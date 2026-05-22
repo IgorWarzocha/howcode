@@ -5,7 +5,14 @@ import type {
   ProjectDiffStatsResult,
   ProjectGitState,
 } from '../../../desktop/types'
-import { composerPopoverOptionClass, composerPopoverOptionSelectedClass } from '../../../ui/classes'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeControlClass,
+  appTypeMetaClass,
+  composerPopoverOptionClass,
+  composerPopoverOptionSelectedClass,
+} from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 
 export const baselineOptions = [
@@ -76,11 +83,11 @@ export function CommitOption({
       <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
         {selected ? <Check size={14} /> : null}
       </span>
-      <span className="min-w-0 leading-4">
-        <span className="block truncate text-[12.5px] text-[color:var(--text)]">
+      <span className="min-w-0">
+        <span className={cn('block truncate', appTypeControlClass, appToneTextClass)}>
           {commit.subject || '(no subject)'}
         </span>
-        <span className="block truncate text-[11px] text-[color:var(--muted)]">
+        <span className={cn('block truncate', appTypeMetaClass, appToneMutedClass)}>
           {commit.shortSha} · {commit.authorName}
         </span>
       </span>
@@ -112,7 +119,7 @@ export function BaselineOption({
       </span>
       <span
         className={cn(
-          'text-[12.5px]',
+          appTypeControlClass,
           selected ? 'text-[color:var(--text)]' : 'text-[color:var(--muted)]',
         )}
       >

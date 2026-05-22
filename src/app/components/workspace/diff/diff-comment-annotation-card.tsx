@@ -1,6 +1,13 @@
 import type { DiffLineAnnotation } from '@pierre/diffs/react'
 import { Check, X } from 'lucide-react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeMetaStrongClass,
+  appTypeSmallClass,
+} from '../../../ui/classes'
+import { cn } from '../../../utils/cn'
 import { type DiffCommentMetadata, describeCommentTarget } from './diff-panel-content.helpers'
 import type { DiffCommentDraft } from './diffCommentStore'
 
@@ -29,11 +36,15 @@ export function DiffCommentAnnotationCard({
   if (metadata.kind === 'draft') {
     return (
       <div ref={draftCardRef} className={commentCardClass}>
-        <div className="mb-2 text-[11px] font-medium text-[color:var(--muted)]">
+        <div className={cn('mb-2', appTypeMetaStrongClass, appToneMutedClass)}>
           Add comment · {draftComment ? describeCommentTarget(draftComment) : 'Line comment'}
         </div>
         <textarea
-          className="min-h-20 w-full resize-y rounded-lg border border-[color:var(--border)] bg-[color:var(--workspace)] px-3 py-2 text-[12px] leading-5 text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+          className={cn(
+            'min-h-20 w-full resize-y rounded-lg border border-[color:var(--border)] bg-[color:var(--workspace)] px-3 py-2 outline-none placeholder:text-[color:var(--muted)]',
+            appTypeSmallClass,
+            appToneTextClass,
+          )}
           value={draftComment?.body ?? ''}
           onChange={(event) => {
             setDraftComment((current) =>
@@ -77,7 +88,13 @@ export function DiffCommentAnnotationCard({
 
   return (
     <div data-saved-diff-comment-id={metadata.id} className={commentCardClass}>
-      <div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-medium text-[color:var(--muted)]">
+      <div
+        className={cn(
+          'mb-1 flex items-center justify-between gap-2',
+          appTypeMetaStrongClass,
+          appToneMutedClass,
+        )}
+      >
         <span>Comment · {describeCommentTarget(metadata)}</span>
         <button
           type="button"
@@ -89,7 +106,7 @@ export function DiffCommentAnnotationCard({
           <X size={12} />
         </button>
       </div>
-      <p className="m-0 whitespace-pre-wrap text-[12px] leading-5 text-[color:var(--text)]">
+      <p className={cn('m-0 whitespace-pre-wrap', appTypeSmallClass, appToneTextClass)}>
         {metadata.body}
       </p>
     </div>

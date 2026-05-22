@@ -1,4 +1,12 @@
 import { SkeletonBlock } from '../../components/common/skeleton'
+import {
+  appToneMutedClass,
+  appToneSubtleClass,
+  appToneTextClass,
+  appTypeDashboardLabelStrongClass,
+  appTypeDashboardMetricClass,
+  appTypeSmallClass,
+} from '../../ui/classes'
 
 export function ProjectMetric({
   detail,
@@ -13,7 +21,9 @@ export function ProjectMetric({
 }) {
   return (
     <div className="grid min-w-0 gap-1">
-      <div className="text-[11px] font-medium tracking-[0.08em] text-[color:var(--muted)] uppercase">
+      <div
+        className={`${appTypeDashboardLabelStrongClass} tracking-[0.08em] ${appToneMutedClass} uppercase`}
+      >
         {label}
       </div>
       {loading ? (
@@ -23,10 +33,10 @@ export function ProjectMetric({
         </>
       ) : (
         <>
-          <div className="font-mono text-[17px] leading-none font-medium text-[color:var(--text)] tabular-nums">
+          <div className={`font-mono ${appTypeDashboardMetricClass} ${appToneTextClass}`}>
             {value}
           </div>
-          <div className="truncate text-[12px] text-[color:var(--muted-2)]">{detail}</div>
+          <div className={`truncate ${appTypeSmallClass} ${appToneSubtleClass}`}>{detail}</div>
         </>
       )}
     </div>

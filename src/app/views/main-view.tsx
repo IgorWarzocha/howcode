@@ -2,6 +2,7 @@ import { MarkdownContent } from '../components/common/markdown-content'
 import { ViewHeader } from '../components/common/view-header'
 import { ViewShell } from '../components/common/view-shell'
 import type { View } from '../types'
+import { appTypeReadableClass } from '../ui/classes'
 import { getComingSoonViewContent } from './coming-soon-roadmaps'
 
 type MainViewProps = {
@@ -19,7 +20,7 @@ export function MainView({ activeView }: MainViewProps) {
     <ViewShell maxWidthClassName="max-w-[760px]">
       <ViewHeader title={content.title} subtitle={content.subtitle} />
 
-      <MarkdownContent markdown={content.markdown} className="gap-3 text-[15px]" />
+      <MarkdownContent markdown={content.markdown} className={`gap-3 ${appTypeReadableClass}`} />
     </ViewShell>
   )
 }

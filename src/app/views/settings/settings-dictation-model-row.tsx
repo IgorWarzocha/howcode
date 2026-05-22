@@ -2,7 +2,16 @@ import { Check, Download, Trash2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { ActivitySpinner } from '../../components/common/activity-spinner'
 import type { DictationModelId, DictationModelSummary } from '../../desktop/types'
-import { composerTextActionButtonClass, settingsListRowClass } from '../../ui/classes'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeGroupTextClass,
+  appTypeMetaClass,
+  appTypeSmallClass,
+  appTypeTinyClass,
+  composerTextActionButtonClass,
+  settingsListRowClass,
+} from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import type { DictationPendingAction } from './useSettingsDictationController'
 
@@ -26,7 +35,7 @@ function ModelActionButton({
       onClick={onClick}
       className={cn(
         composerTextActionButtonClass,
-        'min-h-7 gap-1 rounded-lg px-2.5 text-[11px]',
+        `min-h-7 gap-1 rounded-lg px-2.5 ${appTypeMetaClass}`,
         primary && 'border-[color:var(--accent-border)] bg-[color:var(--accent-bg-subtle)]',
       )}
     >
@@ -52,7 +61,9 @@ function InstalledModelActions({
 >) {
   if (model.selected) {
     return (
-      <div className="inline-flex min-h-7 items-center gap-1 rounded-full border border-[color:var(--accent-border)] bg-[color:var(--accent-bg-subtle)] px-2.5 text-[11px] text-[color:var(--text)]">
+      <div
+        className={`inline-flex min-h-7 items-center gap-1 rounded-full border border-[color:var(--accent-border)] bg-[color:var(--accent-bg-subtle)] px-2.5 ${appTypeMetaClass} ${appToneTextClass}`}
+      >
         <Check size={11} />
         <span>In use</span>
       </div>
@@ -109,18 +120,22 @@ export function SettingsDictationModelRow({
   return (
     <div className={settingsListRowClass}>
       <div className="grid gap-0.5">
-        <div className="flex items-center gap-2 text-[13px] text-[color:var(--text)]">
+        <div className={`flex items-center gap-2 ${appTypeGroupTextClass} ${appToneTextClass}`}>
           <span>{model.name}</span>
-          <span className="rounded-full border border-[color:var(--border)] px-2 py-0.5 text-[10.5px] text-[color:var(--muted)]">
+          <span
+            className={`rounded-full border border-[color:var(--border)] px-2 py-0.5 ${appTypeTinyClass} ${appToneMutedClass}`}
+          >
             {model.downloadSizeLabel}
           </span>
           {model.selected ? (
-            <span className="rounded-full border border-[color:var(--accent-border)] bg-[color:var(--accent-bg-subtle)] px-2 py-0.5 text-[10.5px] text-[color:var(--text)]">
+            <span
+              className={`rounded-full border border-[color:var(--accent-border)] bg-[color:var(--accent-bg-subtle)] px-2 py-0.5 ${appTypeTinyClass} ${appToneTextClass}`}
+            >
               Selected
             </span>
           ) : null}
         </div>
-        <div className="text-[12px] text-[color:var(--muted)]">{model.description}</div>
+        <div className={`${appTypeSmallClass} ${appToneMutedClass}`}>{model.description}</div>
       </div>
 
       <div className="flex items-center gap-2">

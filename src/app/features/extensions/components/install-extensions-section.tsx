@@ -6,7 +6,7 @@ import { Tooltip } from '../../../components/common/tooltip'
 import {
   compactRoundIconButtonClass,
   iconActionButtonDisabledClass,
-  settingsInputClass,
+  quietSearchInputClass,
 } from '../../../ui/classes'
 import type { InstallScope, ManualSourceKind } from '../types'
 
@@ -68,7 +68,7 @@ export function InstallExtensionsSection({
           type="text"
           value={manualSource}
           onChange={(event) => onManualSourceChange(event.target.value)}
-          className={settingsInputClass}
+          className={quietSearchInputClass}
           placeholder={
             manualSourceKind === 'npm'
               ? 'Package name or npm:@scope/pkg'

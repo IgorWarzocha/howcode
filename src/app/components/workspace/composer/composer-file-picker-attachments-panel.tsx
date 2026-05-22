@@ -2,6 +2,7 @@ import { File, Folder, Globe, X } from 'lucide-react'
 import type { DragEvent } from 'react'
 import { isSafeExternalUrl } from '../../../../../shared/external-url'
 import type { ComposerAttachment } from '../../../desktop/types'
+import { appToneMutedClass, appToneTextClass, appTypeTinyClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import {
   getAttachmentDisplayLabel,
@@ -65,7 +66,11 @@ export function ComposerFilePickerAttachmentsPanel({
           attachments.map((attachment) => (
             <div
               key={attachment.path}
-              className="flex h-5 min-w-0 items-center gap-1 rounded-sm border border-transparent bg-transparent px-1.5 text-[10.5px] text-[color:var(--text)] transition-colors hover:bg-[color:var(--surface-hover)]"
+              className={cn(
+                'flex h-5 min-w-0 items-center gap-1 rounded-sm border border-transparent bg-transparent px-1.5 transition-colors hover:bg-[color:var(--surface-hover)]',
+                appTypeTinyClass,
+                appToneTextClass,
+              )}
               title={attachment.path}
             >
               <button
@@ -76,7 +81,7 @@ export function ComposerFilePickerAttachmentsPanel({
               >
                 {getOpenAttachmentIcon(attachment)}
               </button>
-              <span className="min-w-0 flex-1 truncate leading-none">
+              <span className="min-w-0 flex-1 truncate">
                 {getAttachmentDisplayLabel(attachment)}
               </span>
               <button
@@ -92,7 +97,9 @@ export function ComposerFilePickerAttachmentsPanel({
         ) : (
           <div
             className={cn(
-              'grid min-h-24 place-items-center rounded-lg px-3 py-4 text-center text-[11.5px] text-[color:var(--muted)] transition-colors',
+              'grid min-h-24 place-items-center rounded-lg px-3 py-4 text-center transition-colors',
+              appTypeTinyClass,
+              appToneMutedClass,
               dropActive && 'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
             )}
           >

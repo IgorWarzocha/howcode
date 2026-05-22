@@ -2,12 +2,16 @@ import { FilePenLine, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { CompactMetaRow } from '../../../components/common/compact-meta-row'
 import { ConfirmPopover } from '../../../components/common/confirm-popover'
-import { EmptyStateCard } from '../../../components/common/empty-state-card'
 import { TextButton } from '../../../components/common/text-button'
 import { Tooltip } from '../../../components/common/tooltip'
 import type { PiConfiguredSkill } from '../../../desktop/types'
 import { openPathQuery } from '../../../query/desktop-query'
-import { compactRoundIconButtonClass } from '../../../ui/classes'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeGroupTextClass,
+  compactRoundIconButtonClass,
+} from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 
 type InstalledSkillsSectionProps = {
@@ -27,7 +31,11 @@ export function InstalledSkillsSection({
   const confirmRemoveButtonRef = useRef<HTMLButtonElement>(null)
 
   if (skills.length === 0) {
-    return <EmptyStateCard>No {installScope} skills.</EmptyStateCard>
+    return (
+      <div className={`px-2 py-1.5 ${appTypeGroupTextClass} ${appToneMutedClass}`}>
+        No {installScope} skills.
+      </div>
+    )
   }
 
   return (
@@ -87,11 +95,15 @@ export function InstalledSkillsSection({
             </>
           }
         >
-          <div className="min-w-0 flex items-baseline gap-1.5 overflow-hidden">
-            <div className="shrink-0 text-[13px] leading-4 text-[color:var(--text)]">
+          <div
+            className={`min-w-0 flex items-baseline gap-1.5 overflow-hidden ${appTypeGroupTextClass}`}
+          >
+            <div className={cn(`${appTypeGroupTextClass} ${appToneTextClass}`, 'shrink-0')}>
               {configuredSkill.displayName}
             </div>
-            <div className="min-w-0 truncate text-[12px] leading-4 text-[color:var(--muted)]">
+            <div
+              className={cn(`${appTypeGroupTextClass} ${appToneMutedClass}`, 'min-w-0 truncate')}
+            >
               {configuredSkill.description || configuredSkill.sourceRepo || configuredSkill.source}
             </div>
           </div>

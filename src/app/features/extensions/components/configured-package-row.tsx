@@ -6,7 +6,13 @@ import { TextButton } from '../../../components/common/text-button'
 import { Tooltip } from '../../../components/common/tooltip'
 import type { PiConfiguredPackage } from '../../../desktop/types'
 import { openPathQuery } from '../../../query/desktop-query'
-import { compactRoundIconButtonClass } from '../../../ui/classes'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeGroupTextClass,
+  appTypeSmallClass,
+  compactRoundIconButtonClass,
+} from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { getConfiguredSourceLabel, isConfiguredSourcePath } from '../utils'
 
@@ -78,12 +84,13 @@ export function ConfiguredPackageRow({
       }
     >
       <div className="min-w-0 flex items-baseline gap-1.5 overflow-hidden">
-        <div className="shrink-0 text-[13px] leading-4 text-[color:var(--text)]">
+        <div className={cn('shrink-0', appTypeGroupTextClass, appToneTextClass)}>
           {configuredPackage.displayName}
         </div>
         <div
           className={cn(
-            'text-[12px] leading-4 text-[color:var(--muted)]',
+            appTypeSmallClass,
+            appToneMutedClass,
             isConfiguredSourcePath(configuredPackage) ? 'min-w-0 truncate' : 'shrink-0',
           )}
         >

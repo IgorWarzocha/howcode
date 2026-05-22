@@ -3,6 +3,13 @@ import type { GitStatusEntry } from '@pierre/trees'
 import { FileTree, useFileTree, useFileTreeSearch } from '@pierre/trees/react'
 import { FilterX, Search } from 'lucide-react'
 import { type CSSProperties, useEffect, useMemo, useRef } from 'react'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeGroupTextClass,
+  appTypeMetaStrongClass,
+  appTypeSmallClass,
+} from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { getFileChangeCounts, resolveFileDiffPath } from './diff-panel-content.helpers'
 
@@ -153,10 +160,10 @@ export function DiffChangedFilesTree({
   return (
     <div className="flex h-full min-h-0 w-full flex-col border-l border-[color:var(--border)] bg-[color:var(--workspace)]">
       <div className="flex h-10 shrink-0 items-center gap-2 border-b border-[color:var(--border)] px-2.5">
-        <div className="min-w-0 flex-1 truncate pl-2.5 text-[12px] font-medium text-[color:var(--text)]">
+        <div className={cn('min-w-0 flex-1 truncate pl-2.5', appTypeSmallClass, appToneTextClass)}>
           Changed
         </div>
-        <div className="shrink-0 text-[11px] font-medium tabular-nums text-[color:var(--muted)]">
+        <div className={cn('shrink-0 tabular-nums', appTypeMetaStrongClass, appToneMutedClass)}>
           {statusLabel}
         </div>
         {hasSelection ? (
@@ -173,7 +180,11 @@ export function DiffChangedFilesTree({
       </div>
       <div className="flex min-h-0 flex-1 flex-col bg-[color:var(--workspace)] px-2.5 pt-2 pb-2">
         <label
-          className="flex min-h-8 shrink-0 items-center gap-2 rounded-[10px] border border-transparent bg-transparent px-2.5 text-[13px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] focus-within:bg-[rgba(255,255,255,0.05)] focus-within:text-[color:var(--text)]"
+          className={cn(
+            'flex min-h-8 shrink-0 items-center gap-2 rounded-[10px] border border-transparent bg-transparent px-2.5 transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] focus-within:bg-[rgba(255,255,255,0.05)] focus-within:text-[color:var(--text)]',
+            appTypeGroupTextClass,
+            appToneMutedClass,
+          )}
           data-active={search.value.trim().length > 0 ? 'true' : 'false'}
         >
           <Search size={14} className="shrink-0 text-[color:var(--muted)]" />
@@ -181,7 +192,11 @@ export function DiffChangedFilesTree({
             value={search.value}
             onChange={(event) => search.setValue(event.target.value)}
             placeholder="Search"
-            className="min-w-0 flex-1 bg-transparent p-0 text-[13px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+            className={cn(
+              'min-w-0 flex-1 bg-transparent p-0 outline-none placeholder:text-[color:var(--muted)]',
+              appTypeGroupTextClass,
+              appToneTextClass,
+            )}
             aria-label="Search changed files"
           />
         </label>

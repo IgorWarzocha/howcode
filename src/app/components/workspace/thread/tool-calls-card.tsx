@@ -1,4 +1,12 @@
 import {
+  appToneDangerClass,
+  appToneSubtleClass,
+  appTypeCodeClass,
+  appTypeGroupTextClass,
+  appTypeMetaClass,
+  appTypeMetaStrongClass,
+  appTypeSmallClass,
+  appTypeTinyStrongClass,
   processLedgerClass,
   processLedgerDetailBlockClass,
   processLedgerRowClass,
@@ -28,13 +36,15 @@ function renderToolCallBody(message: ToolCallMessage) {
       <div
         className={
           message.isError
-            ? 'grid min-w-0 gap-2 text-[13px] text-[color:var(--danger)]'
-            : 'grid min-w-0 gap-2 text-[13px] text-[color:var(--muted-2)]/88'
+            ? `grid min-w-0 gap-2 ${appTypeGroupTextClass} ${appToneDangerClass}`
+            : `grid min-w-0 gap-2 ${appTypeGroupTextClass} ${appToneSubtleClass}`
         }
       >
         {message.args ? (
           <div className={processLedgerDetailBlockClass}>
-            <div className="font-sans text-[10.5px] tracking-[0.08em] text-[color:var(--muted-2)]/70 uppercase">
+            <div
+              className={`${appTypeTinyStrongClass} tracking-[0.08em] text-[color:var(--muted-2)]/70 uppercase`}
+            >
               Arguments
             </div>
             <pre className="m-0 max-h-44 overflow-auto whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
@@ -67,7 +77,7 @@ function renderToolCallBody(message: ToolCallMessage) {
   }
 
   return (
-    <div className="grid min-w-0 gap-2 font-mono text-[12px] text-[color:var(--muted-2)]/84">
+    <div className={`grid min-w-0 gap-2 ${appTypeCodeClass} text-[color:var(--muted-2)]/84`}>
       <div className="whitespace-pre-wrap break-all text-[color:var(--muted-2)]/88">
         $ {message.command}
       </div>
@@ -118,7 +128,7 @@ export function ToolCallsCard({
       bodyClassName="!border-0 min-w-0 max-w-full overflow-hidden px-0 py-1"
       header={
         <span className="flex min-w-0 flex-1 items-center justify-between gap-3 overflow-hidden">
-          <span className="truncate text-[12px] font-medium text-[color:var(--muted)]/90">
+          <span className={`truncate ${appTypeMetaStrongClass} text-[color:var(--muted)]/90`}>
             Tool calls ({messages.length})
           </span>
         </span>
@@ -155,7 +165,7 @@ export function ToolCallsCard({
                   <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
                     <span
                       className={cn(
-                        'shrink-0 truncate text-[12px] leading-[1.2]',
+                        `${appTypeSmallClass} shrink-0 truncate`,
                         isError
                           ? 'text-[color:var(--danger)]'
                           : isRunning
@@ -165,17 +175,21 @@ export function ToolCallsCard({
                     >
                       {title}
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-[11.5px] leading-[1.2] text-[color:var(--muted-2)]/82">
+                    <span
+                      className={`min-w-0 flex-1 truncate ${appTypeMetaClass} text-[color:var(--muted-2)]/82`}
+                    >
                       {preview}
                     </span>
                   </span>
                   {isError ? (
-                    <span className="shrink-0 text-[10.5px] font-medium text-[color:var(--danger)]">
+                    <span className={`shrink-0 ${appTypeTinyStrongClass} ${appToneDangerClass}`}>
                       Error
                     </span>
                   ) : null}
                   {isRunning ? (
-                    <span className="shrink-0 text-[10.5px] font-medium text-[color:var(--accent)]">
+                    <span
+                      className={`shrink-0 ${appTypeTinyStrongClass} text-[color:var(--accent)]`}
+                    >
                       Running
                     </span>
                   ) : null}

@@ -2,7 +2,12 @@ import { Download, RotateCw } from 'lucide-react'
 import type { KeyboardEvent } from 'react'
 import { MarkdownContent } from '../components/common/markdown-content'
 import { useAppUpdateFlow } from '../hooks/useAppUpdateFlow'
-import { compactRoundIconButtonClass, toolbarButtonClass } from '../ui/classes'
+import {
+  appTypeGroupTextClass,
+  appTypeSectionTitleClass,
+  compactRoundIconButtonClass,
+  toolbarButtonClass,
+} from '../ui/classes'
 import { cn } from '../utils/cn'
 import type { LandingOverviewContent } from './landing-overview-content'
 
@@ -131,7 +136,7 @@ export function EmptyLandingOverview({
                 id={`landing-section-${index}-tab`}
                 role="tab"
                 className={cn(
-                  'border-b px-0 py-3 text-center text-[15px] font-medium transition-colors sm:py-4',
+                  `border-b px-0 py-3 text-center ${appTypeSectionTitleClass} transition-colors sm:py-4`,
                   selected
                     ? 'border-[color:var(--accent)] text-[color:var(--text)]'
                     : 'border-transparent text-[color:var(--muted)] hover:text-[color:var(--text)]',
@@ -153,7 +158,10 @@ export function EmptyLandingOverview({
           role="tabpanel"
           aria-labelledby={`landing-section-${activeSectionIndex}-tab`}
         >
-          <MarkdownContent markdown={activeContent?.markdown ?? ''} className="gap-2 text-[13px]" />
+          <MarkdownContent
+            markdown={activeContent?.markdown ?? ''}
+            className={`gap-2 ${appTypeGroupTextClass}`}
+          />
         </div>
       </div>
     </div>

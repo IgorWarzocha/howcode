@@ -3,6 +3,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
 import type { ThreadSearchMatch, ThreadSearchResult } from '../../../desktop/types'
 import { searchThreadQuery } from '../../../query/desktop-query'
+import {
+  appToneMutedClass,
+  appToneSubtleClass,
+  appToneTextClass,
+  appTypeGroupTextClass,
+  appTypeMetaClass,
+  appTypeSmallClass,
+} from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 
 type ThreadFindBarProps = {
@@ -145,7 +153,11 @@ export function ThreadFindBar({
             }
           }}
           placeholder="Find in thread"
-          className="h-7 min-w-0 flex-1 bg-transparent px-1 text-[13px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
+          className={cn(
+            'h-7 min-w-0 flex-1 bg-transparent px-1 outline-none placeholder:text-[color:var(--muted-2)]',
+            appTypeGroupTextClass,
+            appToneTextClass,
+          )}
           aria-label="Find in thread"
         />
         {searching ? (
@@ -153,7 +165,8 @@ export function ThreadFindBar({
         ) : null}
         <span
           className={cn(
-            'min-w-14 text-center text-[11px]',
+            'min-w-14 text-center',
+            appTypeMetaClass,
             query.trim() && !searching && matchCount === 0
               ? 'text-[color:var(--danger)]'
               : 'text-[color:var(--muted-2)]',
@@ -163,7 +176,11 @@ export function ThreadFindBar({
         </span>
         <button
           type="button"
-          className="rounded-md px-2 text-[12px] text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)]"
+          className={cn(
+            'rounded-md px-2 hover:bg-[color:var(--surface-hover)]',
+            appTypeSmallClass,
+            appToneMutedClass,
+          )}
           onClick={() => goToMatch(-1)}
           aria-label="Previous match"
         >
@@ -171,7 +188,11 @@ export function ThreadFindBar({
         </button>
         <button
           type="button"
-          className="rounded-md px-2 text-[12px] text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)]"
+          className={cn(
+            'rounded-md px-2 hover:bg-[color:var(--surface-hover)]',
+            appTypeSmallClass,
+            appToneMutedClass,
+          )}
           onClick={() => goToMatch(1)}
           aria-label="Next match"
         >
@@ -189,17 +210,29 @@ export function ThreadFindBar({
       {query.trim() ? (
         <div className="max-h-56 overflow-y-auto border-t border-[color:var(--border)] p-1">
           {searching ? (
-            <div className="px-2 py-3 text-[12px] text-[color:var(--muted)]">Searching thread…</div>
+            <div className={cn('px-2 py-3', appTypeSmallClass, appToneMutedClass)}>
+              Searching thread…
+            </div>
           ) : matches.length > 0 ? (
             matches.map((match, index) => (
               <button
                 key={`${match.messageId}:${match.matchStart}:${match.matchEnd}`}
                 type="button"
-                className="grid w-full gap-1 rounded-lg px-2 py-1.5 text-left text-[12px] text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] data-[active=true]:bg-[color:var(--accent-bg-subtle)] data-[active=true]:text-[color:var(--text)]"
+                className={cn(
+                  'grid w-full gap-1 rounded-lg px-2 py-1.5 text-left hover:bg-[color:var(--surface-hover)] data-[active=true]:bg-[color:var(--accent-bg-subtle)] data-[active=true]:text-[color:var(--text)]',
+                  appTypeSmallClass,
+                  appToneMutedClass,
+                )}
                 data-active={index === matchIndex ? 'true' : 'false'}
                 onClick={() => selectMatch(index)}
               >
-                <span className="text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted-2)]">
+                <span
+                  className={cn(
+                    'uppercase tracking-[0.08em]',
+                    appTypeMetaClass,
+                    appToneSubtleClass,
+                  )}
+                >
                   {match.role}
                 </span>
                 <span className="line-clamp-2">
@@ -208,7 +241,7 @@ export function ThreadFindBar({
               </button>
             ))
           ) : (
-            <div className="px-2 py-3 text-[12px] text-[color:var(--muted)]">No matches</div>
+            <div className={cn('px-2 py-3', appTypeSmallClass, appToneMutedClass)}>No matches</div>
           )}
         </div>
       ) : null}

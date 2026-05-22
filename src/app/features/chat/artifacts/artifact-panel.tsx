@@ -23,7 +23,13 @@ import { createPortal } from 'react-dom'
 import { SurfacePanel } from '../../../components/common/surface-panel'
 import { Tooltip } from '../../../components/common/tooltip'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
-import { compactIconButtonClass, popoverPanelClass } from '../../../ui/classes'
+import {
+  appToneTextClass,
+  appTypeGroupTextClass,
+  appTypeGroupTitleClass,
+  compactIconButtonClass,
+  popoverPanelClass,
+} from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { ArtifactPanelBody } from './artifact-panel-body'
 import { formatArtifactSlug } from './artifactFormat'
@@ -239,10 +245,10 @@ function ArtifactPanelHeader({
   const { selectedArtifact, setView, view } = panel
   return (
     <div className="flex min-h-11 items-center justify-between gap-2 border-b border-[color:var(--border)] px-2 py-2 min-[420px]:gap-3 min-[420px]:px-3">
-      <div className="flex min-w-0 flex-1 items-center gap-2 text-[13px] text-[color:var(--text)]">
+      <div className={`flex min-w-0 flex-1 items-center gap-2 ${appTypeGroupTextClass} ${appToneTextClass}`}>
         <FileCode2 size={15} className="shrink-0 text-[color:var(--muted)]" />
         {selectedArtifact ? (
-          <span className="truncate font-medium">{formatArtifactSlug(selectedArtifact.slug)}</span>
+          <span className={`truncate ${appTypeGroupTitleClass}`}>{formatArtifactSlug(selectedArtifact.slug)}</span>
         ) : null}
       </div>
       <div className="flex min-w-0 shrink items-center gap-1 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

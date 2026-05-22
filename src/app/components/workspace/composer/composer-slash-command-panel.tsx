@@ -1,4 +1,8 @@
 import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeCodeClass,
+  appTypeSmallClass,
   composerPopoverOptionClass,
   composerPopoverOptionSelectedClass,
   composerPopoverPanelClass,
@@ -51,11 +55,11 @@ function SlashCommandOption({
         onMouseDown={(event) => event.preventDefault()}
         onClick={() => slashCommands.selectCommand(command)}
       >
-        <span className="shrink-0 whitespace-nowrap font-mono text-[12px] text-[color:var(--text)]">
+        <span className={cn('shrink-0 whitespace-nowrap', appTypeCodeClass, appToneTextClass)}>
           /{command.name}
         </span>
         {command.description ? (
-          <span className="min-w-0 truncate text-[12px] text-[color:var(--muted)]">
+          <span className={cn('min-w-0 truncate', appTypeSmallClass, appToneMutedClass)}>
             {command.description}
           </span>
         ) : null}

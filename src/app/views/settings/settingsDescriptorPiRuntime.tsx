@@ -1,5 +1,5 @@
 import type { PiSettings, PiThemeState } from '../../desktop/types'
-import { settingsInputClass } from '../../ui/classes'
+import { appToneMutedClass, appTypeSmallClass, settingsInputClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import type { SetDraftPiSetting } from './settingsDescriptorTypes'
 import type { SettingDescriptor } from './settingsTypes'
@@ -79,7 +79,9 @@ export function buildPiRuntimeSettingsDescriptors({
       description: 'Soon to be deprecated.',
       keywords: 'transport sse websocket auto provider runtime',
       render: () => (
-        <div className="grid grid-cols-3 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 text-[12px] text-[color:var(--muted)]">
+        <div
+          className={`grid grid-cols-3 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 ${appTypeSmallClass} ${appToneMutedClass}`}
+        >
           {[
             ['sse', 'SSE'],
             ['websocket', 'WebSocket'],
@@ -141,7 +143,9 @@ export function buildPiRuntimeSettingsDescriptors({
           : 'Send one queued follow-up, or drain them all.',
       keywords: 'queue drain steering follow-up mode runtime advanced',
       render: () => (
-        <div className="grid grid-cols-2 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 text-[12px] text-[color:var(--muted)]">
+        <div
+          className={`grid grid-cols-2 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 ${appTypeSmallClass} ${appToneMutedClass}`}
+        >
           {[
             ['one-at-a-time', 'One'],
             ['all', 'All'],
@@ -200,7 +204,9 @@ export function buildPiRuntimeSettingsDescriptors({
       keywords: 'terminal tui editor cursor changelog thinking images escape',
       render: () =>
         key === 'doubleEscapeAction' ? (
-          <div className="grid grid-cols-3 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 text-[12px] text-[color:var(--muted)]">
+          <div
+            className={`grid grid-cols-3 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 ${appTypeSmallClass} ${appToneMutedClass}`}
+          >
             {[
               ['tree', 'Tree'],
               ['fork', 'Fork'],

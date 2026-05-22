@@ -1,13 +1,15 @@
 import { PackagePlus, Search, Sparkles } from 'lucide-react'
 import { DisclosureSection } from '../../../components/common/disclosure-section'
-import { EmptyStateCard } from '../../../components/common/empty-state-card'
 import { TextButton } from '../../../components/common/text-button'
 import { Tooltip } from '../../../components/common/tooltip'
 import type { PiPackageCatalogItem } from '../../../desktop/types'
 import {
+  appToneMutedClass,
+  appTypeControlClass,
   compactRoundIconButtonClass,
   iconActionButtonDisabledClass,
-  settingsInputClass,
+  inlineEmptyNoteClass,
+  quietSearchInputClass,
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import type { InstallScope } from '../types'
@@ -54,20 +56,14 @@ function SearchExtensionsResults({
   | 'selectedCatalogSources'
 >) {
   if (catalogLoading) {
-    return (
-      <div className="rounded-xl border border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]">
-        Loading packages…
-      </div>
-    )
+    return <div className={inlineEmptyNoteClass}>Loading packages…</div>
   }
   if (catalogError) {
     return (
-      <div className="rounded-xl border border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--danger)]">
-        {catalogError}
-      </div>
+      <div className={cn(inlineEmptyNoteClass, 'text-[color:var(--danger)]')}>{catalogError}</div>
     )
   }
-  if (catalogItems.length === 0) return <EmptyStateCard>No pi packages.</EmptyStateCard>
+  if (catalogItems.length === 0) return <div className={inlineEmptyNoteClass}>No pi packages.</div>
   return (
     <div className="grid gap-2">
       {catalogItems.map((item) => (
@@ -96,7 +92,11 @@ function SearchExtensionsLoadMore({
   return (
     <div className="flex justify-center pt-1">
       <TextButton
-        className="rounded-full border border-[color:var(--border)] px-4 py-2 text-[12.5px] text-[color:var(--muted)] hover:text-[color:var(--text)]"
+        className={cn(
+          'rounded-lg px-3 py-1.5 hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
+          appTypeControlClass,
+          appToneMutedClass,
+        )}
         onClick={onLoadMore}
         disabled={isFetchingNextCatalogPage}
       >
@@ -145,7 +145,7 @@ export function SearchExtensionsSection({
                 type="text"
                 value={searchInput}
                 onChange={(event) => onSearchInputChange(event.target.value)}
-                className={cn(settingsInputClass, 'w-full pl-8')}
+                className={cn(quietSearchInputClass, 'w-full pl-8')}
                 placeholder="Search extensions"
                 aria-label="Search extensions"
               />

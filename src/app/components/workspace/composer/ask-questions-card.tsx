@@ -1,6 +1,13 @@
 import { Check, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { NativeAskQuestion } from '../../../desktop/types'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeGroupTextClass,
+  appTypeMetaClass,
+  appTypeTinyClass,
+} from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 
 type AskQuestionsCardProps = {
@@ -28,7 +35,8 @@ function getQuestionOptionRowClass(input: { isOther: boolean; picked: boolean })
     ? 'bg-[color:var(--surface-hover)] text-[color:var(--text)]'
     : 'text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)]'
   return cn(
-    'grid min-h-6 grid-cols-[14px_minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1 text-left text-[11.5px] leading-4 transition-colors',
+    'grid min-h-6 grid-cols-[14px_minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1 text-left transition-colors',
+    appTypeTinyClass,
     input.isOther ? pickedOtherClass : pickedOptionClass,
   )
 }
@@ -163,11 +171,13 @@ export function AskQuestionsCard({
     return (
       <div className={askQuestionsCardClass}>
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-2">
-          <div className="truncate text-[13px] leading-5 text-[color:var(--text)]">
+          <div className={cn('truncate', appTypeGroupTextClass, appToneTextClass)}>
             Review answers
           </div>
 
-          <div className="flex shrink-0 items-center gap-1 text-[11px] text-[color:var(--muted)]">
+          <div
+            className={cn('flex shrink-0 items-center gap-1', appTypeMetaClass, appToneMutedClass)}
+          >
             <button
               type="button"
               className="inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-[color:var(--surface-hover)]"
@@ -195,7 +205,11 @@ export function AskQuestionsCard({
             <button
               key={item.id}
               type="button"
-              className="grid grid-cols-[minmax(0,1fr)] rounded-md px-2 py-1 text-left text-[11.5px] leading-4 text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)]"
+              className={cn(
+                'grid grid-cols-[minmax(0,1fr)] rounded-md px-2 py-1 text-left transition-colors hover:bg-[color:var(--surface-hover)]',
+                appTypeTinyClass,
+                appToneMutedClass,
+              )}
               onClick={() => setActiveIndex(index)}
             >
               <span className="truncate text-[color:var(--text)]">{item.question}</span>
@@ -226,14 +240,16 @@ export function AskQuestionsCard({
   return (
     <div className={askQuestionsCardClass}>
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-2">
-        <div className="min-w-0 truncate text-[13px] leading-5">
+        <div className={cn('min-w-0 truncate', appTypeGroupTextClass)}>
           <span className="text-[color:var(--text)]">{question.question}</span>{' '}
-          <span className="text-[11px] text-[color:var(--muted)]">
+          <span className={cn(appTypeMetaClass, appToneMutedClass)}>
             {question.multiple ? 'Pick any that apply' : 'Pick one'}
           </span>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1 text-[11px] text-[color:var(--muted)]">
+        <div
+          className={cn('flex shrink-0 items-center gap-1', appTypeMetaClass, appToneMutedClass)}
+        >
           <button
             type="button"
             className="inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-[color:var(--surface-hover)] disabled:opacity-35"
@@ -280,7 +296,7 @@ export function AskQuestionsCard({
               <div key="__howcode_other_answer" className="relative">
                 <button type="button" className={rowClass} tabIndex={-1} aria-disabled="true">
                   {mark}
-                  <span className="min-w-0 truncate leading-4">{option.label}</span>
+                  <span className="min-w-0 truncate">{option.label}</span>
                   <span />
                 </button>
                 <button
@@ -304,7 +320,7 @@ export function AskQuestionsCard({
               aria-pressed={picked}
             >
               {mark}
-              <span className="min-w-0 truncate leading-4">{option.label}</span>
+              <span className="min-w-0 truncate">{option.label}</span>
               <span />
             </button>
           )

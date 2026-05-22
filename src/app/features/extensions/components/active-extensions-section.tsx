@@ -1,6 +1,6 @@
 import { DisclosureSection } from '../../../components/common/disclosure-section'
-import { EmptyStateCard } from '../../../components/common/empty-state-card'
 import type { PiConfiguredPackage } from '../../../desktop/types'
+import { inlineEmptyNoteClass } from '../../../ui/classes'
 import { ConfiguredPackageRow } from './configured-package-row'
 
 type ActiveExtensionsSectionProps = {
@@ -33,7 +33,7 @@ export function ActiveExtensionsSection({
             ))}
           </div>
         ) : (
-          <EmptyStateCard>No installed extensions.</EmptyStateCard>
+          <div className={inlineEmptyNoteClass}>No installed extensions.</div>
         )
       ) : null}
     </DisclosureSection>

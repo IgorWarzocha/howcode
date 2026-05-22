@@ -1,6 +1,14 @@
 import { SkeletonBlock } from '../../components/common/skeleton'
 import type { ProjectUsageSessionSummary } from '../../desktop/types'
-import { inlineEmptyNoteClass, quietListRowClass } from '../../ui/classes'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeGroupTextClass,
+  appTypeGroupTitleClass,
+  appTypeSmallClass,
+  inlineEmptyNoteClass,
+  quietListRowClass,
+} from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import { formatCost, formatTokens } from './overview-formatters'
 
@@ -34,14 +42,16 @@ function TopSessionRow({
       type="button"
       className={cn(
         quietListRowClass,
-        'min-h-11 grid-cols-[minmax(0,1fr)] items-center gap-1 text-[12px] active:scale-[0.99] min-[560px]:grid-cols-[minmax(0,1fr)_auto] min-[560px]:gap-4',
+        `min-h-11 grid-cols-[minmax(0,1fr)] items-center gap-1 ${appTypeSmallClass} active:scale-[0.99] min-[560px]:grid-cols-[minmax(0,1fr)_auto] min-[560px]:gap-4`,
       )}
       onClick={() => onOpenThread(projectId, session.threadId, session.sessionPath)}
     >
-      <span className="min-w-0 truncate text-[13px] font-medium text-[color:var(--text)]">
+      <span className={`min-w-0 truncate ${appTypeGroupTitleClass} ${appToneTextClass}`}>
         {session.title}
       </span>
-      <span className="min-w-0 truncate text-[13px] text-[color:var(--muted)] tabular-nums max-[559px]:justify-self-start">
+      <span
+        className={`min-w-0 truncate ${appTypeGroupTextClass} ${appToneMutedClass} tabular-nums max-[559px]:justify-self-start`}
+      >
         {formatCost(session.costTotal)} · {formatTokens(session.totalTokens)}
       </span>
     </button>
@@ -63,7 +73,9 @@ export function TopSessionsSection({
 }) {
   return (
     <section className="col-span-2 col-start-2 grid gap-2 [@media(max-height:560px)]:hidden">
-      <h2 className="m-0 w-[calc(100%-2.5rem)] px-1 text-[13px] font-medium text-[color:var(--text)]">
+      <h2
+        className={`m-0 w-[calc(100%-2.5rem)] px-1 ${appTypeGroupTitleClass} ${appToneTextClass}`}
+      >
         Top sessions by cost
       </h2>
       {loading ? (

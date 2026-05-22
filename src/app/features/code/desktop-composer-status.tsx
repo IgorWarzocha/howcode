@@ -9,6 +9,7 @@ import type {
   DesktopActionInvoker,
 } from '../../desktop/types'
 import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
+import { appToneMutedClass, appTypeMetaClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 
 type DesktopComposerStatusProps = {
@@ -35,10 +36,9 @@ type DesktopComposerStatusModelPickerProps = {
   onAction: DesktopActionInvoker
 }
 
-const statusLineClass =
-  'flex min-w-0 flex-row-reverse items-center gap-1.5 truncate text-right text-[11px] leading-4 text-[color:var(--muted)]'
+const statusLineClass = `flex min-w-0 flex-row-reverse items-center gap-1.5 truncate text-right ${appTypeMetaClass} ${appToneMutedClass}`
 
-const iconClass = 'shrink-0 text-[rgba(169,178,215,0.58)]'
+const iconClass = 'shrink-0 text-[color:var(--muted-2)]/70'
 
 const thinkingLevelLabels: Record<ComposerThinkingLevel, string> = {
   off: 'Off',

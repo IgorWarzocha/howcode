@@ -6,7 +6,12 @@ import {
 } from '../../../../shared/dictation-settings'
 import { ActivitySpinner } from '../../components/common/activity-spinner'
 import type { AppSettings, DictationModelId } from '../../desktop/types'
-import { composerTextActionButtonClass, settingsInputClass } from '../../ui/classes'
+import {
+  appToneDangerClass,
+  appTypeSmallClass,
+  composerTextActionButtonClass,
+  settingsInputClass,
+} from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import type { SettingsController } from './settingsDescriptorTypes'
 import { normalizeManagedDictationModelId } from './settingsDictationHelpers'
@@ -98,7 +103,7 @@ function DictationModelSettingControl({
         )}
       </div>
       {controller.dictationInstallError ? (
-        <output className="text-[12px] text-[color:var(--danger)]" aria-live="polite">
+        <output className={`${appTypeSmallClass} ${appToneDangerClass}`} aria-live="polite">
           {controller.dictationInstallError}
         </output>
       ) : null}

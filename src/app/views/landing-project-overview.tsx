@@ -4,7 +4,16 @@ import { GitHubInvertocatMark } from '../components/common/github-invertocat-mar
 import type { DesktopActionInvoker, ProjectGitState, ProjectUsageSummary } from '../desktop/types'
 import { openExternalQuery } from '../query/desktop-query'
 import type { Project } from '../types'
-import { ghostButtonClass, quietListFrameClass } from '../ui/classes'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeDashboardLabelStrongClass,
+  appTypeDashboardTitleClass,
+  appTypeGroupTitleClass,
+  appTypeSmallClass,
+  ghostButtonClass,
+  quietListFrameClass,
+} from '../ui/classes'
 import { cn } from '../utils/cn'
 import { DashboardBranchSwitcher } from './project-overview/dashboard-branch-switcher'
 import {
@@ -70,7 +79,7 @@ function ProjectRepositorySection({
                 size={14}
                 className="shrink-0 text-[color:var(--muted)] transition-colors group-hover/repo:text-[color:var(--text)]"
               />
-              <span className="min-w-0 truncate text-[13px] font-medium text-[color:var(--text)]">
+              <span className={`min-w-0 truncate ${appTypeGroupTitleClass} ${appToneTextClass}`}>
                 {githubLink.owner}/{githubLink.repo}
               </span>
               <ExternalLink
@@ -82,7 +91,7 @@ function ProjectRepositorySection({
           ) : (
             <>
               <GitBranch size={14} className="text-[color:var(--muted)]" aria-hidden="true" />
-              <span className="min-w-0 truncate text-[13px] font-medium text-[color:var(--text)]">
+              <span className={`min-w-0 truncate ${appTypeGroupTitleClass} ${appToneTextClass}`}>
                 {gitSummary ?? branchLabel}
               </span>
             </>
@@ -122,7 +131,7 @@ function ProjectRepositorySection({
         ) : null}
       </div>
       {gitSummary ? (
-        <div className="px-1 text-[12px] text-[color:var(--muted)]">{gitSummary}</div>
+        <div className={`px-1 ${appTypeSmallClass} ${appToneMutedClass}`}>{gitSummary}</div>
       ) : null}
     </section>
   )
@@ -160,10 +169,12 @@ export function ProjectOverview({
     >
       <div className="col-start-2 grid min-h-0 w-full grid-cols-[2rem_minmax(0,1fr)_2rem] content-end gap-x-2 gap-y-3 min-[560px]:gap-y-4 [@media(max-height:660px)]:gap-y-2">
         <div className="col-start-2 grid w-full gap-1.5 [@media(max-height:660px)]:hidden">
-          <div className="text-[12px] font-medium tracking-[0.12em] text-[color:var(--muted)] uppercase">
+          <div
+            className={`${appTypeDashboardLabelStrongClass} tracking-[0.12em] ${appToneMutedClass} uppercase`}
+          >
             Project overview
           </div>
-          <h1 className="m-0 text-[24px] leading-tight font-medium text-[color:var(--text)] text-balance">
+          <h1 className={`m-0 ${appTypeDashboardTitleClass} ${appToneTextClass} text-balance`}>
             {project.name}
           </h1>
         </div>

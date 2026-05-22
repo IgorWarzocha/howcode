@@ -7,7 +7,14 @@ import type {
   ProjectDiffRenderMode,
   ProjectGitState,
 } from '../../desktop/types'
-import { composerPanelClass } from '../../ui/classes'
+import {
+  appToneMutedClass,
+  appTypeCodeClass,
+  appTypeGroupTextClass,
+  appTypeMetaStrongClass,
+  composerPanelClass,
+} from '../../ui/classes'
+import { cn } from '../../utils/cn'
 import type { SettingsOpenTarget } from '../../views/settings/settingsTypes'
 import { ComposerGitOpsSurface } from './composer/composer-git-ops-surface'
 import type { SavedDiffComment } from './diff/diffCommentStore'
@@ -77,20 +84,29 @@ function GitOpsErrorDetails({ detail, onDismiss }: { detail: string; onDismiss: 
       role="alert"
       aria-live="polite"
     >
-      <div className="group relative rounded-xl border border-[color:var(--danger-border)] bg-[color:var(--panel)] px-3 py-2 pr-12 text-[13px] shadow-[var(--shadow)]">
+      <div
+        className={cn(
+          'group relative rounded-xl border border-[color:var(--danger-border)] bg-[color:var(--panel)] px-3 py-2 pr-12 shadow-[var(--shadow)]',
+          appTypeGroupTextClass,
+        )}
+      >
         <div className="grid gap-1">
           <div className="flex items-center gap-2 text-[color:var(--danger)]">
             <span className="h-2 w-2 rounded-full bg-[color:var(--danger)]" />
             <span>GitOps action failed</span>
             <span className="text-[color:var(--muted)]">{helperText}</span>
           </div>
-          <div className="whitespace-pre-wrap font-mono text-[12px] text-[color:var(--muted)]">
+          <div className={cn('whitespace-pre-wrap', appTypeCodeClass, appToneMutedClass)}>
             {detail}
           </div>
         </div>
         <button
           type="button"
-          className="absolute top-1.5 right-1.5 grid h-8 min-w-8 place-items-center rounded-[10px] border border-[color:var(--border)] bg-[color:var(--panel)] px-2 text-[11px] font-medium text-[color:var(--muted)] opacity-75 shadow-[var(--shadow)] backdrop-blur-sm transition-[opacity,scale,background-color,color] duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-border)] active:scale-[0.96] group-hover:opacity-100"
+          className={cn(
+            'absolute top-1.5 right-1.5 grid h-8 min-w-8 place-items-center rounded-[10px] border border-[color:var(--border)] bg-[color:var(--panel)] px-2 opacity-75 shadow-[var(--shadow)] backdrop-blur-sm transition-[opacity,scale,background-color,color] duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-border)] active:scale-[0.96] group-hover:opacity-100',
+            appTypeMetaStrongClass,
+            appToneMutedClass,
+          )}
           onClick={() => void handleCopy()}
           aria-label={copyState === 'copied' ? 'Copied git error' : 'Copy git error'}
           title={

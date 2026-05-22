@@ -2,6 +2,8 @@ import { EmptyStateCard } from '../../components/common/empty-state-card'
 import { SegmentedToggle } from '../../components/common/segmented-toggle'
 import { ViewHeader } from '../../components/common/view-header'
 import { ViewShell } from '../../components/common/view-shell'
+import { appToneDangerClass, appTypeSmallClass } from '../../ui/classes'
+import { cn } from '../../utils/cn'
 import { ActiveExtensionsSection } from './components/active-extensions-section'
 import { InstallExtensionsSection } from './components/install-extensions-section'
 import { SearchExtensionsSection } from './components/search-extensions-section'
@@ -76,7 +78,7 @@ export function ExtensionsView(props: ExtensionsViewProps) {
         {controller.actionError ?? ''}
       </output>
       {controller.actionError ? (
-        <div className="text-[12px] text-[color:var(--danger)]">{controller.actionError}</div>
+        <div className={cn(appTypeSmallClass, appToneDangerClass)}>{controller.actionError}</div>
       ) : null}
 
       <InstallExtensionsSection

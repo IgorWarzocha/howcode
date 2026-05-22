@@ -1,4 +1,11 @@
 import {
+  appTypeCodeClass,
+  appTypeControlStrongClass,
+  appTypeMetaClass,
+  appTypeMetaStrongClass,
+  appTypeReadableClass,
+  appTypeSmallClass,
+  appTypeTinyStrongClass,
   thinkingDisclosureBodyClass,
   thinkingDisclosureClass,
   thinkingDisclosureTriggerClass,
@@ -19,6 +26,18 @@ import { ExpandablePanel } from './expandable-panel'
 import { MarkdownContent } from './markdown-content'
 import { CopyMessageButton, renderProse, renderThinking } from './thread-message-utils'
 import { useThreadFindHighlight } from './useThreadFindHighlight'
+
+const assistantStatusLabelClass = `mb-2 ${appTypeMetaStrongClass} tracking-[0.08em] uppercase opacity-85`
+
+const customMessageTypeClass = `break-words ${appTypeSmallClass} uppercase tracking-[0.08em] text-[color:var(--muted)] [overflow-wrap:anywhere]`
+
+const systemStatusClass = `inline-flex max-w-full items-center gap-1.5 px-1 ${appTypeMetaClass} text-[color:var(--muted-2)]/78`
+
+const systemStatusLabelClass = `shrink-0 ${appTypeTinyStrongClass} tracking-[0.06em] uppercase opacity-80`
+
+const systemStatusValueClass = `min-w-0 truncate ${appTypeCodeClass} not-italic text-[color:var(--muted)]/82`
+
+const systemLabelClass = `break-words ${appTypeMetaClass} not-italic uppercase tracking-[0.08em] text-[color:var(--muted-2)]/84 [overflow-wrap:anywhere]`
 
 type ThreadMessageProps = {
   message: Message
@@ -83,13 +102,15 @@ function AssistantThinkingBlock({
       showChevron={interactive}
       header={
         <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-          <span className="shrink-0 truncate text-[12.5px] leading-[1.2] font-medium text-[color:var(--muted)]/92">
+          <span
+            className={`shrink-0 truncate ${appTypeControlStrongClass} text-[color:var(--muted)]/92`}
+          >
             {label}
           </span>
-          <span className="shrink-0 text-[11px] leading-[1.2] text-[color:var(--muted-2)]/80">
-            —
-          </span>
-          <span className="min-w-0 flex-1 truncate text-[11.5px] leading-[1.2] italic text-[color:var(--muted-2)]/90">
+          <span className={`shrink-0 ${appTypeMetaClass} text-[color:var(--muted-2)]/80`}>—</span>
+          <span
+            className={`min-w-0 flex-1 truncate ${appTypeMetaClass} italic text-[color:var(--muted-2)]/90`}
+          >
             {preview}
           </span>
         </span>
@@ -98,7 +119,7 @@ function AssistantThinkingBlock({
       {thinkingContent.length > 0 ? (
         <div data-no-find-highlight="true">{renderThinking(thinkingContent)}</div>
       ) : (
-        <div className="text-[12px] italic text-[color:var(--muted-2)]/82">
+        <div className={`${appTypeSmallClass} italic text-[color:var(--muted-2)]/82`}>
           This provider redacted the reasoning trace.
         </div>
       )}
@@ -109,7 +130,7 @@ function AssistantThinkingBlock({
 function SummaryBlock({ label, content }: { label: string; content: string[] }) {
   return (
     <div className={`w-full overflow-hidden ${threadSessionStripClass}`}>
-      <div className="text-[12.5px] font-medium text-[color:var(--muted)]/92">{label}</div>
+      <div className={`${appTypeControlStrongClass} text-[color:var(--muted)]/92`}>{label}</div>
       <div>{renderThinking(content)}</div>
     </div>
   )
@@ -118,7 +139,7 @@ function SummaryBlock({ label, content }: { label: string; content: string[] }) 
 function UserMessageBlock({ message }: { message: ProseMessage }) {
   return (
     <div
-      className={`group/message relative w-full min-w-0 border px-3 py-2 pr-11 text-[14px] leading-[1.58] text-[color:var(--text)] ${threadUserMessageClass}`}
+      className={`group/message relative w-full min-w-0 border px-3 py-2 pr-11 ${appTypeReadableClass} text-[color:var(--text)] ${threadUserMessageClass}`}
     >
       <div className="grid min-w-0 gap-3 [overflow-wrap:anywhere]">
         {message.content.map((paragraph) => (
@@ -126,7 +147,7 @@ function UserMessageBlock({ message }: { message: ProseMessage }) {
             key={paragraph}
             markdown={paragraph}
             tone="user"
-            className="text-[14px] leading-[1.58]"
+            className={appTypeReadableClass}
           />
         ))}
       </div>
@@ -165,11 +186,7 @@ function AssistantMessageBlock({
               : 'group/message relative px-4 pr-12'
           }
         >
-          {statusLabel ? (
-            <div className="mb-2 text-[11px] font-semibold tracking-[0.08em] uppercase opacity-85">
-              {statusLabel}
-            </div>
-          ) : null}
+          {statusLabel ? <div className={assistantStatusLabelClass}>{statusLabel}</div> : null}
           {renderProse(message.content, message.format)}
           <div className="absolute top-0 right-1">
             <CopyMessageButton label="assistant turn" text={message.content.join('\n\n')} />
@@ -206,7 +223,7 @@ function getAssistantStatusClassName(message: ProseMessage) {
 function CustomMessageBlock({ message }: { message: CustomThreadMessage }) {
   return (
     <div className={message.isError ? threadSessionErrorStripClass : threadSessionStripClass}>
-      <div className="break-words text-[12px] uppercase tracking-[0.08em] text-[color:var(--muted)] [overflow-wrap:anywhere]">
+      <div className={customMessageTypeClass}>
         {message.isError ? 'Extension error' : message.customType}
       </div>
       {renderProse(message.content, 'prose', message.isError ? 'default' : 'system')}
@@ -219,22 +236,18 @@ function SystemMessageBlock({ message }: { message: SystemThreadMessage }) {
 
   if (isModelStatus) {
     return (
-      <div className="inline-flex max-w-full items-center gap-1.5 px-1 text-[11.5px] text-[color:var(--muted-2)]/78">
-        <span className="shrink-0 text-[10px] font-medium tracking-[0.06em] uppercase opacity-80">
-          {message.label}
-        </span>
-        <span className="min-w-0 truncate font-mono text-[11px] not-italic text-[color:var(--muted)]/82">
-          {message.content.join('')}
-        </span>
+      <div className={systemStatusClass}>
+        <span className={systemStatusLabelClass}>{message.label}</span>
+        <span className={systemStatusValueClass}>{message.content.join('')}</span>
       </div>
     )
   }
 
   return (
-    <div className={`${threadSessionStripClass} text-[12.5px] italic text-[color:var(--muted)]/92`}>
-      <div className="break-words text-[11px] not-italic uppercase tracking-[0.08em] text-[color:var(--muted-2)]/84 [overflow-wrap:anywhere]">
-        {message.label}
-      </div>
+    <div
+      className={`${threadSessionStripClass} ${appTypeControlStrongClass} italic text-[color:var(--muted)]/92`}
+    >
+      <div className={systemLabelClass}>{message.label}</div>
       {renderProse(message.content, 'prose', 'system')}
     </div>
   )

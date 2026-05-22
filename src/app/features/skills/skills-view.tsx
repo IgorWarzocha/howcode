@@ -1,36 +1,85 @@
 import { ArrowUpRight } from 'lucide-react'
 import { DisclosureSection } from '../../components/common/disclosure-section'
-import { EmptyStateCard } from '../../components/common/empty-state-card'
-import { SegmentedToggle } from '../../components/common/segmented-toggle'
 import { ViewHeader } from '../../components/common/view-header'
 import { ViewShell } from '../../components/common/view-shell'
+import { appToneDangerClass, appToneMutedClass, appTypeGroupTextClass } from '../../ui/classes'
+import { cn } from '../../utils/cn'
 import { BrowseSkillsSection } from './components/browse-skills-section'
 import { InstalledSkillsSection } from './components/installed-skills-section'
 import { SkillCreatorSection } from './components/skill-creator-section'
 import { useSkillsController } from './hooks/useSkillsController'
-import type { SkillsViewProps } from './types'
+import type { InstallScope, SkillsViewProps } from './types'
 import { openExternalUrl } from './utils'
+
+type SkillsScopeSwitcherProps = {
+  value: InstallScope
+  projectScopeAvailable: boolean
+  counts: Record<InstallScope, number>
+  onChange: (scope: InstallScope) => void
+}
+
+function SkillsScopeSwitcher({
+  value,
+  projectScopeAvailable,
+  counts,
+  onChange,
+}: SkillsScopeSwitcherProps) {
+  const options: Array<{ value: InstallScope; label: string; disabled?: boolean }> = [
+    { value: 'global', label: `Global ${counts.global}` },
+    { value: 'project', label: `Project ${counts.project}`, disabled: !projectScopeAvailable },
+    { value: 'chat', label: `Chat ${counts.chat}` },
+  ]
+
+  return (
+    <fieldset className="m-0 flex min-w-0 items-center gap-1 border-0 p-0">
+      <legend className="sr-only">Skill install scope</legend>
+      {options.map((option) => {
+        const selected = value === option.value
+        return (
+          <button
+            key={option.value}
+            type="button"
+            className={cn(
+              `rounded-md px-2 py-0.5 ${appTypeGroupTextClass} ${appToneMutedClass} transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[color:var(--muted)]`,
+              selected && 'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
+            )}
+            disabled={option.disabled}
+            aria-pressed={selected}
+            onClick={() => onChange(option.value)}
+          >
+            {option.label}
+          </button>
+        )
+      })}
+    </fieldset>
+  )
+}
 
 function SkillsMetaLink() {
   return (
-    <>
-      <span className="text-[12px] text-[color:var(--muted)]">via</span>
+    <span
+      className={cn(
+        `${appTypeGroupTextClass} ${appToneMutedClass}`,
+        'inline-flex items-center gap-1',
+      )}
+    >
+      <span>via</span>
       <button
         type="button"
-        className="group inline-flex items-center gap-0.5 p-0 text-[12px]"
+        className="group inline-flex items-center gap-0.5 p-0 text-inherit"
         onClick={() => void openExternalUrl('https://skills.sh')}
         aria-label="Open skills.sh"
         data-tooltip="Open skills.sh"
       >
-        <span className="text-[color:var(--muted)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]">
+        <span className="transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]">
           skills.sh
         </span>
         <ArrowUpRight
           size={12}
-          className="text-[color:var(--muted)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]"
+          className="transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]"
         />
       </button>
-    </>
+    </span>
   )
 }
 
@@ -43,7 +92,9 @@ function DesktopRequiredState({ onClose }: { onClose: () => void }) {
         onClose={onClose}
         closeLabel="Close skills"
       />
-      <EmptyStateCard>Desktop build required.</EmptyStateCard>
+      <div className={`px-2 py-1.5 ${appTypeGroupTextClass} ${appToneMutedClass}`}>
+        Desktop build required.
+      </div>
     </ViewShell>
   )
 }
@@ -72,26 +123,21 @@ export function SkillsView({
         onClose={onClose}
         closeLabel="Close skills"
         actions={
-          <SegmentedToggle
-            size="compact"
-            ariaLabel="Skill install scope"
+          <SkillsScopeSwitcher
             value={controller.installScope}
-            options={[
-              { value: 'global', label: `Global (${controller.globalSkillCount})` },
-              {
-                value: 'project',
-                label: `Project (${controller.projectSkillCount})`,
-                disabled: !controller.projectScopeAvailable,
-              },
-              { value: 'chat', label: `Chat (${controller.chatSkillCount})` },
-            ]}
+            counts={{
+              global: controller.globalSkillCount,
+              project: controller.projectSkillCount,
+              chat: controller.chatSkillCount,
+            }}
+            projectScopeAvailable={controller.projectScopeAvailable}
             onChange={controller.setInstallScope}
           />
         }
       />
 
       {controller.projectScopeAvailable ? null : (
-        <div className="text-[12px] text-[color:var(--muted)]">
+        <div className={`px-2 py-1.5 ${appTypeGroupTextClass} ${appToneMutedClass}`}>
           Project skills are unavailable until a project path is available.
         </div>
       )}
@@ -100,7 +146,14 @@ export function SkillsView({
         {controller.actionError ?? ''}
       </output>
       {controller.actionError ? (
-        <div className="text-[12px] text-[color:var(--danger)]">{controller.actionError}</div>
+        <div
+          className={cn(
+            `px-2 py-1.5 ${appTypeGroupTextClass} ${appToneMutedClass}`,
+            appToneDangerClass,
+          )}
+        >
+          {controller.actionError}
+        </div>
       ) : null}
 
       <SkillCreatorSection

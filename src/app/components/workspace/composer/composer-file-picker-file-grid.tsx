@@ -1,5 +1,6 @@
 import type { DragEvent } from 'react'
 import type { ComposerAttachment, ComposerFilePickerState } from '../../../desktop/types'
+import { appToneMutedClass, appTypeSmallClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { FileEntryButton } from './file-entry-button'
 
@@ -33,7 +34,7 @@ export function ComposerFilePickerFileGrid({
   return (
     <div className={cn('min-h-0 w-full overflow-x-hidden overflow-y-auto p-2 pt-1', className)}>
       {!picker && loading ? (
-        <div className="px-2 py-8 text-center text-[12px] text-[color:var(--muted)]">
+        <div className={cn('px-2 py-8 text-center', appTypeSmallClass, appToneMutedClass)}>
           Loading files…
         </div>
       ) : entries.length > 0 ? (
@@ -65,7 +66,7 @@ export function ComposerFilePickerFileGrid({
           })}
         </div>
       ) : (
-        <div className="px-2 py-8 text-center text-[12px] text-[color:var(--muted)]">
+        <div className={cn('px-2 py-8 text-center', appTypeSmallClass, appToneMutedClass)}>
           {searchQuery.trim().length > 0 ? 'No matching files.' : 'No files in this folder.'}
         </div>
       )}

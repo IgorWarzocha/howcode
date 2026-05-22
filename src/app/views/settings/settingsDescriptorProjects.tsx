@@ -1,6 +1,13 @@
 import { FolderCog, FolderPlus, Trash2 } from 'lucide-react'
 import type { AppSettings } from '../../desktop/types'
-import { composerTextActionButtonClass, settingsInputClass } from '../../ui/classes'
+import {
+  appToneDangerClass,
+  appToneMutedClass,
+  appTypeMetaClass,
+  appTypeSmallClass,
+  composerTextActionButtonClass,
+  settingsInputClass,
+} from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import type { SettingsController } from './settingsDescriptorTypes'
 import type { SettingDescriptor } from './settingsTypes'
@@ -113,7 +120,9 @@ export function buildProjectsSettingsDescriptors({
       description: 'Default global commit action.',
       keywords: 'gitops commit push default project',
       render: () => (
-        <div className="grid grid-cols-2 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 text-[12px] text-[color:var(--muted)]">
+        <div
+          className={`grid grid-cols-2 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 ${appTypeSmallClass} ${appToneMutedClass}`}
+        >
           {[
             ['commit', 'Commit'],
             ['commit-push', 'Commit & push'],
@@ -143,7 +152,9 @@ export function buildProjectsSettingsDescriptors({
       description: 'Default baseline setting for git summary.',
       keywords: 'git diff baseline comparison files lines default',
       render: () => (
-        <div className="grid grid-cols-3 gap-1 rounded-2xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 text-[12px] text-[color:var(--muted)] xl:grid-cols-5">
+        <div
+          className={`grid grid-cols-3 gap-1 rounded-2xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 ${appTypeSmallClass} ${appToneMutedClass} xl:grid-cols-5`}
+        >
           {[
             [{ kind: 'head' }, 'Last'],
             [{ kind: 'previous' }, 'Prev'],
@@ -177,7 +188,9 @@ export function buildProjectsSettingsDescriptors({
       description: 'Default layout for the GitOps diff panel.',
       keywords: 'git diff layout stacked split default',
       render: () => (
-        <div className="grid grid-cols-2 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 text-[12px] text-[color:var(--muted)]">
+        <div
+          className={`grid grid-cols-2 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 ${appTypeSmallClass} ${appToneMutedClass}`}
+        >
           {[
             ['stacked', 'Unified'],
             ['split', 'Split'],
@@ -226,7 +239,9 @@ export function buildProjectsSettingsDescriptors({
       description: 'Delete only Pi session files, or nuke the full project folder.',
       keywords: 'delete deletion cleanup project full clean pi only',
       render: () => (
-        <div className="grid grid-cols-2 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 text-[12px] text-[color:var(--muted)]">
+        <div
+          className={`grid grid-cols-2 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 ${appTypeSmallClass} ${appToneMutedClass}`}
+        >
           {[
             ['pi-only', 'Pi only'],
             ['full-clean', 'Full clean'],
@@ -273,7 +288,7 @@ export function buildProjectsSettingsDescriptors({
             {appSettings.projectImportState === false ? (
               <button
                 type="button"
-                className={cn(composerTextActionButtonClass, 'text-[12px]')}
+                className={composerTextActionButtonClass}
                 onClick={controller.showFirstLaunchReminderAgain}
               >
                 Show reminder
@@ -281,17 +296,17 @@ export function buildProjectsSettingsDescriptors({
             ) : null}
           </div>
           {controller.importStatusMessage ? (
-            <div className="text-right text-[12px] text-[color:var(--muted)]">
+            <div className={`text-right ${appTypeSmallClass} ${appToneMutedClass}`}>
               {controller.importStatusMessage}
             </div>
           ) : null}
           {controller.desktopBridgeAvailable ? null : (
-            <div className="text-right text-[12px] text-[color:var(--muted)]">
+            <div className={`text-right ${appTypeSmallClass} ${appToneMutedClass}`}>
               Project sync needs the desktop bridge.
             </div>
           )}
           {controller.importErrorMessage ? (
-            <div className="text-right text-[12px] text-[color:var(--danger)]">
+            <div className={`text-right ${appTypeSmallClass} ${appToneDangerClass}`}>
               {controller.importErrorMessage}
             </div>
           ) : null}
@@ -335,7 +350,7 @@ export function buildProjectsSettingsDescriptors({
               {appSettings.favoriteFolders.map((folder) => (
                 <span
                   key={folder}
-                  className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.025)] py-1 pr-1 pl-2 text-[11.5px] text-[color:var(--muted)]"
+                  className={`inline-flex max-w-full items-center gap-1.5 rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.025)] py-1 pr-1 pl-2 ${appTypeMetaClass} ${appToneMutedClass}`}
                 >
                   <span className="max-w-[18rem] truncate" title={folder}>
                     {folder}
@@ -369,7 +384,9 @@ export function buildProjectsSettingsDescriptors({
       render: () => (
         <div className="flex max-w-full items-center justify-end gap-2">
           {controller.clearImagesStatusMessage ? (
-            <div className="min-w-0 truncate text-right text-[12px] text-[color:var(--muted)]">
+            <div
+              className={`min-w-0 truncate text-right ${appTypeSmallClass} ${appToneMutedClass}`}
+            >
               {controller.clearImagesStatusMessage}
             </div>
           ) : null}

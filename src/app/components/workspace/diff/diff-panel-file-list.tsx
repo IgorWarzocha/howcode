@@ -11,6 +11,13 @@ import type { VirtualItem } from '@tanstack/react-virtual'
 import { ChevronDown, ChevronRight, MessageSquarePlus } from 'lucide-react'
 import { openPathQuery } from '../../../query/desktop-query'
 import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeGroupTitleClass,
+  appTypeSmallClass,
+} from '../../../ui/classes'
+import { cn } from '../../../utils/cn'
+import {
   DIFF_PANEL_UNSAFE_CSS,
   type DiffCommentMetadata,
   getFileChangeCounts,
@@ -122,16 +129,14 @@ function DiffPanelFileHeader({
         <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center text-[color:var(--muted)]">
           {isCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
         </span>
-        <span className="truncate text-[13px] font-medium text-[color:var(--text)]">
-          {filePath}
-        </span>
+        <span className={cn('truncate', appTypeGroupTitleClass, appToneTextClass)}>{filePath}</span>
         {headerContextLabel ? (
-          <span className="shrink-0 text-[12px] text-[color:var(--muted)]">
+          <span className={cn('shrink-0', appTypeSmallClass, appToneMutedClass)}>
             {headerContextLabel}
           </span>
         ) : null}
       </span>
-      <span className="flex shrink-0 items-center gap-2 text-[12px]">
+      <span className={cn('flex shrink-0 items-center gap-2', appTypeSmallClass)}>
         {deletions > 0 || additions === 0 ? (
           <span className="text-[color:var(--danger)]">-{deletions}</span>
         ) : null}

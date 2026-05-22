@@ -1,23 +1,30 @@
 import ReactMarkdown from 'react-markdown'
 import { openExternalQuery } from '../../../query/desktop-query'
+import {
+  appToneTextClass,
+  appTypeCodeClass,
+  appTypeReadableClass,
+  appTypeReadableStrongClass,
+  appTypeSectionTitleClass,
+} from '../../../ui/classes'
 import remarkGfm from 'remark-gfm'
 
 export function HistoricalMarkdownPreview({ content }: { content: string }) {
   return (
-    <div className="h-full min-h-0 overflow-auto bg-[color:var(--sidebar)] px-7 py-6 text-[14px] leading-[1.7] text-[color:var(--text)] [text-wrap:pretty] [&_h1]:[text-wrap:balance] [&_h2]:[text-wrap:balance] [&_h3]:[text-wrap:balance] [&_pre]:[text-wrap:initial]">
+    <div className={`h-full min-h-0 overflow-auto bg-[color:var(--sidebar)] px-7 py-6 ${appTypeReadableClass} ${appToneTextClass} [text-wrap:pretty] [&_h1]:[text-wrap:balance] [&_h2]:[text-wrap:balance] [&_h3]:[text-wrap:balance] [&_pre]:[text-wrap:initial]`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
           h1: ({ children }) => (
-            <h1 className="mb-3 text-[20px] font-semibold text-[color:var(--text)]">{children}</h1>
+            <h1 className={`mb-3 ${appTypeReadableStrongClass} ${appToneTextClass}`}>{children}</h1>
           ),
           h2: ({ children }) => (
-            <h2 className="mt-5 mb-2 text-[17px] font-semibold text-[color:var(--text)]">
+            <h2 className={`mt-5 mb-2 ${appTypeReadableStrongClass} ${appToneTextClass}`}>
               {children}
             </h2>
           ),
           h3: ({ children }) => (
-            <h3 className="mt-4 mb-2 text-[15px] font-semibold text-[color:var(--text)]">
+            <h3 className={`mt-4 mb-2 ${appTypeSectionTitleClass} ${appToneTextClass}`}>
               {children}
             </h3>
           ),
@@ -46,10 +53,10 @@ export function HistoricalMarkdownPreview({ content }: { content: string }) {
             </blockquote>
           ),
           code: ({ children }) => (
-            <code className="font-mono text-[color:var(--accent)]">{children}</code>
+            <code className={`${appTypeCodeClass} text-[color:var(--accent)]`}>{children}</code>
           ),
           pre: ({ children }) => (
-            <pre className="my-3 overflow-auto rounded-lg border border-[color:var(--border)] p-3 font-mono text-[12px] leading-5 text-[color:var(--text)]">
+            <pre className={`my-3 overflow-auto rounded-lg border border-[color:var(--border)] p-3 ${appTypeCodeClass} ${appToneTextClass}`}>
               {children}
             </pre>
           ),

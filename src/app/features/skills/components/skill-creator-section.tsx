@@ -9,7 +9,13 @@ import {
   openPathQuery,
   startSkillCreatorSessionQuery,
 } from '../../../query/desktop-query'
-import { settingsInputClass } from '../../../ui/classes'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeGroupTextClass,
+  appTypeGroupTitleClass,
+  quietSearchInputClass,
+} from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { getActionError } from '../utils'
 
@@ -154,25 +160,33 @@ export function SkillCreatorSection({
 
   return (
     <section className="grid gap-2">
-      <div className="inline-flex items-center gap-2 text-[13px] font-medium text-[color:var(--text)]">
+      <div
+        className={`inline-flex items-center gap-1.5 text-left ${appTypeGroupTitleClass} ${appToneTextClass}`}
+      >
+        <span className="w-[14px] shrink-0" aria-hidden="true" />
         <span>Create a skill</span>
       </div>
 
-      <div className="grid gap-1.5 text-[12px] leading-5 text-[color:var(--muted)]">
+      <div className={cn(`${appTypeGroupTextClass} ${appToneMutedClass}`, 'grid gap-1.5')}>
         {skillCreatorReady ? (
           <div className="grid gap-2">
             <div className="px-0.5 py-0.5">
               {skillCreatorBusy ? (
-                <div className="inline-flex items-center gap-2 rounded-xl bg-[rgba(255,255,255,0.03)] px-2.5 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
+                <div
+                  className={cn(
+                    `px-2 py-1.5 ${appTypeGroupTextClass} ${appToneMutedClass}`,
+                    'inline-flex items-center gap-2',
+                  )}
+                >
                   <span>Pi is working</span>
                   <ThreeDotsSpinner className="text-[color:var(--muted)]" />
                 </div>
               ) : skillCreatorLatestResponse ? (
-                <div className="rounded-xl bg-[rgba(255,255,255,0.03)] px-2.5 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
+                <div className={`px-2 py-1.5 ${appTypeGroupTextClass} ${appToneMutedClass}`}>
                   {skillCreatorLatestResponse}
                 </div>
               ) : (
-                <div className="rounded-xl bg-[rgba(255,255,255,0.03)] px-2.5 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
+                <div className={`px-2 py-1.5 ${appTypeGroupTextClass} ${appToneMutedClass}`}>
                   This spawns a temporary chat session. For complex project-skills, please use
                   normal chat for best results.
                 </div>
@@ -190,7 +204,7 @@ export function SkillCreatorSection({
                   type="text"
                   value={createSkillDraft}
                   onChange={(event) => setCreateSkillDraft(event.target.value)}
-                  className={cn(settingsInputClass, 'w-full pr-7')}
+                  className={cn(quietSearchInputClass, 'w-full pr-7')}
                   placeholder={createSkillPlaceholder}
                   aria-label="Describe the skill you want"
                   disabled={skillCreatorBusy}
@@ -210,7 +224,7 @@ export function SkillCreatorSection({
               </div>
 
               <TextButton
-                className="inline-flex h-auto items-center gap-1 rounded-xl px-1.5 py-0 text-[12px]"
+                className={`inline-flex h-auto items-center gap-1 rounded-md px-1.5 py-0 ${appTypeGroupTextClass} ${appToneMutedClass} transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[color:var(--muted)]`}
                 onClick={() => {
                   if (createdSkillPath) {
                     void openPathQuery(createdSkillPath)
@@ -230,7 +244,10 @@ export function SkillCreatorSection({
                 No skill creator detected for this scope. Install the bundled skill creator?
               </span>
               <TextButton
-                className="h-auto rounded-md px-1.5 py-0 text-[12px] text-[color:var(--text)]"
+                className={cn(
+                  `inline-flex h-auto items-center gap-1 rounded-md px-1.5 py-0 ${appTypeGroupTextClass} ${appToneMutedClass} transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[color:var(--muted)]`,
+                  appToneTextClass,
+                )}
                 onClick={() => {
                   onSetActionError(null)
                   setMockSkillCreatorInstalled(true)
@@ -239,7 +256,7 @@ export function SkillCreatorSection({
                 Yes
               </TextButton>
               <TextButton
-                className="inline-flex h-auto items-center gap-1 rounded-md px-1.5 py-0 text-[12px]"
+                className={`inline-flex h-auto items-center gap-1 rounded-md px-1.5 py-0 ${appTypeGroupTextClass} ${appToneMutedClass} transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[color:var(--muted)]`}
                 onClick={() => {
                   void onRefreshSkillCreatorDetection()
                 }}

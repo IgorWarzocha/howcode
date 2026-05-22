@@ -5,6 +5,7 @@ import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-event
 import type { TerminalEvent } from '../../../desktop/types'
 import { resizeDesktopTerminal, writeDesktopTerminal } from '../../../hooks/useDesktopTerminal'
 import { useHoverToFocus } from '../../../hooks/useHoverToFocus'
+import { appToneTextClass, appTypeSmallClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import {
   clampTerminalHistory,
@@ -409,7 +410,13 @@ export function TerminalViewport({
     >
       <div ref={terminalMountRef} className="h-full w-full" style={terminalStyle} />
       {terminalInitError ? (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-start bg-[color:var(--terminal-surface)]/92 px-4 py-3 text-[12px] leading-5 text-[color:var(--text)]">
+        <div
+          className={cn(
+            'pointer-events-none absolute inset-0 z-10 flex items-start bg-[color:var(--terminal-surface)]/92 px-4 py-3',
+            appTypeSmallClass,
+            appToneTextClass,
+          )}
+        >
           <span>[terminal] {terminalInitError}</span>
         </div>
       ) : null}

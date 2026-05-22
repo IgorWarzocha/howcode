@@ -2,6 +2,15 @@ import { type MouseEvent, useCallback, useEffect, useRef, useState } from 'react
 import type { ComposerContextUsage } from '../../../desktop/types'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import type { Message } from '../../../types'
+import {
+  appToneAccentClass,
+  appToneMutedClass,
+  appToneSubtleClass,
+  appToneTextClass,
+  appTypeCodeClass,
+  appTypeMetaClass,
+  appTypeSmallClass,
+} from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 
 type ComposerContextMeterProps = {
@@ -305,7 +314,11 @@ export function ComposerContextMeter({
         <div
           ref={popoverRef}
           role="dialog"
-          className="absolute bottom-full left-0 z-[130] grid w-56 gap-2 rounded-xl bg-[color:var(--panel)] p-3 text-[12px] text-[color:var(--muted)] shadow-[var(--shadow)]"
+          className={cn(
+            'absolute bottom-full left-0 z-[130] grid w-56 gap-2 rounded-xl bg-[color:var(--panel)] p-3 shadow-[var(--shadow)]',
+            appTypeSmallClass,
+            appToneMutedClass,
+          )}
           onMouseEnter={openHoverPreview}
           onMouseDown={(event) => event.preventDefault()}
         >
@@ -313,37 +326,37 @@ export function ComposerContextMeter({
             <div className="grid gap-1 border-b border-[color:var(--border)] pb-2">
               <div className="flex justify-between gap-4">
                 <span>Tokens</span>
-                <span className="font-mono text-[color:var(--text)]">
+                <span className={cn(appTypeCodeClass, appToneTextClass)}>
                   {formatTokens(usageTotals.totalTokens)}
                 </span>
               </div>
               <div className="flex justify-between gap-4">
                 <span>Input</span>
-                <span className="font-mono text-[color:var(--text)]">
+                <span className={cn(appTypeCodeClass, appToneTextClass)}>
                   {formatTokens(usageTotals.input)}
                 </span>
               </div>
               <div className="flex justify-between gap-4">
                 <span>Output</span>
-                <span className="font-mono text-[color:var(--text)]">
+                <span className={cn(appTypeCodeClass, appToneTextClass)}>
                   {formatTokens(usageTotals.output)}
                 </span>
               </div>
               <div className="flex justify-between gap-4">
                 <span>Cache read</span>
-                <span className="font-mono text-[color:var(--text)]">
+                <span className={cn(appTypeCodeClass, appToneTextClass)}>
                   {formatTokens(usageTotals.cacheRead)}
                 </span>
               </div>
               <div className="flex justify-between gap-4">
                 <span>Cache write</span>
-                <span className="font-mono text-[color:var(--text)]">
+                <span className={cn(appTypeCodeClass, appToneTextClass)}>
                   {formatTokens(usageTotals.cacheWrite)}
                 </span>
               </div>
               <div className="flex justify-between gap-4">
                 <span>Cost</span>
-                <span className="font-mono text-[color:var(--text)]">
+                <span className={cn(appTypeCodeClass, appToneTextClass)}>
                   {formatCost(usageTotals.costTotal)}
                 </span>
               </div>
@@ -352,40 +365,50 @@ export function ComposerContextMeter({
           <div className="grid gap-1">
             <div className="flex justify-between gap-3">
               <span>Used</span>
-              <span className="font-mono text-[color:var(--text)]">{formatTokens(tokens)}</span>
+              <span className={cn(appTypeCodeClass, appToneTextClass)}>{formatTokens(tokens)}</span>
             </div>
             <div className="flex justify-between gap-3">
               <span>Available</span>
-              <span className="font-mono text-[color:var(--text)]">
+              <span className={cn(appTypeCodeClass, appToneTextClass)}>
                 {formatTokens(availableTokens)}
               </span>
             </div>
             <div className="flex justify-between gap-3">
               <span>Window</span>
-              <span className="font-mono text-[color:var(--text)]">
+              <span className={cn(appTypeCodeClass, appToneTextClass)}>
                 {formatTokens(contextWindow)}
               </span>
             </div>
             <div className="flex justify-between gap-3">
               <span>Usage</span>
-              <span className="font-mono text-[color:var(--text)]">
+              <span className={cn(appTypeCodeClass, appToneTextClass)}>
                 {percent === null || percent === undefined ? 'Unknown' : `${percent.toFixed(1)}%`}
               </span>
             </div>
           </div>
           {tokens === null ? (
-            <div className="text-[11px] text-[color:var(--muted-2)]">
+            <div className={cn(appTypeMetaClass, appToneSubtleClass)}>
               Usage is unknown until the next response updates token stats.
             </div>
           ) : null}
           {isCompacting ? (
-            <div className="mt-1 inline-flex h-7 items-center justify-center rounded-md bg-[color:var(--surface-hover)] px-2.5 text-[11px] text-[color:var(--accent)]">
+            <div
+              className={cn(
+                'mt-1 inline-flex h-7 items-center justify-center rounded-md bg-[color:var(--surface-hover)] px-2.5',
+                appTypeMetaClass,
+                appToneAccentClass,
+              )}
+            >
               Compacting session context…
             </div>
           ) : (
             <button
               type="button"
-              className="mt-1 inline-flex h-7 items-center justify-center rounded-md px-2.5 text-[12px] text-[color:var(--text)] transition-colors hover:bg-[color:var(--surface-hover)] disabled:cursor-not-allowed disabled:text-[color:var(--muted-2)] disabled:opacity-55"
+              className={cn(
+                'mt-1 inline-flex h-7 items-center justify-center rounded-md px-2.5 transition-colors hover:bg-[color:var(--surface-hover)] disabled:cursor-not-allowed disabled:text-[color:var(--muted-2)] disabled:opacity-55',
+                appTypeSmallClass,
+                appToneTextClass,
+              )}
               disabled={compactDisabled}
               onClick={() => {
                 if (compactDisabled) {

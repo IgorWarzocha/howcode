@@ -9,7 +9,12 @@ import {
   normalizeAccelerator,
 } from '../../../../shared/keybindings'
 import type { AppSettings, DesktopActionInvoker, KeybindingCommandId } from '../../desktop/types'
-import { compactIconButtonClass } from '../../ui/classes'
+import {
+  appToneTextClass,
+  appTypeMetaClass,
+  appTypeSmallClass,
+  compactIconButtonClass,
+} from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import type { SettingDescriptor } from './settingsTypes'
 import { InlineSelect } from './settingsUi'
@@ -169,7 +174,7 @@ function ShortcutRecorder({
   return (
     <div className="flex min-w-0 items-center justify-end gap-1.5">
       {conflict ? (
-        <span className="max-w-32 truncate pr-1 text-[11px] text-[color:var(--warning)]">
+        <span className={`max-w-32 truncate pr-1 ${appTypeMetaClass} text-[color:var(--warning)]`}>
           Conflict
         </span>
       ) : null}
@@ -207,7 +212,7 @@ function ShortcutRecorder({
         }}
         aria-label={`Record shortcut for ${binding?.label ?? commandId}`}
       >
-        <span className="block truncate text-[12px] text-[color:var(--text)]">
+        <span className={`block truncate ${appTypeSmallClass} ${appToneTextClass}`}>
           {recording ? 'Press keys…' : displayed}
         </span>
       </button>

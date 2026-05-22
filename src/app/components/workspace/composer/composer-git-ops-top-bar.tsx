@@ -1,3 +1,5 @@
+import { appToneMutedClass, appToneTextClass, appTypeTinyClass } from '../../../ui/classes'
+import { cn } from '../../../utils/cn'
 import { Tooltip } from '../../common/tooltip'
 import type { GitOpsCommentCard } from './composer-git-ops.helpers'
 
@@ -17,14 +19,18 @@ export function ComposerGitOpsTopBar({
           <Tooltip key={comment.id} content={comment.body || 'Open comment'}>
             <button
               type="button"
-              className="inline-flex h-7 min-w-0 shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-0 text-[11.5px] leading-4 text-[color:var(--muted)] transition-colors duration-150 hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
+              className={cn(
+                'inline-flex h-7 min-w-0 shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-0 transition-colors duration-150 hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
+                appTypeTinyClass,
+                appToneMutedClass,
+              )}
               onClick={() => onSelectDiffComment(comment.filePath, comment.id)}
               aria-label={`Open comment on ${comment.filePath} ${comment.linesLabel}`}
             >
-              <span className="max-w-40 truncate text-[11.5px] font-normal text-[color:var(--text)]">
+              <span className={cn('max-w-40 truncate', appTypeTinyClass, appToneTextClass)}>
                 {comment.fileName}
               </span>
-              <span className="shrink-0 text-[11.5px] font-normal">{comment.linesLabel}</span>
+              <span className={cn('shrink-0', appTypeTinyClass)}>{comment.linesLabel}</span>
             </button>
           </Tooltip>
         ))}

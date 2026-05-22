@@ -2,7 +2,16 @@ import { Info, Search, X } from 'lucide-react'
 import { Fragment } from 'react'
 import { Tooltip } from '../../components/common/tooltip'
 import type { AppSettings } from '../../desktop/types'
-import { settingsSectionClass } from '../../ui/classes'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeBodyClass,
+  appTypeControlClass,
+  appTypeMetaClass,
+  appTypeSectionTitleClass,
+  appTypeSmallClass,
+  settingsSectionClass,
+} from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import { settingsHelpRowClass } from './settingsClasses'
 import { settingsCategories } from './settingsGroups'
@@ -15,7 +24,9 @@ type VisibleSettingsGroup = (typeof settingsCategories)[number] & {
 
 export function DevBranchToggle({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
   return (
-    <label className="mt-2 flex min-h-8 cursor-pointer items-center justify-between gap-2 px-3 text-[12px] text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]">
+    <label
+      className={`mt-2 flex min-h-8 cursor-pointer items-center justify-between gap-2 px-3 ${appTypeSmallClass} ${appToneMutedClass} transition-colors hover:text-[color:var(--text)]`}
+    >
       <span className="min-w-0 truncate">Dev branch</span>
       <input
         type="checkbox"
@@ -46,7 +57,7 @@ export function SettingsSearchField({
         type="search"
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
-        className="h-10 w-full min-w-0 flex-1 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.055)] px-3 py-2 pl-9 text-[13px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+        className={`h-10 w-full min-w-0 flex-1 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.055)] px-3 py-2 pl-9 ${appTypeControlClass} ${appToneTextClass} outline-none placeholder:text-[color:var(--muted)]`}
         placeholder="Search…"
         aria-label="Search settings"
       />
@@ -124,7 +135,7 @@ export function SettingsCategorySidebar({
         <button
           type="button"
           className={cn(
-            'flex h-10 items-center rounded-xl px-3 text-left text-[12px] transition-colors active:scale-[0.96]',
+            `flex h-10 items-center rounded-xl px-3 text-left ${appTypeSmallClass} transition-colors active:scale-[0.96]`,
             activeCategory === null && !normalizedFilter
               ? 'bg-[color:var(--accent-bg)] text-[color:var(--text)]'
               : 'text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
@@ -138,7 +149,7 @@ export function SettingsCategorySidebar({
             key={category.id}
             type="button"
             className={cn(
-              'flex h-10 items-center rounded-xl px-3 text-left text-[12px] transition-colors active:scale-[0.96]',
+              `flex h-10 items-center rounded-xl px-3 text-left ${appTypeSmallClass} transition-colors active:scale-[0.96]`,
               activeCategory === category.id && !normalizedFilter
                 ? 'bg-[color:var(--accent-bg)] text-[color:var(--text)]'
                 : 'text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
@@ -176,7 +187,7 @@ export function SettingsMobileFilters({
         <button
           type="button"
           className={cn(
-            'rounded-full border border-[color:var(--border)] px-3 py-1.5 text-[12px] transition-colors',
+            `rounded-full border border-[color:var(--border)] px-3 py-1.5 ${appTypeSmallClass} transition-colors`,
             activeCategory === null && 'bg-[color:var(--accent-bg)] text-[color:var(--text)]',
           )}
           onClick={() => onSelectCategory(null)}
@@ -188,7 +199,7 @@ export function SettingsMobileFilters({
             key={category.id}
             type="button"
             className={cn(
-              'rounded-full border border-[color:var(--border)] px-3 py-1.5 text-[12px] text-[color:var(--muted)] transition-colors',
+              `rounded-full border border-[color:var(--border)] px-3 py-1.5 ${appTypeSmallClass} ${appToneMutedClass} transition-colors`,
               activeCategory === category.id &&
                 'bg-[color:var(--accent-bg)] text-[color:var(--text)]',
             )}
@@ -222,8 +233,8 @@ export function SettingsGroupsList({
   if (visibleGroups.length === 0) {
     return (
       <div className="rounded-[22px] border border-[rgba(169,178,215,0.12)] bg-[rgba(255,255,255,0.025)] p-8 text-center lg:col-span-full">
-        <div className="text-[14px] text-[color:var(--text)]">No matching settings</div>
-        <div className="mt-1 text-[12px] text-[color:var(--muted)]">
+        <div className={`${appTypeBodyClass} ${appToneTextClass}`}>No matching settings</div>
+        <div className={`mt-1 ${appTypeSmallClass} ${appToneMutedClass}`}>
           Try a broader term like “Pi”, “model”, “folder”, or “voice”.
         </div>
       </div>
@@ -245,7 +256,7 @@ export function SettingsGroupsList({
             getCategoryHelpIntro(group.id) && 'min-h-10 items-start',
           )}
         >
-          <h2 className="text-[15px] font-semibold text-[color:var(--text)]">{group.label}</h2>
+          <h2 className={`${appTypeSectionTitleClass} ${appToneTextClass}`}>{group.label}</h2>
         </div>
         <div className="grid">
           {group.settings.map((setting) => (
@@ -262,11 +273,11 @@ export function SettingsGroupsList({
             )}
           >
             {getCategoryHelpIntro(group.id) ? (
-              <span className="min-w-0 text-[11.5px] leading-4 text-wrap text-[color:var(--muted)]">
+              <span className={`min-w-0 ${appTypeMetaClass} text-wrap ${appToneMutedClass}`}>
                 {getCategoryHelpIntro(group.id)}
               </span>
             ) : (
-              <h2 className="invisible text-[15px] font-semibold">{group.label}</h2>
+              <h2 className={`invisible ${appTypeSectionTitleClass}`}>{group.label}</h2>
             )}
           </div>
           <div className="grid">

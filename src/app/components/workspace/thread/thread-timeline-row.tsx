@@ -1,3 +1,5 @@
+import { appToneSubtleClass, appTypeGroupTextClass } from '../../../ui/classes'
+import { cn } from '../../../utils/cn'
 import { ThreadMessage } from '../../common/thread-message'
 import { getCollapsedTurnPreview } from './thread-timeline-previews'
 import {
@@ -35,7 +37,11 @@ function HistoryDividerRow({
     <TimelineRowShell>
       <button
         type="button"
-        className="group flex w-full items-center justify-center py-1 text-[13px] text-[color:var(--muted-2)]"
+        className={cn(
+          'group flex w-full items-center justify-center py-1',
+          appTypeGroupTextClass,
+          appToneSubtleClass,
+        )}
         onClick={onJumpToEarlierMessages}
       >
         <span className="rounded-[12px] px-3 py-1 transition-colors group-hover:bg-[color:var(--surface-hover)] group-focus-visible:bg-[color:var(--surface-hover)]">

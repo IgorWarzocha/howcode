@@ -1,4 +1,8 @@
 import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeControlClass,
+  appTypeSmallClass,
   composerPopoverOptionSelectedClass,
   composerPopoverPanelClass,
   inlineEmptyNoteClass,
@@ -28,7 +32,9 @@ function SkillMentionOption({
       role="option"
       aria-selected={selected}
       className={cn(
-        'flex min-h-8 w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[12.5px] text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] focus-visible:bg-[color:var(--surface-hover)] focus-visible:outline-none',
+        'flex min-h-8 w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] focus-visible:bg-[color:var(--surface-hover)] focus-visible:outline-none',
+        appTypeControlClass,
+        appToneMutedClass,
         selected
           ? composerPopoverOptionSelectedClass
           : 'text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
@@ -37,11 +43,17 @@ function SkillMentionOption({
       onMouseDown={(event) => event.preventDefault()}
       onClick={() => skillMentions.selectSkill(skill)}
     >
-      <span className="max-w-56 flex-none truncate whitespace-nowrap text-[12px] text-[color:var(--text)]">
+      <span
+        className={cn(
+          'max-w-56 flex-none truncate whitespace-nowrap',
+          appTypeSmallClass,
+          appToneTextClass,
+        )}
+      >
         ${skill.name}
       </span>
       {skill.description ? (
-        <span className="min-w-0 truncate text-[12px] text-[color:var(--muted)]">
+        <span className={cn('min-w-0 truncate', appTypeSmallClass, appToneMutedClass)}>
           {skill.description}
         </span>
       ) : null}

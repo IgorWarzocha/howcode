@@ -5,7 +5,16 @@ import { Tooltip } from '../components/common/tooltip'
 import { ViewHeader } from '../components/common/view-header'
 import { ViewShell } from '../components/common/view-shell'
 import type { ArchivedThread, DesktopActionInvoker } from '../desktop/types'
-import { compactIconButtonClass, settingsSectionClass } from '../ui/classes'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeBodyClass,
+  appTypeGroupTextClass,
+  appTypeSectionTitleClass,
+  appTypeSmallClass,
+  compactIconButtonClass,
+  settingsSectionClass,
+} from '../ui/classes'
 import { cn } from '../utils/cn'
 
 type ArchivedThreadsViewProps = {
@@ -162,7 +171,7 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
                 <button
                   ref={deleteAllButtonRef}
                   type="button"
-                  className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-[12px] text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--danger)] disabled:cursor-not-allowed disabled:opacity-45"
+                  className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-2 ${appTypeSmallClass} ${appToneMutedClass} transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--danger)] disabled:cursor-not-allowed disabled:opacity-45`}
                   disabled={busyAction !== null}
                   aria-label="Delete all archived threads"
                   onClick={() => {
@@ -211,7 +220,7 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
                 disabled={busyAction !== null}
                 aria-label="Select all archived threads"
               />
-              <span className="text-[13px]">{selectedCountLabel}</span>
+              <span className={appTypeGroupTextClass}>{selectedCountLabel}</span>
             </label>
 
             <div className="flex items-center gap-1.5">
@@ -298,25 +307,25 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
 
               <div className="min-w-0">
                 <div className="flex min-w-0 items-baseline gap-2">
-                  <span className="truncate text-[14px] text-[color:var(--text)]">
+                  <span className={`truncate ${appTypeBodyClass} ${appToneTextClass}`}>
                     {thread.title}
                   </span>
                   <span
                     aria-hidden="true"
-                    className="shrink-0 text-[12px] text-[color:var(--muted)]"
+                    className={`shrink-0 ${appTypeSmallClass} ${appToneMutedClass}`}
                   >
                     •
                   </span>
-                  <span className="truncate text-[12px] text-[color:var(--muted)]">
+                  <span className={`truncate ${appTypeSmallClass} ${appToneMutedClass}`}>
                     {thread.projectName}
                   </span>
                   <span
                     aria-hidden="true"
-                    className="shrink-0 text-[12px] text-[color:var(--muted)]"
+                    className={`shrink-0 ${appTypeSmallClass} ${appToneMutedClass}`}
                   >
                     •
                   </span>
-                  <span className="shrink-0 text-[12px] text-[color:var(--muted)]">
+                  <span className={`shrink-0 ${appTypeSmallClass} ${appToneMutedClass}`}>
                     {thread.age}
                   </span>
                 </div>
@@ -370,9 +379,13 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
           ))}
         </div>
       ) : (
-        <div className="grid min-h-60 place-items-center px-6 text-center text-[13px] text-[color:var(--muted)]">
+        <div
+          className={`grid min-h-60 place-items-center px-6 text-center ${appTypeGroupTextClass} ${appToneMutedClass}`}
+        >
           <div className="grid gap-2">
-            <div className="text-[15px] text-[color:var(--text)]">No archived threads</div>
+            <div className={`${appTypeSectionTitleClass} ${appToneTextClass}`}>
+              No archived threads
+            </div>
             <p className="m-0 max-w-[448px]">
               Archive a thread from the sidebar and it will show up here for restore or permanent
               deletion.

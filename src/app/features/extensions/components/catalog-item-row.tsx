@@ -2,7 +2,14 @@ import { ArrowUpRight, Check, Sparkles } from 'lucide-react'
 import { CompactMetaRow } from '../../../components/common/compact-meta-row'
 import { Tooltip } from '../../../components/common/tooltip'
 import type { PiPackageCatalogItem } from '../../../desktop/types'
-import { compactRoundIconButtonClass } from '../../../ui/classes'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeGroupTextClass,
+  appTypeMetaClass,
+  appTypeSmallClass,
+  compactRoundIconButtonClass,
+} from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { formatDownloads, openExternalUrl, pickSafeExternalUrl } from '../utils'
 
@@ -70,7 +77,13 @@ export function CatalogItemRow({
               onClick={() => void openExternalUrl(externalUrl)}
               aria-label={`Open ${item.name}`}
             >
-              <span className="truncate text-[13px] leading-4 text-[color:var(--text)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]">
+              <span
+                className={cn(
+                  'truncate transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]',
+                  appTypeGroupTextClass,
+                  appToneTextClass,
+                )}
+              >
                 {item.name}
               </span>
               <ArrowUpRight
@@ -80,22 +93,22 @@ export function CatalogItemRow({
             </button>
           </Tooltip>
         ) : (
-          <span className="truncate text-[13px] leading-4 text-[color:var(--text)]">
+          <span className={cn('truncate', appTypeGroupTextClass, appToneTextClass)}>
             {item.name}
           </span>
         )}
       </div>
-      <div className="min-w-0 truncate text-[12px] leading-4 text-[color:var(--muted)]">
+      <div className={cn('min-w-0 truncate', appTypeSmallClass, appToneMutedClass)}>
         {item.description || item.source}
       </div>
-      <span className="shrink-0 whitespace-nowrap text-[11px] leading-4 text-[color:var(--muted)]">
+      <span className={cn('shrink-0 whitespace-nowrap', appTypeMetaClass, appToneMutedClass)}>
         {formatDownloads(item.monthlyDownloads)}
       </span>
-      <span className="shrink-0 whitespace-nowrap text-[11px] leading-4 text-[color:var(--muted)]">
+      <span className={cn('shrink-0 whitespace-nowrap', appTypeMetaClass, appToneMutedClass)}>
         v{item.version}
       </span>
       {installed ? (
-        <span className="shrink-0 whitespace-nowrap text-[11px] leading-4 text-[color:var(--muted)]">
+        <span className={cn('shrink-0 whitespace-nowrap', appTypeMetaClass, appToneMutedClass)}>
           Installed
         </span>
       ) : null}

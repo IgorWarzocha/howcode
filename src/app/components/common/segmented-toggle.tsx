@@ -1,5 +1,10 @@
 import { useId } from 'react'
-import { segmentedControlClass, segmentedControlOptionClass } from '../../ui/classes'
+import {
+  appToneTextClass,
+  appTypeTinyClass,
+  segmentedControlClass,
+  segmentedControlOptionClass,
+} from '../../ui/classes'
 import { cn } from '../../utils/cn'
 
 type SegmentedToggleOption<T extends string> = {
@@ -35,9 +40,9 @@ export function SegmentedToggle<T extends string>({
           className={cn(
             segmentedControlOptionClass,
             'cursor-pointer has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[color:var(--accent)]',
-            compact && 'px-2.5 py-1 text-[11.5px] leading-4',
+            compact && `px-2.5 py-1 ${appTypeTinyClass}`,
             value === option.value
-              ? 'bg-[rgba(255,255,255,0.18)] font-medium text-[color:var(--text)] shadow-[inset_0_0_0_1px_var(--accent-border)]'
+              ? `bg-[rgba(255,255,255,0.18)] shadow-[inset_0_0_0_1px_var(--accent-border)] ${appToneTextClass}`
               : 'text-[color:var(--muted)] hover:text-[color:var(--text)]',
             option.disabled &&
               'cursor-not-allowed opacity-45 hover:text-[color:var(--muted)] has-[:focus-visible]:outline-0',

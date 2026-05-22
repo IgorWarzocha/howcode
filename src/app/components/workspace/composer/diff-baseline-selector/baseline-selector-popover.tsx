@@ -4,6 +4,8 @@ import type { RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import type { ProjectCommitEntry, ProjectDiffBaseline } from '../../../../desktop/types'
 import {
+  appToneMutedClass,
+  appTypeSmallClass,
   composerPopoverInputClass,
   composerPopoverSectionLabelClass,
   popoverPanelClass,
@@ -76,7 +78,7 @@ export function BaselineSelectorPortal({
             />
           ))
         ) : (
-          <div className="px-2.5 py-3 text-[12px] text-[color:var(--muted)]">
+          <div className={cn('px-2.5 py-3', appTypeSmallClass, appToneMutedClass)}>
             {commitsQuery.isLoading ? 'Loading commits…' : 'No commits found.'}
           </div>
         )}

@@ -15,6 +15,8 @@ import type {
   ProjectGitState,
 } from '../../../desktop/types'
 import {
+  appToneMutedClass,
+  appTypeMetaClass,
   compactIconButtonClass,
   composerPopoverInputClass,
   popoverPanelClass,
@@ -189,7 +191,9 @@ export function ComposerGitOpsFooter({
               >
                 {hasOrigin ? null : (
                   <label className="grid gap-1 px-1 pb-1">
-                    <span className="text-[11px] text-[color:var(--muted)]">GitHub origin URL</span>
+                    <span className={cn(appTypeMetaClass, appToneMutedClass)}>
+                      GitHub origin URL
+                    </span>
                     <input
                       ref={repoInputRef}
                       value={repoUrl}

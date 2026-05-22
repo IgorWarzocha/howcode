@@ -12,7 +12,16 @@ import {
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { openExternalQuery } from '../../query/desktop-query'
-import { inlineCodeClass } from '../../ui/classes'
+import {
+  appToneMutedClass,
+  appTypeCodeBlockClass,
+  appTypeGroupTextClass,
+  appTypeGroupTitleClass,
+  appTypeMetaStrongClass,
+  appTypeReadableClass,
+  appTypeReadableStrongClass,
+  inlineCodeClass,
+} from '../../ui/classes'
 import { cn } from '../../utils/cn'
 
 type MarkdownTone = 'default' | 'thinking' | 'system' | 'user'
@@ -23,7 +32,7 @@ type MarkdownContentProps = {
   className?: string
 }
 
-function getToneTextClass(tone: MarkdownTone) {
+function getMarkdownToneClass(tone: MarkdownTone) {
   switch (tone) {
     case 'thinking':
       return 'text-[color:var(--muted-2)]/78 italic'
@@ -36,7 +45,7 @@ function getToneTextClass(tone: MarkdownTone) {
   }
 }
 
-function getToneStrongClass(tone: MarkdownTone) {
+function getMarkdownStrongToneClass(tone: MarkdownTone) {
   switch (tone) {
     case 'thinking':
       return 'text-[color:var(--muted)]/88'
@@ -105,13 +114,20 @@ function MarkdownPre({ children, ...props }: HTMLAttributes<HTMLPreElement>) {
     <div className="group relative min-w-0">
       <pre
         {...props}
-        className="m-0 max-w-full whitespace-pre-wrap break-words rounded-[14px] border border-[color:var(--border-strong)] bg-[color:var(--message-code-bg)] px-3 py-2.5 pr-14 font-mono text-[12.5px] leading-6 text-[color:var(--markdown-code)] [overflow-wrap:anywhere]"
+        className={cn(
+          'm-0 max-w-full whitespace-pre-wrap break-words rounded-[14px] border border-[color:var(--border-strong)] bg-[color:var(--message-code-bg)] px-3 py-2.5 pr-14 text-[color:var(--markdown-code)] [overflow-wrap:anywhere]',
+          appTypeCodeBlockClass,
+        )}
       >
         {children}
       </pre>
       <button
         type="button"
-        className="absolute right-1.5 top-1.5 grid h-8 min-w-8 place-items-center rounded-[10px] border border-[color:var(--border)] bg-[color:var(--panel)] px-2 text-[11px] font-medium text-[color:var(--muted)] opacity-75 shadow-[var(--shadow)] backdrop-blur-sm transition-[opacity,scale,background-color,color] duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-border)] active:scale-[0.96] group-hover:opacity-100"
+        className={cn(
+          'absolute top-1.5 right-1.5 grid h-8 min-w-8 place-items-center rounded-[10px] border border-[color:var(--border)] bg-[color:var(--panel)] px-2 opacity-75 shadow-[var(--shadow)] backdrop-blur-sm transition-[opacity,scale,background-color,color] duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-border)] active:scale-[0.96] group-hover:opacity-100',
+          appTypeMetaStrongClass,
+          appToneMutedClass,
+        )}
         onClick={() => void handleCopy()}
         aria-label={copyState === 'copied' ? 'Copied code block' : 'Copy code block'}
         title={copyState === 'failed' ? 'Copy failed' : copyState === 'copied' ? 'Copied' : 'Copy'}
@@ -155,7 +171,8 @@ export function MarkdownContent({ markdown, tone = 'default', className }: Markd
   return (
     <div
       className={cn(
-        'grid min-w-0 max-w-full gap-1.5 text-[14px] leading-[1.68] break-words [overflow-wrap:anywhere] [&_*]:min-w-0 [&_code]:break-all [&_pre_code]:whitespace-pre-wrap [&_pre_code]:break-words [&_pre_code]:text-inherit [&_pre_code]:[overflow-wrap:anywhere]',
+        'grid min-w-0 max-w-full gap-1.5 break-words [overflow-wrap:anywhere] [&_*]:min-w-0 [&_code]:break-all [&_pre_code]:whitespace-pre-wrap [&_pre_code]:break-words [&_pre_code]:text-inherit [&_pre_code]:[overflow-wrap:anywhere]',
+        appTypeReadableClass,
         className,
       )}
     >
@@ -166,7 +183,7 @@ export function MarkdownContent({ markdown, tone = 'default', className }: Markd
             <p
               className={cn(
                 'm-0 max-w-full whitespace-pre-wrap break-words [overflow-wrap:anywhere]',
-                getToneTextClass(tone),
+                getMarkdownToneClass(tone),
               )}
             >
               {children}
@@ -175,7 +192,8 @@ export function MarkdownContent({ markdown, tone = 'default', className }: Markd
           h1: ({ children }) => (
             <h1
               className={cn(
-                'm-0 max-w-full break-words text-[14px] leading-[1.68] font-semibold [overflow-wrap:anywhere]',
+                'm-0 max-w-full break-words [overflow-wrap:anywhere]',
+                appTypeReadableStrongClass,
                 tone === 'system'
                   ? 'text-[color:var(--muted)]/92'
                   : 'text-[color:var(--markdown-heading)]',
@@ -187,7 +205,8 @@ export function MarkdownContent({ markdown, tone = 'default', className }: Markd
           h2: ({ children }) => (
             <h2
               className={cn(
-                'm-0 max-w-full break-words text-[14px] leading-[1.68] font-semibold [overflow-wrap:anywhere]',
+                'm-0 max-w-full break-words [overflow-wrap:anywhere]',
+                appTypeReadableStrongClass,
                 tone === 'system'
                   ? 'text-[color:var(--muted)]/92'
                   : 'text-[color:var(--markdown-heading)]',
@@ -199,7 +218,8 @@ export function MarkdownContent({ markdown, tone = 'default', className }: Markd
           h3: ({ children }) => (
             <h3
               className={cn(
-                'm-0 max-w-full break-words text-[14px] leading-[1.68] font-semibold [overflow-wrap:anywhere]',
+                'm-0 max-w-full break-words [overflow-wrap:anywhere]',
+                appTypeReadableStrongClass,
                 tone === 'system'
                   ? 'text-[color:var(--muted)]/92'
                   : 'text-[color:var(--markdown-heading)]',
@@ -211,7 +231,8 @@ export function MarkdownContent({ markdown, tone = 'default', className }: Markd
           h4: ({ children }) => (
             <h4
               className={cn(
-                'm-0 max-w-full break-words text-[14px] leading-[1.68] font-semibold [overflow-wrap:anywhere]',
+                'm-0 max-w-full break-words [overflow-wrap:anywhere]',
+                appTypeReadableStrongClass,
                 tone === 'system'
                   ? 'text-[color:var(--muted)]/92'
                   : 'text-[color:var(--markdown-heading)]',
@@ -246,13 +267,18 @@ export function MarkdownContent({ markdown, tone = 'default', className }: Markd
           ),
           li: ({ children }) => (
             <li
-              className={cn('min-w-0 break-words [overflow-wrap:anywhere]', getToneTextClass(tone))}
+              className={cn(
+                'min-w-0 break-words [overflow-wrap:anywhere]',
+                getMarkdownToneClass(tone),
+              )}
             >
               {children}
             </li>
           ),
           strong: ({ children }) => (
-            <strong className={cn('font-semibold', getToneStrongClass(tone))}>{children}</strong>
+            <strong className={cn(appTypeReadableStrongClass, getMarkdownStrongToneClass(tone))}>
+              {children}
+            </strong>
           ),
           em: ({ children }) => <em className="italic">{children}</em>,
           a: MarkdownLink,
@@ -264,7 +290,9 @@ export function MarkdownContent({ markdown, tone = 'default', className }: Markd
           ),
           table: ({ children }) => (
             <div className="overflow-x-auto rounded-[12px] border border-[color:var(--border)]">
-              <table className="min-w-full border-collapse text-left text-[13px]">{children}</table>
+              <table className={cn('min-w-full border-collapse text-left', appTypeGroupTextClass)}>
+                {children}
+              </table>
             </div>
           ),
           thead: ({ children }) => (
@@ -273,7 +301,8 @@ export function MarkdownContent({ markdown, tone = 'default', className }: Markd
           th: ({ children }) => (
             <th
               className={cn(
-                'border-b border-[color:var(--border)] px-3 py-2 font-medium',
+                'border-b border-[color:var(--border)] px-3 py-2',
+                appTypeGroupTitleClass,
                 tone === 'system'
                   ? 'text-[color:var(--muted)]/92'
                   : 'text-[color:var(--markdown-heading)]',
@@ -286,7 +315,7 @@ export function MarkdownContent({ markdown, tone = 'default', className }: Markd
             <td
               className={cn(
                 'border-t border-[color:var(--border)] px-3 py-2 align-top',
-                getToneTextClass(tone),
+                getMarkdownToneClass(tone),
               )}
             >
               {children}

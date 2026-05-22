@@ -17,6 +17,16 @@ import type {
   DesktopActionInvoker,
   InboxThread,
 } from '../desktop/types'
+import {
+  appToneMutedClass,
+  appToneSubtleClass,
+  appToneTextClass,
+  appTypeBodyClass,
+  appTypeGroupTextClass,
+  appTypeMetaClass,
+  appTypeReadableClass,
+  appTypeSectionTitleClass,
+} from '../ui/classes'
 import { WORKSPACE_CONTENT_MAX_WIDTH_CLASS } from '../ui/layout'
 import type { SettingsOpenTarget } from './settings/settingsTypes'
 
@@ -229,8 +239,12 @@ export function InboxView({
     return (
       <div className="grid h-full min-h-0 place-items-center px-6 py-6">
         <div className="w-full max-w-[520px]">
-          <EmptyStateCard className="grid gap-2 rounded-[18px] px-5 py-5 text-center text-[13px] text-[color:var(--muted)]">
-            <div className="text-[15px] font-medium text-[color:var(--text)]">Inbox is waiting</div>
+          <EmptyStateCard
+            className={`grid gap-2 rounded-[18px] px-5 py-5 text-center ${appTypeGroupTextClass} ${appToneMutedClass}`}
+          >
+            <div className={`${appTypeSectionTitleClass} ${appToneTextClass}`}>
+              Inbox is waiting
+            </div>
             <div>
               Select a thread on the left to skim Pi’s latest reply and either answer or clear it.
             </div>
@@ -247,7 +261,9 @@ export function InboxView({
     <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] pt-6 pb-4">
       <div className={`mx-auto w-full ${WORKSPACE_CONTENT_MAX_WIDTH_CLASS} pb-5`}>
         <div className="grid w-full gap-2 rounded-[18px] border border-[color:var(--border)] bg-[color:var(--panel)] px-4 py-3 shadow-[var(--shadow)]">
-          <div className="flex min-w-0 items-center gap-2 text-[11px] leading-4 text-[color:var(--muted-2)]">
+          <div
+            className={`flex min-w-0 items-center gap-2 ${appTypeMetaClass} ${appToneSubtleClass}`}
+          >
             <span className="truncate">{thread.projectName}</span>
             <span aria-hidden="true">•</span>
             <span className="shrink-0 tabular-nums">{thread.age}</span>
@@ -258,7 +274,9 @@ export function InboxView({
               </>
             ) : null}
           </div>
-          <p className="m-0 max-h-[calc(1.55em*4)] overflow-y-auto whitespace-pre-wrap break-words text-[15px] leading-[1.55] text-[color:var(--text)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <p
+            className={`m-0 max-h-[calc(1.55em*4)] overflow-y-auto whitespace-pre-wrap break-words ${appTypeReadableClass} ${appToneTextClass} [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}
+          >
             {prompt}
           </p>
         </div>
@@ -270,10 +288,12 @@ export function InboxView({
             {messageMarkdown ? (
               <MarkdownContent
                 markdown={messageMarkdown}
-                className="gap-3 text-[15px] text-pretty"
+                className={`gap-3 ${appTypeReadableClass} text-pretty`}
               />
             ) : (
-              <div className="grid min-h-28 place-items-center rounded-[18px] border border-dashed border-[color:var(--border)] text-[14px] text-[color:var(--muted)]">
+              <div
+                className={`grid min-h-28 place-items-center rounded-[18px] border border-dashed border-[color:var(--border)] ${appTypeBodyClass} ${appToneMutedClass}`}
+              >
                 {thread.running ? 'Still working…' : 'No final assistant message yet.'}
               </div>
             )}

@@ -5,6 +5,11 @@ import {
   getFeatureStatusDataAttributes,
 } from '../../features/feature-status'
 import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeControlClass,
+  appTypeMetaClass,
+  appTypeSmallClass,
   composerPopoverInputClass,
   composerPopoverOptionClass,
   composerPopoverOptionSelectedClass,
@@ -107,7 +112,7 @@ export function BranchSwitchPopover({
             </button>
           ))
         ) : (
-          <div className="px-2 py-1.5 text-[12px] text-[color:var(--muted)]">
+          <div className={cn('px-2 py-1.5', appTypeSmallClass, appToneMutedClass)}>
             Press Enter to check out “{branchSwitchInput.trim()}”
           </div>
         )}
@@ -165,15 +170,13 @@ function MockBranchPanel({
             {icon}
           </span>
           <div className="min-w-0">
-            <div className="truncate text-[12.5px] font-medium text-[color:var(--text)]">
-              {title}
-            </div>
-            <div className="truncate text-[11px] text-[color:var(--muted)]">{description}</div>
+            <div className={cn('truncate', appTypeControlClass, appToneTextClass)}>{title}</div>
+            <div className={cn('truncate', appTypeMetaClass, appToneMutedClass)}>{description}</div>
           </div>
         </div>
         <span className={getFeatureStatusBadgeClass(featureId)}>Mock</span>
       </div>
-      <div className="grid min-w-0 grid-cols-2 gap-1.5 text-[11px] text-[color:var(--muted)]">
+      <div className={cn('grid min-w-0 grid-cols-2 gap-1.5', appTypeMetaClass, appToneMutedClass)}>
         {actions.map((action) => (
           <div
             key={action}

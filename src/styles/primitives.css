@@ -148,8 +148,8 @@ button[data-tooltip]::after {
   color: var(--text);
   box-shadow: var(--shadow);
   content: attr(data-tooltip);
-  font-size: 11.5px;
-  line-height: 16px;
+  font-size: var(--app-type-tooltip-size);
+  line-height: var(--app-type-tooltip-line-height);
   white-space: nowrap;
   opacity: 0;
   transition:
@@ -223,8 +223,8 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   color: var(--text);
   box-shadow: var(--shadow);
   content: attr(data-setting-tooltip);
-  font-size: 11.5px;
-  line-height: 16px;
+  font-size: var(--app-type-tooltip-size);
+  line-height: var(--app-type-tooltip-line-height);
   white-space: normal;
   overflow-wrap: anywhere;
   opacity: 0;
@@ -255,8 +255,8 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   padding: 6px 10px;
   color: var(--text);
   box-shadow: var(--shadow);
-  font-size: 11.5px;
-  line-height: 16px;
+  font-size: var(--app-type-tooltip-size);
+  line-height: var(--app-type-tooltip-line-height);
   white-space: normal;
   overflow-wrap: anywhere;
   opacity: 0;
@@ -293,8 +293,8 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
 }
 
 .composer-footer-text {
-  font-size: 12px;
-  line-height: 16px;
+  font-size: var(--app-type-small-size);
+  line-height: var(--app-type-small-line-height);
 }
 
 .composer-footer-row {
@@ -479,7 +479,7 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
 .artifact-markdown-editor .artifact-mdx-toolbar [role="button"],
 .artifact-markdown-editor .artifact-mdx-toolbar [role="combobox"] {
   min-height: 24px;
-  font-size: 11px;
+  font-size: var(--app-type-meta-size);
 }
 
 .artifact-markdown-editor .artifact-mdx-toolbar [class*="toolbarToggleItem"],
@@ -496,7 +496,7 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
 
 .artifact-version-trigger,
 .artifact-version-option {
-  font-size: 13px;
+  font-size: var(--app-type-group-size);
   font-weight: 500;
 }
 
@@ -526,8 +526,8 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   [class*="toolbarToggleItem"]
   > span {
   padding: 0.125rem 0.25rem;
-  font-size: 10px;
-  line-height: 1;
+  font-size: var(--app-type-kicker-size);
+  line-height: var(--app-type-kicker-line-height);
 }
 
 .artifact-markdown-editor .cm-editor,
@@ -607,8 +607,8 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   min-height: 100%;
   padding: 1.5rem 1.75rem;
   color: var(--text);
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: var(--app-type-body-size);
+  line-height: var(--app-type-body-comfortable-line-height);
   text-wrap: pretty;
 }
 

@@ -1,5 +1,7 @@
 import { Check, Clipboard } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { appTypeGroupTextClass } from '../../ui/classes'
+import { cn } from '../../utils/cn'
 import { MarkdownContent } from './markdown-content'
 
 const copyButtonClass =
@@ -74,7 +76,7 @@ export function renderThinking(content: string[], tone: 'system' | 'thinking' = 
           <MarkdownContent
             markdown={paragraph}
             tone={tone}
-            className="gap-1 text-[13px] leading-[1.62]"
+            className={cn('gap-1', appTypeGroupTextClass)}
           />
           <div className="absolute top-0 right-0">
             <CopyMessageButton label="thinking paragraph" text={paragraph} />

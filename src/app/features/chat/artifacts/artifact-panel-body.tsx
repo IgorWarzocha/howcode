@@ -1,4 +1,15 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
+import {
+  appToneDangerClass,
+  appToneMutedClass,
+  appToneSubtleClass,
+  appToneTextClass,
+  appTypeCodeClass,
+  appTypeMetaClass,
+  appTypeSmallClass,
+  appTypeSmallStrongClass,
+  appTypeTinyClass,
+} from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { HistoricalMarkdownPreview } from './artifact-markdown-preview'
 import { formatArtifactSlug } from './artifactFormat'
@@ -62,7 +73,7 @@ function ArtifactListView({ panel }: { panel: ArtifactPanelState }) {
             key={artifact.slug}
             type="button"
             className={cn(
-              'rounded-lg px-3 py-2.5 text-left text-[12px] text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
+              `rounded-lg px-3 py-2.5 text-left ${appTypeSmallClass} ${appToneMutedClass} transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]`,
               artifact.slug === selectedArtifact?.slug &&
                 'bg-[color:var(--accent-bg-subtle)] text-[color:var(--text)]',
             )}
@@ -71,8 +82,8 @@ function ArtifactListView({ panel }: { panel: ArtifactPanelState }) {
               setView('preview')
             }}
           >
-            <div className="truncate font-medium">{formatArtifactSlug(artifact.slug)}</div>
-            <div className="mt-0.5 text-[10px] tracking-[0.12em] text-[color:var(--muted-2)] uppercase">
+            <div className={`truncate ${appTypeSmallStrongClass}`}>{formatArtifactSlug(artifact.slug)}</div>
+            <div className={`mt-0.5 ${appTypeTinyClass} tracking-[0.12em] ${appToneSubtleClass} uppercase`}>
               {artifact.kind} · v{artifact.version}
             </div>
           </button>
@@ -87,7 +98,7 @@ function ArtifactPreviewView({ panel }: { panel: ArtifactPanelState }) {
   return (
     <div className="relative h-full bg-[color:var(--sidebar)]">
       {previewError ? (
-        <pre className="absolute right-2 bottom-2 left-2 z-10 max-h-32 overflow-auto rounded-lg border border-[color:var(--danger-border)] bg-[color:var(--panel)] p-2 text-[11px] whitespace-pre-wrap text-[color:var(--danger)] shadow-[var(--shadow)]">
+        <pre className={`absolute right-2 bottom-2 left-2 z-10 max-h-32 overflow-auto rounded-lg border border-[color:var(--danger-border)] bg-[color:var(--panel)] p-2 ${appTypeMetaClass} whitespace-pre-wrap ${appToneDangerClass} shadow-[var(--shadow)]`}>
           {previewError}
         </pre>
       ) : null}
@@ -126,21 +137,21 @@ export function ArtifactPanelBody({
 
   if (artifactLoadError) {
     return (
-      <div className="grid h-full place-items-center px-6 text-center text-[12px] text-[color:var(--danger)]">
+      <div className={`grid h-full place-items-center px-6 text-center ${appTypeSmallClass} ${appToneDangerClass}`}>
         {artifactLoadError}
       </div>
     )
   }
   if (loadingArtifacts) {
     return (
-      <div className="grid h-full place-items-center px-6 text-center text-[12px] text-[color:var(--muted)]">
+      <div className={`grid h-full place-items-center px-6 text-center ${appTypeSmallClass} ${appToneMutedClass}`}>
         Loading artifacts…
       </div>
     )
   }
   if (artifacts.length === 0) {
     return (
-      <div className="grid h-full place-items-center px-6 text-center text-[12px] text-[color:var(--muted)]">
+      <div className={`grid h-full place-items-center px-6 text-center ${appTypeSmallClass} ${appToneMutedClass}`}>
         No artifacts yet.
       </div>
     )
@@ -149,7 +160,7 @@ export function ArtifactPanelBody({
   if (view === 'code') {
     return (
       <textarea
-        className="h-full w-full resize-none overflow-auto bg-[color:var(--panel)] p-3 font-mono text-[12px] leading-5 text-[color:var(--text)] outline-none"
+        className={`h-full w-full resize-none overflow-auto bg-[color:var(--panel)] p-3 ${appTypeCodeClass} ${appToneTextClass} outline-none`}
         value={draft}
         spellCheck={false}
         readOnly={showingHistoricalVersion}
@@ -161,7 +172,7 @@ export function ArtifactPanelBody({
     return (
       <Suspense
         fallback={
-          <div className="grid h-full place-items-center text-[12px] text-[color:var(--muted)]">
+          <div className={`grid h-full place-items-center ${appTypeSmallClass} ${appToneMutedClass}`}>
             Loading markdown editor…
           </div>
         }

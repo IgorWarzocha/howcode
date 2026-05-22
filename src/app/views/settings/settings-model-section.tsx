@@ -2,7 +2,14 @@ import { ChevronDown, FilePenLine, GitCommitHorizontal } from 'lucide-react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import { SectionIntro } from '../../components/common/section-intro'
 import type { ComposerModel, ModelSelection } from '../../desktop/types'
-import { settingsSectionClass, settingsSelectButtonClass } from '../../ui/classes'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeBodyClass,
+  appTypeGroupTextClass,
+  settingsSectionClass,
+  settingsSelectButtonClass,
+} from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import { buildModelMenuItems } from './helpers'
 import { SettingsComposerMenu } from './settings-composer-menu'
@@ -72,10 +79,10 @@ export function SettingsModelSection({
           <div className="grid min-w-0 grid-cols-[16px_minmax(0,1fr)] items-center gap-3">
             <GitCommitHorizontal size={16} className="text-[color:var(--muted)]" />
             <div className="min-w-0">
-              <div className="truncate text-[13px] text-[color:var(--muted)]">
+              <div className={`truncate ${appTypeGroupTextClass} ${appToneMutedClass}`}>
                 Git commit message model
               </div>
-              <div className="truncate text-[14px] text-[color:var(--text)]">
+              <div className={`truncate ${appTypeBodyClass} ${appToneTextClass}`}>
                 {gitCommitCurrentValue}
               </div>
             </div>
@@ -113,10 +120,10 @@ export function SettingsModelSection({
           <div className="grid min-w-0 grid-cols-[16px_minmax(0,1fr)] items-center gap-3">
             <FilePenLine size={16} className="text-[color:var(--muted)]" />
             <div className="min-w-0">
-              <div className="truncate text-[13px] text-[color:var(--muted)]">
+              <div className={`truncate ${appTypeGroupTextClass} ${appToneMutedClass}`}>
                 Skill creator model
               </div>
-              <div className="truncate text-[14px] text-[color:var(--text)]">
+              <div className={`truncate ${appTypeBodyClass} ${appToneTextClass}`}>
                 {skillCreatorCurrentValue}
               </div>
             </div>

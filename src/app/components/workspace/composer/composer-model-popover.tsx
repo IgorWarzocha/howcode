@@ -2,7 +2,13 @@ import { Search } from 'lucide-react'
 import { type CSSProperties, type RefObject, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { ComposerModel, ComposerThinkingLevel } from '../../../desktop/types'
-import { popoverPanelClass } from '../../../ui/classes'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeMetaClass,
+  appTypeSmallClass,
+  popoverPanelClass,
+} from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { SurfacePanel } from '../../common/surface-panel'
 import {
@@ -164,7 +170,11 @@ export function ComposerModelPopover({
             ref={modelSearchRef}
             value={modelSearch}
             onChange={(event) => setModelSearch(event.currentTarget.value)}
-            className="h-7 w-full rounded-md border-0 bg-[color:var(--surface-hover)] px-2.5 pl-8 text-[11px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)] focus:bg-[color:var(--surface-hover)]"
+            className={cn(
+              'h-7 w-full rounded-md border-0 bg-[color:var(--surface-hover)] px-2.5 pl-8 outline-none placeholder:text-[color:var(--muted)] focus:bg-[color:var(--surface-hover)]',
+              appTypeMetaClass,
+              appToneTextClass,
+            )}
             placeholder={`Search ${modelsForProvider.length} models…`}
             aria-label="Search models"
           />
@@ -176,7 +186,9 @@ export function ComposerModelPopover({
           <div className="mx-2 mb-1 h-px bg-[color:var(--border)]" />
         </>
       ) : showModelSearch ? (
-        <div className="px-2 py-3 text-[11px] text-[color:var(--muted)]">No matching models</div>
+        <div className={cn('px-2 py-3', appTypeMetaClass, appToneMutedClass)}>
+          No matching models
+        </div>
       ) : null}
 
       <div className="relative min-w-0">
@@ -226,7 +238,8 @@ export function ComposerModelPopover({
   )
 
   const panelClassName = cn(
-    'grid w-52 max-w-[calc(100vw-2rem)] overflow-x-hidden rounded-xl border-0 p-1.5 text-[12px]',
+    'grid w-52 max-w-[calc(100vw-2rem)] overflow-x-hidden rounded-xl border-0 p-1.5',
+    appTypeSmallClass,
     sidePlacementEnabled
       ? 'fixed z-[120] max-h-[calc(100vh-1.5rem)] overflow-y-auto transition-opacity duration-150 ease-out'
       : 'absolute bottom-[calc(100%+8px)] left-0 z-[60]',

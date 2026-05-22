@@ -10,7 +10,7 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 import type { ComposerAttachment, ComposerFilePickerState } from '../../../desktop/types'
-import { popoverPanelClass } from '../../../ui/classes'
+import { appToneDangerClass, appTypeMetaClass, popoverPanelClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { SurfacePanel } from '../../common/surface-panel'
 import { ComposerFilePickerAttachmentsPanel } from './composer-file-picker-attachments-panel'
@@ -261,7 +261,13 @@ export function ComposerFilePicker({
       </div>
 
       {errorMessage ? (
-        <div className="pointer-events-none absolute right-3 bottom-2 left-3 truncate text-[11px] text-[color:var(--danger)]">
+        <div
+          className={cn(
+            'pointer-events-none absolute right-3 bottom-2 left-3 truncate',
+            appTypeMetaClass,
+            appToneDangerClass,
+          )}
+        >
           {errorMessage}
         </div>
       ) : null}

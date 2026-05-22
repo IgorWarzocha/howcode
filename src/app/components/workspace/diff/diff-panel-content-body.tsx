@@ -4,6 +4,12 @@ import type { useVirtualizer } from '@tanstack/react-virtual'
 import type { ReactNode, RefObject } from 'react'
 import type { ProjectDiffBaseline } from '../../../desktop/types'
 import type { useDesktopDiff } from '../../../hooks/useDesktopDiff'
+import {
+  appToneMutedClass,
+  appTypeCodeClass,
+  appTypeMetaClass,
+  appTypeSmallClass,
+} from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { getDiffBaselinePrefix, getResolvedDiffBaselineLabel } from '../composer/diff-baseline'
 import { DiffChangedFilesTree } from './diff-changed-files-tree'
@@ -63,7 +69,13 @@ function DiffPanelUnavailable({
   hasNoNetChanges: boolean
 }) {
   return (
-    <div className="flex h-full items-center justify-center px-3 py-2 text-center text-xs text-[color:var(--muted)]">
+    <div
+      className={cn(
+        'flex h-full items-center justify-center px-3 py-2 text-center',
+        appTypeSmallClass,
+        appToneMutedClass,
+      )}
+    >
       <div className="grid max-w-[42rem] gap-1.5">
         <p>
           {error
@@ -82,8 +94,13 @@ function RawPatchView({ reason, text }: { reason: string; text: string }) {
   return (
     <div className="h-full overflow-auto p-3">
       <div className="space-y-2">
-        <p className="text-[11px] text-[color:var(--muted)]">{reason}</p>
-        <pre className="max-h-[70vh] overflow-auto rounded-xl border border-[color:var(--border)] bg-[rgba(18,20,28,0.7)] p-3 font-mono text-[11px] leading-relaxed text-[color:var(--text)]/90">
+        <p className={cn(appTypeMetaClass, appToneMutedClass)}>{reason}</p>
+        <pre
+          className={cn(
+            'max-h-[70vh] overflow-auto rounded-xl border border-[color:var(--border)] bg-[rgba(18,20,28,0.7)] p-3 text-[color:var(--text)]/90',
+            appTypeCodeClass,
+          )}
+        >
           {text}
         </pre>
       </div>

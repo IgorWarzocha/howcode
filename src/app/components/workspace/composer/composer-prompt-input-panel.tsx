@@ -3,6 +3,8 @@ import type { ClipboardEvent, RefObject } from 'react'
 import type { ComposerSendMode, KeybindingOverrides } from '../../../../../shared/keybindings'
 import type { ComposerAttachment, DesktopActionInvoker } from '../../../desktop/types'
 import { getPathForFileQuery } from '../../../query/desktop-query'
+import { appToneMutedClass, appTypeSmallClass } from '../../../ui/classes'
+import { cn } from '../../../utils/cn'
 import type { SettingsOpenTarget } from '../../../views/settings/settingsTypes'
 import { ComposerDictationControls } from './composer-dictation-controls'
 import { ComposerFileMentionPanel } from './composer-file-mention-panel'
@@ -247,7 +249,13 @@ export function ComposerPromptInputPanel({
 
           <div className="inline-flex h-6 items-center justify-end gap-2 self-start">
             {extensionRunning ? (
-              <div className="inline-flex h-6 items-center gap-1.5 rounded-full border border-[color:var(--border)] bg-[color:var(--panel-2)] px-2.5 text-[12px] text-[color:var(--muted)]">
+              <div
+                className={cn(
+                  'inline-flex h-6 items-center gap-1.5 rounded-full border border-[color:var(--border)] bg-[color:var(--panel-2)] px-2.5',
+                  appTypeSmallClass,
+                  appToneMutedClass,
+                )}
+              >
                 <Loader2 size={12} className="animate-spin" />
                 <span>Pi extension running</span>
               </div>

@@ -1,4 +1,6 @@
 import {
+  appToneTextClass,
+  appTypeSmallClass,
   composerPopoverOptionClass,
   composerPopoverOptionSelectedClass,
   composerPopoverPanelClass,
@@ -42,7 +44,7 @@ function FileMentionOption({
       onClick={() => fileMentions.selectFile(file)}
     >
       <Icon size={13} className="shrink-0 text-[color:var(--muted)]" />
-      <span className="min-w-0 flex-1 truncate text-[12px] text-[color:var(--text)]">
+      <span className={cn('min-w-0 flex-1 truncate', appTypeSmallClass, appToneTextClass)}>
         {file.relativePath}
       </span>
     </button>

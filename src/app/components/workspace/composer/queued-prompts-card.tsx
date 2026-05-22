@@ -1,6 +1,6 @@
 import { X } from 'lucide-react'
 import type { ComposerQueuedPrompt } from '../../../desktop/types'
-import { compactIconButtonClass } from '../../../ui/classes'
+import { appToneMutedClass, appTypeSmallClass, compactIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 
 type QueuedPromptsCardProps = {
@@ -29,7 +29,7 @@ export function QueuedPromptsCard({
           'col-start-2 mx-auto grid w-full max-w-[664px] gap-1.5 rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-2.5 py-2 shadow-none',
         )}
       >
-        <div className="pl-3.5 text-[12px] text-[color:var(--muted)]">
+        <div className={cn('pl-3.5', appTypeSmallClass, appToneMutedClass)}>
           Queued messages. Click to edit.
         </div>
 
@@ -41,13 +41,17 @@ export function QueuedPromptsCard({
               <div
                 key={prompt.id}
                 className={cn(
-                  'group grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-lg px-1 py-0 text-[12px] transition-colors hover:bg-[color:var(--surface-hover)]',
+                  'group grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-lg px-1 py-0 transition-colors hover:bg-[color:var(--surface-hover)]',
+                  appTypeSmallClass,
                   isPending && 'opacity-60',
                 )}
               >
                 <button
                   type="button"
-                  className="min-w-0 px-2.5 py-1 text-left text-[12px] leading-5 text-[color:var(--text)]/88 disabled:cursor-default"
+                  className={cn(
+                    'min-w-0 px-2.5 py-1 text-left text-[color:var(--text)]/88 disabled:cursor-default',
+                    appTypeSmallClass,
+                  )}
                   onClick={() => onEditPrompt(prompt)}
                   disabled={isPending}
                 >

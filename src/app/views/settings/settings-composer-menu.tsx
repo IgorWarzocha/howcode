@@ -1,7 +1,12 @@
 import { Check } from 'lucide-react'
 import type { RefObject } from 'react'
 import { SurfacePanel } from '../../components/common/surface-panel'
-import { menuOptionClass, popoverPanelClass } from '../../ui/classes'
+import {
+  appToneMutedClass,
+  appTypeMetaClass,
+  menuOptionClass,
+  popoverPanelClass,
+} from '../../ui/classes'
 import { cn } from '../../utils/cn'
 
 type SettingsComposerMenuItem = {
@@ -52,7 +57,7 @@ export function SettingsComposerMenu({
           <span className="min-w-0">
             <span className="block truncate">{item.label}</span>
             {item.description ? (
-              <span className="block truncate text-[11px] text-[color:var(--muted)]">
+              <span className={`block truncate ${appTypeMetaClass} ${appToneMutedClass}`}>
                 {item.description}
               </span>
             ) : null}

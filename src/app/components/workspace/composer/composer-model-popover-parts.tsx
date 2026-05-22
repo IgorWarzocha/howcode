@@ -1,6 +1,14 @@
 import { Check } from 'lucide-react'
 import type { ComposerThinkingLevel } from '../../../desktop/types'
-import { menuOptionClass, toolbarButtonClass } from '../../../ui/classes'
+import {
+  appToneMutedClass,
+  appToneSubtleClass,
+  appTypeKickerClass,
+  appTypeTinyClass,
+  appTypeTinyStrongClass,
+  menuOptionClass,
+  toolbarButtonClass,
+} from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 
 export type NestedModelMenu = 'provider' | 'model' | 'thinking' | null
@@ -34,12 +42,11 @@ export function ModelPopoverTriggerButton({
       )}
       onClick={onClick}
     >
-      <span className="text-[10.5px] tracking-[0.06em] text-[color:var(--muted-2)] uppercase">
-        {label}
-      </span>
+      <span className={cn(appTypeKickerClass, appToneSubtleClass)}>{label}</span>
       <span
         className={cn(
-          'min-w-0 truncate text-[11.5px]',
+          'min-w-0 truncate',
+          appTypeTinyClass,
           active ? 'text-[color:var(--text)]' : 'text-[color:var(--muted)]',
         )}
       >
@@ -64,7 +71,9 @@ export function ModelPopoverMenuList({ items }: { items: ComposerModelMenuOption
             aria-checked={item.selected}
             className={cn(
               menuOptionClass,
-              'mr-1 min-h-8 rounded-lg py-1.5 text-[11.5px] text-[color:var(--muted)] hover:text-[color:var(--text)]',
+              'mr-1 min-h-8 rounded-lg py-1.5 hover:text-[color:var(--text)]',
+              appTypeTinyClass,
+              appToneMutedClass,
               item.selected && 'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
             )}
             onClick={item.onSelect}
@@ -77,7 +86,8 @@ export function ModelPopoverMenuList({ items }: { items: ComposerModelMenuOption
               {item.description ? (
                 <span
                   className={cn(
-                    'block truncate text-[10px]',
+                    'block truncate',
+                    appTypeTinyStrongClass,
                     item.selected ? 'text-[color:var(--muted)]' : 'text-[color:var(--muted-2)]',
                   )}
                 >

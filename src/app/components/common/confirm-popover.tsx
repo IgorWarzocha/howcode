@@ -1,7 +1,14 @@
 import type { RefObject } from 'react'
 import { useRef } from 'react'
 import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
-import { confirmPopoverClass, popoverPanelClass } from '../../ui/classes'
+import {
+  appToneDangerClass,
+  appToneMutedClass,
+  appTypeTinyClass,
+  appTypeTinyStrongClass,
+  confirmPopoverClass,
+  popoverPanelClass,
+} from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import { SurfacePanel } from './surface-panel'
 
@@ -45,18 +52,26 @@ export function ConfirmPopover({
       data-open="true"
     >
       {message ? (
-        <span className="px-1.5 text-[10.5px] text-[color:var(--muted)]">{message}</span>
+        <span className={cn('px-1.5', appTypeTinyClass, appToneMutedClass)}>{message}</span>
       ) : null}
       <button
         type="button"
-        className="rounded-md px-1.5 py-0.5 text-[10.5px] font-medium text-[color:var(--danger)] transition-colors hover:bg-[rgba(255,120,120,0.14)]"
+        className={cn(
+          'rounded-md px-1.5 py-0.5 transition-colors hover:bg-[rgba(255,120,120,0.14)]',
+          appTypeTinyStrongClass,
+          appToneDangerClass,
+        )}
         onClick={() => void onConfirm()}
       >
         {confirmLabel}
       </button>
       <button
         type="button"
-        className="rounded-md px-1.5 py-0.5 text-[10.5px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
+        className={cn(
+          'rounded-md px-1.5 py-0.5 transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]',
+          appTypeTinyClass,
+          appToneMutedClass,
+        )}
         onClick={onClose}
       >
         {cancelLabel}

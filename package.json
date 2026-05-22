@@ -47,10 +47,12 @@
     "pages:preview": "vite preview --config pages/vite.config.ts",
     "deadcode": "react-doctor . --offline --project howcode --dead-code --fail-on warning",
     "react-doctor": "react-doctor . --offline --project howcode --dead-code",
+    "typography:audit": "bun ./scripts/audit-typography.ts",
     "pack:howcode:dev": "bun ./scripts/pack-howcode-launcher.ts dev pack 0.1.68-dev.1",
     "publish:howcode:dev:dry-run": "bun ./scripts/pack-howcode-launcher.ts dev publish-dry-run 0.1.68-dev.1",
     "publish:howcode": "bun ./scripts/pack-howcode-launcher.ts main publish",
-    "publish:howcode:dev": "bun ./scripts/pack-howcode-launcher.ts dev publish 0.1.68-dev.1"
+    "publish:howcode:dev": "bun ./scripts/pack-howcode-launcher.ts dev publish 0.1.68-dev.1",
+    "typography:generate": "bun ./scripts/generate-typography-css.ts"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,cts,mts,cjs,mjs,json,css,md}": [

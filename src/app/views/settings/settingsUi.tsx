@@ -1,7 +1,15 @@
 import { Check, ChevronDown, Search } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Tooltip } from '../../components/common/tooltip'
-import { composerTextActionButtonClass, popoverPanelClass } from '../../ui/classes'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeControlNormalClass,
+  appTypeMetaClass,
+  appTypeSmallClass,
+  composerTextActionButtonClass,
+  popoverPanelClass,
+} from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import { settingRowClass } from './settingsClasses'
 import type { InlineSelectOption, SettingDescriptor } from './settingsTypes'
@@ -36,7 +44,9 @@ export function SettingRow({
   showHelp: boolean
 }) {
   const title = (
-    <div className="min-w-0 truncate text-[12px] text-[color:var(--text)]">{setting.title}</div>
+    <div className={`min-w-0 truncate ${appTypeSmallClass} ${appToneTextClass}`}>
+      {setting.title}
+    </div>
   )
   const control = <div className="min-w-0 max-w-full">{setting.render()}</div>
 
@@ -93,8 +103,7 @@ export function InlineSelect({
         .includes(normalizedSearch),
     )
   }, [normalizedSearch, options])
-  const compactOptionClass =
-    'flex min-h-0 w-full items-center rounded-md border border-transparent px-2 py-1 text-left text-[11.5px] leading-4 text-[color:var(--text)] transition-colors hover:bg-[rgba(255,255,255,0.045)]'
+  const compactOptionClass = `flex min-h-0 w-full items-center rounded-md border border-transparent px-2 py-1 text-left ${appTypeMetaClass} ${appToneTextClass} transition-colors hover:bg-[rgba(255,255,255,0.045)]`
 
   useEffect(() => {
     if (!open) {
@@ -109,14 +118,14 @@ export function InlineSelect({
 
   return (
     <span
-      className={cn('relative block w-52 max-w-full text-[12px]', className)}
+      className={cn(`relative block w-52 max-w-full ${appTypeSmallClass}`, className)}
       data-inline-select-root
     >
       <button
         type="button"
         className={cn(
           composerTextActionButtonClass,
-          'grid h-8 w-full grid-cols-[minmax(0,1fr)_auto] justify-start gap-2 rounded-lg px-2.5 pr-8 text-left font-normal',
+          `grid h-8 w-full grid-cols-[minmax(0,1fr)_auto] justify-start gap-2 rounded-lg px-2.5 pr-8 text-left ${appTypeControlNormalClass}`,
           open && 'border-[color:var(--accent-border)] bg-[color:var(--accent-bg-subtle)]',
         )}
         onClick={() => {
@@ -129,7 +138,7 @@ export function InlineSelect({
         aria-expanded={open}
         aria-controls={`${id}-menu`}
       >
-        <span className="min-w-0 truncate text-[12px] text-[color:var(--text)]">
+        <span className={`min-w-0 truncate ${appTypeSmallClass} ${appToneTextClass}`}>
           {selectedOption?.label ?? 'Select'}
         </span>
       </button>
@@ -161,7 +170,7 @@ export function InlineSelect({
                 ref={searchInputRef}
                 value={search}
                 onChange={(event) => setSearch(event.currentTarget.value)}
-                className="h-8 w-full rounded-lg border border-[rgba(169,178,215,0.14)] bg-[rgba(255,255,255,0.055)] px-2.5 pl-8 text-[12px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+                className={`h-8 w-full rounded-lg border border-[rgba(169,178,215,0.14)] bg-[rgba(255,255,255,0.055)] px-2.5 pl-8 ${appTypeSmallClass} ${appToneTextClass} outline-none placeholder:text-[color:var(--muted)]`}
                 placeholder={`Search ${options.length} options…`}
                 aria-label="Search options"
               />
@@ -186,9 +195,9 @@ export function InlineSelect({
                   }}
                 >
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[12px] leading-4">{option.label}</span>
+                    <span className={`block truncate ${appTypeSmallClass}`}>{option.label}</span>
                     {option.description ? (
-                      <span className="block truncate text-[11px] leading-3 text-[color:var(--muted)]">
+                      <span className={`block truncate ${appTypeMetaClass} ${appToneMutedClass}`}>
                         {option.description}
                       </span>
                     ) : null}
@@ -197,7 +206,7 @@ export function InlineSelect({
               ))}
             </div>
           ) : (
-            <div className="px-2 py-3 text-[12px] text-[color:var(--muted)]">No matches</div>
+            <div className={`px-2 py-3 ${appTypeSmallClass} ${appToneMutedClass}`}>No matches</div>
           )}
         </div>
       ) : null}

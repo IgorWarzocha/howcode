@@ -5,7 +5,13 @@ import {
   getFeatureStatusButtonClass,
   getFeatureStatusDataAttributes,
 } from '../../features/feature-status'
-import { hoverSurfaceClass, menuItemClass, transitionClass } from '../../ui/classes'
+import {
+  appToneMutedClass,
+  appTypeSmallClass,
+  hoverSurfaceClass,
+  menuItemClass,
+  transitionClass,
+} from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import { FeatureStatusBadge } from './feature-status-badge'
 
@@ -58,7 +64,7 @@ export function MenuItem({
           {statusId ? <FeatureStatusBadge statusId={statusId} /> : null}
         </div>
         {subtitle ? (
-          <div className="truncate text-xs text-[color:var(--muted)]">{subtitle}</div>
+          <div className={cn('truncate', appTypeSmallClass, appToneMutedClass)}>{subtitle}</div>
         ) : null}
       </div>
       {detail ? <span className="ml-auto text-[color:var(--muted)]">{detail}</span> : null}

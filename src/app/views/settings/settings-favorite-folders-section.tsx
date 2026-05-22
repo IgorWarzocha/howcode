@@ -2,6 +2,10 @@ import type { Dispatch, SetStateAction } from 'react'
 import { EmptyStateCard } from '../../components/common/empty-state-card'
 import { SectionIntro } from '../../components/common/section-intro'
 import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeGroupTextClass,
+  appTypeSmallClass,
   primaryButtonClass,
   settingsInputClass,
   settingsListRowClass,
@@ -58,12 +62,15 @@ export function SettingsFavoriteFoldersSection({
         {favoriteFolders.length > 0 ? (
           favoriteFolders.map((favoriteFolder) => (
             <div key={favoriteFolder} className={settingsListRowClass}>
-              <div className="truncate text-[13px] text-[color:var(--text)]" title={favoriteFolder}>
+              <div
+                className={`truncate ${appTypeGroupTextClass} ${appToneTextClass}`}
+                title={favoriteFolder}
+              >
                 {favoriteFolder}
               </div>
               <button
                 type="button"
-                className="text-[12px] text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]"
+                className={`${appTypeSmallClass} ${appToneMutedClass} transition-colors hover:text-[color:var(--text)]`}
                 onClick={() =>
                   updateFavoriteFolders(
                     favoriteFolders.filter((currentFolder) => currentFolder !== favoriteFolder),

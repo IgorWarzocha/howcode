@@ -1,4 +1,9 @@
-import { foldedTimelineRowClass, foldedUserTimelineRowClass } from '@howcode/ui'
+import {
+  appTypeGroupTitleClass,
+  appTypeSmallClass,
+  foldedTimelineRowClass,
+  foldedUserTimelineRowClass,
+} from '@howcode/ui'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import type { PointerEvent, ReactNode } from 'react'
 import { useRef } from 'react'
@@ -42,7 +47,13 @@ export function FoldedTimelineRow({
     >
       <div className="flex min-w-0 items-center gap-2">
         <div
-          className={`min-w-0 flex-1 text-[13px] font-medium leading-[1.4] ${mutedLabel ? 'text-[color:var(--muted-2)]/90' : 'text-[color:var(--text)]/92'} ${italicLabel ? 'italic' : ''} ${singleLine || secondary || trailing ? clampOneLineClass : clampThreeLinesClass}`}
+          className={cn(
+            'min-w-0 flex-1',
+            appTypeGroupTitleClass,
+            mutedLabel ? 'text-[color:var(--muted-2)]/90' : 'text-[color:var(--text)]/92',
+            italicLabel && 'italic',
+            singleLine || secondary || trailing ? clampOneLineClass : clampThreeLinesClass,
+          )}
         >
           {label}
         </div>
@@ -50,7 +61,11 @@ export function FoldedTimelineRow({
       </div>
       {secondary ? (
         <div
-          className={`min-w-0 text-[12px] leading-[1.4] text-[color:var(--muted-2)]/90 ${clampTwoLinesClass}`}
+          className={cn(
+            'min-w-0 text-[color:var(--muted-2)]/90',
+            appTypeSmallClass,
+            clampTwoLinesClass,
+          )}
         >
           {secondary}
         </div>

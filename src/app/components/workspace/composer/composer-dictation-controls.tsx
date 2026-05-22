@@ -4,7 +4,15 @@ import { createPortal } from 'react-dom'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import { useAnimatedPresence } from '../../../hooks/useAnimatedPresence'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
-import { compactIconButtonClass, iconButtonClass } from '../../../ui/classes'
+import {
+  appToneDangerClass,
+  appToneTextClass,
+  appTypeMetaClass,
+  appTypeTinyClass,
+  appTypeTinyStrongClass,
+  compactIconButtonClass,
+  iconButtonClass,
+} from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import type { SettingsOpenTarget } from '../../../views/settings/settingsTypes'
 import { TextButton } from '../../common/text-button'
@@ -104,18 +112,22 @@ function DictationPrompt({
       aria-label="Install speech-to-text model"
       style={position ? { left: `${position.left}px`, top: `${position.top}px` } : undefined}
       className={cn(
-        'fixed z-[140] inline-flex max-w-[calc(100vw-1.5rem)] items-center gap-1.5 rounded-full border border-[color:var(--border-strong)] bg-[color:var(--panel)] px-2 py-1 text-[11px] shadow-[0_18px_40px_rgba(0,0,0,0.34)] transition-[opacity,transform] duration-180 ease-out',
+        'fixed z-[140] inline-flex max-w-[calc(100vw-1.5rem)] items-center gap-1.5 rounded-full border border-[color:var(--border-strong)] bg-[color:var(--panel)] px-2 py-1 shadow-[0_18px_40px_rgba(0,0,0,0.34)] transition-[opacity,transform] duration-180 ease-out',
+        appTypeMetaClass,
         open ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-1 opacity-0',
         !position && 'opacity-0',
       )}
     >
-      <span className="whitespace-nowrap text-[11px] leading-4 text-[color:var(--text)]">
+      <span className={cn('whitespace-nowrap', appTypeMetaClass, appToneTextClass)}>
         No speech-to-text model detected. Install?
       </span>
       <div className="inline-flex shrink-0 items-center justify-end gap-1">
         <button
           type="button"
-          className="inline-flex h-6 items-center gap-1 rounded-full bg-[color:var(--accent)] px-2 text-[10.5px] font-medium text-[color:var(--accent-contrast)] transition-transform active:scale-[0.96]"
+          className={cn(
+            'inline-flex h-6 items-center gap-1 rounded-full bg-[color:var(--accent)] px-2 text-[color:var(--accent-contrast)] transition-transform active:scale-[0.96]',
+            appTypeTinyStrongClass,
+          )}
           onClick={() => {
             onDismiss()
             onOpenSettingsView({ category: 'dictation', settingId: 'dictation.models' })
@@ -136,7 +148,11 @@ function DictationPrompt({
         </button>
       </div>
       <TextButton
-        className="shrink-0 rounded-full border border-[color:var(--danger-border)] px-2 py-0.5 text-[10px] leading-4 whitespace-nowrap text-[color:var(--danger)] hover:border-[color:var(--danger-border)] hover:bg-[color:var(--danger-bg)] hover:text-[color:var(--danger)]"
+        className={cn(
+          'shrink-0 rounded-full border border-[color:var(--danger-border)] px-2 py-0.5 whitespace-nowrap hover:border-[color:var(--danger-border)] hover:bg-[color:var(--danger-bg)] hover:text-[color:var(--danger)]',
+          appTypeTinyClass,
+          appToneDangerClass,
+        )}
         onClick={() => {
           onDismiss()
           void onAction('settings.update', { key: 'showDictationButton', value: false })

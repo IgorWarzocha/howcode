@@ -2,6 +2,7 @@ import { Archive, FolderOpen, Star, Trash2 } from 'lucide-react'
 import { type ReactNode, type RefObject, useState } from 'react'
 import type { DesktopAction } from '../../desktop/actions'
 import type { DesktopActionInvoker } from '../../desktop/types'
+import { appToneDangerClass, appTypeGroupTitleClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import { SurfacePanel } from '../common/surface-panel'
 
@@ -108,7 +109,7 @@ export function ProjectActionMenu({
           >
             <span className="sidebar-project-menu-item__icon">
               {confirmAction === item.action ? (
-                <span className="text-[13px] font-semibold text-[color:var(--danger)]">!</span>
+                <span className={cn(appTypeGroupTitleClass, appToneDangerClass)}>!</span>
               ) : (
                 item.icon
               )}

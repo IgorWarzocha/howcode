@@ -1,7 +1,17 @@
 import { Check, GitCommitHorizontal, X } from 'lucide-react'
 import { useEffect, useEffectEvent, useId, useRef } from 'react'
 import type { AppSettings, ComposerModel, DesktopActionInvoker } from '../../desktop/types'
-import { modalPanelClass, panelChromeClass } from '../../ui/classes'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeBodyClass,
+  appTypeGroupTextClass,
+  appTypeSectionTitleClass,
+  appTypeSmallClass,
+  appTypeViewTitleClass,
+  modalPanelClass,
+  panelChromeClass,
+} from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import { TextButton } from '../common/text-button'
 
@@ -75,10 +85,10 @@ export function SettingsPanel({
       >
         <div className="flex items-start justify-between gap-4 border-b border-[color:var(--border)] px-6 py-5">
           <div>
-            <div id={titleId} className="text-[18px] font-medium text-[color:var(--text)]">
+            <div id={titleId} className={cn(appTypeViewTitleClass, appToneTextClass)}>
               App settings
             </div>
-            <p className="mt-1 text-[13px] text-[color:var(--muted)]">
+            <p className={cn('mt-1', appTypeGroupTextClass, appToneMutedClass)}>
               Choose which Pi model should be used for git commit message generation when that flow
               is enabled. Until you pick one, the app falls back to the current composer model.
             </p>
@@ -95,7 +105,9 @@ export function SettingsPanel({
 
         <div className="grid gap-4 px-6 py-5">
           <section className="grid gap-3">
-            <div className="flex items-center gap-2 text-[15px] font-medium text-[color:var(--text)]">
+            <div
+              className={cn('flex items-center gap-2', appTypeSectionTitleClass, appToneTextClass)}
+            >
               <GitCommitHorizontal size={16} />
               <span>Git commit message model</span>
             </div>
@@ -113,10 +125,10 @@ export function SettingsPanel({
               }
             >
               <div className="min-w-0">
-                <div className="truncate text-[14px] text-[color:var(--text)]">
+                <div className={cn('truncate', appTypeBodyClass, appToneTextClass)}>
                   Use current composer model
                 </div>
-                <div className="truncate text-[12px] text-[color:var(--muted)]">
+                <div className={cn('truncate', appTypeSmallClass, appToneMutedClass)}>
                   {currentModel
                     ? `${currentModel.name} · ${currentModel.provider}/${currentModel.id}`
                     : 'No active composer model'}
@@ -149,10 +161,10 @@ export function SettingsPanel({
                     }
                   >
                     <div className="min-w-0">
-                      <div className="truncate text-[14px] text-[color:var(--text)]">
+                      <div className={cn('truncate', appTypeBodyClass, appToneTextClass)}>
                         {model.name}
                       </div>
-                      <div className="truncate text-[12px] text-[color:var(--muted)]">
+                      <div className={cn('truncate', appTypeSmallClass, appToneMutedClass)}>
                         {model.provider}/{model.id}
                       </div>
                     </div>

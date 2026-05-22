@@ -1,4 +1,5 @@
 import type { ComposerAttachment } from '../../../desktop/types'
+import { appToneTextClass, appTypeMetaClass, appTypeSmallClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 
 type AttachmentChipsProps = {
@@ -26,7 +27,10 @@ export function AttachmentChips({
           type="button"
           className={cn(
             'inline-flex items-center gap-1.5 rounded-full bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]',
-            size === 'compact' ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-[12px]',
+            size === 'compact'
+              ? `px-2 py-0.5 ${appTypeMetaClass}`
+              : `px-2.5 py-1 ${appTypeSmallClass}`,
+            appToneTextClass,
           )}
           onClick={() => onRemove(attachment.path)}
           aria-label={`Remove ${attachment.name}`}

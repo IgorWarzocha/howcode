@@ -1,6 +1,6 @@
 import { Maximize2, Minimize2 } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { compactIconButtonClass } from '../../../ui/classes'
+import { appTypeBodyClass, appTypeSmallClass, compactIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 
 const PLACEHOLDER_SEPARATOR_PATTERN = / · | — |: /
@@ -37,7 +37,8 @@ export function ComposerResponsivePlaceholder({
     <div
       aria-hidden="true"
       className={cn(
-        'pointer-events-none absolute inset-x-0 top-0 min-w-0 truncate text-[14px] leading-[1.45]',
+        'pointer-events-none absolute inset-x-0 top-0 min-w-0 truncate',
+        appTypeBodyClass,
         leadingAdornmentVisible && 'pl-6',
         tone === 'error' ? 'text-[color:var(--danger)]' : 'text-[color:var(--muted-2)]',
       )}
@@ -70,7 +71,8 @@ export function ComposerStatusMessage({
   return (
     <div
       className={cn(
-        'truncate text-[12px] leading-4',
+        'truncate',
+        appTypeSmallClass,
         tone === 'success' ? 'text-[color:var(--green)]' : 'text-[color:var(--danger)]',
       )}
     >

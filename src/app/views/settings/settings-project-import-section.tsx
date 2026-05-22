@@ -1,5 +1,11 @@
 import { SectionIntro } from '../../components/common/section-intro'
-import { primaryButtonClass, settingsSectionClass } from '../../ui/classes'
+import {
+  appToneDangerClass,
+  appToneMutedClass,
+  appTypeSmallClass,
+  primaryButtonClass,
+  settingsSectionClass,
+} from '../../ui/classes'
 import { cn } from '../../utils/cn'
 
 export function SettingsProjectImportSection({
@@ -38,7 +44,7 @@ export function SettingsProjectImportSection({
         {importedState === false ? (
           <button
             type="button"
-            className="text-[12px] text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]"
+            className={`${appTypeSmallClass} ${appToneMutedClass} transition-colors hover:text-[color:var(--text)]`}
             onClick={onShowFirstLaunchReminderAgain}
           >
             Show first-launch reminder again
@@ -47,16 +53,16 @@ export function SettingsProjectImportSection({
       </div>
 
       {importStatusMessage ? (
-        <div className="text-[12px] text-[color:var(--muted)]">{importStatusMessage}</div>
+        <div className={`${appTypeSmallClass} ${appToneMutedClass}`}>{importStatusMessage}</div>
       ) : null}
       {desktopBridgeAvailable ? null : (
-        <div className="text-[12px] text-[color:var(--muted)]">
+        <div className={`${appTypeSmallClass} ${appToneMutedClass}`}>
           Project sync needs the desktop bridge. Restart the dev server or use{' '}
           <code>bun run dev</code>.
         </div>
       )}
       {importErrorMessage ? (
-        <div className="text-[12px] text-[color:var(--danger)]">{importErrorMessage}</div>
+        <div className={`${appTypeSmallClass} ${appToneDangerClass}`}>{importErrorMessage}</div>
       ) : null}
     </section>
   )

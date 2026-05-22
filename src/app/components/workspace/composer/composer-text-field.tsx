@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 import { useHoverToFocus } from '../../../hooks/useHoverToFocus'
+import { appToneTextClass, appTypeBodyClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import {
   ComposerExpandButton,
@@ -182,7 +183,9 @@ export function ComposerTextField({
           ref={textareaRef}
           rows={1}
           className={cn(
-            'm-0 w-full min-h-6 resize-none bg-transparent p-0 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none transition-opacity duration-150 [scrollbar-gutter:stable]',
+            'm-0 w-full min-h-6 resize-none bg-transparent p-0 outline-none transition-opacity duration-150 [scrollbar-gutter:stable]',
+            appTypeBodyClass,
+            appToneTextClass,
             'overflow-x-hidden [hyphens:auto] [overflow-wrap:break-word] [word-break:normal]',
             trailingAdornmentVisible && value.length === 0 && 'pl-6',
             canExpandField && 'composer-textarea-scroll-above-button',

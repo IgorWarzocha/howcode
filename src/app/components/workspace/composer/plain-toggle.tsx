@@ -1,3 +1,4 @@
+import { appToneMutedClass, appTypeTinyClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 
 type PlainToggleProps = {
@@ -35,7 +36,9 @@ export function PlainToggle({
     <button
       type="button"
       className={cn(
-        'inline-flex min-h-7 items-center gap-2 rounded-md px-2 py-1 text-[11.5px] text-[color:var(--muted)] transition-colors',
+        'inline-flex min-h-7 items-center gap-2 rounded-md px-2 py-1 transition-colors',
+        appTypeTinyClass,
+        appToneMutedClass,
         disabled
           ? 'cursor-not-allowed opacity-45'
           : 'hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',

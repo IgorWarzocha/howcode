@@ -1,6 +1,11 @@
 import { Paperclip, X } from 'lucide-react'
 import type { RefObject } from 'react'
-import { compactIconButtonClass, compactRoundIconButtonClass } from '../../../ui/classes'
+import {
+  appToneTextClass,
+  appTypeMetaClass,
+  compactIconButtonClass,
+  compactRoundIconButtonClass,
+} from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 
 type ComposerAttachmentRailProps = {
@@ -23,7 +28,13 @@ export function ComposerAttachmentRail({
       <div className="absolute bottom-[3.55rem] left-0 flex w-7 flex-col-reverse items-center gap-1">
         {attachmentCount > 0 ? (
           <>
-            <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[color:var(--accent-bg)] px-1.5 py-0.5 text-[11px] text-[color:var(--text)]">
+            <span
+              className={cn(
+                'inline-flex min-w-5 items-center justify-center rounded-full bg-[color:var(--accent-bg)] px-1.5 py-0.5',
+                appTypeMetaClass,
+                appToneTextClass,
+              )}
+            >
               {attachmentCount}
             </span>
             <button

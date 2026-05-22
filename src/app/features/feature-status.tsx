@@ -1,3 +1,4 @@
+import { appTypeTinyStrongClass } from '../ui/classes'
 import { cn } from '../utils/cn'
 
 export type FeatureStatus = 'mock' | 'partial'
@@ -20,8 +21,7 @@ export const featureStatusById = {
 
 export type FeatureStatusId = keyof typeof featureStatusById
 
-const featureStatusBadgeBaseClass =
-  'inline-flex items-center rounded-full border px-1.5 py-[1px] text-[10px] font-medium uppercase tracking-[0.08em]'
+const featureStatusBadgeBaseClass = `inline-flex items-center rounded-full border px-1.5 py-[1px] ${appTypeTinyStrongClass} uppercase tracking-[0.08em]`
 
 export function getFeatureStatusMeta(statusId: FeatureStatusId) {
   return featureStatusById[statusId]
@@ -37,7 +37,7 @@ export function getFeatureStatusDataAttributes(statusId: FeatureStatusId) {
 export function getFeatureStatusAccentClass(statusId: FeatureStatusId) {
   return getFeatureStatusMeta(statusId).status === 'mock'
     ? 'border-[color:var(--danger-border)] bg-[color:var(--danger-bg)] text-[color:var(--danger)]'
-    : 'border-[rgba(255,214,102,0.4)] bg-[rgba(255,204,102,0.14)] text-[#ffd36a]'
+    : 'border-[rgba(255,214,102,0.4)] bg-[rgba(255,204,102,0.14)] text-[color:var(--warning)]'
 }
 
 export function getFeatureStatusButtonClass(statusId: FeatureStatusId) {

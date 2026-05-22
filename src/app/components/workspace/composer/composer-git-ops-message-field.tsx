@@ -1,4 +1,5 @@
 import type { KeyboardEventHandler, ReactNode, RefObject } from 'react'
+import { appTypeSmallClass } from '../../../ui/classes'
 import { ComposerTextField } from './composer-text-field'
 
 type ComposerGitOpsMessageFieldProps = {
@@ -42,8 +43,8 @@ function getGitOpsMessagePlaceholder({
 function getStatusMessageClass(statusTone: 'success' | 'error', compact = false) {
   const spacing = compact ? 'mt-1 truncate ' : ''
   return statusTone === 'error'
-    ? `${spacing}text-[12px] leading-4 text-[color:var(--danger)]`
-    : `${spacing}text-[12px] leading-4 text-[color:var(--green)]`
+    ? `${spacing}${appTypeSmallClass} text-[color:var(--danger)]`
+    : `${spacing}${appTypeSmallClass} text-[color:var(--green)]`
 }
 
 export function ComposerGitOpsMessageField({

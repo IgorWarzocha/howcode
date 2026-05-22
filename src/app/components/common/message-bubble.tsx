@@ -1,3 +1,4 @@
+import { appToneMutedClass, appTypeReadableClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 
 type MessageBubbleProps = {
@@ -18,7 +19,11 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
       {content.map((paragraph) => (
         <p
           key={`${role}-${paragraph.slice(0, 32)}-${paragraph.length}`}
-          className="mb-2.5 whitespace-normal leading-[1.7] text-[color:var(--muted)] last:mb-0"
+          className={cn(
+            'mb-2.5 whitespace-normal last:mb-0',
+            appTypeReadableClass,
+            appToneMutedClass,
+          )}
         >
           {paragraph}
         </p>
