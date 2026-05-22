@@ -1,5 +1,6 @@
 import { Info, Search, X } from 'lucide-react'
 import { Fragment } from 'react'
+import { PopoverBoundary } from '../../components/common/popover'
 import { Tooltip } from '../../components/common/tooltip'
 import type { AppSettings } from '../../desktop/types'
 import {
@@ -246,7 +247,8 @@ export function SettingsGroupsList({
 
   return visibleGroups.map((group) => (
     <Fragment key={group.id}>
-      <section
+      <PopoverBoundary
+        as="section"
         className="motion-surface-pulse motion-settings-section-pulse grid min-w-0 gap-1"
         data-pulse-active={group.id === highlightedCategoryId ? 'true' : 'false'}
       >
@@ -263,7 +265,7 @@ export function SettingsGroupsList({
             <SettingRow key={setting.id} setting={setting} showHelp={showHelp} />
           ))}
         </div>
-      </section>
+      </PopoverBoundary>
       {showHelp ? (
         <aside className="hidden min-w-0 content-start gap-1 rounded-[18px] border border-transparent p-2.5 lg:grid">
           <div

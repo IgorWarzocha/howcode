@@ -4,6 +4,14 @@ export { ConfirmPopover } from './confirm-popover'
 export { DisclosureSection } from './disclosure-section'
 export { EmptyStateCard } from './empty-state-card'
 export { MarkdownContent } from './markdown-content'
+export {
+  getPopoverBoundaryProps,
+  getPopoverRootProps,
+  PopoverBoundary,
+  PopoverRoot,
+  popoverBoundaryAttribute,
+  popoverOpenAttribute,
+} from './popover'
 export { PrimaryButton } from './primary-button'
 export { SectionIntro } from './section-intro'
 export { SegmentedToggle } from './segmented-toggle'

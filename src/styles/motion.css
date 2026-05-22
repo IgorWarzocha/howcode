@@ -117,8 +117,12 @@
   animation: standardSurfacePulse 1.15s ease-out 1;
 }
 
-.motion-settings-section-pulse:has([data-inline-select-open="true"]) {
+.motion-settings-section-pulse:has([data-popover-open="true"]) {
   z-index: 20;
+}
+
+[data-popover-boundary]:has([data-popover-open="true"]) {
+  z-index: var(--popover-boundary-z, 20);
 }
 
 .motion-overlay-panel {

@@ -1,5 +1,6 @@
 import { Check, ChevronDown, Search } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { PopoverRoot } from '../../components/common/popover'
 import { Tooltip } from '../../components/common/tooltip'
 import {
   appToneMutedClass,
@@ -130,10 +131,10 @@ export function InlineSelect({
   }, [open, showSearch])
 
   return (
-    <span
-      className={cn(`relative block w-52 max-w-full ${appTypeSmallClass}`, className)}
+    <PopoverRoot
+      open={open}
+      className={cn(`w-52 ${appTypeSmallClass}`, className)}
       data-inline-select-root
-      data-inline-select-open={open ? 'true' : undefined}
     >
       <button
         type="button"
@@ -226,6 +227,6 @@ export function InlineSelect({
           )}
         </div>
       ) : null}
-    </span>
+    </PopoverRoot>
   )
 }
