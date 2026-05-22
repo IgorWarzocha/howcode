@@ -1,20 +1,22 @@
-import { FilePenLine, Trash2 } from 'lucide-react'
+import { ArrowUpRight, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { CompactMetaRow } from '../../../components/common/compact-meta-row'
 import { ConfirmPopover } from '../../../components/common/confirm-popover'
-import { TextButton } from '../../../components/common/text-button'
 import { Tooltip } from '../../../components/common/tooltip'
 import type { PiConfiguredPackage } from '../../../desktop/types'
-import { openPathQuery } from '../../../query/desktop-query'
 import {
   appToneMutedClass,
   appToneTextClass,
   appTypeGroupTextClass,
-  appTypeSmallClass,
-  compactRoundIconButtonClass,
+  viewCloseButtonClass,
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { getConfiguredSourceLabel, isConfiguredSourcePath } from '../utils'
+import {
+  getConfiguredPackageExternalUrl,
+  getConfiguredSourceLabel,
+  isConfiguredSourcePath,
+  openExternalUrl,
+} from '../utils'
 
 type ConfiguredPackageRowProps = {
   configuredPackage: PiConfiguredPackage
@@ -30,72 +32,75 @@ export function ConfiguredPackageRow({
   const [confirmRemoveOpen, setConfirmRemoveOpen] = useState(false)
   const removeButtonRef = useRef<HTMLButtonElement>(null)
   const sourceLabel = getConfiguredSourceLabel(configuredPackage)
+  const externalUrl = getConfiguredPackageExternalUrl(configuredPackage)
 
   return (
     <CompactMetaRow
+      density="dense"
+      contentClassName={`grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-1.5 overflow-hidden ${appTypeGroupTextClass}`}
       actions={
-        <>
-          {(configuredPackage.type === 'local' || configuredPackage.resourceKind === 'extension') &&
-          configuredPackage.settingsPath ? (
-            <Tooltip content="Open settings.json in default editor">
-              <TextButton
-                className={compactRoundIconButtonClass}
+        configuredPackage.resourceKind === 'package' ? (
+          <div className="relative">
+            <Tooltip content={removePending ? 'Removing' : 'Remove'}>
+              <button
+                type="button"
+                ref={removeButtonRef}
+                className={cn(viewCloseButtonClass, 'hover:text-[color:var(--danger)]')}
                 onClick={() => {
-                  if (configuredPackage.settingsPath) {
-                    void openPathQuery(configuredPackage.settingsPath)
-                  }
+                  if (removePending) return
+                  setConfirmRemoveOpen((current) => !current)
                 }}
-                aria-label="Open settings.json in default editor"
+                disabled={removePending}
+                aria-label={removePending ? 'Removing' : 'Remove'}
               >
-                <FilePenLine size={13} />
-              </TextButton>
+                <Trash2 size={13} />
+              </button>
             </Tooltip>
-          ) : null}
 
-          {configuredPackage.resourceKind === 'package' ? (
-            <div className="relative">
-              <Tooltip content={removePending ? 'Removing' : 'Remove'}>
-                <TextButton
-                  ref={removeButtonRef}
-                  className={cn(compactRoundIconButtonClass, 'hover:text-[color:var(--danger)]')}
-                  onClick={() => {
-                    if (removePending) {
-                      return
-                    }
-
-                    setConfirmRemoveOpen((current) => !current)
-                  }}
-                  disabled={removePending}
-                  aria-label={removePending ? 'Removing' : 'Remove'}
-                >
-                  <Trash2 size={13} />
-                </TextButton>
-              </Tooltip>
-
-              <ConfirmPopover
-                open={confirmRemoveOpen}
-                anchorRef={removeButtonRef}
-                onClose={() => setConfirmRemoveOpen(false)}
-                onConfirm={() => void onRemove(configuredPackage)}
-              />
-            </div>
-          ) : null}
-        </>
+            <ConfirmPopover
+              open={confirmRemoveOpen}
+              anchorRef={removeButtonRef}
+              onClose={() => setConfirmRemoveOpen(false)}
+              onConfirm={() => void onRemove(configuredPackage)}
+            />
+          </div>
+        ) : null
       }
     >
-      <div className="min-w-0 flex items-baseline gap-1.5 overflow-hidden">
-        <div className={cn('shrink-0', appTypeGroupTextClass, appToneTextClass)}>
+      {externalUrl ? (
+        <Tooltip content={externalUrl} contentClassName="max-w-[420px]">
+          <button
+            type="button"
+            className="group inline-flex shrink-0 items-center gap-0.5 p-0"
+            onClick={() => void openExternalUrl(externalUrl)}
+            aria-label={`Open ${configuredPackage.displayName}`}
+          >
+            <span
+              className={cn(
+                `${appTypeGroupTextClass} ${appToneTextClass}`,
+                'transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]',
+              )}
+            >
+              {configuredPackage.displayName}
+            </span>
+            <ArrowUpRight
+              size={12}
+              className="shrink-0 text-[color:var(--muted)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]"
+            />
+          </button>
+        </Tooltip>
+      ) : (
+        <span className={`${appTypeGroupTextClass} ${appToneTextClass}`}>
           {configuredPackage.displayName}
-        </div>
-        <div
-          className={cn(
-            appTypeSmallClass,
-            appToneMutedClass,
-            isConfiguredSourcePath(configuredPackage) ? 'min-w-0 truncate' : 'shrink-0',
-          )}
-        >
-          {sourceLabel}
-        </div>
+        </span>
+      )}
+      <div
+        className={cn(
+          `${appTypeGroupTextClass} ${appToneMutedClass}`,
+          isConfiguredSourcePath(configuredPackage) ? 'min-w-0 truncate' : 'shrink-0',
+        )}
+      >
+        {sourceLabel}
       </div>
     </CompactMetaRow>
   )

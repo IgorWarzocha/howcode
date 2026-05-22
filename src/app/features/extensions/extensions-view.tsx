@@ -1,46 +1,101 @@
-import { EmptyStateCard } from '../../components/common/empty-state-card'
-import { SegmentedToggle } from '../../components/common/segmented-toggle'
+import { ArrowUpRight } from 'lucide-react'
 import { ViewHeader } from '../../components/common/view-header'
 import { ViewShell } from '../../components/common/view-shell'
-import { appToneDangerClass, appTypeSmallClass } from '../../ui/classes'
+import { appToneDangerClass, appToneMutedClass, appTypeGroupTextClass } from '../../ui/classes'
+import { skillsViewShellClass } from '../../ui/screen-classes'
 import { cn } from '../../utils/cn'
 import { ActiveExtensionsSection } from './components/active-extensions-section'
 import { InstallExtensionsSection } from './components/install-extensions-section'
 import { SearchExtensionsSection } from './components/search-extensions-section'
 import { useExtensionsController } from './hooks/useExtensionsController'
-import type { ExtensionsViewProps } from './types'
+import type { ExtensionsViewProps, InstallScope } from './types'
+import { openExternalUrl } from './utils'
 
-function ExtensionsScopeToggle({
-  globalInstalledCount,
-  chatInstalledCount,
-  installScope,
-  projectInstalledCount,
-  projectScopeAvailable,
-  onScopeChange,
-}: {
-  globalInstalledCount: number
-  chatInstalledCount: number
-  installScope: 'global' | 'project' | 'chat'
-  projectInstalledCount: number
+type ExtensionsScopeSwitcherProps = {
+  value: InstallScope
   projectScopeAvailable: boolean
-  onScopeChange: (scope: 'global' | 'project' | 'chat') => void
-}) {
+  counts: Record<InstallScope, number>
+  onChange: (scope: InstallScope) => void
+}
+
+function ExtensionsScopeSwitcher({
+  value,
+  projectScopeAvailable,
+  counts,
+  onChange,
+}: ExtensionsScopeSwitcherProps) {
+  const options: Array<{ value: InstallScope; label: string; disabled?: boolean }> = [
+    { value: 'global', label: `Global ${counts.global}` },
+    { value: 'project', label: `Project ${counts.project}`, disabled: !projectScopeAvailable },
+    { value: 'chat', label: `Chat ${counts.chat}` },
+  ]
+
   return (
-    <SegmentedToggle
-      size="compact"
-      ariaLabel="Extension install scope"
-      value={installScope}
-      options={[
-        { value: 'global', label: `Global (${globalInstalledCount})` },
-        {
-          value: 'project',
-          label: `Project (${projectInstalledCount})`,
-          disabled: !projectScopeAvailable,
-        },
-        { value: 'chat', label: `Chat (${chatInstalledCount})` },
-      ]}
-      onChange={onScopeChange}
-    />
+    <fieldset className="m-0 flex min-w-0 items-center gap-1 border-0 p-0">
+      <legend className="sr-only">Extension install scope</legend>
+      {options.map((option) => {
+        const selected = value === option.value
+        return (
+          <button
+            key={option.value}
+            type="button"
+            className={cn(
+              `rounded-md px-2 py-0.5 ${appTypeGroupTextClass} ${appToneMutedClass} transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[color:var(--muted)]`,
+              selected && 'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
+            )}
+            disabled={option.disabled}
+            aria-pressed={selected}
+            onClick={() => onChange(option.value)}
+          >
+            {option.label}
+          </button>
+        )
+      })}
+    </fieldset>
+  )
+}
+
+function ExtensionsMetaLink() {
+  return (
+    <span
+      className={cn(
+        `${appTypeGroupTextClass} ${appToneMutedClass}`,
+        'inline-flex items-center gap-1',
+      )}
+    >
+      <span>via</span>
+      <button
+        type="button"
+        className="group inline-flex items-center gap-0.5 p-0 text-inherit"
+        onClick={() => void openExternalUrl('https://pi.dev/packages')}
+        aria-label="Open pi.dev packages"
+        data-tooltip="Open pi.dev packages"
+      >
+        <span className="transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]">
+          pi.dev
+        </span>
+        <ArrowUpRight
+          size={12}
+          className="transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]"
+        />
+      </button>
+    </span>
+  )
+}
+
+function DesktopRequiredState({ onClose }: { onClose: () => void }) {
+  return (
+    <ViewShell className={`${skillsViewShellClass} gap-8`}>
+      <ViewHeader
+        title="Extensions"
+        meta={<ExtensionsMetaLink />}
+        onClose={onClose}
+        closeLabel="Close extensions"
+      />
+      <div className={`px-2 py-1.5 ${appTypeGroupTextClass} ${appToneMutedClass}`}>
+        Desktop build required.
+      </div>
+    </ViewShell>
   )
 }
 
@@ -48,37 +103,48 @@ export function ExtensionsView(props: ExtensionsViewProps) {
   const controller = useExtensionsController(props)
 
   if (!controller.desktopPackagesAvailable) {
-    return (
-      <ViewShell>
-        <ViewHeader title="Extensions" onClose={props.onClose} closeLabel="Close extensions" />
-        <EmptyStateCard>Desktop build required.</EmptyStateCard>
-      </ViewShell>
-    )
+    return <DesktopRequiredState onClose={props.onClose} />
   }
 
   return (
-    <ViewShell>
+    <ViewShell className={skillsViewShellClass}>
       <ViewHeader
         title="Extensions"
+        meta={<ExtensionsMetaLink />}
         onClose={props.onClose}
         closeLabel="Close extensions"
         actions={
-          <ExtensionsScopeToggle
-            globalInstalledCount={controller.globalInstalledCount}
-            chatInstalledCount={controller.chatInstalledCount}
-            installScope={controller.installScope}
-            projectInstalledCount={controller.projectInstalledCount}
+          <ExtensionsScopeSwitcher
+            value={controller.installScope}
+            counts={{
+              global: controller.globalInstalledCount,
+              project: controller.projectInstalledCount,
+              chat: controller.chatInstalledCount,
+            }}
             projectScopeAvailable={controller.projectScopeAvailable}
-            onScopeChange={controller.setInstallScope}
+            onChange={controller.setInstallScope}
           />
         }
       />
+
+      {controller.projectScopeAvailable ? null : (
+        <div className={`px-2 py-1.5 ${appTypeGroupTextClass} ${appToneMutedClass}`}>
+          Project extensions are unavailable until a project path is available.
+        </div>
+      )}
 
       <output className="sr-only" aria-live="polite">
         {controller.actionError ?? ''}
       </output>
       {controller.actionError ? (
-        <div className={cn(appTypeSmallClass, appToneDangerClass)}>{controller.actionError}</div>
+        <div
+          className={cn(
+            `px-2 py-1.5 ${appTypeGroupTextClass} ${appToneMutedClass}`,
+            appToneDangerClass,
+          )}
+        >
+          {controller.actionError}
+        </div>
       ) : null}
 
       <InstallExtensionsSection
@@ -105,6 +171,7 @@ export function ExtensionsView(props: ExtensionsViewProps) {
       <SearchExtensionsSection
         open={controller.browseOpen}
         searchInput={controller.searchInput}
+        submittedSearchInput={controller.submittedSearchInput}
         installScope={controller.installScope}
         projectScopeAvailable={controller.projectScopeAvailable}
         hasSelectedCatalogSources={controller.hasSelectedCatalogSources}
@@ -118,6 +185,7 @@ export function ExtensionsView(props: ExtensionsViewProps) {
         isFetchingNextCatalogPage={controller.isFetchingNextCatalogPage}
         onToggleOpen={() => controller.setBrowseOpen((current) => !current)}
         onSearchInputChange={controller.setSearchInput}
+        onSubmitSearch={controller.setSubmittedSearchInput}
         onInstallSelected={controller.handleSelectedCatalogInstall}
         onToggleSelectedSource={controller.toggleCatalogSource}
         onLoadMore={controller.loadMoreCatalog}

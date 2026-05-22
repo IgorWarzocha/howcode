@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useDeferredValue, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { PiConfiguredPackage } from '../../../desktop/types'
 import {
   desktopQueryKeys,
@@ -18,15 +18,15 @@ export function useExtensionsController({
   const queryClient = useQueryClient()
   const normalizedProjectPath = projectPath?.trim() ? projectPath : null
   const [searchInput, setSearchInput] = useState('')
+  const [submittedSearchInput, setSubmittedSearchInput] = useState('')
   const [manualSource, setManualSource] = useState('')
   const [manualSourceKind, setManualSourceKind] = useState<ManualSourceKind>('npm')
   const [installScope, setInstallScope] = useState<InstallScope>('global')
-  const [installedOpen, setInstalledOpen] = useState(true)
-  const [browseOpen, setBrowseOpen] = useState(true)
+  const [installedOpen, setInstalledOpen] = useState(false)
+  const [browseOpen, setBrowseOpen] = useState(false)
   const [selectedCatalogSources, setSelectedCatalogSources] = useState<string[]>([])
   const [pendingActions, setPendingActions] = useState<PendingAction[]>([])
   const [actionError, setActionError] = useState<string | null>(null)
-  const deferredSearchInput = useDeferredValue(searchInput.trim())
   const desktopPackagesAvailable = isDesktopPackagesAvailable()
   const projectScopeAvailable = normalizedProjectPath !== null
 
@@ -38,17 +38,17 @@ export function useExtensionsController({
   })
 
   const packagesQuery = useInfiniteQuery({
-    queryKey: desktopQueryKeys.piPackageCatalog(deferredSearchInput),
+    queryKey: desktopQueryKeys.piPackageCatalog(submittedSearchInput),
     initialPageParam: 0,
     queryFn: ({ pageParam }) =>
       searchPiPackagesQuery({
-        query: deferredSearchInput,
+        query: submittedSearchInput,
         cursor: typeof pageParam === 'number' ? pageParam : 0,
         pageSize: 20,
       }),
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     staleTime: 5 * 60_000,
-    enabled: desktopPackagesAvailable && browseOpen,
+    enabled: desktopPackagesAvailable && submittedSearchInput.length >= 2,
   })
 
   const configuredPackages = configuredPackagesQuery.data ?? []
@@ -285,6 +285,8 @@ export function useExtensionsController({
     setManualSource,
     setManualSourceKind,
     setSearchInput,
+    setSubmittedSearchInput,
+    submittedSearchInput,
     handleManualInstall,
     handleRemove,
     handleSelectedCatalogInstall,

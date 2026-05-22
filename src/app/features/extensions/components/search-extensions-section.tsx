@@ -5,12 +5,18 @@ import { Tooltip } from '../../../components/common/tooltip'
 import type { PiPackageCatalogItem } from '../../../desktop/types'
 import {
   appToneMutedClass,
-  appTypeControlClass,
-  compactRoundIconButtonClass,
+  appTypeGroupTextClass,
   iconActionButtonDisabledClass,
   inlineEmptyNoteClass,
   quietSearchInputClass,
+  viewCloseButtonClass,
 } from '../../../ui/classes'
+import {
+  skillsActionColumnClass,
+  skillsListClass,
+  skillsPreviewListClass,
+  skillsSearchControlRowClass,
+} from '../../../ui/screen-classes'
 import { cn } from '../../../utils/cn'
 import type { InstallScope } from '../types'
 import { CatalogItemRow } from './catalog-item-row'
@@ -18,6 +24,7 @@ import { CatalogItemRow } from './catalog-item-row'
 type SearchExtensionsSectionProps = {
   open: boolean
   searchInput: string
+  submittedSearchInput: string
   installScope: InstallScope
   projectScopeAvailable: boolean
   hasSelectedCatalogSources: boolean
@@ -31,6 +38,7 @@ type SearchExtensionsSectionProps = {
   isFetchingNextCatalogPage: boolean
   onToggleOpen: () => void
   onSearchInputChange: (value: string) => void
+  onSubmitSearch: (value: string) => void
   onInstallSelected: () => void | Promise<void>
   onToggleSelectedSource: (source: string) => void
   onLoadMore: () => void
@@ -41,10 +49,12 @@ function SearchExtensionsResults({
   catalogError,
   catalogItems,
   catalogLoading,
+  expanded,
   installedIdentityKeys,
   isInstallPending,
   onToggleSelectedSource,
   selectedCatalogSources,
+  submittedSearchInput,
 }: Pick<
   SearchExtensionsSectionProps,
   | 'catalogError'
@@ -54,10 +64,12 @@ function SearchExtensionsResults({
   | 'isInstallPending'
   | 'onToggleSelectedSource'
   | 'selectedCatalogSources'
->) {
-  if (catalogLoading) {
-    return <div className={inlineEmptyNoteClass}>Loading packages…</div>
+  | 'submittedSearchInput'
+> & { expanded: boolean }) {
+  if (submittedSearchInput.length < 2) {
+    return <div className={inlineEmptyNoteClass}>Search with at least 2 characters.</div>
   }
+  if (catalogLoading) return <div className={inlineEmptyNoteClass}>Loading packages…</div>
   if (catalogError) {
     return (
       <div className={cn(inlineEmptyNoteClass, 'text-[color:var(--danger)]')}>{catalogError}</div>
@@ -65,7 +77,7 @@ function SearchExtensionsResults({
   }
   if (catalogItems.length === 0) return <div className={inlineEmptyNoteClass}>No pi packages.</div>
   return (
-    <div className="grid gap-2">
+    <div className={expanded ? skillsListClass : skillsPreviewListClass}>
       {catalogItems.map((item) => (
         <CatalogItemRow
           key={item.name}
@@ -92,11 +104,7 @@ function SearchExtensionsLoadMore({
   return (
     <div className="flex justify-center pt-1">
       <TextButton
-        className={cn(
-          'rounded-lg px-3 py-1.5 hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
-          appTypeControlClass,
-          appToneMutedClass,
-        )}
+        className={`rounded-md px-2 py-1 ${appTypeGroupTextClass} ${appToneMutedClass} hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]`}
         onClick={onLoadMore}
         disabled={isFetchingNextCatalogPage}
       >
@@ -109,6 +117,7 @@ function SearchExtensionsLoadMore({
 export function SearchExtensionsSection({
   open,
   searchInput,
+  submittedSearchInput,
   installScope,
   projectScopeAvailable,
   hasSelectedCatalogSources,
@@ -122,6 +131,7 @@ export function SearchExtensionsSection({
   isFetchingNextCatalogPage,
   onToggleOpen,
   onSearchInputChange,
+  onSubmitSearch,
   onInstallSelected,
   onToggleSelectedSource,
   onLoadMore,
@@ -133,67 +143,83 @@ export function SearchExtensionsSection({
     hasPendingInstall
 
   return (
-    <DisclosureSection title="Browse" open={open} onToggle={onToggleOpen}>
-      {open ? (
-        <>
-          <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto]">
-            <label className="relative block min-w-0">
-              <span className="pointer-events-none absolute inset-y-0 left-3 z-10 inline-flex items-center text-[color:var(--muted)]">
-                <Search size={14} />
-              </span>
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(event) => onSearchInputChange(event.target.value)}
-                className={cn(quietSearchInputClass, 'w-full pl-8')}
-                placeholder="Search extensions"
-                aria-label="Search extensions"
-              />
-            </label>
+    <DisclosureSection
+      title="Search"
+      open={open}
+      onToggle={onToggleOpen}
+      forceMountContent
+      chevronPosition="right"
+    >
+      <div className={skillsSearchControlRowClass}>
+        <form
+          className="min-w-0"
+          onSubmit={(event) => {
+            event.preventDefault()
+            onSubmitSearch(searchInput.trim())
+          }}
+        >
+          <label className="relative block min-w-0">
+            <span className="pointer-events-none absolute inset-y-0 left-3 z-10 inline-flex items-center text-[color:var(--muted)]">
+              <Search size={14} />
+            </span>
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(event) => onSearchInputChange(event.target.value)}
+              className={cn(quietSearchInputClass, 'w-full pl-8')}
+              placeholder="Search extensions"
+              aria-label="Search extensions"
+            />
+          </label>
+        </form>
 
-            <Tooltip
-              content={
+        <div className={skillsActionColumnClass}>
+          <Tooltip
+            content={
+              hasSelectedCatalogSources
+                ? `Install ${selectedCatalogSources.length} selected extensions`
+                : 'Install extensions'
+            }
+          >
+            <button
+              type="button"
+              className={cn(viewCloseButtonClass, iconActionButtonDisabledClass)}
+              onClick={() => void onInstallSelected()}
+              disabled={installDisabled}
+              aria-label={
                 hasSelectedCatalogSources
                   ? `Install ${selectedCatalogSources.length} selected extensions`
-                  : 'Install selected extensions'
+                  : 'Install extensions'
               }
             >
-              <TextButton
-                type="button"
-                className={cn(compactRoundIconButtonClass, iconActionButtonDisabledClass)}
-                onClick={() => void onInstallSelected()}
-                disabled={installDisabled}
-                aria-label={
-                  hasSelectedCatalogSources
-                    ? `Install ${selectedCatalogSources.length} selected extensions`
-                    : 'Install selected extensions'
-                }
-              >
-                {hasPendingInstall && hasSelectedCatalogSources ? (
-                  <Sparkles size={14} />
-                ) : (
-                  <PackagePlus size={14} />
-                )}
-              </TextButton>
-            </Tooltip>
-          </div>
+              {hasPendingInstall && hasSelectedCatalogSources ? (
+                <Sparkles size={14} />
+              ) : (
+                <PackagePlus size={14} />
+              )}
+            </button>
+          </Tooltip>
+        </div>
+      </div>
 
-          <SearchExtensionsResults
-            catalogError={catalogError}
-            catalogItems={catalogItems}
-            catalogLoading={catalogLoading}
-            installedIdentityKeys={installedIdentityKeys}
-            isInstallPending={isInstallPending}
-            onToggleSelectedSource={onToggleSelectedSource}
-            selectedCatalogSources={selectedCatalogSources}
-          />
+      <SearchExtensionsResults
+        expanded={open}
+        catalogError={catalogError}
+        catalogItems={catalogItems}
+        catalogLoading={catalogLoading}
+        installedIdentityKeys={installedIdentityKeys}
+        isInstallPending={isInstallPending}
+        onToggleSelectedSource={onToggleSelectedSource}
+        selectedCatalogSources={selectedCatalogSources}
+        submittedSearchInput={submittedSearchInput}
+      />
 
-          <SearchExtensionsLoadMore
-            hasNextCatalogPage={hasNextCatalogPage}
-            isFetchingNextCatalogPage={isFetchingNextCatalogPage}
-            onLoadMore={onLoadMore}
-          />
-        </>
+      {open ? (
+        <SearchExtensionsLoadMore
+          hasNextCatalogPage={hasNextCatalogPage}
+          isFetchingNextCatalogPage={isFetchingNextCatalogPage}
+          onLoadMore={onLoadMore}
+        />
       ) : null}
     </DisclosureSection>
   )
