@@ -1,8 +1,7 @@
-import { FilePenLine, Trash2 } from 'lucide-react'
+import { ArrowUpRight, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { CompactMetaRow } from '../../../components/common/compact-meta-row'
 import { ConfirmPopover } from '../../../components/common/confirm-popover'
-import { TextButton } from '../../../components/common/text-button'
 import { Tooltip } from '../../../components/common/tooltip'
 import type { PiConfiguredSkill } from '../../../desktop/types'
 import { openPathQuery } from '../../../query/desktop-query'
@@ -10,12 +9,15 @@ import {
   appToneMutedClass,
   appToneTextClass,
   appTypeGroupTextClass,
-  compactRoundIconButtonClass,
+  inlineEmptyNoteClass,
+  viewCloseButtonClass,
 } from '../../../ui/classes'
+import { skillsListClass, skillsPreviewListClass } from '../../../ui/screen-classes'
 import { cn } from '../../../utils/cn'
 
 type InstalledSkillsSectionProps = {
   installScope: 'global' | 'project' | 'chat'
+  expanded: boolean
   skills: PiConfiguredSkill[]
   isPendingRemove: (installedPath: string) => boolean
   onRemove: (configuredSkill: PiConfiguredSkill) => Promise<void>
@@ -23,6 +25,7 @@ type InstalledSkillsSectionProps = {
 
 export function InstalledSkillsSection({
   installScope,
+  expanded,
   skills,
   isPendingRemove,
   onRemove,
@@ -31,81 +34,81 @@ export function InstalledSkillsSection({
   const confirmRemoveButtonRef = useRef<HTMLButtonElement>(null)
 
   if (skills.length === 0) {
-    return (
-      <div className={`px-2 py-1.5 ${appTypeGroupTextClass} ${appToneMutedClass}`}>
-        No {installScope} skills.
-      </div>
-    )
+    return <div className={inlineEmptyNoteClass}>No {installScope} skills.</div>
   }
 
   return (
-    <div className="grid gap-2">
+    <div className={expanded ? skillsListClass : skillsPreviewListClass}>
       {skills.map((configuredSkill) => (
         <CompactMetaRow
           key={`${configuredSkill.scope}:${configuredSkill.installedPath}`}
+          density="dense"
+          contentClassName={`grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-1.5 overflow-hidden ${appTypeGroupTextClass}`}
           actions={
-            <>
-              <Tooltip content="Open SKILL.md in default editor">
-                <TextButton
-                  className={compactRoundIconButtonClass}
-                  onClick={() => void openPathQuery(configuredSkill.skillFilePath)}
-                  aria-label="Open SKILL.md in default editor"
+            <div className="relative">
+              <Tooltip
+                content={isPendingRemove(configuredSkill.installedPath) ? 'Removing' : 'Remove'}
+              >
+                <button
+                  type="button"
+                  ref={
+                    confirmRemovePath === configuredSkill.installedPath
+                      ? confirmRemoveButtonRef
+                      : undefined
+                  }
+                  className={cn(viewCloseButtonClass, 'hover:text-[color:var(--danger)]')}
+                  onClick={() => {
+                    if (isPendingRemove(configuredSkill.installedPath)) {
+                      return
+                    }
+
+                    setConfirmRemovePath((current) =>
+                      current === configuredSkill.installedPath
+                        ? null
+                        : configuredSkill.installedPath,
+                    )
+                  }}
+                  disabled={isPendingRemove(configuredSkill.installedPath)}
+                  aria-label={
+                    isPendingRemove(configuredSkill.installedPath) ? 'Removing' : 'Remove'
+                  }
                 >
-                  <FilePenLine size={13} />
-                </TextButton>
+                  <Trash2 size={13} />
+                </button>
               </Tooltip>
-              <div className="relative">
-                <Tooltip
-                  content={isPendingRemove(configuredSkill.installedPath) ? 'Removing' : 'Remove'}
-                >
-                  <TextButton
-                    ref={
-                      confirmRemovePath === configuredSkill.installedPath
-                        ? confirmRemoveButtonRef
-                        : undefined
-                    }
-                    className={cn(compactRoundIconButtonClass, 'hover:text-[color:var(--danger)]')}
-                    onClick={() => {
-                      if (isPendingRemove(configuredSkill.installedPath)) {
-                        return
-                      }
 
-                      setConfirmRemovePath((current) =>
-                        current === configuredSkill.installedPath
-                          ? null
-                          : configuredSkill.installedPath,
-                      )
-                    }}
-                    disabled={isPendingRemove(configuredSkill.installedPath)}
-                    aria-label={
-                      isPendingRemove(configuredSkill.installedPath) ? 'Removing' : 'Remove'
-                    }
-                  >
-                    <Trash2 size={13} />
-                  </TextButton>
-                </Tooltip>
-
-                <ConfirmPopover
-                  open={confirmRemovePath === configuredSkill.installedPath}
-                  anchorRef={confirmRemoveButtonRef}
-                  onClose={() => setConfirmRemovePath(null)}
-                  onConfirm={() => void onRemove(configuredSkill)}
-                />
-              </div>
-            </>
+              <ConfirmPopover
+                open={confirmRemovePath === configuredSkill.installedPath}
+                anchorRef={confirmRemoveButtonRef}
+                onClose={() => setConfirmRemovePath(null)}
+                onConfirm={() => void onRemove(configuredSkill)}
+              />
+            </div>
           }
         >
-          <div
-            className={`min-w-0 flex items-baseline gap-1.5 overflow-hidden ${appTypeGroupTextClass}`}
-          >
-            <div className={cn(`${appTypeGroupTextClass} ${appToneTextClass}`, 'shrink-0')}>
-              {configuredSkill.displayName}
-            </div>
-            <div
-              className={cn(`${appTypeGroupTextClass} ${appToneMutedClass}`, 'min-w-0 truncate')}
+          <Tooltip content="Open SKILL.md in default editor">
+            <button
+              type="button"
+              className="group inline-flex shrink-0 items-center gap-0.5 p-0"
+              onClick={() => void openPathQuery(configuredSkill.skillFilePath)}
+              aria-label={`Open ${configuredSkill.displayName} SKILL.md in default editor`}
             >
-              {configuredSkill.description || configuredSkill.sourceRepo || configuredSkill.source}
-            </div>
+              <span
+                className={cn(
+                  `${appTypeGroupTextClass} ${appToneTextClass}`,
+                  'transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]',
+                )}
+              >
+                {configuredSkill.displayName}
+              </span>
+              <ArrowUpRight
+                size={12}
+                className="shrink-0 text-[color:var(--muted)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]"
+              />
+            </button>
+          </Tooltip>
+          <div className={cn(`${appTypeGroupTextClass} ${appToneMutedClass}`, 'min-w-0 truncate')}>
+            {configuredSkill.description || configuredSkill.sourceRepo || configuredSkill.source}
           </div>
         </CompactMetaRow>
       ))}

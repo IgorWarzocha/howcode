@@ -1,6 +1,6 @@
 import { X } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { viewSubtitleClass, viewTitleClass } from '../../ui/classes'
+import { viewCloseButtonClass, viewSubtitleClass, viewTitleClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 
 type ViewHeaderProps = {
@@ -37,7 +37,7 @@ export function ViewHeader({
           {onClose ? (
             <button
               type="button"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] text-[color:var(--text)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.07)]"
+              className={viewCloseButtonClass}
               onClick={onClose}
               aria-label={closeLabel}
               data-tooltip={closeLabel}

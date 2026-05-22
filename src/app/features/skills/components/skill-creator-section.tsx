@@ -1,4 +1,4 @@
-import { CornerDownLeft, FolderOpen, RefreshCw } from 'lucide-react'
+import { ChevronRight, CornerDownLeft, FolderOpen, RefreshCw } from 'lucide-react'
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { TextButton } from '../../../components/common/text-button'
 import { ThreeDotsSpinner } from '../../../components/common/three-dots-spinner'
@@ -13,9 +13,14 @@ import {
   appToneMutedClass,
   appToneTextClass,
   appTypeGroupTextClass,
-  appTypeGroupTitleClass,
+  inlineEmptyNoteClass,
   quietSearchInputClass,
+  sectionHeadingClass,
 } from '../../../ui/classes'
+import {
+  skillsCreatorControlRowClass,
+  skillsOpenFolderButtonClass,
+} from '../../../ui/screen-classes'
 import { cn } from '../../../utils/cn'
 import { getActionError } from '../utils'
 
@@ -160,33 +165,24 @@ export function SkillCreatorSection({
 
   return (
     <section className="grid gap-2">
-      <div
-        className={`inline-flex items-center gap-1.5 text-left ${appTypeGroupTitleClass} ${appToneTextClass}`}
-      >
-        <span className="w-[14px] shrink-0" aria-hidden="true" />
+      <div className={sectionHeadingClass}>
         <span>Create a skill</span>
+        <ChevronRight size={14} className="invisible" aria-hidden="true" />
       </div>
 
-      <div className={cn(`${appTypeGroupTextClass} ${appToneMutedClass}`, 'grid gap-1.5')}>
+      <div className={cn(`${appTypeGroupTextClass} ${appToneMutedClass}`, 'grid gap-1')}>
         {skillCreatorReady ? (
-          <div className="grid gap-2">
-            <div className="px-0.5 py-0.5">
+          <div className="grid gap-1.5">
+            <div>
               {skillCreatorBusy ? (
-                <div
-                  className={cn(
-                    `px-2 py-1.5 ${appTypeGroupTextClass} ${appToneMutedClass}`,
-                    'inline-flex items-center gap-2',
-                  )}
-                >
+                <div className={cn(inlineEmptyNoteClass, 'inline-flex items-center gap-2')}>
                   <span>Pi is working</span>
                   <ThreeDotsSpinner className="text-[color:var(--muted)]" />
                 </div>
               ) : skillCreatorLatestResponse ? (
-                <div className={`px-2 py-1.5 ${appTypeGroupTextClass} ${appToneMutedClass}`}>
-                  {skillCreatorLatestResponse}
-                </div>
+                <div className={inlineEmptyNoteClass}>{skillCreatorLatestResponse}</div>
               ) : (
-                <div className={`px-2 py-1.5 ${appTypeGroupTextClass} ${appToneMutedClass}`}>
+                <div className={inlineEmptyNoteClass}>
                   This spawns a temporary chat session. For complex project-skills, please use
                   normal chat for best results.
                 </div>
@@ -194,7 +190,7 @@ export function SkillCreatorSection({
             </div>
 
             <form
-              className="grid grid-cols-[minmax(0,1fr)_auto] gap-2"
+              className={skillsCreatorControlRowClass}
               onSubmit={(event) => {
                 void handleSubmitCreateSkill(event)
               }}
@@ -224,7 +220,7 @@ export function SkillCreatorSection({
               </div>
 
               <TextButton
-                className={`inline-flex h-auto items-center gap-1 rounded-md px-1.5 py-0 ${appTypeGroupTextClass} ${appToneMutedClass} transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[color:var(--muted)]`}
+                className={skillsOpenFolderButtonClass}
                 onClick={() => {
                   if (createdSkillPath) {
                     void openPathQuery(createdSkillPath)
@@ -233,7 +229,7 @@ export function SkillCreatorSection({
                 disabled={!createdSkillPath}
               >
                 <span>Open folder</span>
-                <FolderOpen size={11} />
+                <FolderOpen size={14} />
               </TextButton>
             </form>
           </div>

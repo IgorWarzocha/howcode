@@ -100,6 +100,16 @@
   overflow-x: hidden;
 }
 
+.view-shell--centered {
+  align-content: center;
+}
+
+@media (max-height: 760px) {
+  .view-shell--centered {
+    align-content: start;
+  }
+}
+
 .composer-stop-button {
   border-radius: 9999px;
 }

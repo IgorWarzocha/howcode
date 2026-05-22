@@ -3,6 +3,7 @@ import { DisclosureSection } from '../../components/common/disclosure-section'
 import { ViewHeader } from '../../components/common/view-header'
 import { ViewShell } from '../../components/common/view-shell'
 import { appToneDangerClass, appToneMutedClass, appTypeGroupTextClass } from '../../ui/classes'
+import { skillsViewShellClass } from '../../ui/screen-classes'
 import { cn } from '../../utils/cn'
 import { BrowseSkillsSection } from './components/browse-skills-section'
 import { InstalledSkillsSection } from './components/installed-skills-section'
@@ -85,7 +86,7 @@ function SkillsMetaLink() {
 
 function DesktopRequiredState({ onClose }: { onClose: () => void }) {
   return (
-    <ViewShell className="gap-8">
+    <ViewShell className={`${skillsViewShellClass} gap-8`}>
       <ViewHeader
         title="Skills"
         meta={<SkillsMetaLink />}
@@ -116,7 +117,7 @@ export function SkillsView({
   }
 
   return (
-    <ViewShell>
+    <ViewShell className={skillsViewShellClass}>
       <ViewHeader
         title="Skills"
         meta={<SkillsMetaLink />}
@@ -169,15 +170,16 @@ export function SkillsView({
         title="Installed"
         open={controller.installedOpen}
         onToggle={() => controller.setInstalledOpen((current) => !current)}
+        forceMountContent
+        chevronPosition="right"
       >
-        {controller.installedOpen ? (
-          <InstalledSkillsSection
-            installScope={controller.installScope}
-            skills={controller.visibleConfiguredSkills}
-            isPendingRemove={controller.isPendingRemove}
-            onRemove={controller.handleRemove}
-          />
-        ) : null}
+        <InstalledSkillsSection
+          installScope={controller.installScope}
+          expanded={controller.installedOpen}
+          skills={controller.visibleConfiguredSkills}
+          isPendingRemove={controller.isPendingRemove}
+          onRemove={controller.handleRemove}
+        />
       </DisclosureSection>
 
       <BrowseSkillsSection

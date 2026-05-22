@@ -1,0 +1,8 @@
+# UI styling
+
+- Pick semantic typography roles, not pixel sizes.
+- Tune global type in `typography-scale.ts`, then run `bun run typography:generate`.
+- Use `appType*Class` + `appTone*Class`; check `classes.ts` before inventing styling.
+- No inline `text-[...]`, `leading-*`, or local `fooTitleClass` one-offs.
+- If a repeated need is missing, add one central role.
+- Commit to validate; hooks run the checks.

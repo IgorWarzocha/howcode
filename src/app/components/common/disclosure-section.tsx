@@ -8,8 +8,11 @@ type DisclosureSectionProps = PropsWithChildren<{
   open: boolean
   onToggle: () => void
   actions?: ReactNode
+  actionsClassName?: string
   className?: string
   contentClassName?: string
+  forceMountContent?: boolean
+  chevronPosition?: 'left' | 'right'
 }>
 
 export function DisclosureSection({
@@ -17,10 +20,15 @@ export function DisclosureSection({
   open,
   onToggle,
   actions,
+  actionsClassName,
   className,
   contentClassName,
+  forceMountContent,
+  chevronPosition = 'left',
   children,
 }: DisclosureSectionProps) {
+  const chevron = open ? <ChevronDown size={14} /> : <ChevronRight size={14} />
+
   return (
     <div className={cn('grid gap-2', className)}>
       <div className="flex items-center justify-between gap-3">
@@ -30,13 +38,14 @@ export function DisclosureSection({
           onClick={onToggle}
           aria-expanded={open}
         >
-          {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          {chevronPosition === 'left' ? chevron : null}
           <span>{title}</span>
+          {chevronPosition === 'right' ? chevron : null}
         </button>
-        {actions ? <div className="shrink-0">{actions}</div> : null}
+        {actions ? <div className={cn('shrink-0', actionsClassName)}>{actions}</div> : null}
       </div>
 
-      {open ? <div className={contentClassName}>{children}</div> : null}
+      {open || forceMountContent ? <div className={contentClassName}>{children}</div> : null}
     </div>
   )
 }

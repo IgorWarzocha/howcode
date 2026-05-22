@@ -25,7 +25,7 @@ export function useSkillsController({
   const queryClient = useQueryClient()
   const normalizedProjectPath = projectPath?.trim() ? projectPath : null
   const [installScope, setInstallScope] = useState<InstallScope>('global')
-  const [installedOpen, setInstalledOpen] = useState(true)
+  const [installedOpen, setInstalledOpen] = useState(false)
   const [pendingActions, setPendingActions] = useState<PendingAction[]>([])
   const [actionError, setActionError] = useState<string | null>(null)
   const desktopSkillsAvailable = isDesktopSkillsAvailable()

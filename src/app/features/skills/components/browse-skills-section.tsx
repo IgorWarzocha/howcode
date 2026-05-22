@@ -3,7 +3,6 @@ import { ArrowUpRight, Check, CornerDownLeft, PackagePlus, Search, Sparkles } fr
 import { useEffect, useState } from 'react'
 import { CompactMetaRow } from '../../../components/common/compact-meta-row'
 import { DisclosureSection } from '../../../components/common/disclosure-section'
-import { TextButton } from '../../../components/common/text-button'
 import { Tooltip } from '../../../components/common/tooltip'
 import type { AppSettings, DesktopActionInvoker } from '../../../desktop/types'
 import { desktopQueryKeys, searchPiSkillsQuery } from '../../../query/desktop-query'
@@ -12,11 +11,21 @@ import {
   appToneMutedClass,
   appToneTextClass,
   appTypeGroupTextClass,
-  appTypeTinyClass,
-  compactRoundIconButtonClass,
   iconActionButtonDisabledClass,
+  inlineEmptyNoteClass,
+  quietCheckboxCheckedClass,
+  quietCheckboxClass,
   quietSearchInputClass,
+  viewCloseButtonClass,
 } from '../../../ui/classes'
+import {
+  skillsActionColumnClass,
+  skillsBrowsePreferenceButtonClass,
+  skillsHeaderActionRailClass,
+  skillsListClass,
+  skillsPreviewListClass,
+  skillsSearchControlRowClass,
+} from '../../../ui/screen-classes'
 import { cn } from '../../../utils/cn'
 import {
   formatInstalls,
@@ -58,6 +67,7 @@ function BrowseSkillRow({
     <CompactMetaRow
       key={item.id}
       selected={selected}
+      density="dense"
       actions={
         <BrowseSkillRowActions
           installed={installed}
@@ -133,14 +143,21 @@ function BrowseSkillRowActions({
 }) {
   if (pendingInstall) {
     return (
-      <output aria-label={`Installing ${item.name}`}>
+      <output
+        className="inline-flex h-7 w-7 items-center justify-center text-[color:var(--muted)]"
+        aria-label={`Installing ${item.name}`}
+      >
         <Sparkles size={14} />
       </output>
     )
   }
   if (installed) {
     return (
-      <span role="img" aria-label={`${item.name} installed`}>
+      <span
+        className="inline-flex h-7 w-7 items-center justify-center text-[color:var(--muted)]"
+        role="img"
+        aria-label={`${item.name} installed`}
+      >
         <Check size={14} strokeWidth={2.4} />
       </span>
     )
@@ -149,7 +166,7 @@ function BrowseSkillRowActions({
     <Tooltip content={selectionLabel}>
       <button
         type="button"
-        className={compactRoundIconButtonClass}
+        className={viewCloseButtonClass}
         onClick={() => {
           setSelectedCatalogSources((current) =>
             current.includes(item.identityKey)
@@ -175,6 +192,7 @@ function BrowseSkillRowActions({
 
 function BrowseSectionContent({
   catalogItems,
+  expanded,
   installedSkillSlugs,
   isPendingInstall,
   selectedCatalogSources,
@@ -183,6 +201,7 @@ function BrowseSectionContent({
   submittedSearchInput,
 }: {
   catalogItems: CatalogItem[]
+  expanded: boolean
   installedSkillSlugs: Set<string>
   isPendingInstall: (source: string) => boolean
   selectedCatalogSources: string[]
@@ -191,18 +210,10 @@ function BrowseSectionContent({
   submittedSearchInput: string
 }) {
   if (submittedSearchInput.length < 2) {
-    return (
-      <div className={`px-2 py-1.5 ${appTypeGroupTextClass} ${appToneMutedClass}`}>
-        Search with at least 2 characters to browse installable skills.
-      </div>
-    )
+    return <div className={inlineEmptyNoteClass}>Search with at least 2 characters.</div>
   }
   if (skillsQuery.isLoading) {
-    return (
-      <div className={`px-2 py-1.5 ${appTypeGroupTextClass} ${appToneMutedClass}`}>
-        Loading skills…
-      </div>
-    )
+    return <div className={inlineEmptyNoteClass}>Loading skills…</div>
   }
   if (skillsQuery.isError) {
     return (
@@ -211,14 +222,9 @@ function BrowseSectionContent({
       </div>
     )
   }
-  if (catalogItems.length === 0)
-    return (
-      <div className={`px-2 py-1.5 ${appTypeGroupTextClass} ${appToneMutedClass}`}>
-        No skills found.
-      </div>
-    )
+  if (catalogItems.length === 0) return <div className={inlineEmptyNoteClass}>No skills found.</div>
   return (
-    <div className="grid gap-2">
+    <div className={expanded ? skillsListClass : skillsPreviewListClass}>
       {catalogItems.map((item) => (
         <BrowseSkillRow
           key={item.id}
@@ -266,7 +272,7 @@ export function BrowseSkillsSection({
         limit: 12,
       }),
     staleTime: 5 * 60_000,
-    enabled: browseOpen && submittedSearchInput.length >= 2,
+    enabled: submittedSearchInput.length >= 2,
   })
 
   const catalogItems = skillsQuery.data?.items ?? []
@@ -290,6 +296,7 @@ export function BrowseSkillsSection({
   const browseSectionContent = (
     <BrowseSectionContent
       catalogItems={catalogItems}
+      expanded={browseOpen}
       installedSkillSlugs={installedSkillSlugs}
       isPendingInstall={isPendingInstall}
       selectedCatalogSources={selectedCatalogSources}
@@ -301,13 +308,16 @@ export function BrowseSkillsSection({
 
   return (
     <DisclosureSection
-      title="Browse"
+      title="Search"
       open={browseOpen}
       onToggle={() => setBrowseOpen((current) => !current)}
+      forceMountContent
+      chevronPosition="right"
+      actionsClassName={skillsHeaderActionRailClass}
       actions={
         <button
           type="button"
-          className={`inline-flex items-center gap-1 ${appTypeTinyClass} ${appToneMutedClass} opacity-80 transition-colors hover:text-[color:var(--text)] hover:opacity-100`}
+          className={skillsBrowsePreferenceButtonClass}
           onClick={() => {
             void onAction('settings.update', {
               key: 'useAgentsSkillsPaths',
@@ -319,9 +329,9 @@ export function BrowseSkillsSection({
           <span>Use .agents instead of .pi?</span>
           <span
             className={cn(
-              'inline-flex h-3 w-3 items-center justify-center rounded-[3px] border border-[color:var(--border)] bg-transparent text-[color:var(--muted)] transition-colors hover:border-[color:var(--border-strong)] hover:text-[color:var(--text)]',
-              appSettings.useAgentsSkillsPaths &&
-                'border-[color:var(--border-strong)] bg-[color:var(--surface-hover)] text-[color:var(--muted)]',
+              quietCheckboxClass,
+              'justify-self-center',
+              appSettings.useAgentsSkillsPaths && quietCheckboxCheckedClass,
             )}
           >
             {appSettings.useAgentsSkillsPaths ? <Check size={11} strokeWidth={2.6} /> : null}
@@ -329,75 +339,71 @@ export function BrowseSkillsSection({
         </button>
       }
     >
-      {browseOpen ? (
-        <>
-          <div className="flex items-center gap-2">
-            <form
-              className="min-w-0 flex-1"
-              onSubmit={(event) => {
-                event.preventDefault()
-                setSubmittedSearchInput(normalizedSearchInput)
-              }}
-            >
-              <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-3 z-10 inline-flex items-center text-[color:var(--muted)]">
-                  <Search size={14} />
-                </div>
-                <input
-                  type="text"
-                  value={searchInput}
-                  onChange={(event) => setSearchInput(event.target.value)}
-                  className={cn(quietSearchInputClass, 'w-full pl-8 pr-9')}
-                  placeholder="Search skills"
-                  aria-label="Search skills"
-                />
-                <Tooltip content="Press Enter to search">
-                  <button
-                    type="submit"
-                    className={cn(
-                      'absolute inset-y-0 right-2 flex items-center justify-center text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:opacity-40',
-                      'z-10',
-                    )}
-                    disabled={normalizedSearchInput.length < 2}
-                    aria-label="Search skills"
-                  >
-                    <span className="flex h-3.5 w-3.5 items-center justify-center">
-                      <CornerDownLeft size={12} strokeWidth={2} className="block" />
-                    </span>
-                  </button>
-                </Tooltip>
-              </div>
-            </form>
-
-            <div className="shrink-0">
-              <Tooltip
-                content={
-                  hasSelectedCatalogSources
-                    ? `Install ${selectedCatalogSources.length} selected skills`
-                    : 'Install skills'
-                }
-              >
-                <TextButton
-                  type="button"
-                  className={cn(compactRoundIconButtonClass, iconActionButtonDisabledClass)}
-                  disabled={!hasSelectedCatalogSources}
-                  onClick={() => {
-                    void handleInstallSelected()
-                  }}
-                  aria-label={
-                    hasSelectedCatalogSources
-                      ? `Install ${selectedCatalogSources.length} selected skills`
-                      : 'Install skills'
-                  }
-                >
-                  {hasPendingInstall ? <Sparkles size={14} /> : <PackagePlus size={14} />}
-                </TextButton>
-              </Tooltip>
+      <div className={skillsSearchControlRowClass}>
+        <form
+          className="min-w-0"
+          onSubmit={(event) => {
+            event.preventDefault()
+            setSubmittedSearchInput(normalizedSearchInput)
+          }}
+        >
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-3 z-10 inline-flex items-center text-[color:var(--muted)]">
+              <Search size={14} />
             </div>
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              className={cn(quietSearchInputClass, 'w-full pl-8 pr-9')}
+              placeholder="Search skills"
+              aria-label="Search skills"
+            />
+            <Tooltip content="Press Enter to search">
+              <button
+                type="submit"
+                className={cn(
+                  'absolute inset-y-0 right-2 flex items-center justify-center text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:opacity-40',
+                  'z-10',
+                )}
+                disabled={normalizedSearchInput.length < 2}
+                aria-label="Search skills"
+              >
+                <span className="flex h-3.5 w-3.5 items-center justify-center">
+                  <CornerDownLeft size={12} strokeWidth={2} className="block" />
+                </span>
+              </button>
+            </Tooltip>
           </div>
-          {browseSectionContent}
-        </>
-      ) : null}
+        </form>
+
+        <div className={skillsActionColumnClass}>
+          <Tooltip
+            content={
+              hasSelectedCatalogSources
+                ? `Install ${selectedCatalogSources.length} selected skills`
+                : 'Install skills'
+            }
+          >
+            <button
+              type="button"
+              className={cn(viewCloseButtonClass, iconActionButtonDisabledClass)}
+              disabled={!hasSelectedCatalogSources}
+              onClick={() => {
+                void handleInstallSelected()
+              }}
+              aria-label={
+                hasSelectedCatalogSources
+                  ? `Install ${selectedCatalogSources.length} selected skills`
+                  : 'Install skills'
+              }
+            >
+              {hasPendingInstall ? <Sparkles size={14} /> : <PackagePlus size={14} />}
+            </button>
+          </Tooltip>
+        </div>
+      </div>
+      {browseSectionContent}
     </DisclosureSection>
   )
 }

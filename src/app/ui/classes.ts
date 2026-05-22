@@ -77,7 +77,9 @@ export const sectionTitleClass = `m-0 ${appTypeSectionTitleClass} ${appToneTextC
 
 export const sectionDescriptionClass = `m-0 ${appTypeGroupTextClass} ${appToneMutedClass}`
 
-export const disclosureButtonClass = `inline-flex items-center gap-1.5 text-left ${appTypeGroupTitleClass} ${appToneTextClass}`
+export const sectionHeadingClass = `inline-flex items-center gap-1.5 text-left ${appTypeSectionTitleClass} ${appToneTextClass}`
+
+export const disclosureButtonClass = sectionHeadingClass
 
 export const emptyStateCardClass = `rounded-xl border border-dashed border-[color:var(--border)] px-3 py-4 ${appTypeSmallClass} ${appToneMutedClass}`
 
@@ -122,8 +124,21 @@ export const quietListFrameClass = 'grid min-w-0 divide-y divide-[color:var(--bo
 export const quietListRowClass =
   'grid min-w-0 gap-1 px-2 py-2 text-left transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)]'
 
-export const quietMetaRowClass =
-  'grid min-h-8 grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 rounded-lg bg-transparent px-2 py-1.5 text-left transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)]'
+export const quietListScrollClass =
+  'grid min-h-0 gap-1 overflow-y-auto overflow-x-hidden pr-1 [scrollbar-gutter:stable]'
+
+export const quietCheckboxClass =
+  'inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[4px] border border-[color:var(--border)] bg-transparent text-[color:var(--muted)] transition-colors'
+
+export const quietCheckboxCheckedClass =
+  'border-[color:var(--border-strong)] bg-[color:var(--surface-hover)] text-[color:var(--muted)]'
+
+const quietMetaRowBaseClass =
+  'grid grid-cols-[minmax(0,1fr)_auto] items-center bg-transparent text-left transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)]'
+
+export const quietMetaRowClass = `${quietMetaRowBaseClass} min-h-8 gap-1.5 rounded-lg px-2 py-1.5`
+
+export const quietMetaRowDenseClass = `${quietMetaRowBaseClass} min-h-7 gap-1 rounded-md px-1.5 py-0.5`
 
 export const quietMetaRowSelectedClass = 'bg-[color:var(--folded-row-bg)]'
 
@@ -150,6 +165,9 @@ export const compactIconButtonClass =
 
 export const compactRoundIconButtonClass =
   'inline-flex h-7 w-7 items-center justify-center rounded-full px-0 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]'
+
+export const viewCloseButtonClass =
+  'inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] opacity-75 transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100'
 
 export const toolbarButtonClass = `inline-flex min-h-7 items-center gap-1.5 rounded-lg border border-transparent px-1.5 ${appTypeControlClass} ${appToneMutedClass} transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]`
 
