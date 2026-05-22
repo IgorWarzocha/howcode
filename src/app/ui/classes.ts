@@ -148,9 +148,9 @@ export const quietSearchInputClass =
 export const inlineEmptyNoteClass = `px-2 py-1.5 ${appTypeSmallClass} ${appToneSubtleClass}`
 
 export const segmentedControlClass =
-  'inline-flex rounded-full border border-[color:var(--border)] bg-[color:var(--panel)] p-1'
+  'inline-flex rounded-lg bg-[color:var(--surface-hover)] p-[3px]'
 
-export const segmentedControlOptionClass = `rounded-full px-3 py-1 ${appTypeSmallClass} capitalize transition-colors`
+export const segmentedControlOptionClass = `rounded-md px-2.5 py-1 ${appTypeSmallClass} capitalize transition-colors`
 
 export const iconActionButtonDisabledClass =
   'disabled:cursor-not-allowed disabled:bg-transparent disabled:text-[color:var(--muted)] disabled:opacity-40'
@@ -186,6 +186,9 @@ export const composerPopoverInputClass = `settings-control-text h-8 min-w-0 roun
 
 export const composerPopoverPanelClass =
   'pointer-events-auto scroll-py-1.5 rounded-xl border-0 bg-[color:var(--panel)] p-1.5 shadow-[var(--shadow)]'
+
+export const settingsPopoverPanelClass =
+  'pointer-events-auto scroll-py-1.5 rounded-xl border-0 bg-[#18181e] p-1.5 shadow-[0_18px_42px_rgba(0,0,0,0.34)]'
 
 export const composerPopoverOptionClass = `grid w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-md px-2.5 text-left ${appTypeControlClass} ${appToneMutedClass} transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] focus-visible:bg-[color:var(--surface-hover)] focus-visible:outline-none`
 
@@ -237,13 +240,13 @@ export const settingsSectionClass =
   'grid gap-3 rounded-[18px] border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-3'
 
 export const settingsSelectButtonClass =
-  'grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.04)]'
+  'grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border-0 bg-[color:var(--surface-hover)] px-3 py-2 text-left transition-colors hover:bg-[color:var(--folded-row-hover-bg)]'
 
 export const settingsInputClass =
-  'settings-control-text min-w-0 flex-1 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2 text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]'
+  'settings-control-text min-w-0 flex-1 rounded-lg border-0 bg-[color:var(--surface-hover)] px-3 py-2 text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)] focus:bg-[color:var(--folded-row-hover-bg)]'
 
 export const settingsListRowClass =
-  'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2'
+  'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md bg-transparent px-2 py-1.5 transition-colors hover:bg-[color:var(--surface-hover)]'
 
 export const settingsCompactListRowClass =
-  'grid h-9 grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-2.5'
+  'grid h-8 grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 rounded-md bg-transparent px-2 transition-colors hover:bg-[color:var(--surface-hover)]'

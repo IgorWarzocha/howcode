@@ -1,5 +1,6 @@
 import { ArchiveRestore, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { CompactMetaRow } from '../components/common/compact-meta-row'
 import { ConfirmPopover } from '../components/common/confirm-popover'
 import { Tooltip } from '../components/common/tooltip'
 import { ViewHeader } from '../components/common/view-header'
@@ -8,13 +9,17 @@ import type { ArchivedThread, DesktopActionInvoker } from '../desktop/types'
 import {
   appToneMutedClass,
   appToneTextClass,
-  appTypeBodyClass,
   appTypeGroupTextClass,
   appTypeSectionTitleClass,
   appTypeSmallClass,
-  compactIconButtonClass,
-  settingsSectionClass,
+  inlineEmptyNoteClass,
+  viewCloseButtonClass,
 } from '../ui/classes'
+import {
+  skillsActionColumnClass,
+  skillsListClass,
+  skillsViewShellClass,
+} from '../ui/screen-classes'
 import { cn } from '../utils/cn'
 
 type ArchivedThreadsViewProps = {
@@ -161,7 +166,7 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
   }
 
   return (
-    <ViewShell maxWidthClassName="max-w-[880px]">
+    <ViewShell className={skillsViewShellClass}>
       <ViewHeader
         title="Archived threads"
         actions={
@@ -171,7 +176,7 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
                 <button
                   ref={deleteAllButtonRef}
                   type="button"
-                  className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-2 ${appTypeSmallClass} ${appToneMutedClass} transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--danger)] disabled:cursor-not-allowed disabled:opacity-45`}
+                  className={`inline-flex h-7 items-center gap-1 rounded-md px-1.5 ${appTypeSmallClass} ${appToneMutedClass} transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--danger)] disabled:cursor-not-allowed disabled:opacity-45`}
                   disabled={busyAction !== null}
                   aria-label="Delete all archived threads"
                   onClick={() => {
@@ -204,185 +209,175 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
       />
 
       {visibleThreads.length > 0 ? (
-        <div className="grid gap-2">
-          <div
-            className={cn(
-              settingsSectionClass,
-              'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5',
-            )}
-          >
-            <label className="inline-flex min-w-0 items-center gap-2 text-[color:var(--text)]">
-              <input
-                type="checkbox"
-                className="h-4 w-4 shrink-0 accent-[color:var(--accent)]"
-                checked={allVisibleSelected}
-                onChange={() => setSelectedThreadIds(allVisibleSelected ? [] : visibleThreadIds)}
-                disabled={busyAction !== null}
-                aria-label="Select all archived threads"
-              />
-              <span className={appTypeGroupTextClass}>{selectedCountLabel}</span>
-            </label>
-
-            <div className="flex items-center gap-1.5">
-              <Tooltip content="Restore selected archived threads">
-                <button
-                  type="button"
-                  className={cn(
-                    compactIconButtonClass,
-                    'h-8 w-8 rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] disabled:cursor-not-allowed disabled:opacity-45',
-                  )}
-                  disabled={selectedThreadIds.length === 0 || busyAction !== null}
-                  aria-label="Restore selected archived threads"
-                  onClick={() => {
-                    void runArchivedThreadMutation({
-                      action: 'thread.restore-many',
-                      busyState: 'restore',
-                      projectIds: selectedVisibleProjectIds,
-                      threadIds: selectedThreadIds,
-                    })
-                  }}
-                >
-                  <ArchiveRestore size={14} />
-                </button>
-              </Tooltip>
-              <div className="relative">
-                <Tooltip content="Delete selected archived threads">
+        <div className={skillsListClass}>
+          <CompactMetaRow
+            density="dense"
+            contentClassName={`grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 overflow-hidden ${appTypeGroupTextClass}`}
+            actions={
+              <div className="flex items-center gap-0.5">
+                <Tooltip content="Restore selected archived threads">
                   <button
-                    ref={deleteSelectedButtonRef}
                     type="button"
-                    className={cn(
-                      compactIconButtonClass,
-                      'h-8 w-8 rounded-lg hover:text-[color:var(--danger)] disabled:cursor-not-allowed disabled:opacity-45',
-                    )}
+                    className={viewCloseButtonClass}
                     disabled={selectedThreadIds.length === 0 || busyAction !== null}
-                    aria-label="Delete selected archived threads"
+                    aria-label="Restore selected archived threads"
                     onClick={() => {
-                      setConfirmBulkDeleteTarget((current) =>
-                        current === 'selected' ? null : 'selected',
-                      )
+                      void runArchivedThreadMutation({
+                        action: 'thread.restore-many',
+                        busyState: 'restore',
+                        projectIds: selectedVisibleProjectIds,
+                        threadIds: selectedThreadIds,
+                      })
                     }}
                   >
-                    <Trash2 size={14} className="text-[color:var(--danger)]" />
+                    <ArchiveRestore size={13} />
                   </button>
                 </Tooltip>
+                <div className="relative">
+                  <Tooltip content="Delete selected archived threads">
+                    <button
+                      ref={deleteSelectedButtonRef}
+                      type="button"
+                      className={cn(viewCloseButtonClass, 'hover:text-[color:var(--danger)]')}
+                      disabled={selectedThreadIds.length === 0 || busyAction !== null}
+                      aria-label="Delete selected archived threads"
+                      onClick={() => {
+                        setConfirmBulkDeleteTarget((current) =>
+                          current === 'selected' ? null : 'selected',
+                        )
+                      }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </Tooltip>
 
-                <ConfirmPopover
-                  open={confirmBulkDeleteTarget === 'selected'}
-                  anchorRef={deleteSelectedButtonRef}
-                  confirmLabel="Delete"
-                  onClose={() => setConfirmBulkDeleteTarget(null)}
-                  onConfirm={() => {
-                    setConfirmBulkDeleteTarget(null)
-                    void runArchivedThreadMutation({
-                      action: 'thread.delete-many',
-                      busyState: 'delete',
-                      projectIds: selectedVisibleProjectIds,
-                      threadIds: selectedThreadIds,
-                    })
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {visibleThreads.map((thread) => (
-            <div
-              key={thread.id}
-              className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 rounded-2xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-4 py-3"
-            >
-              <input
-                type="checkbox"
-                className="h-4 w-4 accent-[color:var(--accent)]"
-                checked={selectedThreadIdSet.has(thread.id)}
-                onChange={() =>
-                  setSelectedThreadIds((current) =>
-                    current.includes(thread.id)
-                      ? current.filter((threadId) => threadId !== thread.id)
-                      : [...current, thread.id],
-                  )
-                }
-                disabled={busyAction !== null}
-                aria-label={`Select ${thread.title}`}
-              />
-
-              <div className="min-w-0">
-                <div className="flex min-w-0 items-baseline gap-2">
-                  <span className={`truncate ${appTypeBodyClass} ${appToneTextClass}`}>
-                    {thread.title}
-                  </span>
-                  <span
-                    aria-hidden="true"
-                    className={`shrink-0 ${appTypeSmallClass} ${appToneMutedClass}`}
-                  >
-                    •
-                  </span>
-                  <span className={`truncate ${appTypeSmallClass} ${appToneMutedClass}`}>
-                    {thread.projectName}
-                  </span>
-                  <span
-                    aria-hidden="true"
-                    className={`shrink-0 ${appTypeSmallClass} ${appToneMutedClass}`}
-                  >
-                    •
-                  </span>
-                  <span className={`shrink-0 ${appTypeSmallClass} ${appToneMutedClass}`}>
-                    {thread.age}
-                  </span>
+                  <ConfirmPopover
+                    open={confirmBulkDeleteTarget === 'selected'}
+                    anchorRef={deleteSelectedButtonRef}
+                    confirmLabel="Delete"
+                    onClose={() => setConfirmBulkDeleteTarget(null)}
+                    onConfirm={() => {
+                      setConfirmBulkDeleteTarget(null)
+                      void runArchivedThreadMutation({
+                        action: 'thread.delete-many',
+                        busyState: 'delete',
+                        projectIds: selectedVisibleProjectIds,
+                        threadIds: selectedThreadIds,
+                      })
+                    }}
+                  />
                 </div>
               </div>
+            }
+          >
+            <label className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 text-[color:var(--text)]">
+              <span className={skillsActionColumnClass}>
+                <input
+                  type="checkbox"
+                  className="h-3.5 w-3.5 accent-[color:var(--accent)]"
+                  checked={allVisibleSelected}
+                  onChange={() => setSelectedThreadIds(allVisibleSelected ? [] : visibleThreadIds)}
+                  disabled={busyAction !== null}
+                  aria-label="Select all archived threads"
+                />
+              </span>
+              <span className={appTypeGroupTextClass}>{selectedCountLabel}</span>
+            </label>
+          </CompactMetaRow>
 
-              <div className="flex items-center gap-1.5">
-                <Tooltip content="Restore thread">
-                  <button
-                    type="button"
-                    className={cn(
-                      compactIconButtonClass,
-                      'h-8 w-8 rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] disabled:cursor-not-allowed disabled:opacity-45',
-                    )}
-                    disabled={busyAction !== null}
-                    aria-label={`Restore ${thread.title}`}
-                    onClick={() => {
-                      void runArchivedThreadMutation({
-                        action: 'thread.restore',
-                        busyState: 'restore',
-                        threadIds: [thread.id],
-                        projectId: thread.projectId,
-                      })
-                    }}
-                  >
-                    <ArchiveRestore size={14} />
-                  </button>
-                </Tooltip>
-                <Tooltip content="Delete thread">
-                  <button
-                    type="button"
-                    className={cn(
-                      compactIconButtonClass,
-                      'h-8 w-8 rounded-lg hover:text-[color:var(--danger)] disabled:cursor-not-allowed disabled:opacity-45',
-                    )}
-                    disabled={busyAction !== null}
-                    aria-label={`Delete ${thread.title}`}
-                    onClick={() => {
-                      void runArchivedThreadMutation({
-                        action: 'thread.delete',
-                        busyState: 'delete',
-                        threadIds: [thread.id],
-                        projectId: thread.projectId,
-                      })
-                    }}
-                  >
-                    <Trash2 size={14} className="text-[color:var(--danger)]" />
-                  </button>
-                </Tooltip>
+          {visibleThreads.map((thread) => (
+            <CompactMetaRow
+              key={thread.id}
+              density="dense"
+              selected={selectedThreadIdSet.has(thread.id)}
+              contentClassName={`grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 overflow-hidden ${appTypeGroupTextClass}`}
+              actions={
+                <div className="flex items-center gap-0.5">
+                  <Tooltip content="Restore thread">
+                    <button
+                      type="button"
+                      className={viewCloseButtonClass}
+                      disabled={busyAction !== null}
+                      aria-label={`Restore ${thread.title}`}
+                      onClick={() => {
+                        void runArchivedThreadMutation({
+                          action: 'thread.restore',
+                          busyState: 'restore',
+                          threadIds: [thread.id],
+                          projectId: thread.projectId,
+                        })
+                      }}
+                    >
+                      <ArchiveRestore size={13} />
+                    </button>
+                  </Tooltip>
+                  <Tooltip content="Delete thread">
+                    <button
+                      type="button"
+                      className={cn(viewCloseButtonClass, 'hover:text-[color:var(--danger)]')}
+                      disabled={busyAction !== null}
+                      aria-label={`Delete ${thread.title}`}
+                      onClick={() => {
+                        void runArchivedThreadMutation({
+                          action: 'thread.delete',
+                          busyState: 'delete',
+                          threadIds: [thread.id],
+                          projectId: thread.projectId,
+                        })
+                      }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </Tooltip>
+                </div>
+              }
+            >
+              <span className={skillsActionColumnClass}>
+                <input
+                  type="checkbox"
+                  className="h-3.5 w-3.5 accent-[color:var(--accent)]"
+                  checked={selectedThreadIdSet.has(thread.id)}
+                  onChange={() =>
+                    setSelectedThreadIds((current) =>
+                      current.includes(thread.id)
+                        ? current.filter((threadId) => threadId !== thread.id)
+                        : [...current, thread.id],
+                    )
+                  }
+                  disabled={busyAction !== null}
+                  aria-label={`Select ${thread.title}`}
+                />
+              </span>
+
+              <div className="flex min-w-0 items-baseline gap-1.5">
+                <span className={`truncate ${appTypeGroupTextClass} ${appToneTextClass}`}>
+                  {thread.title}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className={`${appTypeGroupTextClass} ${appToneMutedClass}`}
+                >
+                  •
+                </span>
+                <span className={`truncate ${appTypeGroupTextClass} ${appToneMutedClass}`}>
+                  {thread.projectName}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className={`${appTypeGroupTextClass} ${appToneMutedClass}`}
+                >
+                  •
+                </span>
+                <span className={`shrink-0 ${appTypeGroupTextClass} ${appToneMutedClass}`}>
+                  {thread.age}
+                </span>
               </div>
-            </div>
+            </CompactMetaRow>
           ))}
         </div>
       ) : (
-        <div
-          className={`grid min-h-60 place-items-center px-6 text-center ${appTypeGroupTextClass} ${appToneMutedClass}`}
-        >
-          <div className="grid gap-2">
+        <div className={inlineEmptyNoteClass}>
+          <div className="grid gap-1">
             <div className={`${appTypeSectionTitleClass} ${appToneTextClass}`}>
               No archived threads
             </div>

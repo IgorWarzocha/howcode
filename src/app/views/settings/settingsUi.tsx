@@ -7,8 +7,13 @@ import {
   appTypeControlNormalClass,
   appTypeMetaClass,
   appTypeSmallClass,
+  composerPopoverInputClass,
+  composerPopoverOptionClass,
+  composerPopoverOptionSelectedClass,
   composerTextActionButtonClass,
-  popoverPanelClass,
+  quietCheckboxCheckedClass,
+  quietCheckboxClass,
+  settingsPopoverPanelClass,
 } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import { settingRowClass } from './settingsClasses'
@@ -26,7 +31,11 @@ export function ToggleBox({
   return (
     <button
       type="button"
-      className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-[color:var(--border)] bg-transparent text-[color:var(--text)] transition-colors active:scale-[0.96] hover:border-[color:var(--border-strong)]"
+      className={cn(
+        quietCheckboxClass,
+        checked && quietCheckboxCheckedClass,
+        'active:scale-[0.96]',
+      )}
       onClick={onClick}
       aria-label={label}
       aria-pressed={checked}
@@ -75,6 +84,7 @@ export function InlineSelect({
   options,
   open,
   className,
+  menuAlign = 'left',
   onChange,
   onOpenChange,
 }: {
@@ -83,13 +93,13 @@ export function InlineSelect({
   options: InlineSelectOption[]
   open: boolean
   className?: string
+  menuAlign?: 'left' | 'right'
   onChange: (value: string) => void
   onOpenChange: (open: boolean) => void
 }) {
   const [search, setSearch] = useState('')
   const searchInputRef = useRef<HTMLInputElement>(null)
   const selectedOption = options.find((option) => option.value === value) ?? options[0] ?? null
-  const alignMenuRight = className?.includes('justify-self-end') ?? false
   const showSearch = options.length > 12
   const normalizedSearch = search.trim().toLowerCase()
   const visibleOptions = useMemo(() => {
@@ -103,7 +113,10 @@ export function InlineSelect({
         .includes(normalizedSearch),
     )
   }, [normalizedSearch, options])
-  const compactOptionClass = `flex min-h-0 w-full items-center rounded-md border border-transparent px-2 py-1 text-left ${appTypeMetaClass} ${appToneTextClass} transition-colors hover:bg-[rgba(255,255,255,0.045)]`
+  const compactOptionClass = cn(
+    composerPopoverOptionClass,
+    `grid-cols-[minmax(0,1fr)] py-1 ${appTypeMetaClass} ${appToneTextClass}`,
+  )
 
   useEffect(() => {
     if (!open) {
@@ -153,11 +166,10 @@ export function InlineSelect({
         <div
           id={`${id}-menu`}
           className={cn(
-            popoverPanelClass,
-            options.length > 10 && 'max-h-64 overflow-y-auto',
-            'absolute top-[calc(100%+6px)] z-[60] grid min-w-full max-w-[calc(100vw-2rem)] overflow-x-hidden rounded-xl border p-1',
-            showSearch && 'w-[26.5rem]',
-            alignMenuRight ? 'right-0' : 'left-0',
+            settingsPopoverPanelClass,
+            'absolute top-[calc(100%+6px)] z-[60] grid max-h-64 min-w-full overflow-y-auto overflow-x-hidden overscroll-contain [scrollbar-gutter:stable]',
+            showSearch ? 'w-[min(19rem,calc(100vw-2rem))]' : 'w-full',
+            menuAlign === 'right' ? 'right-0' : 'left-0',
           )}
         >
           {showSearch ? (
@@ -170,14 +182,17 @@ export function InlineSelect({
                 ref={searchInputRef}
                 value={search}
                 onChange={(event) => setSearch(event.currentTarget.value)}
-                className={`h-8 w-full rounded-lg border border-[rgba(169,178,215,0.14)] bg-[rgba(255,255,255,0.055)] px-2.5 pl-8 ${appTypeSmallClass} ${appToneTextClass} outline-none placeholder:text-[color:var(--muted)]`}
+                className={cn(
+                  composerPopoverInputClass,
+                  `w-full pl-8 ${appTypeSmallClass} ${appToneTextClass}`,
+                )}
                 placeholder={`Search ${options.length} options…`}
                 aria-label="Search options"
               />
             </label>
           ) : null}
           {visibleOptions.length > 0 ? (
-            <div role="menu" className="grid min-w-0">
+            <div role="menu" className="grid min-w-0 overflow-x-hidden">
               {visibleOptions.map((option) => (
                 <button
                   key={option.value}
@@ -186,7 +201,7 @@ export function InlineSelect({
                   aria-checked={option.value === value}
                   className={cn(
                     compactOptionClass,
-                    option.value === value && 'bg-[rgba(255,255,255,0.06)]',
+                    option.value === value && composerPopoverOptionSelectedClass,
                   )}
                   onClick={() => {
                     onChange(option.value)
@@ -194,7 +209,7 @@ export function InlineSelect({
                     onOpenChange(false)
                   }}
                 >
-                  <span className="min-w-0 flex-1">
+                  <span className="grid min-w-0 max-w-full overflow-hidden">
                     <span className={`block truncate ${appTypeSmallClass}`}>{option.label}</span>
                     {option.description ? (
                       <span className={`block truncate ${appTypeMetaClass} ${appToneMutedClass}`}>

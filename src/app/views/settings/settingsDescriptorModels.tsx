@@ -126,6 +126,7 @@ export function buildModelSettingsDescriptors({
         ]}
         onOpenChange={(open) => setOpenSelectId(open ? id : null)}
         onChange={selectModel}
+        menuAlign="right"
       />
     )
   }
@@ -175,19 +176,19 @@ export function buildModelSettingsDescriptors({
     selectThinkingLevel: (value: ComposerThinkingLevel | null) => void,
     allowDefaultThinking = false,
   ) => (
-    <div className="grid w-full min-w-0 grid-cols-1 gap-2 xl:w-auto xl:grid-cols-3 xl:[--settings-model-select-width:10.4rem]">
+    <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_7.75rem] gap-1.5 sm:w-auto sm:[--settings-model-select-width:10.4rem]">
       <div className="min-w-0">
-        <div className="[&_[data-inline-select-root]]:w-full xl:[&_[data-inline-select-root]]:w-[var(--settings-model-select-width)]">
+        <div className="[&_[data-inline-select-root]]:w-full sm:[&_[data-inline-select-root]]:w-[var(--settings-model-select-width)]">
           {buildProviderOptions(`${idPrefix}-provider`, selection, selectModel)}
         </div>
       </div>
       <div className="min-w-0">
-        <div className="[&_[data-inline-select-root]]:w-full xl:[&_[data-inline-select-root]]:w-[var(--settings-model-select-width)]">
+        <div className="[&_[data-inline-select-root]]:w-full sm:[&_[data-inline-select-root]]:w-[var(--settings-model-select-width)]">
           {buildModelOptions(`${idPrefix}-model`, selection, selectModel)}
         </div>
       </div>
       <div className="min-w-0">
-        <div className="[&_[data-inline-select-root]]:w-full xl:[&_[data-inline-select-root]]:w-[var(--settings-model-select-width)]">
+        <div className="[&_[data-inline-select-root]]:w-full sm:[&_[data-inline-select-root]]:w-[7.75rem]">
           {renderThinkingSelector(
             `${idPrefix}-thinking`,
             thinkingLevel,

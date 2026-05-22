@@ -80,7 +80,7 @@ export function buildPiRuntimeSettingsDescriptors({
       keywords: 'transport sse websocket auto provider runtime',
       render: () => (
         <div
-          className={`grid grid-cols-3 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 ${appTypeSmallClass} ${appToneMutedClass}`}
+          className={`grid grid-cols-3 rounded-lg bg-[color:var(--surface-hover)] p-[3px] ${appTypeSmallClass} ${appToneMutedClass}`}
         >
           {[
             ['sse', 'SSE'],
@@ -91,9 +91,9 @@ export function buildPiRuntimeSettingsDescriptors({
               key={value}
               type="button"
               className={cn(
-                'rounded-full px-3 py-1 transition-colors active:scale-[0.96]',
+                'rounded-md px-2.5 py-1 transition-colors hover:bg-[color:var(--surface-hover)] active:scale-[0.98]',
                 draftPiSettings.transport === value &&
-                  'bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_var(--accent-border)]',
+                  'bg-[color:var(--folded-row-hover-bg)] text-[color:var(--text)]',
               )}
               onClick={() => setDraftPiSetting('transport', value as PiSettings['transport'])}
             >
@@ -144,7 +144,7 @@ export function buildPiRuntimeSettingsDescriptors({
       keywords: 'queue drain steering follow-up mode runtime advanced',
       render: () => (
         <div
-          className={`grid grid-cols-2 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 ${appTypeSmallClass} ${appToneMutedClass}`}
+          className={`grid grid-cols-2 rounded-lg bg-[color:var(--surface-hover)] p-[3px] ${appTypeSmallClass} ${appToneMutedClass}`}
         >
           {[
             ['one-at-a-time', 'One'],
@@ -154,9 +154,9 @@ export function buildPiRuntimeSettingsDescriptors({
               key={value}
               type="button"
               className={cn(
-                'rounded-full px-3 py-1 transition-colors active:scale-[0.96]',
+                'rounded-md px-2.5 py-1 transition-colors hover:bg-[color:var(--surface-hover)] active:scale-[0.98]',
                 draftPiSettings[key] === value &&
-                  'bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_var(--accent-border)]',
+                  'bg-[color:var(--folded-row-hover-bg)] text-[color:var(--text)]',
               )}
               onClick={() => setDraftPiSetting(key, value as PiSettings[typeof key])}
             >
@@ -205,7 +205,7 @@ export function buildPiRuntimeSettingsDescriptors({
       render: () =>
         key === 'doubleEscapeAction' ? (
           <div
-            className={`grid grid-cols-3 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 ${appTypeSmallClass} ${appToneMutedClass}`}
+            className={`grid grid-cols-3 rounded-lg bg-[color:var(--surface-hover)] p-[3px] ${appTypeSmallClass} ${appToneMutedClass}`}
           >
             {[
               ['tree', 'Tree'],
@@ -216,9 +216,9 @@ export function buildPiRuntimeSettingsDescriptors({
                 key={value}
                 type="button"
                 className={cn(
-                  'rounded-full px-3 py-1 transition-colors active:scale-[0.96]',
+                  'rounded-md px-2.5 py-1 transition-colors hover:bg-[color:var(--surface-hover)] active:scale-[0.98]',
                   draftPiSettings.doubleEscapeAction === value &&
-                    'bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_var(--accent-border)]',
+                    'bg-[color:var(--folded-row-hover-bg)] text-[color:var(--text)]',
                 )}
                 onClick={() =>
                   setDraftPiSetting('doubleEscapeAction', value as PiSettings['doubleEscapeAction'])

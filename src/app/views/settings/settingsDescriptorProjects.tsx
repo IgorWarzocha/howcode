@@ -121,7 +121,7 @@ export function buildProjectsSettingsDescriptors({
       keywords: 'gitops commit push default project',
       render: () => (
         <div
-          className={`grid grid-cols-2 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 ${appTypeSmallClass} ${appToneMutedClass}`}
+          className={`grid grid-cols-2 rounded-lg bg-[color:var(--surface-hover)] p-[3px] ${appTypeSmallClass} ${appToneMutedClass}`}
         >
           {[
             ['commit', 'Commit'],
@@ -131,9 +131,9 @@ export function buildProjectsSettingsDescriptors({
               key={value}
               type="button"
               className={cn(
-                'rounded-full px-3 py-1 transition-colors active:scale-[0.96]',
+                'rounded-md px-2.5 py-1 transition-colors hover:bg-[color:var(--surface-hover)] active:scale-[0.98]',
                 appSettings.gitOpsDefaultMode === value &&
-                  'bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_var(--accent-border)]',
+                  'bg-[color:var(--folded-row-hover-bg)] text-[color:var(--text)]',
               )}
               onClick={() =>
                 controller.setGitOpsDefaultMode(value as AppSettings['gitOpsDefaultMode'])
@@ -153,7 +153,7 @@ export function buildProjectsSettingsDescriptors({
       keywords: 'git diff baseline comparison files lines default',
       render: () => (
         <div
-          className={`grid grid-cols-3 gap-1 rounded-2xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 ${appTypeSmallClass} ${appToneMutedClass} xl:grid-cols-5`}
+          className={`grid grid-cols-5 gap-1 rounded-lg bg-[color:var(--surface-hover)] p-[3px] ${appTypeSmallClass} ${appToneMutedClass} `}
         >
           {[
             [{ kind: 'head' }, 'Last'],
@@ -168,9 +168,9 @@ export function buildProjectsSettingsDescriptors({
                 key={baseline.kind}
                 type="button"
                 className={cn(
-                  'rounded-xl px-3 py-1 transition-colors active:scale-[0.96]',
+                  'rounded-md px-2.5 py-1 transition-colors hover:bg-[color:var(--surface-hover)] active:scale-[0.98]',
                   appSettings.gitDiffBaselineDefault.kind === baseline.kind &&
-                    'bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_var(--accent-border)]',
+                    'bg-[color:var(--folded-row-hover-bg)] text-[color:var(--text)]',
                 )}
                 onClick={() => controller.setGitDiffBaselineDefault(baseline)}
               >
@@ -189,7 +189,7 @@ export function buildProjectsSettingsDescriptors({
       keywords: 'git diff layout stacked split default',
       render: () => (
         <div
-          className={`grid grid-cols-2 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 ${appTypeSmallClass} ${appToneMutedClass}`}
+          className={`grid grid-cols-2 rounded-lg bg-[color:var(--surface-hover)] p-[3px] ${appTypeSmallClass} ${appToneMutedClass}`}
         >
           {[
             ['stacked', 'Unified'],
@@ -199,9 +199,9 @@ export function buildProjectsSettingsDescriptors({
               key={value}
               type="button"
               className={cn(
-                'rounded-full px-3 py-1 transition-colors active:scale-[0.96]',
+                'rounded-md px-2.5 py-1 transition-colors hover:bg-[color:var(--surface-hover)] active:scale-[0.98]',
                 appSettings.gitDiffRenderModeDefault === value &&
-                  'bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_var(--accent-border)]',
+                  'bg-[color:var(--folded-row-hover-bg)] text-[color:var(--text)]',
               )}
               onClick={() =>
                 controller.setGitDiffRenderModeDefault(
@@ -240,7 +240,7 @@ export function buildProjectsSettingsDescriptors({
       keywords: 'delete deletion cleanup project full clean pi only',
       render: () => (
         <div
-          className={`grid grid-cols-2 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 ${appTypeSmallClass} ${appToneMutedClass}`}
+          className={`grid grid-cols-2 rounded-lg bg-[color:var(--surface-hover)] p-[3px] ${appTypeSmallClass} ${appToneMutedClass}`}
         >
           {[
             ['pi-only', 'Pi only'],
@@ -250,9 +250,9 @@ export function buildProjectsSettingsDescriptors({
               key={value}
               type="button"
               className={cn(
-                'rounded-full px-3 py-1 transition-colors active:scale-[0.96]',
+                'rounded-md px-2.5 py-1 transition-colors hover:bg-[color:var(--surface-hover)] active:scale-[0.98]',
                 appSettings.projectDeletionMode === value &&
-                  'bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_var(--accent-border)]',
+                  'bg-[color:var(--folded-row-hover-bg)] text-[color:var(--text)]',
               )}
               onClick={() =>
                 controller.setProjectDeletionMode(value as AppSettings['projectDeletionMode'])

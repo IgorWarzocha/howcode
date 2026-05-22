@@ -22,7 +22,7 @@ export function buildCommonSettingsDescriptors({
       render: () => (
         <div className="min-w-0 sm:min-w-[13rem]">
           <div
-            className={`grid grid-cols-3 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 ${appTypeSmallClass} ${appToneMutedClass}`}
+            className={`grid grid-cols-3 rounded-lg bg-[color:var(--surface-hover)] p-[3px] ${appTypeSmallClass} ${appToneMutedClass}`}
           >
             {[
               ['steer', 'Steer'],
@@ -33,9 +33,9 @@ export function buildCommonSettingsDescriptors({
                 key={value}
                 type="button"
                 className={cn(
-                  'rounded-full px-3 py-1 transition-colors active:scale-[0.96]',
+                  'rounded-md px-2.5 py-1 transition-colors hover:bg-[color:var(--surface-hover)] active:scale-[0.98]',
                   appSettings.composerStreamingBehavior === value &&
-                    'bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_var(--accent-border)]',
+                    'bg-[color:var(--folded-row-hover-bg)] text-[color:var(--text)]',
                 )}
                 onClick={() =>
                   controller.setComposerStreamingBehavior(

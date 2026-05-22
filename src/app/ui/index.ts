@@ -91,6 +91,7 @@ export {
   settingsCompactListRowClass,
   settingsInputClass,
   settingsListRowClass,
+  settingsPopoverPanelClass,
   settingsSectionClass,
   settingsSelectButtonClass,
   terminalOutputClass,

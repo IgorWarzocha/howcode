@@ -10,7 +10,9 @@ import {
   appTypeMetaClass,
   appTypeSectionTitleClass,
   appTypeSmallClass,
-  settingsSectionClass,
+  inlineEmptyNoteClass,
+  quietSearchInputClass,
+  viewCloseButtonClass,
 } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import { settingsHelpRowClass } from './settingsClasses'
@@ -57,7 +59,7 @@ export function SettingsSearchField({
         type="search"
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
-        className={`h-10 w-full min-w-0 flex-1 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.055)] px-3 py-2 pl-9 ${appTypeControlClass} ${appToneTextClass} outline-none placeholder:text-[color:var(--muted)]`}
+        className={cn(quietSearchInputClass, `h-9 pl-9 ${appTypeControlClass} ${appToneTextClass}`)}
         placeholder="Search…"
         aria-label="Search settings"
       />
@@ -91,8 +93,9 @@ export function SettingsHeaderActions({
         <button
           type="button"
           className={cn(
-            'inline-flex h-8 w-8 items-center justify-center self-center rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] text-[color:var(--text)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.07)] disabled:cursor-not-allowed disabled:opacity-40',
-            showHelp && 'border-[color:var(--accent-border)] bg-[color:var(--accent-bg)]',
+            viewCloseButtonClass,
+            'self-center disabled:cursor-not-allowed disabled:opacity-40',
+            showHelp && 'bg-[color:var(--surface-hover)] text-[color:var(--text)] opacity-100',
           )}
           onClick={onToggleHelp}
           aria-label={showHelp ? 'Hide setting descriptions' : 'Show setting descriptions'}
@@ -104,7 +107,7 @@ export function SettingsHeaderActions({
       </Tooltip>
       <button
         type="button"
-        className="inline-flex h-8 w-8 items-center justify-center self-center rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] text-[color:var(--text)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.07)]"
+        className={cn(viewCloseButtonClass, 'self-center')}
         onClick={onClose}
         aria-label="Close app settings"
         data-tooltip="Close app settings"
@@ -131,11 +134,11 @@ export function SettingsCategorySidebar({
 }) {
   return (
     <div className="sticky top-0 hidden max-h-full min-w-0 overflow-y-auto lg:grid">
-      <nav className="grid rounded-[22px] border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-2">
+      <nav className="grid gap-0.5 p-1">
         <button
           type="button"
           className={cn(
-            `flex h-10 items-center rounded-xl px-3 text-left ${appTypeSmallClass} transition-colors active:scale-[0.96]`,
+            `flex h-8 items-center rounded-md px-2 text-left ${appTypeSmallClass} transition-colors active:scale-[0.98]`,
             activeCategory === null && !normalizedFilter
               ? 'bg-[color:var(--accent-bg)] text-[color:var(--text)]'
               : 'text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
@@ -149,7 +152,7 @@ export function SettingsCategorySidebar({
             key={category.id}
             type="button"
             className={cn(
-              `flex h-10 items-center rounded-xl px-3 text-left ${appTypeSmallClass} transition-colors active:scale-[0.96]`,
+              `flex h-8 items-center rounded-md px-2 text-left ${appTypeSmallClass} transition-colors active:scale-[0.98]`,
               activeCategory === category.id && !normalizedFilter
                 ? 'bg-[color:var(--accent-bg)] text-[color:var(--text)]'
                 : 'text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
@@ -187,7 +190,7 @@ export function SettingsMobileFilters({
         <button
           type="button"
           className={cn(
-            `rounded-full border border-[color:var(--border)] px-3 py-1.5 ${appTypeSmallClass} transition-colors`,
+            `rounded-md px-2 py-1 ${appTypeSmallClass} transition-colors`,
             activeCategory === null && 'bg-[color:var(--accent-bg)] text-[color:var(--text)]',
           )}
           onClick={() => onSelectCategory(null)}
@@ -199,7 +202,7 @@ export function SettingsMobileFilters({
             key={category.id}
             type="button"
             className={cn(
-              `rounded-full border border-[color:var(--border)] px-3 py-1.5 ${appTypeSmallClass} ${appToneMutedClass} transition-colors`,
+              `rounded-md px-2 py-1 ${appTypeSmallClass} ${appToneMutedClass} transition-colors hover:bg-[color:var(--surface-hover)]`,
               activeCategory === category.id &&
                 'bg-[color:var(--accent-bg)] text-[color:var(--text)]',
             )}
@@ -232,7 +235,7 @@ export function SettingsGroupsList({
 }) {
   if (visibleGroups.length === 0) {
     return (
-      <div className="rounded-[22px] border border-[rgba(169,178,215,0.12)] bg-[rgba(255,255,255,0.025)] p-8 text-center lg:col-span-full">
+      <div className={cn(inlineEmptyNoteClass, 'lg:col-span-full')}>
         <div className={`${appTypeBodyClass} ${appToneTextClass}`}>No matching settings</div>
         <div className={`mt-1 ${appTypeSmallClass} ${appToneMutedClass}`}>
           Try a broader term like “Pi”, “model”, “folder”, or “voice”.
@@ -244,10 +247,7 @@ export function SettingsGroupsList({
   return visibleGroups.map((group) => (
     <Fragment key={group.id}>
       <section
-        className={cn(
-          settingsSectionClass,
-          'motion-surface-pulse motion-settings-section-pulse min-w-0 gap-1 p-2.5',
-        )}
+        className="motion-surface-pulse motion-settings-section-pulse grid min-w-0 gap-1"
         data-pulse-active={group.id === highlightedCategoryId ? 'true' : 'false'}
       >
         <div
@@ -280,7 +280,7 @@ export function SettingsGroupsList({
               <h2 className={`invisible ${appTypeSectionTitleClass}`}>{group.label}</h2>
             )}
           </div>
-          <div className="grid">
+          <div className="grid min-w-0">
             {group.settings.map((setting) => (
               <div
                 key={setting.id}
