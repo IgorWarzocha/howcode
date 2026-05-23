@@ -92,7 +92,7 @@ export function ComposerGitOpsFooter({
   const originSaveRequestedRef = useRef(false)
   const [discardCommentsOpen, setDiscardCommentsOpen] = useState(false)
   const backButtonRef = useRef<HTMLButtonElement>(null)
-  const discardCommentsPanelRef = useRef<HTMLDivElement>(null)
+  const discardCommentsPanelRef = useRef<HTMLButtonElement>(null)
 
   useDismissibleLayer({
     open: discardCommentsOpen,
@@ -353,29 +353,22 @@ export function ComposerGitOpsFooter({
           <ArrowLeft size={14} />
         </button>
         {discardCommentsOpen ? (
-          <PopoverPanel
+          <button
             ref={discardCommentsPanelRef}
-            surface={false}
+            type="button"
             className={cn(
-              'motion-popover pointer-events-auto absolute right-0 bottom-[calc(100%+6px)] z-20 rounded-md bg-[color:var(--panel)] p-0 shadow-none',
+              'motion-popover pointer-events-auto absolute right-0 bottom-[calc(100%+6px)] z-20 appearance-none rounded-md !border-0 bg-[#18181e] px-1.5 py-0.5 text-left !text-[11px] !leading-[14px] whitespace-nowrap outline-none ring-0 shadow-none transition-colors hover:bg-[#20212a] focus-visible:bg-[#20212a]',
+              appToneMutedClass,
             )}
             data-open="true"
+            onClick={() => {
+              onDiscardDiffComments()
+              setDiscardCommentsOpen(false)
+              onBack()
+            }}
           >
-            <button
-              type="button"
-              className={cn(
-                'appearance-none rounded-md border-0 bg-transparent px-1.5 py-1 text-left !text-[9px] !leading-[11px] whitespace-nowrap outline-none transition-colors hover:bg-[color:var(--surface-hover)] focus-visible:bg-[color:var(--surface-hover)]',
-                appToneMutedClass,
-              )}
-              onClick={() => {
-                onDiscardDiffComments()
-                setDiscardCommentsOpen(false)
-                onBack()
-              }}
-            >
-              Go back and discard comments?
-            </button>
-          </PopoverPanel>
+            Go back and discard comments?
+          </button>
         ) : null}
       </div>
     </div>
