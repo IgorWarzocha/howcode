@@ -12,7 +12,6 @@ import {
   type CodeViewHandle,
   type DiffLineAnnotation,
   type FileDiffMetadata,
-  useWorkerPool,
 } from '@pierre/diffs/react'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, ChevronRight, MessageSquarePlus } from 'lucide-react'
@@ -94,7 +93,6 @@ type DiffPanelFileListProps = {
 }
 
 type DiffItem = CodeViewItem<DiffCommentMetadata> & { type: 'diff' }
-type BackgroundHighlightTimer = number
 
 function DiffImagePreviewPane({
   baseline,
@@ -241,30 +239,18 @@ function syncAppendOnlyCodeViewItems({
   handle,
   items,
   previous,
-  queueBackgroundHighlight,
 }: {
   handle: CodeViewHandle<DiffCommentMetadata>
   items: DiffItem[]
   previous: { ids: string[]; versions: Map<string, number | undefined> }
-  queueBackgroundHighlight: (item: DiffItem) => void
 }) {
   for (const item of items.slice(0, previous.ids.length)) {
     if (previous.versions.get(item.id) !== item.version) {
-      queueBackgroundHighlight(item)
       handle.updateItem(item)
     }
   }
   const appendedItems = items.slice(previous.ids.length)
-  for (const item of appendedItems) queueBackgroundHighlight(item)
   if (appendedItems.length > 0) handle.addItems(appendedItems)
-}
-
-function requestBackgroundHighlightWork(callback: () => void): BackgroundHighlightTimer {
-  return window.setTimeout(callback, 40)
-}
-
-function cancelBackgroundHighlightWork(handle: BackgroundHighlightTimer) {
-  window.clearTimeout(handle)
 }
 
 export function DiffPanelFileList({
@@ -284,7 +270,6 @@ export function DiffPanelFileList({
   renderCommentAnnotation,
   renderableFiles,
 }: DiffPanelFileListProps) {
-  const workerPool = useWorkerPool()
   const items = useMemo<DiffItem[]>(
     () =>
       renderableFiles.map((fileDiff) => {
@@ -320,12 +305,6 @@ export function DiffPanelFileList({
     ids: [],
     versions: new Map(),
   })
-  const backgroundHighlightQueueRef = useRef<string[]>([])
-  const backgroundHighlightQueuedIdsRef = useRef(new Set<string>())
-  const backgroundHighlightItemsRef = useRef(new Map<string, DiffItem>())
-  const backgroundHighlightTimerRef = useRef<BackgroundHighlightTimer | null>(null)
-  const primedHighlightVersionsRef = useRef(new Set<string>())
-
   const setCodeViewHandle = useCallback(
     (handle: CodeViewHandle<DiffCommentMetadata> | null) => {
       codeViewRef.current = handle
@@ -333,69 +312,6 @@ export function DiffPanelFileList({
       setCodeViewHandleState(handle)
     },
     [codeViewRef],
-  )
-
-  const primeItemHighlight = useCallback(
-    (item: DiffItem, options?: { force?: boolean }) => {
-      const versionKey = `${item.id}:${item.version ?? 'none'}`
-      if (!options?.force) {
-        if (primedHighlightVersionsRef.current.has(versionKey)) return
-        primedHighlightVersionsRef.current.add(versionKey)
-      }
-      workerPool?.primeDiffHighlightCache(item.fileDiff)
-    },
-    [workerPool],
-  )
-
-  const flushBackgroundHighlightQueue = useCallback(() => {
-    backgroundHighlightTimerRef.current = null
-    const queue = backgroundHighlightQueueRef.current
-    for (let index = 0; index < 8; index += 1) {
-      const itemId = queue.shift()
-      if (!itemId) break
-      if (!backgroundHighlightQueuedIdsRef.current.has(itemId)) continue
-      backgroundHighlightQueuedIdsRef.current.delete(itemId)
-      const item = backgroundHighlightItemsRef.current.get(itemId)
-      if (item) primeItemHighlight(item)
-    }
-    if (queue.length > 0) {
-      backgroundHighlightTimerRef.current = requestBackgroundHighlightWork(
-        flushBackgroundHighlightQueue,
-      )
-    }
-  }, [primeItemHighlight])
-
-  const scheduleBackgroundHighlightFlush = useCallback(() => {
-    if (backgroundHighlightTimerRef.current !== null) return
-    backgroundHighlightTimerRef.current = requestBackgroundHighlightWork(
-      flushBackgroundHighlightQueue,
-    )
-  }, [flushBackgroundHighlightQueue])
-
-  const queueBackgroundHighlight = useCallback(
-    (item: DiffItem) => {
-      backgroundHighlightItemsRef.current.set(item.id, item)
-      if (!backgroundHighlightQueuedIdsRef.current.has(item.id)) {
-        backgroundHighlightQueuedIdsRef.current.add(item.id)
-        backgroundHighlightQueueRef.current.push(item.id)
-      }
-      scheduleBackgroundHighlightFlush()
-    },
-    [scheduleBackgroundHighlightFlush],
-  )
-
-  useEffect(
-    () => () => {
-      if (backgroundHighlightTimerRef.current !== null) {
-        cancelBackgroundHighlightWork(backgroundHighlightTimerRef.current)
-      }
-      backgroundHighlightTimerRef.current = null
-      backgroundHighlightQueueRef.current = []
-      backgroundHighlightQueuedIdsRef.current.clear()
-      backgroundHighlightItemsRef.current.clear()
-      primedHighlightVersionsRef.current.clear()
-    },
-    [],
   )
 
   useEffect(() => {
@@ -409,26 +325,13 @@ export function DiffPanelFileList({
         handle: codeViewHandle,
         items,
         previous,
-        queueBackgroundHighlight,
       })
     } else {
-      for (const item of items) queueBackgroundHighlight(item)
       instance.setItems(items)
     }
 
     itemSyncStateRef.current = next
-  }, [codeViewHandle, items, queueBackgroundHighlight])
-
-  const primeRenderedHighlights = useCallback(() => {
-    const renderedItems = codeViewRef.current?.getInstance()?.getRenderedItems() ?? []
-    for (const renderedItem of renderedItems) {
-      if (renderedItem.type === 'diff') {
-        const item = renderedItem.item as DiffItem
-        backgroundHighlightQueuedIdsRef.current.delete(item.id)
-        primeItemHighlight(item, { force: true })
-      }
-    }
-  }, [codeViewRef, primeItemHighlight])
+  }, [codeViewHandle, items])
 
   const handleLineClick = useCallback<
     NonNullable<CodeViewOptions<DiffCommentMetadata>['onLineClick']>
@@ -474,7 +377,6 @@ export function DiffPanelFileList({
       unsafeCSS: DIFF_PANEL_UNSAFE_CSS,
       enableGutterUtility: true,
       lineHoverHighlight: 'both',
-      onPostRender: primeRenderedHighlights,
       itemMetrics: {
         lineHeight: DIFF_FILE_ESTIMATED_LINE_HEIGHT,
         diffHeaderHeight: DIFF_FILE_ESTIMATED_HEADER_HEIGHT,
@@ -488,7 +390,7 @@ export function DiffPanelFileList({
       onLineClick: handleLineClick,
       onLineNumberClick: handleLineNumberClick,
     }),
-    [diffRenderMode, handleLineClick, handleLineNumberClick, primeRenderedHighlights],
+    [diffRenderMode, handleLineClick, handleLineNumberClick],
   )
 
   const renderCustomHeader = useCallback(
