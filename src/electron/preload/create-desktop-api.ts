@@ -63,6 +63,8 @@ function createProjectApi() {
       includeUntracked = false,
     ) =>
       invokeRequest('startProjectDiffStream', { projectId, baseline, streamId, includeUntracked }),
+    cancelProjectDiffStream: (streamId: string) =>
+      invokeRequest('cancelProjectDiffStream', { streamId }),
     getProjectDiffStats: (projectId: string, baseline = null, includeUntracked = false) =>
       invokeRequest('getProjectDiffStats', { projectId, baseline, includeUntracked }),
     getProjectDiffImagePreview: (

@@ -55,6 +55,9 @@ function resetProjectDiffCaches(queryClient: QueryClient, projectId: string) {
     queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
   })
   void queryClient.invalidateQueries({
+    queryKey: desktopQueryKeys.projectDiffImagePreviewPrefix(projectId),
+  })
+  void queryClient.invalidateQueries({
     queryKey: desktopQueryKeys.projectCommitsPrefix(projectId),
   })
 }

@@ -174,6 +174,10 @@ export function canStartProjectDiffStreamQuery() {
   )
 }
 
+export async function cancelProjectDiffStreamQuery(streamId: string): Promise<void> {
+  await window.piDesktop?.cancelProjectDiffStream?.(streamId)
+}
+
 export async function getProjectDiffStatsQuery(
   projectId: string,
   baseline: ProjectDiffBaseline | null = null,

@@ -90,6 +90,10 @@ export type DesktopRequestMap = {
     }
     response: ProjectDiffStreamStartResult
   }
+  cancelProjectDiffStream: {
+    params: { streamId: string }
+    response: undefined
+  }
   getProjectDiffStats: {
     params: {
       projectId: string

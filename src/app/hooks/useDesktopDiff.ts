@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { cleanUserErrorMessage } from '../desktop/error-messages'
 import type { DesktopEvent, ProjectDiffBaseline, ProjectDiffResult } from '../desktop/types'
 import {
+  cancelProjectDiffStreamQuery,
   canStartProjectDiffStreamQuery,
   desktopQueryKeys,
   getProjectDiffQuery,
@@ -157,6 +158,7 @@ function useProjectDiffStream(
       cancelChunkFlush()
       pendingChunksRef.current.clear()
       unsubscribe()
+      void cancelProjectDiffStreamQuery(streamId)
     }
   }, [baseline, canStream, includeUntracked, projectId])
 

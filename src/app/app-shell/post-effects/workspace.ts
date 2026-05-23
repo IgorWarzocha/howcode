@@ -22,6 +22,9 @@ export async function applyWorkspaceCommitPostEffect(input: {
       queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
     }),
     input.queryClient.invalidateQueries({
+      queryKey: desktopQueryKeys.projectDiffImagePreviewPrefix(projectId),
+    }),
+    input.queryClient.invalidateQueries({
       queryKey: desktopQueryKeys.projectCommitsPrefix(projectId),
     }),
   ])
@@ -55,6 +58,9 @@ export async function applySwitchBranchPostEffect(input: {
     }),
     input.queryClient.invalidateQueries({
       queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
+    }),
+    input.queryClient.invalidateQueries({
+      queryKey: desktopQueryKeys.projectDiffImagePreviewPrefix(projectId),
     }),
     input.queryClient.invalidateQueries({
       queryKey: desktopQueryKeys.projectCommitsPrefix(projectId),

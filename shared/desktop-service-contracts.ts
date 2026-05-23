@@ -106,6 +106,7 @@ export type PiThreadsService = {
     streamId?: string | null,
     includeUntracked?: boolean | null,
   ) => Promise<ProjectDiffStreamStartResult>
+  cancelProjectDiffStream: (streamId: string) => Promise<void>
   loadProjectDiffStats: (
     projectId: string,
     baseline?: ProjectDiffBaseline | null,

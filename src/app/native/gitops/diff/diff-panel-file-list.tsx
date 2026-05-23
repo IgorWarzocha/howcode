@@ -228,6 +228,18 @@ function getCodeViewItemSyncState(items: DiffItem[]) {
   }
 }
 
+function hashString(input: string) {
+  let hash = 0
+  for (let index = 0; index < input.length; index += 1) {
+    hash = Math.imul(31, hash) + input.charCodeAt(index)
+  }
+  return hash >>> 0
+}
+
+function getFileDiffVersion(fileDiff: FileDiffMetadata) {
+  return hashString(JSON.stringify(fileDiff))
+}
+
 function isAppendOnlyItemList(previousIds: string[], nextIds: string[]) {
   return (
     previousIds.length <= nextIds.length &&
@@ -283,8 +295,8 @@ export function DiffPanelFileList({
           collapsed: focusedImageFileKeys.has(fileKey)
             ? false
             : (collapsedFiles[fileKey] ?? isImageFile),
-          version: Number(
-            `${fileKey.length}${fileDiff.unifiedLineCount}${fileDiff.splitLineCount}${commentAnnotationsByFile.get(fileKey)?.length ?? 0}${collapsedFiles[fileKey] ? 1 : 0}${focusedImageFileKeys.has(fileKey) ? 1 : 0}`,
+          version: hashString(
+            `${getFileDiffVersion(fileDiff)}:${commentAnnotationsByFile.get(fileKey)?.length ?? 0}:${collapsedFiles[fileKey] ? 1 : 0}:${focusedImageFileKeys.has(fileKey) ? 1 : 0}`,
           ),
         }
       }),

@@ -26,6 +26,7 @@ import {
 const maxDiffImagePreviewBytes = 12 * 1024 * 1024
 const fileExtensionPattern = /\.[^./]+$/
 const leadingSlashPattern = /^\/+/
+const activeProjectDiffStreams = new Map<string, AbortController>()
 const imageMimeTypesByExtension: Record<string, string> = {
   '.apng': 'image/apng',
   '.avif': 'image/avif',
@@ -163,28 +164,35 @@ export async function startProjectDiffStream(
   includeUntracked = false,
 ): Promise<ProjectDiffStreamStartResult> {
   const streamId = requestedStreamId?.trim() || randomUUID()
+  activeProjectDiffStreams.get(streamId)?.abort()
+  const abortController = new AbortController()
+  activeProjectDiffStreams.set(streamId, abortController)
   void (async () => {
-    if (!(await isGitRepository(projectId))) {
-      emitDesktopEvent({
-        type: 'project-diff-stream',
-        event: { type: 'complete', streamId, projectId, result: null },
-      })
-      return
-    }
-
-    let sequence = 0
     try {
+      if (!(await isGitRepository(projectId))) {
+        emitDesktopEvent({
+          type: 'project-diff-stream',
+          event: { type: 'complete', streamId, projectId, result: null },
+        })
+        return
+      }
+
+      let sequence = 0
       const resolvedBaseline = await resolveProjectDiffBaseline(projectId, baseline)
       const snapshot = await loadWorktreeSnapshot(projectId, {
         baselineRev: resolvedBaseline.rev,
         includeUntracked,
+        signal: abortController.signal,
         onPatchChunk: (chunk) => {
+          if (abortController.signal.aborted) return
           emitDesktopEvent({
             type: 'project-diff-stream',
             event: { type: 'chunk', streamId, projectId, sequence: sequence++, chunk },
           })
         },
       })
+
+      if (abortController.signal.aborted) return
 
       emitDesktopEvent({
         type: 'project-diff-stream',
@@ -204,6 +212,7 @@ export async function startProjectDiffStream(
         },
       })
     } catch (error) {
+      if (abortController.signal.aborted) return
       emitDesktopEvent({
         type: 'project-diff-stream',
         event: {
@@ -213,10 +222,22 @@ export async function startProjectDiffStream(
           error: `Could not load worktree diff: ${formatGitCommandError(error)}`,
         },
       })
+    } finally {
+      if (activeProjectDiffStreams.get(streamId) === abortController) {
+        activeProjectDiffStreams.delete(streamId)
+      }
     }
   })()
 
   return { streamId }
+}
+
+export async function cancelProjectDiffStream(streamId: string): Promise<void> {
+  const normalizedStreamId = streamId.trim()
+  const stream = activeProjectDiffStreams.get(normalizedStreamId)
+  if (!stream) return
+  activeProjectDiffStreams.delete(normalizedStreamId)
+  stream.abort()
 }
 
 export async function loadProjectDiff(

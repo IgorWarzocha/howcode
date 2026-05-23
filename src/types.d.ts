@@ -84,6 +84,7 @@ declare global {
         streamId?: string | null,
         includeUntracked?: boolean | null,
       ) => Promise<ProjectDiffStreamStartResult>
+      cancelProjectDiffStream?: (streamId: string) => Promise<void>
       getProjectDiffStats?: (
         projectId: string,
         baseline?: ProjectDiffBaseline | null,

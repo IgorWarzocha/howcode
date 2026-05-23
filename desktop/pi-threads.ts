@@ -20,6 +20,7 @@ export {
 export { handleDesktopAction } from './pi-threads/action-router.ts'
 export { loadProjectUsageSummary } from './pi-threads/project-usage-summary.ts'
 export {
+  cancelProjectDiffStream,
   captureProjectDiffBaseline,
   disposeDesktopRuntime,
   getDictationState,

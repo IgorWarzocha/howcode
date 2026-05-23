@@ -123,6 +123,10 @@ export function invalidateProjectWorktreeQueries({
   })
 
   void queryClient.invalidateQueries({
+    queryKey: desktopQueryKeys.projectDiffImagePreviewPrefix(projectId),
+  })
+
+  void queryClient.invalidateQueries({
     queryKey: desktopQueryKeys.projectCommitsPrefix(projectId),
   })
 }

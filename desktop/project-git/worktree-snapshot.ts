@@ -160,6 +160,7 @@ async function loadTrackedWorktreeSnapshot(
   options: {
     baselineRev?: string | undefined | null | undefined
     hasHead?: boolean | undefined
+    signal?: AbortSignal | undefined
     onPatchChunk?: ((chunk: string) => void) | undefined
   } = {},
 ): Promise<WorktreeSnapshot> {
@@ -170,6 +171,7 @@ async function loadTrackedWorktreeSnapshot(
     diffArguments(['--unified=1', '--no-color', '--no-ext-diff', '--find-renames']),
     {
       timeout: 20_000,
+      signal: options.signal,
       onStdoutChunk: options.onPatchChunk ?? (() => undefined),
     },
   ).then(({ stdout }) => stdout.trim())
@@ -187,6 +189,7 @@ async function loadStagedWorktreeSnapshot(
   projectId: string,
   options: {
     baselineRev?: string | undefined | null | undefined
+    signal?: AbortSignal | undefined
     onPatchChunk?: ((chunk: string) => void) | undefined
   } = {},
 ): Promise<WorktreeSnapshot> {
@@ -206,6 +209,7 @@ async function loadStagedWorktreeSnapshot(
       {
         env,
         timeout: 20_000,
+        signal: options.signal,
         onStdoutChunk: options.onPatchChunk ?? (() => undefined),
       },
     ).then(({ stdout }) => stdout.trim())
@@ -238,6 +242,7 @@ export async function loadWorktreeSnapshot(
   options: {
     baselineRev?: string | undefined | null | undefined
     includeUntracked?: boolean | undefined
+    signal?: AbortSignal | undefined
     onPatchChunk?: ((chunk: string) => void) | undefined
   } = {},
 ): Promise<WorktreeSnapshot> {

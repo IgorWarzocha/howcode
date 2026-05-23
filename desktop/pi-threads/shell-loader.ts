@@ -23,6 +23,7 @@ import {
   subscribeDesktopEvents as subscribeRuntimeEvents,
 } from '../pi-desktop-runtime.ts'
 import {
+  cancelProjectDiffStream,
   captureProjectDiffBaseline,
   listProjectCommits,
   loadProjectDiff,
@@ -86,6 +87,7 @@ export async function loadProjectCommitHistory(
 }
 
 export {
+  cancelProjectDiffStream,
   captureProjectDiffBaseline,
   listProjectCommits,
   loadProjectDiff,

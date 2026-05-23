@@ -9,6 +9,7 @@ type PiThreadsRequestHandlers = Pick<
   | 'getProjectUsageSummary'
   | 'getProjectDiff'
   | 'startProjectDiffStream'
+  | 'cancelProjectDiffStream'
   | 'getProjectDiffStats'
   | 'getProjectDiffImagePreview'
   | 'captureProjectDiffBaseline'
@@ -55,6 +56,10 @@ export function createPiThreadsHandlers(
         streamId ?? null,
         includeUntracked ?? false,
       ),
+    cancelProjectDiffStream: async ({ streamId }) => {
+      await piThreads.cancelProjectDiffStream(streamId)
+      return undefined
+    },
     getProjectDiffStats: ({ projectId, baseline, includeUntracked }) =>
       piThreads.loadProjectDiffStats(projectId, baseline ?? null, includeUntracked ?? false),
     getProjectDiffImagePreview: (request) => piThreads.loadProjectDiffImagePreview(request),

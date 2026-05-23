@@ -70,6 +70,9 @@ export function startGitStreamingWithOptions(
   options: {
     env?: NodeJS.ProcessEnv
     timeout?: number | undefined
+    maxAccumulatedStdoutBytes?: number | undefined
+    maxAccumulatedStderrBytes?: number | undefined
+    signal?: AbortSignal | undefined
     onStdoutChunk: (chunk: string) => void
   },
 ): GitStreamingProcess {
@@ -84,26 +87,53 @@ export function startGitStreamingWithOptions(
     let stdout = ''
     let stderr = ''
     let settled = false
+    const maxAccumulatedStdoutBytes = options.maxAccumulatedStdoutBytes ?? 64 * 1024 * 1024
+    const maxAccumulatedStderrBytes = options.maxAccumulatedStderrBytes ?? 1024 * 1024
     const timeout = setTimeout(() => {
       child.kill('SIGTERM')
       rejectOnce(new Error(`Git command timed out after ${options.timeout ?? 3_000}ms.`))
     }, options.timeout ?? 3_000)
 
+    const cleanupAbortListener = () => {
+      options.signal?.removeEventListener('abort', abortListener)
+    }
+
     const rejectOnce = (error: Error) => {
       if (settled) return
       settled = true
       clearTimeout(timeout)
+      cleanupAbortListener()
       reject(Object.assign(error, { stdout, stderr }))
     }
+
+    const abortListener = () => {
+      child.kill('SIGTERM')
+      rejectOnce(new Error('Git command cancelled.'))
+    }
+
+    if (options.signal?.aborted) {
+      abortListener()
+      return
+    }
+
+    options.signal?.addEventListener('abort', abortListener, { once: true })
 
     child.stdout.setEncoding('utf8')
     child.stdout.on('data', (chunk: string) => {
       stdout += chunk
+      if (Buffer.byteLength(stdout, 'utf8') > maxAccumulatedStdoutBytes) {
+        child.kill('SIGTERM')
+        rejectOnce(new Error('Git command produced too much stdout.'))
+        return
+      }
       options.onStdoutChunk(chunk)
     })
     child.stderr.setEncoding('utf8')
     child.stderr.on('data', (chunk: string) => {
       stderr += chunk
+      if (Buffer.byteLength(stderr, 'utf8') > maxAccumulatedStderrBytes) {
+        stderr = stderr.slice(-maxAccumulatedStderrBytes)
+      }
     })
     cancel = () => {
       if (settled) return
@@ -115,6 +145,7 @@ export function startGitStreamingWithOptions(
       if (settled) return
       settled = true
       clearTimeout(timeout)
+      cleanupAbortListener()
       if (code === 0) {
         resolve({ stdout, stderr })
         return
@@ -138,6 +169,9 @@ export function runGitStreamingWithOptions(
   options: {
     env?: NodeJS.ProcessEnv
     timeout?: number | undefined
+    maxAccumulatedStdoutBytes?: number | undefined
+    maxAccumulatedStderrBytes?: number | undefined
+    signal?: AbortSignal | undefined
     onStdoutChunk: (chunk: string) => void
   },
 ) {
