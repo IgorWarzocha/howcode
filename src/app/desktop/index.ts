@@ -16,4 +16,5 @@ export type {
   ProjectDiffBaseline,
   ProjectDiffRenderMode,
   ProjectGitState,
+  TerminalEvent,
 } from './types'

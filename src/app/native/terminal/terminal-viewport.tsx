@@ -1,12 +1,12 @@
+import type { TerminalEvent } from '@howcode/desktop'
+import { appToneTextClass, appTypeSmallClass } from '@howcode/ui'
 import type { FitAddon } from '@xterm/addon-fit'
 import type { Terminal as XTerm } from '@xterm/xterm'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
-import type { TerminalEvent } from '../../../desktop/types'
-import { resizeDesktopTerminal, writeDesktopTerminal } from '../../../hooks/useDesktopTerminal'
-import { useHoverToFocus } from '../../../hooks/useHoverToFocus'
-import { appToneTextClass, appTypeSmallClass } from '../../../ui/classes'
-import { cn } from '../../../utils/cn'
+import { useHowcodeKeybindingCommand } from '../../app-shell/keybinding-events'
+import { resizeDesktopTerminal, writeDesktopTerminal } from '../../hooks/useDesktopTerminal'
+import { useHoverToFocus } from '../../hooks/useHoverToFocus'
+import { cn } from '../../utils/cn'
 import {
   clampTerminalHistory,
   clearTerminal,

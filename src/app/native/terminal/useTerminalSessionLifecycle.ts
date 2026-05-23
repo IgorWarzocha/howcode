@@ -1,12 +1,12 @@
+import type { TerminalEvent } from '@howcode/desktop'
+import { getPersistedSessionPath, isLocalSessionPath } from '@howcode/shared/session-paths'
 import type { MutableRefObject } from 'react'
 import { useEffect } from 'react'
-import { getPersistedSessionPath, isLocalSessionPath } from '../../../../../shared/session-paths'
-import type { TerminalEvent } from '../../../desktop/types'
 import {
   closeDesktopTerminal,
   openDesktopTerminal,
   subscribeDesktopTerminal,
-} from '../../../hooks/useDesktopTerminal'
+} from '../../hooks/useDesktopTerminal'
 import {
   cancelScheduledTerminalClose,
   scheduleTerminalClose,

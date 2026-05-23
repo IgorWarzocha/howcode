@@ -20,7 +20,7 @@ const howcodeAliases = {
   '@howcode/sidebar': path.resolve(projectRoot, 'src/app/components/sidebar/index.ts'),
   '@howcode/skills': path.resolve(projectRoot, 'src/app/features/skills/index.ts'),
   '@howcode/state': path.resolve(projectRoot, 'src/app/state/index.ts'),
-  '@howcode/terminal': path.resolve(projectRoot, 'src/app/components/workspace/terminal/index.ts'),
+  '@howcode/native-terminal': path.resolve(projectRoot, 'src/app/native/terminal/index.ts'),
   '@howcode/thread': path.resolve(projectRoot, 'src/app/components/workspace/thread/index.ts'),
   '@howcode/ui': path.resolve(projectRoot, 'src/app/ui/index.ts'),
   '@howcode/workspace': path.resolve(projectRoot, 'src/app/components/workspace/index.ts'),

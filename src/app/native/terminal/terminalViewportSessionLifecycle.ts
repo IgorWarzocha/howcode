@@ -2,7 +2,7 @@ import {
   closeDesktopTerminal,
   getDesktopTerminalStatus,
   statDesktopTerminalSessionFile,
-} from '../../../hooks/useDesktopTerminal'
+} from '../../hooks/useDesktopTerminal'
 
 const MAX_TERMINAL_STATUS_FAILURES_BEFORE_CLOSE = 2
 type SessionFileStat = { mtimeMs: number; size: number }
