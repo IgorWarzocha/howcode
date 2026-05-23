@@ -1,4 +1,5 @@
 import {
+  appToneDangerClass,
   appToneMutedClass,
   appToneSubtleClass,
   appToneTextClass,
@@ -7,6 +8,8 @@ import {
   appTypeControlClass,
   appTypeGroupTextClass,
   appTypeGroupTitleClass,
+  appTypeMetaClass,
+  appTypeReadableClass,
   appTypeSectionTitleClass,
   appTypeSmallClass,
   appTypeTinyClass,
@@ -127,6 +130,25 @@ export const artifactHeaderControlActiveClass =
   'bg-[color:var(--surface-hover)] text-[color:var(--text)]'
 
 export const artifactVersionTriggerClass = `artifact-version-trigger inline-flex h-7 max-w-28 shrink-0 items-center gap-1 rounded-md bg-[color:var(--surface-hover)] px-2 ${appTypeControlClass} ${appToneMutedClass} outline-none transition-colors hover:text-[color:var(--text)]`
+
+export const artifactBodyClass =
+  'relative min-h-0 flex-1 overflow-hidden bg-[color:var(--workspace)]'
+
+export const artifactCenteredStateClass = `grid h-full place-items-center px-6 text-center ${appTypeSmallClass}`
+
+export const artifactListClass =
+  'h-full overflow-y-auto overflow-x-hidden px-2 py-1.5 [scrollbar-gutter:stable]'
+
+export const artifactListRowClass = `grid w-full min-w-0 gap-0.5 rounded-md px-2 py-1.5 text-left ${appTypeSmallClass} ${appToneMutedClass} transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]`
+
+export const artifactCodeEditorClass = `h-full w-full resize-none overflow-auto bg-transparent px-3 py-2.5 ${appTypeCodeClass} ${appToneTextClass} outline-none placeholder:text-[color:var(--muted)]`
+
+export const artifactPreviewSurfaceClass =
+  'relative h-full overflow-hidden bg-[color:var(--workspace)]'
+
+export const artifactErrorStripClass = `absolute right-2 bottom-2 left-2 z-10 max-h-32 overflow-auto rounded-md bg-[color:color-mix(in_srgb,var(--danger-bg)_55%,var(--workspace))] px-2.5 py-2 ${appTypeMetaClass} whitespace-pre-wrap ${appToneDangerClass} shadow-[0_14px_32px_rgba(0,0,0,0.24)]`
+
+export const artifactMarkdownPreviewClass = `h-full min-h-0 overflow-auto bg-[color:var(--workspace)] px-7 py-6 ${appTypeReadableClass} ${appToneTextClass} [text-wrap:pretty] [&_h1]:[text-wrap:balance] [&_h2]:[text-wrap:balance] [&_h3]:[text-wrap:balance] [&_pre]:[text-wrap:initial]`
 
 export const changedFilesStripClass = `flex min-w-0 items-center gap-2 rounded-lg bg-[color:var(--folded-row-bg)] px-3 py-2 ${appTypeSmallClass} ${appToneMutedClass}`
 

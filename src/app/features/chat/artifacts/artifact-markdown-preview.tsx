@@ -1,9 +1,9 @@
 import ReactMarkdown from 'react-markdown'
 import { openExternalQuery } from '../../../query/desktop-query'
 import {
+  artifactMarkdownPreviewClass,
   appToneTextClass,
   appTypeCodeClass,
-  appTypeReadableClass,
   appTypeReadableStrongClass,
   appTypeSectionTitleClass,
 } from '../../../ui/classes'
@@ -11,7 +11,7 @@ import remarkGfm from 'remark-gfm'
 
 export function HistoricalMarkdownPreview({ content }: { content: string }) {
   return (
-    <div className={`h-full min-h-0 overflow-auto bg-[color:var(--sidebar)] px-7 py-6 ${appTypeReadableClass} ${appToneTextClass} [text-wrap:pretty] [&_h1]:[text-wrap:balance] [&_h2]:[text-wrap:balance] [&_h3]:[text-wrap:balance] [&_pre]:[text-wrap:initial]`}>
+    <div className={artifactMarkdownPreviewClass}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -48,19 +48,21 @@ export function HistoricalMarkdownPreview({ content }: { content: string }) {
             </a>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="my-3 border-l-2 border-[rgba(185,191,243,0.32)] pl-4 text-[color:var(--muted)]">
+            <blockquote className="my-3 border-l border-[color:var(--border)]/80 pl-4 text-[color:var(--muted)]">
               {children}
             </blockquote>
           ),
           code: ({ children }) => (
-            <code className={`${appTypeCodeClass} text-[color:var(--accent)]`}>{children}</code>
+            <code className={`${appTypeCodeClass} rounded-md bg-[color:var(--inline-code-bg)] px-1 py-0.5 text-[color:var(--inline-code-text)]`}>
+              {children}
+            </code>
           ),
           pre: ({ children }) => (
-            <pre className={`my-3 overflow-auto rounded-lg border border-[color:var(--border)] p-3 ${appTypeCodeClass} ${appToneTextClass}`}>
+            <pre className={`my-3 overflow-auto rounded-md bg-[color:var(--code-block-bg)] p-3 ${appTypeCodeClass} ${appToneTextClass}`}>
               {children}
             </pre>
           ),
-          hr: () => <hr className="my-5 border-0 border-t border-[color:var(--border)]" />,
+          hr: () => <hr className="my-5 border-0 border-t border-[color:var(--border)]/70" />,
         }}
       >
         {content}

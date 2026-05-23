@@ -28,6 +28,7 @@ import {
   artifactHeaderControlActiveClass,
   artifactHeaderControlsClass,
   artifactHeaderTitleClass,
+  artifactBodyClass,
   artifactVersionTriggerClass,
   appTypeGroupTitleClass,
   compactIconButtonClass,
@@ -328,7 +329,7 @@ export function ArtifactPanel({
         panel={panel}
       />
 
-      <div className="relative min-h-0 flex-1 overflow-hidden bg-[color:var(--sidebar)]">
+      <div className={artifactBodyClass}>
         <ArtifactPanelBody fullscreen={fullscreen} panel={panel} />
       </div>
     </section>

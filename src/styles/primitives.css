@@ -414,13 +414,13 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: var(--sidebar);
+  background: var(--workspace);
   color: var(--text);
-  --basePageBg: var(--sidebar);
+  --basePageBg: var(--workspace);
   --baseBase: var(--workspace);
-  --baseBgSubtle: var(--panel);
-  --baseBg: var(--panel-2);
-  --baseBgHover: var(--panel-3);
+  --baseBgSubtle: var(--surface-hover);
+  --baseBg: var(--surface-hover);
+  --baseBgHover: var(--folded-row-hover-bg);
   --baseBgActive: var(--surface-hover);
   --baseLine: var(--border);
   --baseBorder: var(--border-strong);
@@ -454,8 +454,9 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
 
 .artifact-markdown-editor .mdxeditor-toolbar {
   flex: 0 0 auto;
-  border-bottom: 1px solid var(--border);
-  background: var(--panel);
+  border-bottom: 0;
+  background: var(--workspace);
+  box-shadow: inset 0 -1px color-mix(in srgb, var(--border) 58%, transparent);
 }
 
 .artifact-markdown-editor .artifact-mdx-toolbar {
@@ -559,7 +560,7 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
 .artifact-markdown-editor [class*="cm-deleted"],
 .artifact-markdown-editor [class*="cm-inserted"],
 .artifact-markdown-editor [class*="cm-changed"] {
-  background-color: var(--sidebar);
+  background-color: var(--workspace);
   color: var(--text);
 }
 
@@ -578,7 +579,7 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
 }
 
 .artifact-markdown-editor .cm-gutters {
-  border-right: 1px solid var(--border);
+  border-right: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
   background-color: var(--workspace);
   color: var(--muted-2);
 }
@@ -600,8 +601,8 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
 .artifact-markdown-editor .cm-mergeViewGutter,
 .artifact-markdown-editor .cm-mergeView .cm-editor,
 .artifact-markdown-editor .cm-sourceView .cm-editor {
-  border-color: var(--border);
-  background-color: var(--sidebar);
+  border-color: color-mix(in srgb, var(--border) 62%, transparent);
+  background-color: var(--workspace);
   color: var(--text);
 }
 
@@ -670,7 +671,7 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
 .artifact-markdown-editor .artifact-markdown-editor-content code,
 .artifact-markdown-editor .artifact-markdown-editor-content pre {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--code-block-bg);
 }
 
 .artifact-markdown-editor .artifact-markdown-editor-content table {

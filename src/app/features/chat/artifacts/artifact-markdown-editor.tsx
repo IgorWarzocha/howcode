@@ -110,7 +110,7 @@ export function ArtifactMarkdownEditor({
   }, [content])
 
   return (
-    <div className="artifact-markdown-editor h-full min-h-0 overflow-hidden bg-[color:var(--sidebar)]">
+    <div className="artifact-markdown-editor h-full min-h-0 overflow-hidden bg-[color:var(--workspace)]">
       <MDXEditor
         key={artifactKey}
         ref={markdownEditorRef}

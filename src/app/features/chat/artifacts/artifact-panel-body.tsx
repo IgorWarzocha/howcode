@@ -3,12 +3,14 @@ import {
   appToneDangerClass,
   appToneMutedClass,
   appToneSubtleClass,
-  appToneTextClass,
-  appTypeCodeClass,
-  appTypeMetaClass,
-  appTypeSmallClass,
   appTypeSmallStrongClass,
   appTypeTinyClass,
+  artifactCenteredStateClass,
+  artifactCodeEditorClass,
+  artifactErrorStripClass,
+  artifactListClass,
+  artifactListRowClass,
+  artifactPreviewSurfaceClass,
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { HistoricalMarkdownPreview } from './artifact-markdown-preview'
@@ -66,16 +68,16 @@ function ArtifactPreviewIframe({
 function ArtifactListView({ panel }: { panel: ArtifactPanelState }) {
   const { artifacts, selectedArtifact, setSelectedArtifactId, setView } = panel
   return (
-    <div className="h-full overflow-y-auto p-2">
-      <div className="grid gap-1">
+    <div className={artifactListClass}>
+      <div className="grid gap-0.5">
         {artifacts.map((artifact) => (
           <button
             key={artifact.slug}
             type="button"
             className={cn(
-              `rounded-lg px-3 py-2.5 text-left ${appTypeSmallClass} ${appToneMutedClass} transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]`,
+              artifactListRowClass,
               artifact.slug === selectedArtifact?.slug &&
-                'bg-[color:var(--accent-bg-subtle)] text-[color:var(--text)]',
+                'bg-[color:var(--folded-row-bg)] text-[color:var(--text)]',
             )}
             onClick={() => {
               setSelectedArtifactId(artifact.slug)
@@ -96,11 +98,9 @@ function ArtifactListView({ panel }: { panel: ArtifactPanelState }) {
 function ArtifactPreviewView({ panel }: { panel: ArtifactPanelState }) {
   const { previewError, previewHtml, previewRevision, selectedArtifact, setPreviewSource } = panel
   return (
-    <div className="relative h-full bg-[color:var(--sidebar)]">
+    <div className={artifactPreviewSurfaceClass}>
       {previewError ? (
-        <pre className={`absolute right-2 bottom-2 left-2 z-10 max-h-32 overflow-auto rounded-lg border border-[color:var(--danger-border)] bg-[color:var(--panel)] p-2 ${appTypeMetaClass} whitespace-pre-wrap ${appToneDangerClass} shadow-[var(--shadow)]`}>
-          {previewError}
-        </pre>
+        <pre className={artifactErrorStripClass}>{previewError}</pre>
       ) : null}
       {previewHtml ? (
         <ArtifactPreviewIframe
@@ -136,22 +136,18 @@ export function ArtifactPanelBody({
   } = panel
 
   if (artifactLoadError) {
-    return (
-      <div className={`grid h-full place-items-center px-6 text-center ${appTypeSmallClass} ${appToneDangerClass}`}>
-        {artifactLoadError}
-      </div>
-    )
+    return <div className={`${artifactCenteredStateClass} ${appToneDangerClass}`}>{artifactLoadError}</div>
   }
   if (loadingArtifacts) {
     return (
-      <div className={`grid h-full place-items-center px-6 text-center ${appTypeSmallClass} ${appToneMutedClass}`}>
+      <div className={`${artifactCenteredStateClass} ${appToneMutedClass}`}>
         Loading artifacts…
       </div>
     )
   }
   if (artifacts.length === 0) {
     return (
-      <div className={`grid h-full place-items-center px-6 text-center ${appTypeSmallClass} ${appToneMutedClass}`}>
+      <div className={`${artifactCenteredStateClass} ${appToneMutedClass}`}>
         No artifacts yet.
       </div>
     )
@@ -160,7 +156,7 @@ export function ArtifactPanelBody({
   if (view === 'code') {
     return (
       <textarea
-        className={`h-full w-full resize-none overflow-auto bg-[color:var(--panel)] p-3 ${appTypeCodeClass} ${appToneTextClass} outline-none`}
+        className={artifactCodeEditorClass}
         value={draft}
         spellCheck={false}
         readOnly={showingHistoricalVersion}
@@ -172,7 +168,7 @@ export function ArtifactPanelBody({
     return (
       <Suspense
         fallback={
-          <div className={`grid h-full place-items-center ${appTypeSmallClass} ${appToneMutedClass}`}>
+          <div className={`${artifactCenteredStateClass} ${appToneMutedClass}`}>
             Loading markdown editor…
           </div>
         }
