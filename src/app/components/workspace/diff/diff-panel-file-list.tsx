@@ -89,6 +89,7 @@ type DiffPanelFileListProps = {
 }
 
 type DiffItem = CodeViewItem<DiffCommentMetadata> & { type: 'diff' }
+type IdleCallbackHandle = ReturnType<typeof window.setTimeout> | number
 
 function DiffImagePreviewPane({
   baseline,
@@ -235,22 +236,37 @@ function syncAppendOnlyCodeViewItems({
   handle,
   items,
   previous,
-  primeItemHighlight,
+  queueBackgroundHighlight,
 }: {
   handle: CodeViewHandle<DiffCommentMetadata>
   items: DiffItem[]
   previous: { ids: string[]; versions: Map<string, number | undefined> }
-  primeItemHighlight: (item: DiffItem) => void
+  queueBackgroundHighlight: (item: DiffItem) => void
 }) {
   for (const item of items.slice(0, previous.ids.length)) {
     if (previous.versions.get(item.id) !== item.version) {
-      primeItemHighlight(item)
+      queueBackgroundHighlight(item)
       handle.updateItem(item)
     }
   }
   const appendedItems = items.slice(previous.ids.length)
-  for (const item of appendedItems) primeItemHighlight(item)
+  for (const item of appendedItems) queueBackgroundHighlight(item)
   if (appendedItems.length > 0) handle.addItems(appendedItems)
+}
+
+function requestIdleWork(callback: () => void): IdleCallbackHandle {
+  if ('requestIdleCallback' in window && typeof window.requestIdleCallback === 'function') {
+    return window.requestIdleCallback(callback, { timeout: 250 })
+  }
+  return window.setTimeout(callback, 50)
+}
+
+function cancelIdleWork(handle: IdleCallbackHandle) {
+  if ('cancelIdleCallback' in window && typeof window.cancelIdleCallback === 'function') {
+    window.cancelIdleCallback(handle as number)
+    return
+  }
+  window.clearTimeout(handle)
 }
 
 export function DiffPanelFileList({
@@ -306,6 +322,10 @@ export function DiffPanelFileList({
     ids: [],
     versions: new Map(),
   })
+  const backgroundHighlightQueueRef = useRef<string[]>([])
+  const backgroundHighlightQueuedIdsRef = useRef(new Set<string>())
+  const backgroundHighlightItemsRef = useRef(new Map<string, DiffItem>())
+  const backgroundHighlightIdleRef = useRef<IdleCallbackHandle | null>(null)
 
   const setCodeViewHandle = useCallback(
     (handle: CodeViewHandle<DiffCommentMetadata> | null) => {
@@ -323,6 +343,51 @@ export function DiffPanelFileList({
     [workerPool],
   )
 
+  const flushBackgroundHighlightQueue = useCallback(() => {
+    backgroundHighlightIdleRef.current = null
+    const queue = backgroundHighlightQueueRef.current
+    for (let index = 0; index < 4; index += 1) {
+      const itemId = queue.shift()
+      if (!itemId) break
+      backgroundHighlightQueuedIdsRef.current.delete(itemId)
+      const item = backgroundHighlightItemsRef.current.get(itemId)
+      if (item) primeItemHighlight(item)
+    }
+    if (queue.length > 0) {
+      backgroundHighlightIdleRef.current = requestIdleWork(flushBackgroundHighlightQueue)
+    }
+  }, [primeItemHighlight])
+
+  const scheduleBackgroundHighlightFlush = useCallback(() => {
+    if (backgroundHighlightIdleRef.current !== null) return
+    backgroundHighlightIdleRef.current = requestIdleWork(flushBackgroundHighlightQueue)
+  }, [flushBackgroundHighlightQueue])
+
+  const queueBackgroundHighlight = useCallback(
+    (item: DiffItem) => {
+      backgroundHighlightItemsRef.current.set(item.id, item)
+      if (!backgroundHighlightQueuedIdsRef.current.has(item.id)) {
+        backgroundHighlightQueuedIdsRef.current.add(item.id)
+        backgroundHighlightQueueRef.current.push(item.id)
+      }
+      scheduleBackgroundHighlightFlush()
+    },
+    [scheduleBackgroundHighlightFlush],
+  )
+
+  useEffect(
+    () => () => {
+      if (backgroundHighlightIdleRef.current !== null) {
+        cancelIdleWork(backgroundHighlightIdleRef.current)
+      }
+      backgroundHighlightIdleRef.current = null
+      backgroundHighlightQueueRef.current = []
+      backgroundHighlightQueuedIdsRef.current.clear()
+      backgroundHighlightItemsRef.current.clear()
+    },
+    [],
+  )
+
   useEffect(() => {
     const instance = codeViewHandle?.getInstance()
     if (!(codeViewHandle && instance)) return
@@ -330,14 +395,28 @@ export function DiffPanelFileList({
     const previous = itemSyncStateRef.current
     const next = getCodeViewItemSyncState(items)
     if (isAppendOnlyItemList(previous.ids, next.ids)) {
-      syncAppendOnlyCodeViewItems({ handle: codeViewHandle, items, previous, primeItemHighlight })
+      syncAppendOnlyCodeViewItems({
+        handle: codeViewHandle,
+        items,
+        previous,
+        queueBackgroundHighlight,
+      })
     } else {
-      for (const item of items) primeItemHighlight(item)
+      for (const item of items) queueBackgroundHighlight(item)
       instance.setItems(items)
     }
 
     itemSyncStateRef.current = next
-  }, [codeViewHandle, items, primeItemHighlight])
+  }, [codeViewHandle, items, queueBackgroundHighlight])
+
+  const primeRenderedHighlights = useCallback(() => {
+    const renderedItems = codeViewRef.current?.getInstance()?.getRenderedItems() ?? []
+    for (const renderedItem of renderedItems) {
+      if (renderedItem.type === 'diff') {
+        primeItemHighlight(renderedItem.item as DiffItem)
+      }
+    }
+  }, [codeViewRef, primeItemHighlight])
 
   return (
     <CodeView<DiffCommentMetadata>
@@ -358,6 +437,7 @@ export function DiffPanelFileList({
         unsafeCSS: DIFF_PANEL_UNSAFE_CSS,
         enableGutterUtility: true,
         lineHoverHighlight: 'both',
+        onPostRender: primeRenderedHighlights,
         itemMetrics: {
           lineHeight: DIFF_FILE_ESTIMATED_LINE_HEIGHT,
           diffHeaderHeight: DIFF_FILE_ESTIMATED_HEADER_HEIGHT,
