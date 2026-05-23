@@ -1,13 +1,12 @@
 import { type SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { getDesktopActionErrorMessage } from '../../../desktop/action-results'
-import { getErrorMessage } from '../../../desktop/error-messages'
+import { getDesktopActionErrorMessage } from '../../desktop/action-results'
+import { getErrorMessage } from '../../desktop/error-messages'
 import type {
   AppSettings,
   DesktopActionInvoker,
   GitOpsMode,
   ProjectGitState,
-} from '../../../desktop/types'
-import type { SavedDiffComment } from '../diff/diffCommentStore'
+} from '../../desktop/types'
 import {
   buildGitOpsCommentCards,
   getActionResultCommitted,
@@ -16,6 +15,7 @@ import {
   getActionResultPreviewed,
   getActionResultPushed,
 } from './composer-git-ops.helpers'
+import type { SavedDiffComment } from './diff/diffCommentStore'
 
 function getPrimaryGitOpsActionLabel(input: {
   canCommit: boolean

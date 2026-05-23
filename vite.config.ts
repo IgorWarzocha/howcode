@@ -12,7 +12,11 @@ const howcodeAliases = {
   '@howcode/common': path.resolve(projectRoot, 'src/app/components/common/index.ts'),
   '@howcode/composer': path.resolve(projectRoot, 'src/app/components/workspace/composer/index.ts'),
   '@howcode/desktop': path.resolve(projectRoot, 'src/app/desktop/index.ts'),
-  '@howcode/diff': path.resolve(projectRoot, 'src/app/components/workspace/diff/index.ts'),
+  '@howcode/native-gitops/diff-panel': path.resolve(
+    projectRoot,
+    'src/app/native/gitops/diff-panel.tsx',
+  ),
+  '@howcode/native-gitops': path.resolve(projectRoot, 'src/app/native/gitops/index.ts'),
   '@howcode/extensions': path.resolve(projectRoot, 'src/app/features/extensions/index.ts'),
   '@howcode/query': path.resolve(projectRoot, 'src/app/query/index.ts'),
   '@howcode/settings': path.resolve(projectRoot, 'src/app/views/settings/index.ts'),

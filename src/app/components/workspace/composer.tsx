@@ -1,5 +1,5 @@
 import { ComposerPromptSurface } from '@howcode/composer'
-import type { SavedDiffComment } from '@howcode/diff'
+import type { SavedDiffComment } from '@howcode/native-gitops'
 import { type RefObject, useRef } from 'react'
 import type { ComposerSendMode, KeybindingOverrides } from '../../../../shared/keybindings'
 import type {

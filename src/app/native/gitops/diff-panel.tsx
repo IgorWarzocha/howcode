@@ -1,5 +1,6 @@
-import { DiffPanelContent, DiffWorkerPoolProvider } from '@howcode/diff'
 import type { ProjectDiffBaseline } from '../../desktop/types'
+import { DiffPanelContent } from './diff/diff-panel-content'
+import { DiffWorkerPoolProvider } from './diff/diff-worker-pool-provider'
 
 type DiffPanelProps = {
   projectId: string

@@ -1,6 +1,6 @@
 import type { KeyboardEventHandler, ReactNode, RefObject } from 'react'
-import { appTypeSmallClass } from '../../../ui/classes'
-import { ComposerTextField } from './composer-text-field'
+import { ComposerTextField } from '../../components/workspace/composer/composer-text-field'
+import { appTypeSmallClass } from '../../ui/classes'
 
 type ComposerGitOpsMessageFieldProps = {
   actionErrorMessage: string | null

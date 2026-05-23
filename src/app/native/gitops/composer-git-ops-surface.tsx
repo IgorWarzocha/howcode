@@ -1,21 +1,21 @@
 import { type RefObject, useEffect } from 'react'
-import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
+import { useHowcodeKeybindingCommand } from '../../app-shell/keybinding-events'
+import { ComposerDictationControls } from '../../components/workspace/composer/composer-dictation-controls'
+import { useComposerDictation } from '../../components/workspace/composer/useComposerDictation'
 import type {
   AppSettings,
   DesktopActionInvoker,
   ProjectDiffBaseline,
   ProjectDiffRenderMode,
   ProjectGitState,
-} from '../../../desktop/types'
-import { getFeatureStatusDataAttributes } from '../../../features/feature-status'
-import { composerTextActionButtonClass } from '../../../ui/classes'
-import type { SettingsOpenTarget } from '../../../views/settings/settingsTypes'
-import type { SavedDiffComment } from '../diff/diffCommentStore'
-import { ComposerDictationControls } from './composer-dictation-controls'
+} from '../../desktop/types'
+import { getFeatureStatusDataAttributes } from '../../features/feature-status'
+import { composerTextActionButtonClass } from '../../ui/classes'
+import type { SettingsOpenTarget } from '../../views/settings/settingsTypes'
 import { ComposerGitOpsFooter } from './composer-git-ops-footer'
 import { ComposerGitOpsMessageField } from './composer-git-ops-message-field'
 import { ComposerGitOpsTopBar } from './composer-git-ops-top-bar'
-import { useComposerDictation } from './useComposerDictation'
+import type { SavedDiffComment } from './diff/diffCommentStore'
 import { useComposerGitOpsState } from './useComposerGitOpsState'
 
 type ComposerGitOpsSurfaceProps = {

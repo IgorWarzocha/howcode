@@ -2,7 +2,7 @@ import type {
   ProjectCommitEntry,
   ProjectDiffBaseline,
   ProjectDiffResolvedBaseline,
-} from '../../../desktop/types'
+} from '../../desktop/types'
 
 export const defaultDiffBaseline = { kind: 'head' } as const satisfies ProjectDiffBaseline
 

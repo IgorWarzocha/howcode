@@ -1,8 +1,8 @@
 import type { RefObject } from 'react'
 import { createPortal } from 'react-dom'
-import { popoverPanelClass } from '../../../../ui/classes'
-import { cn } from '../../../../utils/cn'
-import { BranchSwitchPopover } from '../../branch-switch-popover'
+import { popoverPanelClass } from '../../../ui/classes'
+import { cn } from '../../../utils/cn'
+import { BranchSwitchPopover } from '../branch-switch-popover'
 
 export type BranchSelectorPanelPosition = {
   left: number

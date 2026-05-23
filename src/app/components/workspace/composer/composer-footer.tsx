@@ -1,3 +1,4 @@
+import { ComposerDiffBaselineSelector, getGitOpsEntryButtonClass } from '@howcode/native-gitops'
 import { Bot, FileCode2, GitBranch, Terminal } from 'lucide-react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type {
@@ -18,13 +19,11 @@ import {
   workspaceFooterTrailingGroupClass,
 } from '../footer/workspace-footer-primitives'
 import { ComposerContextMeter } from './composer-context-meter'
-import { ComposerDiffBaselineSelector } from './composer-diff-baseline-selector'
 import { ComposerModelPopover } from './composer-model-popover'
 import {
   notifyComposerPopoverOpened,
   useComposerPopoverDismissSignal,
 } from './composer-popover-coordination'
-import { getGitOpsEntryButtonClass } from './git-ops'
 
 type ComposerFooterProps = {
   availableModels: ComposerModel[]

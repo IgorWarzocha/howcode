@@ -1,4 +1,4 @@
-import { defaultDiffBaseline } from '@howcode/composer'
+import { defaultDiffBaseline } from '@howcode/native-gitops'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getPersistedSessionPath, isLocalSessionPath } from '../../../shared/session-paths'
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'

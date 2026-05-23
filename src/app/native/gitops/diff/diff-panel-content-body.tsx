@@ -10,7 +10,7 @@ import {
   appTypeSmallClass,
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { getDiffBaselinePrefix, getResolvedDiffBaselineLabel } from '../composer/diff-baseline'
+import { getDiffBaselinePrefix, getResolvedDiffBaselineLabel } from '../diff-baseline'
 import { DiffChangedFilesTree } from './diff-changed-files-tree'
 import type { DiffCommentMetadata } from './diff-panel-content.helpers'
 import type { RenderablePatch } from './diff-panel-content.types'

@@ -2,16 +2,16 @@ import type { useQuery } from '@tanstack/react-query'
 import { Search } from 'lucide-react'
 import type { RefObject } from 'react'
 import { createPortal } from 'react-dom'
-import type { ProjectCommitEntry, ProjectDiffBaseline } from '../../../../desktop/types'
+import { PopoverPanel } from '../../../components/common/popover'
+import type { ProjectCommitEntry, ProjectDiffBaseline } from '../../../desktop/types'
 import {
   appToneMutedClass,
   appTypeSmallClass,
   composerPopoverInputClass,
   composerPopoverSectionLabelClass,
   popoverPanelClass,
-} from '../../../../ui/classes'
-import { cn } from '../../../../utils/cn'
-import { PopoverPanel } from '../../../common/popover'
+} from '../../../ui/classes'
+import { cn } from '../../../utils/cn'
 import { BaselineOption, baselineOptions, CommitOption } from '../composer-diff-baseline-options'
 import type { BranchSelectorPanelPosition } from './branch-selector-popover'
 

@@ -4,7 +4,7 @@ import type {
   ProjectDiffBaseline,
   ProjectDiffStatsResult,
   ProjectGitState,
-} from '../../../desktop/types'
+} from '../../desktop/types'
 import {
   appToneMutedClass,
   appToneTextClass,
@@ -12,8 +12,8 @@ import {
   appTypeMetaClass,
   composerPopoverOptionClass,
   composerPopoverOptionSelectedClass,
-} from '../../../ui/classes'
-import { cn } from '../../../utils/cn'
+} from '../../ui/classes'
+import { cn } from '../../utils/cn'
 
 export const baselineOptions = [
   { key: 'head', label: 'last commit', baseline: { kind: 'head' } },

@@ -3,7 +3,7 @@ import {
   diffCommentStore,
   getDiffCommentContextId,
   type SavedDiffComment,
-} from '@howcode/diff'
+} from '@howcode/native-gitops'
 import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react'
 import type { AppShellController } from '../../app-shell/useAppShellController'
 import { getDesktopActionErrorMessage } from '../../desktop/action-results'

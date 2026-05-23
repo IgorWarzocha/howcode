@@ -1,4 +1,4 @@
-import { ComposerDiffBaselineSelector, getGitOpsEntryButtonClass } from '@howcode/composer'
+import { ComposerDiffBaselineSelector, getGitOpsEntryButtonClass } from '@howcode/native-gitops'
 import { TerminalViewport } from '@howcode/native-terminal'
 import { GitBranch, PanelRightClose, SquareTerminal } from 'lucide-react'
 import { memo, useRef } from 'react'

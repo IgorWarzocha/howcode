@@ -1,32 +1,32 @@
 import { useQuery } from '@tanstack/react-query'
 import { GitCompareArrows } from 'lucide-react'
 import { type RefObject, useEffect, useId, useMemo, useRef, useState } from 'react'
+import {
+  notifyComposerPopoverOpened,
+  useComposerPopoverDismissSignal,
+} from '../../components/workspace/composer/composer-popover-coordination'
+import {
+  type BaselineAnchorKind,
+  useDiffBaselinePopoverPosition,
+} from '../../components/workspace/composer/useDiffBaselinePopoverPosition'
 import type {
   ProjectCommitEntry,
   ProjectDiffBaseline,
   ProjectDiffStatsResult,
   ProjectGitState,
-} from '../../../desktop/types'
-import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
+} from '../../desktop/types'
+import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
 import {
   desktopQueryKeys,
   getProjectDiffStatsQuery,
   listProjectCommitsQuery,
-} from '../../../query/desktop-query'
-import { cn } from '../../../utils/cn'
+} from '../../query/desktop-query'
+import { cn } from '../../utils/cn'
 import { getBaselineCounts, matchesCommitSearch } from './composer-diff-baseline-options'
-import {
-  notifyComposerPopoverOpened,
-  useComposerPopoverDismissSignal,
-} from './composer-popover-coordination'
 import { getDiffBaselineLabel, getDiffBaselinePrefix } from './diff-baseline'
 import { BaselineSelectorPortal } from './diff-baseline-selector/baseline-selector-popover'
 import { ComposerBranchSelectorPopover } from './diff-baseline-selector/branch-selector-popover'
 import { formatGitCount } from './git-ops'
-import {
-  type BaselineAnchorKind,
-  useDiffBaselinePopoverPosition,
-} from './useDiffBaselinePopoverPosition'
 
 type ComposerDiffBaselineSelectorProps = {
   composerPanelRef: RefObject<HTMLDivElement | null>

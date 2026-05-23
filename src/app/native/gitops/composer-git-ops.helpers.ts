@@ -1,5 +1,5 @@
-import type { DesktopActionResult } from '../../../desktop/types'
-import type { SavedDiffComment } from '../diff/diffCommentStore'
+import type { DesktopActionResult } from '../../desktop/types'
+import type { SavedDiffComment } from './diff/diffCommentStore'
 
 export type GitOpsCommentCard = {
   id: string

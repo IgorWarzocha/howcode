@@ -17,7 +17,7 @@ import {
 } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import type { SettingsOpenTarget } from '../../views/settings/settingsTypes'
-import { ComposerGitOpsSurface } from './composer/composer-git-ops-surface'
+import { ComposerGitOpsSurface } from './composer-git-ops-surface'
 import type { SavedDiffComment } from './diff/diffCommentStore'
 
 type GitOpsComposerPanelProps = {

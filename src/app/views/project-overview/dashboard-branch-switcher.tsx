@@ -1,6 +1,6 @@
+import { BranchSwitchPopover } from '@howcode/native-gitops'
 import { type CSSProperties, type RefObject, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { BranchSwitchPopover } from '../../components/workspace/branch-switch-popover'
 import {
   notifyComposerPopoverOpened,
   useComposerPopoverDismissSignal,

@@ -1,5 +1,6 @@
 import { Check, GitFork, GitPullRequestDraft } from 'lucide-react'
 import type { CSSProperties, ReactNode, RefObject } from 'react'
+import { PopoverPanel } from '../../components/common/popover'
 import {
   getFeatureStatusBadgeClass,
   getFeatureStatusDataAttributes,
@@ -17,7 +18,6 @@ import {
   composerPopoverSectionLabelClass,
 } from '../../ui/classes'
 import { cn } from '../../utils/cn'
-import { PopoverPanel } from '../common/popover'
 
 type BranchSwitchPopoverProps = {
   branchLabel: string | null | undefined

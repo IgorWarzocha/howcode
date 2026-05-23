@@ -8,28 +8,28 @@ import {
   useRef,
   useState,
 } from 'react'
+import { PopoverPanel } from '../../components/common/popover'
+import { PlainToggle } from '../../components/workspace/composer/plain-toggle'
+import {
+  workspaceFooterRowClass,
+  workspaceFooterTextClass,
+  workspaceFooterTrailingGroupClass,
+} from '../../components/workspace/footer/workspace-footer-primitives'
 import type {
   GitOpsMode,
   ProjectDiffBaseline,
   ProjectDiffRenderMode,
   ProjectGitState,
-} from '../../../desktop/types'
+} from '../../desktop/types'
 import {
   appToneMutedClass,
   appTypeMetaClass,
   compactIconButtonClass,
   composerPopoverInputClass,
   popoverPanelClass,
-} from '../../../ui/classes'
-import { cn } from '../../../utils/cn'
-import { PopoverPanel } from '../../common/popover'
-import {
-  workspaceFooterRowClass,
-  workspaceFooterTextClass,
-  workspaceFooterTrailingGroupClass,
-} from '../footer/workspace-footer-primitives'
+} from '../../ui/classes'
+import { cn } from '../../utils/cn'
 import { ComposerDiffBaselineSelector } from './composer-diff-baseline-selector'
-import { PlainToggle } from './plain-toggle'
 
 type ComposerGitOpsFooterProps = {
   composerPanelRef: RefObject<HTMLDivElement | null>
