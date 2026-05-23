@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto'
+import { readFile, realpath, stat } from 'node:fs/promises'
+import nodePath from 'node:path'
 import type {
   ProjectDiffBaseline,
   ProjectDiffImagePreview,
@@ -17,11 +19,7 @@ import { formatGitCommandError, runGitBufferWithOptions } from './git-runner.ts'
 import { resolveProjectDiffBaseline } from './project-diff-baselines.ts'
 import { isGitRepository } from './project-state.ts'
 import type { CommitMessageContext } from './types.ts'
-import {
-  captureWorktreeTree,
-  loadWorktreeSnapshot,
-  loadWorktreeStats,
-} from './worktree-snapshot.ts'
+import { loadWorktreeSnapshot, loadWorktreeStats } from './worktree-snapshot.ts'
 
 const maxDiffImagePreviewBytes = 12 * 1024 * 1024
 const fileExtensionPattern = /\.[^./]+$/
@@ -52,6 +50,24 @@ function normalizeGitImagePath(filePath: string) {
 function isMissingNamedBranchBaseline(error: unknown) {
   const message = formatGitCommandError(error)
   return message === 'Could not find dev branch.' || message === 'Could not find main branch.'
+}
+
+async function readWorktreeFile(projectId: string, filePath: string) {
+  const [projectRoot, candidatePath] = await Promise.all([
+    realpath(projectId),
+    realpath(nodePath.resolve(projectId, filePath)),
+  ])
+  const relativePath = nodePath.relative(projectRoot, candidatePath)
+  if (relativePath.startsWith('..') || nodePath.isAbsolute(relativePath)) {
+    return null
+  }
+
+  const fileStat = await stat(candidatePath)
+  if (!fileStat.isFile() || fileStat.size <= 0 || fileStat.size > maxDiffImagePreviewBytes) {
+    return null
+  }
+
+  return await readFile(candidatePath)
 }
 
 async function readGitObject(projectId: string, revision: string, filePath: string) {
@@ -85,11 +101,15 @@ export async function loadProjectDiffImagePreview({
   }
 
   try {
-    const revision =
+    const content =
       side === 'old'
-        ? (await resolveProjectDiffBaseline(projectId, baseline)).rev
-        : await captureWorktreeTree(projectId)
-    const content = await readGitObject(projectId, revision, normalizedPath)
+        ? await readGitObject(
+            projectId,
+            (await resolveProjectDiffBaseline(projectId, baseline)).rev,
+            normalizedPath,
+          )
+        : await readWorktreeFile(projectId, normalizedPath)
+    if (!content) return null
     if (content.length <= 0 || content.length > maxDiffImagePreviewBytes) {
       return null
     }
