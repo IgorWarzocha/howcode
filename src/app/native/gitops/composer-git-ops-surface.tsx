@@ -1,7 +1,8 @@
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
-import { type RefObject, useEffect, useRef, useState } from 'react'
+import { type CSSProperties, type RefObject, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useHowcodeKeybindingCommand } from '../../app-shell/keybinding-events'
-import { PopoverPanel } from '../../common/popover'
+import { PopoverPanel, PopoverPortalLayer, useAnchoredPopoverPosition } from '../../common/popover'
 import { ComposerDictationControls } from '../../composer/composer-dictation-controls'
 import { useComposerDictation } from '../../composer/useComposerDictation'
 import type {
@@ -58,7 +59,17 @@ type ComposerGitOpsSurfaceProps = {
 function UntrackedScopePopover({ count, onInclude }: { count: number; onInclude: () => void }) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLSpanElement | null>(null)
+  const anchorRef = useRef<HTMLButtonElement | null>(null)
+  const panelRef = useRef<HTMLDivElement | null>(null)
   const countLabel = `${count} untracked`
+
+  const { position: portalPosition, positionReady: portalPositionReady } =
+    useAnchoredPopoverPosition({
+      anchorRef,
+      panelRef,
+      enabled: open,
+      placement: 'top-start',
+    })
 
   useEffect(() => {
     if (!open) return
@@ -66,6 +77,7 @@ function UntrackedScopePopover({ count, onInclude }: { count: number; onInclude:
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target
       if (target instanceof Node && rootRef.current?.contains(target)) return
+      if (target instanceof Node && panelRef.current?.contains(target)) return
       setOpen(false)
     }
 
@@ -84,9 +96,64 @@ function UntrackedScopePopover({ count, onInclude }: { count: number; onInclude:
     }
   }, [open])
 
+  const panelClassName = cn(
+    composerPopoverPanelClass,
+    'motion-popover pointer-events-auto fixed z-[300] w-64 p-2 transition-opacity duration-150 ease-out',
+    !portalPositionReady && 'pointer-events-none opacity-0',
+  )
+  const panelStyle: CSSProperties = {
+    left: `${portalPosition.left}px`,
+    top: `${portalPosition.top}px`,
+  }
+
+  const panel = open ? (
+    <PopoverPortalLayer>
+      <PopoverPanel
+        ref={panelRef}
+        open={open}
+        surface={false}
+        className={panelClassName}
+        style={panelStyle}
+      >
+        <div className="grid gap-2 p-1">
+          <div className="grid gap-0.5 px-1">
+            <div className={appTypeMetaStrongClass}>Untracked files</div>
+            <p className={cn(appTypeMetaClass, appToneMutedClass, 'm-0')}>
+              {count} file{count === 1 ? ' is' : 's are'} not tracked by git.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="grid gap-0.5 rounded-md px-2 py-1.5 text-left text-[color:var(--text)] hover:bg-[color:var(--surface-hover)]"
+            onClick={() => setOpen(false)}
+          >
+            <span className={appTypeMetaStrongClass}>Exclude from commit</span>
+            <span className={cn(appTypeMetaClass, appToneMutedClass)}>
+              Hide from the diff and leave untracked.
+            </span>
+          </button>
+          <button
+            type="button"
+            className="grid gap-0.5 rounded-md px-2 py-1.5 text-left text-[color:var(--text)] hover:bg-[color:var(--surface-hover)]"
+            onClick={() => {
+              onInclude()
+              setOpen(false)
+            }}
+          >
+            <span className={appTypeMetaStrongClass}>Include in commit</span>
+            <span className={cn(appTypeMetaClass, appToneMutedClass)}>
+              Show in the diff and add when committing.
+            </span>
+          </button>
+        </div>
+      </PopoverPanel>
+    </PopoverPortalLayer>
+  ) : null
+
   return (
     <span ref={rootRef} className="relative inline-flex">
       <button
+        ref={anchorRef}
         type="button"
         aria-haspopup="dialog"
         aria-expanded={open}
@@ -97,47 +164,7 @@ function UntrackedScopePopover({ count, onInclude }: { count: number; onInclude:
       >
         {countLabel}
       </button>
-      {open ? (
-        <PopoverPanel
-          open={open}
-          className={cn(
-            composerPopoverPanelClass,
-            'motion-popover absolute right-0 bottom-[calc(100%+8px)] z-[80] w-64 p-2',
-          )}
-        >
-          <div className="grid gap-2 p-1">
-            <div className="grid gap-0.5 px-1">
-              <div className={appTypeMetaStrongClass}>Untracked files</div>
-              <p className={cn(appTypeMetaClass, appToneMutedClass, 'm-0')}>
-                {count} file{count === 1 ? ' is' : 's are'} not tracked by git.
-              </p>
-            </div>
-            <button
-              type="button"
-              className="grid gap-0.5 rounded-md px-2 py-1.5 text-left text-[color:var(--text)] hover:bg-[color:var(--surface-hover)]"
-              onClick={() => setOpen(false)}
-            >
-              <span className={appTypeMetaStrongClass}>Exclude from commit</span>
-              <span className={cn(appTypeMetaClass, appToneMutedClass)}>
-                Hide from the diff and leave untracked.
-              </span>
-            </button>
-            <button
-              type="button"
-              className="grid gap-0.5 rounded-md px-2 py-1.5 text-left text-[color:var(--text)] hover:bg-[color:var(--surface-hover)]"
-              onClick={() => {
-                onInclude()
-                setOpen(false)
-              }}
-            >
-              <span className={appTypeMetaStrongClass}>Include in commit</span>
-              <span className={cn(appTypeMetaClass, appToneMutedClass)}>
-                Show in the diff and add when committing.
-              </span>
-            </button>
-          </div>
-        </PopoverPanel>
-      ) : null}
+      {typeof document !== 'undefined' && panel ? createPortal(panel, document.body) : null}
     </span>
   )
 }
