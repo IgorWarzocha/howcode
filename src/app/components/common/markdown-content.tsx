@@ -1,4 +1,5 @@
 const trailingLineBreakPattern = /\n$/
+const languageClassPattern = /(?:^|\s)language-([^\s]+)/
 
 import { Check, Clipboard } from 'lucide-react'
 import {
@@ -84,9 +85,17 @@ function MarkdownLink(props: AnchorHTMLAttributes<HTMLAnchorElement>) {
   )
 }
 
+function getCodeBlockLanguage(children: ReactNode) {
+  if (!isValidElement<{ className?: string }>(children)) return null
+  const className = children.props.className ?? ''
+  const language = languageClassPattern.exec(className)?.[1]
+  return language ? language.replaceAll('-', ' ') : null
+}
+
 function MarkdownPre({ children, ...props }: HTMLAttributes<HTMLPreElement>) {
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle')
   const text = getNodeText(children).replace(trailingLineBreakPattern, '')
+  const language = getCodeBlockLanguage(children)
 
   useEffect(() => {
     if (copyState === 'idle') {
@@ -111,11 +120,21 @@ function MarkdownPre({ children, ...props }: HTMLAttributes<HTMLPreElement>) {
   }
 
   return (
-    <div className="group relative min-w-0">
+    <div className="group relative min-w-0 overflow-hidden rounded-lg bg-[color:var(--code-block-bg)]">
+      <div className="flex h-8 items-center justify-between bg-[color:var(--code-block-header-bg)] px-3">
+        <span
+          className={cn(
+            'truncate uppercase tracking-[0.08em] text-[color:var(--muted-2)]',
+            appTypeMetaStrongClass,
+          )}
+        >
+          {language ?? 'code'}
+        </span>
+      </div>
       <pre
         {...props}
         className={cn(
-          'm-0 max-w-full whitespace-pre-wrap break-words rounded-[14px] border border-[color:var(--border-strong)] bg-[color:var(--message-code-bg)] px-3 py-2.5 pr-14 text-[color:var(--markdown-code)] [overflow-wrap:anywhere]',
+          'm-0 max-w-full overflow-x-auto whitespace-pre-wrap break-words bg-transparent px-3 py-3 pr-14 text-[color:var(--code-block-text)] [overflow-wrap:anywhere]',
           appTypeCodeBlockClass,
         )}
       >
@@ -124,7 +143,7 @@ function MarkdownPre({ children, ...props }: HTMLAttributes<HTMLPreElement>) {
       <button
         type="button"
         className={cn(
-          'absolute top-1.5 right-1.5 grid h-8 min-w-8 place-items-center rounded-md bg-[color:var(--surface-hover)] px-2 opacity-70 transition-[opacity,scale,background-color,color] duration-150 ease-out hover:bg-[color:var(--folded-row-hover-bg)] hover:text-[color:var(--text)] hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-border)] active:scale-[0.96] group-hover:opacity-100',
+          'absolute top-1 right-1 grid h-6 min-w-6 place-items-center rounded-md bg-transparent px-1.5 opacity-55 transition-[opacity,scale,background-color,color] duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-border)] active:scale-[0.96] group-hover:opacity-100',
           appTypeMetaStrongClass,
           appToneMutedClass,
         )}
@@ -132,7 +151,7 @@ function MarkdownPre({ children, ...props }: HTMLAttributes<HTMLPreElement>) {
         aria-label={copyState === 'copied' ? 'Copied code block' : 'Copy code block'}
         title={copyState === 'failed' ? 'Copy failed' : copyState === 'copied' ? 'Copied' : 'Copy'}
       >
-        {copyState === 'copied' ? <Check size={14} /> : <Clipboard size={14} />}
+        {copyState === 'copied' ? <Check size={13} /> : <Clipboard size={13} />}
       </button>
     </div>
   )
@@ -159,7 +178,7 @@ function MarkdownInlineCode({ children }: { children?: ReactNode }) {
     <code
       className={cn(
         inlineCodeClass,
-        'bg-[color:var(--markdown-code-bg)] text-[color:var(--markdown-code)]',
+        'bg-[color:var(--inline-code-bg)] text-[color:var(--inline-code-text)]',
       )}
     >
       {children}

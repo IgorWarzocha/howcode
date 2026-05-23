@@ -29,6 +29,11 @@
   --message-assistant-bg: #2a2d3b;
   --message-tool-bg: #1f2230;
   --message-code-bg: rgba(181, 189, 104, 0.1);
+  --code-block-bg: color-mix(in srgb, var(--panel) 72%, var(--workspace));
+  --code-block-header-bg: color-mix(in srgb, var(--panel-2) 54%, transparent);
+  --code-block-text: color-mix(in srgb, var(--text) 92%, var(--markdown-code));
+  --inline-code-bg: color-mix(in srgb, var(--markdown-code) 13%, transparent);
+  --inline-code-text: color-mix(in srgb, var(--markdown-code) 82%, var(--text));
   --folded-row-bg: rgba(255, 255, 255, 0.035);
   --folded-row-hover-bg: rgba(255, 255, 255, 0.055);
   --folded-user-row-bg: color-mix(in srgb, var(--message-user-bg) 72%, transparent);

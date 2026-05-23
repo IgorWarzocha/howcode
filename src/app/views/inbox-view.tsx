@@ -299,10 +299,12 @@ export function InboxView({
                 />
               </div>
             ) : (
-              <div
-                className={`grid min-h-28 place-items-center rounded-lg bg-[color:var(--folded-row-bg)] ${inlineEmptyNoteClass}`}
-              >
-                {thread.running ? 'Still working…' : 'No final assistant message yet.'}
+              <div className="border-t border-[color:var(--border)]/70 pt-2">
+                <div
+                  className={`grid min-h-28 place-items-center rounded-lg bg-[color:var(--folded-row-bg)] ${inlineEmptyNoteClass}`}
+                >
+                  {thread.running ? 'Still working…' : 'No final assistant message yet.'}
+                </div>
               </div>
             )}
           </div>
