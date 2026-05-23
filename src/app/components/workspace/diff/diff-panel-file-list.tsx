@@ -10,7 +10,7 @@ import {
 } from '@pierre/diffs/react'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, ChevronRight, MessageSquarePlus } from 'lucide-react'
-import { useEffect, useMemo, useRef } from 'react'
+import { useLayoutEffect, useMemo, useRef } from 'react'
 import type { ProjectDiffBaseline, ProjectDiffImageSide } from '../../../desktop/types'
 import { getProjectDiffImagePreviewQuery } from '../../../query/desktop-query'
 import { desktopQueryKeys } from '../../../query/desktop-query-keys'
@@ -259,7 +259,7 @@ export function DiffPanelFileList({
     versions: new Map(),
   })
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const codeViewHandle = codeViewRef.current
     const codeView = codeViewHandle?.getInstance()
     if (!(codeViewHandle && codeView)) return
