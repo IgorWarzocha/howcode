@@ -256,9 +256,9 @@ function syncAppendOnlyCodeViewItems({
 
 function requestIdleWork(callback: () => void): IdleCallbackHandle {
   if ('requestIdleCallback' in window && typeof window.requestIdleCallback === 'function') {
-    return window.requestIdleCallback(callback, { timeout: 250 })
+    return window.requestIdleCallback(callback, { timeout: 750 })
   }
-  return window.setTimeout(callback, 50)
+  return window.setTimeout(callback, 250)
 }
 
 function cancelIdleWork(handle: IdleCallbackHandle) {
@@ -326,6 +326,7 @@ export function DiffPanelFileList({
   const backgroundHighlightQueuedIdsRef = useRef(new Set<string>())
   const backgroundHighlightItemsRef = useRef(new Map<string, DiffItem>())
   const backgroundHighlightIdleRef = useRef<IdleCallbackHandle | null>(null)
+  const primedHighlightVersionsRef = useRef(new Set<string>())
 
   const setCodeViewHandle = useCallback(
     (handle: CodeViewHandle<DiffCommentMetadata> | null) => {
@@ -338,6 +339,9 @@ export function DiffPanelFileList({
 
   const primeItemHighlight = useCallback(
     (item: DiffItem) => {
+      const versionKey = `${item.id}:${item.version ?? 'none'}`
+      if (primedHighlightVersionsRef.current.has(versionKey)) return
+      primedHighlightVersionsRef.current.add(versionKey)
       workerPool?.primeDiffHighlightCache(item.fileDiff)
     },
     [workerPool],
@@ -346,9 +350,10 @@ export function DiffPanelFileList({
   const flushBackgroundHighlightQueue = useCallback(() => {
     backgroundHighlightIdleRef.current = null
     const queue = backgroundHighlightQueueRef.current
-    for (let index = 0; index < 4; index += 1) {
+    for (let index = 0; index < 2; index += 1) {
       const itemId = queue.shift()
       if (!itemId) break
+      if (!backgroundHighlightQueuedIdsRef.current.has(itemId)) continue
       backgroundHighlightQueuedIdsRef.current.delete(itemId)
       const item = backgroundHighlightItemsRef.current.get(itemId)
       if (item) primeItemHighlight(item)
@@ -384,6 +389,7 @@ export function DiffPanelFileList({
       backgroundHighlightQueueRef.current = []
       backgroundHighlightQueuedIdsRef.current.clear()
       backgroundHighlightItemsRef.current.clear()
+      primedHighlightVersionsRef.current.clear()
     },
     [],
   )
@@ -413,7 +419,9 @@ export function DiffPanelFileList({
     const renderedItems = codeViewRef.current?.getInstance()?.getRenderedItems() ?? []
     for (const renderedItem of renderedItems) {
       if (renderedItem.type === 'diff') {
-        primeItemHighlight(renderedItem.item as DiffItem)
+        const item = renderedItem.item as DiffItem
+        backgroundHighlightQueuedIdsRef.current.delete(item.id)
+        primeItemHighlight(item)
       }
     }
   }, [codeViewRef, primeItemHighlight])
