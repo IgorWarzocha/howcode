@@ -4,13 +4,12 @@
 
 - Howcode now uses `@pierre/diffs@^1.2.2`.
 - `bun run ai:check` passes after the package bump.
-- We still render diffs with the old Howcode-owned structure:
-  - desktop returns one full patch string
-  - renderer parses with `parsePatchFiles(...)`
-  - Howcode owns the outer file virtualization via `@tanstack/react-virtual`
-  - visible rows render Pierre `<FileDiff />`
+- We now render the main diff list through Pierre `CodeView`.
+- Desktop still returns one full patch string.
+- Renderer still parses with `parsePatchFiles(...)`.
+- The old Howcode-owned outer `@tanstack/react-virtual` layer has been removed.
 
-So the package is current, but the architecture is still pre-`CodeView`.
+So the package is current and the renderer is on the `CodeView` path. True streaming still needs a backend/query contract change.
 
 ## What changed upstream
 
@@ -37,9 +36,9 @@ Useful bits:
 
 This maps pretty well to our current use, but not perfectly.
 
-## Likely good migration target
+## Migration target we just did
 
-Replace this stack:
+Replaced this stack:
 
 ```txt
 DiffPanelContent
@@ -55,7 +54,7 @@ DiffPanelContent
   CodeView
 ```
 
-Keep the changed-files tree outside CodeView for now.
+Changed-files tree stays outside CodeView for now.
 
 ## Things that look straightforward
 
@@ -78,26 +77,12 @@ Keep the changed-files tree outside CodeView for now.
 - Measurement assumptions. CodeView has `itemMetrics`; we need to set these from our actual row/header CSS or we may get jumpy scroll.
 - Backend streaming. CodeView can add/update items imperatively, but our desktop contract still returns one whole patch. True streaming needs a later backend/query contract change.
 
-## Recommended next slice
+## Next slice
 
-Do not rewrite the production diff panel immediately.
+The production diff list is now on `CodeView`. Next thing to assess is real streaming:
 
-Next slice should be a small hidden/prototype component:
+1. Change the desktop diff contract so it can publish parsed file items incrementally instead of one whole patch string.
+2. Use `CodeViewHandle.addItems(...)` / `updateItem(...)` for append/update paths.
+3. Keep current full-patch path as fallback until streaming is proven.
 
-1. Build `DiffPanelCodeViewSpike` next to the existing diff panel.
-2. Feed it the existing parsed `FileDiffMetadata[]` as controlled `CodeView` items.
-3. Port only:
-   - custom header
-   - annotations
-   - gutter utility
-   - collapsed state
-   - split/unified option
-4. Leave image previews out of the spike first.
-5. Compare behavior against the current panel.
-
-If that works, then migrate production in two commits:
-
-1. text/code diffs to `CodeView`
-2. image diff behavior
-
-If image/custom rows are awkward, keep our current architecture and only adopt smaller Pierre 1.2 APIs where they help.
+Image previews still need visual verification because they are rendered through the custom header path.

@@ -1,7 +1,6 @@
 const trailingSlashPattern = /\/+$/
 
-import type { DiffLineAnnotation, FileDiffMetadata } from '@pierre/diffs/react'
-import { useVirtualizer } from '@tanstack/react-virtual'
+import type { CodeViewHandle, DiffLineAnnotation } from '@pierre/diffs/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ProjectDiffBaseline } from '../../../desktop/types'
 import { getFeatureStatusDataAttributes } from '../../../features/feature-status'
@@ -11,10 +10,7 @@ import { cn } from '../../../utils/cn'
 import { DiffCommentAnnotationCard } from './diff-comment-annotation-card'
 import {
   buildFileDiffRenderKey,
-  DIFF_FILE_ESTIMATED_FILE_GAP,
-  DIFF_FILE_ESTIMATED_HEADER_HEIGHT,
   type DiffCommentMetadata,
-  estimateFileDiffHeight,
   isImageDiffFile,
   orderRenderableFiles,
   resolveFileDiffPath,
@@ -55,6 +51,7 @@ export function DiffPanelContent({
   const [focusedFilePaths, setFocusedFilePaths] = useState<readonly string[]>([])
   const [renderFileTree, setRenderFileTree] = useState(showFileTree)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const codeViewRef = useRef<CodeViewHandle<DiffCommentMetadata> | null>(null)
   const draftCardRef = useRef<HTMLDivElement | null>(null)
   const { diff, isLoading, error } = useDesktopDiff(projectId, baseline, isGitRepo)
 
@@ -120,7 +117,6 @@ export function DiffPanelContent({
   ])
 
   const {
-    annotationCountByFile,
     commentAnnotationsByFile,
     draftComment,
     draftSelectedLines,
@@ -136,7 +132,6 @@ export function DiffPanelContent({
     clearDragSelection,
     getFileInteractionHandlers,
     getSelectedLinesForFile,
-    handleFilePointerDownCapture,
     openDraftComment,
   } = useDiffCommentDrafting({
     draftComment,
@@ -159,50 +154,6 @@ export function DiffPanelContent({
       clearDragSelection()
     }
   }, [clearDragSelection, hasCommentContext])
-
-  const estimatedFileHeights = useMemo(
-    () =>
-      visibleRenderableFiles.map((fileDiff) => {
-        const fileKey = buildFileDiffRenderKey(fileDiff)
-        const isImageFile = isImageDiffFile(fileDiff)
-        return estimateFileDiffHeight({
-          fileDiff,
-          collapsed: focusedImageFileKeys.has(fileKey)
-            ? false
-            : (collapsedFiles[fileKey] ?? isImageFile),
-          diffRenderMode,
-          annotationCount: annotationCountByFile.get(fileKey) ?? 0,
-          imagePreview: isImageFile,
-        })
-      }),
-    [
-      annotationCountByFile,
-      collapsedFiles,
-      diffRenderMode,
-      focusedImageFileKeys,
-      visibleRenderableFiles,
-    ],
-  )
-
-  const getVirtualItemKey = useCallback(
-    (index: number) => buildFileDiffRenderKey(visibleRenderableFiles[index] as FileDiffMetadata),
-    [visibleRenderableFiles],
-  )
-
-  const fileListVirtualizer = useVirtualizer({
-    count: visibleRenderableFiles.length,
-    getScrollElement: () => scrollContainerRef.current,
-    initialRect: {
-      width: 960,
-      height: 720,
-    },
-    estimateSize: (index) =>
-      estimatedFileHeights[index] ??
-      DIFF_FILE_ESTIMATED_HEADER_HEIGHT + DIFF_FILE_ESTIMATED_FILE_GAP,
-    getItemKey: getVirtualItemKey,
-    overscan: 3,
-    useAnimationFrameWithResizeObserver: true,
-  })
 
   const toggleFileCollapsed = useCallback(
     (fileKey: string) => {
@@ -229,7 +180,7 @@ export function DiffPanelContent({
     collapsedFiles,
     draftCardRef,
     draftTarget,
-    fileListVirtualizer,
+    codeViewRef,
     renderableFiles: visibleRenderableFiles,
     savedComments,
     scrollContainerRef,
@@ -248,6 +199,7 @@ export function DiffPanelContent({
     >
       <DiffPanelContentBody
         baseline={baseline}
+        codeViewRef={codeViewRef}
         collapsedFiles={collapsedFiles}
         commentAnnotationsByFile={
           commentAnnotationsByFile as Map<string, DiffLineAnnotation<DiffCommentMetadata>[]>
@@ -258,11 +210,9 @@ export function DiffPanelContent({
         draftSelectedLines={draftSelectedLines}
         error={error}
         focusedImageFileKeys={focusedImageFileKeys}
-        fileListVirtualizer={fileListVirtualizer}
         focusedFilePaths={focusedFilePaths}
         getFileInteractionHandlers={getFileInteractionHandlers}
         getSelectedLinesForFile={getSelectedLinesForFile}
-        handleFilePointerDownCapture={handleFilePointerDownCapture}
         hasFocusedFiles={hasFocusedFiles}
         hasNoNetChanges={hasNoNetChanges}
         hasResolvedPatch={hasResolvedPatch}

@@ -1,6 +1,5 @@
 import type { SelectedLineRange } from '@pierre/diffs'
-import type { DiffLineAnnotation, FileDiffMetadata } from '@pierre/diffs/react'
-import type { useVirtualizer } from '@tanstack/react-virtual'
+import type { CodeViewHandle, DiffLineAnnotation, FileDiffMetadata } from '@pierre/diffs/react'
 import type { ReactNode, RefObject } from 'react'
 import type { ProjectDiffBaseline } from '../../../desktop/types'
 import type { useDesktopDiff } from '../../../hooks/useDesktopDiff'
@@ -29,16 +28,13 @@ type DiffPanelContentBodyProps = {
   diffRenderMode: 'stacked' | 'split'
   draftSelectedLines: SelectedLineRange | null
   error: string | null
-  fileListVirtualizer: ReturnType<typeof useVirtualizer<HTMLDivElement, Element>>
+  codeViewRef: RefObject<CodeViewHandle<DiffCommentMetadata> | null>
   focusedImageFileKeys: ReadonlySet<string>
   focusedFilePaths: readonly string[]
   getFileInteractionHandlers: ReturnType<
     typeof useDiffCommentDrafting
   >['getFileInteractionHandlers']
   getSelectedLinesForFile: ReturnType<typeof useDiffCommentDrafting>['getSelectedLinesForFile']
-  handleFilePointerDownCapture: ReturnType<
-    typeof useDiffCommentDrafting
-  >['handleFilePointerDownCapture']
   hasFocusedFiles: boolean
   hasNoNetChanges: boolean
   hasResolvedPatch: boolean
@@ -123,13 +119,12 @@ function DiffFilesView(input: DiffPanelContentBodyProps) {
           input.diffContentReady ? 'opacity-100' : 'opacity-0',
         )}
       >
-        <div
-          ref={input.scrollContainerRef}
-          className="min-h-0 min-w-0 flex-1 overflow-auto [overflow-anchor:none]"
-        >
+        <div className="min-h-0 min-w-0 flex-1 overflow-hidden [overflow-anchor:none]">
           {input.renderablePatch?.kind === 'files' ? (
             <DiffPanelFileList
               baseline={input.baseline}
+              codeViewRef={input.codeViewRef}
+              scrollContainerRef={input.scrollContainerRef}
               collapsedFiles={input.collapsedFiles}
               commentAnnotationsByFile={input.commentAnnotationsByFile}
               diffRenderMode={input.diffRenderMode}
@@ -137,15 +132,11 @@ function DiffFilesView(input: DiffPanelContentBodyProps) {
               focusedImageFileKeys={input.focusedImageFileKeys}
               getFileInteractionHandlers={input.getFileInteractionHandlers}
               getSelectedLinesForFile={input.getSelectedLinesForFile}
-              handleFilePointerDownCapture={input.handleFilePointerDownCapture}
-              measureElement={input.fileListVirtualizer.measureElement}
               onOpenDraftComment={input.openDraftComment}
               onToggleFileCollapsed={input.toggleFileCollapsed}
               projectId={input.projectId}
               renderCommentAnnotation={input.renderCommentAnnotation}
               renderableFiles={input.visibleRenderableFiles}
-              totalSize={input.fileListVirtualizer.getTotalSize()}
-              virtualItems={input.fileListVirtualizer.getVirtualItems()}
             />
           ) : null}
         </div>

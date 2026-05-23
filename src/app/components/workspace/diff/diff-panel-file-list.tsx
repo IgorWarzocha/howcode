@@ -1,17 +1,18 @@
 const gitDiffPrefixPattern = /^[ab]\//
 
-import type { GetHoveredLineResult, SelectedLineRange } from '@pierre/diffs'
+import type { CodeViewItem, GetHoveredLineResult, SelectedLineRange } from '@pierre/diffs'
 import {
   type AnnotationSide,
+  CodeView,
+  type CodeViewHandle,
   type DiffLineAnnotation,
-  FileDiff,
   type FileDiffMetadata,
 } from '@pierre/diffs/react'
 import { useQuery } from '@tanstack/react-query'
-import type { VirtualItem } from '@tanstack/react-virtual'
 import { ChevronDown, ChevronRight, MessageSquarePlus } from 'lucide-react'
+import { useMemo } from 'react'
 import type { ProjectDiffBaseline, ProjectDiffImageSide } from '../../../desktop/types'
-import { getProjectDiffImagePreviewQuery, openPathQuery } from '../../../query/desktop-query'
+import { getProjectDiffImagePreviewQuery } from '../../../query/desktop-query'
 import { desktopQueryKeys } from '../../../query/desktop-query-keys'
 import {
   appToneMutedClass,
@@ -28,12 +29,14 @@ import {
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import {
+  DIFF_FILE_ESTIMATED_FILE_GAP,
+  DIFF_FILE_ESTIMATED_HEADER_HEIGHT,
+  DIFF_FILE_ESTIMATED_LINE_HEIGHT,
   DIFF_PANEL_UNSAFE_CSS,
   type DiffCommentMetadata,
   getFileChangeCounts,
   getFileHeaderContextLabel,
   isImageDiffFile,
-  joinProjectFilePath,
 } from './diff-panel-content.helpers'
 import { resolveDiffThemeName } from './diff-rendering'
 
@@ -60,6 +63,8 @@ type FileInteractionHandlers = {
 
 type DiffPanelFileListProps = {
   baseline: ProjectDiffBaseline | null
+  codeViewRef: React.RefObject<CodeViewHandle<DiffCommentMetadata> | null>
+  scrollContainerRef: React.RefObject<HTMLDivElement | null>
   collapsedFiles: Record<string, boolean>
   commentAnnotationsByFile: Map<string, DiffLineAnnotation<DiffCommentMetadata>[]>
   diffRenderMode: 'stacked' | 'split'
@@ -69,12 +74,6 @@ type DiffPanelFileListProps = {
     fileKey: string,
     draftSelectedLines: SelectedLineRange | null,
   ) => SelectedLineRange | null
-  handleFilePointerDownCapture: (
-    event: React.PointerEvent<HTMLDivElement>,
-    fileKey: string,
-    filePath: string,
-  ) => void
-  measureElement: (element: Element | null) => void
   onOpenDraftComment: (
     fileKey: string,
     filePath: string,
@@ -85,18 +84,10 @@ type DiffPanelFileListProps = {
   projectId: string
   renderCommentAnnotation: (annotation: DiffLineAnnotation<DiffCommentMetadata>) => React.ReactNode
   renderableFiles: FileDiffMetadata[]
-  totalSize: number
-  virtualItems: VirtualItem[]
   draftSelectedLines: SelectedLineRange | null
 }
 
-type DiffPanelFileRowProps = Omit<
-  DiffPanelFileListProps,
-  'renderableFiles' | 'totalSize' | 'virtualItems'
-> & {
-  fileDiff: FileDiffMetadata
-  virtualRow: VirtualItem
-}
+type DiffItem = CodeViewItem<DiffCommentMetadata> & { type: 'diff' }
 
 function DiffImagePreviewPane({
   baseline,
@@ -169,12 +160,6 @@ function getDiffFileIdentity(fileDiff: FileDiffMetadata) {
   return { fileKey, filePath }
 }
 
-function isDiffHeaderClick(event: React.MouseEvent<HTMLDivElement>) {
-  const nativeEvent = event.nativeEvent as MouseEvent
-  const composedPath = nativeEvent.composedPath?.() ?? []
-  return composedPath.some((node) => node instanceof Element && node.hasAttribute('data-title'))
-}
-
 function DiffPanelFileHeader({
   fileDiff,
   fileKey,
@@ -202,6 +187,7 @@ function DiffPanelFileHeader({
       aria-label={`${isCollapsed ? 'Expand' : 'Collapse'} ${filePath}`}
       aria-expanded={!isCollapsed}
       data-tooltip={`${isCollapsed ? 'Expand' : 'Collapse'} ${filePath}`}
+      data-diff-file-path={filePath}
     >
       <span className="flex min-w-0 items-center gap-2.5">
         <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center text-[color:var(--muted)]">
@@ -226,181 +212,159 @@ function DiffPanelFileHeader({
   )
 }
 
-function DiffPanelFileRow({
-  baseline,
-  collapsedFiles,
-  commentAnnotationsByFile,
-  diffRenderMode,
-  draftSelectedLines,
-  fileDiff,
-  focusedImageFileKeys,
-  getFileInteractionHandlers,
-  getSelectedLinesForFile,
-  handleFilePointerDownCapture,
-  measureElement,
-  onOpenDraftComment,
-  onToggleFileCollapsed,
-  projectId,
-  renderCommentAnnotation,
-  virtualRow,
-}: DiffPanelFileRowProps) {
-  const { fileKey, filePath } = getDiffFileIdentity(fileDiff)
-  const isImageFile = isImageDiffFile(fileDiff)
-  const isCollapsed = focusedImageFileKeys.has(fileKey)
-    ? false
-    : (collapsedFiles[fileKey] ?? isImageFile)
-  const fileInteractionHandlers = getFileInteractionHandlers(fileKey, filePath)
-  const selectedLines = getSelectedLinesForFile(fileKey, draftSelectedLines)
-
-  if (isImageFile) {
-    return (
-      <div
-        key={virtualRow.key}
-        data-index={virtualRow.index}
-        data-diff-file-path={filePath}
-        className={cn(diffFileShellClass, 'first:mt-0')}
-        ref={measureElement}
-        onPointerDownCapture={(event) => handleFilePointerDownCapture(event, fileKey, filePath)}
-      >
-        <DiffPanelFileHeader
-          fileDiff={fileDiff}
-          fileKey={fileKey}
-          filePath={filePath}
-          isCollapsed={isCollapsed}
-          onToggleFileCollapsed={onToggleFileCollapsed}
-        />
-        {isCollapsed ? null : (
-          <DiffImagePreview
-            baseline={baseline}
-            fileDiff={fileDiff}
-            filePath={filePath}
-            projectId={projectId}
-          />
-        )}
-      </div>
-    )
-  }
-
-  return (
-    <div
-      key={virtualRow.key}
-      data-index={virtualRow.index}
-      data-diff-file-path={filePath}
-      className={cn(diffFileShellClass, 'first:mt-0')}
-      ref={measureElement}
-      onPointerDownCapture={(event) => handleFilePointerDownCapture(event, fileKey, filePath)}
-      onClickCapture={(event) => {
-        if (!isDiffHeaderClick(event)) return
-        void openPathQuery(joinProjectFilePath(projectId, filePath)).catch(() => undefined)
-      }}
-    >
-      <FileDiff<DiffCommentMetadata>
-        fileDiff={fileDiff}
-        lineAnnotations={commentAnnotationsByFile.get(fileKey) ?? []}
-        selectedLines={selectedLines}
-        style={{ visibility: 'hidden' }}
-        renderCustomHeader={(currentFileDiff) => (
-          <DiffPanelFileHeader
-            fileDiff={currentFileDiff}
-            fileKey={fileKey}
-            filePath={filePath}
-            isCollapsed={isCollapsed}
-            onToggleFileCollapsed={onToggleFileCollapsed}
-          />
-        )}
-        renderAnnotation={renderCommentAnnotation}
-        renderGutterUtility={(getHoveredLine: () => GetHoveredLineResult<'diff'> | undefined) => {
-          const hoveredLine = getHoveredLine()
-          if (!hoveredLine) return null
-          return (
-            <button
-              type="button"
-              className={diffCommentGutterButtonClass}
-              onClick={(event) => {
-                event.preventDefault()
-                event.stopPropagation()
-                onOpenDraftComment(fileKey, filePath, hoveredLine.side, hoveredLine.lineNumber)
-              }}
-              aria-label={`Add comment on ${filePath}:${hoveredLine.lineNumber}`}
-              data-tooltip="Add comment"
-            >
-              <MessageSquarePlus size={12} />
-            </button>
-          )
-        }}
-        options={{
-          diffStyle: diffRenderMode === 'split' ? 'split' : 'unified',
-          lineDiffType: 'none',
-          overflow: 'wrap',
-          theme: resolveDiffThemeName('dark'),
-          themeType: 'dark',
-          unsafeCSS: DIFF_PANEL_UNSAFE_CSS,
-          collapsed: isCollapsed,
-          enableGutterUtility: true,
-          lineHoverHighlight: 'both',
-          onLineClick: fileInteractionHandlers.onLineClick,
-          onLineNumberClick: fileInteractionHandlers.onLineNumberClick,
-          onPostRender: (node) => {
-            node.style.visibility = 'visible'
-          },
-        }}
-      />
-      {isImageFile && !isCollapsed ? (
-        <DiffImagePreview
-          baseline={baseline}
-          fileDiff={fileDiff}
-          filePath={filePath}
-          projectId={projectId}
-        />
-      ) : null}
-    </div>
-  )
+function getItemFileDiff(item: CodeViewItem<DiffCommentMetadata>) {
+  return item.type === 'diff' ? item.fileDiff : null
 }
 
 export function DiffPanelFileList({
   baseline,
+  codeViewRef,
+  scrollContainerRef,
   collapsedFiles,
   commentAnnotationsByFile,
   diffRenderMode,
+  draftSelectedLines,
   focusedImageFileKeys,
   getFileInteractionHandlers,
   getSelectedLinesForFile,
-  handleFilePointerDownCapture,
-  measureElement,
   onOpenDraftComment,
   onToggleFileCollapsed,
   projectId,
   renderCommentAnnotation,
   renderableFiles,
-  totalSize,
-  virtualItems,
-  draftSelectedLines,
 }: DiffPanelFileListProps) {
+  const items = useMemo<DiffItem[]>(
+    () =>
+      renderableFiles.map((fileDiff) => {
+        const { fileKey } = getDiffFileIdentity(fileDiff)
+        const isImageFile = isImageDiffFile(fileDiff)
+        return {
+          id: fileKey,
+          type: 'diff',
+          fileDiff,
+          annotations: commentAnnotationsByFile.get(fileKey) ?? [],
+          collapsed: focusedImageFileKeys.has(fileKey)
+            ? false
+            : (collapsedFiles[fileKey] ?? isImageFile),
+          version: Number(
+            `${fileKey.length}${commentAnnotationsByFile.get(fileKey)?.length ?? 0}${collapsedFiles[fileKey] ? 1 : 0}${focusedImageFileKeys.has(fileKey) ? 1 : 0}`,
+          ),
+        }
+      }),
+    [collapsedFiles, commentAnnotationsByFile, focusedImageFileKeys, renderableFiles],
+  )
+
+  const selectedLines = useMemo(() => {
+    for (const fileDiff of renderableFiles) {
+      const { fileKey } = getDiffFileIdentity(fileDiff)
+      const range = getSelectedLinesForFile(fileKey, draftSelectedLines)
+      if (range) return { id: fileKey, range }
+    }
+    return null
+  }, [draftSelectedLines, getSelectedLinesForFile, renderableFiles])
+
   return (
-    <div className="relative w-full" style={{ height: totalSize }}>
-      <div style={{ transform: `translateY(${virtualItems[0]?.start ?? 0}px)` }}>
-        {virtualItems.map((virtualRow) => (
-          <DiffPanelFileRow
-            key={virtualRow.key}
-            baseline={baseline}
-            collapsedFiles={collapsedFiles}
-            commentAnnotationsByFile={commentAnnotationsByFile}
-            diffRenderMode={diffRenderMode}
-            focusedImageFileKeys={focusedImageFileKeys}
-            draftSelectedLines={draftSelectedLines}
-            fileDiff={renderableFiles[virtualRow.index] as FileDiffMetadata}
-            getFileInteractionHandlers={getFileInteractionHandlers}
-            getSelectedLinesForFile={getSelectedLinesForFile}
-            handleFilePointerDownCapture={handleFilePointerDownCapture}
-            measureElement={measureElement}
-            onOpenDraftComment={onOpenDraftComment}
-            onToggleFileCollapsed={onToggleFileCollapsed}
-            projectId={projectId}
-            renderCommentAnnotation={renderCommentAnnotation}
-            virtualRow={virtualRow}
-          />
-        ))}
-      </div>
-    </div>
+    <CodeView<DiffCommentMetadata>
+      ref={codeViewRef}
+      items={items}
+      selectedLines={selectedLines}
+      containerRef={scrollContainerRef}
+      className={cn('h-full w-full overflow-auto', diffFileShellClass)}
+      options={{
+        diffStyle: diffRenderMode === 'split' ? 'split' : 'unified',
+        lineDiffType: 'none',
+        overflow: 'wrap',
+        theme: resolveDiffThemeName('dark'),
+        themeType: 'dark',
+        unsafeCSS: DIFF_PANEL_UNSAFE_CSS,
+        enableGutterUtility: true,
+        lineHoverHighlight: 'both',
+        itemMetrics: {
+          lineHeight: DIFF_FILE_ESTIMATED_LINE_HEIGHT,
+          diffHeaderHeight: DIFF_FILE_ESTIMATED_HEADER_HEIGHT,
+          spacing: DIFF_FILE_ESTIMATED_FILE_GAP,
+        },
+        layout: {
+          gap: DIFF_FILE_ESTIMATED_FILE_GAP,
+          paddingTop: 0,
+          paddingBottom: DIFF_FILE_ESTIMATED_FILE_GAP,
+        },
+        onLineClick: (lineProps, context) => {
+          if (!('annotationSide' in lineProps)) return
+          const fileDiff = getItemFileDiff(context.item)
+          if (!fileDiff) return
+          const { fileKey, filePath } = getDiffFileIdentity(fileDiff)
+          getFileInteractionHandlers(fileKey, filePath).onLineClick({
+            lineNumber: lineProps.lineNumber,
+            annotationSide: lineProps.annotationSide,
+            event: lineProps.event,
+          })
+        },
+        onLineNumberClick: (lineProps, context) => {
+          if (!('annotationSide' in lineProps)) return
+          const fileDiff = getItemFileDiff(context.item)
+          if (!fileDiff) return
+          const { fileKey, filePath } = getDiffFileIdentity(fileDiff)
+          getFileInteractionHandlers(fileKey, filePath).onLineNumberClick({
+            lineNumber: lineProps.lineNumber,
+            annotationSide: lineProps.annotationSide,
+            event: lineProps.event,
+          })
+        },
+      }}
+      renderCustomHeader={(item) => {
+        const fileDiff = getItemFileDiff(item)
+        if (!fileDiff) return null
+        const { fileKey, filePath } = getDiffFileIdentity(fileDiff)
+        const isCollapsed = item.collapsed === true
+        const isImageFile = isImageDiffFile(fileDiff)
+        return (
+          <div
+            className={cn(isImageFile && !isCollapsed && diffFileShellClass)}
+            data-diff-file-path={filePath}
+          >
+            <DiffPanelFileHeader
+              fileDiff={fileDiff}
+              fileKey={fileKey}
+              filePath={filePath}
+              isCollapsed={isCollapsed}
+              onToggleFileCollapsed={onToggleFileCollapsed}
+            />
+            {isImageFile && !isCollapsed ? (
+              <DiffImagePreview
+                baseline={baseline}
+                fileDiff={fileDiff}
+                filePath={filePath}
+                projectId={projectId}
+              />
+            ) : null}
+          </div>
+        )
+      }}
+      renderAnnotation={(annotation) =>
+        renderCommentAnnotation(annotation as DiffLineAnnotation<DiffCommentMetadata>)
+      }
+      renderGutterUtility={(getHoveredLine, item) => {
+        const hoveredLine = (getHoveredLine as () => GetHoveredLineResult<'diff'> | undefined)()
+        const fileDiff = getItemFileDiff(item)
+        if (!(hoveredLine && fileDiff)) return null
+        const { fileKey, filePath } = getDiffFileIdentity(fileDiff)
+        return (
+          <button
+            type="button"
+            className={diffCommentGutterButtonClass}
+            onClick={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              onOpenDraftComment(fileKey, filePath, hoveredLine.side, hoveredLine.lineNumber)
+            }}
+            aria-label={`Add comment on ${filePath}:${hoveredLine.lineNumber}`}
+            data-tooltip="Add comment"
+          >
+            <MessageSquarePlus size={12} />
+          </button>
+        )
+      }}
+    />
   )
 }

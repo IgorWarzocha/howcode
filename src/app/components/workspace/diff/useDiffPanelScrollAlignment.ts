@@ -1,6 +1,6 @@
-import type { FileDiffMetadata } from '@pierre/diffs/react'
-import type { Virtualizer } from '@tanstack/react-virtual'
+import type { CodeViewHandle, FileDiffMetadata } from '@pierre/diffs/react'
 import { useEffect } from 'react'
+import type { DiffCommentMetadata } from './diff-panel-content.helpers'
 import { alignElementInScrollViewport, buildFileDiffRenderKey } from './diff-panel-content.helpers'
 import type { SavedDiffComment } from './diffCommentStore'
 
@@ -12,7 +12,7 @@ export function useDiffPanelScrollAlignment({
   collapsedFiles,
   draftCardRef,
   draftTarget,
-  fileListVirtualizer,
+  codeViewRef,
   renderableFiles,
   savedComments,
   scrollContainerRef,
@@ -31,7 +31,7 @@ export function useDiffPanelScrollAlignment({
     endSide?: 'deletions' | 'additions' | undefined
     endLineNumber?: number | undefined
   } | null
-  fileListVirtualizer: Virtualizer<HTMLDivElement, Element>
+  codeViewRef: React.RefObject<CodeViewHandle<DiffCommentMetadata> | null>
   renderableFiles: FileDiffMetadata[]
   savedComments: SavedDiffComment[]
   scrollContainerRef: React.RefObject<HTMLDivElement | null>
@@ -91,7 +91,12 @@ export function useDiffPanelScrollAlignment({
       (fileDiff) => buildFileDiffRenderKey(fileDiff) === selectedComment.fileKey,
     )
     if (selectedFileIndex >= 0) {
-      fileListVirtualizer.scrollToIndex(selectedFileIndex, { align: 'center' })
+      codeViewRef.current?.scrollTo({
+        type: 'item',
+        id: selectedComment.fileKey,
+        align: 'center',
+        behavior: 'instant',
+      })
     }
 
     let cancelled = false
@@ -143,7 +148,7 @@ export function useDiffPanelScrollAlignment({
     }
   }, [
     collapsedFiles,
-    fileListVirtualizer,
+    codeViewRef,
     renderableFiles,
     savedComments,
     scrollContainerRef,
