@@ -496,6 +496,11 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
 }
 
 @container (max-width: 24rem) {
+  .artifact-markdown-editor .mdxeditor-toolbar {
+    height: 56px;
+    min-height: 56px;
+  }
+
   .artifact-markdown-editor .artifact-mdx-toolbar-drawer,
   .artifact-markdown-editor .artifact-mdx-toolbar-drawer [class*="diffSourceToggleWrapper"] {
     height: 56px;
