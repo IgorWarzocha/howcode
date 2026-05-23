@@ -33,39 +33,46 @@
   --diffs-modified-color-override: var(--accent);
   --diffs-bg-context-override: var(--workspace);
   --diffs-bg-context-number-override: var(--workspace);
-  --diffs-bg-hover-override: var(--panel);
-  --diffs-bg-separator-override: var(--panel);
-  --diffs-bg-buffer-override: var(--panel-2);
-  --diffs-bg-addition-override: color-mix(in srgb, var(--workspace) 90%, var(--green));
-  --diffs-bg-addition-number-override: color-mix(in srgb, var(--workspace) 86%, var(--green));
-  --diffs-bg-addition-hover-override: color-mix(in srgb, var(--workspace) 84%, var(--green));
-  --diffs-bg-addition-emphasis-override: color-mix(in srgb, var(--workspace) 78%, var(--green));
-  --diffs-bg-deletion-override: color-mix(in srgb, var(--workspace) 90%, var(--danger));
-  --diffs-bg-deletion-number-override: color-mix(in srgb, var(--workspace) 86%, var(--danger));
-  --diffs-bg-deletion-hover-override: color-mix(in srgb, var(--workspace) 84%, var(--danger));
-  --diffs-bg-deletion-emphasis-override: color-mix(in srgb, var(--workspace) 78%, var(--danger));
+  --diffs-bg-hover-override: var(--surface-hover);
+  --diffs-bg-separator-override: var(--folded-row-bg);
+  --diffs-bg-buffer-override: var(--workspace);
+  --diffs-bg-addition-override: color-mix(in srgb, var(--workspace) 72%, var(--green));
+  --diffs-bg-addition-number-override: color-mix(in srgb, var(--workspace) 68%, var(--green));
+  --diffs-bg-addition-hover-override: color-mix(in srgb, var(--workspace) 64%, var(--green));
+  --diffs-bg-addition-emphasis-override: color-mix(in srgb, var(--workspace) 38%, var(--green));
+  --diffs-bg-deletion-override: color-mix(in srgb, var(--workspace) 72%, var(--danger));
+  --diffs-bg-deletion-number-override: color-mix(in srgb, var(--workspace) 68%, var(--danger));
+  --diffs-bg-deletion-hover-override: color-mix(in srgb, var(--workspace) 64%, var(--danger));
+  --diffs-bg-deletion-emphasis-override: color-mix(in srgb, var(--workspace) 38%, var(--danger));
   --diffs-selection-color-override: var(--accent);
   --diffs-bg-selection-override: var(--panel-3);
-  --diffs-bg-selection-number-override: var(--panel-2);
-  --diffs-bg-conflict-marker-override: var(--panel-2);
+  --diffs-bg-selection-number-override: var(--folded-row-bg);
+  --diffs-bg-conflict-marker-override: var(--folded-row-bg);
   --diffs-bg-conflict-marker-number-override: var(--panel-3);
-  --diffs-bg-conflict-current-override: var(--panel);
-  --diffs-bg-conflict-current-number-override: var(--panel-2);
-  --diffs-bg-conflict-base-override: var(--panel);
-  --diffs-bg-conflict-base-number-override: var(--panel-2);
-  --diffs-bg-conflict-incoming-override: var(--panel);
-  --diffs-bg-conflict-incoming-number-override: var(--panel-2);
-  --conflict-bg-current-override: var(--panel);
-  --conflict-bg-current-number-override: var(--panel-2);
-  --conflict-bg-incoming-override: var(--panel);
-  --conflict-bg-incoming-number-override: var(--panel-2);
-  --conflict-bg-current-header-override: var(--panel-2);
+  --diffs-bg-conflict-current-override: var(--folded-row-bg);
+  --diffs-bg-conflict-current-number-override: var(--panel-3);
+  --diffs-bg-conflict-base-override: var(--folded-row-bg);
+  --diffs-bg-conflict-base-number-override: var(--panel-3);
+  --diffs-bg-conflict-incoming-override: var(--folded-row-bg);
+  --diffs-bg-conflict-incoming-number-override: var(--panel-3);
+  --conflict-bg-current-override: var(--folded-row-bg);
+  --conflict-bg-current-number-override: var(--panel-3);
+  --conflict-bg-incoming-override: var(--folded-row-bg);
+  --conflict-bg-incoming-number-override: var(--panel-3);
+  --conflict-bg-current-header-override: var(--folded-row-bg);
   --conflict-bg-current-header-number-override: var(--panel-3);
-  --conflict-bg-incoming-header-override: var(--panel-2);
+  --conflict-bg-incoming-header-override: var(--folded-row-bg);
   --conflict-bg-incoming-header-number-override: var(--panel-3);
-  --diffs-gap-style: 1px solid var(--border);
+  --diffs-gap-style: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   background-color: var(--workspace);
   color: var(--text);
+}
+
+:host(.diff-file-shell) {
+  display: block;
+  overflow: hidden;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 54%, transparent);
 }
 
 [data-diff-span],
@@ -80,12 +87,11 @@
 [data-diff],
 [data-file] {
   background-color: var(--workspace);
-  border-top: 1px solid var(--border);
 }
 
 [data-gutter] [data-column-number],
 [data-gutter] [data-gutter-buffer] {
-  border-right: 1px solid var(--border);
+  border-right: 1px solid color-mix(in srgb, var(--border) 64%, transparent);
 }
 
 [data-content-buffer],
@@ -94,20 +100,20 @@
 }
 
 [data-file-info] {
-  background-color: var(--panel);
-  border-block-color: var(--border);
+  background-color: var(--folded-row-bg);
+  border-block-color: color-mix(in srgb, var(--border) 64%, transparent);
   color: var(--text);
 }
 
 [data-diffs-header="default"] {
-  background-color: var(--panel);
-  border-bottom: 1px solid var(--border);
+  background-color: var(--folded-row-bg);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 64%, transparent);
   color: var(--text);
 }
 
 [data-diffs-header="custom"] {
-  background-color: var(--panel);
-  border-bottom: 1px solid var(--border);
+  background-color: color-mix(in srgb, var(--folded-row-bg) 56%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 54%, transparent);
   color: var(--text);
 }
 
@@ -156,7 +162,7 @@ slot[name="header-prefix"]::slotted(*) {
 [data-separator-wrapper],
 [data-separator-content],
 [data-expand-button] {
-  background-color: var(--panel);
+  background-color: transparent;
 }
 
 [data-separator="line-info"][data-separator-first],
@@ -166,24 +172,24 @@ slot[name="header-prefix"]::slotted(*) {
 
 [data-expand-button]:hover,
 [data-merge-conflict-action]:hover {
-  background-color: var(--panel-2);
+  background-color: var(--surface-hover);
   color: var(--text);
 }
 
 [data-diff-type="split"][data-overflow="scroll"] [data-additions] {
-  border-left: 1px solid var(--border);
+  border-left: 1px solid color-mix(in srgb, var(--border) 64%, transparent);
 }
 
 [data-diff-type="split"][data-overflow="scroll"] [data-deletions] {
-  border-right: 1px solid var(--border);
+  border-right: 1px solid color-mix(in srgb, var(--border) 64%, transparent);
 }
 
 [data-diff-type="split"][data-overflow="wrap"] [data-deletions] [data-content] {
-  border-right: 1px solid var(--border);
+  border-right: 1px solid color-mix(in srgb, var(--border) 64%, transparent);
 }
 
 [data-diff-type="split"][data-overflow="wrap"] [data-additions] [data-gutter] {
-  border-left: 1px solid var(--border);
+  border-left: 1px solid color-mix(in srgb, var(--border) 64%, transparent);
 }
 
 [data-title] {

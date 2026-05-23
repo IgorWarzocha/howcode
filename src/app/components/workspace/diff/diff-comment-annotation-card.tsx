@@ -6,13 +6,14 @@ import {
   appToneTextClass,
   appTypeMetaStrongClass,
   appTypeSmallClass,
+  compactIconButtonClass,
+  diffCommentAnnotationClass,
+  diffCommentSaveButtonClass,
+  diffCommentTextareaClass,
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { type DiffCommentMetadata, describeCommentTarget } from './diff-panel-content.helpers'
 import type { DiffCommentDraft } from './diffCommentStore'
-
-const commentCardClass =
-  'mx-3 mb-1.5 rounded-lg border border-[color:var(--border)] bg-[color:var(--workspace)] px-3 py-2'
 
 type DiffCommentAnnotationCardProps = {
   annotation: DiffLineAnnotation<DiffCommentMetadata>
@@ -35,16 +36,37 @@ export function DiffCommentAnnotationCard({
 
   if (metadata.kind === 'draft') {
     return (
-      <div ref={draftCardRef} className={commentCardClass}>
-        <div className={cn('mb-2', appTypeMetaStrongClass, appToneMutedClass)}>
-          Add comment · {draftComment ? describeCommentTarget(draftComment) : 'Line comment'}
+      <div ref={draftCardRef} className={diffCommentAnnotationClass}>
+        <div className="flex items-center justify-between gap-2">
+          <div className={cn('min-w-0 truncate', appTypeMetaStrongClass, appToneMutedClass)}>
+            Add comment · {draftComment ? describeCommentTarget(draftComment) : 'Line comment'}
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              className={compactIconButtonClass}
+              onClick={() => {
+                setDraftComment(null)
+              }}
+              aria-label="Cancel comment"
+              data-tooltip="Cancel comment"
+            >
+              <X size={14} />
+            </button>
+            <button
+              type="button"
+              className={diffCommentSaveButtonClass}
+              onClick={onPersistDraftComment}
+              disabled={(draftComment?.body.trim().length ?? 0) === 0}
+              aria-label="Save comment"
+              data-tooltip="Save comment"
+            >
+              <Check size={14} />
+            </button>
+          </div>
         </div>
         <textarea
-          className={cn(
-            'min-h-20 w-full resize-y rounded-lg border border-[color:var(--border)] bg-[color:var(--workspace)] px-3 py-2 outline-none placeholder:text-[color:var(--muted)]',
-            appTypeSmallClass,
-            appToneTextClass,
-          )}
+          className={diffCommentTextareaClass}
           value={draftComment?.body ?? ''}
           onChange={(event) => {
             setDraftComment((current) =>
@@ -56,41 +78,17 @@ export function DiffCommentAnnotationCard({
                 : current,
             )
           }}
-          placeholder="Leave a note on this diff"
           aria-label={`Comment for line ${annotation.lineNumber}`}
         />
-        <div className="mt-2 flex items-center justify-end gap-2">
-          <button
-            type="button"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
-            onClick={() => {
-              setDraftComment(null)
-            }}
-            aria-label="Cancel comment"
-            data-tooltip="Cancel comment"
-          >
-            <X size={14} />
-          </button>
-          <button
-            type="button"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-[color:var(--accent)] text-[color:var(--accent-contrast)] disabled:cursor-not-allowed disabled:opacity-50"
-            onClick={onPersistDraftComment}
-            disabled={(draftComment?.body.trim().length ?? 0) === 0}
-            aria-label="Save comment"
-            data-tooltip="Save comment"
-          >
-            <Check size={14} />
-          </button>
-        </div>
       </div>
     )
   }
 
   return (
-    <div data-saved-diff-comment-id={metadata.id} className={commentCardClass}>
+    <div data-saved-diff-comment-id={metadata.id} className={diffCommentAnnotationClass}>
       <div
         className={cn(
-          'mb-1 flex items-center justify-between gap-2',
+          'flex items-center justify-between gap-2',
           appTypeMetaStrongClass,
           appToneMutedClass,
         )}
@@ -98,7 +96,7 @@ export function DiffCommentAnnotationCard({
         <span>Comment · {describeCommentTarget(metadata)}</span>
         <button
           type="button"
-          className="inline-flex h-5 w-5 items-center justify-center rounded-md text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
+          className={compactIconButtonClass}
           onClick={() => onRemoveComment(metadata.id)}
           aria-label="Remove comment"
           data-tooltip="Remove comment"
@@ -106,7 +104,7 @@ export function DiffCommentAnnotationCard({
           <X size={12} />
         </button>
       </div>
-      <p className={cn('m-0 whitespace-pre-wrap', appTypeSmallClass, appToneTextClass)}>
+      <p className={cn('m-0 whitespace-pre-wrap px-0.5', appTypeSmallClass, appToneTextClass)}>
         {metadata.body}
       </p>
     </div>

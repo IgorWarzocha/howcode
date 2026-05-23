@@ -238,6 +238,19 @@ export const diffRailSearchClass = `flex min-h-8 shrink-0 items-center gap-2 rou
 export const diffRailTreeWrapperClass =
   'flex min-h-0 flex-1 flex-col gap-2 bg-[color:var(--workspace)] px-2.5 pt-1.5 pb-0'
 
+export const diffFileHeaderButtonClass =
+  'flex w-full items-center justify-between gap-3 bg-transparent px-3 py-1.5 text-left text-[color:var(--text)] transition-colors hover:bg-[color:var(--surface-hover)]'
+
+export const diffCommentGutterButtonClass =
+  'inline-flex h-5 w-5 items-center justify-center rounded-md bg-[color:var(--accent-bg)] text-[color:var(--text)] transition hover:bg-[color:var(--accent-bg-strong)]'
+
+export const diffCommentAnnotationClass = 'ml-3 mr-0 mb-1.5 grid gap-1.5 py-1 pl-2.5 pr-0'
+
+export const diffCommentTextareaClass = `min-h-12 w-full resize-y rounded-md border border-[color:var(--border)]/70 bg-transparent px-2 py-1.5 outline-none placeholder:text-[color:var(--muted)] focus:border-[color:var(--border-strong)] focus:bg-[color:var(--surface-hover)] ${appTypeSmallClass} ${appToneTextClass}`
+
+export const diffCommentSaveButtonClass =
+  'inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--green)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:opacity-40'
+
 export const diffPanelTurnChipBaseClass =
   'shrink-0 rounded-lg border px-2 py-1 text-left transition-colors'
 

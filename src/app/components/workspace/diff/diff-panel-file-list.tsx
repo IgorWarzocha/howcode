@@ -15,6 +15,8 @@ import {
   appToneTextClass,
   appTypeGroupTitleClass,
   appTypeSmallClass,
+  diffCommentGutterButtonClass,
+  diffFileHeaderButtonClass,
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import {
@@ -115,7 +117,7 @@ function DiffPanelFileHeader({
   return (
     <button
       type="button"
-      className="flex w-full items-center justify-between gap-3 bg-transparent px-3 py-2 text-left text-[color:var(--text)]"
+      className={diffFileHeaderButtonClass}
       onClick={(event) => {
         event.preventDefault()
         event.stopPropagation()
@@ -182,6 +184,7 @@ function DiffPanelFileRow({
       }}
     >
       <FileDiff<DiffCommentMetadata>
+        className="diff-file-shell"
         fileDiff={fileDiff}
         lineAnnotations={commentAnnotationsByFile.get(fileKey) ?? []}
         selectedLines={selectedLines}
@@ -202,7 +205,7 @@ function DiffPanelFileRow({
           return (
             <button
               type="button"
-              className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-[rgba(168,177,255,0.92)] text-[color:var(--accent-contrast)] shadow-[0_4px_12px_rgba(0,0,0,0.18)] transition hover:scale-[1.03]"
+              className={diffCommentGutterButtonClass}
               onClick={(event) => {
                 event.preventDefault()
                 event.stopPropagation()
