@@ -44,6 +44,15 @@ export function CopyMessageButton({ label, text }: { label: string; text: string
   )
 }
 
+function getParagraphRenderItems(content: string[]) {
+  const seen = new Map<string, number>()
+  return content.map((paragraph) => {
+    const occurrence = seen.get(paragraph) ?? 0
+    seen.set(paragraph, occurrence + 1)
+    return { key: `${paragraph}:${occurrence}`, paragraph }
+  })
+}
+
 export function renderProse(
   content: string[],
   format: 'prose' | 'list' = 'prose',
@@ -61,8 +70,8 @@ export function renderProse(
 
   return (
     <div className="grid min-w-0 gap-3 text-pretty [overflow-wrap:anywhere]">
-      {content.map((paragraph) => (
-        <MarkdownContent key={paragraph} markdown={paragraph} tone={tone} />
+      {getParagraphRenderItems(content).map(({ key, paragraph }) => (
+        <MarkdownContent key={key} markdown={paragraph} tone={tone} />
       ))}
     </div>
   )
@@ -71,8 +80,8 @@ export function renderProse(
 export function renderThinking(content: string[], tone: 'system' | 'thinking' = 'thinking') {
   return (
     <div className="grid min-w-0 gap-2 [overflow-wrap:anywhere]">
-      {content.map((paragraph) => (
-        <div key={paragraph} className="group/message relative min-w-0 pr-9">
+      {getParagraphRenderItems(content).map(({ key, paragraph }) => (
+        <div key={key} className="group/message relative min-w-0 pr-9">
           <MarkdownContent
             markdown={paragraph}
             tone={tone}

@@ -18,6 +18,7 @@ export type ComposerModelMenuOption = {
   label: string
   description?: string
   selected: boolean
+  disabled?: boolean
   onSelect: () => void
 }
 
@@ -77,6 +78,7 @@ export function ModelPopoverMenuList({ items }: { items: ComposerModelMenuOption
               item.selected && 'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
             )}
             onClick={item.onSelect}
+            disabled={item.disabled}
           >
             <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
               {item.selected ? <Check size={13} /> : null}

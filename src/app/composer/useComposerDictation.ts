@@ -102,6 +102,51 @@ function getUnavailableDictationToggleResult(
   return 'unavailable' as const
 }
 
+type StartDictationCaptureInput = {
+  clearDictationSession: () => void
+  dictationMaxDurationSeconds: number
+  dictationState: DictationState | null
+  dictationCaptureRef: React.MutableRefObject<LocalDictationCaptureSession | null>
+  dictationSessionTokenRef: React.MutableRefObject<number>
+  setDictationActive: Dispatch<SetStateAction<boolean>>
+  setDictationInterimText: Dispatch<SetStateAction<string>>
+  setDictationState: Dispatch<SetStateAction<DictationState | null>>
+  setErrorMessage: Dispatch<SetStateAction<string | null>>
+}
+
+async function startDictationCapture(input: StartDictationCaptureInput) {
+  if (!(canUseLocalDictationCapture() && canTranscribeDictationQuery())) {
+    input.setErrorMessage('Local dictation is unavailable in this runtime.')
+    return 'unavailable' as const
+  }
+
+  try {
+    const availability = await readDictationAvailability(
+      input.dictationState,
+      input.setErrorMessage,
+    )
+    if (availability === 'unavailable') return 'unavailable' as const
+    if (availability) input.setDictationState(availability)
+    const unavailableResult = getUnavailableDictationToggleResult(
+      availability,
+      input.setErrorMessage,
+    )
+    if (unavailableResult) return unavailableResult
+
+    const capture = await startLocalDictationCapture(input.dictationMaxDurationSeconds)
+    input.dictationSessionTokenRef.current += 1
+    input.dictationCaptureRef.current = capture
+    input.setDictationActive(true)
+    input.setDictationInterimText('')
+    input.setErrorMessage(null)
+    return 'started' as const
+  } catch (error) {
+    input.clearDictationSession()
+    input.setErrorMessage(getErrorMessage(error, 'Could not start local dictation.'))
+    return 'unavailable' as const
+  }
+}
+
 type UseComposerDictationProps = {
   activeView: string
   dictationModelId: string | null
@@ -129,6 +174,9 @@ export function useComposerDictation({
   const [dictationState, setDictationState] = useState<DictationState | null>(null)
   const dictationSessionTokenRef = useRef(0)
   const dictationFlushPromiseRef = useRef<Promise<void> | null>(null)
+  const dictationStartPromiseRef = useRef<Promise<
+    'started' | 'setup-required' | 'unavailable'
+  > | null>(null)
   const dictationScopeKey = useMemo(
     () => `${activeView}::${projectId}::${sessionPath ?? ''}::${draftThreadId ?? ''}`,
     [activeView, draftThreadId, projectId, sessionPath],
@@ -249,34 +297,33 @@ export function useComposerDictation({
       return 'stopped' as const
     }
 
+    if (dictationStartPromiseRef.current) {
+      return await dictationStartPromiseRef.current
+    }
+
     if (dictationFlushPromiseRef.current) {
       await dictationFlushPromiseRef.current
       return 'stopped' as const
     }
 
-    if (!(canUseLocalDictationCapture() && canTranscribeDictationQuery())) {
-      setErrorMessage('Local dictation is unavailable in this runtime.')
-      return 'unavailable' as const
-    }
-
+    const startPromise = startDictationCapture({
+      clearDictationSession,
+      dictationMaxDurationSeconds,
+      dictationState,
+      dictationCaptureRef,
+      dictationSessionTokenRef,
+      setDictationActive,
+      setDictationInterimText,
+      setDictationState,
+      setErrorMessage,
+    })
+    dictationStartPromiseRef.current = startPromise
     try {
-      const availability = await readDictationAvailability(dictationState, setErrorMessage)
-      if (availability === 'unavailable') return 'unavailable' as const
-      if (availability) setDictationState(availability)
-      const unavailableResult = getUnavailableDictationToggleResult(availability, setErrorMessage)
-      if (unavailableResult) return unavailableResult
-
-      const capture = await startLocalDictationCapture(dictationMaxDurationSeconds)
-      dictationSessionTokenRef.current += 1
-      dictationCaptureRef.current = capture
-      setDictationActive(true)
-      setDictationInterimText('')
-      setErrorMessage(null)
-      return 'started' as const
-    } catch (error) {
-      clearDictationSession()
-      setErrorMessage(getErrorMessage(error, 'Could not start local dictation.'))
-      return 'unavailable' as const
+      return await startPromise
+    } finally {
+      if (dictationStartPromiseRef.current === startPromise) {
+        dictationStartPromiseRef.current = null
+      }
     }
   }
 

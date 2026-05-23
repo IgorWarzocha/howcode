@@ -45,7 +45,7 @@ export function useThreadFindNavigation({
       const attempts = findLoadAttemptsRef.current[activeFindMatch.messageId] ?? 0
       if (attempts >= 20) return
       findLoadAttemptsRef.current[activeFindMatch.messageId] = attempts + 1
-      onLoadAroundMessage?.(Number.MAX_SAFE_INTEGER)
+      onLoadAroundMessage?.(activeFindMatch.revealHistoryCompactions ?? Number.MAX_SAFE_INTEGER)
       return
     }
 

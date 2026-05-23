@@ -1,4 +1,4 @@
-import { getComposerPlaceholderText } from '@howcode/composer'
+import { getComposerPlaceholderText } from '@howcode/composer/composer-prompt-surface-helpers'
 import { describe, expect, it } from 'vitest'
 
 describe('composer placeholder text', () => {

@@ -115,6 +115,8 @@ function DiffImagePreviewPane({
   const previewQuery = useQuery({
     queryKey: desktopQueryKeys.projectDiffImagePreview(projectId, filePath, side, baseline),
     queryFn: () => getProjectDiffImagePreviewQuery({ projectId, baseline, path: filePath, side }),
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
   })
   const label = side === 'old' ? 'Before' : 'After'
 

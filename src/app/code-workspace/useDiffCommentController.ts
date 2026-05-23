@@ -107,7 +107,6 @@ export function useDiffCommentController({
     setDiffCommentsSending(true)
     setDiffCommentError(null)
     setSelectedDiffCommentId(null)
-    setComposerPromptResetKey((current) => current + 1)
 
     try {
       const result = await sendDiffCommentsToComposer({
@@ -118,6 +117,7 @@ export function useDiffCommentController({
         shellState,
       })
       setDiffCommentError(result.error)
+      if (result.ok) setComposerPromptResetKey((current) => current + 1)
       return result.ok
     } catch (error) {
       setDiffCommentError(

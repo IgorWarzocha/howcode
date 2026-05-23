@@ -157,30 +157,47 @@ async function loadTrackedWorktreeSnapshot(
   projectId: string,
   options: {
     baselineRev?: string | undefined | null | undefined
-    hasHead?: boolean | undefined
     signal?: AbortSignal | undefined
     onPatchChunk?: ((chunk: string) => void) | undefined
   } = {},
 ): Promise<WorktreeSnapshot> {
-  const baselineRev = options.baselineRev?.trim() || (options.hasHead ? 'HEAD' : EMPTY_TREE_OID)
-  const diffArguments = (extraArgs: string[]) => ['diff', ...extraArgs, baselineRev, '--']
-  const patchPromise = runGitStreamingWithOptions(
-    projectId,
-    diffArguments(['--unified=1', '--no-color', '--no-ext-diff', '--find-renames']),
-    {
-      timeout: 20_000,
-      signal: options.signal,
-      onStdoutChunk: options.onPatchChunk ?? (() => undefined),
-    },
-  ).then(({ stdout }) => stdout.trim())
-  const statsPromise = loadWorktreeStats(projectId, {
-    baselineRev,
-    hasHead: options.hasHead,
-    includeUntracked: false,
-  })
+  return runExclusiveStagedWorktree(projectId, () =>
+    withTemporaryIndex(projectId, async ({ env, hasHead }) => {
+      await runGitWithOptions(projectId, ['add', '-u', '--', '.'], {
+        env,
+        timeout: 20_000,
+        maxBuffer: 1024 * 1024 * 8,
+      })
 
-  const [stats, patchOutput] = await Promise.all([statsPromise, patchPromise])
-  return { ...stats, patch: patchOutput }
+      const baselineRev = options.baselineRev?.trim() || (hasHead ? 'HEAD' : EMPTY_TREE_OID)
+      const diffArguments = (extraArgs: string[]) => [
+        'diff',
+        '--cached',
+        ...extraArgs,
+        baselineRev,
+        '--',
+      ]
+      const patchPromise = runGitStreamingWithOptions(
+        projectId,
+        diffArguments(['--unified=1', '--no-color', '--no-ext-diff', '--find-renames']),
+        {
+          env,
+          timeout: 20_000,
+          signal: options.signal,
+          onStdoutChunk: options.onPatchChunk ?? (() => undefined),
+        },
+      ).then(({ stdout }) => stdout.trim())
+      const statsPromise = loadWorktreeStats(projectId, {
+        baselineRev,
+        env,
+        hasHead,
+        includeUntracked: true,
+      })
+
+      const [stats, patchOutput] = await Promise.all([statsPromise, patchPromise])
+      return { ...stats, patch: patchOutput }
+    }),
+  )
 }
 
 async function loadStagedWorktreeSnapshot(
@@ -259,6 +276,7 @@ export async function loadWorktreeStats(
   } = {},
 ): Promise<WorktreeStats> {
   const loadStats = async (context?: {
+    cached?: boolean | undefined
     env?: NodeJS.ProcessEnv
     hasHead?: boolean | undefined
   }) => {
@@ -269,7 +287,7 @@ export async function loadWorktreeStats(
         : options.baselineRev?.trim() || (hasHead ? 'HEAD' : EMPTY_TREE_OID)
     const diffArguments = (extraArgs: string[]) => [
       'diff',
-      ...(options.includeUntracked ? ['--cached'] : []),
+      ...(context?.cached ? ['--cached'] : []),
       ...extraArgs,
       baselineRev,
       '--',
@@ -300,22 +318,27 @@ export async function loadWorktreeStats(
     }
   }
 
-  if (options.env || !options.includeUntracked) {
-    const context = options.env
-      ? { env: options.env, hasHead: options.hasHead ?? false }
-      : { hasHead: options.hasHead ?? false }
-    return loadStats(context)
+  if (options.env) {
+    return loadStats({
+      cached: options.includeUntracked,
+      env: options.env,
+      hasHead: options.hasHead ?? false,
+    })
   }
 
   return runExclusiveStagedWorktree(projectId, () =>
     withTemporaryIndex(projectId, async ({ env, hasHead }) => {
-      await runGitWithOptions(projectId, ['add', '-A', '--', '.'], {
-        env,
-        timeout: 20_000,
-        maxBuffer: 1024 * 1024 * 8,
-      })
+      await runGitWithOptions(
+        projectId,
+        ['add', options.includeUntracked ? '-A' : '-u', '--', '.'],
+        {
+          env,
+          timeout: 20_000,
+          maxBuffer: 1024 * 1024 * 8,
+        },
+      )
 
-      return loadStats({ env, hasHead })
+      return loadStats({ cached: true, env, hasHead })
     }),
   )
 }

@@ -106,10 +106,6 @@ function MarkdownPre({ children, ...props }: HTMLAttributes<HTMLPreElement>) {
     return () => window.clearTimeout(timeout)
   }, [copyState])
 
-  if (!text.trim()) {
-    return null
-  }
-
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(text)

@@ -107,6 +107,7 @@ export function ComposerTextField({
     focus: focusTextareaAtEnd,
     blur: () => textareaRef.current?.blur(),
     blurOnLeave: hoverToBlur,
+    extraBoundaryRefs: [inlinePopoverWrapperRef],
   })
 
   const { canExpandField, reservedHeight, setTextareaLayoutVersion, textareaLayoutVersion } =

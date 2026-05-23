@@ -426,7 +426,7 @@ export function ComposerPromptSurface({
             }}
             onSelectModel={(availableModel) => {
               if (isConversationComposerView(activeView) && !persistedSessionPath) {
-                void runComposerAction(
+                return runComposerAction(
                   'settings.update',
                   {
                     key: composerMode === 'chat' ? 'chatModel' : 'codeModel',
@@ -435,10 +435,9 @@ export function ComposerPromptSurface({
                   },
                   { closeMenu: false },
                 )
-                return
               }
 
-              void runComposerAction(
+              return runComposerAction(
                 'composer.model',
                 {
                   provider: availableModel.provider,
@@ -451,14 +450,13 @@ export function ComposerPromptSurface({
             }}
             onSelectThinkingLevel={(level) => {
               if (isConversationComposerView(activeView) && !persistedSessionPath) {
-                void runComposerAction('settings.update', {
+                return runComposerAction('settings.update', {
                   key: composerMode === 'chat' ? 'chatThinkingLevel' : 'codeThinkingLevel',
                   value: level,
                 })
-                return
               }
 
-              void runComposerAction('composer.thinking', {
+              return runComposerAction('composer.thinking', {
                 level,
                 projectId,
                 sessionPath,

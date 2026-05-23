@@ -26,8 +26,8 @@ type ComposerModelPopoverProps = {
   panelRef: RefObject<HTMLDivElement | null>
   preferPortalPlacement?: boolean
   thinkingLevelLabels: Record<ComposerThinkingLevel, string>
-  onSelectModel: (model: ComposerModel) => void
-  onSelectThinkingLevel: (level: ComposerThinkingLevel) => void
+  onSelectModel: (model: ComposerModel) => void | Promise<void>
+  onSelectThinkingLevel: (level: ComposerThinkingLevel) => void | Promise<void>
 }
 
 export function ComposerModelPopover({
@@ -58,6 +58,7 @@ export function ComposerModelPopover({
   const [openMenu, setOpenMenu] = useState<NestedModelMenu>(null)
   const [selectedProvider, setSelectedProvider] = useState(currentModel?.provider ?? '')
   const [modelSearch, setModelSearch] = useState('')
+  const [pendingSelectionId, setPendingSelectionId] = useState<string | null>(null)
   const modelSearchRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -94,7 +95,9 @@ export function ComposerModelPopover({
         id: provider.provider,
         label: provider.provider,
         selected: provider.provider === selectedProvider,
+        disabled: pendingSelectionId !== null,
         onSelect: () => {
+          if (pendingSelectionId) return
           setSelectedProvider(provider.provider)
         },
       }))
@@ -108,8 +111,14 @@ export function ComposerModelPopover({
         selected:
           currentModel?.provider === availableModel.provider &&
           currentModel.id === availableModel.id,
+        disabled: pendingSelectionId !== null,
         onSelect: () => {
-          onSelectModel(availableModel)
+          const selectionId = `${availableModel.provider}/${availableModel.id}`
+          if (pendingSelectionId) return
+          setPendingSelectionId(selectionId)
+          void Promise.resolve(onSelectModel(availableModel)).finally(() => {
+            setPendingSelectionId(null)
+          })
         },
       }))
     }
@@ -119,9 +128,14 @@ export function ComposerModelPopover({
         id: level,
         label: thinkingLevelLabels[level],
         selected: level === currentThinkingLevel,
+        disabled: pendingSelectionId !== null,
         onSelect: () => {
-          onSelectThinkingLevel(level)
-          setOpenMenu(null)
+          if (pendingSelectionId) return
+          setPendingSelectionId(level)
+          void Promise.resolve(onSelectThinkingLevel(level)).finally(() => {
+            setPendingSelectionId(null)
+            setOpenMenu(null)
+          })
         },
       }))
     }
@@ -133,6 +147,7 @@ export function ComposerModelPopover({
     currentModel?.provider,
     currentThinkingLevel,
     onSelectModel,
+    pendingSelectionId,
     onSelectThinkingLevel,
     openMenu,
     providers,

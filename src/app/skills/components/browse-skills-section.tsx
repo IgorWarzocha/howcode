@@ -282,7 +282,7 @@ export function BrowseSkillsSection({
     setSelectedCatalogSources((current) =>
       current.filter((source) => {
         const item = catalogItems.find((catalogItem) => catalogItem.identityKey === source)
-        return item ? !installedSkillSlugs.has(normalizeSkillSlug(item.skillId)) : false
+        return item ? !installedSkillSlugs.has(normalizeSkillSlug(item.skillId)) : true
       }),
     )
   }, [catalogItems, installedSkillSlugs])

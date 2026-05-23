@@ -1,4 +1,4 @@
-import { DiffPanel } from '@howcode/native-gitops/diff-panel'
+import { DiffPanel } from '@howcode/native-gitops'
 import { defaultPiSettings } from '@howcode/shared/default-pi-settings'
 import type { AppShellController } from '../app-shell/useAppShellController'
 import { mainPanelClass } from '../ui/classes'

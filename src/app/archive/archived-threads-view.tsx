@@ -131,6 +131,7 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
       return
     }
 
+    const previousSelectedThreadIds = selectedThreadIds
     setBusyAction(busyState)
     setOptimisticallyHiddenThreadIds((current) => [...new Set([...current, ...threadIds])])
     const mutationThreadIdSet = new Set(threadIds)
@@ -155,11 +156,13 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
         setOptimisticallyHiddenThreadIds((current) =>
           current.filter((threadId) => !restoredThreadIdSet.has(threadId)),
         )
+        setSelectedThreadIds(previousSelectedThreadIds)
       }
     } catch {
       setOptimisticallyHiddenThreadIds((current) =>
         current.filter((threadId) => !mutationThreadIdSet.has(threadId)),
       )
+      setSelectedThreadIds(previousSelectedThreadIds)
     }
 
     setBusyAction(null)

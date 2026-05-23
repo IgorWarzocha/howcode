@@ -1,4 +1,3 @@
-import { ComposerPromptSurface } from '@howcode/composer'
 import type { SavedDiffComment } from '@howcode/native-gitops'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import type { ComposerSendMode, KeybindingOverrides } from '@howcode/shared/keybindings'
@@ -16,6 +15,7 @@ import type {
   ProjectGitState,
 } from '../desktop/types'
 import type { Message, View } from '../types'
+import { ComposerPromptSurface } from './composer-prompt-surface'
 
 export type ComposerProps = {
   activeView: View

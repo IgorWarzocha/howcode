@@ -41,6 +41,7 @@ export function useArtifactSelection(input: {
   useEffect(() => {
     void selectedArtifactSlug
     void selectedVersion
+    if (draftDirtyRef.current) return
     draftDirtyRef.current = false
     setDraft(displayedContentRef.current)
   }, [displayedContentRef, draftDirtyRef, selectedArtifactSlug, selectedVersion, setDraft])

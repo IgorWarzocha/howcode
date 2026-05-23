@@ -49,6 +49,23 @@ function formatTokenBreakdown(usageSummary: ProjectUsageSummary | null | undefin
   return parts.length > 0 ? parts.join(' · ') : 'No token usage yet'
 }
 
+function getSafeExternalUrl(url: string) {
+  try {
+    const parsed = new URL(url)
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed.toString() : null
+  } catch {
+    return null
+  }
+}
+
+async function openExternalUrl(url: string) {
+  const safeUrl = getSafeExternalUrl(url)
+  if (!safeUrl) return false
+  if (await openExternalQuery(safeUrl)) return true
+  window.open(safeUrl, '_blank', 'noopener,noreferrer')
+  return true
+}
+
 function ProjectRepositorySection({
   branchLabel,
   gitState,
@@ -72,7 +89,7 @@ function ProjectRepositorySection({
             <button
               type="button"
               className="group/repo inline-flex min-w-0 items-center gap-2 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-[color:var(--surface-hover)] active:scale-[0.99]"
-              onClick={() => void openExternalQuery(githubLink.canonicalUrl)}
+              onClick={() => void openExternalUrl(githubLink.canonicalUrl)}
               aria-label={`Open ${githubLink.owner}/${githubLink.repo} on GitHub`}
             >
               <GitHubInvertocatMark
@@ -113,7 +130,7 @@ function ProjectRepositorySection({
                 ghostButtonClass,
                 'inline-flex h-7 items-center gap-1.5 px-2 active:scale-[0.96]',
               )}
-              onClick={() => void openExternalQuery(`${githubLink.canonicalUrl}/issues`)}
+              onClick={() => void openExternalUrl(`${githubLink.canonicalUrl}/issues`)}
             >
               <CircleDot size={12} aria-hidden="true" /> Issues
             </button>
@@ -123,7 +140,7 @@ function ProjectRepositorySection({
                 ghostButtonClass,
                 'inline-flex h-7 items-center gap-1.5 px-2 active:scale-[0.96]',
               )}
-              onClick={() => void openExternalQuery(`${githubLink.canonicalUrl}/pulls`)}
+              onClick={() => void openExternalUrl(`${githubLink.canonicalUrl}/pulls`)}
             >
               <GitPullRequest size={12} aria-hidden="true" /> PRs
             </button>
