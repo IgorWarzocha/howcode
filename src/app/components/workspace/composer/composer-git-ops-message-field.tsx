@@ -14,6 +14,7 @@ type ComposerGitOpsMessageFieldProps = {
   onLayoutChange: () => void
   onKeyDown?: KeyboardEventHandler<HTMLTextAreaElement>
   onInput?: () => void
+  leadingAdornment?: ReactNode
   trailingAccessory?: ReactNode
   value: string
   commitFocused: boolean
@@ -59,6 +60,7 @@ export function ComposerGitOpsMessageField({
   onInput,
   onKeyDown,
   onLayoutChange,
+  leadingAdornment,
   trailingAccessory,
   value,
   commitFocused,
@@ -95,6 +97,8 @@ export function ComposerGitOpsMessageField({
       hoverToFocus={hoverToFocus}
       hoverToBlur={hoverToBlur}
       hoverBoundaryRef={hoverBoundaryRef}
+      trailingAdornmentEnabled={Boolean(leadingAdornment)}
+      trailingAdornment={leadingAdornment}
     />
   )
 
@@ -111,7 +115,9 @@ export function ComposerGitOpsMessageField({
     return (
       <div className="flex items-end justify-between gap-2 pr-4 pl-[1.1rem] pt-1 pb-1">
         <div className="min-w-0 flex-1">{field}</div>
-        <div className="inline-flex items-center gap-2">{trailingAccessory}</div>
+        <div className="inline-flex translate-y-[-0.25rem] items-center gap-2">
+          {trailingAccessory}
+        </div>
         {visibleStatusMessage ? (
           <div className={getStatusMessageClass(statusTone)}>{visibleStatusMessage}</div>
         ) : null}
@@ -124,7 +130,9 @@ export function ComposerGitOpsMessageField({
     <div className="grid content-end pr-4 pl-[1.1rem] pt-4 pb-1">
       <div className="flex items-end justify-between gap-2">
         <div className="min-w-0 flex-1">{field}</div>
-        <div className="inline-flex items-center gap-2">{trailingAccessory}</div>
+        <div className="inline-flex translate-y-[-0.25rem] items-center gap-2">
+          {trailingAccessory}
+        </div>
         {liveError}
       </div>
       {visibleStatusMessage ? (

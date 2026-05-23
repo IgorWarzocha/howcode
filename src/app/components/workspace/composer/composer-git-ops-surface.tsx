@@ -195,10 +195,7 @@ export function ComposerGitOpsSurface({
     </button>
   )
   const trailingActions = (
-    <div className="inline-flex items-center gap-2">
-      {dictationControls}
-      {primaryActionButton}
-    </div>
+    <div className="inline-flex items-center gap-2">{primaryActionButton}</div>
   )
 
   return (
@@ -237,6 +234,7 @@ export function ComposerGitOpsSurface({
               }
             }}
             onLayoutChange={onLayoutChange}
+            leadingAdornment={dictationControls}
             trailingAccessory={trailingActions}
             value={commitMessage}
           />
@@ -269,6 +267,7 @@ export function ComposerGitOpsSurface({
             }
           }}
           onLayoutChange={onLayoutChange}
+          leadingAdornment={dictationControls}
           trailingAccessory={trailingActions}
           value={commitMessage}
         />
