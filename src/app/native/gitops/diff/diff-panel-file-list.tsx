@@ -35,6 +35,7 @@ import {
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import {
+  buildFileDiffRenderKey,
   DIFF_FILE_ESTIMATED_FILE_GAP,
   DIFF_FILE_ESTIMATED_HEADER_HEIGHT,
   DIFF_FILE_ESTIMATED_LINE_HEIGHT,
@@ -173,7 +174,7 @@ function DiffImagePreview({
 
 function getDiffFileIdentity(fileDiff: FileDiffMetadata) {
   const filePath = fileDiff.name?.replace(gitDiffPrefixPattern, '') ?? fileDiff.prevName ?? ''
-  const fileKey = `${fileDiff.prevName ?? 'none'}:${fileDiff.name}`
+  const fileKey = buildFileDiffRenderKey(fileDiff)
   return { fileKey, filePath }
 }
 

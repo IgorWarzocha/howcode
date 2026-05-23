@@ -37,7 +37,14 @@ async function sendDiffCommentsToComposer(input: {
   if (actionErrorMessage) return { ok: false, error: actionErrorMessage }
   if (result?.result?.composerSendOutcome === 'stopped') return { ok: false, error: null }
 
-  diffCommentStore.clearContext(input.diffCommentContextId)
+  const sentCommentIds = new Set(input.context.comments.map((comment) => comment.id))
+  const latestContext = diffCommentStore.getContext(input.diffCommentContextId)
+  if (latestContext) {
+    diffCommentStore.setContext(input.diffCommentContextId, {
+      comments: latestContext.comments.filter((comment) => !sentCommentIds.has(comment.id)),
+      draft: latestContext.draft,
+    })
+  }
   return { ok: true, error: null }
 }
 

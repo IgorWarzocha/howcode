@@ -1,5 +1,5 @@
 import type { RefObject } from 'react'
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useDismissibleLayer } from '../hooks/useDismissibleLayer'
 import {
   appToneDangerClass,
@@ -34,6 +34,18 @@ export function ConfirmPopover({
   className,
 }: ConfirmPopoverProps) {
   const panelRef = useRef<HTMLDivElement>(null)
+  const [confirming, setConfirming] = useState(false)
+
+  useEffect(() => {
+    if (!open) setConfirming(false)
+  }, [open])
+
+  const handleConfirm = () => {
+    if (confirming) return
+    setConfirming(true)
+    onClose()
+    void Promise.resolve(onConfirm()).finally(() => setConfirming(false))
+  }
 
   useDismissibleLayer({
     open,
@@ -61,7 +73,8 @@ export function ConfirmPopover({
           appTypeTinyStrongClass,
           appToneDangerClass,
         )}
-        onClick={() => void onConfirm()}
+        onClick={handleConfirm}
+        disabled={confirming}
       >
         {confirmLabel}
       </button>
