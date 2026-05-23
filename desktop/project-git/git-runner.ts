@@ -59,7 +59,12 @@ export function runGitBufferWithOptions(
   })
 }
 
-export function runGitStreamingWithOptions(
+export type GitStreamingProcess = {
+  promise: Promise<{ stdout: string; stderr: string }>
+  cancel: () => void
+}
+
+export function startGitStreamingWithOptions(
   projectId: string,
   args: string[],
   options: {
@@ -67,8 +72,9 @@ export function runGitStreamingWithOptions(
     timeout?: number | undefined
     onStdoutChunk: (chunk: string) => void
   },
-) {
-  return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+): GitStreamingProcess {
+  let cancel: () => void = () => undefined
+  const promise = new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
     const child = spawn('git', args, {
       cwd: projectId,
       env: options.env,
@@ -99,6 +105,11 @@ export function runGitStreamingWithOptions(
     child.stderr.on('data', (chunk: string) => {
       stderr += chunk
     })
+    cancel = () => {
+      if (settled) return
+      child.kill('SIGTERM')
+      rejectOnce(new Error('Git command cancelled.'))
+    }
     child.on('error', rejectOnce)
     child.on('close', (code, signal) => {
       if (settled) return
@@ -117,6 +128,20 @@ export function runGitStreamingWithOptions(
       )
     })
   })
+
+  return { promise, cancel }
+}
+
+export function runGitStreamingWithOptions(
+  projectId: string,
+  args: string[],
+  options: {
+    env?: NodeJS.ProcessEnv
+    timeout?: number | undefined
+    onStdoutChunk: (chunk: string) => void
+  },
+) {
+  return startGitStreamingWithOptions(projectId, args, options).promise
 }
 
 export function getNonInteractiveGitEnv(baseEnv?: NodeJS.ProcessEnv) {
