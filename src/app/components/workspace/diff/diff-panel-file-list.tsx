@@ -1,6 +1,11 @@
 const gitDiffPrefixPattern = /^[ab]\//
 
-import type { CodeViewItem, GetHoveredLineResult, SelectedLineRange } from '@pierre/diffs'
+import type {
+  CodeViewItem,
+  CodeViewOptions,
+  GetHoveredLineResult,
+  SelectedLineRange,
+} from '@pierre/diffs'
 import {
   type AnnotationSide,
   CodeView,
@@ -426,6 +431,137 @@ export function DiffPanelFileList({
     }
   }, [codeViewRef, primeItemHighlight])
 
+  const handleLineClick = useCallback<
+    NonNullable<CodeViewOptions<DiffCommentMetadata>['onLineClick']>
+  >(
+    (lineProps, context) => {
+      if (!('annotationSide' in lineProps)) return
+      const fileDiff = getItemFileDiff(context.item)
+      if (!fileDiff) return
+      const { fileKey, filePath } = getDiffFileIdentity(fileDiff)
+      getFileInteractionHandlers(fileKey, filePath).onLineClick({
+        lineNumber: lineProps.lineNumber,
+        annotationSide: lineProps.annotationSide,
+        event: lineProps.event,
+      })
+    },
+    [getFileInteractionHandlers],
+  )
+
+  const handleLineNumberClick = useCallback<
+    NonNullable<CodeViewOptions<DiffCommentMetadata>['onLineNumberClick']>
+  >(
+    (lineProps, context) => {
+      if (!('annotationSide' in lineProps)) return
+      const fileDiff = getItemFileDiff(context.item)
+      if (!fileDiff) return
+      const { fileKey, filePath } = getDiffFileIdentity(fileDiff)
+      getFileInteractionHandlers(fileKey, filePath).onLineNumberClick({
+        lineNumber: lineProps.lineNumber,
+        annotationSide: lineProps.annotationSide,
+        event: lineProps.event,
+      })
+    },
+    [getFileInteractionHandlers],
+  )
+
+  const codeViewOptions = useMemo<CodeViewOptions<DiffCommentMetadata>>(
+    () => ({
+      diffStyle: diffRenderMode === 'split' ? 'split' : 'unified',
+      lineDiffType: 'none',
+      overflow: 'wrap',
+      theme: resolveDiffThemeName('dark'),
+      themeType: 'dark',
+      unsafeCSS: DIFF_PANEL_UNSAFE_CSS,
+      enableGutterUtility: true,
+      lineHoverHighlight: 'both',
+      onPostRender: primeRenderedHighlights,
+      itemMetrics: {
+        lineHeight: DIFF_FILE_ESTIMATED_LINE_HEIGHT,
+        diffHeaderHeight: DIFF_FILE_ESTIMATED_HEADER_HEIGHT,
+        spacing: DIFF_FILE_ESTIMATED_FILE_GAP,
+      },
+      layout: {
+        gap: DIFF_FILE_ESTIMATED_FILE_GAP,
+        paddingTop: 0,
+        paddingBottom: DIFF_FILE_ESTIMATED_FILE_GAP,
+      },
+      onLineClick: handleLineClick,
+      onLineNumberClick: handleLineNumberClick,
+    }),
+    [diffRenderMode, handleLineClick, handleLineNumberClick, primeRenderedHighlights],
+  )
+
+  const renderCustomHeader = useCallback(
+    (item: CodeViewItem<DiffCommentMetadata>) => {
+      const fileDiff = getItemFileDiff(item)
+      if (!fileDiff) return null
+      const { fileKey, filePath } = getDiffFileIdentity(fileDiff)
+      const isCollapsed = item.collapsed === true
+      const isImageFile = isImageDiffFile(fileDiff)
+      return (
+        <div
+          className={cn(isImageFile && !isCollapsed && diffFileShellClass)}
+          data-diff-file-path={filePath}
+        >
+          <DiffPanelFileHeader
+            fileDiff={fileDiff}
+            fileKey={fileKey}
+            filePath={filePath}
+            isCollapsed={isCollapsed}
+            onToggleFileCollapsed={onToggleFileCollapsed}
+          />
+          {isImageFile && !isCollapsed ? (
+            <DiffImagePreview
+              baseline={baseline}
+              fileDiff={fileDiff}
+              filePath={filePath}
+              projectId={projectId}
+            />
+          ) : null}
+        </div>
+      )
+    },
+    [baseline, onToggleFileCollapsed, projectId],
+  )
+
+  const renderAnnotation = useCallback(
+    (
+      annotation: Parameters<
+        NonNullable<CodeViewOptions<DiffCommentMetadata>['renderAnnotation']>
+      >[0],
+    ) => renderCommentAnnotation(annotation as DiffLineAnnotation<DiffCommentMetadata>),
+    [renderCommentAnnotation],
+  )
+
+  const renderGutterUtility = useCallback(
+    (
+      getHoveredLine: () => GetHoveredLineResult<'diff'> | undefined,
+      item: CodeViewItem<DiffCommentMetadata>,
+    ) => {
+      const hoveredLine = getHoveredLine()
+      const fileDiff = getItemFileDiff(item)
+      if (!(hoveredLine && fileDiff)) return null
+      const { fileKey, filePath } = getDiffFileIdentity(fileDiff)
+      return (
+        <button
+          type="button"
+          className={diffCommentGutterButtonClass}
+          onClick={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            onOpenDraftComment(fileKey, filePath, hoveredLine.side, hoveredLine.lineNumber)
+          }}
+          aria-label={`Add comment on ${filePath}:${hoveredLine.lineNumber}`}
+          data-tooltip="Add comment"
+        >
+          <MessageSquarePlus size={12} />
+        </button>
+      )
+    },
+    [onOpenDraftComment],
+  )
+
   return (
     <CodeView<DiffCommentMetadata>
       ref={setCodeViewHandle}
@@ -436,102 +572,10 @@ export function DiffPanelFileList({
         diffFileShellClass,
         'h-full w-full overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable]',
       )}
-      options={{
-        diffStyle: diffRenderMode === 'split' ? 'split' : 'unified',
-        lineDiffType: 'none',
-        overflow: 'wrap',
-        theme: resolveDiffThemeName('dark'),
-        themeType: 'dark',
-        unsafeCSS: DIFF_PANEL_UNSAFE_CSS,
-        enableGutterUtility: true,
-        lineHoverHighlight: 'both',
-        onPostRender: primeRenderedHighlights,
-        itemMetrics: {
-          lineHeight: DIFF_FILE_ESTIMATED_LINE_HEIGHT,
-          diffHeaderHeight: DIFF_FILE_ESTIMATED_HEADER_HEIGHT,
-          spacing: DIFF_FILE_ESTIMATED_FILE_GAP,
-        },
-        layout: {
-          gap: DIFF_FILE_ESTIMATED_FILE_GAP,
-          paddingTop: 0,
-          paddingBottom: DIFF_FILE_ESTIMATED_FILE_GAP,
-        },
-        onLineClick: (lineProps, context) => {
-          if (!('annotationSide' in lineProps)) return
-          const fileDiff = getItemFileDiff(context.item)
-          if (!fileDiff) return
-          const { fileKey, filePath } = getDiffFileIdentity(fileDiff)
-          getFileInteractionHandlers(fileKey, filePath).onLineClick({
-            lineNumber: lineProps.lineNumber,
-            annotationSide: lineProps.annotationSide,
-            event: lineProps.event,
-          })
-        },
-        onLineNumberClick: (lineProps, context) => {
-          if (!('annotationSide' in lineProps)) return
-          const fileDiff = getItemFileDiff(context.item)
-          if (!fileDiff) return
-          const { fileKey, filePath } = getDiffFileIdentity(fileDiff)
-          getFileInteractionHandlers(fileKey, filePath).onLineNumberClick({
-            lineNumber: lineProps.lineNumber,
-            annotationSide: lineProps.annotationSide,
-            event: lineProps.event,
-          })
-        },
-      }}
-      renderCustomHeader={(item) => {
-        const fileDiff = getItemFileDiff(item)
-        if (!fileDiff) return null
-        const { fileKey, filePath } = getDiffFileIdentity(fileDiff)
-        const isCollapsed = item.collapsed === true
-        const isImageFile = isImageDiffFile(fileDiff)
-        return (
-          <div
-            className={cn(isImageFile && !isCollapsed && diffFileShellClass)}
-            data-diff-file-path={filePath}
-          >
-            <DiffPanelFileHeader
-              fileDiff={fileDiff}
-              fileKey={fileKey}
-              filePath={filePath}
-              isCollapsed={isCollapsed}
-              onToggleFileCollapsed={onToggleFileCollapsed}
-            />
-            {isImageFile && !isCollapsed ? (
-              <DiffImagePreview
-                baseline={baseline}
-                fileDiff={fileDiff}
-                filePath={filePath}
-                projectId={projectId}
-              />
-            ) : null}
-          </div>
-        )
-      }}
-      renderAnnotation={(annotation) =>
-        renderCommentAnnotation(annotation as DiffLineAnnotation<DiffCommentMetadata>)
-      }
-      renderGutterUtility={(getHoveredLine, item) => {
-        const hoveredLine = (getHoveredLine as () => GetHoveredLineResult<'diff'> | undefined)()
-        const fileDiff = getItemFileDiff(item)
-        if (!(hoveredLine && fileDiff)) return null
-        const { fileKey, filePath } = getDiffFileIdentity(fileDiff)
-        return (
-          <button
-            type="button"
-            className={diffCommentGutterButtonClass}
-            onClick={(event) => {
-              event.preventDefault()
-              event.stopPropagation()
-              onOpenDraftComment(fileKey, filePath, hoveredLine.side, hoveredLine.lineNumber)
-            }}
-            aria-label={`Add comment on ${filePath}:${hoveredLine.lineNumber}`}
-            data-tooltip="Add comment"
-          >
-            <MessageSquarePlus size={12} />
-          </button>
-        )
-      }}
+      options={codeViewOptions}
+      renderCustomHeader={renderCustomHeader}
+      renderAnnotation={renderAnnotation}
+      renderGutterUtility={renderGutterUtility}
     />
   )
 }
