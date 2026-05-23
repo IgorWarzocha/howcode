@@ -35,6 +35,7 @@ function useProjectDiffStream(
   projectId: string | null,
   baseline: ProjectDiffBaseline | null,
   enabled: boolean,
+  includeUntracked: boolean,
 ) {
   const [streamedPatch, setStreamedPatch] = useState<string | null>(null)
   const [diff, setDiff] = useState<ProjectDiffResult | null>(null)
@@ -124,7 +125,7 @@ function useProjectDiffStream(
       setIsLoading(false)
     })
 
-    startProjectDiffStreamQuery(projectId, baseline, streamId).then(
+    startProjectDiffStreamQuery(projectId, baseline, streamId, includeUntracked).then(
       (result) => {
         if (!active) return
         if (!result || result.streamId !== streamId) {
@@ -145,7 +146,7 @@ function useProjectDiffStream(
       pendingChunksRef.current.clear()
       unsubscribe()
     }
-  }, [baseline, canStream, projectId])
+  }, [baseline, canStream, includeUntracked, projectId])
 
   return useMemo(
     () => ({ canStream, diff, error, isLoading, streamedPatch }),
@@ -157,14 +158,18 @@ export function useDesktopDiff(
   projectId: string | null,
   baseline: ProjectDiffBaseline | null = null,
   enabled = true,
+  includeUntracked = false,
 ) {
-  const stream = useProjectDiffStream(projectId, baseline, enabled)
+  const stream = useProjectDiffStream(projectId, baseline, enabled, includeUntracked)
   const queryEnabled = enabled && Boolean(projectId) && !stream.canStream
   const query = useQuery<ProjectDiffResult | null, Error>({
     queryKey: projectId
-      ? desktopQueryKeys.projectDiff(projectId, baseline)
+      ? desktopQueryKeys.projectDiff(projectId, baseline, includeUntracked)
       : ['desktop', 'projectDiff', null],
-    queryFn: () => (projectId ? getProjectDiffQuery(projectId, baseline) : Promise.resolve(null)),
+    queryFn: () =>
+      projectId
+        ? getProjectDiffQuery(projectId, baseline, includeUntracked)
+        : Promise.resolve(null),
     enabled: queryEnabled,
     refetchOnMount: 'always',
   })

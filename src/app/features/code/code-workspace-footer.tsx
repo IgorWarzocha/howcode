@@ -80,6 +80,8 @@ function CodeGitOpsComposer(props: CodeWorkspaceContentProps) {
     diffCommentsSending,
     diffCommentError,
     diffLoadError,
+    includeUntrackedDiffFiles,
+    toggleIncludeUntrackedDiffFiles,
     onSetDiffBaseline,
     onSetDiffRenderMode,
     handleSendDiffComments,
@@ -107,8 +109,10 @@ function CodeGitOpsComposer(props: CodeWorkspaceContentProps) {
         diffCommentsSending={diffCommentsSending}
         diffCommentError={diffCommentError}
         diffLoadError={diffLoadError}
+        includeUntracked={includeUntrackedDiffFiles}
         onSetDiffBaseline={onSetDiffBaseline}
         onSetDiffRenderMode={onSetDiffRenderMode}
+        onToggleIncludeUntracked={toggleIncludeUntrackedDiffFiles}
         onSendDiffComments={(message) => {
           void handleSendDiffComments(message).then((sent) => {
             if (sent) handleCloseGitOpsView()

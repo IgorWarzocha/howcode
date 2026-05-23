@@ -30,12 +30,34 @@ export const desktopQueryKeys = {
   projectUsageSummary: (projectId: string) =>
     ['desktop', 'projectUsageSummary', projectId] as const,
   projectDiffPrefix: (projectId: string) => ['desktop', 'projectDiff', projectId] as const,
-  projectDiff: (projectId: string, baseline: ProjectDiffBaseline | null = null) =>
-    ['desktop', 'projectDiff', projectId, baseline?.kind ?? 'head', baseline ?? null] as const,
+  projectDiff: (
+    projectId: string,
+    baseline: ProjectDiffBaseline | null = null,
+    includeUntracked = false,
+  ) =>
+    [
+      'desktop',
+      'projectDiff',
+      projectId,
+      baseline?.kind ?? 'head',
+      baseline ?? null,
+      includeUntracked,
+    ] as const,
   projectDiffStatsPrefix: (projectId: string) =>
     ['desktop', 'projectDiffStats', projectId] as const,
-  projectDiffStats: (projectId: string, baseline: ProjectDiffBaseline | null = null) =>
-    ['desktop', 'projectDiffStats', projectId, baseline?.kind ?? 'head', baseline ?? null] as const,
+  projectDiffStats: (
+    projectId: string,
+    baseline: ProjectDiffBaseline | null = null,
+    includeUntracked = false,
+  ) =>
+    [
+      'desktop',
+      'projectDiffStats',
+      projectId,
+      baseline?.kind ?? 'head',
+      baseline ?? null,
+      includeUntracked,
+    ] as const,
   projectDiffImagePreview: (
     projectId: string,
     path: string,

@@ -76,15 +76,18 @@ declare global {
       getProjectDiff?: (
         projectId: string,
         baseline?: ProjectDiffBaseline | null,
+        includeUntracked?: boolean | null,
       ) => Promise<ProjectDiffResult | null>
       startProjectDiffStream?: (
         projectId: string,
         baseline?: ProjectDiffBaseline | null,
         streamId?: string | null,
+        includeUntracked?: boolean | null,
       ) => Promise<ProjectDiffStreamStartResult>
       getProjectDiffStats?: (
         projectId: string,
         baseline?: ProjectDiffBaseline | null,
+        includeUntracked?: boolean | null,
       ) => Promise<ProjectDiffStatsResult | null>
       getProjectDiffImagePreview?: (request: {
         projectId: string

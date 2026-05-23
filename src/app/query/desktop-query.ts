@@ -147,16 +147,25 @@ export async function getProjectUsageSummaryQuery(
 export async function getProjectDiffQuery(
   projectId: string,
   baseline: ProjectDiffBaseline | null = null,
+  includeUntracked = false,
 ): Promise<ProjectDiffResult | null> {
-  return (await window.piDesktop?.getProjectDiff?.(projectId, baseline)) ?? null
+  return (await window.piDesktop?.getProjectDiff?.(projectId, baseline, includeUntracked)) ?? null
 }
 
 export async function startProjectDiffStreamQuery(
   projectId: string,
   baseline: ProjectDiffBaseline | null = null,
   streamId: string | null = null,
+  includeUntracked = false,
 ) {
-  return (await window.piDesktop?.startProjectDiffStream?.(projectId, baseline, streamId)) ?? null
+  return (
+    (await window.piDesktop?.startProjectDiffStream?.(
+      projectId,
+      baseline,
+      streamId,
+      includeUntracked,
+    )) ?? null
+  )
 }
 
 export function canStartProjectDiffStreamQuery() {
@@ -168,8 +177,11 @@ export function canStartProjectDiffStreamQuery() {
 export async function getProjectDiffStatsQuery(
   projectId: string,
   baseline: ProjectDiffBaseline | null = null,
+  includeUntracked = false,
 ): Promise<ProjectDiffStatsResult | null> {
-  return (await window.piDesktop?.getProjectDiffStats?.(projectId, baseline)) ?? null
+  return (
+    (await window.piDesktop?.getProjectDiffStats?.(projectId, baseline, includeUntracked)) ?? null
+  )
 }
 
 export async function getProjectDiffImagePreviewQuery(request: {

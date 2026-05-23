@@ -34,8 +34,10 @@ type GitOpsComposerPanelProps = {
   diffCommentsSending: boolean
   diffCommentError: string | null
   diffLoadError: string | null
+  includeUntracked: boolean
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
   onSetDiffRenderMode: (mode: ProjectDiffRenderMode) => void
+  onToggleIncludeUntracked: () => void
   onSendDiffComments: (message?: string | null) => void
   onSelectDiffComment: (filePath: string, commentId: string) => void
   onAction: DesktopActionInvoker
@@ -135,8 +137,10 @@ export function GitOpsComposerPanel({
   diffCommentsSending,
   diffCommentError,
   diffLoadError,
+  includeUntracked,
   onSetDiffBaseline,
   onSetDiffRenderMode,
+  onToggleIncludeUntracked,
   onSendDiffComments,
   onSelectDiffComment,
   onAction,
@@ -181,8 +185,10 @@ export function GitOpsComposerPanel({
             diffCommentsSending={diffCommentsSending}
             diffCommentError={diffCommentError}
             diffLoadError={diffLoadError}
+            includeUntracked={includeUntracked}
             onSetDiffBaseline={onSetDiffBaseline}
             onSetDiffRenderMode={onSetDiffRenderMode}
+            onToggleIncludeUntracked={onToggleIncludeUntracked}
             onSendDiffComments={onSendDiffComments}
             onSelectDiffComment={onSelectDiffComment}
             onAction={onAction}

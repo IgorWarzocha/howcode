@@ -155,6 +155,7 @@ export async function startProjectDiffStream(
   projectId: string,
   baseline?: ProjectDiffBaseline | null,
   requestedStreamId?: string | null,
+  includeUntracked = false,
 ): Promise<ProjectDiffStreamStartResult> {
   const streamId = requestedStreamId?.trim() || randomUUID()
   void (async () => {
@@ -171,6 +172,7 @@ export async function startProjectDiffStream(
       const resolvedBaseline = await resolveProjectDiffBaseline(projectId, baseline)
       const snapshot = await loadWorktreeSnapshot(projectId, {
         baselineRev: resolvedBaseline.rev,
+        includeUntracked,
         onPatchChunk: (chunk) => {
           emitDesktopEvent({
             type: 'project-diff-stream',
@@ -215,6 +217,7 @@ export async function startProjectDiffStream(
 export async function loadProjectDiff(
   projectId: string,
   baseline?: ProjectDiffBaseline | null,
+  includeUntracked = false,
 ): Promise<ProjectDiffResult | null> {
   if (!(await isGitRepository(projectId))) {
     return null
@@ -224,6 +227,7 @@ export async function loadProjectDiff(
     const resolvedBaseline = await resolveProjectDiffBaseline(projectId, baseline)
     const snapshot = await loadWorktreeSnapshot(projectId, {
       baselineRev: resolvedBaseline.rev,
+      includeUntracked,
     })
 
     return {
@@ -243,6 +247,7 @@ export async function loadProjectDiff(
 export async function loadProjectDiffStats(
   projectId: string,
   baseline?: ProjectDiffBaseline | null,
+  includeUntracked = false,
 ): Promise<ProjectDiffStatsResult | null> {
   if (!(await isGitRepository(projectId))) {
     return null
@@ -252,6 +257,7 @@ export async function loadProjectDiffStats(
     const resolvedBaseline = await resolveProjectDiffBaseline(projectId, baseline)
     const stats = await loadWorktreeStats(projectId, {
       baselineRev: resolvedBaseline.rev,
+      includeUntracked,
     })
 
     return {

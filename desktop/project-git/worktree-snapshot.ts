@@ -155,7 +155,35 @@ export async function captureWorktreeTree(projectId: string): Promise<string> {
   return withStagedWorktree(projectId, async ({ treeOid }) => treeOid)
 }
 
-export async function loadWorktreeSnapshot(
+async function loadTrackedWorktreeSnapshot(
+  projectId: string,
+  options: {
+    baselineRev?: string | undefined | null | undefined
+    hasHead?: boolean | undefined
+    onPatchChunk?: ((chunk: string) => void) | undefined
+  } = {},
+): Promise<WorktreeSnapshot> {
+  const baselineRev = options.baselineRev?.trim() || (options.hasHead ? 'HEAD' : EMPTY_TREE_OID)
+  const diffArguments = (extraArgs: string[]) => ['diff', ...extraArgs, baselineRev, '--']
+  const patchPromise = runGitStreamingWithOptions(
+    projectId,
+    diffArguments(['--unified=1', '--no-color', '--no-ext-diff', '--find-renames']),
+    {
+      timeout: 20_000,
+      onStdoutChunk: options.onPatchChunk ?? (() => undefined),
+    },
+  ).then(({ stdout }) => stdout.trim())
+  const statsPromise = loadWorktreeStats(projectId, {
+    baselineRev,
+    hasHead: options.hasHead,
+    includeUntracked: false,
+  })
+
+  const [stats, patchOutput] = await Promise.all([statsPromise, patchPromise])
+  return { ...stats, patch: patchOutput }
+}
+
+async function loadStagedWorktreeSnapshot(
   projectId: string,
   options: {
     baselineRev?: string | undefined | null | undefined
@@ -182,7 +210,12 @@ export async function loadWorktreeSnapshot(
       },
     ).then(({ stdout }) => stdout.trim())
 
-    const statsPromise = loadWorktreeStats(projectId, { baselineRev, env, hasHead }).catch(() => ({
+    const statsPromise = loadWorktreeStats(projectId, {
+      baselineRev,
+      env,
+      hasHead,
+      includeUntracked: true,
+    }).catch(() => ({
       fileCount: 0,
       insertions: 0,
       deletions: 0,
@@ -200,12 +233,26 @@ export async function loadWorktreeSnapshot(
   })
 }
 
+export async function loadWorktreeSnapshot(
+  projectId: string,
+  options: {
+    baselineRev?: string | undefined | null | undefined
+    includeUntracked?: boolean | undefined
+    onPatchChunk?: ((chunk: string) => void) | undefined
+  } = {},
+): Promise<WorktreeSnapshot> {
+  return options.includeUntracked
+    ? loadStagedWorktreeSnapshot(projectId, options)
+    : loadTrackedWorktreeSnapshot(projectId, options)
+}
+
 export async function loadWorktreeStats(
   projectId: string,
   options: {
     baselineRev?: string | undefined | null | undefined
     env?: NodeJS.ProcessEnv
     hasHead?: boolean | undefined
+    includeUntracked?: boolean | undefined
   } = {},
 ): Promise<WorktreeStats> {
   const loadStats = async (context?: {
@@ -219,7 +266,7 @@ export async function loadWorktreeStats(
         : options.baselineRev?.trim() || (hasHead ? 'HEAD' : EMPTY_TREE_OID)
     const diffArguments = (extraArgs: string[]) => [
       'diff',
-      '--cached',
+      ...(options.includeUntracked ? ['--cached'] : []),
       ...extraArgs,
       baselineRev,
       '--',
@@ -250,8 +297,11 @@ export async function loadWorktreeStats(
     }
   }
 
-  if (options.env) {
-    return loadStats({ env: options.env, hasHead: options.hasHead ?? false })
+  if (options.env || !options.includeUntracked) {
+    const context = options.env
+      ? { env: options.env, hasHead: options.hasHead ?? false }
+      : { hasHead: options.hasHead ?? false }
+    return loadStats(context)
   }
 
   return runExclusiveStagedWorktree(projectId, () =>

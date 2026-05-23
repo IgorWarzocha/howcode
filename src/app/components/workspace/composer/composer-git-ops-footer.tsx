@@ -37,6 +37,7 @@ type ComposerGitOpsFooterProps = {
   diffRenderMode: ProjectDiffRenderMode
   hasOrigin: boolean
   includeUnstaged: boolean
+  includeUntracked: boolean
   isGitRepo: boolean
   onSaveOrigin: () => void
   onBack: () => void
@@ -45,6 +46,7 @@ type ComposerGitOpsFooterProps = {
   onSwitchBranch?: ((branchName: string) => void) | undefined
   onSetRepoUrl: (repoUrl: string) => void
   onToggleIncludeUnstaged: () => void
+  onToggleIncludeUntracked: () => void
   onTogglePreview: () => void
   onTogglePush: () => void
   onSaveProjectGitOpsMode: (mode: GitOpsMode | null) => void
@@ -54,12 +56,38 @@ type ComposerGitOpsFooterProps = {
   repoUrl: string
 }
 
+function IncludeUntrackedButton({
+  includeUntracked,
+  onToggleIncludeUntracked,
+}: {
+  includeUntracked: boolean
+  onToggleIncludeUntracked: () => void
+}) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        workspaceFooterTextClass,
+        'inline-flex h-7 items-center rounded-lg px-2.5 py-0 text-[color:var(--muted)] transition-colors duration-150 hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
+        includeUntracked && 'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
+      )}
+      onClick={onToggleIncludeUntracked}
+      aria-pressed={includeUntracked}
+      aria-label="Include untracked files"
+      data-tooltip={includeUntracked ? 'Showing untracked files' : 'Include untracked files'}
+    >
+      Untracked
+    </button>
+  )
+}
+
 export function ComposerGitOpsFooter({
   composerPanelRef,
   diffBaseline,
   diffRenderMode,
   hasOrigin,
   includeUnstaged,
+  includeUntracked,
   isGitRepo,
   onSaveOrigin,
   onBack,
@@ -68,6 +96,7 @@ export function ComposerGitOpsFooter({
   onSwitchBranch,
   onSetRepoUrl,
   onToggleIncludeUnstaged,
+  onToggleIncludeUntracked,
   onTogglePreview,
   onTogglePush,
   onSaveProjectGitOpsMode,
@@ -262,6 +291,10 @@ export function ComposerGitOpsFooter({
               Add origin
             </button>
           )}
+          <IncludeUntrackedButton
+            includeUntracked={includeUntracked}
+            onToggleIncludeUntracked={onToggleIncludeUntracked}
+          />
           <button
             type="button"
             className={cn(
@@ -303,6 +336,7 @@ export function ComposerGitOpsFooter({
             selectedBaseline={diffBaseline}
             onSelectBaseline={onSetDiffBaseline}
             onSwitchBranch={onSwitchBranch}
+            includeUntracked={includeUntracked}
           />
         ) : null}
         <button

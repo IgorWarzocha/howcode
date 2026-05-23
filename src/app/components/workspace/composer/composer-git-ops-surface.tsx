@@ -35,8 +35,10 @@ type ComposerGitOpsSurfaceProps = {
   diffCommentsSending: boolean
   diffCommentError: string | null
   diffLoadError: string | null
+  includeUntracked: boolean
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
   onSetDiffRenderMode: (mode: ProjectDiffRenderMode) => void
+  onToggleIncludeUntracked: () => void
   onSendDiffComments: (message?: string | null) => void
   onSelectDiffComment: (filePath: string, commentId: string) => void
   onAction: DesktopActionInvoker
@@ -62,8 +64,10 @@ export function ComposerGitOpsSurface({
   diffCommentsSending,
   diffCommentError,
   diffLoadError,
+  includeUntracked,
   onSetDiffBaseline,
   onSetDiffRenderMode,
+  onToggleIncludeUntracked,
   onSendDiffComments,
   onSelectDiffComment,
   onAction,
@@ -277,6 +281,7 @@ export function ComposerGitOpsSurface({
         diffRenderMode={diffRenderMode}
         hasOrigin={hasOrigin}
         includeUnstaged={includeUnstaged}
+        includeUntracked={includeUntracked}
         isGitRepo={isGitRepo}
         onSaveOrigin={handleSaveOrigin}
         onBack={onBack}
@@ -287,6 +292,7 @@ export function ComposerGitOpsSurface({
         }}
         onSetRepoUrl={setRepoUrl}
         onToggleIncludeUnstaged={() => setIncludeUnstaged((current) => !current)}
+        onToggleIncludeUntracked={onToggleIncludeUntracked}
         onTogglePreview={togglePreviewEnabled}
         onTogglePush={() => setPushEnabled((current) => !current)}
         onSaveProjectGitOpsMode={saveProjectGitOpsMode}

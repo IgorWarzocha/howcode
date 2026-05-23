@@ -74,15 +74,28 @@ export type DesktopRequestMap = {
   getProjectGitState: { params: { projectId: string }; response: ProjectGitState | null }
   getProjectUsageSummary: { params: { projectId: string }; response: ProjectUsageSummary }
   getProjectDiff: {
-    params: { projectId: string; baseline?: ProjectDiffBaseline | null }
+    params: {
+      projectId: string
+      baseline?: ProjectDiffBaseline | null
+      includeUntracked?: boolean | null
+    }
     response: ProjectDiffResult | null
   }
   startProjectDiffStream: {
-    params: { projectId: string; baseline?: ProjectDiffBaseline | null; streamId?: string | null }
+    params: {
+      projectId: string
+      baseline?: ProjectDiffBaseline | null
+      streamId?: string | null
+      includeUntracked?: boolean | null
+    }
     response: ProjectDiffStreamStartResult
   }
   getProjectDiffStats: {
-    params: { projectId: string; baseline?: ProjectDiffBaseline | null }
+    params: {
+      projectId: string
+      baseline?: ProjectDiffBaseline | null
+      includeUntracked?: boolean | null
+    }
     response: ProjectDiffStatsResult | null
   }
   getProjectDiffImagePreview: {

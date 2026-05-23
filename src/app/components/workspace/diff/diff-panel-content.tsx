@@ -31,6 +31,7 @@ type DiffPanelContentProps = {
   diffRenderMode: 'stacked' | 'split'
   layoutMode?: 'split' | 'overlay' | 'main'
   showFileTree?: boolean
+  includeUntracked?: boolean
   loading?: boolean
 }
 
@@ -44,6 +45,7 @@ export function DiffPanelContent({
   diffRenderMode,
   layoutMode = 'split',
   showFileTree = true,
+  includeUntracked = false,
   loading = false,
 }: DiffPanelContentProps) {
   const [collapsedFiles, setCollapsedFiles] = useState<Record<string, boolean>>({})
@@ -52,7 +54,12 @@ export function DiffPanelContent({
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const codeViewRef = useRef<CodeViewHandle<DiffCommentMetadata> | null>(null)
   const draftCardRef = useRef<HTMLDivElement | null>(null)
-  const { diff, streamedPatch, isLoading, error } = useDesktopDiff(projectId, baseline, isGitRepo)
+  const { diff, streamedPatch, isLoading, error } = useDesktopDiff(
+    projectId,
+    baseline,
+    isGitRepo,
+    includeUntracked,
+  )
 
   const selectedPatch = diff?.diff ?? streamedPatch ?? undefined
   const hasResolvedPatch = typeof selectedPatch === 'string'

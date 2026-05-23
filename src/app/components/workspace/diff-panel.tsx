@@ -11,6 +11,7 @@ type DiffPanelProps = {
   diffRenderMode: 'stacked' | 'split'
   layoutMode?: 'split' | 'overlay' | 'main'
   showFileTree?: boolean
+  includeUntracked?: boolean
   loading?: boolean
 }
 
@@ -24,6 +25,7 @@ export function DiffPanel({
   diffRenderMode,
   layoutMode = 'split',
   showFileTree = true,
+  includeUntracked = false,
   loading = false,
 }: DiffPanelProps) {
   return (
@@ -38,6 +40,7 @@ export function DiffPanel({
         diffRenderMode={diffRenderMode}
         layoutMode={layoutMode}
         showFileTree={showFileTree}
+        includeUntracked={includeUntracked}
         loading={loading}
       />
     </DiffWorkerPoolProvider>

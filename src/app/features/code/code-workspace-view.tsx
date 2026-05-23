@@ -47,7 +47,9 @@ export type CodeWorkspaceContentProps = CodeWorkspaceViewProps &
     showDesktopTerminalDrawer: boolean
     centerThreadFooter: boolean
     gitOpsFileTreeVisible: boolean
+    includeUntrackedDiffFiles: boolean
     toggleGitOpsFileTree: () => void
+    toggleIncludeUntrackedDiffFiles: () => void
     diffLoadError: string | null
     threadTimelineLoading: boolean
     composerLayoutVersion: number
@@ -206,12 +208,23 @@ export function CodeWorkspaceView({
     gitOpsFileTreeVisibilityByThread[gitOpsFileTreeStateKey] ??
     shellState?.appSettings.gitDiffFileTreeDefaultVisible ??
     true
+  const [includeUntrackedDiffFilesByThread, setIncludeUntrackedDiffFilesByThread] = useState<
+    Record<string, boolean>
+  >({})
+  const includeUntrackedDiffFiles =
+    includeUntrackedDiffFilesByThread[gitOpsFileTreeStateKey] ?? false
   const toggleGitOpsFileTree = useCallback(() => {
     setGitOpsFileTreeVisibilityByThread((current) => ({
       ...current,
       [gitOpsFileTreeStateKey]: !(current[gitOpsFileTreeStateKey] ?? gitOpsFileTreeVisible),
     }))
   }, [gitOpsFileTreeStateKey, gitOpsFileTreeVisible])
+  const toggleIncludeUntrackedDiffFiles = useCallback(() => {
+    setIncludeUntrackedDiffFilesByThread((current) => ({
+      ...current,
+      [gitOpsFileTreeStateKey]: !(current[gitOpsFileTreeStateKey] ?? false),
+    }))
+  }, [gitOpsFileTreeStateKey])
   useHowcodeKeybindingCommand('gitops.toggleChangedFiles', (event) => {
     if (state.activeView !== 'gitops') return
     event.preventDefault()
@@ -284,6 +297,7 @@ export function CodeWorkspaceView({
       selectedDiffCommentJumpKey={selectedDiffCommentJumpKey}
       diffRenderMode={diffRenderMode}
       gitOpsFileTreeVisible={gitOpsFileTreeVisible}
+      includeUntrackedDiffFiles={includeUntrackedDiffFiles}
       controller={controller}
       shellState={shellState}
       activeComposerState={activeComposerState}
@@ -327,6 +341,7 @@ export function CodeWorkspaceView({
       handleToggleTerminal={handleToggleTerminal}
       showDesktopTerminalDrawer={showDesktopTerminalDrawer}
       toggleGitOpsFileTree={toggleGitOpsFileTree}
+      toggleIncludeUntrackedDiffFiles={toggleIncludeUntrackedDiffFiles}
       showCodeSidebarFooter={showCodeSidebarFooter}
       showUtilitySidebarButton={showUtilitySidebarButton}
       scopedRestoredQueuedPrompt={scopedRestoredQueuedPrompt}

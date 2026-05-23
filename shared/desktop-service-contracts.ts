@@ -98,15 +98,18 @@ export type PiThreadsService = {
   loadProjectDiff: (
     projectId: string,
     baseline?: ProjectDiffBaseline | null,
+    includeUntracked?: boolean | null,
   ) => Promise<ProjectDiffResult | null>
   startProjectDiffStream: (
     projectId: string,
     baseline?: ProjectDiffBaseline | null,
     streamId?: string | null,
+    includeUntracked?: boolean | null,
   ) => Promise<ProjectDiffStreamStartResult>
   loadProjectDiffStats: (
     projectId: string,
     baseline?: ProjectDiffBaseline | null,
+    includeUntracked?: boolean | null,
   ) => Promise<ProjectDiffStatsResult | null>
   loadProjectDiffImagePreview: (request: {
     projectId: string

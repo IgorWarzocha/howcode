@@ -118,12 +118,17 @@ export function installDevWebDesktopBridge() {
     getProjectGitState: (projectId: string) => invokeRequest('getProjectGitState', { projectId }),
     getProjectUsageSummary: (projectId: string) =>
       invokeRequest('getProjectUsageSummary', { projectId }),
-    getProjectDiff: (projectId: string, baseline = null) =>
-      invokeRequest('getProjectDiff', { projectId, baseline }),
-    startProjectDiffStream: (projectId: string, baseline = null, streamId: string | null = null) =>
-      invokeRequest('startProjectDiffStream', { projectId, baseline, streamId }),
-    getProjectDiffStats: (projectId: string, baseline = null) =>
-      invokeRequest('getProjectDiffStats', { projectId, baseline }),
+    getProjectDiff: (projectId: string, baseline = null, includeUntracked = false) =>
+      invokeRequest('getProjectDiff', { projectId, baseline, includeUntracked }),
+    startProjectDiffStream: (
+      projectId: string,
+      baseline = null,
+      streamId: string | null = null,
+      includeUntracked = false,
+    ) =>
+      invokeRequest('startProjectDiffStream', { projectId, baseline, streamId, includeUntracked }),
+    getProjectDiffStats: (projectId: string, baseline = null, includeUntracked = false) =>
+      invokeRequest('getProjectDiffStats', { projectId, baseline, includeUntracked }),
     getProjectDiffImagePreview: (request) => invokeRequest('getProjectDiffImagePreview', request),
     captureProjectDiffBaseline: (projectId: string) =>
       invokeRequest('captureProjectDiffBaseline', { projectId }),

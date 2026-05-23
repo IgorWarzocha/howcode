@@ -34,6 +34,7 @@ type ComposerDiffBaselineSelectorProps = {
   projectGitState: ProjectGitState | null
   branch?: string | null
   selectedBaseline: ProjectDiffBaseline
+  includeUntracked?: boolean
   onSelectBaseline: (baseline: ProjectDiffBaseline) => void
   onSwitchBranch?: ((branchName: string) => void) | undefined
 }
@@ -111,12 +112,14 @@ function useComposerBaselineData({
   projectId,
   searchQuery,
   selectedBaseline,
+  includeUntracked = false,
 }: {
   open: boolean
   projectGitState: ProjectGitState | null
   projectId: string
   searchQuery: string
   selectedBaseline: ProjectDiffBaseline
+  includeUntracked?: boolean
 }) {
   const commitsQuery = useQuery<ProjectCommitEntry[]>({
     queryKey: desktopQueryKeys.projectCommits(projectId, 100),
@@ -126,10 +129,12 @@ function useComposerBaselineData({
   })
   const baselineStatsQuery = useQuery<ProjectDiffStatsResult | null, Error>({
     queryKey: projectId
-      ? desktopQueryKeys.projectDiffStats(projectId, selectedBaseline)
+      ? desktopQueryKeys.projectDiffStats(projectId, selectedBaseline, includeUntracked)
       : ['desktop', 'projectDiffStats', null],
     queryFn: () =>
-      projectId ? getProjectDiffStatsQuery(projectId, selectedBaseline) : Promise.resolve(null),
+      projectId
+        ? getProjectDiffStatsQuery(projectId, selectedBaseline, includeUntracked)
+        : Promise.resolve(null),
     enabled: projectId.length > 0 && selectedBaseline.kind !== 'head',
     staleTime: Number.POSITIVE_INFINITY,
   })
@@ -324,6 +329,7 @@ export function ComposerDiffBaselineSelector({
   selectedBaseline,
   onSelectBaseline,
   onSwitchBranch,
+  includeUntracked = false,
 }: ComposerDiffBaselineSelectorProps) {
   const [open, setOpen] = useState(false)
   const [branchSwitchOpen, setBranchSwitchOpen] = useState(false)
@@ -353,6 +359,7 @@ export function ComposerDiffBaselineSelector({
       projectId,
       searchQuery,
       selectedBaseline,
+      includeUntracked,
     })
   const baselinePrefix = getDiffBaselinePrefix(selectedBaseline)
 
