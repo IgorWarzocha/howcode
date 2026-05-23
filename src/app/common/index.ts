@@ -5,6 +5,7 @@ export { DisclosureSection } from './disclosure-section'
 export { EmptyStateCard } from './empty-state-card'
 export { MarkdownContent } from './markdown-content'
 export {
+  AnchoredPopoverPanel,
   type AnchoredPopoverPlacement,
   getPopoverBoundaryProps,
   getPopoverRootProps,

@@ -7,6 +7,7 @@ import {
   useLayoutEffect,
   useState,
 } from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '../utils/cn'
 import { SurfacePanel } from './surface-panel'
 
@@ -95,7 +96,7 @@ export function PopoverPanel({
   )
 }
 
-export type AnchoredPopoverPlacement = 'top-start' | 'bottom-start' | 'right'
+export type AnchoredPopoverPlacement = 'top-start' | 'top-center' | 'bottom-start' | 'right'
 
 type UseAnchoredPopoverPositionInput = {
   anchorRef: RefObject<HTMLElement | null>
@@ -130,14 +131,20 @@ function getAnchoredPopoverPosition(input: {
     }
   }
 
-  const preferredLeft = anchorRect.left
+  const preferredLeft =
+    placement === 'top-center'
+      ? anchorRect.left + anchorRect.width / 2 - panelRect.width / 2
+      : anchorRect.left
   const topPlacement = placement === 'top-start'
-  const preferredTop = topPlacement
-    ? anchorRect.top - panelRect.height - gap
-    : anchorRect.bottom + gap
-  const fallbackTop = topPlacement
-    ? anchorRect.bottom + gap
-    : anchorRect.top - panelRect.height - gap
+  const centeredTopPlacement = placement === 'top-center'
+  const preferredTop =
+    topPlacement || centeredTopPlacement
+      ? anchorRect.top - panelRect.height - gap
+      : anchorRect.bottom + gap
+  const fallbackTop =
+    topPlacement || centeredTopPlacement
+      ? anchorRect.bottom + gap
+      : anchorRect.top - panelRect.height - gap
 
   return {
     left: clamp(preferredLeft, viewportPadding, Math.max(viewportPadding, maxLeft)),
@@ -211,5 +218,65 @@ export function PopoverPortalLayer({ children, className, style }: PopoverPortal
     <div className={cn('pointer-events-none fixed inset-0 z-[300]', className)} style={style}>
       {children}
     </div>
+  )
+}
+
+type AnchoredPopoverPanelProps = PropsWithChildren<
+  HTMLAttributes<HTMLDivElement> & {
+    anchorRef: RefObject<HTMLElement | null>
+    panelRef: RefObject<HTMLDivElement | null>
+    open: boolean
+    placement?: AnchoredPopoverPlacement | undefined
+    gap?: number | undefined
+    viewportPadding?: number | undefined
+    portalClassName?: string | undefined
+    surface?: boolean | undefined
+  }
+>
+
+export function AnchoredPopoverPanel({
+  anchorRef,
+  panelRef,
+  open,
+  placement = 'top-start',
+  gap,
+  viewportPadding,
+  portalClassName,
+  surface = false,
+  children,
+  className,
+  style,
+  ...props
+}: AnchoredPopoverPanelProps) {
+  const { position, positionReady } = useAnchoredPopoverPosition({
+    anchorRef,
+    panelRef,
+    enabled: open,
+    placement,
+    gap,
+    viewportPadding,
+  })
+
+  if (!(open && typeof document !== 'undefined')) return null
+
+  return createPortal(
+    <PopoverPortalLayer className={portalClassName}>
+      <PopoverPanel
+        ref={panelRef}
+        open={positionReady}
+        surface={surface}
+        data-open={positionReady ? 'true' : 'false'}
+        className={cn(
+          'motion-popover pointer-events-auto fixed transition-opacity duration-150 ease-out',
+          !positionReady && 'pointer-events-none opacity-0',
+          className,
+        )}
+        style={{ ...style, left: `${position.left}px`, top: `${position.top}px` }}
+        {...props}
+      >
+        {children}
+      </PopoverPanel>
+    </PopoverPortalLayer>,
+    document.body,
   )
 }
