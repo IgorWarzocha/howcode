@@ -356,15 +356,16 @@ export function ComposerGitOpsFooter({
         {discardCommentsOpen ? (
           <PopoverPanel
             ref={discardCommentsPanelRef}
+            surface={false}
             className={cn(
-              'motion-popover pointer-events-auto absolute right-0 bottom-[calc(100%+6px)] z-20 rounded-xl border-0 bg-[color:var(--panel)] p-0.5 shadow-[var(--shadow)]',
+              'motion-popover pointer-events-auto absolute right-0 bottom-[calc(100%+6px)] z-20 rounded-md bg-[color:var(--panel)] p-0.5 shadow-[0_8px_20px_rgba(0,0,0,0.18)]',
             )}
             data-open="true"
           >
             <button
               type="button"
               className={cn(
-                'h-5 rounded-md px-1.5 py-0 text-left whitespace-nowrap transition-colors hover:bg-[color:var(--surface-hover)]',
+                'h-4 rounded px-1 py-0 text-left whitespace-nowrap transition-colors hover:bg-[color:var(--surface-hover)]',
                 appTypeTinyClass,
                 appToneMutedClass,
               )}
