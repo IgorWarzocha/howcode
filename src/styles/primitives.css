@@ -335,6 +335,10 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   width: calc(100% + 0.25rem);
 }
 
+.composer-text-field-end-adornment-space {
+  padding-right: min(11.25rem, 48%);
+}
+
 .composer-textarea-scroll-above-button::-webkit-scrollbar-track {
   margin-bottom: 1.25rem;
 }

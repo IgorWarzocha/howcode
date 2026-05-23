@@ -26,10 +26,12 @@ export function ComposerResponsivePlaceholder({
   placeholder,
   tone,
   leadingAdornmentVisible = false,
+  endAdornmentVisible = false,
 }: {
   placeholder: string
   tone: 'muted' | 'error'
   leadingAdornmentVisible?: boolean
+  endAdornmentVisible?: boolean
 }) {
   if (!placeholder) return null
   const { leading, tailParts } = splitPlaceholderText(placeholder)
@@ -40,6 +42,7 @@ export function ComposerResponsivePlaceholder({
         'pointer-events-none absolute inset-x-0 top-0 min-w-0 truncate',
         appTypeBodyClass,
         leadingAdornmentVisible && 'pl-6',
+        endAdornmentVisible && 'composer-text-field-end-adornment-space',
         tone === 'error' ? 'text-[color:var(--danger)]' : 'text-[color:var(--muted-2)]',
       )}
     >

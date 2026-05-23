@@ -23,12 +23,8 @@ export function QueuedPromptsCard({
   }
 
   return (
-    <div className="grid w-full grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible">
-      <div
-        className={cn(
-          'col-start-2 mx-auto grid w-full max-w-[664px] gap-1.5 rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-2.5 py-2 shadow-none',
-        )}
-      >
+    <div className="grid w-full overflow-visible px-[3.5rem]">
+      <div className="grid w-full gap-1.5 rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-2.5 py-2 shadow-none">
         <div className={cn('pl-3.5', appTypeSmallClass, appToneMutedClass)}>
           Queued messages. Click to edit.
         </div>

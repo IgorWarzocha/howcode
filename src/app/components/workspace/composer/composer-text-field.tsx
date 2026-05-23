@@ -37,6 +37,7 @@ type ComposerTextFieldProps = {
   ariaControls?: string | undefined
   reservedLineCount?: number
   inlinePopover?: ReactNode
+  endAdornment?: ReactNode
   trailingAdornment?: ReactNode
   trailingAdornmentEnabled?: boolean
   readOnly?: boolean
@@ -64,6 +65,7 @@ export function ComposerTextField({
   ariaControls,
   reservedLineCount = 4,
   inlinePopover = null,
+  endAdornment = null,
   trailingAdornment = null,
   trailingAdornmentEnabled = Boolean(trailingAdornment),
   readOnly = false,
@@ -86,6 +88,7 @@ export function ComposerTextField({
   const [fieldExpanded, setFieldExpanded] = useState(false)
   const lineHeightRef = useRef(20)
   const trailingAdornmentVisible = trailingAdornmentEnabled
+  const endAdornmentVisible = Boolean(endAdornment)
 
   const focusTextareaAtEnd = useCallback(() => {
     const textarea = textareaRef.current
@@ -177,7 +180,13 @@ export function ComposerTextField({
             placeholder={placeholder}
             tone={placeholderTone}
             leadingAdornmentVisible={trailingAdornmentVisible}
+            endAdornmentVisible={endAdornmentVisible}
           />
+        ) : null}
+        {endAdornment ? (
+          <div className="pointer-events-none absolute top-0 right-0 z-10 flex h-6 max-w-[45cqw] items-center justify-end">
+            {endAdornment}
+          </div>
         ) : null}
         <textarea
           ref={textareaRef}
@@ -188,6 +197,7 @@ export function ComposerTextField({
             appToneTextClass,
             'overflow-x-hidden [hyphens:auto] [overflow-wrap:break-word] [word-break:normal]',
             trailingAdornmentVisible && value.length === 0 && 'pl-6',
+            endAdornmentVisible && 'composer-text-field-end-adornment-space',
             canExpandField && 'composer-textarea-scroll-above-button',
             readOnly && 'cursor-wait opacity-45',
             'placeholder:text-transparent',

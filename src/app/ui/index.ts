@@ -48,6 +48,7 @@ export {
   compactMetaRowActionsClass,
   compactRoundIconButtonClass,
   composerDividerClass,
+  composerInlineStatusPillClass,
   composerPanelClass,
   composerPopoverInputClass,
   composerPopoverOptionClass,
