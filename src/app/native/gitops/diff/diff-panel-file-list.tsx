@@ -236,10 +236,6 @@ function hashString(input: string) {
   return hash >>> 0
 }
 
-function getFileDiffVersion(fileDiff: FileDiffMetadata) {
-  return hashString(JSON.stringify(fileDiff))
-}
-
 function isAppendOnlyItemList(previousIds: string[], nextIds: string[]) {
   return (
     previousIds.length <= nextIds.length &&
@@ -296,7 +292,7 @@ export function DiffPanelFileList({
             ? false
             : (collapsedFiles[fileKey] ?? isImageFile),
           version: hashString(
-            `${getFileDiffVersion(fileDiff)}:${commentAnnotationsByFile.get(fileKey)?.length ?? 0}:${collapsedFiles[fileKey] ? 1 : 0}:${focusedImageFileKeys.has(fileKey) ? 1 : 0}`,
+            `${fileKey}:${fileDiff.unifiedLineCount}:${fileDiff.splitLineCount}:${commentAnnotationsByFile.get(fileKey)?.length ?? 0}:${collapsedFiles[fileKey] ? 1 : 0}:${focusedImageFileKeys.has(fileKey) ? 1 : 0}`,
           ),
         }
       }),

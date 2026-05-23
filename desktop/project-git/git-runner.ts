@@ -86,6 +86,8 @@ export function startGitStreamingWithOptions(
 
     let stdout = ''
     let stderr = ''
+    let stdoutBytes = 0
+    let stderrBytes = 0
     let settled = false
     const maxAccumulatedStdoutBytes = options.maxAccumulatedStdoutBytes ?? 64 * 1024 * 1024
     const maxAccumulatedStderrBytes = options.maxAccumulatedStderrBytes ?? 1024 * 1024
@@ -120,19 +122,23 @@ export function startGitStreamingWithOptions(
 
     child.stdout.setEncoding('utf8')
     child.stdout.on('data', (chunk: string) => {
-      stdout += chunk
-      if (Buffer.byteLength(stdout, 'utf8') > maxAccumulatedStdoutBytes) {
+      stdoutBytes += Buffer.byteLength(chunk, 'utf8')
+      if (stdoutBytes > maxAccumulatedStdoutBytes) {
+        options.onStdoutChunk(chunk)
         child.kill('SIGTERM')
         rejectOnce(new Error('Git command produced too much stdout.'))
         return
       }
+      stdout += chunk
       options.onStdoutChunk(chunk)
     })
     child.stderr.setEncoding('utf8')
     child.stderr.on('data', (chunk: string) => {
+      stderrBytes += Buffer.byteLength(chunk, 'utf8')
       stderr += chunk
-      if (Buffer.byteLength(stderr, 'utf8') > maxAccumulatedStderrBytes) {
+      if (stderrBytes > maxAccumulatedStderrBytes) {
         stderr = stderr.slice(-maxAccumulatedStderrBytes)
+        stderrBytes = Buffer.byteLength(stderr, 'utf8')
       }
     })
     cancel = () => {
