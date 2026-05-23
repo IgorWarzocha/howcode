@@ -62,9 +62,6 @@ type UseComposerControllerProps = {
 
 export function useComposerController({
   activeView,
-  composerPanelRef,
-  mainViewRef,
-  workspaceFooterRef,
   model,
   projectId,
   chatGroupId = null,
@@ -139,20 +136,14 @@ export function useComposerController({
         return
       }
 
-      if (composerPanelRef.current?.contains(target)) {
-        return
-      }
-
-      if (mainViewRef.current?.contains(target) || workspaceFooterRef.current?.contains(target)) {
-        setOpenMenu((current) => (current === 'picker' ? null : current))
-      }
+      setOpenMenu((current) => (current === 'picker' ? null : current))
     }
 
     window.addEventListener('pointerdown', handlePointerDown, true)
     return () => {
       window.removeEventListener('pointerdown', handlePointerDown, true)
     }
-  }, [composerPanelRef, mainViewRef, openMenu, workspaceFooterRef])
+  }, [openMenu])
 
   const extensionCommandRunning = isExtensionCommandRunning || localExtensionCommandRunning
   const canSend =
