@@ -1,13 +1,23 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { RenderablePatch } from './diff-panel-content.types'
 
 export function useDeferredDiffContentReady(renderablePatch: RenderablePatch | null) {
   const [ready, setReady] = useState(false)
+  const hadFilesRef = useRef(false)
 
   useEffect(() => {
-    setReady(false)
-    if (!renderablePatch || renderablePatch.kind !== 'files') return
+    const hasFiles = renderablePatch?.kind === 'files'
+    if (!hasFiles) {
+      hadFilesRef.current = false
+      setReady(false)
+      return
+    }
 
+    const keepExistingFileContentVisible = hadFilesRef.current
+    hadFilesRef.current = true
+    if (keepExistingFileContentVisible) return
+
+    setReady(false)
     let cancelled = false
     const firstFrame = window.requestAnimationFrame(() => {
       const secondFrame = window.requestAnimationFrame(() => {

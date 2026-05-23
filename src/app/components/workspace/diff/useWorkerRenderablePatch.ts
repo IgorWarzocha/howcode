@@ -4,8 +4,10 @@ import type { RenderablePatch } from './diff-panel-content.types'
 
 type DiffParseResponse = {
   id: number
-  patch: RenderablePatch | null
-}
+} & (
+  | { kind: 'patch'; patch: RenderablePatch | null }
+  | { kind: 'files'; files: Extract<RenderablePatch, { kind: 'files' }>['files']; done: boolean }
+)
 
 type DiffParseWorker = Worker & {
   onmessage: ((event: MessageEvent<DiffParseResponse>) => void) | null
@@ -59,7 +61,18 @@ export function useWorkerRenderablePatch(selectedPatch: string | undefined) {
     workerRef.current = worker
     worker.onmessage = (event) => {
       if (!active || event.data.id !== requestIdRef.current) return
-      setRenderablePatch(event.data.patch)
+      if (event.data.kind === 'patch') {
+        setRenderablePatch(event.data.patch)
+        return
+      }
+
+      setRenderablePatch((current) => {
+        if (!current || current.kind !== 'files') {
+          return { kind: 'files', files: event.data.files }
+        }
+
+        return { kind: 'files', files: [...current.files, ...event.data.files] }
+      })
     }
     worker.onerror = fallbackFromFailedWorker
     worker.onmessageerror = fallbackFromFailedWorker
