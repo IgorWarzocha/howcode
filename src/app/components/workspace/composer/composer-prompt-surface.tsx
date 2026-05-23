@@ -4,10 +4,13 @@ import {
   howcodeDismissTransientUiEvent,
   useHowcodeKeybindingCommand,
 } from '../../../app-shell/keybinding-events'
+import {
+  AskQuestionsCard,
+  useComposerAskQuestionsActions,
+} from '../../../features/native-extensions'
 import { composerPanelClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import type { ComposerProps } from '../composer'
-import { AskQuestionsCard } from './ask-questions-card'
 import { ComposerFooter } from './composer-footer'
 import { ComposerPromptInputPanel } from './composer-prompt-input-panel'
 import {
@@ -17,7 +20,6 @@ import {
 import { ComposerAttachmentRail, ComposerStopRail } from './composer-side-controls'
 import { useComposerController } from './controller/useComposerController'
 import { useAskQuestionsOverlayHeight } from './useAskQuestionsOverlayHeight'
-import { useComposerAskQuestionsActions } from './useComposerAskQuestionsActions'
 import { useComposerFileMentions } from './useComposerFileMentions'
 import {
   useComposerAutocompleteEffects,

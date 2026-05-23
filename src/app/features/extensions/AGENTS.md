@@ -1,0 +1,2 @@
+- Always read `.pi/skills/howcode-dual-native-extension/SKILL.md` if touching Howcode-native extension concepts; this folder is for ordinary Pi package extensions.
+- Composer-adjacent native extension overlays must follow the queued-prompt/composer width grammar; do not add independent centered max-width cards.

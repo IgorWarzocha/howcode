@@ -1,4 +1,4 @@
-import type { ComposerProps } from '../composer'
+import type { ComposerProps } from '../../components/workspace/composer'
 
 export function useComposerAskQuestionsActions({
   chatGroupId,
