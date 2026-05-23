@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { buildFileDiffRenderKey } from './diff-panel-content.helpers'
 import { getRenderablePatch } from './diff-panel-content.rendering'
 import type { RenderablePatch } from './diff-panel-content.types'
 
@@ -50,7 +51,21 @@ function appendFiles(
   files: FileRenderablePatch['files'],
 ): RenderablePatch {
   if (!current || current.kind !== 'files') return { kind: 'files', files }
-  return { kind: 'files', files: [...current.files, ...files] }
+  const nextFiles = [...current.files]
+  const indexByKey = new Map(
+    nextFiles.map((fileDiff, index) => [buildFileDiffRenderKey(fileDiff), index] as const),
+  )
+  for (const fileDiff of files) {
+    const key = buildFileDiffRenderKey(fileDiff)
+    const existingIndex = indexByKey.get(key)
+    if (existingIndex === undefined) {
+      indexByKey.set(key, nextFiles.length)
+      nextFiles.push(fileDiff)
+    } else {
+      nextFiles[existingIndex] = fileDiff
+    }
+  }
+  return { kind: 'files', files: nextFiles }
 }
 
 export function useWorkerRenderablePatch(selectedPatch: string | undefined, done = true) {
