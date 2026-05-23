@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
-import type { Artifact, ArtifactVersion } from '../desktop/types'
-import { listArtifactsQuery } from '../query/desktop-query'
+import { useEffect, useState } from 'react'
+import type { Artifact, ArtifactVersion } from '../../desktop/types'
+import { listArtifactsQuery } from '../../query/desktop-query'
 
 export function useArtifactCollection(input: {
   conversationId: string | null
@@ -12,7 +12,8 @@ export function useArtifactCollection(input: {
 }) {
   const [loadingArtifacts, setLoadingArtifacts] = useState(false)
   const [artifactLoadError, setArtifactLoadError] = useState<string | null>(null)
-  const { conversationId, setArtifacts, setSelectedArtifactId, setSelectedVersion, setVersions } = input
+  const { conversationId, setArtifacts, setSelectedArtifactId, setSelectedVersion, setVersions } =
+    input
 
   useEffect(() => {
     let cancelled = false

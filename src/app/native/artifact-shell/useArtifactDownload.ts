@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Artifact } from '../desktop/types'
-import { saveTextToDownloadsQuery } from '../query/desktop-query'
+import type { Artifact } from '../../desktop/types'
+import { saveTextToDownloadsQuery } from '../../query/desktop-query'
 import { getArtifactExtension } from './artifactFormat'
 
 const pathSeparatorPattern = /[\\/]/
@@ -18,12 +18,14 @@ export function useArtifactDownload(input: {
   showingHistoricalVersion: boolean
 }) {
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null)
+  const { selectedArtifactSlug } = input
   const selectedArtifactSlugRef = useRef<string | null>(null)
-  selectedArtifactSlugRef.current = input.selectedArtifactSlug
+  selectedArtifactSlugRef.current = selectedArtifactSlug
 
   useEffect(() => {
+    void selectedArtifactSlug
     setDownloadStatus(null)
-  }, [input.selectedArtifactSlug])
+  }, [selectedArtifactSlug])
 
   const downloadArtifact = async () => {
     if (!input.selectedArtifact) return
@@ -41,7 +43,9 @@ export function useArtifactDownload(input: {
         setCurrentDownloadStatus(result?.error ?? 'Could not save artifact to Downloads.')
       }
     } catch (error) {
-      setCurrentDownloadStatus(error instanceof Error ? error.message : 'Could not save artifact to Downloads.')
+      setCurrentDownloadStatus(
+        error instanceof Error ? error.message : 'Could not save artifact to Downloads.',
+      )
     }
   }
 

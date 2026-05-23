@@ -10,7 +10,7 @@ import { ChatComposerDock, type ChatWorkspaceComposerProps } from './chat-worksp
 import { useChatArtifactDrawerState } from './useChatArtifactDrawerState'
 
 const ArtifactPanel = lazy(() =>
-  import('@howcode/artifacts').then((module) => ({
+  import('@howcode/native-artifacts').then((module) => ({
     default: module.ArtifactPanel,
   })),
 )

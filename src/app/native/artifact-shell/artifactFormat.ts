@@ -1,4 +1,4 @@
-import type { Artifact } from '../desktop/types'
+import type { Artifact } from '../../desktop/types'
 
 export function formatArtifactSlug(slug: string) {
   return slug

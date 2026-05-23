@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Artifact } from '../desktop/types'
-import { compileReactArtifactQuery } from '../query/desktop-query'
+import type { Artifact } from '../../desktop/types'
+import { compileReactArtifactQuery } from '../../query/desktop-query'
 import { buildHtmlPreview, buildReactPreview } from './artifactPreviewBuilders'
 
 export function useArtifactPreview(input: {
@@ -42,7 +42,9 @@ export function useArtifactPreview(input: {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.source !== 'howcode-artifact-preview') return
       if (previewSourceRef.current && event.source !== previewSourceRef.current) return
-      setPreviewError([event.data.phase, event.data.message, event.data.stack].filter(Boolean).join('\n'))
+      setPreviewError(
+        [event.data.phase, event.data.message, event.data.stack].filter(Boolean).join('\n'),
+      )
     }
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)

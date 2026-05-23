@@ -1,7 +1,7 @@
-import { useEffect } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
-import type { ArtifactVersion } from '../desktop/types'
-import { listArtifactVersionsQuery } from '../query/desktop-query'
+import { useEffect } from 'react'
+import type { ArtifactVersion } from '../../desktop/types'
+import { listArtifactVersionsQuery } from '../../query/desktop-query'
 
 export function useArtifactVersions(input: {
   selectedArtifactSlug: string | null

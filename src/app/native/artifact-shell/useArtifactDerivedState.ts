@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import type { Artifact, ArtifactVersion } from '../desktop/types'
+import type { Artifact, ArtifactVersion } from '../../desktop/types'
 import type { ArtifactView } from './useArtifactPanelState'
 
 export function useArtifactDerivedState(input: {
@@ -30,7 +30,9 @@ export function useArtifactDerivedState(input: {
       selectedArtifact && !showingHistoricalVersion && input.draft !== selectedArtifact.content,
     ),
     markdownPreviewEditable:
-      input.view === 'preview' && selectedArtifact?.kind === 'markdown' && !showingHistoricalVersion,
+      input.view === 'preview' &&
+      selectedArtifact?.kind === 'markdown' &&
+      !showingHistoricalVersion,
     previewContent: showingHistoricalVersion ? displayedContent : input.draft,
     selectedArtifact,
     selectedArtifactSlug: selectedArtifact?.slug ?? null,

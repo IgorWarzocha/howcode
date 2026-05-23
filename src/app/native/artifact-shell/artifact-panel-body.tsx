@@ -1,3 +1,4 @@
+import { HistoricalMarkdownPreview } from '@howcode/native-markdown-artifacts'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import {
   appToneDangerClass,
@@ -11,9 +12,8 @@ import {
   artifactListClass,
   artifactListRowClass,
   artifactPreviewSurfaceClass,
-} from '../ui/classes'
-import { cn } from '../utils/cn'
-import { HistoricalMarkdownPreview } from './artifact-markdown-preview'
+} from '../../ui/classes'
+import { cn } from '../../utils/cn'
 import { formatArtifactSlug } from './artifactFormat'
 import type { useArtifactPanelState } from './useArtifactPanelState'
 
@@ -22,7 +22,7 @@ const ArtifactMarkdownEditor = lazy(async () => {
   // @mdxeditor/@lexical code highlighting expects Prism on the browser global.
   // Install it only on the markdown editor path so HTML/React previews stay isolated.
   globalThis.Prism = Prism
-  const module = await import('./artifact-markdown-editor')
+  const module = await import('@howcode/native-markdown-artifacts')
   return { default: module.ArtifactMarkdownEditor }
 })
 
@@ -84,8 +84,12 @@ function ArtifactListView({ panel }: { panel: ArtifactPanelState }) {
               setView('preview')
             }}
           >
-            <div className={`truncate ${appTypeSmallStrongClass}`}>{formatArtifactSlug(artifact.slug)}</div>
-            <div className={`mt-0.5 ${appTypeTinyClass} tracking-[0.12em] ${appToneSubtleClass} uppercase`}>
+            <div className={`truncate ${appTypeSmallStrongClass}`}>
+              {formatArtifactSlug(artifact.slug)}
+            </div>
+            <div
+              className={`mt-0.5 ${appTypeTinyClass} tracking-[0.12em] ${appToneSubtleClass} uppercase`}
+            >
               {artifact.kind} · v{artifact.version}
             </div>
           </button>
@@ -99,9 +103,7 @@ function ArtifactPreviewView({ panel }: { panel: ArtifactPanelState }) {
   const { previewError, previewHtml, previewRevision, selectedArtifact, setPreviewSource } = panel
   return (
     <div className={artifactPreviewSurfaceClass}>
-      {previewError ? (
-        <pre className={artifactErrorStripClass}>{previewError}</pre>
-      ) : null}
+      {previewError ? <pre className={artifactErrorStripClass}>{previewError}</pre> : null}
       {previewHtml ? (
         <ArtifactPreviewIframe
           previewHtml={previewHtml}
@@ -136,20 +138,20 @@ export function ArtifactPanelBody({
   } = panel
 
   if (artifactLoadError) {
-    return <div className={`${artifactCenteredStateClass} ${appToneDangerClass}`}>{artifactLoadError}</div>
+    return (
+      <div className={`${artifactCenteredStateClass} ${appToneDangerClass}`}>
+        {artifactLoadError}
+      </div>
+    )
   }
   if (loadingArtifacts) {
     return (
-      <div className={`${artifactCenteredStateClass} ${appToneMutedClass}`}>
-        Loading artifacts…
-      </div>
+      <div className={`${artifactCenteredStateClass} ${appToneMutedClass}`}>Loading artifacts…</div>
     )
   }
   if (artifacts.length === 0) {
     return (
-      <div className={`${artifactCenteredStateClass} ${appToneMutedClass}`}>
-        No artifacts yet.
-      </div>
+      <div className={`${artifactCenteredStateClass} ${appToneMutedClass}`}>No artifacts yet.</div>
     )
   }
   if (view === 'list') return <ArtifactListView panel={panel} />

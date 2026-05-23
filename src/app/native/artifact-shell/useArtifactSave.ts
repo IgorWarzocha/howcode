@@ -1,7 +1,7 @@
-import { useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
-import type { Artifact } from '../desktop/types'
-import { updateArtifactQuery } from '../query/desktop-query'
+import { useState } from 'react'
+import type { Artifact } from '../../desktop/types'
+import { updateArtifactQuery } from '../../query/desktop-query'
 import type { ArtifactView } from './useArtifactPanelState'
 
 export function useArtifactSave(input: {
@@ -22,9 +22,15 @@ export function useArtifactSave(input: {
     if (!input.showingHistoricalVersion && content === input.selectedArtifact.content) return
     setSaving(true)
     try {
-      const updated = await updateArtifactQuery(input.selectedArtifact.slug, content, input.conversationId)
+      const updated = await updateArtifactQuery(
+        input.selectedArtifact.slug,
+        content,
+        input.conversationId,
+      )
       if (!updated) return
-      input.setArtifacts((current) => current.map((artifact) => (artifact.slug === updated.slug ? updated : artifact)))
+      input.setArtifacts((current) =>
+        current.map((artifact) => (artifact.slug === updated.slug ? updated : artifact)),
+      )
       input.setSelectedVersion('latest')
       input.setView('preview')
       input.setPreviewRevision((revision) => revision + 1)

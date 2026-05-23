@@ -20,28 +20,27 @@ import {
   useState,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { PopoverPanel } from '../common/popover'
-import { Tooltip } from '../common/tooltip'
-import { useDismissibleLayer } from '../hooks/useDismissibleLayer'
+import { PopoverPanel } from '../../common/popover'
+import { Tooltip } from '../../common/tooltip'
+import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
 import {
+  appTypeGroupTitleClass,
+  artifactBodyClass,
   artifactHeaderClass,
   artifactHeaderControlActiveClass,
   artifactHeaderControlsClass,
   artifactHeaderTitleClass,
-  artifactBodyClass,
   artifactVersionTriggerClass,
-  appTypeGroupTitleClass,
   compactIconButtonClass,
   composerPopoverOptionClass,
   composerPopoverOptionSelectedClass,
   composerPopoverPanelClass,
   viewCloseButtonClass,
-} from '../ui/classes'
-import { cn } from '../utils/cn'
+} from '../../ui/classes'
+import { cn } from '../../utils/cn'
 import { ArtifactPanelBody } from './artifact-panel-body'
 import { formatArtifactSlug } from './artifactFormat'
 import { useArtifactPanelState } from './useArtifactPanelState'
-
 
 type ArtifactPanelProps = {
   conversationId: string | null
@@ -136,10 +135,7 @@ function ArtifactVersionSelect({ panel }: { panel: ReturnType<typeof useArtifact
               open={positionReady}
               ref={menuRef}
               data-open={positionReady ? 'true' : 'false'}
-              className={cn(
-                composerPopoverPanelClass,
-                'motion-popover fixed z-[120] grid gap-0.5',
-              )}
+              className={cn(composerPopoverPanelClass, 'motion-popover fixed z-[120] grid gap-0.5')}
               style={menuStyle}
               role="listbox"
               aria-label="Artifact version"
@@ -256,7 +252,9 @@ function ArtifactPanelHeader({
       <div className={artifactHeaderTitleClass}>
         <FileCode2 size={15} className="shrink-0 text-[color:var(--muted)]" />
         {selectedArtifact ? (
-          <span className={`truncate ${appTypeGroupTitleClass}`}>{formatArtifactSlug(selectedArtifact.slug)}</span>
+          <span className={`truncate ${appTypeGroupTitleClass}`}>
+            {formatArtifactSlug(selectedArtifact.slug)}
+          </span>
         ) : null}
       </div>
       <div className={artifactHeaderControlsClass}>

@@ -1,7 +1,7 @@
-import { useEffect } from 'react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
-import type { Artifact } from '../desktop/types'
-import { subscribeDesktopEvents } from '../query/desktop-query'
+import { useEffect } from 'react'
+import type { Artifact } from '../../desktop/types'
+import { subscribeDesktopEvents } from '../../query/desktop-query'
 import type { ArtifactView } from './useArtifactPanelState'
 
 export function useArtifactSelection(input: {
@@ -29,7 +29,14 @@ export function useArtifactSelection(input: {
     draftDirtyRef.current = false
     setDraft(displayedContentRef.current)
     setSelectedVersion('latest')
-  }, [displayedContentRef, draftDirtyRef, previousSelectedArtifactSlugRef, selectedArtifactSlug, setDraft, setSelectedVersion])
+  }, [
+    displayedContentRef,
+    draftDirtyRef,
+    previousSelectedArtifactSlugRef,
+    selectedArtifactSlug,
+    setDraft,
+    setSelectedVersion,
+  ])
 
   useEffect(() => {
     void selectedArtifactSlug
@@ -73,7 +80,16 @@ export function useArtifactUpdateEvents(input: {
       }
       setPreviewRevision((revision) => revision + 1)
     })
-  }, [conversationId, draftDirtyRef, setArtifactLoadError, setArtifacts, setPreviewRevision, setSelectedArtifactId, setSelectedVersion, setView])
+  }, [
+    conversationId,
+    draftDirtyRef,
+    setArtifactLoadError,
+    setArtifacts,
+    setPreviewRevision,
+    setSelectedArtifactId,
+    setSelectedVersion,
+    setView,
+  ])
 }
 
 function upsertArtifact(current: Artifact[], artifact: Artifact) {

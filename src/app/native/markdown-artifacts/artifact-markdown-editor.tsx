@@ -1,6 +1,5 @@
 import { MDXEditor, type MDXEditorMethods } from '@mdxeditor/editor'
 import '@mdxeditor/editor/style.css'
-import { useEffect, useMemo, useRef } from 'react'
 import {
   BlockTypeSelect,
   BoldItalicUnderlineToggles,
@@ -24,7 +23,8 @@ import {
   toolbarPlugin,
   UndoRedo,
 } from '@mdxeditor/editor'
-import { cn } from '../utils/cn'
+import { useEffect, useMemo, useRef } from 'react'
+import { cn } from '../../utils/cn'
 
 export function createMarkdownEditorPlugins(fullscreen: boolean, diffMarkdown: string) {
   return [
@@ -80,8 +80,6 @@ export function createMarkdownEditorPlugins(fullscreen: boolean, diffMarkdown: s
     }),
   ]
 }
-
-
 
 type ArtifactMarkdownEditorProps = {
   content: string

@@ -1,13 +1,13 @@
 import ReactMarkdown from 'react-markdown'
-import { openExternalQuery } from '../query/desktop-query'
+import remarkGfm from 'remark-gfm'
+import { openExternalQuery } from '../../query/desktop-query'
 import {
-  artifactMarkdownPreviewClass,
   appToneTextClass,
   appTypeCodeClass,
   appTypeReadableStrongClass,
   appTypeSectionTitleClass,
-} from '../ui/classes'
-import remarkGfm from 'remark-gfm'
+  artifactMarkdownPreviewClass,
+} from '../../ui/classes'
 
 export function HistoricalMarkdownPreview({ content }: { content: string }) {
   return (
@@ -53,12 +53,16 @@ export function HistoricalMarkdownPreview({ content }: { content: string }) {
             </blockquote>
           ),
           code: ({ children }) => (
-            <code className={`${appTypeCodeClass} rounded-md bg-[color:var(--inline-code-bg)] px-1 py-0.5 text-[color:var(--inline-code-text)]`}>
+            <code
+              className={`${appTypeCodeClass} rounded-md bg-[color:var(--inline-code-bg)] px-1 py-0.5 text-[color:var(--inline-code-text)]`}
+            >
               {children}
             </code>
           ),
           pre: ({ children }) => (
-            <pre className={`my-3 overflow-auto rounded-md bg-[color:var(--code-block-bg)] p-3 ${appTypeCodeClass} ${appToneTextClass}`}>
+            <pre
+              className={`my-3 overflow-auto rounded-md bg-[color:var(--code-block-bg)] p-3 ${appTypeCodeClass} ${appToneTextClass}`}
+            >
               {children}
             </pre>
           ),
