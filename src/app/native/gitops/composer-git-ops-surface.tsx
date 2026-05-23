@@ -1,6 +1,7 @@
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
-import { type RefObject, useEffect } from 'react'
+import { type RefObject, useEffect, useRef, useState } from 'react'
 import { useHowcodeKeybindingCommand } from '../../app-shell/keybinding-events'
+import { PopoverPanel } from '../../common/popover'
 import { ComposerDictationControls } from '../../composer/composer-dictation-controls'
 import { useComposerDictation } from '../../composer/useComposerDictation'
 import type {
@@ -11,7 +12,14 @@ import type {
   ProjectGitState,
 } from '../../desktop/types'
 import { getFeatureStatusDataAttributes } from '../../features/feature-status'
-import { composerTextActionButtonClass } from '../../ui/classes'
+import {
+  appToneMutedClass,
+  appTypeMetaClass,
+  appTypeMetaStrongClass,
+  composerPopoverPanelClass,
+  composerTextActionButtonClass,
+} from '../../ui/classes'
+import { cn } from '../../utils/cn'
 import { ComposerGitOpsFooter } from './composer-git-ops-footer'
 import { ComposerGitOpsMessageField } from './composer-git-ops-message-field'
 import { ComposerGitOpsTopBar } from './composer-git-ops-top-bar'
@@ -45,6 +53,93 @@ type ComposerGitOpsSurfaceProps = {
   onLayoutChange: () => void
   onBack: () => void
   onActionErrorMessageChange?: (message: string | null) => void
+}
+
+function UntrackedScopePopover({ count, onInclude }: { count: number; onInclude: () => void }) {
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLSpanElement | null>(null)
+  const countLabel = `${count} untracked`
+
+  useEffect(() => {
+    if (!open) return
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target
+      if (target instanceof Node && rootRef.current?.contains(target)) return
+      setOpen(false)
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      event.stopPropagation()
+      setOpen(false)
+    }
+
+    window.addEventListener('pointerdown', handlePointerDown, true)
+    window.addEventListener('keydown', handleKeyDown, true)
+    return () => {
+      window.removeEventListener('pointerdown', handlePointerDown, true)
+      window.removeEventListener('keydown', handleKeyDown, true)
+    }
+  }, [open])
+
+  return (
+    <span ref={rootRef} className="relative inline-flex">
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        className={`${composerTextActionButtonClass} border-0 bg-transparent text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]`}
+        onClick={() => setOpen((current) => !current)}
+        onFocus={() => setOpen(true)}
+        onMouseEnter={() => setOpen(true)}
+      >
+        {countLabel}
+      </button>
+      {open ? (
+        <PopoverPanel
+          open={open}
+          className={cn(
+            composerPopoverPanelClass,
+            'motion-popover absolute right-0 bottom-[calc(100%+8px)] z-[80] w-64 p-2',
+          )}
+        >
+          <div className="grid gap-2 p-1">
+            <div className="grid gap-0.5 px-1">
+              <div className={appTypeMetaStrongClass}>Untracked files</div>
+              <p className={cn(appTypeMetaClass, appToneMutedClass, 'm-0')}>
+                {count} file{count === 1 ? ' is' : 's are'} not tracked by git.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="grid gap-0.5 rounded-md px-2 py-1.5 text-left text-[color:var(--text)] hover:bg-[color:var(--surface-hover)]"
+              onClick={() => setOpen(false)}
+            >
+              <span className={appTypeMetaStrongClass}>Exclude from commit</span>
+              <span className={cn(appTypeMetaClass, appToneMutedClass)}>
+                Hide from the diff and leave untracked.
+              </span>
+            </button>
+            <button
+              type="button"
+              className="grid gap-0.5 rounded-md px-2 py-1.5 text-left text-[color:var(--text)] hover:bg-[color:var(--surface-hover)]"
+              onClick={() => {
+                onInclude()
+                setOpen(false)
+              }}
+            >
+              <span className={appTypeMetaStrongClass}>Include in commit</span>
+              <span className={cn(appTypeMetaClass, appToneMutedClass)}>
+                Show in the diff and add when committing.
+              </span>
+            </button>
+          </div>
+        </PopoverPanel>
+      ) : null}
+    </span>
+  )
 }
 
 export function ComposerGitOpsSurface({
@@ -110,8 +205,12 @@ export function ComposerGitOpsSurface({
     diffCommentsSending,
     onAction,
     onSendDiffComments,
+    includeUntracked,
     projectGitState,
   })
+
+  const untrackedFileCount = projectGitState?.untrackedFileCount ?? 0
+  const hiddenUntrackedFileCount = includeUntracked ? 0 : untrackedFileCount
 
   const {
     cancelDictation,
@@ -195,7 +294,17 @@ export function ComposerGitOpsSurface({
     </button>
   )
   const trailingActions = (
-    <div className="inline-flex items-center gap-2">{primaryActionButton}</div>
+    <div className="inline-flex items-center gap-2">
+      {hiddenUntrackedFileCount > 0 ? (
+        <UntrackedScopePopover
+          count={hiddenUntrackedFileCount}
+          onInclude={() => {
+            onToggleIncludeUntracked()
+          }}
+        />
+      ) : null}
+      {primaryActionButton}
+    </div>
   )
 
   return (

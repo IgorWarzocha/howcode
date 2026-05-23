@@ -28,6 +28,7 @@ export type DesktopActionPayloadFields = {
   diffBaseline?: ProjectDiffBaseline | null
   diffRenderMode?: ProjectDiffRenderMode | null
   includeUnstaged?: boolean | undefined
+  includeUntracked?: boolean | undefined
   key?: keyof AppSettings
   piSettingsKey?: keyof PiSettings
   level?: ComposerThinkingLevel
@@ -166,6 +167,7 @@ export type DesktopActionPayloadMap = {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined
     includeUnstaged?: boolean | undefined
+    includeUntracked?: boolean | undefined
     message?: string | undefined | null | undefined
     preview?: boolean | undefined
     push?: boolean | undefined

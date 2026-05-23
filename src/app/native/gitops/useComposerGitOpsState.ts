@@ -35,11 +35,17 @@ function getPrimaryGitOpsActionLabel(input: {
 function getCanCommit(input: {
   fileCount: number
   includeUnstaged: boolean
+  includeUntracked: boolean
   isGitRepo: boolean
   stagedFileCount: number
+  untrackedFileCount: number
 }) {
   if (!input.isGitRepo) return false
-  return input.includeUnstaged ? input.fileCount > 0 : input.stagedFileCount > 0
+  if (!input.includeUnstaged) return input.stagedFileCount > 0
+  const committableFileCount = input.includeUntracked
+    ? input.fileCount
+    : input.fileCount - input.untrackedFileCount
+  return committableFileCount > 0
 }
 
 async function initializeGitRepository(input: {
@@ -101,6 +107,7 @@ export function useComposerGitOpsState({
   onAction,
   onSendDiffComments,
   appSettings,
+  includeUntracked,
   projectGitState,
 }: {
   diffComments: SavedDiffComment[]
@@ -108,6 +115,7 @@ export function useComposerGitOpsState({
   onAction: DesktopActionInvoker
   onSendDiffComments: (message?: string | null) => void
   appSettings: AppSettings
+  includeUntracked: boolean
   projectGitState: ProjectGitState | null
 }) {
   const [includeUnstaged, setIncludeUnstaged] = useState(true)
@@ -136,8 +144,10 @@ export function useComposerGitOpsState({
   const canCommit = getCanCommit({
     fileCount: projectGitState?.fileCount ?? 0,
     includeUnstaged,
+    includeUntracked,
     isGitRepo,
     stagedFileCount: projectGitState?.stagedFileCount ?? 0,
+    untrackedFileCount: projectGitState?.untrackedFileCount ?? 0,
   })
   const primaryActionLabel = getPrimaryGitOpsActionLabel({
     canCommit,
@@ -304,6 +314,7 @@ export function useComposerGitOpsState({
       setActionStatusMessage(null)
       const result = await onAction('workspace.commit', {
         includeUnstaged,
+        includeUntracked,
         message: trimmedCommitMessage.length > 0 ? trimmedCommitMessage : null,
         preview: shouldPreview,
         push: pushEnabled,
@@ -330,6 +341,7 @@ export function useComposerGitOpsState({
     canCommit,
     hasDiffComments,
     includeUnstaged,
+    includeUntracked,
     isGitRepo,
     onAction,
     onSendDiffComments,

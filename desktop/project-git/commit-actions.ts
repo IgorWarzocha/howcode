@@ -35,6 +35,7 @@ export async function commitProjectChanges(
   projectId: string,
   options: {
     includeUnstaged: boolean
+    includeUntracked?: boolean | undefined
     message: string | null
     push: boolean
     preview?: boolean | undefined
@@ -42,7 +43,11 @@ export async function commitProjectChanges(
   },
 ) {
   try {
-    const context = await prepareCommitMessageContext(projectId, options.includeUnstaged)
+    const context = await prepareCommitMessageContext(
+      projectId,
+      options.includeUnstaged,
+      options.includeUntracked ?? false,
+    )
     if (!context) {
       return { committed: false, message: null, previewed: false, pushed: false }
     }
@@ -60,7 +65,7 @@ export async function commitProjectChanges(
     }
 
     if (options.includeUnstaged) {
-      await runGit(projectId, ['add', '-A'])
+      await runGit(projectId, ['add', options.includeUntracked ? '-A' : '-u'])
     }
 
     await runGit(projectId, ['commit', '-m', commitMessage])

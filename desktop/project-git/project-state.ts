@@ -22,6 +22,7 @@ function parseStatusSummary(output: string) {
   let fileCount = 0
   let stagedFileCount = 0
   let unstagedFileCount = 0
+  let untrackedFileCount = 0
 
   for (const line of output.split('\n')) {
     if (!line || line.startsWith('## ')) {
@@ -32,6 +33,7 @@ function parseStatusSummary(output: string) {
 
     if (line.startsWith('??')) {
       unstagedFileCount += 1
+      untrackedFileCount += 1
       continue
     }
 
@@ -51,6 +53,7 @@ function parseStatusSummary(output: string) {
     fileCount,
     stagedFileCount,
     unstagedFileCount,
+    untrackedFileCount,
   }
 }
 
@@ -75,6 +78,7 @@ async function getStatusSummary(projectId: string) {
       fileCount: 0,
       stagedFileCount: 0,
       unstagedFileCount: 0,
+      untrackedFileCount: 0,
     }
   }
 }
@@ -183,6 +187,7 @@ export async function loadProjectGitState(projectId: string): Promise<ProjectGit
       fileCount: 0,
       stagedFileCount: 0,
       unstagedFileCount: 0,
+      untrackedFileCount: 0,
       insertions: 0,
       deletions: 0,
       hasOrigin: false,
@@ -208,6 +213,7 @@ export async function loadProjectGitState(projectId: string): Promise<ProjectGit
     fileCount: statusSummary.fileCount,
     stagedFileCount: statusSummary.stagedFileCount,
     unstagedFileCount: statusSummary.unstagedFileCount,
+    untrackedFileCount: statusSummary.untrackedFileCount,
     insertions: stats.insertions,
     deletions: stats.deletions,
     hasOrigin: originUrl !== null,

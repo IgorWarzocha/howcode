@@ -115,12 +115,17 @@ export function buildDefaultCommitMessage(context: { fileCount: number }) {
 export async function prepareCommitMessageContext(
   projectId: string,
   includeUnstaged: boolean,
+  includeUntracked = false,
 ): Promise<CommitMessageContext | null> {
   if (!(await isGitRepository(projectId))) {
     return null
   }
 
-  const outputs = await loadCommitContextOutputsForMode(projectId, includeUnstaged)
+  const outputs = await loadCommitContextOutputsForMode(
+    projectId,
+    includeUnstaged,
+    includeUntracked,
+  )
 
   const {
     branch,
@@ -147,6 +152,7 @@ export async function prepareCommitMessageContext(
     branch,
     hasOrigin: originUrl !== null,
     includeUnstaged,
+    includeUntracked,
     fileCount,
     insertions: shortStat.insertions,
     deletions: shortStat.deletions,

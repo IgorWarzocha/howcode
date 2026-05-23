@@ -16,6 +16,7 @@ export type ProjectGitState = {
   fileCount: number
   stagedFileCount: number
   unstagedFileCount: number
+  untrackedFileCount: number
   insertions: number
   deletions: number
   hasOrigin: boolean

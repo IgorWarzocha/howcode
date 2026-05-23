@@ -149,6 +149,10 @@ export function getGitIncludeUnstaged(payload: DesktopActionPayloadInput) {
   return typeof payload.includeUnstaged === 'boolean' ? payload.includeUnstaged : true
 }
 
+export function getGitIncludeUntracked(payload: DesktopActionPayloadInput) {
+  return typeof payload.includeUntracked === 'boolean' ? payload.includeUntracked : false
+}
+
 export function getGitPush(payload: DesktopActionPayloadInput) {
   return typeof payload.push === 'boolean' ? payload.push : false
 }
