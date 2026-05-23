@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { flushSync } from 'react-dom'
 import { cleanUserErrorMessage } from '../desktop/error-messages'
 import type { DesktopEvent, ProjectDiffBaseline, ProjectDiffResult } from '../desktop/types'
 import {
@@ -45,7 +44,6 @@ function useProjectDiffStream(
   const pendingChunksRef = useRef(new Map<number, string>())
   const nextSequenceRef = useRef(0)
   const flushFrameRef = useRef<number | null>(null)
-  const firstChunkFlushedRef = useRef(false)
   const canStream = enabled && Boolean(projectId) && canStartProjectDiffStreamQuery()
 
   useEffect(() => {
@@ -62,7 +60,6 @@ function useProjectDiffStream(
       setIsLoading(false)
       pendingChunksRef.current.clear()
       nextSequenceRef.current = 0
-      firstChunkFlushedRef.current = false
       cancelChunkFlush()
     }
 
@@ -79,12 +76,7 @@ function useProjectDiffStream(
     setIsLoading(true)
     pendingChunksRef.current.clear()
     nextSequenceRef.current = 0
-    firstChunkFlushedRef.current = false
     cancelChunkFlush()
-
-    const appendPatchChunk = (chunk: string) => {
-      setStreamedPatch((current) => `${current ?? ''}${chunk}`)
-    }
 
     const flushPendingChunks = () => {
       flushFrameRef.current = null
@@ -98,34 +90,13 @@ function useProjectDiffStream(
 
       if (appendedPatch.length > 0) {
         nextSequenceRef.current = nextSequence
-        appendPatchChunk(appendedPatch)
+        setStreamedPatch((current) => `${current ?? ''}${appendedPatch}`)
       }
-    }
-
-    const flushFirstChunkImmediately = (sequence: number, chunk: string) => {
-      if (firstChunkFlushedRef.current || sequence !== nextSequenceRef.current) return false
-      firstChunkFlushedRef.current = true
-      nextSequenceRef.current = sequence + 1
-      flushSync(() => appendPatchChunk(chunk))
-      return true
     }
 
     const scheduleChunkFlush = () => {
       if (flushFrameRef.current !== null) return
       flushFrameRef.current = window.requestAnimationFrame(flushPendingChunks)
-    }
-
-    const handleStreamChunk = (sequence: number, chunk: string) => {
-      if (!flushFirstChunkImmediately(sequence, chunk)) {
-        pendingChunksRef.current.set(sequence, chunk)
-      }
-      scheduleChunkFlush()
-    }
-
-    const finishStream = () => {
-      cancelChunkFlush()
-      flushPendingChunks()
-      pendingChunksRef.current.clear()
     }
 
     const unsubscribe = subscribeDesktopEvents((event) => {
@@ -134,11 +105,14 @@ function useProjectDiffStream(
       if (streamEvent.streamId !== streamId) return
 
       if (streamEvent.type === 'chunk') {
-        handleStreamChunk(streamEvent.sequence, streamEvent.chunk)
+        pendingChunksRef.current.set(streamEvent.sequence, streamEvent.chunk)
+        scheduleChunkFlush()
         return
       }
 
-      finishStream()
+      cancelChunkFlush()
+      flushPendingChunks()
+      pendingChunksRef.current.clear()
 
       if (streamEvent.type === 'complete') {
         setDiff(streamEvent.result)
