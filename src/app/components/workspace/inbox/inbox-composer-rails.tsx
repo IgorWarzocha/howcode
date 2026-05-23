@@ -18,8 +18,8 @@ export function InboxAttachmentRail({
 }: InboxAttachmentRailProps) {
   const attachmentButtonLabel = attachmentCount > 0 ? 'Manage attachments' : 'Add attachment'
   return (
-    <div className="relative h-full min-h-[7rem] w-8 shrink-0 self-stretch text-[color:var(--muted)]">
-      <div className="absolute bottom-[3.55rem] left-0 flex w-7 flex-col-reverse items-center gap-1">
+    <div className="relative h-full min-h-0 w-8 shrink-0 self-stretch text-[color:var(--muted)]">
+      <div className="absolute bottom-[3.35rem] left-0 flex w-7 flex-col-reverse items-center gap-1">
         {attachmentCount > 0 ? (
           <>
             <span
@@ -74,8 +74,8 @@ export function InboxStopRail({
 }: InboxStopRailProps) {
   const canStop = isStreaming && !isSending && !localActionPending
   return (
-    <div className="relative h-full min-h-[7rem] w-8 shrink-0 self-stretch text-[color:var(--muted)]">
-      <div className="absolute right-0 bottom-[3.55rem] flex w-7 items-center justify-center">
+    <div className="relative h-full min-h-0 w-8 shrink-0 self-stretch text-[color:var(--muted)]">
+      <div className="absolute right-0 bottom-[3.35rem] flex w-7 items-center justify-center">
         <button
           type="button"
           className={cn(

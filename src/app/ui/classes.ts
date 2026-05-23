@@ -81,8 +81,6 @@ export const sectionHeadingClass = `inline-flex items-center gap-1.5 text-left $
 
 export const disclosureButtonClass = sectionHeadingClass
 
-export const emptyStateCardClass = `rounded-xl border border-dashed border-[color:var(--border)] px-3 py-4 ${appTypeSmallClass} ${appToneMutedClass}`
-
 export const processLedgerClass =
   'grid min-w-0 max-w-full gap-1 border-l border-[color:var(--border)]/70 pl-3'
 
@@ -147,6 +145,8 @@ export const quietSearchInputClass =
 
 export const inlineEmptyNoteClass = `px-2 py-1.5 ${appTypeSmallClass} ${appToneSubtleClass}`
 
+export const quietEmptyStateClass = `rounded-lg bg-[color:var(--folded-row-bg)] px-3 py-2.5 ${appTypeSmallClass} ${appToneMutedClass}`
+
 export const segmentedControlClass =
   'inline-flex rounded-lg bg-[color:var(--surface-hover)] p-[3px]'
 
@@ -196,14 +196,6 @@ export const composerPopoverOptionSelectedClass =
   'bg-[color:var(--surface-hover)] text-[color:var(--text)]'
 
 export const composerPopoverSectionLabelClass = `px-2 pt-1 ${appTypeTinyClass} uppercase tracking-[0.08em] ${appToneMutedClass}`
-
-export const interactiveCardClass =
-  'rounded-[20px] border border-[color:var(--border)] bg-[color:var(--panel)] text-left shadow-[var(--shadow)] transition-colors duration-150 ease-out hover:bg-[color:var(--panel-2)]'
-
-export const compactCardClass =
-  'rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] text-left shadow-[var(--shadow)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.05)]'
-
-export const featureCardClass = `${interactiveCardClass} grid min-h-[160px] gap-3.5 p-[18px]`
 
 export const sectionShellClass = 'grid w-full max-w-[980px] content-start gap-[18px]'
 

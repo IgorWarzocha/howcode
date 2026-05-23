@@ -135,7 +135,7 @@ export function ThreadFindBar({
   }
 
   return (
-    <div className="absolute top-3 right-4 z-30 w-[28rem] overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--panel)] shadow-[var(--shadow)]">
+    <div className="absolute top-3 right-4 z-30 w-[28rem] overflow-hidden rounded-xl bg-[color:var(--panel)] shadow-[0_18px_42px_rgba(0,0,0,0.28)]">
       <div className="flex items-center gap-1 p-1">
         <Search size={14} className="ml-2 text-[color:var(--muted)]" />
         <input

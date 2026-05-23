@@ -1,5 +1,5 @@
 import type { PropsWithChildren } from 'react'
-import { emptyStateCardClass } from '../../ui/classes'
+import { quietEmptyStateClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 
 type EmptyStateCardProps = PropsWithChildren<{
@@ -7,5 +7,5 @@ type EmptyStateCardProps = PropsWithChildren<{
 }>
 
 export function EmptyStateCard({ children, className }: EmptyStateCardProps) {
-  return <div className={cn(emptyStateCardClass, className)}>{children}</div>
+  return <div className={cn(quietEmptyStateClass, className)}>{children}</div>
 }

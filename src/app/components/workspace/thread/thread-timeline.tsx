@@ -360,7 +360,7 @@ export function ThreadTimeline({
         <div className="pointer-events-none absolute right-4 bottom-4 left-4 z-20 flex justify-center">
           <div
             className={cn(
-              'rounded-full border border-[color:var(--accent-border)] bg-[color:var(--panel)] px-3 py-2 shadow-[var(--shadow)]',
+              'rounded-full bg-[color:var(--folded-row-bg)] px-3 py-2',
               appTypeGroupTextClass,
               appToneAccentClass,
             )}

@@ -124,7 +124,7 @@ function MarkdownPre({ children, ...props }: HTMLAttributes<HTMLPreElement>) {
       <button
         type="button"
         className={cn(
-          'absolute top-1.5 right-1.5 grid h-8 min-w-8 place-items-center rounded-[10px] border border-[color:var(--border)] bg-[color:var(--panel)] px-2 opacity-75 shadow-[var(--shadow)] backdrop-blur-sm transition-[opacity,scale,background-color,color] duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-border)] active:scale-[0.96] group-hover:opacity-100',
+          'absolute top-1.5 right-1.5 grid h-8 min-w-8 place-items-center rounded-md bg-[color:var(--surface-hover)] px-2 opacity-70 transition-[opacity,scale,background-color,color] duration-150 ease-out hover:bg-[color:var(--folded-row-hover-bg)] hover:text-[color:var(--text)] hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-border)] active:scale-[0.96] group-hover:opacity-100',
           appTypeMetaStrongClass,
           appToneMutedClass,
         )}

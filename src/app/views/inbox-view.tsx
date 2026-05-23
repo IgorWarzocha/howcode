@@ -261,7 +261,7 @@ export function InboxView({
 
   return (
     <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] pt-6 pb-4">
-      <div className={`mx-auto w-full ${WORKSPACE_CONTENT_MAX_WIDTH_CLASS} pb-5`}>
+      <div className="mx-auto w-full max-w-[832px]">
         <div className={`${threadSessionStripClass} gap-2 px-3.5 py-3`}>
           <div
             className={`flex min-w-0 items-center gap-2 ${appTypeMetaClass} ${appToneSubtleClass}`}
@@ -292,10 +292,12 @@ export function InboxView({
         <div className="grid h-full w-full content-start justify-items-center pb-5">
           <div className={`min-h-0 w-full ${WORKSPACE_CONTENT_MAX_WIDTH_CLASS} text-pretty`}>
             {messageMarkdown ? (
-              <MarkdownContent
-                markdown={messageMarkdown}
-                className={`gap-3 ${appTypeReadableClass} text-pretty`}
-              />
+              <div className="border-t border-[color:var(--border)]/70 pt-2">
+                <MarkdownContent
+                  markdown={messageMarkdown}
+                  className={`gap-3 ${appTypeReadableClass} text-pretty`}
+                />
+              </div>
             ) : (
               <div
                 className={`grid min-h-28 place-items-center rounded-lg bg-[color:var(--folded-row-bg)] ${inlineEmptyNoteClass}`}
@@ -307,7 +309,7 @@ export function InboxView({
         </div>
       </div>
 
-      <div className="pt-1">
+      <div>
         <WorkspaceComposerDock
           compactControls={sidebarCompactMode}
           left={

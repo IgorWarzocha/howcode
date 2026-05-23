@@ -1,13 +1,13 @@
 import { Code2 } from 'lucide-react'
-import { appToneMutedClass, appTypeControlClass, compactCardClass } from '../../../ui/classes'
+import { appToneMutedClass, appTypeControlClass, quietEmptyStateClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 
 export function SidebarProjectsPlaceholder() {
   return (
     <div
       className={cn(
-        compactCardClass,
-        'grid min-h-24 place-items-center gap-1.5 px-3 py-3 text-center',
+        quietEmptyStateClass,
+        'grid min-h-24 place-items-center gap-1.5 text-center',
         appTypeControlClass,
         appToneMutedClass,
       )}
