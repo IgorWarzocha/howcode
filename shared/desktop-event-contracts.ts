@@ -2,6 +2,7 @@ import type { AppUpdateState } from './desktop-app-update-contracts'
 import type { Artifact } from './desktop-artifact-contracts'
 import type { ComposerState } from './desktop-composer-contracts'
 import type { DictationModelId } from './desktop-dictation-contracts'
+import type { ProjectDiffStreamEvent } from './desktop-project-git-contracts'
 import type { ThreadData } from './desktop-thread-contracts'
 import type { KeybindingCommandId } from './keybindings'
 
@@ -24,6 +25,10 @@ export type DesktopEvent =
       at: string
       done: boolean
       isError: boolean
+    }
+  | {
+      type: 'project-diff-stream'
+      event: ProjectDiffStreamEvent
     }
   | {
       type: 'runtime-diagnostic'

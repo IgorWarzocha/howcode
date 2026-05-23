@@ -75,6 +75,8 @@ export type {
   ProjectDiffResolvedBaseline,
   ProjectDiffResult,
   ProjectDiffStatsResult,
+  ProjectDiffStreamEvent,
+  ProjectDiffStreamStartResult,
   ProjectGitState,
 } from './desktop-project-git-contracts'
 export type {

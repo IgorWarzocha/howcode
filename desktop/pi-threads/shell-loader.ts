@@ -29,6 +29,7 @@ import {
   loadProjectDiffImagePreview,
   loadProjectDiffStats,
   loadProjectGitState,
+  startProjectDiffStream,
 } from '../project-git.ts'
 import { shutdownRuntimeHosts } from '../runtime-host/client-bridge.ts'
 import { disposeSessionWatcher, setWatchedSessionPath } from './session-watch.ts'
@@ -92,6 +93,7 @@ export {
   loadProjectDiffStats,
   loadProjectGitState,
   setWatchedSessionPath,
+  startProjectDiffStream,
 }
 
 export const subscribeDesktopEvents = subscribeRuntimeEvents

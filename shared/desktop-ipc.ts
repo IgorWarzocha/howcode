@@ -38,6 +38,7 @@ import type {
   ProjectDiffResolvedBaseline,
   ProjectDiffResult,
   ProjectDiffStatsResult,
+  ProjectDiffStreamStartResult,
   ProjectGitState,
   ProjectUsageSummary,
   ReactArtifactCompileResult,
@@ -75,6 +76,10 @@ export type DesktopRequestMap = {
   getProjectDiff: {
     params: { projectId: string; baseline?: ProjectDiffBaseline | null }
     response: ProjectDiffResult | null
+  }
+  startProjectDiffStream: {
+    params: { projectId: string; baseline?: ProjectDiffBaseline | null }
+    response: ProjectDiffStreamStartResult
   }
   getProjectDiffStats: {
     params: { projectId: string; baseline?: ProjectDiffBaseline | null }

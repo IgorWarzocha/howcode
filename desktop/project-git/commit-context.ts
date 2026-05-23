@@ -1,10 +1,13 @@
+import { randomUUID } from 'node:crypto'
 import type {
   ProjectDiffBaseline,
   ProjectDiffImagePreview,
   ProjectDiffImageSide,
   ProjectDiffResult,
   ProjectDiffStatsResult,
+  ProjectDiffStreamStartResult,
 } from '../../shared/desktop-contracts.ts'
+import { emitDesktopEvent } from '../runtime/desktop-events.ts'
 import {
   countNonEmptyLines,
   loadCommitContextOutputsForMode,
@@ -146,6 +149,66 @@ export async function prepareCommitMessageContext(
     numStat: numStatOutput,
     patch: patchOutput,
   }
+}
+
+export async function startProjectDiffStream(
+  projectId: string,
+  baseline?: ProjectDiffBaseline | null,
+): Promise<ProjectDiffStreamStartResult> {
+  const streamId = randomUUID()
+  void (async () => {
+    if (!(await isGitRepository(projectId))) {
+      emitDesktopEvent({
+        type: 'project-diff-stream',
+        event: { type: 'complete', streamId, projectId, result: null },
+      })
+      return
+    }
+
+    let sequence = 0
+    try {
+      const resolvedBaseline = await resolveProjectDiffBaseline(projectId, baseline)
+      const snapshot = await loadWorktreeSnapshot(projectId, {
+        baselineRev: resolvedBaseline.rev,
+        onPatchChunk: (chunk) => {
+          emitDesktopEvent({
+            type: 'project-diff-stream',
+            event: { type: 'chunk', streamId, projectId, sequence: sequence++, chunk },
+          })
+        },
+      })
+
+      emitDesktopEvent({
+        type: 'project-diff-stream',
+        event: {
+          type: 'complete',
+          streamId,
+          projectId,
+          result: {
+            projectId,
+            diff: snapshot.patch,
+            fileCount: snapshot.fileCount,
+            insertions: snapshot.insertions,
+            deletions: snapshot.deletions,
+            baseline: baseline ?? { kind: 'head' },
+            resolvedBaseline,
+          },
+        },
+      })
+    } catch (error) {
+      emitDesktopEvent({
+        type: 'project-diff-stream',
+        event: {
+          type: 'error',
+          streamId,
+          projectId,
+          error: `Could not load worktree diff: ${formatGitCommandError(error)}`,
+        },
+      })
+    }
+  })()
+
+  return { streamId }
 }
 
 export async function loadProjectDiff(

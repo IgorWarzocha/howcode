@@ -87,3 +87,28 @@ export type ProjectDiffStatsResult = {
   baseline: ProjectDiffBaseline
   resolvedBaseline: ProjectDiffResolvedBaseline
 }
+
+export type ProjectDiffStreamStartResult = {
+  streamId: string
+}
+
+export type ProjectDiffStreamEvent =
+  | {
+      type: 'chunk'
+      streamId: string
+      projectId: string
+      sequence: number
+      chunk: string
+    }
+  | {
+      type: 'complete'
+      streamId: string
+      projectId: string
+      result: ProjectDiffResult | null
+    }
+  | {
+      type: 'error'
+      streamId: string
+      projectId: string
+      error: string
+    }

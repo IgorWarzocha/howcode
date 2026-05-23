@@ -39,6 +39,7 @@ import type {
   ProjectDiffResolvedBaseline,
   ProjectDiffResult,
   ProjectDiffStatsResult,
+  ProjectDiffStreamStartResult,
   ProjectGitState,
   ProjectUsageSummary,
   ReactArtifactCompileResult,
@@ -76,6 +77,10 @@ declare global {
         projectId: string,
         baseline?: ProjectDiffBaseline | null,
       ) => Promise<ProjectDiffResult | null>
+      startProjectDiffStream?: (
+        projectId: string,
+        baseline?: ProjectDiffBaseline | null,
+      ) => Promise<ProjectDiffStreamStartResult>
       getProjectDiffStats?: (
         projectId: string,
         baseline?: ProjectDiffBaseline | null,

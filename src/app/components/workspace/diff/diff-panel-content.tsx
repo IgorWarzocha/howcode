@@ -52,9 +52,9 @@ export function DiffPanelContent({
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const codeViewRef = useRef<CodeViewHandle<DiffCommentMetadata> | null>(null)
   const draftCardRef = useRef<HTMLDivElement | null>(null)
-  const { diff, isLoading, error } = useDesktopDiff(projectId, baseline, isGitRepo)
+  const { diff, streamedPatch, isLoading, error } = useDesktopDiff(projectId, baseline, isGitRepo)
 
-  const selectedPatch = diff?.diff
+  const selectedPatch = diff?.diff ?? streamedPatch ?? undefined
   const hasResolvedPatch = typeof selectedPatch === 'string'
   const hasNoNetChanges = hasResolvedPatch && selectedPatch.trim().length === 0
   const renderablePatch = useWorkerRenderablePatch(selectedPatch)

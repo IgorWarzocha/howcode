@@ -9,6 +9,7 @@ export {
   loadProjectDiffImagePreview,
   loadProjectDiffStats,
   prepareCommitMessageContext,
+  startProjectDiffStream,
 } from './project-git/commit-context.ts'
 export { getProjectCommitEntry, listProjectCommits } from './project-git/project-commits.ts'
 export {

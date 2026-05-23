@@ -70,6 +70,8 @@ export type {
   ProjectDiffResolvedBaseline,
   ProjectDiffResult,
   ProjectDiffStatsResult,
+  ProjectDiffStreamEvent,
+  ProjectDiffStreamStartResult,
   ProjectGitState,
   ProjectImportCandidate,
   ProjectUsageSessionSummary,

@@ -184,6 +184,8 @@ const handlers: DesktopRequestHandlerMap = {
   getProjectUsageSummary: ({ projectId }) => piThreads.loadProjectUsageSummary(projectId),
   getProjectDiff: ({ projectId, baseline }) =>
     piThreads.loadProjectDiff(projectId, baseline ?? null),
+  startProjectDiffStream: ({ projectId, baseline }) =>
+    piThreads.startProjectDiffStream(projectId, baseline ?? null),
   getProjectDiffStats: ({ projectId, baseline }) =>
     piThreads.loadProjectDiffStats(projectId, baseline ?? null),
   getProjectDiffImagePreview: (request) => piThreads.loadProjectDiffImagePreview(request),

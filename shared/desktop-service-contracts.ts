@@ -32,6 +32,7 @@ import type {
   ProjectDiffResolvedBaseline,
   ProjectDiffResult,
   ProjectDiffStatsResult,
+  ProjectDiffStreamStartResult,
   ProjectGitState,
   ProjectUsageSummary,
   ReactArtifactCompileResult,
@@ -98,6 +99,10 @@ export type PiThreadsService = {
     projectId: string,
     baseline?: ProjectDiffBaseline | null,
   ) => Promise<ProjectDiffResult | null>
+  startProjectDiffStream: (
+    projectId: string,
+    baseline?: ProjectDiffBaseline | null,
+  ) => Promise<ProjectDiffStreamStartResult>
   loadProjectDiffStats: (
     projectId: string,
     baseline?: ProjectDiffBaseline | null,
