@@ -134,27 +134,33 @@ function DiffImagePreviewPane({
 function DiffImagePreview({
   baseline,
   fileDiff,
-  filePath,
   projectId,
 }: {
   baseline: ProjectDiffBaseline | null
   fileDiff: FileDiffMetadata
-  filePath: string
   projectId: string
 }) {
   const sides: ProjectDiffImageSide[] =
     fileDiff.type === 'new' ? ['new'] : fileDiff.type === 'deleted' ? ['old'] : ['old', 'new']
+  const getSideFilePath = (side: ProjectDiffImageSide) => {
+    const rawPath = side === 'old' ? (fileDiff.prevName ?? fileDiff.name) : fileDiff.name
+    return rawPath?.replace(gitDiffPrefixPattern, '') ?? ''
+  }
+
   return (
     <div className={cn(diffImagePreviewClass, sides.length === 1 && 'md:grid-cols-1')}>
-      {sides.map((side) => (
-        <DiffImagePreviewPane
-          key={side}
-          baseline={baseline}
-          filePath={filePath}
-          projectId={projectId}
-          side={side}
-        />
-      ))}
+      {sides.map((side) => {
+        const sideFilePath = getSideFilePath(side)
+        return (
+          <DiffImagePreviewPane
+            key={side}
+            baseline={baseline}
+            filePath={sideFilePath}
+            projectId={projectId}
+            side={side}
+          />
+        )
+      })}
     </div>
   )
 }
@@ -421,12 +427,7 @@ export function DiffPanelFileList({
             onToggleFileCollapsed={onToggleFileCollapsed}
           />
           {isImageFile && !isCollapsed ? (
-            <DiffImagePreview
-              baseline={baseline}
-              fileDiff={fileDiff}
-              filePath={filePath}
-              projectId={projectId}
-            />
+            <DiffImagePreview baseline={baseline} fileDiff={fileDiff} projectId={projectId} />
           ) : null}
         </div>
       )

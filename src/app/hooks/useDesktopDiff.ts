@@ -135,6 +135,7 @@ function useProjectDiffStream(
       }
 
       setError(streamEvent.error)
+      setStreamedPatch(null)
       setIsLoading(false)
     })
 

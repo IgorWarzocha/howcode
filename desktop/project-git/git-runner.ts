@@ -124,7 +124,6 @@ export function startGitStreamingWithOptions(
     child.stdout.on('data', (chunk: string) => {
       stdoutBytes += Buffer.byteLength(chunk, 'utf8')
       if (stdoutBytes > maxAccumulatedStdoutBytes) {
-        options.onStdoutChunk(chunk)
         child.kill('SIGTERM')
         rejectOnce(new Error('Git command produced too much stdout.'))
         return
