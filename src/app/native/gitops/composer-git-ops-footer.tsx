@@ -364,7 +364,7 @@ export function ComposerGitOpsFooter({
             <button
               type="button"
               className={cn(
-                'rounded-md px-1.5 py-1 text-left !text-[9px] !leading-[11px] whitespace-nowrap transition-colors hover:bg-[color:var(--surface-hover)]',
+                'appearance-none rounded-md border-0 bg-transparent px-1.5 py-1 text-left !text-[9px] !leading-[11px] whitespace-nowrap outline-none transition-colors hover:bg-[color:var(--surface-hover)] focus-visible:bg-[color:var(--surface-hover)]',
                 appToneMutedClass,
               )}
               onClick={() => {
