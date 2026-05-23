@@ -312,7 +312,10 @@ export function DiffPanelFileList({
       initialItems={[]}
       selectedLines={selectedLines}
       containerRef={scrollContainerRef}
-      className={cn('h-full w-full overflow-auto', diffFileShellClass)}
+      className={cn(
+        diffFileShellClass,
+        'h-full w-full overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable]',
+      )}
       options={{
         diffStyle: diffRenderMode === 'split' ? 'split' : 'unified',
         lineDiffType: 'none',
