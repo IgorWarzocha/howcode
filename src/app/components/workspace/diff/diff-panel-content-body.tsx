@@ -30,6 +30,7 @@ type DiffPanelContentBodyProps = {
   draftSelectedLines: SelectedLineRange | null
   error: string | null
   fileListVirtualizer: ReturnType<typeof useVirtualizer<HTMLDivElement, Element>>
+  focusedImageFileKeys: ReadonlySet<string>
   focusedFilePaths: readonly string[]
   getFileInteractionHandlers: ReturnType<
     typeof useDiffCommentDrafting
@@ -133,6 +134,7 @@ function DiffFilesView(input: DiffPanelContentBodyProps) {
               commentAnnotationsByFile={input.commentAnnotationsByFile}
               diffRenderMode={input.diffRenderMode}
               draftSelectedLines={input.draftSelectedLines}
+              focusedImageFileKeys={input.focusedImageFileKeys}
               getFileInteractionHandlers={input.getFileInteractionHandlers}
               getSelectedLinesForFile={input.getSelectedLinesForFile}
               handleFilePointerDownCapture={input.handleFilePointerDownCapture}

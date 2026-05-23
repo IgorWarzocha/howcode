@@ -89,6 +89,14 @@ export function DiffPanelContent({
     }
     return keys
   }, [renderableFiles])
+  const focusedImageFileKeys = useMemo(() => {
+    if (normalizedFocusedFilePaths.length !== 1) return new Set<string>()
+    const selectedPath = normalizedFocusedFilePaths[0]
+    const selectedImage = renderableFiles.find(
+      (fileDiff) => resolveFileDiffPath(fileDiff) === selectedPath && isImageDiffFile(fileDiff),
+    )
+    return selectedImage ? new Set([buildFileDiffRenderKey(selectedImage)]) : new Set<string>()
+  }, [normalizedFocusedFilePaths, renderableFiles])
   const visibleRenderableFiles = useMemo(() => {
     if (!hasFocusedFiles) {
       return renderableFiles
@@ -152,20 +160,6 @@ export function DiffPanelContent({
     }
   }, [clearDragSelection, hasCommentContext])
 
-  useEffect(() => {
-    if (normalizedFocusedFilePaths.length !== 1) return
-    const selectedPath = normalizedFocusedFilePaths[0]
-    const selectedImage = renderableFiles.find(
-      (fileDiff) => resolveFileDiffPath(fileDiff) === selectedPath && isImageDiffFile(fileDiff),
-    )
-    if (!selectedImage) return
-
-    const fileKey = buildFileDiffRenderKey(selectedImage)
-    setCollapsedFiles((current) =>
-      current[fileKey] === false ? current : { ...current, [fileKey]: false },
-    )
-  }, [normalizedFocusedFilePaths, renderableFiles])
-
   const estimatedFileHeights = useMemo(
     () =>
       visibleRenderableFiles.map((fileDiff) => {
@@ -173,13 +167,21 @@ export function DiffPanelContent({
         const isImageFile = isImageDiffFile(fileDiff)
         return estimateFileDiffHeight({
           fileDiff,
-          collapsed: collapsedFiles[fileKey] ?? isImageFile,
+          collapsed: focusedImageFileKeys.has(fileKey)
+            ? false
+            : (collapsedFiles[fileKey] ?? isImageFile),
           diffRenderMode,
           annotationCount: annotationCountByFile.get(fileKey) ?? 0,
           imagePreview: isImageFile,
         })
       }),
-    [annotationCountByFile, collapsedFiles, diffRenderMode, visibleRenderableFiles],
+    [
+      annotationCountByFile,
+      collapsedFiles,
+      diffRenderMode,
+      focusedImageFileKeys,
+      visibleRenderableFiles,
+    ],
   )
 
   const getVirtualItemKey = useCallback(
@@ -255,6 +257,7 @@ export function DiffPanelContent({
         diffRenderMode={diffRenderMode}
         draftSelectedLines={draftSelectedLines}
         error={error}
+        focusedImageFileKeys={focusedImageFileKeys}
         fileListVirtualizer={fileListVirtualizer}
         focusedFilePaths={focusedFilePaths}
         getFileInteractionHandlers={getFileInteractionHandlers}

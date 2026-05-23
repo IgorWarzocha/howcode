@@ -239,7 +239,7 @@ export const diffRailTreeWrapperClass =
   'flex min-h-0 flex-1 flex-col gap-2 bg-[color:var(--workspace)] px-2.5 pt-1.5 pb-0'
 
 export const diffFileHeaderButtonClass =
-  'flex w-full items-center justify-between gap-3 bg-transparent px-3 py-1.5 text-left text-[color:var(--text)] transition-colors hover:bg-[color:var(--surface-hover)]'
+  'flex min-h-9 w-full items-center justify-between gap-3 bg-transparent px-3 py-1.5 text-left text-[color:var(--text)] transition-colors hover:bg-[color:var(--surface-hover)]'
 
 export const diffFileShellClass =
   'overflow-hidden rounded-md border border-[color:var(--border)]/55 bg-[color:var(--workspace)]'

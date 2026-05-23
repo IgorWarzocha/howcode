@@ -63,6 +63,7 @@ type DiffPanelFileListProps = {
   collapsedFiles: Record<string, boolean>
   commentAnnotationsByFile: Map<string, DiffLineAnnotation<DiffCommentMetadata>[]>
   diffRenderMode: 'stacked' | 'split'
+  focusedImageFileKeys: ReadonlySet<string>
   getFileInteractionHandlers: (fileKey: string, filePath: string) => FileInteractionHandlers
   getSelectedLinesForFile: (
     fileKey: string,
@@ -232,6 +233,7 @@ function DiffPanelFileRow({
   diffRenderMode,
   draftSelectedLines,
   fileDiff,
+  focusedImageFileKeys,
   getFileInteractionHandlers,
   getSelectedLinesForFile,
   handleFilePointerDownCapture,
@@ -244,9 +246,41 @@ function DiffPanelFileRow({
 }: DiffPanelFileRowProps) {
   const { fileKey, filePath } = getDiffFileIdentity(fileDiff)
   const isImageFile = isImageDiffFile(fileDiff)
-  const isCollapsed = collapsedFiles[fileKey] ?? isImageFile
+  const isCollapsed = focusedImageFileKeys.has(fileKey)
+    ? false
+    : (collapsedFiles[fileKey] ?? isImageFile)
   const fileInteractionHandlers = getFileInteractionHandlers(fileKey, filePath)
   const selectedLines = getSelectedLinesForFile(fileKey, draftSelectedLines)
+
+  if (isImageFile) {
+    return (
+      <div
+        key={virtualRow.key}
+        data-index={virtualRow.index}
+        data-diff-file-path={filePath}
+        className={cn(diffFileShellClass, 'first:mt-0')}
+        ref={measureElement}
+        onPointerDownCapture={(event) => handleFilePointerDownCapture(event, fileKey, filePath)}
+      >
+        <DiffPanelFileHeader
+          fileDiff={fileDiff}
+          fileKey={fileKey}
+          filePath={filePath}
+          isCollapsed={isCollapsed}
+          onToggleFileCollapsed={onToggleFileCollapsed}
+        />
+        {isCollapsed ? null : (
+          <DiffImagePreview
+            baseline={baseline}
+            fileDiff={fileDiff}
+            filePath={filePath}
+            projectId={projectId}
+          />
+        )}
+      </div>
+    )
+  }
+
   return (
     <div
       key={virtualRow.key}
@@ -328,6 +362,7 @@ export function DiffPanelFileList({
   collapsedFiles,
   commentAnnotationsByFile,
   diffRenderMode,
+  focusedImageFileKeys,
   getFileInteractionHandlers,
   getSelectedLinesForFile,
   handleFilePointerDownCapture,
@@ -351,6 +386,7 @@ export function DiffPanelFileList({
             collapsedFiles={collapsedFiles}
             commentAnnotationsByFile={commentAnnotationsByFile}
             diffRenderMode={diffRenderMode}
+            focusedImageFileKeys={focusedImageFileKeys}
             draftSelectedLines={draftSelectedLines}
             fileDiff={renderableFiles[virtualRow.index] as FileDiffMetadata}
             getFileInteractionHandlers={getFileInteractionHandlers}
