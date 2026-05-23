@@ -247,7 +247,7 @@ export function DiffPanelFileList({
             ? false
             : (collapsedFiles[fileKey] ?? isImageFile),
           version: Number(
-            `${fileKey.length}${commentAnnotationsByFile.get(fileKey)?.length ?? 0}${collapsedFiles[fileKey] ? 1 : 0}${focusedImageFileKeys.has(fileKey) ? 1 : 0}`,
+            `${fileKey.length}${fileDiff.unifiedLineCount}${fileDiff.splitLineCount}${commentAnnotationsByFile.get(fileKey)?.length ?? 0}${collapsedFiles[fileKey] ? 1 : 0}${focusedImageFileKeys.has(fileKey) ? 1 : 0}`,
           ),
         }
       }),
