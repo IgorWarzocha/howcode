@@ -389,7 +389,7 @@ export function BrowseSkillsSection({
             <button
               type="button"
               className={cn(viewCloseButtonClass, iconActionButtonDisabledClass)}
-              disabled={!hasSelectedCatalogSources}
+              disabled={!hasSelectedCatalogSources || hasPendingInstall}
               onClick={() => {
                 void handleInstallSelected()
               }}

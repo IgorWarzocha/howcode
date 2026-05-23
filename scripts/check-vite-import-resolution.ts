@@ -5,7 +5,7 @@ import { createServer } from 'vite'
 const sourceFileExtensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.mts', '.mjs'])
 const sourceRoots = ['src/app']
 const howcodeImportPattern =
-  /(?:import|export)\s+(?:type\s+)?(?:[^'";]*?\s+from\s+)?['"](@howcode\/[^'"]+)['"]/g
+  /(?:import\s*\(\s*|(?:import|export)\s+(?:type\s+)?(?:[^'";]*?\s+from\s+)?)['"](@howcode\/[^'"]+)['"]/g
 
 async function collectSourceFiles(root: string): Promise<string[]> {
   const glob = new Bun.Glob('**/*.{ts,tsx,js,jsx,mts,mjs}')
