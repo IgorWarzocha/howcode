@@ -48,6 +48,11 @@ function normalizeGitImagePath(filePath: string) {
   return normalized.length > 0 && !normalized.includes('\0') ? normalized : null
 }
 
+function isMissingNamedBranchBaseline(error: unknown) {
+  const message = formatGitCommandError(error)
+  return message === 'Could not find dev branch.' || message === 'Could not find main branch.'
+}
+
 async function readGitObject(projectId: string, revision: string, filePath: string) {
   const { stdout } = await runGitBufferWithOptions(projectId, ['show', `${revision}:${filePath}`], {
     timeout: 10_000,
@@ -269,6 +274,10 @@ export async function loadProjectDiffStats(
       resolvedBaseline,
     }
   } catch (error) {
+    if (isMissingNamedBranchBaseline(error)) {
+      return null
+    }
+
     throw new Error(`Could not load worktree diff stats: ${formatGitCommandError(error)}`)
   }
 }
