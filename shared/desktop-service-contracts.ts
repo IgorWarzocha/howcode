@@ -27,6 +27,8 @@ import type {
   PiSkillMutationResult,
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffImagePreview,
+  ProjectDiffImageSide,
   ProjectDiffResolvedBaseline,
   ProjectDiffResult,
   ProjectDiffStatsResult,
@@ -100,6 +102,12 @@ export type PiThreadsService = {
     projectId: string,
     baseline?: ProjectDiffBaseline | null,
   ) => Promise<ProjectDiffStatsResult | null>
+  loadProjectDiffImagePreview: (request: {
+    projectId: string
+    baseline?: ProjectDiffBaseline | null | undefined
+    path: string
+    side: ProjectDiffImageSide
+  }) => Promise<ProjectDiffImagePreview>
   captureProjectDiffBaseline: (projectId: string) => Promise<ProjectDiffResolvedBaseline | null>
   listProjectCommits: (
     projectId: string,

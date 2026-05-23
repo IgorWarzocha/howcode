@@ -30,6 +30,7 @@ export {
   loadComposerSlashCommands,
   loadComposerState,
   loadProjectDiff,
+  loadProjectDiffImagePreview,
   loadProjectDiffStats,
   loadProjectGitState,
   loadShellState,

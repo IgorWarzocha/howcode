@@ -1,5 +1,6 @@
 const trailingSlashPattern = /\/$/
 const leadingCurrentDirectoryPattern = /^\.\//
+const imageDiffFilePattern = /\.(?:apng|avif|bmp|gif|jpe?g|png|svg|webp)$/i
 
 import { parsePatchFiles } from '@pierre/diffs'
 import type { FileDiffMetadata } from '@pierre/diffs/react'
@@ -76,6 +77,10 @@ export function getFileChangeCounts(fileDiff: FileDiffMetadata) {
   }
 
   return { additions, deletions }
+}
+
+export function isImageDiffFile(fileDiff: FileDiffMetadata) {
+  return imageDiffFilePattern.test(resolveFileDiffPath(fileDiff))
 }
 
 export function orderRenderableFiles(fileDiffs: readonly FileDiffMetadata[]) {

@@ -36,6 +36,21 @@ export const desktopQueryKeys = {
     ['desktop', 'projectDiffStats', projectId] as const,
   projectDiffStats: (projectId: string, baseline: ProjectDiffBaseline | null = null) =>
     ['desktop', 'projectDiffStats', projectId, baseline?.kind ?? 'head', baseline ?? null] as const,
+  projectDiffImagePreview: (
+    projectId: string,
+    path: string,
+    side: 'old' | 'new',
+    baseline: ProjectDiffBaseline | null = null,
+  ) =>
+    [
+      'desktop',
+      'projectDiffImagePreview',
+      projectId,
+      path,
+      side,
+      baseline?.kind ?? 'head',
+      baseline ?? null,
+    ] as const,
   projectCommitsPrefix: (projectId: string) => ['desktop', 'projectCommits', projectId] as const,
   projectCommits: (projectId: string, limit = 50) =>
     ['desktop', 'projectCommits', projectId, limit] as const,

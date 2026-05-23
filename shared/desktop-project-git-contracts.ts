@@ -71,6 +71,14 @@ export type ProjectDiffResult = {
   resolvedBaseline: ProjectDiffResolvedBaseline
 }
 
+export type ProjectDiffImageSide = 'old' | 'new'
+
+export type ProjectDiffImagePreview = {
+  side: ProjectDiffImageSide
+  mimeType: string
+  dataUrl: string
+} | null
+
 export type ProjectDiffStatsResult = {
   projectId: string
   fileCount: number

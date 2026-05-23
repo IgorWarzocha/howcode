@@ -186,6 +186,7 @@ const handlers: DesktopRequestHandlerMap = {
     piThreads.loadProjectDiff(projectId, baseline ?? null),
   getProjectDiffStats: ({ projectId, baseline }) =>
     piThreads.loadProjectDiffStats(projectId, baseline ?? null),
+  getProjectDiffImagePreview: (request) => piThreads.loadProjectDiffImagePreview(request),
   captureProjectDiffBaseline: ({ projectId }) => piThreads.captureProjectDiffBaseline(projectId),
   listProjectCommits: ({ projectId, limit }) =>
     piThreads.listProjectCommits(projectId, limit ?? null),

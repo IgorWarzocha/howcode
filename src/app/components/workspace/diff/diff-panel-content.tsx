@@ -15,6 +15,7 @@ import {
   DIFF_FILE_ESTIMATED_HEADER_HEIGHT,
   type DiffCommentMetadata,
   estimateFileDiffHeight,
+  isImageDiffFile,
   orderRenderableFiles,
   resolveFileDiffPath,
 } from './diff-panel-content.helpers'
@@ -79,6 +80,15 @@ export function DiffPanelContent({
     [normalizedFocusedFilePaths],
   )
   const hasFocusedFiles = showFileTree && normalizedFocusedFilePaths.length > 0
+  const imageFileKeys = useMemo(() => {
+    const keys = new Set<string>()
+    for (const fileDiff of renderableFiles) {
+      if (isImageDiffFile(fileDiff)) {
+        keys.add(buildFileDiffRenderKey(fileDiff))
+      }
+    }
+    return keys
+  }, [renderableFiles])
   const visibleRenderableFiles = useMemo(() => {
     if (!hasFocusedFiles) {
       return renderableFiles
@@ -142,15 +152,31 @@ export function DiffPanelContent({
     }
   }, [clearDragSelection, hasCommentContext])
 
+  useEffect(() => {
+    if (normalizedFocusedFilePaths.length !== 1) return
+    const selectedPath = normalizedFocusedFilePaths[0]
+    const selectedImage = renderableFiles.find(
+      (fileDiff) => resolveFileDiffPath(fileDiff) === selectedPath && isImageDiffFile(fileDiff),
+    )
+    if (!selectedImage) return
+
+    const fileKey = buildFileDiffRenderKey(selectedImage)
+    setCollapsedFiles((current) =>
+      current[fileKey] === false ? current : { ...current, [fileKey]: false },
+    )
+  }, [normalizedFocusedFilePaths, renderableFiles])
+
   const estimatedFileHeights = useMemo(
     () =>
       visibleRenderableFiles.map((fileDiff) => {
         const fileKey = buildFileDiffRenderKey(fileDiff)
+        const isImageFile = isImageDiffFile(fileDiff)
         return estimateFileDiffHeight({
           fileDiff,
-          collapsed: collapsedFiles[fileKey] === true,
+          collapsed: collapsedFiles[fileKey] ?? isImageFile,
           diffRenderMode,
           annotationCount: annotationCountByFile.get(fileKey) ?? 0,
+          imagePreview: isImageFile,
         })
       }),
     [annotationCountByFile, collapsedFiles, diffRenderMode, visibleRenderableFiles],
@@ -176,12 +202,15 @@ export function DiffPanelContent({
     useAnimationFrameWithResizeObserver: true,
   })
 
-  const toggleFileCollapsed = useCallback((fileKey: string) => {
-    setCollapsedFiles((current) => ({
-      ...current,
-      [fileKey]: !current[fileKey],
-    }))
-  }, [])
+  const toggleFileCollapsed = useCallback(
+    (fileKey: string) => {
+      setCollapsedFiles((current) => ({
+        ...current,
+        [fileKey]: !(current[fileKey] ?? imageFileKeys.has(fileKey)),
+      }))
+    },
+    [imageFileKeys],
+  )
 
   const renderCommentAnnotation = (annotation: DiffLineAnnotation<DiffCommentMetadata>) => (
     <DiffCommentAnnotationCard

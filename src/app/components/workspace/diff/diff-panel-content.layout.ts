@@ -67,11 +67,13 @@ export function estimateFileDiffHeight({
   collapsed,
   diffRenderMode,
   annotationCount,
+  imagePreview = false,
 }: {
   fileDiff: FileDiffMetadata
   collapsed: boolean
   diffRenderMode: 'stacked' | 'split'
   annotationCount: number
+  imagePreview?: boolean | undefined
 }) {
   let height = DIFF_FILE_ESTIMATED_HEADER_HEIGHT
 
@@ -92,6 +94,10 @@ export function estimateFileDiffHeight({
 
     if (fileDiff.hunks.length > 0) {
       height += DIFF_FILE_ESTIMATED_FILE_GAP
+    }
+
+    if (imagePreview) {
+      height += 280
     }
   }
 

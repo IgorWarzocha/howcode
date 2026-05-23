@@ -33,6 +33,8 @@ import type {
   PiSkillMutationResult,
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffImagePreview,
+  ProjectDiffImageSide,
   ProjectDiffResolvedBaseline,
   ProjectDiffResult,
   ProjectDiffStatsResult,
@@ -77,6 +79,15 @@ export type DesktopRequestMap = {
   getProjectDiffStats: {
     params: { projectId: string; baseline?: ProjectDiffBaseline | null }
     response: ProjectDiffStatsResult | null
+  }
+  getProjectDiffImagePreview: {
+    params: {
+      projectId: string
+      baseline?: ProjectDiffBaseline | null | undefined
+      path: string
+      side: ProjectDiffImageSide
+    }
+    response: ProjectDiffImagePreview
   }
   captureProjectDiffBaseline: {
     params: { projectId: string }

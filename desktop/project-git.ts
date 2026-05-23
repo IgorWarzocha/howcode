@@ -6,6 +6,7 @@ export {
 } from './project-git/commit-actions.ts'
 export {
   loadProjectDiff,
+  loadProjectDiffImagePreview,
   loadProjectDiffStats,
   prepareCommitMessageContext,
 } from './project-git/commit-context.ts'

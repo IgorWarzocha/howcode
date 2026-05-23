@@ -64,6 +64,8 @@ export type {
   ProjectDeletionMode,
   ProjectDiffBaseline,
   ProjectDiffDefaultBaseline,
+  ProjectDiffImagePreview,
+  ProjectDiffImageSide,
   ProjectDiffRenderMode,
   ProjectDiffResolvedBaseline,
   ProjectDiffResult,

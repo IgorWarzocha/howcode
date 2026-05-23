@@ -22,6 +22,7 @@ export {
   getFileChangeCounts,
   getFileHeaderContextLabel,
   getRenderablePatch,
+  isImageDiffFile,
   joinProjectFilePath,
   orderRenderableFiles,
   resolveFileDiffPath,

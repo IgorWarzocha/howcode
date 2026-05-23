@@ -7,16 +7,24 @@ import {
   FileDiff,
   type FileDiffMetadata,
 } from '@pierre/diffs/react'
+import { useQuery } from '@tanstack/react-query'
 import type { VirtualItem } from '@tanstack/react-virtual'
 import { ChevronDown, ChevronRight, MessageSquarePlus } from 'lucide-react'
-import { openPathQuery } from '../../../query/desktop-query'
+import type { ProjectDiffBaseline, ProjectDiffImageSide } from '../../../desktop/types'
+import { getProjectDiffImagePreviewQuery, openPathQuery } from '../../../query/desktop-query'
+import { desktopQueryKeys } from '../../../query/desktop-query-keys'
 import {
   appToneMutedClass,
   appToneTextClass,
   appTypeGroupTitleClass,
+  appTypeMetaStrongClass,
   appTypeSmallClass,
   diffCommentGutterButtonClass,
   diffFileHeaderButtonClass,
+  diffFileShellClass,
+  diffImagePreviewClass,
+  diffImagePreviewFrameClass,
+  diffImagePreviewPanelClass,
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import {
@@ -24,6 +32,7 @@ import {
   type DiffCommentMetadata,
   getFileChangeCounts,
   getFileHeaderContextLabel,
+  isImageDiffFile,
   joinProjectFilePath,
 } from './diff-panel-content.helpers'
 import { resolveDiffThemeName } from './diff-rendering'
@@ -50,6 +59,7 @@ type FileInteractionHandlers = {
 }
 
 type DiffPanelFileListProps = {
+  baseline: ProjectDiffBaseline | null
   collapsedFiles: Record<string, boolean>
   commentAnnotationsByFile: Map<string, DiffLineAnnotation<DiffCommentMetadata>[]>
   diffRenderMode: 'stacked' | 'split'
@@ -85,6 +95,71 @@ type DiffPanelFileRowProps = Omit<
 > & {
   fileDiff: FileDiffMetadata
   virtualRow: VirtualItem
+}
+
+function DiffImagePreviewPane({
+  baseline,
+  filePath,
+  projectId,
+  side,
+}: {
+  baseline: ProjectDiffBaseline | null
+  filePath: string
+  projectId: string
+  side: ProjectDiffImageSide
+}) {
+  const previewQuery = useQuery({
+    queryKey: desktopQueryKeys.projectDiffImagePreview(projectId, filePath, side, baseline),
+    queryFn: () => getProjectDiffImagePreviewQuery({ projectId, baseline, path: filePath, side }),
+  })
+  const label = side === 'old' ? 'Before' : 'After'
+
+  return (
+    <div className={diffImagePreviewPanelClass}>
+      <div className={cn(appTypeMetaStrongClass, appToneMutedClass)}>{label}</div>
+      <div className={diffImagePreviewFrameClass}>
+        {previewQuery.data?.dataUrl ? (
+          <img
+            src={previewQuery.data.dataUrl}
+            alt={`${label} preview for ${filePath}`}
+            className="max-h-[58vh] max-w-full object-contain"
+          />
+        ) : (
+          <div className={cn(appTypeSmallClass, appToneMutedClass)}>
+            {previewQuery.isLoading ? 'Loading image…' : 'No image preview'}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function DiffImagePreview({
+  baseline,
+  fileDiff,
+  filePath,
+  projectId,
+}: {
+  baseline: ProjectDiffBaseline | null
+  fileDiff: FileDiffMetadata
+  filePath: string
+  projectId: string
+}) {
+  const sides: ProjectDiffImageSide[] =
+    fileDiff.type === 'new' ? ['new'] : fileDiff.type === 'deleted' ? ['old'] : ['old', 'new']
+  return (
+    <div className={cn(diffImagePreviewClass, sides.length === 1 && 'md:grid-cols-1')}>
+      {sides.map((side) => (
+        <DiffImagePreviewPane
+          key={side}
+          baseline={baseline}
+          filePath={filePath}
+          projectId={projectId}
+          side={side}
+        />
+      ))}
+    </div>
+  )
 }
 
 function getDiffFileIdentity(fileDiff: FileDiffMetadata) {
@@ -151,6 +226,7 @@ function DiffPanelFileHeader({
 }
 
 function DiffPanelFileRow({
+  baseline,
   collapsedFiles,
   commentAnnotationsByFile,
   diffRenderMode,
@@ -167,7 +243,8 @@ function DiffPanelFileRow({
   virtualRow,
 }: DiffPanelFileRowProps) {
   const { fileKey, filePath } = getDiffFileIdentity(fileDiff)
-  const isCollapsed = collapsedFiles[fileKey] === true
+  const isImageFile = isImageDiffFile(fileDiff)
+  const isCollapsed = collapsedFiles[fileKey] ?? isImageFile
   const fileInteractionHandlers = getFileInteractionHandlers(fileKey, filePath)
   const selectedLines = getSelectedLinesForFile(fileKey, draftSelectedLines)
   return (
@@ -175,7 +252,7 @@ function DiffPanelFileRow({
       key={virtualRow.key}
       data-index={virtualRow.index}
       data-diff-file-path={filePath}
-      className="first:mt-0"
+      className={cn(diffFileShellClass, 'first:mt-0')}
       ref={measureElement}
       onPointerDownCapture={(event) => handleFilePointerDownCapture(event, fileKey, filePath)}
       onClickCapture={(event) => {
@@ -184,7 +261,6 @@ function DiffPanelFileRow({
       }}
     >
       <FileDiff<DiffCommentMetadata>
-        className="diff-file-shell"
         fileDiff={fileDiff}
         lineAnnotations={commentAnnotationsByFile.get(fileKey) ?? []}
         selectedLines={selectedLines}
@@ -235,11 +311,20 @@ function DiffPanelFileRow({
           },
         }}
       />
+      {isImageFile && !isCollapsed ? (
+        <DiffImagePreview
+          baseline={baseline}
+          fileDiff={fileDiff}
+          filePath={filePath}
+          projectId={projectId}
+        />
+      ) : null}
     </div>
   )
 }
 
 export function DiffPanelFileList({
+  baseline,
   collapsedFiles,
   commentAnnotationsByFile,
   diffRenderMode,
@@ -262,6 +347,7 @@ export function DiffPanelFileList({
         {virtualItems.map((virtualRow) => (
           <DiffPanelFileRow
             key={virtualRow.key}
+            baseline={baseline}
             collapsedFiles={collapsedFiles}
             commentAnnotationsByFile={commentAnnotationsByFile}
             diffRenderMode={diffRenderMode}

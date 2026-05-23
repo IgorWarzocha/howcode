@@ -16,6 +16,8 @@ import type {
   InboxThread,
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffImagePreview,
+  ProjectDiffImageSide,
   ProjectDiffResolvedBaseline,
   ProjectDiffResult,
   ProjectDiffStatsResult,
@@ -154,6 +156,15 @@ export async function getProjectDiffStatsQuery(
   baseline: ProjectDiffBaseline | null = null,
 ): Promise<ProjectDiffStatsResult | null> {
   return (await window.piDesktop?.getProjectDiffStats?.(projectId, baseline)) ?? null
+}
+
+export async function getProjectDiffImagePreviewQuery(request: {
+  projectId: string
+  baseline?: ProjectDiffBaseline | null | undefined
+  path: string
+  side: ProjectDiffImageSide
+}): Promise<ProjectDiffImagePreview> {
+  return (await window.piDesktop?.getProjectDiffImagePreview?.(request)) ?? null
 }
 
 export async function captureProjectDiffBaselineQuery(

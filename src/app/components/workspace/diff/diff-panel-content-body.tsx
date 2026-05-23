@@ -128,6 +128,7 @@ function DiffFilesView(input: DiffPanelContentBodyProps) {
         >
           {input.renderablePatch?.kind === 'files' ? (
             <DiffPanelFileList
+              baseline={input.baseline}
               collapsedFiles={input.collapsedFiles}
               commentAnnotationsByFile={input.commentAnnotationsByFile}
               diffRenderMode={input.diffRenderMode}

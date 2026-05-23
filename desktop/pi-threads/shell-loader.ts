@@ -26,6 +26,7 @@ import {
   captureProjectDiffBaseline,
   listProjectCommits,
   loadProjectDiff,
+  loadProjectDiffImagePreview,
   loadProjectDiffStats,
   loadProjectGitState,
 } from '../project-git.ts'
@@ -87,6 +88,7 @@ export {
   captureProjectDiffBaseline,
   listProjectCommits,
   loadProjectDiff,
+  loadProjectDiffImagePreview,
   loadProjectDiffStats,
   loadProjectGitState,
   setWatchedSessionPath,

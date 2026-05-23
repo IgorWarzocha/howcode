@@ -27,6 +27,38 @@ export async function runGitWithOptions(
   })
 }
 
+export function runGitBufferWithOptions(
+  projectId: string,
+  args: string[],
+  options: {
+    env?: NodeJS.ProcessEnv
+    maxBuffer?: number | undefined
+    timeout?: number | undefined
+  } = {},
+) {
+  return new Promise<{ stdout: Buffer; stderr: Buffer }>((resolve, reject) => {
+    execFileCallback(
+      'git',
+      args,
+      {
+        cwd: projectId,
+        encoding: 'buffer',
+        env: options.env,
+        timeout: options.timeout ?? 3_000,
+        maxBuffer: options.maxBuffer ?? 1024 * 128,
+      },
+      (error, stdout, stderr) => {
+        if (error) {
+          reject(Object.assign(error, { stdout, stderr }))
+          return
+        }
+
+        resolve({ stdout, stderr })
+      },
+    )
+  })
+}
+
 export function getNonInteractiveGitEnv(baseEnv?: NodeJS.ProcessEnv) {
   return {
     ...process.env,

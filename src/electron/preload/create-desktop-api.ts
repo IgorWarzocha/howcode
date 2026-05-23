@@ -58,6 +58,9 @@ function createProjectApi() {
       invokeRequest('getProjectDiff', { projectId, baseline }),
     getProjectDiffStats: (projectId: string, baseline = null) =>
       invokeRequest('getProjectDiffStats', { projectId, baseline }),
+    getProjectDiffImagePreview: (
+      request: DesktopRequestMap['getProjectDiffImagePreview']['params'],
+    ) => invokeRequest('getProjectDiffImagePreview', request),
     captureProjectDiffBaseline: (projectId: string) =>
       invokeRequest('captureProjectDiffBaseline', { projectId }),
     listProjectCommits: (projectId: string, limit: number | null = null) =>
