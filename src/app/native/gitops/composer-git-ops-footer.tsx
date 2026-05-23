@@ -19,6 +19,7 @@ import type {
 import {
   appToneMutedClass,
   appTypeMetaClass,
+  appTypeTinyClass,
   compactIconButtonClass,
   composerPopoverInputClass,
   popoverPanelClass,
@@ -347,8 +348,8 @@ export function ComposerGitOpsFooter({
             <button
               type="button"
               className={cn(
-                'rounded-md px-2 py-1 text-left transition-colors hover:bg-[color:var(--surface-hover)]',
-                appTypeMetaClass,
+                'rounded-md px-1.5 py-0.5 text-left whitespace-nowrap transition-colors hover:bg-[color:var(--surface-hover)]',
+                appTypeTinyClass,
                 appToneMutedClass,
               )}
               onClick={() => {
