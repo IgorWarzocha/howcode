@@ -409,6 +409,10 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   }
 }
 
+.artifact-markdown-editor {
+  container-type: inline-size;
+}
+
 .artifact-markdown-editor .mdxeditor {
   height: 100%;
   min-height: 0;
@@ -466,7 +470,7 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   height: 28px;
   min-height: 28px;
   flex-wrap: nowrap;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .artifact-markdown-editor .artifact-mdx-toolbar-drawer {
@@ -486,8 +490,41 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   gap: 0.125rem;
 }
 
-.artifact-markdown-editor .artifact-mdx-toolbar-drawer .artifact-mdx-toolbar-row-secondary {
+.artifact-markdown-editor .artifact-mdx-toolbar-drawer .artifact-mdx-toolbar-row-secondary,
+.artifact-markdown-editor .artifact-mdx-toolbar-drawer .artifact-mdx-toolbar-row-tertiary {
   padding-left: 0.125rem;
+}
+
+@container (max-width: 24rem) {
+  .artifact-markdown-editor .artifact-mdx-toolbar-drawer,
+  .artifact-markdown-editor .artifact-mdx-toolbar-drawer [class*="diffSourceToggleWrapper"] {
+    height: 56px;
+    min-height: 56px;
+  }
+
+  .artifact-markdown-editor .artifact-mdx-toolbar-drawer [class*="diffSourceToggleWrapper"] {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: center;
+    row-gap: 0.125rem;
+  }
+
+  .artifact-markdown-editor .artifact-mdx-toolbar-drawer .artifact-mdx-toolbar-row {
+    height: 26px;
+  }
+
+  .artifact-markdown-editor .artifact-mdx-toolbar-drawer .artifact-mdx-toolbar-row-primary {
+    flex: 0 0 auto;
+  }
+
+  .artifact-markdown-editor .artifact-mdx-toolbar-drawer .artifact-mdx-toolbar-row-secondary {
+    flex: 1 1 auto;
+  }
+
+  .artifact-markdown-editor .artifact-mdx-toolbar-drawer .artifact-mdx-toolbar-row-tertiary {
+    flex: 0 0 100%;
+    padding-left: 5.75rem;
+  }
 }
 
 .artifact-markdown-editor .artifact-mdx-toolbar svg {

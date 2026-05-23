@@ -70,6 +70,8 @@ export function createMarkdownEditorPlugins(fullscreen: boolean, diffMarkdown: s
             <Separator />
             <ListsToggle />
             <CreateLink />
+          </span>
+          <span className="artifact-mdx-toolbar-row artifact-mdx-toolbar-row-tertiary">
             <InsertTable />
             <InsertCodeBlock />
           </span>
