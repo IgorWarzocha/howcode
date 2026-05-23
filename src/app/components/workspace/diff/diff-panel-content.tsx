@@ -12,7 +12,6 @@ import {
   buildFileDiffRenderKey,
   type DiffCommentMetadata,
   isImageDiffFile,
-  orderRenderableFiles,
   resolveFileDiffPath,
 } from './diff-panel-content.helpers'
 import { DiffPanelContentBody } from './diff-panel-content-body'
@@ -60,10 +59,7 @@ export function DiffPanelContent({
   const hasNoNetChanges = hasResolvedPatch && selectedPatch.trim().length === 0
   const renderablePatch = useWorkerRenderablePatch(selectedPatch)
   const renderableFiles = useMemo(
-    () =>
-      renderablePatch && renderablePatch.kind === 'files'
-        ? orderRenderableFiles(renderablePatch.files)
-        : [],
+    () => (renderablePatch && renderablePatch.kind === 'files' ? renderablePatch.files : []),
     [renderablePatch],
   )
 

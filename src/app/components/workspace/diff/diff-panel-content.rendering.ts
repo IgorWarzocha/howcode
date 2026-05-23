@@ -22,7 +22,7 @@ export function getRenderablePatch(
     )
     const files = parsedPatches.flatMap((parsedPatch) => parsedPatch.files)
     if (files.length > 0) {
-      return { kind: 'files', files }
+      return { kind: 'files', files: orderRenderableFiles(files) }
     }
 
     return {
