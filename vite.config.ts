@@ -8,36 +8,43 @@ import { defineConfig, type Plugin } from 'vite'
 
 const projectRoot = fileURLToPath(new URL('.', import.meta.url))
 
-const howcodeAliases = {
-  '@howcode/app-menu': path.resolve(projectRoot, 'src/app/app-menu/index.ts'),
-  '@howcode/app-shell': path.resolve(projectRoot, 'src/app/app-shell/index.ts'),
-  '@howcode/archive': path.resolve(projectRoot, 'src/app/archive/index.ts'),
-  '@howcode/artifacts': path.resolve(projectRoot, 'src/app/artifacts/index.ts'),
-  '@howcode/chat-workspace': path.resolve(projectRoot, 'src/app/chat-workspace/index.ts'),
-  '@howcode/code-workspace': path.resolve(projectRoot, 'src/app/code-workspace/index.ts'),
-  '@howcode/common': path.resolve(projectRoot, 'src/app/common/index.ts'),
-  '@howcode/composer': path.resolve(projectRoot, 'src/app/composer/index.ts'),
-  '@howcode/desktop': path.resolve(projectRoot, 'src/app/desktop/index.ts'),
-  '@howcode/native-gitops/diff-panel': path.resolve(
-    projectRoot,
-    'src/app/native/gitops/diff-panel.tsx',
-  ),
-  '@howcode/native-gitops': path.resolve(projectRoot, 'src/app/native/gitops/index.ts'),
-  '@howcode/extensions': path.resolve(projectRoot, 'src/app/extensions/index.ts'),
-  '@howcode/inbox': path.resolve(projectRoot, 'src/app/inbox/index.ts'),
-  '@howcode/query': path.resolve(projectRoot, 'src/app/query/index.ts'),
-  '@howcode/roadmaps': path.resolve(projectRoot, 'src/app/roadmaps/index.ts'),
-  '@howcode/projects': path.resolve(projectRoot, 'src/app/projects/index.ts'),
-  '@howcode/settings': path.resolve(projectRoot, 'src/app/settings/settings/index.ts'),
-  '@howcode/shared': path.resolve(projectRoot, 'shared'),
-  '@howcode/sidebar': path.resolve(projectRoot, 'src/app/components/sidebar/index.ts'),
-  '@howcode/skills': path.resolve(projectRoot, 'src/app/skills/index.ts'),
-  '@howcode/state': path.resolve(projectRoot, 'src/app/state/index.ts'),
-  '@howcode/native-terminal': path.resolve(projectRoot, 'src/app/native/terminal/index.ts'),
-  '@howcode/thread': path.resolve(projectRoot, 'src/app/thread/index.ts'),
-  '@howcode/ui': path.resolve(projectRoot, 'src/app/ui/index.ts'),
-  '@howcode/workspace-shell': path.resolve(projectRoot, 'src/app/workspace-shell/index.ts'),
-} as const
+const howcodeAliasEntries = [
+  ['@howcode/app-menu', 'src/app/app-menu'],
+  ['@howcode/app-shell', 'src/app/app-shell'],
+  ['@howcode/archive', 'src/app/archive'],
+  ['@howcode/artifacts', 'src/app/artifacts'],
+  ['@howcode/chat-workspace', 'src/app/chat-workspace'],
+  ['@howcode/code-workspace', 'src/app/code-workspace'],
+  ['@howcode/common', 'src/app/common'],
+  ['@howcode/composer', 'src/app/composer'],
+  ['@howcode/desktop', 'src/app/desktop'],
+  ['@howcode/native-gitops', 'src/app/native/gitops'],
+  ['@howcode/extensions', 'src/app/extensions'],
+  ['@howcode/inbox', 'src/app/inbox'],
+  ['@howcode/query', 'src/app/query'],
+  ['@howcode/roadmaps', 'src/app/roadmaps'],
+  ['@howcode/projects', 'src/app/projects'],
+  ['@howcode/settings', 'src/app/settings/settings'],
+  ['@howcode/sidebar', 'src/app/components/sidebar'],
+  ['@howcode/skills', 'src/app/skills'],
+  ['@howcode/state', 'src/app/state'],
+  ['@howcode/native-terminal', 'src/app/native/terminal'],
+  ['@howcode/thread', 'src/app/thread'],
+  ['@howcode/ui', 'src/app/ui'],
+  ['@howcode/workspace-shell', 'src/app/workspace-shell'],
+] as const
+
+const howcodeAliases = [
+  ...howcodeAliasEntries.map(([alias, target]) => ({
+    find: new RegExp(`^${alias.replace('/', '\\/')}/(.+)$`, 'u'),
+    replacement: path.resolve(projectRoot, target, '$1'),
+  })),
+  { find: /^@howcode\/shared\/(.+)$/u, replacement: path.resolve(projectRoot, 'shared', '$1') },
+  ...howcodeAliasEntries.map(([alias, target]) => ({
+    find: alias,
+    replacement: path.resolve(projectRoot, target, 'index.ts'),
+  })),
+] as const
 
 function stripGhosttyPackageSourcemaps(): Plugin {
   return {
