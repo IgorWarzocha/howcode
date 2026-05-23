@@ -10,17 +10,8 @@ import {
   Play,
   Save,
 } from 'lucide-react'
-import {
-  type CSSProperties,
-  type KeyboardEvent,
-  type PointerEvent,
-  useCallback,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react'
-import { createPortal } from 'react-dom'
-import { PopoverPanel } from '../../common/popover'
+import { type KeyboardEvent, type PointerEvent, useCallback, useRef, useState } from 'react'
+import { AnchoredPopoverPanel } from '../../common/popover'
 import { Tooltip } from '../../common/tooltip'
 import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
 import {
@@ -53,40 +44,11 @@ type ArtifactPanelProps = {
 function ArtifactVersionSelect({ panel }: { panel: ReturnType<typeof useArtifactPanelState> }) {
   const { selectedArtifact, selectedVersion, setSelectedVersion, versions } = panel
   const [open, setOpen] = useState(false)
-  const [menuStyle, setMenuStyle] = useState<CSSProperties | undefined>(undefined)
-  const [positionReady, setPositionReady] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const closeMenu = useCallback(() => setOpen(false), [])
 
   useDismissibleLayer({ open, onDismiss: closeMenu, refs: [buttonRef, menuRef] })
-
-  useLayoutEffect(() => {
-    if (!open) {
-      setPositionReady(false)
-      return
-    }
-
-    const updatePosition = () => {
-      const rect = buttonRef.current?.getBoundingClientRect()
-      if (!rect) return
-      const width = Math.max(rect.width, 112)
-      setMenuStyle({
-        left: Math.min(Math.max(8, rect.left), window.innerWidth - width - 8),
-        top: rect.bottom + 6,
-        width,
-      })
-      setPositionReady(true)
-    }
-
-    updatePosition()
-    window.addEventListener('resize', updatePosition)
-    window.addEventListener('scroll', updatePosition, true)
-    return () => {
-      window.removeEventListener('resize', updatePosition)
-      window.removeEventListener('scroll', updatePosition, true)
-    }
-  }, [open])
 
   if (!selectedArtifact) return null
   const options = [
@@ -129,43 +91,40 @@ function ArtifactVersionSelect({ panel }: { panel: ReturnType<typeof useArtifact
         <span className="truncate">{selectedLabel}</span>
         <ChevronDown size={12} className="shrink-0" />
       </button>
-      {open && typeof document !== 'undefined'
-        ? createPortal(
-            <PopoverPanel
-              open={positionReady}
-              ref={menuRef}
-              data-open={positionReady ? 'true' : 'false'}
-              className={cn(composerPopoverPanelClass, 'motion-popover fixed z-[120] grid gap-0.5')}
-              style={menuStyle}
-              role="listbox"
-              aria-label="Artifact version"
-            >
-              {options.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  role="option"
-                  aria-selected={option.value === selectedVersion}
-                  className={cn(
-                    composerPopoverOptionClass,
-                    'artifact-version-option h-7 grid-cols-[14px_minmax(0,1fr)] px-2',
-                    option.value === selectedVersion && composerPopoverOptionSelectedClass,
-                  )}
-                  onPointerDown={(event) => {
-                    event.preventDefault()
-                    event.stopPropagation()
-                    selectOption(option.value)
-                  }}
-                  onClick={() => selectOption(option.value)}
-                >
-                  {option.value === selectedVersion ? <Check size={12} /> : <span />}
-                  <span className="truncate">{option.label}</span>
-                </button>
-              ))}
-            </PopoverPanel>,
-            document.body,
-          )
-        : null}
+      <AnchoredPopoverPanel
+        anchorRef={buttonRef}
+        panelRef={menuRef}
+        open={open}
+        placement="bottom-start"
+        gap={6}
+        surface={false}
+        className={cn(composerPopoverPanelClass, 'z-[120] grid min-w-28 gap-0.5')}
+        role="listbox"
+        aria-label="Artifact version"
+      >
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            role="option"
+            aria-selected={option.value === selectedVersion}
+            className={cn(
+              composerPopoverOptionClass,
+              'artifact-version-option h-7 grid-cols-[14px_minmax(0,1fr)] px-2',
+              option.value === selectedVersion && composerPopoverOptionSelectedClass,
+            )}
+            onPointerDown={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              selectOption(option.value)
+            }}
+            onClick={() => selectOption(option.value)}
+          >
+            {option.value === selectedVersion ? <Check size={12} /> : <span />}
+            <span className="truncate">{option.label}</span>
+          </button>
+        ))}
+      </AnchoredPopoverPanel>
     </>
   )
 }

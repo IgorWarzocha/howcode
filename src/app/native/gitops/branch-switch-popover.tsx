@@ -20,6 +20,7 @@ import {
 import { cn } from '../../utils/cn'
 
 type BranchSwitchPopoverProps = {
+  asChild?: ((content: ReactNode) => ReactNode) | undefined
   branchLabel: string | null | undefined
   branches: readonly string[]
   branchSwitchInput: string
@@ -36,6 +37,7 @@ type BranchSwitchPopoverProps = {
 }
 
 export function BranchSwitchPopover({
+  asChild,
   branchLabel,
   branches,
   branchSwitchInput,
@@ -61,22 +63,8 @@ export function BranchSwitchPopover({
     onSetBranchSwitchOpen(false)
   }
 
-  return (
-    <PopoverPanel
-      surface={false}
-      open={visible}
-      id={panelId}
-      ref={panelRef}
-      data-open={visible ? 'true' : 'false'}
-      role="dialog"
-      aria-label="Branch selector"
-      className={cn(
-        composerPopoverPanelClass,
-        'grid min-w-0 max-w-full grid-rows-[auto_minmax(0,1fr)_auto_auto_auto] gap-1.5 overflow-hidden',
-        className,
-      )}
-      style={style}
-    >
+  const content = (
+    <>
       <div className={composerPopoverSectionLabelClass}>Switch branch</div>
       <div
         className={cn(
@@ -145,6 +133,28 @@ export function BranchSwitchPopover({
         description="Reserved for linked branch workspaces."
         actions={['Create worktree', 'Open existing']}
       />
+    </>
+  )
+
+  if (asChild) return asChild(content)
+
+  return (
+    <PopoverPanel
+      surface={false}
+      open={visible}
+      id={panelId}
+      ref={panelRef}
+      data-open={visible ? 'true' : 'false'}
+      role="dialog"
+      aria-label="Branch selector"
+      className={cn(
+        composerPopoverPanelClass,
+        'grid min-w-0 max-w-full grid-rows-[auto_minmax(0,1fr)_auto_auto_auto] gap-1.5 overflow-hidden',
+        className,
+      )}
+      style={style}
+    >
+      {content}
     </PopoverPanel>
   )
 }

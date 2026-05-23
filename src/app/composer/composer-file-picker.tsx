@@ -1,5 +1,4 @@
 import {
-  type CSSProperties,
   type DragEvent,
   type RefObject,
   useEffect,
@@ -8,8 +7,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { createPortal } from 'react-dom'
-import { PopoverPanel, PopoverPortalLayer, useAnchoredPopoverPosition } from '../common/popover'
+import { AnchoredPopoverPanel, PopoverPanel } from '../common/popover'
 import type { ComposerAttachment, ComposerFilePickerState } from '../desktop/types'
 import { appToneDangerClass, appTypeMetaClass, popoverPanelClass } from '../ui/classes'
 import { cn } from '../utils/cn'
@@ -143,14 +141,6 @@ export function ComposerFilePicker({
     }
   }, [searchExpanded])
 
-  const { position: portalPosition, positionReady: portalPositionReady } =
-    useAnchoredPopoverPosition({
-      anchorRef: anchorRef ?? ({ current: null } as RefObject<HTMLButtonElement | null>),
-      panelRef,
-      enabled: portalPlacementEnabled,
-      placement: 'right',
-    })
-
   const panelContents = (
     <>
       <ComposerFilePickerHeader
@@ -216,24 +206,23 @@ export function ComposerFilePicker({
   const panelClassName = cn(
     'grid grid-rows-[40px_minmax(0,1fr)] overflow-hidden rounded-xl border-0 p-0 shadow-[var(--shadow)]',
     portalPlacementEnabled
-      ? 'fixed z-[120] h-[min(378px,calc(100vh-1.5rem))] min-h-[220px] w-[min(38rem,calc(100vw-1.5rem))] transition-opacity duration-150 ease-out'
+      ? 'h-[min(378px,calc(100vh-1.5rem))] min-h-[220px] w-[min(38rem,calc(100vw-1.5rem))]'
       : 'absolute right-0 bottom-full left-0 z-[70] h-[min(378px,calc(100vh-12rem))] min-h-[220px]',
-    portalPlacementEnabled && !portalPositionReady && 'pointer-events-none opacity-0',
     popoverPanelClass,
   )
 
-  const panelStyle: CSSProperties | undefined = portalPlacementEnabled
-    ? { left: `${portalPosition.left}px`, top: `${portalPosition.top}px` }
-    : undefined
-
-  if (portalPlacementEnabled && typeof document !== 'undefined') {
-    return createPortal(
-      <PopoverPortalLayer className="z-[220]">
-        <PopoverPanel ref={panelRef} className={panelClassName} style={panelStyle}>
-          {panelContents}
-        </PopoverPanel>
-      </PopoverPortalLayer>,
-      document.body,
+  if (portalPlacementEnabled && anchorRef) {
+    return (
+      <AnchoredPopoverPanel
+        anchorRef={anchorRef}
+        panelRef={panelRef}
+        open
+        placement="right"
+        portalClassName="z-[220]"
+        className={panelClassName}
+      >
+        {panelContents}
+      </AnchoredPopoverPanel>
     )
   }
 

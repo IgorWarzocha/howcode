@@ -1,7 +1,6 @@
 import { Search } from 'lucide-react'
-import { type CSSProperties, type RefObject, useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { PopoverPanel, PopoverPortalLayer, useAnchoredPopoverPosition } from '../common/popover'
+import { type RefObject, useEffect, useMemo, useRef, useState } from 'react'
+import { AnchoredPopoverPanel, PopoverPanel } from '../common/popover'
 import type { ComposerModel, ComposerThinkingLevel } from '../desktop/types'
 import {
   appToneMutedClass,
@@ -150,14 +149,6 @@ export function ComposerModelPopover({
     }
   }, [showModelSearch])
 
-  const { position: portalPosition, positionReady: portalPositionReady } =
-    useAnchoredPopoverPosition({
-      anchorRef,
-      panelRef,
-      enabled: preferPortalPlacement,
-      placement: 'top-start',
-    })
-
   const panelContents = (
     <>
       {showModelSearch ? (
@@ -241,30 +232,24 @@ export function ComposerModelPopover({
     'pointer-events-auto grid w-52 max-w-[calc(100vw-2rem)] overflow-x-hidden rounded-xl border-0 p-1.5',
     appTypeSmallClass,
     preferPortalPlacement
-      ? 'fixed z-[300] max-h-[calc(100vh-1.5rem)] overflow-y-auto transition-opacity duration-150 ease-out'
+      ? 'max-h-[calc(100vh-1.5rem)] overflow-y-auto'
       : 'absolute bottom-[calc(100%+8px)] left-0 z-[60]',
-    preferPortalPlacement && !portalPositionReady && 'pointer-events-none opacity-0',
     composerPopoverPanelClass,
   )
 
-  const panelStyle: CSSProperties | undefined = preferPortalPlacement
-    ? { left: `${portalPosition.left}px`, top: `${portalPosition.top}px` }
-    : undefined
-
-  if (preferPortalPlacement && typeof document !== 'undefined') {
-    return createPortal(
-      <PopoverPortalLayer>
-        <PopoverPanel
-          surface={false}
-          ref={panelRef}
-          id="composer-model-menu"
-          className={panelClassName}
-          style={panelStyle}
-        >
-          {panelContents}
-        </PopoverPanel>
-      </PopoverPortalLayer>,
-      document.body,
+  if (preferPortalPlacement) {
+    return (
+      <AnchoredPopoverPanel
+        anchorRef={anchorRef}
+        panelRef={panelRef}
+        open
+        surface={false}
+        id="composer-model-menu"
+        placement="top-start"
+        className={panelClassName}
+      >
+        {panelContents}
+      </AnchoredPopoverPanel>
     )
   }
 

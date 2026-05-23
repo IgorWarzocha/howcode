@@ -1,8 +1,7 @@
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { AudioLines, Check, FileAudio, Mic, X } from 'lucide-react'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { PopoverPanel } from '../common/popover'
+import { useEffect, useRef, useState } from 'react'
+import { AnchoredPopoverPanel } from '../common/popover'
 import { TextButton } from '../common/text-button'
 import type { DesktopActionInvoker } from '../desktop/types'
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence'
@@ -67,57 +66,18 @@ function DictationPrompt({
   open: boolean
   promptRef: React.RefObject<HTMLDivElement | null>
 }) {
-  const [position, setPosition] = useState<{ left: number; top: number } | null>(null)
-
-  useLayoutEffect(() => {
-    if (!open) return
-
-    const updatePosition = () => {
-      const anchorRect = anchorRef.current?.getBoundingClientRect()
-      if (!anchorRect) return
-
-      const promptRect = promptRef.current?.getBoundingClientRect()
-      const viewportPadding = 12
-      const promptWidth = promptRect?.width ?? 312
-      const promptHeight = promptRect?.height ?? 42
-      const preferredLeft = anchorRect.right - promptWidth
-      const left = Math.min(
-        window.innerWidth - viewportPadding - promptWidth,
-        Math.max(viewportPadding, preferredLeft),
-      )
-      const topAbove = anchorRect.top - promptHeight - 10
-      const top =
-        topAbove >= viewportPadding
-          ? topAbove
-          : Math.min(window.innerHeight - viewportPadding - promptHeight, anchorRect.bottom + 10)
-
-      setPosition({ left, top })
-    }
-
-    updatePosition()
-    window.addEventListener('resize', updatePosition)
-    window.addEventListener('scroll', updatePosition, true)
-    return () => {
-      window.removeEventListener('resize', updatePosition)
-      window.removeEventListener('scroll', updatePosition, true)
-    }
-  }, [anchorRef, open, promptRef])
-
-  if (typeof document === 'undefined') return null
-
-  return createPortal(
-    <PopoverPanel
-      surface={false}
-      ref={promptRef}
+  return (
+    <AnchoredPopoverPanel
+      anchorRef={anchorRef}
+      panelRef={promptRef}
       open={open}
+      placement="top-start"
+      surface={false}
       role="dialog"
       aria-label="Install speech-to-text model"
-      style={position ? { left: `${position.left}px`, top: `${position.top}px` } : undefined}
       className={cn(
-        'fixed z-[140] inline-flex max-w-[calc(100vw-1.5rem)] items-center gap-1.5 rounded-full border border-[color:var(--border-strong)] bg-[color:var(--panel)] px-2 py-1 shadow-[0_18px_40px_rgba(0,0,0,0.34)] transition-[opacity,transform] duration-180 ease-out',
+        'z-[140] inline-flex max-w-[calc(100vw-1.5rem)] items-center gap-1.5 rounded-full border border-[color:var(--border-strong)] bg-[color:var(--panel)] px-2 py-1 shadow-[0_18px_40px_rgba(0,0,0,0.34)]',
         appTypeMetaClass,
-        open ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-1 opacity-0',
-        !position && 'opacity-0',
       )}
     >
       <span className={cn('whitespace-nowrap', appTypeMetaClass, appToneTextClass)}>
@@ -162,8 +122,7 @@ function DictationPrompt({
       >
         Hide permanently
       </TextButton>
-    </PopoverPanel>,
-    document.body,
+    </AnchoredPopoverPanel>
   )
 }
 

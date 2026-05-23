@@ -1,6 +1,6 @@
 import { BranchSwitchPopover } from '@howcode/native-gitops'
-import { type CSSProperties, type RefObject, useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { type RefObject, useEffect, useRef, useState } from 'react'
+import { AnchoredPopoverPanel } from '../../common/popover'
 import {
   notifyComposerPopoverOpened,
   useComposerPopoverDismissSignal,
@@ -8,6 +8,7 @@ import {
 import type { DesktopActionInvoker, ProjectGitState } from '../../desktop/types'
 import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
 import type { Project } from '../../types'
+import { composerPopoverPanelClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 
 function DashboardBranchSwitchPopover({
@@ -31,34 +32,7 @@ function DashboardBranchSwitchPopover({
   onSetBranchSwitchOpen: (open: boolean) => void
   onSwitchBranch: (branchName: string) => void
 }) {
-  const [position, setPosition] = useState<CSSProperties | null>(null)
-
-  useEffect(() => {
-    const anchor = anchorRef.current
-    if (!anchor) return
-    const updatePosition = () => {
-      const rect = anchor.getBoundingClientRect()
-      const width = Math.min(320, window.innerWidth - 16)
-      setPosition({
-        background: 'var(--panel)',
-        left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
-        opacity: 1,
-        top: rect.bottom + 6,
-        width,
-      })
-    }
-    updatePosition()
-    window.addEventListener('resize', updatePosition)
-    window.addEventListener('scroll', updatePosition, true)
-    return () => {
-      window.removeEventListener('resize', updatePosition)
-      window.removeEventListener('scroll', updatePosition, true)
-    }
-  }, [anchorRef])
-
-  if (!position || typeof document === 'undefined') return null
-
-  return createPortal(
+  return (
     <BranchSwitchPopover
       branchLabel={currentBranch}
       branchListClassName="max-h-[8.5rem]"
@@ -66,13 +40,27 @@ function DashboardBranchSwitchPopover({
       branchSwitchInput={branchSwitchInput}
       inputRef={inputRef}
       panelRef={panelRef}
-      className="fixed z-[160] isolate"
-      style={{ ...position, boxSizing: 'border-box' }}
+      className="w-[min(20rem,calc(100vw-1rem))] isolate"
       onSetBranchSwitchInput={onSetBranchSwitchInput}
       onSetBranchSwitchOpen={onSetBranchSwitchOpen}
       onSwitchBranch={onSwitchBranch}
-    />,
-    document.body,
+      asChild={(content) => (
+        <AnchoredPopoverPanel
+          anchorRef={anchorRef}
+          panelRef={panelRef}
+          open
+          placement="bottom-start"
+          gap={6}
+          surface={false}
+          className={cn(
+            composerPopoverPanelClass,
+            'grid w-[min(20rem,calc(100vw-1rem))] min-w-0 max-w-full grid-rows-[auto_minmax(0,1fr)_auto_auto_auto] gap-1.5 overflow-hidden',
+          )}
+        >
+          {content}
+        </AnchoredPopoverPanel>
+      )}
+    />
   )
 }
 
