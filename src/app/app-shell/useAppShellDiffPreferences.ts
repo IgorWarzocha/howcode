@@ -125,6 +125,13 @@ function nextDiffBaselineState(options: {
     sessionPath: options.terminalSessionPath,
   }
   if (
+    options.current.projectId === options.composerProjectId &&
+    options.current.source === 'override' &&
+    !options.controller.activeThreadData?.diffPreferences?.baseline
+  ) {
+    return { ...nextScope, baseline: options.current.baseline, source: 'override' as const }
+  }
+  if (
     scopeMatches(options.current, nextScope) &&
     (options.current.source === 'override' ||
       areDiffBaselinesEqual(options.current.baseline, nextBaseline))
