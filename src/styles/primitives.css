@@ -345,7 +345,7 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   display: inline;
 }
 
-@container (max-width: 34rem) {
+@container (max-width: 42rem) {
   .composer-placeholder-tail-xs {
     display: none;
   }
@@ -535,17 +535,18 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
 
   .artifact-markdown-editor .artifact-mdx-toolbar-drawer .artifact-mdx-toolbar-row-primary,
   .artifact-markdown-editor .artifact-mdx-toolbar-fullscreen .artifact-mdx-toolbar-row-primary {
-    flex: 0 0 auto;
+    flex: 0 0 100%;
   }
 
   .artifact-markdown-editor .artifact-mdx-toolbar-drawer .artifact-mdx-toolbar-row-secondary,
   .artifact-markdown-editor .artifact-mdx-toolbar-fullscreen .artifact-mdx-toolbar-row-secondary {
-    display: contents;
+    flex: 0 0 auto;
+    padding-left: 0;
   }
 
   .artifact-markdown-editor .artifact-mdx-toolbar-drawer .artifact-mdx-toolbar-row-tertiary,
   .artifact-markdown-editor .artifact-mdx-toolbar-fullscreen .artifact-mdx-toolbar-row-tertiary {
-    display: contents;
+    flex: 0 0 auto;
     padding-left: 0;
   }
 }
