@@ -219,7 +219,7 @@ export const composerDividerClass = 'h-px bg-[color:var(--border)]'
 
 export const composerInlineStatusPillClass = `inline-flex h-6 max-w-[min(10.75rem,45cqw)] shrink-0 items-center gap-1.5 rounded-full bg-[color:var(--surface-hover)] px-2.5 ${appTypeSmallClass} ${appToneMutedClass}`
 
-export const composerInlineConfirmButtonClass = `motion-popover pointer-events-auto absolute right-[calc(100%+6px)] bottom-0 z-20 inline-flex h-7 items-center rounded-lg border border-transparent bg-[color:var(--panel)] px-2 text-left whitespace-nowrap shadow-none ${appTypeTinyClass} ${appToneMutedClass} transition-colors hover:bg-[color:var(--surface-hover)] focus-visible:bg-[color:var(--surface-hover)] focus-visible:outline-none`
+export const composerInlineConfirmButtonClass = `motion-popover pointer-events-auto absolute right-0 bottom-[calc(100%+6px)] z-20 inline-flex h-7 items-center rounded-lg border border-transparent bg-[color:var(--panel)] px-2 text-left whitespace-nowrap shadow-none ${appTypeSmallClass} ${appToneMutedClass} transition-colors hover:bg-[color:var(--surface-hover)] focus-visible:bg-[color:var(--surface-hover)] focus-visible:outline-none`
 
 export const composerPopoverInputClass = `settings-control-text h-8 min-w-0 rounded-md border-0 bg-[color:var(--surface-hover)] px-2.5 ${appTypeControlClass} ${appToneTextClass} outline-none placeholder:text-[color:var(--muted)] focus:bg-[color:var(--surface-hover)]`
 
