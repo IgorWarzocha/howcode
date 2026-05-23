@@ -55,6 +55,7 @@ export function useDiffCommentController({
 }) {
   const [diffComments, setDiffComments] = useState<SavedDiffComment[]>([])
   const [diffCommentCount, setDiffCommentCount] = useState(0)
+  const [hasPendingDiffComments, setHasPendingDiffComments] = useState(false)
   const [selectedDiffCommentId, setSelectedDiffCommentId] = useState<string | null>(null)
   const [selectedDiffCommentJumpKey, setSelectedDiffCommentJumpKey] = useState(0)
   const [diffCommentsSending, setDiffCommentsSending] = useState(false)
@@ -69,12 +70,15 @@ export function useDiffCommentController({
       if (!diffCommentContextId) {
         setDiffComments([])
         setDiffCommentCount(0)
+        setHasPendingDiffComments(false)
         return
       }
 
-      const nextComments = diffCommentStore.getContext(diffCommentContextId)?.comments ?? []
+      const context = diffCommentStore.getContext(diffCommentContextId)
+      const nextComments = context?.comments ?? []
       setDiffComments(nextComments)
       setDiffCommentCount(nextComments.length)
+      setHasPendingDiffComments(nextComments.length > 0 || Boolean(context?.draft))
     }
 
     setSelectedDiffCommentId(null)
@@ -119,13 +123,20 @@ export function useDiffCommentController({
     handleOpenWorktreeDiffFile(filePath)
   }
 
+  const handleDiscardDiffComments = () => {
+    if (!diffCommentContextId) return
+    diffCommentStore.clearContext(diffCommentContextId)
+  }
+
   return {
     diffCommentCount,
     diffCommentError,
     diffComments,
     diffCommentsSending,
     handleSelectDiffComment,
+    handleDiscardDiffComments,
     handleSendDiffComments,
+    hasPendingDiffComments,
     selectedDiffCommentId,
     selectedDiffCommentJumpKey,
   }

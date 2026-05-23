@@ -49,6 +49,8 @@ type ComposerGitOpsSurfaceProps = {
   onToggleIncludeUntracked: () => void
   onSendDiffComments: (message?: string | null) => void
   onSelectDiffComment: (filePath: string, commentId: string) => void
+  hasPendingDiffComments: boolean
+  onDiscardDiffComments: () => void
   onAction: DesktopActionInvoker
   onLayoutChange: () => void
   onBack: () => void
@@ -172,6 +174,8 @@ export function ComposerGitOpsSurface({
   onToggleIncludeUntracked,
   onSendDiffComments,
   onSelectDiffComment,
+  hasPendingDiffComments,
+  onDiscardDiffComments,
   onAction,
   onLayoutChange,
   onBack,
@@ -400,6 +404,8 @@ export function ComposerGitOpsSurface({
         isGitRepo={isGitRepo}
         onSaveOrigin={handleSaveOrigin}
         onBack={onBack}
+        hasPendingDiffComments={hasPendingDiffComments}
+        onDiscardDiffComments={onDiscardDiffComments}
         onSetDiffBaseline={onSetDiffBaseline}
         onSetDiffRenderMode={onSetDiffRenderMode}
         onSwitchBranch={(branchName) => {

@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { ConfirmPopover } from '../../common/confirm-popover'
 import { PopoverPanel } from '../../common/popover'
 import { PlainToggle } from '../../composer/plain-toggle'
 import type {
@@ -39,8 +40,10 @@ type ComposerGitOpsFooterProps = {
   includeUnstaged: boolean
   includeUntracked: boolean
   isGitRepo: boolean
+  hasPendingDiffComments: boolean
   onSaveOrigin: () => void
   onBack: () => void
+  onDiscardDiffComments: () => void
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
   onSetDiffRenderMode: (mode: ProjectDiffRenderMode) => void
   onSwitchBranch?: ((branchName: string) => void) | undefined
@@ -64,8 +67,10 @@ export function ComposerGitOpsFooter({
   includeUnstaged,
   includeUntracked,
   isGitRepo,
+  hasPendingDiffComments,
   onSaveOrigin,
   onBack,
+  onDiscardDiffComments,
   onSetDiffBaseline,
   onSetDiffRenderMode,
   onSwitchBranch,
@@ -84,7 +89,9 @@ export function ComposerGitOpsFooter({
   const [optionsPopoverLeft, setOptionsPopoverLeft] = useState(0)
   const optionsRef = useRef<HTMLDivElement>(null)
   const repoInputRef = useRef<HTMLInputElement>(null)
+  const backButtonRef = useRef<HTMLButtonElement>(null)
   const originSaveRequestedRef = useRef(false)
+  const [discardCommentsOpen, setDiscardCommentsOpen] = useState(false)
 
   const openOriginEditor = () => {
     setOptionsOpen(true)
@@ -303,7 +310,7 @@ export function ComposerGitOpsFooter({
         </div>
       ) : null}
 
-      <div className={workspaceFooterTrailingGroupClass}>
+      <div className={cn(workspaceFooterTrailingGroupClass, 'relative')}>
         {isGitRepo ? (
           <ComposerDiffBaselineSelector
             composerPanelRef={composerPanelRef}
@@ -317,14 +324,35 @@ export function ComposerGitOpsFooter({
           />
         ) : null}
         <button
+          ref={backButtonRef}
           type="button"
           className={cn(compactIconButtonClass, 'h-7 w-7')}
-          onClick={onBack}
+          onClick={() => {
+            if (hasPendingDiffComments) {
+              setDiscardCommentsOpen(true)
+              return
+            }
+            onBack()
+          }}
           aria-label="Back"
           data-tooltip="Back"
         >
           <ArrowLeft size={14} />
         </button>
+        <ConfirmPopover
+          open={discardCommentsOpen}
+          anchorRef={backButtonRef}
+          onClose={() => setDiscardCommentsOpen(false)}
+          onConfirm={() => {
+            onDiscardDiffComments()
+            setDiscardCommentsOpen(false)
+            onBack()
+          }}
+          message="Go back and discard comments?"
+          confirmLabel="Discard"
+          cancelLabel="Keep"
+          className="right-0 bottom-[calc(100%+6px)] top-auto"
+        />
       </div>
     </div>
   )
