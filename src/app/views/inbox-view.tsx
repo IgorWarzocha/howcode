@@ -21,11 +21,13 @@ import {
   appToneMutedClass,
   appToneSubtleClass,
   appToneTextClass,
-  appTypeBodyClass,
+  appTypeControlStrongClass,
   appTypeGroupTextClass,
   appTypeMetaClass,
   appTypeReadableClass,
   appTypeSectionTitleClass,
+  inlineEmptyNoteClass,
+  threadSessionStripClass,
 } from '../ui/classes'
 import { WORKSPACE_CONTENT_MAX_WIDTH_CLASS } from '../ui/layout'
 import type { SettingsOpenTarget } from './settings/settingsTypes'
@@ -260,7 +262,7 @@ export function InboxView({
   return (
     <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] pt-6 pb-4">
       <div className={`mx-auto w-full ${WORKSPACE_CONTENT_MAX_WIDTH_CLASS} pb-5`}>
-        <div className="grid w-full gap-2 rounded-[18px] border border-[color:var(--border)] bg-[color:var(--panel)] px-4 py-3 shadow-[var(--shadow)]">
+        <div className={`${threadSessionStripClass} gap-2 px-3.5 py-3`}>
           <div
             className={`flex min-w-0 items-center gap-2 ${appTypeMetaClass} ${appToneSubtleClass}`}
           >
@@ -270,12 +272,16 @@ export function InboxView({
             {thread.running ? (
               <>
                 <span aria-hidden="true">•</span>
-                <span className="shrink-0 text-[color:var(--accent)]">working</span>
+                <span
+                  className={`shrink-0 ${appTypeControlStrongClass} text-[color:var(--accent)]`}
+                >
+                  working
+                </span>
               </>
             ) : null}
           </div>
           <p
-            className={`m-0 max-h-[calc(1.55em*4)] overflow-y-auto whitespace-pre-wrap break-words ${appTypeReadableClass} ${appToneTextClass} [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}
+            className={`m-0 max-h-[calc(1.68em*4)] overflow-y-auto whitespace-pre-wrap break-words ${appTypeReadableClass} ${appToneTextClass} [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}
           >
             {prompt}
           </p>
@@ -292,7 +298,7 @@ export function InboxView({
               />
             ) : (
               <div
-                className={`grid min-h-28 place-items-center rounded-[18px] border border-dashed border-[color:var(--border)] ${appTypeBodyClass} ${appToneMutedClass}`}
+                className={`grid min-h-28 place-items-center rounded-lg bg-[color:var(--folded-row-bg)] ${inlineEmptyNoteClass}`}
               >
                 {thread.running ? 'Still working…' : 'No final assistant message yet.'}
               </div>
