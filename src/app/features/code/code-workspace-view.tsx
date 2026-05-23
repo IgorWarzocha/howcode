@@ -3,7 +3,6 @@ import { useCallback, useRef, useState } from 'react'
 import { useHowcodeKeybindingCommand } from '../../app-shell/keybinding-events'
 import type { AppShellController } from '../../app-shell/useAppShellController'
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../../desktop/types'
-import { useDesktopDiff } from '../../hooks/useDesktopDiff'
 import type { Message } from '../../types'
 import { CodeWorkspaceViewContent } from './code-workspace-footer'
 import { useDiffCommentController } from './useDiffCommentController'
@@ -218,11 +217,7 @@ export function CodeWorkspaceView({
     event.preventDefault()
     toggleGitOpsFileTree()
   })
-  const { error: diffLoadError } = useDesktopDiff(
-    composerProjectId,
-    diffBaseline,
-    showDiffInMainView && (projectGitState?.isGitRepo ?? false),
-  )
+  const diffLoadError: string | null = null
   const footerHeight = useWorkspaceFooterHeight({
     footerRef,
     visible: showWorkspaceFooter,
