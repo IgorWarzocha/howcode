@@ -135,7 +135,7 @@ function useComposerBaselineData({
       projectId
         ? getProjectDiffStatsQuery(projectId, selectedBaseline, includeUntracked)
         : Promise.resolve(null),
-    enabled: projectId.length > 0 && selectedBaseline.kind !== 'head',
+    enabled: open && projectId.length > 0 && selectedBaseline.kind !== 'head',
     staleTime: Number.POSITIVE_INFINITY,
   })
 
