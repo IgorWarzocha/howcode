@@ -6,6 +6,8 @@ import { getBundledThemes } from '../bundled-themes.ts'
 import { ensureAskQuestionsExtensionRuntimePath } from '../native-extensions/ask-questions-extension-path.ts'
 import { getSessionNativeExtensions } from '../thread-state-db.ts'
 
+const wslUncPathPattern = /^\\\\(?:wsl\$|wsl\.localhost)\\([^\\/]+)([\\/].*)?$/i
+
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
 }
@@ -19,6 +21,35 @@ type TerminalEnvironmentVariables = NodeJS.ProcessEnv & {
 
 function getEnvironmentVariable(env: NodeJS.ProcessEnv, name: string) {
   return env[name]
+}
+
+function getSafeWindowsSpawnCwd(env: NodeJS.ProcessEnv) {
+  return (
+    getEnvironmentVariable(env, 'USERPROFILE') ||
+    getEnvironmentVariable(env, 'SystemRoot') ||
+    process.cwd()
+  )
+}
+
+export function getWslTerminalLaunch(
+  cwd: string | null | undefined,
+  options?: { platform?: NodeJS.Platform; env?: NodeJS.ProcessEnv },
+) {
+  const platform = options?.platform ?? process.platform
+  if (platform !== 'win32' || !cwd) return null
+
+  const match = cwd.match(wslUncPathPattern)
+  if (!match) return null
+
+  const distro = match[1]
+  const rawLinuxPath = match[2] ?? ''
+  if (!distro) return null
+
+  return {
+    distro,
+    linuxPath: rawLinuxPath ? rawLinuxPath.replaceAll('\\', '/') : '/',
+    windowsSpawnCwd: getSafeWindowsSpawnCwd(options?.env ?? process.env),
+  }
 }
 
 function getPiSessionCommandArgs(sessionPath: string | null | undefined) {
@@ -82,6 +113,16 @@ export function resolveTerminalCommand(
     return {
       shell: getPiSessionShell(platform, env),
       args: getPiSessionCommandArgs(request.sessionPath),
+      cwd: undefined,
+    }
+  }
+
+  const wslLaunch = getWslTerminalLaunch(request.cwd, { platform, env })
+  if (wslLaunch) {
+    return {
+      shell: findExecutable('wsl.exe', getEnvironmentVariable(env, 'PATH') ?? ''),
+      args: ['-d', wslLaunch.distro, '--cd', wslLaunch.linuxPath],
+      cwd: wslLaunch.windowsSpawnCwd,
     }
   }
 
@@ -89,12 +130,14 @@ export function resolveTerminalCommand(
     return {
       shell: getEnvironmentVariable(env, 'COMSPEC') || 'powershell.exe',
       args: [] as string[],
+      cwd: undefined,
     }
   }
 
   return {
     shell: getEnvironmentVariable(env, 'SHELL') || '/bin/bash',
     args: ['-i'],
+    cwd: undefined,
   }
 }
 
