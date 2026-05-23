@@ -103,28 +103,46 @@ function RawPatchView({ reason, text }: { reason: string; text: string }) {
   )
 }
 
+function DiffPanelLoadingState({ message = 'Loading diff…' }: { message?: string }) {
+  return (
+    <div
+      className={cn(
+        'flex h-full items-center justify-center px-3 py-2 text-center',
+        appTypeSmallClass,
+        appToneMutedClass,
+      )}
+      role="status"
+      aria-busy="true"
+    >
+      {message}
+    </div>
+  )
+}
+
 function DiffFilesView(input: DiffPanelContentBodyProps) {
   return (
-    <div className="relative h-full min-h-0" aria-busy={input.loading || input.isLoading}>
+    <div className="relative h-full min-h-0">
       <div className="flex h-full min-h-0">
         <div className="min-h-0 min-w-0 flex-1 overflow-hidden [overflow-anchor:none]">
-          <DiffPanelFileList
-            baseline={input.baseline}
-            codeViewRef={input.codeViewRef}
-            scrollContainerRef={input.scrollContainerRef}
-            collapsedFiles={input.collapsedFiles}
-            commentAnnotationsByFile={input.commentAnnotationsByFile}
-            diffRenderMode={input.diffRenderMode}
-            draftSelectedLines={input.draftSelectedLines}
-            focusedImageFileKeys={input.focusedImageFileKeys}
-            getFileInteractionHandlers={input.getFileInteractionHandlers}
-            getSelectedLinesForFile={input.getSelectedLinesForFile}
-            onOpenDraftComment={input.openDraftComment}
-            onToggleFileCollapsed={input.toggleFileCollapsed}
-            projectId={input.projectId}
-            renderCommentAnnotation={input.renderCommentAnnotation}
-            renderableFiles={input.visibleRenderableFiles}
-          />
+          {input.renderablePatch?.kind === 'files' ? (
+            <DiffPanelFileList
+              baseline={input.baseline}
+              codeViewRef={input.codeViewRef}
+              scrollContainerRef={input.scrollContainerRef}
+              collapsedFiles={input.collapsedFiles}
+              commentAnnotationsByFile={input.commentAnnotationsByFile}
+              diffRenderMode={input.diffRenderMode}
+              draftSelectedLines={input.draftSelectedLines}
+              focusedImageFileKeys={input.focusedImageFileKeys}
+              getFileInteractionHandlers={input.getFileInteractionHandlers}
+              getSelectedLinesForFile={input.getSelectedLinesForFile}
+              onOpenDraftComment={input.openDraftComment}
+              onToggleFileCollapsed={input.toggleFileCollapsed}
+              projectId={input.projectId}
+              renderCommentAnnotation={input.renderCommentAnnotation}
+              renderableFiles={input.visibleRenderableFiles}
+            />
+          ) : null}
         </div>
         <div
           className="min-h-0 shrink-0 overflow-hidden transition-[width,opacity] duration-200 ease-out"
@@ -149,17 +167,24 @@ function DiffFilesView(input: DiffPanelContentBodyProps) {
 }
 
 export function DiffPanelContentBody(input: DiffPanelContentBodyProps) {
+  if (input.loading) {
+    return <DiffPanelLoadingState message="Loading project git state…" />
+  }
   if (!input.isGitRepo) {
     return (
       <DiffPanelEmptyState message="Diffs are unavailable because this project is not a git repository." />
     )
   }
+  if (
+    (input.isLoading || input.hasResolvedPatch) &&
+    !input.hasNoNetChanges &&
+    !input.renderablePatch
+  ) {
+    return <DiffPanelLoadingState />
+  }
   return (
     <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
-      {input.renderablePatch?.kind === 'files' ||
-      input.loading ||
-      (input.isLoading && !input.hasNoNetChanges) ||
-      (input.hasResolvedPatch && !(input.hasNoNetChanges || input.renderablePatch)) ? (
+      {input.renderablePatch?.kind === 'files' ? (
         <DiffFilesView {...input} />
       ) : input.renderablePatch ? (
         <RawPatchView reason={input.renderablePatch.reason} text={input.renderablePatch.text} />
