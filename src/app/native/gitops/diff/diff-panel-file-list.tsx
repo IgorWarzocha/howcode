@@ -198,7 +198,6 @@ function DiffPanelFileHeader({
       }}
       aria-label={`${isCollapsed ? 'Expand' : 'Collapse'} ${filePath}`}
       aria-expanded={!isCollapsed}
-      data-tooltip={`${isCollapsed ? 'Expand' : 'Collapse'} ${filePath}`}
       data-diff-file-path={filePath}
     >
       <span className="flex min-w-0 items-center gap-2.5">
