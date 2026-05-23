@@ -38,6 +38,7 @@ import {
   setGitCommitMessageThinkingLevel,
   setGitDiffBaselineDefault,
   setGitDiffFileTreeDefaultVisible,
+  setGitDiffIncludeUntrackedDefault,
   setGitDiffRenderModeDefault,
   setGitOpsDefaultMode,
   setHoverToBlur,
@@ -196,6 +197,8 @@ const settingsUpdateHandlers = {
   },
   gitDiffFileTreeDefaultVisible: (payload) =>
     setOptionalBooleanSetting(payload, setGitDiffFileTreeDefaultVisible),
+  gitDiffIncludeUntrackedDefault: (payload) =>
+    setOptionalBooleanSetting(payload, setGitDiffIncludeUntrackedDefault),
   gitDiffRenderModeDefault: (payload) => {
     const value = getSettingsProjectDiffRenderModeDefault(payload)
     if (value) setGitDiffRenderModeDefault(value)

@@ -34,6 +34,7 @@ const optimisticSettingKeys = new Set([
   'gitDiffBaselineDefault',
   'gitDiffRenderModeDefault',
   'gitDiffFileTreeDefaultVisible',
+  'gitDiffIncludeUntrackedDefault',
   'projectDeletionMode',
   'useAgentsSkillsPaths',
   'howcodeNativeAskQuestions',
@@ -158,6 +159,8 @@ function applyOptimisticBooleanSetting(
     nextSettings.projectDashboardEnabled = payload.value
   if (payload.key === 'gitDiffFileTreeDefaultVisible')
     nextSettings.gitDiffFileTreeDefaultVisible = payload.value
+  if (payload.key === 'gitDiffIncludeUntrackedDefault')
+    nextSettings.gitDiffIncludeUntrackedDefault = payload.value
   if (payload.key === 'useAgentsSkillsPaths') nextSettings.useAgentsSkillsPaths = payload.value
   if (payload.key === 'howcodeNativeAskQuestions')
     nextSettings.howcodeNativeAskQuestions = payload.value

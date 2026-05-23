@@ -315,6 +315,11 @@ export function useSettingsController({
         key: 'gitDiffFileTreeDefaultVisible',
         value,
       }),
+    setGitDiffIncludeUntrackedDefault: (value: AppSettings['gitDiffIncludeUntrackedDefault']) =>
+      void onAction('settings.update', {
+        key: 'gitDiffIncludeUntrackedDefault',
+        value,
+      }),
     updatePiSetting: <Key extends keyof PiSettings>(key: Key, value: PiSettings[Key]) =>
       void onAction('pi-settings.update', {
         piSettingsKey: key,

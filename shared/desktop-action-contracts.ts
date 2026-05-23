@@ -99,6 +99,7 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'gitDiffBaselineDefault'; value: ProjectDiffDefaultBaseline }
   | { key: 'gitDiffRenderModeDefault'; value: ProjectDiffRenderMode }
   | { key: 'gitDiffFileTreeDefaultVisible'; value: boolean }
+  | { key: 'gitDiffIncludeUntrackedDefault'; value: boolean }
   | { key: 'projectDeletionMode'; value: ProjectDeletionMode }
   | { key: 'useAgentsSkillsPaths'; value: boolean }
   | { key: 'howcodeNativeAskQuestions'; value: boolean }

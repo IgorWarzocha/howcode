@@ -233,6 +233,24 @@ export function buildProjectsSettingsDescriptors({
       ),
     },
     {
+      id: 'projects.git-diff-untracked-default',
+      category: 'projects',
+      title: 'Untracked files',
+      description: 'Include untracked files in GitOps diffs by default.',
+      keywords: 'git diff untracked files default gitops',
+      render: () => (
+        <ToggleBox
+          checked={appSettings.gitDiffIncludeUntrackedDefault}
+          label="Include untracked"
+          onClick={() =>
+            controller.setGitDiffIncludeUntrackedDefault(
+              !appSettings.gitDiffIncludeUntrackedDefault,
+            )
+          }
+        />
+      ),
+    },
+    {
       id: 'projects.deletion-mode',
       category: 'projects',
       title: 'Project deletion cleanup',

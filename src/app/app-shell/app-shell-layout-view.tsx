@@ -78,6 +78,7 @@ const FALLBACK_APP_SETTINGS = {
   gitDiffBaselineDefault: { kind: 'head' },
   gitDiffRenderModeDefault: 'stacked',
   gitDiffFileTreeDefaultVisible: true,
+  gitDiffIncludeUntrackedDefault: false,
   projectDeletionMode: 'pi-only',
   useAgentsSkillsPaths: false,
   howcodeNativeAskQuestions: false,

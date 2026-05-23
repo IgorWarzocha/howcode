@@ -211,8 +211,10 @@ export function CodeWorkspaceView({
   const [includeUntrackedDiffFilesByThread, setIncludeUntrackedDiffFilesByThread] = useState<
     Record<string, boolean>
   >({})
+  const gitDiffIncludeUntrackedDefault =
+    shellState?.appSettings.gitDiffIncludeUntrackedDefault ?? false
   const includeUntrackedDiffFiles =
-    includeUntrackedDiffFilesByThread[gitOpsFileTreeStateKey] ?? false
+    includeUntrackedDiffFilesByThread[gitOpsFileTreeStateKey] ?? gitDiffIncludeUntrackedDefault
   const toggleGitOpsFileTree = useCallback(() => {
     setGitOpsFileTreeVisibilityByThread((current) => ({
       ...current,
@@ -222,9 +224,11 @@ export function CodeWorkspaceView({
   const toggleIncludeUntrackedDiffFiles = useCallback(() => {
     setIncludeUntrackedDiffFilesByThread((current) => ({
       ...current,
-      [gitOpsFileTreeStateKey]: !(current[gitOpsFileTreeStateKey] ?? false),
+      [gitOpsFileTreeStateKey]: !(
+        current[gitOpsFileTreeStateKey] ?? gitDiffIncludeUntrackedDefault
+      ),
     }))
-  }, [gitOpsFileTreeStateKey])
+  }, [gitDiffIncludeUntrackedDefault, gitOpsFileTreeStateKey])
   useHowcodeKeybindingCommand('gitops.toggleChangedFiles', (event) => {
     if (state.activeView !== 'gitops') return
     event.preventDefault()

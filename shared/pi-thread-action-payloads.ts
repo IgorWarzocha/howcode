@@ -272,6 +272,7 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === 'gitDiffBaselineDefault' ||
     payload.key === 'gitDiffRenderModeDefault' ||
     payload.key === 'gitDiffFileTreeDefaultVisible' ||
+    payload.key === 'gitDiffIncludeUntrackedDefault' ||
     payload.key === 'projectDeletionMode' ||
     payload.key === 'useAgentsSkillsPaths' ||
     payload.key === 'howcodeNativeAskQuestions' ||
