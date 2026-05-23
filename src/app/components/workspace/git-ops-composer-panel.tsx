@@ -1,4 +1,4 @@
-import { Check, Clipboard } from 'lucide-react'
+import { Check, Clipboard, FolderGit2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type {
   AppSettings,
@@ -12,6 +12,7 @@ import {
   appTypeCodeClass,
   appTypeGroupTextClass,
   appTypeMetaStrongClass,
+  compactIconButtonClass,
   composerPanelClass,
 } from '../../ui/classes'
 import { cn } from '../../utils/cn'
@@ -44,6 +45,8 @@ type GitOpsComposerPanelProps = {
   onLayoutChange: () => void
   onBack: () => void
   onOpenSettingsView: (target?: SettingsOpenTarget) => void
+  gitOpsFileTreeVisible: boolean
+  onToggleGitOpsFileTree: () => void
 }
 
 function GitOpsErrorDetails({ detail, onDismiss }: { detail: string; onDismiss: () => void }) {
@@ -147,6 +150,8 @@ export function GitOpsComposerPanel({
   onLayoutChange,
   onBack,
   onOpenSettingsView,
+  gitOpsFileTreeVisible,
+  onToggleGitOpsFileTree,
 }: GitOpsComposerPanelProps) {
   const composerPanelRef = useRef<HTMLDivElement>(null)
   const [gitActionErrorMessage, setGitActionErrorMessage] = useState<string | null>(null)
@@ -200,6 +205,22 @@ export function GitOpsComposerPanel({
             }}
           />
         </section>
+      </div>
+      <div className="relative h-full min-h-0 w-8 shrink-0 self-stretch text-[color:var(--muted)]">
+        <div className="absolute right-0 bottom-[3.55rem] flex w-7 items-center justify-center">
+          <button
+            type="button"
+            className={cn(
+              compactIconButtonClass,
+              'h-7 w-7 shrink-0 rounded-md opacity-70 hover:opacity-100',
+            )}
+            onClick={onToggleGitOpsFileTree}
+            aria-label={gitOpsFileTreeVisible ? 'Hide changed files' : 'Show changed files'}
+            data-tooltip={gitOpsFileTreeVisible ? 'Hide changed files' : 'Show changed files'}
+          >
+            <FolderGit2 size={15} />
+          </button>
+        </div>
       </div>
     </div>
   )

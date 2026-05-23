@@ -1,6 +1,6 @@
 import { QueuedPromptsCard } from '@howcode/composer'
 import { Composer } from '@howcode/workspace'
-import { FolderGit2, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { GitOpsComposerPanel } from '../../components/workspace/git-ops-composer-panel'
 import { WorkspaceComposerDock } from '../../components/workspace/workspace-composer-dock'
 import type { Message } from '../../types'
@@ -89,6 +89,8 @@ function CodeGitOpsComposer(props: CodeWorkspaceContentProps) {
     setComposerLayoutVersion,
     handleAction,
     handleCloseGitOpsView,
+    gitOpsFileTreeVisible,
+    toggleGitOpsFileTree,
     controller,
   } = props
   const appSettings = shellState?.appSettings ?? FALLBACK_APP_SETTINGS
@@ -123,6 +125,8 @@ function CodeGitOpsComposer(props: CodeWorkspaceContentProps) {
         onAction={handleAction}
         onBack={handleCloseGitOpsView}
         onOpenSettingsView={(target) => controller.handleShowView('settings', target)}
+        gitOpsFileTreeVisible={gitOpsFileTreeVisible}
+        onToggleGitOpsFileTree={toggleGitOpsFileTree}
       />
     </div>
   )
@@ -257,26 +261,12 @@ function CodeThreadComposerCenter(props: CodeWorkspaceContentProps) {
 function CodeFooterRight(props: CodeWorkspaceContentProps) {
   const {
     state,
-    toggleGitOpsFileTree,
-    gitOpsFileTreeVisible,
     showDesktopTerminalDrawer,
     activeComposerState,
     composerProjectId,
     terminalSessionPath,
     handleAction,
   } = props
-  if (state.activeView === 'gitops' && !state.takeoverVisible)
-    return (
-      <button
-        type="button"
-        className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
-        onClick={toggleGitOpsFileTree}
-        aria-label={gitOpsFileTreeVisible ? 'Hide changed files' : 'Show changed files'}
-        data-tooltip={gitOpsFileTreeVisible ? 'Hide changed files' : 'Show changed files'}
-      >
-        <FolderGit2 size={15} />
-      </button>
-    )
   if (state.activeView === 'thread' && !state.takeoverVisible && !showDesktopTerminalDrawer)
     return (
       <DesktopComposerStatusModelPicker
