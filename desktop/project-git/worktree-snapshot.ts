@@ -14,6 +14,22 @@ export type WorktreeSnapshot = {
 
 export type WorktreeStats = Omit<WorktreeSnapshot, 'patch'>
 
+const stagedWorktreeQueues = new Map<string, Promise<unknown>>()
+
+function runExclusiveStagedWorktree<T>(projectId: string, operation: () => Promise<T>): Promise<T> {
+  const previous = stagedWorktreeQueues.get(projectId) ?? Promise.resolve()
+  const next = previous.then(operation, operation)
+  stagedWorktreeQueues.set(
+    projectId,
+    next.finally(() => {
+      if (stagedWorktreeQueues.get(projectId) === next) {
+        stagedWorktreeQueues.delete(projectId)
+      }
+    }),
+  )
+  return next
+}
+
 function parseNumStat(output: string) {
   let fileCount = 0
   let insertions = 0
@@ -47,22 +63,24 @@ async function withStagedWorktree<T>(
   projectId: string,
   callback: (context: { env: NodeJS.ProcessEnv; hasHead: boolean; treeOid: string }) => Promise<T>,
 ) {
-  return withTemporaryIndex(projectId, async ({ env, hasHead }) => {
-    await runGitWithOptions(projectId, ['add', '-A', '--', '.'], {
-      env,
-      timeout: 20_000,
-      maxBuffer: 1024 * 1024 * 8,
-    })
+  return runExclusiveStagedWorktree(projectId, () =>
+    withTemporaryIndex(projectId, async ({ env, hasHead }) => {
+      await runGitWithOptions(projectId, ['add', '-A', '--', '.'], {
+        env,
+        timeout: 20_000,
+        maxBuffer: 1024 * 1024 * 8,
+      })
 
-    const { stdout } = await runGitWithOptions(projectId, ['write-tree'], {
-      env,
-      timeout: 20_000,
-      maxBuffer: 1024 * 128,
-    })
+      const { stdout } = await runGitWithOptions(projectId, ['write-tree'], {
+        env,
+        timeout: 20_000,
+        maxBuffer: 1024 * 128,
+      })
 
-    const treeOid = stdout.trim() || (hasHead ? 'HEAD^{tree}' : EMPTY_TREE_OID)
-    return callback({ env, hasHead, treeOid })
-  })
+      const treeOid = stdout.trim() || (hasHead ? 'HEAD^{tree}' : EMPTY_TREE_OID)
+      return callback({ env, hasHead, treeOid })
+    }),
+  )
 }
 
 export async function captureWorktreeTree(projectId: string): Promise<string> {
@@ -168,13 +186,15 @@ export async function loadWorktreeStats(
     return loadStats({ env: options.env, hasHead: options.hasHead ?? false })
   }
 
-  return withTemporaryIndex(projectId, async ({ env, hasHead }) => {
-    await runGitWithOptions(projectId, ['add', '-A', '--', '.'], {
-      env,
-      timeout: 20_000,
-      maxBuffer: 1024 * 1024 * 8,
-    })
+  return runExclusiveStagedWorktree(projectId, () =>
+    withTemporaryIndex(projectId, async ({ env, hasHead }) => {
+      await runGitWithOptions(projectId, ['add', '-A', '--', '.'], {
+        env,
+        timeout: 20_000,
+        maxBuffer: 1024 * 1024 * 8,
+      })
 
-    return loadStats({ env, hasHead })
-  })
+      return loadStats({ env, hasHead })
+    }),
+  )
 }
