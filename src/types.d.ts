@@ -80,6 +80,7 @@ declare global {
       startProjectDiffStream?: (
         projectId: string,
         baseline?: ProjectDiffBaseline | null,
+        streamId?: string | null,
       ) => Promise<ProjectDiffStreamStartResult>
       getProjectDiffStats?: (
         projectId: string,

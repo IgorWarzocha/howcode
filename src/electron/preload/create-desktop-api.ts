@@ -56,8 +56,8 @@ function createProjectApi() {
       invokeRequest('getProjectUsageSummary', { projectId }),
     getProjectDiff: (projectId: string, baseline = null) =>
       invokeRequest('getProjectDiff', { projectId, baseline }),
-    startProjectDiffStream: (projectId: string, baseline = null) =>
-      invokeRequest('startProjectDiffStream', { projectId, baseline }),
+    startProjectDiffStream: (projectId: string, baseline = null, streamId: string | null = null) =>
+      invokeRequest('startProjectDiffStream', { projectId, baseline, streamId }),
     getProjectDiffStats: (projectId: string, baseline = null) =>
       invokeRequest('getProjectDiffStats', { projectId, baseline }),
     getProjectDiffImagePreview: (

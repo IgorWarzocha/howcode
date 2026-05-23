@@ -154,8 +154,9 @@ export async function getProjectDiffQuery(
 export async function startProjectDiffStreamQuery(
   projectId: string,
   baseline: ProjectDiffBaseline | null = null,
+  streamId: string | null = null,
 ) {
-  return (await window.piDesktop?.startProjectDiffStream?.(projectId, baseline)) ?? null
+  return (await window.piDesktop?.startProjectDiffStream?.(projectId, baseline, streamId)) ?? null
 }
 
 export function canStartProjectDiffStreamQuery() {

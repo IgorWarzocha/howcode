@@ -154,8 +154,9 @@ export async function prepareCommitMessageContext(
 export async function startProjectDiffStream(
   projectId: string,
   baseline?: ProjectDiffBaseline | null,
+  requestedStreamId?: string | null,
 ): Promise<ProjectDiffStreamStartResult> {
-  const streamId = randomUUID()
+  const streamId = requestedStreamId?.trim() || randomUUID()
   void (async () => {
     if (!(await isGitRepository(projectId))) {
       emitDesktopEvent({

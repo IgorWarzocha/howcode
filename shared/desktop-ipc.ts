@@ -78,7 +78,7 @@ export type DesktopRequestMap = {
     response: ProjectDiffResult | null
   }
   startProjectDiffStream: {
-    params: { projectId: string; baseline?: ProjectDiffBaseline | null }
+    params: { projectId: string; baseline?: ProjectDiffBaseline | null; streamId?: string | null }
     response: ProjectDiffStreamStartResult
   }
   getProjectDiffStats: {

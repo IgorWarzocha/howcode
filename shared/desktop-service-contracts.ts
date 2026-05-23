@@ -102,6 +102,7 @@ export type PiThreadsService = {
   startProjectDiffStream: (
     projectId: string,
     baseline?: ProjectDiffBaseline | null,
+    streamId?: string | null,
   ) => Promise<ProjectDiffStreamStartResult>
   loadProjectDiffStats: (
     projectId: string,

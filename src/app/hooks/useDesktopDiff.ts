@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { cleanUserErrorMessage } from '../desktop/error-messages'
 import type { DesktopEvent, ProjectDiffBaseline, ProjectDiffResult } from '../desktop/types'
 import {
@@ -27,69 +27,91 @@ function isProjectDiffStreamEvent(
   return event.type === 'project-diff-stream'
 }
 
+function createProjectDiffStreamId() {
+  return window.crypto?.randomUUID?.() ?? `project-diff-${Date.now()}-${Math.random()}`
+}
+
 function useProjectDiffStream(
   projectId: string | null,
   baseline: ProjectDiffBaseline | null,
   enabled: boolean,
 ) {
-  const [streamId, setStreamId] = useState<string | null>(null)
   const [streamedPatch, setStreamedPatch] = useState<string | null>(null)
   const [diff, setDiff] = useState<ProjectDiffResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const pendingChunksRef = useRef(new Map<number, string>())
+  const nextSequenceRef = useRef(0)
+  const flushFrameRef = useRef<number | null>(null)
   const canStream = enabled && Boolean(projectId) && canStartProjectDiffStreamQuery()
 
   useEffect(() => {
-    if (!(canStream && projectId)) {
-      setStreamId(null)
+    const cancelChunkFlush = () => {
+      if (flushFrameRef.current === null) return
+      window.cancelAnimationFrame(flushFrameRef.current)
+      flushFrameRef.current = null
+    }
+
+    const resetStreamState = () => {
       setStreamedPatch(null)
       setDiff(null)
       setError(null)
       setIsLoading(false)
+      pendingChunksRef.current.clear()
+      nextSequenceRef.current = 0
+      cancelChunkFlush()
+    }
+
+    if (!(canStream && projectId)) {
+      resetStreamState()
       return
     }
 
     let active = true
-    setStreamId(null)
+    const streamId = createProjectDiffStreamId()
     setStreamedPatch('')
     setDiff(null)
     setError(null)
     setIsLoading(true)
+    pendingChunksRef.current.clear()
+    nextSequenceRef.current = 0
+    cancelChunkFlush()
 
-    startProjectDiffStreamQuery(projectId, baseline).then(
-      (result) => {
-        if (!active) return
-        if (!result) {
-          setIsLoading(false)
-          setError('Could not start diff stream.')
-          return
-        }
-        setStreamId(result.streamId)
-      },
-      (streamError: Error) => {
-        if (!active) return
-        setIsLoading(false)
-        setError(streamError.message)
-      },
-    )
+    const flushPendingChunks = () => {
+      flushFrameRef.current = null
+      let nextSequence = nextSequenceRef.current
+      let appendedPatch = ''
+      while (pendingChunksRef.current.has(nextSequence)) {
+        appendedPatch += pendingChunksRef.current.get(nextSequence) ?? ''
+        pendingChunksRef.current.delete(nextSequence)
+        nextSequence += 1
+      }
 
-    return () => {
-      active = false
+      if (appendedPatch.length > 0) {
+        nextSequenceRef.current = nextSequence
+        setStreamedPatch((current) => `${current ?? ''}${appendedPatch}`)
+      }
     }
-  }, [baseline, canStream, projectId])
 
-  useEffect(() => {
-    if (!(canStream && streamId)) return
+    const scheduleChunkFlush = () => {
+      if (flushFrameRef.current !== null) return
+      flushFrameRef.current = window.requestAnimationFrame(flushPendingChunks)
+    }
 
-    return subscribeDesktopEvents((event) => {
-      if (!isProjectDiffStreamEvent(event)) return
+    const unsubscribe = subscribeDesktopEvents((event) => {
+      if (!(active && isProjectDiffStreamEvent(event))) return
       const streamEvent = event.event
       if (streamEvent.streamId !== streamId) return
 
       if (streamEvent.type === 'chunk') {
-        setStreamedPatch((current) => `${current ?? ''}${streamEvent.chunk}`)
+        pendingChunksRef.current.set(streamEvent.sequence, streamEvent.chunk)
+        scheduleChunkFlush()
         return
       }
+
+      cancelChunkFlush()
+      flushPendingChunks()
+      pendingChunksRef.current.clear()
 
       if (streamEvent.type === 'complete') {
         setDiff(streamEvent.result)
@@ -101,7 +123,29 @@ function useProjectDiffStream(
       setError(streamEvent.error)
       setIsLoading(false)
     })
-  }, [canStream, streamId])
+
+    startProjectDiffStreamQuery(projectId, baseline, streamId).then(
+      (result) => {
+        if (!active) return
+        if (!result || result.streamId !== streamId) {
+          setIsLoading(false)
+          setError('Could not start diff stream.')
+        }
+      },
+      (streamError: Error) => {
+        if (!active) return
+        setIsLoading(false)
+        setError(streamError.message)
+      },
+    )
+
+    return () => {
+      active = false
+      cancelChunkFlush()
+      pendingChunksRef.current.clear()
+      unsubscribe()
+    }
+  }, [baseline, canStream, projectId])
 
   return useMemo(
     () => ({ canStream, diff, error, isLoading, streamedPatch }),
