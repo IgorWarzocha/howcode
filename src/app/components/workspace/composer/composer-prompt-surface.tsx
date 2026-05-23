@@ -73,8 +73,8 @@ export function ComposerPromptSurface({
   onListAttachmentEntries,
   onAction,
   terminalVisible,
-  preferSideFilePicker = false,
-  preferSideModelPopover = false,
+  preferPortalFilePicker = false,
+  preferPortalModelPopover = false,
   artifactsVisible,
   artifactsAvailable,
   onSetDiffBaseline,
@@ -352,7 +352,7 @@ export function ComposerPromptSurface({
               pickerOpen={pickerOpen}
               pickerButtonRef={pickerButtonRef}
               pickerPanelRef={pickerPanelRef}
-              preferSideFilePicker={preferSideFilePicker}
+              preferPortalFilePicker={preferPortalFilePicker}
               pickerState={pickerState}
               placeholderText={placeholderText}
               projectId={projectId}
@@ -415,7 +415,7 @@ export function ComposerPromptSurface({
             modelButtonRef={modelButtonRef}
             modelMenuOpen={modelMenuOpen}
             modelMenuRef={modelMenuRef}
-            preferSideModelPopover={preferSideModelPopover}
+            preferPortalModelPopover={preferPortalModelPopover}
             onOpenGitOps={onOpenGitOps}
             onOpenTakeoverTerminal={onOpenTakeoverTerminal}
             onSelectBaseline={onSetDiffBaseline}

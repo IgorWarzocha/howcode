@@ -236,8 +236,8 @@ function ChatComposer(props: ChatWorkspaceComposerProps) {
       showTerminalControls={false}
       artifactsVisible={artifactDrawer.artifactsVisible}
       terminalVisible={state.terminalVisible}
-      preferSideFilePicker={!hasConversationLayout}
-      preferSideModelPopover={!hasConversationLayout}
+      preferPortalFilePicker={!hasConversationLayout}
+      preferPortalModelPopover={!hasConversationLayout}
       onListAttachmentEntries={listComposerAttachmentEntries}
       onAction={handleAction}
     />
@@ -269,8 +269,8 @@ export function ChatComposerDock(props: ChatWorkspaceComposerProps) {
       left={sidebarCompactMode ? null : <SidebarToggleButton {...props} />}
       center={<ChatComposerCenter {...props} />}
       rightClassName={cn(
-        'opacity-0 min-[1400px]:opacity-100',
-        artifactDrawer.showDesktopArtifactDrawer && 'invisible',
+        'min-[1400px]:opacity-100',
+        artifactDrawer.showDesktopArtifactDrawer ? 'invisible' : 'opacity-0',
       )}
       right={
         <DesktopComposerStatusModelPicker

@@ -66,8 +66,8 @@ export type ComposerProps = {
   artifactsVisible?: boolean
   artifactsAvailable?: boolean
   terminalVisible: boolean
-  preferSideFilePicker?: boolean
-  preferSideModelPopover?: boolean
+  preferPortalFilePicker?: boolean
+  preferPortalModelPopover?: boolean
   onLayoutChange: () => void
   mainViewRef: RefObject<HTMLElement | null>
   workspaceFooterRef: RefObject<HTMLElement | null>

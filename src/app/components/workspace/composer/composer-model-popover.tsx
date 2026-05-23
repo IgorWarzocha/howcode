@@ -7,17 +7,16 @@ import {
   appToneTextClass,
   appTypeMetaClass,
   appTypeSmallClass,
-  popoverPanelClass,
+  composerPopoverPanelClass,
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { PopoverPanel } from '../../common/popover'
+import { PopoverPanel, PopoverPortalLayer, useAnchoredPopoverPosition } from '../../common/popover'
 import {
   type ComposerModelMenuOption,
   ModelPopoverMenuList,
   ModelPopoverTriggerButton,
   type NestedModelMenu,
 } from './composer-model-popover-parts'
-import { useComposerModelPopoverPlacement } from './useComposerModelPopoverPlacement'
 
 type ComposerModelPopoverProps = {
   anchorRef: RefObject<HTMLButtonElement | null>
@@ -26,7 +25,7 @@ type ComposerModelPopoverProps = {
   currentModel: ComposerModel | null
   currentThinkingLevel: ComposerThinkingLevel
   panelRef: RefObject<HTMLDivElement | null>
-  preferSidePlacement?: boolean
+  preferPortalPlacement?: boolean
   thinkingLevelLabels: Record<ComposerThinkingLevel, string>
   onSelectModel: (model: ComposerModel) => void
   onSelectThinkingLevel: (level: ComposerThinkingLevel) => void
@@ -39,7 +38,7 @@ export function ComposerModelPopover({
   currentModel,
   currentThinkingLevel,
   panelRef,
-  preferSidePlacement = false,
+  preferPortalPlacement = false,
   thinkingLevelLabels,
   onSelectModel,
   onSelectThinkingLevel,
@@ -151,11 +150,12 @@ export function ComposerModelPopover({
     }
   }, [showModelSearch])
 
-  const { sidePlacementEnabled, sidePosition, sidePositionReady } =
-    useComposerModelPopoverPlacement({
+  const { position: portalPosition, positionReady: portalPositionReady } =
+    useAnchoredPopoverPosition({
       anchorRef,
       panelRef,
-      preferSidePlacement,
+      enabled: preferPortalPlacement,
+      placement: 'top-start',
     })
 
   const panelContents = (
@@ -238,35 +238,43 @@ export function ComposerModelPopover({
   )
 
   const panelClassName = cn(
-    'grid w-52 max-w-[calc(100vw-2rem)] overflow-x-hidden rounded-xl border-0 p-1.5',
+    'pointer-events-auto grid w-52 max-w-[calc(100vw-2rem)] overflow-x-hidden rounded-xl border-0 p-1.5',
     appTypeSmallClass,
-    sidePlacementEnabled
-      ? 'fixed z-[120] max-h-[calc(100vh-1.5rem)] overflow-y-auto transition-opacity duration-150 ease-out'
+    preferPortalPlacement
+      ? 'fixed z-[300] max-h-[calc(100vh-1.5rem)] overflow-y-auto transition-opacity duration-150 ease-out'
       : 'absolute bottom-[calc(100%+8px)] left-0 z-[60]',
-    sidePlacementEnabled && !sidePositionReady && 'pointer-events-none opacity-0',
-    popoverPanelClass,
+    preferPortalPlacement && !portalPositionReady && 'pointer-events-none opacity-0',
+    composerPopoverPanelClass,
   )
 
-  const panelStyle: CSSProperties | undefined = sidePlacementEnabled
-    ? { left: `${sidePosition.left}px`, top: `${sidePosition.top}px` }
+  const panelStyle: CSSProperties | undefined = preferPortalPlacement
+    ? { left: `${portalPosition.left}px`, top: `${portalPosition.top}px` }
     : undefined
 
-  if (sidePlacementEnabled && typeof document !== 'undefined') {
+  if (preferPortalPlacement && typeof document !== 'undefined') {
     return createPortal(
-      <PopoverPanel
-        ref={panelRef}
-        id="composer-model-menu"
-        className={panelClassName}
-        style={panelStyle}
-      >
-        {panelContents}
-      </PopoverPanel>,
+      <PopoverPortalLayer>
+        <PopoverPanel
+          surface={false}
+          ref={panelRef}
+          id="composer-model-menu"
+          className={panelClassName}
+          style={panelStyle}
+        >
+          {panelContents}
+        </PopoverPanel>
+      </PopoverPortalLayer>,
       document.body,
     )
   }
 
   return (
-    <PopoverPanel ref={panelRef} id="composer-model-menu" className={panelClassName}>
+    <PopoverPanel
+      surface={false}
+      ref={panelRef}
+      id="composer-model-menu"
+      className={panelClassName}
+    >
       {panelContents}
     </PopoverPanel>
   )

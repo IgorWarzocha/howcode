@@ -12,7 +12,7 @@ import { createPortal } from 'react-dom'
 import type { ComposerAttachment, ComposerFilePickerState } from '../../../desktop/types'
 import { appToneDangerClass, appTypeMetaClass, popoverPanelClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { PopoverPanel } from '../../common/popover'
+import { PopoverPanel, PopoverPortalLayer, useAnchoredPopoverPosition } from '../../common/popover'
 import { ComposerFilePickerAttachmentsPanel } from './composer-file-picker-attachments-panel'
 import { ComposerFilePickerFileGrid } from './composer-file-picker-file-grid'
 import { ComposerFilePickerHeader } from './composer-file-picker-header'
@@ -30,7 +30,7 @@ type ComposerFilePickerProps = {
   loading: boolean
   picker: ComposerFilePickerState | null
   panelRef: RefObject<HTMLDivElement | null>
-  preferSidePlacement?: boolean
+  preferPortalPlacement?: boolean
   projectRootPath: string
   onAttachAttachments: (
     attachments: ComposerAttachment[],
@@ -42,13 +42,6 @@ type ComposerFilePickerProps = {
   onToggleFile: (attachment: ComposerAttachment) => void
 }
 
-const sidePlacementGap = 8
-const sidePlacementViewportPadding = 12
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max)
-}
-
 export function ComposerFilePicker({
   anchorRef,
   attachments,
@@ -57,7 +50,7 @@ export function ComposerFilePicker({
   loading,
   picker,
   panelRef,
-  preferSidePlacement = false,
+  preferPortalPlacement = false,
   projectRootPath,
   onAttachAttachments,
   onOpenRoot,
@@ -69,24 +62,16 @@ export function ComposerFilePicker({
   const [dropActive, setDropActive] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchExpanded, setSearchExpanded] = useState(false)
-  const [sidePlacementEnabled, setSidePlacementEnabled] = useState(false)
-  const [sidePosition, setSidePosition] = useState({ left: 0, top: 0 })
-  const [sidePositionReady, setSidePositionReady] = useState(false)
+  const [portalPlacementEnabled, setPortalPlacementEnabled] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
 
   useLayoutEffect(() => {
     const updatePlacementMode = () => {
       const anchorRect = anchorRef?.current?.getBoundingClientRect()
-      const estimatedPanelHeight = Math.min(
-        378,
-        window.innerHeight - sidePlacementViewportPadding * 2,
-      )
-      setSidePlacementEnabled(
+      const estimatedPanelHeight = Math.min(378, window.innerHeight - 12 * 2)
+      setPortalPlacementEnabled(
         Boolean(
-          anchorRect &&
-            (preferSidePlacement ||
-              anchorRect.top <
-                estimatedPanelHeight + sidePlacementGap + sidePlacementViewportPadding),
+          anchorRect && (preferPortalPlacement || anchorRect.top < estimatedPanelHeight + 8 + 12),
         ),
       )
     }
@@ -98,7 +83,7 @@ export function ComposerFilePicker({
       window.removeEventListener('resize', updatePlacementMode)
       window.removeEventListener('scroll', updatePlacementMode, true)
     }
-  }, [anchorRef, preferSidePlacement])
+  }, [anchorRef, preferPortalPlacement])
 
   const attachedByPath = useMemo(
     () => new Set(attachments.map((attachment) => attachment.path)),
@@ -158,59 +143,13 @@ export function ComposerFilePicker({
     }
   }, [searchExpanded])
 
-  useLayoutEffect(() => {
-    if (!sidePlacementEnabled) {
-      setSidePositionReady(false)
-      return
-    }
-
-    const updatePosition = (event?: Event) => {
-      const target = event?.target instanceof Node ? event.target : null
-      if (target && panelRef.current?.contains(target)) {
-        return
-      }
-
-      const anchorRect = anchorRef?.current?.getBoundingClientRect()
-      const panelRect = panelRef.current?.getBoundingClientRect()
-
-      if (!(anchorRect && panelRect)) {
-        return
-      }
-
-      const maxLeft = window.innerWidth - panelRect.width - sidePlacementViewportPadding
-      const preferredLeft = anchorRect.right + sidePlacementGap
-      const left = clamp(
-        preferredLeft,
-        sidePlacementViewportPadding,
-        Math.max(sidePlacementViewportPadding, maxLeft),
-      )
-      const maxTop = window.innerHeight - panelRect.height - sidePlacementViewportPadding
-      const centeredTop = anchorRect.top + anchorRect.height / 2 - panelRect.height / 2
-      const top = clamp(
-        centeredTop,
-        sidePlacementViewportPadding,
-        Math.max(sidePlacementViewportPadding, maxTop),
-      )
-
-      setSidePosition((current) => {
-        if (current.left === left && current.top === top) {
-          return current
-        }
-
-        return { left, top }
-      })
-      setSidePositionReady(true)
-    }
-
-    updatePosition()
-    window.addEventListener('resize', updatePosition)
-    window.addEventListener('scroll', updatePosition, true)
-
-    return () => {
-      window.removeEventListener('resize', updatePosition)
-      window.removeEventListener('scroll', updatePosition, true)
-    }
-  }, [anchorRef, panelRef, sidePlacementEnabled])
+  const { position: portalPosition, positionReady: portalPositionReady } =
+    useAnchoredPopoverPosition({
+      anchorRef: anchorRef ?? ({ current: null } as RefObject<HTMLButtonElement | null>),
+      panelRef,
+      enabled: portalPlacementEnabled,
+      placement: 'right',
+    })
 
   const panelContents = (
     <>
@@ -276,22 +215,24 @@ export function ComposerFilePicker({
 
   const panelClassName = cn(
     'grid grid-rows-[40px_minmax(0,1fr)] overflow-hidden rounded-xl border-0 p-0 shadow-[var(--shadow)]',
-    sidePlacementEnabled
+    portalPlacementEnabled
       ? 'fixed z-[120] h-[min(378px,calc(100vh-1.5rem))] min-h-[220px] w-[min(38rem,calc(100vw-1.5rem))] transition-opacity duration-150 ease-out'
       : 'absolute right-0 bottom-full left-0 z-[70] h-[min(378px,calc(100vh-12rem))] min-h-[220px]',
-    sidePlacementEnabled && !sidePositionReady && 'pointer-events-none opacity-0',
+    portalPlacementEnabled && !portalPositionReady && 'pointer-events-none opacity-0',
     popoverPanelClass,
   )
 
-  const panelStyle: CSSProperties | undefined = sidePlacementEnabled
-    ? { left: `${sidePosition.left}px`, top: `${sidePosition.top}px` }
+  const panelStyle: CSSProperties | undefined = portalPlacementEnabled
+    ? { left: `${portalPosition.left}px`, top: `${portalPosition.top}px` }
     : undefined
 
-  if (sidePlacementEnabled && typeof document !== 'undefined') {
+  if (portalPlacementEnabled && typeof document !== 'undefined') {
     return createPortal(
-      <PopoverPanel ref={panelRef} className={panelClassName} style={panelStyle}>
-        {panelContents}
-      </PopoverPanel>,
+      <PopoverPortalLayer className="z-[220]">
+        <PopoverPanel ref={panelRef} className={panelClassName} style={panelStyle}>
+          {panelContents}
+        </PopoverPanel>
+      </PopoverPortalLayer>,
       document.body,
     )
   }

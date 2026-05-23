@@ -208,7 +208,7 @@ export function DesktopComposerStatusModelPicker({
           currentModel={model}
           currentThinkingLevel={thinkingLevel}
           panelRef={panelRef}
-          preferSidePlacement
+          preferPortalPlacement
           thinkingLevelLabels={thinkingLevelLabels}
           onSelectModel={selectModel}
           onSelectThinkingLevel={selectThinkingLevel}

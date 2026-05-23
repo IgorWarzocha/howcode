@@ -229,6 +229,8 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
       onRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
       onToggleTerminal={handleToggleTerminal}
       terminalVisible={state.terminalVisible}
+      preferPortalFilePicker={state.activeView === 'project'}
+      preferPortalModelPopover={state.activeView === 'project'}
       onListAttachmentEntries={listComposerAttachmentEntries}
       onAction={handleAction}
     />
@@ -316,7 +318,7 @@ function CodeWorkspaceThreadFooter(props: CodeWorkspaceContentProps) {
           left={<CodeFooterLeft {...props} />}
           center={<CodeThreadComposerCenter {...props} />}
           rightClassName={cn(
-            state.activeView === 'gitops' ? 'opacity-100' : 'opacity-0 min-[1400px]:opacity-100',
+            state.activeView === 'gitops' ? 'opacity-100' : 'min-[1400px]:opacity-100 opacity-0',
           )}
           right={<CodeFooterRight {...props} />}
         />

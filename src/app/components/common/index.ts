@@ -5,13 +5,16 @@ export { DisclosureSection } from './disclosure-section'
 export { EmptyStateCard } from './empty-state-card'
 export { MarkdownContent } from './markdown-content'
 export {
+  type AnchoredPopoverPlacement,
   getPopoverBoundaryProps,
   getPopoverRootProps,
   PopoverBoundary,
   PopoverPanel,
+  PopoverPortalLayer,
   PopoverRoot,
   popoverBoundaryAttribute,
   popoverOpenAttribute,
+  useAnchoredPopoverPosition,
 } from './popover'
 export { PrimaryButton } from './primary-button'
 export { SectionIntro } from './section-intro'
