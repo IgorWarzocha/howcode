@@ -9,6 +9,7 @@ import { defineConfig, type Plugin } from 'vite'
 const projectRoot = fileURLToPath(new URL('.', import.meta.url))
 
 const howcodeAliases = {
+  '@howcode/app-menu': path.resolve(projectRoot, 'src/app/app-menu/index.ts'),
   '@howcode/common': path.resolve(projectRoot, 'src/app/components/common/index.ts'),
   '@howcode/composer': path.resolve(projectRoot, 'src/app/components/workspace/composer/index.ts'),
   '@howcode/desktop': path.resolve(projectRoot, 'src/app/desktop/index.ts'),

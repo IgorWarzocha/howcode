@@ -14,6 +14,8 @@
     "paths": {
       "@howcode/common": ["./src/app/components/common/index.ts"],
       "@howcode/common/*": ["./src/app/components/common/*"],
+      "@howcode/app-menu": ["./src/app/app-menu/index.ts"],
+      "@howcode/app-menu/*": ["./src/app/app-menu/*"],
       "@howcode/composer": ["./src/app/components/workspace/composer/index.ts"],
       "@howcode/composer/*": ["./src/app/components/workspace/composer/*"],
       "@howcode/desktop": ["./src/app/desktop/index.ts"],

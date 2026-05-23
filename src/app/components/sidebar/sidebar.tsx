@@ -22,11 +22,11 @@ import { Tooltip } from '../common/tooltip'
 
 type SidebarNavigableView = Exclude<View, 'gitops'>
 
+import { AppMenu } from '@howcode/app-menu'
 import { NavButton } from '../common/nav-button'
 import { SidebarChatSection } from './chat/sidebar-chat-section'
 import { SidebarInboxSection } from './inbox/sidebar-inbox-section'
 import { SidebarProjectsSection } from './projects/sidebar-projects-section'
-import { SettingsMenu } from './settings-menu'
 import { SidebarChatSkeleton, SidebarInboxSkeleton } from './sidebar-skeletons'
 
 type SidebarProps = {
@@ -345,7 +345,7 @@ export function Sidebar({
         </div>
 
         {settingsMenuPresent ? (
-          <SettingsMenu
+          <AppMenu
             menuId={settingsMenuId}
             open={settingsOpen}
             panelRef={settingsMenuRef}

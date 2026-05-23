@@ -1,13 +1,13 @@
 import { Archive, Download, Info, PackagePlus, RotateCw, Settings, Sparkles } from 'lucide-react'
 import type { ReactNode, RefObject } from 'react'
-import { type FeatureStatusId, getFeatureStatusDataAttributes } from '../../features/feature-status'
-import { useAppUpdateFlow } from '../../hooks/useAppUpdateFlow'
-import { cn } from '../../utils/cn'
-import type { SettingsOpenTarget } from '../../views/settings/settingsTypes'
-import { FeatureStatusBadge } from '../common/feature-status-badge'
-import { PopoverPanel } from '../common/popover'
+import { FeatureStatusBadge } from '../components/common/feature-status-badge'
+import { PopoverPanel } from '../components/common/popover'
+import { type FeatureStatusId, getFeatureStatusDataAttributes } from '../features/feature-status'
+import { useAppUpdateFlow } from '../hooks/useAppUpdateFlow'
+import { cn } from '../utils/cn'
+import type { SettingsOpenTarget } from '../views/settings/settingsTypes'
 
-type SettingsMenuProps = {
+export type AppMenuProps = {
   menuId: string
   open: boolean
   onOpenExtensionsView: () => void
@@ -18,7 +18,7 @@ type SettingsMenuProps = {
   panelRef?: RefObject<HTMLDivElement | null>
 }
 
-export function SettingsMenu({
+export function AppMenu({
   menuId,
   open,
   onOpenExtensionsView,
@@ -27,7 +27,7 @@ export function SettingsMenu({
   onOpenSettingsPanel,
   onOpenArchivedThreads,
   panelRef,
-}: SettingsMenuProps) {
+}: AppMenuProps) {
   const { step, isRunning, advance } = useAppUpdateFlow()
   const updateDisabled = isRunning
   const UpdateIcon =
