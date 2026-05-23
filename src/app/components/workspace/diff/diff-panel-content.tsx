@@ -60,7 +60,7 @@ export function DiffPanelContent({
     includeUntracked,
   )
 
-  const selectedPatch = diff?.diff ?? streamedPatch ?? undefined
+  const selectedPatch = streamedPatch ?? diff?.diff ?? undefined
   const hasResolvedPatch = typeof selectedPatch === 'string'
   const hasNoNetChanges = hasResolvedPatch && selectedPatch.trim().length === 0
   const renderablePatch = useWorkerRenderablePatch(selectedPatch, !isLoading)

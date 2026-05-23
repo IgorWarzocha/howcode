@@ -128,7 +128,7 @@ function useProjectDiffStream(
 
       if (streamEvent.type === 'complete') {
         setDiff(streamEvent.result)
-        setStreamedPatch(streamEvent.result?.diff ?? '')
+        setStreamedPatch((current) => (streamEvent.result ? current : ''))
         setIsLoading(false)
         return
       }
