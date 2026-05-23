@@ -15,7 +15,7 @@ export function DiffWorkerPoolProvider({ children }: { children?: ReactNode }) {
       poolOptions={{
         workerFactory: () => new DiffsWorker(),
         poolSize: workerPoolSize,
-        totalASTLRUCacheSize: 1_200,
+        totalASTLRUCacheSize: 5_000,
       }}
       highlighterOptions={{
         theme: resolveDiffThemeName('dark'),
