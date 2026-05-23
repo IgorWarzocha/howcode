@@ -16,6 +16,7 @@ import type {
   ProjectDiffRenderMode,
   ProjectGitState,
 } from '../../desktop/types'
+import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
 import {
   appToneMutedClass,
   appTypeMetaClass,
@@ -91,6 +92,14 @@ export function ComposerGitOpsFooter({
   const repoInputRef = useRef<HTMLInputElement>(null)
   const originSaveRequestedRef = useRef(false)
   const [discardCommentsOpen, setDiscardCommentsOpen] = useState(false)
+  const backButtonRef = useRef<HTMLButtonElement>(null)
+  const discardCommentsPanelRef = useRef<HTMLDivElement>(null)
+
+  useDismissibleLayer({
+    open: discardCommentsOpen,
+    onDismiss: () => setDiscardCommentsOpen(false),
+    refs: [backButtonRef, discardCommentsPanelRef],
+  })
 
   const openOriginEditor = () => {
     setOptionsOpen(true)
@@ -323,9 +332,16 @@ export function ComposerGitOpsFooter({
           />
         ) : null}
         <button
+          ref={backButtonRef}
           type="button"
           className={cn(compactIconButtonClass, 'h-7 w-7')}
           onClick={() => {
+            if (discardCommentsOpen) {
+              onDiscardDiffComments()
+              setDiscardCommentsOpen(false)
+              onBack()
+              return
+            }
             if (hasPendingDiffComments) {
               setDiscardCommentsOpen(true)
               return
@@ -339,16 +355,16 @@ export function ComposerGitOpsFooter({
         </button>
         {discardCommentsOpen ? (
           <PopoverPanel
+            ref={discardCommentsPanelRef}
             className={cn(
-              'motion-popover absolute right-0 bottom-[calc(100%+6px)] z-20 rounded-xl border-0 p-1.5',
-              popoverPanelClass,
+              'motion-popover pointer-events-auto absolute right-0 bottom-[calc(100%+6px)] z-20 rounded-xl border-0 bg-[color:var(--panel)] p-0.5 shadow-[var(--shadow)]',
             )}
             data-open="true"
           >
             <button
               type="button"
               className={cn(
-                'rounded-md px-1.5 py-0.5 text-left whitespace-nowrap transition-colors hover:bg-[color:var(--surface-hover)]',
+                'h-5 rounded-md px-1.5 py-0 text-left whitespace-nowrap transition-colors hover:bg-[color:var(--surface-hover)]',
                 appTypeTinyClass,
                 appToneMutedClass,
               )}
