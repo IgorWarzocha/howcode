@@ -10,7 +10,7 @@ import {
 } from '@pierre/diffs/react'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, ChevronRight, MessageSquarePlus } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ProjectDiffBaseline, ProjectDiffImageSide } from '../../../desktop/types'
 import { getProjectDiffImagePreviewQuery } from '../../../query/desktop-query'
 import { desktopQueryKeys } from '../../../query/desktop-query-keys'
@@ -299,11 +299,14 @@ export function DiffPanelFileList({
     versions: new Map(),
   })
 
-  const setCodeViewHandle = (handle: CodeViewHandle<DiffCommentMetadata> | null) => {
-    codeViewRef.current = handle
-    if (!handle) itemSyncStateRef.current = { ids: [], versions: new Map() }
-    setCodeViewHandleState(handle)
-  }
+  const setCodeViewHandle = useCallback(
+    (handle: CodeViewHandle<DiffCommentMetadata> | null) => {
+      codeViewRef.current = handle
+      if (!handle) itemSyncStateRef.current = { ids: [], versions: new Map() }
+      setCodeViewHandleState(handle)
+    },
+    [codeViewRef],
+  )
 
   useEffect(() => {
     const instance = codeViewHandle?.getInstance()
