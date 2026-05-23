@@ -1,3 +1,4 @@
+import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
 import {
   appNewSessionSlashCommand,
@@ -6,7 +7,6 @@ import {
 } from '../../../../../shared/composer-slash-commands'
 import type { ComposerSlashCommand } from '../../../desktop/types'
 import { getComposerSlashCommandsQuery } from '../../../query/desktop-query'
-import type { SettingsOpenTarget } from '../../../views/settings/settingsTypes'
 
 import { handleOpenSlashCommandKey } from './composer-slash-command-keydown'
 import { getOpenSelectedCommand, tryResolveSlashDraft } from './composer-slash-command-resolution'

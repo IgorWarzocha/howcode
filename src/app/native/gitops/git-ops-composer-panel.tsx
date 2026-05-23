@@ -1,3 +1,4 @@
+import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { Check, Clipboard, FolderGit2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type {
@@ -16,7 +17,6 @@ import {
   composerPanelClass,
 } from '../../ui/classes'
 import { cn } from '../../utils/cn'
-import type { SettingsOpenTarget } from '../../views/settings/settingsTypes'
 import { ComposerGitOpsSurface } from './composer-git-ops-surface'
 import type { SavedDiffComment } from './diff/diffCommentStore'
 

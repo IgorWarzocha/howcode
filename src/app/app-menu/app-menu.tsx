@@ -1,3 +1,4 @@
+import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { Archive, Download, Info, PackagePlus, RotateCw, Settings, Sparkles } from 'lucide-react'
 import type { ReactNode, RefObject } from 'react'
 import { FeatureStatusBadge } from '../components/common/feature-status-badge'
@@ -5,7 +6,6 @@ import { PopoverPanel } from '../components/common/popover'
 import { type FeatureStatusId, getFeatureStatusDataAttributes } from '../features/feature-status'
 import { useAppUpdateFlow } from '../hooks/useAppUpdateFlow'
 import { cn } from '../utils/cn'
-import type { SettingsOpenTarget } from '../views/settings/settingsTypes'
 
 export type AppMenuProps = {
   menuId: string

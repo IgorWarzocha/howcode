@@ -1,5 +1,6 @@
 import { ComposerPromptSurface } from '@howcode/composer'
 import type { SavedDiffComment } from '@howcode/native-gitops'
+import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { type RefObject, useRef } from 'react'
 import type { ComposerSendMode, KeybindingOverrides } from '../../../../shared/keybindings'
 import type {
@@ -15,7 +16,6 @@ import type {
   ProjectGitState,
 } from '../../desktop/types'
 import type { Message, View } from '../../types'
-import type { SettingsOpenTarget } from '../../views/settings/settingsTypes'
 
 export type ComposerProps = {
   activeView: View

@@ -1,3 +1,4 @@
+import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { AudioLines, Check, FileAudio, Mic, X } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -14,7 +15,6 @@ import {
   iconButtonClass,
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import type { SettingsOpenTarget } from '../../../views/settings/settingsTypes'
 import { PopoverPanel } from '../../common/popover'
 import { TextButton } from '../../common/text-button'
 

@@ -1,7 +1,7 @@
+import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { useReducer, useState } from 'react'
 import type { ArchivedThread, ComposerState, ProjectGitState, ThreadData } from '../desktop/types'
 import { createInitialWorkspaceState, workspaceReducer } from '../state/workspace'
-import type { SettingsOpenTarget } from '../views/settings/settingsTypes'
 
 export function useAppShellStateBundle() {
   const [appLaunchedAtMs] = useState(() => Date.now())

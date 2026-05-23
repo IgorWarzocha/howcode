@@ -44,7 +44,7 @@ type SidebarProjectsSectionProps = {
   onAction: DesktopActionInvoker
   onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
   onOpenSettingsPanel: (
-    target?: import('../../../views/settings/settingsTypes').SettingsOpenTarget,
+    target?: import('@howcode/settings/settingsTypes').SettingsOpenTarget,
   ) => void
   onProjectSelect: (projectId: string) => void
   onProjectPrimeSelection: (projectId: string) => void

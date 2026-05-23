@@ -1,9 +1,8 @@
+import { ChatWorkspaceView } from '@howcode/chat-workspace'
+import { CodeWorkspaceView, FALLBACK_APP_SETTINGS } from '@howcode/code-workspace'
+import { LandingView } from '@howcode/projects'
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
-import { ChatWorkspaceView } from '../features/chat/chat-workspace-view'
-import { FALLBACK_APP_SETTINGS } from '../features/code/code-workspace-defaults'
-import { CodeWorkspaceView } from '../features/code/code-workspace-view'
 import { mainPanelClass } from '../ui/classes'
-import { LandingView } from '../views/landing-view'
 import { MainView } from '../views/main-view'
 import type { AppShellController } from './useAppShellController'
 

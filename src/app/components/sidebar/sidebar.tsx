@@ -1,3 +1,4 @@
+import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import {
   BriefcaseBusiness,
   Code2,
@@ -17,7 +18,6 @@ import type {
 import { useAnimatedPresence } from '../../hooks/useAnimatedPresence'
 import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
 import type { Project, View } from '../../types'
-import type { SettingsOpenTarget } from '../../views/settings/settingsTypes'
 import { Tooltip } from '../common/tooltip'
 
 type SidebarNavigableView = Exclude<View, 'gitops'>
