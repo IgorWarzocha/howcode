@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { cleanUserErrorMessage } from '../desktop/error-messages'
 import type { DesktopEvent, ProjectDiffBaseline, ProjectDiffResult } from '../desktop/types'
@@ -32,11 +32,34 @@ function createProjectDiffStreamId() {
   return window.crypto?.randomUUID?.() ?? `project-diff-${Date.now()}-${Math.random()}`
 }
 
+function isCurrentProjectDiffQuery(queryKey: readonly unknown[], projectId: string) {
+  return queryKey[0] === 'desktop' && queryKey[1] === 'projectDiff' && queryKey[2] === projectId
+}
+
+function useProjectDiffInvalidationVersion(projectId: string | null) {
+  const queryClient = useQueryClient()
+  const [version, setVersion] = useState(0)
+
+  useEffect(() => {
+    if (!projectId) return
+    return queryClient.getQueryCache().subscribe((event) => {
+      const queryKey = event.query.queryKey
+      if (!isCurrentProjectDiffQuery(queryKey, projectId)) return
+      if (event.type === 'removed' || event.query.state.isInvalidated) {
+        setVersion((current) => current + 1)
+      }
+    })
+  }, [projectId, queryClient])
+
+  return version
+}
+
 function useProjectDiffStream(
   projectId: string | null,
   baseline: ProjectDiffBaseline | null,
   enabled: boolean,
   includeUntracked: boolean,
+  refreshVersion: number,
 ) {
   const [streamedPatch, setStreamedPatch] = useState<string | null>(null)
   const [diff, setDiff] = useState<ProjectDiffResult | null>(null)
@@ -48,6 +71,7 @@ function useProjectDiffStream(
   const canStream = enabled && Boolean(projectId) && canStartProjectDiffStreamQuery()
 
   useEffect(() => {
+    void refreshVersion
     const cancelChunkFlush = () => {
       if (flushFrameRef.current === null) return
       window.cancelAnimationFrame(flushFrameRef.current)
@@ -161,7 +185,7 @@ function useProjectDiffStream(
       unsubscribe()
       void cancelProjectDiffStreamQuery(streamId)
     }
-  }, [baseline, canStream, includeUntracked, projectId])
+  }, [baseline, canStream, includeUntracked, projectId, refreshVersion])
 
   return useMemo(
     () => ({ canStream, diff, error, isLoading, streamedPatch }),
@@ -175,7 +199,14 @@ export function useDesktopDiff(
   enabled = true,
   includeUntracked = false,
 ) {
-  const stream = useProjectDiffStream(projectId, baseline, enabled, includeUntracked)
+  const streamRefreshVersion = useProjectDiffInvalidationVersion(projectId)
+  const stream = useProjectDiffStream(
+    projectId,
+    baseline,
+    enabled,
+    includeUntracked,
+    streamRefreshVersion,
+  )
   const queryEnabled = enabled && Boolean(projectId) && !stream.canStream
   const query = useQuery<ProjectDiffResult | null, Error>({
     queryKey: projectId
