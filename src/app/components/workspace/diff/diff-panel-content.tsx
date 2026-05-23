@@ -15,7 +15,6 @@ import {
   resolveFileDiffPath,
 } from './diff-panel-content.helpers'
 import { DiffPanelContentBody } from './diff-panel-content-body'
-import { useDeferredDiffContentReady } from './useDeferredDiffContentReady'
 import { useDiffCommentDrafting } from './useDiffCommentDrafting'
 import { useDiffPanelCommentState } from './useDiffPanelCommentState'
 import { useDiffPanelScrollAlignment } from './useDiffPanelScrollAlignment'
@@ -70,7 +69,6 @@ export function DiffPanelContent({
     [renderablePatch],
   )
 
-  const diffContentReady = useDeferredDiffContentReady(renderablePatch)
   const normalizedFocusedFilePaths = useMemo(
     () => focusedFilePaths.map((filePath) => filePath.replace(trailingSlashPattern, '')),
     [focusedFilePaths],
@@ -208,7 +206,6 @@ export function DiffPanelContent({
           commentAnnotationsByFile as Map<string, DiffLineAnnotation<DiffCommentMetadata>[]>
         }
         diff={diff}
-        diffContentReady={diffContentReady}
         diffRenderMode={diffRenderMode}
         draftSelectedLines={draftSelectedLines}
         error={error}

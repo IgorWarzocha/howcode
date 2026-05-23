@@ -16,7 +16,6 @@ import type { DiffCommentMetadata } from './diff-panel-content.helpers'
 import type { RenderablePatch } from './diff-panel-content.types'
 import { DiffPanelEmptyState } from './diff-panel-empty-state'
 import { DiffPanelFileList } from './diff-panel-file-list'
-import { DiffPanelSkeleton } from './diff-panel-skeleton'
 import type { useDiffCommentDrafting } from './useDiffCommentDrafting'
 
 type DiffPanelContentBodyProps = {
@@ -24,7 +23,6 @@ type DiffPanelContentBodyProps = {
   collapsedFiles: Record<string, boolean>
   commentAnnotationsByFile: Map<string, DiffLineAnnotation<DiffCommentMetadata>[]>
   diff: ReturnType<typeof useDesktopDiff>['diff']
-  diffContentReady: boolean
   diffRenderMode: 'stacked' | 'split'
   draftSelectedLines: SelectedLineRange | null
   error: string | null
@@ -105,20 +103,26 @@ function RawPatchView({ reason, text }: { reason: string; text: string }) {
   )
 }
 
+function DiffPanelLoadingState({ message = 'Loading diff…' }: { message?: string }) {
+  return (
+    <div
+      className={cn(
+        'flex h-full items-center justify-center px-3 py-2 text-center',
+        appTypeSmallClass,
+        appToneMutedClass,
+      )}
+      role="status"
+      aria-busy="true"
+    >
+      {message}
+    </div>
+  )
+}
+
 function DiffFilesView(input: DiffPanelContentBodyProps) {
   return (
     <div className="relative h-full min-h-0">
-      {input.diffContentReady ? null : (
-        <div className="absolute inset-0 z-10 bg-[color:var(--workspace)]">
-          <DiffPanelSkeleton showFileTree={input.showFileTree} />
-        </div>
-      )}
-      <div
-        className={cn(
-          'flex h-full min-h-0 transition-opacity duration-100',
-          input.diffContentReady ? 'opacity-100' : 'opacity-0',
-        )}
-      >
+      <div className="flex h-full min-h-0">
         <div className="min-h-0 min-w-0 flex-1 overflow-hidden [overflow-anchor:none]">
           {input.renderablePatch?.kind === 'files' ? (
             <DiffPanelFileList
@@ -164,11 +168,7 @@ function DiffFilesView(input: DiffPanelContentBodyProps) {
 
 export function DiffPanelContentBody(input: DiffPanelContentBodyProps) {
   if (input.loading) {
-    return (
-      <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
-        <DiffPanelSkeleton showFileTree={input.showFileTree} />
-      </div>
-    )
+    return <DiffPanelLoadingState message="Loading project git state…" />
   }
   if (!input.isGitRepo) {
     return (
@@ -180,11 +180,7 @@ export function DiffPanelContentBody(input: DiffPanelContentBodyProps) {
     !input.hasNoNetChanges &&
     !input.renderablePatch
   ) {
-    return (
-      <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
-        <DiffPanelSkeleton showFileTree={input.showFileTree} />
-      </div>
-    )
+    return <DiffPanelLoadingState />
   }
   return (
     <div className="min-h-0 min-w-0 flex-1 overflow-hidden">

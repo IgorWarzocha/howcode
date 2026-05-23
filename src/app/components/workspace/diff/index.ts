@@ -1,7 +1,6 @@
 export { DiffChangedFilesTree } from './diff-changed-files-tree'
 export { DiffPanelContent } from './diff-panel-content'
 export { DiffPanelEmptyState } from './diff-panel-empty-state'
-export { DiffPanelSkeleton } from './diff-panel-skeleton'
 export { DiffWorkerPoolProvider } from './diff-worker-pool-provider'
 export { buildDiffCommentPrompt } from './diffCommentPrompt'
 export type { SavedDiffComment } from './diffCommentStore'
