@@ -39,8 +39,10 @@ type ComposerGitOpsFooterProps = {
   includeUnstaged: boolean
   includeUntracked: boolean
   isGitRepo: boolean
+  hasPendingDiffComments: boolean
   onSaveOrigin: () => void
   onBack: () => void
+  onDiscardDiffComments: () => void
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
   onSetDiffRenderMode: (mode: ProjectDiffRenderMode) => void
   onSwitchBranch?: ((branchName: string) => void) | undefined
@@ -64,8 +66,10 @@ export function ComposerGitOpsFooter({
   includeUnstaged,
   includeUntracked,
   isGitRepo,
+  hasPendingDiffComments,
   onSaveOrigin,
   onBack,
+  onDiscardDiffComments,
   onSetDiffBaseline,
   onSetDiffRenderMode,
   onSwitchBranch,
@@ -85,6 +89,7 @@ export function ComposerGitOpsFooter({
   const optionsRef = useRef<HTMLDivElement>(null)
   const repoInputRef = useRef<HTMLInputElement>(null)
   const originSaveRequestedRef = useRef(false)
+  const [discardCommentsOpen, setDiscardCommentsOpen] = useState(false)
 
   const openOriginEditor = () => {
     setOptionsOpen(true)
@@ -303,7 +308,7 @@ export function ComposerGitOpsFooter({
         </div>
       ) : null}
 
-      <div className={workspaceFooterTrailingGroupClass}>
+      <div className={cn(workspaceFooterTrailingGroupClass, 'relative')}>
         {isGitRepo ? (
           <ComposerDiffBaselineSelector
             composerPanelRef={composerPanelRef}
@@ -319,12 +324,43 @@ export function ComposerGitOpsFooter({
         <button
           type="button"
           className={cn(compactIconButtonClass, 'h-7 w-7')}
-          onClick={onBack}
+          onClick={() => {
+            if (hasPendingDiffComments) {
+              setDiscardCommentsOpen(true)
+              return
+            }
+            onBack()
+          }}
           aria-label="Back"
           data-tooltip="Back"
         >
           <ArrowLeft size={14} />
         </button>
+        {discardCommentsOpen ? (
+          <PopoverPanel
+            className={cn(
+              'motion-popover absolute right-0 bottom-[calc(100%+6px)] z-20 rounded-xl border-0 p-1.5',
+              popoverPanelClass,
+            )}
+            data-open="true"
+          >
+            <button
+              type="button"
+              className={cn(
+                'rounded-md px-2 py-1 text-left transition-colors hover:bg-[color:var(--surface-hover)]',
+                appTypeMetaClass,
+                appToneMutedClass,
+              )}
+              onClick={() => {
+                onDiscardDiffComments()
+                setDiscardCommentsOpen(false)
+                onBack()
+              }}
+            >
+              Go back and discard comments?
+            </button>
+          </PopoverPanel>
+        ) : null}
       </div>
     </div>
   )
