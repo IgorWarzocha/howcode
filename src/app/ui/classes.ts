@@ -95,7 +95,7 @@ export const foldedTimelineRowClass = `${processLedgerRowClass} folded-timeline-
 export const foldedUserTimelineRowClass = `${processLedgerRowClass} folded-timeline-row--user`
 
 export const processLedgerRowExpandedClass =
-  'mt-1 ml-2 grid min-w-0 max-w-[calc(100%-0.5rem)] gap-2 border-l border-[color:var(--border)]/70 py-1.5 pl-3'
+  'mt-1 ml-2 grid min-w-0 max-w-[calc(100%_-_0.5rem)] gap-2 border-l border-[color:var(--border)]/70 py-1.5 pl-3'
 
 export const processLedgerDetailBlockClass = `grid min-w-0 max-w-full gap-1 overflow-hidden border-l border-[color:var(--border)]/70 bg-[color:var(--folded-row-bg)] px-2 py-1.5 ${appTypeCodeClass} text-[color:var(--muted-2)]/82`
 

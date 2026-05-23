@@ -127,12 +127,13 @@ export function DiffPanelContent({
     removeComment,
     savedComments,
     setDraftComment,
-  } = useDiffPanelCommentState({ projectId })
+  } = useDiffPanelCommentState({ baseline, includeUntracked, projectId })
 
   const {
     clearDragSelection,
     getFileInteractionHandlers,
     getSelectedLinesForFile,
+    handleFilePointerDownCapture,
     openDraftComment,
   } = useDiffCommentDrafting({
     draftComment,
@@ -213,6 +214,7 @@ export function DiffPanelContent({
         focusedFilePaths={focusedFilePaths}
         getFileInteractionHandlers={getFileInteractionHandlers}
         getSelectedLinesForFile={getSelectedLinesForFile}
+        handleFilePointerDownCapture={handleFilePointerDownCapture}
         hasFocusedFiles={hasFocusedFiles}
         hasNoNetChanges={hasNoNetChanges}
         hasResolvedPatch={hasResolvedPatch}

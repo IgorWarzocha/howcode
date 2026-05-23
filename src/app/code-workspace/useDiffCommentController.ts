@@ -7,6 +7,7 @@ import {
 import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
 import { getDesktopActionErrorMessage } from '../desktop/action-results'
+import type { ProjectDiffBaseline } from '../desktop/types'
 
 function getDiffCommentSendError(result: Awaited<ReturnType<AppShellController['handleAction']>>) {
   return getDesktopActionErrorMessage(result, 'Could not send comments to the agent.')
@@ -41,17 +42,21 @@ async function sendDiffCommentsToComposer(input: {
 }
 
 export function useDiffCommentController({
+  baseline,
   composerProjectId,
   handleAction,
   handleOpenWorktreeDiffFile,
+  includeUntracked,
   setComposerPromptResetKey,
   shellState,
 }: {
+  baseline: ProjectDiffBaseline | null
   composerProjectId: string
   handleAction: AppShellController['handleAction']
   handleOpenWorktreeDiffFile: (filePath: string) => void
   setComposerPromptResetKey: Dispatch<SetStateAction<number>>
   shellState: AppShellController['shellState']
+  includeUntracked: boolean
 }) {
   const [diffComments, setDiffComments] = useState<SavedDiffComment[]>([])
   const [diffCommentCount, setDiffCommentCount] = useState(0)
@@ -61,8 +66,8 @@ export function useDiffCommentController({
   const [diffCommentsSending, setDiffCommentsSending] = useState(false)
   const [diffCommentError, setDiffCommentError] = useState<string | null>(null)
   const diffCommentContextId = useMemo(
-    () => getDiffCommentContextId({ projectId: composerProjectId }),
-    [composerProjectId],
+    () => getDiffCommentContextId({ baseline, includeUntracked, projectId: composerProjectId }),
+    [baseline, composerProjectId, includeUntracked],
   )
 
   useEffect(() => {

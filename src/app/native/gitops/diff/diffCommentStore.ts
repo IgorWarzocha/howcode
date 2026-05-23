@@ -1,3 +1,4 @@
+import type { ProjectDiffBaseline } from '../../../desktop/types'
 import {
   createStoragePersistence,
   getBeforeUnloadTarget,
@@ -150,12 +151,27 @@ function serializeContexts(
   }
 }
 
-export function getDiffCommentContextId({ projectId }: { projectId: string }) {
+function getDiffBaselineScopeKey(baseline: ProjectDiffBaseline | null) {
+  if (!baseline) return 'head'
+  if (baseline.kind === 'commit') return `commit:${baseline.sha}`
+  if (baseline.kind === 'last-opened') return `last-opened:${baseline.rev}`
+  return baseline.kind
+}
+
+export function getDiffCommentContextId({
+  baseline = null,
+  includeUntracked = false,
+  projectId,
+}: {
+  baseline?: ProjectDiffBaseline | null | undefined
+  includeUntracked?: boolean | undefined
+  projectId: string
+}) {
   if (projectId.length === 0) {
     return null
   }
 
-  return `project:${projectId}:worktree-diff`
+  return `project:${projectId}:worktree-diff:${getDiffBaselineScopeKey(baseline)}:untracked:${includeUntracked ? 'included' : 'hidden'}`
 }
 
 export function createDiffCommentStore({

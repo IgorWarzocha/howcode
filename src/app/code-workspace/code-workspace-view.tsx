@@ -259,11 +259,13 @@ export function CodeWorkspaceView({
     selectedDiffCommentId,
     selectedDiffCommentJumpKey,
   } = useDiffCommentController({
+    baseline: diffBaseline,
     composerProjectId,
     handleAction,
     handleOpenWorktreeDiffFile,
     setComposerPromptResetKey,
     shellState,
+    includeUntracked: includeUntrackedDiffFiles,
   })
   const {
     handleEditQueuedPrompt,

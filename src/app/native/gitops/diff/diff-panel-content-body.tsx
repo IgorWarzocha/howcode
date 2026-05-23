@@ -33,6 +33,9 @@ type DiffPanelContentBodyProps = {
     typeof useDiffCommentDrafting
   >['getFileInteractionHandlers']
   getSelectedLinesForFile: ReturnType<typeof useDiffCommentDrafting>['getSelectedLinesForFile']
+  handleFilePointerDownCapture: ReturnType<
+    typeof useDiffCommentDrafting
+  >['handleFilePointerDownCapture']
   hasFocusedFiles: boolean
   hasNoNetChanges: boolean
   hasResolvedPatch: boolean
@@ -119,6 +122,7 @@ function DiffFilesView(input: DiffPanelContentBodyProps) {
             focusedImageFileKeys={input.focusedImageFileKeys}
             getFileInteractionHandlers={input.getFileInteractionHandlers}
             getSelectedLinesForFile={input.getSelectedLinesForFile}
+            onFilePointerDownCapture={input.handleFilePointerDownCapture}
             onOpenDraftComment={input.openDraftComment}
             onToggleFileCollapsed={input.toggleFileCollapsed}
             projectId={input.projectId}

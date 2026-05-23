@@ -74,7 +74,7 @@ export function TopSessionsSection({
   return (
     <section className="col-span-2 col-start-2 grid gap-2 [@media(max-height:560px)]:hidden">
       <h2
-        className={`m-0 w-[calc(100%-2.5rem)] px-1 ${appTypeGroupTitleClass} ${appToneTextClass}`}
+        className={`m-0 w-[calc(100%_-_2.5rem)] px-1 ${appTypeGroupTitleClass} ${appToneTextClass}`}
       >
         Top sessions by cost
       </h2>

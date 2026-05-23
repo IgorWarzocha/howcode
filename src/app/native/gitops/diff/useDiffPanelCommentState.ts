@@ -1,6 +1,7 @@
 import type { SelectedLineRange } from '@pierre/diffs'
 import type { DiffLineAnnotation } from '@pierre/diffs/react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { ProjectDiffBaseline } from '../../../desktop/types'
 import { buildDraftTarget, type DiffCommentMetadata } from './diff-panel-content.helpers'
 import {
   type DiffCommentDraft,
@@ -9,40 +10,62 @@ import {
   type SavedDiffComment,
 } from './diffCommentStore'
 
-export function useDiffPanelCommentState({ projectId }: { projectId: string }) {
+export function useDiffPanelCommentState({
+  baseline,
+  includeUntracked,
+  projectId,
+}: {
+  baseline: ProjectDiffBaseline | null
+  includeUntracked: boolean
+  projectId: string
+}) {
   const [savedComments, setSavedComments] = useState<SavedDiffComment[]>([])
   const [draftComment, setDraftComment] = useState<DiffCommentDraft | null>(null)
+  const [hydratedContextId, setHydratedContextId] = useState<string | null>(null)
+  const writingStoreRef = useRef(false)
 
   const diffCommentContextId = useMemo(
     () =>
       getDiffCommentContextId({
+        baseline,
+        includeUntracked,
         projectId,
       }),
-    [projectId],
+    [baseline, includeUntracked, projectId],
   )
 
   useEffect(() => {
     if (!diffCommentContextId) {
       setSavedComments([])
       setDraftComment(null)
+      setHydratedContextId(null)
       return
     }
 
-    const persistedContext = diffCommentStore.getContext(diffCommentContextId)
-    setSavedComments(persistedContext?.comments ?? [])
-    setDraftComment(persistedContext?.draft ?? null)
+    const syncFromStore = () => {
+      if (writingStoreRef.current) return
+      const persistedContext = diffCommentStore.getContext(diffCommentContextId)
+      setSavedComments(persistedContext?.comments ?? [])
+      setDraftComment(persistedContext?.draft ?? null)
+      setHydratedContextId(diffCommentContextId)
+    }
+
+    syncFromStore()
+    return diffCommentStore.subscribe(syncFromStore)
   }, [diffCommentContextId])
 
   useEffect(() => {
-    if (!diffCommentContextId) {
+    if (!diffCommentContextId || hydratedContextId !== diffCommentContextId) {
       return
     }
 
+    writingStoreRef.current = true
     diffCommentStore.setContext(diffCommentContextId, {
       comments: savedComments,
       draft: draftComment,
     })
-  }, [diffCommentContextId, draftComment, savedComments])
+    writingStoreRef.current = false
+  }, [diffCommentContextId, draftComment, hydratedContextId, savedComments])
 
   const draftTarget = useMemo(() => {
     if (!draftComment) {

@@ -80,6 +80,11 @@ type DiffPanelFileListProps = {
     fileKey: string,
     draftSelectedLines: SelectedLineRange | null,
   ) => SelectedLineRange | null
+  onFilePointerDownCapture: (
+    event: React.PointerEvent<HTMLDivElement>,
+    fileKey: string,
+    filePath: string,
+  ) => void
   onOpenDraftComment: (
     fileKey: string,
     filePath: string,
@@ -287,6 +292,7 @@ export function DiffPanelFileList({
   focusedImageFileKeys,
   getFileInteractionHandlers,
   getSelectedLinesForFile,
+  onFilePointerDownCapture,
   onOpenDraftComment,
   onToggleFileCollapsed,
   projectId,
@@ -299,16 +305,17 @@ export function DiffPanelFileList({
         const { fileKey } = getDiffFileIdentity(fileDiff)
         const isImageFile = isImageDiffFile(fileDiff)
         const annotations = commentAnnotationsByFile.get(fileKey) ?? []
+        const collapsed = focusedImageFileKeys.has(fileKey)
+          ? false
+          : (collapsedFiles[fileKey] ?? isImageFile)
         return {
           id: fileKey,
           type: 'diff',
           fileDiff,
           annotations,
-          collapsed: focusedImageFileKeys.has(fileKey)
-            ? false
-            : (collapsedFiles[fileKey] ?? isImageFile),
+          collapsed,
           version: hashString(
-            `${fileKey}:${fileDiff.unifiedLineCount}:${fileDiff.splitLineCount}:${getAnnotationVersionKey(annotations)}:${collapsedFiles[fileKey] ? 1 : 0}:${focusedImageFileKeys.has(fileKey) ? 1 : 0}`,
+            `${fileKey}:${fileDiff.unifiedLineCount}:${fileDiff.splitLineCount}:${getAnnotationVersionKey(annotations)}:${collapsed ? 1 : 0}`,
           ),
         }
       }),
@@ -428,6 +435,7 @@ export function DiffPanelFileList({
         <div
           className={cn(isImageFile && !isCollapsed && diffFileShellClass)}
           data-diff-file-path={filePath}
+          onPointerDownCapture={(event) => onFilePointerDownCapture(event, fileKey, filePath)}
         >
           <DiffPanelFileHeader
             fileDiff={fileDiff}
@@ -442,7 +450,7 @@ export function DiffPanelFileList({
         </div>
       )
     },
-    [baseline, onToggleFileCollapsed, projectId],
+    [baseline, onFilePointerDownCapture, onToggleFileCollapsed, projectId],
   )
 
   const renderAnnotation = useCallback(
@@ -452,6 +460,28 @@ export function DiffPanelFileList({
       >[0],
     ) => renderCommentAnnotation(annotation as DiffLineAnnotation<DiffCommentMetadata>),
     [renderCommentAnnotation],
+  )
+
+  const fileIdentityByPath = useMemo(() => {
+    const next = new Map<string, { fileKey: string; filePath: string }>()
+    for (const fileDiff of renderableFiles) {
+      const identity = getDiffFileIdentity(fileDiff)
+      next.set(identity.filePath, identity)
+    }
+    return next
+  }, [renderableFiles])
+
+  const handleCodeViewPointerDownCapture = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      const filePath = (event.target as HTMLElement | null)
+        ?.closest<HTMLElement>('[data-diff-file-path]')
+        ?.getAttribute('data-diff-file-path')
+      if (!filePath) return
+      const identity = fileIdentityByPath.get(filePath)
+      if (!identity) return
+      onFilePointerDownCapture(event, identity.fileKey, identity.filePath)
+    },
+    [fileIdentityByPath, onFilePointerDownCapture],
   )
 
   const renderGutterUtility = useCallback(
@@ -488,19 +518,21 @@ export function DiffPanelFileList({
   )
 
   return (
-    <CodeView<DiffCommentMetadata>
-      ref={setCodeViewHandle}
-      initialItems={[]}
-      selectedLines={selectedLines}
-      containerRef={scrollContainerRef}
-      className={cn(
-        diffFileShellClass,
-        'h-full w-full overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable]',
-      )}
-      options={codeViewOptions}
-      renderCustomHeader={renderCustomHeader}
-      renderAnnotation={renderAnnotation}
-      renderGutterUtility={renderGutterUtility}
-    />
+    <div className="h-full min-h-0" onPointerDownCapture={handleCodeViewPointerDownCapture}>
+      <CodeView<DiffCommentMetadata>
+        ref={setCodeViewHandle}
+        initialItems={[]}
+        selectedLines={selectedLines}
+        containerRef={scrollContainerRef}
+        className={cn(
+          diffFileShellClass,
+          'h-full w-full overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable]',
+        )}
+        options={codeViewOptions}
+        renderCustomHeader={renderCustomHeader}
+        renderAnnotation={renderAnnotation}
+        renderGutterUtility={renderGutterUtility}
+      />
+    </div>
   )
 }

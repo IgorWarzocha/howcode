@@ -414,7 +414,7 @@ function TerminalDrawerLayer(props: AppShellLayoutViewProps) {
     <div
       className={cn(
         'pointer-events-none absolute top-0 right-0 bottom-0 z-20 max-w-full overflow-hidden',
-        sidebarCompactMode ? 'w-full' : 'w-[min(28rem,calc(100%-2.5rem))]',
+        sidebarCompactMode ? 'w-full' : 'w-[min(28rem,calc(100%_-_2.5rem))]',
       )}
     >
       <div
