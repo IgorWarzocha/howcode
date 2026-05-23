@@ -1,16 +1,16 @@
 const gitDiffPrefixPattern = /^[ab]\//
 
 import type { CodeViewItem, GetHoveredLineResult, SelectedLineRange } from '@pierre/diffs'
-import type { CodeViewHandle } from '@pierre/diffs/react'
 import {
   type AnnotationSide,
   CodeView,
+  type CodeViewHandle,
   type DiffLineAnnotation,
   type FileDiffMetadata,
 } from '@pierre/diffs/react'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, ChevronRight, MessageSquarePlus } from 'lucide-react'
-import { useMemo } from 'react'
+import { useLayoutEffect, useMemo, useRef } from 'react'
 import type { ProjectDiffBaseline, ProjectDiffImageSide } from '../../../desktop/types'
 import { getProjectDiffImagePreviewQuery } from '../../../query/desktop-query'
 import { desktopQueryKeys } from '../../../query/desktop-query-keys'
@@ -254,6 +254,49 @@ export function DiffPanelFileList({
     [collapsedFiles, commentAnnotationsByFile, focusedImageFileKeys, renderableFiles],
   )
 
+  const itemSyncStateRef = useRef<{ ids: string[]; versions: Map<string, number | undefined> }>({
+    ids: [],
+    versions: new Map(),
+  })
+
+  useLayoutEffect(() => {
+    const codeViewHandle = codeViewRef.current
+    const codeView = codeViewHandle?.getInstance()
+    if (!(codeViewHandle && codeView)) return
+
+    const previous = itemSyncStateRef.current
+    const nextIds = items.map((item) => item.id)
+    const previousIds = previous.ids
+    const isAppendOnly =
+      previousIds.length <= nextIds.length &&
+      previousIds.every((previousId, index) => previousId === nextIds[index])
+
+    if (!isAppendOnly) {
+      codeView.setItems(items)
+      itemSyncStateRef.current = {
+        ids: nextIds,
+        versions: new Map(items.map((item) => [item.id, item.version])),
+      }
+      return
+    }
+
+    for (const item of items.slice(0, previousIds.length)) {
+      if (previous.versions.get(item.id) !== item.version) {
+        codeViewHandle.updateItem(item)
+      }
+    }
+
+    const appendedItems = items.slice(previousIds.length)
+    if (appendedItems.length > 0) {
+      codeViewHandle.addItems(appendedItems)
+    }
+
+    itemSyncStateRef.current = {
+      ids: nextIds,
+      versions: new Map(items.map((item) => [item.id, item.version])),
+    }
+  }, [codeViewRef, items])
+
   const selectedLines = useMemo(() => {
     for (const fileDiff of renderableFiles) {
       const { fileKey } = getDiffFileIdentity(fileDiff)
@@ -266,7 +309,7 @@ export function DiffPanelFileList({
   return (
     <CodeView<DiffCommentMetadata>
       ref={codeViewRef}
-      items={items}
+      initialItems={[]}
       selectedLines={selectedLines}
       containerRef={scrollContainerRef}
       className={cn(
