@@ -243,6 +243,15 @@ function hashString(input: string) {
   return hash >>> 0
 }
 
+function getAnnotationVersionKey(annotations: readonly DiffLineAnnotation<DiffCommentMetadata>[]) {
+  return annotations
+    .map(
+      (annotation) =>
+        `${annotation.metadata.id}:${annotation.metadata.kind}:${annotation.side}:${annotation.lineNumber}:${annotation.metadata.body.length}`,
+    )
+    .join('|')
+}
+
 function isAppendOnlyItemList(previousIds: string[], nextIds: string[]) {
   return (
     previousIds.length <= nextIds.length &&
@@ -290,16 +299,17 @@ export function DiffPanelFileList({
       renderableFiles.map((fileDiff) => {
         const { fileKey } = getDiffFileIdentity(fileDiff)
         const isImageFile = isImageDiffFile(fileDiff)
+        const annotations = commentAnnotationsByFile.get(fileKey) ?? []
         return {
           id: fileKey,
           type: 'diff',
           fileDiff,
-          annotations: commentAnnotationsByFile.get(fileKey) ?? [],
+          annotations,
           collapsed: focusedImageFileKeys.has(fileKey)
             ? false
             : (collapsedFiles[fileKey] ?? isImageFile),
           version: hashString(
-            `${fileKey}:${fileDiff.unifiedLineCount}:${fileDiff.splitLineCount}:${commentAnnotationsByFile.get(fileKey)?.length ?? 0}:${collapsedFiles[fileKey] ? 1 : 0}:${focusedImageFileKeys.has(fileKey) ? 1 : 0}`,
+            `${fileKey}:${fileDiff.unifiedLineCount}:${fileDiff.splitLineCount}:${getAnnotationVersionKey(annotations)}:${collapsedFiles[fileKey] ? 1 : 0}:${focusedImageFileKeys.has(fileKey) ? 1 : 0}`,
           ),
         }
       }),
