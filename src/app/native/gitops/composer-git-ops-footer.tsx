@@ -357,14 +357,14 @@ export function ComposerGitOpsFooter({
             ref={discardCommentsPanelRef}
             surface={false}
             className={cn(
-              'motion-popover pointer-events-auto absolute right-0 bottom-[calc(100%+6px)] z-20 bg-transparent p-0 shadow-none',
+              'motion-popover pointer-events-auto absolute right-0 bottom-[calc(100%+6px)] z-20 rounded-md bg-[color:var(--panel)] p-0 shadow-none',
             )}
             data-open="true"
           >
             <button
               type="button"
               className={cn(
-                'rounded-md px-1.5 py-1 text-left text-[10px] leading-[12px] whitespace-nowrap transition-colors hover:bg-[color:var(--surface-hover)]',
+                'rounded-md px-1.5 py-1 text-left !text-[9px] !leading-[11px] whitespace-nowrap transition-colors hover:bg-[color:var(--surface-hover)]',
                 appToneMutedClass,
               )}
               onClick={() => {
