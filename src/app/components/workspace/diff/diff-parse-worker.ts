@@ -21,7 +21,8 @@ type DiffParseResponse = {
 )
 
 const streamedFileChunkSize = 8
-const gitFileBoundaryPattern = /(^|\n)(?=diff --git )/g
+const gitFileBoundaryMarker = 'diff --git '
+const gitFileBoundaryLineMarker = `\n${gitFileBoundaryMarker}`
 
 let activeRequestId = 0
 let fileBuffer = ''
@@ -30,12 +31,19 @@ let emittedFiles = false
 
 function findGitFileBoundaryIndexes() {
   const boundaryIndexes: number[] = []
-  gitFileBoundaryPattern.lastIndex = 0
-  for (;;) {
-    const match = gitFileBoundaryPattern.exec(fileBuffer)
-    if (!match) break
-    boundaryIndexes.push(match.index + (match[1] ? 1 : 0))
+
+  if (fileBuffer.startsWith(gitFileBoundaryMarker)) {
+    boundaryIndexes.push(0)
   }
+
+  let searchIndex = 0
+  for (;;) {
+    const markerIndex = fileBuffer.indexOf(gitFileBoundaryLineMarker, searchIndex)
+    if (markerIndex === -1) break
+    boundaryIndexes.push(markerIndex + 1)
+    searchIndex = markerIndex + gitFileBoundaryLineMarker.length
+  }
+
   return boundaryIndexes
 }
 
