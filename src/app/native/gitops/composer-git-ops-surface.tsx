@@ -112,6 +112,7 @@ function UntrackedScopePopover({ count, onInclude }: { count: number; onInclude:
         ref={panelRef}
         open={open}
         surface={false}
+        data-open={portalPositionReady ? 'true' : 'false'}
         className={panelClassName}
         style={panelStyle}
       >
