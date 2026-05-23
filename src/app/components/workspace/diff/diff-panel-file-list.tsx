@@ -7,6 +7,7 @@ import {
   type CodeViewHandle,
   type DiffLineAnnotation,
   type FileDiffMetadata,
+  useWorkerPool,
 } from '@pierre/diffs/react'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, ChevronRight, MessageSquarePlus } from 'lucide-react'
@@ -234,15 +235,21 @@ function syncAppendOnlyCodeViewItems({
   handle,
   items,
   previous,
+  primeItemHighlight,
 }: {
   handle: CodeViewHandle<DiffCommentMetadata>
   items: DiffItem[]
   previous: { ids: string[]; versions: Map<string, number | undefined> }
+  primeItemHighlight: (item: DiffItem) => void
 }) {
   for (const item of items.slice(0, previous.ids.length)) {
-    if (previous.versions.get(item.id) !== item.version) handle.updateItem(item)
+    if (previous.versions.get(item.id) !== item.version) {
+      primeItemHighlight(item)
+      handle.updateItem(item)
+    }
   }
   const appendedItems = items.slice(previous.ids.length)
+  for (const item of appendedItems) primeItemHighlight(item)
   if (appendedItems.length > 0) handle.addItems(appendedItems)
 }
 
@@ -263,6 +270,7 @@ export function DiffPanelFileList({
   renderCommentAnnotation,
   renderableFiles,
 }: DiffPanelFileListProps) {
+  const workerPool = useWorkerPool()
   const items = useMemo<DiffItem[]>(
     () =>
       renderableFiles.map((fileDiff) => {
@@ -308,6 +316,13 @@ export function DiffPanelFileList({
     [codeViewRef],
   )
 
+  const primeItemHighlight = useCallback(
+    (item: DiffItem) => {
+      workerPool?.primeDiffHighlightCache(item.fileDiff)
+    },
+    [workerPool],
+  )
+
   useEffect(() => {
     const instance = codeViewHandle?.getInstance()
     if (!(codeViewHandle && instance)) return
@@ -315,13 +330,14 @@ export function DiffPanelFileList({
     const previous = itemSyncStateRef.current
     const next = getCodeViewItemSyncState(items)
     if (isAppendOnlyItemList(previous.ids, next.ids)) {
-      syncAppendOnlyCodeViewItems({ handle: codeViewHandle, items, previous })
+      syncAppendOnlyCodeViewItems({ handle: codeViewHandle, items, previous, primeItemHighlight })
     } else {
+      for (const item of items) primeItemHighlight(item)
       instance.setItems(items)
     }
 
     itemSyncStateRef.current = next
-  }, [codeViewHandle, items])
+  }, [codeViewHandle, items, primeItemHighlight])
 
   return (
     <CodeView<DiffCommentMetadata>
