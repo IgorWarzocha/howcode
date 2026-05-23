@@ -99,17 +99,6 @@ function parseCompleteFileBlocks(id: number, done: boolean) {
   postFileChunks(id, files, done)
 }
 
-function parseBufferedPartialFile(id: number, done: boolean) {
-  if (done || fileBuffer.trim().length === 0 || !fileBuffer.includes('diff --git ')) return
-  const file = processFile(fileBuffer, {
-    cacheKey: `${activeRequestId}:${parsedFileCount}`,
-    isGitDiff: true,
-  })
-  if (!file) return
-  emittedFiles = true
-  postFileChunks(id, [file], false)
-}
-
 function resetStream(id: number) {
   activeRequestId = id
   fileBuffer = ''
@@ -134,6 +123,5 @@ self.addEventListener('message', (event: MessageEvent<DiffParseRequest>) => {
 
   fileBuffer += chunk
   parseCompleteFileBlocks(id, done)
-  parseBufferedPartialFile(id, done)
   if (done && !emittedFiles) postFallbackPatch(id, patch, cacheScope)
 })
