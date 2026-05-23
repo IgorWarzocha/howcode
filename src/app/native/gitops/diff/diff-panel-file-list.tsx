@@ -167,7 +167,7 @@ function DiffImagePreview({
 
 function getDiffFileIdentity(fileDiff: FileDiffMetadata) {
   const filePath = fileDiff.name?.replace(gitDiffPrefixPattern, '') ?? fileDiff.prevName ?? ''
-  const fileKey = fileDiff.cacheKey ?? `${fileDiff.prevName ?? 'none'}:${fileDiff.name}`
+  const fileKey = `${fileDiff.prevName ?? 'none'}:${fileDiff.name}`
   return { fileKey, filePath }
 }
 

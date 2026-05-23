@@ -19,8 +19,8 @@ import type { SavedDiffComment } from './diff/diffCommentStore'
 
 function getPrimaryGitOpsActionLabel(input: {
   canCommit: boolean
+  committableFileCount: number
   diffCommentsSending: boolean
-  fileCount: number
   hasDiffComments: boolean
   isGitRepo: boolean
   pushEnabled: boolean
@@ -28,8 +28,22 @@ function getPrimaryGitOpsActionLabel(input: {
   if (input.hasDiffComments)
     return input.diffCommentsSending ? 'Sending comments…' : 'Send comments'
   if (!input.isGitRepo) return 'Init git'
-  if (input.canCommit || input.fileCount > 0) return input.pushEnabled ? 'Commit & push' : 'Commit'
+  if (input.canCommit || input.committableFileCount > 0)
+    return input.pushEnabled ? 'Commit & push' : 'Commit'
   return 'Clean'
+}
+
+function getCommittableFileCount(input: {
+  fileCount: number
+  includeUnstaged: boolean
+  includeUntracked: boolean
+  stagedFileCount: number
+  untrackedFileCount: number
+}) {
+  if (!input.includeUnstaged) return input.stagedFileCount
+  return input.includeUntracked
+    ? input.fileCount
+    : Math.max(0, input.fileCount - input.untrackedFileCount)
 }
 
 function getCanCommit(input: {
@@ -41,11 +55,7 @@ function getCanCommit(input: {
   untrackedFileCount: number
 }) {
   if (!input.isGitRepo) return false
-  if (!input.includeUnstaged) return input.stagedFileCount > 0
-  const committableFileCount = input.includeUntracked
-    ? input.fileCount
-    : input.fileCount - input.untrackedFileCount
-  return committableFileCount > 0
+  return getCommittableFileCount(input) > 0
 }
 
 async function initializeGitRepository(input: {
@@ -141,6 +151,13 @@ export function useComposerGitOpsState({
   const isTreeClean = isGitRepo && (projectGitState?.fileCount ?? 0) === 0
   const hasDiffComments = diffComments.length > 0
   const trimmedCommitMessage = commitMessage.trim()
+  const committableFileCount = getCommittableFileCount({
+    fileCount: projectGitState?.fileCount ?? 0,
+    includeUnstaged,
+    includeUntracked,
+    stagedFileCount: projectGitState?.stagedFileCount ?? 0,
+    untrackedFileCount: projectGitState?.untrackedFileCount ?? 0,
+  })
   const canCommit = getCanCommit({
     fileCount: projectGitState?.fileCount ?? 0,
     includeUnstaged,
@@ -151,8 +168,8 @@ export function useComposerGitOpsState({
   })
   const primaryActionLabel = getPrimaryGitOpsActionLabel({
     canCommit,
+    committableFileCount,
     diffCommentsSending,
-    fileCount: projectGitState?.fileCount ?? 0,
     hasDiffComments,
     isGitRepo,
     pushEnabled,

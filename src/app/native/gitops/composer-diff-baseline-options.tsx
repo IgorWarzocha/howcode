@@ -40,13 +40,23 @@ export function matchesCommitSearch(commit: ProjectCommitEntry, query: string) {
 
 export function getBaselineCounts(input: {
   baselineStats: ProjectDiffStatsResult | null | undefined
+  includeUntracked: boolean
   projectGitState: ProjectGitState | null
   selectedBaseline: ProjectDiffBaseline
 }) {
   if (input.selectedBaseline.kind === 'head') {
+    if (input.includeUntracked && input.baselineStats) {
+      return {
+        fileCount: input.baselineStats.fileCount,
+        insertions: input.baselineStats.insertions,
+        deletions: input.baselineStats.deletions,
+      }
+    }
     if (!input.projectGitState) return null
     return {
-      fileCount: input.projectGitState.fileCount,
+      fileCount: input.includeUntracked
+        ? input.projectGitState.fileCount
+        : Math.max(0, input.projectGitState.fileCount - input.projectGitState.untrackedFileCount),
       insertions: input.projectGitState.insertions,
       deletions: input.projectGitState.deletions,
     }

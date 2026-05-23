@@ -49,7 +49,7 @@ export function resolveFileDiffPath(fileDiff: FileDiffMetadata): string {
 }
 
 export function buildFileDiffRenderKey(fileDiff: FileDiffMetadata): string {
-  return fileDiff.cacheKey ?? `${fileDiff.prevName ?? 'none'}:${fileDiff.name}`
+  return `${fileDiff.prevName ?? 'none'}:${fileDiff.name}`
 }
 
 export function joinProjectFilePath(projectId: string, filePath: string) {

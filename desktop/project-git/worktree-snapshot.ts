@@ -87,14 +87,12 @@ function runExclusiveStagedWorktree<T>(projectId: string, operation: () => Promi
     () => runWithProcessStagedWorktreeLock(projectId, operation),
     () => runWithProcessStagedWorktreeLock(projectId, operation),
   )
-  stagedWorktreeQueues.set(
-    projectId,
-    next.finally(() => {
-      if (stagedWorktreeQueues.get(projectId) === next) {
-        stagedWorktreeQueues.delete(projectId)
-      }
-    }),
-  )
+  const cleanup = next.finally(() => {
+    if (stagedWorktreeQueues.get(projectId) === cleanup) {
+      stagedWorktreeQueues.delete(projectId)
+    }
+  })
+  stagedWorktreeQueues.set(projectId, cleanup)
   return next
 }
 

@@ -135,7 +135,7 @@ function useComposerBaselineData({
       projectId
         ? getProjectDiffStatsQuery(projectId, selectedBaseline, includeUntracked)
         : Promise.resolve(null),
-    enabled: projectId.length > 0 && selectedBaseline.kind !== 'head',
+    enabled: projectId.length > 0 && (selectedBaseline.kind !== 'head' || includeUntracked),
     staleTime: Number.POSITIVE_INFINITY,
   })
 
@@ -152,10 +152,11 @@ function useComposerBaselineData({
     () =>
       getBaselineCounts({
         baselineStats: baselineStatsQuery.data,
+        includeUntracked,
         projectGitState,
         selectedBaseline,
       }),
-    [baselineStatsQuery.data, projectGitState, selectedBaseline],
+    [baselineStatsQuery.data, includeUntracked, projectGitState, selectedBaseline],
   )
 
   return {
