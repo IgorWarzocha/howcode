@@ -241,6 +241,10 @@ export function useDiffCommentDrafting({
         return
       }
 
+      if ((event.target as HTMLElement | null)?.closest('[data-diff-comment-annotation]')) {
+        return
+      }
+
       const target = resolvePointerLineTarget(event.nativeEvent)
       if (!target) {
         return

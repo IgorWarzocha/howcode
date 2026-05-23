@@ -16,6 +16,7 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, ChevronRight, MessageSquarePlus } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Tooltip } from '../../../common/tooltip'
 import type { ProjectDiffBaseline, ProjectDiffImageSide } from '../../../desktop/types'
 import { getProjectDiffImagePreviewQuery } from '../../../query/desktop-query'
 import { desktopQueryKeys } from '../../../query/desktop-query-keys'
@@ -454,19 +455,24 @@ export function DiffPanelFileList({
       if (!(hoveredLine && fileDiff)) return null
       const { fileKey, filePath } = getDiffFileIdentity(fileDiff)
       return (
-        <button
-          type="button"
-          className={diffCommentGutterButtonClass}
-          onClick={(event) => {
-            event.preventDefault()
-            event.stopPropagation()
-            onOpenDraftComment(fileKey, filePath, hoveredLine.side, hoveredLine.lineNumber)
-          }}
-          aria-label={`Add comment on ${filePath}:${hoveredLine.lineNumber}`}
-          data-tooltip="Add comment"
-        >
-          <MessageSquarePlus size={12} />
-        </button>
+        <Tooltip content="Add comment">
+          <button
+            type="button"
+            className={diffCommentGutterButtonClass}
+            onPointerDownCapture={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+            }}
+            onClick={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              onOpenDraftComment(fileKey, filePath, hoveredLine.side, hoveredLine.lineNumber)
+            }}
+            aria-label={`Add comment on ${filePath}:${hoveredLine.lineNumber}`}
+          >
+            <MessageSquarePlus size={12} />
+          </button>
+        </Tooltip>
       )
     },
     [onOpenDraftComment],

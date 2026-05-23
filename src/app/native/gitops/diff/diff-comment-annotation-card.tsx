@@ -1,6 +1,7 @@
 import type { DiffLineAnnotation } from '@pierre/diffs/react'
 import { Check, X } from 'lucide-react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
+import { Tooltip } from '../../../common/tooltip'
 import {
   appToneMutedClass,
   appToneTextClass,
@@ -36,33 +37,43 @@ export function DiffCommentAnnotationCard({
 
   if (metadata.kind === 'draft') {
     return (
-      <div ref={draftCardRef} className={diffCommentAnnotationClass}>
+      <div
+        ref={draftCardRef}
+        data-diff-comment-annotation="true"
+        className={diffCommentAnnotationClass}
+      >
         <div className="flex items-center justify-between gap-2">
           <div className={cn('min-w-0 truncate', appTypeMetaStrongClass, appToneMutedClass)}>
             Add comment · {draftComment ? describeCommentTarget(draftComment) : 'Line comment'}
           </div>
           <div className="flex shrink-0 items-center gap-1">
-            <button
-              type="button"
-              className={compactIconButtonClass}
-              onClick={() => {
-                setDraftComment(null)
-              }}
-              aria-label="Cancel comment"
-              data-tooltip="Cancel comment"
-            >
-              <X size={14} />
-            </button>
-            <button
-              type="button"
-              className={diffCommentSaveButtonClass}
-              onClick={onPersistDraftComment}
-              disabled={(draftComment?.body.trim().length ?? 0) === 0}
-              aria-label="Save comment"
-              data-tooltip="Save comment"
-            >
-              <Check size={14} />
-            </button>
+            <Tooltip content="Cancel comment">
+              <button
+                type="button"
+                className={compactIconButtonClass}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setDraftComment(null)
+                }}
+                aria-label="Cancel comment"
+              >
+                <X size={14} />
+              </button>
+            </Tooltip>
+            <Tooltip content="Save comment">
+              <button
+                type="button"
+                className={diffCommentSaveButtonClass}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onPersistDraftComment()
+                }}
+                disabled={(draftComment?.body.trim().length ?? 0) === 0}
+                aria-label="Save comment"
+              >
+                <Check size={14} />
+              </button>
+            </Tooltip>
           </div>
         </div>
         <textarea
@@ -85,7 +96,11 @@ export function DiffCommentAnnotationCard({
   }
 
   return (
-    <div data-saved-diff-comment-id={metadata.id} className={diffCommentAnnotationClass}>
+    <div
+      data-saved-diff-comment-id={metadata.id}
+      data-diff-comment-annotation="true"
+      className={diffCommentAnnotationClass}
+    >
       <div
         className={cn(
           'flex items-center justify-between gap-2',
@@ -94,15 +109,19 @@ export function DiffCommentAnnotationCard({
         )}
       >
         <span>Comment · {describeCommentTarget(metadata)}</span>
-        <button
-          type="button"
-          className={compactIconButtonClass}
-          onClick={() => onRemoveComment(metadata.id)}
-          aria-label="Remove comment"
-          data-tooltip="Remove comment"
-        >
-          <X size={12} />
-        </button>
+        <Tooltip content="Remove comment">
+          <button
+            type="button"
+            className={compactIconButtonClass}
+            onClick={(event) => {
+              event.stopPropagation()
+              onRemoveComment(metadata.id)
+            }}
+            aria-label="Remove comment"
+          >
+            <X size={12} />
+          </button>
+        </Tooltip>
       </div>
       <p className={cn('m-0 whitespace-pre-wrap px-0.5', appTypeSmallClass, appToneTextClass)}>
         {metadata.body}
