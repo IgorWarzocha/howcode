@@ -1,4 +1,4 @@
-import { runGitWithOptions, withTemporaryIndex } from './git-runner.ts'
+import { runGitStreamingWithOptions, runGitWithOptions, withTemporaryIndex } from './git-runner.ts'
 
 export const EMPTY_TREE_OID = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 
@@ -71,7 +71,10 @@ export async function captureWorktreeTree(projectId: string): Promise<string> {
 
 export async function loadWorktreeSnapshot(
   projectId: string,
-  options: { baselineRev?: string | undefined | null | undefined } = {},
+  options: {
+    baselineRev?: string | undefined | null | undefined
+    onPatchChunk?: ((chunk: string) => void) | undefined
+  } = {},
 ): Promise<WorktreeSnapshot> {
   return withStagedWorktree(projectId, async ({ env, hasHead }) => {
     const baselineRev = options.baselineRev?.trim() || (hasHead ? 'HEAD' : EMPTY_TREE_OID)
@@ -83,13 +86,13 @@ export async function loadWorktreeSnapshot(
       '--',
     ]
 
-    const patchPromise = runGitWithOptions(
+    const patchPromise = runGitStreamingWithOptions(
       projectId,
       diffArguments(['--unified=1', '--no-color', '--no-ext-diff', '--find-renames']),
       {
         env,
         timeout: 20_000,
-        maxBuffer: 1024 * 1024 * 24,
+        onStdoutChunk: options.onPatchChunk ?? (() => undefined),
       },
     ).then(({ stdout }) => stdout.trim())
 

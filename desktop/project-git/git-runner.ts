@@ -1,4 +1,4 @@
-import { execFile as execFileCallback } from 'node:child_process'
+import { execFile as execFileCallback, spawn } from 'node:child_process'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -56,6 +56,66 @@ export function runGitBufferWithOptions(
         resolve({ stdout, stderr })
       },
     )
+  })
+}
+
+export function runGitStreamingWithOptions(
+  projectId: string,
+  args: string[],
+  options: {
+    env?: NodeJS.ProcessEnv
+    timeout?: number | undefined
+    onStdoutChunk: (chunk: string) => void
+  },
+) {
+  return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+    const child = spawn('git', args, {
+      cwd: projectId,
+      env: options.env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+
+    let stdout = ''
+    let stderr = ''
+    let settled = false
+    const timeout = setTimeout(() => {
+      child.kill('SIGTERM')
+      rejectOnce(new Error(`Git command timed out after ${options.timeout ?? 3_000}ms.`))
+    }, options.timeout ?? 3_000)
+
+    const rejectOnce = (error: Error) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timeout)
+      reject(Object.assign(error, { stdout, stderr }))
+    }
+
+    child.stdout.setEncoding('utf8')
+    child.stdout.on('data', (chunk: string) => {
+      stdout += chunk
+      options.onStdoutChunk(chunk)
+    })
+    child.stderr.setEncoding('utf8')
+    child.stderr.on('data', (chunk: string) => {
+      stderr += chunk
+    })
+    child.on('error', rejectOnce)
+    child.on('close', (code, signal) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timeout)
+      if (code === 0) {
+        resolve({ stdout, stderr })
+        return
+      }
+
+      reject(
+        Object.assign(new Error(`Git command failed with ${signal ?? `exit code ${code}`}.`), {
+          stdout,
+          stderr,
+        }),
+      )
+    })
   })
 }
 
