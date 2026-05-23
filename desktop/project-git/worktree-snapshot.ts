@@ -1,3 +1,7 @@
+import { createHash } from 'node:crypto'
+import { mkdir, rm, stat } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { runGitStreamingWithOptions, runGitWithOptions, withTemporaryIndex } from './git-runner.ts'
 
 export const EMPTY_TREE_OID = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
@@ -15,10 +19,74 @@ export type WorktreeSnapshot = {
 export type WorktreeStats = Omit<WorktreeSnapshot, 'patch'>
 
 const stagedWorktreeQueues = new Map<string, Promise<unknown>>()
+const stagedWorktreeLockRoot = join(tmpdir(), 'howcode-git-worktree-locks')
+const stagedWorktreeLockStaleMs = 120_000
+const stagedWorktreeLockPollMs = 50
+const stagedWorktreeLockTimeoutMs = 30_000
+
+function getStagedWorktreeLockPath(projectId: string) {
+  const lockKey = createHash('sha1').update(projectId).digest('hex')
+  return join(stagedWorktreeLockRoot, `${lockKey}.lock`)
+}
+
+function waitForStagedWorktreeLock() {
+  return new Promise((resolve) => setTimeout(resolve, stagedWorktreeLockPollMs))
+}
+
+function isFileAlreadyExistsError(error: unknown) {
+  return Boolean(error && typeof error === 'object' && 'code' in error && error.code === 'EEXIST')
+}
+
+async function removeStaleStagedWorktreeLock(lockPath: string) {
+  try {
+    const lockStat = await stat(lockPath)
+    if (Date.now() - lockStat.mtimeMs <= stagedWorktreeLockStaleMs) return false
+    await rm(lockPath, { force: true, recursive: true })
+    return true
+  } catch {
+    return true
+  }
+}
+
+async function acquireStagedWorktreeLock(projectId: string) {
+  await mkdir(stagedWorktreeLockRoot, { recursive: true })
+  const lockPath = getStagedWorktreeLockPath(projectId)
+  const startedAt = Date.now()
+
+  while (true) {
+    try {
+      await mkdir(lockPath)
+      return async () => {
+        await rm(lockPath, { force: true, recursive: true })
+      }
+    } catch (error) {
+      if (!isFileAlreadyExistsError(error)) throw error
+      if (await removeStaleStagedWorktreeLock(lockPath)) continue
+
+      if (Date.now() - startedAt > stagedWorktreeLockTimeoutMs) {
+        throw new Error('Timed out waiting for staged worktree diff lock.')
+      }
+
+      await waitForStagedWorktreeLock()
+    }
+  }
+}
+
+async function runWithProcessStagedWorktreeLock<T>(projectId: string, operation: () => Promise<T>) {
+  const release = await acquireStagedWorktreeLock(projectId)
+  try {
+    return await operation()
+  } finally {
+    await release()
+  }
+}
 
 function runExclusiveStagedWorktree<T>(projectId: string, operation: () => Promise<T>): Promise<T> {
   const previous = stagedWorktreeQueues.get(projectId) ?? Promise.resolve()
-  const next = previous.then(operation, operation)
+  const next = previous.then(
+    () => runWithProcessStagedWorktreeLock(projectId, operation),
+    () => runWithProcessStagedWorktreeLock(projectId, operation),
+  )
   stagedWorktreeQueues.set(
     projectId,
     next.finally(() => {
