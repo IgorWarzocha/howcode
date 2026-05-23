@@ -1,4 +1,4 @@
-import { getPersistedSessionPath } from '../../../shared/session-paths'
+import { getPersistedSessionPath } from '@howcode/shared/session-paths'
 import type { ComposerStateRequest, ProjectDiffBaseline } from '../desktop/types'
 
 export const desktopQueryKeys = {

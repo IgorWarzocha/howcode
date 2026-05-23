@@ -1,6 +1,6 @@
+import { parseGitHubRepositoryUrl } from '@howcode/shared/github-repository-url'
 import { CircleDot, ExternalLink, GitBranch, GitPullRequest } from 'lucide-react'
-import { parseGitHubRepositoryUrl } from '../../../shared/github-repository-url'
-import { GitHubInvertocatMark } from '../components/common/github-invertocat-mark'
+import { GitHubInvertocatMark } from '../common/github-invertocat-mark'
 import type { DesktopActionInvoker, ProjectGitState, ProjectUsageSummary } from '../desktop/types'
 import { openExternalQuery } from '../query/desktop-query'
 import type { Project } from '../types'

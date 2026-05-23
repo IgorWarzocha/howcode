@@ -1,3 +1,6 @@
+import { EmptyStateCard } from '@howcode/common/empty-state-card'
+import { IconButton } from '@howcode/common/icon-button'
+import { PopoverPanel } from '@howcode/common/popover'
 import {
   BrushCleaning,
   Check,
@@ -20,9 +23,6 @@ import {
   appTypeGroupTextClass,
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { EmptyStateCard } from '../../common/empty-state-card'
-import { IconButton } from '../../common/icon-button'
-import { PopoverPanel } from '../../common/popover'
 import { InboxThreadRow } from './inbox-thread-row'
 
 type InboxFilterMode = 'all' | 'terminal' | 'recent'

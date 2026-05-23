@@ -1,6 +1,8 @@
 import { closestCorners, DndContext } from '@dnd-kit/core'
 import { restrictToParentElement, restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { IconButton } from '@howcode/common/icon-button'
+import { PopoverPanel } from '@howcode/common/popover'
 import { Edit2, FolderPlus, Plus, Search } from 'lucide-react'
 import { useRef } from 'react'
 import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
@@ -10,8 +12,6 @@ import type {
   ChatThread,
   DesktopActionInvoker,
 } from '../../../desktop/types'
-import { IconButton } from '../../common/icon-button'
-import { PopoverPanel } from '../../common/popover'
 import { ChatGroupRow } from './chat-group-row'
 import { ChatThreadDropItem } from './chat-thread-drop-item'
 import { SortableGroupItem } from './sortable-group-item'

@@ -1,4 +1,4 @@
-import { SectionIntro } from '../../components/common/section-intro'
+import { SectionIntro } from '../../common/section-intro'
 import {
   appToneDangerClass,
   appToneMutedClass,

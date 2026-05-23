@@ -1,3 +1,4 @@
+import { IconButton } from '@howcode/common/icon-button'
 import { FolderPlus, Search, X } from 'lucide-react'
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
@@ -12,7 +13,6 @@ import {
   appTypeSmallClass,
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { IconButton } from '../../common/icon-button'
 import { ProjectTree } from '../project-tree'
 import { SidebarProjectsSkeleton } from '../sidebar-skeletons'
 import {

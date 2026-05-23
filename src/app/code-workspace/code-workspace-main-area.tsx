@@ -1,5 +1,5 @@
 import { DiffPanel } from '@howcode/native-gitops/diff-panel'
-import { defaultPiSettings } from '../../../shared/default-pi-settings'
+import { defaultPiSettings } from '@howcode/shared/default-pi-settings'
 import type { AppShellController } from '../app-shell/useAppShellController'
 import { mainPanelClass } from '../ui/classes'
 import { FALLBACK_APP_SETTINGS } from './code-workspace-defaults'

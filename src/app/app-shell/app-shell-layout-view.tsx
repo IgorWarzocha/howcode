@@ -1,4 +1,4 @@
-import { TerminalPanel } from '@howcode/workspace'
+import { TerminalPanel } from '@howcode/workspace-shell'
 import { PanelLeftOpen, PanelRightClose } from 'lucide-react'
 import type { CSSProperties, Dispatch, RefObject, SetStateAction } from 'react'
 import { Sidebar } from '../components/sidebar/sidebar'

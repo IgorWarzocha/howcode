@@ -1,6 +1,6 @@
 import { ArrowUpRight, Check, Sparkles } from 'lucide-react'
-import { CompactMetaRow } from '../../components/common/compact-meta-row'
-import { Tooltip } from '../../components/common/tooltip'
+import { CompactMetaRow } from '../../common/compact-meta-row'
+import { Tooltip } from '../../common/tooltip'
 import type { PiPackageCatalogItem } from '../../desktop/types'
 import {
   appToneMutedClass,

@@ -1,4 +1,4 @@
-import { getSafeExternalUrl, pickSafeExternalUrl } from '../../../shared/external-url'
+import { getSafeExternalUrl, pickSafeExternalUrl } from '@howcode/shared/external-url'
 import type { PiConfiguredPackage } from '../desktop/types'
 import { canSearchPiPackagesQuery, openExternalQuery } from '../query/desktop-query'
 import { getActionError } from '../utils/action-error'

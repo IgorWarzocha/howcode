@@ -1,4 +1,4 @@
-import { getSafeExternalUrl } from '../../../shared/external-url'
+import { getSafeExternalUrl } from '@howcode/shared/external-url'
 import type { PiConfiguredSkill, PiSkillCatalogItem } from '../desktop/types'
 import { canSearchPiSkillsQuery, openExternalQuery } from '../query/desktop-query'
 import { getActionError } from '../utils/action-error'

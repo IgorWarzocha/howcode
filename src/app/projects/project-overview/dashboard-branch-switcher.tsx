@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom'
 import {
   notifyComposerPopoverOpened,
   useComposerPopoverDismissSignal,
-} from '../../components/workspace/composer/composer-popover-coordination'
+} from '../../composer/composer-popover-coordination'
 import type { DesktopActionInvoker, ProjectGitState } from '../../desktop/types'
 import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
 import type { Project } from '../../types'

@@ -1,16 +1,16 @@
-import type { DesktopAction } from '../../shared/desktop-actions'
+import type { DesktopAction } from '@howcode/shared/desktop-actions'
 import type {
   AnyDesktopActionPayload,
   ComposerAttachment,
   DesktopEvent,
-} from '../../shared/desktop-contracts'
+} from '@howcode/shared/desktop-contracts'
 import type {
   DesktopEventChannel,
   DesktopEventMap,
   DesktopRequestChannel,
   DesktopRequestMap,
-} from '../../shared/desktop-ipc'
-import type { TerminalEvent, TerminalOpenRequest } from '../../shared/terminal-contracts'
+} from '@howcode/shared/desktop-ipc'
+import type { TerminalEvent, TerminalOpenRequest } from '@howcode/shared/terminal-contracts'
 
 let bridgeTokenPromise: Promise<string> | null = null
 

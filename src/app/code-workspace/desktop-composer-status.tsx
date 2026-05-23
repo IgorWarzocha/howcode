@@ -1,7 +1,7 @@
+import { getPersistedSessionPath } from '@howcode/shared/session-paths'
 import { Bot, Brain, Gauge, Server } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
-import { getPersistedSessionPath } from '../../../shared/session-paths'
-import { ComposerModelPopover } from '../components/workspace/composer/composer-model-popover'
+import { ComposerModelPopover } from '../composer/composer-model-popover'
 import type {
   ComposerContextUsage,
   ComposerModel,

@@ -1,3 +1,4 @@
+import { Tooltip } from '@howcode/common/tooltip'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import {
   BriefcaseBusiness,
@@ -18,12 +19,11 @@ import type {
 import { useAnimatedPresence } from '../../hooks/useAnimatedPresence'
 import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
 import type { Project, View } from '../../types'
-import { Tooltip } from '../common/tooltip'
 
 type SidebarNavigableView = Exclude<View, 'gitops'>
 
 import { AppMenu } from '@howcode/app-menu'
-import { NavButton } from '../common/nav-button'
+import { NavButton } from '@howcode/common/nav-button'
 import { SidebarChatSection } from './chat/sidebar-chat-section'
 import { SidebarInboxSection } from './inbox/sidebar-inbox-section'
 import { SidebarProjectsSection } from './projects/sidebar-projects-section'

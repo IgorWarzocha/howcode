@@ -1,10 +1,10 @@
-import { Download, Trash2 } from 'lucide-react'
-import type { Dispatch, SetStateAction } from 'react'
 import {
   DEFAULT_DICTATION_MAX_DURATION_SECONDS,
   DICTATION_MAX_DURATION_OPTIONS,
-} from '../../../../shared/dictation-settings'
-import { ActivitySpinner } from '../../components/common/activity-spinner'
+} from '@howcode/shared/dictation-settings'
+import { Download, Trash2 } from 'lucide-react'
+import type { Dispatch, SetStateAction } from 'react'
+import { ActivitySpinner } from '../../common/activity-spinner'
 import type { AppSettings, DictationModelId } from '../../desktop/types'
 import {
   appToneDangerClass,

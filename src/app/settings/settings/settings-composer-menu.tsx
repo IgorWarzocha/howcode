@@ -1,6 +1,6 @@
 import { Check } from 'lucide-react'
 import type { RefObject } from 'react'
-import { PopoverPanel } from '../../components/common/popover'
+import { PopoverPanel } from '../../common/popover'
 import {
   appToneMutedClass,
   appTypeMetaClass,

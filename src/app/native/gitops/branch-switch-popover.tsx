@@ -1,6 +1,6 @@
 import { Check, GitFork, GitPullRequestDraft } from 'lucide-react'
 import type { CSSProperties, ReactNode, RefObject } from 'react'
-import { PopoverPanel } from '../../components/common/popover'
+import { PopoverPanel } from '../../common/popover'
 import {
   getFeatureStatusBadgeClass,
   getFeatureStatusDataAttributes,

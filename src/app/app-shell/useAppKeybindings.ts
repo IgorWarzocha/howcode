@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef } from 'react'
 import {
   eventToAcceleratorCandidates,
   getEffectiveAccelerators,
   type KeybindingCommandId,
   type KeybindingOverrides,
-} from '../../../shared/keybindings'
+} from '@howcode/shared/keybindings'
+import { useEffect, useMemo, useRef } from 'react'
 import { runAppCommand, stopActiveRun } from './keybinding-command-handlers'
 import {
   appLevelShortcutsAreBlocked,

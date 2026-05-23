@@ -4,11 +4,11 @@ import { type RefObject, useEffect, useId, useMemo, useRef, useState } from 'rea
 import {
   notifyComposerPopoverOpened,
   useComposerPopoverDismissSignal,
-} from '../../components/workspace/composer/composer-popover-coordination'
+} from '../../composer/composer-popover-coordination'
 import {
   type BaselineAnchorKind,
   useDiffBaselinePopoverPosition,
-} from '../../components/workspace/composer/useDiffBaselinePopoverPosition'
+} from '../../composer/useDiffBaselinePopoverPosition'
 import type {
   ProjectCommitEntry,
   ProjectDiffBaseline,

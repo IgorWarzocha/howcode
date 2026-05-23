@@ -1,6 +1,6 @@
+import { GitHubInvertocatMark } from '@howcode/common/github-invertocat-mark'
 import { Clock3, ListFilter, SquareTerminal, Star } from 'lucide-react'
 import type { View } from '../../../types'
-import { GitHubInvertocatMark } from '../../common/github-invertocat-mark'
 import type { SidebarProjectsFilterMode } from './sidebar-projects.helpers'
 
 export function shouldShowSidebarProjects(activeView: View) {

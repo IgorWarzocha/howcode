@@ -1,8 +1,8 @@
 import { ChevronRight, CornerDownLeft, FolderOpen, RefreshCw } from 'lucide-react'
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
-import { TextButton } from '../../components/common/text-button'
-import { ThreeDotsSpinner } from '../../components/common/three-dots-spinner'
-import { Tooltip } from '../../components/common/tooltip'
+import { TextButton } from '../../common/text-button'
+import { ThreeDotsSpinner } from '../../common/three-dots-spinner'
+import { Tooltip } from '../../common/tooltip'
 import {
   closeSkillCreatorSessionQuery,
   continueSkillCreatorSessionQuery,

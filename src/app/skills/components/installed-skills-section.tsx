@@ -1,8 +1,8 @@
 import { ArrowUpRight, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { CompactMetaRow } from '../../components/common/compact-meta-row'
-import { ConfirmPopover } from '../../components/common/confirm-popover'
-import { Tooltip } from '../../components/common/tooltip'
+import { CompactMetaRow } from '../../common/compact-meta-row'
+import { ConfirmPopover } from '../../common/confirm-popover'
+import { Tooltip } from '../../common/tooltip'
 import type { PiConfiguredSkill } from '../../desktop/types'
 import { openPathQuery } from '../../query/desktop-query'
 import {

@@ -20,8 +20,8 @@ import {
   useState,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { PopoverPanel } from '../components/common/popover'
-import { Tooltip } from '../components/common/tooltip'
+import { PopoverPanel } from '../common/popover'
+import { Tooltip } from '../common/tooltip'
 import { useDismissibleLayer } from '../hooks/useDismissibleLayer'
 import {
   artifactHeaderClass,

@@ -1,4 +1,4 @@
-import { getPersistedSessionPath } from '../../../shared/session-paths'
+import { getPersistedSessionPath } from '@howcode/shared/session-paths'
 import type { ThreadData } from '../desktop/types'
 import { useDesktopThreadQuery } from '../hooks/useDesktopThread'
 

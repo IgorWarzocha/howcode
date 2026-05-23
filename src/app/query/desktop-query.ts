@@ -1,7 +1,7 @@
 const pathSeparatorPattern = /[\\/]/
 
-import { fallbackAppSlashCommands } from '../../../shared/composer-slash-commands'
-import type { DesktopRequestMap } from '../../../shared/desktop-ipc'
+import { fallbackAppSlashCommands } from '@howcode/shared/composer-slash-commands'
+import type { DesktopRequestMap } from '@howcode/shared/desktop-ipc'
 import type {
   AppUpdateState,
   ArchivedThread,

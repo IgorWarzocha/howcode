@@ -1,5 +1,5 @@
+import type { KeybindingCommandId } from '@howcode/shared/keybindings'
 import { useEffect, useRef } from 'react'
-import type { KeybindingCommandId } from '../../../shared/keybindings'
 
 export const howcodeKeybindingCommandEvent = 'howcode:keybinding-command'
 export const howcodeDismissTransientUiEvent = 'howcode:dismiss-transient-ui'

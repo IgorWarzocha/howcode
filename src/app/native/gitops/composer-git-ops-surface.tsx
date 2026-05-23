@@ -1,8 +1,8 @@
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { type RefObject, useEffect } from 'react'
 import { useHowcodeKeybindingCommand } from '../../app-shell/keybinding-events'
-import { ComposerDictationControls } from '../../components/workspace/composer/composer-dictation-controls'
-import { useComposerDictation } from '../../components/workspace/composer/useComposerDictation'
+import { ComposerDictationControls } from '../../composer/composer-dictation-controls'
+import { useComposerDictation } from '../../composer/useComposerDictation'
 import type {
   AppSettings,
   DesktopActionInvoker,

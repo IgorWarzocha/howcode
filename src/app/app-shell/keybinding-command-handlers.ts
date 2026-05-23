@@ -1,4 +1,4 @@
-import type { KeybindingCommandId } from '../../../shared/keybindings'
+import type { KeybindingCommandId } from '@howcode/shared/keybindings'
 import { appLevelShortcutsAreBlocked, rendererCommandIds } from './keybinding-context'
 import {
   dispatchHowcodeDismissTransientUi,

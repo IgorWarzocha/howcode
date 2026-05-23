@@ -1,5 +1,5 @@
+import { getPersistedSessionPath, isLocalSessionPath } from '@howcode/shared/session-paths'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { getPersistedSessionPath, isLocalSessionPath } from '../../../shared/session-paths'
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence'
 import { AppShellLayoutView } from './app-shell-layout-view'
 import { useAppKeybindings } from './useAppKeybindings'

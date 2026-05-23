@@ -1,9 +1,9 @@
-import { Check, Mic } from 'lucide-react'
 import {
   DEFAULT_DICTATION_MAX_DURATION_SECONDS,
   DICTATION_MAX_DURATION_OPTIONS,
-} from '../../../../shared/dictation-settings'
-import { SectionIntro } from '../../components/common/section-intro'
+} from '@howcode/shared/dictation-settings'
+import { Check, Mic } from 'lucide-react'
+import { SectionIntro } from '../../common/section-intro'
 import type {
   AppSettings,
   DictationModelId,

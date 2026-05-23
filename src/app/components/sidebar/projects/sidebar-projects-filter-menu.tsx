@@ -1,7 +1,7 @@
+import { GitHubInvertocatMark } from '@howcode/common/github-invertocat-mark'
+import { PopoverPanel } from '@howcode/common/popover'
 import { Check, Clock3, SquareTerminal, Star } from 'lucide-react'
 import type { ReactNode, RefObject } from 'react'
-import { GitHubInvertocatMark } from '../../common/github-invertocat-mark'
-import { PopoverPanel } from '../../common/popover'
 import type { SidebarProjectsFilterMode } from './sidebar-projects.helpers'
 
 type SidebarProjectsFilterMenuProps = {

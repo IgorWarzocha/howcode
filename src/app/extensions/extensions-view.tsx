@@ -1,6 +1,6 @@
 import { ArrowUpRight } from 'lucide-react'
-import { ViewHeader } from '../components/common/view-header'
-import { ViewShell } from '../components/common/view-shell'
+import { ViewHeader } from '../common/view-header'
+import { ViewShell } from '../common/view-shell'
 import { appToneDangerClass, appToneMutedClass, appTypeGroupTextClass } from '../ui/classes'
 import { skillsViewShellClass } from '../ui/screen-classes'
 import { cn } from '../utils/cn'

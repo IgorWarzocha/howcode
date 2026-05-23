@@ -1,4 +1,4 @@
-import type { KeybindingCommandId } from '../../../shared/keybindings'
+import type { KeybindingCommandId } from '@howcode/shared/keybindings'
 import type { KeybindingRuntime } from './keybinding-runtime'
 
 export const rendererCommandIds = new Set<KeybindingCommandId>([

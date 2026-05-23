@@ -1,6 +1,6 @@
+import { getLocalDraftChatGroupId, isLocalSessionPath } from '@howcode/shared/session-paths'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
-import { getLocalDraftChatGroupId, isLocalSessionPath } from '../../../shared/session-paths'
 import type { ShellState, Thread } from '../desktop/types'
 import { desktopQueryKeys, getProjectThreadsQuery } from '../query/desktop-query'
 

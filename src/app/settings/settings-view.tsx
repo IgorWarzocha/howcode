@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { ViewHeader } from '../components/common/view-header'
-import { ViewShell } from '../components/common/view-shell'
+import { ViewHeader } from '../common/view-header'
+import { ViewShell } from '../common/view-shell'
 import type {
   AppSettings,
   ComposerModel,

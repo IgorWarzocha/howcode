@@ -1,0 +1,8 @@
+export type { ComposerProps } from './composer'
+export { Composer } from './composer'
+export { ComposerFooter } from './composer-footer'
+export { ComposerModelPopover } from './composer-model-popover'
+export { ComposerPromptSurface } from './composer-prompt-surface'
+export { getComposerPlaceholderText } from './composer-prompt-surface-helpers'
+export type { ComposerDraft } from './composerDraftStore'
+export { QueuedPromptsCard } from './queued-prompts-card'

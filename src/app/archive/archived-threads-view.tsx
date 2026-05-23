@@ -1,10 +1,10 @@
 import { ArchiveRestore, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CompactMetaRow } from '../components/common/compact-meta-row'
-import { ConfirmPopover } from '../components/common/confirm-popover'
-import { Tooltip } from '../components/common/tooltip'
-import { ViewHeader } from '../components/common/view-header'
-import { ViewShell } from '../components/common/view-shell'
+import { CompactMetaRow } from '../common/compact-meta-row'
+import { ConfirmPopover } from '../common/confirm-popover'
+import { Tooltip } from '../common/tooltip'
+import { ViewHeader } from '../common/view-header'
+import { ViewShell } from '../common/view-shell'
 import type { ArchivedThread, DesktopActionInvoker } from '../desktop/types'
 import {
   appToneMutedClass,

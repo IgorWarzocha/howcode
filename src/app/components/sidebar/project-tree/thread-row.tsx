@@ -1,8 +1,8 @@
+import { ActivitySpinner } from '@howcode/common/activity-spinner'
+import { Tooltip } from '@howcode/common/tooltip'
 import { Archive, SquareTerminal, Star } from 'lucide-react'
 import { compactIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { ActivitySpinner } from '../../common/activity-spinner'
-import { Tooltip } from '../../common/tooltip'
 
 type ThreadRowProps = {
   age: string

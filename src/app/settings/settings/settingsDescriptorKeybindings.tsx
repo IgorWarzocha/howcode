@@ -1,13 +1,13 @@
-import { Ban, CheckCircle2, RotateCcw } from 'lucide-react'
-import type { KeyboardEvent } from 'react'
-import { useEffect, useState } from 'react'
 import {
   bundledKeybindings,
   eventToAcceleratorCandidates,
   getConflictForCommand,
   isValidAccelerator,
   normalizeAccelerator,
-} from '../../../../shared/keybindings'
+} from '@howcode/shared/keybindings'
+import { Ban, CheckCircle2, RotateCcw } from 'lucide-react'
+import type { KeyboardEvent } from 'react'
+import { useEffect, useState } from 'react'
 import type { AppSettings, DesktopActionInvoker, KeybindingCommandId } from '../../desktop/types'
 import {
   appToneTextClass,

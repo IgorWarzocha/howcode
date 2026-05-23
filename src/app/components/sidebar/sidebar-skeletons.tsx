@@ -1,4 +1,4 @@
-import { SkeletonBlock } from '../common/skeleton'
+import { SkeletonBlock } from '@howcode/common/skeleton'
 
 const projectSkeletonRows = [
   'project-a',

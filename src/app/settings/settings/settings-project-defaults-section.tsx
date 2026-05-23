@@ -1,7 +1,7 @@
 import { Check, FolderPlus } from 'lucide-react'
 import type { Dispatch, SetStateAction } from 'react'
-import { SectionIntro } from '../../components/common/section-intro'
-import { SegmentedToggle } from '../../components/common/segmented-toggle'
+import { SectionIntro } from '../../common/section-intro'
+import { SegmentedToggle } from '../../common/segmented-toggle'
 import type { AppSettings } from '../../desktop/types'
 import {
   appToneMutedClass,

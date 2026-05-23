@@ -2,7 +2,7 @@ import {
   isKeybindingCommandId,
   isValidAccelerator,
   normalizeAccelerator,
-} from '../../../shared/keybindings'
+} from '@howcode/shared/keybindings'
 import type {
   ComposerThinkingLevel,
   ModelSelection,

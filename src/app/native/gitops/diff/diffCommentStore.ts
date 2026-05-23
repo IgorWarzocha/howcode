@@ -4,7 +4,7 @@ import {
   getBrowserStorage,
   hydratePersistedRecordMap,
   type PersistedRecordStoreOptions,
-} from '../../../components/workspace/persistence/persistedRecordStore'
+} from '../../../workspace-shell/persistence/persistedRecordStore'
 
 type AnnotationSide = 'deletions' | 'additions'
 

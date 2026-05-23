@@ -2,7 +2,7 @@ import {
   getLocalDraftProjectId,
   getPersistedSessionPath,
   isLocalSessionPath,
-} from '../../../shared/session-paths'
+} from '@howcode/shared/session-paths'
 import type { DesktopEvent } from '../desktop/types'
 import { desktopQueryKeys, invokeDesktopActionQuery } from '../query/desktop-query'
 import type { WorkspaceState } from '../state/workspace'

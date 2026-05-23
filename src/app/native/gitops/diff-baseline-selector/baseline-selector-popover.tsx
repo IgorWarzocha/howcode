@@ -2,7 +2,7 @@ import type { useQuery } from '@tanstack/react-query'
 import { Search } from 'lucide-react'
 import type { RefObject } from 'react'
 import { createPortal } from 'react-dom'
-import { PopoverPanel } from '../../../components/common/popover'
+import { PopoverPanel } from '../../../common/popover'
 import type { ProjectCommitEntry, ProjectDiffBaseline } from '../../../desktop/types'
 import {
   appToneMutedClass,

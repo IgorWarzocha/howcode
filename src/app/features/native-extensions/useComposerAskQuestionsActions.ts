@@ -1,4 +1,4 @@
-import type { ComposerProps } from '../../components/workspace/composer'
+import type { ComposerProps } from '@howcode/composer'
 
 export function useComposerAskQuestionsActions({
   chatGroupId,

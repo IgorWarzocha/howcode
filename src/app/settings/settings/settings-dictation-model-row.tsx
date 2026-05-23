@@ -1,6 +1,6 @@
 import { Check, Download, Trash2 } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { ActivitySpinner } from '../../components/common/activity-spinner'
+import { ActivitySpinner } from '../../common/activity-spinner'
 import type { DictationModelId, DictationModelSummary } from '../../desktop/types'
 import {
   appToneMutedClass,

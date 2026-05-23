@@ -1,6 +1,6 @@
+import { getLocalDraftProjectId } from '@howcode/shared/session-paths'
 import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch } from 'react'
-import { getLocalDraftProjectId } from '../../../../shared/session-paths'
 import type { ComposerState, DesktopActionResult } from '../../desktop/types'
 import type { WorkspaceAction, WorkspaceState } from '../../state/workspace'
 import {

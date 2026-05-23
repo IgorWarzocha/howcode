@@ -1,4 +1,4 @@
-import { isLocalSessionPath } from '../../../shared/session-paths'
+import { isLocalSessionPath } from '@howcode/shared/session-paths'
 import type {
   ChatSidebarState,
   DesktopActionResult,

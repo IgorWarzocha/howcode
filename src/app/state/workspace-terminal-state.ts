@@ -1,4 +1,4 @@
-import { isLocalSessionPath } from '../../../shared/session-paths'
+import { isLocalSessionPath } from '@howcode/shared/session-paths'
 import type { View } from '../types'
 import type { NonGitOpsView, WorkspaceAction, WorkspaceState } from './workspace'
 

@@ -1,4 +1,4 @@
-import { SkeletonBlock } from '../../components/common/skeleton'
+import { SkeletonBlock } from '../../common/skeleton'
 import {
   appToneMutedClass,
   appToneSubtleClass,

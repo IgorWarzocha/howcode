@@ -17,9 +17,9 @@ import type {
   ThreadData,
 } from '../desktop/types'
 import { SettingsView } from '../settings/settings-view'
+import { ThreadView } from '../thread/thread-view'
 import type { Project, View } from '../types'
 import { viewSubtitleClass, viewTitleClass } from '../ui/classes'
-import { ThreadView } from '../views/thread-view'
 
 const ExtensionsView = lazy(async () => {
   const module = await import('../extensions/extensions-view')

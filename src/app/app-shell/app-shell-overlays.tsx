@@ -1,4 +1,4 @@
-import { TerminalPanel } from '@howcode/workspace'
+import { TerminalPanel } from '@howcode/workspace-shell'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { useCallback, useRef } from 'react'
 import type { ProjectDiffBaseline } from '../desktop/types'

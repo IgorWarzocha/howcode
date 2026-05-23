@@ -1,6 +1,6 @@
 import { ChevronDown, FilePenLine, GitCommitHorizontal } from 'lucide-react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
-import { SectionIntro } from '../../components/common/section-intro'
+import { SectionIntro } from '../../common/section-intro'
 import type { ComposerModel, ModelSelection } from '../../desktop/types'
 import {
   appToneMutedClass,

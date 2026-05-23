@@ -1,9 +1,9 @@
+import { MainView } from '@howcode/app-shell'
 import { ChatWorkspaceView } from '@howcode/chat-workspace'
 import { CodeWorkspaceView, FALLBACK_APP_SETTINGS } from '@howcode/code-workspace'
 import { LandingView } from '@howcode/projects'
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
 import { mainPanelClass } from '../ui/classes'
-import { MainView } from '../views/main-view'
 import type { AppShellController } from './useAppShellController'
 
 type AppShellWorkspaceProps = {

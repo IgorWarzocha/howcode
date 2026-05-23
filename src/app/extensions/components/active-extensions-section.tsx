@@ -1,4 +1,4 @@
-import { DisclosureSection } from '../../components/common/disclosure-section'
+import { DisclosureSection } from '../../common/disclosure-section'
 import type { PiConfiguredPackage } from '../../desktop/types'
 import { inlineEmptyNoteClass } from '../../ui/classes'
 import { skillsListClass, skillsPreviewListClass } from '../../ui/screen-classes'

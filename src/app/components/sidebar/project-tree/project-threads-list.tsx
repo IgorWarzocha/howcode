@@ -1,3 +1,4 @@
+import { Tooltip } from '@howcode/common/tooltip'
 import { Archive, ChevronDown, ChevronRight } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
@@ -5,7 +6,6 @@ import { useAnimatedPresence } from '../../../hooks/useAnimatedPresence'
 import type { Project, View } from '../../../types'
 import { compactIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { Tooltip } from '../../common/tooltip'
 import { EmptyThreadsState } from './empty-threads-state'
 import { ThreadRow } from './thread-row'
 

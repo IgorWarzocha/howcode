@@ -8,13 +8,8 @@ import {
   useRef,
   useState,
 } from 'react'
-import { PopoverPanel } from '../../components/common/popover'
-import { PlainToggle } from '../../components/workspace/composer/plain-toggle'
-import {
-  workspaceFooterRowClass,
-  workspaceFooterTextClass,
-  workspaceFooterTrailingGroupClass,
-} from '../../components/workspace/footer/workspace-footer-primitives'
+import { PopoverPanel } from '../../common/popover'
+import { PlainToggle } from '../../composer/plain-toggle'
 import type {
   GitOpsMode,
   ProjectDiffBaseline,
@@ -29,6 +24,11 @@ import {
   popoverPanelClass,
 } from '../../ui/classes'
 import { cn } from '../../utils/cn'
+import {
+  workspaceFooterRowClass,
+  workspaceFooterTextClass,
+  workspaceFooterTrailingGroupClass,
+} from '../../workspace-shell/footer/workspace-footer-primitives'
 import { ComposerDiffBaselineSelector } from './composer-diff-baseline-selector'
 
 type ComposerGitOpsFooterProps = {

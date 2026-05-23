@@ -1,5 +1,5 @@
 import { CornerDownLeft, PackagePlus, Sparkles } from 'lucide-react'
-import { Tooltip } from '../../components/common/tooltip'
+import { Tooltip } from '../../common/tooltip'
 import {
   appToneMutedClass,
   appTypeGroupTextClass,

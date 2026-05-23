@@ -1,14 +1,14 @@
 import { QueuedPromptsCard } from '@howcode/composer'
-import { Composer } from '@howcode/workspace'
+import { Composer } from '@howcode/workspace-shell'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
 import { DesktopComposerStatusModelPicker } from '../code-workspace/desktop-composer-status'
 import type { useQueuedPromptRestore } from '../code-workspace/useQueuedPromptRestore'
-import { WorkspaceComposerDock } from '../components/workspace/workspace-composer-dock'
 import type { AppSettings, ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
 import type { Message } from '../types'
 import { cn } from '../utils/cn'
+import { WorkspaceComposerDock } from '../workspace-shell/workspace-composer-dock'
 import type { ChatArtifactDrawerState } from './useChatArtifactDrawerState'
 
 const FALLBACK_APP_SETTINGS = {

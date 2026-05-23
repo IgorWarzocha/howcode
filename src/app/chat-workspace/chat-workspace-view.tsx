@@ -1,5 +1,5 @@
+import { getLocalDraftChatGroupId, getPersistedSessionPath } from '@howcode/shared/session-paths'
 import { lazy, type RefObject, Suspense, useRef, useState } from 'react'
-import { getLocalDraftChatGroupId, getPersistedSessionPath } from '../../../shared/session-paths'
 import type { AppShellController } from '../app-shell/useAppShellController'
 import { useQueuedPromptRestore } from '../code-workspace/useQueuedPromptRestore'
 import { useWorkspaceFooterHeight } from '../code-workspace/useWorkspaceFooterHeight'

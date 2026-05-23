@@ -100,7 +100,7 @@ describe('pi message mapper', () => {
       'Validation',
       [
         '```sh',
-        'bunx biome check src/app/components/common/markdown-content.tsx \\',
+        'bunx biome check src/app/common/markdown-content.tsx \\',
         '  shared/pi-message-mapper.ts',
         '```',
       ].join('\n'),

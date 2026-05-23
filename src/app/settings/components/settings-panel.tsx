@@ -1,6 +1,6 @@
 import { Check, GitCommitHorizontal, X } from 'lucide-react'
 import { useEffect, useEffectEvent, useId, useRef } from 'react'
-import { TextButton } from '../../components/common/text-button'
+import { TextButton } from '../../common/text-button'
 import type { AppSettings, ComposerModel, DesktopActionInvoker } from '../../desktop/types'
 import {
   appToneMutedClass,

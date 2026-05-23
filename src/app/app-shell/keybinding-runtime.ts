@@ -1,5 +1,5 @@
+import type { KeybindingCommandId } from '@howcode/shared/keybindings'
 import type { MutableRefObject } from 'react'
-import type { KeybindingCommandId } from '../../../shared/keybindings'
 import type { AppShellController } from './useAppShellController'
 
 export type ThreadCycleSelection = {

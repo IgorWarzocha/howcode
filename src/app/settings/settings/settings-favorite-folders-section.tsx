@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react'
-import { EmptyStateCard } from '../../components/common/empty-state-card'
-import { SectionIntro } from '../../components/common/section-intro'
+import { EmptyStateCard } from '../../common/empty-state-card'
+import { SectionIntro } from '../../common/section-intro'
 import {
   appToneMutedClass,
   appToneTextClass,

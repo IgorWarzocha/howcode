@@ -1,4 +1,4 @@
-import { Tooltip } from '../../components/common/tooltip'
+import { Tooltip } from '../../common/tooltip'
 import { appToneMutedClass, appToneTextClass, appTypeTinyClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import type { GitOpsCommentCard } from './composer-git-ops.helpers'

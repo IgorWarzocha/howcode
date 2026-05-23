@@ -1,6 +1,6 @@
+import type { DesktopRequestMap } from '@howcode/shared/desktop-ipc'
 import { ChevronLeft, Folder, Home, Plus, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { DesktopRequestMap } from '../../../../../shared/desktop-ipc'
 import { listProjectDirectoryEntriesQuery } from '../../../query/desktop-query'
 
 type ProjectDirectoryState = DesktopRequestMap['listProjectDirectoryEntries']['response']

@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { ArrowUpRight, Check, CornerDownLeft, PackagePlus, Search, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { CompactMetaRow } from '../../components/common/compact-meta-row'
-import { DisclosureSection } from '../../components/common/disclosure-section'
-import { Tooltip } from '../../components/common/tooltip'
+import { CompactMetaRow } from '../../common/compact-meta-row'
+import { DisclosureSection } from '../../common/disclosure-section'
+import { Tooltip } from '../../common/tooltip'
 import type { AppSettings, DesktopActionInvoker } from '../../desktop/types'
 import { desktopQueryKeys, searchPiSkillsQuery } from '../../query/desktop-query'
 import {

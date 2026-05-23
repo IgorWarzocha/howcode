@@ -1,6 +1,6 @@
 import { Download, RotateCw } from 'lucide-react'
 import type { KeyboardEvent } from 'react'
-import { MarkdownContent } from '../components/common/markdown-content'
+import { MarkdownContent } from '../common/markdown-content'
 import { useAppUpdateFlow } from '../hooks/useAppUpdateFlow'
 import {
   appTypeGroupTextClass,

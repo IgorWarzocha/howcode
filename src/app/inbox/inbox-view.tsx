@@ -1,10 +1,9 @@
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
+import { isCompactSlashCommand } from '@howcode/shared/composer-slash-commands'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { useState } from 'react'
-import { isCompactSlashCommand } from '../../../shared/composer-slash-commands'
-import { EmptyStateCard } from '../components/common/empty-state-card'
-import { MarkdownContent } from '../components/common/markdown-content'
-import { WorkspaceComposerDock } from '../components/workspace/workspace-composer-dock'
+import { EmptyStateCard } from '../common/empty-state-card'
+import { MarkdownContent } from '../common/markdown-content'
 import { getDesktopActionErrorMessage } from '../desktop/action-results'
 import { getErrorMessage } from '../desktop/error-messages'
 import type {
@@ -30,6 +29,7 @@ import {
   threadSessionStripClass,
 } from '../ui/classes'
 import { WORKSPACE_CONTENT_MAX_WIDTH_CLASS } from '../ui/layout'
+import { WorkspaceComposerDock } from '../workspace-shell/workspace-composer-dock'
 import { InboxComposer } from './components/inbox-composer'
 
 type InboxViewProps = {

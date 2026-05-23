@@ -1,7 +1,7 @@
 import { PackagePlus, Search, Sparkles } from 'lucide-react'
-import { DisclosureSection } from '../../components/common/disclosure-section'
-import { TextButton } from '../../components/common/text-button'
-import { Tooltip } from '../../components/common/tooltip'
+import { DisclosureSection } from '../../common/disclosure-section'
+import { TextButton } from '../../common/text-button'
+import { Tooltip } from '../../common/tooltip'
 import type { PiPackageCatalogItem } from '../../desktop/types'
 import {
   appToneMutedClass,

@@ -1,0 +1,81 @@
+import type { RefObject } from 'react'
+import { useRef } from 'react'
+import { useDismissibleLayer } from '../hooks/useDismissibleLayer'
+import {
+  appToneDangerClass,
+  appToneMutedClass,
+  appTypeTinyClass,
+  appTypeTinyStrongClass,
+  confirmPopoverClass,
+  popoverPanelClass,
+} from '../ui/classes'
+import { cn } from '../utils/cn'
+import { PopoverPanel } from './popover'
+
+type ConfirmPopoverProps = {
+  open: boolean
+  anchorRef: RefObject<HTMLElement | null>
+  onClose: () => void
+  onConfirm: () => void | Promise<void>
+  message?: string
+  confirmLabel?: string
+  cancelLabel?: string
+  className?: string
+}
+
+export function ConfirmPopover({
+  open,
+  anchorRef,
+  onClose,
+  onConfirm,
+  message,
+  confirmLabel = 'Yes',
+  cancelLabel = 'No',
+  className,
+}: ConfirmPopoverProps) {
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  useDismissibleLayer({
+    open,
+    onDismiss: onClose,
+    refs: [anchorRef, panelRef],
+  })
+
+  if (!open) {
+    return null
+  }
+
+  return (
+    <PopoverPanel
+      ref={panelRef}
+      className={cn(confirmPopoverClass, popoverPanelClass, className)}
+      data-open="true"
+    >
+      {message ? (
+        <span className={cn('px-1.5', appTypeTinyClass, appToneMutedClass)}>{message}</span>
+      ) : null}
+      <button
+        type="button"
+        className={cn(
+          'rounded-md px-1.5 py-0.5 transition-colors hover:bg-[rgba(255,120,120,0.14)]',
+          appTypeTinyStrongClass,
+          appToneDangerClass,
+        )}
+        onClick={() => void onConfirm()}
+      >
+        {confirmLabel}
+      </button>
+      <button
+        type="button"
+        className={cn(
+          'rounded-md px-1.5 py-0.5 transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]',
+          appTypeTinyClass,
+          appToneMutedClass,
+        )}
+        onClick={onClose}
+      >
+        {cancelLabel}
+      </button>
+    </PopoverPanel>
+  )
+}

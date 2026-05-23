@@ -1,7 +1,7 @@
+import { ActivitySpinner } from '@howcode/common/activity-spinner'
+import { Tooltip } from '@howcode/common/tooltip'
 import { SquareTerminal, X } from 'lucide-react'
 import { compactIconButtonClass } from '../../../ui/classes'
-import { ActivitySpinner } from '../../common/activity-spinner'
-import { Tooltip } from '../../common/tooltip'
 
 type InboxThreadRowProps = {
   age: string
