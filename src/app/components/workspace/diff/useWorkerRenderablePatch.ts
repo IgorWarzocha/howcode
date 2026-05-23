@@ -2,24 +2,16 @@ import { useEffect, useRef, useState } from 'react'
 import { getRenderablePatch } from './diff-panel-content.rendering'
 import type { RenderablePatch } from './diff-panel-content.types'
 
-type FileRenderablePatch = Extract<RenderablePatch, { kind: 'files' }>
-
 type DiffParseResponse = {
   id: number
 } & (
   | { kind: 'patch'; patch: RenderablePatch | null }
-  | { kind: 'files'; files: FileRenderablePatch['files']; done: boolean }
+  | { kind: 'files'; files: Extract<RenderablePatch, { kind: 'files' }>['files']; done: boolean }
 )
 
 type DiffParseWorker = Worker & {
   onmessage: ((event: MessageEvent<DiffParseResponse>) => void) | null
   onmessageerror: ((event: MessageEvent) => void) | null
-}
-
-type PatchChunkState = {
-  canAppend: boolean
-  chunk: string
-  requestId: number
 }
 
 function createDiffParseWorker(): DiffParseWorker {
@@ -28,59 +20,25 @@ function createDiffParseWorker(): DiffParseWorker {
   }) as DiffParseWorker
 }
 
-function getPatchChunkState({
-  previousPatch,
-  requestId,
-  selectedPatch,
-}: {
-  previousPatch: string | undefined
-  requestId: number
-  selectedPatch: string
-}): PatchChunkState {
-  const canAppend = typeof previousPatch === 'string' && selectedPatch.startsWith(previousPatch)
-  return {
-    canAppend,
-    chunk: canAppend ? selectedPatch.slice(previousPatch.length) : selectedPatch,
-    requestId: canAppend ? requestId : requestId + 1,
-  }
-}
-
-function appendFiles(
-  current: RenderablePatch | null,
-  files: FileRenderablePatch['files'],
-): RenderablePatch {
-  if (!current || current.kind !== 'files') return { kind: 'files', files }
-  return { kind: 'files', files: [...current.files, ...files] }
-}
-
-export function useWorkerRenderablePatch(selectedPatch: string | undefined, done = true) {
+export function useWorkerRenderablePatch(selectedPatch: string | undefined) {
   const [renderablePatch, setRenderablePatch] = useState<RenderablePatch | null>(null)
   const requestIdRef = useRef(0)
-  const previousPatchRef = useRef<string | undefined>(undefined)
   const workerRef = useRef<DiffParseWorker | null>(null)
 
   useEffect(() => {
     if (typeof selectedPatch !== 'string') {
       requestIdRef.current += 1
-      previousPatchRef.current = undefined
       setRenderablePatch(null)
       return
     }
 
-    const chunkState = getPatchChunkState({
-      previousPatch: previousPatchRef.current,
-      requestId: requestIdRef.current,
-      selectedPatch,
-    })
-    previousPatchRef.current = selectedPatch
-    requestIdRef.current = chunkState.requestId
-    if (!chunkState.canAppend) setRenderablePatch(null)
-    if (chunkState.chunk.length === 0 && !done) return
+    const requestId = requestIdRef.current + 1
+    requestIdRef.current = requestId
+    setRenderablePatch(null)
 
     let active = true
-    let worker: DiffParseWorker
     const parseOnMainThread = () => {
-      if (!active || chunkState.requestId !== requestIdRef.current) return
+      if (!active || requestId !== requestIdRef.current) return
       setRenderablePatch(getRenderablePatch(selectedPatch, 'diff-panel:dark'))
     }
     const fallbackFromFailedWorker = () => {
@@ -92,6 +50,7 @@ export function useWorkerRenderablePatch(selectedPatch: string | undefined, done
       parseOnMainThread()
     }
 
+    let worker: DiffParseWorker
     try {
       worker = workerRef.current ?? createDiffParseWorker()
     } catch {
@@ -99,7 +58,6 @@ export function useWorkerRenderablePatch(selectedPatch: string | undefined, done
       parseOnMainThread()
       return
     }
-
     workerRef.current = worker
     worker.onmessage = (event) => {
       if (!active || event.data.id !== requestIdRef.current) return
@@ -107,20 +65,20 @@ export function useWorkerRenderablePatch(selectedPatch: string | undefined, done
         setRenderablePatch(event.data.patch)
         return
       }
-      setRenderablePatch((current) => appendFiles(current, event.data.files))
+
+      setRenderablePatch((current) => {
+        if (!current || current.kind !== 'files') {
+          return { kind: 'files', files: event.data.files }
+        }
+
+        return { kind: 'files', files: [...current.files, ...event.data.files] }
+      })
     }
     worker.onerror = fallbackFromFailedWorker
     worker.onmessageerror = fallbackFromFailedWorker
 
     try {
-      worker.postMessage({
-        id: chunkState.requestId,
-        kind: chunkState.canAppend ? 'append' : 'reset',
-        chunk: chunkState.chunk,
-        done,
-        cacheScope: 'diff-panel:dark',
-        patch: selectedPatch,
-      })
+      worker.postMessage({ id: requestId, patch: selectedPatch, cacheScope: 'diff-panel:dark' })
     } catch {
       fallbackFromFailedWorker()
     }
@@ -133,7 +91,7 @@ export function useWorkerRenderablePatch(selectedPatch: string | undefined, done
         worker.onmessageerror = null
       }
     }
-  }, [done, selectedPatch])
+  }, [selectedPatch])
 
   useEffect(
     () => () => {

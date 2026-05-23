@@ -63,7 +63,7 @@ export function DiffPanelContent({
   const selectedPatch = diff?.diff ?? streamedPatch ?? undefined
   const hasResolvedPatch = typeof selectedPatch === 'string'
   const hasNoNetChanges = hasResolvedPatch && selectedPatch.trim().length === 0
-  const renderablePatch = useWorkerRenderablePatch(selectedPatch, !isLoading)
+  const renderablePatch = useWorkerRenderablePatch(selectedPatch)
   const renderableFiles = useMemo(
     () => (renderablePatch && renderablePatch.kind === 'files' ? renderablePatch.files : []),
     [renderablePatch],
