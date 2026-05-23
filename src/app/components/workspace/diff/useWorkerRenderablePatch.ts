@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { buildFileDiffRenderKey } from './diff-panel-content.helpers'
 import { getRenderablePatch } from './diff-panel-content.rendering'
 import type { RenderablePatch } from './diff-panel-content.types'
@@ -74,7 +74,7 @@ export function useWorkerRenderablePatch(selectedPatch: string | undefined, done
   const previousPatchRef = useRef<string | undefined>(undefined)
   const workerRef = useRef<DiffParseWorker | null>(null)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (typeof selectedPatch !== 'string') {
       requestIdRef.current += 1
       previousPatchRef.current = undefined
