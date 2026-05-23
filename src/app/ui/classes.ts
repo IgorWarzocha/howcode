@@ -222,6 +222,22 @@ export const terminalDrawerFooterClass =
 
 export const diffPanelEmptyStateClass = `flex min-h-60 items-center justify-center px-5 text-center ${appTypeSmallClass} ${appToneMutedClass}`
 
+export const diffPanelMainSurfaceClass =
+  'flex h-full min-h-0 flex-col overflow-hidden bg-[color:var(--workspace)]'
+
+export const diffPanelSplitSurfaceClass = `${diffPanelMainSurfaceClass} rounded-[20px] border-l border-[color:var(--border)]/70 xl:w-full`
+
+export const diffRailClass =
+  'flex h-full min-h-0 w-full flex-col bg-[color:var(--workspace)] text-[color:var(--text)]'
+
+export const diffRailHeaderClass =
+  'flex h-9 shrink-0 items-center gap-2 px-2.5 text-[color:var(--muted)]'
+
+export const diffRailSearchClass = `flex min-h-8 shrink-0 items-center gap-2 rounded-lg bg-[color:var(--surface-hover)] px-2.5 transition-colors focus-within:bg-[color:var(--folded-row-hover-bg)] ${appTypeGroupTextClass} ${appToneMutedClass}`
+
+export const diffRailTreeWrapperClass =
+  'flex min-h-0 flex-1 flex-col gap-2 bg-[color:var(--workspace)] px-2.5 pt-1.5 pb-0'
+
 export const diffPanelTurnChipBaseClass =
   'shrink-0 rounded-lg border px-2 py-1 text-left transition-colors'
 

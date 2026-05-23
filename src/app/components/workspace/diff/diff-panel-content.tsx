@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ProjectDiffBaseline } from '../../../desktop/types'
 import { getFeatureStatusDataAttributes } from '../../../features/feature-status'
 import { useDesktopDiff } from '../../../hooks/useDesktopDiff'
+import { diffPanelMainSurfaceClass, diffPanelSplitSurfaceClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { DiffCommentAnnotationCard } from './diff-comment-annotation-card'
 import {
@@ -210,8 +211,7 @@ export function DiffPanelContent({
   return (
     <aside
       className={cn(
-        'flex h-full min-h-0 flex-col overflow-hidden rounded-[20px] bg-[color:var(--workspace)]',
-        layoutMode === 'split' && 'border-l border-[color:var(--border)] xl:w-full',
+        layoutMode === 'split' ? diffPanelSplitSurfaceClass : diffPanelMainSurfaceClass,
       )}
       {...getFeatureStatusDataAttributes('feature:diff.panel')}
     >

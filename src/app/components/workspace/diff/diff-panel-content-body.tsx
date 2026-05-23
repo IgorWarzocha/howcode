@@ -149,7 +149,7 @@ function DiffFilesView(input: DiffPanelContentBodyProps) {
         <div
           className="min-h-0 shrink-0 overflow-hidden transition-[width,opacity] duration-200 ease-out"
           style={{
-            width: input.showFileTree ? 'min(28rem, calc(100% - 2.5rem))' : 0,
+            width: input.showFileTree ? 'min(24rem, calc(100% - 2.5rem))' : 0,
             opacity: input.showFileTree ? 1 : 0,
           }}
           aria-hidden={!input.showFileTree}

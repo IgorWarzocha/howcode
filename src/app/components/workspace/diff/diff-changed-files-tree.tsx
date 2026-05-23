@@ -9,6 +9,11 @@ import {
   appTypeGroupTextClass,
   appTypeMetaStrongClass,
   appTypeSmallClass,
+  compactIconButtonClass,
+  diffRailClass,
+  diffRailHeaderClass,
+  diffRailSearchClass,
+  diffRailTreeWrapperClass,
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { getFileChangeCounts, resolveFileDiffPath } from './diff-panel-content.helpers'
@@ -19,22 +24,22 @@ const TREE_UNSAFE_CSS = `
     --trees-fg-override: var(--text);
     --trees-muted-fg-override: var(--muted);
     --trees-bg-override: var(--workspace);
-    --trees-bg-muted-override: rgba(169, 178, 215, 0.075);
-    --trees-border-color-override: rgba(169, 178, 215, 0.11);
-    --trees-search-bg-override: rgba(10, 12, 18, 0.44);
+    --trees-bg-muted-override: var(--surface-hover);
+    --trees-border-color-override: color-mix(in srgb, var(--border) 68%, transparent);
+    --trees-search-bg-override: var(--surface-hover);
     --trees-search-fg-override: var(--text);
-    --trees-selected-bg-override: rgba(168, 177, 255, 0.16);
+    --trees-selected-bg-override: var(--folded-row-bg);
     --trees-selected-fg-override: var(--text);
-    --trees-focused-bg-override: rgba(169, 178, 215, 0.08);
-    --trees-hover-bg-override: rgba(169, 178, 215, 0.08);
+    --trees-focused-bg-override: var(--surface-hover);
+    --trees-hover-bg-override: var(--surface-hover);
     --trees-border-radius-override: 9px;
     --trees-padding-inline-override: 0px;
     --trees-level-gap-override: 0px;
     --trees-item-margin-x-override: 0px;
     --trees-item-padding-x-override: 0.625rem;
-    --trees-scrollbar-thumb-override: rgba(169, 178, 215, 0.24);
+    --trees-scrollbar-thumb-override: color-mix(in srgb, var(--muted) 34%, transparent);
     --trees-scrollbar-gutter-override: 6px;
-    background: transparent;
+    background: var(--workspace);
     font-family: var(--font-sans, "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif);
   }
   [data-file-tree-virtualized-list='true'],
@@ -79,7 +84,6 @@ const treeHostStyle = {
   '--trees-item-margin-x-override': '0px',
   '--trees-item-padding-x-override': '0.625rem',
   '--trees-scrollbar-gutter-override': '6px',
-  backgroundColor: 'var(--workspace)',
 } as CSSProperties
 
 export function DiffChangedFilesTree({
@@ -158,9 +162,9 @@ export function DiffChangedFilesTree({
   }
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col border-l border-[color:var(--border)] bg-[color:var(--workspace)]">
-      <div className="flex h-10 shrink-0 items-center gap-2 border-b border-[color:var(--border)] px-2.5">
-        <div className={cn('min-w-0 flex-1 truncate pl-2.5', appTypeSmallClass, appToneTextClass)}>
+    <div className={diffRailClass}>
+      <div className={diffRailHeaderClass}>
+        <div className={cn('min-w-0 flex-1 truncate px-2', appTypeSmallClass, appToneTextClass)}>
           Changed
         </div>
         <div className={cn('shrink-0 tabular-nums', appTypeMetaStrongClass, appToneMutedClass)}>
@@ -169,7 +173,7 @@ export function DiffChangedFilesTree({
         {hasSelection ? (
           <button
             type="button"
-            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[color:var(--muted)] transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
+            className={compactIconButtonClass}
             onClick={clearSelection}
             aria-label="Clear file focus"
             data-tooltip="Clear file focus"
@@ -178,12 +182,11 @@ export function DiffChangedFilesTree({
           </button>
         ) : null}
       </div>
-      <div className="flex min-h-0 flex-1 flex-col bg-[color:var(--workspace)] px-2.5 pt-2 pb-2">
+      <div className={diffRailTreeWrapperClass}>
         <label
           className={cn(
-            'flex min-h-8 shrink-0 items-center gap-2 rounded-[10px] border border-transparent bg-transparent px-2.5 transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] focus-within:bg-[rgba(255,255,255,0.05)] focus-within:text-[color:var(--text)]',
-            appTypeGroupTextClass,
-            appToneMutedClass,
+            diffRailSearchClass,
+            search.value.trim().length > 0 && 'bg-[color:var(--folded-row-hover-bg)]',
           )}
           data-active={search.value.trim().length > 0 ? 'true' : 'false'}
         >
