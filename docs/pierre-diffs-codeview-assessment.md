@@ -6,10 +6,11 @@
 - `bun run ai:check` passes after the package bump.
 - We now render the main diff list through Pierre `CodeView`.
 - Desktop still returns one full patch string.
-- Renderer still parses with `parsePatchFiles(...)`.
+- Renderer still parses with `parsePatchFiles(...)`, but the parse worker now posts parsed files in chunks.
+- Diff rows are fed into `CodeView` through the imperative `addItems(...)` / `updateItem(...)` path.
 - The old Howcode-owned outer `@tanstack/react-virtual` layer has been removed.
 
-So the package is current and the renderer is on the `CodeView` path. True streaming still needs a backend/query contract change.
+So the package is current and the renderer is on the `CodeView` path. We now have renderer-side streaming from worker chunks into CodeView. True git/process streaming still needs a backend/query contract change.
 
 ## What changed upstream
 
@@ -77,12 +78,21 @@ Changed-files tree stays outside CodeView for now.
 - Measurement assumptions. CodeView has `itemMetrics`; we need to set these from our actual row/header CSS or we may get jumpy scroll.
 - Backend streaming. CodeView can add/update items imperatively, but our desktop contract still returns one whole patch. True streaming needs a later backend/query contract change.
 
+## What is now migrated
+
+- `CodeView` owns the diff scroll/virtualization layer.
+- We use `initialItems` and sync changes imperatively.
+- Appending worker chunks goes through `CodeViewHandle.addItems(...)`.
+- Existing rows update through `CodeViewHandle.updateItem(...)`.
+- Reorders/filter changes fall back to `CodeView#setItems(...)`.
+- Parsed file ordering is done before chunks are emitted, so streamed appends keep stable file order.
+
 ## Next slice
 
-The production diff list is now on `CodeView`. Next thing to assess is real streaming:
+The production diff list is now on `CodeView`, and renderer-side streaming is in place. Next thing to assess is true git/process streaming:
 
-1. Change the desktop diff contract so it can publish parsed file items incrementally instead of one whole patch string.
-2. Use `CodeViewHandle.addItems(...)` / `updateItem(...)` for append/update paths.
+1. Change the desktop diff contract so it can publish patch/file chunks instead of one whole patch string.
+2. Decide whether parsing stays renderer-side or moves closer to the git stream.
 3. Keep current full-patch path as fallback until streaming is proven.
 
 Image previews still need visual verification because they are rendered through the custom header path.
