@@ -24,11 +24,17 @@ import { PopoverPanel } from '../../../components/common/popover'
 import { Tooltip } from '../../../components/common/tooltip'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import {
-  appToneTextClass,
-  appTypeGroupTextClass,
+  artifactHeaderClass,
+  artifactHeaderControlActiveClass,
+  artifactHeaderControlsClass,
+  artifactHeaderTitleClass,
+  artifactVersionTriggerClass,
   appTypeGroupTitleClass,
   compactIconButtonClass,
-  popoverPanelClass,
+  composerPopoverOptionClass,
+  composerPopoverOptionSelectedClass,
+  composerPopoverPanelClass,
+  viewCloseButtonClass,
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { ArtifactPanelBody } from './artifact-panel-body'
@@ -113,7 +119,7 @@ function ArtifactVersionSelect({ panel }: { panel: ReturnType<typeof useArtifact
       <button
         ref={buttonRef}
         type="button"
-        className="artifact-version-trigger inline-flex h-7 max-w-28 shrink-0 items-center gap-1 rounded-lg border border-[color:var(--border)] bg-[color:var(--panel-2)] px-2 text-[color:var(--muted)] outline-none transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
+        className={artifactVersionTriggerClass}
         onPointerDown={handleTriggerPointerDown}
         onKeyDown={handleTriggerKeyDown}
         aria-label="Artifact version"
@@ -130,8 +136,8 @@ function ArtifactVersionSelect({ panel }: { panel: ReturnType<typeof useArtifact
               ref={menuRef}
               data-open={positionReady ? 'true' : 'false'}
               className={cn(
-                popoverPanelClass,
-                'motion-popover fixed z-[120] grid gap-0.5 rounded-xl p-1',
+                composerPopoverPanelClass,
+                'motion-popover fixed z-[120] grid gap-0.5',
               )}
               style={menuStyle}
               role="listbox"
@@ -144,9 +150,9 @@ function ArtifactVersionSelect({ panel }: { panel: ReturnType<typeof useArtifact
                   role="option"
                   aria-selected={option.value === selectedVersion}
                   className={cn(
-                    'artifact-version-option grid grid-cols-[14px_minmax(0,1fr)] items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
-                    option.value === selectedVersion &&
-                      'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
+                    composerPopoverOptionClass,
+                    'artifact-version-option h-7 grid-cols-[14px_minmax(0,1fr)] px-2',
+                    option.value === selectedVersion && composerPopoverOptionSelectedClass,
                   )}
                   onPointerDown={(event) => {
                     event.preventDefault()
@@ -176,7 +182,7 @@ function ArtifactViewToggle({ panel }: { panel: ReturnType<typeof useArtifactPan
       className={cn(
         compactIconButtonClass,
         'h-7 w-7',
-        view !== 'list' && 'bg-[color:var(--accent-bg)] text-[color:var(--text)]',
+        view !== 'list' && artifactHeaderControlActiveClass,
       )}
       onClick={() => setView(view === 'code' ? 'preview' : 'code')}
       disabled={!selectedArtifact}
@@ -245,21 +251,21 @@ function ArtifactPanelHeader({
 }) {
   const { selectedArtifact, setView, view } = panel
   return (
-    <div className="flex min-h-11 items-center justify-between gap-2 border-b border-[color:var(--border)] px-2 py-2 min-[420px]:gap-3 min-[420px]:px-3">
-      <div className={`flex min-w-0 flex-1 items-center gap-2 ${appTypeGroupTextClass} ${appToneTextClass}`}>
+    <div className={artifactHeaderClass}>
+      <div className={artifactHeaderTitleClass}>
         <FileCode2 size={15} className="shrink-0 text-[color:var(--muted)]" />
         {selectedArtifact ? (
           <span className={`truncate ${appTypeGroupTitleClass}`}>{formatArtifactSlug(selectedArtifact.slug)}</span>
         ) : null}
       </div>
-      <div className="flex min-w-0 shrink items-center gap-1 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className={artifactHeaderControlsClass}>
         <ArtifactVersionSelect panel={panel} />
         <button
           type="button"
           className={cn(
             compactIconButtonClass,
             'h-7 w-7',
-            view === 'list' && 'bg-[color:var(--accent-bg)] text-[color:var(--text)]',
+            view === 'list' && artifactHeaderControlActiveClass,
           )}
           onClick={() => setView('list')}
           aria-label="Show artifact list"
@@ -275,7 +281,7 @@ function ArtifactPanelHeader({
           className={cn(
             compactIconButtonClass,
             'h-7 w-7',
-            fullscreen && 'bg-[color:var(--accent-bg)] text-[color:var(--text)]',
+            fullscreen && artifactHeaderControlActiveClass,
           )}
           aria-label={fullscreen ? 'Exit artifact fullscreen' : 'Artifact fullscreen'}
           onClick={onToggleFullscreen}
@@ -286,7 +292,7 @@ function ArtifactPanelHeader({
         </button>
         <button
           type="button"
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
+          className={viewCloseButtonClass}
           aria-label="Hide artifacts"
           onClick={onClose}
           data-tooltip="Hide artifacts"
@@ -313,7 +319,7 @@ export function ArtifactPanel({
   return (
     <section
       aria-label="Artifacts drawer"
-      className="flex h-full min-h-0 flex-1 flex-col overflow-hidden border-l border-[color:var(--border)] bg-[color:var(--workspace)]"
+      className="flex h-full min-h-0 flex-1 flex-col overflow-hidden border-l border-[color:var(--border)]/60 bg-[color:var(--workspace)]"
     >
       <ArtifactPanelHeader
         fullscreen={fullscreen}

@@ -115,6 +115,19 @@ export const thinkingDisclosureBodyClass =
 
 export const artifactStripClass = 'rounded-lg bg-[color:var(--folded-row-bg)] px-3 py-2 text-left'
 
+export const artifactHeaderClass =
+  'flex min-h-10 items-center justify-between gap-2 bg-[color:var(--workspace)] px-2 py-1.5 shadow-[inset_0_-1px_color-mix(in_srgb,var(--border)_58%,transparent)] min-[420px]:gap-3 min-[420px]:px-3'
+
+export const artifactHeaderTitleClass = `flex min-w-0 flex-1 items-center gap-2 ${appTypeGroupTextClass} ${appToneTextClass}`
+
+export const artifactHeaderControlsClass =
+  'flex min-w-0 shrink items-center gap-0.5 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+
+export const artifactHeaderControlActiveClass =
+  'bg-[color:var(--surface-hover)] text-[color:var(--text)]'
+
+export const artifactVersionTriggerClass = `artifact-version-trigger inline-flex h-7 max-w-28 shrink-0 items-center gap-1 rounded-md bg-[color:var(--surface-hover)] px-2 ${appTypeControlClass} ${appToneMutedClass} outline-none transition-colors hover:text-[color:var(--text)]`
+
 export const changedFilesStripClass = `flex min-w-0 items-center gap-2 rounded-lg bg-[color:var(--folded-row-bg)] px-3 py-2 ${appTypeSmallClass} ${appToneMutedClass}`
 
 export const quietListFrameClass = 'grid min-w-0 divide-y divide-[color:var(--border)]/70'
