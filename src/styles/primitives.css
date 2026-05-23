@@ -509,6 +509,10 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
     row-gap: 0.125rem;
   }
 
+  .artifact-markdown-editor .artifact-mdx-toolbar-drawer [class*="diffSourceToggle"] {
+    display: contents;
+  }
+
   .artifact-markdown-editor .artifact-mdx-toolbar-drawer .artifact-mdx-toolbar-row {
     height: 26px;
   }
