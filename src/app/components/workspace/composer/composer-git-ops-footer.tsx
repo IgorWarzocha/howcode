@@ -56,31 +56,6 @@ type ComposerGitOpsFooterProps = {
   repoUrl: string
 }
 
-function IncludeUntrackedButton({
-  includeUntracked,
-  onToggleIncludeUntracked,
-}: {
-  includeUntracked: boolean
-  onToggleIncludeUntracked: () => void
-}) {
-  return (
-    <button
-      type="button"
-      className={cn(
-        workspaceFooterTextClass,
-        'inline-flex h-7 items-center rounded-lg px-2.5 py-0 text-[color:var(--muted)] transition-colors duration-150 hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
-        includeUntracked && 'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
-      )}
-      onClick={onToggleIncludeUntracked}
-      aria-pressed={includeUntracked}
-      aria-label="Include untracked files"
-      data-tooltip={includeUntracked ? 'Showing untracked files' : 'Include untracked files'}
-    >
-      Untracked
-    </button>
-  )
-}
-
 export function ComposerGitOpsFooter({
   composerPanelRef,
   diffBaseline,
@@ -250,6 +225,12 @@ export function ComposerGitOpsFooter({
                   toggleSide="left"
                 />
                 <PlainToggle
+                  label="Include untracked"
+                  checked={includeUntracked}
+                  onClick={onToggleIncludeUntracked}
+                  toggleSide="left"
+                />
+                <PlainToggle
                   label="Draft message"
                   checked={previewEnabled}
                   onClick={onTogglePreview}
@@ -291,10 +272,6 @@ export function ComposerGitOpsFooter({
               Add origin
             </button>
           )}
-          <IncludeUntrackedButton
-            includeUntracked={includeUntracked}
-            onToggleIncludeUntracked={onToggleIncludeUntracked}
-          />
           <button
             type="button"
             className={cn(
