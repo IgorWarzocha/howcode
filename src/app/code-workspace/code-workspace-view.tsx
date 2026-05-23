@@ -252,10 +252,8 @@ export function CodeWorkspaceView({
     diffCommentError,
     diffComments,
     diffCommentsSending,
-    handleDiscardDiffComments,
     handleSelectDiffComment,
     handleSendDiffComments,
-    hasPendingDiffComments,
     selectedDiffCommentId,
     selectedDiffCommentJumpKey,
   } = useDiffCommentController({
@@ -331,10 +329,8 @@ export function CodeWorkspaceView({
       diffCommentsSending={diffCommentsSending}
       diffCommentError={diffCommentError}
       diffLoadError={diffLoadError}
-      hasPendingDiffComments={hasPendingDiffComments}
       onSetDiffBaseline={onSetDiffBaseline}
       onSetDiffRenderMode={onSetDiffRenderMode}
-      handleDiscardDiffComments={handleDiscardDiffComments}
       handleSendDiffComments={handleSendDiffComments}
       handleSelectDiffComment={handleSelectDiffComment}
       setComposerLayoutVersion={setComposerLayoutVersion}

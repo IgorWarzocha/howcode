@@ -41,8 +41,6 @@ type GitOpsComposerPanelProps = {
   onToggleIncludeUntracked: () => void
   onSendDiffComments: (message?: string | null) => void
   onSelectDiffComment: (filePath: string, commentId: string) => void
-  hasPendingDiffComments: boolean
-  onDiscardDiffComments: () => void
   onAction: DesktopActionInvoker
   onLayoutChange: () => void
   onBack: () => void
@@ -148,8 +146,6 @@ export function GitOpsComposerPanel({
   onToggleIncludeUntracked,
   onSendDiffComments,
   onSelectDiffComment,
-  hasPendingDiffComments,
-  onDiscardDiffComments,
   onAction,
   onLayoutChange,
   onBack,
@@ -200,8 +196,6 @@ export function GitOpsComposerPanel({
             onToggleIncludeUntracked={onToggleIncludeUntracked}
             onSendDiffComments={onSendDiffComments}
             onSelectDiffComment={onSelectDiffComment}
-            hasPendingDiffComments={hasPendingDiffComments}
-            onDiscardDiffComments={onDiscardDiffComments}
             onAction={onAction}
             onLayoutChange={onLayoutChange}
             onBack={onBack}

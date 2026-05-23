@@ -80,13 +80,11 @@ function CodeGitOpsComposer(props: CodeWorkspaceContentProps) {
     diffCommentsSending,
     diffCommentError,
     diffLoadError,
-    hasPendingDiffComments,
     includeUntrackedDiffFiles,
     toggleIncludeUntrackedDiffFiles,
     onSetDiffBaseline,
     onSetDiffRenderMode,
     handleSendDiffComments,
-    handleDiscardDiffComments,
     handleSelectDiffComment,
     setComposerLayoutVersion,
     handleAction,
@@ -123,8 +121,6 @@ function CodeGitOpsComposer(props: CodeWorkspaceContentProps) {
           })
         }}
         onSelectDiffComment={handleSelectDiffComment}
-        hasPendingDiffComments={hasPendingDiffComments}
-        onDiscardDiffComments={handleDiscardDiffComments}
         onLayoutChange={() => setComposerLayoutVersion((current: number) => current + 1)}
         onAction={handleAction}
         onBack={handleCloseGitOpsView}
