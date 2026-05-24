@@ -588,7 +588,8 @@
   --sidebar-row-leading-width: 16px;
   --sidebar-row-meta-width: 1.5rem;
   --sidebar-row-gap: 0.5rem;
-  --sidebar-row-padding-x: 0.625rem;
+  --sidebar-row-padding-x: 0.3125rem;
+  --sidebar-row-meta-inset: 0.3125rem;
   border-radius: 0.75rem;
   transition:
     background-color 150ms ease-out,
@@ -905,6 +906,7 @@
   justify-content: flex-end;
   color: var(--muted-2);
   overflow: visible;
+  transform: translateX(calc(-1 * var(--sidebar-row-meta-inset)));
 }
 
 .sidebar-thread-meta-value {
@@ -914,20 +916,9 @@
   display: inline-flex;
   width: 1.5rem;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   text-align: right;
   transition: opacity 150ms ease-out;
-}
-
-.sidebar-thread-branch-status {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--muted-2);
-}
-
-.sidebar-thread-branch-status[data-current="true"] {
-  color: var(--accent);
 }
 
 .sidebar-thread-row:hover .sidebar-thread-meta-value,
@@ -942,7 +933,7 @@
 .sidebar-thread-meta-actions {
   position: absolute;
   inset-block: 0;
-  right: 0;
+  right: calc(-1 * var(--sidebar-row-meta-inset));
   z-index: 2;
   display: grid;
   height: 1.5rem;
@@ -1260,7 +1251,8 @@
   --sidebar-row-leading-width: 16px;
   --sidebar-row-meta-width: 1.5rem;
   --sidebar-row-gap: 0.5rem;
-  --sidebar-row-padding-x: 0.625rem;
+  --sidebar-row-padding-x: 0.3125rem;
+  --sidebar-row-meta-inset: 0.3125rem;
   position: relative;
   display: grid;
   min-height: 1.75rem;
@@ -1309,16 +1301,21 @@
   flex: 0 0 auto;
 }
 
+.sidebar-work-branch-group[data-current="true"] .sidebar-work-branch-icon {
+  color: var(--accent);
+}
+
 .sidebar-work-branch-meta {
   display: inline-flex;
-  min-width: 1.5rem;
+  width: 1.5rem;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   color: var(--muted-2);
-  font-size: var(--app-type-kicker-size);
-  font-weight: 650;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: var(--app-type-control-size);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  transform: translateX(calc(-1 * var(--sidebar-row-meta-inset)));
 }
 
 .sidebar-work-branch-current {
@@ -1326,8 +1323,9 @@
 }
 
 .sidebar-work-branch-count {
-  min-width: 1ch;
-  text-align: center;
+  display: inline-block;
+  min-width: 1.5rem;
+  text-align: right;
 }
 
 .sidebar-work-branch-actions {

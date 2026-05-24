@@ -221,8 +221,6 @@ function WorkThreadRow({
       unread={Boolean(thread.unread)}
       isSelected={isSelected}
       title={thread.title}
-      branchName={thread.branchName}
-      branchAssignedToCurrent={Boolean(currentBranch && thread.branchName === currentBranch)}
       assignBranchLabel={
         currentBranch && thread.branchName === currentBranch
           ? `Unassign from ${currentBranch}`
@@ -257,6 +255,112 @@ function WorkThreadRow({
   )
 }
 
+function BranchSwitchAction({
+  blocked,
+  group,
+  project,
+  onAction,
+  onBlocked,
+}: {
+  blocked: boolean
+  group: BranchThreadGroup
+  project: Project
+  onAction: DesktopActionInvoker
+  onBlocked: () => void
+}) {
+  return (
+    <Tooltip
+      content={blocked ? 'Worktree is dirty. Commit first.' : `Switch to ${group.label}`}
+      placement="right"
+    >
+      <button
+        type="button"
+        className="sidebar-work-branch-action"
+        onClick={(event) => {
+          event.stopPropagation()
+          void onAction('workspace.switch-branch', {
+            projectId: project.id,
+            value: group.label,
+          }).then((result) => {
+            const error = result?.result?.error
+            if (typeof error === 'string' && error.includes('Worktree is dirty')) onBlocked()
+          })
+        }}
+        aria-label={`Switch to ${group.label}`}
+      >
+        <GitBranch size={12} />
+      </button>
+    </Tooltip>
+  )
+}
+
+function BranchPruneAction({
+  group,
+  project,
+  confirming,
+  onAction,
+  onCancel,
+  onConfirm,
+  onRequestConfirm,
+}: {
+  group: BranchThreadGroup
+  project: Project
+  confirming: boolean
+  onAction: DesktopActionInvoker
+  onCancel: () => void
+  onConfirm: () => void
+  onRequestConfirm: () => void
+}) {
+  if (confirming) {
+    return (
+      <>
+        <button
+          type="button"
+          className="sidebar-work-branch-action"
+          onClick={(event) => {
+            event.stopPropagation()
+            onCancel()
+          }}
+          aria-label="Cancel prune"
+        >
+          <X size={12} />
+        </button>
+        <button
+          type="button"
+          className="sidebar-work-branch-action sidebar-work-branch-action--danger"
+          onClick={(event) => {
+            event.stopPropagation()
+            onConfirm()
+            void onAction('workspace.prune-branch', {
+              projectId: project.id,
+              branchName: group.label,
+            })
+          }}
+          aria-label={`Confirm prune ${group.label}`}
+        >
+          <Trash2 size={12} />
+        </button>
+      </>
+    )
+  }
+
+  return (
+    <Tooltip content={`Prune ${group.label}`} placement="right">
+      <button
+        type="button"
+        className="sidebar-work-branch-action"
+        onClick={(event) => {
+          event.stopPropagation()
+          onRequestConfirm()
+        }}
+        aria-label={`Prune ${group.label}`}
+      >
+        <Trash2 size={12} />
+      </button>
+    </Tooltip>
+  )
+}
+
 function BranchThreadGroupSection({
   activeView,
   collapsed,
@@ -270,6 +374,8 @@ function BranchThreadGroupSection({
   onToggle,
   pruneConfirmBranchId,
   onSetPruneConfirmBranchId,
+  switchErrorBranchId,
+  onSetSwitchErrorBranchId,
 }: {
   activeView: View
   collapsed: boolean
@@ -283,9 +389,12 @@ function BranchThreadGroupSection({
   onToggle: () => void
   pruneConfirmBranchId: string | null
   onSetPruneConfirmBranchId: (branchId: string | null) => void
+  switchErrorBranchId: string | null
+  onSetSwitchErrorBranchId: (branchId: string | null) => void
 }) {
   const canManageBranch = !(group.current || group.unassigned)
   const confirmingPrune = pruneConfirmBranchId === group.id
+  const switchBlocked = switchErrorBranchId === group.id
 
   return (
     <section className="sidebar-work-branch-group" data-current={group.current ? 'true' : 'false'}>
@@ -305,7 +414,8 @@ function BranchThreadGroupSection({
           onClick={onToggle}
           aria-expanded={!collapsed}
         >
-          <GitBranch size={13} />
+          {/* TODO(worktrees): swap this for a dynamic work-context icon once worktrees land. Branches can keep GitBranch; worktrees likely need a custom SVG. */}
+          <GitBranch size={13} className="sidebar-work-branch-icon" />
           <span className="truncate">{group.label}</span>
         </button>
         <span className="sidebar-work-branch-meta">
@@ -317,66 +427,24 @@ function BranchThreadGroupSection({
           data-confirming={confirmingPrune ? 'true' : 'false'}
         >
           {canManageBranch && !confirmingPrune ? (
-            <Tooltip content={`Switch to ${group.label}`} placement="right">
-              <button
-                type="button"
-                className="sidebar-work-branch-action"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  void onAction('workspace.switch-branch', {
-                    projectId: project.id,
-                    value: group.label,
-                  })
-                }}
-                aria-label={`Switch to ${group.label}`}
-              >
-                <GitBranch size={12} />
-              </button>
-            </Tooltip>
+            <BranchSwitchAction
+              blocked={switchBlocked}
+              group={group}
+              project={project}
+              onAction={onAction}
+              onBlocked={() => onSetSwitchErrorBranchId(group.id)}
+            />
           ) : null}
-          {canManageBranch && confirmingPrune ? (
-            <>
-              <button
-                type="button"
-                className="sidebar-work-branch-action"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  onSetPruneConfirmBranchId(null)
-                }}
-                aria-label="Cancel prune"
-              >
-                <X size={12} />
-              </button>
-              <button
-                type="button"
-                className="sidebar-work-branch-action sidebar-work-branch-action--danger"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  onSetPruneConfirmBranchId(null)
-                  void onAction('workspace.prune-branch', {
-                    projectId: project.id,
-                    branchName: group.label,
-                  })
-                }}
-                aria-label={`Confirm prune ${group.label}`}
-              >
-                <Trash2 size={12} />
-              </button>
-            </>
-          ) : canManageBranch ? (
-            <Tooltip content={`Prune ${group.label}`} placement="right">
-              <button
-                type="button"
-                className="sidebar-work-branch-action"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  onSetPruneConfirmBranchId(group.id)
-                }}
-                aria-label={`Prune ${group.label}`}
-              >
-                <Trash2 size={12} />
-              </button>
-            </Tooltip>
+          {canManageBranch ? (
+            <BranchPruneAction
+              confirming={confirmingPrune}
+              group={group}
+              project={project}
+              onAction={onAction}
+              onCancel={() => onSetPruneConfirmBranchId(null)}
+              onConfirm={() => onSetPruneConfirmBranchId(null)}
+              onRequestConfirm={() => onSetPruneConfirmBranchId(group.id)}
+            />
           ) : null}
         </span>
       </div>
@@ -425,6 +493,7 @@ export function WorkSidebarSection({
   const [projectSwitcherOpen, setProjectSwitcherOpen] = useState(false)
   const [collapsedBranchIds, setCollapsedBranchIds] = useState<Record<string, boolean>>({})
   const [pruneConfirmBranchId, setPruneConfirmBranchId] = useState<string | null>(null)
+  const [switchErrorBranchId, setSwitchErrorBranchId] = useState<string | null>(null)
   const selectedProject =
     projects.find((project) => project.id === selectedProjectId) ?? projects[0] ?? null
 
@@ -551,6 +620,8 @@ export function WorkSidebarSection({
                   }
                   pruneConfirmBranchId={pruneConfirmBranchId}
                   onSetPruneConfirmBranchId={setPruneConfirmBranchId}
+                  switchErrorBranchId={switchErrorBranchId}
+                  onSetSwitchErrorBranchId={setSwitchErrorBranchId}
                 />
               )
             })

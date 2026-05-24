@@ -12,8 +12,6 @@ type ThreadRowProps = {
   unread?: boolean
   isSelected: boolean
   title: string
-  branchName?: string | undefined
-  branchAssignedToCurrent?: boolean | undefined
   assignBranchLabel?: string | undefined
   onArchive: () => void
   onAssignToBranch?: (() => void) | undefined
@@ -57,39 +55,19 @@ function ThreadLeadingIcon({
 
 function ThreadMetaSlot({
   age,
-  branchAssignedToCurrent,
-  branchName,
   assignBranchLabel,
   onArchive,
   onAssignToBranch,
   terminalRunning,
 }: Pick<
   ThreadRowProps,
-  | 'age'
-  | 'assignBranchLabel'
-  | 'branchAssignedToCurrent'
-  | 'branchName'
-  | 'onArchive'
-  | 'onAssignToBranch'
-  | 'terminalRunning'
+  'age' | 'assignBranchLabel' | 'onArchive' | 'onAssignToBranch' | 'terminalRunning'
 >) {
-  const metaValue = branchName ? (
-    <span
-      className="sidebar-thread-branch-status"
-      data-current={branchAssignedToCurrent ? 'true' : 'false'}
-      title={`Assigned to ${branchName}`}
-    >
-      <GitBranch size={12} />
-    </span>
-  ) : terminalRunning ? (
-    <SquareTerminal size={12} />
-  ) : (
-    age
-  )
+  const metaValue = terminalRunning ? <SquareTerminal size={12} /> : age
 
   return (
     <span className="sidebar-thread-meta-slot">
-      <span className="sidebar-thread-meta-value" aria-hidden={branchName ? undefined : 'true'}>
+      <span className="sidebar-thread-meta-value" aria-hidden="true">
         {metaValue}
       </span>
       <span className="sidebar-thread-meta-actions">
@@ -105,7 +83,6 @@ function ThreadMetaSlot({
                 compactIconButtonClass,
                 'h-full w-full border-transparent bg-transparent hover:bg-transparent',
               )}
-              data-active={branchAssignedToCurrent ? 'true' : 'false'}
               onClick={onAssignToBranch}
               aria-label={assignBranchLabel ?? 'Assign to branch'}
             >
@@ -143,8 +120,6 @@ export function ThreadRow({
   unread = false,
   isSelected,
   title,
-  branchName,
-  branchAssignedToCurrent,
   assignBranchLabel,
   onArchive,
   onAssignToBranch,
@@ -176,8 +151,6 @@ export function ThreadRow({
       <ThreadMetaSlot
         age={age}
         assignBranchLabel={assignBranchLabel}
-        branchAssignedToCurrent={branchAssignedToCurrent}
-        branchName={branchName}
         onArchive={onArchive}
         onAssignToBranch={onAssignToBranch}
         terminalRunning={terminalRunning}
