@@ -1470,6 +1470,11 @@
   min-width: 0;
 }
 
+.sidebar-work-project-block + .sidebar-work-project-block {
+  border-top: 1px solid var(--border);
+  padding-top: 0.375rem;
+}
+
 .sidebar-work-project-block-heading-row {
   display: grid;
   min-width: 0;
@@ -1574,8 +1579,7 @@
 }
 
 .sidebar-work-branch-heading:hover,
-.sidebar-work-branch-heading:focus-within,
-.sidebar-work-branch-group[data-current="true"] > .sidebar-work-branch-heading {
+.sidebar-work-branch-heading:focus-within {
   background: var(--surface-hover);
   color: var(--text);
 }
@@ -1608,7 +1612,7 @@
 }
 
 .sidebar-work-branch-group[data-current="true"] .sidebar-work-branch-icon {
-  color: var(--accent);
+  color: color-mix(in srgb, var(--accent) 74%, var(--muted));
 }
 
 .sidebar-work-branch-meta {

@@ -1520,6 +1520,16 @@ function SingleProjectWorkContent({
           <span>Automations</span>
           <span className="sidebar-work-pill">Soon</span>
         </button>
+        <button
+          type="button"
+          className="sidebar-work-history-row"
+          data-active={activeView === 'sessions' ? 'true' : 'false'}
+          onClick={() => onShowView('sessions')}
+        >
+          <Archive size={14} />
+          <span>Past sessions</span>
+          <span className={cn(appTypeMetaClass, appToneSubtleClass)}>{olderThreadCount}</span>
+        </button>
       </div>
 
       <div className="sidebar-work-lane">
@@ -1583,19 +1593,6 @@ function SingleProjectWorkContent({
             </div>
           )}
         </div>
-      </div>
-
-      <div className="sidebar-work-history">
-        <button
-          type="button"
-          className="sidebar-work-history-row"
-          data-active={activeView === 'sessions' ? 'true' : 'false'}
-          onClick={() => onShowView('sessions')}
-        >
-          <Archive size={14} />
-          <span>Past sessions</span>
-          <span className={cn(appTypeMetaClass, appToneSubtleClass)}>{olderThreadCount}</span>
-        </button>
       </div>
     </>
   )
