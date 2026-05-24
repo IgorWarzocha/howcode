@@ -310,17 +310,21 @@ export function Sidebar({
       }
       className="sidebar-shell motion-surface-pulse motion-sidebar-selection-pulse relative"
     >
-      {showModeSelection ? (
-        <SidebarModeNav
-          activeView={activeView}
-          codeModeActive={codeModeActive}
-          onShowView={onShowView}
-        />
-      ) : null}
+      <div className="sidebar-shell-row sidebar-shell-row--top">
+        {showModeSelection ? (
+          <SidebarModeNav
+            activeView={activeView}
+            codeModeActive={codeModeActive}
+            onShowView={onShowView}
+          />
+        ) : null}
+      </div>
 
-      <SidebarContent {...sidebarContentProps} />
+      <div className="sidebar-shell-row sidebar-shell-row--content">
+        <SidebarContent {...sidebarContentProps} />
+      </div>
 
-      <div className="sidebar-footer">
+      <div className="sidebar-shell-row sidebar-shell-row--footer sidebar-footer">
         <div className="flex items-center gap-1">
           <button
             ref={settingsButtonRef}
