@@ -40,12 +40,14 @@
 @keyframes standardSurfacePulse {
   0%,
   100% {
-    opacity: 1;
+    opacity: 0.28;
+    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
     box-shadow: none;
   }
 
   50% {
-    opacity: 1;
+    opacity: 0.48;
+    background-color: color-mix(in srgb, var(--accent) 16%, transparent);
     box-shadow: none;
   }
 }

@@ -1,6 +1,7 @@
 export type ExtensionsViewProps = {
   projectPath: string | null
   onSetProjectScopeActive: (active: boolean) => void
+  onProjectTargetSelected?: (() => void) | undefined
   onClose: () => void
 }
 

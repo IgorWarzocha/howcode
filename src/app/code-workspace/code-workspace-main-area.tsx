@@ -41,7 +41,9 @@ function CodeWorkspaceDefaultMain(props: CodeWorkspaceContentProps) {
   const appSettings = props.shellState?.appSettings ?? FALLBACK_APP_SETTINGS
   const selectedProjectId =
     (props.controller.state.activeView === 'project' ||
-      props.controller.state.activeView === 'sessions') &&
+      props.controller.state.activeView === 'sessions' ||
+      props.controller.state.activeView === 'extensions' ||
+      props.controller.state.activeView === 'skills') &&
     props.controller.state.hasSelectedProject
       ? props.controller.state.selectedProjectId
       : ''

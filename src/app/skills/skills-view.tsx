@@ -19,15 +19,10 @@ type SkillsScopeSwitcherProps = {
   onChange: (scope: InstallScope) => void
 }
 
-function SkillsScopeSwitcher({
-  value,
-  projectScopeAvailable,
-  counts,
-  onChange,
-}: SkillsScopeSwitcherProps) {
+function SkillsScopeSwitcher({ value, counts, onChange }: SkillsScopeSwitcherProps) {
   const options: Array<{ value: InstallScope; label: string; disabled?: boolean }> = [
     { value: 'global', label: `Global ${counts.global}` },
-    { value: 'project', label: `Project ${counts.project}`, disabled: !projectScopeAvailable },
+    { value: 'project', label: `Project ${counts.project}` },
     { value: 'chat', label: `Chat ${counts.chat}` },
   ]
 

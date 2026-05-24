@@ -3,12 +3,17 @@
   height: 100%;
   min-height: 0;
   min-width: 0;
+  width: 100%;
   flex-direction: column;
   gap: 0.875rem;
   overflow: hidden;
-  border-right: 1px solid var(--border);
+  border-right: 0;
   background: var(--sidebar);
   padding: 0.75rem 0.625rem 0.625rem;
+}
+
+.sidebar-shell[data-project-target-mode="true"] {
+  padding-right: 0;
 }
 
 :root[data-desktop-platform="darwin"] .sidebar-shell {
@@ -1147,6 +1152,52 @@
   padding: 0.375rem;
   color: var(--muted-2);
   font-size: var(--app-type-meta-size);
+}
+
+.sidebar-work-install-targets {
+  position: relative;
+  gap: 0.375rem;
+}
+
+.sidebar-work-install-target-copy {
+  padding: 0 var(--sidebar-row-padding-x, 0.3125rem);
+  color: var(--muted-2);
+  font-size: var(--app-type-small-size);
+  font-weight: 600;
+}
+
+.sidebar-work-install-target-list {
+  max-height: none;
+  margin-right: 0;
+  padding-right: 0;
+}
+
+.sidebar-shell[data-pulse-active="true"][data-project-target-mode="true"]
+  .sidebar-work-install-target-list {
+  background: var(--panel);
+}
+
+.sidebar-shell[data-pulse-active="true"][data-project-target-mode="true"]
+  .sidebar-work-install-targets::after {
+  content: "";
+  position: absolute;
+  top: 1.625rem;
+  right: 0;
+  bottom: 0;
+  width: 8px;
+  pointer-events: none;
+  animation: sidebarScrollbarTrackPulse 2.8s ease-in-out infinite;
+}
+
+@keyframes sidebarScrollbarTrackPulse {
+  0%,
+  100% {
+    background-color: color-mix(in srgb, var(--accent) 5%, transparent);
+  }
+
+  50% {
+    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
 }
 
 .sidebar-project-create-popover[data-variant="work-sidebar"] {

@@ -151,6 +151,11 @@ function AppShellSidebar(props: AppShellLayoutViewProps) {
       onRefreshChatSidebar={controller.refreshChatSidebarState}
       onProjectSelect={handleProjectSelect}
       onProjectPrimeSelection={handleSetSelectedProject}
+      onProjectTargetSelected={() => {
+        if (state.activeView === 'extensions')
+          controller.handleSetExtensionsProjectScopeActive(true)
+        if (state.activeView === 'skills') controller.handleSetSkillsProjectScopeActive(true)
+      }}
       onLoadProjectThreads={controller.handleLoadProjectThreads}
       onSelectInboxThread={controller.handleSelectInboxThread}
       onThreadOpen={handleThreadOpen}

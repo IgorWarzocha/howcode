@@ -291,6 +291,7 @@ export function CodeWorkspaceMainView({
         <ExtensionsView
           projectPath={selectedProjectId || null}
           onSetProjectScopeActive={onSetExtensionsProjectScopeActive}
+          onProjectTargetSelected={() => onSetExtensionsProjectScopeActive(true)}
           onClose={onCloseUtilityView}
         />
       </Suspense>
@@ -313,6 +314,7 @@ export function CodeWorkspaceMainView({
           appSettings={appSettings}
           projectPath={selectedProjectId || null}
           onSetProjectScopeActive={onSetSkillsProjectScopeActive}
+          onProjectTargetSelected={() => onSetSkillsProjectScopeActive(true)}
           onAction={onAction}
           onClose={onCloseUtilityView}
         />

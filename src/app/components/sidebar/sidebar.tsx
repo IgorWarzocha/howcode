@@ -19,7 +19,6 @@ import { AppMenu } from '@howcode/app-menu'
 import { NavButton } from '@howcode/common/nav-button'
 import { SidebarChatSection } from './chat/sidebar-chat-section'
 import { SidebarInboxSection } from './inbox/sidebar-inbox-section'
-import { SidebarProjectsSection } from './projects/sidebar-projects-section'
 import { SidebarChatSkeleton, SidebarInboxSkeleton } from './sidebar-skeletons'
 import { WorkSidebarSection } from './work-sidebar-section'
 
@@ -60,6 +59,7 @@ type SidebarProps = {
   onRefreshChatSidebar: () => Promise<unknown>
   onProjectSelect: (projectId: string) => void
   onProjectPrimeSelection: (projectId: string) => void
+  onProjectTargetSelected?: (() => void) | undefined
   onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
   onSelectInboxThread: (thread: InboxThread) => void
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
@@ -167,26 +167,27 @@ function SidebarContent(props: SidebarProps) {
     )
   }
   return (
-    <SidebarProjectsSection
+    <WorkSidebarSection
       activeView={props.activeView}
-      appLaunchedAtMs={props.appLaunchedAtMs}
-      appSettings={props.appSettings}
-      protectedProjectId={props.protectedProjectId ?? null}
-      projectScopeLockActive={props.projectScopeLockActive}
-      projects={props.projects}
       loading={props.projectsLoading ?? false}
+      projects={props.projects}
+      projectGitState={props.projectGitState}
+      initialVisibleProjectIds={props.sidebarVisibleProjectIds}
+      projectTargetMode={true}
+      projectScopeLockActive={props.projectScopeLockActive}
       selectedProjectId={props.selectedProjectId}
       selectedThreadId={props.selectedThreadId}
       terminalRunningProjectIds={props.terminalRunningProjectIds}
       terminalRunningSessionPaths={props.terminalRunningSessionPaths}
-      collapsedProjectIds={props.collapsedProjectIds}
       onAction={props.onAction}
+      appSettings={props.appSettings}
       onLoadProjectThreads={props.onLoadProjectThreads}
       onOpenSettingsPanel={props.onOpenSettingsPanel}
       onProjectSelect={props.onProjectSelect}
       onProjectPrimeSelection={props.onProjectPrimeSelection}
+      onProjectTargetSelected={props.onProjectTargetSelected}
       onThreadOpen={props.onThreadOpen}
-      onToggleProjectCollapse={props.onToggleProjectCollapse}
+      onShowView={props.onShowView}
     />
   )
 }
@@ -228,6 +229,7 @@ export function Sidebar({
   onRefreshChatSidebar,
   onProjectSelect,
   onProjectPrimeSelection,
+  onProjectTargetSelected,
   onLoadProjectThreads,
   onSelectInboxThread,
   onThreadOpen,
@@ -290,6 +292,7 @@ export function Sidebar({
     onRefreshChatSidebar,
     onProjectSelect,
     onProjectPrimeSelection,
+    ...(onProjectTargetSelected ? { onProjectTargetSelected } : {}),
     onLoadProjectThreads,
     onSelectInboxThread,
     onThreadOpen,
@@ -302,6 +305,9 @@ export function Sidebar({
     <aside
       aria-label="Workspace sidebar"
       data-pulse-active={projectScopeLockActive ? 'true' : 'false'}
+      data-project-target-mode={
+        activeView === 'extensions' || activeView === 'skills' ? 'true' : 'false'
+      }
       className="sidebar-shell motion-surface-pulse motion-sidebar-selection-pulse relative"
     >
       {showModeSelection ? (

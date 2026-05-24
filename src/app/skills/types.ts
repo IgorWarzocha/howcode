@@ -4,6 +4,7 @@ export type SkillsViewProps = {
   appSettings: AppSettings
   projectPath: string | null
   onSetProjectScopeActive: (active: boolean) => void
+  onProjectTargetSelected?: (() => void) | undefined
   onAction: DesktopActionInvoker
   onClose: () => void
 }
