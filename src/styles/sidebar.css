@@ -761,6 +761,11 @@
 
 .sidebar-old-sessions-row,
 .sidebar-thread-row {
+  border-radius: 0.375rem;
+}
+
+.sidebar-old-sessions-row,
+.sidebar-thread-row {
   display: grid;
   min-height: 1.75rem;
   width: 100%;
