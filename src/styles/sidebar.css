@@ -893,7 +893,7 @@
   align-items: center;
   justify-content: flex-end;
   color: var(--muted-2);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .sidebar-thread-meta-value {
@@ -921,9 +921,12 @@
   position: absolute;
   inset-block: 0;
   right: 0;
+  z-index: 2;
   display: flex;
   height: 1.5rem;
   align-items: center;
+  border-radius: 0.5rem;
+  background: var(--surface-hover);
   opacity: 0;
   transform: translateX(calc(100% - 1.5rem));
   transition:
