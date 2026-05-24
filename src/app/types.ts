@@ -11,6 +11,7 @@ export type View =
   | 'chat'
   | 'claw'
   | 'work'
+  | 'automations'
   | 'settings'
   | 'extensions'
   | 'skills'

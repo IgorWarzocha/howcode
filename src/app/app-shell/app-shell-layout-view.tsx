@@ -1,7 +1,7 @@
+import { Sidebar } from '@howcode/sidebar'
 import { TerminalPanel } from '@howcode/workspace-shell'
 import { PanelLeftOpen, PanelRightClose } from 'lucide-react'
 import type { CSSProperties, Dispatch, RefObject, SetStateAction } from 'react'
-import { Sidebar } from '../components/sidebar/sidebar'
 import type { AppSettings, ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
 import { appToneTextClass, appTypeGroupTextClass } from '../ui/classes'
 import { cn } from '../utils/cn'

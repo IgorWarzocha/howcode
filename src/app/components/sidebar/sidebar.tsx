@@ -1,14 +1,6 @@
 import { Tooltip } from '@howcode/common/tooltip'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
-import {
-  BriefcaseBusiness,
-  Code2,
-  Inbox,
-  MessageSquare,
-  PanelLeftClose,
-  PawPrint,
-  Settings,
-} from 'lucide-react'
+import { Code2, Inbox, MessageSquare, PanelLeftClose, Settings } from 'lucide-react'
 import { useCallback, useRef } from 'react'
 import type {
   AppSettings,
@@ -28,6 +20,7 @@ import { SidebarChatSection } from './chat/sidebar-chat-section'
 import { SidebarInboxSection } from './inbox/sidebar-inbox-section'
 import { SidebarProjectsSection } from './projects/sidebar-projects-section'
 import { SidebarChatSkeleton, SidebarInboxSkeleton } from './sidebar-skeletons'
+import { WorkSidebarSection } from './work-sidebar-section'
 
 type SidebarProps = {
   projects: Project[]
@@ -74,7 +67,12 @@ type SidebarProps = {
 }
 
 function isCodeModeActive(activeView: View) {
-  return activeView !== 'chat' && activeView !== 'claw' && activeView !== 'work'
+  return (
+    activeView !== 'chat' &&
+    activeView !== 'claw' &&
+    activeView !== 'work' &&
+    activeView !== 'automations'
+  )
 }
 
 function SidebarModeNav({
@@ -88,30 +86,6 @@ function SidebarModeNav({
 }) {
   return (
     <nav className="sidebar-mode-nav" aria-label="Primary navigation">
-      <NavButton
-        icon={<PawPrint size={16} />}
-        label={
-          <span className="sidebar-mode-label">
-            <span>Claw</span>
-            <span className="sidebar-coming-soon-label">Coming soon</span>
-          </span>
-        }
-        active={activeView === 'claw'}
-        disabled
-        title="Coming soon"
-      />
-      <NavButton
-        icon={<BriefcaseBusiness size={16} />}
-        label={
-          <span className="sidebar-mode-label">
-            <span>Work</span>
-            <span className="sidebar-coming-soon-label">Coming soon</span>
-          </span>
-        }
-        active={activeView === 'work'}
-        disabled
-        title="Coming soon"
-      />
       <NavButton
         icon={<Inbox size={16} />}
         label="Inbox"
@@ -164,6 +138,25 @@ function SidebarContent(props: SidebarProps) {
         onNewChat={props.onNewChat}
         onRefresh={props.onRefreshChatSidebar}
         onThreadOpen={props.onThreadOpen}
+      />
+    )
+  }
+  if (props.activeView !== 'extensions' && props.activeView !== 'skills') {
+    return (
+      <WorkSidebarSection
+        activeView={props.activeView}
+        loading={props.projectsLoading ?? false}
+        projects={props.projects}
+        selectedProjectId={props.selectedProjectId}
+        selectedThreadId={props.selectedThreadId}
+        terminalRunningProjectIds={props.terminalRunningProjectIds}
+        terminalRunningSessionPaths={props.terminalRunningSessionPaths}
+        onAction={props.onAction}
+        onLoadProjectThreads={props.onLoadProjectThreads}
+        onOpenArchivedThreads={props.onOpenArchivedThreads}
+        onProjectSelect={props.onProjectSelect}
+        onThreadOpen={props.onThreadOpen}
+        onShowView={props.onShowView}
       />
     )
   }
