@@ -22,6 +22,7 @@ export const implementedDesktopActions = [
   'thread.open',
   'thread.archive',
   'thread.archive-many',
+  'thread.assign-branch',
   'thread.restore',
   'thread.restore-many',
   'thread.delete',

@@ -7,6 +7,7 @@ import type {
   ChatSidebarState,
   DesktopActionInvoker,
   InboxThread,
+  ProjectGitState,
 } from '../../desktop/types'
 import { useAnimatedPresence } from '../../hooks/useAnimatedPresence'
 import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
@@ -31,6 +32,7 @@ type SidebarProps = {
   projectsLoading?: boolean
   appLaunchedAtMs: number
   appSettings: AppSettings
+  projectGitState: ProjectGitState | null
   protectedProjectId?: string | null
   activeView: View
   selectedInboxSessionPath: string | null
@@ -147,6 +149,7 @@ function SidebarContent(props: SidebarProps) {
         activeView={props.activeView}
         loading={props.projectsLoading ?? false}
         projects={props.projects}
+        projectGitState={props.projectGitState}
         selectedProjectId={props.selectedProjectId}
         selectedThreadId={props.selectedThreadId}
         terminalRunningProjectIds={props.terminalRunningProjectIds}
@@ -195,6 +198,7 @@ export function Sidebar({
   projectsLoading = false,
   appLaunchedAtMs,
   appSettings,
+  projectGitState,
   protectedProjectId = null,
   activeView,
   selectedInboxSessionPath,
@@ -256,6 +260,7 @@ export function Sidebar({
     projectsLoading,
     appLaunchedAtMs,
     appSettings,
+    projectGitState,
     protectedProjectId,
     activeView,
     selectedInboxSessionPath,

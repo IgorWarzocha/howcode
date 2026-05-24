@@ -2,7 +2,7 @@ import { IconButton } from '@howcode/common/icon-button'
 import { Tooltip } from '@howcode/common/tooltip'
 import { Archive, Bot, ChevronDown, FolderCode, GitBranch, Plus, Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import type { DesktopActionInvoker } from '../../desktop/types'
+import type { DesktopActionInvoker, ProjectGitState } from '../../desktop/types'
 import type { Project, Thread, View } from '../../types'
 import { appToneSubtleClass, appTypeMetaClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
@@ -15,6 +15,7 @@ type WorkSidebarSectionProps = {
   activeView: View
   loading: boolean
   projects: Project[]
+  projectGitState: ProjectGitState | null
   selectedProjectId: string
   selectedThreadId: string | null
   terminalRunningProjectIds: ReadonlySet<string>
@@ -94,6 +95,7 @@ function WorkThreadRow({
   selectedThreadId,
   terminalRunningSessionPaths,
   thread,
+  currentBranch,
   onAction,
   onThreadOpen,
 }: {
@@ -102,6 +104,7 @@ function WorkThreadRow({
   selectedThreadId: string | null
   terminalRunningSessionPaths: ReadonlySet<string>
   thread: Thread
+  currentBranch: string | null
   onAction: DesktopActionInvoker
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
 }) {
@@ -120,10 +123,19 @@ function WorkThreadRow({
       unread={Boolean(thread.unread)}
       isSelected={isSelected}
       title={thread.title}
+      branchName={thread.branchName}
+      assignBranchLabel={currentBranch ? `Assign to ${currentBranch}` : 'Clear assigned branch'}
       onArchive={() =>
         onAction('thread.archive', {
           projectId: project.id,
           threadId: thread.id,
+        })
+      }
+      onAssignToBranch={() =>
+        onAction('thread.assign-branch', {
+          projectId: project.id,
+          threadId: thread.id,
+          branchName: currentBranch,
         })
       }
       onOpen={() => {
@@ -144,6 +156,7 @@ export function WorkSidebarSection({
   activeView,
   loading,
   projects,
+  projectGitState,
   selectedProjectId,
   selectedThreadId,
   terminalRunningProjectIds,
@@ -185,7 +198,11 @@ export function WorkSidebarSection({
   }
 
   const threadCount = selectedProject.threadCount ?? selectedProject.threads.length
-  const workLabel = selectedProject.name
+  const currentBranch =
+    projectGitState?.projectId === selectedProject.id && projectGitState.isGitRepo
+      ? projectGitState.branch
+      : null
+  const workLabel = currentBranch ?? selectedProject.name
 
   return (
     <section className="sidebar-work-section" aria-label="Project work">
@@ -268,6 +285,7 @@ export function WorkSidebarSection({
                 thread={thread}
                 onAction={onAction}
                 onThreadOpen={onThreadOpen}
+                currentBranch={currentBranch}
               />
             ))
           ) : (

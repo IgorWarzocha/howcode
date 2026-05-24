@@ -19,6 +19,7 @@ export {
   archiveProjectThreads,
   archiveThread,
   archiveThreads,
+  assignThreadBranch,
   beginInboxThreadTurn,
   clearReadInboxThreads,
   collapseAllProjects,

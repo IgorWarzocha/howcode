@@ -1,6 +1,6 @@
 import { ActivitySpinner } from '@howcode/common/activity-spinner'
 import { Tooltip } from '@howcode/common/tooltip'
-import { Archive, SquareTerminal, Star } from 'lucide-react'
+import { Archive, GitBranch, SquareTerminal, Star } from 'lucide-react'
 import { compactIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 
@@ -12,7 +12,10 @@ type ThreadRowProps = {
   unread?: boolean
   isSelected: boolean
   title: string
+  branchName?: string | undefined
+  assignBranchLabel?: string | undefined
   onArchive: () => void
+  onAssignToBranch?: (() => void) | undefined
   onOpen: () => void
   onPin: () => void
 }
@@ -53,9 +56,14 @@ function ThreadLeadingIcon({
 
 function ThreadMetaSlot({
   age,
+  assignBranchLabel,
   onArchive,
+  onAssignToBranch,
   terminalRunning,
-}: Pick<ThreadRowProps, 'age' | 'onArchive' | 'terminalRunning'>) {
+}: Pick<
+  ThreadRowProps,
+  'age' | 'assignBranchLabel' | 'onArchive' | 'onAssignToBranch' | 'terminalRunning'
+>) {
   return (
     <span className="sidebar-thread-meta-slot">
       {terminalRunning ? (
@@ -68,17 +76,32 @@ function ThreadMetaSlot({
         </span>
       )}
       <Tooltip content="Archive thread" placement="right" className="sidebar-thread-meta-action">
-        <button
-          type="button"
-          className={cn(
-            compactIconButtonClass,
-            'h-full w-full border-transparent bg-transparent hover:bg-transparent',
-          )}
-          onClick={onArchive}
-          aria-label="Archive thread"
-        >
-          <Archive size={12} />
-        </button>
+        <span className="sidebar-thread-meta-actions">
+          {onAssignToBranch ? (
+            <button
+              type="button"
+              className={cn(
+                compactIconButtonClass,
+                'h-full w-full border-transparent bg-transparent hover:bg-transparent',
+              )}
+              onClick={onAssignToBranch}
+              aria-label={assignBranchLabel ?? 'Assign to branch'}
+            >
+              <GitBranch size={12} />
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className={cn(
+              compactIconButtonClass,
+              'h-full w-full border-transparent bg-transparent hover:bg-transparent',
+            )}
+            onClick={onArchive}
+            aria-label="Archive thread"
+          >
+            <Archive size={12} />
+          </button>
+        </span>
       </Tooltip>
     </span>
   )
@@ -92,7 +115,10 @@ export function ThreadRow({
   unread = false,
   isSelected,
   title,
+  branchName,
+  assignBranchLabel,
   onArchive,
+  onAssignToBranch,
   onOpen,
   onPin,
 }: ThreadRowProps) {
@@ -116,9 +142,16 @@ export function ThreadRow({
         aria-current={isSelected ? 'page' : undefined}
       >
         <span className="truncate">{title}</span>
+        {branchName ? <span className="sidebar-thread-branch-badge">{branchName}</span> : null}
       </button>
 
-      <ThreadMetaSlot age={age} onArchive={onArchive} terminalRunning={terminalRunning} />
+      <ThreadMetaSlot
+        age={age}
+        assignBranchLabel={assignBranchLabel}
+        onArchive={onArchive}
+        onAssignToBranch={onAssignToBranch}
+        terminalRunning={terminalRunning}
+      />
     </div>
   )
 }

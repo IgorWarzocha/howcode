@@ -80,6 +80,7 @@ export function mapThreadRow(row: ThreadRow): Thread {
     unread: Boolean(row.unread),
     pinned: Boolean(row.pinned),
     sessionPath: row.sessionPath,
+    branchName: row.branchName ?? undefined,
   }
 }
 

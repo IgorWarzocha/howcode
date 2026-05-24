@@ -28,6 +28,7 @@ export {
 export {
   archiveThread,
   archiveThreads,
+  assignThreadBranch,
   deleteThreadRecord,
   deleteThreadRecordsBySessionPaths,
   restoreThread,

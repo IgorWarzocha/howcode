@@ -121,6 +121,7 @@ function AppShellSidebar(props: AppShellLayoutViewProps) {
       projectsLoading={controller.shellLoading}
       appLaunchedAtMs={controller.appLaunchedAtMs}
       appSettings={controller.shellState?.appSettings ?? FALLBACK_APP_SETTINGS}
+      projectGitState={controller.projectGitState}
       chatSidebarState={controller.chatSidebarState}
       activeView={state.activeView}
       protectedProjectId={controller.shellState?.resolvedCwd ?? controller.shellState?.cwd ?? null}

@@ -61,6 +61,18 @@ export function toggleThreadPinned(threadId: string) {
   ).run(threadId)
 }
 
+export function assignThreadBranch(threadId: string, branchName: string | null) {
+  const normalizedBranchName = branchName?.trim() || null
+  const db = getThreadStateDatabase()
+  db.prepare(
+    `
+      UPDATE threads
+      SET branch_name = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `,
+  ).run(normalizedBranchName, threadId)
+}
+
 export function archiveThread(threadId: string) {
   const db = getThreadStateDatabase()
   db.prepare(

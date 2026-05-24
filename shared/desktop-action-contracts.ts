@@ -57,6 +57,7 @@ export type DesktopActionPayloadFields = {
   text?: string | undefined
   threadId?: string | undefined
   threadIds?: string[] | undefined
+  branchName?: string | undefined | null | undefined
   value?:
     | string
     | undefined
@@ -158,6 +159,11 @@ export type DesktopActionPayloadMap = {
   }
   'thread.archive': { threadId: string }
   'thread.archive-many': { projectId?: string | undefined | null | undefined; threadIds: string[] }
+  'thread.assign-branch': {
+    threadId: string
+    projectId?: string | undefined | null | undefined
+    branchName?: string | undefined | null | undefined
+  }
   'thread.restore': { threadId: string }
   'thread.restore-many': { threadIds: string[]; projectIds?: string[] | undefined }
   'thread.delete': { threadId: string }

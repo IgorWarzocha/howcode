@@ -205,6 +205,7 @@ export function listProjectThreads(
           threads.running AS running,
           COALESCE(inbox_items.unread, 0) AS unread,
           threads.pinned AS pinned,
+          threads.branch_name AS branchName,
           threads.last_modified_ms AS lastModifiedMs
         FROM threads
         LEFT JOIN inbox_items ON inbox_items.session_path = threads.session_path
@@ -242,6 +243,7 @@ export function listArchivedProjectThreads(
           threads.running AS running,
           COALESCE(inbox_items.unread, 0) AS unread,
           threads.pinned AS pinned,
+          threads.branch_name AS branchName,
           threads.last_modified_ms AS lastModifiedMs
         FROM threads
         LEFT JOIN inbox_items ON inbox_items.session_path = threads.session_path

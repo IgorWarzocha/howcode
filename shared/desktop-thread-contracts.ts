@@ -10,6 +10,7 @@ export type Thread = {
   running?: boolean | undefined
   unread?: boolean | undefined
   pinned?: boolean | undefined
+  branchName?: string | undefined
 }
 
 export type InboxThread = {

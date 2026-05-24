@@ -27,6 +27,7 @@ export type ThreadRow = {
   running: number
   unread: number
   pinned: number
+  branchName: string | null
   lastModifiedMs: number
 }
 

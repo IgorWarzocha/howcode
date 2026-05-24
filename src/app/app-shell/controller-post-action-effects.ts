@@ -177,7 +177,8 @@ const postEffectHandlers: PostEffectHandler[] = [
     matches: (ctx) =>
       ctx.action === 'thread.pin' ||
       ctx.action === 'thread.archive' ||
-      ctx.action === 'thread.archive-many',
+      ctx.action === 'thread.archive-many' ||
+      ctx.action === 'thread.assign-branch',
     run: handleArchivedThreadEffects,
   },
   {

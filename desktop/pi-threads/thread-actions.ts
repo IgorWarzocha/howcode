@@ -2,6 +2,7 @@ import { unlink } from 'node:fs/promises'
 import type { DesktopAction } from '../../shared/desktop-actions.ts'
 import type { AnyDesktopActionPayload } from '../../shared/desktop-contracts.ts'
 import {
+  getBranchName,
   getComposerRequest,
   getSessionPath,
   getThreadId,
@@ -13,6 +14,7 @@ import { openThreadRuntime, startNewThread } from '../pi-desktop-runtime.ts'
 import {
   archiveThread,
   archiveThreads,
+  assignThreadBranch,
   clearReadInboxThreads,
   deleteThreadRecord,
   dismissInboxThread,
@@ -110,6 +112,11 @@ const threadActionHandlers = {
   'thread.archive-many': (payload) => {
     const threadIds = getThreadIds(payload)
     if (threadIds.length > 0) archiveThreads(threadIds)
+    return handledAction()
+  },
+  'thread.assign-branch': (payload) => {
+    const threadId = getThreadId(payload)
+    if (threadId) assignThreadBranch(threadId, getBranchName(payload))
     return handledAction()
   },
   'thread.restore': (payload) => {

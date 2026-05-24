@@ -152,6 +152,7 @@ const threadStateSchemaSql = `
       running INTEGER NOT NULL DEFAULT 0,
       pinned INTEGER NOT NULL DEFAULT 0,
       archived INTEGER NOT NULL DEFAULT 0,
+      branch_name TEXT,
       diff_baseline_json TEXT,
       diff_render_mode TEXT,
       last_modified_ms INTEGER NOT NULL,
@@ -239,6 +240,7 @@ function ensureThreadColumns(database: Database) {
   addColumnIfMissing(database, 'threads', 'last_assistant_preview TEXT')
   addColumnIfMissing(database, 'threads', 'last_assistant_at_ms INTEGER')
   addColumnIfMissing(database, 'threads', 'running INTEGER NOT NULL DEFAULT 0')
+  addColumnIfMissing(database, 'threads', 'branch_name TEXT')
   addColumnIfMissing(database, 'threads', 'diff_baseline_json TEXT')
   addColumnIfMissing(database, 'threads', 'diff_render_mode TEXT')
 }
