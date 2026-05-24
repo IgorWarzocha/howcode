@@ -361,6 +361,26 @@ function BranchPruneAction({
   )
 }
 
+function filterBranchGroups(groups: BranchThreadGroup[], searchQuery: string) {
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase()
+  if (!normalizedSearchQuery) return groups
+
+  return groups
+    .map((group) => ({
+      ...group,
+      threads: group.threads.filter((thread) =>
+        [thread.title, thread.summary ?? '', thread.branchName ?? group.label]
+          .join(' ')
+          .toLowerCase()
+          .includes(normalizedSearchQuery),
+      ),
+    }))
+    .filter(
+      (group) =>
+        group.label.toLowerCase().includes(normalizedSearchQuery) || group.threads.length > 0,
+    )
+}
+
 function BranchThreadGroupSection({
   activeView,
   collapsed,
@@ -491,6 +511,7 @@ export function WorkSidebarSection({
   onShowView,
 }: WorkSidebarSectionProps) {
   const [projectSwitcherOpen, setProjectSwitcherOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const [collapsedBranchIds, setCollapsedBranchIds] = useState<Record<string, boolean>>({})
   const [pruneConfirmBranchId, setPruneConfirmBranchId] = useState<string | null>(null)
   const [switchErrorBranchId, setSwitchErrorBranchId] = useState<string | null>(null)
@@ -526,6 +547,8 @@ export function WorkSidebarSection({
       ? projectGitState.branches
       : []
   const branchGroups = buildBranchGroups(activeThreads, currentBranch, repositoryBranches)
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase()
+  const visibleBranchGroups = filterBranchGroups(branchGroups, searchQuery)
   const selectedThread = selectedProject.threads.find((thread) => thread.id === selectedThreadId)
   const selectedGroupId = selectedThread?.branchName?.trim() || UNASSIGNED_BRANCH_GROUP_ID
 
@@ -576,10 +599,24 @@ export function WorkSidebarSection({
 
       <div className="sidebar-work-lane">
         <div className="sidebar-work-section-heading">
-          <div>
-            <div className="sidebar-work-project-kicker">Branches</div>
-            <div className="sidebar-work-lane-title">Threads by branch</div>
-          </div>
+          <label
+            className="sidebar-search-field sidebar-work-search-field"
+            data-active={searchQuery.trim().length > 0 ? 'true' : 'false'}
+          >
+            <Search size={14} className="sidebar-search-icon" />
+            <input
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key !== 'Escape' || searchQuery.length === 0) return
+                event.stopPropagation()
+                setSearchQuery('')
+              }}
+              placeholder="Search history"
+              className="sidebar-search-input"
+              aria-label="Search history"
+            />
+          </label>
           <Tooltip content="New thread" placement="right">
             <IconButton
               label="New thread"
@@ -596,10 +633,12 @@ export function WorkSidebarSection({
         </div>
 
         <div className="sidebar-work-thread-list">
-          {activeThreads.length > 0 || branchGroups.length > 0 ? (
-            branchGroups.map((group) => {
+          {visibleBranchGroups.length > 0 ? (
+            visibleBranchGroups.map((group) => {
               const defaultCollapsed = !(group.current || group.id === selectedGroupId)
-              const collapsed = collapsedBranchIds[group.id] ?? defaultCollapsed
+              const collapsed = normalizedSearchQuery
+                ? false
+                : (collapsedBranchIds[group.id] ?? defaultCollapsed)
               return (
                 <BranchThreadGroupSection
                   key={group.id}
@@ -651,10 +690,6 @@ export function WorkSidebarSection({
           <span className={cn(appTypeMetaClass, appToneSubtleClass)}>
             {olderThreads.length > 0 ? olderThreads.length : threadCount}
           </span>
-        </button>
-        <button type="button" className="sidebar-work-history-row" onClick={onOpenArchivedThreads}>
-          <Search size={14} />
-          <span>Search history</span>
         </button>
       </div>
     </section>

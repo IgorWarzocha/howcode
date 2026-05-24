@@ -1198,6 +1198,10 @@
   gap: 0.5rem;
 }
 
+.sidebar-work-search-field {
+  min-width: 0;
+}
+
 .sidebar-work-lane-title {
   display: flex;
   min-width: 0;
