@@ -19,8 +19,8 @@ import { AppMenu } from '@howcode/app-menu'
 import { NavButton } from '@howcode/common/nav-button'
 import { SidebarChatSection } from './chat/sidebar-chat-section'
 import { SidebarInboxSection } from './inbox/sidebar-inbox-section'
+import { ProjectWorkSection } from './project-work-section'
 import { SidebarChatSkeleton, SidebarInboxSkeleton } from './sidebar-skeletons'
-import { WorkSidebarSection } from './work-sidebar-section'
 
 type SidebarProps = {
   projects: Project[]
@@ -145,7 +145,7 @@ function SidebarContent(props: SidebarProps) {
   }
   if (props.activeView !== 'extensions' && props.activeView !== 'skills') {
     return (
-      <WorkSidebarSection
+      <ProjectWorkSection
         activeView={props.activeView}
         loading={props.projectsLoading ?? false}
         projects={props.projects}
@@ -167,7 +167,7 @@ function SidebarContent(props: SidebarProps) {
     )
   }
   return (
-    <WorkSidebarSection
+    <ProjectWorkSection
       activeView={props.activeView}
       loading={props.projectsLoading ?? false}
       projects={props.projects}

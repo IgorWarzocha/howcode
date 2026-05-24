@@ -2,5 +2,6 @@
 @import "./sidebar/projects.css";
 @import "./sidebar/common-list.css";
 @import "./sidebar/project-tree.css";
+@import "./sidebar/thread-rows.css";
 @import "./sidebar/inbox.css";
-@import "./sidebar/work.css";
+@import "./sidebar/project-work.css";

@@ -19,17 +19,17 @@ export function ProjectInstallTargetList({
   onProjectTargetSelected?: (() => void) | undefined
 }) {
   return (
-    <div className="sidebar-work-lane sidebar-work-install-targets">
-      <div className="sidebar-work-install-target-copy">Choose install target</div>
-      <div className="sidebar-work-install-target-scroll-shell">
-        <div className="sidebar-work-project-list sidebar-work-install-target-list">
+    <div className="sidebar-project-work-lane sidebar-project-work-install-targets">
+      <div className="sidebar-project-work-install-target-copy">Choose install target</div>
+      <div className="sidebar-project-work-install-target-scroll-shell">
+        <div className="sidebar-project-work-project-list sidebar-project-work-install-target-list">
           {projects.map((project) => {
             const selected = project.id === selectedProjectId
             return (
               <button
                 key={project.id}
                 type="button"
-                className="sidebar-work-project-option"
+                className="sidebar-project-work-project-option"
                 data-active={selected ? 'true' : 'false'}
                 aria-current={selected ? 'true' : undefined}
                 onClick={() => {
@@ -40,13 +40,13 @@ export function ProjectInstallTargetList({
                 }}
               >
                 <span
-                  className="sidebar-work-project-scope-toggle"
+                  className="sidebar-project-work-project-scope-toggle"
                   data-checked={selected ? 'true' : 'false'}
                   aria-hidden="true"
                 >
                   {selected ? <Check size={11} /> : null}
                 </span>
-                <span className="sidebar-work-project-focus">
+                <span className="sidebar-project-work-project-focus">
                   {project.repoOriginUrl ? (
                     <GitHubInvertocatMark size={13} />
                   ) : (
@@ -56,7 +56,7 @@ export function ProjectInstallTargetList({
                 </span>
                 {terminalRunningProjectIds.has(project.id) ? (
                   <span
-                    className="sidebar-work-live-dot"
+                    className="sidebar-project-work-live-dot"
                     title="Running terminal"
                     aria-hidden="true"
                   />

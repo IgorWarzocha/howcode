@@ -12,7 +12,7 @@ export function SearchHistoryField({
 }) {
   return (
     <label
-      className="sidebar-search-field sidebar-work-search-field"
+      className="sidebar-search-field sidebar-project-work-search-field"
       data-active={searchQuery.trim().length > 0 ? 'true' : 'false'}
     >
       <Search size={14} className="sidebar-search-icon" />
@@ -55,7 +55,7 @@ export function ProjectRenameField({
   return (
     <input
       ref={inputRef}
-      className="sidebar-work-project-rename-input"
+      className="sidebar-project-work-project-rename-input"
       value={renameDraft}
       onBlur={onSubmit}
       onChange={(event) => onChange(event.target.value)}

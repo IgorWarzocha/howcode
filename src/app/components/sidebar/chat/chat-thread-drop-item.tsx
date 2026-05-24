@@ -1,6 +1,6 @@
 import type { DragEvent } from 'react'
 import type { ChatThread, DesktopActionInvoker } from '../../../desktop/types'
-import { ThreadRow } from '../project-tree/thread-row'
+import { ThreadRow } from '../thread-row/thread-row'
 
 export const chatThreadDragType = 'application/howcode-chat-thread'
 

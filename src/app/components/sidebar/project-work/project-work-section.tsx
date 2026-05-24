@@ -9,7 +9,7 @@ import type { Project, View } from '../../../types'
 import { SidebarProjectsSkeleton } from '../sidebar-skeletons'
 import { ProjectInstallTargetList } from './project-install-target-list'
 import { ProjectScopeSelector } from './project-scope-selector'
-import { MultiProjectWorkContent, SingleProjectWorkContent } from './work-sidebar-content'
+import { MultiProjectWorkContent, SingleProjectWorkContent } from './project-work-content'
 import {
   bucketThreads,
   buildBranchGroups,
@@ -24,9 +24,9 @@ import {
   orderProjectsForScopeSelector,
   sameStringList,
   UNASSIGNED_BRANCH_GROUP_ID,
-} from './work-sidebar-model'
+} from './project-work-model'
 
-type WorkSidebarSectionProps = {
+type ProjectWorkSectionProps = {
   activeView: View
   loading: boolean
   projects: Project[]
@@ -49,7 +49,7 @@ type WorkSidebarSectionProps = {
   onShowView: (view: Exclude<View, 'gitops'>) => void
 }
 
-export function WorkSidebarSection({
+export function ProjectWorkSection({
   activeView,
   appSettings,
   loading,
@@ -69,7 +69,7 @@ export function WorkSidebarSection({
   onProjectTargetSelected,
   onThreadOpen,
   onShowView,
-}: WorkSidebarSectionProps) {
+}: ProjectWorkSectionProps) {
   const [projectSwitcherOpen, setProjectSwitcherOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [collapsedBranchIds, setCollapsedBranchIds] = useState<Record<string, boolean>>({})
@@ -125,7 +125,7 @@ export function WorkSidebarSection({
   useLayoutEffect(() => {
     if (!selectedThreadId) return
     const selectedRow = document.querySelector(
-      '.sidebar-work-section .sidebar-thread-row[data-selected="true"]',
+      '.sidebar-project-work-section .sidebar-thread-row[data-selected="true"]',
     )
     selectedRow?.scrollIntoView({ block: 'nearest' })
   }, [selectedThreadId])
@@ -186,7 +186,7 @@ export function WorkSidebarSection({
 
   if (!selectedProject && displayableProjects.length === 0) {
     return (
-      <section className="sidebar-work-section" aria-label="Work">
+      <section className="sidebar-project-work-section" aria-label="Work">
         <ProjectScopeSelector
           appSettings={appSettings}
           label="No projects yet"
@@ -201,7 +201,7 @@ export function WorkSidebarSection({
           onOpenSettingsPanel={onOpenSettingsPanel}
           onToggleVisibleProject={toggleVisibleProject}
         />
-        <div className="sidebar-work-empty">
+        <div className="sidebar-project-work-empty">
           <FolderCode size={18} />
           <span>Add a project to get started</span>
         </div>
@@ -211,7 +211,7 @@ export function WorkSidebarSection({
 
   if (projectTargetMode) {
     return (
-      <section className="sidebar-work-section" aria-label="Project install target">
+      <section className="sidebar-project-work-section" aria-label="Project install target">
         <ProjectInstallTargetList
           projects={displayableProjects}
           selectedProjectId={selectedProjectId}
@@ -261,7 +261,7 @@ export function WorkSidebarSection({
     void onAction('workspace.sidebar-scope', { projectIds: storedVisibleProjectIds })
   }
   return (
-    <section className="sidebar-work-section" aria-label="Project work">
+    <section className="sidebar-project-work-section" aria-label="Project work">
       <ProjectScopeSelector
         appSettings={appSettings}
         label={projectScopeLabel}
@@ -278,7 +278,7 @@ export function WorkSidebarSection({
       />
 
       {visibleProjects.length === 0 ? (
-        <div className="sidebar-work-empty sidebar-work-scope-empty">
+        <div className="sidebar-project-work-empty sidebar-project-work-scope-empty">
           <FolderCode size={18} />
           <span>No projects selected.</span>
           <span>Choose projects from the selector above.</span>

@@ -6,7 +6,7 @@ import {
   getProjectScopeLabel,
   getVisibleProjectIds,
   UNASSIGNED_BRANCH_GROUP_ID,
-} from '../app/components/sidebar/work/work-sidebar-model'
+} from '../app/components/sidebar/project-work/project-work-model'
 import type { Project, Thread } from '../app/types'
 
 function thread(overrides: Partial<Thread> & Pick<Thread, 'id'>): Thread {
@@ -24,7 +24,7 @@ function project(overrides: Partial<Project> & Pick<Project, 'id' | 'name'>): Pr
   }
 }
 
-describe('work sidebar model', () => {
+describe('project work sidebar model', () => {
   afterEach(() => {
     vi.useRealTimers()
   })

@@ -1,8 +1,8 @@
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project, Thread, View } from '../../../types'
-import { ThreadRow } from '../project-tree/thread-row'
+import { ThreadRow } from '../thread-row/thread-row'
 
-export function WorkThreadRow({
+export function ProjectWorkThreadRow({
   activeView,
   project,
   selectedThreadId,

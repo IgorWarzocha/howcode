@@ -23,10 +23,10 @@ function ProjectScopeOptionRow({
   onToggleVisible: () => void
 }) {
   return (
-    <div className="sidebar-work-project-option" data-active={focused ? 'true' : 'false'}>
+    <div className="sidebar-project-work-project-option" data-active={focused ? 'true' : 'false'}>
       <button
         type="button"
-        className="sidebar-work-project-scope-toggle"
+        className="sidebar-project-work-project-scope-toggle"
         data-checked={visible ? 'true' : 'false'}
         onClick={(event) => {
           event.stopPropagation()
@@ -36,12 +36,20 @@ function ProjectScopeOptionRow({
       >
         {visible ? <Check size={11} /> : null}
       </button>
-      <button type="button" className="sidebar-work-project-focus" onClick={onToggleVisible}>
+      <button
+        type="button"
+        className="sidebar-project-work-project-focus"
+        onClick={onToggleVisible}
+      >
         {project.repoOriginUrl ? <GitHubInvertocatMark size={13} /> : <FolderCode size={13} />}
         <span className="truncate">{project.name}</span>
       </button>
       {running ? (
-        <span className="sidebar-work-live-dot" title="Running terminal" aria-hidden="true" />
+        <span
+          className="sidebar-project-work-live-dot"
+          title="Running terminal"
+          aria-hidden="true"
+        />
       ) : null}
     </div>
   )
@@ -118,15 +126,15 @@ export function ProjectScopeSelector({
   })
 
   return (
-    <div ref={selectorRef} className="sidebar-work-project-card">
-      <div className="sidebar-work-project-header-row">
-        <div className="sidebar-work-project-kicker">Projects</div>
+    <div ref={selectorRef} className="sidebar-project-work-project-card">
+      <div className="sidebar-project-work-project-header-row">
+        <div className="sidebar-project-work-project-kicker">Projects</div>
         <IconButton
           ref={createButtonRef}
           label="Add project"
           icon={<Plus size={13} />}
           tooltipPlacement="right"
-          className="sidebar-work-project-create-button h-7 w-7 -translate-x-0.5 rounded-md"
+          className="sidebar-project-work-project-create-button h-7 w-7 -translate-x-0.5 rounded-md"
           onClick={() => {
             if (open) onOpenChange(false)
             setCreateOpen(!createOpen)
@@ -135,20 +143,20 @@ export function ProjectScopeSelector({
       </div>
       <button
         type="button"
-        className="sidebar-work-project-button"
+        className="sidebar-project-work-project-button"
         onClick={() => onOpenChange(!open)}
         aria-expanded={open}
       >
         <span className="truncate">{label}</span>
-        <span className="sidebar-work-project-button-meta">
+        <span className="sidebar-project-work-project-button-meta">
           {scopeProject?.repoOriginUrl ? <GitHubInvertocatMark size={13} /> : null}
           <ChevronDown size={13} />
         </span>
       </button>
       {open ? (
-        <div className="sidebar-work-project-list">
+        <div className="sidebar-project-work-project-list">
           <label
-            className="sidebar-search-field sidebar-work-project-search-field"
+            className="sidebar-search-field sidebar-project-work-project-search-field"
             data-active={projectSearchQuery.trim().length > 0 ? 'true' : 'false'}
           >
             <Search size={14} className="sidebar-search-icon" />
@@ -176,14 +184,14 @@ export function ProjectScopeSelector({
             />
           ))}
           {filteredProjects.length === 0 ? (
-            <div className="sidebar-work-project-empty">No matching projects</div>
+            <div className="sidebar-project-work-project-empty">No matching projects</div>
           ) : null}
         </div>
       ) : null}
       <SidebarProjectsCreatePopover
-        menuId="sidebar-work-project-create"
+        menuId="sidebar-project-work-project-create"
         open={createOpen}
-        variant="work-sidebar"
+        variant="project-work"
         draft={projectNameDraft}
         defaultLocation={appSettings.preferredProjectLocation ?? null}
         busy={createBusy}

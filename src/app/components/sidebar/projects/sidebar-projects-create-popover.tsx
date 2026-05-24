@@ -10,7 +10,7 @@ type SidebarProjectsCreatePopoverProps = {
   defaultLocation: string | null
   busy: boolean
   errorMessage: string | null
-  variant?: 'legacy' | 'work-sidebar'
+  variant?: 'legacy' | 'project-work'
   panelRef?: RefObject<HTMLDialogElement | null>
   onChangeDraft: (value: string) => void
   onCreate: (options?: { parentPath?: string | null }) => void

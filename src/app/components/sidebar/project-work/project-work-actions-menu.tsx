@@ -26,13 +26,13 @@ export const ProjectWorkActionsMenu = forwardRef<
   return (
     <div
       ref={ref}
-      className="sidebar-work-project-actions-menu"
+      className="sidebar-project-work-project-actions-menu"
       style={{ right: `${right}px`, width: `${width}px` }}
       role="menu"
     >
       <button
         type="button"
-        className="sidebar-work-project-actions-menu-item"
+        className="sidebar-project-work-project-actions-menu-item"
         onClick={onRename}
         role="menuitem"
       >
@@ -41,7 +41,7 @@ export const ProjectWorkActionsMenu = forwardRef<
       </button>
       <button
         type="button"
-        className="sidebar-work-project-actions-menu-item"
+        className="sidebar-project-work-project-actions-menu-item"
         onClick={() => runProjectAction('project.open-in-file-manager')}
         role="menuitem"
       >
@@ -50,7 +50,7 @@ export const ProjectWorkActionsMenu = forwardRef<
       </button>
       <button
         type="button"
-        className="sidebar-work-project-actions-menu-item"
+        className="sidebar-project-work-project-actions-menu-item"
         data-danger="true"
         onClick={() => {
           if (!deleteConfirm) {

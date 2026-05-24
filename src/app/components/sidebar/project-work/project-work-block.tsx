@@ -10,14 +10,14 @@ import { cn } from '../../../utils/cn'
 import { ProjectCompactBranchGroups, ProjectExpandedBranchGroups } from './branch-thread-groups'
 import { NewThreadMenu } from './new-thread-menu'
 import { ProjectWorkActionsMenu } from './project-work-actions-menu'
-import { ProjectRenameField } from './work-sidebar-fields'
+import { ProjectRenameField } from './project-work-fields'
 import {
   type BranchThreadGroup,
   filterThreadsBySearch,
   filterThreadsForCurrentBranch,
   projectBlockMatchesSearch,
   sortThreads,
-} from './work-sidebar-model'
+} from './project-work-model'
 
 function ProjectWorkBlockHeader({
   currentBranch,
@@ -54,7 +54,7 @@ function ProjectWorkBlockHeader({
   useLayoutEffect(() => {
     if (!(projectMenuOpen && menuButtonRef.current)) return
     const anchor = menuButtonRef.current
-    const row = anchor.closest('.sidebar-work-project-block-heading-row')
+    const row = anchor.closest('.sidebar-project-work-project-block-heading-row')
     const rowRect = row?.getBoundingClientRect()
     const anchorRect = anchor.getBoundingClientRect()
     if (!rowRect) {
@@ -76,10 +76,10 @@ function ProjectWorkBlockHeader({
   }
 
   return (
-    <div className="sidebar-work-project-block-heading-row">
+    <div className="sidebar-project-work-project-block-heading-row">
       <button
         type="button"
-        className="sidebar-work-project-block-disclosure"
+        className="sidebar-project-work-project-block-disclosure"
         onClick={onToggleExpanded}
         aria-expanded={expanded}
         aria-label={expanded ? `Collapse ${project.name}` : `Expand ${project.name}`}
@@ -88,7 +88,7 @@ function ProjectWorkBlockHeader({
       </button>
       <button
         type="button"
-        className="sidebar-work-project-block-heading"
+        className="sidebar-project-work-project-block-heading"
         onClick={() => onFocusProject(project.id)}
       >
         {project.repoOriginUrl ? <GitHubInvertocatMark size={13} /> : <FolderCode size={13} />}
@@ -107,13 +107,13 @@ function ProjectWorkBlockHeader({
           <span className="truncate">{project.name}</span>
         )}
       </button>
-      <div className="sidebar-work-project-menu-anchor">
+      <div className="sidebar-project-work-project-menu-anchor">
         <IconButton
           ref={menuButtonRef}
           label="Project actions"
           icon={<MoreHorizontal size={13} />}
           tooltipPlacement="right"
-          className="sidebar-work-project-menu-button h-7 w-7 rounded-md"
+          className="sidebar-project-work-project-menu-button h-7 w-7 rounded-md"
           onClick={() => setProjectMenuOpen((current) => !current)}
         />
         {projectMenuOpen ? (
@@ -227,7 +227,7 @@ export function ProjectWorkSummaryBlock({
     return null
 
   return (
-    <section className="sidebar-work-project-block">
+    <section className="sidebar-project-work-project-block">
       <ProjectWorkBlockHeader
         currentBranch={currentBranch}
         dirtyMessage={dirtyMessage}
@@ -238,10 +238,10 @@ export function ProjectWorkSummaryBlock({
         onToggleExpanded={onToggleExpanded}
       />
 
-      <div className="sidebar-work-project-block-actions">
+      <div className="sidebar-project-work-project-block-actions">
         <button
           type="button"
-          className="sidebar-work-action-row"
+          className="sidebar-project-work-action-row"
           data-active={activeView === 'automations' && isProjectActive ? 'true' : 'false'}
           onClick={() => {
             onFocusProject(project.id)
@@ -250,12 +250,12 @@ export function ProjectWorkSummaryBlock({
         >
           <ChevronRight size={13} aria-hidden="true" />
           <span>Automations</span>
-          <span className="sidebar-work-pill">Soon</span>
+          <span className="sidebar-project-work-pill">Soon</span>
         </button>
         {expanded ? (
           <button
             type="button"
-            className="sidebar-work-history-row"
+            className="sidebar-project-work-history-row"
             data-active={
               activeView === 'sessions' && isProjectActive && selectedThreadId === null
                 ? 'true'

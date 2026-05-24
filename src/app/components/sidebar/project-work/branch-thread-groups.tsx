@@ -2,8 +2,8 @@ import { Tooltip } from '@howcode/common/tooltip'
 import { ChevronDown, ChevronRight, GitBranch, Trash2, X } from 'lucide-react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project, Thread, View } from '../../../types'
-import type { BranchThreadGroup } from './work-sidebar-model'
-import { WorkThreadRow } from './work-thread-row'
+import type { BranchThreadGroup } from './project-work-model'
+import { ProjectWorkThreadRow } from './project-work-thread-row'
 
 function BranchSwitchAction({
   blocked,
@@ -25,7 +25,7 @@ function BranchSwitchAction({
     >
       <button
         type="button"
-        className="sidebar-work-branch-action"
+        className="sidebar-project-work-branch-action"
         onClick={(event) => {
           event.stopPropagation()
           void onAction('workspace.switch-branch', {
@@ -66,7 +66,7 @@ function BranchPruneAction({
       <>
         <button
           type="button"
-          className="sidebar-work-branch-action"
+          className="sidebar-project-work-branch-action"
           onClick={(event) => {
             event.stopPropagation()
             onCancel()
@@ -77,7 +77,7 @@ function BranchPruneAction({
         </button>
         <button
           type="button"
-          className="sidebar-work-branch-action sidebar-work-branch-action--danger"
+          className="sidebar-project-work-branch-action sidebar-project-work-branch-action--danger"
           onClick={(event) => {
             event.stopPropagation()
             onConfirm()
@@ -98,7 +98,7 @@ function BranchPruneAction({
     <Tooltip content={`Prune ${group.label}`} placement="right">
       <button
         type="button"
-        className="sidebar-work-branch-action"
+        className="sidebar-project-work-branch-action"
         onClick={(event) => {
           event.stopPropagation()
           onRequestConfirm()
@@ -147,11 +147,14 @@ export function BranchThreadGroupSection({
   const switchBlocked = switchErrorBranchId === group.id
 
   return (
-    <section className="sidebar-work-branch-group" data-current={group.current ? 'true' : 'false'}>
-      <div className="sidebar-work-branch-heading">
+    <section
+      className="sidebar-project-work-branch-group"
+      data-current={group.current ? 'true' : 'false'}
+    >
+      <div className="sidebar-project-work-branch-heading">
         <button
           type="button"
-          className="sidebar-work-branch-disclosure"
+          className="sidebar-project-work-branch-disclosure"
           onClick={onToggle}
           aria-expanded={!collapsed}
           aria-label={collapsed ? `Expand ${group.label}` : `Collapse ${group.label}`}
@@ -160,20 +163,22 @@ export function BranchThreadGroupSection({
         </button>
         <button
           type="button"
-          className="sidebar-work-branch-toggle"
+          className="sidebar-project-work-branch-toggle"
           onClick={onToggle}
           aria-expanded={!collapsed}
         >
           {/* TODO(worktrees): swap this for a dynamic work-context icon once worktrees land. Branches can keep GitBranch; worktrees likely need a custom SVG. */}
-          <GitBranch size={13} className="sidebar-work-branch-icon" />
+          <GitBranch size={13} className="sidebar-project-work-branch-icon" />
           <span className="truncate">{group.label}</span>
         </button>
-        <span className="sidebar-work-branch-meta">
-          {group.current ? <span className="sidebar-work-branch-current">Current</span> : null}
-          <span className="sidebar-work-branch-count">{group.threads.length}</span>
+        <span className="sidebar-project-work-branch-meta">
+          {group.current ? (
+            <span className="sidebar-project-work-branch-current">Current</span>
+          ) : null}
+          <span className="sidebar-project-work-branch-count">{group.threads.length}</span>
         </span>
         <span
-          className="sidebar-work-branch-actions"
+          className="sidebar-project-work-branch-actions"
           data-confirming={confirmingPrune ? 'true' : 'false'}
         >
           {canManageBranch && !confirmingPrune ? (
@@ -200,10 +205,10 @@ export function BranchThreadGroupSection({
       </div>
 
       {collapsed ? null : (
-        <div className="sidebar-work-branch-thread-list">
+        <div className="sidebar-project-work-branch-thread-list">
           {group.threads.length > 0 ? (
             group.threads.map((thread) => (
-              <WorkThreadRow
+              <ProjectWorkThreadRow
                 key={thread.id}
                 activeView={activeView}
                 project={project}
@@ -216,7 +221,7 @@ export function BranchThreadGroupSection({
               />
             ))
           ) : (
-            <div className="sidebar-work-branch-empty">No threads assigned here yet.</div>
+            <div className="sidebar-project-work-branch-empty">No threads assigned here yet.</div>
           )}
         </div>
       )}
@@ -260,7 +265,7 @@ export function ProjectExpandedBranchGroups({
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
 }) {
   return (
-    <div className="sidebar-work-project-expanded-branches">
+    <div className="sidebar-project-work-project-expanded-branches">
       {branchGroups.map((group) => {
         const groupKey = `${project.id}:${group.id}`
         const defaultCollapsed = !group.current
@@ -327,11 +332,11 @@ export function ProjectCompactBranchGroups({
 }) {
   return (
     <>
-      <section className="sidebar-work-branch-group" data-current="true">
-        <div className="sidebar-work-branch-heading">
+      <section className="sidebar-project-work-branch-group" data-current="true">
+        <div className="sidebar-project-work-branch-heading">
           <button
             type="button"
-            className="sidebar-work-branch-disclosure"
+            className="sidebar-project-work-branch-disclosure"
             onClick={onToggleCurrentBranch}
             aria-expanded={currentBranchExpanded}
             aria-label={currentBranchExpanded ? 'Collapse current branch' : 'Expand current branch'}
@@ -340,22 +345,22 @@ export function ProjectCompactBranchGroups({
           </button>
           <button
             type="button"
-            className="sidebar-work-branch-toggle"
+            className="sidebar-project-work-branch-toggle"
             onClick={onToggleCurrentBranch}
             aria-expanded={currentBranchExpanded}
           >
-            <GitBranch size={13} className="sidebar-work-branch-icon" />
+            <GitBranch size={13} className="sidebar-project-work-branch-icon" />
             <span className="truncate">{currentBranch ?? 'No branch'}</span>
           </button>
-          <span className="sidebar-work-branch-meta">
-            <span className="sidebar-work-branch-count">{branchThreads.length}</span>
+          <span className="sidebar-project-work-branch-meta">
+            <span className="sidebar-project-work-branch-count">{branchThreads.length}</span>
           </span>
         </div>
         {currentBranchExpanded ? (
-          <div className="sidebar-work-branch-thread-list">
+          <div className="sidebar-project-work-branch-thread-list">
             {branchThreads.length > 0 ? (
               branchThreads.map((thread) => (
-                <WorkThreadRow
+                <ProjectWorkThreadRow
                   key={thread.id}
                   activeView={activeView}
                   currentBranch={currentBranch}
@@ -368,18 +373,18 @@ export function ProjectCompactBranchGroups({
                 />
               ))
             ) : (
-              <div className="sidebar-work-branch-empty">No threads on current branch.</div>
+              <div className="sidebar-project-work-branch-empty">No threads on current branch.</div>
             )}
           </div>
         ) : null}
       </section>
 
       {unassignedThreads.length > 0 ? (
-        <section className="sidebar-work-branch-group">
-          <div className="sidebar-work-branch-heading">
+        <section className="sidebar-project-work-branch-group">
+          <div className="sidebar-project-work-branch-heading">
             <button
               type="button"
-              className="sidebar-work-branch-disclosure"
+              className="sidebar-project-work-branch-disclosure"
               onClick={onToggleUnassigned}
               aria-expanded={unassignedExpanded}
               aria-label={
@@ -390,20 +395,20 @@ export function ProjectCompactBranchGroups({
             </button>
             <button
               type="button"
-              className="sidebar-work-branch-toggle sidebar-work-branch-toggle--plain"
+              className="sidebar-project-work-branch-toggle sidebar-project-work-branch-toggle--plain"
               onClick={onToggleUnassigned}
               aria-expanded={unassignedExpanded}
             >
               <span className="truncate">Unassigned</span>
             </button>
-            <span className="sidebar-work-branch-meta">
-              <span className="sidebar-work-branch-count">{unassignedThreads.length}</span>
+            <span className="sidebar-project-work-branch-meta">
+              <span className="sidebar-project-work-branch-count">{unassignedThreads.length}</span>
             </span>
           </div>
           {unassignedExpanded ? (
-            <div className="sidebar-work-branch-thread-list">
+            <div className="sidebar-project-work-branch-thread-list">
               {unassignedThreads.map((thread) => (
-                <WorkThreadRow
+                <ProjectWorkThreadRow
                   key={thread.id}
                   activeView={activeView}
                   currentBranch={currentBranch}

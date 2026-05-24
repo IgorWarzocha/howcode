@@ -7,7 +7,7 @@ import { cn } from '../../../utils/cn'
 import { BranchThreadGroupSection } from './branch-thread-groups'
 import { createThreadForBranch, NewThreadMenu } from './new-thread-menu'
 import { ProjectWorkSummaryBlock } from './project-work-block'
-import { SearchHistoryField } from './work-sidebar-fields'
+import { SearchHistoryField } from './project-work-fields'
 import {
   type BranchThreadGroup,
   bucketThreads,
@@ -17,7 +17,7 @@ import {
   getProjectGitStateForSidebar,
   getRepositoryBranchesForProject,
   UNASSIGNED_BRANCH_GROUP_ID,
-} from './work-sidebar-model'
+} from './project-work-model'
 
 export function MultiProjectWorkContent({
   activeView,
@@ -71,16 +71,16 @@ export function MultiProjectWorkContent({
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
 }) {
   return (
-    <div className="sidebar-work-lane">
-      <div className="sidebar-work-section-heading sidebar-work-section-heading--search-only">
+    <div className="sidebar-project-work-lane">
+      <div className="sidebar-project-work-section-heading sidebar-project-work-section-heading--search-only">
         <SearchHistoryField
           inputRef={searchInputRef}
           searchQuery={searchQuery}
           onSearchQueryChange={onSearchQueryChange}
         />
       </div>
-      <div className="sidebar-work-scroll-shell">
-        <div className="sidebar-work-thread-list sidebar-work-project-block-list">
+      <div className="sidebar-project-work-scroll-shell">
+        <div className="sidebar-project-work-thread-list sidebar-project-work-project-block-list">
           {visibleProjects.map((project) => {
             const buckets = bucketThreads(project, selectedThreadId)
             const blockCurrentBranch = getCurrentBranchForProject(
@@ -203,20 +203,20 @@ export function SingleProjectWorkContent({
 }) {
   return (
     <>
-      <div className="sidebar-work-actions">
+      <div className="sidebar-project-work-actions">
         <button
           type="button"
-          className="sidebar-work-action-row"
+          className="sidebar-project-work-action-row"
           data-active={activeView === 'automations' ? 'true' : 'false'}
           onClick={() => onShowView('automations')}
         >
           <ChevronRight size={13} aria-hidden="true" />
           <span>Automations</span>
-          <span className="sidebar-work-pill">Soon</span>
+          <span className="sidebar-project-work-pill">Soon</span>
         </button>
         <button
           type="button"
-          className="sidebar-work-history-row"
+          className="sidebar-project-work-history-row"
           data-active={activeView === 'sessions' && selectedThreadId === null ? 'true' : 'false'}
           onClick={() => onShowView('sessions')}
         >
@@ -226,8 +226,8 @@ export function SingleProjectWorkContent({
         </button>
       </div>
 
-      <div className="sidebar-work-lane">
-        <div className="sidebar-work-section-heading">
+      <div className="sidebar-project-work-lane">
+        <div className="sidebar-project-work-section-heading">
           <SearchHistoryField
             inputRef={searchInputRef}
             searchQuery={searchQuery}
@@ -241,8 +241,8 @@ export function SingleProjectWorkContent({
           />
         </div>
 
-        <div className="sidebar-work-scroll-shell">
-          <div className="sidebar-work-thread-list">
+        <div className="sidebar-project-work-scroll-shell">
+          <div className="sidebar-project-work-thread-list">
             {branchGroups.length > 0 ? (
               branchGroups.map((group) => {
                 const defaultCollapsed = !(group.current || group.id === selectedGroupId)
@@ -275,7 +275,7 @@ export function SingleProjectWorkContent({
                 )
               })
             ) : (
-              <div className="sidebar-work-start-card">
+              <div className="sidebar-project-work-start-card">
                 <span>No active threads for this work context.</span>
                 <button
                   type="button"
