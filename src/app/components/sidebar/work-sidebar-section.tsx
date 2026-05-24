@@ -1,3 +1,4 @@
+import { GitHubInvertocatMark } from '@howcode/common/github-invertocat-mark'
 import { IconButton } from '@howcode/common/icon-button'
 import { Tooltip } from '@howcode/common/tooltip'
 import {
@@ -187,7 +188,7 @@ function ProjectOptionRow({
       data-active={active ? 'true' : 'false'}
       onClick={onSelect}
     >
-      <FolderCode size={13} />
+      {project.repoOriginUrl ? <GitHubInvertocatMark size={13} /> : <FolderCode size={13} />}
       <span className="truncate">{project.name}</span>
       {running ? (
         <span className="sidebar-work-live-dot" title="Running terminal" aria-hidden="true" />
@@ -738,7 +739,10 @@ export function WorkSidebarSection({
           aria-expanded={projectSwitcherOpen}
         >
           <span className="truncate">{selectedProject.name}</span>
-          <ChevronDown size={14} />
+          <span className="sidebar-work-project-button-meta">
+            {selectedProject.repoOriginUrl ? <GitHubInvertocatMark size={13} /> : null}
+            <ChevronDown size={13} />
+          </span>
         </button>
         {projectSwitcherOpen ? (
           <div className="sidebar-work-project-list">
