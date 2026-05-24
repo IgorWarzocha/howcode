@@ -263,7 +263,7 @@ export function WorkSidebarSection({
             <IconButton
               label="New thread"
               icon={<Plus size={14} />}
-              className="h-7 w-7 rounded-lg"
+              className="h-7 w-7 rounded-md"
               onClick={() =>
                 onAction('thread.new', {
                   projectId: selectedProject.id,

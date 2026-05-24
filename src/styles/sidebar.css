@@ -938,7 +938,7 @@
   align-items: center;
   gap: 0.0625rem;
   border: 1px solid var(--border);
-  border-radius: 0.625rem;
+  border-radius: 0.375rem;
   background: var(--panel);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
   opacity: 0;
@@ -1095,7 +1095,7 @@
   align-items: center;
   gap: 0.5rem;
   border: 1px solid var(--border);
-  border-radius: 0.875rem;
+  border-radius: 0.375rem;
   background: var(--panel);
   padding: 0 0.625rem;
   color: var(--text);
@@ -1114,7 +1114,7 @@
   gap: 0.125rem;
   overflow-y: auto;
   border: 1px solid var(--border);
-  border-radius: 0.875rem;
+  border-radius: 0.375rem;
   background: var(--panel);
   padding: 0.25rem;
 }
@@ -1125,7 +1125,7 @@
   grid-template-columns: 14px minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.45rem;
-  border-radius: 0.625rem;
+  border-radius: 0.25rem;
   padding: 0 0.45rem;
   color: var(--muted);
   font-size: var(--app-type-small-size);
@@ -1141,7 +1141,7 @@
 .sidebar-work-live-dot {
   width: 0.45rem;
   height: 0.45rem;
-  border-radius: 999px;
+  border-radius: 0.125rem;
   background: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
 }
@@ -1158,7 +1158,7 @@
   grid-template-columns: 16px minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.5rem;
-  border-radius: 0.75rem;
+  border-radius: 0.375rem;
   padding: 0 0.5rem;
   color: var(--muted);
   font-size: var(--app-type-group-size);
@@ -1174,7 +1174,7 @@
 
 .sidebar-work-pill {
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 0.25rem;
   padding: 0.0625rem 0.375rem;
   color: var(--muted-2);
   font-size: var(--app-type-kicker-size);
@@ -1223,7 +1223,7 @@
   justify-items: start;
   gap: 0.5rem;
   border: 1px dashed var(--border);
-  border-radius: 0.875rem;
+  border-radius: 0.375rem;
   padding: 0.75rem;
   color: var(--muted);
   font-size: var(--app-type-small-size);
