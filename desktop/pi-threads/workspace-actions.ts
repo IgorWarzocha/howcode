@@ -13,8 +13,10 @@ import {
   getProjectDiffBaselinePreference,
   getProjectDiffRenderModePreference,
   getProjectId,
+  getProjectIds,
 } from '../../shared/pi-thread-action-payloads.ts'
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
+import { setSidebarVisibleProjectIds } from '../app-settings/writers.ts'
 import { generateGitCommitMessage } from '../git-commit-message.ts'
 import {
   commitProjectChanges,
@@ -108,6 +110,9 @@ export async function handleWorkspaceDesktopAction(
       return handleCommitOptionsWorkspaceAction(payload)
     case 'workspace.diff-preferences':
       return handleDiffPreferencesWorkspaceAction(payload)
+    case 'workspace.sidebar-scope':
+      setSidebarVisibleProjectIds(getProjectIds(payload))
+      return handledAction()
     case 'workspace.switch-branch': {
       const projectId = getProjectId(payload)
       if (!projectId) return handledAction()

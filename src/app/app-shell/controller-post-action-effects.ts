@@ -163,6 +163,7 @@ async function handleSwitchBranchEffects(ctx: PostEffectsContext) {
     contextualPayload: ctx.contextualPayload,
     queryClient: ctx.queryClient,
     loadProjectGitState: ctx.loadProjectGitState,
+    loadProjectThreads: ctx.loadProjectThreads,
     setProjectGitState: ctx.setProjectGitState,
   })
 }
@@ -237,6 +238,10 @@ const postEffectHandlers: PostEffectHandler[] = [
     run: handleNewThreadOrProjectEffects,
   },
   { matches: (ctx) => ctx.action === 'workspace.commit-options', run: handleCommitOptionsEffects },
+  {
+    matches: (ctx) => ctx.action === 'workspace.sidebar-scope',
+    run: (ctx) => ctx.refreshShellState(),
+  },
   {
     matches: (ctx) =>
       ctx.action === 'workspace.switch-branch' || ctx.action === 'workspace.prune-branch',

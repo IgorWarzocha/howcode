@@ -33,6 +33,7 @@ type SidebarProps = {
   appLaunchedAtMs: number
   appSettings: AppSettings
   projectGitState: ProjectGitState | null
+  sidebarVisibleProjectIds: string[] | null | undefined
   protectedProjectId?: string | null
   activeView: View
   selectedInboxSessionPath: string | null
@@ -150,6 +151,7 @@ function SidebarContent(props: SidebarProps) {
         loading={props.projectsLoading ?? false}
         projects={props.projects}
         projectGitState={props.projectGitState}
+        initialVisibleProjectIds={props.sidebarVisibleProjectIds}
         selectedProjectId={props.selectedProjectId}
         selectedThreadId={props.selectedThreadId}
         terminalRunningProjectIds={props.terminalRunningProjectIds}
@@ -198,6 +200,7 @@ export function Sidebar({
   appLaunchedAtMs,
   appSettings,
   projectGitState,
+  sidebarVisibleProjectIds,
   protectedProjectId = null,
   activeView,
   selectedInboxSessionPath,
@@ -260,6 +263,7 @@ export function Sidebar({
     appLaunchedAtMs,
     appSettings,
     projectGitState,
+    sidebarVisibleProjectIds,
     protectedProjectId,
     activeView,
     selectedInboxSessionPath,

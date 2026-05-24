@@ -41,6 +41,7 @@ export const implementedDesktopActions = [
   'workspace.commit',
   'workspace.commit-options',
   'workspace.diff-preferences',
+  'workspace.sidebar-scope',
   'workspace.switch-branch',
   'workspace.prune-branch',
   'settings.update',

@@ -191,6 +191,7 @@ export type DesktopActionPayloadMap = {
     diffBaseline?: ProjectDiffBaseline | null
     diffRenderMode?: ProjectDiffRenderMode | null
   }
+  'workspace.sidebar-scope': { projectIds: string[] }
   'workspace.switch-branch': { projectId?: string | undefined | null | undefined; value: string }
   'workspace.prune-branch': {
     projectId?: string | undefined | null | undefined

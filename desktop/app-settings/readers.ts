@@ -35,6 +35,7 @@ import {
   projectDeletionModeKey,
   projectImportStateKey,
   showDictationButtonKey,
+  sidebarVisibleProjectIdsKey,
   skillCreatorModelKey,
   skillCreatorThinkingLevelKey,
   useAgentsSkillsPathsKey,
@@ -90,6 +91,12 @@ function loadKeybindingSettings(value: (key: string) => string | undefined) {
     keybindings: parseKeybindingOverrides(value(keybindingsKey)),
     composerSendMode: parseComposerSendModePreference(value(composerSendModeKey)) ?? 'enter',
   }
+}
+
+export function loadSidebarVisibleProjectIds(): string[] | null {
+  const rows = loadPreferenceRows()
+  const valueJson = rows.get(sidebarVisibleProjectIdsKey)?.valueJson
+  return valueJson === undefined ? null : parseFavoriteFolders(valueJson)
 }
 
 function loadProjectUiSettings(value: (key: string) => string | undefined) {

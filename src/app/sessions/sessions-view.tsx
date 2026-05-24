@@ -249,9 +249,9 @@ export function SessionsView({
       <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-4 overflow-hidden">
         <div className="grid gap-4">
           <ViewHeader
-            title="Sessions"
+            title="Past sessions"
             onClose={onClose}
-            closeLabel="Close sessions"
+            closeLabel="Close past sessions"
             closeTooltip={false}
           />
 
@@ -270,7 +270,7 @@ export function SessionsView({
                   if (event.key !== 'Escape') return
                   setSearchQuery('')
                 }}
-                placeholder="Search sessions"
+                placeholder="Search past sessions"
                 className="min-w-0 bg-transparent text-sm text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
                 aria-label="Search sessions"
               />
@@ -314,7 +314,9 @@ export function SessionsView({
           ) : (
             <div className={inlineEmptyNoteClass}>
               <div className="grid gap-1">
-                <div className={`${appTypeSectionTitleClass} ${appToneTextClass}`}>No sessions</div>
+                <div className={`${appTypeSectionTitleClass} ${appToneTextClass}`}>
+                  No past sessions
+                </div>
                 <p className={cn('m-0 max-w-[448px]', appToneMutedClass)}>
                   Older project threads will appear here once they leave the active sidebar.
                 </p>

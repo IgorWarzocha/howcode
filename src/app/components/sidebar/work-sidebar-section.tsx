@@ -1,9 +1,11 @@
 import { GitHubInvertocatMark } from '@howcode/common/github-invertocat-mark'
 import { IconButton } from '@howcode/common/icon-button'
 import { Tooltip } from '@howcode/common/tooltip'
+import { useQueries } from '@tanstack/react-query'
 import {
   Archive,
   Bot,
+  Check,
   ChevronDown,
   ChevronRight,
   FolderCode,
@@ -14,8 +16,10 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { DesktopActionInvoker, ProjectGitState } from '../../desktop/types'
+import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
+import { desktopQueryKeys, getProjectGitStateQuery } from '../../query/desktop-query'
 import type { Project, Thread, View } from '../../types'
 import { appToneSubtleClass, appTypeMetaClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
@@ -24,12 +28,38 @@ import { SidebarProjectsSkeleton } from './sidebar-skeletons'
 
 const OLD_THREAD_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000
 const UNASSIGNED_BRANCH_GROUP_ID = '__unassigned__'
+function sameStringList(a: readonly string[], b: readonly string[]) {
+  return a.length === b.length && a.every((value, index) => value === b[index])
+}
+
+function getProjectScopeLabel({
+  selectedProject,
+  visibleProjects,
+}: {
+  selectedProject: Project
+  visibleProjects: readonly Project[]
+}) {
+  if (visibleProjects.length === 0) return 'No projects selected'
+  const primaryVisibleProject =
+    visibleProjects.find((project) => project.id === selectedProject.id) ?? visibleProjects[0]
+  const primaryProjectName = primaryVisibleProject?.name ?? selectedProject.name
+  return visibleProjects.length > 1
+    ? `${primaryProjectName} +${visibleProjects.length - 1}`
+    : primaryProjectName
+}
+
+function getDisplayableProjects(projects: readonly Project[]) {
+  return projects.filter(
+    (project) => project.id.trim().length > 0 && project.name.trim().length > 0,
+  )
+}
 
 type WorkSidebarSectionProps = {
   activeView: View
   loading: boolean
   projects: Project[]
   projectGitState: ProjectGitState | null
+  initialVisibleProjectIds: string[] | null | undefined
   selectedProjectId: string
   selectedThreadId: string | null
   terminalRunningProjectIds: ReadonlySet<string>
@@ -170,30 +200,41 @@ function buildBranchGroups(
   return groups
 }
 
-function ProjectOptionRow({
-  active,
+function ProjectScopeOptionRow({
+  focused,
   project,
   running,
-  onSelect,
+  visible,
+  onToggleVisible,
 }: {
-  active: boolean
+  focused: boolean
   project: Project
   running: boolean
-  onSelect: () => void
+  visible: boolean
+  onToggleVisible: () => void
 }) {
   return (
-    <button
-      type="button"
-      className="sidebar-work-project-option"
-      data-active={active ? 'true' : 'false'}
-      onClick={onSelect}
-    >
-      {project.repoOriginUrl ? <GitHubInvertocatMark size={13} /> : <FolderCode size={13} />}
-      <span className="truncate">{project.name}</span>
+    <div className="sidebar-work-project-option" data-active={focused ? 'true' : 'false'}>
+      <button
+        type="button"
+        className="sidebar-work-project-scope-toggle"
+        data-checked={visible ? 'true' : 'false'}
+        onClick={(event) => {
+          event.stopPropagation()
+          onToggleVisible()
+        }}
+        aria-label={visible ? `Hide ${project.name} in sidebar` : `Show ${project.name} in sidebar`}
+      >
+        {visible ? <Check size={11} /> : null}
+      </button>
+      <button type="button" className="sidebar-work-project-focus" onClick={onToggleVisible}>
+        {project.repoOriginUrl ? <GitHubInvertocatMark size={13} /> : <FolderCode size={13} />}
+        <span className="truncate">{project.name}</span>
+      </button>
       {running ? (
         <span className="sidebar-work-live-dot" title="Running terminal" aria-hidden="true" />
       ) : null}
-    </button>
+    </div>
   )
 }
 
@@ -520,6 +561,248 @@ async function createThreadForBranch({
   })
 }
 
+function getProjectGitStateForSidebar(
+  projectId: string,
+  projectGitState: ProjectGitState | null,
+  gitStatesByProjectId: ReadonlyMap<string, ProjectGitState | null>,
+) {
+  if (projectGitState?.projectId === projectId) return projectGitState
+  return gitStatesByProjectId.get(projectId) ?? null
+}
+
+function getCurrentBranchForProject(
+  project: Project,
+  projectGitState: ProjectGitState | null,
+  gitStatesByProjectId: ReadonlyMap<string, ProjectGitState | null>,
+) {
+  const gitState = getProjectGitStateForSidebar(project.id, projectGitState, gitStatesByProjectId)
+  return gitState?.isGitRepo ? gitState.branch : null
+}
+
+function getRepositoryBranchesForProject(
+  project: Project,
+  projectGitState: ProjectGitState | null,
+  gitStatesByProjectId: ReadonlyMap<string, ProjectGitState | null>,
+) {
+  const gitState = getProjectGitStateForSidebar(project.id, projectGitState, gitStatesByProjectId)
+  return gitState?.isGitRepo ? gitState.branches : []
+}
+
+function filterThreadsForCurrentBranch(threads: readonly Thread[], currentBranch: string | null) {
+  if (!currentBranch) return []
+  return sortThreads(threads.filter((thread) => thread.branchName === currentBranch))
+}
+
+function filterThreadsBySearch(threads: readonly Thread[], searchQuery: string) {
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase()
+  if (!normalizedSearchQuery) return [...threads]
+  return threads.filter((thread) =>
+    [thread.title, thread.summary ?? '', thread.branchName ?? '']
+      .join(' ')
+      .toLowerCase()
+      .includes(normalizedSearchQuery),
+  )
+}
+
+function ProjectWorkSummaryBlock({
+  activeView,
+  currentBranch,
+  dirtyMessage,
+  project,
+  searchQuery,
+  selectedThreadId,
+  terminalRunningSessionPaths,
+  threads,
+  unassignedCollapsed,
+  onAction,
+  onOpenProjectFull,
+  onShowView,
+  onThreadOpen,
+  onToggleUnassigned,
+}: {
+  activeView: View
+  currentBranch: string | null
+  dirtyMessage: string | null
+  project: Project
+  searchQuery: string
+  selectedThreadId: string | null
+  terminalRunningSessionPaths: ReadonlySet<string>
+  threads: Thread[]
+  unassignedCollapsed: boolean
+  onAction: DesktopActionInvoker
+  onOpenProjectFull: (projectId: string) => void
+  onShowView: (view: Exclude<View, 'gitops'>) => void
+  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
+  onToggleUnassigned: () => void
+}) {
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase()
+  const branchThreads = filterThreadsBySearch(
+    filterThreadsForCurrentBranch(threads, currentBranch),
+    searchQuery,
+  )
+  const unassignedThreads = filterThreadsBySearch(
+    sortThreads(threads.filter((thread) => !thread.branchName?.trim())),
+    searchQuery,
+  )
+  const showUnassigned = unassignedThreads.length > 0
+  const branchMatchesSearch =
+    normalizedSearchQuery.length === 0 ||
+    project.name.toLowerCase().includes(normalizedSearchQuery) ||
+    (currentBranch?.toLowerCase().includes(normalizedSearchQuery) ?? false) ||
+    branchThreads.length > 0 ||
+    unassignedThreads.length > 0
+  const unassignedExpanded = normalizedSearchQuery.length > 0 || !unassignedCollapsed
+
+  if (!branchMatchesSearch) return null
+
+  return (
+    <section className="sidebar-work-project-block">
+      <div className="sidebar-work-project-block-heading-row">
+        <button
+          type="button"
+          className="sidebar-work-project-block-heading"
+          onClick={() => onOpenProjectFull(project.id)}
+        >
+          {project.repoOriginUrl ? <GitHubInvertocatMark size={13} /> : <FolderCode size={13} />}
+          <span className="truncate">{project.name}</span>
+        </button>
+        <NewThreadMenu
+          currentBranch={currentBranch}
+          dirtyMessage={dirtyMessage}
+          onAction={onAction}
+          projectId={project.id}
+        />
+      </div>
+
+      <div className="sidebar-work-project-block-actions">
+        <button
+          type="button"
+          className="sidebar-work-action-row"
+          data-active={activeView === 'automations' ? 'true' : 'false'}
+          onClick={() => {
+            onOpenProjectFull(project.id)
+            onShowView('automations')
+          }}
+        >
+          <Bot size={15} />
+          <span>Automations</span>
+          <span className="sidebar-work-pill">Soon</span>
+        </button>
+      </div>
+
+      <section className="sidebar-work-branch-group" data-current="true">
+        <div className="sidebar-work-branch-heading">
+          <span className="sidebar-work-branch-disclosure" aria-hidden="true">
+            <ChevronDown size={13} />
+          </span>
+          <span className="sidebar-work-branch-toggle">
+            <GitBranch size={13} className="sidebar-work-branch-icon" />
+            <span className="truncate">{currentBranch ?? 'No branch'}</span>
+          </span>
+          <span className="sidebar-work-branch-meta">
+            <span className="sidebar-work-branch-count">{branchThreads.length}</span>
+          </span>
+        </div>
+        <div className="sidebar-work-branch-thread-list">
+          {branchThreads.length > 0 ? (
+            branchThreads.map((thread) => (
+              <WorkThreadRow
+                key={thread.id}
+                activeView={activeView}
+                currentBranch={currentBranch}
+                project={project}
+                selectedThreadId={selectedThreadId}
+                terminalRunningSessionPaths={terminalRunningSessionPaths}
+                thread={thread}
+                onAction={onAction}
+                onThreadOpen={onThreadOpen}
+              />
+            ))
+          ) : (
+            <div className="sidebar-work-branch-empty">No threads on current branch.</div>
+          )}
+        </div>
+      </section>
+
+      {showUnassigned ? (
+        <section className="sidebar-work-branch-group">
+          <div className="sidebar-work-branch-heading">
+            <button
+              type="button"
+              className="sidebar-work-branch-disclosure"
+              onClick={onToggleUnassigned}
+              aria-expanded={unassignedExpanded}
+              aria-label={
+                unassignedExpanded ? 'Collapse unassigned sessions' : 'Expand unassigned sessions'
+              }
+            >
+              {unassignedExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+            </button>
+            <button
+              type="button"
+              className="sidebar-work-branch-toggle"
+              onClick={onToggleUnassigned}
+              aria-expanded={unassignedExpanded}
+            >
+              <X size={13} />
+              <span className="truncate">Unassigned</span>
+            </button>
+            <span className="sidebar-work-branch-meta">
+              <span className="sidebar-work-branch-count">{unassignedThreads.length}</span>
+            </span>
+          </div>
+          {unassignedExpanded ? (
+            <div className="sidebar-work-branch-thread-list">
+              {unassignedThreads.map((thread) => (
+                <WorkThreadRow
+                  key={thread.id}
+                  activeView={activeView}
+                  currentBranch={currentBranch}
+                  project={project}
+                  selectedThreadId={selectedThreadId}
+                  terminalRunningSessionPaths={terminalRunningSessionPaths}
+                  thread={thread}
+                  onAction={onAction}
+                  onThreadOpen={onThreadOpen}
+                />
+              ))}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+    </section>
+  )
+}
+
+function SearchHistoryField({
+  searchQuery,
+  onSearchQueryChange,
+}: {
+  searchQuery: string
+  onSearchQueryChange: (query: string) => void
+}) {
+  return (
+    <label
+      className="sidebar-search-field sidebar-work-search-field"
+      data-active={searchQuery.trim().length > 0 ? 'true' : 'false'}
+    >
+      <Search size={14} className="sidebar-search-icon" />
+      <input
+        value={searchQuery}
+        onChange={(event) => onSearchQueryChange(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape' || searchQuery.length === 0) return
+          event.stopPropagation()
+          onSearchQueryChange('')
+        }}
+        placeholder="Search history"
+        className="sidebar-search-input"
+        aria-label="Search history"
+      />
+    </label>
+  )
+}
+
 function NewThreadMenu({
   currentBranch,
   dirtyMessage,
@@ -671,98 +954,197 @@ function NewThreadMenu({
   )
 }
 
-export function WorkSidebarSection({
-  activeView,
-  loading,
+function ProjectScopeSelector({
+  label,
+  open,
   projects,
-  projectGitState,
-  selectedProjectId,
-  selectedThreadId,
+  scopeProject,
+  selectedProject,
   terminalRunningProjectIds,
-  terminalRunningSessionPaths,
-  onAction,
-  onLoadProjectThreads,
-  onProjectSelect,
-  onThreadOpen,
-  onShowView,
-}: WorkSidebarSectionProps) {
-  const [projectSwitcherOpen, setProjectSwitcherOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [collapsedBranchIds, setCollapsedBranchIds] = useState<Record<string, boolean>>({})
-  const [pruneConfirmBranchId, setPruneConfirmBranchId] = useState<string | null>(null)
-  const [switchErrorBranchId, setSwitchErrorBranchId] = useState<string | null>(null)
-  const selectedProject =
-    projects.find((project) => project.id === selectedProjectId) ?? projects[0] ?? null
-
-  useEffect(() => {
-    if (!selectedProject || selectedProject.threadsLoaded) return
-    void onLoadProjectThreads(selectedProject.id, { chat: false })
-  }, [onLoadProjectThreads, selectedProject])
-
-  if (loading && projects.length === 0) return <SidebarProjectsSkeleton />
-
-  if (!selectedProject) {
-    return (
-      <section className="sidebar-work-section" aria-label="Work">
-        <div className="sidebar-work-empty">
-          <FolderCode size={18} />
-          <span>No projects yet</span>
-        </div>
-      </section>
-    )
-  }
-
-  const { activeThreads, olderThreads } = bucketThreads(selectedProject, selectedThreadId)
-  const currentBranch =
-    projectGitState?.projectId === selectedProject.id && projectGitState.isGitRepo
-      ? projectGitState.branch
-      : null
-  const repositoryBranches =
-    projectGitState?.projectId === selectedProject.id && projectGitState.isGitRepo
-      ? projectGitState.branches
-      : []
-  const branchGroups = buildBranchGroups(activeThreads, currentBranch, repositoryBranches)
-  const dirtyWorktreeMessage = getDirtyWorktreeMessage(projectGitState, selectedProject.id)
-  const normalizedSearchQuery = searchQuery.trim().toLowerCase()
-  const visibleBranchGroups = filterBranchGroups(branchGroups, searchQuery)
-  const selectedThread = selectedProject.threads.find((thread) => thread.id === selectedThreadId)
-  const selectedGroupId = selectedThread?.branchName?.trim() || UNASSIGNED_BRANCH_GROUP_ID
+  visibleProjects,
+  onOpenChange,
+  onToggleVisibleProject,
+}: {
+  label: string
+  open: boolean
+  projects: Project[]
+  scopeProject: Project | null
+  selectedProject: Project
+  terminalRunningProjectIds: ReadonlySet<string>
+  visibleProjects: Project[]
+  onOpenChange: (open: boolean) => void
+  onToggleVisibleProject: (projectId: string) => void
+}) {
+  const selectorRef = useRef<HTMLDivElement | null>(null)
+  useDismissibleLayer({
+    open,
+    onDismiss: () => onOpenChange(false),
+    refs: [selectorRef],
+  })
 
   return (
-    <section className="sidebar-work-section" aria-label="Project work">
-      <div className="sidebar-work-project-card">
-        <div className="sidebar-work-project-kicker">Project</div>
-        <button
-          type="button"
-          className="sidebar-work-project-button"
-          onClick={() => setProjectSwitcherOpen((open) => !open)}
-          aria-expanded={projectSwitcherOpen}
-        >
-          <span className="truncate">{selectedProject.name}</span>
-          <span className="sidebar-work-project-button-meta">
-            {selectedProject.repoOriginUrl ? <GitHubInvertocatMark size={13} /> : null}
-            <ChevronDown size={13} />
-          </span>
-        </button>
-        {projectSwitcherOpen ? (
-          <div className="sidebar-work-project-list">
-            {projects.map((project) => (
-              <ProjectOptionRow
-                key={project.id}
-                project={project}
-                active={project.id === selectedProject.id}
-                running={terminalRunningProjectIds.has(project.id)}
-                onSelect={() => {
-                  onProjectSelect(project.id)
-                  void onAction('project.select', { projectId: project.id })
-                  setProjectSwitcherOpen(false)
-                }}
-              />
-            ))}
-          </div>
-        ) : null}
-      </div>
+    <div ref={selectorRef} className="sidebar-work-project-card">
+      <div className="sidebar-work-project-kicker">Project</div>
+      <button
+        type="button"
+        className="sidebar-work-project-button"
+        onClick={() => onOpenChange(!open)}
+        aria-expanded={open}
+      >
+        <span className="truncate">{label}</span>
+        <span className="sidebar-work-project-button-meta">
+          {scopeProject?.repoOriginUrl ? <GitHubInvertocatMark size={13} /> : null}
+          <ChevronDown size={13} />
+        </span>
+      </button>
+      {open ? (
+        <div className="sidebar-work-project-list">
+          {projects.map((project) => (
+            <ProjectScopeOptionRow
+              key={project.id}
+              project={project}
+              focused={project.id === selectedProject.id}
+              visible={visibleProjects.some((visibleProject) => visibleProject.id === project.id)}
+              running={terminalRunningProjectIds.has(project.id)}
+              onToggleVisible={() => onToggleVisibleProject(project.id)}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  )
+}
 
+function MultiProjectWorkContent({
+  activeView,
+  collapsedBranchIds,
+  gitStatesByProjectId,
+  projectGitState,
+  searchQuery,
+  selectedThreadId,
+  terminalRunningSessionPaths,
+  visibleProjects,
+  onAction,
+  onOpenProjectFull,
+  onSearchQueryChange,
+  onSetCollapsedBranchIds,
+  onShowView,
+  onThreadOpen,
+}: {
+  activeView: View
+  collapsedBranchIds: Record<string, boolean>
+  gitStatesByProjectId: ReadonlyMap<string, ProjectGitState | null>
+  projectGitState: ProjectGitState | null
+  searchQuery: string
+  selectedThreadId: string | null
+  terminalRunningSessionPaths: ReadonlySet<string>
+  visibleProjects: Project[]
+  onAction: DesktopActionInvoker
+  onOpenProjectFull: (projectId: string) => void
+  onSearchQueryChange: (query: string) => void
+  onSetCollapsedBranchIds: (
+    updater: (current: Record<string, boolean>) => Record<string, boolean>,
+  ) => void
+  onShowView: (view: Exclude<View, 'gitops'>) => void
+  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
+}) {
+  return (
+    <div className="sidebar-work-lane">
+      <div className="sidebar-work-section-heading sidebar-work-section-heading--search-only">
+        <SearchHistoryField searchQuery={searchQuery} onSearchQueryChange={onSearchQueryChange} />
+      </div>
+      <div className="sidebar-work-thread-list sidebar-work-project-block-list">
+        {visibleProjects.map((project) => {
+          const buckets = bucketThreads(project, selectedThreadId)
+          const blockCurrentBranch = getCurrentBranchForProject(
+            project,
+            projectGitState,
+            gitStatesByProjectId,
+          )
+          const dirtyMessage = getDirtyWorktreeMessage(
+            getProjectGitStateForSidebar(project.id, projectGitState, gitStatesByProjectId),
+            project.id,
+          )
+          const unassignedGroupId = `${project.id}:${UNASSIGNED_BRANCH_GROUP_ID}`
+          return (
+            <ProjectWorkSummaryBlock
+              key={project.id}
+              activeView={activeView}
+              currentBranch={blockCurrentBranch}
+              dirtyMessage={dirtyMessage}
+              project={project}
+              searchQuery={searchQuery}
+              selectedThreadId={selectedThreadId}
+              terminalRunningSessionPaths={terminalRunningSessionPaths}
+              threads={buckets.activeThreads}
+              unassignedCollapsed={collapsedBranchIds[unassignedGroupId] ?? true}
+              onAction={onAction}
+              onOpenProjectFull={onOpenProjectFull}
+              onShowView={onShowView}
+              onThreadOpen={onThreadOpen}
+              onToggleUnassigned={() =>
+                onSetCollapsedBranchIds((current) => ({
+                  ...current,
+                  [unassignedGroupId]: !(current[unassignedGroupId] ?? true),
+                }))
+              }
+            />
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function SingleProjectWorkContent({
+  activeView,
+  branchGroups,
+  collapsedBranchIds,
+  currentBranch,
+  dirtyWorktreeMessage,
+  olderThreadCount,
+  normalizedSearchQuery,
+  project,
+  pruneConfirmBranchId,
+  searchQuery,
+  selectedGroupId,
+  selectedThreadId,
+  switchErrorBranchId,
+  terminalRunningSessionPaths,
+  onAction,
+  onSearchQueryChange,
+  onSetCollapsedBranchIds,
+  onSetPruneConfirmBranchId,
+  onSetSwitchErrorBranchId,
+  onShowView,
+  onThreadOpen,
+}: {
+  activeView: View
+  branchGroups: BranchThreadGroup[]
+  collapsedBranchIds: Record<string, boolean>
+  currentBranch: string | null
+  dirtyWorktreeMessage: string | null
+  olderThreadCount: number
+  normalizedSearchQuery: string
+  project: Project
+  pruneConfirmBranchId: string | null
+  searchQuery: string
+  selectedGroupId: string
+  selectedThreadId: string | null
+  switchErrorBranchId: string | null
+  terminalRunningSessionPaths: ReadonlySet<string>
+  onAction: DesktopActionInvoker
+  onSearchQueryChange: (query: string) => void
+  onSetCollapsedBranchIds: (
+    updater: (current: Record<string, boolean>) => Record<string, boolean>,
+  ) => void
+  onSetPruneConfirmBranchId: (branchId: string | null) => void
+  onSetSwitchErrorBranchId: (branchId: string | null) => void
+  onShowView: (view: Exclude<View, 'gitops'>) => void
+  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
+}) {
+  return (
+    <>
       <div className="sidebar-work-actions">
         <button
           type="button"
@@ -778,35 +1160,18 @@ export function WorkSidebarSection({
 
       <div className="sidebar-work-lane">
         <div className="sidebar-work-section-heading">
-          <label
-            className="sidebar-search-field sidebar-work-search-field"
-            data-active={searchQuery.trim().length > 0 ? 'true' : 'false'}
-          >
-            <Search size={14} className="sidebar-search-icon" />
-            <input
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key !== 'Escape' || searchQuery.length === 0) return
-                event.stopPropagation()
-                setSearchQuery('')
-              }}
-              placeholder="Search history"
-              className="sidebar-search-input"
-              aria-label="Search history"
-            />
-          </label>
+          <SearchHistoryField searchQuery={searchQuery} onSearchQueryChange={onSearchQueryChange} />
           <NewThreadMenu
             currentBranch={currentBranch}
             dirtyMessage={dirtyWorktreeMessage}
             onAction={onAction}
-            projectId={selectedProject.id}
+            projectId={project.id}
           />
         </div>
 
         <div className="sidebar-work-thread-list">
-          {visibleBranchGroups.length > 0 ? (
-            visibleBranchGroups.map((group) => {
+          {branchGroups.length > 0 ? (
+            branchGroups.map((group) => {
               const defaultCollapsed = !(group.current || group.id === selectedGroupId)
               const collapsed = normalizedSearchQuery
                 ? false
@@ -818,21 +1183,21 @@ export function WorkSidebarSection({
                   collapsed={collapsed}
                   currentBranch={currentBranch}
                   group={group}
-                  project={selectedProject}
+                  project={project}
                   selectedThreadId={selectedThreadId}
                   terminalRunningSessionPaths={terminalRunningSessionPaths}
                   onAction={onAction}
                   onThreadOpen={onThreadOpen}
                   onToggle={() =>
-                    setCollapsedBranchIds((current) => ({
+                    onSetCollapsedBranchIds((current) => ({
                       ...current,
                       [group.id]: !collapsed,
                     }))
                   }
                   pruneConfirmBranchId={pruneConfirmBranchId}
-                  onSetPruneConfirmBranchId={setPruneConfirmBranchId}
+                  onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
                   switchErrorBranchId={switchErrorBranchId}
-                  onSetSwitchErrorBranchId={setSwitchErrorBranchId}
+                  onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
                 />
               )
             })
@@ -845,7 +1210,7 @@ export function WorkSidebarSection({
                   void createThreadForBranch({
                     branchName: currentBranch,
                     onAction,
-                    projectId: selectedProject.id,
+                    projectId: project.id,
                   })
                 }
               >
@@ -864,10 +1229,219 @@ export function WorkSidebarSection({
           onClick={() => onShowView('sessions')}
         >
           <Archive size={14} />
-          <span>Sessions</span>
-          <span className={cn(appTypeMetaClass, appToneSubtleClass)}>{olderThreads.length}</span>
+          <span>Past sessions</span>
+          <span className={cn(appTypeMetaClass, appToneSubtleClass)}>{olderThreadCount}</span>
         </button>
       </div>
+    </>
+  )
+}
+
+export function WorkSidebarSection({
+  activeView,
+  loading,
+  projects,
+  projectGitState,
+  initialVisibleProjectIds,
+  selectedProjectId,
+  selectedThreadId,
+  terminalRunningProjectIds,
+  terminalRunningSessionPaths,
+  onAction,
+  onLoadProjectThreads,
+  onProjectSelect,
+  onThreadOpen,
+  onShowView,
+}: WorkSidebarSectionProps) {
+  const [projectSwitcherOpen, setProjectSwitcherOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [collapsedBranchIds, setCollapsedBranchIds] = useState<Record<string, boolean>>({})
+  const [pruneConfirmBranchId, setPruneConfirmBranchId] = useState<string | null>(null)
+  const [switchErrorBranchId, setSwitchErrorBranchId] = useState<string | null>(null)
+  const [storedVisibleProjectIds, setStoredVisibleProjectIds] = useState<string[] | null>(null)
+  const displayableProjects = useMemo(() => getDisplayableProjects(projects), [projects])
+  const selectedProject =
+    displayableProjects.find((project) => project.id === selectedProjectId) ??
+    displayableProjects[0] ??
+    null
+  const visibleProjectIds =
+    storedVisibleProjectIds ??
+    (initialVisibleProjectIds === null
+      ? selectedProject
+        ? [selectedProject.id]
+        : []
+      : (initialVisibleProjectIds ?? []))
+
+  useEffect(() => {
+    if (initialVisibleProjectIds === undefined) return
+    setStoredVisibleProjectIds((current) => current ?? initialVisibleProjectIds)
+  }, [initialVisibleProjectIds])
+
+  useEffect(() => {
+    if (!storedVisibleProjectIds) return
+    setStoredVisibleProjectIds((current) => {
+      if (!current) return current
+      const validProjectIds = new Set(displayableProjects.map((project) => project.id))
+      const nextProjectIds = current.filter((projectId) => validProjectIds.has(projectId))
+      return sameStringList(current, nextProjectIds) ? current : nextProjectIds
+    })
+  }, [displayableProjects, storedVisibleProjectIds])
+
+  useEffect(() => {
+    if (storedVisibleProjectIds === null) return
+    void onAction('workspace.sidebar-scope', { projectIds: storedVisibleProjectIds })
+  }, [onAction, storedVisibleProjectIds])
+
+  const visibleProjects = useMemo(() => {
+    const visibleIds = new Set(visibleProjectIds)
+    return displayableProjects.filter((project) => visibleIds.has(project.id))
+  }, [displayableProjects, visibleProjectIds])
+
+  const gitStateQueries = useQueries({
+    queries: visibleProjects.map((project) => ({
+      queryKey: desktopQueryKeys.projectGitState(project.id),
+      queryFn: () => getProjectGitStateQuery(project.id),
+      staleTime: 0,
+    })),
+  })
+  const gitStatesByProjectId = useMemo(() => {
+    const states = new Map<string, ProjectGitState | null>()
+    for (const [index, project] of visibleProjects.entries()) {
+      states.set(project.id, gitStateQueries[index]?.data ?? null)
+    }
+    if (projectGitState) states.set(projectGitState.projectId, projectGitState)
+    return states
+  }, [gitStateQueries, projectGitState, visibleProjects])
+
+  useEffect(() => {
+    for (const project of visibleProjects) {
+      if (project.threadsLoaded) continue
+      void onLoadProjectThreads(project.id, { chat: false })
+    }
+  }, [onLoadProjectThreads, visibleProjects])
+
+  if (loading && displayableProjects.length === 0) return <SidebarProjectsSkeleton />
+
+  if (!selectedProject) {
+    return (
+      <section className="sidebar-work-section" aria-label="Work">
+        <div className="sidebar-work-empty">
+          <FolderCode size={18} />
+          <span>No projects yet</span>
+        </div>
+      </section>
+    )
+  }
+
+  const { activeThreads, olderThreads } = bucketThreads(selectedProject, selectedThreadId)
+  const currentBranch = getCurrentBranchForProject(
+    selectedProject,
+    projectGitState,
+    gitStatesByProjectId,
+  )
+  const repositoryBranches = getRepositoryBranchesForProject(
+    selectedProject,
+    projectGitState,
+    gitStatesByProjectId,
+  )
+  const branchGroups = buildBranchGroups(activeThreads, currentBranch, repositoryBranches)
+  const dirtyWorktreeMessage = getDirtyWorktreeMessage(
+    getProjectGitStateForSidebar(selectedProject.id, projectGitState, gitStatesByProjectId),
+    selectedProject.id,
+  )
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase()
+  const visibleBranchGroups = filterBranchGroups(branchGroups, searchQuery)
+  const selectedThread = selectedProject.threads.find((thread) => thread.id === selectedThreadId)
+  const selectedGroupId = selectedThread?.branchName?.trim() || UNASSIGNED_BRANCH_GROUP_ID
+  const multiProjectMode = visibleProjects.length > 1
+  const scopeProject =
+    visibleProjects.find((project) => project.id === selectedProject.id) ??
+    visibleProjects[0] ??
+    null
+  const projectScopeLabel = getProjectScopeLabel({ selectedProject, visibleProjects })
+
+  const focusProject = (projectId: string) => {
+    onProjectSelect(projectId)
+    void onAction('project.select', { projectId })
+  }
+  const toggleVisibleProject = (projectId: string) => {
+    const wasVisible = visibleProjectIds.includes(projectId)
+    if (!wasVisible) focusProject(projectId)
+    setStoredVisibleProjectIds((current) => {
+      const visibleIds = current ?? visibleProjectIds
+      const nextProjectIds = visibleIds.includes(projectId)
+        ? visibleIds.filter((id) => id !== projectId)
+        : [...visibleIds, projectId]
+      return nextProjectIds
+    })
+  }
+  const openProjectFull = (projectId: string) => {
+    focusProject(projectId)
+    setStoredVisibleProjectIds([projectId])
+  }
+
+  return (
+    <section className="sidebar-work-section" aria-label="Project work">
+      <ProjectScopeSelector
+        label={projectScopeLabel}
+        open={projectSwitcherOpen}
+        projects={displayableProjects}
+        scopeProject={scopeProject}
+        selectedProject={selectedProject}
+        terminalRunningProjectIds={terminalRunningProjectIds}
+        visibleProjects={visibleProjects}
+        onOpenChange={setProjectSwitcherOpen}
+        onToggleVisibleProject={toggleVisibleProject}
+      />
+
+      {visibleProjects.length === 0 ? (
+        <div className="sidebar-work-empty sidebar-work-scope-empty">
+          <FolderCode size={18} />
+          <span>No projects selected.</span>
+          <span>Choose projects from the selector above.</span>
+        </div>
+      ) : multiProjectMode ? (
+        <MultiProjectWorkContent
+          activeView={activeView}
+          collapsedBranchIds={collapsedBranchIds}
+          gitStatesByProjectId={gitStatesByProjectId}
+          projectGitState={projectGitState}
+          searchQuery={searchQuery}
+          selectedThreadId={selectedThreadId}
+          terminalRunningSessionPaths={terminalRunningSessionPaths}
+          visibleProjects={visibleProjects}
+          onAction={onAction}
+          onOpenProjectFull={openProjectFull}
+          onSearchQueryChange={setSearchQuery}
+          onSetCollapsedBranchIds={setCollapsedBranchIds}
+          onShowView={onShowView}
+          onThreadOpen={onThreadOpen}
+        />
+      ) : (
+        <SingleProjectWorkContent
+          activeView={activeView}
+          branchGroups={visibleBranchGroups}
+          collapsedBranchIds={collapsedBranchIds}
+          currentBranch={currentBranch}
+          dirtyWorktreeMessage={dirtyWorktreeMessage}
+          normalizedSearchQuery={normalizedSearchQuery}
+          olderThreadCount={olderThreads.length}
+          project={selectedProject}
+          pruneConfirmBranchId={pruneConfirmBranchId}
+          searchQuery={searchQuery}
+          selectedGroupId={selectedGroupId}
+          selectedThreadId={selectedThreadId}
+          switchErrorBranchId={switchErrorBranchId}
+          terminalRunningSessionPaths={terminalRunningSessionPaths}
+          onAction={onAction}
+          onSearchQueryChange={setSearchQuery}
+          onSetCollapsedBranchIds={setCollapsedBranchIds}
+          onSetPruneConfirmBranchId={setPruneConfirmBranchId}
+          onSetSwitchErrorBranchId={setSwitchErrorBranchId}
+          onShowView={onShowView}
+          onThreadOpen={onThreadOpen}
+        />
+      )}
     </section>
   )
 }
