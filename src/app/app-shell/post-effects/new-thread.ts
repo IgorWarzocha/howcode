@@ -81,12 +81,18 @@ function applyOptimisticThread(
   input: NewThreadPostEffectInput,
   thread: { projectId: string; threadId: string; sessionPath: string },
 ) {
+  const branchName =
+    typeof input.contextualPayload.branchName === 'string' &&
+    input.contextualPayload.branchName.trim().length > 0
+      ? input.contextualPayload.branchName.trim()
+      : undefined
   const optimisticThread = {
     id: thread.threadId,
     title: 'New thread',
     age: 'Now',
     lastModifiedMs: Date.now(),
     sessionPath: thread.sessionPath,
+    branchName,
   }
   applyProjectThreadToShellState(input.queryClient, thread.projectId, optimisticThread, {
     revealProject: true,

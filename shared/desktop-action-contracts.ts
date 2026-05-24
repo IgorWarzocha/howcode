@@ -151,6 +151,7 @@ export type DesktopActionPayloadMap = {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined
     chatGroupId?: string | undefined | null | undefined
+    branchName?: string | undefined | null | undefined
   }
   'thread.open': {
     projectId?: string | undefined | null | undefined

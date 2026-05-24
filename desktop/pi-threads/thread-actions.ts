@@ -135,7 +135,12 @@ const threadActionHandlers = {
     return handledAction()
   },
   'thread.delete-many': deleteManyThreadsFromPayload,
-  'thread.new': async (payload) => handledAction(await startNewThread(getComposerRequest(payload))),
+  'thread.new': async (payload) => {
+    const result = await startNewThread(getComposerRequest(payload))
+    const branchName = getBranchName(payload)
+    if (branchName) assignThreadBranch(result.threadId, branchName)
+    return handledAction(result)
+  },
   'inbox.mark-read': (payload) => {
     const sessionPath = getSessionPath(payload)
     if (sessionPath) markInboxThreadRead(sessionPath)
