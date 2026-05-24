@@ -1,6 +1,7 @@
 import { type PointerEvent, type RefObject, useCallback, useEffect } from 'react'
 
 const DEFAULT_HOVER_TOLERANCE_PX = 20
+const EMPTY_BOUNDARY_REFS: readonly RefObject<HTMLElement | null>[] = []
 
 function isPointInsideRectWithTolerance({
   clientX,
@@ -30,7 +31,7 @@ export function useHoverToFocus<T extends HTMLElement>({
   blurOnLeave = false,
   tolerancePx = DEFAULT_HOVER_TOLERANCE_PX,
   isFocused,
-  extraBoundaryRefs = [],
+  extraBoundaryRefs = EMPTY_BOUNDARY_REFS,
 }: {
   enabled: boolean
   boundaryRef?: RefObject<HTMLElement | null>

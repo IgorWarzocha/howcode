@@ -51,6 +51,7 @@ export type CodeWorkspaceContentProps = CodeWorkspaceViewProps &
     toggleGitOpsFileTree: () => void
     toggleIncludeUntrackedDiffFiles: () => void
     diffLoadError: string | null
+    setDiffLoadError: Dispatch<SetStateAction<string | null>>
     threadTimelineLoading: boolean
     composerLayoutVersion: number
     setComposerLayoutVersion: Dispatch<SetStateAction<number>>
@@ -234,7 +235,7 @@ export function CodeWorkspaceView({
     event.preventDefault()
     toggleGitOpsFileTree()
   })
-  const diffLoadError: string | null = null
+  const [diffLoadError, setDiffLoadError] = useState<string | null>(null)
   const footerHeight = useWorkspaceFooterHeight({
     footerRef,
     visible: showWorkspaceFooter,
@@ -333,6 +334,7 @@ export function CodeWorkspaceView({
       diffCommentsSending={diffCommentsSending}
       diffCommentError={diffCommentError}
       diffLoadError={diffLoadError}
+      setDiffLoadError={setDiffLoadError}
       hasPendingDiffComments={hasPendingDiffComments}
       onSetDiffBaseline={onSetDiffBaseline}
       onSetDiffRenderMode={onSetDiffRenderMode}

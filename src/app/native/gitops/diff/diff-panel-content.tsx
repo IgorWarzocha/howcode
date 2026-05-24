@@ -32,6 +32,7 @@ type DiffPanelContentProps = {
   showFileTree?: boolean
   includeUntracked?: boolean
   loading?: boolean
+  onLoadErrorChange?: ((error: string | null) => void) | undefined
 }
 
 export function DiffPanelContent({
@@ -46,6 +47,7 @@ export function DiffPanelContent({
   showFileTree = true,
   includeUntracked = false,
   loading = false,
+  onLoadErrorChange,
 }: DiffPanelContentProps) {
   const [collapsedFiles, setCollapsedFiles] = useState<Record<string, boolean>>({})
   const [focusedFilePaths, setFocusedFilePaths] = useState<readonly string[]>([])
@@ -59,6 +61,14 @@ export function DiffPanelContent({
     isGitRepo,
     includeUntracked,
   )
+
+  useEffect(() => {
+    onLoadErrorChange?.(error)
+  }, [error, onLoadErrorChange])
+
+  useEffect(() => {
+    return () => onLoadErrorChange?.(null)
+  }, [onLoadErrorChange])
 
   const selectedPatch = streamedPatch ?? diff?.diff ?? undefined
   const hasResolvedPatch = typeof selectedPatch === 'string'

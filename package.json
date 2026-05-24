@@ -32,7 +32,7 @@
     "postinstall": "node ./scripts/install-electron.cjs && electron-builder install-app-deps",
     "test:watch": "vitest",
     "check": "bun run ai:check && bun run build",
-    "ai:check": "biome check --write --error-on-warnings . && tsgo --noEmit && tsgo -p tsconfig.desktop.json --noEmit && tsgo -p tsconfig.electron.json --noEmit && tsgo -p tsconfig.scripts.json --noEmit && bun ./scripts/check-vite-import-resolution.ts && vitest run",
+    "ai:check": "biome check --error-on-warnings . && tsgo --noEmit && tsgo -p tsconfig.desktop.json --noEmit && tsgo -p tsconfig.electron.json --noEmit && tsgo -p tsconfig.scripts.json --noEmit && bun ./scripts/check-vite-import-resolution.ts && vitest run",
     "pages:dev": "vite --config pages/vite.config.ts",
     "pages:build": "vite build --config pages/vite.config.ts",
     "pages:preview": "vite preview --config pages/vite.config.ts",

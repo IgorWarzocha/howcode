@@ -191,7 +191,7 @@ async function loadTrackedWorktreeSnapshot(
         baselineRev,
         env,
         hasHead,
-        includeUntracked: true,
+        includeUntracked: false,
       })
 
       const [stats, patchOutput] = await Promise.all([statsPromise, patchPromise])

@@ -14,6 +14,7 @@ type DiffPanelProps = {
   showFileTree?: boolean
   includeUntracked?: boolean
   loading?: boolean
+  onLoadErrorChange?: ((error: string | null) => void) | undefined
 }
 
 export function DiffPanel({
@@ -28,6 +29,7 @@ export function DiffPanel({
   showFileTree = true,
   includeUntracked = false,
   loading = false,
+  onLoadErrorChange,
 }: DiffPanelProps) {
   return (
     <DiffWorkerPoolProvider>
@@ -43,6 +45,7 @@ export function DiffPanel({
         showFileTree={showFileTree}
         includeUntracked={includeUntracked}
         loading={loading}
+        onLoadErrorChange={onLoadErrorChange}
       />
     </DiffWorkerPoolProvider>
   )
