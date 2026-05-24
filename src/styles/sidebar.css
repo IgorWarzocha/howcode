@@ -1192,14 +1192,19 @@
 .sidebar-work-history-row {
   display: grid;
   min-height: 1.75rem;
-  grid-template-columns: 16px minmax(0, 1fr) auto;
+  grid-template-columns: var(--sidebar-row-leading-width, 16px) minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--sidebar-row-gap, 0.5rem);
   border-radius: 0.375rem;
-  padding: 0 0.3125rem;
+  padding: 0 var(--sidebar-row-padding-x, 0.3125rem);
   color: var(--muted);
   font-size: var(--app-type-group-size);
   text-align: left;
+}
+
+.sidebar-work-action-row > svg:first-child,
+.sidebar-work-history-row > svg:first-child {
+  justify-self: center;
 }
 
 .sidebar-work-action-row:hover,
@@ -1361,9 +1366,25 @@
 .sidebar-work-project-block-heading-row {
   display: grid;
   min-width: 0;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 1.75rem minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.375rem;
+  gap: calc(var(--sidebar-row-gap, 0.5rem) - var(--sidebar-row-padding-x, 0.3125rem));
+  padding-right: var(--sidebar-row-padding-x, 0.3125rem);
+}
+
+.sidebar-work-project-block-disclosure {
+  display: inline-flex;
+  height: 1.75rem;
+  width: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.25rem;
+  color: var(--muted);
+}
+
+.sidebar-work-project-block-disclosure:hover {
+  background: var(--surface-hover);
+  color: var(--text);
 }
 
 .sidebar-work-project-block-heading {
@@ -1374,20 +1395,21 @@
   align-items: center;
   gap: 0.45rem;
   border-radius: 0.375rem;
-  padding: 0 0.3125rem;
+  padding: 0;
   color: var(--text);
   font-size: var(--app-type-small-size);
   font-weight: 600;
   text-align: left;
 }
 
-.sidebar-work-project-block-heading:hover {
-  background: var(--surface-hover);
-}
-
 .sidebar-work-project-block-actions {
   display: grid;
   gap: 0;
+}
+
+.sidebar-work-project-expanded-branches {
+  display: grid;
+  gap: 0.125rem;
 }
 
 .sidebar-work-start-card,
@@ -1469,6 +1491,10 @@
   gap: 0.375rem;
   padding-block: 0.125rem;
   text-align: left;
+}
+
+.sidebar-work-branch-toggle--plain {
+  gap: 0;
 }
 
 .sidebar-work-branch-toggle > svg {
