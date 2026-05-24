@@ -93,6 +93,7 @@ export function ComposerFooter({
   thinkingLevelLabels,
 }: ComposerFooterProps) {
   const contextDismissSignal = useComposerPopoverDismissSignal({
+    ignoreSource: 'model',
     onDismiss: () => onSetOpenMenu((current) => (current === 'model' ? null : current)),
   })
   const gitVisualMode = projectGitState?.isGitRepo
@@ -132,8 +133,11 @@ export function ComposerFooter({
           icon={<Bot size={14} />}
           className={cn(workspaceFooterTextClass, 'pr-8')}
           onClick={() => {
-            notifyComposerPopoverOpened('model')
-            onSetOpenMenu((current) => (current === 'model' ? null : 'model'))
+            onSetOpenMenu((current) => {
+              if (current === 'model') return null
+              notifyComposerPopoverOpened('model')
+              return 'model'
+            })
           }}
           aria-haspopup="menu"
           aria-expanded={modelMenuOpen}

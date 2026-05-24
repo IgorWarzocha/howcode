@@ -53,7 +53,7 @@ function useComposerBaselinePopoverControls({
   canSwitchBranch: boolean
   open: boolean
   setBranchSwitchInput: (input: string) => void
-  setBranchSwitchOpen: (open: boolean) => void
+  setBranchSwitchOpen: (open: boolean | ((current: boolean) => boolean)) => void
   setOpen: (open: boolean | ((current: boolean) => boolean)) => void
 }) {
   const closePopover = () => setOpen(false)
@@ -64,10 +64,13 @@ function useComposerBaselinePopoverControls({
     setOpen(true)
   }
   const toggleBaselinePopover = (anchor: 'summary' | 'branch' | 'compact') => {
-    notifyComposerPopoverOpened('diff-baseline')
     activeAnchorRef.current = anchor
     setBranchSwitchOpen(false)
-    setOpen((current) => !current)
+    setOpen((current) => {
+      if (current) return false
+      notifyComposerPopoverOpened('diff-baseline')
+      return true
+    })
   }
   const openBranchSwitchPopover = () => {
     if (!canSwitchBranch) {
@@ -76,10 +79,13 @@ function useComposerBaselinePopoverControls({
     }
 
     activeAnchorRef.current = 'branch'
-    notifyComposerPopoverOpened('diff-baseline')
     setOpen(false)
-    setBranchSwitchInput('')
-    setBranchSwitchOpen(true)
+    setBranchSwitchOpen((current) => {
+      if (current) return false
+      notifyComposerPopoverOpened('diff-baseline')
+      setBranchSwitchInput('')
+      return true
+    })
   }
   const previewBaselinePopover = (anchor: 'summary' | 'branch') => {
     ;(open || branchSwitchOpen) && openBaselinePopover(anchor)
@@ -298,7 +304,6 @@ function BaselineBranchButton({
           event.stopPropagation()
           onOpen()
         }}
-        onClick={onOpen}
         onMouseEnter={onPreview}
       >
         <span className="truncate">{branchLabel}</span>
