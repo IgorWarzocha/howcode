@@ -1,5 +1,6 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { markdownHtmlRehypePlugins } from '../../common/markdown-html'
 import { openExternalQuery } from '../../query/desktop-query'
 import {
   appToneTextClass,
@@ -14,6 +15,7 @@ export function HistoricalMarkdownPreview({ content }: { content: string }) {
     <div className={artifactMarkdownPreviewClass}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        rehypePlugins={markdownHtmlRehypePlugins}
         components={{
           h1: ({ children }) => (
             <h1 className={`mb-3 ${appTypeReadableStrongClass} ${appToneTextClass}`}>{children}</h1>

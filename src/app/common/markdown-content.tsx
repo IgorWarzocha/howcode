@@ -24,6 +24,7 @@ import {
   inlineCodeClass,
 } from '../ui/classes'
 import { cn } from '../utils/cn'
+import { markdownHtmlRehypePlugins } from './markdown-html'
 
 type MarkdownTone = 'default' | 'thinking' | 'system' | 'user'
 
@@ -193,6 +194,7 @@ export function MarkdownContent({ markdown, tone = 'default', className }: Markd
     >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        rehypePlugins={markdownHtmlRehypePlugins}
         components={{
           p: ({ children }) => (
             <p
