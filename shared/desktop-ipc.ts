@@ -36,7 +36,6 @@ import type {
   ProjectDiffImagePreview,
   ProjectDiffImageSide,
   ProjectDiffResolvedBaseline,
-  ProjectDiffResult,
   ProjectDiffStatsResult,
   ProjectDiffStreamStartResult,
   ProjectGitState,
@@ -73,14 +72,6 @@ export type DesktopRequestMap = {
   getShellState: { params: Record<string, never>; response: ShellState }
   getProjectGitState: { params: { projectId: string }; response: ProjectGitState | null }
   getProjectUsageSummary: { params: { projectId: string }; response: ProjectUsageSummary }
-  getProjectDiff: {
-    params: {
-      projectId: string
-      baseline?: ProjectDiffBaseline | null
-      includeUntracked?: boolean | null
-    }
-    response: ProjectDiffResult | null
-  }
   startProjectDiffStream: {
     params: {
       projectId: string

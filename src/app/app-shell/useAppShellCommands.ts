@@ -4,6 +4,7 @@ import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch, SetStateAction } from 'react'
 import { useCallback } from 'react'
 import type { DesktopActionResult, InboxThread, ShellState } from '../desktop/types'
+import { notifyProjectDiffInvalidated } from '../hooks/project-diff-invalidation'
 import { forgetLocalDraftThread } from '../hooks/useDesktopProjectThreads'
 import { desktopQueryKeys } from '../query/desktop-query'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
@@ -48,9 +49,7 @@ type UseAppShellCommandsInput = {
 }
 
 function resetProjectDiffCaches(queryClient: QueryClient, projectId: string) {
-  queryClient.removeQueries({
-    queryKey: desktopQueryKeys.projectDiffPrefix(projectId),
-  })
+  notifyProjectDiffInvalidated(projectId)
   void queryClient.invalidateQueries({
     queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
   })

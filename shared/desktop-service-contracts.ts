@@ -30,7 +30,6 @@ import type {
   ProjectDiffImagePreview,
   ProjectDiffImageSide,
   ProjectDiffResolvedBaseline,
-  ProjectDiffResult,
   ProjectDiffStatsResult,
   ProjectDiffStreamStartResult,
   ProjectGitState,
@@ -95,11 +94,6 @@ export type PiThreadsService = {
   }) => Promise<PiPackageMutationResult>
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
   loadProjectUsageSummary: (projectId: string) => Promise<ProjectUsageSummary>
-  loadProjectDiff: (
-    projectId: string,
-    baseline?: ProjectDiffBaseline | null,
-    includeUntracked?: boolean | null,
-  ) => Promise<ProjectDiffResult | null>
   startProjectDiffStream: (
     projectId: string,
     baseline?: ProjectDiffBaseline | null,

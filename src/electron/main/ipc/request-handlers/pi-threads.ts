@@ -7,7 +7,6 @@ type PiThreadsRequestHandlers = Pick<
   | 'getShellState'
   | 'getProjectGitState'
   | 'getProjectUsageSummary'
-  | 'getProjectDiff'
   | 'startProjectDiffStream'
   | 'cancelProjectDiffStream'
   | 'getProjectDiffStats'
@@ -47,8 +46,6 @@ export function createPiThreadsHandlers(
     getShellState: async () => piThreads.loadShellState(getDesktopWorkingDirectory()),
     getProjectGitState: ({ projectId }) => piThreads.loadProjectGitState(projectId),
     getProjectUsageSummary: ({ projectId }) => piThreads.loadProjectUsageSummary(projectId),
-    getProjectDiff: ({ projectId, baseline, includeUntracked }) =>
-      piThreads.loadProjectDiff(projectId, baseline ?? null, includeUntracked ?? false),
     startProjectDiffStream: ({ projectId, baseline, streamId, includeUntracked }) =>
       piThreads.startProjectDiffStream(
         projectId,

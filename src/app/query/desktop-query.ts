@@ -19,7 +19,6 @@ import type {
   ProjectDiffImagePreview,
   ProjectDiffImageSide,
   ProjectDiffResolvedBaseline,
-  ProjectDiffResult,
   ProjectDiffStatsResult,
   ProjectGitState,
   ProjectUsageSummary,
@@ -142,14 +141,6 @@ export async function getProjectUsageSummaryQuery(
   projectId: string,
 ): Promise<ProjectUsageSummary | null> {
   return (await window.piDesktop?.getProjectUsageSummary?.(projectId)) ?? null
-}
-
-export async function getProjectDiffQuery(
-  projectId: string,
-  baseline: ProjectDiffBaseline | null = null,
-  includeUntracked = false,
-): Promise<ProjectDiffResult | null> {
-  return (await window.piDesktop?.getProjectDiff?.(projectId, baseline, includeUntracked)) ?? null
 }
 
 export async function startProjectDiffStreamQuery(

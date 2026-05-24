@@ -54,8 +54,6 @@ function createProjectApi() {
     getProjectGitState: (projectId: string) => invokeRequest('getProjectGitState', { projectId }),
     getProjectUsageSummary: (projectId: string) =>
       invokeRequest('getProjectUsageSummary', { projectId }),
-    getProjectDiff: (projectId: string, baseline = null, includeUntracked = false) =>
-      invokeRequest('getProjectDiff', { projectId, baseline, includeUntracked }),
     startProjectDiffStream: (
       projectId: string,
       baseline = null,

@@ -1,15 +1,13 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { cleanUserErrorMessage } from '../desktop/error-messages'
 import type { DesktopEvent, ProjectDiffBaseline, ProjectDiffResult } from '../desktop/types'
 import {
   cancelProjectDiffStreamQuery,
   canStartProjectDiffStreamQuery,
-  desktopQueryKeys,
-  getProjectDiffQuery,
   startProjectDiffStreamQuery,
   subscribeDesktopEvents,
 } from '../query/desktop-query'
+import { useProjectDiffInvalidationVersion } from './project-diff-invalidation'
 
 type DiffState = {
   diff: ProjectDiffResult | null
@@ -30,28 +28,6 @@ function isProjectDiffStreamEvent(
 
 function createProjectDiffStreamId() {
   return window.crypto?.randomUUID?.() ?? `project-diff-${Date.now()}-${Math.random()}`
-}
-
-function isCurrentProjectDiffQuery(queryKey: readonly unknown[], projectId: string) {
-  return queryKey[0] === 'desktop' && queryKey[1] === 'projectDiff' && queryKey[2] === projectId
-}
-
-function useProjectDiffInvalidationVersion(projectId: string | null) {
-  const queryClient = useQueryClient()
-  const [version, setVersion] = useState(0)
-
-  useEffect(() => {
-    if (!projectId) return
-    return queryClient.getQueryCache().subscribe((event) => {
-      const queryKey = event.query.queryKey
-      if (!isCurrentProjectDiffQuery(queryKey, projectId)) return
-      if (event.type === 'removed' || event.query.state.isInvalidated) {
-        setVersion((current) => current + 1)
-      }
-    })
-  }, [projectId, queryClient])
-
-  return version
 }
 
 function useProjectDiffStream(
@@ -207,25 +183,13 @@ export function useDesktopDiff(
     includeUntracked,
     streamRefreshVersion,
   )
-  const queryEnabled = enabled && Boolean(projectId) && !stream.canStream
-  const query = useQuery<ProjectDiffResult | null, Error>({
-    queryKey: projectId
-      ? desktopQueryKeys.projectDiff(projectId, baseline, includeUntracked)
-      : ['desktop', 'projectDiff', null],
-    queryFn: () =>
-      projectId
-        ? getProjectDiffQuery(projectId, baseline, includeUntracked)
-        : Promise.resolve(null),
-    enabled: queryEnabled,
-    refetchOnMount: 'always',
-  })
-
-  const rawError = stream.canStream ? stream.error : (query.error?.message ?? null)
+  const streamUnavailable = enabled && Boolean(projectId) && !stream.canStream
+  const rawError = streamUnavailable ? 'Diff streaming is unavailable.' : stream.error
 
   return {
-    diff: stream.canStream ? stream.diff : (query.data ?? null),
-    streamedPatch: stream.canStream ? stream.streamedPatch : null,
-    isLoading: stream.canStream ? stream.isLoading : query.isLoading || query.isFetching,
-    error: queryEnabled || stream.canStream ? getReadableDesktopDiffError(rawError) : null,
+    diff: stream.diff,
+    streamedPatch: stream.streamedPatch,
+    isLoading: stream.isLoading,
+    error: enabled && projectId ? getReadableDesktopDiffError(rawError) : null,
   } satisfies DiffState
 }

@@ -29,20 +29,6 @@ export const desktopQueryKeys = {
   projectGitState: (projectId: string) => ['desktop', 'projectGitState', projectId] as const,
   projectUsageSummary: (projectId: string) =>
     ['desktop', 'projectUsageSummary', projectId] as const,
-  projectDiffPrefix: (projectId: string) => ['desktop', 'projectDiff', projectId] as const,
-  projectDiff: (
-    projectId: string,
-    baseline: ProjectDiffBaseline | null = null,
-    includeUntracked = false,
-  ) =>
-    [
-      'desktop',
-      'projectDiff',
-      projectId,
-      baseline?.kind ?? 'head',
-      baseline ?? null,
-      includeUntracked,
-    ] as const,
   projectDiffStatsPrefix: (projectId: string) =>
     ['desktop', 'projectDiffStats', projectId] as const,
   projectDiffStats: (

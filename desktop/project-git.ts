@@ -6,7 +6,6 @@ export {
 } from './project-git/commit-actions.ts'
 export {
   cancelProjectDiffStream,
-  loadProjectDiff,
   loadProjectDiffImagePreview,
   loadProjectDiffStats,
   prepareCommitMessageContext,

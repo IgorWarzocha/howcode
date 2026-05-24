@@ -5,7 +5,6 @@ import type {
   ProjectDiffBaseline,
   ProjectDiffImagePreview,
   ProjectDiffImageSide,
-  ProjectDiffResult,
   ProjectDiffStatsResult,
   ProjectDiffStreamStartResult,
 } from '../../shared/desktop-contracts.ts'
@@ -264,36 +263,6 @@ export async function cancelProjectDiffStream(streamId: string): Promise<void> {
   if (!stream) return
   activeProjectDiffStreams.delete(normalizedStreamId)
   stream.abort()
-}
-
-export async function loadProjectDiff(
-  projectId: string,
-  baseline?: ProjectDiffBaseline | null,
-  includeUntracked = false,
-): Promise<ProjectDiffResult | null> {
-  if (!(await isGitRepository(projectId))) {
-    return null
-  }
-
-  try {
-    const resolvedBaseline = await resolveProjectDiffBaseline(projectId, baseline)
-    const snapshot = await loadWorktreeSnapshot(projectId, {
-      baselineRev: resolvedBaseline.rev,
-      includeUntracked,
-    })
-
-    return {
-      projectId,
-      diff: snapshot.patch,
-      fileCount: snapshot.fileCount,
-      insertions: snapshot.insertions,
-      deletions: snapshot.deletions,
-      baseline: baseline ?? { kind: 'head' },
-      resolvedBaseline,
-    }
-  } catch (error) {
-    throw new Error(`Could not load worktree diff: ${formatGitCommandError(error)}`)
-  }
 }
 
 export async function loadProjectDiffStats(

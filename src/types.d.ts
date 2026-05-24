@@ -37,7 +37,6 @@ import type {
   ProjectDiffImagePreview,
   ProjectDiffImageSide,
   ProjectDiffResolvedBaseline,
-  ProjectDiffResult,
   ProjectDiffStatsResult,
   ProjectDiffStreamStartResult,
   ProjectGitState,
@@ -73,11 +72,6 @@ declare global {
       getShellState: () => Promise<ShellState>
       getProjectGitState?: (projectId: string) => Promise<ProjectGitState | null>
       getProjectUsageSummary?: (projectId: string) => Promise<ProjectUsageSummary>
-      getProjectDiff?: (
-        projectId: string,
-        baseline?: ProjectDiffBaseline | null,
-        includeUntracked?: boolean | null,
-      ) => Promise<ProjectDiffResult | null>
       startProjectDiffStream?: (
         projectId: string,
         baseline?: ProjectDiffBaseline | null,
