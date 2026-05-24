@@ -160,6 +160,7 @@ function SidebarContent(props: SidebarProps) {
         onLoadProjectThreads={props.onLoadProjectThreads}
         onOpenSettingsPanel={props.onOpenSettingsPanel}
         onProjectSelect={props.onProjectSelect}
+        onProjectPrimeSelection={props.onProjectPrimeSelection}
         onThreadOpen={props.onThreadOpen}
         onShowView={props.onShowView}
       />

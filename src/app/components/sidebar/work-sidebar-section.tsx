@@ -68,6 +68,22 @@ function orderProjectsForScopeSelector(projects: readonly Project[], visibleProj
   })
 }
 
+function projectBlockMatchesSearch(input: {
+  branchThreads: Thread[]
+  currentBranch: string | null
+  normalizedSearchQuery: string
+  projectName: string
+  unassignedThreads: Thread[]
+}) {
+  if (input.normalizedSearchQuery.length === 0) return true
+  return (
+    input.projectName.toLowerCase().includes(input.normalizedSearchQuery) ||
+    (input.currentBranch?.toLowerCase().includes(input.normalizedSearchQuery) ?? false) ||
+    input.branchThreads.length > 0 ||
+    input.unassignedThreads.length > 0
+  )
+}
+
 type WorkSidebarSectionProps = {
   activeView: View
   loading: boolean
@@ -83,6 +99,7 @@ type WorkSidebarSectionProps = {
   appSettings: AppSettings
   onOpenSettingsPanel: (target?: SettingsOpenTarget) => void
   onProjectSelect: (projectId: string) => void
+  onProjectPrimeSelection: (projectId: string) => void
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
   onShowView: (view: Exclude<View, 'gitops'>) => void
 }
@@ -843,6 +860,7 @@ function ProjectWorkSummaryBlock({
   project,
   pruneConfirmBranchId,
   searchQuery,
+  selectedProjectId,
   selectedThreadId,
   switchErrorBranchId,
   terminalRunningSessionPaths,
@@ -850,6 +868,7 @@ function ProjectWorkSummaryBlock({
   unassignedCollapsed,
   onAction,
   onFocusProject,
+  onPrimeProject,
   onSetCollapsedBranchIds,
   onSetPruneConfirmBranchId,
   onSetSwitchErrorBranchId,
@@ -868,6 +887,7 @@ function ProjectWorkSummaryBlock({
   project: Project
   pruneConfirmBranchId: string | null
   searchQuery: string
+  selectedProjectId: string
   selectedThreadId: string | null
   switchErrorBranchId: string | null
   terminalRunningSessionPaths: ReadonlySet<string>
@@ -875,6 +895,7 @@ function ProjectWorkSummaryBlock({
   unassignedCollapsed: boolean
   onAction: DesktopActionInvoker
   onFocusProject: (projectId: string) => void
+  onPrimeProject: (projectId: string) => void
   onSetCollapsedBranchIds: (
     updater: (current: Record<string, boolean>) => Record<string, boolean>,
   ) => void
@@ -885,6 +906,12 @@ function ProjectWorkSummaryBlock({
   onToggleExpanded: () => void
   onToggleUnassigned: () => void
 }) {
+  const isProjectActive = selectedProjectId === project.id
+  const openProjectSessions = () => {
+    onPrimeProject(project.id)
+    onShowView('sessions')
+    void onAction('project.select', { projectId: project.id })
+  }
   const normalizedSearchQuery = searchQuery.trim().toLowerCase()
   const branchThreads = filterThreadsBySearch(
     filterThreadsForCurrentBranch(threads, currentBranch),
@@ -894,15 +921,18 @@ function ProjectWorkSummaryBlock({
     sortThreads(threads.filter((thread) => !thread.branchName?.trim())),
     searchQuery,
   )
-  const branchMatchesSearch =
-    normalizedSearchQuery.length === 0 ||
-    project.name.toLowerCase().includes(normalizedSearchQuery) ||
-    (currentBranch?.toLowerCase().includes(normalizedSearchQuery) ?? false) ||
-    branchThreads.length > 0 ||
-    unassignedThreads.length > 0
   const unassignedExpanded = normalizedSearchQuery.length > 0 || !unassignedCollapsed
 
-  if (!branchMatchesSearch) return null
+  if (
+    !projectBlockMatchesSearch({
+      branchThreads,
+      currentBranch,
+      normalizedSearchQuery,
+      projectName: project.name,
+      unassignedThreads,
+    })
+  )
+    return null
 
   return (
     <section className="sidebar-work-project-block">
@@ -936,7 +966,7 @@ function ProjectWorkSummaryBlock({
         <button
           type="button"
           className="sidebar-work-action-row"
-          data-active={activeView === 'automations' ? 'true' : 'false'}
+          data-active={activeView === 'automations' && isProjectActive ? 'true' : 'false'}
           onClick={() => {
             onFocusProject(project.id)
             onShowView('automations')
@@ -950,11 +980,12 @@ function ProjectWorkSummaryBlock({
           <button
             type="button"
             className="sidebar-work-history-row"
-            data-active={activeView === 'sessions' ? 'true' : 'false'}
-            onClick={() => {
-              onFocusProject(project.id)
-              onShowView('sessions')
-            }}
+            data-active={
+              activeView === 'sessions' && isProjectActive && selectedThreadId === null
+                ? 'true'
+                : 'false'
+            }
+            onClick={openProjectSessions}
           >
             <Archive size={14} />
             <span>Past sessions</span>
@@ -1347,11 +1378,13 @@ function MultiProjectWorkContent({
   gitStatesByProjectId,
   projectGitState,
   searchQuery,
+  selectedProjectId,
   selectedThreadId,
   terminalRunningSessionPaths,
   visibleProjects,
   onAction,
   onFocusProject,
+  onPrimeProject,
   onSearchQueryChange,
   onSetCollapsedBranchIds,
   onSetExpandedProjectIds,
@@ -1367,11 +1400,13 @@ function MultiProjectWorkContent({
   gitStatesByProjectId: ReadonlyMap<string, ProjectGitState | null>
   projectGitState: ProjectGitState | null
   searchQuery: string
+  selectedProjectId: string
   selectedThreadId: string | null
   terminalRunningSessionPaths: ReadonlySet<string>
   visibleProjects: Project[]
   onAction: DesktopActionInvoker
   onFocusProject: (projectId: string) => void
+  onPrimeProject: (projectId: string) => void
   onSearchQueryChange: (query: string) => void
   onSetCollapsedBranchIds: (
     updater: (current: Record<string, boolean>) => Record<string, boolean>,
@@ -1428,6 +1463,7 @@ function MultiProjectWorkContent({
               project={project}
               pruneConfirmBranchId={pruneConfirmBranchId}
               searchQuery={searchQuery}
+              selectedProjectId={selectedProjectId}
               selectedThreadId={selectedThreadId}
               switchErrorBranchId={switchErrorBranchId}
               terminalRunningSessionPaths={terminalRunningSessionPaths}
@@ -1435,6 +1471,7 @@ function MultiProjectWorkContent({
               unassignedCollapsed={collapsedBranchIds[unassignedGroupId] ?? true}
               onAction={onAction}
               onFocusProject={onFocusProject}
+              onPrimeProject={onPrimeProject}
               onSetCollapsedBranchIds={onSetCollapsedBranchIds}
               onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
               onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
@@ -1523,7 +1560,7 @@ function SingleProjectWorkContent({
         <button
           type="button"
           className="sidebar-work-history-row"
-          data-active={activeView === 'sessions' ? 'true' : 'false'}
+          data-active={activeView === 'sessions' && selectedThreadId === null ? 'true' : 'false'}
           onClick={() => onShowView('sessions')}
         >
           <Archive size={14} />
@@ -1613,6 +1650,7 @@ export function WorkSidebarSection({
   onLoadProjectThreads,
   onOpenSettingsPanel,
   onProjectSelect,
+  onProjectPrimeSelection,
   onThreadOpen,
   onShowView,
 }: WorkSidebarSectionProps) {
@@ -1736,6 +1774,10 @@ export function WorkSidebarSection({
     onProjectSelect(projectId)
     void onAction('project.select', { projectId })
   }
+  const primeProject = (projectId: string) => {
+    onProjectPrimeSelection(projectId)
+    void onAction('project.select', { projectId })
+  }
   const toggleVisibleProject = (projectId: string) => {
     const wasVisible = visibleProjectIds.includes(projectId)
     const nextProjectIds = wasVisible
@@ -1785,11 +1827,13 @@ export function WorkSidebarSection({
           gitStatesByProjectId={gitStatesByProjectId}
           projectGitState={projectGitState}
           searchQuery={searchQuery}
+          selectedProjectId={selectedProjectId}
           selectedThreadId={selectedThreadId}
           terminalRunningSessionPaths={terminalRunningSessionPaths}
           visibleProjects={visibleProjects}
           onAction={onAction}
           onFocusProject={focusProject}
+          onPrimeProject={primeProject}
           onSearchQueryChange={setSearchQuery}
           onSetCollapsedBranchIds={setCollapsedBranchIds}
           onSetExpandedProjectIds={setCollapsedBranchIds}
