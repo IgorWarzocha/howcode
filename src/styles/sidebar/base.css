@@ -1,0 +1,202 @@
+.sidebar-shell {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  flex-direction: column;
+  gap: 0.875rem;
+  overflow: hidden;
+  border-right: 0;
+  background: var(--sidebar);
+  padding: 0.75rem 0 0.625rem;
+}
+
+.sidebar-shell-row {
+  min-width: 0;
+}
+
+.sidebar-shell-row--top,
+.sidebar-shell-row--footer {
+  padding-right: 0.625rem;
+  padding-left: 0.625rem;
+}
+
+.sidebar-shell-row--content {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  padding-left: 0.625rem;
+}
+
+:root[data-desktop-platform="darwin"] .sidebar-shell {
+  padding-top: 2.375rem;
+}
+
+.sidebar-mode-nav {
+  display: grid;
+  gap: 0.125rem;
+}
+
+.sidebar-nav-button {
+  display: flex;
+  min-height: 2rem;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 0 0.625rem;
+  color: var(--muted);
+  font-size: var(--app-type-group-size);
+  line-height: var(--app-type-group-line-height);
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out;
+}
+
+.sidebar-nav-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.sidebar-nav-button:disabled:hover {
+  background: transparent;
+  color: var(--muted);
+}
+
+.sidebar-nav-button[data-active="true"] {
+  background: var(--surface-hover);
+  box-shadow: none;
+  color: var(--text);
+}
+
+.sidebar-nav-button__label {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+}
+
+.sidebar-feature-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sidebar-mode-label {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.sidebar-coming-soon-label {
+  flex-shrink: 0;
+  color: var(--muted-2);
+  font-size: var(--app-type-kicker-size);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sidebar-footer {
+  position: relative;
+  margin-top: auto;
+  padding-bottom: 0.75rem;
+}
+
+.sidebar-settings-button {
+  display: flex;
+  min-height: 34px;
+  width: 100%;
+  align-items: center;
+  gap: 0.625rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 0 0.625rem;
+  color: var(--muted);
+  font-size: var(--app-type-body-size);
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out;
+}
+
+.sidebar-nav-button:hover,
+.sidebar-settings-button:hover,
+.sidebar-settings-button[data-open="true"] {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.sidebar-popover-panel {
+  border: 1px solid var(--border-strong);
+  background: var(--panel);
+  box-shadow: none;
+}
+
+.sidebar-settings-menu {
+  position: absolute;
+  inset-inline: 0;
+  bottom: calc(100% + 8px);
+  z-index: 40;
+  display: grid;
+  max-height: min(32rem, calc(100vh - 7rem));
+  gap: 0.25rem;
+  overflow-y: auto;
+  border-radius: 1rem;
+  padding: 0.5rem;
+  transform-origin: bottom left;
+}
+
+.sidebar-settings-menu-item {
+  display: grid;
+  min-height: 2rem;
+  width: 100%;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.625rem;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.625rem;
+  color: var(--text);
+  font-size: var(--app-type-body-size);
+  text-align: left;
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out,
+    opacity 150ms ease-out;
+}
+
+.sidebar-settings-menu-item:hover {
+  background: var(--surface-hover);
+}
+
+.sidebar-settings-menu-item[data-disabled="true"] {
+  cursor: not-allowed;
+  color: var(--muted);
+  opacity: 0.55;
+}
+
+.sidebar-settings-menu-item[data-disabled="true"]:hover {
+  background: transparent;
+}
+
+.sidebar-settings-menu-item__icon,
+.sidebar-project-menu-item__icon,
+.sidebar-filter-option__check,
+.sidebar-filter-option__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+
+.sidebar-settings-menu-item__label {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+}
