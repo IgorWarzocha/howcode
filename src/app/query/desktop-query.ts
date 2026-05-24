@@ -1,7 +1,7 @@
 const pathSeparatorPattern = /[\\/]/
 
-import { fallbackAppSlashCommands } from '../../../shared/composer-slash-commands'
-import type { DesktopRequestMap } from '../../../shared/desktop-ipc'
+import { fallbackAppSlashCommands } from '@howcode/shared/composer-slash-commands'
+import type { DesktopRequestMap } from '@howcode/shared/desktop-ipc'
 import type {
   AppUpdateState,
   ArchivedThread,
@@ -16,8 +16,9 @@ import type {
   InboxThread,
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffImagePreview,
+  ProjectDiffImageSide,
   ProjectDiffResolvedBaseline,
-  ProjectDiffResult,
   ProjectDiffStatsResult,
   ProjectGitState,
   ProjectUsageSummary,
@@ -142,18 +143,49 @@ export async function getProjectUsageSummaryQuery(
   return (await window.piDesktop?.getProjectUsageSummary?.(projectId)) ?? null
 }
 
-export async function getProjectDiffQuery(
+export async function startProjectDiffStreamQuery(
   projectId: string,
   baseline: ProjectDiffBaseline | null = null,
-): Promise<ProjectDiffResult | null> {
-  return (await window.piDesktop?.getProjectDiff?.(projectId, baseline)) ?? null
+  streamId: string | null = null,
+  includeUntracked = false,
+) {
+  return (
+    (await window.piDesktop?.startProjectDiffStream?.(
+      projectId,
+      baseline,
+      streamId,
+      includeUntracked,
+    )) ?? null
+  )
+}
+
+export function canStartProjectDiffStreamQuery() {
+  return (
+    typeof window !== 'undefined' && typeof window.piDesktop?.startProjectDiffStream === 'function'
+  )
+}
+
+export async function cancelProjectDiffStreamQuery(streamId: string): Promise<void> {
+  await window.piDesktop?.cancelProjectDiffStream?.(streamId)
 }
 
 export async function getProjectDiffStatsQuery(
   projectId: string,
   baseline: ProjectDiffBaseline | null = null,
+  includeUntracked = false,
 ): Promise<ProjectDiffStatsResult | null> {
-  return (await window.piDesktop?.getProjectDiffStats?.(projectId, baseline)) ?? null
+  return (
+    (await window.piDesktop?.getProjectDiffStats?.(projectId, baseline, includeUntracked)) ?? null
+  )
+}
+
+export async function getProjectDiffImagePreviewQuery(request: {
+  projectId: string
+  baseline?: ProjectDiffBaseline | null | undefined
+  path: string
+  side: ProjectDiffImageSide
+}): Promise<ProjectDiffImagePreview> {
+  return (await window.piDesktop?.getProjectDiffImagePreview?.(request)) ?? null
 }
 
 export async function captureProjectDiffBaselineQuery(

@@ -4,6 +4,7 @@ import {
   getComposerRequest,
   getGitCommitMessage,
   getGitIncludeUnstaged,
+  getGitIncludeUntracked,
   getGitOpsMode,
   getGitPreview,
   getGitPush,
@@ -35,6 +36,7 @@ async function handleCommitWorkspaceAction(payload: AnyDesktopActionPayload) {
   return handledAction(
     await commitProjectChanges(projectId, {
       includeUnstaged: getGitIncludeUnstaged(payload),
+      includeUntracked: getGitIncludeUntracked(payload),
       message: getGitCommitMessage(payload),
       preview: getGitPreview(payload),
       push: getGitPush(payload),

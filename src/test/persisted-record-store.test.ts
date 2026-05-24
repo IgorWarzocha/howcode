@@ -3,7 +3,7 @@ import {
   createStoragePersistence,
   hydratePersistedRecordMap,
   type StorageLike,
-} from '../app/components/workspace/persistence/persistedRecordStore'
+} from '../app/workspace-shell/persistence/persistedRecordStore'
 import { createMemoryStorage } from './helpers/storage'
 
 describe('persistedRecordStore', () => {

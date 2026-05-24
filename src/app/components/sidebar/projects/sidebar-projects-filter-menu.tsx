@@ -1,7 +1,7 @@
+import { GitHubInvertocatMark } from '@howcode/common/github-invertocat-mark'
+import { PopoverPanel } from '@howcode/common/popover'
 import { Check, Clock3, SquareTerminal, Star } from 'lucide-react'
 import type { ReactNode, RefObject } from 'react'
-import { GitHubInvertocatMark } from '../../common/github-invertocat-mark'
-import { SurfacePanel } from '../../common/surface-panel'
 import type { SidebarProjectsFilterMode } from './sidebar-projects.helpers'
 
 type SidebarProjectsFilterMenuProps = {
@@ -28,7 +28,8 @@ export function SidebarProjectsFilterMenu({
   onSelect,
 }: SidebarProjectsFilterMenuProps) {
   return (
-    <SurfacePanel
+    <PopoverPanel
+      open={open}
       ref={panelRef}
       id={menuId}
       role="menu"
@@ -57,6 +58,6 @@ export function SidebarProjectsFilterMenu({
           </button>
         )
       })}
-    </SurfacePanel>
+    </PopoverPanel>
   )
 }

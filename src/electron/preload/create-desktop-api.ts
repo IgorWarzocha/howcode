@@ -54,10 +54,20 @@ function createProjectApi() {
     getProjectGitState: (projectId: string) => invokeRequest('getProjectGitState', { projectId }),
     getProjectUsageSummary: (projectId: string) =>
       invokeRequest('getProjectUsageSummary', { projectId }),
-    getProjectDiff: (projectId: string, baseline = null) =>
-      invokeRequest('getProjectDiff', { projectId, baseline }),
-    getProjectDiffStats: (projectId: string, baseline = null) =>
-      invokeRequest('getProjectDiffStats', { projectId, baseline }),
+    startProjectDiffStream: (
+      projectId: string,
+      baseline = null,
+      streamId: string | null = null,
+      includeUntracked = false,
+    ) =>
+      invokeRequest('startProjectDiffStream', { projectId, baseline, streamId, includeUntracked }),
+    cancelProjectDiffStream: (streamId: string) =>
+      invokeRequest('cancelProjectDiffStream', { streamId }),
+    getProjectDiffStats: (projectId: string, baseline = null, includeUntracked = false) =>
+      invokeRequest('getProjectDiffStats', { projectId, baseline, includeUntracked }),
+    getProjectDiffImagePreview: (
+      request: DesktopRequestMap['getProjectDiffImagePreview']['params'],
+    ) => invokeRequest('getProjectDiffImagePreview', request),
     captureProjectDiffBaseline: (projectId: string) =>
       invokeRequest('captureProjectDiffBaseline', { projectId }),
     listProjectCommits: (projectId: string, limit: number | null = null) =>

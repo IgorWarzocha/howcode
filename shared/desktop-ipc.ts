@@ -33,9 +33,11 @@ import type {
   PiSkillMutationResult,
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffImagePreview,
+  ProjectDiffImageSide,
   ProjectDiffResolvedBaseline,
-  ProjectDiffResult,
   ProjectDiffStatsResult,
+  ProjectDiffStreamStartResult,
   ProjectGitState,
   ProjectUsageSummary,
   ReactArtifactCompileResult,
@@ -70,13 +72,35 @@ export type DesktopRequestMap = {
   getShellState: { params: Record<string, never>; response: ShellState }
   getProjectGitState: { params: { projectId: string }; response: ProjectGitState | null }
   getProjectUsageSummary: { params: { projectId: string }; response: ProjectUsageSummary }
-  getProjectDiff: {
-    params: { projectId: string; baseline?: ProjectDiffBaseline | null }
-    response: ProjectDiffResult | null
+  startProjectDiffStream: {
+    params: {
+      projectId: string
+      baseline?: ProjectDiffBaseline | null
+      streamId?: string | null
+      includeUntracked?: boolean | null
+    }
+    response: ProjectDiffStreamStartResult
+  }
+  cancelProjectDiffStream: {
+    params: { streamId: string }
+    response: undefined
   }
   getProjectDiffStats: {
-    params: { projectId: string; baseline?: ProjectDiffBaseline | null }
+    params: {
+      projectId: string
+      baseline?: ProjectDiffBaseline | null
+      includeUntracked?: boolean | null
+    }
     response: ProjectDiffStatsResult | null
+  }
+  getProjectDiffImagePreview: {
+    params: {
+      projectId: string
+      baseline?: ProjectDiffBaseline | null | undefined
+      path: string
+      side: ProjectDiffImageSide
+    }
+    response: ProjectDiffImagePreview
   }
   captureProjectDiffBaseline: {
     params: { projectId: string }

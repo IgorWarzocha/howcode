@@ -3,6 +3,7 @@ export type CommitMessageContext = {
   branch: string | null
   hasOrigin: boolean
   includeUnstaged: boolean
+  includeUntracked: boolean
   fileCount: number
   insertions: number
   deletions: number

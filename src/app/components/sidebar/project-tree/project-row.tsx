@@ -1,10 +1,10 @@
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core'
+import { GitHubInvertocatMark } from '@howcode/common/github-invertocat-mark'
+import { Tooltip } from '@howcode/common/tooltip'
 import { ChevronDown, ChevronRight, Folder, MoreHorizontal, Plus, Star } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { compactIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { GitHubInvertocatMark } from '../../common/github-invertocat-mark'
-import { Tooltip } from '../../common/tooltip'
 
 type ProjectRowProps = {
   actionMenuId: string

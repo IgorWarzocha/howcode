@@ -85,10 +85,14 @@ export async function loadCommitContextOutputs(
   }
 }
 
-export async function loadCommitContextOutputsForMode(projectId: string, includeUnstaged: boolean) {
+export async function loadCommitContextOutputsForMode(
+  projectId: string,
+  includeUnstaged: boolean,
+  includeUntracked: boolean,
+) {
   if (!includeUnstaged) return loadCommitContextOutputs(projectId)
   return withTemporaryIndex(projectId, async ({ env, hasHead }) => {
-    await runGitWithOptions(projectId, ['add', '-A', '--', '.'], {
+    await runGitWithOptions(projectId, ['add', includeUntracked ? '-A' : '-u', '--', '.'], {
       env,
       timeout: 10_000,
       maxBuffer: 1024 * 1024 * 4,

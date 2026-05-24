@@ -20,6 +20,7 @@ import {
   gitCommitMessageThinkingLevelKey,
   gitDiffBaselineDefaultKey,
   gitDiffFileTreeDefaultVisibleKey,
+  gitDiffIncludeUntrackedDefaultKey,
   gitDiffRenderModeDefaultKey,
   gitOpsDefaultModeKey,
   hoverToBlurKey,
@@ -134,6 +135,8 @@ export function loadAppSettings(): AppSettings {
       parseGitDiffRenderModePreference(value(gitDiffRenderModeDefaultKey)) ?? 'stacked',
     gitDiffFileTreeDefaultVisible:
       parseBooleanPreference(value(gitDiffFileTreeDefaultVisibleKey)) ?? true,
+    gitDiffIncludeUntrackedDefault:
+      parseBooleanPreference(value(gitDiffIncludeUntrackedDefaultKey)) ?? false,
     projectDeletionMode:
       parseProjectDeletionModePreference(value(projectDeletionModeKey)) ?? 'pi-only',
     useAgentsSkillsPaths: parseBooleanPreference(value(useAgentsSkillsPathsKey)) ?? false,

@@ -1,4 +1,4 @@
-import { createLocalThreadDraft } from '../../../shared/session-paths'
+import { createLocalThreadDraft } from '@howcode/shared/session-paths'
 import type { DesktopAction } from '../desktop/actions'
 import type { AnyDesktopActionPayload, DesktopActionResult, Thread } from '../desktop/types'
 import { hasDesktopBridgeQuery } from '../query/desktop-query'

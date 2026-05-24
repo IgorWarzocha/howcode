@@ -1,9 +1,9 @@
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core'
+import { Tooltip } from '@howcode/common/tooltip'
 import { ChevronDown, ChevronRight, Folder, MoreHorizontal, Plus } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { compactIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { Tooltip } from '../../common/tooltip'
 
 type ChatGroupRowProps = {
   actionMenuId: string

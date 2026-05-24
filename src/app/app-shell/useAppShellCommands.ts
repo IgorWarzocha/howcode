@@ -1,13 +1,14 @@
+import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
+import { isLocalSessionPath } from '@howcode/shared/session-paths'
 import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch, SetStateAction } from 'react'
 import { useCallback } from 'react'
-import { isLocalSessionPath } from '../../../shared/session-paths'
 import type { DesktopActionResult, InboxThread, ShellState } from '../desktop/types'
+import { notifyProjectDiffInvalidated } from '../hooks/project-diff-invalidation'
 import { forgetLocalDraftThread } from '../hooks/useDesktopProjectThreads'
 import { desktopQueryKeys } from '../query/desktop-query'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
 import type { View } from '../types'
-import type { SettingsOpenTarget } from '../views/settings/settingsTypes'
 import { removeProjectThreadFromShellState } from './project-thread-cache'
 import { getProjectSelectionAction } from './scoped-project-view'
 import { THREAD_CYCLE_OPEN_ACTION_DELAY_MS, useScheduledThreadOpen } from './useScheduledThreadOpen'
@@ -48,11 +49,12 @@ type UseAppShellCommandsInput = {
 }
 
 function resetProjectDiffCaches(queryClient: QueryClient, projectId: string) {
-  queryClient.removeQueries({
-    queryKey: desktopQueryKeys.projectDiffPrefix(projectId),
-  })
+  notifyProjectDiffInvalidated(projectId)
   void queryClient.invalidateQueries({
     queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
+  })
+  void queryClient.invalidateQueries({
+    queryKey: desktopQueryKeys.projectDiffImagePreviewPrefix(projectId),
   })
   void queryClient.invalidateQueries({
     queryKey: desktopQueryKeys.projectCommitsPrefix(projectId),

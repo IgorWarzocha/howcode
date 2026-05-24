@@ -31,6 +31,7 @@ import {
   gitCommitMessageThinkingLevelKey,
   gitDiffBaselineDefaultKey,
   gitDiffFileTreeDefaultVisibleKey,
+  gitDiffIncludeUntrackedDefaultKey,
   gitDiffRenderModeDefaultKey,
   gitOpsDefaultModeKey,
   hoverToBlurKey,
@@ -261,6 +262,15 @@ export function setGitDiffFileTreeDefaultVisible(visible: boolean) {
   }
 
   writeAppPreference(gitDiffFileTreeDefaultVisibleKey, JSON.stringify(false))
+}
+
+export function setGitDiffIncludeUntrackedDefault(enabled: boolean) {
+  if (!enabled) {
+    deleteAppPreference(gitDiffIncludeUntrackedDefaultKey)
+    return
+  }
+
+  writeAppPreference(gitDiffIncludeUntrackedDefaultKey, JSON.stringify(true))
 }
 
 export function setProjectDeletionMode(mode: ProjectDeletionMode) {

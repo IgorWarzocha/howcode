@@ -1,4 +1,4 @@
-import { getPersistedSessionPath } from '../../../shared/session-paths'
+import { getPersistedSessionPath } from '@howcode/shared/session-paths'
 import type { DesktopAction } from '../desktop/actions'
 import type { AnyDesktopActionPayload, ArchivedThread } from '../desktop/types'
 import type { WorkspaceState } from '../state/workspace'

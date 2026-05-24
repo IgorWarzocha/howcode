@@ -34,9 +34,11 @@ import type {
   PiSkillMutationResult,
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffImagePreview,
+  ProjectDiffImageSide,
   ProjectDiffResolvedBaseline,
-  ProjectDiffResult,
   ProjectDiffStatsResult,
+  ProjectDiffStreamStartResult,
   ProjectGitState,
   ProjectUsageSummary,
   ReactArtifactCompileResult,
@@ -70,14 +72,24 @@ declare global {
       getShellState: () => Promise<ShellState>
       getProjectGitState?: (projectId: string) => Promise<ProjectGitState | null>
       getProjectUsageSummary?: (projectId: string) => Promise<ProjectUsageSummary>
-      getProjectDiff?: (
+      startProjectDiffStream?: (
         projectId: string,
         baseline?: ProjectDiffBaseline | null,
-      ) => Promise<ProjectDiffResult | null>
+        streamId?: string | null,
+        includeUntracked?: boolean | null,
+      ) => Promise<ProjectDiffStreamStartResult>
+      cancelProjectDiffStream?: (streamId: string) => Promise<void>
       getProjectDiffStats?: (
         projectId: string,
         baseline?: ProjectDiffBaseline | null,
+        includeUntracked?: boolean | null,
       ) => Promise<ProjectDiffStatsResult | null>
+      getProjectDiffImagePreview?: (request: {
+        projectId: string
+        baseline?: ProjectDiffBaseline | null | undefined
+        path: string
+        side: ProjectDiffImageSide
+      }) => Promise<ProjectDiffImagePreview>
       captureProjectDiffBaseline?: (
         projectId: string,
       ) => Promise<ProjectDiffResolvedBaseline | null>

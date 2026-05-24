@@ -27,9 +27,11 @@ import type {
   PiSkillMutationResult,
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffImagePreview,
+  ProjectDiffImageSide,
   ProjectDiffResolvedBaseline,
-  ProjectDiffResult,
   ProjectDiffStatsResult,
+  ProjectDiffStreamStartResult,
   ProjectGitState,
   ProjectUsageSummary,
   ReactArtifactCompileResult,
@@ -92,14 +94,24 @@ export type PiThreadsService = {
   }) => Promise<PiPackageMutationResult>
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
   loadProjectUsageSummary: (projectId: string) => Promise<ProjectUsageSummary>
-  loadProjectDiff: (
+  startProjectDiffStream: (
     projectId: string,
     baseline?: ProjectDiffBaseline | null,
-  ) => Promise<ProjectDiffResult | null>
+    streamId?: string | null,
+    includeUntracked?: boolean | null,
+  ) => Promise<ProjectDiffStreamStartResult>
+  cancelProjectDiffStream: (streamId: string) => Promise<void>
   loadProjectDiffStats: (
     projectId: string,
     baseline?: ProjectDiffBaseline | null,
+    includeUntracked?: boolean | null,
   ) => Promise<ProjectDiffStatsResult | null>
+  loadProjectDiffImagePreview: (request: {
+    projectId: string
+    baseline?: ProjectDiffBaseline | null | undefined
+    path: string
+    side: ProjectDiffImageSide
+  }) => Promise<ProjectDiffImagePreview>
   captureProjectDiffBaseline: (projectId: string) => Promise<ProjectDiffResolvedBaseline | null>
   listProjectCommits: (
     projectId: string,

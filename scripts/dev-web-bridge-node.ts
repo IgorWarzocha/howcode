@@ -182,10 +182,20 @@ const handlers: DesktopRequestHandlerMap = {
   getShellState: () => piThreads.loadShellState(getDesktopWorkingDirectory()),
   getProjectGitState: ({ projectId }) => piThreads.loadProjectGitState(projectId),
   getProjectUsageSummary: ({ projectId }) => piThreads.loadProjectUsageSummary(projectId),
-  getProjectDiff: ({ projectId, baseline }) =>
-    piThreads.loadProjectDiff(projectId, baseline ?? null),
-  getProjectDiffStats: ({ projectId, baseline }) =>
-    piThreads.loadProjectDiffStats(projectId, baseline ?? null),
+  startProjectDiffStream: ({ projectId, baseline, streamId, includeUntracked }) =>
+    piThreads.startProjectDiffStream(
+      projectId,
+      baseline ?? null,
+      streamId ?? null,
+      includeUntracked ?? false,
+    ),
+  cancelProjectDiffStream: async ({ streamId }) => {
+    await piThreads.cancelProjectDiffStream(streamId)
+    return undefined
+  },
+  getProjectDiffStats: ({ projectId, baseline, includeUntracked }) =>
+    piThreads.loadProjectDiffStats(projectId, baseline ?? null, includeUntracked ?? false),
+  getProjectDiffImagePreview: (request) => piThreads.loadProjectDiffImagePreview(request),
   captureProjectDiffBaseline: ({ projectId }) => piThreads.captureProjectDiffBaseline(projectId),
   listProjectCommits: ({ projectId, limit }) =>
     piThreads.listProjectCommits(projectId, limit ?? null),

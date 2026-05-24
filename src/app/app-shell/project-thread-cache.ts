@@ -1,4 +1,4 @@
-import { isLocalSessionPath } from '../../../shared/session-paths'
+import { isLocalSessionPath } from '@howcode/shared/session-paths'
 import type { ShellState, Thread } from '../desktop/types'
 import { desktopQueryKeys } from '../query/desktop-query'
 

@@ -1,0 +1,2 @@
+- Always read `.pi/skills/howcode-dual-native-extension/SKILL.md` before changing Howcode-native extension UI or wiring.
+- Composer-adjacent native extension overlays must follow the queued-prompt/composer width grammar; do not add independent centered max-width cards.

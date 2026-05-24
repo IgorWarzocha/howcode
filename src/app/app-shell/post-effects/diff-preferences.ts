@@ -1,8 +1,8 @@
-import type { QueryClient } from '@tanstack/react-query'
 import {
   getProjectDiffBaselinePreference,
   getProjectDiffRenderModePreference,
-} from '../../../../shared/pi-thread-action-payloads'
+} from '@howcode/shared/pi-thread-action-payloads'
+import type { QueryClient } from '@tanstack/react-query'
 import type { ThreadData } from '../../desktop/types'
 import { desktopQueryKeys } from '../../query/desktop-query'
 import type { ActionPayload } from '../controller-action-utils'

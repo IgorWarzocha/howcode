@@ -1,6 +1,6 @@
+import { defaultDiffBaseline } from '@howcode/native-gitops'
+import { getPersistedSessionPath, isLocalSessionPath } from '@howcode/shared/session-paths'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { getPersistedSessionPath, isLocalSessionPath } from '../../../shared/session-paths'
-import { defaultDiffBaseline } from '../components/workspace/composer/diff-baseline'
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
 import type { AppShellController } from './useAppShellController'
 

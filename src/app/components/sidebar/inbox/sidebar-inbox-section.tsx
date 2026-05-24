@@ -1,3 +1,6 @@
+import { EmptyStateCard } from '@howcode/common/empty-state-card'
+import { IconButton } from '@howcode/common/icon-button'
+import { PopoverPanel } from '@howcode/common/popover'
 import {
   BrushCleaning,
   Check,
@@ -13,9 +16,13 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } fro
 import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
 import type { DesktopActionInvoker, InboxThread } from '../../../desktop/types'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
-import { EmptyStateCard } from '../../common/empty-state-card'
-import { IconButton } from '../../common/icon-button'
-import { SurfacePanel } from '../../common/surface-panel'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeControlClass,
+  appTypeGroupTextClass,
+} from '../../../ui/classes'
+import { cn } from '../../../utils/cn'
 import { InboxThreadRow } from './inbox-thread-row'
 
 type InboxFilterMode = 'all' | 'terminal' | 'recent'
@@ -91,7 +98,7 @@ function SidebarInboxFilterMenu({
   onSelect: (filterMode: InboxFilterMode) => void
 }) {
   return (
-    <SurfacePanel
+    <PopoverPanel
       ref={panelRef}
       id={menuId}
       role="menu"
@@ -120,7 +127,7 @@ function SidebarInboxFilterMenu({
           </button>
         )
       })}
-    </SurfacePanel>
+    </PopoverPanel>
   )
 }
 
@@ -134,7 +141,7 @@ function SidebarInboxClearMenu({
   onSelect: (olderThanDays: number | null) => void
 }) {
   return (
-    <SurfacePanel
+    <PopoverPanel
       ref={panelRef}
       id={menuId}
       role="menu"
@@ -153,7 +160,7 @@ function SidebarInboxClearMenu({
           <span className="truncate text-left">{item.label}</span>
         </button>
       ))}
-    </SurfacePanel>
+    </PopoverPanel>
   )
 }
 
@@ -355,8 +362,14 @@ export function SidebarInboxSection({
           </div>
         </div>
       ) : (
-        <EmptyStateCard className="grid gap-1.5 px-3 py-4 text-center text-[12.5px] text-[color:var(--muted)]">
-          <div className="text-[13px] text-[color:var(--text)]">No inbox items</div>
+        <EmptyStateCard
+          className={cn(
+            'grid gap-1.5 px-3 py-4 text-center',
+            appTypeControlClass,
+            appToneMutedClass,
+          )}
+        >
+          <div className={cn(appTypeGroupTextClass, appToneTextClass)}>No inbox items</div>
           <div>{getEmptyInboxMessage(showUnreadOnly, filterMode)}</div>
         </EmptyStateCard>
       )}

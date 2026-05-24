@@ -1,5 +1,5 @@
+import { isLocalSessionPath } from '@howcode/shared/session-paths'
 import type { Dispatch, SetStateAction } from 'react'
-import { isLocalSessionPath } from '../../../shared/session-paths'
 import type {
   ChatSidebarState,
   ComposerState,

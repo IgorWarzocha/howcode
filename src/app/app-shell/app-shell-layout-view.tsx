@@ -1,15 +1,15 @@
+import { TerminalPanel } from '@howcode/workspace-shell'
 import { PanelLeftOpen, PanelRightClose } from 'lucide-react'
 import type { CSSProperties, Dispatch, RefObject, SetStateAction } from 'react'
 import { Sidebar } from '../components/sidebar/sidebar'
-import { TerminalPanel } from '../components/workspace/terminal-panel'
 import type { AppSettings, ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
+import { appToneTextClass, appTypeGroupTextClass } from '../ui/classes'
 import { cn } from '../utils/cn'
 import { AppShellOverlays } from './app-shell-overlays'
 import { AppShellWorkspace } from './app-shell-workspace'
 import { appShellRootClass } from './layout-classes'
 import type { AppShellController } from './useAppShellController'
 
-const TERMINAL_DRAWER_WIDTH = 'min(28rem, calc(100% - 2.5rem))'
 type AppShellLayoutViewProps = {
   controller: AppShellController
   projects: AppShellController['projects']
@@ -78,6 +78,7 @@ const FALLBACK_APP_SETTINGS = {
   gitDiffBaselineDefault: { kind: 'head' },
   gitDiffRenderModeDefault: 'stacked',
   gitDiffFileTreeDefaultVisible: true,
+  gitDiffIncludeUntrackedDefault: false,
   projectDeletionMode: 'pi-only',
   useAgentsSkillsPaths: false,
   howcodeNativeAskQuestions: false,
@@ -411,8 +412,10 @@ function TerminalDrawerLayer(props: AppShellLayoutViewProps) {
   if (!terminalDrawerPresent) return null
   return (
     <div
-      className="pointer-events-none absolute top-0 right-0 bottom-0 z-20 max-w-full overflow-hidden"
-      style={{ width: sidebarCompactMode ? '100%' : TERMINAL_DRAWER_WIDTH }}
+      className={cn(
+        'pointer-events-none absolute top-0 right-0 bottom-0 z-20 max-w-full overflow-hidden',
+        sidebarCompactMode ? 'w-full' : 'w-[min(28rem,calc(100%_-_2.5rem))]',
+      )}
     >
       <div
         data-open={terminalDrawerVisible ? 'true' : 'false'}
@@ -434,7 +437,13 @@ function AppShellToast(props: AppShellLayoutViewProps) {
   const { controller } = props
   if (!controller.toast) return null
   return (
-    <div className="pointer-events-none fixed bottom-4 left-1/2 z-[60] -translate-x-1/2 rounded-2xl border border-[color:var(--border-strong)] bg-[rgba(14,18,28,0.94)] px-4 py-2 text-[13px] text-[color:var(--text)] shadow-[0_16px_40px_rgba(0,0,0,0.32)] backdrop-blur-sm">
+    <div
+      className={cn(
+        'pointer-events-none fixed bottom-4 left-1/2 z-[60] -translate-x-1/2 rounded-2xl border border-[color:var(--border-strong)] bg-[rgba(14,18,28,0.94)] px-4 py-2 shadow-[0_16px_40px_rgba(0,0,0,0.32)] backdrop-blur-sm',
+        appTypeGroupTextClass,
+        appToneTextClass,
+      )}
+    >
       {controller.toast}
     </div>
   )

@@ -1,3 +1,4 @@
+import { IconButton } from '@howcode/common/icon-button'
 import { FolderPlus, Search, X } from 'lucide-react'
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
@@ -5,8 +6,13 @@ import type { DesktopActionInvoker } from '../../../desktop/types'
 import { useDesktopBridgeAvailable } from '../../../hooks/useDesktopBridge'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import type { Project, View } from '../../../types'
+import {
+  appToneSubtleClass,
+  appTypeGroupTextClass,
+  appTypeMetaClass,
+  appTypeSmallClass,
+} from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { IconButton } from '../../common/icon-button'
 import { ProjectTree } from '../project-tree'
 import { SidebarProjectsSkeleton } from '../sidebar-skeletons'
 import {
@@ -38,7 +44,7 @@ type SidebarProjectsSectionProps = {
   onAction: DesktopActionInvoker
   onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
   onOpenSettingsPanel: (
-    target?: import('../../../views/settings/settingsTypes').SettingsOpenTarget,
+    target?: import('@howcode/settings/settingsTypes').SettingsOpenTarget,
   ) => void
   onProjectSelect: (projectId: string) => void
   onProjectPrimeSelection: (projectId: string) => void
@@ -61,7 +67,7 @@ function PendingProjectRow({ pendingProject }: { pendingProject: PendingProject 
         >
           <span className="sidebar-project-title">{pendingProject.name}</span>
         </div>
-        <span className="text-[11px] text-[color:var(--muted-2)]">Adding…</span>
+        <span className={cn(appTypeMetaClass, appToneSubtleClass)}>Adding…</span>
       </div>
     </div>
   )
@@ -138,7 +144,9 @@ function SidebarProjectsContent({
     return (
       <div
         className={cn(
-          'px-2.5 py-2 text-[13px] text-[color:var(--muted-2)]',
+          'px-2.5 py-2',
+          appTypeGroupTextClass,
+          appToneSubtleClass,
           searchQuery.trim().length > 0 || filterMode !== 'all' ? '' : 'hidden',
         )}
       >
@@ -146,7 +154,7 @@ function SidebarProjectsContent({
       </div>
     )
   return (
-    <div className="px-2.5 py-2 text-[12px] leading-5 text-[color:var(--muted-2)]">
+    <div className={cn('px-2.5 py-2', appTypeSmallClass, appToneSubtleClass)}>
       Project sync needs the desktop bridge. Restart the dev server or use <code>bun run dev</code>.
     </div>
   )

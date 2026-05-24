@@ -42,6 +42,7 @@ export type AppSettings = {
   gitDiffBaselineDefault: ProjectDiffDefaultBaseline
   gitDiffRenderModeDefault: ProjectDiffRenderMode
   gitDiffFileTreeDefaultVisible: boolean
+  gitDiffIncludeUntrackedDefault: boolean
   projectDeletionMode: ProjectDeletionMode
   useAgentsSkillsPaths: boolean
   howcodeNativeAskQuestions: boolean

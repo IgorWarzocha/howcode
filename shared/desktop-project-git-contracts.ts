@@ -16,6 +16,7 @@ export type ProjectGitState = {
   fileCount: number
   stagedFileCount: number
   unstagedFileCount: number
+  untrackedFileCount: number
   insertions: number
   deletions: number
   hasOrigin: boolean
@@ -71,6 +72,14 @@ export type ProjectDiffResult = {
   resolvedBaseline: ProjectDiffResolvedBaseline
 }
 
+export type ProjectDiffImageSide = 'old' | 'new'
+
+export type ProjectDiffImagePreview = {
+  side: ProjectDiffImageSide
+  mimeType: string
+  dataUrl: string
+} | null
+
 export type ProjectDiffStatsResult = {
   projectId: string
   fileCount: number
@@ -79,3 +88,28 @@ export type ProjectDiffStatsResult = {
   baseline: ProjectDiffBaseline
   resolvedBaseline: ProjectDiffResolvedBaseline
 }
+
+export type ProjectDiffStreamStartResult = {
+  streamId: string
+}
+
+export type ProjectDiffStreamEvent =
+  | {
+      type: 'chunk'
+      streamId: string
+      projectId: string
+      sequence: number
+      chunk: string
+    }
+  | {
+      type: 'complete'
+      streamId: string
+      projectId: string
+      result: ProjectDiffResult | null
+    }
+  | {
+      type: 'error'
+      streamId: string
+      projectId: string
+      error: string
+    }

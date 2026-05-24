@@ -1,6 +1,6 @@
+import { getPersistedSessionPath } from '@howcode/shared/session-paths'
 import type { Dispatch } from 'react'
 import { useEffect } from 'react'
-import { getPersistedSessionPath } from '../../../shared/session-paths'
 import { watchSessionQuery } from '../query/desktop-query'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
 import { isUtilityView } from '../state/workspace'

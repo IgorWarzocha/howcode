@@ -68,11 +68,15 @@ export type {
   ProjectCommitEntry,
   ProjectDiffBaseline,
   ProjectDiffDefaultBaseline,
+  ProjectDiffImagePreview,
+  ProjectDiffImageSide,
   ProjectDiffPreferences,
   ProjectDiffRenderMode,
   ProjectDiffResolvedBaseline,
   ProjectDiffResult,
   ProjectDiffStatsResult,
+  ProjectDiffStreamEvent,
+  ProjectDiffStreamStartResult,
   ProjectGitState,
 } from './desktop-project-git-contracts'
 export type {

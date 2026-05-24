@@ -1,0 +1,362 @@
+import { useEffect, useRef, useState } from 'react'
+import type { AppSettings, DesktopActionInvoker, PiSettings } from '../../desktop/types'
+import { useAnimatedPresence } from '../../hooks/useAnimatedPresence'
+import {
+  desktopBridgeUnavailableMessage,
+  useDesktopBridgeAvailable,
+} from '../../hooks/useDesktopBridge'
+import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
+import type { Project } from '../../types'
+import {
+  buildModelSelectionPayload,
+  getActionError,
+  getModelSettingValue,
+  getProjectImportSummaryMessage,
+} from './helpers'
+import { useSettingsDictationController } from './useSettingsDictationController'
+
+function normalizeOptionalSettingsPath(value: string | null | undefined) {
+  const normalizedValue = value?.trim() ?? ''
+  return normalizedValue.length > 0 ? normalizedValue : null
+}
+
+function normalizeCustomPiDirectoryDraft(
+  draftValue: string | null | undefined,
+  currentValue: string | null | undefined,
+) {
+  const normalizedDraft = normalizeOptionalSettingsPath(draftValue)
+  if (!normalizedDraft) return null
+  const normalizedCurrent = normalizeOptionalSettingsPath(currentValue)
+  if (!(normalizedCurrent && (normalizedDraft === '~' || normalizedDraft.startsWith('~/')))) {
+    return normalizedDraft
+  }
+
+  const suffix = normalizedDraft === '~' ? '' : normalizedDraft.slice(1)
+  if (normalizedDraft === '~' || normalizedCurrent.endsWith(suffix)) {
+    return `${normalizedCurrent.slice(0, normalizedCurrent.length - suffix.length)}${suffix}`
+  }
+
+  return normalizedDraft
+}
+
+export function useSettingsController({
+  appSettings,
+  resolvedPiDirectory,
+  onAction,
+}: {
+  appSettings: AppSettings
+  resolvedPiDirectory?: string | null | undefined
+  projects: Project[]
+  onAction: DesktopActionInvoker
+}) {
+  const [preferredProjectLocationDraft, setPreferredProjectLocationDraft] = useState(
+    appSettings.preferredProjectLocation ?? '',
+  )
+  const [customPiDirectoryDraft, setCustomPiDirectoryDraft] = useState(
+    appSettings.customPiDirectory ?? '',
+  )
+  const [gitCommitMenuOpen, setGitCommitMenuOpen] = useState(false)
+  const [skillCreatorMenuOpen, setSkillCreatorMenuOpen] = useState(false)
+  const [favoriteFolderDraft, setFavoriteFolderDraft] = useState('')
+  const [importBusy, setImportBusy] = useState(false)
+  const [importStatusMessage, setImportStatusMessage] = useState<string | null>(null)
+  const [importErrorMessage, setImportErrorMessage] = useState<string | null>(null)
+  const [clearImagesBusy, setClearImagesBusy] = useState(false)
+  const [clearImagesStatusMessage, setClearImagesStatusMessage] = useState<string | null>(null)
+  const gitCommitButtonRef = useRef<HTMLButtonElement>(null)
+  const gitCommitPanelRef = useRef<HTMLDivElement>(null)
+  const gitCommitMenuPresent = useAnimatedPresence(gitCommitMenuOpen)
+  const skillCreatorButtonRef = useRef<HTMLButtonElement>(null)
+  const skillCreatorPanelRef = useRef<HTMLDivElement>(null)
+  const skillCreatorMenuPresent = useAnimatedPresence(skillCreatorMenuOpen)
+
+  const dictation = useSettingsDictationController({ appSettings, onAction })
+  const desktopBridgeAvailable = useDesktopBridgeAvailable()
+
+  useEffect(() => {
+    setPreferredProjectLocationDraft(appSettings.preferredProjectLocation ?? '')
+  }, [appSettings.preferredProjectLocation])
+
+  useEffect(() => {
+    setCustomPiDirectoryDraft(appSettings.customPiDirectory ?? '')
+  }, [appSettings.customPiDirectory])
+
+  const closeGitCommitMenu = () => {
+    setGitCommitMenuOpen(false)
+  }
+
+  const closeSkillCreatorMenu = () => {
+    setSkillCreatorMenuOpen(false)
+  }
+
+  useDismissibleLayer({
+    open: gitCommitMenuOpen,
+    onDismiss: closeGitCommitMenu,
+    refs: [gitCommitButtonRef, gitCommitPanelRef],
+  })
+
+  useDismissibleLayer({
+    open: skillCreatorMenuOpen,
+    onDismiss: closeSkillCreatorMenu,
+    refs: [skillCreatorButtonRef, skillCreatorPanelRef],
+  })
+
+  const updateFavoriteFolders = (nextFavoriteFolders: string[]) => {
+    void onAction('settings.update', {
+      key: 'favoriteFolders',
+      folders: nextFavoriteFolders,
+    })
+  }
+
+  const addFavoriteFolder = () => {
+    const nextFavoriteFolder = favoriteFolderDraft.trim()
+    if (!nextFavoriteFolder) {
+      return
+    }
+
+    updateFavoriteFolders([...appSettings.favoriteFolders, nextFavoriteFolder])
+    setFavoriteFolderDraft('')
+  }
+
+  const savePreferredProjectLocation = () => {
+    void onAction('settings.update', {
+      key: 'preferredProjectLocation',
+      value: preferredProjectLocationDraft,
+    })
+  }
+
+  const saveCustomPiDirectory = () => {
+    const nextCustomPiDirectory = normalizeCustomPiDirectoryDraft(
+      customPiDirectoryDraft,
+      appSettings.customPiDirectory,
+    )
+    const currentCustomPiDirectory = normalizeOptionalSettingsPath(appSettings.customPiDirectory)
+    if (nextCustomPiDirectory === currentCustomPiDirectory) {
+      return
+    }
+
+    void onAction('settings.update', {
+      key: 'customPiDirectory',
+      value: nextCustomPiDirectory,
+    })
+  }
+
+  const selectModel = (
+    key: 'chatModel' | 'codeModel' | 'gitCommitMessageModel' | 'skillCreatorModel',
+    id: string,
+    closeMenu: () => void,
+  ) => {
+    void onAction('settings.update', buildModelSelectionPayload(key, id))
+    closeMenu()
+  }
+
+  const handleImportProjectUi = async () => {
+    if (!desktopBridgeAvailable) {
+      setImportStatusMessage(null)
+      setImportErrorMessage(desktopBridgeUnavailableMessage)
+      return
+    }
+
+    setImportBusy(true)
+    setImportStatusMessage('Scanning projects for UI info…')
+    setImportErrorMessage(null)
+
+    try {
+      const result = await onAction('projects.import.apply', {
+        projectIds: [],
+      })
+      const error = getActionError(result)
+      if (error) {
+        setImportErrorMessage(error)
+        setImportStatusMessage(null)
+        return
+      }
+
+      setImportStatusMessage(getProjectImportSummaryMessage(result))
+    } finally {
+      setImportBusy(false)
+    }
+  }
+
+  const handleClearClipboardImages = async () => {
+    if (!desktopBridgeAvailable) {
+      setClearImagesStatusMessage(desktopBridgeUnavailableMessage)
+      return
+    }
+
+    setClearImagesBusy(true)
+    setClearImagesStatusMessage(null)
+    try {
+      const result = await onAction('settings.clear-clipboard-images', {})
+      const error = getActionError(result)
+      if (error) {
+        setClearImagesStatusMessage(error)
+        return
+      }
+
+      const clearedCount = result?.result?.clearedCount ?? 0
+      const failedCount = result?.result?.clearFailedCount ?? 0
+      const deletedMessage =
+        clearedCount === 1
+          ? 'Deleted 1 clipboard image.'
+          : `Deleted ${clearedCount} clipboard images.`
+      setClearImagesStatusMessage(
+        failedCount > 0 ? `${deletedMessage} ${failedCount} failed.` : deletedMessage,
+      )
+    } finally {
+      setClearImagesBusy(false)
+    }
+  }
+
+  return {
+    addFavoriteFolder,
+    deleteDictationModel: dictation.deleteDictationModel,
+    dictationDownloadLogLines: dictation.dictationDownloadLogLines,
+    dictationInstallError: dictation.dictationInstallError,
+    dictationModels: dictation.dictationModels,
+    dictationPendingAction: dictation.dictationPendingAction,
+    dictationState: dictation.dictationState,
+    clearImagesBusy,
+    clearImagesStatusMessage,
+    customPiDirectoryDraft,
+    resolvedPiDirectory,
+    favoriteFolderDraft,
+    gitCommitButtonRef,
+    gitCommitCurrentValue: getModelSettingValue(appSettings.gitCommitMessageModel),
+    gitCommitMenuId: 'settings-git-commit-model-menu',
+    gitCommitMenuOpen,
+    gitCommitMenuPresent,
+    gitCommitPanelRef,
+    importBusy,
+    importErrorMessage,
+    importStatusMessage,
+    desktopBridgeAvailable,
+    installDictationModel: dictation.installDictationModel,
+    preferredProjectLocationDraft,
+    refreshDictationState: dictation.refreshDictationState,
+    savePreferredProjectLocation,
+    saveCustomPiDirectory,
+    setComposerStreamingBehavior: (value: AppSettings['composerStreamingBehavior']) =>
+      void onAction('settings.update', {
+        key: 'composerStreamingBehavior',
+        value,
+      }),
+    setDictationMaxDurationSeconds: (value: AppSettings['dictationMaxDurationSeconds']) =>
+      void onAction('settings.update', {
+        key: 'dictationMaxDurationSeconds',
+        value,
+      }),
+    setDictationModelId: (value: AppSettings['dictationModelId']) =>
+      void onAction('settings.update', {
+        key: 'dictationModelId',
+        value,
+      }),
+    setShowDictationButton: (value: boolean) =>
+      void onAction('settings.update', {
+        key: 'showDictationButton',
+        value,
+      }),
+    selectDictationModel: dictation.selectDictationModel,
+    selectChatModel: (id: string) =>
+      selectModel('chatModel', id, () => {
+        // Chat model menu is managed by the native select control.
+      }),
+    selectCodeModel: (id: string) =>
+      selectModel('codeModel', id, () => {
+        // Code model menu is managed by the native select control.
+      }),
+    selectGitCommitModel: (id: string) =>
+      selectModel('gitCommitMessageModel', id, closeGitCommitMenu),
+    selectSkillCreatorModel: (id: string) =>
+      selectModel('skillCreatorModel', id, closeSkillCreatorMenu),
+    setFavoriteFolderDraft,
+    setCustomPiDirectoryDraft,
+    setGitCommitMenuOpen,
+    setPreferredProjectLocationDraft,
+    setSkillCreatorMenuOpen,
+    skillCreatorButtonRef,
+    skillCreatorCurrentValue: getModelSettingValue(appSettings.skillCreatorModel),
+    skillCreatorMenuId: 'settings-skill-creator-model-menu',
+    skillCreatorMenuOpen,
+    skillCreatorMenuPresent,
+    skillCreatorPanelRef,
+    toggleInitializeGitOnProjectCreate: () =>
+      void onAction('settings.update', {
+        key: 'initializeGitOnProjectCreate',
+        value: !appSettings.initializeGitOnProjectCreate,
+      }),
+    toggleProjectDashboardEnabled: () =>
+      void onAction('settings.update', {
+        key: 'projectDashboardEnabled',
+        value: !appSettings.projectDashboardEnabled,
+      }),
+    setProjectDeletionMode: (value: AppSettings['projectDeletionMode']) =>
+      void onAction('settings.update', {
+        key: 'projectDeletionMode',
+        value,
+      }),
+    setGitOpsDefaultMode: (value: AppSettings['gitOpsDefaultMode']) =>
+      void onAction('settings.update', {
+        key: 'gitOpsDefaultMode',
+        value,
+      }),
+    setGitDiffBaselineDefault: (value: AppSettings['gitDiffBaselineDefault']) =>
+      void onAction('settings.update', {
+        key: 'gitDiffBaselineDefault',
+        value,
+      }),
+    setGitDiffRenderModeDefault: (value: AppSettings['gitDiffRenderModeDefault']) =>
+      void onAction('settings.update', {
+        key: 'gitDiffRenderModeDefault',
+        value,
+      }),
+    setGitDiffFileTreeDefaultVisible: (value: AppSettings['gitDiffFileTreeDefaultVisible']) =>
+      void onAction('settings.update', {
+        key: 'gitDiffFileTreeDefaultVisible',
+        value,
+      }),
+    setGitDiffIncludeUntrackedDefault: (value: AppSettings['gitDiffIncludeUntrackedDefault']) =>
+      void onAction('settings.update', {
+        key: 'gitDiffIncludeUntrackedDefault',
+        value,
+      }),
+    updatePiSetting: <Key extends keyof PiSettings>(key: Key, value: PiSettings[Key]) =>
+      void onAction('pi-settings.update', {
+        piSettingsKey: key,
+        value,
+      }),
+    togglePiTuiTakeover: () =>
+      void onAction('settings.update', {
+        key: 'piTuiTakeover',
+        value: !appSettings.piTuiTakeover,
+      }),
+    toggleHowcodeNativeAskQuestions: () =>
+      void onAction('settings.update', {
+        key: 'howcodeNativeAskQuestions',
+        value: !appSettings.howcodeNativeAskQuestions,
+      }),
+    toggleDevUpdateBranch: () =>
+      void onAction('settings.update', {
+        key: 'devUpdateBranch',
+        value: !appSettings.devUpdateBranch,
+      }),
+    toggleHoverToFocus: () =>
+      void onAction('settings.update', {
+        key: 'hoverToFocus',
+        value: !appSettings.hoverToFocus,
+      }),
+    toggleHoverToBlur: () =>
+      void onAction('settings.update', {
+        key: 'hoverToBlur',
+        value: !appSettings.hoverToBlur,
+      }),
+    updateFavoriteFolders,
+    handleImportProjectUi,
+    handleClearClipboardImages,
+    showFirstLaunchReminderAgain: () =>
+      void onAction('settings.update', {
+        key: 'projectImportState',
+        imported: null,
+      }),
+  }
+}

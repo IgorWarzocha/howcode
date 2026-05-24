@@ -1,6 +1,6 @@
+import { isLocalSessionPath } from '@howcode/shared/session-paths'
 import type { Dispatch } from 'react'
 import { useEffect } from 'react'
-import { isLocalSessionPath } from '../../../shared/session-paths'
 import type { ArchivedThread } from '../desktop/types'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
 import type { Project } from '../types'

@@ -1,4 +1,4 @@
-import { getPersistedSessionPath } from '../../../shared/session-paths'
+import { getPersistedSessionPath } from '@howcode/shared/session-paths'
 import type { ComposerStateRequest, ProjectDiffBaseline } from '../desktop/types'
 
 export const desktopQueryKeys = {
@@ -7,7 +7,8 @@ export const desktopQueryKeys = {
   piPackageCatalog: (query: string) => ['desktop', 'piPackages', 'catalog', query] as const,
   configuredPiPackages: (projectPath?: string | null | undefined, chat = false) =>
     ['desktop', 'piPackages', 'configured', projectPath ?? null, chat] as const,
-  piSkillCatalog: (query: string) => ['desktop', 'piSkills', 'catalog', query] as const,
+  piSkillCatalog: (query: string, limit?: number | undefined) =>
+    ['desktop', 'piSkills', 'catalog', query, limit ?? null] as const,
   configuredPiSkills: (projectPath?: string | null | undefined, chat = false) =>
     ['desktop', 'piSkills', 'configured', projectPath ?? null, chat] as const,
   projectThreads: (projectId: string, chat = false) =>
@@ -28,13 +29,38 @@ export const desktopQueryKeys = {
   projectGitState: (projectId: string) => ['desktop', 'projectGitState', projectId] as const,
   projectUsageSummary: (projectId: string) =>
     ['desktop', 'projectUsageSummary', projectId] as const,
-  projectDiffPrefix: (projectId: string) => ['desktop', 'projectDiff', projectId] as const,
-  projectDiff: (projectId: string, baseline: ProjectDiffBaseline | null = null) =>
-    ['desktop', 'projectDiff', projectId, baseline?.kind ?? 'head', baseline ?? null] as const,
   projectDiffStatsPrefix: (projectId: string) =>
     ['desktop', 'projectDiffStats', projectId] as const,
-  projectDiffStats: (projectId: string, baseline: ProjectDiffBaseline | null = null) =>
-    ['desktop', 'projectDiffStats', projectId, baseline?.kind ?? 'head', baseline ?? null] as const,
+  projectDiffStats: (
+    projectId: string,
+    baseline: ProjectDiffBaseline | null = null,
+    includeUntracked = false,
+  ) =>
+    [
+      'desktop',
+      'projectDiffStats',
+      projectId,
+      baseline?.kind ?? 'head',
+      baseline ?? null,
+      includeUntracked,
+    ] as const,
+  projectDiffImagePreview: (
+    projectId: string,
+    path: string,
+    side: 'old' | 'new',
+    baseline: ProjectDiffBaseline | null = null,
+  ) =>
+    [
+      'desktop',
+      'projectDiffImagePreview',
+      projectId,
+      path,
+      side,
+      baseline?.kind ?? 'head',
+      baseline ?? null,
+    ] as const,
+  projectDiffImagePreviewPrefix: (projectId: string) =>
+    ['desktop', 'projectDiffImagePreview', projectId] as const,
   projectCommitsPrefix: (projectId: string) => ['desktop', 'projectCommits', projectId] as const,
   projectCommits: (projectId: string, limit = 50) =>
     ['desktop', 'projectCommits', projectId, limit] as const,

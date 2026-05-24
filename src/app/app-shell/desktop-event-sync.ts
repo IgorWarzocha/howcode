@@ -2,8 +2,9 @@ import {
   getLocalDraftProjectId,
   getPersistedSessionPath,
   isLocalSessionPath,
-} from '../../../shared/session-paths'
+} from '@howcode/shared/session-paths'
 import type { DesktopEvent } from '../desktop/types'
+import { notifyProjectDiffInvalidated } from '../hooks/project-diff-invalidation'
 import { desktopQueryKeys, invokeDesktopActionQuery } from '../query/desktop-query'
 import type { WorkspaceState } from '../state/workspace'
 
@@ -113,13 +114,15 @@ export function invalidateProjectWorktreeQueries({
   queryClient: QueryClientLike
 }) {
   if (activeView === 'gitops') {
-    void queryClient.invalidateQueries({
-      queryKey: desktopQueryKeys.projectDiffPrefix(projectId),
-    })
+    notifyProjectDiffInvalidated(projectId)
   }
 
   void queryClient.invalidateQueries({
     queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
+  })
+
+  void queryClient.invalidateQueries({
+    queryKey: desktopQueryKeys.projectDiffImagePreviewPrefix(projectId),
   })
 
   void queryClient.invalidateQueries({

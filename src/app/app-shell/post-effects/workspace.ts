@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query'
 import type { ProjectGitState } from '../../desktop/types'
+import { notifyProjectDiffInvalidated } from '../../hooks/project-diff-invalidation'
 import { desktopQueryKeys } from '../../query/desktop-query'
 import type { ActionPayload } from '../controller-action-utils'
 import { getPayloadProjectId } from '../controller-action-utils'
@@ -14,12 +15,13 @@ export async function applyWorkspaceCommitPostEffect(input: {
   const projectId = getPayloadProjectId(input.contextualPayload)
   if (!(projectId && input.committed)) return
 
+  notifyProjectDiffInvalidated(projectId)
   await Promise.all([
     input.queryClient.invalidateQueries({
-      queryKey: desktopQueryKeys.projectDiffPrefix(projectId),
+      queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
     }),
     input.queryClient.invalidateQueries({
-      queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
+      queryKey: desktopQueryKeys.projectDiffImagePreviewPrefix(projectId),
     }),
     input.queryClient.invalidateQueries({
       queryKey: desktopQueryKeys.projectCommitsPrefix(projectId),
@@ -48,13 +50,14 @@ export async function applySwitchBranchPostEffect(input: {
   const projectId = getPayloadProjectId(input.contextualPayload)
   if (!projectId) return
 
+  notifyProjectDiffInvalidated(projectId)
   await Promise.all([
     input.queryClient.invalidateQueries({ queryKey: desktopQueryKeys.projectGitState(projectId) }),
     input.queryClient.invalidateQueries({
-      queryKey: desktopQueryKeys.projectDiffPrefix(projectId),
+      queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
     }),
     input.queryClient.invalidateQueries({
-      queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
+      queryKey: desktopQueryKeys.projectDiffImagePreviewPrefix(projectId),
     }),
     input.queryClient.invalidateQueries({
       queryKey: desktopQueryKeys.projectCommitsPrefix(projectId),
