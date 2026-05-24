@@ -42,6 +42,7 @@ export const implementedDesktopActions = [
   'workspace.commit-options',
   'workspace.diff-preferences',
   'workspace.switch-branch',
+  'workspace.prune-branch',
   'settings.update',
   'settings.clear-clipboard-images',
   'pi-settings.update',

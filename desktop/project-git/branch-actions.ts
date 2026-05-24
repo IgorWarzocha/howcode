@@ -83,3 +83,26 @@ export async function switchProjectBranch(projectId: string, branchName: string)
     return { error: formatGitCommandError(error) }
   }
 }
+
+export async function pruneProjectBranch(projectId: string, branchName: string) {
+  const normalizedBranchName = branchName.trim()
+  if (!normalizedBranchName) return { error: 'Branch name is required.' }
+
+  try {
+    const currentBranchResult = await runGitWithOptions(projectId, ['branch', '--show-current'], {
+      timeout: 10_000,
+      maxBuffer: 1024 * 1024,
+    })
+    if (currentBranchResult.stdout.trim() === normalizedBranchName) {
+      return { error: 'Cannot prune the currently checked-out branch.' }
+    }
+
+    await runGitWithOptions(projectId, ['branch', '-D', normalizedBranchName], {
+      timeout: 10_000,
+      maxBuffer: 1024 * 1024,
+    })
+    return { didMutate: true }
+  } catch (error) {
+    return { error: formatGitCommandError(error) }
+  }
+}

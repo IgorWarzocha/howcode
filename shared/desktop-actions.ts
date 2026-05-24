@@ -30,6 +30,7 @@ export const desktopActions = [
   'workspace.commit-options',
   'workspace.diff-preferences',
   'workspace.switch-branch',
+  'workspace.prune-branch',
   'composer.model',
   'composer.thinking',
   'composer.send',

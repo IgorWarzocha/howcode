@@ -237,7 +237,11 @@ const postEffectHandlers: PostEffectHandler[] = [
     run: handleNewThreadOrProjectEffects,
   },
   { matches: (ctx) => ctx.action === 'workspace.commit-options', run: handleCommitOptionsEffects },
-  { matches: (ctx) => ctx.action === 'workspace.switch-branch', run: handleSwitchBranchEffects },
+  {
+    matches: (ctx) =>
+      ctx.action === 'workspace.switch-branch' || ctx.action === 'workspace.prune-branch',
+    run: handleSwitchBranchEffects,
+  },
   {
     matches: (ctx) => ctx.action === 'workspace.diff-preferences',
     run: handleDiffPreferencesEffects,

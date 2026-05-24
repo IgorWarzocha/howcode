@@ -191,6 +191,10 @@ export type DesktopActionPayloadMap = {
     diffRenderMode?: ProjectDiffRenderMode | null
   }
   'workspace.switch-branch': { projectId?: string | undefined | null | undefined; value: string }
+  'workspace.prune-branch': {
+    projectId?: string | undefined | null | undefined
+    branchName: string
+  }
   'composer.model': {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined

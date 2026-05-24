@@ -9,6 +9,8 @@ import {
   GitBranch,
   Plus,
   Search,
+  Trash2,
+  X,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { DesktopActionInvoker, ProjectGitState } from '../../desktop/types'
@@ -266,6 +268,8 @@ function BranchThreadGroupSection({
   onAction,
   onThreadOpen,
   onToggle,
+  pruneConfirmBranchId,
+  onSetPruneConfirmBranchId,
 }: {
   activeView: View
   collapsed: boolean
@@ -277,21 +281,105 @@ function BranchThreadGroupSection({
   onAction: DesktopActionInvoker
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
   onToggle: () => void
+  pruneConfirmBranchId: string | null
+  onSetPruneConfirmBranchId: (branchId: string | null) => void
 }) {
+  const canManageBranch = !(group.current || group.unassigned)
+  const confirmingPrune = pruneConfirmBranchId === group.id
+
   return (
     <section className="sidebar-work-branch-group" data-current={group.current ? 'true' : 'false'}>
-      <button
-        type="button"
-        className="sidebar-work-branch-heading"
-        onClick={onToggle}
-        aria-expanded={!collapsed}
-      >
-        {collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
-        <GitBranch size={13} />
-        <span className="truncate">{group.label}</span>
-        {group.current ? <span className="sidebar-work-branch-current">Current</span> : null}
-        <span className="sidebar-work-branch-count">{group.threads.length}</span>
-      </button>
+      <div className="sidebar-work-branch-heading">
+        <button
+          type="button"
+          className="sidebar-work-branch-disclosure"
+          onClick={onToggle}
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? `Expand ${group.label}` : `Collapse ${group.label}`}
+        >
+          {collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
+        </button>
+        <button
+          type="button"
+          className="sidebar-work-branch-toggle"
+          onClick={onToggle}
+          aria-expanded={!collapsed}
+        >
+          <GitBranch size={13} />
+          <span className="truncate">{group.label}</span>
+        </button>
+        <span className="sidebar-work-branch-meta">
+          {group.current ? <span className="sidebar-work-branch-current">Current</span> : null}
+          <span className="sidebar-work-branch-count">{group.threads.length}</span>
+        </span>
+        <span
+          className="sidebar-work-branch-actions"
+          data-confirming={confirmingPrune ? 'true' : 'false'}
+        >
+          {canManageBranch && !confirmingPrune ? (
+            <Tooltip content={`Switch to ${group.label}`} placement="right">
+              <button
+                type="button"
+                className="sidebar-work-branch-action"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  void onAction('workspace.switch-branch', {
+                    projectId: project.id,
+                    value: group.label,
+                  })
+                }}
+                aria-label={`Switch to ${group.label}`}
+              >
+                <GitBranch size={12} />
+              </button>
+            </Tooltip>
+          ) : null}
+          {canManageBranch && confirmingPrune ? (
+            <>
+              <button
+                type="button"
+                className="sidebar-work-branch-action"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onSetPruneConfirmBranchId(null)
+                }}
+                aria-label="Cancel prune"
+              >
+                <X size={12} />
+              </button>
+              <button
+                type="button"
+                className="sidebar-work-branch-action sidebar-work-branch-action--danger"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onSetPruneConfirmBranchId(null)
+                  void onAction('workspace.prune-branch', {
+                    projectId: project.id,
+                    branchName: group.label,
+                  })
+                }}
+                aria-label={`Confirm prune ${group.label}`}
+              >
+                <Trash2 size={12} />
+              </button>
+            </>
+          ) : canManageBranch ? (
+            <Tooltip content={`Prune ${group.label}`} placement="right">
+              <button
+                type="button"
+                className="sidebar-work-branch-action"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onSetPruneConfirmBranchId(group.id)
+                }}
+                aria-label={`Prune ${group.label}`}
+              >
+                <Trash2 size={12} />
+              </button>
+            </Tooltip>
+          ) : null}
+        </span>
+      </div>
 
       {collapsed ? null : (
         <div className="sidebar-work-branch-thread-list">
@@ -336,6 +424,7 @@ export function WorkSidebarSection({
 }: WorkSidebarSectionProps) {
   const [projectSwitcherOpen, setProjectSwitcherOpen] = useState(false)
   const [collapsedBranchIds, setCollapsedBranchIds] = useState<Record<string, boolean>>({})
+  const [pruneConfirmBranchId, setPruneConfirmBranchId] = useState<string | null>(null)
   const selectedProject =
     projects.find((project) => project.id === selectedProjectId) ?? projects[0] ?? null
 
@@ -460,6 +549,8 @@ export function WorkSidebarSection({
                       [group.id]: !collapsed,
                     }))
                   }
+                  pruneConfirmBranchId={pruneConfirmBranchId}
+                  onSetPruneConfirmBranchId={setPruneConfirmBranchId}
                 />
               )
             })

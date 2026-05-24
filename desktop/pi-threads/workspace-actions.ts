@@ -1,6 +1,7 @@
 import type { DesktopAction } from '../../shared/desktop-actions.ts'
 import type { AnyDesktopActionPayload } from '../../shared/desktop-contracts.ts'
 import {
+  getBranchName,
   getComposerRequest,
   getGitCommitMessage,
   getGitIncludeUnstaged,
@@ -18,6 +19,7 @@ import { generateGitCommitMessage } from '../git-commit-message.ts'
 import {
   commitProjectChanges,
   initializeProjectGit,
+  pruneProjectBranch,
   setProjectOrigin,
   switchProjectBranch,
 } from '../project-git.ts'
@@ -110,6 +112,12 @@ export async function handleWorkspaceDesktopAction(
       const projectId = getProjectId(payload)
       if (!projectId) return handledAction()
       return handledAction(await switchProjectBranch(projectId, String(payload.value ?? '')))
+    }
+    case 'workspace.prune-branch': {
+      const projectId = getProjectId(payload)
+      const branchName = getBranchName(payload)
+      if (!(projectId && branchName)) return handledAction()
+      return handledAction(await pruneProjectBranch(projectId, branchName))
     }
 
     default:
