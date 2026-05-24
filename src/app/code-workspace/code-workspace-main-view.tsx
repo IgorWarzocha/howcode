@@ -270,6 +270,7 @@ export function CodeWorkspaceMainView({
         currentBranch={currentBranch}
         project={selectedProject}
         onAction={onAction}
+        onClose={onCloseUtilityView}
         onOpenThread={onOpenThread}
       />
     )

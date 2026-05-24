@@ -10,6 +10,7 @@ type ViewHeaderProps = {
   actions?: ReactNode
   onClose?: () => void
   closeLabel?: string
+  closeTooltip?: boolean
   className?: string
 }
 
@@ -20,6 +21,7 @@ export function ViewHeader({
   actions,
   onClose,
   closeLabel = 'Close view',
+  closeTooltip = true,
   className,
 }: ViewHeaderProps) {
   return (
@@ -40,8 +42,8 @@ export function ViewHeader({
               className={viewCloseButtonClass}
               onClick={onClose}
               aria-label={closeLabel}
-              data-tooltip={closeLabel}
-              data-tooltip-placement="left"
+              data-tooltip={closeTooltip ? closeLabel : undefined}
+              data-tooltip-placement={closeTooltip ? 'left' : undefined}
             >
               <X size={14} />
             </button>

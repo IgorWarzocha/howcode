@@ -17,7 +17,7 @@ import {
 } from './workspace-terminal-state'
 
 export function isUtilityView(view: View): view is UtilityView {
-  return view === 'settings' || view === 'extensions' || view === 'skills'
+  return view === 'settings' || view === 'extensions' || view === 'skills' || view === 'sessions'
 }
 
 function createUtilityViewReturnState(state: WorkspaceState): UtilityViewReturnState {

@@ -46,7 +46,7 @@ export function ChatThreadDropItem({
         unread={Boolean(thread.unread)}
         isSelected={selectedThreadId === thread.id}
         title={thread.title}
-        onArchive={() => void onAction('thread.archive', { threadId: thread.id }).then(onRefresh)}
+        onDelete={() => void onAction('thread.archive', { threadId: thread.id }).then(onRefresh)}
         onOpen={() =>
           thread.sessionPath &&
           onThreadOpen(thread.projectId, thread.id, thread.sessionPath, 'chat')

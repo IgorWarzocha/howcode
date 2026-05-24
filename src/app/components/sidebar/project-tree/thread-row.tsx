@@ -1,6 +1,6 @@
 import { ActivitySpinner } from '@howcode/common/activity-spinner'
 import { Tooltip } from '@howcode/common/tooltip'
-import { Archive, GitBranch, SquareTerminal, Star } from 'lucide-react'
+import { GitBranch, SquareTerminal, Star, Trash2 } from 'lucide-react'
 import { compactIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 
@@ -13,7 +13,7 @@ type ThreadRowProps = {
   isSelected: boolean
   title: string
   assignBranchLabel?: string | undefined
-  onArchive: () => void
+  onDelete: () => void
   onAssignToBranch?: (() => void) | undefined
   onOpen: () => void
   onPin: () => void
@@ -56,12 +56,12 @@ function ThreadLeadingIcon({
 function ThreadMetaSlot({
   age,
   assignBranchLabel,
-  onArchive,
+  onDelete,
   onAssignToBranch,
   terminalRunning,
 }: Pick<
   ThreadRowProps,
-  'age' | 'assignBranchLabel' | 'onArchive' | 'onAssignToBranch' | 'terminalRunning'
+  'age' | 'assignBranchLabel' | 'onDelete' | 'onAssignToBranch' | 'terminalRunning'
 >) {
   const metaValue = terminalRunning ? <SquareTerminal size={12} /> : age
 
@@ -91,7 +91,7 @@ function ThreadMetaSlot({
           </Tooltip>
         ) : null}
         <Tooltip
-          content="Archive thread"
+          content="Delete session"
           placement="right"
           className="sidebar-thread-action-anchor"
         >
@@ -101,10 +101,10 @@ function ThreadMetaSlot({
               compactIconButtonClass,
               'h-full w-full border-transparent bg-transparent hover:bg-transparent',
             )}
-            onClick={onArchive}
-            aria-label="Archive thread"
+            onClick={onDelete}
+            aria-label="Delete session"
           >
-            <Archive size={12} />
+            <Trash2 size={12} />
           </button>
         </Tooltip>
       </span>
@@ -121,7 +121,7 @@ export function ThreadRow({
   isSelected,
   title,
   assignBranchLabel,
-  onArchive,
+  onDelete,
   onAssignToBranch,
   onOpen,
   onPin,
@@ -151,7 +151,7 @@ export function ThreadRow({
       <ThreadMetaSlot
         age={age}
         assignBranchLabel={assignBranchLabel}
-        onArchive={onArchive}
+        onDelete={onDelete}
         onAssignToBranch={onAssignToBranch}
         terminalRunning={terminalRunning}
       />

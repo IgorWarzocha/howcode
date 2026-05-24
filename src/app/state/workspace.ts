@@ -2,7 +2,7 @@ import type { Project, Thread, View } from '../types'
 import { workspaceActionHandlers } from './workspace-action-handlers'
 
 export type NonGitOpsView = Exclude<View, 'gitops'>
-export type UtilityView = Extract<View, 'settings' | 'extensions' | 'skills'>
+export type UtilityView = Extract<View, 'settings' | 'extensions' | 'skills' | 'sessions'>
 
 export type UtilityViewReturnState = {
   activeView: View

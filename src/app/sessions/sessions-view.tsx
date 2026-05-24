@@ -21,6 +21,7 @@ type SessionsViewProps = {
   project: Project | null
   currentBranch: string | null
   onAction: DesktopActionInvoker
+  onClose: () => void
   onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void
 }
 
@@ -199,6 +200,7 @@ export function SessionsView({
   currentBranch,
   project,
   onAction,
+  onClose,
   onOpenThread,
 }: SessionsViewProps) {
   const [searchQuery, setSearchQuery] = useState('')
@@ -243,73 +245,84 @@ export function SessionsView({
   }
 
   return (
-    <ViewShell className={skillsViewShellClass}>
-      <ViewHeader title="Sessions" />
+    <ViewShell className={`${skillsViewShellClass} h-full min-h-0 content-stretch overflow-hidden`}>
+      <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-4 overflow-hidden">
+        <div className="grid gap-4">
+          <ViewHeader
+            title="Sessions"
+            onClose={onClose}
+            closeLabel="Close sessions"
+            closeTooltip={false}
+          />
 
-      <div className="grid gap-3">
-        <div className="grid gap-1">
-          <div className={`${appTypeSectionTitleClass} ${appToneTextClass}`}>
-            {project?.name ?? 'No project selected'}
+          <div className="grid gap-3">
+            <div className="grid gap-1">
+              <div className={`${appTypeSectionTitleClass} ${appToneTextClass}`}>
+                {project?.name ?? 'No project selected'}
+              </div>
+            </div>
+
+            <label className="grid min-h-9 grid-cols-[minmax(0,1fr)] items-center rounded-md bg-[color:var(--surface-hover)] px-3">
+              <input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key !== 'Escape') return
+                  setSearchQuery('')
+                }}
+                placeholder="Search sessions"
+                className="min-w-0 bg-transparent text-sm text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+                aria-label="Search sessions"
+              />
+            </label>
+            {visibleThreads.length > 0 ? (
+              <SessionsToolbar
+                allVisibleSelected={allVisibleSelected}
+                currentBranch={currentBranch}
+                selectedCount={selectedThreadIds.length}
+                visibleThreadIds={visibleThreadIds}
+                onRunBulkAction={(action, threadIds) => void runBulkAction(action, threadIds)}
+                onSetSelectedThreadIds={setSelectedThreadIds}
+              />
+            ) : null}
           </div>
         </div>
 
-        <label className="grid min-h-9 grid-cols-[minmax(0,1fr)] items-center rounded-md bg-[color:var(--surface-hover)] px-3">
-          <input
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key !== 'Escape') return
-              setSearchQuery('')
-            }}
-            placeholder="Search sessions"
-            className="min-w-0 bg-transparent text-sm text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
-            aria-label="Search sessions"
-          />
-        </label>
-        {visibleThreads.length > 0 ? (
-          <SessionsToolbar
-            allVisibleSelected={allVisibleSelected}
-            currentBranch={currentBranch}
-            selectedCount={selectedThreadIds.length}
-            visibleThreadIds={visibleThreadIds}
-            onRunBulkAction={(action, threadIds) => void runBulkAction(action, threadIds)}
-            onSetSelectedThreadIds={setSelectedThreadIds}
-          />
-        ) : null}
+        <div className="min-h-0 overflow-y-auto overflow-x-hidden pr-3 [scrollbar-gutter:stable]">
+          {visibleThreads.length > 0 ? (
+            <div className="grid gap-1">
+              {visibleThreads.map((thread) => (
+                <SessionRow
+                  key={thread.id}
+                  currentBranch={currentBranch}
+                  project={project}
+                  selected={selectedThreadIdSet.has(thread.id)}
+                  thread={thread}
+                  onAction={onAction}
+                  onDelete={() => void runBulkAction('delete', [thread.id])}
+                  onOpenThread={onOpenThread}
+                  onToggleSelected={() =>
+                    setSelectedThreadIds((current) =>
+                      current.includes(thread.id)
+                        ? current.filter((threadId) => threadId !== thread.id)
+                        : [...current, thread.id],
+                    )
+                  }
+                />
+              ))}
+            </div>
+          ) : (
+            <div className={inlineEmptyNoteClass}>
+              <div className="grid gap-1">
+                <div className={`${appTypeSectionTitleClass} ${appToneTextClass}`}>No sessions</div>
+                <p className={cn('m-0 max-w-[448px]', appToneMutedClass)}>
+                  Older project threads will appear here once they leave the active sidebar.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-
-      {visibleThreads.length > 0 ? (
-        <div className="grid gap-1">
-          {visibleThreads.map((thread) => (
-            <SessionRow
-              key={thread.id}
-              currentBranch={currentBranch}
-              project={project}
-              selected={selectedThreadIdSet.has(thread.id)}
-              thread={thread}
-              onAction={onAction}
-              onDelete={() => void runBulkAction('delete', [thread.id])}
-              onOpenThread={onOpenThread}
-              onToggleSelected={() =>
-                setSelectedThreadIds((current) =>
-                  current.includes(thread.id)
-                    ? current.filter((threadId) => threadId !== thread.id)
-                    : [...current, thread.id],
-                )
-              }
-            />
-          ))}
-        </div>
-      ) : (
-        <div className={inlineEmptyNoteClass}>
-          <div className="grid gap-1">
-            <div className={`${appTypeSectionTitleClass} ${appToneTextClass}`}>No sessions</div>
-            <p className={cn('m-0 max-w-[448px]', appToneMutedClass)}>
-              Older project threads will appear here once they leave the active sidebar.
-            </p>
-          </div>
-        </div>
-      )}
     </ViewShell>
   )
 }

@@ -237,8 +237,8 @@ function WorkThreadRow({
             ? `Assign to ${currentBranch}`
             : 'Clear assigned branch'
       }
-      onArchive={() =>
-        onAction('thread.archive', {
+      onDelete={() =>
+        onAction('thread.delete', {
           projectId: project.id,
           threadId: thread.id,
         })

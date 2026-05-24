@@ -170,7 +170,7 @@ export function ProjectThreadsList({
           unread={Boolean(thread.unread)}
           isSelected={isSelected}
           title={thread.title}
-          onArchive={() =>
+          onDelete={() =>
             onAction('thread.archive', {
               projectId: project.id,
               threadId: thread.id,
