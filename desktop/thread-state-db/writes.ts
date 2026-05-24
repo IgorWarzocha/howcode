@@ -26,6 +26,7 @@ export {
   upsertThreadSummary,
 } from './session-writes.ts'
 export {
+  addProjectUsageTotals,
   archiveThread,
   archiveThreads,
   assignThreadBranch,

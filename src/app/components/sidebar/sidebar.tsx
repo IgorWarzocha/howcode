@@ -156,7 +156,6 @@ function SidebarContent(props: SidebarProps) {
         terminalRunningSessionPaths={props.terminalRunningSessionPaths}
         onAction={props.onAction}
         onLoadProjectThreads={props.onLoadProjectThreads}
-        onOpenArchivedThreads={props.onOpenArchivedThreads}
         onProjectSelect={props.onProjectSelect}
         onThreadOpen={props.onThreadOpen}
         onShowView={props.onShowView}

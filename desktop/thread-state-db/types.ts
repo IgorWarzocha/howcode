@@ -70,10 +70,22 @@ export type ArchivedThreadRow = {
   projectId: string
   projectName: string
   lastModifiedMs: number
+  isChat: number
 }
 
 export type ThreadPathRow = {
   sessionPath: string
+}
+
+export type ProjectUsageTotalsRow = {
+  input: number
+  output: number
+  cacheRead: number
+  cacheWrite: number
+  totalTokens: number
+  costTotal: number
+  assistantTurnCount: number
+  sessionCount: number
 }
 
 export type ThreadDiffPreferencesRow = {
@@ -83,4 +95,11 @@ export type ThreadDiffPreferencesRow = {
 
 export type ThreadCwdRow = {
   cwd: string
+}
+
+export type ThreadDeletionSnapshotRow = {
+  cwd: string
+  title: string
+  sessionPath: string
+  lastModifiedMs: number
 }

@@ -110,5 +110,6 @@ export function mapArchivedThreadRow(row: ArchivedThreadRow): ArchivedThread {
     projectId: row.projectId,
     projectName: row.projectName,
     sessionPath: row.sessionPath,
+    isChat: Boolean(row.isChat),
   }
 }

@@ -89,6 +89,7 @@ export type ArchivedThread = {
   projectId: string
   projectName: string
   sessionPath: string
+  isChat?: boolean | undefined
 }
 
 export type ProseMessage = {

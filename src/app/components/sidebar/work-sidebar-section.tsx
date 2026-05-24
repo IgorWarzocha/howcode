@@ -35,7 +35,6 @@ type WorkSidebarSectionProps = {
   terminalRunningSessionPaths: ReadonlySet<string>
   onAction: DesktopActionInvoker
   onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
-  onOpenArchivedThreads: () => void
   onProjectSelect: (projectId: string) => void
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
   onShowView: (view: Exclude<View, 'gitops'>) => void
@@ -682,7 +681,6 @@ export function WorkSidebarSection({
   terminalRunningSessionPaths,
   onAction,
   onLoadProjectThreads,
-  onOpenArchivedThreads,
   onProjectSelect,
   onThreadOpen,
   onShowView,
@@ -714,7 +712,6 @@ export function WorkSidebarSection({
   }
 
   const { activeThreads, olderThreads } = bucketThreads(selectedProject, selectedThreadId)
-  const threadCount = selectedProject.threadCount ?? selectedProject.threads.length
   const currentBranch =
     projectGitState?.projectId === selectedProject.id && projectGitState.isGitRepo
       ? projectGitState.branch
@@ -856,12 +853,15 @@ export function WorkSidebarSection({
       </div>
 
       <div className="sidebar-work-history">
-        <button type="button" className="sidebar-work-history-row" onClick={onOpenArchivedThreads}>
+        <button
+          type="button"
+          className="sidebar-work-history-row"
+          data-active={activeView === 'sessions' ? 'true' : 'false'}
+          onClick={() => onShowView('sessions')}
+        >
           <Archive size={14} />
-          <span>Older threads</span>
-          <span className={cn(appTypeMetaClass, appToneSubtleClass)}>
-            {olderThreads.length > 0 ? olderThreads.length : threadCount}
-          </span>
+          <span>Sessions</span>
+          <span className={cn(appTypeMetaClass, appToneSubtleClass)}>{olderThreads.length}</span>
         </button>
       </div>
     </section>

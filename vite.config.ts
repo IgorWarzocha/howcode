@@ -27,6 +27,7 @@ const howcodeAliasEntries = [
   ['@howcode/roadmaps', 'src/app/roadmaps'],
   ['@howcode/projects', 'src/app/projects'],
   ['@howcode/settings', 'src/app/settings/settings'],
+  ['@howcode/sessions', 'src/app/sessions'],
   ['@howcode/sidebar', 'src/app/components/sidebar'],
   ['@howcode/skills', 'src/app/skills'],
   ['@howcode/state', 'src/app/state'],

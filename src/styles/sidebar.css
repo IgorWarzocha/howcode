@@ -1166,6 +1166,7 @@
 
 .sidebar-work-action-row:hover,
 .sidebar-work-action-row[data-active="true"],
+.sidebar-work-history-row[data-active="true"],
 .sidebar-work-history-row:hover {
   background: var(--surface-hover);
   color: var(--text);

@@ -158,6 +158,10 @@ export function getCurrentTitle(activeView: View, selectedThread: Thread | undef
     return 'Archived threads'
   }
 
+  if (activeView === 'sessions') {
+    return 'Sessions'
+  }
+
   return (activeView === 'chat' || activeView === 'thread') && selectedThread
     ? selectedThread.title
     : 'New thread'

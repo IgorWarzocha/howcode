@@ -2,6 +2,17 @@ import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../../shared/de
 import { getThreadStateDatabase } from './db.ts'
 import { runInTransaction } from './write-transaction.ts'
 
+export type ProjectUsageTotalsDelta = {
+  cwd: string
+  input: number
+  output: number
+  cacheRead: number
+  cacheWrite: number
+  totalTokens: number
+  costTotal: number
+  assistantTurnCount: number
+}
+
 export function setThreadRunningState(sessionPath: string, running: boolean) {
   const db = getThreadStateDatabase()
   db.prepare(
@@ -132,6 +143,44 @@ export function deleteThreadRecord(threadId: string) {
       WHERE id = ?
     `,
   ).run(threadId)
+}
+
+export function addProjectUsageTotals(snapshot: ProjectUsageTotalsDelta) {
+  const db = getThreadStateDatabase()
+  db.prepare(
+    `
+      INSERT INTO project_usage_totals (
+        cwd,
+        input,
+        output,
+        cache_read,
+        cache_write,
+        total_tokens,
+        cost_total,
+        assistant_turn_count,
+        session_count
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(cwd) DO UPDATE SET
+        input = project_usage_totals.input + excluded.input,
+        output = project_usage_totals.output + excluded.output,
+        cache_read = project_usage_totals.cache_read + excluded.cache_read,
+        cache_write = project_usage_totals.cache_write + excluded.cache_write,
+        total_tokens = project_usage_totals.total_tokens + excluded.total_tokens,
+        cost_total = project_usage_totals.cost_total + excluded.cost_total,
+        assistant_turn_count = project_usage_totals.assistant_turn_count + excluded.assistant_turn_count,
+        session_count = project_usage_totals.session_count + excluded.session_count
+    `,
+  ).run(
+    snapshot.cwd,
+    snapshot.input,
+    snapshot.output,
+    snapshot.cacheRead,
+    snapshot.cacheWrite,
+    snapshot.totalTokens,
+    snapshot.costTotal,
+    snapshot.assistantTurnCount,
+    1,
+  )
 }
 
 export function deleteThreadRecordsBySessionPaths(sessionPaths: string[]) {

@@ -176,6 +176,18 @@ const threadStateSchemaSql = `
       FOREIGN KEY (session_path) REFERENCES threads(session_path) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS project_usage_totals (
+      cwd TEXT PRIMARY KEY,
+      input INTEGER NOT NULL DEFAULT 0,
+      output INTEGER NOT NULL DEFAULT 0,
+      cache_read INTEGER NOT NULL DEFAULT 0,
+      cache_write INTEGER NOT NULL DEFAULT 0,
+      total_tokens INTEGER NOT NULL DEFAULT 0,
+      cost_total REAL NOT NULL DEFAULT 0,
+      assistant_turn_count INTEGER NOT NULL DEFAULT 0,
+      session_count INTEGER NOT NULL DEFAULT 0
+    );
+
     CREATE INDEX IF NOT EXISTS inbox_items_by_unread_idx ON inbox_items(unread DESC, last_assistant_at_ms DESC);
 
     CREATE TABLE IF NOT EXISTS app_preferences (

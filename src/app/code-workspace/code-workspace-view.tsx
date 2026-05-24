@@ -76,6 +76,7 @@ function isCodeUtilityView(activeView: AppShellController['state']['activeView']
     activeView === 'settings' ||
     activeView === 'extensions' ||
     activeView === 'skills' ||
+    activeView === 'sessions' ||
     activeView === 'archived'
   )
 }

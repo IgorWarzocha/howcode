@@ -21,8 +21,10 @@ import type {
   InboxPathRow,
   InboxThreadRow,
   ProjectRow,
+  ProjectUsageTotalsRow,
   ThreadAssistantSnapshotRow,
   ThreadCwdRow,
+  ThreadDeletionSnapshotRow,
   ThreadDiffPreferencesRow,
   ThreadPathRow,
   ThreadRow,
@@ -322,11 +324,13 @@ export function listArchivedThreads(): ArchivedThread[] {
           threads.session_path AS sessionPath,
           threads.cwd AS projectId,
           COALESCE(projects.custom_name, projects.name) AS projectName,
-          threads.last_modified_ms AS lastModifiedMs
+          threads.last_modified_ms AS lastModifiedMs,
+          CASE WHEN chat_threads.session_path IS NULL THEN 0 ELSE 1 END AS isChat
         FROM threads
         INNER JOIN projects ON projects.cwd = threads.cwd
         LEFT JOIN chat_threads ON chat_threads.session_path = threads.session_path
         WHERE threads.archived = 1
+          AND chat_threads.session_path IS NOT NULL
         ORDER BY threads.last_modified_ms DESC, threads.title COLLATE NOCASE ASC
       `,
     )
@@ -350,6 +354,29 @@ export function listProjectSessionPaths(projectId: string) {
   return rows.map((row) => row.sessionPath)
 }
 
+export function getProjectStoredUsageTotals(projectId: string): ProjectUsageTotalsRow | null {
+  const db = getThreadStateDatabase()
+  const row = db
+    .prepare(
+      `
+        SELECT
+          input AS input,
+          output AS output,
+          cache_read AS cacheRead,
+          cache_write AS cacheWrite,
+          total_tokens AS totalTokens,
+          cost_total AS costTotal,
+          assistant_turn_count AS assistantTurnCount,
+          session_count AS sessionCount
+        FROM project_usage_totals
+        WHERE cwd = ?
+      `,
+    )
+    .get(projectId) as ProjectUsageTotalsRow | undefined
+
+  return row ?? null
+}
+
 export function getThreadSessionPath(threadId: string) {
   const db = getThreadStateDatabase()
   const row = db
@@ -363,6 +390,25 @@ export function getThreadSessionPath(threadId: string) {
     .get(threadId) as ThreadPathRow | undefined
 
   return row?.sessionPath ?? null
+}
+
+export function getThreadDeletionSnapshot(threadId: string) {
+  const db = getThreadStateDatabase()
+  const row = db
+    .prepare(
+      `
+        SELECT
+          cwd AS cwd,
+          title AS title,
+          session_path AS sessionPath,
+          last_modified_ms AS lastModifiedMs
+        FROM threads
+        WHERE id = ?
+      `,
+    )
+    .get(threadId) as ThreadDeletionSnapshotRow | undefined
+
+  return row ?? null
 }
 
 export function getThreadCwd(sessionPath: string) {
