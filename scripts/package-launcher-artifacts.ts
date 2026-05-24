@@ -5,10 +5,20 @@ import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync } from 'node:fs'
 import { copyFile, cp, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
 
 const appName = 'howcode'
+const nodeMajorVersionPattern = /^v?(\d+)/
+
+const require = createRequire(import.meta.url)
+const { supportedServiceNodeAbis, validateAbiBundle, validateCurrentNativeDependenciesLoad } =
+  require('./service-native-abi.cjs') as {
+    supportedServiceNodeAbis: string[]
+    validateAbiBundle: (resourcesPath: string, abi: string) => void
+    validateCurrentNativeDependenciesLoad: (resourcesPath: string, nodeExecutable?: string) => void
+  }
 
 const electronOutputRoot = path.join(process.cwd(), 'artifacts', 'electron')
 const artifactRoot = path.join(process.cwd(), 'artifacts')
@@ -17,7 +27,6 @@ const launcherOutputRoot = path.join(artifactRoot, 'npm-launcher')
 const requiredUnpackedRuntimePaths = [
   path.join('build', 'desktop', 'service-host.mjs'),
   path.join('node_modules', 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node'),
-  path.join('node_modules', 'node-pty', 'build', 'Release', 'pty.node'),
 ]
 
 type Target = {
@@ -163,6 +172,8 @@ async function createNormalizedArchive(bundlePath: string, target: Target) {
     )
   }
 
+  validateUnpackedNativeRuntimeBundles(unpackedRoot)
+
   const tarResult = spawnSync('tar', ['-czf', archivePath, '-C', tempRoot, normalizedBundleName], {
     stdio: 'inherit',
   })
@@ -174,6 +185,31 @@ async function createNormalizedArchive(bundlePath: string, target: Target) {
   }
 
   return archivePath
+}
+
+function getValidationNodeExecutable() {
+  const currentMajor = process.version.match(nodeMajorVersionPattern)?.[1]
+  const preferredNodePath = currentMajor
+    ? process.env[`HOWCODE_NODE_${currentMajor}_PATH`]
+    : undefined
+  return (
+    preferredNodePath?.trim() ||
+    // biome-ignore lint/complexity/useLiteralKeys: ProcessEnv is an index-signature type.
+    process.env['HOWCODE_NODE_PATH']?.trim() ||
+    // biome-ignore lint/complexity/useLiteralKeys: ProcessEnv is an index-signature type.
+    process.env['NODE']?.trim() ||
+    'node'
+  )
+}
+
+function validateUnpackedNativeRuntimeBundles(unpackedRoot: string) {
+  const resourcesPath = path.dirname(unpackedRoot)
+  const validationNodeExecutable = getValidationNodeExecutable()
+  validateCurrentNativeDependenciesLoad(resourcesPath, validationNodeExecutable)
+
+  for (const abi of supportedServiceNodeAbis) {
+    validateAbiBundle(resourcesPath, abi)
+  }
 }
 
 async function createUpdateMetadata(archivePath: string, target: Target, version: string) {

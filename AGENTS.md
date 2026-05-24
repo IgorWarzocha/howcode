@@ -7,6 +7,7 @@
 - Run `bun run ai:check` manually only when asked, when not committing, or when debugging a failing hook.
 - If you touch a subsystem with its own fast deterministic tests, run those when useful.
 - Never weaken strict Biome or TypeScript rules just to silence warnings quickly. Fix the issue properly or add a narrow, justified override.
+- Prefer modular structure before piling more branches into an existing file. When a change adds a new concern, platform split, state machine, or UI surface, first consider a small folder/module boundary instead of growing a godfile/godfunction.
 
 ## Project Workflow
 - In dev, assume the app dev server is already running; do not start it manually, and use Electron CDP at `127.0.0.1:39217`.

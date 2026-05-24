@@ -1,118 +1,31 @@
-import { loadAppSettings } from './app-settings/readers.ts'
-import { getPiModule } from './pi-module.ts'
-import * as piSkills from './pi-skills.ts'
-import * as piThreads from './pi-threads.ts'
-import * as skillCreator from './skill-creator-session.ts'
-import * as terminalManager from './terminal/manager.ts'
-import { getDesktopUserDataPath } from './user-data-path.ts'
+import { existsSync } from 'node:fs'
+import path from 'node:path'
+import serviceNativeAbi from '../shared/service-native-abi.json'
 
-type ServiceRequest = {
-  type: 'request'
-  id: string
-  module: string
-  method: string
-  args: unknown[]
+function getElectronResourcesPath() {
+  // biome-ignore lint/complexity/useLiteralKeys: ProcessEnv is an index-signature type.
+  return process.env['HOWCODE_ELECTRON_RESOURCES_PATH']?.trim() ?? ''
 }
 
-type ServiceResponse = {
-  type: 'response'
-  id: string
-  ok: boolean
-  result?: unknown
-  error?: string
-  stack?: string
+function activateNativeDependenciesForCurrentNode() {
+  const resourcesPath = getElectronResourcesPath()
+  if (!resourcesPath) return
+
+  const unpackedAppPath = path.join(resourcesPath, 'app.asar.unpacked')
+  if (!existsSync(unpackedAppPath)) return
+
+  const abi = process.versions.modules
+  const abiBundleRoot = path.join(
+    unpackedAppPath,
+    serviceNativeAbi.nativeServiceAbiDirectoryName,
+    abi,
+  )
+  if (!existsSync(abiBundleRoot)) return
+  const abiNodeModulesPath = path.join(abiBundleRoot, 'node_modules')
+  // biome-ignore lint/complexity/useLiteralKeys: ProcessEnv is an index-signature type.
+  process.env['HOWCODE_SERVICE_NATIVE_NODE_MODULES'] = abiNodeModulesPath
 }
 
-const modules = {
-  piThreads,
-  piSkills,
-  skillCreator,
-  terminalManager,
-} satisfies Record<string, Record<string, unknown>>
-
-type ServiceModuleName = keyof typeof modules
-
-function isServiceModuleName(value: string): value is ServiceModuleName {
-  return Object.hasOwn(modules, value)
-}
-
-function getServiceMethod(moduleName: ServiceModuleName, methodName: string) {
-  const targetModule: Record<string, unknown> = modules[moduleName]
-  if (!Object.hasOwn(targetModule, methodName)) return null
-  const target = targetModule[methodName]
-  return typeof target === 'function' ? target : null
-}
-
-async function getServiceDiagnostics() {
-  let piAgentDir: string | null = null
-  try {
-    const { getAgentDir } = await getPiModule()
-    piAgentDir = getAgentDir()
-  } catch {
-    piAgentDir = null
-  }
-
-  return {
-    nodeExecPath: process.execPath,
-    nodeVersion: process.version,
-    nodeAbi: process.versions.modules,
-    cwd: process.cwd(),
-    userDataPath: getDesktopUserDataPath(),
-    piAgentDir,
-    customPiDirectory: loadAppSettings().customPiDirectory,
-  }
-}
-
-piThreads.subscribeDesktopEvents((event) => {
-  process.send?.({ type: 'desktop-event', event })
-})
-
-terminalManager.subscribeTerminalEvents((event) => {
-  process.send?.({ type: 'terminal-event', event })
-})
-
-async function handleRequest(message: ServiceRequest): Promise<ServiceResponse> {
-  try {
-    if (!isServiceModuleName(message.module)) {
-      throw new Error(`Unknown desktop service module: ${message.module}`)
-    }
-
-    const target = getServiceMethod(message.module, message.method)
-    if (!target) {
-      throw new Error(`Unknown desktop service method: ${message.module}.${message.method}`)
-    }
-
-    const result = await target(...message.args)
-    return { type: 'response', id: message.id, ok: true, result }
-  } catch (error) {
-    const stack = error instanceof Error ? error.stack : undefined
-    return {
-      type: 'response',
-      id: message.id,
-      ok: false,
-      error: error instanceof Error ? error.message : String(error),
-      ...(stack ? { stack } : {}),
-    }
-  }
-}
-
-process.on('message', (message: ServiceRequest) => {
-  if (!message || message.type !== 'request') return
-  void handleRequest(message).then((response) => process.send?.(response))
-})
-
-async function shutdown() {
-  await Promise.allSettled([
-    piThreads.disposeDesktopRuntime?.(),
-    terminalManager.closeAllTerminals?.(),
-  ])
-  process.exit(0)
-}
-
-process.once('disconnect', () => void shutdown())
-process.once('SIGTERM', () => void shutdown())
-process.once('SIGINT', () => void shutdown())
-
-void getServiceDiagnostics().then((diagnostics) => {
-  process.send?.({ type: 'ready', diagnostics })
-})
+activateNativeDependenciesForCurrentNode()
+const runtimeEntrypoint = './service-host-runtime.mjs'
+await import(runtimeEntrypoint)

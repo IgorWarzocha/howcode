@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import type { DesktopEvent } from '../../shared/desktop-contracts'
 import type { DesktopServiceRuntime } from '../../shared/desktop-service-contracts'
 import type { TerminalEvent } from '../../shared/terminal-contracts'
+import { prepareServiceNativeRuntime } from './service-native-runtime'
 
 export type DesktopServiceApi = DesktopServiceRuntime
 export type DesktopServiceModuleName = keyof DesktopServiceApi
@@ -173,10 +174,22 @@ export class DesktopServiceClient {
     if (this.process && !this.process.killed && this.process.exitCode === null) return this.process
 
     this.startPromise = (async () => {
-      const nodeExecutable =
-        typeof this.options.nodeExecutable === 'function'
-          ? await this.options.nodeExecutable()
-          : this.options.nodeExecutable
+      let nodeExecutable: string
+      let nodeRuntime: Awaited<ReturnType<typeof prepareServiceNativeRuntime>>
+      try {
+        nodeExecutable =
+          typeof this.options.nodeExecutable === 'function'
+            ? await this.options.nodeExecutable()
+            : this.options.nodeExecutable
+        nodeRuntime = await prepareServiceNativeRuntime({
+          nodeExecutable,
+          // biome-ignore lint/complexity/useLiteralKeys: ProcessEnv is an index-signature type.
+          resourcesPath: this.options.env?.['HOWCODE_ELECTRON_RESOURCES_PATH'],
+        })
+      } catch (error) {
+        this.startPromise = null
+        throw error
+      }
 
       return await new Promise<ChildProcess>((resolve, reject) => {
         const child = spawn(nodeExecutable, [this.options.serviceHostPath], {
@@ -186,6 +199,8 @@ export class DesktopServiceClient {
             ...this.options.env,
             HOWCODE_HANDLE_LOCAL_HOST_REQUESTS: '1',
             HOWCODE_REPO_ROOT: this.options.cwd,
+            HOWCODE_SERVICE_NODE_ABI: nodeRuntime.abi,
+            HOWCODE_SERVICE_NODE_VERSION: nodeRuntime.version,
           },
           stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
         })

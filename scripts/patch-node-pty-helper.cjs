@@ -24,43 +24,7 @@ function resolveNodePtyRoot(resourcesPath) {
   return path.join(resourcesPath, 'app.asar.unpacked', 'node_modules', 'node-pty')
 }
 
-function patchUnixTerminal(unixTerminalPath) {
-  const source = fs.readFileSync(unixTerminalPath, 'utf8')
-  if (source.includes('function unpackAsarPath(value, marker)')) {
-    return { patched: false, reason: 'already-patched' }
-  }
-
-  if (!source.includes(NODE_PTY_UNIX_TERMINAL_PATTERN)) {
-    throw new Error(`node-pty helperPath pattern not found in ${unixTerminalPath}`)
-  }
-
-  fs.writeFileSync(
-    unixTerminalPath,
-    source.replace(NODE_PTY_UNIX_TERMINAL_PATTERN, NODE_PTY_UNIX_TERMINAL_REPLACEMENT),
-  )
-  return { patched: true }
-}
-
-function chmodExecutableIfPresent(filePath) {
-  if (!fs.existsSync(filePath)) return false
-  fs.chmodSync(filePath, 0o755)
-  return true
-}
-
-function getNodePtySpawnHelperCandidates(nodePtyRoot) {
-  return [
-    path.join(nodePtyRoot, 'build', 'Release', 'spawn-helper'),
-    path.join(nodePtyRoot, 'prebuilds', 'darwin-arm64', 'spawn-helper'),
-    path.join(nodePtyRoot, 'prebuilds', 'darwin-x64', 'spawn-helper'),
-  ]
-}
-
-function ensureNodePtySpawnHelpersExecutable(nodePtyRoot) {
-  return getNodePtySpawnHelperCandidates(nodePtyRoot).filter(chmodExecutableIfPresent)
-}
-
-function patchPackagedNodePty(resourcesPath, options = {}) {
-  const nodePtyRoot = resolveNodePtyRoot(resourcesPath)
+function patchNodePtyRoot(nodePtyRoot, options = {}) {
   const unixTerminalPath = path.join(nodePtyRoot, 'lib', 'unixTerminal.js')
   const helperCandidates = getNodePtySpawnHelperCandidates(nodePtyRoot)
   const existingHelpers = helperCandidates.filter((candidate) => fs.existsSync(candidate))
@@ -99,11 +63,51 @@ function patchPackagedNodePty(resourcesPath, options = {}) {
   }
 }
 
+function patchUnixTerminal(unixTerminalPath) {
+  const source = fs.readFileSync(unixTerminalPath, 'utf8')
+  if (source.includes('function unpackAsarPath(value, marker)')) {
+    return { patched: false, reason: 'already-patched' }
+  }
+
+  if (!source.includes(NODE_PTY_UNIX_TERMINAL_PATTERN)) {
+    throw new Error(`node-pty helperPath pattern not found in ${unixTerminalPath}`)
+  }
+
+  fs.writeFileSync(
+    unixTerminalPath,
+    source.replace(NODE_PTY_UNIX_TERMINAL_PATTERN, NODE_PTY_UNIX_TERMINAL_REPLACEMENT),
+  )
+  return { patched: true }
+}
+
+function chmodExecutableIfPresent(filePath) {
+  if (!fs.existsSync(filePath)) return false
+  fs.chmodSync(filePath, 0o755)
+  return true
+}
+
+function getNodePtySpawnHelperCandidates(nodePtyRoot) {
+  return [
+    path.join(nodePtyRoot, 'build', 'Release', 'spawn-helper'),
+    path.join(nodePtyRoot, 'prebuilds', 'darwin-arm64', 'spawn-helper'),
+    path.join(nodePtyRoot, 'prebuilds', 'darwin-x64', 'spawn-helper'),
+  ]
+}
+
+function ensureNodePtySpawnHelpersExecutable(nodePtyRoot) {
+  return getNodePtySpawnHelperCandidates(nodePtyRoot).filter(chmodExecutableIfPresent)
+}
+
+function patchPackagedNodePty(resourcesPath, options = {}) {
+  return patchNodePtyRoot(resolveNodePtyRoot(resourcesPath), options)
+}
+
 module.exports = {
   NODE_PTY_UNIX_TERMINAL_PATTERN,
   NODE_PTY_UNIX_TERMINAL_REPLACEMENT,
   unpackAsarPath,
   patchUnixTerminal,
+  patchNodePtyRoot,
   getNodePtySpawnHelperCandidates,
   ensureNodePtySpawnHelpersExecutable,
   patchPackagedNodePty,

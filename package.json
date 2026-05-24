@@ -9,7 +9,7 @@
   "main": "build/electron/main/index.cjs",
   "packageManager": "bun@1.3.10",
   "engines": {
-    "node": ">=24.15.0"
+    "node": ">=24.15.0 <27"
   },
   "scripts": {
     "dev": "bun run dev:clean && concurrently -k \"bun run dev:web\" \"bun run dev:runtime\" \"bun run dev:desktop\"",
@@ -23,6 +23,7 @@
     "build": "vite build && bun run build:runtime && electron-builder --dir --config electron-builder.yml",
     "build:release": "vite build && bun run build:runtime && electron-builder --config electron-builder.yml --publish never",
     "build:launcher-artifacts": "bun ./scripts/package-launcher-artifacts.ts",
+    "build:service-native-abi-bundles": "node ./scripts/build-release-service-native-abi-bundles.cjs",
     "release:prepare": "bun run build:release && bun run build:launcher-artifacts",
     "pack:howcode": "bun ./scripts/pack-howcode-launcher.ts main pack",
     "publish:howcode:dry-run": "bun ./scripts/pack-howcode-launcher.ts main publish-dry-run",
