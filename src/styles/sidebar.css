@@ -908,7 +908,7 @@
   display: inline-flex;
   width: 1.5rem;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   text-align: right;
   transition: opacity 150ms ease-out;
 }
@@ -943,17 +943,17 @@
   width: 3rem;
   grid-template-columns: 1.5rem 1.5rem;
   align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--panel);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
   opacity: 0;
-  transform: translateX(calc(100% - 1.5rem));
-  transition:
-    opacity 150ms ease-out,
-    transform 150ms ease-out;
+  transition: opacity 150ms ease-out;
 }
 
 .sidebar-thread-row:hover .sidebar-thread-meta-actions,
 .sidebar-thread-row:focus-within .sidebar-thread-meta-actions {
   opacity: 1;
-  transform: translateX(0);
 }
 
 .sidebar-thread-meta-actions > * {
@@ -1241,4 +1241,54 @@
   gap: 0.125rem;
   border-top: 1px solid var(--border);
   padding-top: 0.5rem;
+}
+
+.sidebar-work-branch-group {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.sidebar-work-branch-heading {
+  display: grid;
+  min-height: 1.625rem;
+  grid-template-columns: 13px 13px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.3125rem;
+  border-radius: 0.375rem;
+  padding: 0 0.375rem;
+  color: var(--muted);
+  font-size: var(--app-type-control-size);
+  text-align: left;
+}
+
+.sidebar-work-branch-heading:hover,
+.sidebar-work-branch-group[data-current="true"] > .sidebar-work-branch-heading {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.sidebar-work-branch-current,
+.sidebar-work-branch-count {
+  color: var(--muted-2);
+  font-size: var(--app-type-kicker-size);
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sidebar-work-branch-count {
+  min-width: 1ch;
+  text-align: right;
+}
+
+.sidebar-work-branch-thread-list {
+  display: grid;
+  gap: 0.125rem;
+}
+
+.sidebar-work-branch-empty {
+  padding: 0.25rem 0.625rem 0.375rem 2rem;
+  color: var(--muted-2);
+  font-size: var(--app-type-small-size);
 }
