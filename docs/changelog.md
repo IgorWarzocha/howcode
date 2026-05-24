@@ -1,24 +1,25 @@
 ### 0.1.66
 
 - Split desktop Pi/runtime work into a stock-Node service so native deps stop fighting Electron.
-- Added custom Pi directory settings and branch switching/selectors in the dashboard and composer.
-- Added configurable app keybindings.
-- Added thread find and result highlights.
-- Added sidebar find shortcuts.
-- Polished composer hints and small alignment details.
-- Fixed new project threads vanishing during refreshes.
+  *Reason being that Pi compiles your extensions against your system Node. Things were getting messy. The app is compiled to work with Node 24, 25 and 26.*
+- De-cardified a lot of the UI: quieter chat/tool rows, composer popovers, Skills/Extensions, Settings, Inbox, artifacts, and GitOps diffs.
+- Split up app shell, composer, terminal, GitOps, inbox, settings, artifacts, and runtime-host code.
+- Added cleaner app module boundaries with `@howcode/*` aliases and native capability folders. First step to pluginisation of the app.
+- Upgraded GitOps diffs to use Pierre's streamed CodeView renderer.
+- GitOps now shows image previews.
 - Made GitOps diffs less likely to freeze the UI.
-- Split up app shell, composer, terminal, diff, inbox, settings, and runtime-host code.
+- Added configurable app keybindings. More coming soon™
+- Added custom Pi directory settings.
+- Added thread find and result highlights.
 - Updated dependencies.
-- Made Electron installs recover when `unzip` is missing.
-- Added DevTools shortcuts for debugging blank app windows.
+- Fixed packaged macOS terminal startup (thank you, BlockedPath).
 - Fixed dev-channel updater checks getting stuck on stale archives.
-- Fixed packaged macOS terminal startup (thank you, BlockedPath)
+- Fixed same-version update hash checks.
+- Fixed new project threads vanishing during refreshes.
 - Fixed code landing/project dashboard routing.
 - Fixed empty dashboard threads piling up.
 - Fixed Pi TUI new-thread sidebar handoff.
 - Quieted missing-session usage noise and checkbox layout shifts.
-- Fixed same-version update hash checks and F12 failure hints.
 
 Snapshot: May 19, 2026.
 
