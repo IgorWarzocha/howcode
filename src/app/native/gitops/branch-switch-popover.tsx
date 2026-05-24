@@ -1,3 +1,4 @@
+// Keep this visually in sync with diff-baseline-selector/baseline-selector-popover.tsx; these popovers are one UI family.
 import { Check, GitFork, GitPullRequestDraft } from 'lucide-react'
 import type { CSSProperties, ReactNode, RefObject } from 'react'
 import { PopoverPanel } from '../../common/popover'
@@ -88,14 +89,13 @@ export function BranchSwitchPopover({
               }}
             >
               <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
-                {branch === currentBranch ? <Check size={13} /> : null}
+                {branch === currentBranch ? <Check size={14} /> : null}
               </span>
               <span
                 className={cn(
                   'min-w-0 truncate',
-                  branch === currentBranch
-                    ? 'text-[color:var(--text)]'
-                    : 'text-[color:var(--muted)]',
+                  appTypeControlClass,
+                  branch === currentBranch ? appToneTextClass : appToneMutedClass,
                 )}
               >
                 {branch}

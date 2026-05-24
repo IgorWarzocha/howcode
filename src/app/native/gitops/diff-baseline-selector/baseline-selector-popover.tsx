@@ -1,3 +1,4 @@
+// Keep this visually in sync with ../branch-switch-popover.tsx; these popovers are one UI family.
 import type { useQuery } from '@tanstack/react-query'
 import { Search } from 'lucide-react'
 import type { RefObject } from 'react'
