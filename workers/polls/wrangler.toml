@@ -1,0 +1,14 @@
+name = "howcode-polls"
+main = "src/index.ts"
+compatibility_date = "2026-05-24"
+
+[observability]
+enabled = true
+
+[vars]
+ALLOWED_ORIGINS = "https://igorwarzocha.github.io,http://localhost:4173"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "howcode_polls"
+database_id = "74218c6d-51ae-4e44-8953-dfe2be89d66b"

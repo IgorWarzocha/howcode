@@ -43,7 +43,9 @@
     "publish:howcode:dev:dry-run": "bun ./scripts/pack-howcode-launcher.ts dev publish-dry-run 0.1.68-dev.1",
     "publish:howcode": "bun ./scripts/pack-howcode-launcher.ts main publish",
     "publish:howcode:dev": "bun ./scripts/pack-howcode-launcher.ts dev publish 0.1.68-dev.1",
-    "typography:generate": "bun ./scripts/generate-typography-css.ts"
+    "typography:generate": "bun ./scripts/generate-typography-css.ts",
+    "polls:deploy": "cd workers/polls && bunx wrangler deploy",
+    "polls:migrate": "cd workers/polls && bunx wrangler d1 migrations apply howcode_polls --remote"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,cts,mts,cjs,mjs,json,css,md}": [
