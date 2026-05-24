@@ -908,6 +908,17 @@
   transition: opacity 150ms ease-out;
 }
 
+.sidebar-thread-branch-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-2);
+}
+
+.sidebar-thread-branch-status[data-current="true"] {
+  color: var(--accent);
+}
+
 .sidebar-thread-row:hover .sidebar-thread-meta-value,
 .sidebar-thread-row:focus-within .sidebar-thread-meta-value {
   opacity: 0;
@@ -925,8 +936,11 @@
   display: flex;
   height: 1.5rem;
   align-items: center;
-  border-radius: 0.5rem;
-  background: var(--surface-hover);
+  gap: 0.0625rem;
+  border: 1px solid var(--border);
+  border-radius: 0.625rem;
+  background: var(--panel);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
   opacity: 0;
   transform: translateX(calc(100% - 1.5rem));
   transition:
@@ -942,6 +956,18 @@
 
 .sidebar-thread-meta-actions > * {
   flex: 0 0 1.5rem;
+}
+
+.sidebar-thread-action-anchor {
+  display: inline-flex;
+  height: 1.5rem;
+  width: 1.5rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-thread-action-anchor button[data-active="true"] {
+  color: var(--accent);
 }
 
 .sidebar-inbox-row {

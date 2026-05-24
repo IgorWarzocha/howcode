@@ -12,6 +12,8 @@ type ThreadRowProps = {
   unread?: boolean
   isSelected: boolean
   title: string
+  branchName?: string | undefined
+  branchAssignedToCurrent?: boolean | undefined
   assignBranchLabel?: string | undefined
   onArchive: () => void
   onAssignToBranch?: (() => void) | undefined
@@ -55,34 +57,55 @@ function ThreadLeadingIcon({
 
 function ThreadMetaSlot({
   age,
+  branchAssignedToCurrent,
+  branchName,
   assignBranchLabel,
   onArchive,
   onAssignToBranch,
   terminalRunning,
 }: Pick<
   ThreadRowProps,
-  'age' | 'assignBranchLabel' | 'onArchive' | 'onAssignToBranch' | 'terminalRunning'
+  | 'age'
+  | 'assignBranchLabel'
+  | 'branchAssignedToCurrent'
+  | 'branchName'
+  | 'onArchive'
+  | 'onAssignToBranch'
+  | 'terminalRunning'
 >) {
+  const metaValue = branchName ? (
+    <span
+      className="sidebar-thread-branch-status"
+      data-current={branchAssignedToCurrent ? 'true' : 'false'}
+      title={`Assigned to ${branchName}`}
+    >
+      <GitBranch size={12} />
+    </span>
+  ) : terminalRunning ? (
+    <SquareTerminal size={12} />
+  ) : (
+    age
+  )
+
   return (
     <span className="sidebar-thread-meta-slot">
-      {terminalRunning ? (
-        <span className="sidebar-thread-meta-value">
-          <SquareTerminal size={12} />
-        </span>
-      ) : (
-        <span className="sidebar-thread-meta-value" aria-hidden="true">
-          {age}
-        </span>
-      )}
+      <span className="sidebar-thread-meta-value" aria-hidden={branchName ? undefined : 'true'}>
+        {metaValue}
+      </span>
       <span className="sidebar-thread-meta-actions">
         {onAssignToBranch ? (
-          <Tooltip content={assignBranchLabel ?? 'Assign to branch'} placement="right">
+          <Tooltip
+            content={assignBranchLabel ?? 'Assign to branch'}
+            placement="right"
+            className="sidebar-thread-action-anchor"
+          >
             <button
               type="button"
               className={cn(
                 compactIconButtonClass,
                 'h-full w-full border-transparent bg-transparent hover:bg-transparent',
               )}
+              data-active={branchAssignedToCurrent ? 'true' : 'false'}
               onClick={onAssignToBranch}
               aria-label={assignBranchLabel ?? 'Assign to branch'}
             >
@@ -90,7 +113,11 @@ function ThreadMetaSlot({
             </button>
           </Tooltip>
         ) : null}
-        <Tooltip content="Archive thread" placement="right">
+        <Tooltip
+          content="Archive thread"
+          placement="right"
+          className="sidebar-thread-action-anchor"
+        >
           <button
             type="button"
             className={cn(
@@ -116,6 +143,8 @@ export function ThreadRow({
   unread = false,
   isSelected,
   title,
+  branchName,
+  branchAssignedToCurrent,
   assignBranchLabel,
   onArchive,
   onAssignToBranch,
@@ -147,6 +176,8 @@ export function ThreadRow({
       <ThreadMetaSlot
         age={age}
         assignBranchLabel={assignBranchLabel}
+        branchAssignedToCurrent={branchAssignedToCurrent}
+        branchName={branchName}
         onArchive={onArchive}
         onAssignToBranch={onAssignToBranch}
         terminalRunning={terminalRunning}
