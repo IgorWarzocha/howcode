@@ -9,7 +9,6 @@ export type SessionSummaryRecord = {
 export type ProjectRow = {
   id: string
   name: string
-  orderIndex: number | null
   pinned: number
   collapsed: number
   threadCount: number

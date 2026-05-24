@@ -50,7 +50,6 @@ export function listProjects(cwd: string): Project[] {
         SELECT
           projects.cwd AS id,
           COALESCE(projects.custom_name, projects.name) AS name,
-          projects.order_index AS orderIndex,
           projects.pinned AS pinned,
           projects.collapsed AS collapsed,
           projects.repo_origin_url AS repoOriginUrl,
@@ -70,22 +69,17 @@ export function listProjects(cwd: string): Project[] {
         GROUP BY
           projects.cwd,
           COALESCE(projects.custom_name, projects.name),
-          projects.order_index,
           projects.pinned,
           projects.collapsed,
           projects.repo_origin_url,
           projects.repo_origin_checked,
           projects.git_ops_mode
         ORDER BY
-          projects.pinned DESC,
-          CASE WHEN projects.order_index IS NULL THEN 1 ELSE 0 END,
-          projects.order_index ASC,
-          CASE WHEN projects.order_index IS NULL AND projects.cwd = ? THEN 0 ELSE 1 END,
           latestModifiedMs DESC,
           projects.name COLLATE NOCASE ASC
       `,
     )
-    .all(getChatSessionLikePattern(), cwd) as ProjectRow[]
+    .all(getChatSessionLikePattern()) as ProjectRow[]
 
   return rows.map(mapProjectRow)
 }

@@ -53,6 +53,18 @@ function getDisplayableProjects(projects: readonly Project[]) {
   )
 }
 
+function orderProjectsForScopeSelector(projects: readonly Project[], visibleProjectIds: string[]) {
+  const visibleIndexById = new Map(visibleProjectIds.map((projectId, index) => [projectId, index]))
+  return [...projects].sort((left, right) => {
+    const leftIndex = visibleIndexById.get(left.id)
+    const rightIndex = visibleIndexById.get(right.id)
+    if (leftIndex !== undefined && rightIndex !== undefined) return leftIndex - rightIndex
+    if (leftIndex !== undefined) return -1
+    if (rightIndex !== undefined) return 1
+    return 0
+  })
+}
+
 type WorkSidebarSectionProps = {
   activeView: View
   loading: boolean
@@ -1516,6 +1528,7 @@ export function WorkSidebarSection({
   const [pruneConfirmBranchId, setPruneConfirmBranchId] = useState<string | null>(null)
   const [switchErrorBranchId, setSwitchErrorBranchId] = useState<string | null>(null)
   const [storedVisibleProjectIds, setStoredVisibleProjectIds] = useState<string[] | null>(null)
+  const [scopeSelectorOrderIds, setScopeSelectorOrderIds] = useState<string[] | null>(null)
   const appliedInitialEmptyScopeRef = useRef(false)
   const displayableProjects = useMemo(() => getDisplayableProjects(projects), [projects])
   const selectedProject =
@@ -1549,15 +1562,18 @@ export function WorkSidebarSection({
     })
   }, [displayableProjects, storedVisibleProjectIds])
 
-  useEffect(() => {
-    if (storedVisibleProjectIds === null) return
-    void onAction('workspace.sidebar-scope', { projectIds: storedVisibleProjectIds })
-  }, [onAction, storedVisibleProjectIds])
-
   const visibleProjects = useMemo(() => {
     const visibleIds = new Set(visibleProjectIds)
     return displayableProjects.filter((project) => visibleIds.has(project.id))
   }, [displayableProjects, visibleProjectIds])
+  const scopeSelectorProjects = useMemo(
+    () =>
+      orderProjectsForScopeSelector(
+        displayableProjects,
+        projectSwitcherOpen && scopeSelectorOrderIds ? scopeSelectorOrderIds : visibleProjectIds,
+      ),
+    [displayableProjects, projectSwitcherOpen, scopeSelectorOrderIds, visibleProjectIds],
+  )
 
   const gitStateQueries = useQueries({
     queries: visibleProjects.map((project) => ({
@@ -1632,23 +1648,30 @@ export function WorkSidebarSection({
       ? visibleProjectIds.filter((id) => id !== projectId)
       : [...visibleProjectIds, projectId]
     setStoredVisibleProjectIds(nextProjectIds)
-    if (!wasVisible) {
+    if (!wasVisible && visibleProjectIds.length === 0) {
       focusProject(projectId)
     } else if (nextProjectIds.length === 0) {
       onShowView('landing')
     }
+  }
+  const setProjectSwitcherOpenState = (open: boolean) => {
+    if (open) setScopeSelectorOrderIds(visibleProjectIds)
+    setProjectSwitcherOpen(open)
+    if (open || storedVisibleProjectIds === null) return
+    setScopeSelectorOrderIds(null)
+    void onAction('workspace.sidebar-scope', { projectIds: storedVisibleProjectIds })
   }
   return (
     <section className="sidebar-work-section" aria-label="Project work">
       <ProjectScopeSelector
         label={projectScopeLabel}
         open={projectSwitcherOpen}
-        projects={displayableProjects}
+        projects={scopeSelectorProjects}
         scopeProject={scopeProject}
         selectedProject={selectedProject}
         terminalRunningProjectIds={terminalRunningProjectIds}
         visibleProjects={visibleProjects}
-        onOpenChange={setProjectSwitcherOpen}
+        onOpenChange={setProjectSwitcherOpenState}
         onToggleVisibleProject={toggleVisibleProject}
       />
 

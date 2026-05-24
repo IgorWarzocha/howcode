@@ -60,7 +60,6 @@ type SidebarProps = {
   onRefreshChatSidebar: () => Promise<unknown>
   onProjectSelect: (projectId: string) => void
   onProjectPrimeSelection: (projectId: string) => void
-  onProjectReorder: (projectIds: string[]) => void
   onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
   onSelectInboxThread: (thread: InboxThread) => void
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
@@ -183,7 +182,6 @@ function SidebarContent(props: SidebarProps) {
       onOpenSettingsPanel={props.onOpenSettingsPanel}
       onProjectSelect={props.onProjectSelect}
       onProjectPrimeSelection={props.onProjectPrimeSelection}
-      onProjectReorder={props.onProjectReorder}
       onThreadOpen={props.onThreadOpen}
       onToggleProjectCollapse={props.onToggleProjectCollapse}
     />
@@ -227,7 +225,6 @@ export function Sidebar({
   onRefreshChatSidebar,
   onProjectSelect,
   onProjectPrimeSelection,
-  onProjectReorder,
   onLoadProjectThreads,
   onSelectInboxThread,
   onThreadOpen,
@@ -290,7 +287,6 @@ export function Sidebar({
     onRefreshChatSidebar,
     onProjectSelect,
     onProjectPrimeSelection,
-    onProjectReorder,
     onLoadProjectThreads,
     onSelectInboxThread,
     onThreadOpen,

@@ -129,7 +129,6 @@ export type DesktopActionPayloadMap = {
   'project.expand': { projectId: string }
   'project.collapse': { projectId: string }
   'project.open-in-file-manager': { projectId: string }
-  'project.reorder': { projectIds: string[] }
   'project.pin': { projectId: string }
   'project.edit-name': { projectId: string; projectName: string }
   'project.refresh-repo-origin': { projectId: string }

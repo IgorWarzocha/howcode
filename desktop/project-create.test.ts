@@ -15,9 +15,6 @@ const startNewThreadMock = vi.fn(async (request: { projectId?: string }) => {
 const ensureProjectMock = vi.fn((projectId: string) => {
   callOrder.push(`ensure:${projectId}`)
 })
-const moveProjectToTopMock = vi.fn((projectId: string) => {
-  callOrder.push(`top:${projectId}`)
-})
 const setProjectRepoOriginMock = vi.fn()
 
 vi.mock('./pi-desktop-runtime.ts', () => ({
@@ -27,7 +24,6 @@ vi.mock('./pi-desktop-runtime.ts', () => ({
 vi.mock('./thread-state-db.ts', () => ({
   ensureProject: ensureProjectMock,
   listProjects: vi.fn(() => []),
-  moveProjectToTop: moveProjectToTopMock,
   setProjectRepoOrigin: setProjectRepoOriginMock,
 }))
 
@@ -38,7 +34,6 @@ describe('project creation', () => {
     callOrder.length = 0
     startNewThreadMock.mockClear()
     ensureProjectMock.mockClear()
-    moveProjectToTopMock.mockClear()
     setProjectRepoOriginMock.mockClear()
     workspacePath = await mkdtemp(path.join(os.tmpdir(), 'howcode-project-create-workspace-'))
   })
@@ -47,7 +42,7 @@ describe('project creation', () => {
     await rm(workspacePath, { recursive: true, force: true })
   })
 
-  it('creates and orders a plain new project after starting its draft thread', async () => {
+  it('creates a plain new project after starting its draft thread', async () => {
     const { createProject } = await import('./project-create.ts')
 
     const result = await createProject({
@@ -58,14 +53,10 @@ describe('project creation', () => {
 
     const projectPath = path.join(workspacePath, 'Fresh Project')
     expect(result.projectId).toBe(projectPath)
-    expect(callOrder).toEqual([
-      `start:${projectPath}`,
-      `ensure:${projectPath}`,
-      `top:${projectPath}`,
-    ])
+    expect(callOrder).toEqual([`start:${projectPath}`, `ensure:${projectPath}`])
   })
 
-  it('adds and orders a folder project after starting its draft thread', async () => {
+  it('adds a folder project after starting its draft thread', async () => {
     const { addProjectFromPath } = await import('./project-create.ts')
     const projectPath = path.join(workspacePath, 'existing-project')
 
@@ -76,11 +67,7 @@ describe('project creation', () => {
     })
 
     expect(result.projectId).toBe(projectPath)
-    expect(callOrder).toEqual([
-      `start:${projectPath}`,
-      `ensure:${projectPath}`,
-      `top:${projectPath}`,
-    ])
+    expect(callOrder).toEqual([`start:${projectPath}`, `ensure:${projectPath}`])
   })
 
   it('does not insert the project row if draft thread startup fails', async () => {

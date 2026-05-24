@@ -1,7 +1,6 @@
 import path from 'node:path'
 import { ensureChatStateSchema } from '../chat-state-db.ts'
 import { getThreadStateDatabase } from './db.ts'
-import { runInTransaction } from './write-transaction.ts'
 
 export function ensureProject(cwd: string) {
   const db = getThreadStateDatabase()
@@ -98,50 +97,6 @@ export function setProjectGitOpsMode(projectId: string, mode: 'commit' | 'commit
       WHERE cwd = ?
     `,
   ).run(mode, projectId)
-}
-
-export function reorderProjects(projectIds: string[]) {
-  if (projectIds.length === 0) {
-    return
-  }
-
-  const db = getThreadStateDatabase()
-  const updateProjectOrder = db.prepare(
-    `
-      UPDATE projects
-      SET order_index = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE cwd = ?
-    `,
-  )
-
-  runInTransaction(db, () => {
-    projectIds.forEach((projectId, index) => {
-      updateProjectOrder.run(index, projectId)
-    })
-  })
-}
-
-export function moveProjectToTop(projectId: string) {
-  const db = getThreadStateDatabase()
-  const row = db
-    .prepare(
-      `
-        SELECT MIN(order_index) AS minOrderIndex
-        FROM projects
-        WHERE hidden = 0 AND order_index IS NOT NULL
-      `,
-    )
-    .get() as { minOrderIndex?: number | undefined | null } | undefined
-
-  const nextOrderIndex = typeof row?.minOrderIndex === 'number' ? row.minOrderIndex - 1 : 0
-
-  db.prepare(
-    `
-      UPDATE projects
-      SET order_index = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE cwd = ?
-    `,
-  ).run(nextOrderIndex, projectId)
 }
 
 export function hideProject(projectId: string) {

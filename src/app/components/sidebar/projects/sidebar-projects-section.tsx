@@ -48,7 +48,6 @@ type SidebarProjectsSectionProps = {
   ) => void
   onProjectSelect: (projectId: string) => void
   onProjectPrimeSelection: (projectId: string) => void
-  onProjectReorder: (projectIds: string[]) => void
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
   onToggleProjectCollapse: (projectId: string) => void
 }
@@ -81,7 +80,6 @@ function SidebarProjectsContent({
   loading,
   onAction,
   onProjectPrimeSelection,
-  onProjectReorder,
   onProjectSelect,
   onThreadOpen,
   onToggleProjectCollapse,
@@ -101,7 +99,6 @@ function SidebarProjectsContent({
   loading: boolean
   onAction: DesktopActionInvoker
   onProjectPrimeSelection: (projectId: string) => void
-  onProjectReorder: (projectIds: string[]) => void
   onProjectSelect: (projectId: string) => void
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
   onToggleProjectCollapse: (projectId: string) => void
@@ -133,7 +130,6 @@ function SidebarProjectsContent({
             onAction={onAction}
             onProjectSelect={onProjectSelect}
             onProjectPrimeSelection={onProjectPrimeSelection}
-            onProjectReorder={onProjectReorder}
             onThreadOpen={onThreadOpen}
             onToggleProjectCollapse={onToggleProjectCollapse}
           />
@@ -178,7 +174,6 @@ export function SidebarProjectsSection({
   onOpenSettingsPanel,
   onProjectSelect,
   onProjectPrimeSelection,
-  onProjectReorder,
   onThreadOpen,
   onToggleProjectCollapse,
 }: SidebarProjectsSectionProps) {
@@ -413,7 +408,6 @@ export function SidebarProjectsSection({
         loading={loading}
         onAction={onAction}
         onProjectPrimeSelection={onProjectPrimeSelection}
-        onProjectReorder={onProjectReorder}
         onProjectSelect={onProjectSelect}
         onThreadOpen={onThreadOpen}
         onToggleProjectCollapse={onToggleProjectCollapse}

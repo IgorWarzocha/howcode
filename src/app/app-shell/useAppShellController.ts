@@ -123,14 +123,11 @@ export function useAppShellController() {
     workspaceState: bundle.state,
   })
   const commands = useAppShellCommands({
-    applyProjectOrder: desktopShell.applyProjectOrder,
     collapsedProjectIds: viewModel.collapsedProjectIds,
     composerProjectId: viewModel.composerProjectId,
     dispatch: bundle.dispatch,
     handleAction: actions.handleAction,
     queryClient,
-    runDesktopAction: actions.runDesktopAction,
-    scheduleShellStateRefresh: desktopShell.scheduleShellStateRefresh,
     setSettingsOpenTarget: bundle.setSettingsOpenTarget,
     setThreadHistoryCompactions: bundle.setThreadHistoryCompactions,
     setThreadRefreshKey: bundle.setThreadRefreshKey,

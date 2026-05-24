@@ -130,7 +130,6 @@ const threadStateSchemaSql = `
       cwd TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       custom_name TEXT,
-      order_index INTEGER,
       pinned INTEGER NOT NULL DEFAULT 0,
       hidden INTEGER NOT NULL DEFAULT 0,
       collapsed INTEGER NOT NULL DEFAULT 1,
@@ -239,7 +238,6 @@ function addColumnIfMissing(database: Database, tableName: string, columnSql: st
 
 function ensureProjectColumns(database: Database) {
   addColumnIfMissing(database, 'projects', 'custom_name TEXT')
-  addColumnIfMissing(database, 'projects', 'order_index INTEGER')
   addColumnIfMissing(database, 'projects', 'hidden INTEGER NOT NULL DEFAULT 0')
   addColumnIfMissing(database, 'projects', 'pinned INTEGER NOT NULL DEFAULT 0')
   addColumnIfMissing(database, 'projects', 'repo_origin_url TEXT')

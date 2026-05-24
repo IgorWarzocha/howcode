@@ -21,7 +21,6 @@ type AppShellLayoutViewProps = {
   handleToggleSettings: AppShellController['handleToggleSettings']
   handleProjectSelect: AppShellController['handleProjectSelect']
   handleSetSelectedProject: AppShellController['handleSetSelectedProject']
-  handleProjectReorder: AppShellController['handleProjectReorder']
   handleThreadOpen: AppShellController['handleThreadOpen']
   handleToggleProjectCollapse: AppShellController['handleToggleProjectCollapse']
   sidebarCollapsed: boolean
@@ -106,7 +105,6 @@ function AppShellSidebar(props: AppShellLayoutViewProps) {
     handleToggleSettings,
     handleProjectSelect,
     handleSetSelectedProject,
-    handleProjectReorder,
     handleThreadOpen,
     handleToggleProjectCollapse,
     compactMode,
@@ -153,7 +151,6 @@ function AppShellSidebar(props: AppShellLayoutViewProps) {
       onRefreshChatSidebar={controller.refreshChatSidebarState}
       onProjectSelect={handleProjectSelect}
       onProjectPrimeSelection={handleSetSelectedProject}
-      onProjectReorder={handleProjectReorder}
       onLoadProjectThreads={controller.handleLoadProjectThreads}
       onSelectInboxThread={controller.handleSelectInboxThread}
       onThreadOpen={handleThreadOpen}
