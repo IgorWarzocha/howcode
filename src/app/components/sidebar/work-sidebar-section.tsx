@@ -123,7 +123,6 @@ function WorkThreadRow({
       unread={Boolean(thread.unread)}
       isSelected={isSelected}
       title={thread.title}
-      branchName={thread.branchName}
       assignBranchLabel={currentBranch ? `Assign to ${currentBranch}` : 'Clear assigned branch'}
       onArchive={() =>
         onAction('thread.archive', {
