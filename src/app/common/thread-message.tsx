@@ -182,7 +182,7 @@ function AssistantMessageBlock({
         <div
           className={
             statusClassName
-              ? `${threadSessionSurfaceClass} group/message relative px-4 py-3 pr-12 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] ${statusClassName}`
+              ? `${threadSessionSurfaceClass} group/message relative px-4 py-3 pr-12 ${statusClassName}`
               : 'group/message relative px-4 pr-12'
           }
         >

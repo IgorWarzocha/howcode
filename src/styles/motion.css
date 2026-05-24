@@ -41,39 +41,28 @@
   0%,
   100% {
     opacity: 1;
-    box-shadow:
-      inset 0 0 0 1px var(--accent-bg),
-      inset 0 0 14px var(--accent-bg-subtle);
+    box-shadow: none;
   }
 
   50% {
     opacity: 1;
-    box-shadow:
-      inset 0 0 0 1px var(--accent-border),
-      inset 0 0 26px var(--accent-bg),
-      inset 0 0 42px var(--accent-bg-subtle);
+    box-shadow: none;
   }
 }
 
 @keyframes composerPanelPulse {
   0%,
   100% {
-    box-shadow:
-      inset 0 0 0 1px color-mix(in srgb, var(--accent-border) 46%, transparent),
-      inset 0 0 0 rgba(185, 191, 243, 0);
+    box-shadow: none;
   }
 
   50% {
-    box-shadow:
-      inset 0 0 0 1px color-mix(in srgb, var(--accent-border) 58%, transparent),
-      inset 0 0 9px color-mix(in srgb, var(--accent-bg-subtle) 55%, transparent);
+    box-shadow: none;
   }
 }
 
 .motion-composer-panel-pulse {
-  transition:
-    border-color 180ms var(--motion-ease-standard),
-    box-shadow 180ms var(--motion-ease-standard);
+  transition: border-color 180ms var(--motion-ease-standard);
 }
 
 .motion-composer-panel-pulse-active {
@@ -95,7 +84,7 @@
   pointer-events: none;
   border-radius: inherit;
   background: transparent;
-  box-shadow: inset 0 0 0 1px rgba(183, 186, 245, 0);
+  box-shadow: none;
 }
 
 .motion-surface-pulse > * {

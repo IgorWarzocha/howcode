@@ -181,13 +181,12 @@ function ShortcutRecorder({
       <button
         type="button"
         className={cn(
-          'min-h-9 min-w-40 rounded-xl px-3 text-left transition-[background-color,box-shadow,scale] active:scale-[0.96]',
+          'min-h-9 min-w-40 rounded-xl px-3 text-left transition-[background-color,scale] active:scale-[0.96]',
           recording
-            ? 'bg-[color:var(--accent-bg-subtle)] shadow-[inset_0_0_0_1px_var(--accent-border),0_0_0_3px_rgba(124,147,255,0.12)]'
-            : 'bg-[rgba(255,255,255,0.055)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.075)]',
+            ? 'bg-[color:var(--accent-bg-subtle)]'
+            : 'bg-[rgba(255,255,255,0.055)] hover:bg-[rgba(255,255,255,0.075)]',
           !(hasCustomShortcut || disabled || recording) && 'opacity-55',
           disabled && 'opacity-45',
-          conflict && 'shadow-[inset_0_0_0_1px_var(--warning)]',
         )}
         onFocus={() => setRecording(true)}
         onBlur={() => setRecording(false)}

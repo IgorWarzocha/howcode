@@ -43,7 +43,7 @@
   --markdown-code: #8abeb7;
   --markdown-code-bg: rgba(138, 190, 183, 0.14);
   --markdown-quote: #969db7;
-  --shadow: 0 12px 36px rgba(6, 7, 13, 0.18);
+  --shadow: none;
   /* app typography: generated start */
   --app-type-view-title-size: 18px;
   --app-type-section-title-size: 15px;

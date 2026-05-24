@@ -1,6 +1,7 @@
 import { GitHubInvertocatMark } from '@howcode/common/github-invertocat-mark'
 import { IconButton } from '@howcode/common/icon-button'
 import { Tooltip } from '@howcode/common/tooltip'
+import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { useQueries } from '@tanstack/react-query'
 import {
   Archive,
@@ -16,13 +17,15 @@ import {
   X,
 } from 'lucide-react'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { DesktopActionInvoker, ProjectGitState } from '../../desktop/types'
+import type { AppSettings, DesktopActionInvoker, ProjectGitState } from '../../desktop/types'
 import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
 import { desktopQueryKeys, getProjectGitStateQuery } from '../../query/desktop-query'
 import type { Project, Thread, View } from '../../types'
 import { appToneSubtleClass, appTypeMetaClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import { ThreadRow } from './project-tree/thread-row'
+import { SidebarProjectsCreatePopover } from './projects/sidebar-projects-create-popover'
+import { useSidebarProjectCreation } from './projects/useSidebarProjectCreation'
 import { SidebarProjectsSkeleton } from './sidebar-skeletons'
 
 const OLD_THREAD_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000
@@ -77,6 +80,8 @@ type WorkSidebarSectionProps = {
   terminalRunningSessionPaths: ReadonlySet<string>
   onAction: DesktopActionInvoker
   onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
+  appSettings: AppSettings
+  onOpenSettingsPanel: (target?: SettingsOpenTarget) => void
   onProjectSelect: (projectId: string) => void
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
   onShowView: (view: Exclude<View, 'gitops'>) => void
@@ -1186,6 +1191,7 @@ function NewThreadMenu({
 }
 
 function ProjectScopeSelector({
+  appSettings,
   label,
   open,
   projects,
@@ -1193,9 +1199,12 @@ function ProjectScopeSelector({
   selectedProject,
   terminalRunningProjectIds,
   visibleProjects,
+  onAction,
   onOpenChange,
+  onOpenSettingsPanel,
   onToggleVisibleProject,
 }: {
+  appSettings: AppSettings
   label: string
   open: boolean
   projects: Project[]
@@ -1203,19 +1212,70 @@ function ProjectScopeSelector({
   selectedProject: Project
   terminalRunningProjectIds: ReadonlySet<string>
   visibleProjects: Project[]
+  onAction: DesktopActionInvoker
   onOpenChange: (open: boolean) => void
+  onOpenSettingsPanel: (target?: SettingsOpenTarget) => void
   onToggleVisibleProject: (projectId: string) => void
 }) {
   const selectorRef = useRef<HTMLDivElement | null>(null)
+  const createButtonRef = useRef<HTMLButtonElement>(null)
+  const createPanelRef = useRef<HTMLDialogElement>(null)
+  const [projectSearchQuery, setProjectSearchQuery] = useState('')
+  const {
+    createBusy,
+    createErrorMessage,
+    createOpen,
+    handleAddFolderProject,
+    handleCreateProject,
+    projectNameDraft,
+    setCreateErrorMessage,
+    setCreateOpen,
+    setProjectNameDraft,
+  } = useSidebarProjectCreation({ appSettings, onAction, onOpenSettingsPanel })
+  const normalizedProjectSearch = projectSearchQuery.trim().toLowerCase()
+  const visibleProjectIds = useMemo(
+    () => new Set(visibleProjects.map((project) => project.id)),
+    [visibleProjects],
+  )
+  const filteredProjects = useMemo(() => {
+    if (!normalizedProjectSearch) return projects
+    return projects.filter(
+      (project) =>
+        project.name.toLowerCase().includes(normalizedProjectSearch) ||
+        project.id.toLowerCase().includes(normalizedProjectSearch),
+    )
+  }, [normalizedProjectSearch, projects])
+
+  const closeCreatePopover = () => {
+    setCreateOpen(false)
+    setCreateErrorMessage(null)
+  }
+  const dismissSelector = () => {
+    closeCreatePopover()
+    onOpenChange(false)
+  }
   useDismissibleLayer({
-    open,
-    onDismiss: () => onOpenChange(false),
-    refs: [selectorRef],
+    open: open || createOpen,
+    onDismiss: dismissSelector,
+    refs: [selectorRef, createPanelRef],
   })
 
   return (
     <div ref={selectorRef} className="sidebar-work-project-card">
-      <div className="sidebar-work-project-kicker">Project</div>
+      <div className="sidebar-work-project-header-row">
+        <div className="sidebar-work-project-kicker">Projects</div>
+        <IconButton
+          ref={createButtonRef}
+          label="Add project"
+          icon={<Plus size={13} />}
+          tooltipPlacement="right"
+          className="sidebar-work-project-create-button h-7 w-7 -translate-x-0.5 rounded-md"
+          onClick={() => {
+            if (open) onOpenChange(false)
+            setCreateOpen(!createOpen)
+          }}
+        />
+      </div>
       <button
         type="button"
         className="sidebar-work-project-button"
@@ -1230,18 +1290,53 @@ function ProjectScopeSelector({
       </button>
       {open ? (
         <div className="sidebar-work-project-list">
-          {projects.map((project) => (
+          <label
+            className="sidebar-search-field sidebar-work-project-search-field"
+            data-active={projectSearchQuery.trim().length > 0 ? 'true' : 'false'}
+          >
+            <Search size={14} className="sidebar-search-icon" />
+            <input
+              value={projectSearchQuery}
+              onChange={(event) => setProjectSearchQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key !== 'Escape' || projectSearchQuery.length === 0) return
+                event.stopPropagation()
+                setProjectSearchQuery('')
+              }}
+              placeholder="Search projects"
+              className="sidebar-search-input"
+              aria-label="Search projects"
+            />
+          </label>
+          {filteredProjects.map((project) => (
             <ProjectScopeOptionRow
               key={project.id}
               project={project}
               focused={project.id === selectedProject.id}
-              visible={visibleProjects.some((visibleProject) => visibleProject.id === project.id)}
+              visible={visibleProjectIds.has(project.id)}
               running={terminalRunningProjectIds.has(project.id)}
               onToggleVisible={() => onToggleVisibleProject(project.id)}
             />
           ))}
+          {filteredProjects.length === 0 ? (
+            <div className="sidebar-work-project-empty">No matching projects</div>
+          ) : null}
         </div>
       ) : null}
+      <SidebarProjectsCreatePopover
+        menuId="sidebar-work-project-create"
+        open={createOpen}
+        variant="work-sidebar"
+        draft={projectNameDraft}
+        defaultLocation={appSettings.preferredProjectLocation ?? null}
+        busy={createBusy}
+        errorMessage={createErrorMessage}
+        panelRef={createPanelRef}
+        onChangeDraft={setProjectNameDraft}
+        onCreate={handleCreateProject}
+        onAddFolder={handleAddFolderProject}
+        onClose={closeCreatePopover}
+      />
     </div>
   )
 }
@@ -1508,6 +1603,7 @@ function SingleProjectWorkContent({
 
 export function WorkSidebarSection({
   activeView,
+  appSettings,
   loading,
   projects,
   projectGitState,
@@ -1518,6 +1614,7 @@ export function WorkSidebarSection({
   terminalRunningSessionPaths,
   onAction,
   onLoadProjectThreads,
+  onOpenSettingsPanel,
   onProjectSelect,
   onThreadOpen,
   onShowView,
@@ -1664,6 +1761,7 @@ export function WorkSidebarSection({
   return (
     <section className="sidebar-work-section" aria-label="Project work">
       <ProjectScopeSelector
+        appSettings={appSettings}
         label={projectScopeLabel}
         open={projectSwitcherOpen}
         projects={scopeSelectorProjects}
@@ -1671,7 +1769,9 @@ export function WorkSidebarSection({
         selectedProject={selectedProject}
         terminalRunningProjectIds={terminalRunningProjectIds}
         visibleProjects={visibleProjects}
+        onAction={onAction}
         onOpenChange={setProjectSwitcherOpenState}
+        onOpenSettingsPanel={onOpenSettingsPanel}
         onToggleVisibleProject={toggleVisibleProject}
       />
 

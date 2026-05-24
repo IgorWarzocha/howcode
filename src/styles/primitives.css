@@ -124,7 +124,7 @@
 }
 
 .composer-stop-button--active {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 16%, transparent);
+  box-shadow: none;
 }
 
 .composer-stop-button__spinner {
@@ -165,7 +165,7 @@ button[data-tooltip]::after {
   background: var(--panel);
   padding: 6px 10px;
   color: var(--text);
-  box-shadow: var(--shadow);
+  box-shadow: none;
   content: attr(data-tooltip);
   font-size: var(--app-type-tooltip-size);
   line-height: var(--app-type-tooltip-line-height);
@@ -240,7 +240,7 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   background: var(--panel);
   padding: 6px 10px;
   color: var(--text);
-  box-shadow: var(--shadow);
+  box-shadow: none;
   content: attr(data-setting-tooltip);
   font-size: var(--app-type-tooltip-size);
   line-height: var(--app-type-tooltip-line-height);
@@ -273,7 +273,7 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   background: var(--panel);
   padding: 6px 10px;
   color: var(--text);
-  box-shadow: var(--shadow);
+  box-shadow: none;
   font-size: var(--app-type-tooltip-size);
   line-height: var(--app-type-tooltip-line-height);
   white-space: normal;
@@ -464,7 +464,7 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   flex: 0 0 auto;
   border-bottom: 0;
   background: var(--workspace);
-  box-shadow: inset 0 -1px color-mix(in srgb, var(--border) 58%, transparent);
+  box-shadow: none;
 }
 
 .artifact-markdown-editor .artifact-mdx-toolbar {
