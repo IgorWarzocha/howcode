@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, GitBranch } from 'lucide-react'
+import { CircleOff, GitBranch } from 'lucide-react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project, Thread, View } from '../../../types'
 import { BranchPruneAction, BranchSwitchAction } from './branch-actions'
@@ -54,7 +54,7 @@ export function BranchThreadGroupSection({
           aria-expanded={!collapsed}
           aria-label={collapsed ? `Expand ${group.label}` : `Collapse ${group.label}`}
         >
-          {collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
+          <GitBranch size={13} className="sidebar-project-work-branch-icon" />
         </button>
         <button
           type="button"
@@ -62,8 +62,6 @@ export function BranchThreadGroupSection({
           onClick={onToggle}
           aria-expanded={!collapsed}
         >
-          {/* TODO(worktrees): swap this for a dynamic work-context icon once worktrees land. Branches can keep GitBranch; worktrees likely need a custom SVG. */}
-          <GitBranch size={13} className="sidebar-project-work-branch-icon" />
           <span className="truncate">{group.label}</span>
         </button>
         <span className="sidebar-project-work-branch-meta">
@@ -237,7 +235,7 @@ export function ProjectCompactBranchGroups({
             aria-expanded={currentBranchExpanded}
             aria-label={currentBranchExpanded ? 'Collapse current branch' : 'Expand current branch'}
           >
-            {currentBranchExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+            <GitBranch size={13} className="sidebar-project-work-branch-icon" />
           </button>
           <button
             type="button"
@@ -245,7 +243,6 @@ export function ProjectCompactBranchGroups({
             onClick={onToggleCurrentBranch}
             aria-expanded={currentBranchExpanded}
           >
-            <GitBranch size={13} className="sidebar-project-work-branch-icon" />
             <span className="truncate">{currentBranch ?? 'No branch'}</span>
           </button>
           <span className="sidebar-project-work-branch-meta">
@@ -287,7 +284,7 @@ export function ProjectCompactBranchGroups({
                 unassignedExpanded ? 'Collapse unassigned sessions' : 'Expand unassigned sessions'
               }
             >
-              {unassignedExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+              <CircleOff size={13} />
             </button>
             <button
               type="button"

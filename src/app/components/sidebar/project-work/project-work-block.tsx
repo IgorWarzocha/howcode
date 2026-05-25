@@ -1,6 +1,6 @@
 import { GitHubInvertocatMark } from '@howcode/common/github-invertocat-mark'
 import { IconButton } from '@howcode/common/icon-button'
-import { Archive, ChevronDown, ChevronRight, FolderCode, MoreHorizontal } from 'lucide-react'
+import { Archive, ChevronRight, FolderCode, MoreHorizontal } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
@@ -85,11 +85,10 @@ function ProjectWorkBlockHeader({
         aria-expanded={expanded}
         aria-label={expanded ? `Collapse ${project.name}` : `Expand ${project.name}`}
       >
-        {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+        {project.repoOriginUrl ? <GitHubInvertocatMark size={13} /> : <FolderCode size={13} />}
       </button>
       {editingName ? (
         <div className="sidebar-project-work-project-block-heading">
-          {project.repoOriginUrl ? <GitHubInvertocatMark size={13} /> : <FolderCode size={13} />}
           <ProjectRenameField
             projectName={project.name}
             renameDraft={renameDraft}
@@ -107,7 +106,6 @@ function ProjectWorkBlockHeader({
           className="sidebar-project-work-project-block-heading"
           onClick={() => onFocusProject(project.id)}
         >
-          {project.repoOriginUrl ? <GitHubInvertocatMark size={13} /> : <FolderCode size={13} />}
           <span className="truncate">{project.name}</span>
         </button>
       )}

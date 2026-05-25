@@ -38,15 +38,11 @@
   padding-right: 0;
 }
 
-.sidebar-project-work-project-block-disclosure svg {
-  transform: translateX(-0.125rem);
-}
-
 .sidebar-project-work-project-block-heading {
   display: grid;
   min-width: 0;
   min-height: 1.75rem;
-  grid-template-columns: 14px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
   gap: 0.45rem;
   border-radius: 0.375rem;
