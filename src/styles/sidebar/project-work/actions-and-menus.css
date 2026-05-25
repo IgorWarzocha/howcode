@@ -62,10 +62,23 @@
 }
 
 .sidebar-new-thread-option-meta {
+  display: inline-flex;
   min-width: 0;
   max-width: 6rem;
+  align-items: center;
+  justify-content: flex-end;
   color: var(--muted-2);
   font-size: var(--app-type-meta-size);
+}
+
+.sidebar-new-thread-option-plus {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--accent);
+}
+
+.sidebar-new-thread-option .tooltip-anchor {
+  justify-self: end;
 }
 
 .sidebar-new-thread-branch-create input {
@@ -93,6 +106,10 @@
   font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.sidebar-new-thread-create-action {
+  justify-self: end;
 }
 
 .sidebar-new-thread-branch-create button[data-warning="true"] {

@@ -1,4 +1,5 @@
 import { IconButton } from '@howcode/common/icon-button'
+import { Tooltip } from '@howcode/common/tooltip'
 import { GitBranch, GitFork, Plus, X } from 'lucide-react'
 import { type ReactNode, type RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
@@ -68,21 +69,22 @@ function CreateTargetRow({
         placeholder={placeholder}
         aria-label={inputLabel}
       />
-      <button
-        type="button"
-        data-warning={error ? 'true' : 'false'}
-        aria-label={actionLabel}
-        title={actionLabel}
-        onClick={() => {
-          if (value.trim().length === 0) {
-            focusInput(inputRef.current)
-            return
-          }
-          onCreate()
-        }}
-      >
-        {error ?? <Plus size={12} />}
-      </button>
+      <Tooltip content={actionLabel} placement="right" className="sidebar-new-thread-create-action">
+        <button
+          type="button"
+          data-warning={error ? 'true' : 'false'}
+          aria-label={actionLabel}
+          onClick={() => {
+            if (value.trim().length === 0) {
+              focusInput(inputRef.current)
+              return
+            }
+            onCreate()
+          }}
+        >
+          {error ?? <Plus size={12} />}
+        </button>
+      </Tooltip>
     </div>
   )
 }
@@ -275,7 +277,11 @@ export function NewThreadMenu({
           >
             <X size={12} />
             <span className="truncate">Unassigned</span>
-            <span className="sidebar-new-thread-option-meta">No branch</span>
+            <Tooltip content="Start outside git" placement="right">
+              <span className="sidebar-new-thread-option-meta sidebar-new-thread-option-plus">
+                <Plus size={12} />
+              </span>
+            </Tooltip>
           </button>
         </div>
       ) : null}
