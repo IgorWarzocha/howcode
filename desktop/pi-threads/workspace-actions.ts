@@ -31,9 +31,12 @@ import {
   switchProjectBranch,
 } from '../project-git.ts'
 import {
+  deleteThreadRecordsBySessionPaths,
   ensureProject,
   getProjectWorktreeDirectory,
   hasRunningProjectThread,
+  listBranchSessionPaths,
+  listProjectSessionPaths,
   setProjectGitOpsMode,
   setProjectRepoOrigin,
   setProjectWorktreeDirectory,
@@ -155,6 +158,26 @@ function handleSetWorktreeDirectoryWorkspaceAction(payload: AnyDesktopActionPayl
   return handledAction({ didMutate: true, rootProjectId: projectId })
 }
 
+async function handleRemoveWorktreeWorkspaceAction(payload: AnyDesktopActionPayload) {
+  const projectId = getProjectId(payload)
+  const worktreePath = getWorktreePath(payload)
+  const branchName = getBranchName(payload)
+  if (!(projectId && worktreePath)) return handledAction({ error: 'Worktree path is required.' })
+  if (hasRunningProjectThread(worktreePath)) {
+    return handledAction({ error: 'Stop running sessions before removing this worktree.' })
+  }
+
+  const sessionPaths = listProjectSessionPaths(worktreePath)
+  const removeResult = await removeProjectWorktree(projectId, worktreePath)
+  if ('error' in removeResult) return handledAction(removeResult)
+
+  const branchResult = branchName ? await pruneProjectBranch(projectId, branchName) : null
+  if (branchResult && 'error' in branchResult) return handledAction(branchResult)
+
+  deleteThreadRecordsBySessionPaths(sessionPaths)
+  return handledAction(removeResult)
+}
+
 export async function handleWorkspaceDesktopAction(
   action: DesktopAction,
   payload: AnyDesktopActionPayload,
@@ -181,17 +204,15 @@ export async function handleWorkspaceDesktopAction(
       if (hasRunningProjectThread(projectId)) {
         return handledAction({ error: 'Stop running sessions before pruning this branch.' })
       }
-      return handledAction(await pruneProjectBranch(projectId, branchName))
+      const sessionPaths = listBranchSessionPaths(projectId, branchName)
+      const result = await pruneProjectBranch(projectId, branchName)
+      if (!('error' in result)) deleteThreadRecordsBySessionPaths(sessionPaths)
+      return handledAction(result)
     }
     case 'workspace.create-worktree':
       return handleCreateWorktreeWorkspaceAction(payload)
-    case 'workspace.remove-worktree': {
-      const projectId = getProjectId(payload)
-      const worktreePath = getWorktreePath(payload)
-      if (!(projectId && worktreePath))
-        return handledAction({ error: 'Worktree path is required.' })
-      return handledAction(await removeProjectWorktree(projectId, worktreePath))
-    }
+    case 'workspace.remove-worktree':
+      return handleRemoveWorktreeWorkspaceAction(payload)
     case 'workspace.set-worktree-directory':
       return handleSetWorktreeDirectoryWorkspaceAction(payload)
 

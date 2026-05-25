@@ -11,6 +11,7 @@ export {
   hasRunningProjectThread,
   listArchivedProjectThreads,
   listArchivedThreads,
+  listBranchSessionPaths,
   listInboxThreads,
   listProjectFamilySessionPaths,
   listProjectSessionPaths,

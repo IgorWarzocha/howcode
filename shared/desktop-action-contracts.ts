@@ -206,6 +206,7 @@ export type DesktopActionPayloadMap = {
   }
   'workspace.remove-worktree': {
     projectId?: string | undefined | null | undefined
+    branchName?: string | undefined | null | undefined
     worktreePath: string
   }
   'workspace.set-worktree-directory': {

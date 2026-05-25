@@ -73,6 +73,27 @@ export function BranchPruneAction({
   onConfirm: () => void
   onRequestConfirm: () => void
 }) {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const actionLabel = group.worktree ? 'Remove' : 'Prune'
+  const runPrune = async () => {
+    const result = group.worktreePath
+      ? await onAction('workspace.remove-worktree', {
+          projectId: project.id,
+          worktreePath: group.worktreePath,
+          branchName: group.label,
+        })
+      : await onAction('workspace.prune-branch', {
+          projectId: project.id,
+          branchName: group.label,
+        })
+    const error = result?.result?.error
+    if (error) {
+      setErrorMessage(error)
+      return
+    }
+    onConfirm()
+  }
+
   if (confirming) {
     return (
       <>
@@ -92,13 +113,9 @@ export function BranchPruneAction({
           className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--danger"
           onClick={(event) => {
             event.stopPropagation()
-            onConfirm()
-            void onAction('workspace.prune-branch', {
-              projectId: project.id,
-              branchName: group.label,
-            })
+            void runPrune()
           }}
-          aria-label={`Confirm prune ${group.label}`}
+          aria-label={`Confirm ${actionLabel.toLowerCase()} ${group.label}`}
         >
           <Trash2 size={12} />
         </button>
@@ -107,15 +124,16 @@ export function BranchPruneAction({
   }
 
   return (
-    <Tooltip content={`Prune ${group.label}`} placement="right">
+    <Tooltip content={errorMessage ?? `${actionLabel} ${group.label}`} placement="right">
       <button
         type="button"
         className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action"
         onClick={(event) => {
           event.stopPropagation()
+          setErrorMessage(null)
           onRequestConfirm()
         }}
-        aria-label={`Prune ${group.label}`}
+        aria-label={`${actionLabel} ${group.label}`}
       >
         <Trash2 size={12} />
       </button>
