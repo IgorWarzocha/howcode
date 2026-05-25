@@ -38,6 +38,7 @@ export {
 } from './thread-writes.ts'
 export type { ProjectWorktreeMetadata, ProjectWorktreeSource } from './worktree-writes.ts'
 export {
+  deleteProjectWorktreeMetadata,
   getProjectWorktreeDirectory,
   setProjectWorktreeDirectory,
   upsertProjectWorktree,

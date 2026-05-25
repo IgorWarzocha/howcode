@@ -30,6 +30,7 @@ import {
   setProjectOrigin,
   switchProjectBranch,
 } from '../project-git.ts'
+import { listTerminals } from '../terminal/manager.ts'
 import {
   ensureProject,
   getProjectWorktreeDirectory,
@@ -45,6 +46,25 @@ import {
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
 import { deletePersistedThreads } from './thread-actions.ts'
+
+async function hasRunningProjectTerminal(projectId: string) {
+  const terminalSnapshots = await listTerminals()
+  return terminalSnapshots.some(
+    (snapshot) =>
+      snapshot.projectId === projectId &&
+      (snapshot.status === 'starting' || snapshot.status === 'running'),
+  )
+}
+
+async function deletePersistedThreadsForWorkspace(threadIds: string[]) {
+  const deleteResult = await deletePersistedThreads(threadIds)
+  if (deleteResult.failedThreadIds.length === 0) return null
+  return {
+    didMutate: deleteResult.deletedThreadIds.length > 0,
+    error: `Failed to delete ${deleteResult.failedThreadIds.length} thread(s).`,
+    failedThreadIds: deleteResult.failedThreadIds,
+  }
+}
 
 async function handleCommitWorkspaceAction(payload: AnyDesktopActionPayload) {
   const projectId = getProjectId(payload)
@@ -166,15 +186,26 @@ async function handleRemoveWorktreeWorkspaceAction(payload: AnyDesktopActionPayl
   if (hasRunningProjectThread(worktreePath)) {
     return handledAction({ error: 'Stop running sessions before removing this worktree.' })
   }
+  if (await hasRunningProjectTerminal(worktreePath)) {
+    return handledAction({ error: 'Stop running terminals before removing this worktree.' })
+  }
 
   const threadIds = listProjectThreadIds(worktreePath)
   const removeResult = await removeProjectWorktree(projectId, worktreePath)
   if ('error' in removeResult) return handledAction(removeResult)
 
   const branchResult = branchName ? await pruneProjectBranch(projectId, branchName) : null
-  if (branchResult && 'error' in branchResult) return handledAction(branchResult)
+  const cleanupError = await deletePersistedThreadsForWorkspace(threadIds)
+  if (branchResult && 'error' in branchResult) {
+    return handledAction({
+      didMutate: true,
+      error: cleanupError?.error
+        ? `${branchResult.error} ${cleanupError.error}`
+        : branchResult.error,
+    })
+  }
+  if (cleanupError) return handledAction(cleanupError)
 
-  await deletePersistedThreads(threadIds)
   return handledAction(removeResult)
 }
 
@@ -206,7 +237,10 @@ export async function handleWorkspaceDesktopAction(
       }
       const threadIds = listBranchThreadIds(projectId, branchName)
       const result = await pruneProjectBranch(projectId, branchName)
-      if (!('error' in result)) await deletePersistedThreads(threadIds)
+      if (!('error' in result)) {
+        const cleanupError = await deletePersistedThreadsForWorkspace(threadIds)
+        if (cleanupError) return handledAction(cleanupError)
+      }
       return handledAction(result)
     }
     case 'workspace.create-worktree':

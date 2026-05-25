@@ -5,6 +5,7 @@ import { setProjectImportState } from './app-settings/writers.ts'
 import { getOriginUrl, isGitRepository } from './project-git/project-state.ts'
 import { type GitWorktreeEntry, loadGitWorktrees } from './project-git/worktrees.ts'
 import {
+  deleteProjectWorktreeMetadata,
   ensureProject,
   getProjectWorktreeDirectory,
   listProjects,
@@ -108,7 +109,10 @@ export async function importProjectWorktrees(projectId: string) {
   })
 
   for (const worktree of worktrees) {
-    if (worktree.prunable) continue
+    if (worktree.prunable) {
+      deleteProjectWorktreeMetadata(worktree.path)
+      continue
+    }
     ensureProject(worktree.path)
     const isMain = worktree.path === rootProjectId
     const source = isMain

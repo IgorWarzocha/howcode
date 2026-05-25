@@ -71,3 +71,13 @@ export function upsertProjectWorktree(metadata: ProjectWorktreeMetadata) {
     ).run(metadata.branchName, metadata.cwd)
   }
 }
+
+export function deleteProjectWorktreeMetadata(cwd: string) {
+  const db = getThreadStateDatabase()
+  db.prepare(
+    `
+      DELETE FROM project_worktrees
+      WHERE cwd = ?
+    `,
+  ).run(cwd)
+}

@@ -24,8 +24,8 @@ import {
   deleteThreadRecordsBySessionPaths,
   hasProject,
   hasRunningProjectThread,
+  listProjectFamilyProjectIds,
   listProjectFamilySessionPaths,
-  listProjectSessionPaths,
   renameProject,
   setProjectCollapsed,
   setProjectRepoOrigin,
@@ -74,8 +74,7 @@ async function removeDirectoryIfEmpty(directoryPath: string) {
   }
 }
 
-async function deleteProjectPiFiles(projectId: string) {
-  const sessionPaths = listProjectSessionPaths(projectId)
+async function deleteProjectPiFiles(projectId: string, sessionPaths: string[]) {
   const resolvedProjectId = path.resolve(projectId)
   const removableDirectories = new Set<string>()
   const deletedSessionPaths: string[] = []
@@ -176,11 +175,15 @@ async function getAsyncProjectDeletionBlockedError(projectId: string) {
   return null
 }
 
-async function deleteProjectWithFullClean(projectId: string, projectSessionPaths: string[]) {
+async function deleteProjectWithFullClean(
+  projectId: string,
+  projectSessionPaths: string[],
+  projectFamilyIds: string[],
+) {
   await rm(projectId, { recursive: true, force: true })
-  const cleanupResult = await deleteProjectPiFiles(projectId)
+  const cleanupResult = await deleteProjectPiFiles(projectId, projectSessionPaths)
   deleteArtifactsForConversations(projectSessionPaths)
-  deleteProject(projectId)
+  for (const familyProjectId of projectFamilyIds) deleteProject(familyProjectId)
   return cleanupResult.failedSessionPaths.length > 0
     ? handledAction({
         didMutate: true,
@@ -189,8 +192,12 @@ async function deleteProjectWithFullClean(projectId: string, projectSessionPaths
     : handledAction()
 }
 
-async function deleteProjectPiOnly(projectId: string) {
-  const cleanupResult = await deleteProjectPiFiles(projectId)
+async function deleteProjectPiOnly(
+  projectId: string,
+  projectSessionPaths: string[],
+  projectFamilyIds: string[],
+) {
+  const cleanupResult = await deleteProjectPiFiles(projectId, projectSessionPaths)
   if (cleanupResult.failedSessionPaths.length > 0) {
     deleteArtifactsForConversations(cleanupResult.deletedSessionPaths)
     deleteThreadRecordsBySessionPaths(cleanupResult.deletedSessionPaths)
@@ -204,7 +211,7 @@ async function deleteProjectPiOnly(projectId: string) {
   }
 
   deleteArtifactsForConversations(cleanupResult.deletedSessionPaths)
-  deleteProject(projectId)
+  for (const familyProjectId of projectFamilyIds) deleteProject(familyProjectId)
   return handledAction()
 }
 
@@ -220,9 +227,10 @@ async function removeProjectFromPayload(payload: AnyDesktopActionPayload) {
 
   const appSettings = loadAppSettings()
   const projectSessionPaths = listProjectFamilySessionPaths(projectId)
+  const projectFamilyIds = listProjectFamilyProjectIds(projectId)
   return appSettings.projectDeletionMode === 'full-clean'
-    ? await deleteProjectWithFullClean(projectId, projectSessionPaths)
-    : await deleteProjectPiOnly(projectId)
+    ? await deleteProjectWithFullClean(projectId, projectSessionPaths, projectFamilyIds)
+    : await deleteProjectPiOnly(projectId, projectSessionPaths, projectFamilyIds)
 }
 
 type ProjectActionHandler = (

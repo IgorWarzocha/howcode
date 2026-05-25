@@ -1,3 +1,4 @@
+import { access } from 'node:fs/promises'
 import path from 'node:path'
 import { formatGitCommandError, getNonInteractiveGitEnv, runGitWithOptions } from './git-runner.ts'
 
@@ -96,6 +97,51 @@ async function hasLocalBranch(projectId: string, branchName: string) {
   }
 }
 
+async function findRemoteBranchBase(projectId: string, branchName: string) {
+  try {
+    const { stdout } = await runGitWithOptions(
+      projectId,
+      ['for-each-ref', '--format=%(refname:short)', 'refs/remotes'],
+      {
+        timeout: 10_000,
+        maxBuffer: 1024 * 512,
+      },
+    )
+    const remoteBranches = stdout
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0 && !line.endsWith('/HEAD'))
+    return (
+      remoteBranches.find((remoteBranch) => remoteBranch === `origin/${branchName}`) ??
+      remoteBranches.find((remoteBranch) => remoteBranch.endsWith(`/${branchName}`)) ??
+      null
+    )
+  } catch {
+    return null
+  }
+}
+
+async function pathExists(candidatePath: string) {
+  try {
+    await access(candidatePath)
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function resolveAvailableWorktreePath(parentPath: string, folderName: string) {
+  const initialPath = path.join(parentPath, folderName)
+  if (!(await pathExists(initialPath))) return initialPath
+
+  for (let suffix = 2; suffix < 1000; suffix += 1) {
+    const candidatePath = path.join(parentPath, `${folderName}-${suffix}`)
+    if (!(await pathExists(candidatePath))) return candidatePath
+  }
+
+  throw new Error('Could not find an available worktree folder name.')
+}
+
 export async function loadGitWorktrees(projectId: string) {
   const { stdout } = await runGitWithOptions(projectId, ['worktree', 'list', '--porcelain'], {
     timeout: 10_000,
@@ -124,7 +170,7 @@ export async function createProjectWorktree(input: {
   try {
     const mainWorktree = await resolveMainWorktree(input.projectId)
     const rootProjectId = mainWorktree?.path ?? input.projectId
-    const worktreePath = path.join(
+    const worktreePath = await resolveAvailableWorktreePath(
       resolveWorktreeParent(rootProjectId, input.worktreeDirectory),
       folderName,
     )
@@ -134,9 +180,15 @@ export async function createProjectWorktree(input: {
       maxBuffer: 1024 * 1024,
     })
 
-    const worktreeAddArgs = (await hasLocalBranch(input.projectId, branchName))
+    const localBranchExists = await hasLocalBranch(input.projectId, branchName)
+    const remoteBranchBase = localBranchExists
+      ? null
+      : await findRemoteBranchBase(input.projectId, branchName)
+    const worktreeAddArgs = localBranchExists
       ? ['worktree', 'add', worktreePath, branchName]
-      : ['worktree', 'add', '-b', branchName, worktreePath]
+      : remoteBranchBase
+        ? ['worktree', 'add', '-b', branchName, worktreePath, remoteBranchBase]
+        : ['worktree', 'add', '-b', branchName, worktreePath]
 
     await runGitWithOptions(input.projectId, worktreeAddArgs, {
       env: getNonInteractiveGitEnv(),
