@@ -1,6 +1,7 @@
 import type { ProseMessage, ThreadData } from '../../shared/desktop-contracts.ts'
 import { setThreadCompactingState, setThreadStreamingState } from '../../shared/thread-data.ts'
 import { getLatestInboxAssistantMessage } from '../../shared/thread-inbox.ts'
+import { importProjectWorktrees } from '../project-import.ts'
 import { emitDesktopEvent } from '../runtime/desktop-events.ts'
 import {
   rememberLiveThread,
@@ -63,6 +64,7 @@ export async function publishExternalThreadUpdate({
   threadId: string
 }) {
   thread = normalizeExternalThreadData(thread)
+  void importProjectWorktrees(projectId)
   rememberLiveThread(sessionPath, thread)
   rememberSessionPath(sessionPath, projectId)
   threadId = upsertThreadSummary({

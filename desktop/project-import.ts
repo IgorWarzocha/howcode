@@ -81,7 +81,7 @@ function normalizePathForPrefix(projectPath: string) {
   return projectPath.endsWith('/') ? projectPath : `${projectPath}/`
 }
 
-async function importProjectWorktrees(projectId: string) {
+export async function importProjectWorktrees(projectId: string) {
   let worktrees: GitWorktreeEntry[]
   try {
     worktrees = await loadGitWorktrees(projectId)
@@ -126,4 +126,12 @@ async function importProjectWorktrees(projectId: string) {
   }
 
   return childWorktreeCount
+}
+
+export async function importProjectWorktreesForProjectIds(projectIds: Iterable<string>) {
+  let worktreeProjectCount = 0
+  for (const projectId of new Set(projectIds)) {
+    worktreeProjectCount += await importProjectWorktrees(projectId)
+  }
+  return worktreeProjectCount
 }

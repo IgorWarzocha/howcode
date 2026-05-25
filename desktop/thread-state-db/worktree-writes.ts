@@ -59,4 +59,15 @@ export function upsertProjectWorktree(metadata: ProjectWorktreeMetadata) {
     metadata.isMain ? 1 : 0,
     metadata.source,
   )
+
+  if (!metadata.isMain && metadata.branchName) {
+    db.prepare(
+      `
+        UPDATE threads
+        SET branch_name = COALESCE(branch_name, ?),
+          updated_at = CURRENT_TIMESTAMP
+        WHERE cwd = ?
+      `,
+    ).run(metadata.branchName, metadata.cwd)
+  }
 }

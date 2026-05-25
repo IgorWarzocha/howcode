@@ -13,7 +13,7 @@ export async function createThreadForBranch({
   onAction: DesktopActionInvoker
   projectId: string
 }) {
-  await onAction('thread.new', {
+  return await onAction('thread.new', {
     projectId,
     composerMode: 'code',
     branchName,
@@ -45,11 +45,20 @@ export async function createThreadInWorktreeForBranch({
     }
   }
 
-  await createThreadForBranch({
+  const threadResult = await createThreadForBranch({
     branchName,
     onAction,
     projectId: worktreeResult.result.projectId,
   })
+  const threadError = threadResult?.result?.error
+  if (!threadResult?.ok || threadError) {
+    return {
+      error:
+        typeof threadError === 'string' && threadError.trim().length > 0
+          ? threadError
+          : 'Could not start thread.',
+    }
+  }
   return { didMutate: true }
 }
 

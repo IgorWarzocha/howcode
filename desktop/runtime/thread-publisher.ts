@@ -9,6 +9,7 @@ import {
 import { buildThreadHistorySlice, type SessionPathEntry } from '../../shared/thread-history.ts'
 import { getLatestInboxAssistantMessage } from '../../shared/thread-inbox.ts'
 import { isChatSessionPath, upsertChatThread } from '../chat-state-db.ts'
+import { importProjectWorktrees } from '../project-import.ts'
 import {
   beginInboxThreadTurn,
   getThreadAssistantSnapshot,
@@ -132,6 +133,7 @@ function upsertPersistedThreadSummary({
   thread: ThreadData
   timestamp: number
 }) {
+  void importProjectWorktrees(runtime.cwd)
   const threadId = upsertThreadSummary({
     id: runtime.session.sessionId,
     cwd: runtime.cwd,
