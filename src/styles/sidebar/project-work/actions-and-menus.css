@@ -51,10 +51,6 @@
   min-width: 0;
 }
 
-.sidebar-new-thread-menu {
-  box-shadow: none;
-}
-
 .sidebar-new-thread-option,
 .sidebar-new-thread-branch-create {
   min-height: 1.625rem;

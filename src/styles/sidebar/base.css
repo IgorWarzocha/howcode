@@ -110,7 +110,7 @@
 .sidebar-popover-panel {
   border: 1px solid var(--border-strong);
   background: var(--panel);
-  box-shadow: none;
+  box-shadow: var(--shadow);
 }
 
 .sidebar-settings-menu {

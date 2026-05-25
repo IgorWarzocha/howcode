@@ -12,7 +12,7 @@
   border-radius: 0.375rem;
   background: var(--panel);
   padding: 0.25rem;
-  box-shadow: none;
+  box-shadow: var(--shadow);
 }
 
 .sidebar-project-create-popover[data-variant="project-work"] .sidebar-project-create-row {
