@@ -175,9 +175,8 @@ export function NewThreadMenu({
 
           <div
             className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-branch-create"
-            onPointerDown={(event) => {
+            onPointerUp={(event) => {
               if ((event.target as HTMLElement).closest('button')) return
-              event.preventDefault()
               focusInput(newBranchInputRef.current)
             }}
           >
@@ -208,9 +207,8 @@ export function NewThreadMenu({
 
           <div
             className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-branch-create"
-            onPointerDown={(event) => {
+            onPointerUp={(event) => {
               if ((event.target as HTMLElement).closest('button')) return
-              event.preventDefault()
               focusInput(newWorktreeInputRef.current)
             }}
           >
