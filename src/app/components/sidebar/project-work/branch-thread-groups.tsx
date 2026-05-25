@@ -384,6 +384,7 @@ export function ProjectCompactBranchGroups({
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
   onToggleUnassigned: () => void
 }) {
+  const canToggleCurrentBranch = branchThreads.length > 0
   const currentBranchGroup: BranchThreadGroup = {
     id: 'current-branch',
     label: currentBranch ?? 'No branch',
@@ -401,6 +402,7 @@ export function ProjectCompactBranchGroups({
             type="button"
             className="sidebar-icon-action sidebar-icon-action--xs sidebar-icon-action--no-hover sidebar-project-work-branch-disclosure"
             onClick={onToggleCurrentBranch}
+            disabled={!canToggleCurrentBranch}
             aria-expanded={currentBranchExpanded}
             aria-label={currentBranchExpanded ? 'Collapse current branch' : 'Expand current branch'}
           >
@@ -410,6 +412,7 @@ export function ProjectCompactBranchGroups({
             type="button"
             className="sidebar-project-work-branch-toggle"
             onClick={onToggleCurrentBranch}
+            disabled={!canToggleCurrentBranch}
             aria-expanded={currentBranchExpanded}
           >
             <span className="truncate">{currentBranch ?? 'No branch'}</span>
