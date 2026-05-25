@@ -38,6 +38,8 @@ export function NewThreadMenu({
   const [menuWidth, setMenuWidth] = useState(240)
   const [menuRight, setMenuRight] = useState(0)
   const menuRef = useRef<HTMLDivElement | null>(null)
+  const newBranchInputRef = useRef<HTMLInputElement | null>(null)
+  const newWorktreeInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     if (!open) return
@@ -80,6 +82,11 @@ export function NewThreadMenu({
   const createAssignedThread = async (branchName: string | null) => {
     await createThreadForBranch({ branchName, onAction, projectId })
     setOpen(false)
+  }
+
+  const focusInput = (input: HTMLInputElement | null) => {
+    input?.focus()
+    input?.select()
   }
 
   const createThreadInNewWorktree = async () => {
@@ -166,9 +173,17 @@ export function NewThreadMenu({
             </span>
           </button>
 
-          <div className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-branch-create">
+          <div
+            className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-branch-create"
+            onPointerDown={(event) => {
+              if ((event.target as HTMLElement).closest('button')) return
+              event.preventDefault()
+              focusInput(newBranchInputRef.current)
+            }}
+          >
             <GitBranch size={12} />
             <input
+              ref={newBranchInputRef}
               value={newBranchName}
               onChange={(event) => {
                 setNewBranchName(event.target.value)
@@ -191,9 +206,17 @@ export function NewThreadMenu({
             </button>
           </div>
 
-          <div className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-branch-create">
+          <div
+            className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-branch-create"
+            onPointerDown={(event) => {
+              if ((event.target as HTMLElement).closest('button')) return
+              event.preventDefault()
+              focusInput(newWorktreeInputRef.current)
+            }}
+          >
             <GitFork size={12} />
             <input
+              ref={newWorktreeInputRef}
               value={newWorktreeBranchName}
               onChange={(event) => {
                 setNewWorktreeBranchName(event.target.value)
