@@ -63,15 +63,26 @@ async function sha256Hex(input: string) {
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
+function getVoterHashSecret(env: Env) {
+  const secret = env.VOTER_HASH_SECRET?.trim()
+  if (!secret) {
+    throw new Response(JSON.stringify({ error: 'Polls are not configured.' }), {
+      headers: jsonHeaders,
+      status: 503,
+    })
+  }
+  return secret
+}
+
 async function getVoterHash(request: Request, env: Env, pollId: string) {
   const userAgent = request.headers.get('user-agent') ?? 'unknown-ua'
   const address = getClientAddress(request)
-  const secret = env.VOTER_HASH_SECRET ?? 'dev-secret-change-me'
+  const secret = getVoterHashSecret(env)
   return sha256Hex(`${secret}:${pollId}:${address}:${userAgent}`)
 }
 
 async function getUserAgentHash(request: Request, env: Env) {
-  const secret = env.VOTER_HASH_SECRET ?? 'dev-secret-change-me'
+  const secret = getVoterHashSecret(env)
   return sha256Hex(`${secret}:${request.headers.get('user-agent') ?? 'unknown-ua'}`)
 }
 
@@ -162,7 +173,7 @@ async function handleVote(request: Request, env: Env) {
   const userAgentHash = await getUserAgentHash(request, env)
 
   const recentEvents = await env.DB.prepare(
-    "SELECT COUNT(*) AS count FROM poll_vote_events WHERE voter_hash = ? AND created_at > datetime('now', '-30 seconds')",
+    "SELECT COUNT(*) AS count FROM poll_vote_events WHERE voter_hash = ? AND julianday(created_at) > julianday('now', '-30 seconds')",
   )
     .bind(voterHash)
     .first<{ count: number }>()

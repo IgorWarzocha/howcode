@@ -37,8 +37,9 @@ export function BranchThreadGroupSection({
   onSetSwitchErrorBranchId: (branchId: string | null) => void
 }) {
   const canManageBranch = !(group.current || group.unassigned)
-  const confirmingPrune = pruneConfirmBranchId === group.id
-  const switchBlocked = switchErrorBranchId === group.id
+  const branchActionKey = `${project.id}:${group.id}`
+  const confirmingPrune = pruneConfirmBranchId === branchActionKey
+  const switchBlocked = switchErrorBranchId === branchActionKey
 
   return (
     <section
@@ -81,7 +82,7 @@ export function BranchThreadGroupSection({
               group={group}
               project={project}
               onAction={onAction}
-              onBlocked={() => onSetSwitchErrorBranchId(group.id)}
+              onBlocked={() => onSetSwitchErrorBranchId(branchActionKey)}
             />
           ) : null}
           {canManageBranch ? (
@@ -92,7 +93,7 @@ export function BranchThreadGroupSection({
               onAction={onAction}
               onCancel={() => onSetPruneConfirmBranchId(null)}
               onConfirm={() => onSetPruneConfirmBranchId(null)}
-              onRequestConfirm={() => onSetPruneConfirmBranchId(group.id)}
+              onRequestConfirm={() => onSetPruneConfirmBranchId(branchActionKey)}
             />
           ) : null}
         </span>

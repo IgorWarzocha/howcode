@@ -5,6 +5,7 @@ import {
   filterBranchGroups,
   getProjectScopeLabel,
   getVisibleProjectIds,
+  projectBlockMatchesSearch,
   UNASSIGNED_BRANCH_GROUP_ID,
 } from '../app/components/sidebar/project-work/project-work-model'
 import type { Project, Thread } from '../app/types'
@@ -93,6 +94,27 @@ describe('project work sidebar model', () => {
 
     expect(filterBranchGroups(groups, 'sidebar').map((group) => group.id)).toEqual(['ui'])
     expect(filterBranchGroups(groups, 'main').map((group) => group.id)).toEqual(['main'])
+  })
+
+  it('matches project blocks from filtered branch groups, including non-current branches', () => {
+    const groups = buildBranchGroups(
+      [
+        thread({ id: 'one', title: 'Fix parser', branchName: 'main' }),
+        thread({ id: 'two', title: 'Polish sidebar', branchName: 'feature' }),
+      ],
+      'main',
+      ['feature'],
+    )
+    const filteredGroups = filterBranchGroups(groups, 'sidebar')
+
+    expect(
+      projectBlockMatchesSearch({
+        branchGroups: filteredGroups,
+        normalizedSearchQuery: 'sidebar',
+        projectName: 'Compiler',
+      }),
+    ).toBe(true)
+    expect(filteredGroups.map((group) => group.id)).toEqual(['feature'])
   })
 
   it('derives visible project ids from stored, initial, or selected project state', () => {

@@ -226,25 +226,28 @@ export function ProjectWorkSection({
 
   if (!selectedProject) return null
 
-  const { activeThreads, olderThreads } = bucketThreads(selectedProject, selectedThreadId)
+  const contentProject = visibleProjects.length === 1 ? visibleProjects[0] : selectedProject
+  if (!contentProject) return null
+
+  const { activeThreads, olderThreads } = bucketThreads(contentProject, selectedThreadId)
   const currentBranch = getCurrentBranchForProject(
-    selectedProject,
+    contentProject,
     projectGitState,
     gitStatesByProjectId,
   )
   const repositoryBranches = getRepositoryBranchesForProject(
-    selectedProject,
+    contentProject,
     projectGitState,
     gitStatesByProjectId,
   )
   const branchGroups = buildBranchGroups(activeThreads, currentBranch, repositoryBranches)
   const dirtyWorktreeMessage = getDirtyWorktreeMessage(
-    getProjectGitStateForSidebar(selectedProject.id, projectGitState, gitStatesByProjectId),
-    selectedProject.id,
+    getProjectGitStateForSidebar(contentProject.id, projectGitState, gitStatesByProjectId),
+    contentProject.id,
   )
   const normalizedSearchQuery = searchQuery.trim().toLowerCase()
   const visibleBranchGroups = filterBranchGroups(branchGroups, searchQuery)
-  const selectedThread = selectedProject.threads.find((thread) => thread.id === selectedThreadId)
+  const selectedThread = contentProject.threads.find((thread) => thread.id === selectedThreadId)
   const selectedGroupId = selectedThread?.branchName?.trim() || UNASSIGNED_BRANCH_GROUP_ID
   const multiProjectMode = visibleProjects.length > 1
   const scopeProject =
@@ -317,7 +320,7 @@ export function ProjectWorkSection({
           dirtyWorktreeMessage={dirtyWorktreeMessage}
           normalizedSearchQuery={normalizedSearchQuery}
           olderThreadCount={olderThreads.length}
-          project={selectedProject}
+          project={contentProject}
           pruneConfirmBranchId={pruneConfirmBranchId}
           searchInputRef={searchInputRef}
           searchQuery={searchQuery}

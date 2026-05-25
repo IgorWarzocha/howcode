@@ -7,6 +7,7 @@ enabled = true
 
 [vars]
 ALLOWED_ORIGINS = "https://igorwarzocha.github.io,http://localhost:4173"
+# Set the real value with `wrangler secret put VOTER_HASH_SECRET`.
 
 [[d1_databases]]
 binding = "DB"

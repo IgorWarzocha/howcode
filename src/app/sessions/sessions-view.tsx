@@ -1,5 +1,6 @@
 import { GitBranch, Trash2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { ConfirmPopover } from '../common/confirm-popover'
 import { Tooltip } from '../common/tooltip'
 import { ViewHeader } from '../common/view-header'
 import { ViewShell } from '../common/view-shell'
@@ -66,6 +67,10 @@ function SessionsToolbar({
   onRunBulkAction: (action: SessionBulkAction, threadIds?: string[]) => void
   onSetSelectedThreadIds: (threadIds: string[]) => void
 }) {
+  const [confirmDeleteTarget, setConfirmDeleteTarget] = useState<'selected' | 'all' | null>(null)
+  const deleteSelectedButtonRef = useRef<HTMLButtonElement>(null)
+  const deleteAllButtonRef = useRef<HTMLButtonElement>(null)
+
   return (
     <div className="flex min-w-0 items-center justify-between gap-2 text-xs text-[color:var(--muted)]">
       <label className="grid min-w-0 grid-cols-[1rem_minmax(0,1fr)] items-center gap-2 pl-2">
@@ -95,22 +100,50 @@ function SessionsToolbar({
         >
           Unassign
         </button>
-        <button
-          type="button"
-          className="rounded px-1.5 py-1 text-[color:var(--danger)] hover:bg-[color:color-mix(in_srgb,var(--danger-bg)_48%,transparent)] disabled:opacity-45"
-          disabled={selectedCount === 0}
-          onClick={() => onRunBulkAction('delete')}
-        >
-          Delete selected
-        </button>
-        <button
-          type="button"
-          className="rounded px-1.5 py-1 text-[color:var(--danger)] hover:bg-[color:color-mix(in_srgb,var(--danger-bg)_48%,transparent)] disabled:opacity-45"
-          disabled={visibleThreadIds.length === 0}
-          onClick={() => onRunBulkAction('delete', visibleThreadIds)}
-        >
-          Delete all
-        </button>
+        <div className="relative">
+          <button
+            ref={deleteSelectedButtonRef}
+            type="button"
+            className="rounded px-1.5 py-1 text-[color:var(--danger)] hover:bg-[color:color-mix(in_srgb,var(--danger-bg)_48%,transparent)] disabled:opacity-45"
+            disabled={selectedCount === 0}
+            onClick={() =>
+              setConfirmDeleteTarget((current) => (current === 'selected' ? null : 'selected'))
+            }
+          >
+            Delete selected
+          </button>
+          <ConfirmPopover
+            open={confirmDeleteTarget === 'selected'}
+            anchorRef={deleteSelectedButtonRef}
+            confirmLabel={`Delete ${selectedCount}`}
+            onClose={() => setConfirmDeleteTarget(null)}
+            onConfirm={() => {
+              setConfirmDeleteTarget(null)
+              onRunBulkAction('delete')
+            }}
+          />
+        </div>
+        <div className="relative">
+          <button
+            ref={deleteAllButtonRef}
+            type="button"
+            className="rounded px-1.5 py-1 text-[color:var(--danger)] hover:bg-[color:color-mix(in_srgb,var(--danger-bg)_48%,transparent)] disabled:opacity-45"
+            disabled={visibleThreadIds.length === 0}
+            onClick={() => setConfirmDeleteTarget((current) => (current === 'all' ? null : 'all'))}
+          >
+            Delete all
+          </button>
+          <ConfirmPopover
+            open={confirmDeleteTarget === 'all'}
+            anchorRef={deleteAllButtonRef}
+            confirmLabel={`Delete ${visibleThreadIds.length}`}
+            onClose={() => setConfirmDeleteTarget(null)}
+            onConfirm={() => {
+              setConfirmDeleteTarget(null)
+              onRunBulkAction('delete', visibleThreadIds)
+            }}
+          />
+        </div>
       </div>
     </div>
   )
@@ -135,6 +168,8 @@ function SessionRow({
   onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void
   onToggleSelected: () => void
 }) {
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
+  const deleteButtonRef = useRef<HTMLButtonElement>(null)
   const assignedToCurrent = currentBranch && thread.branchName === currentBranch
   const assignLabel = assignedToCurrent
     ? `Unassign from ${currentBranch}`
@@ -182,16 +217,29 @@ function SessionRow({
         </button>
       </Tooltip>
       <span className="shrink-0 text-xs text-[color:var(--muted-2)]">{thread.age}</span>
-      <Tooltip content="Delete session">
-        <button
-          type="button"
-          className={viewCloseButtonClass}
-          aria-label={`Delete ${thread.title}`}
-          onClick={onDelete}
-        >
-          <Trash2 size={13} />
-        </button>
-      </Tooltip>
+      <div className="relative">
+        <Tooltip content="Delete session">
+          <button
+            ref={deleteButtonRef}
+            type="button"
+            className={viewCloseButtonClass}
+            aria-label={`Delete ${thread.title}`}
+            onClick={() => setConfirmDeleteOpen((current) => !current)}
+          >
+            <Trash2 size={13} />
+          </button>
+        </Tooltip>
+        <ConfirmPopover
+          open={confirmDeleteOpen}
+          anchorRef={deleteButtonRef}
+          confirmLabel="Delete"
+          onClose={() => setConfirmDeleteOpen(false)}
+          onConfirm={() => {
+            setConfirmDeleteOpen(false)
+            onDelete()
+          }}
+        />
+      </div>
     </div>
   )
 }

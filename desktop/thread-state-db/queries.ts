@@ -75,6 +75,7 @@ export function listProjects(cwd: string): Project[] {
           projects.repo_origin_checked,
           projects.git_ops_mode
         ORDER BY
+          projects.pinned DESC,
           latestModifiedMs DESC,
           projects.name COLLATE NOCASE ASC
       `,

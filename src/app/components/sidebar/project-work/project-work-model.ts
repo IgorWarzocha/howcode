@@ -45,18 +45,14 @@ export function orderProjectsForScopeSelector(
 }
 
 export function projectBlockMatchesSearch(input: {
-  branchThreads: Thread[]
-  currentBranch: string | null
+  branchGroups: BranchThreadGroup[]
   normalizedSearchQuery: string
   projectName: string
-  unassignedThreads: Thread[]
 }) {
   if (input.normalizedSearchQuery.length === 0) return true
   return (
     input.projectName.toLowerCase().includes(input.normalizedSearchQuery) ||
-    (input.currentBranch?.toLowerCase().includes(input.normalizedSearchQuery) ?? false) ||
-    input.branchThreads.length > 0 ||
-    input.unassignedThreads.length > 0
+    input.branchGroups.length > 0
   )
 }
 

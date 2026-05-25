@@ -44,7 +44,7 @@ export function ProjectWorkThreadRow({
             : 'Clear assigned branch'
       }
       onDelete={() =>
-        onAction('thread.delete', {
+        onAction('thread.archive', {
           projectId: project.id,
           threadId: thread.id,
         })
