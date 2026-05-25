@@ -393,6 +393,14 @@ export function ProjectCompactBranchGroups({
     unassigned: false,
     worktree: false,
   }
+  const unassignedGroup: BranchThreadGroup = {
+    id: 'compact-unassigned',
+    label: 'Unassigned',
+    threads: unassignedThreads,
+    current: false,
+    unassigned: true,
+    worktree: false,
+  }
 
   return (
     <>
@@ -514,6 +522,23 @@ export function ProjectCompactBranchGroups({
             </button>
             <span className="sidebar-project-work-branch-meta">
               <span className="sidebar-project-work-branch-count">{unassignedThreads.length}</span>
+            </span>
+            <span className="sidebar-project-work-branch-actions" data-action-count="1">
+              <BranchInlineActions
+                canPrune={false}
+                canSwitch={false}
+                confirmingPrune={false}
+                currentBranch={currentBranch}
+                group={unassignedGroup}
+                project={project}
+                switchBlocked={false}
+                onAction={onAction}
+                onCancelPrune={() => undefined}
+                onConfirmPrune={() => undefined}
+                onRequestPruneConfirm={() => undefined}
+                onSwitchBlocked={() => undefined}
+                onSwitchFailed={() => undefined}
+              />
             </span>
           </div>
           {unassignedExpanded ? (
