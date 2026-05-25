@@ -34,6 +34,7 @@ export function NewThreadMenu({
   const [newBranchName, setNewBranchName] = useState('')
   const [newBranchError, setNewBranchError] = useState<string | null>(null)
   const [menuWidth, setMenuWidth] = useState(240)
+  const [menuRight, setMenuRight] = useState(0)
   const menuRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -60,7 +61,18 @@ export function NewThreadMenu({
   useLayoutEffect(() => {
     if (!(open && menuRef.current)) return
     const anchor = menuRef.current
-    setMenuWidth(anchor.offsetLeft + anchor.offsetWidth)
+    const row = anchor.closest(
+      '.sidebar-project-work-project-block-heading-row, .sidebar-project-work-section-heading',
+    )
+    const rowRect = row?.getBoundingClientRect()
+    const anchorRect = anchor.getBoundingClientRect()
+    if (!rowRect) {
+      setMenuWidth(anchor.offsetLeft + anchor.offsetWidth)
+      setMenuRight(0)
+      return
+    }
+    setMenuWidth(rowRect.width)
+    setMenuRight(anchorRect.right - rowRect.right)
   }, [open])
 
   const createAssignedThread = async (branchName: string | null) => {
@@ -107,7 +119,7 @@ export function NewThreadMenu({
       {open ? (
         <div
           className="sidebar-menu-surface sidebar-menu-surface--below-normal sidebar-new-thread-menu"
-          style={{ width: `${menuWidth}px` }}
+          style={{ right: `${menuRight}px`, width: `${menuWidth}px` }}
           role="menu"
           aria-label="New thread options"
         >
