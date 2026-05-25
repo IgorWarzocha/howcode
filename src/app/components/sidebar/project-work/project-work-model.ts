@@ -314,6 +314,24 @@ export function getWorktreeBranchesForProject(
     }))
 }
 
+export function getWorktreeProjectsForRoot(project: Project, projects: readonly Project[]) {
+  return projects.filter(
+    (candidate) =>
+      candidate.id !== project.id &&
+      candidate.worktree?.rootProjectId === project.id &&
+      candidate.worktree.isMain === false,
+  )
+}
+
+export function getThreadsForProjectWorktreeRows(project: Project, projects: readonly Project[]) {
+  return getWorktreeProjectsForRoot(project, projects).flatMap((worktreeProject) =>
+    worktreeProject.threads.map((thread) => ({
+      ...thread,
+      branchName: thread.branchName ?? worktreeProject.worktree?.branchName ?? undefined,
+    })),
+  )
+}
+
 export function filterThreadsForCurrentBranch(
   threads: readonly Thread[],
   currentBranch: string | null,

@@ -20,8 +20,10 @@ import {
   getProjectGitStateForSidebar,
   getProjectScopeLabel,
   getRepositoryBranchesForProject,
+  getThreadsForProjectWorktreeRows,
   getVisibleProjectIds,
   getWorktreeBranchesForProject,
+  getWorktreeProjectsForRoot,
   orderProjectsForScopeSelector,
   sameStringList,
   UNASSIGNED_BRANCH_GROUP_ID,
@@ -159,11 +161,17 @@ export function ProjectWorkSection({
   }, [gitStateQueries, projectGitState, visibleProjects])
 
   useEffect(() => {
+    const projectsToLoad = new Map(visibleProjects.map((project) => [project.id, project]))
     for (const project of visibleProjects) {
+      for (const worktreeProject of getWorktreeProjectsForRoot(project, displayableProjects)) {
+        projectsToLoad.set(worktreeProject.id, worktreeProject)
+      }
+    }
+    for (const project of projectsToLoad.values()) {
       if (project.threadsLoaded) continue
       void onLoadProjectThreads(project.id, { chat: false })
     }
-  }, [onLoadProjectThreads, visibleProjects])
+  }, [displayableProjects, onLoadProjectThreads, visibleProjects])
 
   const focusProject = (projectId: string) => {
     onProjectSelect(projectId)
@@ -250,7 +258,7 @@ export function ProjectWorkSection({
     gitStatesByProjectId,
   )
   const branchGroups = buildBranchGroups(
-    activeThreads,
+    [...activeThreads, ...getThreadsForProjectWorktreeRows(contentProject, displayableProjects)],
     currentBranch,
     repositoryBranches,
     worktreeBranches,
@@ -303,6 +311,7 @@ export function ProjectWorkSection({
       ) : multiProjectMode ? (
         <MultiProjectWorkContent
           activeView={activeView}
+          allProjects={displayableProjects}
           collapsedBranchIds={collapsedBranchIds}
           gitStatesByProjectId={gitStatesByProjectId}
           projectGitState={projectGitState}

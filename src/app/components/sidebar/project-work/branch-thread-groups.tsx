@@ -106,6 +106,7 @@ export function BranchThreadGroupSection({
   const branchActionKey = `${project.id}:${group.id}`
   const confirmingPrune = pruneConfirmBranchId === branchActionKey
   const switchBlocked = switchErrorBranchId === branchActionKey
+  const threadProject = group.worktreePath ? { ...project, id: group.worktreePath } : project
 
   return (
     <section
@@ -175,7 +176,7 @@ export function BranchThreadGroupSection({
               <ProjectWorkThreadRow
                 key={thread.id}
                 activeView={activeView}
-                project={project}
+                project={threadProject}
                 selectedThreadId={selectedThreadId}
                 terminalRunningSessionPaths={terminalRunningSessionPaths}
                 thread={thread}

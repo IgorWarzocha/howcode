@@ -16,12 +16,14 @@ import {
   getDirtyWorktreeMessage,
   getProjectGitStateForSidebar,
   getRepositoryBranchesForProject,
+  getThreadsForProjectWorktreeRows,
   getWorktreeBranchesForProject,
   UNASSIGNED_BRANCH_GROUP_ID,
 } from './project-work-model'
 
 export function MultiProjectWorkContent({
   activeView,
+  allProjects,
   collapsedBranchIds,
   gitStatesByProjectId,
   projectGitState,
@@ -46,6 +48,7 @@ export function MultiProjectWorkContent({
   onThreadOpen,
 }: {
   activeView: View
+  allProjects: Project[]
   collapsedBranchIds: Record<string, boolean>
   gitStatesByProjectId: ReadonlyMap<string, ProjectGitState | null>
   projectGitState: ProjectGitState | null
@@ -106,7 +109,7 @@ export function MultiProjectWorkContent({
               gitStatesByProjectId,
             )
             const branchGroups = buildBranchGroups(
-              buckets.activeThreads,
+              [...buckets.activeThreads, ...getThreadsForProjectWorktreeRows(project, allProjects)],
               blockCurrentBranch,
               repositoryBranches,
               worktreeBranches,
