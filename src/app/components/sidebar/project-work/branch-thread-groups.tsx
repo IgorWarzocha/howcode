@@ -59,7 +59,9 @@ function EmptyBranchStartAction({
     ? `Start thread in ${group.label}`
     : group.current
       ? `Start thread on ${currentBranch ?? group.label}`
-      : `Switch to ${group.label} and start thread`
+      : group.unassigned
+        ? 'Start unassigned thread'
+        : `Switch to ${group.label} and start thread`
 
   return (
     <Tooltip content={blocked ? 'Worktree is dirty. Commit first.' : label} placement="right">
