@@ -71,6 +71,83 @@ function EmptyBranchStartAction({
   )
 }
 
+function BranchInlineActions({
+  canManageBranch,
+  confirmingPrune,
+  currentBranch,
+  group,
+  project,
+  switchBlocked,
+  onAction,
+  onCancelPrune,
+  onConfirmPrune,
+  onRequestPruneConfirm,
+  onSwitchBlocked,
+  onSwitchFailed,
+}: {
+  canManageBranch: boolean
+  confirmingPrune: boolean
+  currentBranch: string | null
+  group: BranchThreadGroup
+  project: Project
+  switchBlocked: boolean
+  onAction: DesktopActionInvoker
+  onCancelPrune: () => void
+  onConfirmPrune: () => void
+  onRequestPruneConfirm: () => void
+  onSwitchBlocked: () => void
+  onSwitchFailed: () => void
+}) {
+  if (!canManageBranch) {
+    return (
+      <EmptyBranchStartAction
+        blocked={switchBlocked}
+        currentBranch={currentBranch}
+        group={group}
+        project={project}
+        onAction={onAction}
+        onBlocked={onSwitchBlocked}
+        onSwitchFailed={onSwitchFailed}
+      />
+    )
+  }
+
+  return (
+    <>
+      <BranchPruneAction
+        confirming={confirmingPrune}
+        group={group}
+        project={project}
+        onAction={onAction}
+        onCancel={onCancelPrune}
+        onConfirm={onConfirmPrune}
+        onRequestConfirm={onRequestPruneConfirm}
+      />
+      {confirmingPrune ? null : (
+        <>
+          <BranchSwitchAction
+            blocked={switchBlocked}
+            group={group}
+            project={project}
+            onAction={onAction}
+            onBlocked={onSwitchBlocked}
+            onSwitchFailed={onSwitchFailed}
+          />
+          <EmptyBranchStartAction
+            blocked={switchBlocked}
+            currentBranch={currentBranch}
+            group={group}
+            project={project}
+            onAction={onAction}
+            onBlocked={onSwitchBlocked}
+            onSwitchFailed={onSwitchFailed}
+          />
+        </>
+      )}
+    </>
+  )
+}
+
 export function BranchThreadGroupSection({
   activeView,
   collapsed,
@@ -140,56 +217,26 @@ export function BranchThreadGroupSection({
             <span className="sidebar-project-work-branch-current">Current</span>
           ) : null}
           <span className="sidebar-project-work-branch-count">{group.threads.length}</span>
-          {canManageBranch ? null : (
-            <span className="sidebar-project-work-branch-start">
-              <EmptyBranchStartAction
-                blocked={switchBlocked}
-                currentBranch={currentBranch}
-                group={group}
-                project={project}
-                onAction={onAction}
-                onBlocked={() => onSetSwitchErrorBranchId(branchActionKey)}
-                onSwitchFailed={() => onSetSwitchErrorBranchId(null)}
-              />
-            </span>
-          )}
         </span>
         <span
           className="sidebar-project-work-branch-actions"
+          data-compact={canManageBranch ? 'false' : 'true'}
           data-confirming={confirmingPrune ? 'true' : 'false'}
         >
-          {canManageBranch ? (
-            <BranchPruneAction
-              confirming={confirmingPrune}
-              group={group}
-              project={project}
-              onAction={onAction}
-              onCancel={() => onSetPruneConfirmBranchId(null)}
-              onConfirm={() => onSetPruneConfirmBranchId(null)}
-              onRequestConfirm={() => onSetPruneConfirmBranchId(branchActionKey)}
-            />
-          ) : null}
-          {canManageBranch && !confirmingPrune ? (
-            <>
-              <BranchSwitchAction
-                blocked={switchBlocked}
-                group={group}
-                project={project}
-                onAction={onAction}
-                onBlocked={() => onSetSwitchErrorBranchId(branchActionKey)}
-                onSwitchFailed={() => onSetSwitchErrorBranchId(null)}
-              />
-              <EmptyBranchStartAction
-                blocked={switchBlocked}
-                currentBranch={currentBranch}
-                group={group}
-                project={project}
-                onAction={onAction}
-                onBlocked={() => onSetSwitchErrorBranchId(branchActionKey)}
-                onSwitchFailed={() => onSetSwitchErrorBranchId(null)}
-              />
-            </>
-          ) : null}
+          <BranchInlineActions
+            canManageBranch={canManageBranch}
+            confirmingPrune={confirmingPrune}
+            currentBranch={currentBranch}
+            group={group}
+            project={project}
+            switchBlocked={switchBlocked}
+            onAction={onAction}
+            onCancelPrune={() => onSetPruneConfirmBranchId(null)}
+            onConfirmPrune={() => onSetPruneConfirmBranchId(null)}
+            onRequestPruneConfirm={() => onSetPruneConfirmBranchId(branchActionKey)}
+            onSwitchBlocked={() => onSetSwitchErrorBranchId(branchActionKey)}
+            onSwitchFailed={() => onSetSwitchErrorBranchId(null)}
+          />
         </span>
       </div>
 
@@ -354,22 +401,22 @@ export function ProjectCompactBranchGroups({
           </button>
           <span className="sidebar-project-work-branch-meta">
             <span className="sidebar-project-work-branch-count">{branchThreads.length}</span>
-            <span className="sidebar-project-work-branch-start">
-              <IconButton
-                label="Start thread on current branch"
-                tooltipPlacement="right"
-                icon={<Plus size={14} />}
-                className="sidebar-project-work-empty-start h-7 w-7 rounded-md"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  void createThreadForBranch({
-                    branchName: currentBranch,
-                    onAction,
-                    projectId: project.id,
-                  })
-                }}
-              />
-            </span>
+          </span>
+          <span className="sidebar-project-work-branch-actions" data-compact="true">
+            <IconButton
+              label="Start thread on current branch"
+              tooltipPlacement="right"
+              icon={<Plus size={14} />}
+              className="sidebar-project-work-empty-start h-7 w-7 rounded-md"
+              onClick={(event) => {
+                event.stopPropagation()
+                void createThreadForBranch({
+                  branchName: currentBranch,
+                  onAction,
+                  projectId: project.id,
+                })
+              }}
+            />
           </span>
         </div>
         {currentBranchExpanded ? (
