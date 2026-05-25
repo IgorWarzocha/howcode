@@ -13,7 +13,7 @@ type ThreadIdPathRow = {
 const worktreeBranchForCwdSql = `
   SELECT branch_name
   FROM project_worktrees
-  WHERE cwd = ?
+  WHERE cwd = ? AND is_main = 0
 `
 
 function escapeLikePattern(value: string) {
