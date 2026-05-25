@@ -96,13 +96,7 @@
 }
 
 .sidebar-new-thread-branch-create button {
-  display: inline-flex;
-  width: 1.25rem;
-  height: 1.25rem;
-  align-items: center;
-  justify-content: center;
   overflow: hidden;
-  color: var(--accent);
   font-size: var(--app-type-meta-size);
   font-weight: 650;
   text-overflow: ellipsis;
@@ -110,6 +104,8 @@
 }
 
 .sidebar-new-thread-create-action {
+  width: 1.25rem;
+  height: 1.25rem;
   justify-self: end;
 }
 

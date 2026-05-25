@@ -3,7 +3,7 @@ import { Tooltip } from '@howcode/common/tooltip'
 import { useQueryClient } from '@tanstack/react-query'
 import { GitBranch, GitFork, Plus, X } from 'lucide-react'
 import { type ReactNode, type RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import type { DesktopActionInvoker } from '../../../desktop/types'
+import type { DesktopActionInvoker, ProjectGitState } from '../../../desktop/types'
 import { desktopQueryKeys, getProjectGitStateQuery } from '../../../query/desktop-query'
 
 export async function createThreadForBranch({
@@ -25,6 +25,15 @@ export async function createThreadForBranch({
 function focusInput(input: HTMLInputElement | null) {
   input?.focus()
   input?.select()
+}
+
+function getBranchCreateBlockMessage(projectGitState: ProjectGitState | null) {
+  if (!projectGitState?.isGitRepo) return null
+  const dirtyFileCount =
+    projectGitState.stagedFileCount +
+    projectGitState.unstagedFileCount +
+    projectGitState.untrackedFileCount
+  return dirtyFileCount > 0 ? 'Commit first' : null
 }
 
 function CreateTargetRow({
@@ -71,14 +80,11 @@ function CreateTargetRow({
         placeholder={placeholder}
         aria-label={inputLabel}
       />
-      <Tooltip
-        content={actionLabel}
-        placement="right"
-        className="sidebar-new-thread-option-meta sidebar-new-thread-option-plus sidebar-new-thread-create-action"
-      >
+      <Tooltip content={actionLabel} placement="right" className="sidebar-new-thread-create-action">
         <button
           type="button"
           data-warning={error ? 'true' : 'false'}
+          className="sidebar-new-thread-option-meta sidebar-new-thread-option-plus"
           aria-label={actionLabel}
           onClick={() => {
             if (value.trim().length === 0) {
@@ -108,6 +114,7 @@ export function NewThreadMenu({
   const [open, setOpen] = useState(false)
   const [newBranchName, setNewBranchName] = useState('')
   const [newBranchError, setNewBranchError] = useState<string | null>(null)
+  const [branchCreateBlockMessage, setBranchCreateBlockMessage] = useState<string | null>(null)
   const [newWorktreeBranchName, setNewWorktreeBranchName] = useState('')
   const [newWorktreeError, setNewWorktreeError] = useState<string | null>(null)
   const [menuWidth, setMenuWidth] = useState(240)
@@ -159,16 +166,20 @@ export function NewThreadMenu({
     setOpen(false)
   }
 
+  const refreshBranchCreateState = async () => {
+    setBranchCreateBlockMessage(null)
+    const nextGitState = await queryClient.fetchQuery({
+      queryKey: desktopQueryKeys.projectGitState(projectId),
+      queryFn: () => getProjectGitStateQuery(projectId),
+      staleTime: 0,
+    })
+    setBranchCreateBlockMessage(getBranchCreateBlockMessage(nextGitState))
+  }
+
   const toggleOpen = () => {
     setOpen((current) => {
       const nextOpen = !current
-      if (nextOpen) {
-        void queryClient.fetchQuery({
-          queryKey: desktopQueryKeys.projectGitState(projectId),
-          queryFn: () => getProjectGitStateQuery(projectId),
-          staleTime: 0,
-        })
-      }
+      if (nextOpen) void refreshBranchCreateState()
       return nextOpen
     })
   }
@@ -204,6 +215,10 @@ export function NewThreadMenu({
   const createThreadOnNewBranch = async () => {
     const branchName = newBranchName.trim()
     if (!branchName) return
+    if (branchCreateBlockMessage) {
+      setNewBranchError(branchCreateBlockMessage)
+      return
+    }
     setNewBranchError(null)
     const switchResult = await onAction('workspace.switch-branch', {
       projectId,
@@ -257,7 +272,7 @@ export function NewThreadMenu({
             icon={<GitBranch size={12} />}
             inputRef={newBranchInputRef}
             value={newBranchName}
-            error={newBranchError}
+            error={newBranchError ?? branchCreateBlockMessage}
             placeholder="New branch"
             inputLabel="New branch name"
             createLabel="Create branch"
