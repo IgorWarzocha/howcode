@@ -101,7 +101,7 @@ export function NewThreadMenu({
         label="New thread"
         icon={<Plus size={14} />}
         tooltipPlacement="right"
-        className="h-7 w-7 translate-x-0.5 rounded-md"
+        className="h-7 w-7 rounded-md"
         onClick={() => setOpen((current) => !current)}
       />
       {open ? (

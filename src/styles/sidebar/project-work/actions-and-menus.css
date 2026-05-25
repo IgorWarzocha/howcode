@@ -33,7 +33,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.5rem;
-  padding-right: 0.625rem;
+  padding-right: 0;
 }
 
 .sidebar-project-work-section-heading--search-only {
@@ -47,6 +47,7 @@
 
 .sidebar-new-thread-menu-anchor {
   position: relative;
+  justify-self: end;
   min-width: 0;
 }
 

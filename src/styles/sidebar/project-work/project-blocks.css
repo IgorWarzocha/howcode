@@ -35,7 +35,7 @@
   grid-template-columns: 1.75rem minmax(0, 1fr) auto auto;
   align-items: center;
   gap: calc(var(--sidebar-row-gap, 0.5rem) - var(--sidebar-row-padding-x, 0.3125rem));
-  padding-right: var(--sidebar-row-padding-x, 0.3125rem);
+  padding-right: 0;
 }
 
 .sidebar-project-work-project-block-disclosure svg {
