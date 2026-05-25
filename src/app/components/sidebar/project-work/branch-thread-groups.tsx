@@ -140,6 +140,17 @@ export function BranchThreadGroupSection({
             <span className="sidebar-project-work-branch-current">Current</span>
           ) : null}
           <span className="sidebar-project-work-branch-count">{group.threads.length}</span>
+          <span className="sidebar-project-work-branch-start">
+            <EmptyBranchStartAction
+              blocked={switchBlocked}
+              currentBranch={currentBranch}
+              group={group}
+              project={project}
+              onAction={onAction}
+              onBlocked={() => onSetSwitchErrorBranchId(branchActionKey)}
+              onSwitchFailed={() => onSetSwitchErrorBranchId(null)}
+            />
+          </span>
         </span>
         <span
           className="sidebar-project-work-branch-actions"
@@ -171,34 +182,21 @@ export function BranchThreadGroupSection({
 
       {collapsed ? null : (
         <div className="sidebar-project-work-branch-thread-list">
-          {group.threads.length > 0 ? (
-            group.threads.map((thread) => (
-              <ProjectWorkThreadRow
-                key={thread.id}
-                activeView={activeView}
-                project={threadProject}
-                selectedThreadId={selectedThreadId}
-                terminalRunningSessionPaths={terminalRunningSessionPaths}
-                thread={thread}
-                onAction={onAction}
-                onThreadOpen={onThreadOpen}
-                currentBranch={currentBranch}
-              />
-            ))
-          ) : (
-            <div className="sidebar-project-work-branch-empty">
-              <span>No threads assigned here yet.</span>
-              <EmptyBranchStartAction
-                blocked={switchBlocked}
-                currentBranch={currentBranch}
-                group={group}
-                project={project}
-                onAction={onAction}
-                onBlocked={() => onSetSwitchErrorBranchId(branchActionKey)}
-                onSwitchFailed={() => onSetSwitchErrorBranchId(null)}
-              />
-            </div>
-          )}
+          {group.threads.length > 0
+            ? group.threads.map((thread) => (
+                <ProjectWorkThreadRow
+                  key={thread.id}
+                  activeView={activeView}
+                  project={threadProject}
+                  selectedThreadId={selectedThreadId}
+                  terminalRunningSessionPaths={terminalRunningSessionPaths}
+                  thread={thread}
+                  onAction={onAction}
+                  onThreadOpen={onThreadOpen}
+                  currentBranch={currentBranch}
+                />
+              ))
+            : null}
         </div>
       )}
     </section>
@@ -343,43 +341,41 @@ export function ProjectCompactBranchGroups({
           </button>
           <span className="sidebar-project-work-branch-meta">
             <span className="sidebar-project-work-branch-count">{branchThreads.length}</span>
+            <span className="sidebar-project-work-branch-start">
+              <IconButton
+                label="Start thread on current branch"
+                tooltipPlacement="right"
+                icon={<Plus size={14} />}
+                className="sidebar-project-work-empty-start h-7 w-7 rounded-md"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  void createThreadForBranch({
+                    branchName: currentBranch,
+                    onAction,
+                    projectId: project.id,
+                  })
+                }}
+              />
+            </span>
           </span>
         </div>
         {currentBranchExpanded ? (
           <div className="sidebar-project-work-branch-thread-list">
-            {branchThreads.length > 0 ? (
-              branchThreads.map((thread) => (
-                <ProjectWorkThreadRow
-                  key={thread.id}
-                  activeView={activeView}
-                  currentBranch={currentBranch}
-                  project={project}
-                  selectedThreadId={selectedThreadId}
-                  terminalRunningSessionPaths={terminalRunningSessionPaths}
-                  thread={thread}
-                  onAction={onAction}
-                  onThreadOpen={onThreadOpen}
-                />
-              ))
-            ) : (
-              <div className="sidebar-project-work-branch-empty">
-                <span>No threads on current branch.</span>
-                <IconButton
-                  label="Start thread on current branch"
-                  tooltipPlacement="right"
-                  icon={<Plus size={14} />}
-                  className="sidebar-project-work-empty-start h-7 w-7 rounded-md"
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    void createThreadForBranch({
-                      branchName: currentBranch,
-                      onAction,
-                      projectId: project.id,
-                    })
-                  }}
-                />
-              </div>
-            )}
+            {branchThreads.length > 0
+              ? branchThreads.map((thread) => (
+                  <ProjectWorkThreadRow
+                    key={thread.id}
+                    activeView={activeView}
+                    currentBranch={currentBranch}
+                    project={project}
+                    selectedThreadId={selectedThreadId}
+                    terminalRunningSessionPaths={terminalRunningSessionPaths}
+                    thread={thread}
+                    onAction={onAction}
+                    onThreadOpen={onThreadOpen}
+                  />
+                ))
+              : null}
           </div>
         ) : null}
       </section>
