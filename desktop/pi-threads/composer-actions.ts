@@ -2,6 +2,7 @@ import { isCompactSlashCommand } from '../../shared/composer-slash-commands.ts'
 import type { DesktopAction } from '../../shared/desktop-actions.ts'
 import type { AnyDesktopActionPayload, ComposerAttachment } from '../../shared/desktop-contracts.ts'
 import {
+  getBranchName,
   getComposerAttachments,
   getComposerModelSelection,
   getComposerQueueId,
@@ -23,6 +24,7 @@ import {
   stopComposerRun,
 } from '../pi-desktop-runtime.ts'
 import { invalidateRuntimeHostSettings } from '../runtime-host/client-bridge.ts'
+import { assignThreadBranch } from '../thread-state-db.ts'
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
 import { normalizeComposerSendAttachments } from './composer-attachment-payload'
@@ -55,6 +57,10 @@ async function sendComposerPromptFromPayload(payload: AnyDesktopActionPayload) {
     attachments,
     streamingBehavior: getComposerStreamingBehavior(payload),
   })
+  const branchName = getBranchName(payload) ?? getComposerRequest(payload).branchName?.trim()
+  if (composerSendResult.threadId && branchName) {
+    assignThreadBranch(composerSendResult.threadId, branchName)
+  }
   return handledAction({
     composerSendOutcome: composerSendResult.outcome,
     composerSendSessionPath: composerSendResult.sessionPath,

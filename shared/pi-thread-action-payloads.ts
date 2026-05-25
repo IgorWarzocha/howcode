@@ -13,7 +13,7 @@ import type {
   ProjectDiffDefaultBaseline,
   ProjectDiffRenderMode,
 } from './desktop-contracts'
-import { getPersistedSessionPath } from './session-paths'
+import { getLocalDraftBranchName, getPersistedSessionPath } from './session-paths'
 
 const composerThinkingLevels = new Set<ComposerThinkingLevel>([
   'off',
@@ -35,6 +35,12 @@ export function getComposerRequest(payload: DesktopActionPayloadInput): Composer
         ? payload.composerMode
         : null,
     chatGroupId: typeof payload.chatGroupId === 'string' ? payload.chatGroupId : null,
+    branchName:
+      typeof payload.branchName === 'string'
+        ? payload.branchName
+        : getLocalDraftBranchName(
+            typeof payload.sessionPath === 'string' ? payload.sessionPath : null,
+          ),
   }
 }
 
