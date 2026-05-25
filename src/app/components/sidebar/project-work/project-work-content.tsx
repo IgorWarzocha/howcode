@@ -16,6 +16,7 @@ import {
   getDirtyWorktreeMessage,
   getProjectGitStateForSidebar,
   getRepositoryBranchesForProject,
+  getWorktreeBranchesForProject,
   UNASSIGNED_BRANCH_GROUP_ID,
 } from './project-work-model'
 
@@ -99,10 +100,16 @@ export function MultiProjectWorkContent({
               projectGitState,
               gitStatesByProjectId,
             )
+            const worktreeBranches = getWorktreeBranchesForProject(
+              project,
+              projectGitState,
+              gitStatesByProjectId,
+            )
             const branchGroups = buildBranchGroups(
               buckets.activeThreads,
               blockCurrentBranch,
               repositoryBranches,
+              worktreeBranches,
             )
             const unassignedGroupId = `${project.id}:${UNASSIGNED_BRANCH_GROUP_ID}`
             const expanded = collapsedBranchIds[`project:${project.id}`] === false

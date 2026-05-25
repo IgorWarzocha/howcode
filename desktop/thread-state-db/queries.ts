@@ -55,9 +55,15 @@ export function listProjects(cwd: string): Project[] {
           projects.repo_origin_url AS repoOriginUrl,
           projects.repo_origin_checked AS repoOriginChecked,
           projects.git_ops_mode AS gitOpsMode,
+          project_worktrees.root_cwd AS worktreeRootProjectId,
+          project_worktrees.branch_name AS worktreeBranchName,
+          project_worktrees.is_main AS worktreeIsMain,
+          project_worktrees.source AS worktreeSource,
           COUNT(threads.id) AS threadCount,
           COALESCE(MAX(threads.last_modified_ms), 0) AS latestModifiedMs
         FROM projects
+        LEFT JOIN project_worktrees
+          ON project_worktrees.cwd = projects.cwd
         LEFT JOIN threads
           ON threads.cwd = projects.cwd
           AND threads.archived = 0
@@ -73,7 +79,11 @@ export function listProjects(cwd: string): Project[] {
           projects.collapsed,
           projects.repo_origin_url,
           projects.repo_origin_checked,
-          projects.git_ops_mode
+          projects.git_ops_mode,
+          project_worktrees.root_cwd,
+          project_worktrees.branch_name,
+          project_worktrees.is_main,
+          project_worktrees.source
         ORDER BY
           projects.pinned DESC,
           latestModifiedMs DESC,

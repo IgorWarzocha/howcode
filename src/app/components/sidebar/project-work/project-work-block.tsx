@@ -220,6 +220,9 @@ export function ProjectWorkSummaryBlock({
     searchQuery,
   )
   const filteredBranchGroups = filterBranchGroups(branchGroups, searchQuery)
+  const compactWorktreeGroups = filteredBranchGroups.filter(
+    (group) => group.worktree && !group.current,
+  )
   const searchExpanded = normalizedSearchQuery.length > 0
   const unassignedExpanded = searchExpanded || !unassignedCollapsed
 
@@ -298,17 +301,23 @@ export function ProjectWorkSummaryBlock({
         <ProjectCompactBranchGroups
           activeView={activeView}
           branchThreads={branchThreads}
+          collapsedBranchIds={collapsedBranchIds}
           currentBranch={currentBranch}
           currentBranchExpanded={
             normalizedSearchQuery.length > 0 ||
             !(collapsedBranchIds[`${project.id}:current-branch`] ?? false)
           }
+          normalizedSearchQuery={normalizedSearchQuery}
           project={project}
           selectedThreadId={selectedThreadId}
+          switchErrorBranchId={switchErrorBranchId}
           terminalRunningSessionPaths={terminalRunningSessionPaths}
           unassignedExpanded={unassignedExpanded}
           unassignedThreads={unassignedThreads}
+          worktreeGroups={compactWorktreeGroups}
           onAction={onAction}
+          onSetCollapsedBranchIds={onSetCollapsedBranchIds}
+          onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
           onThreadOpen={onThreadOpen}
           onToggleCurrentBranch={() =>
             onSetCollapsedBranchIds((current) => ({

@@ -21,6 +21,7 @@ import {
   getProjectScopeLabel,
   getRepositoryBranchesForProject,
   getVisibleProjectIds,
+  getWorktreeBranchesForProject,
   orderProjectsForScopeSelector,
   sameStringList,
   UNASSIGNED_BRANCH_GROUP_ID,
@@ -243,7 +244,17 @@ export function ProjectWorkSection({
     projectGitState,
     gitStatesByProjectId,
   )
-  const branchGroups = buildBranchGroups(activeThreads, currentBranch, repositoryBranches)
+  const worktreeBranches = getWorktreeBranchesForProject(
+    contentProject,
+    projectGitState,
+    gitStatesByProjectId,
+  )
+  const branchGroups = buildBranchGroups(
+    activeThreads,
+    currentBranch,
+    repositoryBranches,
+    worktreeBranches,
+  )
   const dirtyWorktreeMessage = getDirtyWorktreeMessage(
     getProjectGitStateForSidebar(contentProject.id, projectGitState, gitStatesByProjectId),
     contentProject.id,

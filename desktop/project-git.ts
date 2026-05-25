@@ -18,3 +18,8 @@ export {
 } from './project-git/project-diff-baselines.ts'
 export { loadProjectGitState } from './project-git/project-state.ts'
 export type { CommitMessageContext } from './project-git/types.ts'
+export {
+  createProjectWorktree,
+  getMainWorktreePath,
+  loadGitWorktrees,
+} from './project-git/worktrees.ts'

@@ -244,7 +244,9 @@ const postEffectHandlers: PostEffectHandler[] = [
   },
   {
     matches: (ctx) =>
-      ctx.action === 'workspace.switch-branch' || ctx.action === 'workspace.prune-branch',
+      ctx.action === 'workspace.switch-branch' ||
+      ctx.action === 'workspace.prune-branch' ||
+      ctx.action === 'workspace.create-worktree',
     run: handleSwitchBranchEffects,
   },
   {
@@ -253,7 +255,8 @@ const postEffectHandlers: PostEffectHandler[] = [
   },
   { matches: (ctx) => ctx.action === 'workspace.commit', run: handleWorkspaceCommitEffects },
   {
-    matches: (ctx) => ctx.action === 'projects.import.apply',
+    matches: (ctx) =>
+      ctx.action === 'projects.import.apply' || ctx.action === 'workspace.set-worktree-directory',
     run: (ctx) => ctx.refreshShellState(),
   },
 ]

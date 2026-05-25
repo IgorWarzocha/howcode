@@ -36,3 +36,9 @@ export {
   setThreadRunningState,
   toggleThreadPinned,
 } from './thread-writes.ts'
+export type { ProjectWorktreeMetadata, ProjectWorktreeSource } from './worktree-writes.ts'
+export {
+  getProjectWorktreeDirectory,
+  setProjectWorktreeDirectory,
+  upsertProjectWorktree,
+} from './worktree-writes.ts'

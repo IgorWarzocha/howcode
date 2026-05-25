@@ -66,6 +66,14 @@ export function mapProjectRow(row: ProjectRow): Project {
     collapsed: Boolean(row.collapsed),
     repoOriginUrl: row.repoOriginUrl,
     repoOriginChecked: Boolean(row.repoOriginChecked),
+    worktree: row.worktreeRootProjectId
+      ? {
+          rootProjectId: row.worktreeRootProjectId,
+          branchName: row.worktreeBranchName,
+          isMain: Boolean(row.worktreeIsMain),
+          source: row.worktreeSource === 'imported' ? 'imported' : 'howcode',
+        }
+      : undefined,
   }
 }
 

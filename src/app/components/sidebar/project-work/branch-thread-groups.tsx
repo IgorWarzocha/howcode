@@ -1,9 +1,75 @@
-import { CircleOff, GitBranch } from 'lucide-react'
+import { IconButton } from '@howcode/common/icon-button'
+import { CircleOff, GitBranch, GitFork, Plus } from 'lucide-react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project, Thread, View } from '../../../types'
 import { BranchPruneAction, BranchSwitchAction } from './branch-actions'
+import { createThreadForBranch } from './new-thread-menu'
 import type { BranchThreadGroup } from './project-work-model'
 import { ProjectWorkThreadRow } from './project-work-thread-row'
+
+function EmptyBranchStartAction({
+  blocked,
+  currentBranch,
+  group,
+  project,
+  onAction,
+  onBlocked,
+  onSwitchFailed,
+}: {
+  blocked: boolean
+  currentBranch: string | null
+  group: BranchThreadGroup
+  project: Project
+  onAction: DesktopActionInvoker
+  onBlocked: () => void
+  onSwitchFailed: () => void
+}) {
+  const targetProjectId = group.worktreePath ?? project.id
+  const startThread = async () => {
+    if (!(group.current || group.worktree || group.unassigned)) {
+      const switchResult = await onAction('workspace.switch-branch', {
+        projectId: project.id,
+        value: group.label,
+      })
+      const switchError = switchResult?.result?.error
+      if (switchError) {
+        if (typeof switchError === 'string' && switchError.includes('Worktree is dirty')) {
+          onBlocked()
+          return
+        }
+        onSwitchFailed()
+        return
+      }
+    }
+
+    await createThreadForBranch({
+      branchName: group.unassigned ? null : group.label,
+      onAction,
+      projectId: targetProjectId,
+    })
+  }
+
+  const label = group.worktree
+    ? `Start thread in ${group.label}`
+    : group.current
+      ? `Start thread on ${currentBranch ?? group.label}`
+      : `Switch to ${group.label} and start thread`
+
+  return (
+    <IconButton
+      label={label}
+      tooltip={blocked ? 'Worktree is dirty. Commit first.' : label}
+      tooltipPlacement="right"
+      icon={<Plus size={14} />}
+      className="sidebar-project-work-empty-start h-7 w-7 rounded-md"
+      data-warning={blocked ? 'true' : 'false'}
+      onClick={(event) => {
+        event.stopPropagation()
+        void startThread()
+      }}
+    />
+  )
+}
 
 export function BranchThreadGroupSection({
   activeView,
@@ -36,7 +102,7 @@ export function BranchThreadGroupSection({
   switchErrorBranchId: string | null
   onSetSwitchErrorBranchId: (branchId: string | null) => void
 }) {
-  const canManageBranch = !(group.current || group.unassigned)
+  const canManageBranch = !(group.current || group.unassigned || group.worktree)
   const branchActionKey = `${project.id}:${group.id}`
   const confirmingPrune = pruneConfirmBranchId === branchActionKey
   const switchBlocked = switchErrorBranchId === branchActionKey
@@ -44,7 +110,7 @@ export function BranchThreadGroupSection({
   return (
     <section
       className="sidebar-project-work-branch-group"
-      data-current={group.current ? 'true' : 'false'}
+      data-current={group.current || group.worktree ? 'true' : 'false'}
     >
       <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading">
         <button
@@ -54,7 +120,11 @@ export function BranchThreadGroupSection({
           aria-expanded={!collapsed}
           aria-label={collapsed ? `Expand ${group.label}` : `Collapse ${group.label}`}
         >
-          <GitBranch size={13} className="sidebar-project-work-branch-icon" />
+          {group.worktree ? (
+            <GitFork size={13} className="sidebar-project-work-branch-icon" />
+          ) : (
+            <GitBranch size={13} className="sidebar-project-work-branch-icon" />
+          )}
         </button>
         <button
           type="button"
@@ -115,7 +185,18 @@ export function BranchThreadGroupSection({
               />
             ))
           ) : (
-            <div className="sidebar-project-work-branch-empty">No threads assigned here yet.</div>
+            <div className="sidebar-project-work-branch-empty">
+              <span>No threads assigned here yet.</span>
+              <EmptyBranchStartAction
+                blocked={switchBlocked}
+                currentBranch={currentBranch}
+                group={group}
+                project={project}
+                onAction={onAction}
+                onBlocked={() => onSetSwitchErrorBranchId(branchActionKey)}
+                onSwitchFailed={() => onSetSwitchErrorBranchId(null)}
+              />
+            </div>
           )}
         </div>
       )}
@@ -198,28 +279,42 @@ export function ProjectExpandedBranchGroups({
 export function ProjectCompactBranchGroups({
   activeView,
   branchThreads,
+  collapsedBranchIds,
   currentBranch,
   currentBranchExpanded,
+  normalizedSearchQuery,
   project,
   selectedThreadId,
+  switchErrorBranchId,
   terminalRunningSessionPaths,
   unassignedExpanded,
   unassignedThreads,
+  worktreeGroups,
   onAction,
+  onSetCollapsedBranchIds,
+  onSetSwitchErrorBranchId,
   onToggleCurrentBranch,
   onThreadOpen,
   onToggleUnassigned,
 }: {
   activeView: View
   branchThreads: Thread[]
+  collapsedBranchIds: Record<string, boolean>
   currentBranch: string | null
   currentBranchExpanded: boolean
+  normalizedSearchQuery: string
   project: Project
   selectedThreadId: string | null
+  switchErrorBranchId: string | null
   terminalRunningSessionPaths: ReadonlySet<string>
   unassignedExpanded: boolean
   unassignedThreads: Thread[]
+  worktreeGroups: BranchThreadGroup[]
   onAction: DesktopActionInvoker
+  onSetCollapsedBranchIds: (
+    updater: (current: Record<string, boolean>) => Record<string, boolean>,
+  ) => void
+  onSetSwitchErrorBranchId: (branchId: string | null) => void
   onToggleCurrentBranch: () => void
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
   onToggleUnassigned: () => void
@@ -266,11 +361,58 @@ export function ProjectCompactBranchGroups({
                 />
               ))
             ) : (
-              <div className="sidebar-project-work-branch-empty">No threads on current branch.</div>
+              <div className="sidebar-project-work-branch-empty">
+                <span>No threads on current branch.</span>
+                <IconButton
+                  label="Start thread on current branch"
+                  tooltipPlacement="right"
+                  icon={<Plus size={14} />}
+                  className="sidebar-project-work-empty-start h-7 w-7 rounded-md"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    void createThreadForBranch({
+                      branchName: currentBranch,
+                      onAction,
+                      projectId: project.id,
+                    })
+                  }}
+                />
+              </div>
             )}
           </div>
         ) : null}
       </section>
+
+      {worktreeGroups.map((group) => {
+        const groupKey = `${project.id}:${group.id}`
+        const collapsed = normalizedSearchQuery
+          ? false
+          : (collapsedBranchIds[groupKey] ?? group.threads.length === 0)
+        return (
+          <BranchThreadGroupSection
+            key={group.id}
+            activeView={activeView}
+            collapsed={collapsed}
+            currentBranch={currentBranch}
+            group={group}
+            project={project}
+            selectedThreadId={selectedThreadId}
+            terminalRunningSessionPaths={terminalRunningSessionPaths}
+            onAction={onAction}
+            onThreadOpen={onThreadOpen}
+            onToggle={() =>
+              onSetCollapsedBranchIds((current) => ({
+                ...current,
+                [groupKey]: !collapsed,
+              }))
+            }
+            pruneConfirmBranchId={null}
+            onSetPruneConfirmBranchId={() => undefined}
+            switchErrorBranchId={switchErrorBranchId}
+            onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
+          />
+        )
+      })}
 
       {unassignedThreads.length > 0 ? (
         <section className="sidebar-project-work-branch-group">

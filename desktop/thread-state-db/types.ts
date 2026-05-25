@@ -16,6 +16,10 @@ export type ProjectRow = {
   repoOriginUrl: string | null
   repoOriginChecked: number
   gitOpsMode: string | null
+  worktreeRootProjectId: string | null
+  worktreeBranchName: string | null
+  worktreeIsMain: number | null
+  worktreeSource: string | null
 }
 
 export type ThreadRow = {

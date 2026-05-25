@@ -14,21 +14,28 @@ import {
   getProjectDiffRenderModePreference,
   getProjectId,
   getProjectIds,
+  getWorktreeDirectory,
 } from '../../shared/pi-thread-action-payloads.ts'
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import { setSidebarVisibleProjectIds } from '../app-settings/writers.ts'
 import { generateGitCommitMessage } from '../git-commit-message.ts'
 import {
   commitProjectChanges,
+  createProjectWorktree,
+  getMainWorktreePath,
   initializeProjectGit,
   pruneProjectBranch,
   setProjectOrigin,
   switchProjectBranch,
 } from '../project-git.ts'
 import {
+  ensureProject,
+  getProjectWorktreeDirectory,
   setProjectGitOpsMode,
   setProjectRepoOrigin,
+  setProjectWorktreeDirectory,
   setThreadDiffPreferences,
+  upsertProjectWorktree,
 } from '../thread-state-db.ts'
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
@@ -99,6 +106,52 @@ function handleDiffPreferencesWorkspaceAction(payload: AnyDesktopActionPayload) 
     : handledAction({ error: 'Could not save diff preferences for this session.' })
 }
 
+async function handleCreateWorktreeWorkspaceAction(payload: AnyDesktopActionPayload) {
+  const projectId = getProjectId(payload)
+  const branchName = getBranchName(payload)
+  if (!(projectId && branchName)) return handledAction({ error: 'Branch name is required.' })
+
+  const rootProjectId = await getMainWorktreePath(projectId)
+  const worktreeDirectory =
+    getWorktreeDirectory(payload) ?? getProjectWorktreeDirectory(rootProjectId)
+  const result = await createProjectWorktree({ projectId, branchName, worktreeDirectory })
+  if ('error' in result) return handledAction(result)
+
+  ensureProject(result.rootProjectId)
+  ensureProject(result.projectId)
+  upsertProjectWorktree({
+    cwd: result.rootProjectId,
+    rootCwd: result.rootProjectId,
+    branchName: null,
+    isMain: true,
+    source: 'howcode',
+  })
+  upsertProjectWorktree({
+    cwd: result.projectId,
+    rootCwd: result.rootProjectId,
+    branchName: result.branchName,
+    isMain: false,
+    source: 'howcode',
+  })
+
+  return handledAction({
+    didMutate: true,
+    projectId: result.projectId,
+    rootProjectId: result.rootProjectId,
+  })
+}
+
+function handleSetWorktreeDirectoryWorkspaceAction(payload: AnyDesktopActionPayload) {
+  const projectId = getProjectId(payload)
+  const worktreeDirectory = getWorktreeDirectory(payload)
+  if (!(projectId && worktreeDirectory)) {
+    return handledAction({ error: 'Worktree directory is required.' })
+  }
+
+  setProjectWorktreeDirectory(projectId, worktreeDirectory)
+  return handledAction({ didMutate: true, rootProjectId: projectId })
+}
+
 export async function handleWorkspaceDesktopAction(
   action: DesktopAction,
   payload: AnyDesktopActionPayload,
@@ -124,6 +177,10 @@ export async function handleWorkspaceDesktopAction(
       if (!(projectId && branchName)) return handledAction()
       return handledAction(await pruneProjectBranch(projectId, branchName))
     }
+    case 'workspace.create-worktree':
+      return handleCreateWorktreeWorkspaceAction(payload)
+    case 'workspace.set-worktree-directory':
+      return handleSetWorktreeDirectoryWorkspaceAction(payload)
 
     default:
       return unhandledAction()

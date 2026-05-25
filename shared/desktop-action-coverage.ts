@@ -43,6 +43,8 @@ export const implementedDesktopActions = [
   'workspace.sidebar-scope',
   'workspace.switch-branch',
   'workspace.prune-branch',
+  'workspace.create-worktree',
+  'workspace.set-worktree-directory',
   'settings.update',
   'settings.clear-clipboard-images',
   'pi-settings.update',

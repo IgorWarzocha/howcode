@@ -63,6 +63,12 @@ export function getBranchName(payload: DesktopActionPayloadInput) {
   return branchName.length > 0 ? branchName : null
 }
 
+export function getWorktreeDirectory(payload: DesktopActionPayloadInput) {
+  const worktreeDirectory =
+    typeof payload.worktreeDirectory === 'string' ? payload.worktreeDirectory.trim() : ''
+  return worktreeDirectory.length > 0 ? worktreeDirectory : null
+}
+
 export function getProjectName(payload: DesktopActionPayloadInput) {
   const projectName = typeof payload.projectName === 'string' ? payload.projectName.trim() : ''
   return projectName.length > 0 ? projectName : null

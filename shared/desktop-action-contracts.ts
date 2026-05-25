@@ -41,6 +41,7 @@ export type DesktopActionPayloadFields = {
   projectName?: string | undefined
   projectPath?: string | undefined
   parentPath?: string | undefined
+  worktreeDirectory?: string | undefined | null | undefined
   createIfMissing?: boolean | undefined
   provider?: string | undefined
   queueId?: string | undefined
@@ -196,6 +197,15 @@ export type DesktopActionPayloadMap = {
     projectId?: string | undefined | null | undefined
     branchName: string
   }
+  'workspace.create-worktree': {
+    projectId?: string | undefined | null | undefined
+    branchName: string
+    worktreeDirectory?: string | undefined | null | undefined
+  }
+  'workspace.set-worktree-directory': {
+    projectId?: string | undefined | null | undefined
+    worktreeDirectory: string
+  }
   'composer.model': {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined
@@ -274,6 +284,7 @@ export type DesktopActionResultData = {
   piSettings?: PiSettings
   previewed?: boolean | undefined
   projectId?: string | undefined
+  rootProjectId?: string | undefined
   projects?: ProjectImportCandidate[]
   pushed?: boolean | undefined
   pushFailed?: boolean | undefined

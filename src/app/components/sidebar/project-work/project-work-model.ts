@@ -2,6 +2,7 @@ import type { ProjectGitState } from '../../../desktop/types'
 import type { Project, Thread } from '../../../types'
 
 const OLD_THREAD_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000
+const pathSeparatorPattern = /[\\/]/
 export const UNASSIGNED_BRANCH_GROUP_ID = '__unassigned__'
 export function sameStringList(a: readonly string[], b: readonly string[]) {
   return a.length === b.length && a.every((value, index) => value === b[index])
@@ -80,6 +81,41 @@ export type BranchThreadGroup = {
   threads: Thread[]
   current: boolean
   unassigned: boolean
+  worktree: boolean
+  worktreePath?: string | undefined
+}
+
+export type WorktreeBranch = {
+  label: string
+  path: string
+}
+
+function buildWorktreePathByBranch(worktreeBranches: readonly WorktreeBranch[]) {
+  const worktreePathByBranch = new Map<string, string>()
+  for (const worktreeBranch of worktreeBranches) {
+    const branchName = worktreeBranch.label.trim()
+    if (!branchName) continue
+    worktreePathByBranch.set(branchName, worktreeBranch.path)
+  }
+  return worktreePathByBranch
+}
+
+function createBranchThreadGroup(input: {
+  branchName: string
+  current: boolean
+  groupedThreads: ReadonlyMap<string, Thread[]>
+  worktreePathByBranch: ReadonlyMap<string, string>
+}): BranchThreadGroup {
+  const worktreePath = input.worktreePathByBranch.get(input.branchName)
+  return {
+    id: input.branchName,
+    label: input.branchName,
+    threads: sortThreads(input.groupedThreads.get(input.branchName) ?? []),
+    current: input.current,
+    unassigned: false,
+    worktree: worktreePath !== undefined,
+    worktreePath,
+  }
 }
 
 export function getDirtyWorktreeMessage(
@@ -130,6 +166,7 @@ export function buildBranchGroups(
   threads: Thread[],
   currentBranch: string | null,
   repositoryBranches: readonly string[],
+  worktreeBranches: readonly WorktreeBranch[] = [],
 ): BranchThreadGroup[] {
   const groupedThreads = new Map<string, Thread[]>()
   const unassignedThreads: Thread[] = []
@@ -154,27 +191,35 @@ export function buildBranchGroups(
   for (const branchName of groupedThreads.keys()) branchNames.add(branchName)
   if (currentBranch) branchNames.add(currentBranch)
 
+  const worktreePathByBranch = buildWorktreePathByBranch(worktreeBranches)
+  for (const branchName of worktreePathByBranch.keys()) branchNames.add(branchName)
+
   const groups: BranchThreadGroup[] = []
   if (currentBranch && branchNames.has(currentBranch)) {
-    groups.push({
-      id: currentBranch,
-      label: currentBranch,
-      threads: sortThreads(groupedThreads.get(currentBranch) ?? []),
-      current: true,
-      unassigned: false,
-    })
+    groups.push(
+      createBranchThreadGroup({
+        branchName: currentBranch,
+        current: true,
+        groupedThreads,
+        worktreePathByBranch,
+      }),
+    )
     branchNames.delete(currentBranch)
   }
 
   const otherBranchGroups = [...branchNames]
-    .map((branchName) => ({
-      id: branchName,
-      label: branchName,
-      threads: sortThreads(groupedThreads.get(branchName) ?? []),
-      current: false,
-      unassigned: false,
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label))
+    .map((branchName) =>
+      createBranchThreadGroup({
+        branchName,
+        current: false,
+        groupedThreads,
+        worktreePathByBranch,
+      }),
+    )
+    .sort((a, b) => {
+      if (a.worktree !== b.worktree) return a.worktree ? -1 : 1
+      return a.label.localeCompare(b.label)
+    })
 
   groups.push(...otherBranchGroups)
 
@@ -185,6 +230,7 @@ export function buildBranchGroups(
       threads: sortThreads(unassignedThreads),
       current: false,
       unassigned: true,
+      worktree: false,
     })
   }
 
@@ -195,6 +241,7 @@ export function buildBranchGroups(
       threads: [],
       current: false,
       unassigned: true,
+      worktree: false,
     })
   }
 
@@ -246,6 +293,25 @@ export function getRepositoryBranchesForProject(
 ) {
   const gitState = getProjectGitStateForSidebar(project.id, projectGitState, gitStatesByProjectId)
   return gitState?.isGitRepo ? gitState.branches : []
+}
+
+export function getWorktreeBranchesForProject(
+  project: Project,
+  projectGitState: ProjectGitState | null,
+  gitStatesByProjectId: ReadonlyMap<string, ProjectGitState | null>,
+): WorktreeBranch[] {
+  const gitState = getProjectGitStateForSidebar(project.id, projectGitState, gitStatesByProjectId)
+  if (!gitState?.isGitRepo) return []
+
+  return gitState.worktrees
+    .filter((worktree) => worktree.path !== project.id)
+    .map((worktree) => ({
+      label:
+        worktree.branch ??
+        worktree.path.split(pathSeparatorPattern).filter(Boolean).at(-1) ??
+        worktree.path,
+      path: worktree.path,
+    }))
 }
 
 export function filterThreadsForCurrentBranch(

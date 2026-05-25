@@ -82,6 +82,34 @@ describe('project work sidebar model', () => {
     expect(groups.at(-1)).toMatchObject({ unassigned: true, label: 'Unassigned' })
   })
 
+  it('keeps present worktrees visible as branch-like groups', () => {
+    const groups = buildBranchGroups(
+      [],
+      'main',
+      ['main'],
+      [{ label: 'feature/worktree', path: '/repo/.worktrees/feature-worktree' }],
+    )
+
+    expect(groups.map((group) => group.id)).toEqual(['main', 'feature/worktree'])
+    expect(groups[1]).toMatchObject({
+      label: 'feature/worktree',
+      threads: [],
+      worktree: true,
+      worktreePath: '/repo/.worktrees/feature-worktree',
+    })
+  })
+
+  it('sorts present worktrees before inactive branch-only groups', () => {
+    const groups = buildBranchGroups(
+      [],
+      'main',
+      ['main', 'zzz-branch'],
+      [{ label: 'aaa-worktree', path: '/repo/.worktrees/aaa-worktree' }],
+    )
+
+    expect(groups.map((group) => group.id)).toEqual(['main', 'aaa-worktree', 'zzz-branch'])
+  })
+
   it('filters branch groups by branch label or matching thread content', () => {
     const groups = buildBranchGroups(
       [

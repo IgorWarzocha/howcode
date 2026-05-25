@@ -31,6 +31,8 @@ export const desktopActions = [
   'workspace.sidebar-scope',
   'workspace.switch-branch',
   'workspace.prune-branch',
+  'workspace.create-worktree',
+  'workspace.set-worktree-directory',
   'composer.model',
   'composer.thinking',
   'composer.send',
