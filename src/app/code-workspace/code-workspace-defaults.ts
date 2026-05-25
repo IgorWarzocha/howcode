@@ -29,6 +29,7 @@ export const FALLBACK_APP_SETTINGS = {
   howcodeNativeAskQuestions: false,
   devUpdateBranch: false,
   piTuiTakeover: false,
+  hideSidebarSessionCounts: false,
   hoverToFocus: true,
   hoverToBlur: false,
   keybindings: {},

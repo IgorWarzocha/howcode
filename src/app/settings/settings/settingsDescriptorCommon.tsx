@@ -79,6 +79,20 @@ export function buildCommonSettingsDescriptors({
       ),
     },
     {
+      id: 'common.hide-sidebar-session-counts',
+      category: 'pi-runtime',
+      title: 'Hide sidebar counts',
+      description: 'Hide branch and session count badges in the sidebar.',
+      keywords: 'sidebar counts sessions branch numbers badges hide',
+      render: () => (
+        <ToggleBox
+          checked={appSettings.hideSidebarSessionCounts}
+          label="Hide sidebar counts"
+          onClick={controller.toggleHideSidebarSessionCounts}
+        />
+      ),
+    },
+    {
       id: 'common.hover-to-focus',
       category: 'pi-runtime',
       title: 'Hover to type',

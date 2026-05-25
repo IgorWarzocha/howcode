@@ -300,6 +300,7 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === 'devUpdateBranch' ||
     payload.key === 'betaUpdateBranch' ||
     payload.key === 'piTuiTakeover' ||
+    payload.key === 'hideSidebarSessionCounts' ||
     payload.key === 'hoverToFocus' ||
     payload.key === 'hoverToBlur' ||
     payload.key === 'keybindings' ||

@@ -150,11 +150,16 @@ function BranchInlineActions({
   )
 }
 
+function BranchSessionCount({ count, hidden }: { count: number; hidden: boolean }) {
+  return hidden ? null : <span className="sidebar-project-work-branch-count">{count}</span>
+}
+
 export function BranchThreadGroupSection({
   activeView,
   collapsed,
   currentBranch,
   group,
+  hideSessionCounts,
   project,
   selectedThreadId,
   terminalRunningSessionPaths,
@@ -170,6 +175,7 @@ export function BranchThreadGroupSection({
   collapsed: boolean
   currentBranch: string | null
   group: BranchThreadGroup
+  hideSessionCounts: boolean
   project: Project
   selectedThreadId: string | null
   terminalRunningSessionPaths: ReadonlySet<string>
@@ -223,7 +229,7 @@ export function BranchThreadGroupSection({
           {group.current ? (
             <span className="sidebar-project-work-branch-current">Current</span>
           ) : null}
-          <span className="sidebar-project-work-branch-count">{group.threads.length}</span>
+          <BranchSessionCount count={group.threads.length} hidden={hideSessionCounts} />
         </span>
         <span
           className="sidebar-project-work-branch-actions"
@@ -276,6 +282,7 @@ export function ProjectExpandedBranchGroups({
   branchGroups,
   collapsedBranchIds,
   currentBranch,
+  hideSessionCounts,
   normalizedSearchQuery,
   project,
   pruneConfirmBranchId,
@@ -292,6 +299,7 @@ export function ProjectExpandedBranchGroups({
   branchGroups: BranchThreadGroup[]
   collapsedBranchIds: Record<string, boolean>
   currentBranch: string | null
+  hideSessionCounts: boolean
   normalizedSearchQuery: string
   project: Project
   pruneConfirmBranchId: string | null
@@ -321,6 +329,7 @@ export function ProjectExpandedBranchGroups({
             collapsed={collapsed}
             currentBranch={currentBranch}
             group={group}
+            hideSessionCounts={hideSessionCounts}
             project={project}
             selectedThreadId={selectedThreadId}
             terminalRunningSessionPaths={terminalRunningSessionPaths}
@@ -349,6 +358,7 @@ export function ProjectCompactBranchGroups({
   collapsedBranchIds,
   currentBranch,
   currentBranchExpanded,
+  hideSessionCounts,
   normalizedSearchQuery,
   project,
   selectedThreadId,
@@ -369,6 +379,7 @@ export function ProjectCompactBranchGroups({
   collapsedBranchIds: Record<string, boolean>
   currentBranch: string | null
   currentBranchExpanded: boolean
+  hideSessionCounts: boolean
   normalizedSearchQuery: string
   project: Project
   selectedThreadId: string | null
@@ -428,7 +439,7 @@ export function ProjectCompactBranchGroups({
             <span className="truncate">{currentBranch ?? 'No branch'}</span>
           </button>
           <span className="sidebar-project-work-branch-meta">
-            <span className="sidebar-project-work-branch-count">{branchThreads.length}</span>
+            <BranchSessionCount count={branchThreads.length} hidden={hideSessionCounts} />
           </span>
           <span className="sidebar-project-work-branch-actions" data-action-count="2">
             <BranchInlineActions
@@ -481,6 +492,7 @@ export function ProjectCompactBranchGroups({
             collapsed={collapsed}
             currentBranch={currentBranch}
             group={group}
+            hideSessionCounts={hideSessionCounts}
             project={project}
             selectedThreadId={selectedThreadId}
             terminalRunningSessionPaths={terminalRunningSessionPaths}
@@ -523,7 +535,7 @@ export function ProjectCompactBranchGroups({
               <span className="truncate">Unassigned</span>
             </button>
             <span className="sidebar-project-work-branch-meta">
-              <span className="sidebar-project-work-branch-count">{unassignedThreads.length}</span>
+              <BranchSessionCount count={unassignedThreads.length} hidden={hideSessionCounts} />
             </span>
             <span className="sidebar-project-work-branch-actions" data-action-count="1">
               <BranchInlineActions

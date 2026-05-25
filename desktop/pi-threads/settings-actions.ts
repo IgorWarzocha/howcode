@@ -41,6 +41,7 @@ import {
   setGitDiffIncludeUntrackedDefault,
   setGitDiffRenderModeDefault,
   setGitOpsDefaultMode,
+  setHideSidebarSessionCounts,
   setHoverToBlur,
   setHoverToFocus,
   setHowcodeNativeAskQuestions,
@@ -156,6 +157,8 @@ const settingsUpdateHandlers = {
   devUpdateBranch: (payload) => setDevUpdateBranch(getSettingsBooleanValue(payload) ?? false),
   betaUpdateBranch: (payload) => setDevUpdateBranch(getSettingsBooleanValue(payload) ?? false),
   piTuiTakeover: (payload) => setPiTuiTakeover(getSettingsBooleanValue(payload) ?? false),
+  hideSidebarSessionCounts: (payload) =>
+    setHideSidebarSessionCounts(getSettingsBooleanValue(payload) ?? false),
   hoverToFocus: (payload) => setHoverToFocus(getSettingsBooleanValue(payload) ?? true),
   hoverToBlur: (payload) => setHoverToBlur(getSettingsBooleanValue(payload) ?? false),
   keybindings: (payload) => {

@@ -109,6 +109,7 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'devUpdateBranch'; value: boolean }
   | { key: 'betaUpdateBranch'; value: boolean }
   | { key: 'piTuiTakeover'; value: boolean }
+  | { key: 'hideSidebarSessionCounts'; value: boolean }
   | { key: 'hoverToFocus'; value: boolean }
   | { key: 'hoverToBlur'; value: boolean }
   | { key: 'keybindings'; value: AppSettings['keybindings'] }

@@ -146,6 +146,7 @@ export function ProjectWorkSummaryBlock({
   collapsedBranchIds,
   currentBranch,
   expanded,
+  hideSessionCounts,
   olderThreadCount,
   project,
   pruneConfirmBranchId,
@@ -172,6 +173,7 @@ export function ProjectWorkSummaryBlock({
   collapsedBranchIds: Record<string, boolean>
   currentBranch: string | null
   expanded: boolean
+  hideSessionCounts: boolean
   olderThreadCount: number
   project: Project
   pruneConfirmBranchId: string | null
@@ -264,7 +266,9 @@ export function ProjectWorkSummaryBlock({
           >
             <Archive size={14} />
             <span>Past sessions</span>
-            <span className={cn(appTypeMetaClass, appToneSubtleClass)}>{olderThreadCount}</span>
+            {hideSessionCounts ? null : (
+              <span className={cn(appTypeMetaClass, appToneSubtleClass)}>{olderThreadCount}</span>
+            )}
           </button>
         ) : null}
       </div>
@@ -275,6 +279,7 @@ export function ProjectWorkSummaryBlock({
           branchGroups={filteredBranchGroups}
           collapsedBranchIds={collapsedBranchIds}
           currentBranch={currentBranch}
+          hideSessionCounts={hideSessionCounts}
           normalizedSearchQuery={normalizedSearchQuery}
           project={project}
           pruneConfirmBranchId={pruneConfirmBranchId}
@@ -297,6 +302,7 @@ export function ProjectWorkSummaryBlock({
             normalizedSearchQuery.length > 0 ||
             !(collapsedBranchIds[`${project.id}:current-branch`] ?? false)
           }
+          hideSessionCounts={hideSessionCounts}
           normalizedSearchQuery={normalizedSearchQuery}
           project={project}
           selectedThreadId={selectedThreadId}

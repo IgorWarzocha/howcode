@@ -29,6 +29,7 @@ export function MultiProjectWorkContent({
   searchQuery,
   selectedProjectId,
   selectedThreadId,
+  hideSessionCounts,
   terminalRunningSessionPaths,
   visibleProjects,
   onAction,
@@ -54,6 +55,7 @@ export function MultiProjectWorkContent({
   searchQuery: string
   selectedProjectId: string
   selectedThreadId: string | null
+  hideSessionCounts: boolean
   terminalRunningSessionPaths: ReadonlySet<string>
   visibleProjects: Project[]
   onAction: DesktopActionInvoker
@@ -118,6 +120,7 @@ export function MultiProjectWorkContent({
                 collapsedBranchIds={collapsedBranchIds}
                 currentBranch={blockCurrentBranch}
                 expanded={expanded}
+                hideSessionCounts={hideSessionCounts}
                 olderThreadCount={buckets.olderThreads.length}
                 project={project}
                 pruneConfirmBranchId={pruneConfirmBranchId}
@@ -163,6 +166,7 @@ export function SingleProjectWorkContent({
   branchGroups,
   collapsedBranchIds,
   currentBranch,
+  hideSessionCounts,
   olderThreadCount,
   normalizedSearchQuery,
   project,
@@ -185,6 +189,7 @@ export function SingleProjectWorkContent({
   branchGroups: BranchThreadGroup[]
   collapsedBranchIds: Record<string, boolean>
   currentBranch: string | null
+  hideSessionCounts: boolean
   olderThreadCount: number
   normalizedSearchQuery: string
   project: Project
@@ -226,7 +231,9 @@ export function SingleProjectWorkContent({
         >
           <Archive size={14} />
           <span>Past sessions</span>
-          <span className={cn(appTypeMetaClass, appToneSubtleClass)}>{olderThreadCount}</span>
+          {hideSessionCounts ? null : (
+            <span className={cn(appTypeMetaClass, appToneSubtleClass)}>{olderThreadCount}</span>
+          )}
         </button>
       </div>
 
@@ -255,6 +262,7 @@ export function SingleProjectWorkContent({
                   collapsed={collapsed}
                   currentBranch={currentBranch}
                   group={group}
+                  hideSessionCounts={hideSessionCounts}
                   project={project}
                   selectedThreadId={selectedThreadId}
                   terminalRunningSessionPaths={terminalRunningSessionPaths}

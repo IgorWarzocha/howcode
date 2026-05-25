@@ -41,6 +41,7 @@ const optimisticSettingKeys = new Set([
   'devUpdateBranch',
   'betaUpdateBranch',
   'piTuiTakeover',
+  'hideSidebarSessionCounts',
   'hoverToFocus',
   'hoverToBlur',
   'keybindings',
@@ -168,6 +169,8 @@ function applyOptimisticBooleanSetting(
     nextSettings.devUpdateBranch = payload.value
   }
   if (payload.key === 'piTuiTakeover') nextSettings.piTuiTakeover = payload.value
+  if (payload.key === 'hideSidebarSessionCounts')
+    nextSettings.hideSidebarSessionCounts = payload.value
   if (payload.key === 'hoverToFocus') nextSettings.hoverToFocus = payload.value
   if (payload.key === 'hoverToBlur') nextSettings.hoverToBlur = payload.value
 }

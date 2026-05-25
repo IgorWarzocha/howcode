@@ -313,6 +313,7 @@ export function ProjectWorkSection({
           searchQuery={searchQuery}
           selectedProjectId={selectedProjectId}
           selectedThreadId={selectedThreadId}
+          hideSessionCounts={appSettings.hideSidebarSessionCounts}
           terminalRunningSessionPaths={terminalRunningSessionPaths}
           visibleProjects={visibleProjects}
           onAction={onAction}
@@ -335,6 +336,7 @@ export function ProjectWorkSection({
           branchGroups={visibleBranchGroups}
           collapsedBranchIds={collapsedBranchIds}
           currentBranch={currentBranch}
+          hideSessionCounts={appSettings.hideSidebarSessionCounts}
           normalizedSearchQuery={normalizedSearchQuery}
           olderThreadCount={olderThreads.length}
           project={contentProject}
