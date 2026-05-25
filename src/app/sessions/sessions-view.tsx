@@ -115,7 +115,7 @@ function SessionsToolbar({
           <ConfirmPopover
             open={confirmDeleteTarget === 'selected'}
             anchorRef={deleteSelectedButtonRef}
-            confirmLabel={`Delete ${selectedCount}`}
+            confirmLabel="Delete"
             onClose={() => setConfirmDeleteTarget(null)}
             onConfirm={() => {
               setConfirmDeleteTarget(null)
@@ -136,7 +136,7 @@ function SessionsToolbar({
           <ConfirmPopover
             open={confirmDeleteTarget === 'all'}
             anchorRef={deleteAllButtonRef}
-            confirmLabel={`Delete ${visibleThreadIds.length}`}
+            confirmLabel="Delete"
             onClose={() => setConfirmDeleteTarget(null)}
             onConfirm={() => {
               setConfirmDeleteTarget(null)
