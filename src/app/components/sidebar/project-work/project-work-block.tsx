@@ -305,6 +305,7 @@ export function ProjectWorkSummaryBlock({
           hideSessionCounts={hideSessionCounts}
           normalizedSearchQuery={normalizedSearchQuery}
           project={project}
+          pruneConfirmBranchId={pruneConfirmBranchId}
           selectedThreadId={selectedThreadId}
           switchErrorBranchId={switchErrorBranchId}
           terminalRunningSessionPaths={terminalRunningSessionPaths}
@@ -313,6 +314,7 @@ export function ProjectWorkSummaryBlock({
           worktreeGroups={compactWorktreeGroups}
           onAction={onAction}
           onSetCollapsedBranchIds={onSetCollapsedBranchIds}
+          onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
           onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
           onThreadOpen={onThreadOpen}
           onToggleCurrentBranch={() =>

@@ -59,11 +59,14 @@ export function listProjects(cwd: string): Project[] {
           project_worktrees.branch_name AS worktreeBranchName,
           project_worktrees.is_main AS worktreeIsMain,
           project_worktrees.source AS worktreeSource,
+          project_worktree_settings.worktree_dir AS worktreeDirectory,
           COUNT(threads.id) AS threadCount,
           COALESCE(MAX(threads.last_modified_ms), 0) AS latestModifiedMs
         FROM projects
         LEFT JOIN project_worktrees
           ON project_worktrees.cwd = projects.cwd
+        LEFT JOIN project_worktree_settings
+          ON project_worktree_settings.root_cwd = COALESCE(project_worktrees.root_cwd, projects.cwd)
         LEFT JOIN threads
           ON threads.cwd = projects.cwd
           AND threads.archived = 0
@@ -83,7 +86,8 @@ export function listProjects(cwd: string): Project[] {
           project_worktrees.root_cwd,
           project_worktrees.branch_name,
           project_worktrees.is_main,
-          project_worktrees.source
+          project_worktrees.source,
+          project_worktree_settings.worktree_dir
         ORDER BY
           projects.pinned DESC,
           latestModifiedMs DESC,

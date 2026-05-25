@@ -19,13 +19,19 @@ export const ProjectWorkActionsMenu = forwardRef<
 ) {
   const [confirmAction, setConfirmAction] = useState<'project.remove-project' | null>(null)
   const [editingWorktreeDir, setEditingWorktreeDir] = useState(false)
-  const [worktreeDirDraft, setWorktreeDirDraft] = useState('./.worktrees')
+  const [worktreeDirDraft, setWorktreeDirDraft] = useState(
+    project.worktreeDirectory ?? './.worktrees',
+  )
   const worktreeDirInputRef = useRef<HTMLInputElement | null>(null)
   useEffect(() => {
     if (!editingWorktreeDir) return
     worktreeDirInputRef.current?.focus()
     worktreeDirInputRef.current?.select()
   }, [editingWorktreeDir])
+  useEffect(() => {
+    if (editingWorktreeDir) return
+    setWorktreeDirDraft(project.worktreeDirectory ?? './.worktrees')
+  }, [editingWorktreeDir, project.worktreeDirectory])
   const runProjectAction = (
     action: 'project.open-in-file-manager' | 'project.pin' | 'project.remove-project',
   ) => {
@@ -102,7 +108,9 @@ export const ProjectWorkActionsMenu = forwardRef<
         >
           <GitFork size={12} />
           <span>Worktree folder</span>
-          <span className="sidebar-project-work-project-actions-menu-meta">./.worktrees</span>
+          <span className="sidebar-project-work-project-actions-menu-meta">
+            {project.worktreeDirectory ?? './.worktrees'}
+          </span>
         </button>
       )}
       <button

@@ -66,6 +66,7 @@ export function mapProjectRow(row: ProjectRow): Project {
     collapsed: Boolean(row.collapsed),
     repoOriginUrl: row.repoOriginUrl,
     repoOriginChecked: Boolean(row.repoOriginChecked),
+    worktreeDirectory: row.worktreeDirectory ?? './.worktrees',
     worktree: row.worktreeRootProjectId
       ? {
           rootProjectId: row.worktreeRootProjectId,

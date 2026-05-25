@@ -20,6 +20,7 @@ export type ProjectRow = {
   worktreeBranchName: string | null
   worktreeIsMain: number | null
   worktreeSource: string | null
+  worktreeDirectory: string | null
 }
 
 export type ThreadRow = {

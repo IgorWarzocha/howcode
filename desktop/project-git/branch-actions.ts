@@ -60,6 +60,13 @@ async function hasDirtyWorktree(projectId: string) {
   return stdout.split('\n').some((line) => line.trim().length > 0)
 }
 
+function chooseBranchAfterPrune(branches: Set<string>, branchName: string) {
+  for (const candidate of ['main', 'master', 'develop', 'dev']) {
+    if (candidate !== branchName && branches.has(candidate)) return candidate
+  }
+  return [...branches].find((candidate) => candidate !== branchName) ?? null
+}
+
 export async function switchProjectBranch(projectId: string, branchName: string) {
   const normalizedBranchName = branchName.trim()
   if (!normalizedBranchName) return { error: 'Branch name is required.' }
@@ -104,10 +111,18 @@ export async function pruneProjectBranch(projectId: string, branchName: string) 
       maxBuffer: 1024 * 1024,
     })
     if (currentBranchResult.stdout.trim() === normalizedBranchName) {
-      return { error: 'Cannot prune the currently checked-out branch.' }
+      const nextBranch = chooseBranchAfterPrune(
+        await listLocalBranches(projectId),
+        normalizedBranchName,
+      )
+      if (!nextBranch) return { error: 'No other local branch to switch to.' }
+      await runGitWithOptions(projectId, ['switch', nextBranch], {
+        timeout: 10_000,
+        maxBuffer: 1024 * 1024,
+      })
     }
 
-    await runGitWithOptions(projectId, ['branch', '-d', normalizedBranchName], {
+    await runGitWithOptions(projectId, ['branch', '-D', normalizedBranchName], {
       timeout: 10_000,
       maxBuffer: 1024 * 1024,
     })

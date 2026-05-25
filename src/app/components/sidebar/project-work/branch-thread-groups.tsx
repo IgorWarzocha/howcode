@@ -354,6 +354,7 @@ export function ProjectCompactBranchGroups({
   hideSessionCounts,
   normalizedSearchQuery,
   project,
+  pruneConfirmBranchId,
   selectedThreadId,
   switchErrorBranchId,
   terminalRunningSessionPaths,
@@ -362,6 +363,7 @@ export function ProjectCompactBranchGroups({
   worktreeGroups,
   onAction,
   onSetCollapsedBranchIds,
+  onSetPruneConfirmBranchId,
   onSetSwitchErrorBranchId,
   onToggleCurrentBranch,
   onThreadOpen,
@@ -375,6 +377,7 @@ export function ProjectCompactBranchGroups({
   hideSessionCounts: boolean
   normalizedSearchQuery: string
   project: Project
+  pruneConfirmBranchId: string | null
   selectedThreadId: string | null
   switchErrorBranchId: string | null
   terminalRunningSessionPaths: ReadonlySet<string>
@@ -385,6 +388,7 @@ export function ProjectCompactBranchGroups({
   onSetCollapsedBranchIds: (
     updater: (current: Record<string, boolean>) => Record<string, boolean>,
   ) => void
+  onSetPruneConfirmBranchId: (branchId: string | null) => void
   onSetSwitchErrorBranchId: (branchId: string | null) => void
   onToggleCurrentBranch: () => void
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
@@ -399,6 +403,9 @@ export function ProjectCompactBranchGroups({
     unassigned: false,
     worktree: false,
   }
+  const currentBranchActionKey = `${project.id}:${currentBranchGroup.id}`
+  const confirmingCurrentPrune = pruneConfirmBranchId === currentBranchActionKey
+  const canPruneCurrentBranch = Boolean(currentBranch)
   const unassignedGroup: BranchThreadGroup = {
     id: 'compact-unassigned',
     label: 'Unassigned',
@@ -434,19 +441,23 @@ export function ProjectCompactBranchGroups({
           <span className="sidebar-project-work-branch-meta">
             <BranchSessionCount count={branchThreads.length} hidden={hideSessionCounts} />
           </span>
-          <span className="sidebar-project-work-branch-actions" data-action-count="2">
+          <span
+            className="sidebar-project-work-branch-actions"
+            data-action-count={canPruneCurrentBranch ? 2 : 1}
+            data-confirming={confirmingCurrentPrune ? 'true' : 'false'}
+          >
             <BranchInlineActions
-              canPrune={true}
+              canPrune={canPruneCurrentBranch}
               canSwitch={false}
-              confirmingPrune={false}
+              confirmingPrune={confirmingCurrentPrune}
               currentBranch={currentBranch}
               group={currentBranchGroup}
               project={project}
               switchBlocked={false}
               onAction={onAction}
-              onCancelPrune={() => undefined}
-              onConfirmPrune={() => undefined}
-              onRequestPruneConfirm={() => undefined}
+              onCancelPrune={() => onSetPruneConfirmBranchId(null)}
+              onConfirmPrune={() => onSetPruneConfirmBranchId(null)}
+              onRequestPruneConfirm={() => onSetPruneConfirmBranchId(currentBranchActionKey)}
               onSwitchBlocked={() => undefined}
               onSwitchFailed={() => undefined}
             />
@@ -497,8 +508,8 @@ export function ProjectCompactBranchGroups({
                 [groupKey]: !collapsed,
               }))
             }
-            pruneConfirmBranchId={null}
-            onSetPruneConfirmBranchId={() => undefined}
+            pruneConfirmBranchId={pruneConfirmBranchId}
+            onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
             switchErrorBranchId={switchErrorBranchId}
             onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
           />

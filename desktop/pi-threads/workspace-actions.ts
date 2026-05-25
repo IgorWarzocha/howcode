@@ -31,6 +31,7 @@ import {
 import {
   ensureProject,
   getProjectWorktreeDirectory,
+  hasRunningProjectThread,
   setProjectGitOpsMode,
   setProjectRepoOrigin,
   setProjectWorktreeDirectory,
@@ -175,6 +176,9 @@ export async function handleWorkspaceDesktopAction(
       const projectId = getProjectId(payload)
       const branchName = getBranchName(payload)
       if (!(projectId && branchName)) return handledAction()
+      if (hasRunningProjectThread(projectId)) {
+        return handledAction({ error: 'Stop running sessions before pruning this branch.' })
+      }
       return handledAction(await pruneProjectBranch(projectId, branchName))
     }
     case 'workspace.create-worktree':

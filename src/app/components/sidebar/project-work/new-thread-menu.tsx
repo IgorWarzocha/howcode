@@ -203,11 +203,20 @@ export function NewThreadMenu({
     const branchName = newBranchName.trim()
     if (!branchName) return
     setNewBranchError(null)
-    const result = await createThreadInWorktreeForBranch({ branchName, onAction, projectId })
-    if (result.error) {
-      setNewBranchError(result.error)
+    const switchResult = await onAction('workspace.switch-branch', {
+      projectId,
+      value: branchName,
+    })
+    const switchError = switchResult?.result?.error
+    if (!switchResult?.ok || switchError) {
+      setNewBranchError(
+        typeof switchError === 'string' && switchError.trim().length > 0
+          ? switchError
+          : 'Could not create branch.',
+      )
       return
     }
+    await createThreadForBranch({ branchName, onAction, projectId })
     setNewBranchName('')
     setNewBranchError(null)
     setOpen(false)

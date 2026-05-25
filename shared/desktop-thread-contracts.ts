@@ -49,6 +49,7 @@ export type Project = {
   threadCount?: number | undefined
   repoOriginUrl?: string | undefined | null
   repoOriginChecked?: boolean | undefined
+  worktreeDirectory?: string | undefined
   worktree?: ProjectWorktreeInfo | undefined
 }
 

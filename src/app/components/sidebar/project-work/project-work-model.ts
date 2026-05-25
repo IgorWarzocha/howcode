@@ -288,11 +288,14 @@ export function getWorktreeBranchesForProject(
   projectGitState: ProjectGitState | null,
   gitStatesByProjectId: ReadonlyMap<string, ProjectGitState | null>,
 ): WorktreeBranch[] {
+  if (project.worktree && !project.worktree.isMain) return []
+
   const gitState = getProjectGitStateForSidebar(project.id, projectGitState, gitStatesByProjectId)
   if (!gitState?.isGitRepo) return []
+  const rootProjectId = project.worktree?.rootProjectId ?? project.id
 
   return gitState.worktrees
-    .filter((worktree) => worktree.path !== project.id)
+    .filter((worktree) => worktree.path !== project.id && worktree.path !== rootProjectId)
     .map((worktree) => ({
       label:
         worktree.branch ??
