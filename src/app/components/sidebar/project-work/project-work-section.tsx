@@ -92,9 +92,10 @@ export function ProjectWorkSection({
   useEffect(() => {
     if (appliedInitialEmptyScopeRef.current || initialVisibleProjectIds === undefined) return
     appliedInitialEmptyScopeRef.current = true
+    if (projectTargetMode) return
     if (initialVisibleProjectIds === null || initialVisibleProjectIds.length > 0) return
     onShowView('landing')
-  }, [initialVisibleProjectIds, onShowView])
+  }, [initialVisibleProjectIds, onShowView, projectTargetMode])
 
   useEffect(() => {
     if (initialVisibleProjectIds === undefined) return

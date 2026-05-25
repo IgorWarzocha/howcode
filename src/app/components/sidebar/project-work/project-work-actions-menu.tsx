@@ -1,4 +1,4 @@
-import { Archive, FolderOpen, Pencil, Star, Trash2 } from 'lucide-react'
+import { FolderOpen, Pencil, Star, Trash2 } from 'lucide-react'
 import { forwardRef, useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project } from '../../../types'
@@ -17,17 +17,11 @@ export const ProjectWorkActionsMenu = forwardRef<
   { project, right, width, onAction, onClose, onRename },
   ref,
 ) {
-  const [confirmAction, setConfirmAction] = useState<
-    'project.archive-threads' | 'project.remove-project' | null
-  >(null)
+  const [confirmAction, setConfirmAction] = useState<'project.remove-project' | null>(null)
   const runProjectAction = (
-    action:
-      | 'project.open-in-file-manager'
-      | 'project.pin'
-      | 'project.archive-threads'
-      | 'project.remove-project',
+    action: 'project.open-in-file-manager' | 'project.pin' | 'project.remove-project',
   ) => {
-    if (action === 'project.archive-threads' || action === 'project.remove-project') {
+    if (action === 'project.remove-project') {
       if (confirmAction !== action) {
         setConfirmAction(action)
         return
@@ -71,19 +65,6 @@ export const ProjectWorkActionsMenu = forwardRef<
       >
         <Star size={12} className={project.pinned ? 'fill-current' : undefined} />
         <span>{project.pinned ? 'Unmark favourite' : 'Mark favourite'}</span>
-      </button>
-      <button
-        type="button"
-        className="sidebar-menu-item sidebar-project-work-project-actions-menu-item"
-        onClick={() => runProjectAction('project.archive-threads')}
-        role="menuitem"
-      >
-        <Archive size={12} />
-        <span>
-          {confirmAction === 'project.archive-threads'
-            ? 'Click to confirm'
-            : 'Archive all sessions'}
-        </span>
       </button>
       <button
         type="button"

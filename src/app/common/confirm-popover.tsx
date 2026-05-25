@@ -21,8 +21,8 @@ export function ConfirmPopover({
   anchorRef,
   onClose,
   onConfirm,
-  confirmLabel: _confirmLabel = 'Yes',
-  cancelLabel: _cancelLabel = 'Cancel',
+  confirmLabel = 'Yes',
+  cancelLabel = 'Cancel',
   className,
 }: ConfirmPopoverProps) {
   const panelRef = useRef<HTMLDivElement>(null)
@@ -65,6 +65,8 @@ export function ConfirmPopover({
         )}
         onClick={handleConfirm}
         disabled={confirming}
+        aria-label={confirmLabel}
+        title={confirmLabel}
       >
         <Check size={13} />
       </button>
@@ -72,6 +74,8 @@ export function ConfirmPopover({
         type="button"
         className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] transition-[background-color,color,scale] duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] active:scale-[0.96]"
         onClick={onClose}
+        aria-label={cancelLabel}
+        title={cancelLabel}
       >
         <X size={13} />
       </button>

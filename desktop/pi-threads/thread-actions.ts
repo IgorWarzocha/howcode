@@ -46,6 +46,14 @@ function finiteNumber(value: unknown) {
 }
 
 function getAssistantUsage(entry: unknown) {
+  if (
+    typeof entry !== 'object' ||
+    entry === null ||
+    !('type' in entry) ||
+    entry.type !== 'message'
+  ) {
+    return null
+  }
   const message =
     typeof entry === 'object' && entry !== null && 'message' in entry ? entry.message : null
   if (

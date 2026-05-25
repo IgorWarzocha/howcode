@@ -1,6 +1,8 @@
 import { ActivitySpinner } from '@howcode/common/activity-spinner'
 import { Tooltip } from '@howcode/common/tooltip'
 import { GitBranch, SquareTerminal, Star, Trash2 } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { ConfirmPopover } from '../../../common/confirm-popover'
 import { compactIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 
@@ -17,6 +19,7 @@ type ThreadRowProps = {
   onAssignToBranch?: (() => void) | undefined
   onOpen: () => void
   onPin: () => void
+  confirmDelete?: boolean | undefined
 }
 
 function ThreadLeadingIcon({
@@ -56,14 +59,30 @@ function ThreadLeadingIcon({
 function ThreadMetaSlot({
   age,
   assignBranchLabel,
+  confirmDelete,
   onDelete,
   onAssignToBranch,
   terminalRunning,
 }: Pick<
   ThreadRowProps,
-  'age' | 'assignBranchLabel' | 'onDelete' | 'onAssignToBranch' | 'terminalRunning'
+  | 'age'
+  | 'assignBranchLabel'
+  | 'confirmDelete'
+  | 'onDelete'
+  | 'onAssignToBranch'
+  | 'terminalRunning'
 >) {
   const metaValue = terminalRunning ? <SquareTerminal size={12} /> : age
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
+  const deleteButtonRef = useRef<HTMLButtonElement | null>(null)
+
+  const handleDeleteClick = () => {
+    if (!confirmDelete) {
+      onDelete()
+      return
+    }
+    setConfirmDeleteOpen((current) => !current)
+  }
 
   return (
     <span className="sidebar-thread-meta-slot">
@@ -96,17 +115,30 @@ function ThreadMetaSlot({
           className="sidebar-thread-action-anchor"
         >
           <button
+            ref={deleteButtonRef}
             type="button"
             className={cn(
               compactIconButtonClass,
               'h-full w-full border-transparent bg-transparent hover:bg-transparent',
             )}
-            onClick={onDelete}
+            onClick={handleDeleteClick}
             aria-label="Delete session"
           >
             <Trash2 size={12} />
           </button>
         </Tooltip>
+        {confirmDelete ? (
+          <ConfirmPopover
+            open={confirmDeleteOpen}
+            anchorRef={deleteButtonRef}
+            confirmLabel="Delete session"
+            onClose={() => setConfirmDeleteOpen(false)}
+            onConfirm={() => {
+              setConfirmDeleteOpen(false)
+              onDelete()
+            }}
+          />
+        ) : null}
       </span>
     </span>
   )
@@ -125,6 +157,7 @@ export function ThreadRow({
   onAssignToBranch,
   onOpen,
   onPin,
+  confirmDelete,
 }: ThreadRowProps) {
   return (
     <div
@@ -151,6 +184,7 @@ export function ThreadRow({
       <ThreadMetaSlot
         age={age}
         assignBranchLabel={assignBranchLabel}
+        confirmDelete={confirmDelete}
         onDelete={onDelete}
         onAssignToBranch={onAssignToBranch}
         terminalRunning={terminalRunning}

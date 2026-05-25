@@ -114,6 +114,12 @@ export function deleteProject(projectId: string) {
   const db = getThreadStateDatabase()
   db.prepare(
     `
+      DELETE FROM project_usage_totals
+      WHERE cwd = ?
+    `,
+  ).run(projectId)
+  db.prepare(
+    `
       DELETE FROM projects
       WHERE cwd = ?
     `,
