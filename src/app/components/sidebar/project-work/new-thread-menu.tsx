@@ -1,10 +1,8 @@
 import { IconButton } from '@howcode/common/icon-button'
 import { Tooltip } from '@howcode/common/tooltip'
-import { useQueryClient } from '@tanstack/react-query'
 import { GitBranch, GitFork, Plus, X } from 'lucide-react'
 import { type ReactNode, type RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import type { DesktopActionInvoker, ProjectGitState } from '../../../desktop/types'
-import { desktopQueryKeys, getProjectGitStateQuery } from '../../../query/desktop-query'
+import type { DesktopActionInvoker } from '../../../desktop/types'
 
 export async function createThreadForBranch({
   branchName,
@@ -27,13 +25,32 @@ function focusInput(input: HTMLInputElement | null) {
   input?.select()
 }
 
-function getBranchCreateBlockMessage(projectGitState: ProjectGitState | null) {
-  if (!projectGitState?.isGitRepo) return null
-  const dirtyFileCount =
-    projectGitState.stagedFileCount +
-    projectGitState.unstagedFileCount +
-    projectGitState.untrackedFileCount
-  return dirtyFileCount > 0 ? 'Commit first' : null
+export async function createThreadInWorktreeForBranch({
+  branchName,
+  onAction,
+  projectId,
+}: {
+  branchName: string
+  onAction: DesktopActionInvoker
+  projectId: string
+}) {
+  const worktreeResult = await onAction('workspace.create-worktree', { projectId, branchName })
+  const worktreeError = worktreeResult?.result?.error
+  if (!worktreeResult?.ok || worktreeError || !worktreeResult.result?.projectId) {
+    return {
+      error:
+        typeof worktreeError === 'string' && worktreeError.trim().length > 0
+          ? worktreeError
+          : 'Could not create worktree.',
+    }
+  }
+
+  await createThreadForBranch({
+    branchName,
+    onAction,
+    projectId: worktreeResult.result.projectId,
+  })
+  return { didMutate: true }
 }
 
 function CreateTargetRow({
@@ -110,11 +127,9 @@ export function NewThreadMenu({
   onAction: DesktopActionInvoker
   projectId: string
 }) {
-  const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const [newBranchName, setNewBranchName] = useState('')
   const [newBranchError, setNewBranchError] = useState<string | null>(null)
-  const [branchCreateBlockMessage, setBranchCreateBlockMessage] = useState<string | null>(null)
   const [newWorktreeBranchName, setNewWorktreeBranchName] = useState('')
   const [newWorktreeError, setNewWorktreeError] = useState<string | null>(null)
   const [menuWidth, setMenuWidth] = useState(240)
@@ -166,47 +181,19 @@ export function NewThreadMenu({
     setOpen(false)
   }
 
-  const refreshBranchCreateState = async () => {
-    setBranchCreateBlockMessage(null)
-    const nextGitState = await queryClient.fetchQuery({
-      queryKey: desktopQueryKeys.projectGitState(projectId),
-      queryFn: () => getProjectGitStateQuery(projectId),
-      staleTime: 0,
-    })
-    setBranchCreateBlockMessage(getBranchCreateBlockMessage(nextGitState))
-  }
-
   const toggleOpen = () => {
-    setOpen((current) => {
-      const nextOpen = !current
-      if (nextOpen) void refreshBranchCreateState()
-      return nextOpen
-    })
+    setOpen((current) => !current)
   }
 
   const createThreadInNewWorktree = async () => {
     const branchName = newWorktreeBranchName.trim()
     if (!branchName) return
     setNewWorktreeError(null)
-    const worktreeResult = await onAction('workspace.create-worktree', {
-      projectId,
-      branchName,
-    })
-    const worktreeError = worktreeResult?.result?.error
-    if (!worktreeResult?.ok || worktreeError || !worktreeResult.result?.projectId) {
-      setNewWorktreeError(
-        typeof worktreeError === 'string' && worktreeError.trim().length > 0
-          ? worktreeError
-          : 'Could not create worktree.',
-      )
+    const result = await createThreadInWorktreeForBranch({ branchName, onAction, projectId })
+    if (result.error) {
+      setNewWorktreeError(result.error)
       return
     }
-
-    await createThreadForBranch({
-      branchName,
-      onAction,
-      projectId: worktreeResult.result.projectId,
-    })
     setNewWorktreeBranchName('')
     setNewWorktreeError(null)
     setOpen(false)
@@ -215,25 +202,12 @@ export function NewThreadMenu({
   const createThreadOnNewBranch = async () => {
     const branchName = newBranchName.trim()
     if (!branchName) return
-    if (branchCreateBlockMessage) {
-      setNewBranchError(branchCreateBlockMessage)
-      return
-    }
     setNewBranchError(null)
-    const switchResult = await onAction('workspace.switch-branch', {
-      projectId,
-      value: branchName,
-    })
-    const switchError = switchResult?.result?.error
-    if (!switchResult?.ok || switchError) {
-      setNewBranchError(
-        typeof switchError === 'string' && switchError.trim().length > 0
-          ? switchError
-          : 'Could not create branch.',
-      )
+    const result = await createThreadInWorktreeForBranch({ branchName, onAction, projectId })
+    if (result.error) {
+      setNewBranchError(result.error)
       return
     }
-    await createThreadForBranch({ branchName, onAction, projectId })
     setNewBranchName('')
     setNewBranchError(null)
     setOpen(false)
@@ -271,7 +245,7 @@ export function NewThreadMenu({
             icon={<GitBranch size={11} />}
             inputRef={newBranchInputRef}
             value={newBranchName}
-            error={newBranchError ?? branchCreateBlockMessage}
+            error={newBranchError}
             placeholder="New branch"
             inputLabel="New branch name"
             createLabel="Create branch"

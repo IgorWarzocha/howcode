@@ -1,11 +1,14 @@
-import { Archive, ChevronRight } from 'lucide-react'
-import type { RefObject } from 'react'
+import { IconButton } from '@howcode/common/icon-button'
+import { Archive, ChevronRight, MoreHorizontal } from 'lucide-react'
+import { type RefObject, useLayoutEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker, ProjectGitState } from '../../../desktop/types'
+import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import type { Project, View } from '../../../types'
 import { appToneSubtleClass, appTypeMetaClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { BranchThreadGroupSection } from './branch-thread-groups'
 import { NewThreadMenu } from './new-thread-menu'
+import { ProjectWorkActionsMenu } from './project-work-actions-menu'
 import { ProjectWorkSummaryBlock } from './project-work-block'
 import { SearchHistoryField } from './project-work-fields'
 import {
@@ -18,6 +21,62 @@ import {
   getWorktreeBranchesForProject,
   UNASSIGNED_BRANCH_GROUP_ID,
 } from './project-work-model'
+
+function ProjectActionsMenuButton({
+  project,
+  onAction,
+}: {
+  project: Project
+  onAction: DesktopActionInvoker
+}) {
+  const [open, setOpen] = useState(false)
+  const [menuWidth, setMenuWidth] = useState(240)
+  const [menuRight, setMenuRight] = useState(0)
+  const buttonRef = useRef<HTMLButtonElement | null>(null)
+  const menuRef = useRef<HTMLDivElement | null>(null)
+  useDismissibleLayer({
+    open,
+    onDismiss: () => setOpen(false),
+    refs: [buttonRef, menuRef],
+  })
+  useLayoutEffect(() => {
+    if (!(open && buttonRef.current)) return
+    const anchor = buttonRef.current
+    const row = anchor.closest('.sidebar-project-work-section-heading')
+    const rowRect = row?.getBoundingClientRect()
+    const anchorRect = anchor.getBoundingClientRect()
+    if (!rowRect) {
+      setMenuWidth(anchor.offsetLeft + anchor.offsetWidth)
+      setMenuRight(0)
+      return
+    }
+    setMenuWidth(rowRect.width)
+    setMenuRight(anchorRect.right - rowRect.right)
+  }, [open])
+
+  return (
+    <div className="sidebar-project-work-project-menu-anchor">
+      <IconButton
+        ref={buttonRef}
+        label="Project actions"
+        icon={<MoreHorizontal size={13} />}
+        tooltipPlacement="right"
+        className="sidebar-project-work-project-menu-button h-7 w-7 rounded-md"
+        onClick={() => setOpen((current) => !current)}
+      />
+      {open ? (
+        <ProjectWorkActionsMenu
+          ref={menuRef}
+          right={menuRight}
+          width={menuWidth}
+          project={project}
+          onAction={onAction}
+          onClose={() => setOpen(false)}
+        />
+      ) : null}
+    </div>
+  )
+}
 
 export function MultiProjectWorkContent({
   activeView,
@@ -244,6 +303,7 @@ export function SingleProjectWorkContent({
             searchQuery={searchQuery}
             onSearchQueryChange={onSearchQueryChange}
           />
+          <ProjectActionsMenuButton project={project} onAction={onAction} />
           <NewThreadMenu currentBranch={currentBranch} onAction={onAction} projectId={project.id} />
         </div>
 

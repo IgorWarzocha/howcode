@@ -3,7 +3,7 @@ import { CircleOff, GitBranch, GitFork, Plus } from 'lucide-react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project, Thread, View } from '../../../types'
 import { BranchPruneAction, BranchSwitchAction } from './branch-actions'
-import { createThreadForBranch } from './new-thread-menu'
+import { createThreadForBranch, createThreadInWorktreeForBranch } from './new-thread-menu'
 import type { BranchThreadGroup } from './project-work-model'
 import { ProjectWorkThreadRow } from './project-work-thread-row'
 
@@ -19,7 +19,6 @@ function EmptyBranchStartAction({
   group,
   project,
   onAction,
-  onBlocked,
   onSwitchFailed,
 }: {
   blocked: boolean
@@ -27,25 +26,20 @@ function EmptyBranchStartAction({
   group: BranchThreadGroup
   project: Project
   onAction: DesktopActionInvoker
-  onBlocked: () => void
   onSwitchFailed: () => void
 }) {
   const targetProjectId = group.worktreePath ?? project.id
   const startThread = async () => {
     if (!(group.current || group.worktree || group.unassigned)) {
-      const switchResult = await onAction('workspace.switch-branch', {
+      const worktreeResult = await createThreadInWorktreeForBranch({
+        branchName: group.label,
+        onAction,
         projectId: project.id,
-        value: group.label,
       })
-      const switchError = switchResult?.result?.error
-      if (switchError) {
-        if (typeof switchError === 'string' && switchError.includes('Worktree is dirty')) {
-          onBlocked()
-          return
-        }
+      if (worktreeResult.error) {
         onSwitchFailed()
-        return
       }
+      return
     }
 
     await createThreadForBranch({
@@ -61,7 +55,7 @@ function EmptyBranchStartAction({
       ? `Start thread on ${currentBranch ?? group.label}`
       : group.unassigned
         ? 'Start unassigned thread'
-        : `Switch to ${group.label} and start thread`
+        : `Start thread in ${group.label} worktree`
 
   return (
     <Tooltip content={blocked ? 'Worktree is dirty. Commit first.' : label} placement="right">
@@ -141,7 +135,6 @@ function BranchInlineActions({
             group={group}
             project={project}
             onAction={onAction}
-            onBlocked={onSwitchBlocked}
             onSwitchFailed={onSwitchFailed}
           />
         </>
