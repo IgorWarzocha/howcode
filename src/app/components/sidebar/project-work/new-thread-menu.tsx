@@ -165,14 +165,15 @@ export function NewThreadMenu({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       event.stopPropagation()
+      event.stopImmediatePropagation()
       setOpen(false)
     }
 
     document.addEventListener('pointerdown', handlePointerDown, true)
-    document.addEventListener('keydown', handleKeyDown, true)
+    window.addEventListener('keydown', handleKeyDown, true)
     return () => {
       document.removeEventListener('pointerdown', handlePointerDown, true)
-      document.removeEventListener('keydown', handleKeyDown, true)
+      window.removeEventListener('keydown', handleKeyDown, true)
     }
   }, [open])
 

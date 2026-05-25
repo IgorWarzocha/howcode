@@ -159,7 +159,7 @@ async function handleCommitOptionsEffects(ctx: PostEffectsContext) {
 }
 
 async function handleSwitchBranchEffects(ctx: PostEffectsContext) {
-  if (hasActionError(ctx.actionResult)) return
+  if (hasActionError(ctx.actionResult) && ctx.actionResult?.result?.didMutate !== true) return
   await applySwitchBranchPostEffect({
     contextualPayload: ctx.contextualPayload,
     queryClient: ctx.queryClient,
@@ -170,7 +170,7 @@ async function handleSwitchBranchEffects(ctx: PostEffectsContext) {
 }
 
 async function handleCreateWorktreeEffects(ctx: PostEffectsContext) {
-  if (hasActionError(ctx.actionResult)) return
+  if (hasActionError(ctx.actionResult) && ctx.actionResult?.result?.didMutate !== true) return
   await applyCreateWorktreePostEffect({
     contextualPayload: ctx.contextualPayload,
     actionResult: ctx.actionResult,
