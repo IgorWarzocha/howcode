@@ -257,15 +257,14 @@ export function NewThreadMenu({
         >
           <button
             type="button"
-            className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-option"
+            className="sidebar-menu-item sidebar-new-thread-option sidebar-new-thread-current-branch-option"
             onClick={() => void createAssignedThread(currentBranch)}
             disabled={!currentBranch}
           >
-            <GitBranch size={12} />
-            <span className="truncate">Current branch</span>
-            <span className="sidebar-new-thread-option-meta truncate">
-              {currentBranch ?? 'No branch'}
+            <span className="sidebar-new-thread-current-branch-icon" aria-hidden="true">
+              <GitBranch size={12} />
             </span>
+            <span className="truncate">{currentBranch ?? 'No branch'}</span>
           </button>
 
           <CreateTargetRow
