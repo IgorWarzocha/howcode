@@ -414,7 +414,7 @@ export function ProjectCompactBranchGroups({
           <span className="sidebar-project-work-branch-meta">
             <span className="sidebar-project-work-branch-count">{branchThreads.length}</span>
           </span>
-          <span className="sidebar-project-work-branch-actions" data-action-count="1">
+          <span className="sidebar-project-work-branch-actions" data-action-count="2">
             <BranchInlineActions
               canPrune={true}
               canSwitch={false}
