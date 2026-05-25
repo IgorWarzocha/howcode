@@ -22,7 +22,6 @@ import {
 
 function ProjectWorkBlockHeader({
   currentBranch,
-  dirtyMessage,
   expanded,
   project,
   onAction,
@@ -30,7 +29,6 @@ function ProjectWorkBlockHeader({
   onToggleExpanded,
 }: {
   currentBranch: string | null
-  dirtyMessage: string | null
   expanded: boolean
   project: Project
   onAction: DesktopActionInvoker
@@ -137,12 +135,7 @@ function ProjectWorkBlockHeader({
           />
         ) : null}
       </div>
-      <NewThreadMenu
-        currentBranch={currentBranch}
-        dirtyMessage={dirtyMessage}
-        onAction={onAction}
-        projectId={project.id}
-      />
+      <NewThreadMenu currentBranch={currentBranch} onAction={onAction} projectId={project.id} />
     </div>
   )
 }
@@ -152,7 +145,6 @@ export function ProjectWorkSummaryBlock({
   branchGroups,
   collapsedBranchIds,
   currentBranch,
-  dirtyMessage,
   expanded,
   olderThreadCount,
   project,
@@ -179,7 +171,6 @@ export function ProjectWorkSummaryBlock({
   branchGroups: BranchThreadGroup[]
   collapsedBranchIds: Record<string, boolean>
   currentBranch: string | null
-  dirtyMessage: string | null
   expanded: boolean
   olderThreadCount: number
   project: Project
@@ -239,7 +230,6 @@ export function ProjectWorkSummaryBlock({
     <section className="sidebar-project-work-project-block">
       <ProjectWorkBlockHeader
         currentBranch={currentBranch}
-        dirtyMessage={dirtyMessage}
         expanded={expanded}
         project={project}
         onAction={onAction}

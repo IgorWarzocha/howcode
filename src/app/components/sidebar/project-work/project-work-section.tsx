@@ -15,9 +15,7 @@ import {
   buildBranchGroups,
   filterBranchGroups,
   getCurrentBranchForProject,
-  getDirtyWorktreeMessage,
   getDisplayableProjects,
-  getProjectGitStateForSidebar,
   getProjectScopeLabel,
   getRepositoryBranchesForProject,
   getThreadsForProjectWorktreeRows,
@@ -263,10 +261,6 @@ export function ProjectWorkSection({
     repositoryBranches,
     worktreeBranches,
   )
-  const dirtyWorktreeMessage = getDirtyWorktreeMessage(
-    getProjectGitStateForSidebar(contentProject.id, projectGitState, gitStatesByProjectId),
-    contentProject.id,
-  )
   const normalizedSearchQuery = searchQuery.trim().toLowerCase()
   const visibleBranchGroups = filterBranchGroups(branchGroups, searchQuery)
   const selectedThread = contentProject.threads.find((thread) => thread.id === selectedThreadId)
@@ -341,7 +335,6 @@ export function ProjectWorkSection({
           branchGroups={visibleBranchGroups}
           collapsedBranchIds={collapsedBranchIds}
           currentBranch={currentBranch}
-          dirtyWorktreeMessage={dirtyWorktreeMessage}
           normalizedSearchQuery={normalizedSearchQuery}
           olderThreadCount={olderThreads.length}
           project={contentProject}

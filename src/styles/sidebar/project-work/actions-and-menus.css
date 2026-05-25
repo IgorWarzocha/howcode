@@ -109,7 +109,17 @@
 }
 
 .sidebar-new-thread-create-action {
+  display: inline-flex;
+  width: 1.25rem;
+  height: 1.25rem;
+  align-items: center;
+  justify-content: center;
   justify-self: end;
+}
+
+.sidebar-new-thread-create-action:has(button[data-warning="true"]) {
+  width: auto;
+  max-width: 5.5rem;
 }
 
 .sidebar-new-thread-branch-create button[data-warning="true"] {

@@ -91,12 +91,10 @@ function CreateTargetRow({
 
 export function NewThreadMenu({
   currentBranch,
-  dirtyMessage,
   onAction,
   projectId,
 }: {
   currentBranch: string | null
-  dirtyMessage: string | null
   onAction: DesktopActionInvoker
   projectId: string
 }) {
@@ -185,10 +183,6 @@ export function NewThreadMenu({
   const createThreadOnNewBranch = async () => {
     const branchName = newBranchName.trim()
     if (!branchName) return
-    if (dirtyMessage) {
-      setNewBranchError(dirtyMessage)
-      return
-    }
     setNewBranchError(null)
     const switchResult = await onAction('workspace.switch-branch', {
       projectId,
@@ -242,7 +236,7 @@ export function NewThreadMenu({
             icon={<GitBranch size={12} />}
             inputRef={newBranchInputRef}
             value={newBranchName}
-            error={newBranchError ?? dirtyMessage}
+            error={newBranchError}
             placeholder="New branch"
             inputLabel="New branch name"
             createLabel="Create branch"

@@ -13,8 +13,6 @@ import {
   bucketThreads,
   buildBranchGroups,
   getCurrentBranchForProject,
-  getDirtyWorktreeMessage,
-  getProjectGitStateForSidebar,
   getRepositoryBranchesForProject,
   getThreadsForProjectWorktreeRows,
   getWorktreeBranchesForProject,
@@ -94,10 +92,6 @@ export function MultiProjectWorkContent({
               projectGitState,
               gitStatesByProjectId,
             )
-            const dirtyMessage = getDirtyWorktreeMessage(
-              getProjectGitStateForSidebar(project.id, projectGitState, gitStatesByProjectId),
-              project.id,
-            )
             const repositoryBranches = getRepositoryBranchesForProject(
               project,
               projectGitState,
@@ -123,7 +117,6 @@ export function MultiProjectWorkContent({
                 branchGroups={branchGroups}
                 collapsedBranchIds={collapsedBranchIds}
                 currentBranch={blockCurrentBranch}
-                dirtyMessage={dirtyMessage}
                 expanded={expanded}
                 olderThreadCount={buckets.olderThreads.length}
                 project={project}
@@ -170,7 +163,6 @@ export function SingleProjectWorkContent({
   branchGroups,
   collapsedBranchIds,
   currentBranch,
-  dirtyWorktreeMessage,
   olderThreadCount,
   normalizedSearchQuery,
   project,
@@ -193,7 +185,6 @@ export function SingleProjectWorkContent({
   branchGroups: BranchThreadGroup[]
   collapsedBranchIds: Record<string, boolean>
   currentBranch: string | null
-  dirtyWorktreeMessage: string | null
   olderThreadCount: number
   normalizedSearchQuery: string
   project: Project
@@ -246,12 +237,7 @@ export function SingleProjectWorkContent({
             searchQuery={searchQuery}
             onSearchQueryChange={onSearchQueryChange}
           />
-          <NewThreadMenu
-            currentBranch={currentBranch}
-            dirtyMessage={dirtyWorktreeMessage}
-            onAction={onAction}
-            projectId={project.id}
-          />
+          <NewThreadMenu currentBranch={currentBranch} onAction={onAction} projectId={project.id} />
         </div>
 
         <div className="sidebar-project-work-scroll-shell">

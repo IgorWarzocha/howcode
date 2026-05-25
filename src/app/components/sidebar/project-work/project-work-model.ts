@@ -118,18 +118,6 @@ function createBranchThreadGroup(input: {
   }
 }
 
-export function getDirtyWorktreeMessage(
-  projectGitState: ProjectGitState | null,
-  projectId: string,
-) {
-  if (projectGitState?.projectId !== projectId || !projectGitState.isGitRepo) return null
-  const dirtyFileCount =
-    projectGitState.stagedFileCount +
-    projectGitState.unstagedFileCount +
-    projectGitState.untrackedFileCount
-  return dirtyFileCount > 0 ? 'Commit first' : null
-}
-
 function getThreadSortValue(thread: Thread) {
   return thread.lastModifiedMs ?? 0
 }
