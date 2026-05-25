@@ -83,38 +83,41 @@ export type BranchThreadGroup = {
   unassigned: boolean
   worktree: boolean
   worktreePath?: string | undefined
+  worktreeBranchName?: string | undefined
 }
 
 export type WorktreeBranch = {
   label: string
   path: string
+  branchName?: string | undefined
 }
 
-function buildWorktreePathByBranch(worktreeBranches: readonly WorktreeBranch[]) {
-  const worktreePathByBranch = new Map<string, string>()
+function buildWorktreeByBranch(worktreeBranches: readonly WorktreeBranch[]) {
+  const worktreeByBranch = new Map<string, WorktreeBranch>()
   for (const worktreeBranch of worktreeBranches) {
-    const branchName = worktreeBranch.label.trim()
+    const branchName = (worktreeBranch.branchName ?? worktreeBranch.label).trim()
     if (!branchName) continue
-    worktreePathByBranch.set(branchName, worktreeBranch.path)
+    worktreeByBranch.set(branchName, worktreeBranch)
   }
-  return worktreePathByBranch
+  return worktreeByBranch
 }
 
 function createBranchThreadGroup(input: {
   branchName: string
   current: boolean
   groupedThreads: ReadonlyMap<string, Thread[]>
-  worktreePathByBranch: ReadonlyMap<string, string>
+  worktreeByBranch: ReadonlyMap<string, WorktreeBranch>
 }): BranchThreadGroup {
-  const worktreePath = input.worktreePathByBranch.get(input.branchName)
+  const worktree = input.worktreeByBranch.get(input.branchName)
   return {
     id: input.branchName,
     label: input.branchName,
     threads: sortThreads(input.groupedThreads.get(input.branchName) ?? []),
     current: input.current,
     unassigned: false,
-    worktree: worktreePath !== undefined,
-    worktreePath,
+    worktree: worktree !== undefined,
+    worktreePath: worktree?.path,
+    worktreeBranchName: worktree?.branchName,
   }
 }
 
@@ -179,8 +182,8 @@ export function buildBranchGroups(
   for (const branchName of groupedThreads.keys()) branchNames.add(branchName)
   if (currentBranch) branchNames.add(currentBranch)
 
-  const worktreePathByBranch = buildWorktreePathByBranch(worktreeBranches)
-  for (const branchName of worktreePathByBranch.keys()) branchNames.add(branchName)
+  const worktreeByBranch = buildWorktreeByBranch(worktreeBranches)
+  for (const branchName of worktreeByBranch.keys()) branchNames.add(branchName)
 
   const groups: BranchThreadGroup[] = []
   if (currentBranch && branchNames.has(currentBranch)) {
@@ -189,7 +192,7 @@ export function buildBranchGroups(
         branchName: currentBranch,
         current: true,
         groupedThreads,
-        worktreePathByBranch,
+        worktreeByBranch,
       }),
     )
     branchNames.delete(currentBranch)
@@ -201,7 +204,7 @@ export function buildBranchGroups(
         branchName,
         current: false,
         groupedThreads,
-        worktreePathByBranch,
+        worktreeByBranch,
       }),
     )
     .sort((a, b) => {
@@ -302,6 +305,7 @@ export function getWorktreeBranchesForProject(
         worktree.path.split(pathSeparatorPattern).filter(Boolean).at(-1) ??
         worktree.path,
       path: worktree.path,
+      branchName: worktree.branch ?? undefined,
     }))
 }
 

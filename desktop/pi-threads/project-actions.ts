@@ -120,15 +120,14 @@ async function deleteProjectPiFiles(projectId: string, sessionPaths: string[]) {
   }
 }
 
-async function isBusyProjectDeletionTarget(projectId: string) {
-  if (hasRunningProjectThread(projectId)) {
-    return true
-  }
+async function isBusyProjectDeletionTarget(projectIds: string[]) {
+  if (projectIds.some((projectId) => hasRunningProjectThread(projectId))) return true
 
   const terminalSnapshots = await listTerminals()
+  const projectIdSet = new Set(projectIds)
   return terminalSnapshots.some(
     (snapshot) =>
-      snapshot.projectId === projectId &&
+      projectIdSet.has(snapshot.projectId) &&
       (snapshot.status === 'starting' || snapshot.status === 'running'),
   )
 }
@@ -163,12 +162,12 @@ function getProjectDeletionBlockedError(projectId: string) {
   return null
 }
 
-async function getAsyncProjectDeletionBlockedError(projectId: string) {
+async function getAsyncProjectDeletionBlockedError(projectId: string, projectFamilyIds: string[]) {
   if (await isProtectedProjectDeletionTarget(projectId, getDesktopWorkingDirectory())) {
     return 'Cannot delete the active shell project.'
   }
 
-  if (await isBusyProjectDeletionTarget(projectId)) {
+  if (await isBusyProjectDeletionTarget(projectFamilyIds)) {
     return 'Cannot delete a project while Pi or a terminal is still running in it.'
   }
 
@@ -222,12 +221,12 @@ async function removeProjectFromPayload(payload: AnyDesktopActionPayload) {
   const blockedError = getProjectDeletionBlockedError(projectId)
   if (blockedError) return handledAction({ error: blockedError })
 
-  const asyncBlockedError = await getAsyncProjectDeletionBlockedError(projectId)
+  const projectFamilyIds = listProjectFamilyProjectIds(projectId)
+  const asyncBlockedError = await getAsyncProjectDeletionBlockedError(projectId, projectFamilyIds)
   if (asyncBlockedError) return handledAction({ error: asyncBlockedError })
 
   const appSettings = loadAppSettings()
   const projectSessionPaths = listProjectFamilySessionPaths(projectId)
-  const projectFamilyIds = listProjectFamilyProjectIds(projectId)
   return appSettings.projectDeletionMode === 'full-clean'
     ? await deleteProjectWithFullClean(projectId, projectSessionPaths, projectFamilyIds)
     : await deleteProjectPiOnly(projectId, projectSessionPaths, projectFamilyIds)

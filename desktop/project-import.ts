@@ -5,10 +5,12 @@ import { setProjectImportState } from './app-settings/writers.ts'
 import { getOriginUrl, isGitRepository } from './project-git/project-state.ts'
 import { type GitWorktreeEntry, loadGitWorktrees } from './project-git/worktrees.ts'
 import {
+  deleteProject,
   deleteProjectWorktreeMetadata,
   ensureProject,
   getProjectWorktreeDirectory,
   listProjects,
+  listProjectThreadIds,
   setProjectRepoOrigin,
   upsertProjectWorktree,
 } from './thread-state-db.ts'
@@ -83,6 +85,11 @@ function isPathInside(parentPath: string, childPath: string) {
   return relativePath.length > 0 && !relativePath.startsWith('..') && !path.isAbsolute(relativePath)
 }
 
+function removePrunableWorktreeMetadata(worktreePath: string) {
+  deleteProjectWorktreeMetadata(worktreePath)
+  if (listProjectThreadIds(worktreePath).length === 0) deleteProject(worktreePath)
+}
+
 export async function importProjectWorktrees(projectId: string) {
   let worktrees: GitWorktreeEntry[]
   try {
@@ -110,7 +117,7 @@ export async function importProjectWorktrees(projectId: string) {
 
   for (const worktree of worktrees) {
     if (worktree.prunable) {
-      deleteProjectWorktreeMetadata(worktree.path)
+      removePrunableWorktreeMetadata(worktree.path)
       continue
     }
     ensureProject(worktree.path)

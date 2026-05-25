@@ -32,6 +32,7 @@ import {
 } from '../project-git.ts'
 import { listTerminals } from '../terminal/manager.ts'
 import {
+  deleteProject,
   ensureProject,
   getProjectWorktreeDirectory,
   hasRunningProjectThread,
@@ -196,6 +197,7 @@ async function handleRemoveWorktreeWorkspaceAction(payload: AnyDesktopActionPayl
 
   const branchResult = branchName ? await pruneProjectBranch(projectId, branchName) : null
   const cleanupError = await deletePersistedThreadsForWorkspace(threadIds)
+  if (!cleanupError) deleteProject(worktreePath)
   if (branchResult && 'error' in branchResult) {
     return handledAction({
       didMutate: true,

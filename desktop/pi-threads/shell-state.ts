@@ -50,7 +50,10 @@ function scheduleStartupProjectMetadataRefresh() {
   if (startupProjectMetadataRefresh) return
   startupProjectMetadataRefresh = importProjects([])
     .then(() => emitDesktopEvent({ type: 'shell-state-refresh' }))
-    .catch((error) => console.warn('Failed to refresh project metadata.', error))
+    .catch((error) => {
+      startupProjectMetadataRefresh = null
+      console.warn('Failed to refresh project metadata.', error)
+    })
 }
 
 export async function loadShellState(cwd: string): Promise<ShellState> {

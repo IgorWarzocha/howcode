@@ -80,7 +80,7 @@ export function BranchPruneAction({
       ? await onAction('workspace.remove-worktree', {
           projectId: project.id,
           worktreePath: group.worktreePath,
-          branchName: group.label,
+          branchName: group.worktreeBranchName ?? null,
         })
       : await onAction('workspace.prune-branch', {
           projectId: project.id,
