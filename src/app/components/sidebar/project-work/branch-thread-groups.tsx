@@ -186,6 +186,7 @@ export function BranchThreadGroupSection({
   const confirmingPrune = pruneConfirmBranchId === branchActionKey
   const switchBlocked = switchErrorBranchId === branchActionKey
   const threadProject = group.worktreePath ? { ...project, id: group.worktreePath } : project
+  const canToggleThreads = group.threads.length > 0
 
   return (
     <section
@@ -197,6 +198,7 @@ export function BranchThreadGroupSection({
           type="button"
           className="sidebar-icon-action sidebar-icon-action--xs sidebar-icon-action--no-hover sidebar-project-work-branch-disclosure"
           onClick={onToggle}
+          disabled={!canToggleThreads}
           aria-expanded={!collapsed}
           aria-label={collapsed ? `Expand ${group.label}` : `Collapse ${group.label}`}
         >
@@ -210,6 +212,7 @@ export function BranchThreadGroupSection({
           type="button"
           className="sidebar-project-work-branch-toggle"
           onClick={onToggle}
+          disabled={!canToggleThreads}
           aria-expanded={!collapsed}
         >
           <span className="truncate">{group.label}</span>

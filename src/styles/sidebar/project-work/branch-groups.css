@@ -13,6 +13,11 @@
   text-align: left;
 }
 
+.sidebar-project-work-branch-toggle:disabled,
+.sidebar-project-work-branch-disclosure:disabled {
+  cursor: default;
+}
+
 .sidebar-project-work-branch-toggle > svg {
   flex: 0 0 auto;
 }
