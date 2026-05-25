@@ -49,7 +49,7 @@ export function BranchThreadGroupSection({
       <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading">
         <button
           type="button"
-          className="sidebar-icon-action sidebar-icon-action--xs sidebar-project-work-branch-disclosure"
+          className="sidebar-icon-action sidebar-icon-action--xs sidebar-icon-action--no-hover sidebar-project-work-branch-disclosure"
           onClick={onToggle}
           aria-expanded={!collapsed}
           aria-label={collapsed ? `Expand ${group.label}` : `Collapse ${group.label}`}
@@ -231,7 +231,7 @@ export function ProjectCompactBranchGroups({
         <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading">
           <button
             type="button"
-            className="sidebar-icon-action sidebar-icon-action--xs sidebar-project-work-branch-disclosure"
+            className="sidebar-icon-action sidebar-icon-action--xs sidebar-icon-action--no-hover sidebar-project-work-branch-disclosure"
             onClick={onToggleCurrentBranch}
             aria-expanded={currentBranchExpanded}
             aria-label={currentBranchExpanded ? 'Collapse current branch' : 'Expand current branch'}
@@ -279,7 +279,7 @@ export function ProjectCompactBranchGroups({
           <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading">
             <button
               type="button"
-              className="sidebar-icon-action sidebar-icon-action--xs sidebar-project-work-branch-disclosure"
+              className="sidebar-icon-action sidebar-icon-action--xs sidebar-icon-action--no-hover sidebar-project-work-branch-disclosure"
               onClick={onToggleUnassigned}
               aria-expanded={unassignedExpanded}
               aria-label={
