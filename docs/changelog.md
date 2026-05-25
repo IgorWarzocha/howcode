@@ -19,6 +19,10 @@
 - Fixed code landing/project dashboard routing.
 - Fixed empty dashboard threads piling up.
 - Fixed Pi TUI new-thread sidebar handoff.
+- Added the new project-work sidebar: branch-grouped sessions, visible-project scope, Past sessions, branch actions, and cleaner project menus.
+- Added worktree layout defaults, worktree docs/blog pages, and the poll worker pieces for the worktrees write-up.
+- Made session deletion/archiving harder to do accidentally, with confirmations and archived code sessions showing up again.
+- Cleaned up sidebar popovers and project-work styling so the new sidebar feels less bolted on.
 - Quieted missing-session usage noise and checkbox layout shifts.
 
 Snapshot: May 19, 2026.
