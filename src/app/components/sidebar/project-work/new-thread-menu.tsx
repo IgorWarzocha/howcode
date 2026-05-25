@@ -198,8 +198,13 @@ export function NewThreadMenu({
             <button
               type="button"
               data-warning={newBranchError || dirtyMessage ? 'true' : 'false'}
-              onClick={() => void createThreadOnNewBranch()}
-              disabled={newBranchName.trim().length === 0}
+              onClick={() => {
+                if (newBranchName.trim().length === 0) {
+                  focusInput(newBranchInputRef.current)
+                  return
+                }
+                void createThreadOnNewBranch()
+              }}
             >
               {newBranchError || dirtyMessage ? (newBranchError ?? dirtyMessage) : 'Create'}
             </button>
@@ -230,8 +235,13 @@ export function NewThreadMenu({
             <button
               type="button"
               data-warning={newWorktreeError ? 'true' : 'false'}
-              onClick={() => void createThreadInNewWorktree()}
-              disabled={newWorktreeBranchName.trim().length === 0}
+              onClick={() => {
+                if (newWorktreeBranchName.trim().length === 0) {
+                  focusInput(newWorktreeInputRef.current)
+                  return
+                }
+                void createThreadInNewWorktree()
+              }}
             >
               {newWorktreeError ?? 'Create'}
             </button>
