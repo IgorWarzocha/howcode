@@ -54,6 +54,7 @@
 .sidebar-new-thread-option,
 .sidebar-new-thread-branch-create {
   min-height: 1.625rem;
+  padding-left: 0.1875rem;
 }
 
 .sidebar-new-thread-option > svg:first-child,
