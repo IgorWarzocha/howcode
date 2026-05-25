@@ -108,15 +108,19 @@ function BranchInlineActions({
 }) {
   if (!canManageBranch) {
     return (
-      <EmptyBranchStartAction
-        blocked={switchBlocked}
-        currentBranch={currentBranch}
-        group={group}
-        project={project}
-        onAction={onAction}
-        onBlocked={onSwitchBlocked}
-        onSwitchFailed={onSwitchFailed}
-      />
+      <>
+        <span className="sidebar-project-work-branch-action-spacer" aria-hidden="true" />
+        <span className="sidebar-project-work-branch-action-spacer" aria-hidden="true" />
+        <EmptyBranchStartAction
+          blocked={switchBlocked}
+          currentBranch={currentBranch}
+          group={group}
+          project={project}
+          onAction={onAction}
+          onBlocked={onSwitchBlocked}
+          onSwitchFailed={onSwitchFailed}
+        />
+      </>
     )
   }
 
@@ -419,13 +423,18 @@ export function ProjectCompactBranchGroups({
             <span className="sidebar-project-work-branch-count">{branchThreads.length}</span>
           </span>
           <span className="sidebar-project-work-branch-actions">
-            <EmptyBranchStartAction
-              blocked={false}
+            <BranchInlineActions
+              canManageBranch={false}
+              confirmingPrune={false}
               currentBranch={currentBranch}
               group={currentBranchGroup}
               project={project}
+              switchBlocked={false}
               onAction={onAction}
-              onBlocked={() => undefined}
+              onCancelPrune={() => undefined}
+              onConfirmPrune={() => undefined}
+              onRequestPruneConfirm={() => undefined}
+              onSwitchBlocked={() => undefined}
               onSwitchFailed={() => undefined}
             />
           </span>
