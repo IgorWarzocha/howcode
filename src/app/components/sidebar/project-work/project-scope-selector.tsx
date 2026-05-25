@@ -23,7 +23,10 @@ function ProjectScopeOptionRow({
   onToggleVisible: () => void
 }) {
   return (
-    <div className="sidebar-project-work-project-option" data-active={focused ? 'true' : 'false'}>
+    <div
+      className="sidebar-compact-row sidebar-compact-row--project-option sidebar-project-work-project-option"
+      data-active={focused ? 'true' : 'false'}
+    >
       <button
         type="button"
         className="sidebar-project-work-project-scope-toggle"

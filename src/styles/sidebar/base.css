@@ -78,30 +78,6 @@
   flex: 1;
 }
 
-.sidebar-feature-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.sidebar-mode-label {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.sidebar-coming-soon-label {
-  flex-shrink: 0;
-  color: var(--muted-2);
-  font-size: var(--app-type-kicker-size);
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .sidebar-footer {
   position: relative;
   margin-top: auto;

@@ -29,7 +29,7 @@ export function ProjectInstallTargetList({
               <button
                 key={project.id}
                 type="button"
-                className="sidebar-project-work-project-option"
+                className="sidebar-compact-row sidebar-compact-row--project-option sidebar-project-work-project-option"
                 data-active={selected ? 'true' : 'false'}
                 aria-current={selected ? 'true' : undefined}
                 onClick={() => {

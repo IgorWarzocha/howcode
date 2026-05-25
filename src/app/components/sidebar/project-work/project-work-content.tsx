@@ -206,7 +206,7 @@ export function SingleProjectWorkContent({
       <div className="sidebar-project-work-actions">
         <button
           type="button"
-          className="sidebar-project-work-action-row"
+          className="sidebar-compact-row sidebar-compact-row--action sidebar-project-work-action-row"
           data-active={activeView === 'automations' ? 'true' : 'false'}
           onClick={() => onShowView('automations')}
         >
@@ -216,7 +216,7 @@ export function SingleProjectWorkContent({
         </button>
         <button
           type="button"
-          className="sidebar-project-work-history-row"
+          className="sidebar-compact-row sidebar-compact-row--action sidebar-project-work-history-row"
           data-active={activeView === 'sessions' && selectedThreadId === null ? 'true' : 'false'}
           onClick={() => onShowView('sessions')}
         >

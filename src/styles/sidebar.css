@@ -1,4 +1,5 @@
 @import "./sidebar/base.css";
+@import "./sidebar/primitives.css";
 @import "./sidebar/projects.css";
 @import "./sidebar/common-list.css";
 @import "./sidebar/project-tree.css";

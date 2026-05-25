@@ -79,7 +79,7 @@ function ProjectWorkBlockHeader({
     <div className="sidebar-project-work-project-block-heading-row">
       <button
         type="button"
-        className="sidebar-project-work-project-block-disclosure"
+        className="sidebar-icon-action sidebar-icon-action--md sidebar-project-work-project-block-disclosure"
         onClick={onToggleExpanded}
         aria-expanded={expanded}
         aria-label={expanded ? `Collapse ${project.name}` : `Expand ${project.name}`}
@@ -241,7 +241,7 @@ export function ProjectWorkSummaryBlock({
       <div className="sidebar-project-work-project-block-actions">
         <button
           type="button"
-          className="sidebar-project-work-action-row"
+          className="sidebar-compact-row sidebar-compact-row--action sidebar-project-work-action-row"
           data-active={activeView === 'automations' && isProjectActive ? 'true' : 'false'}
           onClick={() => {
             onFocusProject(project.id)
@@ -255,7 +255,7 @@ export function ProjectWorkSummaryBlock({
         {expanded ? (
           <button
             type="button"
-            className="sidebar-project-work-history-row"
+            className="sidebar-compact-row sidebar-compact-row--action sidebar-project-work-history-row"
             data-active={
               activeView === 'sessions' && isProjectActive && selectedThreadId === null
                 ? 'true'

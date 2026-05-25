@@ -38,16 +38,6 @@
   padding-right: var(--sidebar-row-padding-x, 0.3125rem);
 }
 
-.sidebar-project-work-project-block-disclosure {
-  display: inline-flex;
-  height: 1.75rem;
-  width: 1.75rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.25rem;
-  color: var(--muted);
-}
-
 .sidebar-project-work-project-block-disclosure svg {
   transform: translateX(-0.125rem);
 }

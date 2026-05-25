@@ -25,7 +25,7 @@ function BranchSwitchAction({
     >
       <button
         type="button"
-        className="sidebar-project-work-branch-action"
+        className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action"
         onClick={(event) => {
           event.stopPropagation()
           void onAction('workspace.switch-branch', {
@@ -66,7 +66,7 @@ function BranchPruneAction({
       <>
         <button
           type="button"
-          className="sidebar-project-work-branch-action"
+          className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action"
           onClick={(event) => {
             event.stopPropagation()
             onCancel()
@@ -77,7 +77,7 @@ function BranchPruneAction({
         </button>
         <button
           type="button"
-          className="sidebar-project-work-branch-action sidebar-project-work-branch-action--danger"
+          className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--danger"
           onClick={(event) => {
             event.stopPropagation()
             onConfirm()
@@ -98,7 +98,7 @@ function BranchPruneAction({
     <Tooltip content={`Prune ${group.label}`} placement="right">
       <button
         type="button"
-        className="sidebar-project-work-branch-action"
+        className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action"
         onClick={(event) => {
           event.stopPropagation()
           onRequestConfirm()
@@ -151,10 +151,10 @@ export function BranchThreadGroupSection({
       className="sidebar-project-work-branch-group"
       data-current={group.current ? 'true' : 'false'}
     >
-      <div className="sidebar-project-work-branch-heading">
+      <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading">
         <button
           type="button"
-          className="sidebar-project-work-branch-disclosure"
+          className="sidebar-icon-action sidebar-icon-action--xs sidebar-project-work-branch-disclosure"
           onClick={onToggle}
           aria-expanded={!collapsed}
           aria-label={collapsed ? `Expand ${group.label}` : `Collapse ${group.label}`}
@@ -333,10 +333,10 @@ export function ProjectCompactBranchGroups({
   return (
     <>
       <section className="sidebar-project-work-branch-group" data-current="true">
-        <div className="sidebar-project-work-branch-heading">
+        <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading">
           <button
             type="button"
-            className="sidebar-project-work-branch-disclosure"
+            className="sidebar-icon-action sidebar-icon-action--xs sidebar-project-work-branch-disclosure"
             onClick={onToggleCurrentBranch}
             aria-expanded={currentBranchExpanded}
             aria-label={currentBranchExpanded ? 'Collapse current branch' : 'Expand current branch'}
@@ -381,10 +381,10 @@ export function ProjectCompactBranchGroups({
 
       {unassignedThreads.length > 0 ? (
         <section className="sidebar-project-work-branch-group">
-          <div className="sidebar-project-work-branch-heading">
+          <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading">
             <button
               type="button"
-              className="sidebar-project-work-branch-disclosure"
+              className="sidebar-icon-action sidebar-icon-action--xs sidebar-project-work-branch-disclosure"
               onClick={onToggleUnassigned}
               aria-expanded={unassignedExpanded}
               aria-label={

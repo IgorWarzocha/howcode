@@ -106,14 +106,14 @@ export function NewThreadMenu({
       />
       {open ? (
         <div
-          className="sidebar-new-thread-menu"
+          className="sidebar-menu-surface sidebar-menu-surface--below-normal sidebar-new-thread-menu"
           style={{ width: `${menuWidth}px` }}
           role="menu"
           aria-label="New thread options"
         >
           <button
             type="button"
-            className="sidebar-new-thread-option"
+            className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-option"
             onClick={() => void createAssignedThread(currentBranch)}
             disabled={!currentBranch}
           >
@@ -124,7 +124,7 @@ export function NewThreadMenu({
             </span>
           </button>
 
-          <div className="sidebar-new-thread-branch-create">
+          <div className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-branch-create">
             <GitBranch size={12} />
             <input
               value={newBranchName}
@@ -149,7 +149,11 @@ export function NewThreadMenu({
             </button>
           </div>
 
-          <button type="button" className="sidebar-new-thread-option" disabled>
+          <button
+            type="button"
+            className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-option"
+            disabled
+          >
             <GitFork size={12} />
             <span className="truncate">New worktree</span>
             <span className="sidebar-new-thread-option-meta">Soon</span>
@@ -157,7 +161,7 @@ export function NewThreadMenu({
 
           <button
             type="button"
-            className="sidebar-new-thread-option"
+            className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-option"
             onClick={() => void createAssignedThread(null)}
           >
             <X size={12} />

@@ -5,46 +5,6 @@
   overflow: visible;
 }
 
-.sidebar-project-work-branch-heading {
-  --sidebar-row-leading-width: 16px;
-  --sidebar-row-meta-width: 1.5rem;
-  --sidebar-row-gap: 0.5rem;
-  --sidebar-row-padding-x: 0.3125rem;
-  --sidebar-row-meta-inset: 0.3125rem;
-  position: relative;
-  display: grid;
-  min-height: 1.75rem;
-  width: 100%;
-  min-width: 0;
-  grid-template-columns: var(--sidebar-row-leading-width) minmax(0, 1fr) var(
-      --sidebar-row-meta-width
-    );
-  align-items: center;
-  gap: var(--sidebar-row-gap);
-  border-radius: 0.375rem;
-  padding: 1px var(--sidebar-row-padding-x);
-  color: var(--muted);
-  font-size: var(--app-type-control-size);
-  line-height: var(--app-type-group-line-height);
-  text-align: left;
-}
-
-.sidebar-project-work-branch-heading:hover,
-.sidebar-project-work-branch-heading:focus-within {
-  background: var(--surface-hover);
-  color: var(--text);
-}
-
-.sidebar-project-work-branch-disclosure {
-  display: inline-flex;
-  height: 1.25rem;
-  width: 1rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.25rem;
-  color: var(--muted);
-}
-
 .sidebar-project-work-branch-toggle {
   display: flex;
   min-width: 0;
@@ -119,21 +79,6 @@
 .sidebar-project-work-branch-heading:hover .sidebar-project-work-branch-actions,
 .sidebar-project-work-branch-heading:focus-within .sidebar-project-work-branch-actions {
   opacity: 1;
-}
-
-.sidebar-project-work-branch-action {
-  display: inline-flex;
-  height: 1.5rem;
-  width: 1.5rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.25rem;
-  color: var(--muted);
-}
-
-.sidebar-project-work-branch-action:hover {
-  background: var(--surface-hover);
-  color: var(--text);
 }
 
 .sidebar-project-work-branch-action--danger {
