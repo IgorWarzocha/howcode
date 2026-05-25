@@ -5,7 +5,7 @@ import type { Project, View } from '../../../types'
 import { appToneSubtleClass, appTypeMetaClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { BranchThreadGroupSection } from './branch-thread-groups'
-import { createThreadForBranch, NewThreadMenu } from './new-thread-menu'
+import { NewThreadMenu } from './new-thread-menu'
 import { ProjectWorkSummaryBlock } from './project-work-block'
 import { SearchHistoryField } from './project-work-fields'
 import {
@@ -256,55 +256,37 @@ export function SingleProjectWorkContent({
 
         <div className="sidebar-project-work-scroll-shell">
           <div className="sidebar-project-work-thread-list">
-            {branchGroups.length > 0 ? (
-              branchGroups.map((group) => {
-                const groupKey = `${project.id}:${group.id}`
-                const defaultCollapsed = !(group.current || group.id === selectedGroupId)
-                const collapsed = normalizedSearchQuery
-                  ? false
-                  : (collapsedBranchIds[groupKey] ?? defaultCollapsed)
-                return (
-                  <BranchThreadGroupSection
-                    key={group.id}
-                    activeView={activeView}
-                    collapsed={collapsed}
-                    currentBranch={currentBranch}
-                    group={group}
-                    project={project}
-                    selectedThreadId={selectedThreadId}
-                    terminalRunningSessionPaths={terminalRunningSessionPaths}
-                    onAction={onAction}
-                    onThreadOpen={onThreadOpen}
-                    onToggle={() =>
-                      onSetCollapsedBranchIds((current) => ({
-                        ...current,
-                        [groupKey]: !collapsed,
-                      }))
-                    }
-                    pruneConfirmBranchId={pruneConfirmBranchId}
-                    onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
-                    switchErrorBranchId={switchErrorBranchId}
-                    onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
-                  />
-                )
-              })
-            ) : (
-              <div className="sidebar-project-work-start-card">
-                <span>No active threads for this work context.</span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    void createThreadForBranch({
-                      branchName: currentBranch,
-                      onAction,
-                      projectId: project.id,
-                    })
+            {branchGroups.map((group) => {
+              const groupKey = `${project.id}:${group.id}`
+              const defaultCollapsed = !(group.current || group.id === selectedGroupId)
+              const collapsed = normalizedSearchQuery
+                ? false
+                : (collapsedBranchIds[groupKey] ?? defaultCollapsed)
+              return (
+                <BranchThreadGroupSection
+                  key={group.id}
+                  activeView={activeView}
+                  collapsed={collapsed}
+                  currentBranch={currentBranch}
+                  group={group}
+                  project={project}
+                  selectedThreadId={selectedThreadId}
+                  terminalRunningSessionPaths={terminalRunningSessionPaths}
+                  onAction={onAction}
+                  onThreadOpen={onThreadOpen}
+                  onToggle={() =>
+                    onSetCollapsedBranchIds((current) => ({
+                      ...current,
+                      [groupKey]: !collapsed,
+                    }))
                   }
-                >
-                  Start one
-                </button>
-              </div>
-            )}
+                  pruneConfirmBranchId={pruneConfirmBranchId}
+                  onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
+                  switchErrorBranchId={switchErrorBranchId}
+                  onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
+                />
+              )
+            })}
           </div>
         </div>
       </div>
