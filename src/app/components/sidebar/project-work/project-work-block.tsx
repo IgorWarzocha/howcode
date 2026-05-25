@@ -85,7 +85,11 @@ function ProjectWorkBlockHeader({
         aria-expanded={expanded}
         aria-label={expanded ? `Collapse ${project.name}` : `Expand ${project.name}`}
       >
-        {project.repoOriginUrl ? <GitHubInvertocatMark size={13} /> : <FolderCode size={13} />}
+        {project.repoOriginUrl ? (
+          <GitHubInvertocatMark size={13} className="sidebar-project-work-project-origin-icon" />
+        ) : (
+          <FolderCode size={13} />
+        )}
       </button>
       {editingName ? (
         <div className="sidebar-project-work-project-block-heading">

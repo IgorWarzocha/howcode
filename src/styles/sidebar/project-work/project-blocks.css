@@ -53,6 +53,10 @@
   text-align: left;
 }
 
+.sidebar-project-work-project-origin-icon {
+  transform: translateY(-0.0625rem);
+}
+
 .sidebar-project-work-project-rename-input {
   min-width: 0;
   width: 100%;
