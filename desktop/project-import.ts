@@ -77,8 +77,9 @@ export async function importProjects(projectIds: string[]) {
   }
 }
 
-function normalizePathForPrefix(projectPath: string) {
-  return projectPath.endsWith('/') ? projectPath : `${projectPath}/`
+function isPathInside(parentPath: string, childPath: string) {
+  const relativePath = path.relative(path.resolve(parentPath), path.resolve(childPath))
+  return relativePath.length > 0 && !relativePath.startsWith('..') && !path.isAbsolute(relativePath)
 }
 
 export async function importProjectWorktrees(projectId: string) {
@@ -95,7 +96,6 @@ export async function importProjectWorktrees(projectId: string) {
   const configuredWorktreeRoot = path.isAbsolute(configuredWorktreeDir)
     ? path.resolve(configuredWorktreeDir)
     : path.resolve(rootProjectId, configuredWorktreeDir)
-  const normalizedConfiguredRoot = normalizePathForPrefix(configuredWorktreeRoot)
   let childWorktreeCount = 0
 
   ensureProject(rootProjectId)
@@ -108,11 +108,12 @@ export async function importProjectWorktrees(projectId: string) {
   })
 
   for (const worktree of worktrees) {
+    if (worktree.prunable) continue
     ensureProject(worktree.path)
     const isMain = worktree.path === rootProjectId
     const source = isMain
       ? 'howcode'
-      : normalizePathForPrefix(worktree.path).startsWith(normalizedConfiguredRoot)
+      : isPathInside(configuredWorktreeRoot, worktree.path)
         ? 'howcode'
         : 'imported'
     upsertProjectWorktree({

@@ -44,6 +44,7 @@ export const implementedDesktopActions = [
   'workspace.switch-branch',
   'workspace.prune-branch',
   'workspace.create-worktree',
+  'workspace.remove-worktree',
   'workspace.set-worktree-directory',
   'settings.update',
   'settings.clear-clipboard-images',

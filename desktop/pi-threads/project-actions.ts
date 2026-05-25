@@ -24,6 +24,7 @@ import {
   deleteThreadRecordsBySessionPaths,
   hasProject,
   hasRunningProjectThread,
+  listProjectFamilySessionPaths,
   listProjectSessionPaths,
   renameProject,
   setProjectCollapsed,
@@ -218,7 +219,7 @@ async function removeProjectFromPayload(payload: AnyDesktopActionPayload) {
   if (asyncBlockedError) return handledAction({ error: asyncBlockedError })
 
   const appSettings = loadAppSettings()
-  const projectSessionPaths = listProjectSessionPaths(projectId)
+  const projectSessionPaths = listProjectFamilySessionPaths(projectId)
   return appSettings.projectDeletionMode === 'full-clean'
     ? await deleteProjectWithFullClean(projectId, projectSessionPaths)
     : await deleteProjectPiOnly(projectId)

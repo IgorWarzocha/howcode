@@ -36,7 +36,10 @@ export function BranchSwitchAction({
             value: group.label,
           }).then((result) => {
             const error = result?.result?.error
-            if (!error) return
+            if (!error) {
+              onSwitchFailed()
+              return
+            }
             setErrorMessage(error)
             if (typeof error === 'string' && error.includes('Worktree is dirty')) {
               onBlocked()

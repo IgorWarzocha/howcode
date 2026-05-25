@@ -362,6 +362,26 @@ export function listProjectSessionPaths(projectId: string) {
   return rows.map((row) => row.sessionPath)
 }
 
+export function listProjectFamilySessionPaths(projectId: string) {
+  const db = getThreadStateDatabase()
+  const rows = db
+    .prepare(
+      `
+        SELECT threads.session_path AS sessionPath
+        FROM threads
+        WHERE threads.cwd = ?
+          OR threads.cwd IN (
+            SELECT cwd
+            FROM project_worktrees
+            WHERE root_cwd = ? AND is_main = 0
+          )
+      `,
+    )
+    .all(projectId, projectId) as ThreadPathRow[]
+
+  return rows.map((row) => row.sessionPath)
+}
+
 export function getProjectStoredUsageTotals(projectId: string): ProjectUsageTotalsRow | null {
   const db = getThreadStateDatabase()
   const row = db

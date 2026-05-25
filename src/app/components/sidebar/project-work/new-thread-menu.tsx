@@ -62,6 +62,14 @@ export async function createThreadInWorktreeForBranch({
   return { didMutate: true }
 }
 
+function getThreadCreationError(actionResult: Awaited<ReturnType<typeof createThreadForBranch>>) {
+  const threadError = actionResult?.result?.error
+  if (actionResult?.ok && !threadError) return null
+  return typeof threadError === 'string' && threadError.trim().length > 0
+    ? threadError
+    : 'Could not start thread.'
+}
+
 function CreateTargetRow({
   icon,
   inputRef,
@@ -225,7 +233,12 @@ export function NewThreadMenu({
       )
       return
     }
-    await createThreadForBranch({ branchName, onAction, projectId })
+    const threadResult = await createThreadForBranch({ branchName, onAction, projectId })
+    const threadCreationError = getThreadCreationError(threadResult)
+    if (threadCreationError) {
+      setNewBranchError(threadCreationError)
+      return
+    }
     setNewBranchName('')
     setNewBranchError(null)
     setOpen(false)

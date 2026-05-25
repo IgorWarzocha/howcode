@@ -12,6 +12,7 @@ export {
   listArchivedProjectThreads,
   listArchivedThreads,
   listInboxThreads,
+  listProjectFamilySessionPaths,
   listProjectSessionPaths,
   listProjects,
   listProjectThreads,

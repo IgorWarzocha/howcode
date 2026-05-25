@@ -262,7 +262,8 @@ const postEffectHandlers: PostEffectHandler[] = [
     run: handleSwitchBranchEffects,
   },
   {
-    matches: (ctx) => ctx.action === 'workspace.create-worktree',
+    matches: (ctx) =>
+      ctx.action === 'workspace.create-worktree' || ctx.action === 'workspace.remove-worktree',
     run: handleCreateWorktreeEffects,
   },
   {

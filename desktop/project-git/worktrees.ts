@@ -6,6 +6,7 @@ export type GitWorktreeEntry = {
   head: string | null
   branch: string | null
   detached: boolean
+  prunable: boolean
 }
 
 export type GitWorktreeCreateResult =
@@ -36,7 +37,7 @@ export function parseGitWorktreePorcelain(output: string): GitWorktreeEntry[] {
     const { key, value } = parsePorcelainLine(trimmedLine)
     if (key === 'worktree') {
       finishCurrent()
-      current = { path: value, head: null, branch: null, detached: false }
+      current = { path: value, head: null, branch: null, detached: false, prunable: false }
       continue
     }
 
@@ -57,6 +58,7 @@ function applyPorcelainField(entry: GitWorktreeEntry, key: string | undefined, v
   if (key === 'HEAD') entry.head = value || null
   if (key === 'branch') entry.branch = value ? normalizeBranchRef(value) : null
   if (key === 'detached') entry.detached = true
+  if (key === 'prunable') entry.prunable = true
 }
 
 function sanitizeWorktreeFolderName(branchName: string) {
@@ -143,6 +145,35 @@ export async function createProjectWorktree(input: {
     })
 
     return { didMutate: true, projectId: worktreePath, rootProjectId, branchName }
+  } catch (error) {
+    return { error: formatGitCommandError(error) }
+  }
+}
+
+export async function removeProjectWorktree(projectId: string, worktreePath: string) {
+  const normalizedPath = worktreePath.trim()
+  if (!normalizedPath) return { error: 'Worktree path is required.' }
+
+  try {
+    const worktrees = await loadGitWorktrees(projectId)
+    const worktree = worktrees.find(
+      (entry) => path.resolve(entry.path) === path.resolve(normalizedPath),
+    )
+    if (!worktree) return { error: 'Worktree is not registered with Git.' }
+    if (worktree.path === (worktrees[0]?.path ?? null)) {
+      return { error: 'Cannot remove the main worktree.' }
+    }
+
+    await runGitWithOptions(projectId, ['worktree', 'remove', worktree.path], {
+      env: getNonInteractiveGitEnv(),
+      timeout: 30_000,
+      maxBuffer: 1024 * 1024 * 4,
+    })
+    return {
+      didMutate: true,
+      projectId: worktree.path,
+      rootProjectId: worktrees[0]?.path ?? projectId,
+    }
   } catch (error) {
     return { error: formatGitCommandError(error) }
   }

@@ -22,4 +22,5 @@ export {
   createProjectWorktree,
   getMainWorktreePath,
   loadGitWorktrees,
+  removeProjectWorktree,
 } from './project-git/worktrees.ts'

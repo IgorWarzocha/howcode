@@ -32,6 +32,7 @@ export const desktopActions = [
   'workspace.switch-branch',
   'workspace.prune-branch',
   'workspace.create-worktree',
+  'workspace.remove-worktree',
   'workspace.set-worktree-directory',
   'composer.model',
   'composer.thinking',

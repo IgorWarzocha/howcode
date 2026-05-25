@@ -15,6 +15,7 @@ import {
   getProjectId,
   getProjectIds,
   getWorktreeDirectory,
+  getWorktreePath,
 } from '../../shared/pi-thread-action-payloads.ts'
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import { setSidebarVisibleProjectIds } from '../app-settings/writers.ts'
@@ -25,6 +26,7 @@ import {
   getMainWorktreePath,
   initializeProjectGit,
   pruneProjectBranch,
+  removeProjectWorktree,
   setProjectOrigin,
   switchProjectBranch,
 } from '../project-git.ts'
@@ -183,6 +185,13 @@ export async function handleWorkspaceDesktopAction(
     }
     case 'workspace.create-worktree':
       return handleCreateWorktreeWorkspaceAction(payload)
+    case 'workspace.remove-worktree': {
+      const projectId = getProjectId(payload)
+      const worktreePath = getWorktreePath(payload)
+      if (!(projectId && worktreePath))
+        return handledAction({ error: 'Worktree path is required.' })
+      return handledAction(await removeProjectWorktree(projectId, worktreePath))
+    }
     case 'workspace.set-worktree-directory':
       return handleSetWorktreeDirectoryWorkspaceAction(payload)
 

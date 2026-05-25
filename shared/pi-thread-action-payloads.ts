@@ -75,6 +75,11 @@ export function getWorktreeDirectory(payload: DesktopActionPayloadInput) {
   return worktreeDirectory.length > 0 ? worktreeDirectory : null
 }
 
+export function getWorktreePath(payload: DesktopActionPayloadInput) {
+  const worktreePath = typeof payload.worktreePath === 'string' ? payload.worktreePath.trim() : ''
+  return worktreePath.length > 0 ? worktreePath : null
+}
+
 export function getProjectName(payload: DesktopActionPayloadInput) {
   const projectName = typeof payload.projectName === 'string' ? payload.projectName.trim() : ''
   return projectName.length > 0 ? projectName : null

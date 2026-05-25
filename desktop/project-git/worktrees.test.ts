@@ -15,11 +15,35 @@ branch refs/heads/feature/a
 worktree /repo/worktrees/review
 HEAD fedcba
 detached
+
+worktree /repo/worktrees/stale
+HEAD 000000
+branch refs/heads/stale
+prunable gitdir file points to non-existent location
 `),
     ).toEqual([
-      { path: '/repo', head: 'abc123', branch: 'main', detached: false },
-      { path: '/repo/worktrees/feature-a', head: 'def456', branch: 'feature/a', detached: false },
-      { path: '/repo/worktrees/review', head: 'fedcba', branch: null, detached: true },
+      { path: '/repo', head: 'abc123', branch: 'main', detached: false, prunable: false },
+      {
+        path: '/repo/worktrees/feature-a',
+        head: 'def456',
+        branch: 'feature/a',
+        detached: false,
+        prunable: false,
+      },
+      {
+        path: '/repo/worktrees/review',
+        head: 'fedcba',
+        branch: null,
+        detached: true,
+        prunable: false,
+      },
+      {
+        path: '/repo/worktrees/stale',
+        head: '000000',
+        branch: 'stale',
+        detached: false,
+        prunable: true,
+      },
     ])
   })
 })
