@@ -69,12 +69,7 @@ type SidebarProps = {
 }
 
 function isCodeModeActive(activeView: View) {
-  return (
-    activeView !== 'chat' &&
-    activeView !== 'claw' &&
-    activeView !== 'work' &&
-    activeView !== 'automations'
-  )
+  return activeView !== 'chat' && activeView !== 'claw' && activeView !== 'work'
 }
 
 function SidebarModeNav({

@@ -280,7 +280,7 @@ function getStoredUsageSummary(projectId: string): ProjectUsageSummary {
   return {
     projectId,
     sessionCount: storedTotals?.sessionCount ?? 0,
-    sessionsWithUsageCount: storedTotals?.sessionCount ?? 0,
+    sessionsWithUsageCount: storedTotals?.sessionsWithUsageCount ?? 0,
     assistantTurnCount: storedTotals?.assistantTurnCount ?? 0,
     cacheRead: storedTotals?.cacheRead ?? 0,
     cacheWrite: storedTotals?.cacheWrite ?? 0,

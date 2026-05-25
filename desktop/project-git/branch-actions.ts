@@ -107,7 +107,7 @@ export async function pruneProjectBranch(projectId: string, branchName: string) 
       return { error: 'Cannot prune the currently checked-out branch.' }
     }
 
-    await runGitWithOptions(projectId, ['branch', '-D', normalizedBranchName], {
+    await runGitWithOptions(projectId, ['branch', '-d', normalizedBranchName], {
       timeout: 10_000,
       maxBuffer: 1024 * 1024,
     })

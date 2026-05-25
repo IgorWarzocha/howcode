@@ -325,7 +325,6 @@ export function listArchivedThreads(): ArchivedThread[] {
         INNER JOIN projects ON projects.cwd = threads.cwd
         LEFT JOIN chat_threads ON chat_threads.session_path = threads.session_path
         WHERE threads.archived = 1
-          AND chat_threads.session_path IS NOT NULL
         ORDER BY threads.last_modified_ms DESC, threads.title COLLATE NOCASE ASC
       `,
     )
@@ -362,7 +361,8 @@ export function getProjectStoredUsageTotals(projectId: string): ProjectUsageTota
           total_tokens AS totalTokens,
           cost_total AS costTotal,
           assistant_turn_count AS assistantTurnCount,
-          session_count AS sessionCount
+          session_count AS sessionCount,
+          sessions_with_usage_count AS sessionsWithUsageCount
         FROM project_usage_totals
         WHERE cwd = ?
       `,

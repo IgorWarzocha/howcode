@@ -85,6 +85,7 @@ export type ProjectUsageTotalsRow = {
   costTotal: number
   assistantTurnCount: number
   sessionCount: number
+  sessionsWithUsageCount: number
 }
 
 export type ThreadDiffPreferencesRow = {

@@ -11,6 +11,7 @@ export type ProjectUsageTotalsDelta = {
   totalTokens: number
   costTotal: number
   assistantTurnCount: number
+  sessionsWithUsageCount?: number | undefined
 }
 
 export function setThreadRunningState(sessionPath: string, running: boolean) {
@@ -158,8 +159,9 @@ export function addProjectUsageTotals(snapshot: ProjectUsageTotalsDelta) {
         total_tokens,
         cost_total,
         assistant_turn_count,
-        session_count
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        session_count,
+        sessions_with_usage_count
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(cwd) DO UPDATE SET
         input = project_usage_totals.input + excluded.input,
         output = project_usage_totals.output + excluded.output,
@@ -168,7 +170,8 @@ export function addProjectUsageTotals(snapshot: ProjectUsageTotalsDelta) {
         total_tokens = project_usage_totals.total_tokens + excluded.total_tokens,
         cost_total = project_usage_totals.cost_total + excluded.cost_total,
         assistant_turn_count = project_usage_totals.assistant_turn_count + excluded.assistant_turn_count,
-        session_count = project_usage_totals.session_count + excluded.session_count
+        session_count = project_usage_totals.session_count + excluded.session_count,
+        sessions_with_usage_count = project_usage_totals.sessions_with_usage_count + excluded.sessions_with_usage_count
     `,
   ).run(
     snapshot.cwd,
@@ -180,6 +183,7 @@ export function addProjectUsageTotals(snapshot: ProjectUsageTotalsDelta) {
     snapshot.costTotal,
     snapshot.assistantTurnCount,
     1,
+    snapshot.sessionsWithUsageCount ?? (snapshot.assistantTurnCount > 0 ? 1 : 0),
   )
 }
 

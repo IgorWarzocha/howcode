@@ -184,7 +184,8 @@ const threadStateSchemaSql = `
       total_tokens INTEGER NOT NULL DEFAULT 0,
       cost_total REAL NOT NULL DEFAULT 0,
       assistant_turn_count INTEGER NOT NULL DEFAULT 0,
-      session_count INTEGER NOT NULL DEFAULT 0
+      session_count INTEGER NOT NULL DEFAULT 0,
+      sessions_with_usage_count INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE INDEX IF NOT EXISTS inbox_items_by_unread_idx ON inbox_items(unread DESC, last_assistant_at_ms DESC);
@@ -259,6 +260,14 @@ function ensureInboxColumns(database: Database) {
   addColumnIfMissing(database, 'inbox_items', 'last_user_prompt TEXT')
 }
 
+function ensureProjectUsageTotalsColumns(database: Database) {
+  addColumnIfMissing(
+    database,
+    'project_usage_totals',
+    'sessions_with_usage_count INTEGER NOT NULL DEFAULT 0',
+  )
+}
+
 function resetRunningThreads(database: Database) {
   database.exec(`
     UPDATE threads
@@ -272,6 +281,7 @@ function runThreadStateMigrations(database: Database) {
   ensureProjectColumns(database)
   ensureThreadColumns(database)
   ensureInboxColumns(database)
+  ensureProjectUsageTotalsColumns(database)
   resetRunningThreads(database)
 }
 

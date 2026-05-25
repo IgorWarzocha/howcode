@@ -1,4 +1,4 @@
-import { FolderOpen, Pencil, Trash2 } from 'lucide-react'
+import { Archive, FolderOpen, Pencil, Star, Trash2 } from 'lucide-react'
 import { forwardRef, useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project } from '../../../types'
@@ -17,8 +17,23 @@ export const ProjectWorkActionsMenu = forwardRef<
   { project, right, width, onAction, onClose, onRename },
   ref,
 ) {
-  const [deleteConfirm, setDeleteConfirm] = useState(false)
-  const runProjectAction = (action: 'project.open-in-file-manager' | 'project.remove-project') => {
+  const [confirmAction, setConfirmAction] = useState<
+    'project.archive-threads' | 'project.remove-project' | null
+  >(null)
+  const runProjectAction = (
+    action:
+      | 'project.open-in-file-manager'
+      | 'project.pin'
+      | 'project.archive-threads'
+      | 'project.remove-project',
+  ) => {
+    if (action === 'project.archive-threads' || action === 'project.remove-project') {
+      if (confirmAction !== action) {
+        setConfirmAction(action)
+        return
+      }
+      setConfirmAction(null)
+    }
     void onAction(action, { projectId: project.id, projectName: project.name })
     onClose()
   }
@@ -51,18 +66,38 @@ export const ProjectWorkActionsMenu = forwardRef<
       <button
         type="button"
         className="sidebar-menu-item sidebar-project-work-project-actions-menu-item"
+        onClick={() => runProjectAction('project.pin')}
+        role="menuitem"
+      >
+        <Star size={12} className={project.pinned ? 'fill-current' : undefined} />
+        <span>{project.pinned ? 'Unmark favourite' : 'Mark favourite'}</span>
+      </button>
+      <button
+        type="button"
+        className="sidebar-menu-item sidebar-project-work-project-actions-menu-item"
+        onClick={() => runProjectAction('project.archive-threads')}
+        role="menuitem"
+      >
+        <Archive size={12} />
+        <span>
+          {confirmAction === 'project.archive-threads'
+            ? 'Click to confirm'
+            : 'Archive all sessions'}
+        </span>
+      </button>
+      <button
+        type="button"
+        className="sidebar-menu-item sidebar-project-work-project-actions-menu-item"
         data-danger="true"
         onClick={() => {
-          if (!deleteConfirm) {
-            setDeleteConfirm(true)
-            return
-          }
           runProjectAction('project.remove-project')
         }}
         role="menuitem"
       >
         <Trash2 size={12} />
-        <span>{deleteConfirm ? 'Click to confirm' : 'Delete project'}</span>
+        <span>
+          {confirmAction === 'project.remove-project' ? 'Click to confirm' : 'Delete project'}
+        </span>
       </button>
     </div>
   )
