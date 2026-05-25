@@ -24,6 +24,7 @@ import {
 } from './post-effects/thread-lifecycle'
 import {
   applyCommitOptionsPostEffect,
+  applyCreateWorktreePostEffect,
   applySwitchBranchPostEffect,
   applyWorkspaceCommitPostEffect,
 } from './post-effects/workspace'
@@ -168,6 +169,19 @@ async function handleSwitchBranchEffects(ctx: PostEffectsContext) {
   })
 }
 
+async function handleCreateWorktreeEffects(ctx: PostEffectsContext) {
+  if (hasActionError(ctx.actionResult)) return
+  await applyCreateWorktreePostEffect({
+    contextualPayload: ctx.contextualPayload,
+    actionResult: ctx.actionResult,
+    queryClient: ctx.queryClient,
+    loadProjectGitState: ctx.loadProjectGitState,
+    loadProjectThreads: ctx.loadProjectThreads,
+    refreshShellState: ctx.refreshShellState,
+    setProjectGitState: ctx.setProjectGitState,
+  })
+}
+
 type PostEffectHandler = {
   matches: (ctx: PostEffectsContext) => boolean
   run: (ctx: PostEffectsContext) => Promise<void> | void
@@ -244,10 +258,12 @@ const postEffectHandlers: PostEffectHandler[] = [
   },
   {
     matches: (ctx) =>
-      ctx.action === 'workspace.switch-branch' ||
-      ctx.action === 'workspace.prune-branch' ||
-      ctx.action === 'workspace.create-worktree',
+      ctx.action === 'workspace.switch-branch' || ctx.action === 'workspace.prune-branch',
     run: handleSwitchBranchEffects,
+  },
+  {
+    matches: (ctx) => ctx.action === 'workspace.create-worktree',
+    run: handleCreateWorktreeEffects,
   },
   {
     matches: (ctx) => ctx.action === 'workspace.diff-preferences',

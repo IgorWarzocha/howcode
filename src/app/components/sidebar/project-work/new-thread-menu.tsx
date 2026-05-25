@@ -33,6 +33,8 @@ export function NewThreadMenu({
   const [open, setOpen] = useState(false)
   const [newBranchName, setNewBranchName] = useState('')
   const [newBranchError, setNewBranchError] = useState<string | null>(null)
+  const [newWorktreeBranchName, setNewWorktreeBranchName] = useState('')
+  const [newWorktreeError, setNewWorktreeError] = useState<string | null>(null)
   const [menuWidth, setMenuWidth] = useState(240)
   const [menuRight, setMenuRight] = useState(0)
   const menuRef = useRef<HTMLDivElement | null>(null)
@@ -77,6 +79,34 @@ export function NewThreadMenu({
 
   const createAssignedThread = async (branchName: string | null) => {
     await createThreadForBranch({ branchName, onAction, projectId })
+    setOpen(false)
+  }
+
+  const createThreadInNewWorktree = async () => {
+    const branchName = newWorktreeBranchName.trim()
+    if (!branchName) return
+    setNewWorktreeError(null)
+    const worktreeResult = await onAction('workspace.create-worktree', {
+      projectId,
+      branchName,
+    })
+    const worktreeError = worktreeResult?.result?.error
+    if (!worktreeResult?.ok || worktreeError || !worktreeResult.result?.projectId) {
+      setNewWorktreeError(
+        typeof worktreeError === 'string' && worktreeError.trim().length > 0
+          ? worktreeError
+          : 'Could not create worktree.',
+      )
+      return
+    }
+
+    await createThreadForBranch({
+      branchName,
+      onAction,
+      projectId: worktreeResult.result.projectId,
+    })
+    setNewWorktreeBranchName('')
+    setNewWorktreeError(null)
     setOpen(false)
   }
 
@@ -161,15 +191,30 @@ export function NewThreadMenu({
             </button>
           </div>
 
-          <button
-            type="button"
-            className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-option"
-            disabled
-          >
+          <div className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-branch-create">
             <GitFork size={12} />
-            <span className="truncate">New worktree</span>
-            <span className="sidebar-new-thread-option-meta">Soon</span>
-          </button>
+            <input
+              value={newWorktreeBranchName}
+              onChange={(event) => {
+                setNewWorktreeBranchName(event.target.value)
+                setNewWorktreeError(null)
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') void createThreadInNewWorktree()
+                if (event.key === 'Escape') setOpen(false)
+              }}
+              placeholder="New worktree"
+              aria-label="New worktree branch name"
+            />
+            <button
+              type="button"
+              data-warning={newWorktreeError ? 'true' : 'false'}
+              onClick={() => void createThreadInNewWorktree()}
+              disabled={newWorktreeBranchName.trim().length === 0}
+            >
+              {newWorktreeError ?? 'Create'}
+            </button>
+          </div>
 
           <button
             type="button"
