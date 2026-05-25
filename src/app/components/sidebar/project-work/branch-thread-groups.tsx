@@ -7,6 +7,12 @@ import { createThreadForBranch } from './new-thread-menu'
 import type { BranchThreadGroup } from './project-work-model'
 import { ProjectWorkThreadRow } from './project-work-thread-row'
 
+function getStartThreadBranchName(group: BranchThreadGroup, currentBranch: string | null) {
+  if (group.current) return currentBranch
+  if (group.unassigned) return null
+  return group.label
+}
+
 function EmptyBranchStartAction({
   blocked,
   currentBranch,
@@ -43,7 +49,7 @@ function EmptyBranchStartAction({
     }
 
     await createThreadForBranch({
-      branchName: group.unassigned ? null : group.label,
+      branchName: getStartThreadBranchName(group, currentBranch),
       onAction,
       projectId: targetProjectId,
     })
@@ -378,6 +384,15 @@ export function ProjectCompactBranchGroups({
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
   onToggleUnassigned: () => void
 }) {
+  const currentBranchGroup: BranchThreadGroup = {
+    id: 'current-branch',
+    label: currentBranch ?? 'No branch',
+    threads: branchThreads,
+    current: true,
+    unassigned: false,
+    worktree: false,
+  }
+
   return (
     <>
       <section className="sidebar-project-work-branch-group" data-current="true">
@@ -403,19 +418,14 @@ export function ProjectCompactBranchGroups({
             <span className="sidebar-project-work-branch-count">{branchThreads.length}</span>
           </span>
           <span className="sidebar-project-work-branch-actions" data-compact="true">
-            <IconButton
-              label="Start thread on current branch"
-              tooltipPlacement="right"
-              icon={<Plus size={14} />}
-              className="sidebar-project-work-empty-start h-7 w-7 rounded-md"
-              onClick={(event) => {
-                event.stopPropagation()
-                void createThreadForBranch({
-                  branchName: currentBranch,
-                  onAction,
-                  projectId: project.id,
-                })
-              }}
+            <EmptyBranchStartAction
+              blocked={false}
+              currentBranch={currentBranch}
+              group={currentBranchGroup}
+              project={project}
+              onAction={onAction}
+              onBlocked={() => undefined}
+              onSwitchFailed={() => undefined}
             />
           </span>
         </div>
