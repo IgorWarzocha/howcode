@@ -262,13 +262,13 @@ export function NewThreadMenu({
             disabled={!currentBranch}
           >
             <span className="sidebar-new-thread-current-branch-icon" aria-hidden="true">
-              <GitBranch size={12} />
+              <GitBranch size={11} />
             </span>
             <span className="truncate">{currentBranch ?? 'No branch'}</span>
           </button>
 
           <CreateTargetRow
-            icon={<GitBranch size={12} />}
+            icon={<GitBranch size={11} />}
             inputRef={newBranchInputRef}
             value={newBranchName}
             error={newBranchError ?? branchCreateBlockMessage}
@@ -284,7 +284,7 @@ export function NewThreadMenu({
           />
 
           <CreateTargetRow
-            icon={<GitFork size={12} />}
+            icon={<GitFork size={11} />}
             inputRef={newWorktreeInputRef}
             value={newWorktreeBranchName}
             error={newWorktreeError}
@@ -304,7 +304,7 @@ export function NewThreadMenu({
             className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-option"
             onClick={() => void createAssignedThread(null)}
           >
-            <X size={12} />
+            <X size={11} />
             <span className="truncate">Unassigned</span>
             <Tooltip content="Start outside git" placement="right">
               <span className="sidebar-new-thread-option-meta sidebar-new-thread-option-plus">

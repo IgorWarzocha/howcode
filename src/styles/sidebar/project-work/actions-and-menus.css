@@ -56,6 +56,12 @@
   min-height: 1.625rem;
 }
 
+.sidebar-new-thread-option > svg:first-child,
+.sidebar-new-thread-branch-create > svg:first-child,
+.sidebar-new-thread-current-branch-icon {
+  justify-self: center;
+}
+
 .sidebar-new-thread-option:disabled {
   cursor: default;
   opacity: 0.55;
@@ -67,8 +73,8 @@
 
 .sidebar-new-thread-current-branch-icon {
   display: inline-flex;
-  width: 1rem;
-  height: 1rem;
+  width: 16px;
+  height: 16px;
   align-items: center;
   justify-content: center;
   color: var(--accent);
