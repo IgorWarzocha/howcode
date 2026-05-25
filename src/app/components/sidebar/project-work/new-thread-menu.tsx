@@ -1,8 +1,10 @@
 import { IconButton } from '@howcode/common/icon-button'
 import { Tooltip } from '@howcode/common/tooltip'
+import { useQueryClient } from '@tanstack/react-query'
 import { GitBranch, GitFork, Plus, X } from 'lucide-react'
 import { type ReactNode, type RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
+import { desktopQueryKeys, getProjectGitStateQuery } from '../../../query/desktop-query'
 
 export async function createThreadForBranch({
   branchName,
@@ -69,7 +71,11 @@ function CreateTargetRow({
         placeholder={placeholder}
         aria-label={inputLabel}
       />
-      <Tooltip content={actionLabel} placement="right" className="sidebar-new-thread-create-action">
+      <Tooltip
+        content={actionLabel}
+        placement="right"
+        className="sidebar-new-thread-option-meta sidebar-new-thread-option-plus sidebar-new-thread-create-action"
+      >
         <button
           type="button"
           data-warning={error ? 'true' : 'false'}
@@ -98,6 +104,7 @@ export function NewThreadMenu({
   onAction: DesktopActionInvoker
   projectId: string
 }) {
+  const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const [newBranchName, setNewBranchName] = useState('')
   const [newBranchError, setNewBranchError] = useState<string | null>(null)
@@ -150,6 +157,20 @@ export function NewThreadMenu({
   const createAssignedThread = async (branchName: string | null) => {
     await createThreadForBranch({ branchName, onAction, projectId })
     setOpen(false)
+  }
+
+  const toggleOpen = () => {
+    setOpen((current) => {
+      const nextOpen = !current
+      if (nextOpen) {
+        void queryClient.fetchQuery({
+          queryKey: desktopQueryKeys.projectGitState(projectId),
+          queryFn: () => getProjectGitStateQuery(projectId),
+          staleTime: 0,
+        })
+      }
+      return nextOpen
+    })
   }
 
   const createThreadInNewWorktree = async () => {
@@ -210,7 +231,7 @@ export function NewThreadMenu({
         icon={<Plus size={14} />}
         tooltipPlacement="right"
         className="h-7 w-7 rounded-md"
-        onClick={() => setOpen((current) => !current)}
+        onClick={toggleOpen}
       />
       {open ? (
         <div

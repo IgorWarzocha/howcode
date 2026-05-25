@@ -77,7 +77,8 @@
   color: var(--accent);
 }
 
-.sidebar-new-thread-option .tooltip-anchor {
+.sidebar-new-thread-option .tooltip-anchor,
+.sidebar-new-thread-branch-create .tooltip-anchor {
   justify-self: end;
 }
 
@@ -109,11 +110,6 @@
 }
 
 .sidebar-new-thread-create-action {
-  display: inline-flex;
-  width: 1.25rem;
-  height: 1.25rem;
-  align-items: center;
-  justify-content: center;
   justify-self: end;
 }
 
