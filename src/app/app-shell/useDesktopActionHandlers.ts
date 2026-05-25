@@ -78,7 +78,8 @@ function shouldShowGlobalActionError(action: DesktopAction) {
     action === 'composer.stop' ||
     action === 'workspace.commit' ||
     action === 'workspace.commit-options' ||
-    action === 'workspace.diff-preferences'
+    action === 'workspace.diff-preferences' ||
+    action === 'workspace.switch-branch'
   )
 }
 

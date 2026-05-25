@@ -26,7 +26,6 @@ import {
   hasRunningProjectThread,
   listProjectSessionPaths,
   renameProject,
-  reorderProjects,
   setProjectCollapsed,
   setProjectRepoOrigin,
   toggleProjectPinned,
@@ -249,11 +248,6 @@ const projectActionHandlers = {
     const projectId = getProjectId(payload)
     if (!projectId) return handledAction()
     if (!(await openPathWithSystem(projectId))) throw new Error(`Unable to open path: ${projectId}`)
-    return handledAction()
-  },
-  'project.reorder': (payload) => {
-    const projectIds = getProjectIds(payload)
-    if (projectIds.length > 0) reorderProjects(projectIds)
     return handledAction()
   },
   'project.pin': (payload) => {

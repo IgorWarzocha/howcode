@@ -91,11 +91,15 @@ export function AppShellWorkspace({
     )
   }
 
-  if (state.activeView === 'claw' || state.activeView === 'work') {
+  if (
+    state.activeView === 'claw' ||
+    state.activeView === 'work' ||
+    state.activeView === 'automations'
+  ) {
     return (
       <div className="relative min-h-0 flex-1 px-5 pt-1.5">
         <main className={mainPanelClass}>
-          <MainView activeView={state.activeView} />
+          <MainView activeView={state.activeView} projectName={currentProjectName} />
         </main>
       </div>
     )

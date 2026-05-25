@@ -1,0 +1,190 @@
+.sidebar-project-tree {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.sidebar-tree-item {
+  margin-bottom: 0.125rem;
+}
+
+.sidebar-row-surface {
+  --sidebar-row-leading-width: 16px;
+  --sidebar-row-meta-width: 1.5rem;
+  --sidebar-row-gap: 0.5rem;
+  --sidebar-row-padding-x: 0.3125rem;
+  --sidebar-row-meta-inset: 0.3125rem;
+  border-radius: 0.75rem;
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out,
+    opacity 150ms ease-out;
+}
+
+.sidebar-project-row {
+  display: grid;
+  grid-template-columns: var(--sidebar-row-leading-width) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--sidebar-row-gap);
+  padding: 1px var(--sidebar-row-padding-x);
+}
+
+.sidebar-project-row[data-highlighted="true"] {
+  background: var(--accent-bg-subtle);
+}
+
+.sidebar-project-row:hover,
+.sidebar-project-row:focus-within,
+.sidebar-inbox-row:hover,
+.sidebar-inbox-row:focus-within {
+  background: var(--accent-bg-subtle);
+}
+
+.sidebar-project-row[data-dragging="true"] {
+  box-shadow: none;
+}
+
+.sidebar-project-toggle {
+  position: relative;
+  display: inline-flex;
+  height: 1.25rem;
+  width: 1rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.375rem;
+  color: var(--muted);
+  transition: color 150ms ease-out;
+}
+
+.sidebar-project-toggle[data-can-toggle="true"]:hover {
+  color: var(--text);
+}
+
+.sidebar-project-toggle[data-can-toggle="false"] {
+  cursor: default;
+}
+
+.sidebar-project-icon {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  transform: translateY(2px);
+  transition: opacity 150ms ease-out;
+}
+
+.sidebar-project-chevron-icon {
+  opacity: 0;
+  transition-duration: 200ms;
+}
+
+.sidebar-project-row:hover
+  .sidebar-project-toggle[data-can-toggle="true"]
+  .sidebar-project-origin-icon,
+.sidebar-project-row:focus-within
+  .sidebar-project-toggle[data-can-toggle="true"]
+  .sidebar-project-origin-icon {
+  opacity: 0;
+}
+
+.sidebar-project-row:hover
+  .sidebar-project-toggle[data-can-toggle="true"]
+  .sidebar-project-chevron-icon,
+.sidebar-project-row:focus-within
+  .sidebar-project-toggle[data-can-toggle="true"]
+  .sidebar-project-chevron-icon {
+  opacity: 1;
+}
+
+.sidebar-project-edit {
+  display: flex;
+  min-height: 1.75rem;
+  min-width: 0;
+  align-items: center;
+  border-radius: 0.75rem;
+  padding-block: 0.25rem;
+  color: var(--text);
+  font-size: var(--app-type-sidebar-title-size);
+  font-weight: 500;
+  line-height: var(--app-type-group-line-height);
+}
+
+.sidebar-project-input {
+  width: 100%;
+  min-width: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+
+.sidebar-project-button {
+  display: flex;
+  min-height: 1.75rem;
+  min-width: 0;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 0.75rem;
+  padding-block: 0.25rem;
+  color: var(--muted);
+  font-size: var(--app-type-group-size);
+  line-height: var(--app-type-group-line-height);
+  text-align: left;
+  transition: color 150ms ease-out;
+}
+
+.sidebar-project-button:hover,
+.sidebar-project-button[data-active="true"] {
+  color: var(--text);
+}
+
+.sidebar-project-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  font-size: var(--app-type-sidebar-title-size);
+  font-weight: 500;
+  opacity: 0.92;
+}
+
+.sidebar-row-inline-icon {
+  flex-shrink: 0;
+  transform: translateY(2px);
+}
+
+.sidebar-project-favourite-icon {
+  color: var(--text);
+  fill: currentColor;
+  opacity: 0.72;
+  transform: none;
+}
+
+.sidebar-project-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.125rem;
+  overflow: visible;
+  padding-right: 0.125rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease-out;
+}
+
+.sidebar-project-row:hover .sidebar-project-actions,
+.sidebar-project-row:focus-within .sidebar-project-actions,
+.sidebar-project-actions[data-open="true"],
+.sidebar-project-actions[data-dragging="true"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sidebar-project-actions[data-editing="true"],
+.sidebar-project-actions[data-visible="false"] {
+  opacity: 0;
+  pointer-events: none;
+}

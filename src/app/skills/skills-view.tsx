@@ -19,15 +19,10 @@ type SkillsScopeSwitcherProps = {
   onChange: (scope: InstallScope) => void
 }
 
-function SkillsScopeSwitcher({
-  value,
-  projectScopeAvailable,
-  counts,
-  onChange,
-}: SkillsScopeSwitcherProps) {
+function SkillsScopeSwitcher({ value, counts, onChange }: SkillsScopeSwitcherProps) {
   const options: Array<{ value: InstallScope; label: string; disabled?: boolean }> = [
     { value: 'global', label: `Global ${counts.global}` },
-    { value: 'project', label: `Project ${counts.project}`, disabled: !projectScopeAvailable },
+    { value: 'project', label: `Project ${counts.project}` },
     { value: 'chat', label: `Chat ${counts.chat}` },
   ]
 
@@ -136,12 +131,6 @@ export function SkillsView({
           />
         }
       />
-
-      {controller.projectScopeAvailable ? null : (
-        <div className={`px-2 py-1.5 ${appTypeGroupTextClass} ${appToneMutedClass}`}>
-          Project skills are unavailable until a project path is available.
-        </div>
-      )}
 
       <output className="sr-only" aria-live="polite">
         {controller.actionError ?? ''}

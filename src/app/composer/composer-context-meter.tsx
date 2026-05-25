@@ -317,7 +317,7 @@ export function ComposerContextMeter({
           ref={popoverRef}
           role="dialog"
           className={cn(
-            'absolute bottom-full left-0 z-[130] grid w-56 gap-2 rounded-xl bg-[color:var(--panel)] p-3 shadow-[var(--shadow)]',
+            'absolute bottom-full left-0 z-[130] grid w-56 gap-2 rounded-xl bg-[color:var(--panel)] p-3',
             appTypeSmallClass,
             appToneMutedClass,
           )}

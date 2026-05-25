@@ -86,7 +86,11 @@ export async function promptComposerRuntime(input: {
     return buildComposerSendResult(runtime, 'stopped')
   }
   await runtime.attachmentFileAccess?.grantAttachments(request.attachments ?? [])
+  const isExtensionCommand = isExtensionCommandPrompt(runtime, request.text)
   await promptAndReturnAfterPreflight({
+    ...(isExtensionCommand
+      ? { acceptWhen: () => adapters.isRuntimeExtensionCommandRunning(runtime) }
+      : {}),
     emitComposerUpdate: adapters.emitComposerUpdate,
     runtime,
     message,

@@ -130,6 +130,7 @@ export type ShellState = {
   agentDir: string
   sessionDir: string
   projects: Project[]
+  sidebarVisibleProjectIds: string[] | null
   appSettings: AppSettings
   piSettings: PiSettings
   piTheme: PiThemeState

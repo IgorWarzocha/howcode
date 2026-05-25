@@ -11,6 +11,7 @@ function shellState(projects: ShellState['projects']): ShellState {
     agentDir: '/agent',
     sessionDir: '/sessions',
     projects,
+    sidebarVisibleProjectIds: null,
     appSettings: {} as ShellState['appSettings'],
     piSettings: {} as ShellState['piSettings'],
     piTheme: {} as ShellState['piTheme'],

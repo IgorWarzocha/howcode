@@ -21,8 +21,10 @@ import type {
   InboxPathRow,
   InboxThreadRow,
   ProjectRow,
+  ProjectUsageTotalsRow,
   ThreadAssistantSnapshotRow,
   ThreadCwdRow,
+  ThreadDeletionSnapshotRow,
   ThreadDiffPreferencesRow,
   ThreadPathRow,
   ThreadRow,
@@ -48,7 +50,6 @@ export function listProjects(cwd: string): Project[] {
         SELECT
           projects.cwd AS id,
           COALESCE(projects.custom_name, projects.name) AS name,
-          projects.order_index AS orderIndex,
           projects.pinned AS pinned,
           projects.collapsed AS collapsed,
           projects.repo_origin_url AS repoOriginUrl,
@@ -68,7 +69,6 @@ export function listProjects(cwd: string): Project[] {
         GROUP BY
           projects.cwd,
           COALESCE(projects.custom_name, projects.name),
-          projects.order_index,
           projects.pinned,
           projects.collapsed,
           projects.repo_origin_url,
@@ -76,14 +76,11 @@ export function listProjects(cwd: string): Project[] {
           projects.git_ops_mode
         ORDER BY
           projects.pinned DESC,
-          CASE WHEN projects.order_index IS NULL THEN 1 ELSE 0 END,
-          projects.order_index ASC,
-          CASE WHEN projects.order_index IS NULL AND projects.cwd = ? THEN 0 ELSE 1 END,
           latestModifiedMs DESC,
           projects.name COLLATE NOCASE ASC
       `,
     )
-    .all(getChatSessionLikePattern(), cwd) as ProjectRow[]
+    .all(getChatSessionLikePattern()) as ProjectRow[]
 
   return rows.map(mapProjectRow)
 }
@@ -205,6 +202,7 @@ export function listProjectThreads(
           threads.running AS running,
           COALESCE(inbox_items.unread, 0) AS unread,
           threads.pinned AS pinned,
+          threads.branch_name AS branchName,
           threads.last_modified_ms AS lastModifiedMs
         FROM threads
         LEFT JOIN inbox_items ON inbox_items.session_path = threads.session_path
@@ -242,6 +240,7 @@ export function listArchivedProjectThreads(
           threads.running AS running,
           COALESCE(inbox_items.unread, 0) AS unread,
           threads.pinned AS pinned,
+          threads.branch_name AS branchName,
           threads.last_modified_ms AS lastModifiedMs
         FROM threads
         LEFT JOIN inbox_items ON inbox_items.session_path = threads.session_path
@@ -320,7 +319,8 @@ export function listArchivedThreads(): ArchivedThread[] {
           threads.session_path AS sessionPath,
           threads.cwd AS projectId,
           COALESCE(projects.custom_name, projects.name) AS projectName,
-          threads.last_modified_ms AS lastModifiedMs
+          threads.last_modified_ms AS lastModifiedMs,
+          CASE WHEN chat_threads.session_path IS NULL THEN 0 ELSE 1 END AS isChat
         FROM threads
         INNER JOIN projects ON projects.cwd = threads.cwd
         LEFT JOIN chat_threads ON chat_threads.session_path = threads.session_path
@@ -348,6 +348,30 @@ export function listProjectSessionPaths(projectId: string) {
   return rows.map((row) => row.sessionPath)
 }
 
+export function getProjectStoredUsageTotals(projectId: string): ProjectUsageTotalsRow | null {
+  const db = getThreadStateDatabase()
+  const row = db
+    .prepare(
+      `
+        SELECT
+          input AS input,
+          output AS output,
+          cache_read AS cacheRead,
+          cache_write AS cacheWrite,
+          total_tokens AS totalTokens,
+          cost_total AS costTotal,
+          assistant_turn_count AS assistantTurnCount,
+          session_count AS sessionCount,
+          sessions_with_usage_count AS sessionsWithUsageCount
+        FROM project_usage_totals
+        WHERE cwd = ?
+      `,
+    )
+    .get(projectId) as ProjectUsageTotalsRow | undefined
+
+  return row ?? null
+}
+
 export function getThreadSessionPath(threadId: string) {
   const db = getThreadStateDatabase()
   const row = db
@@ -361,6 +385,25 @@ export function getThreadSessionPath(threadId: string) {
     .get(threadId) as ThreadPathRow | undefined
 
   return row?.sessionPath ?? null
+}
+
+export function getThreadDeletionSnapshot(threadId: string) {
+  const db = getThreadStateDatabase()
+  const row = db
+    .prepare(
+      `
+        SELECT
+          cwd AS cwd,
+          title AS title,
+          session_path AS sessionPath,
+          last_modified_ms AS lastModifiedMs
+        FROM threads
+        WHERE id = ?
+      `,
+    )
+    .get(threadId) as ThreadDeletionSnapshotRow | undefined
+
+  return row ?? null
 }
 
 export function getThreadCwd(sessionPath: string) {

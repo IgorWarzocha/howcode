@@ -10,6 +10,7 @@ export type Thread = {
   running?: boolean | undefined
   unread?: boolean | undefined
   pinned?: boolean | undefined
+  branchName?: string | undefined
 }
 
 export type InboxThread = {
@@ -88,6 +89,7 @@ export type ArchivedThread = {
   projectId: string
   projectName: string
   sessionPath: string
+  isChat?: boolean | undefined
 }
 
 export type ProseMessage = {

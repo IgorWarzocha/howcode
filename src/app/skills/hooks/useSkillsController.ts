@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { PiConfiguredSkill } from '../../desktop/types'
 import {
   desktopQueryKeys,
@@ -17,9 +17,11 @@ import {
 
 export function useSkillsController({
   projectPath,
+  onProjectTargetSelected,
   onSetProjectScopeActive,
 }: {
   projectPath: string | null
+  onProjectTargetSelected?: (() => void) | undefined
   onSetProjectScopeActive: (active: boolean) => void
 }) {
   const queryClient = useQueryClient()
@@ -28,8 +30,23 @@ export function useSkillsController({
   const [installedOpen, setInstalledOpen] = useState(false)
   const [pendingActions, setPendingActions] = useState<PendingAction[]>([])
   const [actionError, setActionError] = useState<string | null>(null)
+  const previousProjectPathRef = useRef<string | null>(normalizedProjectPath)
   const desktopSkillsAvailable = isDesktopSkillsAvailable()
   const projectScopeAvailable = normalizedProjectPath !== null
+
+  useEffect(() => {
+    if (previousProjectPathRef.current === normalizedProjectPath) return
+    previousProjectPathRef.current = normalizedProjectPath
+    onProjectTargetSelected?.()
+  }, [normalizedProjectPath, onProjectTargetSelected])
+
+  useEffect(() => {
+    const handleProjectTargetSelected = () => setInstallScope('project')
+    window.addEventListener('howcode:project-target-selected', handleProjectTargetSelected)
+    return () => {
+      window.removeEventListener('howcode:project-target-selected', handleProjectTargetSelected)
+    }
+  }, [])
 
   const configuredSkillsQuery = useQuery({
     queryKey: desktopQueryKeys.configuredPiSkills(projectPath, true),
@@ -61,20 +78,12 @@ export function useSkillsController({
   )
 
   useEffect(() => {
-    if (!projectScopeAvailable && installScope === 'project') {
-      setInstallScope('global')
-    }
-  }, [installScope, projectScopeAvailable])
-
-  useEffect(() => {
-    onSetProjectScopeActive(
-      (projectScopeAvailable && installScope === 'project') || installScope === 'chat',
-    )
+    onSetProjectScopeActive(installScope === 'project' || installScope === 'chat')
 
     return () => {
       onSetProjectScopeActive(false)
     }
-  }, [installScope, onSetProjectScopeActive, projectScopeAvailable])
+  }, [installScope, onSetProjectScopeActive])
 
   const invalidateConfiguredSkillsCaches = (skills?: PiConfiguredSkill[]) => {
     if (skills) {

@@ -5,7 +5,11 @@ import type {
   ProjectUsageSessionSummary,
   ProjectUsageSummary,
 } from '../../shared/desktop-contracts.ts'
-import { listArchivedProjectThreads, listProjectThreads } from '../thread-state-db.ts'
+import {
+  getProjectStoredUsageTotals,
+  listArchivedProjectThreads,
+  listProjectThreads,
+} from '../thread-state-db.ts'
 import { mapWithConcurrency } from './map-with-concurrency.ts'
 
 type UsageEntry = {
@@ -271,6 +275,23 @@ function getTopSessions(sessionSummaries: ProjectUsageSessionSummary[]) {
     .slice(0, TOP_USAGE_SESSION_LIMIT)
 }
 
+function getStoredUsageSummary(projectId: string): ProjectUsageSummary {
+  const storedTotals = getProjectStoredUsageTotals(projectId)
+  return {
+    projectId,
+    sessionCount: storedTotals?.sessionCount ?? 0,
+    sessionsWithUsageCount: storedTotals?.sessionsWithUsageCount ?? 0,
+    assistantTurnCount: storedTotals?.assistantTurnCount ?? 0,
+    cacheRead: storedTotals?.cacheRead ?? 0,
+    cacheWrite: storedTotals?.cacheWrite ?? 0,
+    costTotal: storedTotals?.costTotal ?? 0,
+    input: storedTotals?.input ?? 0,
+    output: storedTotals?.output ?? 0,
+    totalTokens: storedTotals?.totalTokens ?? 0,
+    topSessions: [],
+  }
+}
+
 function getArchivedUsage(projectId: string) {
   const archivedThreads = listArchivedProjectThreads(projectId)
   const threadSignature = getThreadSignature(archivedThreads)
@@ -342,13 +363,22 @@ export async function loadProjectUsageSummary(projectId: string): Promise<Projec
   const activeSummary = await summarizeThreads(projectId, threads)
   const archivedUsage = getArchivedUsage(projectId)
   const archivedSummary = archivedUsage.summary
-  const totals = archivedSummary ? combineTotals(activeSummary, archivedSummary) : activeSummary
+  const storedTotalsSummary = getStoredUsageSummary(projectId)
+  const activeAndArchivedTotals = archivedSummary
+    ? combineTotals(activeSummary, archivedSummary)
+    : activeSummary
+  const totals = combineTotals(activeAndArchivedTotals, storedTotalsSummary)
 
   return {
     projectId,
-    sessionCount: activeSummary.sessionCount + (archivedSummary?.sessionCount ?? 0),
+    sessionCount:
+      activeSummary.sessionCount +
+      (archivedSummary?.sessionCount ?? 0) +
+      storedTotalsSummary.sessionCount,
     sessionsWithUsageCount:
-      activeSummary.sessionsWithUsageCount + (archivedSummary?.sessionsWithUsageCount ?? 0),
+      activeSummary.sessionsWithUsageCount +
+      (archivedSummary?.sessionsWithUsageCount ?? 0) +
+      storedTotalsSummary.sessionsWithUsageCount,
     ...totals,
     archivedUsageRefreshing: archivedUsage.refreshing,
     topSessions: getTopSessions([

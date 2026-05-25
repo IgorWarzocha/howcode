@@ -130,7 +130,6 @@ const threadStateSchemaSql = `
       cwd TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       custom_name TEXT,
-      order_index INTEGER,
       pinned INTEGER NOT NULL DEFAULT 0,
       hidden INTEGER NOT NULL DEFAULT 0,
       collapsed INTEGER NOT NULL DEFAULT 1,
@@ -152,6 +151,7 @@ const threadStateSchemaSql = `
       running INTEGER NOT NULL DEFAULT 0,
       pinned INTEGER NOT NULL DEFAULT 0,
       archived INTEGER NOT NULL DEFAULT 0,
+      branch_name TEXT,
       diff_baseline_json TEXT,
       diff_render_mode TEXT,
       last_modified_ms INTEGER NOT NULL,
@@ -173,6 +173,19 @@ const threadStateSchemaSql = `
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (session_path) REFERENCES threads(session_path) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS project_usage_totals (
+      cwd TEXT PRIMARY KEY,
+      input INTEGER NOT NULL DEFAULT 0,
+      output INTEGER NOT NULL DEFAULT 0,
+      cache_read INTEGER NOT NULL DEFAULT 0,
+      cache_write INTEGER NOT NULL DEFAULT 0,
+      total_tokens INTEGER NOT NULL DEFAULT 0,
+      cost_total REAL NOT NULL DEFAULT 0,
+      assistant_turn_count INTEGER NOT NULL DEFAULT 0,
+      session_count INTEGER NOT NULL DEFAULT 0,
+      sessions_with_usage_count INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE INDEX IF NOT EXISTS inbox_items_by_unread_idx ON inbox_items(unread DESC, last_assistant_at_ms DESC);
@@ -226,7 +239,6 @@ function addColumnIfMissing(database: Database, tableName: string, columnSql: st
 
 function ensureProjectColumns(database: Database) {
   addColumnIfMissing(database, 'projects', 'custom_name TEXT')
-  addColumnIfMissing(database, 'projects', 'order_index INTEGER')
   addColumnIfMissing(database, 'projects', 'hidden INTEGER NOT NULL DEFAULT 0')
   addColumnIfMissing(database, 'projects', 'pinned INTEGER NOT NULL DEFAULT 0')
   addColumnIfMissing(database, 'projects', 'repo_origin_url TEXT')
@@ -239,12 +251,21 @@ function ensureThreadColumns(database: Database) {
   addColumnIfMissing(database, 'threads', 'last_assistant_preview TEXT')
   addColumnIfMissing(database, 'threads', 'last_assistant_at_ms INTEGER')
   addColumnIfMissing(database, 'threads', 'running INTEGER NOT NULL DEFAULT 0')
+  addColumnIfMissing(database, 'threads', 'branch_name TEXT')
   addColumnIfMissing(database, 'threads', 'diff_baseline_json TEXT')
   addColumnIfMissing(database, 'threads', 'diff_render_mode TEXT')
 }
 
 function ensureInboxColumns(database: Database) {
   addColumnIfMissing(database, 'inbox_items', 'last_user_prompt TEXT')
+}
+
+function ensureProjectUsageTotalsColumns(database: Database) {
+  addColumnIfMissing(
+    database,
+    'project_usage_totals',
+    'sessions_with_usage_count INTEGER NOT NULL DEFAULT 0',
+  )
 }
 
 function resetRunningThreads(database: Database) {
@@ -260,6 +281,7 @@ function runThreadStateMigrations(database: Database) {
   ensureProjectColumns(database)
   ensureThreadColumns(database)
   ensureInboxColumns(database)
+  ensureProjectUsageTotalsColumns(database)
   resetRunningThreads(database)
 }
 

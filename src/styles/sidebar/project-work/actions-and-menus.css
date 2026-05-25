@@ -1,0 +1,100 @@
+.sidebar-project-work-actions {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.sidebar-project-work-action-row > svg:first-child,
+.sidebar-project-work-history-row > svg:first-child {
+  justify-self: center;
+}
+
+.sidebar-project-work-pill {
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  padding: 0.0625rem 0.375rem;
+  color: var(--muted-2);
+  font-size: var(--app-type-kicker-size);
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sidebar-project-work-lane {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow: hidden;
+}
+
+.sidebar-project-work-section-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding-right: 0;
+}
+
+.sidebar-project-work-section-heading--search-only {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.sidebar-project-work-search-field {
+  min-width: 0;
+  border-radius: 0.375rem;
+}
+
+.sidebar-new-thread-menu-anchor {
+  position: relative;
+  justify-self: end;
+  min-width: 0;
+}
+
+.sidebar-new-thread-option,
+.sidebar-new-thread-branch-create {
+  min-height: 1.625rem;
+}
+
+.sidebar-new-thread-option:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.sidebar-new-thread-option-meta {
+  min-width: 0;
+  max-width: 6rem;
+  color: var(--muted-2);
+  font-size: var(--app-type-meta-size);
+}
+
+.sidebar-new-thread-branch-create input {
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: var(--app-type-meta-size);
+  outline: none;
+}
+
+.sidebar-new-thread-branch-create input::placeholder {
+  color: var(--muted-2);
+}
+
+.sidebar-new-thread-branch-create button {
+  max-width: 5.5rem;
+  overflow: hidden;
+  color: var(--accent);
+  font-size: var(--app-type-meta-size);
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-new-thread-branch-create button:disabled {
+  color: var(--muted-2);
+}
+
+.sidebar-new-thread-branch-create button[data-warning="true"] {
+  color: color-mix(in srgb, var(--warning) 68%, var(--muted));
+}

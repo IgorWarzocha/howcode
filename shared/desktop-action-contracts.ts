@@ -57,6 +57,7 @@ export type DesktopActionPayloadFields = {
   text?: string | undefined
   threadId?: string | undefined
   threadIds?: string[] | undefined
+  branchName?: string | undefined | null | undefined
   value?:
     | string
     | undefined
@@ -128,7 +129,6 @@ export type DesktopActionPayloadMap = {
   'project.expand': { projectId: string }
   'project.collapse': { projectId: string }
   'project.open-in-file-manager': { projectId: string }
-  'project.reorder': { projectIds: string[] }
   'project.pin': { projectId: string }
   'project.edit-name': { projectId: string; projectName: string }
   'project.refresh-repo-origin': { projectId: string }
@@ -150,6 +150,7 @@ export type DesktopActionPayloadMap = {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined
     chatGroupId?: string | undefined | null | undefined
+    branchName?: string | undefined | null | undefined
   }
   'thread.open': {
     projectId?: string | undefined | null | undefined
@@ -158,6 +159,11 @@ export type DesktopActionPayloadMap = {
   }
   'thread.archive': { threadId: string }
   'thread.archive-many': { projectId?: string | undefined | null | undefined; threadIds: string[] }
+  'thread.assign-branch': {
+    threadId: string
+    projectId?: string | undefined | null | undefined
+    branchName?: string | undefined | null | undefined
+  }
   'thread.restore': { threadId: string }
   'thread.restore-many': { threadIds: string[]; projectIds?: string[] | undefined }
   'thread.delete': { threadId: string }
@@ -184,7 +190,12 @@ export type DesktopActionPayloadMap = {
     diffBaseline?: ProjectDiffBaseline | null
     diffRenderMode?: ProjectDiffRenderMode | null
   }
+  'workspace.sidebar-scope': { projectIds: string[] }
   'workspace.switch-branch': { projectId?: string | undefined | null | undefined; value: string }
+  'workspace.prune-branch': {
+    projectId?: string | undefined | null | undefined
+    branchName: string
+  }
   'composer.model': {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined

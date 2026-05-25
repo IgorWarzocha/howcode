@@ -45,6 +45,7 @@ export async function applySwitchBranchPostEffect(input: {
   contextualPayload: ActionPayload
   queryClient: QueryClient
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
+  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
   setProjectGitState: (state: ProjectGitState | null) => void
 }) {
   const projectId = getPayloadProjectId(input.contextualPayload)
@@ -53,6 +54,7 @@ export async function applySwitchBranchPostEffect(input: {
   notifyProjectDiffInvalidated(projectId)
   await Promise.all([
     input.queryClient.invalidateQueries({ queryKey: desktopQueryKeys.projectGitState(projectId) }),
+    input.queryClient.invalidateQueries({ queryKey: desktopQueryKeys.projectThreads(projectId) }),
     input.queryClient.invalidateQueries({
       queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
     }),
@@ -63,5 +65,6 @@ export async function applySwitchBranchPostEffect(input: {
       queryKey: desktopQueryKeys.projectCommitsPrefix(projectId),
     }),
   ])
+  await input.loadProjectThreads(projectId, { chat: false })
   input.setProjectGitState(await input.loadProjectGitState(projectId))
 }

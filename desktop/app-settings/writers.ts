@@ -45,6 +45,7 @@ import {
   projectDeletionModeKey,
   projectImportStateKey,
   showDictationButtonKey,
+  sidebarVisibleProjectIdsKey,
   skillCreatorModelKey,
   skillCreatorThinkingLevelKey,
   useAgentsSkillsPathsKey,
@@ -184,6 +185,13 @@ export function setFavoriteFolders(favoriteFolders: string[]) {
   }
 
   writeAppPreference(favoriteFoldersKey, JSON.stringify(normalizedFavoriteFolders))
+}
+
+export function setSidebarVisibleProjectIds(projectIds: string[]) {
+  const normalizedProjectIds = [
+    ...new Set(projectIds.map((projectId) => projectId.trim()).filter(Boolean)),
+  ]
+  writeAppPreference(sidebarVisibleProjectIdsKey, JSON.stringify(normalizedProjectIds))
 }
 
 export function setProjectImportState(projectImportState: boolean | null) {

@@ -10,6 +10,7 @@ type SidebarProjectsCreatePopoverProps = {
   defaultLocation: string | null
   busy: boolean
   errorMessage: string | null
+  variant?: 'legacy' | 'project-work'
   panelRef?: RefObject<HTMLDialogElement | null>
   onChangeDraft: (value: string) => void
   onCreate: (options?: { parentPath?: string | null }) => void
@@ -24,6 +25,7 @@ export function SidebarProjectsCreatePopover({
   defaultLocation,
   busy,
   errorMessage,
+  variant = 'legacy',
   panelRef,
   onChangeDraft,
   onCreate,
@@ -57,6 +59,7 @@ export function SidebarProjectsCreatePopover({
       aria-label="Create project"
       {...getPopoverRootProps(open)}
       data-open={open ? 'true' : 'false'}
+      data-variant={variant}
       className="sidebar-popover-panel sidebar-project-create-popover motion-popover"
     >
       <div className="sidebar-project-create-row">

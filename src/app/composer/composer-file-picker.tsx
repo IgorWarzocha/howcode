@@ -204,7 +204,7 @@ export function ComposerFilePicker({
   )
 
   const panelClassName = cn(
-    'grid grid-rows-[40px_minmax(0,1fr)] overflow-hidden rounded-xl border-0 p-0 shadow-[var(--shadow)]',
+    'grid grid-rows-[40px_minmax(0,1fr)] overflow-hidden rounded-xl border-0 p-0',
     portalPlacementEnabled
       ? 'h-[min(378px,calc(100vh-1.5rem))] min-h-[220px] w-[min(38rem,calc(100vw-1.5rem))]'
       : 'absolute right-0 bottom-full left-0 z-[70] h-[min(378px,calc(100vh-12rem))] min-h-[220px]',

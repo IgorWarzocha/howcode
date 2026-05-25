@@ -58,6 +58,11 @@ export function getThreadIds(payload: DesktopActionPayloadInput) {
     : []
 }
 
+export function getBranchName(payload: DesktopActionPayloadInput) {
+  const branchName = typeof payload.branchName === 'string' ? payload.branchName.trim() : ''
+  return branchName.length > 0 ? branchName : null
+}
+
 export function getProjectName(payload: DesktopActionPayloadInput) {
   const projectName = typeof payload.projectName === 'string' ? payload.projectName.trim() : ''
   return projectName.length > 0 ? projectName : null

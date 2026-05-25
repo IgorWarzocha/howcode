@@ -80,6 +80,7 @@ export function mapThreadRow(row: ThreadRow): Thread {
     unread: Boolean(row.unread),
     pinned: Boolean(row.pinned),
     sessionPath: row.sessionPath,
+    branchName: row.branchName ?? undefined,
   }
 }
 
@@ -109,5 +110,6 @@ export function mapArchivedThreadRow(row: ArchivedThreadRow): ArchivedThread {
     projectId: row.projectId,
     projectName: row.projectName,
     sessionPath: row.sessionPath,
+    isChat: Boolean(row.isChat),
   }
 }

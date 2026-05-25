@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { promptAndReturnAfterPreflight } from './composer-preflight.ts'
 import { buildComposerPromptMessage, isExtensionCommandPrompt } from './composer-prompt-flow.ts'
 import type { PiRuntime } from './types.ts'
 
@@ -36,5 +37,35 @@ describe('composer prompt flow', () => {
     expect(isExtensionCommandPrompt(runtime, '/review these changes')).toBe(true)
     expect(isExtensionCommandPrompt(runtime, '/unknown')).toBe(false)
     expect(isExtensionCommandPrompt(runtime, 'not a command')).toBe(false)
+  })
+
+  it('returns once an extension command is observed as running', async () => {
+    let commandRunning = false
+    const runtime = {
+      session: {
+        sessionFile: '/tmp/session.jsonl',
+        prompt: async () => {
+          commandRunning = true
+          await new Promise(() => {
+            // Intentionally never resolves; this simulates a still-running runtime command.
+          })
+        },
+      },
+    } as unknown as PiRuntime
+
+    await expect(
+      promptAndReturnAfterPreflight({
+        acceptWhen: () => commandRunning,
+        emitComposerUpdate: async () => {
+          // No-op for this focused prompt flow test.
+        },
+        message: '/review',
+        request: { sessionPath: '/tmp/session.jsonl' },
+        runtime,
+        scheduleRuntimeDisposal: () => {
+          // No-op for this focused prompt flow test.
+        },
+      }),
+    ).resolves.toBeUndefined()
   })
 })

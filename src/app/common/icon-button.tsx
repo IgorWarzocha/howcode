@@ -30,8 +30,7 @@ export function IconButton({
       type={type}
       className={cn(
         iconButtonClass,
-        active &&
-          'bg-[rgba(183,186,245,0.09)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.03)]',
+        active && 'bg-[rgba(183,186,245,0.09)] text-[color:var(--text)]',
         className,
       )}
       onClick={onClick}

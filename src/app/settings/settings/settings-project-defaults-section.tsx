@@ -42,7 +42,7 @@ export function SettingsProjectDefaultsSection({
         settingsSectionClass,
         'motion-surface-pulse motion-sidebar-selection-pulse',
         preferredProjectLocationMissing &&
-          'border-[color:var(--accent-border)] bg-[color:var(--accent-bg-subtle)] shadow-[inset_0_0_0_1px_var(--accent-border)]',
+          'border-[color:var(--accent-border)] bg-[color:var(--accent-bg-subtle)]',
       )}
     >
       <SectionIntro

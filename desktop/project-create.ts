@@ -11,19 +11,13 @@ import { startNewThread } from './pi-desktop-runtime.ts'
 import { formatGitCommandError, getNonInteractiveGitEnv } from './project-git/git-runner.ts'
 import { getOriginUrl, isGitRepository } from './project-git/project-state.ts'
 import { initializeProjectGit } from './project-git.ts'
-import {
-  ensureProject,
-  listProjects,
-  moveProjectToTop,
-  setProjectRepoOrigin,
-} from './thread-state-db.ts'
+import { ensureProject, listProjects, setProjectRepoOrigin } from './thread-state-db.ts'
 
 const execFile = promisify(execFileCallback)
 
 async function startThreadForNewlyVisibleProject(projectId: string) {
   const result = await startNewThread({ projectId })
   ensureProject(projectId)
-  moveProjectToTop(projectId)
   return result
 }
 
@@ -128,7 +122,6 @@ async function addExistingRepositoryProject(projectPath: string, repositoryUrl: 
 
   ensureProject(projectPath)
   setProjectRepoOrigin(projectPath, originUrl ?? repositoryUrl)
-  moveProjectToTop(projectPath)
   return { projectId: projectPath }
 }
 
@@ -172,7 +165,6 @@ export async function createProjectFromGitHubUrl(options: {
 
   const existingProjectId = await findExistingGitHubProject(repository.canonicalUrl)
   if (existingProjectId) {
-    moveProjectToTop(existingProjectId)
     return { projectId: existingProjectId }
   }
 
@@ -208,7 +200,6 @@ export async function createProjectFromGitHubUrl(options: {
       resolvedExistingProject &&
       (await resolvePathIfPresent(resolvedExistingProject)) === resolvedProjectPath
     ) {
-      moveProjectToTop(resolvedExistingProject)
       return { projectId: resolvedExistingProject }
     }
 

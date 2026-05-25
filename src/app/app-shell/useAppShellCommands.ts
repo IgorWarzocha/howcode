@@ -13,11 +13,6 @@ import { removeProjectThreadFromShellState } from './project-thread-cache'
 import { getProjectSelectionAction } from './scoped-project-view'
 import { THREAD_CYCLE_OPEN_ACTION_DELAY_MS, useScheduledThreadOpen } from './useScheduledThreadOpen'
 
-type RunDesktopAction = (
-  action: 'project.reorder',
-  payload: { projectIds: string[] },
-) => Promise<DesktopActionResult | null>
-
 type HandleAction = (
   action:
     | 'threads.collapse-all'
@@ -32,14 +27,11 @@ type HandleAction = (
 ) => Promise<DesktopActionResult | null>
 
 type UseAppShellCommandsInput = {
-  applyProjectOrder: (projectIds: string[]) => void
   collapsedProjectIds: Record<string, boolean>
   composerProjectId: string
   dispatch: Dispatch<WorkspaceAction>
   handleAction: HandleAction
   queryClient: QueryClient
-  runDesktopAction: RunDesktopAction
-  scheduleShellStateRefresh: () => void
   setThreadHistoryCompactions: Dispatch<SetStateAction<number>>
   setThreadRefreshKey: Dispatch<SetStateAction<number>>
   setThreadQueryDeferred: Dispatch<SetStateAction<boolean>>
@@ -62,14 +54,11 @@ function resetProjectDiffCaches(queryClient: QueryClient, projectId: string) {
 }
 
 export function useAppShellCommands({
-  applyProjectOrder,
   collapsedProjectIds,
   composerProjectId,
   dispatch,
   handleAction,
   queryClient,
-  runDesktopAction,
-  scheduleShellStateRefresh,
   setSettingsOpenTarget,
   setThreadHistoryCompactions,
   setThreadRefreshKey,
@@ -204,12 +193,6 @@ export function useAppShellCommands({
     handleOpenGitOpsView({ filePath })
   }
 
-  const handleProjectReorder = async (projectIds: string[]) => {
-    applyProjectOrder(projectIds)
-    await runDesktopAction('project.reorder', { projectIds })
-    scheduleShellStateRefresh()
-  }
-
   const setTakeoverOverrideForSelectedSession = (visible: boolean) => {
     const sessionPath = workspaceState.selectedSessionPath
     const globalTakeoverVisible = shellState?.appSettings?.piTuiTakeover
@@ -277,7 +260,6 @@ export function useAppShellCommands({
     handleOpenGitOpsView,
     handleOpenSettingsPanel: () => dispatch({ type: 'set-settings-panel-open', open: true }),
     handleOpenWorktreeDiffFile,
-    handleProjectReorder,
     handleProjectSelect: (projectId: string) =>
       dispatch({ type: getProjectSelectionAction(workspaceState.activeView), projectId }),
     handleSetSelectedProject: (projectId: string) =>

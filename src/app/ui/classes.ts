@@ -63,7 +63,7 @@ export const popoverPanelClass =
   'border-[color:var(--border-strong)] bg-[color:var(--panel)] shadow-[var(--shadow)]'
 
 export const confirmPopoverClass =
-  'motion-popover absolute top-[calc(100%+6px)] right-0 z-20 flex items-center gap-1 rounded-xl p-1'
+  'motion-popover pointer-events-auto absolute top-[calc(100%+0.25rem)] right-0 z-50 flex gap-0.5 rounded-lg border-0 bg-[color:var(--panel)] p-1 shadow-[var(--shadow)]'
 
 export const mainPanelClass =
   'min-h-0 overflow-y-scroll overflow-x-hidden pt-1.5 [scrollbar-gutter:stable_both-edges]'

@@ -1,7 +1,9 @@
 export {
+  getProjectStoredUsageTotals,
   getSessionNativeExtensions,
   getThreadAssistantSnapshot,
   getThreadCwd,
+  getThreadDeletionSnapshot,
   getThreadDiffPreferences,
   getThreadSessionPath,
   hasInboxItem,
@@ -16,9 +18,11 @@ export {
 } from './thread-state-db/queries.ts'
 export type { SessionSummaryRecord } from './thread-state-db/types.ts'
 export {
+  addProjectUsageTotals,
   archiveProjectThreads,
   archiveThread,
   archiveThreads,
+  assignThreadBranch,
   beginInboxThreadTurn,
   clearReadInboxThreads,
   collapseAllProjects,
@@ -29,9 +33,7 @@ export {
   ensureProject,
   hideProject,
   markInboxThreadRead,
-  moveProjectToTop,
   renameProject,
-  reorderProjects,
   restoreThread,
   restoreThreads,
   setProjectCollapsed,

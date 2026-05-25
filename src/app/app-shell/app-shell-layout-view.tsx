@@ -1,7 +1,7 @@
+import { Sidebar } from '@howcode/sidebar'
 import { TerminalPanel } from '@howcode/workspace-shell'
 import { PanelLeftOpen, PanelRightClose } from 'lucide-react'
 import type { CSSProperties, Dispatch, RefObject, SetStateAction } from 'react'
-import { Sidebar } from '../components/sidebar/sidebar'
 import type { AppSettings, ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
 import { appToneTextClass, appTypeGroupTextClass } from '../ui/classes'
 import { cn } from '../utils/cn'
@@ -21,7 +21,6 @@ type AppShellLayoutViewProps = {
   handleToggleSettings: AppShellController['handleToggleSettings']
   handleProjectSelect: AppShellController['handleProjectSelect']
   handleSetSelectedProject: AppShellController['handleSetSelectedProject']
-  handleProjectReorder: AppShellController['handleProjectReorder']
   handleThreadOpen: AppShellController['handleThreadOpen']
   handleToggleProjectCollapse: AppShellController['handleToggleProjectCollapse']
   sidebarCollapsed: boolean
@@ -106,7 +105,6 @@ function AppShellSidebar(props: AppShellLayoutViewProps) {
     handleToggleSettings,
     handleProjectSelect,
     handleSetSelectedProject,
-    handleProjectReorder,
     handleThreadOpen,
     handleToggleProjectCollapse,
     compactMode,
@@ -121,6 +119,8 @@ function AppShellSidebar(props: AppShellLayoutViewProps) {
       projectsLoading={controller.shellLoading}
       appLaunchedAtMs={controller.appLaunchedAtMs}
       appSettings={controller.shellState?.appSettings ?? FALLBACK_APP_SETTINGS}
+      projectGitState={controller.projectGitState}
+      sidebarVisibleProjectIds={controller.shellState?.sidebarVisibleProjectIds}
       chatSidebarState={controller.chatSidebarState}
       activeView={state.activeView}
       protectedProjectId={controller.shellState?.resolvedCwd ?? controller.shellState?.cwd ?? null}
@@ -151,7 +151,11 @@ function AppShellSidebar(props: AppShellLayoutViewProps) {
       onRefreshChatSidebar={controller.refreshChatSidebarState}
       onProjectSelect={handleProjectSelect}
       onProjectPrimeSelection={handleSetSelectedProject}
-      onProjectReorder={handleProjectReorder}
+      onProjectTargetSelected={() => {
+        if (state.activeView === 'extensions')
+          controller.handleSetExtensionsProjectScopeActive(true)
+        if (state.activeView === 'skills') controller.handleSetSkillsProjectScopeActive(true)
+      }}
       onLoadProjectThreads={controller.handleLoadProjectThreads}
       onSelectInboxThread={controller.handleSelectInboxThread}
       onThreadOpen={handleThreadOpen}
@@ -198,7 +202,7 @@ function CompactUtilitySidebarButton(props: AppShellLayoutViewProps) {
     <div className="pointer-events-none absolute bottom-5 left-5 z-[45]">
       <button
         type="button"
-        className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--panel)] text-[color:var(--muted)] opacity-70 shadow-[0_10px_28px_rgba(0,0,0,0.22)] transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
+        className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--panel)] text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
         onClick={handleToggleSidebar}
         aria-label="Show sidebar"
         data-tooltip="Show sidebar"
@@ -258,7 +262,7 @@ function CompactWorkspaceSidebarButton(props: AppShellLayoutViewProps) {
           <button
             type="button"
             className={cn(
-              'inline-flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--panel)] text-[color:var(--muted)] shadow-[0_10px_28px_rgba(0,0,0,0.22)] transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
+              'inline-flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--panel)] text-[color:var(--muted)] transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
               !artifactDrawerOverlayVisible && 'opacity-70 hover:opacity-100',
             )}
             onClick={handleToggleSidebar}
@@ -439,7 +443,7 @@ function AppShellToast(props: AppShellLayoutViewProps) {
   return (
     <div
       className={cn(
-        'pointer-events-none fixed bottom-4 left-1/2 z-[60] -translate-x-1/2 rounded-2xl border border-[color:var(--border-strong)] bg-[rgba(14,18,28,0.94)] px-4 py-2 shadow-[0_16px_40px_rgba(0,0,0,0.32)] backdrop-blur-sm',
+        'pointer-events-none fixed bottom-4 left-1/2 z-[60] -translate-x-1/2 rounded-2xl border border-[color:var(--border-strong)] bg-[rgba(14,18,28,0.94)] px-4 py-2 backdrop-blur-sm',
         appTypeGroupTextClass,
         appToneTextClass,
       )}

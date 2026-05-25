@@ -6,8 +6,8 @@ import { useAnimatedPresence } from '../../../hooks/useAnimatedPresence'
 import type { Project, View } from '../../../types'
 import { compactIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
+import { ThreadRow } from '../thread-row/thread-row'
 import { EmptyThreadsState } from './empty-threads-state'
-import { ThreadRow } from './thread-row'
 
 const OLD_THREAD_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000
 
@@ -170,7 +170,7 @@ export function ProjectThreadsList({
           unread={Boolean(thread.unread)}
           isSelected={isSelected}
           title={thread.title}
-          onArchive={() =>
+          onDelete={() =>
             onAction('thread.archive', {
               projectId: project.id,
               threadId: thread.id,

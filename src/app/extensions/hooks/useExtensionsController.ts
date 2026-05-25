@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { PiConfiguredPackage } from '../../desktop/types'
 import {
   desktopQueryKeys,
@@ -13,6 +13,7 @@ import { getActionError, getInstalledIdentityKeys, isDesktopPackagesAvailable } 
 
 export function useExtensionsController({
   projectPath,
+  onProjectTargetSelected,
   onSetProjectScopeActive,
 }: ExtensionsViewProps) {
   const queryClient = useQueryClient()
@@ -27,8 +28,23 @@ export function useExtensionsController({
   const [selectedCatalogSources, setSelectedCatalogSources] = useState<string[]>([])
   const [pendingActions, setPendingActions] = useState<PendingAction[]>([])
   const [actionError, setActionError] = useState<string | null>(null)
+  const previousProjectPathRef = useRef<string | null>(normalizedProjectPath)
   const desktopPackagesAvailable = isDesktopPackagesAvailable()
   const projectScopeAvailable = normalizedProjectPath !== null
+
+  useEffect(() => {
+    if (previousProjectPathRef.current === normalizedProjectPath) return
+    previousProjectPathRef.current = normalizedProjectPath
+    onProjectTargetSelected?.()
+  }, [normalizedProjectPath, onProjectTargetSelected])
+
+  useEffect(() => {
+    const handleProjectTargetSelected = () => setInstallScope('project')
+    window.addEventListener('howcode:project-target-selected', handleProjectTargetSelected)
+    return () => {
+      window.removeEventListener('howcode:project-target-selected', handleProjectTargetSelected)
+    }
+  }, [])
 
   const configuredPackagesQuery = useQuery({
     queryKey: desktopQueryKeys.configuredPiPackages(projectPath, true),
@@ -87,12 +103,6 @@ export function useExtensionsController({
     () => packagesQuery.data?.pages.flatMap((page) => page.items) ?? [],
     [packagesQuery.data?.pages],
   )
-
-  useEffect(() => {
-    if (!projectScopeAvailable && installScope === 'project') {
-      setInstallScope('global')
-    }
-  }, [installScope, projectScopeAvailable])
 
   useEffect(() => {
     onSetProjectScopeActive(installScope === 'project' || installScope === 'chat')

@@ -40,7 +40,11 @@ function CodeWorkspaceDiffMain(props: CodeWorkspaceContentProps) {
 function CodeWorkspaceDefaultMain(props: CodeWorkspaceContentProps) {
   const appSettings = props.shellState?.appSettings ?? FALLBACK_APP_SETTINGS
   const selectedProjectId =
-    props.controller.state.activeView === 'project' && props.controller.state.hasSelectedProject
+    (props.controller.state.activeView === 'project' ||
+      props.controller.state.activeView === 'sessions' ||
+      props.controller.state.activeView === 'extensions' ||
+      props.controller.state.activeView === 'skills') &&
+    props.controller.state.hasSelectedProject
       ? props.controller.state.selectedProjectId
       : ''
   return (
@@ -60,6 +64,7 @@ function CodeWorkspaceDefaultMain(props: CodeWorkspaceContentProps) {
       currentProjectName={props.currentProjectName}
       selectedInboxThread={props.controller.selectedInboxThread}
       projects={props.controller.projects}
+      projectGitState={props.projectGitState}
       settingsOpenTarget={props.controller.settingsOpenTarget}
       selectedProjectId={selectedProjectId}
       workspaceContentClass={props.workspaceContentClass}

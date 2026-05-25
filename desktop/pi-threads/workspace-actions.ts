@@ -1,6 +1,7 @@
 import type { DesktopAction } from '../../shared/desktop-actions.ts'
 import type { AnyDesktopActionPayload } from '../../shared/desktop-contracts.ts'
 import {
+  getBranchName,
   getComposerRequest,
   getGitCommitMessage,
   getGitIncludeUnstaged,
@@ -12,12 +13,15 @@ import {
   getProjectDiffBaselinePreference,
   getProjectDiffRenderModePreference,
   getProjectId,
+  getProjectIds,
 } from '../../shared/pi-thread-action-payloads.ts'
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
+import { setSidebarVisibleProjectIds } from '../app-settings/writers.ts'
 import { generateGitCommitMessage } from '../git-commit-message.ts'
 import {
   commitProjectChanges,
   initializeProjectGit,
+  pruneProjectBranch,
   setProjectOrigin,
   switchProjectBranch,
 } from '../project-git.ts'
@@ -106,10 +110,19 @@ export async function handleWorkspaceDesktopAction(
       return handleCommitOptionsWorkspaceAction(payload)
     case 'workspace.diff-preferences':
       return handleDiffPreferencesWorkspaceAction(payload)
+    case 'workspace.sidebar-scope':
+      setSidebarVisibleProjectIds(getProjectIds(payload))
+      return handledAction()
     case 'workspace.switch-branch': {
       const projectId = getProjectId(payload)
       if (!projectId) return handledAction()
       return handledAction(await switchProjectBranch(projectId, String(payload.value ?? '')))
+    }
+    case 'workspace.prune-branch': {
+      const projectId = getProjectId(payload)
+      const branchName = getBranchName(payload)
+      if (!(projectId && branchName)) return handledAction()
+      return handledAction(await pruneProjectBranch(projectId, branchName))
     }
 
     default:

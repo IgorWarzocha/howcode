@@ -121,7 +121,6 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     composerProjectId,
     currentProjectName,
     handleAction,
-    handleProjectReorder,
     handleProjectSelect,
     handleSetSelectedProject,
     handleShowView,
@@ -302,7 +301,6 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
       handleToggleSettings={handleToggleSettings}
       handleProjectSelect={handleProjectSelect}
       handleSetSelectedProject={handleSetSelectedProject}
-      handleProjectReorder={handleProjectReorder}
       handleThreadOpen={handleThreadOpen}
       handleToggleProjectCollapse={handleToggleProjectCollapse}
       sidebarCollapsed={sidebarCollapsed}

@@ -1,0 +1,88 @@
+.sidebar-project-create-popover[data-variant="project-work"] {
+  position: absolute;
+  inset-inline: 0;
+  top: 1.875rem;
+  z-index: 45;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  margin: 0;
+  gap: 0.125rem;
+  border: 0;
+  border-radius: 0.375rem;
+  background: var(--panel);
+  padding: 0.25rem;
+  box-shadow: var(--shadow);
+}
+
+.sidebar-project-create-popover[data-variant="project-work"] .sidebar-project-create-row {
+  grid-template-columns: minmax(0, 1fr) 1.75rem 1.75rem;
+}
+
+.sidebar-project-create-popover[data-variant="project-work"] .sidebar-project-create-input,
+.sidebar-project-create-popover[data-variant="project-work"] .sidebar-project-create-submit {
+  height: 1.75rem;
+  border-radius: 0.25rem;
+}
+
+.sidebar-project-create-popover[data-variant="project-work"] .sidebar-project-create-input {
+  padding: 0 0.375rem;
+  font-size: var(--app-type-meta-size);
+}
+
+.sidebar-project-create-popover[data-variant="project-work"] .sidebar-project-create-input:focus {
+  background: transparent;
+}
+
+.sidebar-project-create-popover[data-variant="project-work"] .sidebar-project-create-submit {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  width: 1.75rem;
+}
+
+.sidebar-project-create-popover[data-variant="project-work"]
+  .sidebar-project-create-submit[data-enabled="true"] {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.sidebar-project-create-popover[data-variant="project-work"]
+  .sidebar-project-create-submit[data-enabled="true"]:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.sidebar-project-create-popover[data-variant="project-work"] .sidebar-project-browse-toggle {
+  background: transparent;
+  color: var(--muted);
+}
+
+.sidebar-project-create-popover[data-variant="project-work"]
+  .sidebar-project-browse-toggle[data-enabled="true"],
+.sidebar-project-create-popover[data-variant="project-work"] .sidebar-project-browse-toggle:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.sidebar-project-create-popover[data-variant="project-work"] .sidebar-project-folder-icon-button,
+.sidebar-project-create-popover[data-variant="project-work"] .sidebar-project-folder-row,
+.sidebar-project-create-popover[data-variant="project-work"] .sidebar-project-folder-search {
+  border-radius: 0.25rem;
+}
+
+.sidebar-project-create-popover[data-variant="project-work"] .sidebar-project-folder-search {
+  min-height: 1.75rem;
+  background: transparent;
+  padding: 0 0.375rem;
+}
+
+.sidebar-project-create-popover[data-variant="project-work"]
+  .sidebar-project-folder-search:focus-within {
+  background: var(--surface-hover);
+}
+
+.sidebar-project-create-popover[data-variant="project-work"] .sidebar-project-folder-search-input {
+  height: 1.75rem;
+  font-size: var(--app-type-meta-size);
+}

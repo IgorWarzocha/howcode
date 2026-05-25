@@ -76,7 +76,7 @@ function DictationPrompt({
       role="dialog"
       aria-label="Install speech-to-text model"
       className={cn(
-        'z-[140] inline-flex max-w-[calc(100vw-1.5rem)] items-center gap-1.5 rounded-full border border-[color:var(--border-strong)] bg-[color:var(--panel)] px-2 py-1 shadow-[0_18px_40px_rgba(0,0,0,0.34)]',
+        'z-[140] inline-flex max-w-[calc(100vw-1.5rem)] items-center gap-1.5 rounded-full border border-[color:var(--border-strong)] bg-[color:var(--panel)] px-2 py-1',
         appTypeMetaClass,
       )}
     >

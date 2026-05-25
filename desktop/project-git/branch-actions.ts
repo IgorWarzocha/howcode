@@ -52,11 +52,21 @@ async function fetchRemoteBranches(projectId: string) {
   }
 }
 
+async function hasDirtyWorktree(projectId: string) {
+  const { stdout } = await runGitWithOptions(projectId, ['status', '--short'], {
+    timeout: 10_000,
+    maxBuffer: 1024 * 1024,
+  })
+  return stdout.split('\n').some((line) => line.trim().length > 0)
+}
+
 export async function switchProjectBranch(projectId: string, branchName: string) {
   const normalizedBranchName = branchName.trim()
   if (!normalizedBranchName) return { error: 'Branch name is required.' }
 
   try {
+    if (await hasDirtyWorktree(projectId)) return { error: 'Worktree is dirty. Commit first.' }
+
     const localBranches = await listLocalBranches(projectId)
     let remoteBranches: string[] = []
 
@@ -75,6 +85,29 @@ export async function switchProjectBranch(projectId: string, branchName: string)
     })
 
     await runGitWithOptions(projectId, plan.args, {
+      timeout: 10_000,
+      maxBuffer: 1024 * 1024,
+    })
+    return { didMutate: true }
+  } catch (error) {
+    return { error: formatGitCommandError(error) }
+  }
+}
+
+export async function pruneProjectBranch(projectId: string, branchName: string) {
+  const normalizedBranchName = branchName.trim()
+  if (!normalizedBranchName) return { error: 'Branch name is required.' }
+
+  try {
+    const currentBranchResult = await runGitWithOptions(projectId, ['branch', '--show-current'], {
+      timeout: 10_000,
+      maxBuffer: 1024 * 1024,
+    })
+    if (currentBranchResult.stdout.trim() === normalizedBranchName) {
+      return { error: 'Cannot prune the currently checked-out branch.' }
+    }
+
+    await runGitWithOptions(projectId, ['branch', '-d', normalizedBranchName], {
       timeout: 10_000,
       maxBuffer: 1024 * 1024,
     })

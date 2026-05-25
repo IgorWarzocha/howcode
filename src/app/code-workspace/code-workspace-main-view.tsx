@@ -1,6 +1,7 @@
 import { ArchivedThreadsView } from '@howcode/archive'
 import { InboxView } from '@howcode/inbox'
 import { LandingView, ProjectOverviewView } from '@howcode/projects'
+import { SessionsView } from '@howcode/sessions'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { lazy, Suspense } from 'react'
 import type {
@@ -14,6 +15,7 @@ import type {
   InboxThread,
   PiSettings,
   PiThemeState,
+  ProjectGitState,
   ThreadData,
 } from '../desktop/types'
 import { SettingsView } from '../settings/settings-view'
@@ -47,6 +49,7 @@ type CodeWorkspaceMainViewProps = {
   currentProjectName: string
   selectedInboxThread: InboxThread | null
   projects: Project[]
+  projectGitState: ProjectGitState | null
   settingsOpenTarget?: SettingsOpenTarget | null | undefined
   selectedProjectId: string
   workspaceContentClass: string
@@ -174,6 +177,7 @@ export function CodeWorkspaceMainView({
   currentProjectName,
   selectedInboxThread,
   projects,
+  projectGitState,
   settingsOpenTarget,
   selectedProjectId,
   workspaceContentClass,
@@ -255,6 +259,23 @@ export function CodeWorkspaceMainView({
     return <ArchivedThreadsView threads={archivedThreads} onAction={onAction} />
   }
 
+  if (activeView === 'sessions') {
+    const selectedProject = projects.find((project) => project.id === selectedProjectId) ?? null
+    const currentBranch =
+      projectGitState?.projectId === selectedProjectId && projectGitState.isGitRepo
+        ? projectGitState.branch
+        : null
+    return (
+      <SessionsView
+        currentBranch={currentBranch}
+        project={selectedProject}
+        onAction={onAction}
+        onClose={onCloseUtilityView}
+        onOpenThread={onOpenThread}
+      />
+    )
+  }
+
   if (activeView === 'extensions') {
     return (
       <Suspense
@@ -270,6 +291,7 @@ export function CodeWorkspaceMainView({
         <ExtensionsView
           projectPath={selectedProjectId || null}
           onSetProjectScopeActive={onSetExtensionsProjectScopeActive}
+          onProjectTargetSelected={() => onSetExtensionsProjectScopeActive(true)}
           onClose={onCloseUtilityView}
         />
       </Suspense>
@@ -292,6 +314,7 @@ export function CodeWorkspaceMainView({
           appSettings={appSettings}
           projectPath={selectedProjectId || null}
           onSetProjectScopeActive={onSetSkillsProjectScopeActive}
+          onProjectTargetSelected={() => onSetSkillsProjectScopeActive(true)}
           onAction={onAction}
           onClose={onCloseUtilityView}
         />

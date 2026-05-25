@@ -1,20 +1,13 @@
 import { Tooltip } from '@howcode/common/tooltip'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
-import {
-  BriefcaseBusiness,
-  Code2,
-  Inbox,
-  MessageSquare,
-  PanelLeftClose,
-  PawPrint,
-  Settings,
-} from 'lucide-react'
+import { Code2, Inbox, MessageSquare, PanelLeftClose, Settings } from 'lucide-react'
 import { useCallback, useRef } from 'react'
 import type {
   AppSettings,
   ChatSidebarState,
   DesktopActionInvoker,
   InboxThread,
+  ProjectGitState,
 } from '../../desktop/types'
 import { useAnimatedPresence } from '../../hooks/useAnimatedPresence'
 import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
@@ -26,7 +19,7 @@ import { AppMenu } from '@howcode/app-menu'
 import { NavButton } from '@howcode/common/nav-button'
 import { SidebarChatSection } from './chat/sidebar-chat-section'
 import { SidebarInboxSection } from './inbox/sidebar-inbox-section'
-import { SidebarProjectsSection } from './projects/sidebar-projects-section'
+import { ProjectWorkSection } from './project-work-section'
 import { SidebarChatSkeleton, SidebarInboxSkeleton } from './sidebar-skeletons'
 
 type SidebarProps = {
@@ -38,6 +31,8 @@ type SidebarProps = {
   projectsLoading?: boolean
   appLaunchedAtMs: number
   appSettings: AppSettings
+  projectGitState: ProjectGitState | null
+  sidebarVisibleProjectIds: string[] | null | undefined
   protectedProjectId?: string | null
   activeView: View
   selectedInboxSessionPath: string | null
@@ -64,7 +59,7 @@ type SidebarProps = {
   onRefreshChatSidebar: () => Promise<unknown>
   onProjectSelect: (projectId: string) => void
   onProjectPrimeSelection: (projectId: string) => void
-  onProjectReorder: (projectIds: string[]) => void
+  onProjectTargetSelected?: (() => void) | undefined
   onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
   onSelectInboxThread: (thread: InboxThread) => void
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
@@ -88,30 +83,6 @@ function SidebarModeNav({
 }) {
   return (
     <nav className="sidebar-mode-nav" aria-label="Primary navigation">
-      <NavButton
-        icon={<PawPrint size={16} />}
-        label={
-          <span className="sidebar-mode-label">
-            <span>Claw</span>
-            <span className="sidebar-coming-soon-label">Coming soon</span>
-          </span>
-        }
-        active={activeView === 'claw'}
-        disabled
-        title="Coming soon"
-      />
-      <NavButton
-        icon={<BriefcaseBusiness size={16} />}
-        label={
-          <span className="sidebar-mode-label">
-            <span>Work</span>
-            <span className="sidebar-coming-soon-label">Coming soon</span>
-          </span>
-        }
-        active={activeView === 'work'}
-        disabled
-        title="Coming soon"
-      />
       <NavButton
         icon={<Inbox size={16} />}
         label="Inbox"
@@ -167,27 +138,52 @@ function SidebarContent(props: SidebarProps) {
       />
     )
   }
+  if (props.activeView !== 'extensions' && props.activeView !== 'skills') {
+    return (
+      <ProjectWorkSection
+        activeView={props.activeView}
+        loading={props.projectsLoading ?? false}
+        projects={props.projects}
+        projectGitState={props.projectGitState}
+        initialVisibleProjectIds={props.sidebarVisibleProjectIds}
+        selectedProjectId={props.selectedProjectId}
+        selectedThreadId={props.selectedThreadId}
+        terminalRunningProjectIds={props.terminalRunningProjectIds}
+        terminalRunningSessionPaths={props.terminalRunningSessionPaths}
+        onAction={props.onAction}
+        appSettings={props.appSettings}
+        onLoadProjectThreads={props.onLoadProjectThreads}
+        onOpenSettingsPanel={props.onOpenSettingsPanel}
+        onProjectSelect={props.onProjectSelect}
+        onProjectPrimeSelection={props.onProjectPrimeSelection}
+        onThreadOpen={props.onThreadOpen}
+        onShowView={props.onShowView}
+        onToggleProjectCollapse={props.onToggleProjectCollapse}
+      />
+    )
+  }
   return (
-    <SidebarProjectsSection
+    <ProjectWorkSection
       activeView={props.activeView}
-      appLaunchedAtMs={props.appLaunchedAtMs}
-      appSettings={props.appSettings}
-      protectedProjectId={props.protectedProjectId ?? null}
-      projectScopeLockActive={props.projectScopeLockActive}
-      projects={props.projects}
       loading={props.projectsLoading ?? false}
+      projects={props.projects}
+      projectGitState={props.projectGitState}
+      initialVisibleProjectIds={props.sidebarVisibleProjectIds}
+      projectTargetMode={true}
+      projectScopeLockActive={props.projectScopeLockActive}
       selectedProjectId={props.selectedProjectId}
       selectedThreadId={props.selectedThreadId}
       terminalRunningProjectIds={props.terminalRunningProjectIds}
       terminalRunningSessionPaths={props.terminalRunningSessionPaths}
-      collapsedProjectIds={props.collapsedProjectIds}
       onAction={props.onAction}
+      appSettings={props.appSettings}
       onLoadProjectThreads={props.onLoadProjectThreads}
       onOpenSettingsPanel={props.onOpenSettingsPanel}
       onProjectSelect={props.onProjectSelect}
       onProjectPrimeSelection={props.onProjectPrimeSelection}
-      onProjectReorder={props.onProjectReorder}
+      onProjectTargetSelected={props.onProjectTargetSelected}
       onThreadOpen={props.onThreadOpen}
+      onShowView={props.onShowView}
       onToggleProjectCollapse={props.onToggleProjectCollapse}
     />
   )
@@ -202,6 +198,8 @@ export function Sidebar({
   projectsLoading = false,
   appLaunchedAtMs,
   appSettings,
+  projectGitState,
+  sidebarVisibleProjectIds,
   protectedProjectId = null,
   activeView,
   selectedInboxSessionPath,
@@ -228,7 +226,7 @@ export function Sidebar({
   onRefreshChatSidebar,
   onProjectSelect,
   onProjectPrimeSelection,
-  onProjectReorder,
+  onProjectTargetSelected,
   onLoadProjectThreads,
   onSelectInboxThread,
   onThreadOpen,
@@ -263,6 +261,8 @@ export function Sidebar({
     projectsLoading,
     appLaunchedAtMs,
     appSettings,
+    projectGitState,
+    sidebarVisibleProjectIds,
     protectedProjectId,
     activeView,
     selectedInboxSessionPath,
@@ -289,7 +289,7 @@ export function Sidebar({
     onRefreshChatSidebar,
     onProjectSelect,
     onProjectPrimeSelection,
-    onProjectReorder,
+    ...(onProjectTargetSelected ? { onProjectTargetSelected } : {}),
     onLoadProjectThreads,
     onSelectInboxThread,
     onThreadOpen,
@@ -302,19 +302,26 @@ export function Sidebar({
     <aside
       aria-label="Workspace sidebar"
       data-pulse-active={projectScopeLockActive ? 'true' : 'false'}
+      data-project-target-mode={
+        activeView === 'extensions' || activeView === 'skills' ? 'true' : 'false'
+      }
       className="sidebar-shell motion-surface-pulse motion-sidebar-selection-pulse relative"
     >
-      {showModeSelection ? (
-        <SidebarModeNav
-          activeView={activeView}
-          codeModeActive={codeModeActive}
-          onShowView={onShowView}
-        />
-      ) : null}
+      <div className="sidebar-shell-row sidebar-shell-row--top">
+        {showModeSelection ? (
+          <SidebarModeNav
+            activeView={activeView}
+            codeModeActive={codeModeActive}
+            onShowView={onShowView}
+          />
+        ) : null}
+      </div>
 
-      <SidebarContent {...sidebarContentProps} />
+      <div className="sidebar-shell-row sidebar-shell-row--content">
+        <SidebarContent {...sidebarContentProps} />
+      </div>
 
-      <div className="sidebar-footer">
+      <div className="sidebar-shell-row sidebar-shell-row--footer sidebar-footer">
         <div className="flex items-center gap-1">
           <button
             ref={settingsButtonRef}

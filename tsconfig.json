@@ -48,6 +48,8 @@
       "@howcode/projects/*": ["./src/app/projects/*"],
       "@howcode/settings": ["./src/app/settings/settings/index.ts"],
       "@howcode/settings/*": ["./src/app/settings/settings/*"],
+      "@howcode/sessions": ["./src/app/sessions/index.ts"],
+      "@howcode/sessions/*": ["./src/app/sessions/*"],
       "@howcode/shared/*": ["./shared/*"],
       "@howcode/sidebar": ["./src/app/components/sidebar/index.ts"],
       "@howcode/sidebar/*": ["./src/app/components/sidebar/*"],

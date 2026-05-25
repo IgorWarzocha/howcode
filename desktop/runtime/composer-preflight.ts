@@ -3,6 +3,7 @@ import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import type { PiRuntime } from './types.ts'
 
 export async function promptAndReturnAfterPreflight(input: {
+  acceptWhen?: (() => boolean) | undefined
   emitComposerUpdate: (request: ComposerStateRequest) => Promise<unknown>
   message: string
   options?: Parameters<PiRuntime['session']['prompt']>[1]
@@ -11,9 +12,25 @@ export async function promptAndReturnAfterPreflight(input: {
   scheduleRuntimeDisposal: (runtimeKey: string) => void
 }) {
   let resolvePreflight: (success: boolean) => void
+  let settled = false
   const preflight = new Promise<boolean>((resolve) => {
-    resolvePreflight = resolve
+    resolvePreflight = (success) => {
+      if (settled) return
+      settled = true
+      resolve(success)
+    }
   })
+
+  const acceptancePoll = input.acceptWhen
+    ? setInterval(() => {
+        try {
+          if (input.acceptWhen?.()) resolvePreflight(true)
+        } catch {
+          // Keep the prompt path authoritative if the optimistic acceptance check fails.
+        }
+      }, 25)
+    : null
+  acceptancePoll?.unref?.()
 
   const promptPromise = input.runtime.session.prompt(input.message, {
     ...input.options,
@@ -21,6 +38,7 @@ export async function promptAndReturnAfterPreflight(input: {
   })
 
   const accepted = await preflight
+  if (acceptancePoll) clearInterval(acceptancePoll)
   if (!accepted) {
     await promptPromise
     return

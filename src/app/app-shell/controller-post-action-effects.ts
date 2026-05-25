@@ -163,6 +163,7 @@ async function handleSwitchBranchEffects(ctx: PostEffectsContext) {
     contextualPayload: ctx.contextualPayload,
     queryClient: ctx.queryClient,
     loadProjectGitState: ctx.loadProjectGitState,
+    loadProjectThreads: ctx.loadProjectThreads,
     setProjectGitState: ctx.setProjectGitState,
   })
 }
@@ -177,7 +178,8 @@ const postEffectHandlers: PostEffectHandler[] = [
     matches: (ctx) =>
       ctx.action === 'thread.pin' ||
       ctx.action === 'thread.archive' ||
-      ctx.action === 'thread.archive-many',
+      ctx.action === 'thread.archive-many' ||
+      ctx.action === 'thread.assign-branch',
     run: handleArchivedThreadEffects,
   },
   {
@@ -236,7 +238,15 @@ const postEffectHandlers: PostEffectHandler[] = [
     run: handleNewThreadOrProjectEffects,
   },
   { matches: (ctx) => ctx.action === 'workspace.commit-options', run: handleCommitOptionsEffects },
-  { matches: (ctx) => ctx.action === 'workspace.switch-branch', run: handleSwitchBranchEffects },
+  {
+    matches: (ctx) => ctx.action === 'workspace.sidebar-scope',
+    run: (ctx) => ctx.refreshShellState(),
+  },
+  {
+    matches: (ctx) =>
+      ctx.action === 'workspace.switch-branch' || ctx.action === 'workspace.prune-branch',
+    run: handleSwitchBranchEffects,
+  },
   {
     matches: (ctx) => ctx.action === 'workspace.diff-preferences',
     run: handleDiffPreferencesEffects,

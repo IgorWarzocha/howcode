@@ -12,9 +12,7 @@ export {
   deleteProject,
   ensureProject,
   hideProject,
-  moveProjectToTop,
   renameProject,
-  reorderProjects,
   setProjectCollapsed,
   setProjectGitOpsMode,
   setProjectRepoOrigin,
@@ -26,8 +24,10 @@ export {
   upsertThreadSummary,
 } from './session-writes.ts'
 export {
+  addProjectUsageTotals,
   archiveThread,
   archiveThreads,
+  assignThreadBranch,
   deleteThreadRecord,
   deleteThreadRecordsBySessionPaths,
   restoreThread,

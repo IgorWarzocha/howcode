@@ -1,6 +1,6 @@
 import path from 'node:path'
 import type { ShellState } from '../../shared/desktop-contracts.ts'
-import { loadAppSettings } from '../app-settings/readers.ts'
+import { loadAppSettings, loadSidebarVisibleProjectIds } from '../app-settings/readers.ts'
 import { getComposerState } from '../pi-desktop-runtime.ts'
 import { loadPiSettings, loadPiThemeState } from '../pi-settings.ts'
 import { invokeRuntimeHost } from '../runtime-host/client-bridge.ts'
@@ -55,7 +55,9 @@ export async function loadShellState(cwd: string): Promise<ShellState> {
     resolveProjectPathForComparison(cwd),
     enrichProjectsWithResolvedIds(listProjects(cwd)),
   ])
-  const visibleProjects = disambiguateDuplicateProjectNames(projects)
+  const visibleProjects = disambiguateDuplicateProjectNames(
+    projects.filter((project) => project.id.trim().length > 0 && project.name.trim().length > 0),
+  )
 
   return {
     platform: process.platform,
@@ -66,6 +68,7 @@ export async function loadShellState(cwd: string): Promise<ShellState> {
     agentDir,
     sessionDir,
     appSettings,
+    sidebarVisibleProjectIds: loadSidebarVisibleProjectIds(),
     piSettings,
     piTheme,
     composer,
