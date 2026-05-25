@@ -125,3 +125,8 @@
   background: var(--surface-hover);
   color: var(--text);
 }
+
+.sidebar-icon-action--no-hover:hover {
+  background: transparent;
+  color: var(--muted);
+}

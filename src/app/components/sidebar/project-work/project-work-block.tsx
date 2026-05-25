@@ -79,7 +79,7 @@ function ProjectWorkBlockHeader({
     <div className="sidebar-project-work-project-block-heading-row">
       <button
         type="button"
-        className="sidebar-icon-action sidebar-icon-action--md sidebar-project-work-project-block-disclosure"
+        className="sidebar-icon-action sidebar-icon-action--md sidebar-icon-action--no-hover sidebar-project-work-project-block-disclosure"
         onClick={onToggleExpanded}
         aria-expanded={expanded}
         aria-label={expanded ? `Collapse ${project.name}` : `Expand ${project.name}`}
