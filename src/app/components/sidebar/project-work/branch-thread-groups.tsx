@@ -140,32 +140,24 @@ export function BranchThreadGroupSection({
             <span className="sidebar-project-work-branch-current">Current</span>
           ) : null}
           <span className="sidebar-project-work-branch-count">{group.threads.length}</span>
-          <span className="sidebar-project-work-branch-start">
-            <EmptyBranchStartAction
-              blocked={switchBlocked}
-              currentBranch={currentBranch}
-              group={group}
-              project={project}
-              onAction={onAction}
-              onBlocked={() => onSetSwitchErrorBranchId(branchActionKey)}
-              onSwitchFailed={() => onSetSwitchErrorBranchId(null)}
-            />
-          </span>
+          {canManageBranch ? null : (
+            <span className="sidebar-project-work-branch-start">
+              <EmptyBranchStartAction
+                blocked={switchBlocked}
+                currentBranch={currentBranch}
+                group={group}
+                project={project}
+                onAction={onAction}
+                onBlocked={() => onSetSwitchErrorBranchId(branchActionKey)}
+                onSwitchFailed={() => onSetSwitchErrorBranchId(null)}
+              />
+            </span>
+          )}
         </span>
         <span
           className="sidebar-project-work-branch-actions"
           data-confirming={confirmingPrune ? 'true' : 'false'}
         >
-          {canManageBranch && !confirmingPrune ? (
-            <BranchSwitchAction
-              blocked={switchBlocked}
-              group={group}
-              project={project}
-              onAction={onAction}
-              onBlocked={() => onSetSwitchErrorBranchId(branchActionKey)}
-              onSwitchFailed={() => onSetSwitchErrorBranchId(null)}
-            />
-          ) : null}
           {canManageBranch ? (
             <BranchPruneAction
               confirming={confirmingPrune}
@@ -176,6 +168,27 @@ export function BranchThreadGroupSection({
               onConfirm={() => onSetPruneConfirmBranchId(null)}
               onRequestConfirm={() => onSetPruneConfirmBranchId(branchActionKey)}
             />
+          ) : null}
+          {canManageBranch && !confirmingPrune ? (
+            <>
+              <BranchSwitchAction
+                blocked={switchBlocked}
+                group={group}
+                project={project}
+                onAction={onAction}
+                onBlocked={() => onSetSwitchErrorBranchId(branchActionKey)}
+                onSwitchFailed={() => onSetSwitchErrorBranchId(null)}
+              />
+              <EmptyBranchStartAction
+                blocked={switchBlocked}
+                currentBranch={currentBranch}
+                group={group}
+                project={project}
+                onAction={onAction}
+                onBlocked={() => onSetSwitchErrorBranchId(branchActionKey)}
+                onSwitchFailed={() => onSetSwitchErrorBranchId(null)}
+              />
+            </>
           ) : null}
         </span>
       </div>
