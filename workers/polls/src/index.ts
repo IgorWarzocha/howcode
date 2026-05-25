@@ -171,11 +171,12 @@ async function handleVote(request: Request, env: Env) {
   const optionId = await assertOption(env, pollId, payload?.optionId)
   const voterHash = await getVoterHash(request, env, pollId)
   const userAgentHash = await getUserAgentHash(request, env)
+  const recentCutoff = new Date(Date.now() - 30_000).toISOString()
 
   const recentEvents = await env.DB.prepare(
-    "SELECT COUNT(*) AS count FROM poll_vote_events WHERE voter_hash = ? AND julianday(created_at) > julianday('now', '-30 seconds')",
+    'SELECT COUNT(*) AS count FROM poll_vote_events WHERE voter_hash = ? AND created_at > ?',
   )
-    .bind(voterHash)
+    .bind(voterHash, recentCutoff)
     .first<{ count: number }>()
   if ((recentEvents?.count ?? 0) > 8) {
     return json(request, env, { error: 'Too many vote attempts. Try again in a minute.' }, 429)

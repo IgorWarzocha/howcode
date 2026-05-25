@@ -35,6 +35,7 @@ export function MultiProjectWorkContent({
   onPrimeProject,
   onSearchQueryChange,
   onSetCollapsedBranchIds,
+  onToggleProjectCollapse,
   onSetExpandedProjectIds,
   onSetPruneConfirmBranchId,
   onSetSwitchErrorBranchId,
@@ -60,6 +61,7 @@ export function MultiProjectWorkContent({
   onSetCollapsedBranchIds: (
     updater: (current: Record<string, boolean>) => Record<string, boolean>,
   ) => void
+  onToggleProjectCollapse: (projectId: string) => void
   onSetExpandedProjectIds: (
     updater: (current: Record<string, boolean>) => Record<string, boolean>,
   ) => void
@@ -131,12 +133,13 @@ export function MultiProjectWorkContent({
                 onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
                 onShowView={onShowView}
                 onThreadOpen={onThreadOpen}
-                onToggleExpanded={() =>
+                onToggleExpanded={() => {
+                  onToggleProjectCollapse(project.id)
                   onSetExpandedProjectIds((current) => ({
                     ...current,
                     [`project:${project.id}`]: expanded,
                   }))
-                }
+                }}
                 onToggleUnassigned={() =>
                   onSetCollapsedBranchIds((current) => ({
                     ...current,
@@ -245,10 +248,11 @@ export function SingleProjectWorkContent({
           <div className="sidebar-project-work-thread-list">
             {branchGroups.length > 0 ? (
               branchGroups.map((group) => {
+                const groupKey = `${project.id}:${group.id}`
                 const defaultCollapsed = !(group.current || group.id === selectedGroupId)
                 const collapsed = normalizedSearchQuery
                   ? false
-                  : (collapsedBranchIds[group.id] ?? defaultCollapsed)
+                  : (collapsedBranchIds[groupKey] ?? defaultCollapsed)
                 return (
                   <BranchThreadGroupSection
                     key={group.id}
@@ -264,7 +268,7 @@ export function SingleProjectWorkContent({
                     onToggle={() =>
                       onSetCollapsedBranchIds((current) => ({
                         ...current,
-                        [group.id]: !collapsed,
+                        [groupKey]: !collapsed,
                       }))
                     }
                     pruneConfirmBranchId={pruneConfirmBranchId}

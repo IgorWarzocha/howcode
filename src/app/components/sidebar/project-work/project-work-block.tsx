@@ -87,13 +87,9 @@ function ProjectWorkBlockHeader({
       >
         {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
       </button>
-      <button
-        type="button"
-        className="sidebar-project-work-project-block-heading"
-        onClick={() => onFocusProject(project.id)}
-      >
-        {project.repoOriginUrl ? <GitHubInvertocatMark size={13} /> : <FolderCode size={13} />}
-        {editingName ? (
+      {editingName ? (
+        <div className="sidebar-project-work-project-block-heading">
+          {project.repoOriginUrl ? <GitHubInvertocatMark size={13} /> : <FolderCode size={13} />}
           <ProjectRenameField
             projectName={project.name}
             renameDraft={renameDraft}
@@ -104,10 +100,17 @@ function ProjectWorkBlockHeader({
             onChange={setRenameDraft}
             onSubmit={submitRename}
           />
-        ) : (
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="sidebar-project-work-project-block-heading"
+          onClick={() => onFocusProject(project.id)}
+        >
+          {project.repoOriginUrl ? <GitHubInvertocatMark size={13} /> : <FolderCode size={13} />}
           <span className="truncate">{project.name}</span>
-        )}
-      </button>
+        </button>
+      )}
       <div className="sidebar-project-work-project-menu-anchor">
         <IconButton
           ref={menuButtonRef}

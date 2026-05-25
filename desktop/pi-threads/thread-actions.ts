@@ -124,12 +124,12 @@ async function summarizeSessionUsageForStorage(sessionPath: string): Promise<Usa
 
 async function storeUsageBeforeDelete(threadId: string, sessionPath: string) {
   const deletionSnapshot = getThreadDeletionSnapshot(threadId)
-  if (!deletionSnapshot) return
+  if (!deletionSnapshot) return null
   const usage = await summarizeSessionUsageForStorage(sessionPath)
-  addProjectUsageTotals({
+  return {
     cwd: deletionSnapshot.cwd,
     ...usage,
-  })
+  }
 }
 
 async function unlinkSessionFile(sessionPath: string) {
@@ -142,17 +142,14 @@ async function unlinkSessionFile(sessionPath: string) {
 
 async function deletePersistedThread(threadId: string) {
   const sessionPath = getThreadSessionPath(threadId)
+  const usageSnapshot = sessionPath ? await storeUsageBeforeDelete(threadId, sessionPath) : null
   if (sessionPath) {
-    try {
-      await storeUsageBeforeDelete(threadId, sessionPath)
-    } catch (error) {
-      if (!isMissingFileError(error)) throw error
-    }
     await unlinkSessionFile(sessionPath)
     deleteArtifactsForConversation(sessionPath)
     deleteChatThread(sessionPath)
   }
   deleteThreadRecord(threadId)
+  if (usageSnapshot) addProjectUsageTotals(usageSnapshot)
 }
 
 async function deletePersistedThreads(threadIds: string[]) {

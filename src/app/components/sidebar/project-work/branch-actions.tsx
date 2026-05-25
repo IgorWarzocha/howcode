@@ -10,12 +10,14 @@ export function BranchSwitchAction({
   project,
   onAction,
   onBlocked,
+  onSwitchFailed,
 }: {
   blocked: boolean
   group: BranchThreadGroup
   project: Project
   onAction: DesktopActionInvoker
   onBlocked: () => void
+  onSwitchFailed: () => void
 }) {
   return (
     <Tooltip
@@ -32,7 +34,12 @@ export function BranchSwitchAction({
             value: group.label,
           }).then((result) => {
             const error = result?.result?.error
-            if (typeof error === 'string' && error.includes('Worktree is dirty')) onBlocked()
+            if (!error) return
+            if (typeof error === 'string' && error.includes('Worktree is dirty')) {
+              onBlocked()
+              return
+            }
+            onSwitchFailed()
           })
         }}
         aria-label={`Switch to ${group.label}`}

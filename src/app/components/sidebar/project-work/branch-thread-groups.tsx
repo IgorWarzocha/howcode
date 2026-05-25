@@ -83,6 +83,7 @@ export function BranchThreadGroupSection({
               project={project}
               onAction={onAction}
               onBlocked={() => onSetSwitchErrorBranchId(branchActionKey)}
+              onSwitchFailed={() => onSetSwitchErrorBranchId(null)}
             />
           ) : null}
           {canManageBranch ? (

@@ -18,10 +18,15 @@ type ExtensionsScopeSwitcherProps = {
   onChange: (scope: InstallScope) => void
 }
 
-function ExtensionsScopeSwitcher({ value, counts, onChange }: ExtensionsScopeSwitcherProps) {
+function ExtensionsScopeSwitcher({
+  value,
+  counts,
+  projectScopeAvailable,
+  onChange,
+}: ExtensionsScopeSwitcherProps) {
   const options: Array<{ value: InstallScope; label: string; disabled?: boolean }> = [
     { value: 'global', label: `Global ${counts.global}` },
-    { value: 'project', label: `Project ${counts.project}` },
+    { value: 'project', label: `Project ${counts.project}`, disabled: !projectScopeAvailable },
     { value: 'chat', label: `Chat ${counts.chat}` },
   ]
 

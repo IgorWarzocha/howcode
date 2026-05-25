@@ -158,6 +158,7 @@ function SidebarContent(props: SidebarProps) {
         onProjectPrimeSelection={props.onProjectPrimeSelection}
         onThreadOpen={props.onThreadOpen}
         onShowView={props.onShowView}
+        onToggleProjectCollapse={props.onToggleProjectCollapse}
       />
     )
   }
@@ -168,7 +169,7 @@ function SidebarContent(props: SidebarProps) {
       projects={props.projects}
       projectGitState={props.projectGitState}
       initialVisibleProjectIds={props.sidebarVisibleProjectIds}
-      projectTargetMode={true}
+      projectTargetMode={props.projectScopeLockActive}
       projectScopeLockActive={props.projectScopeLockActive}
       selectedProjectId={props.selectedProjectId}
       selectedThreadId={props.selectedThreadId}
@@ -183,6 +184,7 @@ function SidebarContent(props: SidebarProps) {
       onProjectTargetSelected={props.onProjectTargetSelected}
       onThreadOpen={props.onThreadOpen}
       onShowView={props.onShowView}
+      onToggleProjectCollapse={props.onToggleProjectCollapse}
     />
   )
 }
@@ -301,7 +303,9 @@ export function Sidebar({
       aria-label="Workspace sidebar"
       data-pulse-active={projectScopeLockActive ? 'true' : 'false'}
       data-project-target-mode={
-        activeView === 'extensions' || activeView === 'skills' ? 'true' : 'false'
+        (activeView === 'extensions' || activeView === 'skills') && projectScopeLockActive
+          ? 'true'
+          : 'false'
       }
       className="sidebar-shell motion-surface-pulse motion-sidebar-selection-pulse relative"
     >

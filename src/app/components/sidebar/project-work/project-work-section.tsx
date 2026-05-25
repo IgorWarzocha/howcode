@@ -47,6 +47,7 @@ type ProjectWorkSectionProps = {
   onProjectTargetSelected?: (() => void) | undefined
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
   onShowView: (view: Exclude<View, 'gitops'>) => void
+  onToggleProjectCollapse: (projectId: string) => void
 }
 
 export function ProjectWorkSection({
@@ -69,6 +70,7 @@ export function ProjectWorkSection({
   onProjectTargetSelected,
   onThreadOpen,
   onShowView,
+  onToggleProjectCollapse,
 }: ProjectWorkSectionProps) {
   const [projectSwitcherOpen, setProjectSwitcherOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -304,6 +306,7 @@ export function ProjectWorkSection({
           onPrimeProject={primeProject}
           onSearchQueryChange={setSearchQuery}
           onSetCollapsedBranchIds={setCollapsedBranchIds}
+          onToggleProjectCollapse={onToggleProjectCollapse}
           onSetExpandedProjectIds={setCollapsedBranchIds}
           onSetPruneConfirmBranchId={setPruneConfirmBranchId}
           onSetSwitchErrorBranchId={setSwitchErrorBranchId}
