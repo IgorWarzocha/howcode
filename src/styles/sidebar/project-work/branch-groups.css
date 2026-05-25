@@ -84,15 +84,20 @@
   display: none;
 }
 
-.sidebar-project-work-branch-action-spacer {
-  height: 1.5rem;
-  width: 1.5rem;
-}
-
 .sidebar-project-work-branch-actions[data-confirming="true"] {
   width: 3rem;
   grid-template-columns: 1.5rem 1.5rem;
   opacity: 1;
+}
+
+.sidebar-project-work-branch-actions[data-action-count="1"] {
+  width: 1.5rem;
+  grid-template-columns: 1.5rem;
+}
+
+.sidebar-project-work-branch-actions[data-action-count="2"] {
+  width: 3rem;
+  grid-template-columns: 1.5rem 1.5rem;
 }
 
 .sidebar-project-work-branch-heading:hover .sidebar-project-work-branch-actions,

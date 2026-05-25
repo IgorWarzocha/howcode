@@ -80,7 +80,8 @@ function EmptyBranchStartAction({
 }
 
 function BranchInlineActions({
-  canManageBranch,
+  canPrune,
+  canSwitch,
   confirmingPrune,
   currentBranch,
   group,
@@ -93,7 +94,8 @@ function BranchInlineActions({
   onSwitchBlocked,
   onSwitchFailed,
 }: {
-  canManageBranch: boolean
+  canPrune: boolean
+  canSwitch: boolean
   confirmingPrune: boolean
   currentBranch: string | null
   group: BranchThreadGroup
@@ -106,45 +108,31 @@ function BranchInlineActions({
   onSwitchBlocked: () => void
   onSwitchFailed: () => void
 }) {
-  if (!canManageBranch) {
-    return (
-      <>
-        <span className="sidebar-project-work-branch-action-spacer" aria-hidden="true" />
-        <span className="sidebar-project-work-branch-action-spacer" aria-hidden="true" />
-        <EmptyBranchStartAction
-          blocked={switchBlocked}
-          currentBranch={currentBranch}
+  return (
+    <>
+      {canPrune ? (
+        <BranchPruneAction
+          confirming={confirmingPrune}
           group={group}
           project={project}
           onAction={onAction}
-          onBlocked={onSwitchBlocked}
-          onSwitchFailed={onSwitchFailed}
+          onCancel={onCancelPrune}
+          onConfirm={onConfirmPrune}
+          onRequestConfirm={onRequestPruneConfirm}
         />
-      </>
-    )
-  }
-
-  return (
-    <>
-      <BranchPruneAction
-        confirming={confirmingPrune}
-        group={group}
-        project={project}
-        onAction={onAction}
-        onCancel={onCancelPrune}
-        onConfirm={onConfirmPrune}
-        onRequestConfirm={onRequestPruneConfirm}
-      />
+      ) : null}
       {confirmingPrune ? null : (
         <>
-          <BranchSwitchAction
-            blocked={switchBlocked}
-            group={group}
-            project={project}
-            onAction={onAction}
-            onBlocked={onSwitchBlocked}
-            onSwitchFailed={onSwitchFailed}
-          />
+          {canSwitch ? (
+            <BranchSwitchAction
+              blocked={switchBlocked}
+              group={group}
+              project={project}
+              onAction={onAction}
+              onBlocked={onSwitchBlocked}
+              onSwitchFailed={onSwitchFailed}
+            />
+          ) : null}
           <EmptyBranchStartAction
             blocked={switchBlocked}
             currentBranch={currentBranch}
@@ -191,7 +179,9 @@ export function BranchThreadGroupSection({
   switchErrorBranchId: string | null
   onSetSwitchErrorBranchId: (branchId: string | null) => void
 }) {
-  const canManageBranch = !(group.current || group.unassigned || group.worktree)
+  const canPruneBranch = !group.unassigned
+  const canSwitchBranch = !(group.current || group.unassigned || group.worktree)
+  const actionCount = canPruneBranch && canSwitchBranch ? 3 : canPruneBranch ? 2 : 1
   const branchActionKey = `${project.id}:${group.id}`
   const confirmingPrune = pruneConfirmBranchId === branchActionKey
   const switchBlocked = switchErrorBranchId === branchActionKey
@@ -232,10 +222,12 @@ export function BranchThreadGroupSection({
         </span>
         <span
           className="sidebar-project-work-branch-actions"
+          data-action-count={actionCount}
           data-confirming={confirmingPrune ? 'true' : 'false'}
         >
           <BranchInlineActions
-            canManageBranch={canManageBranch}
+            canPrune={canPruneBranch}
+            canSwitch={canSwitchBranch}
             confirmingPrune={confirmingPrune}
             currentBranch={currentBranch}
             group={group}
@@ -422,9 +414,10 @@ export function ProjectCompactBranchGroups({
           <span className="sidebar-project-work-branch-meta">
             <span className="sidebar-project-work-branch-count">{branchThreads.length}</span>
           </span>
-          <span className="sidebar-project-work-branch-actions">
+          <span className="sidebar-project-work-branch-actions" data-action-count="1">
             <BranchInlineActions
-              canManageBranch={false}
+              canPrune={false}
+              canSwitch={false}
               confirmingPrune={false}
               currentBranch={currentBranch}
               group={currentBranchGroup}
