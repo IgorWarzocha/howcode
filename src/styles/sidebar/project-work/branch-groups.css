@@ -80,8 +80,13 @@
   transition: opacity 150ms ease-out;
 }
 
-.sidebar-project-work-branch-actions > [data-tooltip-root] {
-  display: contents;
+.sidebar-project-work-branch-actions > .tooltip-anchor {
+  display: inline-flex;
+  height: 1.5rem;
+  width: 1.5rem;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
 }
 
 .sidebar-project-work-branch-actions:empty {
