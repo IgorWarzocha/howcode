@@ -21,6 +21,10 @@
   color: color-mix(in srgb, var(--accent) 74%, var(--muted));
 }
 
+.sidebar-project-work-unassigned-icon {
+  transform: translateY(-0.0625rem);
+}
+
 .sidebar-project-work-branch-meta {
   display: inline-flex;
   width: 1.5rem;

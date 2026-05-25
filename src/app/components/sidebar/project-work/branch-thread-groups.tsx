@@ -284,7 +284,7 @@ export function ProjectCompactBranchGroups({
                 unassignedExpanded ? 'Collapse unassigned sessions' : 'Expand unassigned sessions'
               }
             >
-              <CircleOff size={13} />
+              <CircleOff size={13} className="sidebar-project-work-unassigned-icon" />
             </button>
             <button
               type="button"
