@@ -54,7 +54,7 @@ function DashboardBranchSwitchPopover({
           surface={false}
           className={cn(
             composerPopoverPanelClass,
-            'grid w-[min(20rem,calc(100vw-1rem))] min-w-0 max-w-full grid-rows-[auto_minmax(0,1fr)_auto_auto_auto] gap-1.5 overflow-hidden',
+            'grid w-[min(20rem,calc(100vw-1rem))] min-w-0 max-w-full grid-rows-[auto_minmax(0,1fr)_auto] gap-1.5 overflow-hidden',
           )}
         >
           {content}

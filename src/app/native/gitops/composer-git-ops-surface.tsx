@@ -408,9 +408,6 @@ export function ComposerGitOpsSurface({
         onDiscardDiffComments={onDiscardDiffComments}
         onSetDiffBaseline={onSetDiffBaseline}
         onSetDiffRenderMode={onSetDiffRenderMode}
-        onSwitchBranch={(branchName) => {
-          void onAction('workspace.switch-branch', { projectId, value: branchName })
-        }}
         onSetRepoUrl={setRepoUrl}
         onToggleIncludeUnstaged={() => setIncludeUnstaged((current) => !current)}
         onToggleIncludeUntracked={onToggleIncludeUntracked}
