@@ -82,13 +82,23 @@
 }
 
 .sidebar-new-thread-branch-create button {
-  max-width: 5.5rem;
+  display: inline-flex;
+  width: 1.25rem;
+  height: 1.25rem;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
   color: var(--accent);
   font-size: var(--app-type-meta-size);
   font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.sidebar-new-thread-branch-create button[data-warning="true"] {
+  width: auto;
+  max-width: 5.5rem;
+  justify-content: flex-end;
 }
 
 .sidebar-new-thread-branch-create button:disabled {

@@ -1,6 +1,6 @@
 import { IconButton } from '@howcode/common/icon-button'
 import { GitBranch, GitFork, Plus, X } from 'lucide-react'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { type ReactNode, type RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 
 export async function createThreadForBranch({
@@ -17,6 +17,74 @@ export async function createThreadForBranch({
     composerMode: 'code',
     branchName,
   })
+}
+
+function focusInput(input: HTMLInputElement | null) {
+  input?.focus()
+  input?.select()
+}
+
+function CreateTargetRow({
+  icon,
+  inputRef,
+  value,
+  error,
+  placeholder,
+  inputLabel,
+  createLabel,
+  onChange,
+  onCreate,
+  onClose,
+}: {
+  icon: ReactNode
+  inputRef: RefObject<HTMLInputElement | null>
+  value: string
+  error: string | null
+  placeholder: string
+  inputLabel: string
+  createLabel: string
+  onChange: (value: string) => void
+  onCreate: () => void
+  onClose: () => void
+}) {
+  const actionLabel = error ?? createLabel
+  return (
+    <div
+      className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-branch-create"
+      onPointerUp={(event) => {
+        if ((event.target as HTMLElement).closest('button')) return
+        focusInput(inputRef.current)
+      }}
+    >
+      {icon}
+      <input
+        ref={inputRef}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') onCreate()
+          if (event.key === 'Escape') onClose()
+        }}
+        placeholder={placeholder}
+        aria-label={inputLabel}
+      />
+      <button
+        type="button"
+        data-warning={error ? 'true' : 'false'}
+        aria-label={actionLabel}
+        title={actionLabel}
+        onClick={() => {
+          if (value.trim().length === 0) {
+            focusInput(inputRef.current)
+            return
+          }
+          onCreate()
+        }}
+      >
+        {error ?? <Plus size={12} />}
+      </button>
+    </div>
+  )
 }
 
 export function NewThreadMenu({
@@ -82,11 +150,6 @@ export function NewThreadMenu({
   const createAssignedThread = async (branchName: string | null) => {
     await createThreadForBranch({ branchName, onAction, projectId })
     setOpen(false)
-  }
-
-  const focusInput = (input: HTMLInputElement | null) => {
-    input?.focus()
-    input?.select()
   }
 
   const createThreadInNewWorktree = async () => {
@@ -173,79 +236,37 @@ export function NewThreadMenu({
             </span>
           </button>
 
-          <div
-            className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-branch-create"
-            onPointerUp={(event) => {
-              if ((event.target as HTMLElement).closest('button')) return
-              focusInput(newBranchInputRef.current)
+          <CreateTargetRow
+            icon={<GitBranch size={12} />}
+            inputRef={newBranchInputRef}
+            value={newBranchName}
+            error={newBranchError ?? dirtyMessage}
+            placeholder="New branch"
+            inputLabel="New branch name"
+            createLabel="Create branch"
+            onChange={(value) => {
+              setNewBranchName(value)
+              setNewBranchError(null)
             }}
-          >
-            <GitBranch size={12} />
-            <input
-              ref={newBranchInputRef}
-              value={newBranchName}
-              onChange={(event) => {
-                setNewBranchName(event.target.value)
-                setNewBranchError(null)
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') void createThreadOnNewBranch()
-                if (event.key === 'Escape') setOpen(false)
-              }}
-              placeholder="New branch"
-              aria-label="New branch name"
-            />
-            <button
-              type="button"
-              data-warning={newBranchError || dirtyMessage ? 'true' : 'false'}
-              onClick={() => {
-                if (newBranchName.trim().length === 0) {
-                  focusInput(newBranchInputRef.current)
-                  return
-                }
-                void createThreadOnNewBranch()
-              }}
-            >
-              {newBranchError || dirtyMessage ? (newBranchError ?? dirtyMessage) : 'Create'}
-            </button>
-          </div>
+            onCreate={() => void createThreadOnNewBranch()}
+            onClose={() => setOpen(false)}
+          />
 
-          <div
-            className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-branch-create"
-            onPointerUp={(event) => {
-              if ((event.target as HTMLElement).closest('button')) return
-              focusInput(newWorktreeInputRef.current)
+          <CreateTargetRow
+            icon={<GitFork size={12} />}
+            inputRef={newWorktreeInputRef}
+            value={newWorktreeBranchName}
+            error={newWorktreeError}
+            placeholder="New worktree"
+            inputLabel="New worktree branch name"
+            createLabel="Create worktree"
+            onChange={(value) => {
+              setNewWorktreeBranchName(value)
+              setNewWorktreeError(null)
             }}
-          >
-            <GitFork size={12} />
-            <input
-              ref={newWorktreeInputRef}
-              value={newWorktreeBranchName}
-              onChange={(event) => {
-                setNewWorktreeBranchName(event.target.value)
-                setNewWorktreeError(null)
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') void createThreadInNewWorktree()
-                if (event.key === 'Escape') setOpen(false)
-              }}
-              placeholder="New worktree"
-              aria-label="New worktree branch name"
-            />
-            <button
-              type="button"
-              data-warning={newWorktreeError ? 'true' : 'false'}
-              onClick={() => {
-                if (newWorktreeBranchName.trim().length === 0) {
-                  focusInput(newWorktreeInputRef.current)
-                  return
-                }
-                void createThreadInNewWorktree()
-              }}
-            >
-              {newWorktreeError ?? 'Create'}
-            </button>
-          </div>
+            onCreate={() => void createThreadInNewWorktree()}
+            onClose={() => setOpen(false)}
+          />
 
           <button
             type="button"
