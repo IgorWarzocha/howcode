@@ -31,12 +31,11 @@ import {
   switchProjectBranch,
 } from '../project-git.ts'
 import {
-  deleteThreadRecordsBySessionPaths,
   ensureProject,
   getProjectWorktreeDirectory,
   hasRunningProjectThread,
-  listBranchSessionPaths,
-  listProjectSessionPaths,
+  listBranchThreadIds,
+  listProjectThreadIds,
   setProjectGitOpsMode,
   setProjectRepoOrigin,
   setProjectWorktreeDirectory,
@@ -45,6 +44,7 @@ import {
 } from '../thread-state-db.ts'
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
+import { deletePersistedThreads } from './thread-actions.ts'
 
 async function handleCommitWorkspaceAction(payload: AnyDesktopActionPayload) {
   const projectId = getProjectId(payload)
@@ -167,14 +167,14 @@ async function handleRemoveWorktreeWorkspaceAction(payload: AnyDesktopActionPayl
     return handledAction({ error: 'Stop running sessions before removing this worktree.' })
   }
 
-  const sessionPaths = listProjectSessionPaths(worktreePath)
+  const threadIds = listProjectThreadIds(worktreePath)
   const removeResult = await removeProjectWorktree(projectId, worktreePath)
   if ('error' in removeResult) return handledAction(removeResult)
 
   const branchResult = branchName ? await pruneProjectBranch(projectId, branchName) : null
   if (branchResult && 'error' in branchResult) return handledAction(branchResult)
 
-  deleteThreadRecordsBySessionPaths(sessionPaths)
+  await deletePersistedThreads(threadIds)
   return handledAction(removeResult)
 }
 
@@ -204,9 +204,9 @@ export async function handleWorkspaceDesktopAction(
       if (hasRunningProjectThread(projectId)) {
         return handledAction({ error: 'Stop running sessions before pruning this branch.' })
       }
-      const sessionPaths = listBranchSessionPaths(projectId, branchName)
+      const threadIds = listBranchThreadIds(projectId, branchName)
       const result = await pruneProjectBranch(projectId, branchName)
-      if (!('error' in result)) deleteThreadRecordsBySessionPaths(sessionPaths)
+      if (!('error' in result)) await deletePersistedThreads(threadIds)
       return handledAction(result)
     }
     case 'workspace.create-worktree':

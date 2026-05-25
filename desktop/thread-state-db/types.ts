@@ -78,6 +78,7 @@ export type ArchivedThreadRow = {
 }
 
 export type ThreadPathRow = {
+  id?: string | undefined
   sessionPath: string
 }
 

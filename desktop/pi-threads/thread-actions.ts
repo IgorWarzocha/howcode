@@ -158,7 +158,7 @@ async function deletePersistedThread(threadId: string) {
   if (usageSnapshot) addProjectUsageTotals(usageSnapshot)
 }
 
-async function deletePersistedThreads(threadIds: string[]) {
+export async function deletePersistedThreads(threadIds: string[]) {
   const deletedThreadIds: string[] = []
   const failedThreadIds: string[] = []
 

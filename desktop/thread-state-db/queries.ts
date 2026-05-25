@@ -397,6 +397,36 @@ export function listBranchSessionPaths(projectId: string, branchName: string) {
   return rows.map((row) => row.sessionPath)
 }
 
+export function listBranchThreadIds(projectId: string, branchName: string) {
+  const db = getThreadStateDatabase()
+  const rows = db
+    .prepare(
+      `
+        SELECT id AS id, session_path AS sessionPath
+        FROM threads
+        WHERE cwd = ? AND branch_name = ?
+      `,
+    )
+    .all(projectId, branchName) as ThreadPathRow[]
+
+  return rows.map((row) => row.id).filter((id): id is string => typeof id === 'string')
+}
+
+export function listProjectThreadIds(projectId: string) {
+  const db = getThreadStateDatabase()
+  const rows = db
+    .prepare(
+      `
+        SELECT id AS id, session_path AS sessionPath
+        FROM threads
+        WHERE cwd = ?
+      `,
+    )
+    .all(projectId) as ThreadPathRow[]
+
+  return rows.map((row) => row.id).filter((id): id is string => typeof id === 'string')
+}
+
 export function getProjectStoredUsageTotals(projectId: string): ProjectUsageTotalsRow | null {
   const db = getThreadStateDatabase()
   const row = db

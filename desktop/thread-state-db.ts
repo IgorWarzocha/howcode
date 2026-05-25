@@ -12,10 +12,12 @@ export {
   listArchivedProjectThreads,
   listArchivedThreads,
   listBranchSessionPaths,
+  listBranchThreadIds,
   listInboxThreads,
   listProjectFamilySessionPaths,
   listProjectSessionPaths,
   listProjects,
+  listProjectThreadIds,
   listProjectThreads,
 } from './thread-state-db/queries.ts'
 export type { SessionSummaryRecord } from './thread-state-db/types.ts'
