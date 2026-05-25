@@ -47,21 +47,34 @@ export function ProjectRenameField({
   onSubmit: () => void
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null)
+  const submittedRef = useRef(false)
   useEffect(() => {
     inputRef.current?.focus()
     inputRef.current?.select()
   }, [])
+
+  const submitOnce = () => {
+    if (submittedRef.current) return
+    submittedRef.current = true
+    onSubmit()
+  }
 
   return (
     <input
       ref={inputRef}
       className="sidebar-project-work-project-rename-input"
       value={renameDraft}
-      onBlur={onSubmit}
-      onChange={(event) => onChange(event.target.value)}
+      onBlur={submitOnce}
+      onChange={(event) => {
+        submittedRef.current = false
+        onChange(event.target.value)
+      }}
       onClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => {
-        if (event.key === 'Enter') onSubmit()
+        if (event.key === 'Enter') {
+          event.preventDefault()
+          submitOnce()
+        }
         if (event.key === 'Escape') {
           event.stopPropagation()
           onCancel()

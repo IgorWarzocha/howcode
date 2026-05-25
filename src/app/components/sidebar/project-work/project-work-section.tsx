@@ -348,6 +348,7 @@ export function ProjectWorkSection({
           switchErrorBranchId={switchErrorBranchId}
           terminalRunningSessionPaths={terminalRunningSessionPaths}
           onAction={onAction}
+          onFocusProject={focusProject}
           onSearchQueryChange={setSearchQuery}
           onSetCollapsedBranchIds={setCollapsedBranchIds}
           onSetPruneConfirmBranchId={setPruneConfirmBranchId}

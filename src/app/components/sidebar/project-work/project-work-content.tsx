@@ -237,6 +237,7 @@ export function SingleProjectWorkContent({
   switchErrorBranchId,
   terminalRunningSessionPaths,
   onAction,
+  onFocusProject,
   onSearchQueryChange,
   onSetCollapsedBranchIds,
   onSetPruneConfirmBranchId,
@@ -260,6 +261,7 @@ export function SingleProjectWorkContent({
   switchErrorBranchId: string | null
   terminalRunningSessionPaths: ReadonlySet<string>
   onAction: DesktopActionInvoker
+  onFocusProject: (projectId: string) => void
   onSearchQueryChange: (query: string) => void
   onSetCollapsedBranchIds: (
     updater: (current: Record<string, boolean>) => Record<string, boolean>,
@@ -269,6 +271,11 @@ export function SingleProjectWorkContent({
   onShowView: (view: Exclude<View, 'gitops'>) => void
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
 }) {
+  const openProjectView = (view: Exclude<View, 'gitops'>) => {
+    onFocusProject(project.id)
+    onShowView(view)
+  }
+
   return (
     <>
       <div className="sidebar-project-work-actions">
@@ -276,7 +283,7 @@ export function SingleProjectWorkContent({
           type="button"
           className="sidebar-compact-row sidebar-compact-row--action sidebar-project-work-action-row"
           data-active={activeView === 'automations' ? 'true' : 'false'}
-          onClick={() => onShowView('automations')}
+          onClick={() => openProjectView('automations')}
         >
           <ChevronRight size={13} aria-hidden="true" />
           <span>Automations</span>
@@ -286,7 +293,7 @@ export function SingleProjectWorkContent({
           type="button"
           className="sidebar-compact-row sidebar-compact-row--action sidebar-project-work-history-row"
           data-active={activeView === 'sessions' && selectedThreadId === null ? 'true' : 'false'}
-          onClick={() => onShowView('sessions')}
+          onClick={() => openProjectView('sessions')}
         >
           <Archive size={14} />
           <span>Past sessions</span>

@@ -126,6 +126,15 @@ export function ProjectScopeSelector({
     open: open || createOpen,
     onDismiss: dismissSelector,
     refs: [selectorRef, createPanelRef],
+    shouldDismissOnEscape: (event) => {
+      if (projectSearchQuery.length === 0) return true
+      const target = event.target as HTMLElement | null
+      if (!target?.closest('.sidebar-project-work-project-search-field')) return true
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      setProjectSearchQuery('')
+      return false
+    },
   })
 
   return (

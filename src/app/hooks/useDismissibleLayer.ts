@@ -6,9 +6,15 @@ type UseDismissibleLayerOptions = {
   open: boolean
   onDismiss: () => void
   refs: DismissibleRef[]
+  shouldDismissOnEscape?: ((event: KeyboardEvent) => boolean) | undefined
 }
 
-export function useDismissibleLayer({ open, onDismiss, refs }: UseDismissibleLayerOptions) {
+export function useDismissibleLayer({
+  open,
+  onDismiss,
+  refs,
+  shouldDismissOnEscape,
+}: UseDismissibleLayerOptions) {
   useEffect(() => {
     if (!open) {
       return
@@ -25,6 +31,7 @@ export function useDismissibleLayer({ open, onDismiss, refs }: UseDismissibleLay
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        if (shouldDismissOnEscape && !shouldDismissOnEscape(event)) return
         event.preventDefault()
         event.stopImmediatePropagation()
         onDismiss()
@@ -38,5 +45,5 @@ export function useDismissibleLayer({ open, onDismiss, refs }: UseDismissibleLay
       window.removeEventListener('pointerdown', handlePointerDown)
       window.removeEventListener('keydown', handleKeyDown, true)
     }
-  }, [onDismiss, open, refs])
+  }, [onDismiss, open, refs, shouldDismissOnEscape])
 }
