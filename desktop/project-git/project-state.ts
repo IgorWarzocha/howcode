@@ -1,6 +1,7 @@
 import type { ProjectGitState } from '../../shared/desktop-contracts.ts'
 import { getThreadStateDatabase } from '../thread-state-db/db.ts'
 import { hasHeadCommit, runGit, runGitWithOptions } from './git-runner.ts'
+import { loadGitWorktrees } from './worktrees.ts'
 
 const shortStatInsertionsPattern = /(\d+)\s+insertions?\(\+\)/
 const shortStatDeletionsPattern = /(\d+)\s+deletions?\(-\)/
@@ -194,15 +195,17 @@ export async function loadProjectGitState(projectId: string): Promise<ProjectGit
       originName: null,
       originUrl: null,
       gitOpsModeOverride,
+      worktrees: [],
     }
   }
 
-  const [branch, branches, statusSummary, originUrl, stats] = await Promise.all([
+  const [branch, branches, statusSummary, originUrl, stats, worktrees] = await Promise.all([
     getBranch(projectId),
     getBranches(projectId),
     getStatusSummary(projectId),
     getOriginUrl(projectId),
     getDiffStats(projectId),
+    loadGitWorktrees(projectId).catch(() => []),
   ])
 
   return {
@@ -220,5 +223,6 @@ export async function loadProjectGitState(projectId: string): Promise<ProjectGit
     originName: deriveOriginName(originUrl),
     originUrl,
     gitOpsModeOverride,
+    worktrees,
   }
 }

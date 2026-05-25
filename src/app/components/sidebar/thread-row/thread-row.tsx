@@ -73,6 +73,7 @@ function ThreadMetaSlot({
   | 'terminalRunning'
 >) {
   const metaValue = terminalRunning ? <SquareTerminal size={12} /> : age
+  const actionCount = onAssignToBranch ? 2 : 1
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const deleteButtonRef = useRef<HTMLButtonElement | null>(null)
 
@@ -89,7 +90,7 @@ function ThreadMetaSlot({
       <span className="sidebar-thread-meta-value" aria-hidden="true">
         {metaValue}
       </span>
-      <span className="sidebar-thread-meta-actions">
+      <span className="sidebar-thread-meta-actions" data-action-count={actionCount}>
         {onAssignToBranch ? (
           <Tooltip
             content={assignBranchLabel ?? 'Assign to branch'}

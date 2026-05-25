@@ -10,6 +10,12 @@ type ThreadIdPathRow = {
   sessionPath: string
 }
 
+const worktreeBranchForCwdSql = `
+  SELECT branch_name
+  FROM project_worktrees
+  WHERE cwd = ? AND is_main = 0
+`
+
 function escapeLikePattern(value: string) {
   return value.replace(/[\\%_]/g, (character) => `\\${character}`)
 }
@@ -95,13 +101,14 @@ export function syncSessionSummaries(cwd: string, sessions: SessionSummaryRecord
   )
   const insertThread = db.prepare(
     `
-      INSERT INTO threads (id, cwd, session_path, title, last_modified_ms)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO threads (id, cwd, session_path, title, last_modified_ms, branch_name)
+      VALUES (?, ?, ?, ?, ?, (${worktreeBranchForCwdSql}))
       ON CONFLICT(session_path) DO UPDATE SET
         id = excluded.id,
         cwd = excluded.cwd,
         title = excluded.title,
         last_modified_ms = excluded.last_modified_ms,
+        branch_name = COALESCE(threads.branch_name, excluded.branch_name),
         updated_at = CURRENT_TIMESTAMP
     `,
   )
@@ -119,6 +126,7 @@ export function syncSessionSummaries(cwd: string, sessions: SessionSummaryRecord
         session.sessionPath,
         session.title,
         session.lastModifiedMs,
+        session.cwd,
       )
     }
   })
@@ -140,16 +148,24 @@ export function upsertThreadSummary(session: SessionSummaryRecord) {
 
   db.prepare(
     `
-      INSERT INTO threads (id, cwd, session_path, title, last_modified_ms)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO threads (id, cwd, session_path, title, last_modified_ms, branch_name)
+      VALUES (?, ?, ?, ?, ?, (${worktreeBranchForCwdSql}))
       ON CONFLICT(session_path) DO UPDATE SET
         id = excluded.id,
         cwd = excluded.cwd,
         title = excluded.title,
         last_modified_ms = excluded.last_modified_ms,
+        branch_name = COALESCE(threads.branch_name, excluded.branch_name),
         updated_at = CURRENT_TIMESTAMP
     `,
-  ).run(threadId, session.cwd, session.sessionPath, session.title, session.lastModifiedMs)
+  ).run(
+    threadId,
+    session.cwd,
+    session.sessionPath,
+    session.title,
+    session.lastModifiedMs,
+    session.cwd,
+  )
 
   return threadId
 }

@@ -125,7 +125,13 @@ async function summarizeSessionUsageForStorage(sessionPath: string): Promise<Usa
 async function storeUsageBeforeDelete(threadId: string, sessionPath: string) {
   const deletionSnapshot = getThreadDeletionSnapshot(threadId)
   if (!deletionSnapshot) return null
-  const usage = await summarizeSessionUsageForStorage(sessionPath)
+  let usage: Awaited<ReturnType<typeof summarizeSessionUsageForStorage>>
+  try {
+    usage = await summarizeSessionUsageForStorage(sessionPath)
+  } catch (error) {
+    if (!isMissingFileError(error)) throw error
+    return null
+  }
   return {
     cwd: deletionSnapshot.cwd,
     ...usage,
@@ -152,7 +158,7 @@ async function deletePersistedThread(threadId: string) {
   if (usageSnapshot) addProjectUsageTotals(usageSnapshot)
 }
 
-async function deletePersistedThreads(threadIds: string[]) {
+export async function deletePersistedThreads(threadIds: string[]) {
   const deletedThreadIds: string[] = []
   const failedThreadIds: string[] = []
 

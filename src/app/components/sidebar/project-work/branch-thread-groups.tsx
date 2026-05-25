@@ -1,7 +1,7 @@
-import { CircleOff, GitBranch } from 'lucide-react'
+import { GitBranch, GitFork } from 'lucide-react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
-import type { Project, Thread, View } from '../../../types'
-import { BranchPruneAction, BranchSwitchAction } from './branch-actions'
+import type { Project, View } from '../../../types'
+import { BranchInlineActions, BranchSessionCount } from './branch-row-actions'
 import type { BranchThreadGroup } from './project-work-model'
 import { ProjectWorkThreadRow } from './project-work-thread-row'
 
@@ -10,6 +10,7 @@ export function BranchThreadGroupSection({
   collapsed,
   currentBranch,
   group,
+  hideSessionCounts,
   project,
   selectedThreadId,
   terminalRunningSessionPaths,
@@ -25,6 +26,7 @@ export function BranchThreadGroupSection({
   collapsed: boolean
   currentBranch: string | null
   group: BranchThreadGroup
+  hideSessionCounts: boolean
   project: Project
   selectedThreadId: string | null
   terminalRunningSessionPaths: ReadonlySet<string>
@@ -36,30 +38,40 @@ export function BranchThreadGroupSection({
   switchErrorBranchId: string | null
   onSetSwitchErrorBranchId: (branchId: string | null) => void
 }) {
-  const canManageBranch = !(group.current || group.unassigned)
+  const canPruneBranch = !group.unassigned
+  const canSwitchBranch = !(group.current || group.unassigned || group.worktree)
+  const actionCount = canPruneBranch && canSwitchBranch ? 3 : canPruneBranch ? 2 : 1
   const branchActionKey = `${project.id}:${group.id}`
   const confirmingPrune = pruneConfirmBranchId === branchActionKey
   const switchBlocked = switchErrorBranchId === branchActionKey
+  const threadProject = group.worktreePath ? { ...project, id: group.worktreePath } : project
+  const canToggleThreads = group.threads.length > 0
 
   return (
     <section
       className="sidebar-project-work-branch-group"
-      data-current={group.current ? 'true' : 'false'}
+      data-current={group.current || group.worktree ? 'true' : 'false'}
     >
       <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading">
         <button
           type="button"
           className="sidebar-icon-action sidebar-icon-action--xs sidebar-icon-action--no-hover sidebar-project-work-branch-disclosure"
           onClick={onToggle}
+          disabled={!canToggleThreads}
           aria-expanded={!collapsed}
           aria-label={collapsed ? `Expand ${group.label}` : `Collapse ${group.label}`}
         >
-          <GitBranch size={13} className="sidebar-project-work-branch-icon" />
+          {group.worktree ? (
+            <GitFork size={13} className="sidebar-project-work-branch-icon" />
+          ) : (
+            <GitBranch size={13} className="sidebar-project-work-branch-icon" />
+          )}
         </button>
         <button
           type="button"
           className="sidebar-project-work-branch-toggle"
           onClick={onToggle}
+          disabled={!canToggleThreads}
           aria-expanded={!collapsed}
         >
           <span className="truncate">{group.label}</span>
@@ -68,55 +80,48 @@ export function BranchThreadGroupSection({
           {group.current ? (
             <span className="sidebar-project-work-branch-current">Current</span>
           ) : null}
-          <span className="sidebar-project-work-branch-count">{group.threads.length}</span>
+          <BranchSessionCount count={group.threads.length} hidden={hideSessionCounts} />
         </span>
         <span
           className="sidebar-project-work-branch-actions"
+          data-action-count={actionCount}
           data-confirming={confirmingPrune ? 'true' : 'false'}
         >
-          {canManageBranch && !confirmingPrune ? (
-            <BranchSwitchAction
-              blocked={switchBlocked}
-              group={group}
-              project={project}
-              onAction={onAction}
-              onBlocked={() => onSetSwitchErrorBranchId(branchActionKey)}
-              onSwitchFailed={() => onSetSwitchErrorBranchId(null)}
-            />
-          ) : null}
-          {canManageBranch ? (
-            <BranchPruneAction
-              confirming={confirmingPrune}
-              group={group}
-              project={project}
-              onAction={onAction}
-              onCancel={() => onSetPruneConfirmBranchId(null)}
-              onConfirm={() => onSetPruneConfirmBranchId(null)}
-              onRequestConfirm={() => onSetPruneConfirmBranchId(branchActionKey)}
-            />
-          ) : null}
+          <BranchInlineActions
+            canPrune={canPruneBranch}
+            canSwitch={canSwitchBranch}
+            confirmingPrune={confirmingPrune}
+            currentBranch={currentBranch}
+            group={group}
+            project={project}
+            switchBlocked={switchBlocked}
+            onAction={onAction}
+            onCancelPrune={() => onSetPruneConfirmBranchId(null)}
+            onConfirmPrune={() => onSetPruneConfirmBranchId(null)}
+            onRequestPruneConfirm={() => onSetPruneConfirmBranchId(branchActionKey)}
+            onSwitchBlocked={() => onSetSwitchErrorBranchId(branchActionKey)}
+            onSwitchFailed={() => onSetSwitchErrorBranchId(null)}
+          />
         </span>
       </div>
 
       {collapsed ? null : (
         <div className="sidebar-project-work-branch-thread-list">
-          {group.threads.length > 0 ? (
-            group.threads.map((thread) => (
-              <ProjectWorkThreadRow
-                key={thread.id}
-                activeView={activeView}
-                project={project}
-                selectedThreadId={selectedThreadId}
-                terminalRunningSessionPaths={terminalRunningSessionPaths}
-                thread={thread}
-                onAction={onAction}
-                onThreadOpen={onThreadOpen}
-                currentBranch={currentBranch}
-              />
-            ))
-          ) : (
-            <div className="sidebar-project-work-branch-empty">No threads assigned here yet.</div>
-          )}
+          {group.threads.length > 0
+            ? group.threads.map((thread) => (
+                <ProjectWorkThreadRow
+                  key={thread.id}
+                  activeView={activeView}
+                  project={threadProject}
+                  selectedThreadId={selectedThreadId}
+                  terminalRunningSessionPaths={terminalRunningSessionPaths}
+                  thread={thread}
+                  onAction={onAction}
+                  onThreadOpen={onThreadOpen}
+                  currentBranch={currentBranch}
+                />
+              ))
+            : null}
         </div>
       )}
     </section>
@@ -128,6 +133,7 @@ export function ProjectExpandedBranchGroups({
   branchGroups,
   collapsedBranchIds,
   currentBranch,
+  hideSessionCounts,
   normalizedSearchQuery,
   project,
   pruneConfirmBranchId,
@@ -144,6 +150,7 @@ export function ProjectExpandedBranchGroups({
   branchGroups: BranchThreadGroup[]
   collapsedBranchIds: Record<string, boolean>
   currentBranch: string | null
+  hideSessionCounts: boolean
   normalizedSearchQuery: string
   project: Project
   pruneConfirmBranchId: string | null
@@ -173,6 +180,7 @@ export function ProjectExpandedBranchGroups({
             collapsed={collapsed}
             currentBranch={currentBranch}
             group={group}
+            hideSessionCounts={hideSessionCounts}
             project={project}
             selectedThreadId={selectedThreadId}
             terminalRunningSessionPaths={terminalRunningSessionPaths}
@@ -192,131 +200,5 @@ export function ProjectExpandedBranchGroups({
         )
       })}
     </div>
-  )
-}
-
-export function ProjectCompactBranchGroups({
-  activeView,
-  branchThreads,
-  currentBranch,
-  currentBranchExpanded,
-  project,
-  selectedThreadId,
-  terminalRunningSessionPaths,
-  unassignedExpanded,
-  unassignedThreads,
-  onAction,
-  onToggleCurrentBranch,
-  onThreadOpen,
-  onToggleUnassigned,
-}: {
-  activeView: View
-  branchThreads: Thread[]
-  currentBranch: string | null
-  currentBranchExpanded: boolean
-  project: Project
-  selectedThreadId: string | null
-  terminalRunningSessionPaths: ReadonlySet<string>
-  unassignedExpanded: boolean
-  unassignedThreads: Thread[]
-  onAction: DesktopActionInvoker
-  onToggleCurrentBranch: () => void
-  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
-  onToggleUnassigned: () => void
-}) {
-  return (
-    <>
-      <section className="sidebar-project-work-branch-group" data-current="true">
-        <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading">
-          <button
-            type="button"
-            className="sidebar-icon-action sidebar-icon-action--xs sidebar-icon-action--no-hover sidebar-project-work-branch-disclosure"
-            onClick={onToggleCurrentBranch}
-            aria-expanded={currentBranchExpanded}
-            aria-label={currentBranchExpanded ? 'Collapse current branch' : 'Expand current branch'}
-          >
-            <GitBranch size={13} className="sidebar-project-work-branch-icon" />
-          </button>
-          <button
-            type="button"
-            className="sidebar-project-work-branch-toggle"
-            onClick={onToggleCurrentBranch}
-            aria-expanded={currentBranchExpanded}
-          >
-            <span className="truncate">{currentBranch ?? 'No branch'}</span>
-          </button>
-          <span className="sidebar-project-work-branch-meta">
-            <span className="sidebar-project-work-branch-count">{branchThreads.length}</span>
-          </span>
-        </div>
-        {currentBranchExpanded ? (
-          <div className="sidebar-project-work-branch-thread-list">
-            {branchThreads.length > 0 ? (
-              branchThreads.map((thread) => (
-                <ProjectWorkThreadRow
-                  key={thread.id}
-                  activeView={activeView}
-                  currentBranch={currentBranch}
-                  project={project}
-                  selectedThreadId={selectedThreadId}
-                  terminalRunningSessionPaths={terminalRunningSessionPaths}
-                  thread={thread}
-                  onAction={onAction}
-                  onThreadOpen={onThreadOpen}
-                />
-              ))
-            ) : (
-              <div className="sidebar-project-work-branch-empty">No threads on current branch.</div>
-            )}
-          </div>
-        ) : null}
-      </section>
-
-      {unassignedThreads.length > 0 ? (
-        <section className="sidebar-project-work-branch-group">
-          <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading">
-            <button
-              type="button"
-              className="sidebar-icon-action sidebar-icon-action--xs sidebar-icon-action--no-hover sidebar-project-work-branch-disclosure"
-              onClick={onToggleUnassigned}
-              aria-expanded={unassignedExpanded}
-              aria-label={
-                unassignedExpanded ? 'Collapse unassigned sessions' : 'Expand unassigned sessions'
-              }
-            >
-              <CircleOff size={13} className="sidebar-project-work-unassigned-icon" />
-            </button>
-            <button
-              type="button"
-              className="sidebar-project-work-branch-toggle sidebar-project-work-branch-toggle--plain"
-              onClick={onToggleUnassigned}
-              aria-expanded={unassignedExpanded}
-            >
-              <span className="truncate">Unassigned</span>
-            </button>
-            <span className="sidebar-project-work-branch-meta">
-              <span className="sidebar-project-work-branch-count">{unassignedThreads.length}</span>
-            </span>
-          </div>
-          {unassignedExpanded ? (
-            <div className="sidebar-project-work-branch-thread-list">
-              {unassignedThreads.map((thread) => (
-                <ProjectWorkThreadRow
-                  key={thread.id}
-                  activeView={activeView}
-                  currentBranch={currentBranch}
-                  project={project}
-                  selectedThreadId={selectedThreadId}
-                  terminalRunningSessionPaths={terminalRunningSessionPaths}
-                  thread={thread}
-                  onAction={onAction}
-                  onThreadOpen={onThreadOpen}
-                />
-              ))}
-            </div>
-          ) : null}
-        </section>
-      ) : null}
-    </>
   )
 }

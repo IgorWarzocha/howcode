@@ -13,6 +13,13 @@ export type Thread = {
   branchName?: string | undefined
 }
 
+export type ProjectWorktreeInfo = {
+  rootProjectId: string
+  branchName: string | null
+  isMain: boolean
+  source: 'howcode' | 'imported'
+}
+
 export type InboxThread = {
   threadId: string
   title: string
@@ -42,6 +49,8 @@ export type Project = {
   threadCount?: number | undefined
   repoOriginUrl?: string | undefined | null
   repoOriginChecked?: boolean | undefined
+  worktreeDirectory?: string | undefined
+  worktree?: ProjectWorktreeInfo | undefined
 }
 
 export type ProjectUsageSessionSummary = {

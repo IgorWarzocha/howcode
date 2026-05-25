@@ -23,6 +23,14 @@ export type ProjectGitState = {
   originName: string | null
   originUrl: string | null
   gitOpsModeOverride: GitOpsMode | null
+  worktrees: ProjectGitWorktreeEntry[]
+}
+
+export type ProjectGitWorktreeEntry = {
+  path: string
+  branch: string | null
+  head: string | null
+  detached: boolean
 }
 
 export type ProjectDiffBaseline =

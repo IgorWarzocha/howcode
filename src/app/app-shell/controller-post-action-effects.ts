@@ -24,6 +24,7 @@ import {
 } from './post-effects/thread-lifecycle'
 import {
   applyCommitOptionsPostEffect,
+  applyCreateWorktreePostEffect,
   applySwitchBranchPostEffect,
   applyWorkspaceCommitPostEffect,
 } from './post-effects/workspace'
@@ -158,12 +159,25 @@ async function handleCommitOptionsEffects(ctx: PostEffectsContext) {
 }
 
 async function handleSwitchBranchEffects(ctx: PostEffectsContext) {
-  if (hasActionError(ctx.actionResult)) return
+  if (hasActionError(ctx.actionResult) && ctx.actionResult?.result?.didMutate !== true) return
   await applySwitchBranchPostEffect({
     contextualPayload: ctx.contextualPayload,
     queryClient: ctx.queryClient,
     loadProjectGitState: ctx.loadProjectGitState,
     loadProjectThreads: ctx.loadProjectThreads,
+    setProjectGitState: ctx.setProjectGitState,
+  })
+}
+
+async function handleCreateWorktreeEffects(ctx: PostEffectsContext) {
+  if (hasActionError(ctx.actionResult) && ctx.actionResult?.result?.didMutate !== true) return
+  await applyCreateWorktreePostEffect({
+    contextualPayload: ctx.contextualPayload,
+    actionResult: ctx.actionResult,
+    queryClient: ctx.queryClient,
+    loadProjectGitState: ctx.loadProjectGitState,
+    loadProjectThreads: ctx.loadProjectThreads,
+    refreshShellState: ctx.refreshShellState,
     setProjectGitState: ctx.setProjectGitState,
   })
 }
@@ -248,12 +262,18 @@ const postEffectHandlers: PostEffectHandler[] = [
     run: handleSwitchBranchEffects,
   },
   {
+    matches: (ctx) =>
+      ctx.action === 'workspace.create-worktree' || ctx.action === 'workspace.remove-worktree',
+    run: handleCreateWorktreeEffects,
+  },
+  {
     matches: (ctx) => ctx.action === 'workspace.diff-preferences',
     run: handleDiffPreferencesEffects,
   },
   { matches: (ctx) => ctx.action === 'workspace.commit', run: handleWorkspaceCommitEffects },
   {
-    matches: (ctx) => ctx.action === 'projects.import.apply',
+    matches: (ctx) =>
+      ctx.action === 'projects.import.apply' || ctx.action === 'workspace.set-worktree-directory',
     run: (ctx) => ctx.refreshShellState(),
   },
 ]

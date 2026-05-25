@@ -3,12 +3,16 @@ import type { ShellState } from '../../shared/desktop-contracts.ts'
 import { loadAppSettings, loadSidebarVisibleProjectIds } from '../app-settings/readers.ts'
 import { getComposerState } from '../pi-desktop-runtime.ts'
 import { loadPiSettings, loadPiThemeState } from '../pi-settings.ts'
+import { importProjects } from '../project-import.ts'
+import { emitDesktopEvent } from '../runtime/desktop-events.ts'
 import { invokeRuntimeHost } from '../runtime-host/client-bridge.ts'
 import { ensureProject, listProjects } from '../thread-state-db.ts'
 import { enrichProjectsWithResolvedIds, resolveProjectPathForComparison } from './project-paths.ts'
 import { scheduleShellIndexSync } from './shell-index.ts'
 
 type SessionStorage = { agentDir: string; sessionDir: string }
+
+let startupProjectMetadataRefresh: Promise<unknown> | null = null
 
 function getProjectNameQualifier(projectId: string) {
   const parentName = path.basename(path.dirname(projectId))
@@ -42,11 +46,22 @@ function getSessionStorage(cwd: string): Promise<SessionStorage> {
   return invokeRuntimeHost('getPiSessionStorage', { projectPath: cwd })
 }
 
+function scheduleStartupProjectMetadataRefresh() {
+  if (startupProjectMetadataRefresh) return
+  startupProjectMetadataRefresh = importProjects([])
+    .then(() => emitDesktopEvent({ type: 'shell-state-refresh' }))
+    .catch((error) => {
+      startupProjectMetadataRefresh = null
+      console.warn('Failed to refresh project metadata.', error)
+    })
+}
+
 export async function loadShellState(cwd: string): Promise<ShellState> {
   const { agentDir, sessionDir } = await getSessionStorage(cwd)
 
   ensureProject(cwd)
   scheduleShellIndexSync(cwd)
+  scheduleStartupProjectMetadataRefresh()
   const composer = await getComposerState({ projectId: cwd })
   const appSettings = loadAppSettings()
   const [piSettings, piTheme, resolvedCwd, projects] = await Promise.all([

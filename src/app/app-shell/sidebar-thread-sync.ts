@@ -1,4 +1,4 @@
-import { isLocalSessionPath } from '@howcode/shared/session-paths'
+import { getLocalDraftBranchName, isLocalSessionPath } from '@howcode/shared/session-paths'
 import type {
   ChatSidebarState,
   DesktopActionResult,
@@ -48,6 +48,7 @@ function buildSidebarThread(input: {
   id: string
   title: string
   sessionPath: string
+  branchName?: string | undefined | null
   running?: boolean
   lastModifiedMs?: number
 }): Thread {
@@ -57,6 +58,7 @@ function buildSidebarThread(input: {
     age: 'Now',
     lastModifiedMs: input.lastModifiedMs ?? Date.now(),
     sessionPath: input.sessionPath,
+    branchName: input.branchName ?? undefined,
     running: input.running,
   }
 }
@@ -161,6 +163,7 @@ export function applyOptimisticComposerThread({
     id: localFallback.threadId,
     title: 'New thread',
     sessionPath: localFallback.sessionPath,
+    branchName: getLocalDraftBranchName(localFallback.sessionPath),
     running: true,
   })
 
@@ -278,6 +281,7 @@ export function reconcileComposerThreadResult({
       id: resultThreadId,
       title: title ?? 'New thread',
       sessionPath: resultSessionPath,
+      branchName: getLocalDraftBranchName(submittedSessionPath),
     }),
     chatGroupId:
       workspaceState.activeView === 'chat'

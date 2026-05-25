@@ -24,7 +24,8 @@ import {
   deleteThreadRecordsBySessionPaths,
   hasProject,
   hasRunningProjectThread,
-  listProjectSessionPaths,
+  listProjectFamilyProjectIds,
+  listProjectFamilySessionPaths,
   renameProject,
   setProjectCollapsed,
   setProjectRepoOrigin,
@@ -73,8 +74,7 @@ async function removeDirectoryIfEmpty(directoryPath: string) {
   }
 }
 
-async function deleteProjectPiFiles(projectId: string) {
-  const sessionPaths = listProjectSessionPaths(projectId)
+async function deleteProjectPiFiles(projectId: string, sessionPaths: string[]) {
   const resolvedProjectId = path.resolve(projectId)
   const removableDirectories = new Set<string>()
   const deletedSessionPaths: string[] = []
@@ -120,15 +120,14 @@ async function deleteProjectPiFiles(projectId: string) {
   }
 }
 
-async function isBusyProjectDeletionTarget(projectId: string) {
-  if (hasRunningProjectThread(projectId)) {
-    return true
-  }
+async function isBusyProjectDeletionTarget(projectIds: string[]) {
+  if (projectIds.some((projectId) => hasRunningProjectThread(projectId))) return true
 
   const terminalSnapshots = await listTerminals()
+  const projectIdSet = new Set(projectIds)
   return terminalSnapshots.some(
     (snapshot) =>
-      snapshot.projectId === projectId &&
+      projectIdSet.has(snapshot.projectId) &&
       (snapshot.status === 'starting' || snapshot.status === 'running'),
   )
 }
@@ -163,23 +162,27 @@ function getProjectDeletionBlockedError(projectId: string) {
   return null
 }
 
-async function getAsyncProjectDeletionBlockedError(projectId: string) {
+async function getAsyncProjectDeletionBlockedError(projectId: string, projectFamilyIds: string[]) {
   if (await isProtectedProjectDeletionTarget(projectId, getDesktopWorkingDirectory())) {
     return 'Cannot delete the active shell project.'
   }
 
-  if (await isBusyProjectDeletionTarget(projectId)) {
+  if (await isBusyProjectDeletionTarget(projectFamilyIds)) {
     return 'Cannot delete a project while Pi or a terminal is still running in it.'
   }
 
   return null
 }
 
-async function deleteProjectWithFullClean(projectId: string, projectSessionPaths: string[]) {
+async function deleteProjectWithFullClean(
+  projectId: string,
+  projectSessionPaths: string[],
+  projectFamilyIds: string[],
+) {
   await rm(projectId, { recursive: true, force: true })
-  const cleanupResult = await deleteProjectPiFiles(projectId)
+  const cleanupResult = await deleteProjectPiFiles(projectId, projectSessionPaths)
   deleteArtifactsForConversations(projectSessionPaths)
-  deleteProject(projectId)
+  for (const familyProjectId of projectFamilyIds) deleteProject(familyProjectId)
   return cleanupResult.failedSessionPaths.length > 0
     ? handledAction({
         didMutate: true,
@@ -188,8 +191,12 @@ async function deleteProjectWithFullClean(projectId: string, projectSessionPaths
     : handledAction()
 }
 
-async function deleteProjectPiOnly(projectId: string) {
-  const cleanupResult = await deleteProjectPiFiles(projectId)
+async function deleteProjectPiOnly(
+  projectId: string,
+  projectSessionPaths: string[],
+  projectFamilyIds: string[],
+) {
+  const cleanupResult = await deleteProjectPiFiles(projectId, projectSessionPaths)
   if (cleanupResult.failedSessionPaths.length > 0) {
     deleteArtifactsForConversations(cleanupResult.deletedSessionPaths)
     deleteThreadRecordsBySessionPaths(cleanupResult.deletedSessionPaths)
@@ -203,7 +210,7 @@ async function deleteProjectPiOnly(projectId: string) {
   }
 
   deleteArtifactsForConversations(cleanupResult.deletedSessionPaths)
-  deleteProject(projectId)
+  for (const familyProjectId of projectFamilyIds) deleteProject(familyProjectId)
   return handledAction()
 }
 
@@ -214,14 +221,15 @@ async function removeProjectFromPayload(payload: AnyDesktopActionPayload) {
   const blockedError = getProjectDeletionBlockedError(projectId)
   if (blockedError) return handledAction({ error: blockedError })
 
-  const asyncBlockedError = await getAsyncProjectDeletionBlockedError(projectId)
+  const projectFamilyIds = listProjectFamilyProjectIds(projectId)
+  const asyncBlockedError = await getAsyncProjectDeletionBlockedError(projectId, projectFamilyIds)
   if (asyncBlockedError) return handledAction({ error: asyncBlockedError })
 
   const appSettings = loadAppSettings()
-  const projectSessionPaths = listProjectSessionPaths(projectId)
+  const projectSessionPaths = listProjectFamilySessionPaths(projectId)
   return appSettings.projectDeletionMode === 'full-clean'
-    ? await deleteProjectWithFullClean(projectId, projectSessionPaths)
-    : await deleteProjectPiOnly(projectId)
+    ? await deleteProjectWithFullClean(projectId, projectSessionPaths, projectFamilyIds)
+    : await deleteProjectPiOnly(projectId, projectSessionPaths, projectFamilyIds)
 }
 
 type ProjectActionHandler = (

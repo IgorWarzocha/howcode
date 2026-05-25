@@ -418,12 +418,6 @@ export function ComposerPromptSurface({
             onOpenGitOps={onOpenGitOps}
             onOpenTakeoverTerminal={onOpenTakeoverTerminal}
             onSelectBaseline={onSetDiffBaseline}
-            onSwitchBranch={(branchName) => {
-              void runComposerAction('workspace.switch-branch', {
-                projectId,
-                value: branchName,
-              })
-            }}
             onSelectModel={(availableModel) => {
               if (isConversationComposerView(activeView) && !persistedSessionPath) {
                 return runComposerAction(

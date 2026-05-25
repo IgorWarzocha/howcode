@@ -47,7 +47,6 @@ type ComposerGitOpsFooterProps = {
   onDiscardDiffComments: () => void
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
   onSetDiffRenderMode: (mode: ProjectDiffRenderMode) => void
-  onSwitchBranch?: ((branchName: string) => void) | undefined
   onSetRepoUrl: (repoUrl: string) => void
   onToggleIncludeUnstaged: () => void
   onToggleIncludeUntracked: () => void
@@ -74,7 +73,6 @@ export function ComposerGitOpsFooter({
   onDiscardDiffComments,
   onSetDiffBaseline,
   onSetDiffRenderMode,
-  onSwitchBranch,
   onSetRepoUrl,
   onToggleIncludeUnstaged,
   onToggleIncludeUntracked,
@@ -327,7 +325,6 @@ export function ComposerGitOpsFooter({
             projectGitState={projectGitState}
             selectedBaseline={diffBaseline}
             onSelectBaseline={onSetDiffBaseline}
-            onSwitchBranch={onSwitchBranch}
             includeUntracked={includeUntracked}
           />
         ) : null}

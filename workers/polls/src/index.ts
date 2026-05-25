@@ -223,10 +223,10 @@ export default {
 
     try {
       if (request.method === 'GET' && url.pathname === '/results') {
-        return handleResults(request, env, url)
+        return await handleResults(request, env, url)
       }
       if (request.method === 'POST' && url.pathname === '/vote') {
-        return handleVote(request, env)
+        return await handleVote(request, env)
       }
       return json(request, env, { error: 'Not found.' }, 404)
     } catch (error) {

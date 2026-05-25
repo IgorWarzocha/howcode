@@ -11,12 +11,21 @@ export {
   hasRunningProjectThread,
   listArchivedProjectThreads,
   listArchivedThreads,
+  listBranchSessionPaths,
+  listBranchThreadIds,
   listInboxThreads,
+  listProjectFamilyProjectIds,
+  listProjectFamilySessionPaths,
   listProjectSessionPaths,
   listProjects,
+  listProjectThreadIds,
   listProjectThreads,
 } from './thread-state-db/queries.ts'
 export type { SessionSummaryRecord } from './thread-state-db/types.ts'
+export type {
+  ProjectWorktreeMetadata,
+  ProjectWorktreeSource,
+} from './thread-state-db/writes.ts'
 export {
   addProjectUsageTotals,
   archiveProjectThreads,
@@ -27,10 +36,12 @@ export {
   clearReadInboxThreads,
   collapseAllProjects,
   deleteProject,
+  deleteProjectWorktreeMetadata,
   deleteThreadRecord,
   deleteThreadRecordsBySessionPaths,
   dismissInboxThread,
   ensureProject,
+  getProjectWorktreeDirectory,
   hideProject,
   markInboxThreadRead,
   renameProject,
@@ -39,6 +50,7 @@ export {
   setProjectCollapsed,
   setProjectGitOpsMode,
   setProjectRepoOrigin,
+  setProjectWorktreeDirectory,
   setSessionNativeExtensions,
   setThreadDiffPreferences,
   setThreadRunningState,
@@ -47,5 +59,6 @@ export {
   toggleThreadPinned,
   upsertInboxThreadMessage,
   upsertInboxThreadPrompt,
+  upsertProjectWorktree,
   upsertThreadSummary,
 } from './thread-state-db/writes.ts'

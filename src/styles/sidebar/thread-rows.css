@@ -178,6 +178,11 @@
   transition: opacity 150ms ease-out;
 }
 
+.sidebar-thread-meta-actions[data-action-count="1"] {
+  width: 1.5rem;
+  grid-template-columns: 1.5rem;
+}
+
 .sidebar-thread-row:hover .sidebar-thread-meta-actions,
 .sidebar-thread-row:focus-within .sidebar-thread-meta-actions {
   opacity: 1;

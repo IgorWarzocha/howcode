@@ -86,6 +86,24 @@
   min-height: 1.75rem;
 }
 
+.sidebar-project-work-project-actions-menu-meta {
+  color: var(--subtle);
+  font-size: var(--app-type-meta-size);
+}
+
+.sidebar-project-work-worktree-dir-item input {
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  outline: none;
+}
+
+.sidebar-project-work-worktree-dir-item button {
+  color: var(--accent);
+  font-size: var(--app-type-meta-size);
+}
+
 .sidebar-project-work-project-actions-menu-item[data-danger="true"]:hover,
 .sidebar-project-work-project-actions-menu-item[data-danger="true"]:focus-visible {
   color: var(--danger);
@@ -101,7 +119,6 @@
   gap: 0.125rem;
 }
 
-.sidebar-project-work-start-card,
 .sidebar-project-work-empty {
   display: grid;
   justify-items: start;
@@ -111,11 +128,6 @@
   padding: 0.75rem;
   color: var(--muted);
   font-size: var(--app-type-small-size);
-}
-
-.sidebar-project-work-start-card button {
-  color: var(--accent);
-  font-weight: 650;
 }
 
 .sidebar-project-work-history {

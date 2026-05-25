@@ -55,9 +55,18 @@ export function listProjects(cwd: string): Project[] {
           projects.repo_origin_url AS repoOriginUrl,
           projects.repo_origin_checked AS repoOriginChecked,
           projects.git_ops_mode AS gitOpsMode,
+          project_worktrees.root_cwd AS worktreeRootProjectId,
+          project_worktrees.branch_name AS worktreeBranchName,
+          project_worktrees.is_main AS worktreeIsMain,
+          project_worktrees.source AS worktreeSource,
+          project_worktree_settings.worktree_dir AS worktreeDirectory,
           COUNT(threads.id) AS threadCount,
           COALESCE(MAX(threads.last_modified_ms), 0) AS latestModifiedMs
         FROM projects
+        LEFT JOIN project_worktrees
+          ON project_worktrees.cwd = projects.cwd
+        LEFT JOIN project_worktree_settings
+          ON project_worktree_settings.root_cwd = COALESCE(project_worktrees.root_cwd, projects.cwd)
         LEFT JOIN threads
           ON threads.cwd = projects.cwd
           AND threads.archived = 0
@@ -73,7 +82,12 @@ export function listProjects(cwd: string): Project[] {
           projects.collapsed,
           projects.repo_origin_url,
           projects.repo_origin_checked,
-          projects.git_ops_mode
+          projects.git_ops_mode,
+          project_worktrees.root_cwd,
+          project_worktrees.branch_name,
+          project_worktrees.is_main,
+          project_worktrees.source,
+          project_worktree_settings.worktree_dir
         ORDER BY
           projects.pinned DESC,
           latestModifiedMs DESC,
@@ -346,6 +360,91 @@ export function listProjectSessionPaths(projectId: string) {
     .all(projectId) as ThreadPathRow[]
 
   return rows.map((row) => row.sessionPath)
+}
+
+export function listProjectFamilySessionPaths(projectId: string) {
+  const db = getThreadStateDatabase()
+  const rows = db
+    .prepare(
+      `
+        SELECT threads.session_path AS sessionPath
+        FROM threads
+        WHERE threads.cwd = ?
+          OR threads.cwd IN (
+            SELECT cwd
+            FROM project_worktrees
+            WHERE root_cwd = ? AND is_main = 0
+          )
+      `,
+    )
+    .all(projectId, projectId) as ThreadPathRow[]
+
+  return rows.map((row) => row.sessionPath)
+}
+
+export function listProjectFamilyProjectIds(projectId: string) {
+  const db = getThreadStateDatabase()
+  const rows = db
+    .prepare(
+      `
+        SELECT cwd AS id
+        FROM projects
+        WHERE cwd = ?
+          OR cwd IN (
+            SELECT cwd
+            FROM project_worktrees
+            WHERE root_cwd = ? AND is_main = 0
+          )
+      `,
+    )
+    .all(projectId, projectId) as { id: string }[]
+
+  return rows.map((row) => row.id)
+}
+
+export function listBranchSessionPaths(projectId: string, branchName: string) {
+  const db = getThreadStateDatabase()
+  const rows = db
+    .prepare(
+      `
+        SELECT session_path AS sessionPath
+        FROM threads
+        WHERE cwd = ? AND branch_name = ?
+      `,
+    )
+    .all(projectId, branchName) as ThreadPathRow[]
+
+  return rows.map((row) => row.sessionPath)
+}
+
+export function listBranchThreadIds(projectId: string, branchName: string) {
+  const db = getThreadStateDatabase()
+  const rows = db
+    .prepare(
+      `
+        SELECT id AS id, session_path AS sessionPath
+        FROM threads
+        WHERE cwd = ? AND branch_name = ?
+      `,
+    )
+    .all(projectId, branchName) as ThreadPathRow[]
+
+  return rows.map((row) => row.id).filter((id): id is string => typeof id === 'string')
+}
+
+export function listProjectThreadIds(projectId: string) {
+  const db = getThreadStateDatabase()
+  const rows = db
+    .prepare(
+      `
+        SELECT id AS id, session_path AS sessionPath
+        FROM threads
+        WHERE cwd = ?
+      `,
+    )
+    .all(projectId) as ThreadPathRow[]
+
+  return rows.map((row) => row.id).filter((id): id is string => typeof id === 'string')
 }
 
 export function getProjectStoredUsageTotals(projectId: string): ProjectUsageTotalsRow | null {

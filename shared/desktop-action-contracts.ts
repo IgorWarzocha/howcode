@@ -41,6 +41,8 @@ export type DesktopActionPayloadFields = {
   projectName?: string | undefined
   projectPath?: string | undefined
   parentPath?: string | undefined
+  worktreeDirectory?: string | undefined | null | undefined
+  worktreePath?: string | undefined | null | undefined
   createIfMissing?: boolean | undefined
   provider?: string | undefined
   queueId?: string | undefined
@@ -108,6 +110,7 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'devUpdateBranch'; value: boolean }
   | { key: 'betaUpdateBranch'; value: boolean }
   | { key: 'piTuiTakeover'; value: boolean }
+  | { key: 'hideSidebarSessionCounts'; value: boolean }
   | { key: 'hoverToFocus'; value: boolean }
   | { key: 'hoverToBlur'; value: boolean }
   | { key: 'keybindings'; value: AppSettings['keybindings'] }
@@ -196,6 +199,20 @@ export type DesktopActionPayloadMap = {
     projectId?: string | undefined | null | undefined
     branchName: string
   }
+  'workspace.create-worktree': {
+    projectId?: string | undefined | null | undefined
+    branchName: string
+    worktreeDirectory?: string | undefined | null | undefined
+  }
+  'workspace.remove-worktree': {
+    projectId?: string | undefined | null | undefined
+    branchName?: string | undefined | null | undefined
+    worktreePath: string
+  }
+  'workspace.set-worktree-directory': {
+    projectId?: string | undefined | null | undefined
+    worktreeDirectory: string
+  }
   'composer.model': {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined
@@ -274,6 +291,7 @@ export type DesktopActionResultData = {
   piSettings?: PiSettings
   previewed?: boolean | undefined
   projectId?: string | undefined
+  rootProjectId?: string | undefined
   projects?: ProjectImportCandidate[]
   pushed?: boolean | undefined
   pushFailed?: boolean | undefined

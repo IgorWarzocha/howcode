@@ -16,6 +16,11 @@ export type ProjectRow = {
   repoOriginUrl: string | null
   repoOriginChecked: number
   gitOpsMode: string | null
+  worktreeRootProjectId: string | null
+  worktreeBranchName: string | null
+  worktreeIsMain: number | null
+  worktreeSource: string | null
+  worktreeDirectory: string | null
 }
 
 export type ThreadRow = {
@@ -73,6 +78,7 @@ export type ArchivedThreadRow = {
 }
 
 export type ThreadPathRow = {
+  id?: string | undefined
   sessionPath: string
 }
 

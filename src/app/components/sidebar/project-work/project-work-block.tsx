@@ -7,7 +7,8 @@ import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import type { Project, Thread, View } from '../../../types'
 import { appToneSubtleClass, appTypeMetaClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { ProjectCompactBranchGroups, ProjectExpandedBranchGroups } from './branch-thread-groups'
+import { ProjectExpandedBranchGroups } from './branch-thread-groups'
+import { ProjectCompactBranchGroups } from './compact-branch-groups'
 import { NewThreadMenu } from './new-thread-menu'
 import { ProjectWorkActionsMenu } from './project-work-actions-menu'
 import { ProjectRenameField } from './project-work-fields'
@@ -22,7 +23,6 @@ import {
 
 function ProjectWorkBlockHeader({
   currentBranch,
-  dirtyMessage,
   expanded,
   project,
   onAction,
@@ -30,7 +30,6 @@ function ProjectWorkBlockHeader({
   onToggleExpanded,
 }: {
   currentBranch: string | null
-  dirtyMessage: string | null
   expanded: boolean
   project: Project
   onAction: DesktopActionInvoker
@@ -137,12 +136,7 @@ function ProjectWorkBlockHeader({
           />
         ) : null}
       </div>
-      <NewThreadMenu
-        currentBranch={currentBranch}
-        dirtyMessage={dirtyMessage}
-        onAction={onAction}
-        projectId={project.id}
-      />
+      <NewThreadMenu currentBranch={currentBranch} onAction={onAction} projectId={project.id} />
     </div>
   )
 }
@@ -152,8 +146,8 @@ export function ProjectWorkSummaryBlock({
   branchGroups,
   collapsedBranchIds,
   currentBranch,
-  dirtyMessage,
   expanded,
+  hideSessionCounts,
   olderThreadCount,
   project,
   pruneConfirmBranchId,
@@ -179,8 +173,8 @@ export function ProjectWorkSummaryBlock({
   branchGroups: BranchThreadGroup[]
   collapsedBranchIds: Record<string, boolean>
   currentBranch: string | null
-  dirtyMessage: string | null
   expanded: boolean
+  hideSessionCounts: boolean
   olderThreadCount: number
   project: Project
   pruneConfirmBranchId: string | null
@@ -220,6 +214,9 @@ export function ProjectWorkSummaryBlock({
     searchQuery,
   )
   const filteredBranchGroups = filterBranchGroups(branchGroups, searchQuery)
+  const compactWorktreeGroups = filteredBranchGroups.filter(
+    (group) => group.worktree && !group.current,
+  )
   const searchExpanded = normalizedSearchQuery.length > 0
   const unassignedExpanded = searchExpanded || !unassignedCollapsed
 
@@ -236,7 +233,6 @@ export function ProjectWorkSummaryBlock({
     <section className="sidebar-project-work-project-block">
       <ProjectWorkBlockHeader
         currentBranch={currentBranch}
-        dirtyMessage={dirtyMessage}
         expanded={expanded}
         project={project}
         onAction={onAction}
@@ -271,7 +267,9 @@ export function ProjectWorkSummaryBlock({
           >
             <Archive size={14} />
             <span>Past sessions</span>
-            <span className={cn(appTypeMetaClass, appToneSubtleClass)}>{olderThreadCount}</span>
+            {hideSessionCounts ? null : (
+              <span className={cn(appTypeMetaClass, appToneSubtleClass)}>{olderThreadCount}</span>
+            )}
           </button>
         ) : null}
       </div>
@@ -282,6 +280,7 @@ export function ProjectWorkSummaryBlock({
           branchGroups={filteredBranchGroups}
           collapsedBranchIds={collapsedBranchIds}
           currentBranch={currentBranch}
+          hideSessionCounts={hideSessionCounts}
           normalizedSearchQuery={normalizedSearchQuery}
           project={project}
           pruneConfirmBranchId={pruneConfirmBranchId}
@@ -298,17 +297,26 @@ export function ProjectWorkSummaryBlock({
         <ProjectCompactBranchGroups
           activeView={activeView}
           branchThreads={branchThreads}
+          collapsedBranchIds={collapsedBranchIds}
           currentBranch={currentBranch}
           currentBranchExpanded={
             normalizedSearchQuery.length > 0 ||
             !(collapsedBranchIds[`${project.id}:current-branch`] ?? false)
           }
+          hideSessionCounts={hideSessionCounts}
+          normalizedSearchQuery={normalizedSearchQuery}
           project={project}
+          pruneConfirmBranchId={pruneConfirmBranchId}
           selectedThreadId={selectedThreadId}
+          switchErrorBranchId={switchErrorBranchId}
           terminalRunningSessionPaths={terminalRunningSessionPaths}
           unassignedExpanded={unassignedExpanded}
           unassignedThreads={unassignedThreads}
+          worktreeGroups={compactWorktreeGroups}
           onAction={onAction}
+          onSetCollapsedBranchIds={onSetCollapsedBranchIds}
+          onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
+          onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
           onThreadOpen={onThreadOpen}
           onToggleCurrentBranch={() =>
             onSetCollapsedBranchIds((current) => ({

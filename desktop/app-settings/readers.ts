@@ -23,6 +23,7 @@ import {
   gitDiffIncludeUntrackedDefaultKey,
   gitDiffRenderModeDefaultKey,
   gitOpsDefaultModeKey,
+  hideSidebarSessionCountsKey,
   hoverToBlurKey,
   hoverToFocusKey,
   howcodeNativeAskQuestionsKey,
@@ -104,6 +105,7 @@ function loadProjectUiSettings(value: (key: string) => string | undefined) {
     initializeGitOnProjectCreate:
       parseBooleanPreference(value(initializeGitOnProjectCreateKey)) ?? false,
     projectDashboardEnabled: parseBooleanPreference(value(projectDashboardEnabledKey)) ?? true,
+    hideSidebarSessionCounts: parseBooleanPreference(value(hideSidebarSessionCountsKey)) ?? false,
   }
 }
 

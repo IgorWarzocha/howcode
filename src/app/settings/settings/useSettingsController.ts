@@ -330,6 +330,11 @@ export function useSettingsController({
         key: 'piTuiTakeover',
         value: !appSettings.piTuiTakeover,
       }),
+    toggleHideSidebarSessionCounts: () =>
+      void onAction('settings.update', {
+        key: 'hideSidebarSessionCounts',
+        value: !appSettings.hideSidebarSessionCounts,
+      }),
     toggleHowcodeNativeAskQuestions: () =>
       void onAction('settings.update', {
         key: 'howcodeNativeAskQuestions',

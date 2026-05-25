@@ -2,6 +2,7 @@ import type { ProjectGitState } from '../../../desktop/types'
 import type { Project, Thread } from '../../../types'
 
 const OLD_THREAD_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000
+const pathSeparatorPattern = /[\\/]/
 export const UNASSIGNED_BRANCH_GROUP_ID = '__unassigned__'
 export function sameStringList(a: readonly string[], b: readonly string[]) {
   return a.length === b.length && a.every((value, index) => value === b[index])
@@ -80,18 +81,44 @@ export type BranchThreadGroup = {
   threads: Thread[]
   current: boolean
   unassigned: boolean
+  worktree: boolean
+  worktreePath?: string | undefined
+  worktreeBranchName?: string | undefined
 }
 
-export function getDirtyWorktreeMessage(
-  projectGitState: ProjectGitState | null,
-  projectId: string,
-) {
-  if (projectGitState?.projectId !== projectId || !projectGitState.isGitRepo) return null
-  const dirtyFileCount =
-    projectGitState.stagedFileCount +
-    projectGitState.unstagedFileCount +
-    projectGitState.untrackedFileCount
-  return dirtyFileCount > 0 ? 'Commit first' : null
+export type WorktreeBranch = {
+  label: string
+  path: string
+  branchName?: string | undefined
+}
+
+function buildWorktreeByBranch(worktreeBranches: readonly WorktreeBranch[]) {
+  const worktreeByBranch = new Map<string, WorktreeBranch>()
+  for (const worktreeBranch of worktreeBranches) {
+    const branchName = (worktreeBranch.branchName ?? worktreeBranch.label).trim()
+    if (!branchName) continue
+    worktreeByBranch.set(branchName, worktreeBranch)
+  }
+  return worktreeByBranch
+}
+
+function createBranchThreadGroup(input: {
+  branchName: string
+  current: boolean
+  groupedThreads: ReadonlyMap<string, Thread[]>
+  worktreeByBranch: ReadonlyMap<string, WorktreeBranch>
+}): BranchThreadGroup {
+  const worktree = input.worktreeByBranch.get(input.branchName)
+  return {
+    id: input.branchName,
+    label: input.branchName,
+    threads: sortThreads(input.groupedThreads.get(input.branchName) ?? []),
+    current: input.current,
+    unassigned: false,
+    worktree: worktree !== undefined,
+    worktreePath: worktree?.path,
+    worktreeBranchName: worktree?.branchName,
+  }
 }
 
 function getThreadSortValue(thread: Thread) {
@@ -130,6 +157,7 @@ export function buildBranchGroups(
   threads: Thread[],
   currentBranch: string | null,
   repositoryBranches: readonly string[],
+  worktreeBranches: readonly WorktreeBranch[] = [],
 ): BranchThreadGroup[] {
   const groupedThreads = new Map<string, Thread[]>()
   const unassignedThreads: Thread[] = []
@@ -154,27 +182,35 @@ export function buildBranchGroups(
   for (const branchName of groupedThreads.keys()) branchNames.add(branchName)
   if (currentBranch) branchNames.add(currentBranch)
 
+  const worktreeByBranch = buildWorktreeByBranch(worktreeBranches)
+  for (const branchName of worktreeByBranch.keys()) branchNames.add(branchName)
+
   const groups: BranchThreadGroup[] = []
   if (currentBranch && branchNames.has(currentBranch)) {
-    groups.push({
-      id: currentBranch,
-      label: currentBranch,
-      threads: sortThreads(groupedThreads.get(currentBranch) ?? []),
-      current: true,
-      unassigned: false,
-    })
+    groups.push(
+      createBranchThreadGroup({
+        branchName: currentBranch,
+        current: true,
+        groupedThreads,
+        worktreeByBranch,
+      }),
+    )
     branchNames.delete(currentBranch)
   }
 
   const otherBranchGroups = [...branchNames]
-    .map((branchName) => ({
-      id: branchName,
-      label: branchName,
-      threads: sortThreads(groupedThreads.get(branchName) ?? []),
-      current: false,
-      unassigned: false,
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label))
+    .map((branchName) =>
+      createBranchThreadGroup({
+        branchName,
+        current: false,
+        groupedThreads,
+        worktreeByBranch,
+      }),
+    )
+    .sort((a, b) => {
+      if (a.worktree !== b.worktree) return a.worktree ? -1 : 1
+      return a.label.localeCompare(b.label)
+    })
 
   groups.push(...otherBranchGroups)
 
@@ -185,6 +221,7 @@ export function buildBranchGroups(
       threads: sortThreads(unassignedThreads),
       current: false,
       unassigned: true,
+      worktree: false,
     })
   }
 
@@ -195,6 +232,7 @@ export function buildBranchGroups(
       threads: [],
       current: false,
       unassigned: true,
+      worktree: false,
     })
   }
 
@@ -246,6 +284,47 @@ export function getRepositoryBranchesForProject(
 ) {
   const gitState = getProjectGitStateForSidebar(project.id, projectGitState, gitStatesByProjectId)
   return gitState?.isGitRepo ? gitState.branches : []
+}
+
+export function getWorktreeBranchesForProject(
+  project: Project,
+  projectGitState: ProjectGitState | null,
+  gitStatesByProjectId: ReadonlyMap<string, ProjectGitState | null>,
+): WorktreeBranch[] {
+  if (project.worktree && !project.worktree.isMain) return []
+
+  const gitState = getProjectGitStateForSidebar(project.id, projectGitState, gitStatesByProjectId)
+  if (!gitState?.isGitRepo) return []
+  const rootProjectId = project.worktree?.rootProjectId ?? project.id
+
+  return gitState.worktrees
+    .filter((worktree) => worktree.path !== project.id && worktree.path !== rootProjectId)
+    .map((worktree) => ({
+      label:
+        worktree.branch ??
+        worktree.path.split(pathSeparatorPattern).filter(Boolean).at(-1) ??
+        worktree.path,
+      path: worktree.path,
+      branchName: worktree.branch ?? undefined,
+    }))
+}
+
+export function getWorktreeProjectsForRoot(project: Project, projects: readonly Project[]) {
+  return projects.filter(
+    (candidate) =>
+      candidate.id !== project.id &&
+      candidate.worktree?.rootProjectId === project.id &&
+      candidate.worktree.isMain === false,
+  )
+}
+
+export function getThreadsForProjectWorktreeRows(project: Project, projects: readonly Project[]) {
+  return getWorktreeProjectsForRoot(project, projects).flatMap((worktreeProject) =>
+    worktreeProject.threads.map((thread) => ({
+      ...thread,
+      branchName: thread.branchName ?? worktreeProject.worktree?.branchName ?? undefined,
+    })),
+  )
 }
 
 export function filterThreadsForCurrentBranch(

@@ -1,4 +1,3 @@
-// Keep this visually in sync with ../branch-switch-popover.tsx; these popovers are one UI family.
 import type { useQuery } from '@tanstack/react-query'
 import { Search } from 'lucide-react'
 import type { RefObject } from 'react'
@@ -14,7 +13,13 @@ import {
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { BaselineOption, baselineOptions, CommitOption } from '../composer-diff-baseline-options'
-import type { BranchSelectorPanelPosition } from './branch-selector-popover'
+
+type BaselineSelectorPanelPosition = {
+  left: number
+  bottom: number
+  width: number
+  maxHeight: number
+}
 
 export function BaselineSelectorPortal({
   commitsQuery,
@@ -33,7 +38,7 @@ export function BaselineSelectorPortal({
   commitsQuery: ReturnType<typeof useQuery<ProjectCommitEntry[]>>
   onSelectBaseline: (baseline: ProjectDiffBaseline) => void
   panelId: string
-  panelPosition: BranchSelectorPanelPosition
+  panelPosition: BaselineSelectorPanelPosition
   panelRef: RefObject<HTMLDivElement | null>
   positionReady: boolean
   searchQuery: string

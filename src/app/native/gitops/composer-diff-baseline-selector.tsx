@@ -25,7 +25,6 @@ import { cn } from '../../utils/cn'
 import { getBaselineCounts, matchesCommitSearch } from './composer-diff-baseline-options'
 import { getDiffBaselineLabel, getDiffBaselinePrefix } from './diff-baseline'
 import { BaselineSelectorPortal } from './diff-baseline-selector/baseline-selector-popover'
-import { ComposerBranchSelectorPopover } from './diff-baseline-selector/branch-selector-popover'
 import { formatGitCount } from './git-ops'
 
 type ComposerDiffBaselineSelectorProps = {
@@ -36,69 +35,38 @@ type ComposerDiffBaselineSelectorProps = {
   selectedBaseline: ProjectDiffBaseline
   includeUntracked?: boolean
   onSelectBaseline: (baseline: ProjectDiffBaseline) => void
-  onSwitchBranch?: ((branchName: string) => void) | undefined
 }
 
 function useComposerBaselinePopoverControls({
   activeAnchorRef,
-  branchSwitchOpen,
-  canSwitchBranch,
   open,
-  setBranchSwitchInput,
-  setBranchSwitchOpen,
   setOpen,
 }: {
   activeAnchorRef: RefObject<BaselineAnchorKind>
-  branchSwitchOpen: boolean
-  canSwitchBranch: boolean
   open: boolean
-  setBranchSwitchInput: (input: string) => void
-  setBranchSwitchOpen: (open: boolean | ((current: boolean) => boolean)) => void
   setOpen: (open: boolean | ((current: boolean) => boolean)) => void
 }) {
   const closePopover = () => setOpen(false)
   const openBaselinePopover = (anchor: 'summary' | 'branch' | 'compact') => {
     notifyComposerPopoverOpened('diff-baseline')
     activeAnchorRef.current = anchor
-    setBranchSwitchOpen(false)
     setOpen(true)
   }
   const toggleBaselinePopover = (anchor: 'summary' | 'branch' | 'compact') => {
     activeAnchorRef.current = anchor
-    setBranchSwitchOpen(false)
     setOpen((current) => {
       if (current) return false
       notifyComposerPopoverOpened('diff-baseline')
       return true
     })
   }
-  const openBranchSwitchPopover = () => {
-    if (!canSwitchBranch) {
-      openBaselinePopover('branch')
-      return
-    }
-
-    activeAnchorRef.current = 'branch'
-    setOpen(false)
-    setBranchSwitchOpen((current) => {
-      if (current) return false
-      notifyComposerPopoverOpened('diff-baseline')
-      setBranchSwitchInput('')
-      return true
-    })
-  }
   const previewBaselinePopover = (anchor: 'summary' | 'branch') => {
-    ;(open || branchSwitchOpen) && openBaselinePopover(anchor)
-  }
-  const previewBranchSwitchPopover = () => {
-    ;(open || branchSwitchOpen) && openBranchSwitchPopover()
+    open && openBaselinePopover(anchor)
   }
 
   return {
     closePopover,
-    openBranchSwitchPopover,
     previewBaselinePopover,
-    previewBranchSwitchPopover,
     toggleBaselinePopover,
   }
 }
@@ -254,36 +222,16 @@ function BaselineSummaryButton({
 
 function BaselineBranchButton({
   branchLabel,
-  branches,
   branchAnchorRef,
-  branchSwitchPanelRef,
-  branchSwitchInputRef,
-  branchSwitchInput,
-  branchSwitchOpen,
   open,
   panelId,
-  panelPosition,
-  positionReady,
   onOpen,
   onPreview,
-  onSetBranchSwitchInput,
-  onSetBranchSwitchOpen,
-  onSwitchBranch,
 }: {
   branchAnchorRef: RefObject<HTMLButtonElement | null>
-  branchSwitchPanelRef: RefObject<HTMLDivElement | null>
-  branchSwitchInputRef: RefObject<HTMLInputElement | null>
   branchLabel: string
-  branches: readonly string[]
-  branchSwitchInput: string
-  branchSwitchOpen: boolean
   onOpen: () => void
   onPreview: () => void
-  panelPosition: { left: number; bottom: number; width: number; maxHeight: number }
-  positionReady: boolean
-  onSetBranchSwitchInput: (value: string) => void
-  onSetBranchSwitchOpen: (open: boolean) => void
-  onSwitchBranch?: ((branchName: string) => void) | undefined
   open: boolean
   panelId: string
 }) {
@@ -293,11 +241,11 @@ function BaselineBranchButton({
         ref={branchAnchorRef}
         type="button"
         aria-haspopup="dialog"
-        aria-expanded={open || branchSwitchOpen}
+        aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         className={cn(
           'composer-branch-chip composer-footer-text pointer-events-auto relative z-20 inline-flex h-7 max-w-[12rem] cursor-pointer select-none items-center rounded-lg px-2.5 py-0 text-[color:var(--muted)] transition-colors duration-150 hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
-          (open || branchSwitchOpen) && 'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
+          open && 'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
         )}
         onPointerDownCapture={(event) => {
           event.preventDefault()
@@ -308,21 +256,6 @@ function BaselineBranchButton({
       >
         <span className="truncate">{branchLabel}</span>
       </button>
-      {branchSwitchOpen && onSwitchBranch ? (
-        <ComposerBranchSelectorPopover
-          branchLabel={branchLabel}
-          branches={branches}
-          branchSwitchInput={branchSwitchInput}
-          inputRef={branchSwitchInputRef}
-          panelId={panelId}
-          panelPosition={panelPosition}
-          panelRef={branchSwitchPanelRef}
-          positionReady={positionReady}
-          onSetBranchSwitchInput={onSetBranchSwitchInput}
-          onSetBranchSwitchOpen={onSetBranchSwitchOpen}
-          onSwitchBranch={onSwitchBranch}
-        />
-      ) : null}
     </span>
   )
 }
@@ -334,18 +267,13 @@ export function ComposerDiffBaselineSelector({
   branch,
   selectedBaseline,
   onSelectBaseline,
-  onSwitchBranch,
   includeUntracked = false,
 }: ComposerDiffBaselineSelectorProps) {
   const [open, setOpen] = useState(false)
-  const [branchSwitchOpen, setBranchSwitchOpen] = useState(false)
-  const [branchSwitchInput, setBranchSwitchInput] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const panelId = useId()
   const anchorRef = useRef<HTMLButtonElement>(null)
   const branchAnchorRef = useRef<HTMLButtonElement>(null)
-  const branchSwitchPanelRef = useRef<HTMLDivElement>(null)
-  const branchSwitchInputRef = useRef<HTMLInputElement>(null)
   const compactAnchorRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const activeAnchorRef = useRef<BaselineAnchorKind>('summary')
@@ -354,7 +282,6 @@ export function ComposerDiffBaselineSelector({
     ignoreSource: 'diff-baseline',
     onDismiss: () => {
       setOpen(false)
-      setBranchSwitchOpen(false)
     },
   })
 
@@ -369,37 +296,20 @@ export function ComposerDiffBaselineSelector({
     })
   const baselinePrefix = getDiffBaselinePrefix(selectedBaseline)
 
-  const {
-    closePopover,
-    openBranchSwitchPopover,
-    previewBaselinePopover,
-    previewBranchSwitchPopover,
-    toggleBaselinePopover,
-  } = useComposerBaselinePopoverControls({
-    activeAnchorRef,
-    branchSwitchOpen,
-    canSwitchBranch: Boolean(onSwitchBranch),
-    open,
-    setBranchSwitchInput,
-    setBranchSwitchOpen,
-    setOpen,
-  })
+  const { closePopover, previewBaselinePopover, toggleBaselinePopover } =
+    useComposerBaselinePopoverControls({
+      activeAnchorRef,
+      open,
+      setOpen,
+    })
 
   useDismissibleLayer({
-    open: open || branchSwitchOpen,
+    open,
     onDismiss: () => {
       closePopover()
-      setBranchSwitchOpen(false)
     },
-    refs: [anchorRef, branchAnchorRef, branchSwitchPanelRef, compactAnchorRef, panelRef],
+    refs: [anchorRef, branchAnchorRef, compactAnchorRef, panelRef],
   })
-
-  useEffect(() => {
-    if (!branchSwitchOpen) return
-    window.requestAnimationFrame(() => {
-      branchSwitchInputRef.current?.focus()
-    })
-  }, [branchSwitchOpen])
 
   useEffect(() => {
     if (!open) {
@@ -413,7 +323,7 @@ export function ComposerDiffBaselineSelector({
     branchAnchorRef,
     compactAnchorRef,
     composerPanelRef,
-    open: open || branchSwitchOpen,
+    open,
   })
 
   const fileCountLabel = counts ? formatGitCount(counts.fileCount) : '…'
@@ -439,21 +349,11 @@ export function ComposerDiffBaselineSelector({
       {showBranchChip ? (
         <BaselineBranchButton
           branchAnchorRef={branchAnchorRef}
-          branchSwitchInputRef={branchSwitchInputRef}
-          branchSwitchInput={branchSwitchInput}
-          branchSwitchOpen={branchSwitchOpen}
-          branchSwitchPanelRef={branchSwitchPanelRef}
-          branches={projectGitState?.branches ?? []}
           branchLabel={branchLabel}
           open={open}
           panelId={panelId}
-          panelPosition={panelPosition}
-          positionReady={positionReady}
-          onOpen={openBranchSwitchPopover}
-          onPreview={previewBranchSwitchPopover}
-          onSetBranchSwitchInput={setBranchSwitchInput}
-          onSetBranchSwitchOpen={setBranchSwitchOpen}
-          onSwitchBranch={onSwitchBranch}
+          onOpen={() => toggleBaselinePopover('branch')}
+          onPreview={() => previewBaselinePopover('branch')}
         />
       ) : null}
       <button

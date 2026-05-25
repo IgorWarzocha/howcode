@@ -34,6 +34,7 @@ import {
   gitDiffIncludeUntrackedDefaultKey,
   gitDiffRenderModeDefaultKey,
   gitOpsDefaultModeKey,
+  hideSidebarSessionCountsKey,
   hoverToBlurKey,
   hoverToFocusKey,
   howcodeNativeAskQuestionsKey,
@@ -299,6 +300,15 @@ export function setDevUpdateBranch(enabled: boolean) {
 
 export function setPiTuiTakeover(enabled: boolean) {
   writeAppPreference(piTuiTakeoverKey, JSON.stringify(enabled))
+}
+
+export function setHideSidebarSessionCounts(enabled: boolean) {
+  if (!enabled) {
+    deleteAppPreference(hideSidebarSessionCountsKey)
+    return
+  }
+
+  writeAppPreference(hideSidebarSessionCountsKey, JSON.stringify(true))
 }
 
 export function setHoverToFocus(enabled: boolean) {

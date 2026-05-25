@@ -1,5 +1,5 @@
 const LOCAL_SESSION_PREFIX = 'local://'
-const localSessionPathPattern = /^local:\/\/([^/]+)\/[^?]+(?:\?chatGroupId=([^&]+))?$/
+const localSessionPathPattern = /^local:\/\/([^/]+)\/[^?]+(?:\?(.+))?$/
 
 function buildLocalSessionToken() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -22,16 +22,17 @@ function getLocalDraftParts(sessionPath: string | null | undefined) {
     return null
   }
 
-  const [, encodedProjectId = '', encodedChatGroupId = ''] =
-    sessionPath.match(localSessionPathPattern) ?? []
+  const [, encodedProjectId = '', query = ''] = sessionPath.match(localSessionPathPattern) ?? []
   if (encodedProjectId.length === 0) {
     return null
   }
 
   try {
+    const params = new URLSearchParams(query)
     return {
       projectId: decodeURIComponent(encodedProjectId),
-      chatGroupId: encodedChatGroupId ? decodeURIComponent(encodedChatGroupId) : null,
+      chatGroupId: params.get('chatGroupId'),
+      branchName: params.get('branchName'),
     }
   } catch {
     return null
@@ -46,19 +47,27 @@ export function getLocalDraftChatGroupId(sessionPath: string | null | undefined)
   return getLocalDraftParts(sessionPath)?.chatGroupId ?? null
 }
 
+export function getLocalDraftBranchName(sessionPath: string | null | undefined) {
+  return getLocalDraftParts(sessionPath)?.branchName ?? null
+}
+
 export function createLocalThreadDraft(
   projectId: string,
   token = buildLocalSessionToken(),
-  options: { chatGroupId?: string | undefined | null | undefined } = {},
+  options: {
+    chatGroupId?: string | undefined | null | undefined
+    branchName?: string | undefined | null | undefined
+  } = {},
 ) {
   const encodedProjectId = encodeURIComponent(projectId)
-  const chatGroupSuffix = options.chatGroupId
-    ? `?chatGroupId=${encodeURIComponent(options.chatGroupId)}`
-    : ''
+  const params = new URLSearchParams()
+  if (options.chatGroupId) params.set('chatGroupId', options.chatGroupId)
+  if (options.branchName) params.set('branchName', options.branchName)
+  const suffix = params.size > 0 ? `?${params.toString()}` : ''
 
   return {
     projectId,
     threadId: `local-thread-${token}`,
-    sessionPath: `${LOCAL_SESSION_PREFIX}${encodedProjectId}/${token}${chatGroupSuffix}`,
+    sessionPath: `${LOCAL_SESSION_PREFIX}${encodedProjectId}/${token}${suffix}`,
   }
 }

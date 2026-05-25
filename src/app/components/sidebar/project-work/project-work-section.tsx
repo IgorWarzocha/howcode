@@ -15,12 +15,13 @@ import {
   buildBranchGroups,
   filterBranchGroups,
   getCurrentBranchForProject,
-  getDirtyWorktreeMessage,
   getDisplayableProjects,
-  getProjectGitStateForSidebar,
   getProjectScopeLabel,
   getRepositoryBranchesForProject,
+  getThreadsForProjectWorktreeRows,
   getVisibleProjectIds,
+  getWorktreeBranchesForProject,
+  getWorktreeProjectsForRoot,
   orderProjectsForScopeSelector,
   sameStringList,
   UNASSIGNED_BRANCH_GROUP_ID,
@@ -158,11 +159,17 @@ export function ProjectWorkSection({
   }, [gitStateQueries, projectGitState, visibleProjects])
 
   useEffect(() => {
+    const projectsToLoad = new Map(visibleProjects.map((project) => [project.id, project]))
     for (const project of visibleProjects) {
+      for (const worktreeProject of getWorktreeProjectsForRoot(project, displayableProjects)) {
+        projectsToLoad.set(worktreeProject.id, worktreeProject)
+      }
+    }
+    for (const project of projectsToLoad.values()) {
       if (project.threadsLoaded) continue
       void onLoadProjectThreads(project.id, { chat: false })
     }
-  }, [onLoadProjectThreads, visibleProjects])
+  }, [displayableProjects, onLoadProjectThreads, visibleProjects])
 
   const focusProject = (projectId: string) => {
     onProjectSelect(projectId)
@@ -243,10 +250,16 @@ export function ProjectWorkSection({
     projectGitState,
     gitStatesByProjectId,
   )
-  const branchGroups = buildBranchGroups(activeThreads, currentBranch, repositoryBranches)
-  const dirtyWorktreeMessage = getDirtyWorktreeMessage(
-    getProjectGitStateForSidebar(contentProject.id, projectGitState, gitStatesByProjectId),
-    contentProject.id,
+  const worktreeBranches = getWorktreeBranchesForProject(
+    contentProject,
+    projectGitState,
+    gitStatesByProjectId,
+  )
+  const branchGroups = buildBranchGroups(
+    [...activeThreads, ...getThreadsForProjectWorktreeRows(contentProject, displayableProjects)],
+    currentBranch,
+    repositoryBranches,
+    worktreeBranches,
   )
   const normalizedSearchQuery = searchQuery.trim().toLowerCase()
   const visibleBranchGroups = filterBranchGroups(branchGroups, searchQuery)
@@ -292,6 +305,7 @@ export function ProjectWorkSection({
       ) : multiProjectMode ? (
         <MultiProjectWorkContent
           activeView={activeView}
+          allProjects={displayableProjects}
           collapsedBranchIds={collapsedBranchIds}
           gitStatesByProjectId={gitStatesByProjectId}
           projectGitState={projectGitState}
@@ -299,6 +313,7 @@ export function ProjectWorkSection({
           searchQuery={searchQuery}
           selectedProjectId={selectedProjectId}
           selectedThreadId={selectedThreadId}
+          hideSessionCounts={appSettings.hideSidebarSessionCounts}
           terminalRunningSessionPaths={terminalRunningSessionPaths}
           visibleProjects={visibleProjects}
           onAction={onAction}
@@ -321,7 +336,7 @@ export function ProjectWorkSection({
           branchGroups={visibleBranchGroups}
           collapsedBranchIds={collapsedBranchIds}
           currentBranch={currentBranch}
-          dirtyWorktreeMessage={dirtyWorktreeMessage}
+          hideSessionCounts={appSettings.hideSidebarSessionCounts}
           normalizedSearchQuery={normalizedSearchQuery}
           olderThreadCount={olderThreads.length}
           project={contentProject}
@@ -333,6 +348,7 @@ export function ProjectWorkSection({
           switchErrorBranchId={switchErrorBranchId}
           terminalRunningSessionPaths={terminalRunningSessionPaths}
           onAction={onAction}
+          onFocusProject={focusProject}
           onSearchQueryChange={setSearchQuery}
           onSetCollapsedBranchIds={setCollapsedBranchIds}
           onSetPruneConfirmBranchId={setPruneConfirmBranchId}

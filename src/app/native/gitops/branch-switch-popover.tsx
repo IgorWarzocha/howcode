@@ -1,16 +1,10 @@
-// Keep this visually in sync with diff-baseline-selector/baseline-selector-popover.tsx; these popovers are one UI family.
-import { Check, GitFork, GitPullRequestDraft } from 'lucide-react'
+import { Check } from 'lucide-react'
 import type { CSSProperties, ReactNode, RefObject } from 'react'
 import { PopoverPanel } from '../../common/popover'
-import {
-  getFeatureStatusBadgeClass,
-  getFeatureStatusDataAttributes,
-} from '../../features/feature-status'
 import {
   appToneMutedClass,
   appToneTextClass,
   appTypeControlClass,
-  appTypeMetaClass,
   appTypeSmallClass,
   composerPopoverInputClass,
   composerPopoverOptionClass,
@@ -119,20 +113,6 @@ export function BranchSwitchPopover({
         className={composerPopoverInputClass}
         placeholder="Search branches"
       />
-      <MockBranchPanel
-        featureId="feature:composer.repo-selector"
-        icon={<GitFork size={14} />}
-        title="Repository"
-        description="Selector will live here instead of the removed top bar."
-        actions={['origin', 'Switch repo']}
-      />
-      <MockBranchPanel
-        featureId="feature:composer.worktrees"
-        icon={<GitPullRequestDraft size={14} />}
-        title="Worktrees"
-        description="Reserved for linked branch workspaces."
-        actions={['Create worktree', 'Open existing']}
-      />
     </>
   )
 
@@ -149,56 +129,12 @@ export function BranchSwitchPopover({
       aria-label="Branch selector"
       className={cn(
         composerPopoverPanelClass,
-        'grid min-w-0 max-w-full grid-rows-[auto_minmax(0,1fr)_auto_auto_auto] gap-1.5 overflow-hidden',
+        'grid min-w-0 max-w-full grid-rows-[auto_minmax(0,1fr)_auto] gap-1.5 overflow-hidden',
         className,
       )}
       style={style}
     >
       {content}
     </PopoverPanel>
-  )
-}
-
-function MockBranchPanel({
-  actions,
-  description,
-  featureId,
-  icon,
-  title,
-}: {
-  actions: readonly [string, string]
-  description: string
-  featureId: 'feature:composer.repo-selector' | 'feature:composer.worktrees'
-  icon: ReactNode
-  title: string
-}) {
-  return (
-    <div
-      className="grid min-h-[82px] min-w-0 max-w-full gap-2 overflow-hidden rounded-lg bg-[color:var(--surface-hover)] p-2.5"
-      {...getFeatureStatusDataAttributes(featureId)}
-    >
-      <div className="flex min-w-0 items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[color:var(--panel)] text-[color:var(--muted)]">
-            {icon}
-          </span>
-          <div className="min-w-0">
-            <div className={cn('truncate', appTypeControlClass, appToneTextClass)}>{title}</div>
-            <div className={cn('truncate', appTypeMetaClass, appToneMutedClass)}>{description}</div>
-          </div>
-        </div>
-        <span className={getFeatureStatusBadgeClass(featureId)}>Mock</span>
-      </div>
-      <div className={cn('grid min-w-0 grid-cols-2 gap-1.5', appTypeMetaClass, appToneMutedClass)}>
-        {actions.map((action) => (
-          <div
-            key={action}
-            className="min-w-0 truncate rounded-md bg-[color:var(--panel)] px-2 py-1.5"
-          >
-            {action}
-          </div>
-        ))}
-      </div>
-    </div>
   )
 }

@@ -24,6 +24,7 @@ export function ProjectWorkThreadRow({
   const isSelected =
     selectedThreadId === thread.id &&
     (activeView === 'thread' || activeView === 'project' || activeView === 'gitops')
+  const canAssignToCurrentBranch = Boolean(currentBranch && !thread.branchName?.trim())
 
   return (
     <ThreadRow
@@ -36,13 +37,7 @@ export function ProjectWorkThreadRow({
       unread={Boolean(thread.unread)}
       isSelected={isSelected}
       title={thread.title}
-      assignBranchLabel={
-        currentBranch && thread.branchName === currentBranch
-          ? `Unassign from ${currentBranch}`
-          : currentBranch
-            ? `Assign to ${currentBranch}`
-            : 'Clear assigned branch'
-      }
+      assignBranchLabel={canAssignToCurrentBranch ? `Assign to ${currentBranch}` : undefined}
       onDelete={() =>
         onAction('thread.delete', {
           projectId: project.id,
@@ -50,12 +45,15 @@ export function ProjectWorkThreadRow({
         })
       }
       confirmDelete
-      onAssignToBranch={() =>
-        onAction('thread.assign-branch', {
-          projectId: project.id,
-          threadId: thread.id,
-          branchName: currentBranch && thread.branchName === currentBranch ? null : currentBranch,
-        })
+      onAssignToBranch={
+        canAssignToCurrentBranch
+          ? () =>
+              onAction('thread.assign-branch', {
+                projectId: project.id,
+                threadId: thread.id,
+                branchName: currentBranch,
+              })
+          : undefined
       }
       onOpen={() => {
         if (!thread.sessionPath) return

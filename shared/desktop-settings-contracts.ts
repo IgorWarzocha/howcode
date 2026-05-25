@@ -48,6 +48,7 @@ export type AppSettings = {
   howcodeNativeAskQuestions: boolean
   devUpdateBranch: boolean
   piTuiTakeover: boolean
+  hideSidebarSessionCounts: boolean
   hoverToFocus: boolean
   hoverToBlur: boolean
   keybindings: KeybindingOverrides

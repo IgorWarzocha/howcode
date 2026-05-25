@@ -13,7 +13,7 @@ import type {
   ProjectDiffDefaultBaseline,
   ProjectDiffRenderMode,
 } from './desktop-contracts'
-import { getPersistedSessionPath } from './session-paths'
+import { getLocalDraftBranchName, getPersistedSessionPath } from './session-paths'
 
 const composerThinkingLevels = new Set<ComposerThinkingLevel>([
   'off',
@@ -35,6 +35,12 @@ export function getComposerRequest(payload: DesktopActionPayloadInput): Composer
         ? payload.composerMode
         : null,
     chatGroupId: typeof payload.chatGroupId === 'string' ? payload.chatGroupId : null,
+    branchName:
+      typeof payload.branchName === 'string'
+        ? payload.branchName
+        : getLocalDraftBranchName(
+            typeof payload.sessionPath === 'string' ? payload.sessionPath : null,
+          ),
   }
 }
 
@@ -61,6 +67,17 @@ export function getThreadIds(payload: DesktopActionPayloadInput) {
 export function getBranchName(payload: DesktopActionPayloadInput) {
   const branchName = typeof payload.branchName === 'string' ? payload.branchName.trim() : ''
   return branchName.length > 0 ? branchName : null
+}
+
+export function getWorktreeDirectory(payload: DesktopActionPayloadInput) {
+  const worktreeDirectory =
+    typeof payload.worktreeDirectory === 'string' ? payload.worktreeDirectory.trim() : ''
+  return worktreeDirectory.length > 0 ? worktreeDirectory : null
+}
+
+export function getWorktreePath(payload: DesktopActionPayloadInput) {
+  const worktreePath = typeof payload.worktreePath === 'string' ? payload.worktreePath.trim() : ''
+  return worktreePath.length > 0 ? worktreePath : null
 }
 
 export function getProjectName(payload: DesktopActionPayloadInput) {
@@ -288,6 +305,7 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === 'devUpdateBranch' ||
     payload.key === 'betaUpdateBranch' ||
     payload.key === 'piTuiTakeover' ||
+    payload.key === 'hideSidebarSessionCounts' ||
     payload.key === 'hoverToFocus' ||
     payload.key === 'hoverToBlur' ||
     payload.key === 'keybindings' ||

@@ -10,6 +10,15 @@
   border-right: 0;
   background: var(--sidebar);
   padding: 0.75rem 0 0.625rem;
+  user-select: none;
+}
+
+.sidebar-shell :is(button, [role="button"]):focus {
+  outline: none;
+}
+
+.sidebar-shell :is(input, textarea, [contenteditable="true"]) {
+  user-select: text;
 }
 
 .sidebar-shell-row {
