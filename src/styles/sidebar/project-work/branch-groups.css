@@ -90,11 +90,6 @@
   opacity: 1;
 }
 
-.sidebar-project-work-branch-actions[data-compact="true"] {
-  width: 1.5rem;
-  grid-template-columns: 1.5rem;
-}
-
 .sidebar-project-work-branch-heading:hover .sidebar-project-work-branch-actions,
 .sidebar-project-work-branch-heading:focus-within .sidebar-project-work-branch-actions {
   opacity: 1;

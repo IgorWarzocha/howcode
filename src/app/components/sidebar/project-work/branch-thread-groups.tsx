@@ -228,7 +228,6 @@ export function BranchThreadGroupSection({
         </span>
         <span
           className="sidebar-project-work-branch-actions"
-          data-compact={canManageBranch ? 'false' : 'true'}
           data-confirming={confirmingPrune ? 'true' : 'false'}
         >
           <BranchInlineActions
@@ -419,7 +418,7 @@ export function ProjectCompactBranchGroups({
           <span className="sidebar-project-work-branch-meta">
             <span className="sidebar-project-work-branch-count">{branchThreads.length}</span>
           </span>
-          <span className="sidebar-project-work-branch-actions" data-compact="true">
+          <span className="sidebar-project-work-branch-actions">
             <EmptyBranchStartAction
               blocked={false}
               currentBranch={currentBranch}
