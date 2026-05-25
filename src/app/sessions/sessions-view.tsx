@@ -170,12 +170,8 @@ function SessionRow({
 }) {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const deleteButtonRef = useRef<HTMLButtonElement>(null)
-  const assignedToCurrent = currentBranch && thread.branchName === currentBranch
-  const assignLabel = assignedToCurrent
-    ? `Unassign from ${currentBranch}`
-    : currentBranch
-      ? `Assign to ${currentBranch}`
-      : 'Clear assigned branch'
+  const canAssignToCurrentBranch = Boolean(currentBranch && !thread.branchName?.trim())
+  const assignLabel = currentBranch ? `Assign to ${currentBranch}` : null
 
   return (
     <div className="grid min-h-9 min-w-0 grid-cols-[1rem_minmax(0,1fr)_auto_auto_auto_auto] items-center gap-2 rounded-md px-2 text-sm text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]">
@@ -200,22 +196,24 @@ function SessionRow({
         <GitBranch size={12} className="shrink-0" />
         <span className="truncate">{thread.branchName ?? 'Unassigned'}</span>
       </span>
-      <Tooltip content={assignLabel}>
-        <button
-          type="button"
-          className={viewCloseButtonClass}
-          aria-label={`${assignLabel} for ${thread.title}`}
-          onClick={() => {
-            void onAction('thread.assign-branch', {
-              projectId: project?.id,
-              threadId: thread.id,
-              branchName: assignedToCurrent ? null : currentBranch,
-            })
-          }}
-        >
-          <GitBranch size={13} />
-        </button>
-      </Tooltip>
+      {canAssignToCurrentBranch && assignLabel ? (
+        <Tooltip content={assignLabel}>
+          <button
+            type="button"
+            className={viewCloseButtonClass}
+            aria-label={`${assignLabel} for ${thread.title}`}
+            onClick={() => {
+              void onAction('thread.assign-branch', {
+                projectId: project?.id,
+                threadId: thread.id,
+                branchName: currentBranch,
+              })
+            }}
+          >
+            <GitBranch size={13} />
+          </button>
+        </Tooltip>
+      ) : null}
       <span className="shrink-0 text-xs text-[color:var(--muted-2)]">{thread.age}</span>
       <div className="relative">
         <Tooltip content="Delete session">
