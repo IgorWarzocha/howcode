@@ -95,11 +95,6 @@
   grid-template-columns: 1.5rem;
 }
 
-.sidebar-project-work-branch-actions .sidebar-project-work-empty-start {
-  height: 1.5rem;
-  width: 1.5rem;
-}
-
 .sidebar-project-work-branch-heading:hover .sidebar-project-work-branch-actions,
 .sidebar-project-work-branch-heading:focus-within .sidebar-project-work-branch-actions {
   opacity: 1;

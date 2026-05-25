@@ -1,4 +1,4 @@
-import { IconButton } from '@howcode/common/icon-button'
+import { Tooltip } from '@howcode/common/tooltip'
 import { CircleOff, GitBranch, GitFork, Plus } from 'lucide-react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project, Thread, View } from '../../../types'
@@ -62,18 +62,20 @@ function EmptyBranchStartAction({
       : `Switch to ${group.label} and start thread`
 
   return (
-    <IconButton
-      label={label}
-      tooltip={blocked ? 'Worktree is dirty. Commit first.' : label}
-      tooltipPlacement="right"
-      icon={<Plus size={14} />}
-      className="sidebar-project-work-empty-start h-7 w-7 rounded-md"
-      data-warning={blocked ? 'true' : 'false'}
-      onClick={(event) => {
-        event.stopPropagation()
-        void startThread()
-      }}
-    />
+    <Tooltip content={blocked ? 'Worktree is dirty. Commit first.' : label} placement="right">
+      <button
+        type="button"
+        className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-empty-start"
+        data-warning={blocked ? 'true' : 'false'}
+        onClick={(event) => {
+          event.stopPropagation()
+          void startThread()
+        }}
+        aria-label={label}
+      >
+        <Plus size={12} />
+      </button>
+    </Tooltip>
   )
 }
 
