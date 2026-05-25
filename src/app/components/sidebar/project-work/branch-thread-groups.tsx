@@ -416,7 +416,7 @@ export function ProjectCompactBranchGroups({
           </span>
           <span className="sidebar-project-work-branch-actions" data-action-count="1">
             <BranchInlineActions
-              canPrune={false}
+              canPrune={true}
               canSwitch={false}
               confirmingPrune={false}
               currentBranch={currentBranch}
