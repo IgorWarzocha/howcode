@@ -1,0 +1,1 @@
+Reorganized Settings into clearer user-facing categories, grouped all Pi-backed settings under a single Pi section with lighter category dividers, fixed Biome so checks work correctly from nested worktrees, and added this worktree-summary workflow so completed worktrees can be reviewed together before merging.

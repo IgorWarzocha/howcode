@@ -7,13 +7,13 @@ description: "Use when Igor says a worktree seems complete and wants a branch/wo
 
 ## Goal
 
-Create a short, useful summary file at:
+Create a short, useful summary file in the current worktree at:
 
 ```txt
-/branches/(branch-name)/(worktree-name).md
+branches/(parent-branch-name)/(worktree-name).md
 ```
 
-These files help future sessions review all completed worktrees for a branch in one place before merging.
+These files live in each worktree until that worktree is merged, so future sessions can review all completed worktrees for a parent branch in one place before merging.
 
 ## Procedure
 
@@ -23,29 +23,25 @@ These files help future sessions review all completed worktrees for a branch in 
 pwd
 git branch --show-current
 git rev-parse --show-toplevel
+git worktree list --porcelain
 ```
 
 2. Derive:
-   - `branch-name` from `git branch --show-current`
-   - `worktree-name` from the repo root basename, e.g. `/path/.worktrees/settings_view` → `settings_view`
+   - `worktree-name` from the current repo root basename, e.g. `/path/.worktrees/settings_view` → `settings_view`
+   - `parent-branch-name` from the main/parent checkout in `git worktree list --porcelain`, not from the current worktree branch. In this repo that is usually the worktree at `/home/igorw/Work/howcode`.
 
-3. Review the work:
+3. Review the work against the parent branch:
 
 ```bash
 git log --oneline --decorate --max-count=12
 git status --short
+git diff --stat "$parent_branch...HEAD"
 ```
 
-If needed, compare against the parent/main branch with a focused command such as:
+4. Create the summary file inside the current worktree checkout:
 
 ```bash
-git diff --stat main...HEAD
-```
-
-4. Create the summary file:
-
-```bash
-mkdir -p "/branches/$branch_name"
+mkdir -p "branches/$parent_branch"
 ```
 
 Write a concise paragraph describing what was accomplished and why it matters. Keep it PR-ish, but not a full PR body.
@@ -62,5 +58,6 @@ Reorganized Settings into clearer user-facing categories, grouped all Pi-backed 
 - Do not write a full PR template.
 - Focus on what changed, why it matters, and anything a future merge/review session should know.
 - Do not include test logs unless they affect merge confidence.
-- If the repo is not in a worktree, still create the file using the current checkout basename as `worktree-name`.
+- Write the file in the current worktree, not by switching to or editing the parent checkout.
+- If no separate parent checkout exists, fall back to the current branch name for `parent-branch-name`.
 - After writing it, tell Igor the file path and keep the chat summary brief.
