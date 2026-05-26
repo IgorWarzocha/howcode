@@ -245,8 +245,11 @@ export function SettingsGroupsList({
     )
   }
 
-  return visibleGroups.map((group) => (
+  return visibleGroups.map((group, index) => (
     <Fragment key={group.id}>
+      {index > 0 ? (
+        <div className="my-2 h-px bg-[rgba(169,178,215,0.18)] lg:col-span-full" />
+      ) : null}
       <PopoverBoundary
         as="section"
         className="motion-surface-pulse motion-settings-section-pulse grid min-w-0 gap-1"
