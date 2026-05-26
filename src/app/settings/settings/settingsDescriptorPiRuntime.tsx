@@ -21,7 +21,7 @@ export function buildPiRuntimeSettingsDescriptors({
   return [
     {
       id: 'pi-runtime.theme',
-      category: 'pi-runtime',
+      category: 'pi',
       title: 'Theme',
       description: "Select a theme to use. Syncs with Pi's JSON files.",
       keywords: 'theme color json pi gui terminal appearance',
@@ -74,7 +74,8 @@ export function buildPiRuntimeSettingsDescriptors({
     },
     {
       id: 'pi-runtime.transport',
-      category: 'pi-runtime',
+      category: 'pi',
+      dividerBefore: true,
       title: 'Transport',
       description: 'Soon to be deprecated.',
       keywords: 'transport sse websocket auto provider runtime',
@@ -105,7 +106,7 @@ export function buildPiRuntimeSettingsDescriptors({
     },
     {
       id: 'pi-runtime.auto-compact',
-      category: 'pi-runtime',
+      category: 'pi',
       title: 'Auto compact context',
       description: 'Switch auto compaction on or off.',
       keywords: 'auto compact context runtime',
@@ -119,7 +120,7 @@ export function buildPiRuntimeSettingsDescriptors({
     },
     {
       id: 'pi-runtime.skill-commands',
-      category: 'pi-runtime',
+      category: 'pi',
       title: 'Enable skill slash commands',
       description: 'Expose installed skills as /commands.',
       keywords: 'skills slash commands picker runtime',
@@ -135,7 +136,7 @@ export function buildPiRuntimeSettingsDescriptors({
     },
     ...(['steeringMode', 'followUpMode'] as const).map((key) => ({
       id: `pi-runtime.${key}`,
-      category: 'pi-runtime' as const,
+      category: 'pi' as const,
       title: key === 'steeringMode' ? 'Steering mode' : 'Follow-up mode',
       description:
         key === 'steeringMode'
@@ -174,7 +175,8 @@ export function buildPiRuntimeSettingsDescriptors({
       ] as const
     ).map(([key, title, description]) => ({
       id: `pi-runtime.${key}`,
-      category: 'pi-runtime' as const,
+      category: 'pi' as const,
+      dividerBefore: key === 'autoResizeImages',
       title,
       description,
       keywords: 'image images telemetry runtime provider',
@@ -198,7 +200,8 @@ export function buildPiRuntimeSettingsDescriptors({
       ] as const
     ).map(([key, title, description]) => ({
       id: `pi-tui.${key}`,
-      category: 'pi-tui' as const,
+      category: 'pi' as const,
+      dividerBefore: key === 'doubleEscapeAction',
       title,
       description,
       keywords: 'terminal tui editor cursor changelog thinking images escape',
@@ -263,7 +266,8 @@ export function buildPiRuntimeSettingsDescriptors({
       ] as const
     ).map(([key, title, description, min, max]) => ({
       id: `pi-tui.${key}`,
-      category: 'pi-tui' as const,
+      category: 'pi' as const,
+      dividerBefore: key === 'imageWidthCells',
       title,
       description,
       keywords: 'terminal tui editor autocomplete image width padding rows',

@@ -46,7 +46,7 @@ function prepareCreateProject(input: {
   input.setCreateErrorMessage(null)
   if (!(input.parentPath || input.appSettings.preferredProjectLocation)) {
     input.setCreateOpen(false)
-    input.onOpenSettingsPanel({ category: 'projects', settingId: 'projects.default-location' })
+    input.onOpenSettingsPanel({ category: 'howcode', settingId: 'projects.default-location' })
     return null
   }
   const draft = input.projectNameDraft.trim()

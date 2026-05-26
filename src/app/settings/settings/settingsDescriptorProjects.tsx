@@ -23,7 +23,7 @@ export function buildProjectsSettingsDescriptors({
   return [
     {
       id: 'projects.default-location',
-      category: 'projects',
+      category: 'howcode',
       title: 'Default project location',
       description: 'Default folder for new projects.',
       keywords: 'project folder location path default',
@@ -53,7 +53,7 @@ export function buildProjectsSettingsDescriptors({
     },
     {
       id: 'projects.custom-pi-directory',
-      category: 'projects',
+      category: 'howcode',
       title: 'Custom Pi directory',
       description: 'Override the Pi agent directory used across the app.',
       keywords: 'pi directory agent dir custom path settings sessions models',
@@ -87,7 +87,7 @@ export function buildProjectsSettingsDescriptors({
     },
     {
       id: 'projects.initialize-git',
-      category: 'projects',
+      category: 'howcode',
       title: 'Initialise git',
       description: 'Always git init when creating a new project.',
       keywords: 'git init initialize projects diffs',
@@ -101,7 +101,7 @@ export function buildProjectsSettingsDescriptors({
     },
     {
       id: 'projects.dashboard',
-      category: 'projects',
+      category: 'howcode',
       title: 'Project dashboard',
       description: 'Show the project dashboard when a project is selected in Code.',
       keywords: 'project dashboard overview code landing performance disable',
@@ -115,7 +115,7 @@ export function buildProjectsSettingsDescriptors({
     },
     {
       id: 'projects.gitops-default',
-      category: 'projects',
+      category: 'git-diffs',
       title: 'GitOps default',
       description: 'Default global commit action.',
       keywords: 'gitops commit push default project',
@@ -147,7 +147,7 @@ export function buildProjectsSettingsDescriptors({
     },
     {
       id: 'projects.git-diff-baseline-default',
-      category: 'projects',
+      category: 'git-diffs',
       title: 'Diff comparison default',
       description: 'Default baseline setting for git summary.',
       keywords: 'git diff baseline comparison files lines default',
@@ -183,7 +183,7 @@ export function buildProjectsSettingsDescriptors({
     },
     {
       id: 'projects.git-diff-render-default',
-      category: 'projects',
+      category: 'git-diffs',
       title: 'Diff view default',
       description: 'Default layout for the GitOps diff panel.',
       keywords: 'git diff layout stacked split default',
@@ -218,7 +218,7 @@ export function buildProjectsSettingsDescriptors({
 
     {
       id: 'projects.git-diff-file-tree-default',
-      category: 'projects',
+      category: 'git-diffs',
       title: 'Diff file tree',
       description: 'Default visibility for the GitOps file tree.',
       keywords: 'git diff file tree changed files sidebar default',
@@ -234,7 +234,7 @@ export function buildProjectsSettingsDescriptors({
     },
     {
       id: 'projects.git-diff-untracked-default',
-      category: 'projects',
+      category: 'git-diffs',
       title: 'Untracked files',
       description: 'Include untracked files in GitOps diffs by default.',
       keywords: 'git diff untracked files default gitops',
@@ -252,7 +252,7 @@ export function buildProjectsSettingsDescriptors({
     },
     {
       id: 'projects.deletion-mode',
-      category: 'projects',
+      category: 'howcode',
       title: 'Project deletion cleanup',
       description: 'Delete only Pi session files, or nuke the full project folder.',
       keywords: 'delete deletion cleanup project full clean pi only',
@@ -284,7 +284,7 @@ export function buildProjectsSettingsDescriptors({
     },
     {
       id: 'projects.import-ui',
-      category: 'projects',
+      category: 'howcode',
       title: 'Project UI import',
       description: 'Scan projects for UI info like repo and origin status.',
       keywords: 'project import ui scan repo origin first launch',
@@ -333,7 +333,7 @@ export function buildProjectsSettingsDescriptors({
     },
     {
       id: 'projects.favorite-folders',
-      category: 'projects',
+      category: 'howcode',
       title: 'Favorite folders',
       description: 'Paths shown in the attachment picker alongside Home.',
       keywords: 'favorite folders attachment picker paths',
@@ -395,7 +395,7 @@ export function buildProjectsSettingsDescriptors({
     },
     {
       id: 'projects.clipboard-images',
-      category: 'projects',
+      category: 'howcode',
       title: 'Clipboard images',
       description: 'Delete temp clipboard images.',
       keywords: 'clipboard images screenshots attachments delete cleanup temp',

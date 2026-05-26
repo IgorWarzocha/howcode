@@ -219,7 +219,7 @@ export function SettingsMobileFilters({
 }
 
 function getCategoryHelpIntro(categoryId: SettingsCategoryId) {
-  if (categoryId !== 'keybindings') return null
+  if (categoryId !== 'shortcuts') return null
   return 'Shortcuts require at least one modifier — Ctrl, Shift, Alt, or Command — plus one key.'
 }
 
@@ -262,7 +262,12 @@ export function SettingsGroupsList({
         </div>
         <div className="grid">
           {group.settings.map((setting) => (
-            <SettingRow key={setting.id} setting={setting} showHelp={showHelp} />
+            <Fragment key={setting.id}>
+              {setting.dividerBefore ? (
+                <div className="my-2 border-t border-[rgba(169,178,215,0.12)]" />
+              ) : null}
+              <SettingRow setting={setting} showHelp={showHelp} />
+            </Fragment>
           ))}
         </div>
       </PopoverBoundary>
@@ -284,19 +289,23 @@ export function SettingsGroupsList({
           </div>
           <div className="grid min-w-0">
             {group.settings.map((setting) => (
-              <div
-                key={setting.id}
-                className={settingsHelpRowClass}
-                style={
-                  settingRowHeights[setting.id]
-                    ? { height: `${settingRowHeights[setting.id]}px` }
-                    : undefined
-                }
-              >
-                <span className="relative top-[10px] truncate">
-                  {setting.helpDescription ?? setting.description}
-                </span>
-              </div>
+              <Fragment key={setting.id}>
+                {setting.dividerBefore ? (
+                  <div className="my-2 border-t border-transparent" />
+                ) : null}
+                <div
+                  className={settingsHelpRowClass}
+                  style={
+                    settingRowHeights[setting.id]
+                      ? { height: `${settingRowHeights[setting.id]}px` }
+                      : undefined
+                  }
+                >
+                  <span className="relative top-[10px] truncate">
+                    {setting.helpDescription ?? setting.description}
+                  </span>
+                </div>
+              </Fragment>
             ))}
           </div>
         </aside>
