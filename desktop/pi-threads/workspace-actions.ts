@@ -32,7 +32,7 @@ import {
   setProjectOrigin,
   switchProjectBranch,
 } from '../project-git.ts'
-import { listTerminals } from '../terminal/manager.ts'
+import { closeTerminal, listTerminals } from '../terminal/manager.ts'
 import {
   deleteProject,
   ensureProject,
@@ -51,12 +51,12 @@ import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
 import { deletePersistedThreads } from './thread-actions.ts'
 
-async function hasRunningProjectTerminal(projectId: string) {
+async function closeWorkspaceTerminals(projectId: string) {
   const terminalSnapshots = await listTerminals()
-  return terminalSnapshots.some(
-    (snapshot) =>
-      snapshot.projectId === projectId &&
-      (snapshot.status === 'starting' || snapshot.status === 'running'),
+  await Promise.all(
+    terminalSnapshots
+      .filter((snapshot) => snapshot.projectId === projectId)
+      .map((snapshot) => closeTerminal({ sessionId: snapshot.sessionId, deleteHistory: true })),
   )
 }
 
@@ -207,12 +207,7 @@ async function handleMergeWorktreeWorkspaceAction(payload: AnyDesktopActionPaylo
   if (!(projectId && worktreePath && branchName)) {
     return handledAction({ error: 'Worktree branch is required.' })
   }
-  if (hasRunningProjectThread(worktreePath)) {
-    return handledAction({ error: 'Stop running sessions before merging this worktree.' })
-  }
-  if (await hasRunningProjectTerminal(worktreePath)) {
-    return handledAction({ error: 'Stop running terminals before merging this worktree.' })
-  }
+  await closeWorkspaceTerminals(worktreePath)
 
   const mergeResult = await mergeProjectBranch(projectId, branchName)
   if ('error' in mergeResult) return handledAction(mergeResult)
@@ -233,24 +228,13 @@ async function handleMergeWorktreeWorkspaceAction(payload: AnyDesktopActionPaylo
   return handledAction({ didMutate: true, projectId: worktreePath, rootProjectId: projectId })
 }
 
-async function ensureWorktreeCanBeCleanedUp(worktreePath: string) {
-  if (hasRunningProjectThread(worktreePath)) {
-    return 'Stop running sessions before cleaning up completed worktrees.'
-  }
-  if (await hasRunningProjectTerminal(worktreePath)) {
-    return 'Stop running terminals before cleaning up completed worktrees.'
-  }
-  return null
-}
-
 async function cleanupWorktree(input: {
   projectId: string
   worktreePath: string
   branchName: string | null
   merge: boolean
 }) {
-  const runningError = await ensureWorktreeCanBeCleanedUp(input.worktreePath)
-  if (runningError) return { error: runningError }
+  await closeWorkspaceTerminals(input.worktreePath)
 
   if (input.merge) {
     if (!input.branchName) return { error: 'Worktree branch is required.' }
@@ -303,12 +287,7 @@ async function handleRemoveWorktreeWorkspaceAction(payload: AnyDesktopActionPayl
   const worktreePath = getWorktreePath(payload)
   const branchName = getBranchName(payload)
   if (!(projectId && worktreePath)) return handledAction({ error: 'Worktree path is required.' })
-  if (hasRunningProjectThread(worktreePath)) {
-    return handledAction({ error: 'Stop running sessions before removing this worktree.' })
-  }
-  if (await hasRunningProjectTerminal(worktreePath)) {
-    return handledAction({ error: 'Stop running terminals before removing this worktree.' })
-  }
+  await closeWorkspaceTerminals(worktreePath)
 
   const threadIds = listProjectThreadIds(worktreePath)
   const removeResult = await removeProjectWorktree(projectId, worktreePath)
