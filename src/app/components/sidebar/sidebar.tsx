@@ -17,6 +17,8 @@ type SidebarNavigableView = Exclude<View, 'gitops'>
 
 import { AppMenu } from '@howcode/app-menu'
 import { NavButton } from '@howcode/common/nav-button'
+import { iconButtonClass } from '../../ui/classes'
+import { cn } from '../../utils/cn'
 import { SidebarChatSection } from './chat/sidebar-chat-section'
 import { SidebarInboxSection } from './inbox/sidebar-inbox-section'
 import { ProjectWorkSection } from './project-work-section'
@@ -341,7 +343,10 @@ export function Sidebar({
             <Tooltip content="Hide sidebar" placement="right">
               <button
                 type="button"
-                className="inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] text-[color:var(--muted)] transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
+                className={cn(
+                  iconButtonClass,
+                  'h-[34px] w-[34px] shrink-0 rounded-[10px] opacity-80 hover:opacity-100',
+                )}
                 onClick={onToggleSidebar}
                 aria-label="Hide sidebar"
               >
