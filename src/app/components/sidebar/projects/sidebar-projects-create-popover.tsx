@@ -2,6 +2,7 @@ import { getPopoverRootProps } from '@howcode/common/popover'
 import { FolderPlus, Search } from 'lucide-react'
 import { type RefObject, useEffect, useRef, useState } from 'react'
 import { SidebarProjectsFolderBrowser } from './sidebar-projects-folder-browser'
+import { isPathLikeProjectDraft } from './useSidebarProjectCreation'
 
 type SidebarProjectsCreatePopoverProps = {
   menuId: string
@@ -37,8 +38,11 @@ export function SidebarProjectsCreatePopover({
   const [browseSearchQuery, setBrowseSearchQuery] = useState('')
   const [currentFolderPath, setCurrentFolderPath] = useState<string | null>(null)
   const [emptyCreateAttempted, setEmptyCreateAttempted] = useState(false)
+  const draftIsPathLike = isPathLikeProjectDraft(draft)
   const canSubmit =
-    draft.trim().length > 0 && !busy && Boolean(browseOpen ? currentFolderPath : defaultLocation)
+    draft.trim().length > 0 &&
+    !busy &&
+    (draftIsPathLike || Boolean(browseOpen ? currentFolderPath : defaultLocation))
   const missingProjectNameWarning = browseOpen && draft.trim().length === 0 && emptyCreateAttempted
 
   useEffect(() => {
