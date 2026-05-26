@@ -337,6 +337,7 @@ export function ProjectWorkSection({
           collapsedBranchIds={collapsedBranchIds}
           currentBranch={currentBranch}
           hideSessionCounts={appSettings.hideSidebarSessionCounts}
+          isGitRepo={Boolean(projectGitState?.isGitRepo)}
           normalizedSearchQuery={normalizedSearchQuery}
           olderThreadCount={olderThreads.length}
           project={contentProject}

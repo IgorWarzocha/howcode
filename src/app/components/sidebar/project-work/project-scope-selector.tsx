@@ -146,7 +146,7 @@ export function ProjectScopeSelector({
           label="Add project"
           icon={<Plus size={13} />}
           tooltipPlacement="right"
-          className="sidebar-project-work-project-create-button h-7 w-7 -translate-x-0.5 rounded-md"
+          className="sidebar-project-work-project-create-button h-7 w-7 -translate-x-px rounded-md"
           onClick={() => {
             if (open) onOpenChange(false)
             setCreateOpen(!createOpen)

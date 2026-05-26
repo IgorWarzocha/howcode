@@ -38,7 +38,7 @@
 .sidebar-project-work-project-button {
   display: grid;
   min-height: 2rem;
-  grid-template-columns: minmax(0, 1fr) 1.5rem;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.5rem;
   border: 1px solid var(--border);
@@ -56,11 +56,15 @@
 }
 
 .sidebar-project-work-project-button-meta {
-  display: inline-flex;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1rem;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
+  justify-items: center;
+  gap: 0.125rem;
   color: var(--muted);
+  transform: translateX(0.125rem);
 }
 
 .sidebar-project-work-project-button-meta svg {

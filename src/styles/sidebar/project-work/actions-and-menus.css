@@ -3,6 +3,16 @@
   gap: 0.25rem;
 }
 
+.sidebar-project-work-toolbar {
+  display: flex;
+  min-height: 1.75rem;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.125rem;
+  padding-right: 0.625rem;
+}
+
 .sidebar-project-work-action-row > svg:first-child,
 .sidebar-project-work-history-row > svg:first-child {
   justify-self: center;
@@ -30,7 +40,7 @@
 
 .sidebar-project-work-section-heading {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 0.5rem;
   padding-right: 0;

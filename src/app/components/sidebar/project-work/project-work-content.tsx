@@ -21,6 +21,7 @@ import {
   getWorktreeBranchesForProject,
   UNASSIGNED_BRANCH_GROUP_ID,
 } from './project-work-model'
+import { ProjectWorkThreadRow } from './project-work-thread-row'
 
 function ProjectActionsMenuButton({
   project,
@@ -42,7 +43,9 @@ function ProjectActionsMenuButton({
   useLayoutEffect(() => {
     if (!(open && buttonRef.current)) return
     const anchor = buttonRef.current
-    const row = anchor.closest('.sidebar-project-work-section-heading')
+    const row = anchor.closest(
+      '.sidebar-project-work-toolbar, .sidebar-project-work-section-heading',
+    )
     const rowRect = row?.getBoundingClientRect()
     const anchorRect = anchor.getBoundingClientRect()
     if (!rowRect) {
@@ -74,6 +77,43 @@ function ProjectActionsMenuButton({
           onClose={() => setOpen(false)}
         />
       ) : null}
+    </div>
+  )
+}
+
+function NonGitProjectThreads({
+  activeView,
+  branchGroups,
+  project,
+  selectedThreadId,
+  terminalRunningSessionPaths,
+  onAction,
+  onThreadOpen,
+}: {
+  activeView: View
+  branchGroups: BranchThreadGroup[]
+  project: Project
+  selectedThreadId: string | null
+  terminalRunningSessionPaths: ReadonlySet<string>
+  onAction: DesktopActionInvoker
+  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
+}) {
+  const threads = branchGroups.flatMap((group) => group.threads)
+  return (
+    <div className="sidebar-project-work-thread-list">
+      {threads.map((thread) => (
+        <ProjectWorkThreadRow
+          key={thread.id}
+          activeView={activeView}
+          currentBranch={null}
+          project={project}
+          selectedThreadId={selectedThreadId}
+          terminalRunningSessionPaths={terminalRunningSessionPaths}
+          thread={thread}
+          onAction={onAction}
+          onThreadOpen={onThreadOpen}
+        />
+      ))}
     </div>
   )
 }
@@ -169,6 +209,8 @@ export function MultiProjectWorkContent({
               repositoryBranches,
               worktreeBranches,
             )
+            const blockGitState = gitStatesByProjectId.get(project.id) ?? null
+            const blockIsGitRepo = Boolean(blockGitState?.isGitRepo)
             const unassignedGroupId = `${project.id}:${UNASSIGNED_BRANCH_GROUP_ID}`
             const expanded = collapsedBranchIds[`project:${project.id}`] === false
             return (
@@ -180,6 +222,7 @@ export function MultiProjectWorkContent({
                 currentBranch={blockCurrentBranch}
                 expanded={expanded}
                 hideSessionCounts={hideSessionCounts}
+                isGitRepo={blockIsGitRepo}
                 olderThreadCount={buckets.olderThreads.length}
                 project={project}
                 pruneConfirmBranchId={pruneConfirmBranchId}
@@ -226,6 +269,7 @@ export function SingleProjectWorkContent({
   collapsedBranchIds,
   currentBranch,
   hideSessionCounts,
+  isGitRepo,
   olderThreadCount,
   normalizedSearchQuery,
   project,
@@ -250,6 +294,7 @@ export function SingleProjectWorkContent({
   collapsedBranchIds: Record<string, boolean>
   currentBranch: string | null
   hideSessionCounts: boolean
+  isGitRepo: boolean
   olderThreadCount: number
   normalizedSearchQuery: string
   project: Project
@@ -278,6 +323,16 @@ export function SingleProjectWorkContent({
 
   return (
     <>
+      <div className="sidebar-project-work-toolbar">
+        <ProjectActionsMenuButton project={project} onAction={onAction} />
+        <NewThreadMenu
+          currentBranch={currentBranch}
+          isGitRepo={isGitRepo}
+          onAction={onAction}
+          projectId={project.id}
+        />
+      </div>
+
       <div className="sidebar-project-work-actions">
         <button
           type="button"
@@ -304,51 +359,61 @@ export function SingleProjectWorkContent({
       </div>
 
       <div className="sidebar-project-work-lane">
-        <div className="sidebar-project-work-section-heading">
+        <div className="sidebar-project-work-section-heading sidebar-project-work-section-heading--search-only">
           <SearchHistoryField
             inputRef={searchInputRef}
             searchQuery={searchQuery}
             onSearchQueryChange={onSearchQueryChange}
           />
-          <ProjectActionsMenuButton project={project} onAction={onAction} />
-          <NewThreadMenu currentBranch={currentBranch} onAction={onAction} projectId={project.id} />
         </div>
 
         <div className="sidebar-project-work-scroll-shell">
-          <div className="sidebar-project-work-thread-list">
-            {branchGroups.map((group) => {
-              const groupKey = `${project.id}:${group.id}`
-              const defaultCollapsed = !(group.current || group.id === selectedGroupId)
-              const collapsed = normalizedSearchQuery
-                ? false
-                : (collapsedBranchIds[groupKey] ?? defaultCollapsed)
-              return (
-                <BranchThreadGroupSection
-                  key={group.id}
-                  activeView={activeView}
-                  collapsed={collapsed}
-                  currentBranch={currentBranch}
-                  group={group}
-                  hideSessionCounts={hideSessionCounts}
-                  project={project}
-                  selectedThreadId={selectedThreadId}
-                  terminalRunningSessionPaths={terminalRunningSessionPaths}
-                  onAction={onAction}
-                  onThreadOpen={onThreadOpen}
-                  onToggle={() =>
-                    onSetCollapsedBranchIds((current) => ({
-                      ...current,
-                      [groupKey]: !collapsed,
-                    }))
-                  }
-                  pruneConfirmBranchId={pruneConfirmBranchId}
-                  onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
-                  switchErrorBranchId={switchErrorBranchId}
-                  onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
-                />
-              )
-            })}
-          </div>
+          {isGitRepo ? (
+            <div className="sidebar-project-work-thread-list">
+              {branchGroups.map((group) => {
+                const groupKey = `${project.id}:${group.id}`
+                const defaultCollapsed = !(group.current || group.id === selectedGroupId)
+                const collapsed = normalizedSearchQuery
+                  ? false
+                  : (collapsedBranchIds[groupKey] ?? defaultCollapsed)
+                return (
+                  <BranchThreadGroupSection
+                    key={group.id}
+                    activeView={activeView}
+                    collapsed={collapsed}
+                    currentBranch={currentBranch}
+                    group={group}
+                    hideSessionCounts={hideSessionCounts}
+                    project={project}
+                    selectedThreadId={selectedThreadId}
+                    terminalRunningSessionPaths={terminalRunningSessionPaths}
+                    onAction={onAction}
+                    onThreadOpen={onThreadOpen}
+                    onToggle={() =>
+                      onSetCollapsedBranchIds((current) => ({
+                        ...current,
+                        [groupKey]: !collapsed,
+                      }))
+                    }
+                    pruneConfirmBranchId={pruneConfirmBranchId}
+                    onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
+                    switchErrorBranchId={switchErrorBranchId}
+                    onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
+                  />
+                )
+              })}
+            </div>
+          ) : (
+            <NonGitProjectThreads
+              activeView={activeView}
+              branchGroups={branchGroups}
+              project={project}
+              selectedThreadId={selectedThreadId}
+              terminalRunningSessionPaths={terminalRunningSessionPaths}
+              onAction={onAction}
+              onThreadOpen={onThreadOpen}
+            />
+          )}
         </div>
       </div>
     </>

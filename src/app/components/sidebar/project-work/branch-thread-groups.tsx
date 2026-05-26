@@ -1,9 +1,42 @@
-import { GitBranch, GitFork } from 'lucide-react'
+import { Tooltip } from '@howcode/common/tooltip'
+import { CircleOff, GitBranch, GitFork } from 'lucide-react'
+import type { ReactNode } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project, View } from '../../../types'
 import { BranchInlineActions, BranchSessionCount } from './branch-row-actions'
 import type { BranchThreadGroup } from './project-work-model'
 import { ProjectWorkThreadRow } from './project-work-thread-row'
+
+function BranchHeadingIcon({ group }: { group: BranchThreadGroup }) {
+  if (group.unassigned) {
+    return <CircleOff size={13} className="sidebar-project-work-unassigned-icon" />
+  }
+  if (group.worktree) {
+    return <GitFork size={13} className="sidebar-project-work-branch-icon" />
+  }
+  return <GitBranch size={13} className="sidebar-project-work-branch-icon" />
+}
+
+function BranchHeadingLabel({ group }: { group: BranchThreadGroup }) {
+  return <span className="truncate">{group.label}</span>
+}
+
+function BranchHeadingRow({ children, unassigned }: { children: ReactNode; unassigned: boolean }) {
+  const row = (
+    <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading">
+      {children}
+    </div>
+  )
+  if (!unassigned) return row
+  return (
+    <Tooltip
+      content="Sessions not assigned to a git branch"
+      className="sidebar-project-work-row-tooltip"
+    >
+      {row}
+    </Tooltip>
+  )
+}
 
 export function BranchThreadGroupSection({
   activeView,
@@ -52,7 +85,7 @@ export function BranchThreadGroupSection({
       className="sidebar-project-work-branch-group"
       data-current={group.current || group.worktree ? 'true' : 'false'}
     >
-      <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading">
+      <BranchHeadingRow unassigned={group.unassigned}>
         <button
           type="button"
           className="sidebar-icon-action sidebar-icon-action--xs sidebar-icon-action--no-hover sidebar-project-work-branch-disclosure"
@@ -61,11 +94,7 @@ export function BranchThreadGroupSection({
           aria-expanded={!collapsed}
           aria-label={collapsed ? `Expand ${group.label}` : `Collapse ${group.label}`}
         >
-          {group.worktree ? (
-            <GitFork size={13} className="sidebar-project-work-branch-icon" />
-          ) : (
-            <GitBranch size={13} className="sidebar-project-work-branch-icon" />
-          )}
+          <BranchHeadingIcon group={group} />
         </button>
         <button
           type="button"
@@ -74,7 +103,7 @@ export function BranchThreadGroupSection({
           disabled={!canToggleThreads}
           aria-expanded={!collapsed}
         >
-          <span className="truncate">{group.label}</span>
+          <BranchHeadingLabel group={group} />
         </button>
         <span className="sidebar-project-work-branch-meta">
           {group.current ? (
@@ -103,7 +132,7 @@ export function BranchThreadGroupSection({
             onSwitchFailed={() => onSetSwitchErrorBranchId(null)}
           />
         </span>
-      </div>
+      </BranchHeadingRow>
 
       {collapsed ? null : (
         <div className="sidebar-project-work-branch-thread-list">

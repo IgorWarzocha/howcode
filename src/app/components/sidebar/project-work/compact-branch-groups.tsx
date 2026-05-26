@@ -1,3 +1,4 @@
+import { Tooltip } from '@howcode/common/tooltip'
 import { CircleOff, GitBranch } from 'lucide-react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project, Thread, View } from '../../../types'
@@ -177,47 +178,52 @@ export function ProjectCompactBranchGroups({
 
       {unassignedThreads.length > 0 ? (
         <section className="sidebar-project-work-branch-group">
-          <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading">
-            <button
-              type="button"
-              className="sidebar-icon-action sidebar-icon-action--xs sidebar-icon-action--no-hover sidebar-project-work-branch-disclosure"
-              onClick={onToggleUnassigned}
-              aria-expanded={unassignedExpanded}
-              aria-label={
-                unassignedExpanded ? 'Collapse unassigned sessions' : 'Expand unassigned sessions'
-              }
-            >
-              <CircleOff size={13} className="sidebar-project-work-unassigned-icon" />
-            </button>
-            <button
-              type="button"
-              className="sidebar-project-work-branch-toggle sidebar-project-work-branch-toggle--plain"
-              onClick={onToggleUnassigned}
-              aria-expanded={unassignedExpanded}
-            >
-              <span className="truncate">Unassigned</span>
-            </button>
-            <span className="sidebar-project-work-branch-meta">
-              <BranchSessionCount count={unassignedThreads.length} hidden={hideSessionCounts} />
-            </span>
-            <span className="sidebar-project-work-branch-actions" data-action-count="1">
-              <BranchInlineActions
-                canPrune={false}
-                canSwitch={false}
-                confirmingPrune={false}
-                currentBranch={currentBranch}
-                group={unassignedGroup}
-                project={project}
-                switchBlocked={false}
-                onAction={onAction}
-                onCancelPrune={() => undefined}
-                onConfirmPrune={() => undefined}
-                onRequestPruneConfirm={() => undefined}
-                onSwitchBlocked={() => undefined}
-                onSwitchFailed={() => undefined}
-              />
-            </span>
-          </div>
+          <Tooltip
+            content="Sessions not assigned to a git branch"
+            className="sidebar-project-work-row-tooltip"
+          >
+            <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading">
+              <button
+                type="button"
+                className="sidebar-icon-action sidebar-icon-action--xs sidebar-icon-action--no-hover sidebar-project-work-branch-disclosure"
+                onClick={onToggleUnassigned}
+                aria-expanded={unassignedExpanded}
+                aria-label={
+                  unassignedExpanded ? 'Collapse unassigned sessions' : 'Expand unassigned sessions'
+                }
+              >
+                <CircleOff size={13} className="sidebar-project-work-unassigned-icon" />
+              </button>
+              <button
+                type="button"
+                className="sidebar-project-work-branch-toggle sidebar-project-work-branch-toggle--plain"
+                onClick={onToggleUnassigned}
+                aria-expanded={unassignedExpanded}
+              >
+                <span className="truncate">Unassigned</span>
+              </button>
+              <span className="sidebar-project-work-branch-meta">
+                <BranchSessionCount count={unassignedThreads.length} hidden={hideSessionCounts} />
+              </span>
+              <span className="sidebar-project-work-branch-actions" data-action-count="1">
+                <BranchInlineActions
+                  canPrune={false}
+                  canSwitch={false}
+                  confirmingPrune={false}
+                  currentBranch={currentBranch}
+                  group={unassignedGroup}
+                  project={project}
+                  switchBlocked={false}
+                  onAction={onAction}
+                  onCancelPrune={() => undefined}
+                  onConfirmPrune={() => undefined}
+                  onRequestPruneConfirm={() => undefined}
+                  onSwitchBlocked={() => undefined}
+                  onSwitchFailed={() => undefined}
+                />
+              </span>
+            </div>
+          </Tooltip>
           {unassignedExpanded ? (
             <div className="sidebar-project-work-branch-thread-list">
               {unassignedThreads.map((thread) => (
