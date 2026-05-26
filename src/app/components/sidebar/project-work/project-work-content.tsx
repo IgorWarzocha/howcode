@@ -200,6 +200,7 @@ export function MultiProjectWorkContent({
             )
             const worktreeBranches = getWorktreeBranchesForProject(
               project,
+              allProjects,
               projectGitState,
               gitStatesByProjectId,
             )

@@ -40,6 +40,7 @@ export type { ProjectWorktreeMetadata, ProjectWorktreeSource } from './worktree-
 export {
   deleteProjectWorktreeMetadata,
   getProjectWorktreeDirectory,
+  setProjectWorktreeCompleted,
   setProjectWorktreeDirectory,
   upsertProjectWorktree,
 } from './worktree-writes.ts'

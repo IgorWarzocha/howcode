@@ -50,6 +50,7 @@ export {
   setProjectCollapsed,
   setProjectGitOpsMode,
   setProjectRepoOrigin,
+  setProjectWorktreeCompleted,
   setProjectWorktreeDirectory,
   setSessionNativeExtensions,
   setThreadDiffPreferences,

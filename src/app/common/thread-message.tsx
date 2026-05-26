@@ -101,7 +101,7 @@ function AssistantThinkingBlock({
       interactive={interactive}
       showChevron={interactive}
       header={
-        <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+        <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5 gap-y-0.5 overflow-hidden">
           <span
             className={`shrink-0 truncate ${appTypeControlStrongClass} text-[color:var(--muted)]/92`}
           >
@@ -109,7 +109,7 @@ function AssistantThinkingBlock({
           </span>
           <span className={`shrink-0 ${appTypeMetaClass} text-[color:var(--muted-2)]/80`}>—</span>
           <span
-            className={`min-w-0 flex-1 truncate ${appTypeMetaClass} italic text-[color:var(--muted-2)]/90`}
+            className={`min-w-0 flex-[1_1_16rem] whitespace-normal break-words ${appTypeMetaClass} italic text-[color:var(--muted-2)]/90`}
           >
             {preview}
           </span>

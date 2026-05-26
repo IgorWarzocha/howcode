@@ -21,13 +21,15 @@ function getReplyActivityKey(messages: readonly Message[]) {
 function CodeSidebarToggleButton(props: CodeWorkspaceContentProps) {
   const { sidebarCollapsed, sidebarCompactMode, onToggleSidebar } = props
   const sidebarHidden = sidebarCollapsed || sidebarCompactMode
+  if (sidebarCompactMode && !sidebarHidden) return null
+  const label = sidebarHidden ? 'Show sidebar' : 'Hide sidebar'
   return (
     <button
       type="button"
-      className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
+      className="pointer-events-auto inline-flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
       onClick={onToggleSidebar}
-      aria-label={sidebarHidden ? 'Show sidebar' : 'Hide sidebar'}
-      data-tooltip={sidebarHidden ? 'Show sidebar' : 'Hide sidebar'}
+      aria-label={label}
+      data-tooltip={label}
       data-tooltip-placement="right"
     >
       {sidebarHidden ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
@@ -35,35 +37,9 @@ function CodeSidebarToggleButton(props: CodeWorkspaceContentProps) {
   )
 }
 
-function CodeSidebarFooterButton(props: CodeWorkspaceContentProps) {
-  const { sidebarCollapsed, onToggleSidebar } = props
-  return (
-    <button
-      type="button"
-      className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--panel)] text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
-      onClick={onToggleSidebar}
-      aria-label={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
-      data-tooltip={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
-      data-tooltip-placement="right"
-    >
-      {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
-    </button>
-  )
-}
-
 function CodeFooterLeft(props: CodeWorkspaceContentProps) {
-  const { state, sidebarCompactMode } = props
-  if (state.activeView === 'project') {
-    return <CodeSidebarToggleButton {...props} />
-  }
-  if (
-    !(
-      (state.activeView === 'thread' || state.activeView === 'gitops') &&
-      !state.takeoverVisible &&
-      !sidebarCompactMode
-    )
-  )
-    return null
+  const { state } = props
+  if (state.takeoverVisible) return null
   return <CodeSidebarToggleButton {...props} />
 }
 
@@ -295,6 +271,7 @@ function CodeWorkspaceThreadFooter(props: CodeWorkspaceContentProps) {
     centerThreadFooter,
     threadFooterStyle,
     sidebarAutoHidden,
+    sidebarCollapsed,
     state,
   } = props
   return (
@@ -312,7 +289,7 @@ function CodeWorkspaceThreadFooter(props: CodeWorkspaceContentProps) {
     >
       <div className="pointer-events-auto grid gap-2.5">
         <WorkspaceComposerDock
-          compactControls={sidebarAutoHidden}
+          compactControls={sidebarAutoHidden || sidebarCollapsed}
           left={<CodeFooterLeft {...props} />}
           center={<CodeThreadComposerCenter {...props} />}
           rightClassName={cn(
@@ -326,39 +303,19 @@ function CodeWorkspaceThreadFooter(props: CodeWorkspaceContentProps) {
 }
 
 function CodeSidebarFooter(props: CodeWorkspaceContentProps) {
-  const { sidebarCompactMode } = props
   return (
     <footer className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4">
-      <div className="pointer-events-auto grid gap-2.5">
-        <WorkspaceComposerDock
-          compactControls={sidebarCompactMode}
-          center={null}
-          left={sidebarCompactMode ? null : <CodeSidebarFooterButton {...props} />}
-        />
+      <div className="pointer-events-auto mb-1.5">
+        <CodeSidebarToggleButton {...props} />
       </div>
     </footer>
   )
 }
 
-function CodeUtilitySidebarButton(props: CodeWorkspaceContentProps) {
-  return (
-    <div className="pointer-events-none absolute bottom-5 left-5 z-10">
-      <CodeSidebarFooterButton {...props} />
-    </div>
-  )
-}
-
 function CodeWorkspaceFooterArea(props: CodeWorkspaceContentProps) {
-  const {
-    showWorkspaceFooter,
-    showCodeSidebarFooter,
-    showUtilitySidebarButton,
-    sidebarCompactMode,
-  } = props
+  const { showWorkspaceFooter, showCodeSidebarFooter } = props
   if (showWorkspaceFooter) return <CodeWorkspaceThreadFooter {...props} />
   if (showCodeSidebarFooter) return <CodeSidebarFooter {...props} />
-  if (showUtilitySidebarButton && !sidebarCompactMode)
-    return <CodeUtilitySidebarButton {...props} />
   return null
 }
 

@@ -134,6 +134,48 @@ function applyInboxSendResult(input: {
   }
 }
 
+function InboxEmptyState() {
+  return (
+    <div className="grid h-full min-h-0 place-items-center px-6 py-6">
+      <div className="w-full max-w-[520px]">
+        <EmptyStateCard
+          className={`grid gap-2 rounded-[18px] px-5 py-5 text-center ${appTypeGroupTextClass} ${appToneMutedClass}`}
+        >
+          <div className={`${appTypeSectionTitleClass} ${appToneTextClass}`}>Inbox is waiting</div>
+          <div>
+            Select a thread on the left to skim Pi’s latest reply and either answer or clear it.
+          </div>
+        </EmptyStateCard>
+      </div>
+    </div>
+  )
+}
+
+function InboxSidebarToggle({
+  sidebarCollapsed,
+  sidebarCompactMode,
+  onToggleSidebar,
+}: {
+  sidebarCollapsed: boolean
+  sidebarCompactMode: boolean
+  onToggleSidebar: () => void
+}) {
+  if (sidebarCompactMode && !sidebarCollapsed) return null
+  const showSidebar = sidebarCollapsed || sidebarCompactMode
+  return (
+    <button
+      type="button"
+      className="pointer-events-auto inline-flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
+      onClick={onToggleSidebar}
+      aria-label={showSidebar ? 'Show sidebar' : 'Hide sidebar'}
+      data-tooltip={showSidebar ? 'Show sidebar' : 'Hide sidebar'}
+      data-tooltip-placement="right"
+    >
+      {showSidebar ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+    </button>
+  )
+}
+
 export function InboxView({
   appSettings,
   availableModels,
@@ -238,22 +280,7 @@ export function InboxView({
   }
 
   if (!thread) {
-    return (
-      <div className="grid h-full min-h-0 place-items-center px-6 py-6">
-        <div className="w-full max-w-[520px]">
-          <EmptyStateCard
-            className={`grid gap-2 rounded-[18px] px-5 py-5 text-center ${appTypeGroupTextClass} ${appToneMutedClass}`}
-          >
-            <div className={`${appTypeSectionTitleClass} ${appToneTextClass}`}>
-              Inbox is waiting
-            </div>
-            <div>
-              Select a thread on the left to skim Pi’s latest reply and either answer or clear it.
-            </div>
-          </EmptyStateCard>
-        </div>
-      </div>
-    )
+    return <InboxEmptyState />
   }
 
   const prompt = thread.prompt?.trim() || thread.title
@@ -313,20 +340,13 @@ export function InboxView({
 
       <div>
         <WorkspaceComposerDock
-          compactControls={sidebarCompactMode}
+          compactControls={sidebarCompactMode || sidebarCollapsed}
           left={
-            sidebarCompactMode ? null : (
-              <button
-                type="button"
-                className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
-                onClick={onToggleSidebar}
-                aria-label={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
-                data-tooltip={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
-                data-tooltip-placement="right"
-              >
-                {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
-              </button>
-            )
+            <InboxSidebarToggle
+              sidebarCollapsed={sidebarCollapsed}
+              sidebarCompactMode={sidebarCompactMode}
+              onToggleSidebar={onToggleSidebar}
+            />
           }
           center={
             <InboxComposer

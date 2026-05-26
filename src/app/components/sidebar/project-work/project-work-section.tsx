@@ -252,6 +252,7 @@ export function ProjectWorkSection({
   )
   const worktreeBranches = getWorktreeBranchesForProject(
     contentProject,
+    displayableProjects,
     projectGitState,
     gitStatesByProjectId,
   )

@@ -18,6 +18,7 @@ export type ProjectWorktreeInfo = {
   branchName: string | null
   isMain: boolean
   source: 'howcode' | 'imported'
+  completed?: boolean | undefined
 }
 
 export type InboxThread = {

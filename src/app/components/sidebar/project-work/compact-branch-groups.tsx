@@ -61,6 +61,7 @@ export function ProjectCompactBranchGroups({
     id: 'current-branch',
     label: currentBranch ?? 'No branch',
     threads: branchThreads,
+    worktrees: [],
     current: true,
     unassigned: false,
     worktree: false,
@@ -72,6 +73,7 @@ export function ProjectCompactBranchGroups({
     id: 'compact-unassigned',
     label: 'Unassigned',
     threads: unassignedThreads,
+    worktrees: [],
     current: false,
     unassigned: true,
     worktree: false,
@@ -111,7 +113,12 @@ export function ProjectCompactBranchGroups({
             <BranchInlineActions
               canPrune={canPruneCurrentBranch}
               canSwitch={false}
+              canToggleWorktreeComplete={false}
+              canMergeWorktree={false}
+              canMergeCompletedWorktrees={false}
+              canRemoveCompletedWorktrees={false}
               confirmingPrune={confirmingCurrentPrune}
+              confirmingRemoveCompletedWorktrees={false}
               currentBranch={currentBranch}
               group={currentBranchGroup}
               project={project}
@@ -120,6 +127,9 @@ export function ProjectCompactBranchGroups({
               onCancelPrune={() => onSetPruneConfirmBranchId(null)}
               onConfirmPrune={() => onSetPruneConfirmBranchId(null)}
               onRequestPruneConfirm={() => onSetPruneConfirmBranchId(currentBranchActionKey)}
+              onCancelRemoveCompletedWorktrees={() => undefined}
+              onConfirmRemoveCompletedWorktrees={() => undefined}
+              onRequestRemoveCompletedWorktreesConfirm={() => undefined}
               onSwitchBlocked={() => undefined}
               onSwitchFailed={() => undefined}
             />
@@ -209,7 +219,12 @@ export function ProjectCompactBranchGroups({
                 <BranchInlineActions
                   canPrune={false}
                   canSwitch={false}
+                  canToggleWorktreeComplete={false}
+                  canMergeWorktree={false}
+                  canMergeCompletedWorktrees={false}
+                  canRemoveCompletedWorktrees={false}
                   confirmingPrune={false}
+                  confirmingRemoveCompletedWorktrees={false}
                   currentBranch={currentBranch}
                   group={unassignedGroup}
                   project={project}
@@ -218,6 +233,9 @@ export function ProjectCompactBranchGroups({
                   onCancelPrune={() => undefined}
                   onConfirmPrune={() => undefined}
                   onRequestPruneConfirm={() => undefined}
+                  onCancelRemoveCompletedWorktrees={() => undefined}
+                  onConfirmRemoveCompletedWorktrees={() => undefined}
+                  onRequestRemoveCompletedWorktreesConfirm={() => undefined}
                   onSwitchBlocked={() => undefined}
                   onSwitchFailed={() => undefined}
                 />

@@ -96,6 +96,29 @@ describe('project work sidebar model', () => {
       threads: [],
       worktree: true,
       worktreePath: '/repo/.worktrees/feature-worktree',
+      worktrees: [],
+    })
+  })
+
+  it('nests a worktree under a branch only when the branch has its own threads', () => {
+    const groups = buildBranchGroups(
+      [thread({ id: 'branch-thread', branchName: 'feature', lastModifiedMs: 20 })],
+      'main',
+      ['main', 'feature'],
+      [{ label: 'feature', path: '/repo/.worktrees/feature', branchName: 'feature' }],
+    )
+
+    expect(groups[1]).toMatchObject({
+      label: 'feature',
+      threads: [{ id: 'branch-thread' }],
+      worktree: false,
+      worktrees: [
+        {
+          label: 'feature',
+          path: '/repo/.worktrees/feature',
+          threads: [],
+        },
+      ],
     })
   })
 
@@ -108,6 +131,27 @@ describe('project work sidebar model', () => {
     )
 
     expect(groups.map((group) => group.id)).toEqual(['main', 'aaa-worktree', 'zzz-branch'])
+  })
+
+  it('marks completed worktree-only groups as complete', () => {
+    const groups = buildBranchGroups(
+      [],
+      'main',
+      ['main'],
+      [
+        {
+          label: 'done-worktree',
+          path: '/repo/.worktrees/done-worktree',
+          complete: true,
+        },
+      ],
+    )
+
+    expect(groups[1]).toMatchObject({
+      worktree: true,
+      worktreeComplete: true,
+      worktreePath: '/repo/.worktrees/done-worktree',
+    })
   })
 
   it('filters branch groups by branch label or matching thread content', () => {

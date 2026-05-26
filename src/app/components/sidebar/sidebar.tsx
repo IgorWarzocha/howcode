@@ -17,6 +17,8 @@ type SidebarNavigableView = Exclude<View, 'gitops'>
 
 import { AppMenu } from '@howcode/app-menu'
 import { NavButton } from '@howcode/common/nav-button'
+import { iconButtonClass } from '../../ui/classes'
+import { cn } from '../../utils/cn'
 import { SidebarChatSection } from './chat/sidebar-chat-section'
 import { SidebarInboxSection } from './inbox/sidebar-inbox-section'
 import { ProjectWorkSection } from './project-work-section'
@@ -47,6 +49,7 @@ type SidebarProps = {
   onAction: DesktopActionInvoker
   onShowView: (view: SidebarNavigableView) => void
   onToggleSettings: () => void
+  onToggleSidebar: () => void
   onOpenExtensionsView: () => void
   onOpenAbout: () => void
   onOpenSkillsView: () => void
@@ -65,7 +68,6 @@ type SidebarProps = {
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
   onToggleProjectCollapse: (projectId: string) => void
   compactMode?: boolean
-  onCloseCompactSidebar?: () => void
 }
 
 function isCodeModeActive(activeView: View) {
@@ -214,6 +216,7 @@ export function Sidebar({
   onAction,
   onShowView,
   onToggleSettings,
+  onToggleSidebar,
   onOpenExtensionsView,
   onOpenAbout,
   onOpenSkillsView,
@@ -232,7 +235,6 @@ export function Sidebar({
   onThreadOpen,
   onToggleProjectCollapse,
   compactMode = false,
-  onCloseCompactSidebar,
 }: SidebarProps) {
   const settingsButtonRef = useRef<HTMLButtonElement>(null)
   const settingsMenuRef = useRef<HTMLDivElement>(null)
@@ -277,6 +279,7 @@ export function Sidebar({
     onAction,
     onShowView,
     onToggleSettings,
+    onToggleSidebar,
     onOpenExtensionsView,
     onOpenAbout,
     onOpenSkillsView,
@@ -295,7 +298,6 @@ export function Sidebar({
     onThreadOpen,
     onToggleProjectCollapse,
     compactMode,
-    ...(onCloseCompactSidebar ? { onCloseCompactSidebar } : {}),
   }
 
   return (
@@ -337,12 +339,15 @@ export function Sidebar({
             <span>Settings</span>
           </button>
 
-          {compactMode && onCloseCompactSidebar ? (
+          {compactMode ? (
             <Tooltip content="Hide sidebar" placement="right">
               <button
                 type="button"
-                className="inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] text-[color:var(--muted)] transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
-                onClick={onCloseCompactSidebar}
+                className={cn(
+                  iconButtonClass,
+                  'h-[34px] w-[34px] shrink-0 rounded-[10px] opacity-80 hover:opacity-100',
+                )}
+                onClick={onToggleSidebar}
                 aria-label="Hide sidebar"
               >
                 <PanelLeftClose size={15} />
