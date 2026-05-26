@@ -22,6 +22,7 @@ import {
 import { invokeRuntimeHost, subscribeRuntimeHostEvents } from './runtime-host/client-bridge.ts'
 import {
   beginInboxThreadTurn,
+  consumeInboxReplySuppression,
   hasInboxItem,
   setThreadRunningState,
   upsertInboxThreadMessage,
@@ -118,6 +119,7 @@ async function persistHostThreadUpdate(event: Extract<DesktopEvent, { type: 'thr
   }
 
   if (event.reason === 'end') {
+    if (consumeInboxReplySuppression(event.sessionPath)) return
     const latestAssistantMessage = getLatestInboxAssistantMessage(event.thread.messages)
     if (latestAssistantMessage) {
       upsertInboxThreadMessage({

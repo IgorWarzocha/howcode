@@ -109,7 +109,7 @@ describe('desktop event handlers', () => {
           ],
         },
       ],
-    } as ShellState
+    } as unknown as ShellState
     const { runtime, getQueryData } = createRuntime({
       localSessionPath: localDraft.sessionPath,
       projectId,
@@ -160,7 +160,7 @@ describe('desktop event handlers', () => {
           threads: [],
         },
       ],
-    } as ShellState
+    } as unknown as ShellState
     const { runtime, getQueryData } = createRuntime({
       localSessionPath: '',
       projectId,

@@ -24,7 +24,7 @@ import {
   stopComposerRun,
 } from '../pi-desktop-runtime.ts'
 import { invalidateRuntimeHostSettings } from '../runtime-host/client-bridge.ts'
-import { assignThreadBranch } from '../thread-state-db.ts'
+import { assignThreadBranch, dismissInboxThreadAfterReply } from '../thread-state-db.ts'
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
 import { normalizeComposerSendAttachments } from './composer-attachment-payload'
@@ -51,13 +51,18 @@ async function sendComposerPromptFromPayload(payload: AnyDesktopActionPayload) {
 
   if (!text && attachments.length === 0) return handledAction()
 
+  const composerRequest = getComposerRequest(payload)
+  if (payload.suppressInbox === true && composerRequest.sessionPath) {
+    dismissInboxThreadAfterReply(composerRequest.sessionPath)
+  }
+
   const composerSendResult = await sendComposerPrompt({
-    ...getComposerRequest(payload),
+    ...composerRequest,
     text,
     attachments,
     streamingBehavior: getComposerStreamingBehavior(payload),
   })
-  const branchName = getBranchName(payload) ?? getComposerRequest(payload).branchName?.trim()
+  const branchName = getBranchName(payload) ?? composerRequest.branchName?.trim()
   if (composerSendResult.threadId && branchName) {
     assignThreadBranch(composerSendResult.threadId, branchName)
   }

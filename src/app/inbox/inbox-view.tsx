@@ -72,6 +72,7 @@ function getInboxSendPayload(input: {
       sessionPath: input.thread.sessionPath,
       text: nextDraft,
       attachments: isCompactCommand ? [] : input.attachments,
+      suppressInbox: true,
       streamingBehavior: input.appSettings.composerStreamingBehavior,
       composerMode: input.thread.isChat ? 'chat' : 'code',
     } as const,

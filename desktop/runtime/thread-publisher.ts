@@ -11,6 +11,7 @@ import { getLatestInboxAssistantMessage } from '../../shared/thread-inbox.ts'
 import { isChatSessionPath, upsertChatThread } from '../chat-state-db.ts'
 import {
   beginInboxThreadTurn,
+  consumeInboxReplySuppression,
   getThreadAssistantSnapshot,
   hasInboxItem,
   setThreadRunningState,
@@ -177,6 +178,7 @@ function updateInboxEndState(
   timestamp: number,
 ) {
   if (reason !== 'end') return
+  if (consumeInboxReplySuppression(sessionPath)) return
   const latestAssistantMessage = getLatestInboxAssistantMessage(thread.messages)
   if (!latestAssistantMessage) return
   upsertInboxThreadMessage({

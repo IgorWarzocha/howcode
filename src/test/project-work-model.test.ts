@@ -10,7 +10,9 @@ import {
 } from '../app/components/sidebar/project-work/project-work-model'
 import type { Project, Thread } from '../app/types'
 
-function thread(overrides: Partial<Thread> & Pick<Thread, 'id'>): Thread {
+function thread(
+  overrides: Partial<Thread & { sidebarWorktreePath: string }> & Pick<Thread, 'id'>,
+): Thread & { sidebarWorktreePath?: string | undefined } {
   return {
     title: overrides.id,
     age: 'Now',

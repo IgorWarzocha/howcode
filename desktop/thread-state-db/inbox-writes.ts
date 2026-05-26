@@ -76,6 +76,40 @@ export function dismissInboxThread(sessionPath: string) {
   ).run(sessionPath)
 }
 
+export function dismissInboxThreadAfterReply(sessionPath: string) {
+  const db = getThreadStateDatabase()
+  runInTransaction(db, () => {
+    db.prepare(
+      `
+        DELETE FROM inbox_items
+        WHERE session_path = ?
+      `,
+    ).run(sessionPath)
+    db.prepare(
+      `
+        INSERT INTO inbox_reply_suppressions (session_path)
+        VALUES (?)
+        ON CONFLICT(session_path) DO UPDATE SET
+          created_at = CURRENT_TIMESTAMP
+      `,
+    ).run(sessionPath)
+  })
+}
+
+export function consumeInboxReplySuppression(sessionPath: string) {
+  const db = getThreadStateDatabase()
+  const result = db
+    .prepare(
+      `
+        DELETE FROM inbox_reply_suppressions
+        WHERE session_path = ?
+      `,
+    )
+    .run(sessionPath) as { changes: number }
+
+  return result.changes > 0
+}
+
 export function clearReadInboxThreads(olderThanMs: number | null = null) {
   const db = getThreadStateDatabase()
   const result = (

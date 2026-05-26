@@ -158,7 +158,8 @@ export function applyOptimisticComposerThread({
 
   const chatGroupId = activeView === 'chat' ? getContextualChatGroupId(contextualPayload) : null
   const branchName =
-    typeof contextualPayload.branchName === 'string' && contextualPayload.branchName.trim().length > 0
+    typeof contextualPayload.branchName === 'string' &&
+    contextualPayload.branchName.trim().length > 0
       ? contextualPayload.branchName.trim()
       : null
   const localFallback = buildLocalThreadFallback(contextualPayload.projectId, {
