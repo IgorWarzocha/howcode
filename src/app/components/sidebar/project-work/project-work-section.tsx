@@ -16,6 +16,7 @@ import {
   filterBranchGroups,
   getCurrentBranchForProject,
   getDisplayableProjects,
+  getDisplayableWorkspaces,
   getProjectScopeLabel,
   getRepositoryBranchesForProject,
   getThreadsForProjectWorktreeRows,
@@ -82,9 +83,16 @@ export function ProjectWorkSection({
   const [scopeSelectorOrderIds, setScopeSelectorOrderIds] = useState<string[] | null>(null)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
   const appliedInitialEmptyScopeRef = useRef(false)
+  const displayableWorkspaces = useMemo(() => getDisplayableWorkspaces(projects), [projects])
   const displayableProjects = useMemo(() => getDisplayableProjects(projects), [projects])
+  const selectedWorkspace = displayableWorkspaces.find(
+    (project) => project.id === selectedProjectId,
+  )
   const selectedProject =
     displayableProjects.find((project) => project.id === selectedProjectId) ??
+    displayableProjects.find(
+      (project) => project.id === selectedWorkspace?.worktree?.rootProjectId,
+    ) ??
     displayableProjects[0] ??
     null
   const visibleProjectIds = getVisibleProjectIds(
@@ -161,7 +169,7 @@ export function ProjectWorkSection({
   useEffect(() => {
     const projectsToLoad = new Map(visibleProjects.map((project) => [project.id, project]))
     for (const project of visibleProjects) {
-      for (const worktreeProject of getWorktreeProjectsForRoot(project, displayableProjects)) {
+      for (const worktreeProject of getWorktreeProjectsForRoot(project, displayableWorkspaces)) {
         projectsToLoad.set(worktreeProject.id, worktreeProject)
       }
     }
@@ -169,7 +177,7 @@ export function ProjectWorkSection({
       if (project.threadsLoaded) continue
       void onLoadProjectThreads(project.id, { chat: false })
     }
-  }, [displayableProjects, onLoadProjectThreads, visibleProjects])
+  }, [displayableWorkspaces, onLoadProjectThreads, visibleProjects])
 
   const focusProject = (projectId: string) => {
     onProjectSelect(projectId)
@@ -252,12 +260,12 @@ export function ProjectWorkSection({
   )
   const worktreeBranches = getWorktreeBranchesForProject(
     contentProject,
-    displayableProjects,
+    displayableWorkspaces,
     projectGitState,
     gitStatesByProjectId,
   )
   const branchGroups = buildBranchGroups(
-    [...activeThreads, ...getThreadsForProjectWorktreeRows(contentProject, displayableProjects)],
+    [...activeThreads, ...getThreadsForProjectWorktreeRows(contentProject, displayableWorkspaces)],
     currentBranch,
     repositoryBranches,
     worktreeBranches,
@@ -306,7 +314,7 @@ export function ProjectWorkSection({
       ) : multiProjectMode ? (
         <MultiProjectWorkContent
           activeView={activeView}
-          allProjects={displayableProjects}
+          allProjects={displayableWorkspaces}
           collapsedBranchIds={collapsedBranchIds}
           gitStatesByProjectId={gitStatesByProjectId}
           projectGitState={projectGitState}

@@ -3,6 +3,8 @@ import {
   bucketThreads,
   buildBranchGroups,
   filterBranchGroups,
+  getDisplayableProjects,
+  getDisplayableWorkspaces,
   getProjectScopeLabel,
   getVisibleProjectIds,
   projectBlockMatchesSearch,
@@ -228,6 +230,30 @@ describe('project work sidebar model', () => {
     expect(getVisibleProjectIds(null, ['initial'], selected)).toEqual(['initial'])
     expect(getVisibleProjectIds(null, null, selected)).toEqual(['project-a'])
     expect(getVisibleProjectIds(null, undefined, selected)).toEqual([])
+  })
+
+  it('keeps worktrees out of project-level sidebar lists while retaining them as workspaces', () => {
+    const root = project({
+      id: '/repo',
+      name: 'Repo',
+      worktree: { isMain: true, rootProjectId: '/repo', branchName: 'main', source: 'howcode' },
+    })
+    const worktree = project({
+      id: '/repo/.worktrees/feature',
+      name: 'Repo feature',
+      worktree: {
+        isMain: false,
+        rootProjectId: '/repo',
+        branchName: 'feature',
+        source: 'howcode',
+      },
+    })
+
+    expect(getDisplayableProjects([root, worktree]).map((item) => item.id)).toEqual(['/repo'])
+    expect(getDisplayableWorkspaces([root, worktree]).map((item) => item.id)).toEqual([
+      '/repo',
+      '/repo/.worktrees/feature',
+    ])
   })
 
   it('labels project scope using selected visible project when possible', () => {

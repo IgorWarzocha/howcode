@@ -26,6 +26,15 @@ export function getProjectScopeLabel({
 
 export function getDisplayableProjects(projects: readonly Project[]) {
   return projects.filter(
+    (project) =>
+      project.id.trim().length > 0 &&
+      project.name.trim().length > 0 &&
+      project.worktree?.isMain !== false,
+  )
+}
+
+export function getDisplayableWorkspaces(projects: readonly Project[]) {
+  return projects.filter(
     (project) => project.id.trim().length > 0 && project.name.trim().length > 0,
   )
 }
