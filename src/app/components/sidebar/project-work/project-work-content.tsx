@@ -6,7 +6,7 @@ import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import type { Project, View } from '../../../types'
 import { appToneSubtleClass, appTypeMetaClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { BranchThreadGroupSection } from './branch-thread-groups'
+import { BranchThreadGroupSection, shouldSeparateBranchGroups } from './branch-thread-groups'
 import { NewThreadMenu } from './new-thread-menu'
 import { ProjectWorkActionsMenu } from './project-work-actions-menu'
 import { ProjectWorkSummaryBlock } from './project-work-block'
@@ -371,12 +371,17 @@ export function SingleProjectWorkContent({
         <div className="sidebar-project-work-scroll-shell">
           {isGitRepo ? (
             <div className="sidebar-project-work-thread-list">
-              {branchGroups.map((group) => {
+              {branchGroups.map((group, index) => {
                 const groupKey = `${project.id}:${group.id}`
-                const defaultCollapsed = !(group.current || group.id === selectedGroupId)
+                const defaultCollapsed = !(
+                  group.current ||
+                  group.id === selectedGroupId ||
+                  group.worktrees.length > 0
+                )
                 const collapsed = normalizedSearchQuery
                   ? false
                   : (collapsedBranchIds[groupKey] ?? defaultCollapsed)
+                const showBottomDivider = shouldSeparateBranchGroups(group, branchGroups[index + 1])
                 return (
                   <BranchThreadGroupSection
                     key={group.id}
@@ -389,6 +394,7 @@ export function SingleProjectWorkContent({
                     selectedThreadId={selectedThreadId}
                     terminalRunningSessionPaths={terminalRunningSessionPaths}
                     onAction={onAction}
+                    showBottomDivider={showBottomDivider}
                     onThreadOpen={onThreadOpen}
                     onToggle={() =>
                       onSetCollapsedBranchIds((current) => ({

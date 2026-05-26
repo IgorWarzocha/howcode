@@ -82,7 +82,7 @@ describe('project work sidebar model', () => {
     expect(groups.at(-1)).toMatchObject({ unassigned: true, label: 'Unassigned' })
   })
 
-  it('keeps present worktrees visible as branch-like groups', () => {
+  it('keeps present worktrees nested under their source branch', () => {
     const groups = buildBranchGroups(
       [],
       'main',
@@ -94,13 +94,17 @@ describe('project work sidebar model', () => {
     expect(groups[1]).toMatchObject({
       label: 'feature/worktree',
       threads: [],
-      worktree: true,
-      worktreePath: '/repo/.worktrees/feature-worktree',
-      worktrees: [],
+      worktree: false,
+      worktrees: [
+        {
+          path: '/repo/.worktrees/feature-worktree',
+          threads: [],
+        },
+      ],
     })
   })
 
-  it('nests a worktree under a branch only when the branch has its own threads', () => {
+  it('nests a worktree under its branch when the branch has its own threads', () => {
     const groups = buildBranchGroups(
       [thread({ id: 'branch-thread', branchName: 'feature', lastModifiedMs: 20 })],
       'main',
@@ -133,7 +137,7 @@ describe('project work sidebar model', () => {
     expect(groups.map((group) => group.id)).toEqual(['main', 'aaa-worktree', 'zzz-branch'])
   })
 
-  it('marks completed worktree-only groups as complete', () => {
+  it('marks completed nested worktrees as complete', () => {
     const groups = buildBranchGroups(
       [],
       'main',
@@ -148,9 +152,13 @@ describe('project work sidebar model', () => {
     )
 
     expect(groups[1]).toMatchObject({
-      worktree: true,
-      worktreeComplete: true,
-      worktreePath: '/repo/.worktrees/done-worktree',
+      worktree: false,
+      worktrees: [
+        {
+          complete: true,
+          path: '/repo/.worktrees/done-worktree',
+        },
+      ],
     })
   })
 

@@ -86,8 +86,15 @@ export function getCompactBranchVisualGroupKey(
 
 function getBranchVisualGroupKey(group: BranchThreadGroup) {
   if (group.unassigned) return 'unassigned'
-  if (group.worktree || group.worktrees.length > 0) return 'worktrees'
   return group.label
+}
+
+export function shouldSeparateBranchGroups(
+  group: BranchThreadGroup,
+  nextGroup: BranchThreadGroup | undefined,
+) {
+  if (!nextGroup) return false
+  return getBranchVisualGroupKey(group) !== getBranchVisualGroupKey(nextGroup)
 }
 
 export function BranchThreadGroupSection({

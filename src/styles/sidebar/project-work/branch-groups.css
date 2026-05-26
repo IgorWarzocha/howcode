@@ -242,11 +242,6 @@
   min-width: 0;
 }
 
-.sidebar-project-work-worktree-group[data-last="true"] {
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
-  padding-bottom: 0.25rem;
-}
-
 .sidebar-project-work-worktree-heading {
   color: var(--muted);
 }

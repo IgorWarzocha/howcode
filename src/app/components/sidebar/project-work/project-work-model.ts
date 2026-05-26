@@ -141,18 +141,14 @@ function createBranchThreadGroup(input: {
     }))
     .sort((a, b) => a.label.localeCompare(b.label))
   const branchThreads = sortThreads(input.groupedThreads.get(input.branchName) ?? [])
-  const onlyWorktree = branchThreads.length === 0 && worktrees.length === 1 ? worktrees[0] : null
   return {
     id: input.branchName,
     label: input.branchName,
-    threads: onlyWorktree ? onlyWorktree.threads : branchThreads,
-    worktrees: onlyWorktree ? [] : worktrees,
+    threads: branchThreads,
+    worktrees,
     current: input.current,
     unassigned: false,
-    worktree: onlyWorktree !== null,
-    worktreeComplete: onlyWorktree?.complete,
-    worktreePath: onlyWorktree?.path,
-    worktreeBranchName: onlyWorktree?.branchName,
+    worktree: false,
   }
 }
 
@@ -425,7 +421,7 @@ export function getWorktreeBranchesForProject(
         worktree.path.split(pathSeparatorPattern).filter(Boolean).at(-1) ??
         worktree.path,
       path: worktree.path,
-      branchName: worktree.branch ?? undefined,
+      branchName: gitState.branch ?? worktree.branch ?? undefined,
       complete: projectById.get(worktree.path)?.worktree?.completed ?? false,
     }))
 }
