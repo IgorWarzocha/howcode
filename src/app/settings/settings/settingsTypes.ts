@@ -1,12 +1,14 @@
 import type { ReactNode } from 'react'
 
 export type SettingsCategoryId =
+  | 'howcode'
+  | 'composer'
+  | 'extensions'
   | 'models'
-  | 'pi-runtime'
-  | 'pi-tui'
-  | 'projects'
+  | 'git-diffs'
+  | 'pi'
+  | 'shortcuts'
   | 'dictation'
-  | 'keybindings'
 
 export type SettingsOpenTarget = {
   category?: SettingsCategoryId | undefined
@@ -19,6 +21,7 @@ export type SettingDescriptor = {
   title: string
   description: string
   helpDescription?: string
+  dividerBefore?: boolean
   keywords?: string
   render: () => ReactNode
 }

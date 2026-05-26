@@ -15,7 +15,7 @@ export function buildCommonSettingsDescriptors({
   return [
     {
       id: 'common.streaming-behavior',
-      category: 'pi-runtime',
+      category: 'composer',
       title: 'Send while Pi is responding',
       description: 'Composer follow-up messages behavior.',
       keywords: 'queue steer stop streaming responding send composer',
@@ -52,7 +52,7 @@ export function buildCommonSettingsDescriptors({
     },
     {
       id: 'common.howcode-native-ask-questions',
-      category: 'pi-runtime',
+      category: 'extensions',
       title: 'Ask questions tool',
       description: 'Native ask questions tool (GUI+TUI).',
       keywords: 'native extensions ask questions tool clarify',
@@ -66,7 +66,7 @@ export function buildCommonSettingsDescriptors({
     },
     {
       id: 'common.pi-tui-takeover',
-      category: 'pi-runtime',
+      category: 'howcode',
       title: 'Open in TUI',
       description: 'Always use Pi TUI takeover.',
       keywords: 'takeover terminal tui open conversations',
@@ -80,7 +80,7 @@ export function buildCommonSettingsDescriptors({
     },
     {
       id: 'common.hide-sidebar-session-counts',
-      category: 'pi-runtime',
+      category: 'howcode',
       title: 'Hide sidebar counts',
       description: 'Hide branch and session count badges in the sidebar.',
       keywords: 'sidebar counts sessions branch numbers badges hide',
@@ -94,7 +94,7 @@ export function buildCommonSettingsDescriptors({
     },
     {
       id: 'common.hover-to-focus',
-      category: 'pi-runtime',
+      category: 'composer',
       title: 'Hover to type',
       description: 'Hover to input for composer and terminal.',
       keywords: 'hover focus type composer terminal drawer input',
@@ -108,7 +108,7 @@ export function buildCommonSettingsDescriptors({
     },
     {
       id: 'common.hover-to-blur',
-      category: 'pi-runtime',
+      category: 'composer',
       title: 'Stop typing on hover leave',
       description: 'Instantly leave input when not in hover area.',
       keywords: 'hover blur leave stop typing composer terminal drawer input',

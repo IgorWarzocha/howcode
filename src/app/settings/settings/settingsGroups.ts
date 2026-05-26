@@ -1,12 +1,14 @@
 import type { SettingDescriptor, SettingsCategory, SettingsCategoryId } from './settingsTypes'
 
 export const settingsCategories: SettingsCategory[] = [
-  { id: 'projects', label: 'Projects' },
+  { id: 'howcode', label: 'Howcode' },
+  { id: 'composer', label: 'Composer' },
+  { id: 'extensions', label: 'Extensions' },
   { id: 'models', label: 'Models' },
-  { id: 'pi-runtime', label: 'Pi Runtime' },
-  { id: 'pi-tui', label: 'Pi TUI' },
+  { id: 'git-diffs', label: 'Git & Diffs' },
+  { id: 'pi', label: 'Pi' },
+  { id: 'shortcuts', label: 'Shortcuts' },
   { id: 'dictation', label: 'Dictation' },
-  { id: 'keybindings', label: 'Keybindings' },
 ]
 
 export function filterSettings({

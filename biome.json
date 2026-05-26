@@ -14,7 +14,7 @@
       "!**/dist-pages",
       "!**/Frameworks",
       "!**/node_modules",
-      "!**/.worktrees",
+      "!.worktrees",
       "!**/vendor"
     ],
     "ignoreUnknown": true
