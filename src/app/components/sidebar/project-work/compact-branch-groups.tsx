@@ -3,7 +3,7 @@ import { CircleOff, GitBranch } from 'lucide-react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project, Thread, View } from '../../../types'
 import { BranchInlineActions, BranchSessionCount } from './branch-row-actions'
-import { BranchThreadGroupSection } from './branch-thread-groups'
+import { BranchThreadGroupSection, getCompactBranchVisualGroupKey } from './branch-thread-groups'
 import type { BranchThreadGroup, WorktreeBranch } from './project-work-model'
 import { ProjectWorkThreadRow } from './project-work-thread-row'
 
@@ -186,11 +186,16 @@ export function ProjectCompactBranchGroups({
         ) : null}
       </section>
 
-      {worktreeGroups.map((group) => {
+      {worktreeGroups.map((group, index) => {
         const groupKey = `${project.id}:${group.id}`
+        const visualGroupKey = getCompactBranchVisualGroupKey(group, currentBranch)
+        const previousGroup =
+          index > 0 ? (worktreeGroups[index - 1] ?? currentBranchGroup) : currentBranchGroup
+        const previousVisualGroupKey = getCompactBranchVisualGroupKey(previousGroup, currentBranch)
         const collapsed = normalizedSearchQuery
           ? false
-          : (collapsedBranchIds[groupKey] ?? group.threads.length === 0)
+          : (collapsedBranchIds[groupKey] ??
+            (group.threads.length === 0 && group.worktrees.length === 0))
         return (
           <BranchThreadGroupSection
             key={group.id}
@@ -203,6 +208,7 @@ export function ProjectCompactBranchGroups({
             selectedThreadId={selectedThreadId}
             terminalRunningSessionPaths={terminalRunningSessionPaths}
             onAction={onAction}
+            showTopDivider={visualGroupKey !== previousVisualGroupKey}
             onThreadOpen={onThreadOpen}
             onToggle={() =>
               onSetCollapsedBranchIds((current) => ({
@@ -219,7 +225,10 @@ export function ProjectCompactBranchGroups({
       })}
 
       {unassignedThreads.length > 0 ? (
-        <section className="sidebar-project-work-branch-group">
+        <section
+          className="sidebar-project-work-branch-group"
+          data-divider-before={worktreeGroups.length > 0 ? 'true' : 'false'}
+        >
           <Tooltip
             content="Sessions not assigned to a git branch"
             className="sidebar-project-work-row-tooltip"

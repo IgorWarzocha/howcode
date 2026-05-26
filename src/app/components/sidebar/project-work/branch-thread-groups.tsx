@@ -77,6 +77,19 @@ function getBranchActionState(input: {
   }
 }
 
+export function getCompactBranchVisualGroupKey(
+  group: BranchThreadGroup,
+  currentBranch: string | null,
+) {
+  return group.worktree ? (currentBranch ?? group.worktreeBranchName ?? group.label) : group.label
+}
+
+function getBranchVisualGroupKey(group: BranchThreadGroup) {
+  if (group.unassigned) return 'unassigned'
+  if (group.worktree || group.worktrees.length > 0) return 'worktrees'
+  return group.label
+}
+
 export function BranchThreadGroupSection({
   activeView,
   collapsed,
@@ -87,6 +100,8 @@ export function BranchThreadGroupSection({
   selectedThreadId,
   terminalRunningSessionPaths,
   onAction,
+  showBottomDivider = false,
+  showTopDivider = false,
   onThreadOpen,
   onToggle,
   pruneConfirmBranchId,
@@ -103,6 +118,8 @@ export function BranchThreadGroupSection({
   selectedThreadId: string | null
   terminalRunningSessionPaths: ReadonlySet<string>
   onAction: DesktopActionInvoker
+  showBottomDivider?: boolean
+  showTopDivider?: boolean
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
   onToggle: () => void
   pruneConfirmBranchId: string | null
@@ -124,7 +141,10 @@ export function BranchThreadGroupSection({
   return (
     <section
       className="sidebar-project-work-branch-group"
+      data-branch-group-kind="branch"
       data-current={group.current || (group.worktree && !group.worktreeComplete) ? 'true' : 'false'}
+      data-divider-after={showBottomDivider ? 'true' : 'false'}
+      data-divider-before={showTopDivider ? 'true' : 'false'}
     >
       <BranchHeadingRow unassigned={group.unassigned}>
         <button
@@ -280,6 +300,7 @@ function WorktreeGroupSection({
   return (
     <section
       className="sidebar-project-work-worktree-group"
+      data-branch-group-kind="worktree"
       data-current={worktree.complete ? 'false' : 'true'}
       data-last={isLast ? 'true' : 'false'}
     >
@@ -383,12 +404,17 @@ export function ProjectExpandedBranchGroups({
 }) {
   return (
     <div className="sidebar-project-work-project-expanded-branches">
-      {branchGroups.map((group) => {
+      {branchGroups.map((group, index) => {
         const groupKey = `${project.id}:${group.id}`
-        const defaultCollapsed = !group.current
+        const visualGroupKey = getBranchVisualGroupKey(group)
+        const nextGroup = index < branchGroups.length - 1 ? branchGroups[index + 1] : undefined
+        const nextVisualGroupKey = nextGroup ? getBranchVisualGroupKey(nextGroup) : null
+        const defaultCollapsed = !(group.current || group.worktrees.length > 0)
         const collapsed = normalizedSearchQuery
           ? false
           : (collapsedBranchIds[groupKey] ?? defaultCollapsed)
+        const showBottomDivider =
+          nextVisualGroupKey !== null && visualGroupKey !== nextVisualGroupKey
         return (
           <BranchThreadGroupSection
             key={group.id}
@@ -401,6 +427,7 @@ export function ProjectExpandedBranchGroups({
             selectedThreadId={selectedThreadId}
             terminalRunningSessionPaths={terminalRunningSessionPaths}
             onAction={onAction}
+            showBottomDivider={showBottomDivider}
             onThreadOpen={onThreadOpen}
             onToggle={() =>
               onSetCollapsedBranchIds((current) => ({
