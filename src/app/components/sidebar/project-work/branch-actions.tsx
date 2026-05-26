@@ -1,73 +1,9 @@
 import { Tooltip } from '@howcode/common/tooltip'
-import { CheckSquare, GitBranch, GitMerge, Square, Trash2, XSquare } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { CheckSquare, GitBranch, GitMerge, Square, Trash2, X, XSquare } from 'lucide-react'
+import { useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project } from '../../../types'
 import type { BranchThreadGroup } from './project-work-model'
-
-function BranchConfirmPopover({
-  confirmLabel,
-  dismissLabel,
-  onCancel,
-  onConfirm,
-}: {
-  confirmLabel: string
-  dismissLabel: string
-  onCancel: () => void
-  onConfirm: () => void
-}) {
-  const popoverRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      event.stopPropagation()
-      onCancel()
-    }
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target
-      if (target instanceof Node && popoverRef.current?.contains(target)) return
-      if (
-        target instanceof Element &&
-        target.closest('.sidebar-project-work-branch-confirm-anchor')
-      ) {
-        return
-      }
-      onCancel()
-    }
-    document.addEventListener('keydown', handleKeyDown, true)
-    document.addEventListener('pointerdown', handlePointerDown, true)
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown, true)
-      document.removeEventListener('pointerdown', handlePointerDown, true)
-    }
-  }, [onCancel])
-
-  return (
-    <div ref={popoverRef} className="sidebar-project-work-branch-confirm-popover">
-      <button
-        type="button"
-        className="sidebar-project-work-branch-confirm-button"
-        onClick={(event) => {
-          event.stopPropagation()
-          onCancel()
-        }}
-      >
-        {dismissLabel}
-      </button>
-      <button
-        type="button"
-        className="sidebar-project-work-branch-confirm-button sidebar-project-work-branch-confirm-button--danger"
-        onClick={(event) => {
-          event.stopPropagation()
-          onConfirm()
-        }}
-      >
-        {confirmLabel}
-      </button>
-    </div>
-  )
-}
 
 export function BranchSwitchAction({
   blocked,
@@ -160,7 +96,18 @@ export function BranchPruneAction({
 
   if (confirming) {
     return (
-      <span className="sidebar-project-work-branch-confirm-anchor">
+      <>
+        <button
+          type="button"
+          className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action"
+          onClick={(event) => {
+            event.stopPropagation()
+            onCancel()
+          }}
+          aria-label="Cancel remove"
+        >
+          <X size={12} />
+        </button>
         <button
           type="button"
           className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--danger"
@@ -170,15 +117,9 @@ export function BranchPruneAction({
           }}
           aria-label={`Confirm ${actionLabel.toLowerCase()} ${group.label}`}
         >
-          <XSquare size={12} />
+          <Trash2 size={12} />
         </button>
-        <BranchConfirmPopover
-          dismissLabel="Dismiss"
-          confirmLabel={actionLabel}
-          onCancel={onCancel}
-          onConfirm={() => void runPrune()}
-        />
-      </span>
+      </>
     )
   }
 
@@ -336,7 +277,18 @@ export function RemoveCompletedWorktreesAction({
 
   if (confirming) {
     return (
-      <span className="sidebar-project-work-branch-confirm-anchor">
+      <>
+        <button
+          type="button"
+          className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action"
+          onClick={(event) => {
+            event.stopPropagation()
+            onCancel()
+          }}
+          aria-label="Cancel removing completed worktrees"
+        >
+          <X size={12} />
+        </button>
         <button
           type="button"
           className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--danger"
@@ -348,13 +300,7 @@ export function RemoveCompletedWorktreesAction({
         >
           <Trash2 size={12} />
         </button>
-        <BranchConfirmPopover
-          dismissLabel="Dismiss"
-          confirmLabel="Remove"
-          onCancel={onCancel}
-          onConfirm={() => void removeCompleted()}
-        />
-      </span>
+      </>
     )
   }
 
