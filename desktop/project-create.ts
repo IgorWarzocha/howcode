@@ -1,5 +1,6 @@
 import { execFile as execFileCallback } from 'node:child_process'
 import { mkdir, realpath, stat } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import path from 'node:path'
 import { promisify } from 'node:util'
 import { getDesktopWorkingDirectory } from '../shared/desktop-working-directory.ts'
@@ -14,6 +15,14 @@ import { initializeProjectGit } from './project-git.ts'
 import { ensureProject, listProjects, setProjectRepoOrigin } from './thread-state-db.ts'
 
 const execFile = promisify(execFileCallback)
+
+function expandHomePath(projectPath: string) {
+  if (projectPath === '~') return homedir()
+  if (projectPath.startsWith('~/') || projectPath.startsWith('~\\')) {
+    return path.join(homedir(), projectPath.slice(2))
+  }
+  return projectPath
+}
 
 async function startThreadForNewlyVisibleProject(projectId: string) {
   const result = await startNewThread({ projectId })
@@ -69,7 +78,7 @@ export async function addProjectFromPath(options: {
   createIfMissing: boolean
   initializeGit: boolean
 }) {
-  const projectPath = options.projectPath.trim()
+  const projectPath = expandHomePath(options.projectPath.trim())
   if (projectPath.length === 0) {
     throw new Error('Choose a folder to add.')
   }

@@ -53,8 +53,21 @@ function prepareCreateProject(input: {
   return draft || null
 }
 
+const pathLikeProjectDraftPattern = /^(~(?:[/\\]|$)|[/\\]|[A-Za-z]:[/\\])/
+
+function isPathLikeProjectDraft(draft: string) {
+  return pathLikeProjectDraftPattern.test(draft.trim())
+}
+
 function getCreateProjectPayload(draft: string, parentPath?: string | null) {
   const repository = parseGitHubRepositoryUrl(draft)
+  if (isPathLikeProjectDraft(draft) && !repository) {
+    return {
+      pendingProjectName: getSidebarFolderProjectName(draft),
+      payload: { projectPath: draft, createIfMissing: true },
+    }
+  }
+
   return {
     pendingProjectName: repository?.folderName ?? draft,
     payload: repository
