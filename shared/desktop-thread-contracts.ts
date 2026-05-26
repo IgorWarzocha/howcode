@@ -132,6 +132,8 @@ export type ToolResultMessage = {
   images?: ToolResultImage[] | undefined
   isError: boolean
   args?: string | undefined
+  rawArgs?: unknown | undefined
+  details?: unknown | undefined
   running?: boolean | undefined
 }
 
