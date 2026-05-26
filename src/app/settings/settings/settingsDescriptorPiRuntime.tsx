@@ -75,7 +75,6 @@ export function buildPiRuntimeSettingsDescriptors({
     {
       id: 'pi-runtime.transport',
       category: 'pi',
-      dividerBefore: true,
       title: 'Transport',
       description: 'Soon to be deprecated.',
       keywords: 'transport sse websocket auto provider runtime',
@@ -176,7 +175,6 @@ export function buildPiRuntimeSettingsDescriptors({
     ).map(([key, title, description]) => ({
       id: `pi-runtime.${key}`,
       category: 'pi' as const,
-      dividerBefore: key === 'autoResizeImages',
       title,
       description,
       keywords: 'image images telemetry runtime provider',
@@ -267,7 +265,6 @@ export function buildPiRuntimeSettingsDescriptors({
     ).map(([key, title, description, min, max]) => ({
       id: `pi-tui.${key}`,
       category: 'pi' as const,
-      dividerBefore: key === 'imageWidthCells',
       title,
       description,
       keywords: 'terminal tui editor autocomplete image width padding rows',
