@@ -176,6 +176,62 @@ function InboxSidebarToggle({
   )
 }
 
+function InboxThreadHeader({ thread }: { thread: InboxThread }) {
+  const prompt = thread.prompt?.trim() || thread.title
+  return (
+    <div className="mx-auto w-full max-w-[832px]">
+      <div className={`${threadSessionStripClass} gap-2 px-3.5 py-3`}>
+        <div
+          className={`flex min-w-0 items-center gap-2 ${appTypeMetaClass} ${appToneSubtleClass}`}
+        >
+          <span className="truncate">{thread.projectName}</span>
+          <span aria-hidden="true">•</span>
+          <span className="shrink-0 tabular-nums">{thread.age}</span>
+          {thread.running ? (
+            <>
+              <span aria-hidden="true">•</span>
+              <span className={`shrink-0 ${appTypeControlStrongClass} text-[color:var(--accent)]`}>
+                working
+              </span>
+            </>
+          ) : null}
+        </div>
+        <p
+          className={`m-0 max-h-[calc(1.68em*4)] overflow-y-auto whitespace-pre-wrap break-words ${appTypeReadableClass} ${appToneTextClass} [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}
+        >
+          {prompt}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function InboxThreadMessage({ thread }: { thread: InboxThread }) {
+  const messageMarkdown = thread.content.join('\n\n').trim()
+  return (
+    <div className="min-h-0 overflow-y-auto">
+      <div className="grid h-full w-full content-start justify-items-center pb-5">
+        <div className={`min-h-0 w-full ${WORKSPACE_CONTENT_MAX_WIDTH_CLASS} text-pretty`}>
+          <div className="border-t border-[color:var(--border)]/70 pt-2">
+            {messageMarkdown ? (
+              <MarkdownContent
+                markdown={messageMarkdown}
+                className={`gap-3 ${appTypeReadableClass} text-pretty`}
+              />
+            ) : (
+              <div
+                className={`grid min-h-28 place-items-center rounded-lg bg-[color:var(--folded-row-bg)] ${inlineEmptyNoteClass}`}
+              >
+                {thread.running ? 'Still working…' : 'No final assistant message yet.'}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function InboxView({
   appSettings,
   availableModels,
@@ -283,60 +339,10 @@ export function InboxView({
     return <InboxEmptyState />
   }
 
-  const prompt = thread.prompt?.trim() || thread.title
-  const messageMarkdown = thread.content.join('\n\n').trim()
-
   return (
     <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] pt-6 pb-4">
-      <div className="mx-auto w-full max-w-[832px]">
-        <div className={`${threadSessionStripClass} gap-2 px-3.5 py-3`}>
-          <div
-            className={`flex min-w-0 items-center gap-2 ${appTypeMetaClass} ${appToneSubtleClass}`}
-          >
-            <span className="truncate">{thread.projectName}</span>
-            <span aria-hidden="true">•</span>
-            <span className="shrink-0 tabular-nums">{thread.age}</span>
-            {thread.running ? (
-              <>
-                <span aria-hidden="true">•</span>
-                <span
-                  className={`shrink-0 ${appTypeControlStrongClass} text-[color:var(--accent)]`}
-                >
-                  working
-                </span>
-              </>
-            ) : null}
-          </div>
-          <p
-            className={`m-0 max-h-[calc(1.68em*4)] overflow-y-auto whitespace-pre-wrap break-words ${appTypeReadableClass} ${appToneTextClass} [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}
-          >
-            {prompt}
-          </p>
-        </div>
-      </div>
-
-      <div className="min-h-0 overflow-y-auto">
-        <div className="grid h-full w-full content-start justify-items-center pb-5">
-          <div className={`min-h-0 w-full ${WORKSPACE_CONTENT_MAX_WIDTH_CLASS} text-pretty`}>
-            {messageMarkdown ? (
-              <div className="border-t border-[color:var(--border)]/70 pt-2">
-                <MarkdownContent
-                  markdown={messageMarkdown}
-                  className={`gap-3 ${appTypeReadableClass} text-pretty`}
-                />
-              </div>
-            ) : (
-              <div className="border-t border-[color:var(--border)]/70 pt-2">
-                <div
-                  className={`grid min-h-28 place-items-center rounded-lg bg-[color:var(--folded-row-bg)] ${inlineEmptyNoteClass}`}
-                >
-                  {thread.running ? 'Still working…' : 'No final assistant message yet.'}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <InboxThreadHeader thread={thread} />
+      <InboxThreadMessage thread={thread} />
 
       <div>
         <WorkspaceComposerDock
