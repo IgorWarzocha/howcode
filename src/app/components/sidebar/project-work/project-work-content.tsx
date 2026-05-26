@@ -352,13 +352,15 @@ export function SingleProjectWorkContent({
           project={project}
           onOpenDashboard={openProjectDashboard}
         />
-        <ProjectActionsMenuButton project={project} onAction={onAction} />
-        <NewThreadMenu
-          currentBranch={currentBranch}
-          isGitRepo={isGitRepo}
-          onAction={onAction}
-          projectId={project.id}
-        />
+        <div className="sidebar-project-work-toolbar-actions">
+          <ProjectActionsMenuButton project={project} onAction={onAction} />
+          <NewThreadMenu
+            currentBranch={currentBranch}
+            isGitRepo={isGitRepo}
+            onAction={onAction}
+            projectId={project.id}
+          />
+        </div>
       </div>
 
       <div className="sidebar-project-work-actions">

@@ -8,9 +8,18 @@
   min-height: 1.75rem;
   min-width: 0;
   align-items: center;
+  justify-content: space-between;
+  gap: 0.125rem;
+  padding-left: 0.125rem;
+  padding-right: 0.625rem;
+}
+
+.sidebar-project-work-toolbar-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
   justify-content: flex-end;
   gap: 0.125rem;
-  padding-right: 0.625rem;
 }
 
 .sidebar-project-work-action-row > svg:first-child,

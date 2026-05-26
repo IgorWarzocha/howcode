@@ -182,7 +182,7 @@ export function ProjectOverview({
     composerOverlayHeight > 0 ? `calc(60% - ${measuredComposerHeight / 2}px + 0.5rem)` : '100%'
   return (
     <div
-      className="mx-auto grid min-h-0 w-full grid-cols-[minmax(2rem,1fr)_minmax(0,800px)_minmax(2rem,1fr)] content-end gap-x-2 overflow-y-auto px-0 text-left [scrollbar-gutter:stable]"
+      className="mx-auto grid min-h-0 w-full grid-cols-[minmax(2rem,1fr)_minmax(0,800px)_minmax(2rem,1fr)] content-center gap-x-2 overflow-y-auto px-0 text-left [scrollbar-gutter:stable]"
       style={{ height: dashboardHeight }}
     >
       <div className="col-start-2 grid min-h-0 w-full grid-cols-[2rem_minmax(0,1fr)_2rem] content-end gap-x-2 gap-y-3 min-[560px]:gap-y-4 [@media(max-height:660px)]:gap-y-2">
