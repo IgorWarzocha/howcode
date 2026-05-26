@@ -8,6 +8,7 @@ import { openExternalQuery } from '../../query/desktop-query'
 import { buildXtermTheme } from './terminal-xterm-theme'
 import {
   DEFAULT_TERMINAL_COLS,
+  DEFAULT_TERMINAL_FONT_FAMILY,
   DEFAULT_TERMINAL_ROWS,
   normalizeTerminalDimension,
   writeSystemMessage,
@@ -57,7 +58,7 @@ export function useTerminalXtermInstance({
         cursorBlink: true,
         scrollback: 5_000,
         convertEol: false,
-        fontFamily: '"Liberation Mono", Consolas, Menlo, monospace',
+        fontFamily: DEFAULT_TERMINAL_FONT_FAMILY,
         fontSize: 12,
         lineHeight: 1.2,
         theme: buildXtermTheme(mount),
