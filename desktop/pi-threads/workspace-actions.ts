@@ -288,7 +288,14 @@ async function handleCompletedWorktreesWorkspaceAction(
       merge: options.merge,
     })
     didMutate = didMutate || result.didMutate === true
-    if ('error' in result) return handledAction({ ...result, didMutate })
+    if ('error' in result) {
+      return handledAction({
+        ...result,
+        didMutate,
+        failedWorktreeBranchName: worktree.branchName,
+        failedWorktreePath: worktree.worktreePath,
+      })
+    }
   }
 
   return handledAction({ didMutate: true, rootProjectId: projectId })

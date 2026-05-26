@@ -327,6 +327,17 @@ function getCompletedWorktreeTargets(group: BranchThreadGroup) {
   }))
 }
 
+function getCompletedWorktreeFailureLabel(
+  group: BranchThreadGroup,
+  failedWorktreePath: string | undefined,
+  failedWorktreeBranchName: string | null | undefined,
+) {
+  const completedWorktrees =
+    group.completedWorktrees ?? group.worktrees.filter((worktree) => worktree.complete)
+  const failedWorktree = completedWorktrees.find((worktree) => worktree.path === failedWorktreePath)
+  return failedWorktree?.label ?? failedWorktreeBranchName ?? failedWorktreePath ?? 'a worktree'
+}
+
 export function MergeCompletedWorktreesAction({
   group,
   project,
@@ -363,8 +374,13 @@ export function MergeCompletedWorktreesAction({
             .then((result) => {
               const error = result?.result?.error
               if (typeof error === 'string' && error.trim().length > 0) {
+                const failureLabel = getCompletedWorktreeFailureLabel(
+                  group,
+                  result?.result?.failedWorktreePath,
+                  result?.result?.failedWorktreeBranchName,
+                )
                 setWarningMessage(
-                  'Merge needs attention in parent branch. Start a session on the parent branch to resolve it.',
+                  `${failureLabel} did not merge. Start a session on the parent branch to resolve it.`,
                 )
               }
             })

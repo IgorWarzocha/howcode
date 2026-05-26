@@ -307,6 +307,8 @@ export type DesktopActionResultData = {
   deletedThreadIds?: string[] | undefined
   didMutate?: boolean | undefined
   error?: string | undefined
+  failedWorktreeBranchName?: string | undefined | null | undefined
+  failedWorktreePath?: string | undefined
   failedThreadIds?: string[] | undefined
   importedProjectIds?: string[] | undefined
   message?: string | undefined | null | undefined
