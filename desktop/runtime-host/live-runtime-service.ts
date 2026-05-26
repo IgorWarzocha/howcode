@@ -203,7 +203,7 @@ export async function sendComposerPrompt(
     const runtime = await createRuntimeForNewSession(
       request.projectId ?? getDesktopWorkingDirectory(),
       request.composerSessionDir,
-      { chatGroupId: request.chatGroupId ?? null },
+      { branchName: request.branchName ?? null, chatGroupId: request.chatGroupId ?? null },
     )
     await applyComposerModeSettings(runtime, request)
     return await runSend(runtime)
@@ -212,6 +212,7 @@ export async function sendComposerPrompt(
   if (cachedRuntimePromise) {
     const cachedRuntime = await cachedRuntimePromise
     if (cachedRuntime.session.isStreaming || isRuntimeExtensionCommandRunning(cachedRuntime)) {
+      cachedRuntime.branchName = request.branchName ?? cachedRuntime.branchName ?? null
       return await runSend(cachedRuntime)
     }
   }
@@ -222,6 +223,7 @@ export async function sendComposerPrompt(
       settingsCwd: request.composerSessionDir ?? null,
       chatGroupId: request.chatGroupId ?? null,
     })
+    runtime.branchName = request.branchName ?? runtime.branchName ?? null
     await applyComposerModeSettings(runtime, request)
     return await runSend(runtime)
   })

@@ -4,6 +4,7 @@ export type SessionSummaryRecord = {
   sessionPath: string
   title: string
   lastModifiedMs: number
+  branchName?: string | undefined | null | undefined
 }
 
 export type ProjectRow = {

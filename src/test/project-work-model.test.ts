@@ -84,7 +84,7 @@ describe('project work sidebar model', () => {
     expect(groups.at(-1)).toMatchObject({ unassigned: true, label: 'Unassigned' })
   })
 
-  it('keeps present worktrees nested under their source branch', () => {
+  it('represents a branch checkout with no root sessions as a worktree row', () => {
     const groups = buildBranchGroups(
       [],
       'main',
@@ -92,17 +92,13 @@ describe('project work sidebar model', () => {
       [{ label: 'feature/worktree', path: '/repo/.worktrees/feature-worktree' }],
     )
 
-    expect(groups.map((group) => group.id)).toEqual(['main', 'feature/worktree'])
+    expect(groups.map((group) => group.id)).toEqual(['main', '/repo/.worktrees/feature-worktree'])
     expect(groups[1]).toMatchObject({
       label: 'feature/worktree',
       threads: [],
-      worktree: false,
-      worktrees: [
-        {
-          path: '/repo/.worktrees/feature-worktree',
-          threads: [],
-        },
-      ],
+      worktree: true,
+      worktreePath: '/repo/.worktrees/feature-worktree',
+      worktrees: [],
     })
   })
 
@@ -149,8 +145,8 @@ describe('project work sidebar model', () => {
       ],
     )
 
-    expect(groups.map((group) => group.id)).toEqual(['main', 'feature/worktree'])
-    expect(groups[1]?.worktrees[0]?.threads).toMatchObject([{ id: 'worktree-thread' }])
+    expect(groups.map((group) => group.id)).toEqual(['main', '/repo/.worktrees/feature-worktree'])
+    expect(groups[1]).toMatchObject({ worktree: true, threads: [{ id: 'worktree-thread' }] })
   })
 
   it('sorts present worktrees before inactive branch-only groups', () => {
@@ -161,7 +157,11 @@ describe('project work sidebar model', () => {
       [{ label: 'aaa-worktree', path: '/repo/.worktrees/aaa-worktree' }],
     )
 
-    expect(groups.map((group) => group.id)).toEqual(['main', 'aaa-worktree', 'zzz-branch'])
+    expect(groups.map((group) => group.id)).toEqual([
+      'main',
+      '/repo/.worktrees/aaa-worktree',
+      'zzz-branch',
+    ])
   })
 
   it('marks completed nested worktrees as complete', () => {
@@ -179,13 +179,10 @@ describe('project work sidebar model', () => {
     )
 
     expect(groups[1]).toMatchObject({
-      worktree: false,
-      worktrees: [
-        {
-          complete: true,
-          path: '/repo/.worktrees/done-worktree',
-        },
-      ],
+      worktree: true,
+      worktreeComplete: true,
+      worktreePath: '/repo/.worktrees/done-worktree',
+      worktrees: [],
     })
   })
 

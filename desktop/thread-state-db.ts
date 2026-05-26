@@ -32,6 +32,7 @@ export {
   archiveThread,
   archiveThreads,
   assignThreadBranch,
+  assignThreadToProjectBranch,
   beginInboxThreadTurn,
   clearReadInboxThreads,
   collapseAllProjects,

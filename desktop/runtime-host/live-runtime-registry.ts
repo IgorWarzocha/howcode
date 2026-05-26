@@ -145,7 +145,10 @@ export async function getOrCreateRuntimeForSessionPath(
 export async function createRuntimeForNewSession(
   cwd: string,
   sessionDir?: string | undefined | null | undefined,
-  options: { chatGroupId?: string | undefined | null | undefined } = {},
+  options: {
+    branchName?: string | undefined | null | undefined
+    chatGroupId?: string | undefined | null | undefined
+  } = {},
 ) {
   const runtime = await createLiveRuntime(
     {
@@ -156,6 +159,7 @@ export async function createRuntimeForNewSession(
     },
     liveRuntimeFactoryHandlers,
   )
+  runtime.branchName = options.branchName ?? null
   const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile)
   if (runtimeKey) {
     registerRuntime(runtimeKey, Promise.resolve(runtime), sessionDir ?? null)

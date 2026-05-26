@@ -141,6 +141,23 @@ function createBranchThreadGroup(input: {
     }))
     .sort((a, b) => a.label.localeCompare(b.label))
   const branchThreads = sortThreads(input.groupedThreads.get(input.branchName) ?? [])
+  if (!input.current && branchThreads.length === 0 && worktrees.length === 1) {
+    const [worktree] = worktrees
+    if (worktree) {
+      return {
+        id: worktree.id,
+        label: worktree.label,
+        threads: worktree.threads,
+        worktrees: [],
+        current: false,
+        unassigned: false,
+        worktree: true,
+        worktreeComplete: worktree.complete,
+        worktreePath: worktree.path,
+        worktreeBranchName: worktree.branchName ?? input.branchName,
+      }
+    }
+  }
   return {
     id: input.branchName,
     label: input.branchName,

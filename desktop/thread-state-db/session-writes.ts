@@ -16,6 +16,10 @@ const worktreeBranchForCwdSql = `
   WHERE cwd = ? AND is_main = 0
 `
 
+function getSessionBranchName(session: SessionSummaryRecord) {
+  return session.branchName?.trim() || null
+}
+
 function escapeLikePattern(value: string) {
   return value.replace(/[\\%_]/g, (character) => `\\${character}`)
 }
@@ -102,7 +106,7 @@ export function syncSessionSummaries(cwd: string, sessions: SessionSummaryRecord
   const insertThread = db.prepare(
     `
       INSERT INTO threads (id, cwd, session_path, title, last_modified_ms, branch_name)
-      VALUES (?, ?, ?, ?, ?, (${worktreeBranchForCwdSql}))
+      VALUES (?, ?, ?, ?, ?, COALESCE(?, (${worktreeBranchForCwdSql})))
       ON CONFLICT(session_path) DO UPDATE SET
         id = excluded.id,
         cwd = excluded.cwd,
@@ -126,6 +130,7 @@ export function syncSessionSummaries(cwd: string, sessions: SessionSummaryRecord
         session.sessionPath,
         session.title,
         session.lastModifiedMs,
+        getSessionBranchName(session),
         session.cwd,
       )
     }
@@ -149,7 +154,7 @@ export function upsertThreadSummary(session: SessionSummaryRecord) {
   db.prepare(
     `
       INSERT INTO threads (id, cwd, session_path, title, last_modified_ms, branch_name)
-      VALUES (?, ?, ?, ?, ?, (${worktreeBranchForCwdSql}))
+      VALUES (?, ?, ?, ?, ?, COALESCE(?, (${worktreeBranchForCwdSql})))
       ON CONFLICT(session_path) DO UPDATE SET
         id = excluded.id,
         cwd = excluded.cwd,
@@ -164,6 +169,7 @@ export function upsertThreadSummary(session: SessionSummaryRecord) {
     session.sessionPath,
     session.title,
     session.lastModifiedMs,
+    getSessionBranchName(session),
     session.cwd,
   )
 

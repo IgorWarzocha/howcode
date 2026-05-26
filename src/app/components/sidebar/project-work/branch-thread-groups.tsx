@@ -94,7 +94,15 @@ export function shouldSeparateBranchGroups(
   nextGroup: BranchThreadGroup | undefined,
 ) {
   if (!nextGroup) return false
-  return getBranchVisualGroupKey(group) !== getBranchVisualGroupKey(nextGroup)
+  const groupIsCheckoutCluster = group.current || group.worktree || group.worktrees.length > 0
+  const nextGroupIsCheckoutCluster =
+    nextGroup.current || nextGroup.worktree || nextGroup.worktrees.length > 0
+  return groupIsCheckoutCluster && !nextGroupIsCheckoutCluster
+}
+
+function getThreadAssignBranchForGroup(group: BranchThreadGroup, currentBranch: string | null) {
+  if (!group.worktree) return currentBranch
+  return group.worktreeBranchName ?? group.label
 }
 
 export function BranchThreadGroupSection({
@@ -141,6 +149,7 @@ export function BranchThreadGroupSection({
   })
   const switchBlocked = switchErrorBranchId === actionState.branchActionKey
   const threadProject = group.worktreePath ? { ...project, id: group.worktreePath } : project
+  const threadAssignBranch = getThreadAssignBranchForGroup(group, currentBranch)
   const canToggleThreads = group.threads.length > 0
   const hasWorktrees = group.worktrees.length > 0
   const canToggleGroup = canToggleThreads || hasWorktrees
@@ -230,7 +239,7 @@ export function BranchThreadGroupSection({
                   thread={thread}
                   onAction={onAction}
                   onThreadOpen={onThreadOpen}
-                  currentBranch={currentBranch}
+                  currentBranch={threadAssignBranch}
                 />
               ))}
             </div>
@@ -291,6 +300,7 @@ function WorktreeGroupSection({
   const worktreeActionKey = `${project.id}:${worktree.id}`
   const confirmingPrune = pruneConfirmBranchId === worktreeActionKey
   const threadProject = { ...project, id: worktree.path }
+  const threadAssignBranch = worktree.branchName ?? group.label
   const worktreeGroup: BranchThreadGroup = {
     id: worktree.id,
     label: worktree.label,
@@ -363,7 +373,7 @@ function WorktreeGroupSection({
               thread={thread}
               onAction={onAction}
               onThreadOpen={onThreadOpen}
-              currentBranch={currentBranch}
+              currentBranch={threadAssignBranch}
             />
           ))}
         </div>

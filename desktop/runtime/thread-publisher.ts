@@ -139,6 +139,7 @@ function upsertPersistedThreadSummary({
     sessionPath,
     title: thread.title,
     lastModifiedMs: timestamp,
+    branchName: runtime.branchName ?? null,
   })
   if (isChatSessionPath(sessionPath)) {
     upsertChatThread({ sessionPath, groupId: runtime.chatGroupId ?? null })
@@ -232,6 +233,7 @@ export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThr
     projectId,
     threadId,
     sessionPath,
+    branchName: runtime.branchName ?? null,
     chatGroupId: runtime.chatGroupId ?? null,
     isChat: isChatSessionPath(sessionPath),
     thread,

@@ -60,13 +60,19 @@ cp -a "$src" "$dest"
 # Replace the launch log for this run.
 : > "$log_file"
 
-# Launch and record pid.
-("$dest/howcode" >"$log_file" 2>&1 & echo $! > "$pid_file")
+# Launch fully detached from the agent shell/session and record pid.
+setsid -f "$dest/howcode" >"$log_file" 2>&1
 sleep 1
 
-pid=$(cat "$pid_file")
+pid=$(pgrep -f "^$dest/howcode" | head -n1 || true)
+if [ -z "$pid" ]; then
+  echo "Launch did not stay up; log follows:" >&2
+  tail -80 "$log_file" >&2 || true
+  exit 1
+fi
+echo "$pid" > "$pid_file"
 echo "Launched $dest/howcode pid=$pid"
-ps -p "$pid" -o pid,cmd --no-headers || true
+ps -p "$pid" -o pid,ppid,sid,cmd --no-headers || true
 echo "Log: $log_file"
 tail -80 "$log_file" || true
 ```

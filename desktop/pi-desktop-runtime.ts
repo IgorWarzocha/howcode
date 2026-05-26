@@ -100,6 +100,7 @@ async function persistHostThreadUpdate(event: Extract<DesktopEvent, { type: 'thr
     sessionPath: event.sessionPath,
     title: event.thread.title,
     lastModifiedMs: timestamp,
+    branchName: event.branchName ?? null,
   })
 
   event.threadId = threadId

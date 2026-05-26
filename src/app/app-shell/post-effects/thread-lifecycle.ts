@@ -34,6 +34,10 @@ function getPayloadThreadId(payload: ActionPayload) {
   return typeof payload.threadId === 'string' ? payload.threadId : null
 }
 
+function isString(value: unknown): value is string {
+  return typeof value === 'string'
+}
+
 function clearSelectedThreadIfIncluded(input: ThreadLifecycleInput, threadIds: string[]) {
   const selectedThreadId = input.workspaceState.selectedThreadId
   if (!(selectedThreadId && new Set(threadIds).has(selectedThreadId))) return
@@ -89,8 +93,15 @@ function getDeletedThreadIds(input: ThreadLifecycleInput) {
 
 export async function applyArchivedThreadPostEffect(input: ThreadLifecycleInput) {
   const projectId = getPayloadProjectId(input.contextualPayload)
-  if (projectId) await input.loadProjectThreads(projectId)
-  if (projectId) await invalidateProjectUsage(input, [projectId])
+  const resultAffectedProjectIds = Array.isArray(input.actionResult?.result?.affectedProjectIds)
+    ? input.actionResult.result.affectedProjectIds.filter(isString)
+    : []
+  const affectedProjectIds = [...new Set([projectId, ...resultAffectedProjectIds].filter(isString))]
+  if (input.action === 'thread.assign-branch' && affectedProjectIds.length > 1) {
+    await input.refreshShellState()
+  }
+  await Promise.all(affectedProjectIds.map((id) => input.loadProjectThreads(id)))
+  await invalidateProjectUsage(input, affectedProjectIds)
   if (input.action === 'thread.archive' || input.action === 'thread.archive-many') {
     await refreshArchivedIfVisible(input)
   }

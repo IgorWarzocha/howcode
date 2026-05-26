@@ -314,6 +314,7 @@ export type DesktopActionResultData = {
   originUrl?: string | undefined | null | undefined
   piSettings?: PiSettings
   previewed?: boolean | undefined
+  affectedProjectIds?: string[] | undefined
   projectId?: string | undefined
   rootProjectId?: string | undefined
   projects?: ProjectImportCandidate[]

@@ -2,6 +2,12 @@ import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../../shared/de
 import { getThreadStateDatabase } from './db.ts'
 import { runInTransaction } from './write-transaction.ts'
 
+const pathSeparatorPattern = /[\\/]/
+
+function isString(value: unknown): value is string {
+  return typeof value === 'string'
+}
+
 export type ProjectUsageTotalsDelta = {
   cwd: string
   input: number
@@ -74,15 +80,63 @@ export function toggleThreadPinned(threadId: string) {
 }
 
 export function assignThreadBranch(threadId: string, branchName: string | null) {
+  return assignThreadToProjectBranch(threadId, branchName)
+}
+
+export function assignThreadToProjectBranch(
+  threadId: string,
+  branchName: string | null,
+  projectId?: string | null,
+) {
   const normalizedBranchName = branchName?.trim() || null
+  const normalizedProjectId = projectId?.trim() || null
   const db = getThreadStateDatabase()
-  db.prepare(
-    `
-      UPDATE threads
-      SET branch_name = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `,
-  ).run(normalizedBranchName, threadId)
+  const current = db
+    .prepare(
+      `
+        SELECT cwd AS projectId
+        FROM threads
+        WHERE id = ?
+      `,
+    )
+    .get(threadId) as { projectId?: string | undefined } | undefined
+
+  if (normalizedProjectId) {
+    db.prepare(
+      `
+        INSERT INTO projects (cwd, name)
+        VALUES (?, ?)
+        ON CONFLICT(cwd) DO NOTHING
+      `,
+    ).run(
+      normalizedProjectId,
+      normalizedProjectId.split(pathSeparatorPattern).filter(Boolean).at(-1) || normalizedProjectId,
+    )
+  }
+
+  if (normalizedProjectId) {
+    db.prepare(
+      `
+        UPDATE threads
+        SET cwd = ?, branch_name = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `,
+    ).run(normalizedProjectId, normalizedBranchName, threadId)
+  } else {
+    db.prepare(
+      `
+        UPDATE threads
+        SET branch_name = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `,
+    ).run(normalizedBranchName, threadId)
+  }
+
+  const nextProjectId = normalizedProjectId ?? current?.projectId
+  return {
+    affectedProjectIds: [...new Set([current?.projectId, nextProjectId].filter(isString))],
+    projectId: nextProjectId,
+  }
 }
 
 export function archiveThread(threadId: string) {

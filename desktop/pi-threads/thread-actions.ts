@@ -6,6 +6,7 @@ import type { AnyDesktopActionPayload } from '../../shared/desktop-contracts.ts'
 import {
   getBranchName,
   getComposerRequest,
+  getProjectId,
   getSessionPath,
   getThreadId,
   getThreadIds,
@@ -18,6 +19,7 @@ import {
   archiveThread,
   archiveThreads,
   assignThreadBranch,
+  assignThreadToProjectBranch,
   clearReadInboxThreads,
   deleteThreadRecord,
   dismissInboxThread,
@@ -223,8 +225,10 @@ const threadActionHandlers = {
   },
   'thread.assign-branch': (payload) => {
     const threadId = getThreadId(payload)
-    if (threadId) assignThreadBranch(threadId, getBranchName(payload))
-    return handledAction()
+    if (!threadId) return handledAction()
+    return handledAction(
+      assignThreadToProjectBranch(threadId, getBranchName(payload), getProjectId(payload)),
+    )
   },
   'thread.restore': (payload) => {
     const threadId = getThreadId(payload)

@@ -353,6 +353,7 @@ export function applyThreadEventToSidebarState({
       id: event.threadId,
       title: event.thread.title,
       sessionPath: event.sessionPath,
+      branchName: event.branchName,
       running: event.thread.isStreaming || event.thread.isCompacting,
     }),
     chatGroupId: event.isChat === true ? event.chatGroupId : undefined,

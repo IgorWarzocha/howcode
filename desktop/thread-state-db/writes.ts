@@ -30,6 +30,7 @@ export {
   archiveThread,
   archiveThreads,
   assignThreadBranch,
+  assignThreadToProjectBranch,
   deleteThreadRecord,
   deleteThreadRecordsBySessionPaths,
   restoreThread,
