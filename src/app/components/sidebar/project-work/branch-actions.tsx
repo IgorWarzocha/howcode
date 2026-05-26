@@ -45,29 +45,37 @@ function BranchConfirmPopover({
   }, [onCancel])
 
   return (
-    <div ref={popoverRef} className="sidebar-project-work-branch-confirm-popover">
-      <button
-        type="button"
-        className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-confirm-button"
-        onClick={(event) => {
-          event.stopPropagation()
-          onCancel()
-        }}
-        aria-label="Dismiss confirmation"
-      >
-        <X size={12} />
-      </button>
-      <button
-        type="button"
-        className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-confirm-button sidebar-project-work-branch-confirm-button--danger"
-        onClick={(event) => {
-          event.stopPropagation()
-          onConfirm()
-        }}
-        aria-label={confirmAriaLabel}
-      >
-        {confirmIcon}
-      </button>
+    <div
+      ref={popoverRef}
+      className="sidebar-project-work-branch-actions sidebar-project-work-branch-confirm-popover"
+      data-action-count="2"
+    >
+      <span className="tooltip-anchor">
+        <button
+          type="button"
+          className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-confirm-button"
+          onClick={(event) => {
+            event.stopPropagation()
+            onCancel()
+          }}
+          aria-label="Dismiss confirmation"
+        >
+          <X size={12} />
+        </button>
+      </span>
+      <span className="tooltip-anchor">
+        <button
+          type="button"
+          className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--danger sidebar-project-work-branch-confirm-button"
+          onClick={(event) => {
+            event.stopPropagation()
+            onConfirm()
+          }}
+          aria-label={confirmAriaLabel}
+        >
+          {confirmIcon}
+        </button>
+      </span>
     </div>
   )
 }
@@ -161,20 +169,25 @@ export function BranchPruneAction({
     onConfirm()
   }
 
+  const actionButton = (
+    <button
+      type="button"
+      className={`sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action${confirming ? ' sidebar-project-work-branch-action--danger' : ''}`}
+      onClick={(event) => {
+        event.stopPropagation()
+        setErrorMessage(null)
+        onRequestConfirm()
+      }}
+      aria-label={`${actionLabel} ${group.label}`}
+    >
+      <XSquare size={12} />
+    </button>
+  )
+
   if (confirming) {
     return (
       <span className="sidebar-project-work-branch-confirm-anchor">
-        <button
-          type="button"
-          className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--danger"
-          onClick={(event) => {
-            event.stopPropagation()
-            void runPrune()
-          }}
-          aria-label={`Confirm ${actionLabel.toLowerCase()} ${group.label}`}
-        >
-          <XSquare size={12} />
-        </button>
+        {actionButton}
         <BranchConfirmPopover
           confirmAriaLabel={`Confirm ${actionLabel.toLowerCase()} ${group.label}`}
           confirmIcon={<XSquare size={12} />}
@@ -187,18 +200,7 @@ export function BranchPruneAction({
 
   return (
     <Tooltip content={errorMessage ?? `${actionLabel} ${group.label}`} placement="right">
-      <button
-        type="button"
-        className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action"
-        onClick={(event) => {
-          event.stopPropagation()
-          setErrorMessage(null)
-          onRequestConfirm()
-        }}
-        aria-label={`${actionLabel} ${group.label}`}
-      >
-        <XSquare size={12} />
-      </button>
+      {actionButton}
     </Tooltip>
   )
 }
@@ -337,20 +339,24 @@ export function RemoveCompletedWorktreesAction({
     if (!result?.result?.error) onConfirm()
   }
 
+  const actionButton = (
+    <button
+      type="button"
+      className={`sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action${confirming ? ' sidebar-project-work-branch-action--danger' : ''}`}
+      onClick={(event) => {
+        event.stopPropagation()
+        onRequestConfirm()
+      }}
+      aria-label={`Remove completed worktrees under ${group.label}`}
+    >
+      <Trash2 size={12} />
+    </button>
+  )
+
   if (confirming) {
     return (
       <span className="sidebar-project-work-branch-confirm-anchor">
-        <button
-          type="button"
-          className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--danger"
-          onClick={(event) => {
-            event.stopPropagation()
-            void removeCompleted()
-          }}
-          aria-label={`Remove completed worktrees under ${group.label}`}
-        >
-          <Trash2 size={12} />
-        </button>
+        {actionButton}
         <BranchConfirmPopover
           confirmAriaLabel={`Remove completed worktrees under ${group.label}`}
           confirmIcon={<Trash2 size={12} />}
@@ -363,17 +369,7 @@ export function RemoveCompletedWorktreesAction({
 
   return (
     <Tooltip content="Remove completed worktrees" placement="right">
-      <button
-        type="button"
-        className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action"
-        onClick={(event) => {
-          event.stopPropagation()
-          onRequestConfirm()
-        }}
-        aria-label={`Remove completed worktrees under ${group.label}`}
-      >
-        <Trash2 size={12} />
-      </button>
+      {actionButton}
     </Tooltip>
   )
 }
