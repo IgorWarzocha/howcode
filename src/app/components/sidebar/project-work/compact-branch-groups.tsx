@@ -21,7 +21,7 @@ function getCompletedWorktreesForCompactCurrentBranch(
       {
         label: group.label,
         path: group.worktreePath,
-        branchName: group.worktreeBranchName ?? group.label,
+        branchName: group.worktreeBranchName ?? null,
         complete: true,
       },
     ]
@@ -91,9 +91,13 @@ export function ProjectCompactBranchGroups({
     worktree: false,
   }
   const currentBranchActionKey = `${project.id}:${currentBranchGroup.id}`
-  const completedWorktreesActionKey = `${currentBranchActionKey}:completed-worktrees`
+  const mergeCompletedWorktreesActionKey = `${currentBranchActionKey}:merge-completed-worktrees`
+  const removeCompletedWorktreesActionKey = `${currentBranchActionKey}:remove-completed-worktrees`
   const confirmingCurrentPrune = pruneConfirmBranchId === currentBranchActionKey
-  const confirmingRemoveCompletedWorktrees = pruneConfirmBranchId === completedWorktreesActionKey
+  const confirmingMergeCompletedWorktrees =
+    pruneConfirmBranchId === mergeCompletedWorktreesActionKey
+  const confirmingRemoveCompletedWorktrees =
+    pruneConfirmBranchId === removeCompletedWorktreesActionKey
   const canPruneCurrentBranch = Boolean(currentBranch)
   const currentBranchActionCount =
     (canPruneCurrentBranch ? 1 : 0) + (hasCompletedWorktrees ? 2 : 0) + 1
@@ -137,7 +141,11 @@ export function ProjectCompactBranchGroups({
             className="sidebar-project-work-branch-actions"
             data-action-count={currentBranchActionCount}
             data-confirming={
-              confirmingCurrentPrune || confirmingRemoveCompletedWorktrees ? 'true' : 'false'
+              confirmingCurrentPrune ||
+              confirmingMergeCompletedWorktrees ||
+              confirmingRemoveCompletedWorktrees
+                ? 'true'
+                : 'false'
             }
           >
             <BranchInlineActions
@@ -148,6 +156,7 @@ export function ProjectCompactBranchGroups({
               canMergeCompletedWorktrees={hasCompletedWorktrees}
               canRemoveCompletedWorktrees={hasCompletedWorktrees}
               confirmingPrune={confirmingCurrentPrune}
+              confirmingMergeCompletedWorktrees={confirmingMergeCompletedWorktrees}
               confirmingRemoveCompletedWorktrees={confirmingRemoveCompletedWorktrees}
               currentBranch={currentBranch}
               group={currentBranchGroup}
@@ -157,10 +166,15 @@ export function ProjectCompactBranchGroups({
               onCancelPrune={() => onSetPruneConfirmBranchId(null)}
               onConfirmPrune={() => onSetPruneConfirmBranchId(null)}
               onRequestPruneConfirm={() => onSetPruneConfirmBranchId(currentBranchActionKey)}
+              onCancelMergeCompletedWorktrees={() => onSetPruneConfirmBranchId(null)}
+              onConfirmMergeCompletedWorktrees={() => onSetPruneConfirmBranchId(null)}
+              onRequestMergeCompletedWorktreesConfirm={() =>
+                onSetPruneConfirmBranchId(mergeCompletedWorktreesActionKey)
+              }
               onCancelRemoveCompletedWorktrees={() => onSetPruneConfirmBranchId(null)}
               onConfirmRemoveCompletedWorktrees={() => onSetPruneConfirmBranchId(null)}
               onRequestRemoveCompletedWorktreesConfirm={() =>
-                onSetPruneConfirmBranchId(completedWorktreesActionKey)
+                onSetPruneConfirmBranchId(removeCompletedWorktreesActionKey)
               }
               onSwitchBlocked={() => undefined}
               onSwitchFailed={() => undefined}
@@ -265,6 +279,7 @@ export function ProjectCompactBranchGroups({
                   canMergeCompletedWorktrees={false}
                   canRemoveCompletedWorktrees={false}
                   confirmingPrune={false}
+                  confirmingMergeCompletedWorktrees={false}
                   confirmingRemoveCompletedWorktrees={false}
                   currentBranch={currentBranch}
                   group={unassignedGroup}
@@ -274,6 +289,9 @@ export function ProjectCompactBranchGroups({
                   onCancelPrune={() => undefined}
                   onConfirmPrune={() => undefined}
                   onRequestPruneConfirm={() => undefined}
+                  onCancelMergeCompletedWorktrees={() => undefined}
+                  onConfirmMergeCompletedWorktrees={() => undefined}
+                  onRequestMergeCompletedWorktreesConfirm={() => undefined}
                   onCancelRemoveCompletedWorktrees={() => undefined}
                   onConfirmRemoveCompletedWorktrees={() => undefined}
                   onRequestRemoveCompletedWorktreesConfirm={() => undefined}

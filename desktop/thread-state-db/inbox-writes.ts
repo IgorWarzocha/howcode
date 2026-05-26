@@ -98,16 +98,28 @@ export function dismissInboxThreadAfterReply(sessionPath: string) {
 
 export function consumeInboxReplySuppression(sessionPath: string) {
   const db = getThreadStateDatabase()
-  const result = db
-    .prepare(
-      `
-        DELETE FROM inbox_reply_suppressions
-        WHERE session_path = ?
-      `,
-    )
-    .run(sessionPath) as { changes: number }
+  let changes = 0
+  runInTransaction(db, () => {
+    const result = db
+      .prepare(
+        `
+          DELETE FROM inbox_reply_suppressions
+          WHERE session_path = ?
+        `,
+      )
+      .run(sessionPath) as { changes: number }
+    changes = result.changes
+    if (changes > 0) {
+      db.prepare(
+        `
+          DELETE FROM inbox_items
+          WHERE session_path = ?
+        `,
+      ).run(sessionPath)
+    }
+  })
 
-  return result.changes > 0
+  return changes > 0
 }
 
 export function clearReadInboxThreads(olderThanMs: number | null = null) {

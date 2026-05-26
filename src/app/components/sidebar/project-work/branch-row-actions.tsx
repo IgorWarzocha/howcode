@@ -87,6 +87,7 @@ export function BranchInlineActions({
   canMergeCompletedWorktrees,
   canRemoveCompletedWorktrees,
   confirmingPrune,
+  confirmingMergeCompletedWorktrees,
   confirmingRemoveCompletedWorktrees,
   currentBranch,
   group,
@@ -96,6 +97,9 @@ export function BranchInlineActions({
   onCancelPrune,
   onConfirmPrune,
   onRequestPruneConfirm,
+  onCancelMergeCompletedWorktrees,
+  onConfirmMergeCompletedWorktrees,
+  onRequestMergeCompletedWorktreesConfirm,
   onCancelRemoveCompletedWorktrees,
   onConfirmRemoveCompletedWorktrees,
   onRequestRemoveCompletedWorktreesConfirm,
@@ -109,6 +113,7 @@ export function BranchInlineActions({
   canMergeCompletedWorktrees: boolean
   canRemoveCompletedWorktrees: boolean
   confirmingPrune: boolean
+  confirmingMergeCompletedWorktrees: boolean
   confirmingRemoveCompletedWorktrees: boolean
   currentBranch: string | null
   group: BranchThreadGroup
@@ -118,6 +123,9 @@ export function BranchInlineActions({
   onCancelPrune: () => void
   onConfirmPrune: () => void
   onRequestPruneConfirm: () => void
+  onCancelMergeCompletedWorktrees: () => void
+  onConfirmMergeCompletedWorktrees: () => void
+  onRequestMergeCompletedWorktreesConfirm: () => void
   onCancelRemoveCompletedWorktrees: () => void
   onConfirmRemoveCompletedWorktrees: () => void
   onRequestRemoveCompletedWorktreesConfirm: () => void
@@ -149,7 +157,15 @@ export function BranchInlineActions({
         />
       ) : null}
       {canMergeCompletedWorktrees ? (
-        <MergeCompletedWorktreesAction group={group} project={project} onAction={onAction} />
+        <MergeCompletedWorktreesAction
+          confirming={confirmingMergeCompletedWorktrees}
+          group={group}
+          project={project}
+          onAction={onAction}
+          onCancel={onCancelMergeCompletedWorktrees}
+          onConfirm={onConfirmMergeCompletedWorktrees}
+          onRequestConfirm={onRequestMergeCompletedWorktreesConfirm}
+        />
       ) : null}
       {canSwitch ? (
         <BranchSwitchAction

@@ -227,7 +227,14 @@ async function handleMergeWorktreeWorkspaceAction(payload: AnyDesktopActionPaylo
   setProjectWorktreeCompleted(worktreePath, true)
   const threadIds = listProjectThreadIds(worktreePath)
   const removeResult = await removeProjectWorktree(projectId, worktreePath)
-  if ('error' in removeResult) return handledAction(removeResult)
+  if ('error' in removeResult) {
+    return handledAction({
+      ...removeResult,
+      didMutate: true,
+      projectId: worktreePath,
+      rootProjectId: projectId,
+    })
+  }
 
   const branchResult = await pruneProjectBranch(projectId, branchName)
   const cleanupError = await deletePersistedThreadsForWorkspace(threadIds)
@@ -257,7 +264,14 @@ async function cleanupWorktree(input: {
 
   const threadIds = listProjectThreadIds(input.worktreePath)
   const removeResult = await removeProjectWorktree(input.projectId, input.worktreePath)
-  if ('error' in removeResult) return removeResult
+  if ('error' in removeResult) {
+    return {
+      ...removeResult,
+      didMutate: true,
+      projectId: input.worktreePath,
+      rootProjectId: input.projectId,
+    }
+  }
 
   const branchResult = input.branchName
     ? await pruneProjectBranch(input.projectId, input.branchName)

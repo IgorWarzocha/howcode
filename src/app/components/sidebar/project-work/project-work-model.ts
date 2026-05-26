@@ -95,13 +95,13 @@ export type BranchThreadGroup = {
   worktree: boolean
   worktreeComplete?: boolean | undefined
   worktreePath?: string | undefined
-  worktreeBranchName?: string | undefined
+  worktreeBranchName?: string | null | undefined
 }
 
 export type WorktreeBranch = {
   label: string
   path: string
-  branchName?: string | undefined
+  branchName?: string | null | undefined
   complete?: boolean | undefined
 }
 
@@ -164,7 +164,7 @@ function createBranchThreadGroup(input: {
         worktree: true,
         worktreeComplete: worktree.complete,
         worktreePath: worktree.path,
-        worktreeBranchName: worktree.branchName ?? input.branchName,
+        worktreeBranchName: worktree.branchName ?? null,
       }
     }
   }
@@ -448,7 +448,7 @@ export function getWorktreeBranchesForProject(
         worktree.path.split(pathSeparatorPattern).filter(Boolean).at(-1) ??
         worktree.path,
       path: worktree.path,
-      branchName: worktree.branch ?? undefined,
+      branchName: worktree.branch ?? null,
       complete: projectById.get(worktree.path)?.worktree?.completed ?? false,
     }))
 }

@@ -38,23 +38,35 @@ function BranchHeadingRow({ children, unassigned }: { children: ReactNode; unass
   )
 }
 
+function hasCompletedWorktrees(group: BranchThreadGroup) {
+  return (
+    (group.completedWorktrees?.length ?? 0) > 0 ||
+    group.worktrees.some((worktree) => worktree.complete)
+  )
+}
+
+function hasMergeableCompletedWorktrees(group: BranchThreadGroup) {
+  return (
+    (group.completedWorktrees?.some((worktree) => Boolean(worktree.branchName)) ?? false) ||
+    group.worktrees.some((worktree) => worktree.complete && Boolean(worktree.branchName))
+  )
+}
+
 function getBranchActionState(input: {
   group: BranchThreadGroup
   projectId: string
   pruneConfirmBranchId: string | null
 }) {
   const { group, projectId, pruneConfirmBranchId } = input
-  const canPruneBranch = !group.unassigned
+  const canPruneBranch = !(group.unassigned || (group.worktree && !group.worktreeBranchName))
   const canSwitchBranch = !(group.current || group.unassigned || group.worktree)
   const canToggleWorktreeComplete = group.worktree
-  const canMergeWorktree = group.worktree
-  const hasCompletedWorktrees =
-    (group.completedWorktrees?.length ?? 0) > 0 ||
-    group.worktrees.some((worktree) => worktree.complete)
-  const canMergeCompletedWorktrees = !group.worktree && hasCompletedWorktrees
-  const canRemoveCompletedWorktrees = !group.worktree && hasCompletedWorktrees
+  const canMergeWorktree = group.worktree && Boolean(group.worktreeBranchName)
+  const canMergeCompletedWorktrees = !group.worktree && hasMergeableCompletedWorktrees(group)
+  const canRemoveCompletedWorktrees = !group.worktree && hasCompletedWorktrees(group)
   const branchActionKey = `${projectId}:${group.id}`
-  const completedWorktreesActionKey = `${branchActionKey}:completed-worktrees`
+  const mergeCompletedWorktreesActionKey = `${branchActionKey}:merge-completed-worktrees`
+  const removeCompletedWorktreesActionKey = `${branchActionKey}:remove-completed-worktrees`
   return {
     actionCount:
       (canPruneBranch ? 1 : 0) +
@@ -65,7 +77,8 @@ function getBranchActionState(input: {
       (canRemoveCompletedWorktrees ? 1 : 0) +
       1,
     branchActionKey,
-    completedWorktreesActionKey,
+    mergeCompletedWorktreesActionKey,
+    removeCompletedWorktreesActionKey,
     canPruneBranch,
     canSwitchBranch,
     canToggleWorktreeComplete,
@@ -73,7 +86,8 @@ function getBranchActionState(input: {
     canMergeCompletedWorktrees,
     canRemoveCompletedWorktrees,
     confirmingPrune: pruneConfirmBranchId === branchActionKey,
-    confirmingRemoveCompletedWorktrees: pruneConfirmBranchId === completedWorktreesActionKey,
+    confirmingMergeCompletedWorktrees: pruneConfirmBranchId === mergeCompletedWorktreesActionKey,
+    confirmingRemoveCompletedWorktrees: pruneConfirmBranchId === removeCompletedWorktreesActionKey,
   }
 }
 
@@ -102,7 +116,7 @@ export function shouldSeparateBranchGroups(
 
 function getThreadAssignBranchForGroup(group: BranchThreadGroup, currentBranch: string | null) {
   if (!group.worktree) return currentBranch
-  return group.worktreeBranchName ?? group.label
+  return group.worktreeBranchName ?? null
 }
 
 export function BranchThreadGroupSection({
@@ -192,7 +206,9 @@ export function BranchThreadGroupSection({
           className="sidebar-project-work-branch-actions"
           data-action-count={actionState.actionCount}
           data-confirming={
-            actionState.confirmingPrune || actionState.confirmingRemoveCompletedWorktrees
+            actionState.confirmingPrune ||
+            actionState.confirmingMergeCompletedWorktrees ||
+            actionState.confirmingRemoveCompletedWorktrees
               ? 'true'
               : 'false'
           }
@@ -205,6 +221,7 @@ export function BranchThreadGroupSection({
             canMergeCompletedWorktrees={actionState.canMergeCompletedWorktrees}
             canRemoveCompletedWorktrees={actionState.canRemoveCompletedWorktrees}
             confirmingPrune={actionState.confirmingPrune}
+            confirmingMergeCompletedWorktrees={actionState.confirmingMergeCompletedWorktrees}
             confirmingRemoveCompletedWorktrees={actionState.confirmingRemoveCompletedWorktrees}
             currentBranch={currentBranch}
             group={group}
@@ -214,10 +231,15 @@ export function BranchThreadGroupSection({
             onCancelPrune={() => onSetPruneConfirmBranchId(null)}
             onConfirmPrune={() => onSetPruneConfirmBranchId(null)}
             onRequestPruneConfirm={() => onSetPruneConfirmBranchId(actionState.branchActionKey)}
+            onCancelMergeCompletedWorktrees={() => onSetPruneConfirmBranchId(null)}
+            onConfirmMergeCompletedWorktrees={() => onSetPruneConfirmBranchId(null)}
+            onRequestMergeCompletedWorktreesConfirm={() =>
+              onSetPruneConfirmBranchId(actionState.mergeCompletedWorktreesActionKey)
+            }
             onCancelRemoveCompletedWorktrees={() => onSetPruneConfirmBranchId(null)}
             onConfirmRemoveCompletedWorktrees={() => onSetPruneConfirmBranchId(null)}
             onRequestRemoveCompletedWorktreesConfirm={() =>
-              onSetPruneConfirmBranchId(actionState.completedWorktreesActionKey)
+              onSetPruneConfirmBranchId(actionState.removeCompletedWorktreesActionKey)
             }
             onSwitchBlocked={() => onSetSwitchErrorBranchId(actionState.branchActionKey)}
             onSwitchFailed={() => onSetSwitchErrorBranchId(null)}
@@ -249,7 +271,6 @@ export function BranchThreadGroupSection({
               key={worktree.id}
               activeView={activeView}
               currentBranch={currentBranch}
-              group={group}
               hideSessionCounts={hideSessionCounts}
               isLast={index === group.worktrees.length - 1}
               project={project}
@@ -271,7 +292,6 @@ export function BranchThreadGroupSection({
 function WorktreeGroupSection({
   activeView,
   currentBranch,
-  group,
   hideSessionCounts,
   isLast,
   project,
@@ -285,7 +305,6 @@ function WorktreeGroupSection({
 }: {
   activeView: View
   currentBranch: string | null
-  group: BranchThreadGroup
   hideSessionCounts: boolean
   isLast: boolean
   project: Project
@@ -300,7 +319,9 @@ function WorktreeGroupSection({
   const worktreeActionKey = `${project.id}:${worktree.id}`
   const confirmingPrune = pruneConfirmBranchId === worktreeActionKey
   const threadProject = { ...project, id: worktree.path }
-  const threadAssignBranch = worktree.branchName ?? group.label
+  const threadAssignBranch = worktree.branchName ?? null
+  const worktreeHasBranch = Boolean(worktree.branchName)
+  const worktreeActionCount = (worktreeHasBranch ? 2 : 0) + 2
   const worktreeGroup: BranchThreadGroup = {
     id: worktree.id,
     label: worktree.label,
@@ -311,7 +332,7 @@ function WorktreeGroupSection({
     worktree: true,
     worktreeComplete: worktree.complete,
     worktreePath: worktree.path,
-    worktreeBranchName: worktree.branchName ?? group.label,
+    worktreeBranchName: worktree.branchName ?? null,
   }
 
   return (
@@ -333,17 +354,18 @@ function WorktreeGroupSection({
         </span>
         <span
           className="sidebar-project-work-branch-actions"
-          data-action-count="4"
+          data-action-count={worktreeActionCount}
           data-confirming={confirmingPrune ? 'true' : 'false'}
         >
           <BranchInlineActions
-            canPrune={true}
+            canPrune={worktreeHasBranch}
             canSwitch={false}
             canToggleWorktreeComplete={true}
-            canMergeWorktree={true}
+            canMergeWorktree={worktreeHasBranch}
             canMergeCompletedWorktrees={false}
             canRemoveCompletedWorktrees={false}
             confirmingPrune={confirmingPrune}
+            confirmingMergeCompletedWorktrees={false}
             confirmingRemoveCompletedWorktrees={false}
             currentBranch={currentBranch}
             group={worktreeGroup}
@@ -353,6 +375,9 @@ function WorktreeGroupSection({
             onCancelPrune={() => onSetPruneConfirmBranchId(null)}
             onConfirmPrune={() => onSetPruneConfirmBranchId(null)}
             onRequestPruneConfirm={() => onSetPruneConfirmBranchId(worktreeActionKey)}
+            onCancelMergeCompletedWorktrees={() => undefined}
+            onConfirmMergeCompletedWorktrees={() => undefined}
+            onRequestMergeCompletedWorktreesConfirm={() => undefined}
             onCancelRemoveCompletedWorktrees={() => undefined}
             onConfirmRemoveCompletedWorktrees={() => undefined}
             onRequestRemoveCompletedWorktreesConfirm={() => undefined}

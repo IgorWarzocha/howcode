@@ -318,13 +318,18 @@ export function WorktreeMergeAction({
   )
 }
 
-function getCompletedWorktreeTargets(group: BranchThreadGroup) {
+function getCompletedWorktreeTargets(
+  group: BranchThreadGroup,
+  options: { requireBranch?: boolean } = {},
+) {
   const completedWorktrees =
     group.completedWorktrees ?? group.worktrees.filter((worktree) => worktree.complete)
-  return completedWorktrees.map((worktree) => ({
-    worktreePath: worktree.path,
-    branchName: worktree.branchName ?? group.label,
-  }))
+  return completedWorktrees
+    .filter((worktree) => !options.requireBranch || Boolean(worktree.branchName))
+    .map((worktree) => ({
+      worktreePath: worktree.path,
+      branchName: worktree.branchName ?? null,
+    }))
 }
 
 function getCompletedWorktreeFailureLabel(
@@ -341,55 +346,88 @@ function getCompletedWorktreeFailureLabel(
 export function MergeCompletedWorktreesAction({
   group,
   project,
+  confirming,
   onAction,
+  onCancel,
+  onConfirm,
+  onRequestConfirm,
 }: {
   group: BranchThreadGroup
   project: Project
+  confirming: boolean
   onAction: DesktopActionInvoker
+  onCancel: () => void
+  onConfirm: () => void
+  onRequestConfirm: () => void
 }) {
   const [pending, setPending] = useState(false)
   const [warningMessage, setWarningMessage] = useState<string | null>(null)
-  const worktrees = getCompletedWorktreeTargets(group)
+  const worktrees = getCompletedWorktreeTargets(group, { requireBranch: true })
   if (worktrees.length === 0) return null
+
+  const mergeCompleted = () => {
+    setPending(true)
+    setWarningMessage(null)
+    void onAction('workspace.merge-completed-worktrees', {
+      projectId: project.id,
+      worktrees,
+    })
+      .then((result) => {
+        const error = result?.result?.error
+        if (typeof error === 'string' && error.trim().length > 0) {
+          const failureLabel = getCompletedWorktreeFailureLabel(
+            group,
+            result?.result?.failedWorktreePath,
+            result?.result?.failedWorktreeBranchName,
+          )
+          setWarningMessage(
+            `${failureLabel} did not merge. Start a session on the parent branch to resolve it.`,
+          )
+          return
+        }
+        onConfirm()
+      })
+      .finally(() => setPending(false))
+  }
 
   const tooltipContent = pending
     ? 'Merging completed worktrees…'
     : (warningMessage ?? 'Merge completed worktrees')
 
+  const actionButton = (
+    <button
+      type="button"
+      className={`sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-merge-action${confirming ? ' sidebar-project-work-branch-action--danger' : ''}`}
+      data-warning={warningMessage ? 'true' : 'false'}
+      disabled={pending}
+      onClick={(event) => {
+        event.stopPropagation()
+        setWarningMessage(null)
+        onRequestConfirm()
+      }}
+      aria-label={`Merge completed worktrees under ${group.label}`}
+    >
+      {pending ? <ActivitySpinner className="h-3 w-3 text-current" /> : <GitMerge size={12} />}
+    </button>
+  )
+
+  if (confirming) {
+    return (
+      <span className="tooltip-anchor sidebar-project-work-branch-confirm-anchor">
+        {actionButton}
+        <BranchConfirmPopover
+          confirmAriaLabel={`Merge completed worktrees under ${group.label}`}
+          confirmIcon={<GitMerge size={12} />}
+          onCancel={onCancel}
+          onConfirm={mergeCompleted}
+        />
+      </span>
+    )
+  }
+
   return (
     <Tooltip content={tooltipContent} placement="right">
-      <button
-        type="button"
-        className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-merge-action"
-        data-warning={warningMessage ? 'true' : 'false'}
-        disabled={pending}
-        onClick={(event) => {
-          event.stopPropagation()
-          setPending(true)
-          setWarningMessage(null)
-          void onAction('workspace.merge-completed-worktrees', {
-            projectId: project.id,
-            worktrees,
-          })
-            .then((result) => {
-              const error = result?.result?.error
-              if (typeof error === 'string' && error.trim().length > 0) {
-                const failureLabel = getCompletedWorktreeFailureLabel(
-                  group,
-                  result?.result?.failedWorktreePath,
-                  result?.result?.failedWorktreeBranchName,
-                )
-                setWarningMessage(
-                  `${failureLabel} did not merge. Start a session on the parent branch to resolve it.`,
-                )
-              }
-            })
-            .finally(() => setPending(false))
-        }}
-        aria-label={`Merge completed worktrees under ${group.label}`}
-      >
-        {pending ? <ActivitySpinner className="h-3 w-3 text-current" /> : <GitMerge size={12} />}
-      </button>
+      {actionButton}
     </Tooltip>
   )
 }

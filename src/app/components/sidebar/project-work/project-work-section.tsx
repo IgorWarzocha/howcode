@@ -16,6 +16,7 @@ import {
   getCurrentBranchForProject,
   getDisplayableProjects,
   getDisplayableWorkspaces,
+  getProjectGitStateForSidebar,
   getProjectScopeLabel,
   getRepositoryBranchesForProject,
   getThreadBucketsForProjectWork,
@@ -261,6 +262,11 @@ export function ProjectWorkSection({
     projectGitState,
     gitStatesByProjectId,
   )
+  const contentProjectGitState = getProjectGitStateForSidebar(
+    contentProject.id,
+    projectGitState,
+    gitStatesByProjectId,
+  )
   const worktreeBranches = getWorktreeBranchesForProject(
     contentProject,
     displayableWorkspaces,
@@ -349,7 +355,7 @@ export function ProjectWorkSection({
           collapsedBranchIds={collapsedBranchIds}
           currentBranch={currentBranch}
           hideSessionCounts={appSettings.hideSidebarSessionCounts}
-          isGitRepo={Boolean(projectGitState?.isGitRepo)}
+          isGitRepo={Boolean(contentProjectGitState?.isGitRepo)}
           normalizedSearchQuery={normalizedSearchQuery}
           olderThreadCount={olderThreads.length}
           project={contentProject}
