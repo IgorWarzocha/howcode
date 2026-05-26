@@ -37,7 +37,7 @@ type ProjectWorkSectionProps = {
   selectedThreadId: string | null
   projectTargetMode?: boolean | undefined
   projectScopeLockActive?: boolean | undefined
-  terminalRunningProjectIds: ReadonlySet<string>
+  terminalRunningWorkspaceIds: ReadonlySet<string>
   terminalRunningSessionPaths: ReadonlySet<string>
   onAction: DesktopActionInvoker
   onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
@@ -61,7 +61,7 @@ export function ProjectWorkSection({
   initialVisibleProjectIds,
   selectedProjectId,
   selectedThreadId,
-  terminalRunningProjectIds,
+  terminalRunningWorkspaceIds,
   terminalRunningSessionPaths,
   onAction,
   onLoadProjectThreads,
@@ -204,7 +204,7 @@ export function ProjectWorkSection({
           projects={scopeSelectorProjects}
           scopeProject={null}
           selectedProject={null}
-          terminalRunningProjectIds={terminalRunningProjectIds}
+          terminalRunningWorkspaceIds={terminalRunningWorkspaceIds}
           visibleProjects={visibleProjects}
           onAction={onAction}
           onOpenChange={setProjectSwitcherOpen}
@@ -225,7 +225,7 @@ export function ProjectWorkSection({
         <ProjectInstallTargetList
           projects={displayableProjects}
           selectedProjectId={selectedProjectId}
-          terminalRunningProjectIds={terminalRunningProjectIds}
+          terminalRunningWorkspaceIds={terminalRunningWorkspaceIds}
           onAction={onAction}
           onProjectPrimeSelection={onProjectPrimeSelection}
           onProjectTargetSelected={onProjectTargetSelected}
@@ -289,7 +289,7 @@ export function ProjectWorkSection({
         projects={scopeSelectorProjects}
         scopeProject={scopeProject}
         selectedProject={selectedProject}
-        terminalRunningProjectIds={terminalRunningProjectIds}
+        terminalRunningWorkspaceIds={terminalRunningWorkspaceIds}
         visibleProjects={visibleProjects}
         onAction={onAction}
         onOpenChange={setProjectSwitcherOpenState}

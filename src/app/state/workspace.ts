@@ -13,7 +13,7 @@ export type UtilityViewReturnState = {
   selectedThreadId: string | null
   selectedSessionPath: string | null
   terminalVisible: boolean
-  projectTerminalVisibleByProject: Record<string, boolean>
+  workspaceTerminalVisibleByWorkspace: Record<string, boolean>
   restoreTerminalVisibleOnGitOpsClose: boolean
   takeoverVisible: boolean
   gitOpsReturnView: NonGitOpsView
@@ -29,7 +29,7 @@ export type WorkspaceState = {
   selectedThreadId: string | null
   selectedSessionPath: string | null
   terminalVisible: boolean
-  projectTerminalVisibleByProject: Record<string, boolean>
+  workspaceTerminalVisibleByWorkspace: Record<string, boolean>
   terminalVisibleBySession: Record<string, boolean>
   restoreTerminalVisibleOnGitOpsClose: boolean
   takeoverVisible: boolean
@@ -99,7 +99,7 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
     selectedThreadId: null,
     selectedSessionPath: null,
     terminalVisible: false,
-    projectTerminalVisibleByProject: {},
+    workspaceTerminalVisibleByWorkspace: {},
     terminalVisibleBySession: {},
     restoreTerminalVisibleOnGitOpsClose: false,
     takeoverVisible: false,

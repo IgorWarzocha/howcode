@@ -119,7 +119,7 @@ function AppShellSidebar(props: AppShellLayoutViewProps) {
       selectedChatGroupId={controller.selectedChatGroupId}
       settingsOpen={state.settingsOpen}
       projectScopeLockActive={projectScopeLockActive}
-      terminalRunningProjectIds={controller.terminalRunningProjectIds}
+      terminalRunningWorkspaceIds={controller.terminalRunningWorkspaceIds}
       terminalRunningSessionPaths={controller.terminalRunningSessionPaths}
       collapsedProjectIds={effectiveCollapsedProjectIds}
       onAction={handleAction}

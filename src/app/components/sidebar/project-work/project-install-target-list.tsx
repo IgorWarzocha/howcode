@@ -6,14 +6,14 @@ import type { Project } from '../../../types'
 export function ProjectInstallTargetList({
   projects,
   selectedProjectId,
-  terminalRunningProjectIds,
+  terminalRunningWorkspaceIds,
   onAction,
   onProjectPrimeSelection,
   onProjectTargetSelected,
 }: {
   projects: Project[]
   selectedProjectId: string
-  terminalRunningProjectIds: ReadonlySet<string>
+  terminalRunningWorkspaceIds: ReadonlySet<string>
   onAction: DesktopActionInvoker
   onProjectPrimeSelection: (projectId: string) => void
   onProjectTargetSelected?: (() => void) | undefined
@@ -54,7 +54,7 @@ export function ProjectInstallTargetList({
                   )}
                   <span className="truncate">{project.name}</span>
                 </span>
-                {terminalRunningProjectIds.has(project.id) ? (
+                {terminalRunningWorkspaceIds.has(project.id) ? (
                   <span
                     className="sidebar-project-work-live-dot"
                     title="Running terminal"

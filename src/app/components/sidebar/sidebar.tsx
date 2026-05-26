@@ -43,7 +43,7 @@ type SidebarProps = {
   selectedChatGroupId: string | null
   settingsOpen: boolean
   projectScopeLockActive: boolean
-  terminalRunningProjectIds: ReadonlySet<string>
+  terminalRunningWorkspaceIds: ReadonlySet<string>
   terminalRunningSessionPaths: ReadonlySet<string>
   collapsedProjectIds: Record<string, boolean>
   onAction: DesktopActionInvoker
@@ -150,7 +150,7 @@ function SidebarContent(props: SidebarProps) {
         initialVisibleProjectIds={props.sidebarVisibleProjectIds}
         selectedProjectId={props.selectedProjectId}
         selectedThreadId={props.selectedThreadId}
-        terminalRunningProjectIds={props.terminalRunningProjectIds}
+        terminalRunningWorkspaceIds={props.terminalRunningWorkspaceIds}
         terminalRunningSessionPaths={props.terminalRunningSessionPaths}
         onAction={props.onAction}
         appSettings={props.appSettings}
@@ -175,7 +175,7 @@ function SidebarContent(props: SidebarProps) {
       projectScopeLockActive={props.projectScopeLockActive}
       selectedProjectId={props.selectedProjectId}
       selectedThreadId={props.selectedThreadId}
-      terminalRunningProjectIds={props.terminalRunningProjectIds}
+      terminalRunningWorkspaceIds={props.terminalRunningWorkspaceIds}
       terminalRunningSessionPaths={props.terminalRunningSessionPaths}
       onAction={props.onAction}
       appSettings={props.appSettings}
@@ -210,7 +210,7 @@ export function Sidebar({
   selectedChatGroupId,
   settingsOpen,
   projectScopeLockActive,
-  terminalRunningProjectIds,
+  terminalRunningWorkspaceIds,
   terminalRunningSessionPaths,
   collapsedProjectIds,
   onAction,
@@ -273,7 +273,7 @@ export function Sidebar({
     selectedChatGroupId,
     settingsOpen,
     projectScopeLockActive,
-    terminalRunningProjectIds,
+    terminalRunningWorkspaceIds,
     terminalRunningSessionPaths,
     collapsedProjectIds,
     onAction,

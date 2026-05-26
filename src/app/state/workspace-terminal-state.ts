@@ -57,7 +57,7 @@ export function shouldMigrateTerminalVisibilityForOpenedThread(
   if (
     state.activeView === 'project' &&
     state.selectedProjectId === action.projectId &&
-    (state.projectTerminalVisibleByProject[action.projectId] ?? false)
+    (state.workspaceTerminalVisibleByWorkspace[action.projectId] ?? false)
   ) {
     return true
   }
@@ -78,7 +78,7 @@ export function shouldMigrateTerminalVisibilityForOpenedThread(
 }
 
 export function getTerminalStateForNextView(state: WorkspaceState, nextView: View) {
-  const getProjectTerminalVisible = () => {
+  const getWorkspaceTerminalVisible = () => {
     if (state.selectedSessionPath) {
       return getTerminalVisibilityForSession(
         state.terminalVisibleBySession,
@@ -86,7 +86,7 @@ export function getTerminalStateForNextView(state: WorkspaceState, nextView: Vie
       )
     }
     return state.selectedProjectId
-      ? (state.projectTerminalVisibleByProject[state.selectedProjectId] ?? false)
+      ? (state.workspaceTerminalVisibleByWorkspace[state.selectedProjectId] ?? false)
       : false
   }
 
@@ -99,7 +99,7 @@ export function getTerminalStateForNextView(state: WorkspaceState, nextView: Vie
               state.selectedSessionPath,
             )
           : nextView === 'project'
-            ? getProjectTerminalVisible()
+            ? getWorkspaceTerminalVisible()
             : state.terminalVisible,
       restoreTerminalVisibleOnGitOpsClose: state.restoreTerminalVisibleOnGitOpsClose,
     }
@@ -126,8 +126,8 @@ export function setTerminalVisibleState(state: WorkspaceState, visible: boolean)
     return {
       ...state,
       terminalVisible: visible,
-      projectTerminalVisibleByProject: {
-        ...state.projectTerminalVisibleByProject,
+      workspaceTerminalVisibleByWorkspace: {
+        ...state.workspaceTerminalVisibleByWorkspace,
         [state.selectedProjectId]: visible,
       },
     }

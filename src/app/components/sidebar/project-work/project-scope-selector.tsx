@@ -65,7 +65,7 @@ export function ProjectScopeSelector({
   projects,
   scopeProject,
   selectedProject,
-  terminalRunningProjectIds,
+  terminalRunningWorkspaceIds,
   visibleProjects,
   onAction,
   onOpenChange,
@@ -78,7 +78,7 @@ export function ProjectScopeSelector({
   projects: Project[]
   scopeProject: Project | null
   selectedProject: Project | null
-  terminalRunningProjectIds: ReadonlySet<string>
+  terminalRunningWorkspaceIds: ReadonlySet<string>
   visibleProjects: Project[]
   onAction: DesktopActionInvoker
   onOpenChange: (open: boolean) => void
@@ -191,7 +191,7 @@ export function ProjectScopeSelector({
               project={project}
               focused={project.id === selectedProject?.id}
               visible={visibleProjectIds.has(project.id)}
-              running={terminalRunningProjectIds.has(project.id)}
+              running={terminalRunningWorkspaceIds.has(project.id)}
               onToggleVisible={() => onToggleVisibleProject(project.id)}
             />
           ))}

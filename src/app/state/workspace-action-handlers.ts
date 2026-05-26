@@ -30,7 +30,7 @@ function createUtilityViewReturnState(state: WorkspaceState): UtilityViewReturnS
     selectedThreadId: state.selectedThreadId,
     selectedSessionPath: state.selectedSessionPath,
     terminalVisible: state.terminalVisible,
-    projectTerminalVisibleByProject: state.projectTerminalVisibleByProject,
+    workspaceTerminalVisibleByWorkspace: state.workspaceTerminalVisibleByWorkspace,
     restoreTerminalVisibleOnGitOpsClose: state.restoreTerminalVisibleOnGitOpsClose,
     takeoverVisible: state.takeoverVisible,
     gitOpsReturnView: state.gitOpsReturnView,
@@ -50,7 +50,7 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
     selectedThreadId: null,
     selectedSessionPath: null,
     terminalVisible: false,
-    projectTerminalVisibleByProject: {},
+    workspaceTerminalVisibleByWorkspace: {},
     terminalVisibleBySession: {},
     restoreTerminalVisibleOnGitOpsClose: false,
     takeoverVisible: false,
@@ -214,7 +214,7 @@ function openThreadState(
         ...state.terminalVisibleBySession,
         [action.sessionPath]:
           state.activeView === 'project'
-            ? (state.projectTerminalVisibleByProject[action.projectId] ?? false)
+            ? (state.workspaceTerminalVisibleByWorkspace[action.projectId] ?? false)
             : getTerminalVisibilityForSession(
                 state.terminalVisibleBySession,
                 state.selectedSessionPath,
@@ -405,7 +405,7 @@ export const workspaceActionHandlers = {
     landingVisible: false,
     selectedThreadId: null,
     selectedSessionPath: null,
-    terminalVisible: state.projectTerminalVisibleByProject[action.projectId] ?? false,
+    terminalVisible: state.workspaceTerminalVisibleByWorkspace[action.projectId] ?? false,
     selectedDiffFilePath: null,
     takeoverVisible: false,
     gitOpsReturnView: 'project',
