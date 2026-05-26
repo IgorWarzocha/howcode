@@ -126,6 +126,31 @@ describe('project work sidebar model', () => {
     })
   })
 
+  it('groups worktree threads by the worktree branch, not the root current branch', () => {
+    const groups = buildBranchGroups(
+      [
+        thread({
+          id: 'worktree-thread',
+          branchName: 'feature/worktree',
+          lastModifiedMs: 20,
+          sidebarWorktreePath: '/repo/.worktrees/feature-worktree',
+        }),
+      ],
+      'main',
+      ['main'],
+      [
+        {
+          label: 'feature/worktree',
+          path: '/repo/.worktrees/feature-worktree',
+          branchName: 'feature/worktree',
+        },
+      ],
+    )
+
+    expect(groups.map((group) => group.id)).toEqual(['main', 'feature/worktree'])
+    expect(groups[1]?.worktrees[0]?.threads).toMatchObject([{ id: 'worktree-thread' }])
+  })
+
   it('sorts present worktrees before inactive branch-only groups', () => {
     const groups = buildBranchGroups(
       [],

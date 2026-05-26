@@ -75,7 +75,7 @@ export function hasDesktopBridge() {
 
 export function buildLocalThreadFallback(
   projectId: string,
-  options: { chatGroupId?: string | null } = {},
+  options: { chatGroupId?: string | null; branchName?: string | null } = {},
 ) {
   return createLocalThreadDraft(projectId, undefined, options)
 }

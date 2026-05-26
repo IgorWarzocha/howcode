@@ -421,7 +421,7 @@ export function getWorktreeBranchesForProject(
         worktree.path.split(pathSeparatorPattern).filter(Boolean).at(-1) ??
         worktree.path,
       path: worktree.path,
-      branchName: gitState.branch ?? worktree.branch ?? undefined,
+      branchName: worktree.branch ?? undefined,
       complete: projectById.get(worktree.path)?.worktree?.completed ?? false,
     }))
 }
