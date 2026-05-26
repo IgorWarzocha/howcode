@@ -13,11 +13,10 @@ import { ProjectWorkSummaryBlock } from './project-work-block'
 import { SearchHistoryField } from './project-work-fields'
 import {
   type BranchThreadGroup,
-  bucketThreads,
   buildBranchGroups,
   getCurrentBranchForProject,
   getRepositoryBranchesForProject,
-  getThreadsForProjectWorktreeRows,
+  getThreadBucketsForProjectWork,
   getWorktreeBranchesForProject,
   UNASSIGNED_BRANCH_GROUP_ID,
 } from './project-work-model'
@@ -187,7 +186,7 @@ export function MultiProjectWorkContent({
       <div className="sidebar-project-work-scroll-shell">
         <div className="sidebar-project-work-thread-list sidebar-project-work-project-block-list">
           {visibleProjects.map((project) => {
-            const buckets = bucketThreads(project, selectedThreadId)
+            const buckets = getThreadBucketsForProjectWork(project, allProjects, selectedThreadId)
             const blockCurrentBranch = getCurrentBranchForProject(
               project,
               projectGitState,
@@ -205,7 +204,7 @@ export function MultiProjectWorkContent({
               gitStatesByProjectId,
             )
             const branchGroups = buildBranchGroups(
-              [...buckets.activeThreads, ...getThreadsForProjectWorktreeRows(project, allProjects)],
+              buckets.activeThreads,
               blockCurrentBranch,
               repositoryBranches,
               worktreeBranches,

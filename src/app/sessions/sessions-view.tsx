@@ -20,10 +20,16 @@ const OLD_THREAD_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000
 
 type SessionsViewProps = {
   project: Project | null
+  projects: Project[]
   currentBranch: string | null
   onAction: DesktopActionInvoker
   onClose: () => void
   onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void
+}
+
+type PastSessionThread = Thread & {
+  projectId: string
+  worktreeLabel?: string | undefined
 }
 
 type SessionBulkAction = 'delete' | 'assign-current' | 'unassign'
@@ -32,10 +38,29 @@ function getThreadSortValue(thread: Thread) {
   return thread.lastModifiedMs ?? 0
 }
 
-function getOldProjectThreads(project: Project | null) {
+function getWorktreeProjectsForSessions(project: Project | null, projects: readonly Project[]) {
+  if (!project) return []
+  return projects.filter(
+    (candidate) =>
+      candidate.worktree?.isMain === false && candidate.worktree.rootProjectId === project.id,
+  )
+}
+
+function getOldProjectThreads(project: Project | null, projects: readonly Project[]) {
   if (!project) return []
   const cutoffMs = Date.now() - OLD_THREAD_THRESHOLD_MS
-  return [...project.threads]
+  const threads: PastSessionThread[] = [
+    ...project.threads.map((thread) => ({ ...thread, projectId: project.id })),
+    ...getWorktreeProjectsForSessions(project, projects).flatMap((worktreeProject) =>
+      worktreeProject.threads.map((thread) => ({
+        ...thread,
+        projectId: worktreeProject.id,
+        worktreeLabel: worktreeProject.worktree?.branchName ?? worktreeProject.name,
+        branchName: thread.branchName ?? worktreeProject.worktree?.branchName ?? undefined,
+      })),
+    ),
+  ]
+  return threads
     .filter((thread) => {
       if (thread.pinned || thread.running || thread.unread) return false
       return (thread.lastModifiedMs ?? Number.MAX_SAFE_INTEGER) < cutoffMs
@@ -43,13 +68,21 @@ function getOldProjectThreads(project: Project | null) {
     .sort((a, b) => getThreadSortValue(b) - getThreadSortValue(a))
 }
 
-function threadMatchesSearch(thread: Thread, query: string) {
+function threadMatchesSearch(thread: PastSessionThread, query: string) {
   const normalizedQuery = query.trim().toLowerCase()
   if (!normalizedQuery) return true
-  return [thread.title, thread.summary ?? '', thread.branchName ?? '']
+  return [thread.title, thread.summary ?? '', thread.branchName ?? '', thread.worktreeLabel ?? '']
     .join(' ')
     .toLowerCase()
     .includes(normalizedQuery)
+}
+
+function getSessionAssignmentLabel(thread: PastSessionThread) {
+  const branchLabel = thread.branchName ?? 'Unassigned'
+  if (!thread.worktreeLabel) return branchLabel
+  return thread.worktreeLabel === branchLabel
+    ? `${branchLabel} worktree`
+    : `${thread.worktreeLabel} · ${branchLabel}`
 }
 
 function SessionsToolbar({
@@ -162,7 +195,7 @@ function SessionRow({
   currentBranch: string | null
   project: Project | null
   selected: boolean
-  thread: Thread
+  thread: PastSessionThread
   onAction: DesktopActionInvoker
   onDelete: () => void
   onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void
@@ -187,14 +220,14 @@ function SessionRow({
         className="grid min-w-0 grid-cols-[minmax(0,1fr)] items-center text-left"
         onClick={() => {
           if (!(project && thread.sessionPath)) return
-          onOpenThread(project.id, thread.id, thread.sessionPath)
+          onOpenThread(thread.projectId, thread.id, thread.sessionPath)
         }}
       >
         <span className={`truncate ${appToneTextClass}`}>{thread.title}</span>
       </button>
       <span className="inline-flex min-w-0 max-w-44 items-center gap-1 truncate text-xs text-[color:var(--muted-2)]">
         <GitBranch size={12} className="shrink-0" />
-        <span className="truncate">{thread.branchName ?? 'Unassigned'}</span>
+        <span className="truncate">{getSessionAssignmentLabel(thread)}</span>
       </span>
       {canAssignToCurrentBranch && assignLabel ? (
         <Tooltip content={assignLabel}>
@@ -204,7 +237,7 @@ function SessionRow({
             aria-label={`${assignLabel} for ${thread.title}`}
             onClick={() => {
               void onAction('thread.assign-branch', {
-                projectId: project?.id,
+                projectId: thread.projectId,
                 threadId: thread.id,
                 branchName: currentBranch,
               })
@@ -245,13 +278,14 @@ function SessionRow({
 export function SessionsView({
   currentBranch,
   project,
+  projects,
   onAction,
   onClose,
   onOpenThread,
 }: SessionsViewProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedThreadIds, setSelectedThreadIds] = useState<string[]>([])
-  const oldThreads = useMemo(() => getOldProjectThreads(project), [project])
+  const oldThreads = useMemo(() => getOldProjectThreads(project, projects), [project, projects])
   const visibleThreads = useMemo(
     () => oldThreads.filter((thread) => threadMatchesSearch(thread, searchQuery)),
     [oldThreads, searchQuery],
@@ -275,16 +309,25 @@ export function SessionsView({
   const runBulkAction = async (action: SessionBulkAction, threadIds = selectedThreadIds) => {
     if (!project || threadIds.length === 0) return
     if (action === 'delete') {
-      await onAction('thread.delete-many', { projectIds: [project.id], threadIds })
+      const projectIds = [
+        ...new Set(
+          oldThreads
+            .filter((thread) => threadIds.includes(thread.id))
+            .map((thread) => thread.projectId),
+        ),
+      ]
+      await onAction('thread.delete-many', { projectIds, threadIds })
     } else {
       await Promise.all(
-        threadIds.map((threadId) =>
-          onAction('thread.assign-branch', {
-            projectId: project.id,
-            threadId,
-            branchName: action === 'assign-current' ? currentBranch : null,
-          }),
-        ),
+        oldThreads
+          .filter((thread) => threadIds.includes(thread.id))
+          .map((thread) =>
+            onAction('thread.assign-branch', {
+              projectId: thread.projectId,
+              threadId: thread.id,
+              branchName: action === 'assign-current' ? currentBranch : null,
+            }),
+          ),
       )
     }
     setSelectedThreadIds([])

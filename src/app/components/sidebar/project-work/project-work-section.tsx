@@ -11,7 +11,6 @@ import { ProjectInstallTargetList } from './project-install-target-list'
 import { ProjectScopeSelector } from './project-scope-selector'
 import { MultiProjectWorkContent, SingleProjectWorkContent } from './project-work-content'
 import {
-  bucketThreads,
   buildBranchGroups,
   filterBranchGroups,
   getCurrentBranchForProject,
@@ -19,7 +18,7 @@ import {
   getDisplayableWorkspaces,
   getProjectScopeLabel,
   getRepositoryBranchesForProject,
-  getThreadsForProjectWorktreeRows,
+  getThreadBucketsForProjectWork,
   getVisibleProjectIds,
   getWorktreeBranchesForProject,
   getWorktreeProjectsForRoot,
@@ -247,7 +246,11 @@ export function ProjectWorkSection({
   const contentProject = visibleProjects.length === 1 ? visibleProjects[0] : selectedProject
   if (!contentProject) return null
 
-  const { activeThreads, olderThreads } = bucketThreads(contentProject, selectedThreadId)
+  const { activeThreads, olderThreads } = getThreadBucketsForProjectWork(
+    contentProject,
+    displayableWorkspaces,
+    selectedThreadId,
+  )
   const currentBranch = getCurrentBranchForProject(
     contentProject,
     projectGitState,
@@ -265,7 +268,7 @@ export function ProjectWorkSection({
     gitStatesByProjectId,
   )
   const branchGroups = buildBranchGroups(
-    [...activeThreads, ...getThreadsForProjectWorktreeRows(contentProject, displayableWorkspaces)],
+    activeThreads,
     currentBranch,
     repositoryBranches,
     worktreeBranches,

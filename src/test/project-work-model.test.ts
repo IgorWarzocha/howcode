@@ -6,6 +6,7 @@ import {
   getDisplayableProjects,
   getDisplayableWorkspaces,
   getProjectScopeLabel,
+  getThreadBucketsForProjectWork,
   getVisibleProjectIds,
   projectBlockMatchesSearch,
   UNASSIGNED_BRANCH_GROUP_ID,
@@ -63,6 +64,39 @@ describe('project work sidebar model', () => {
       'unread',
     ])
     expect(buckets.olderThreads.map((item) => item.id)).toEqual(['old'])
+  })
+
+  it('buckets inactive worktree threads into older project work sessions with worktree context', () => {
+    vi.setSystemTime(new Date('2026-05-25T00:00:00Z'))
+    const old = Date.now() - 8 * 24 * 60 * 60 * 1000
+    const root = project({
+      id: '/repo',
+      name: 'Repo',
+      worktree: { isMain: true, rootProjectId: '/repo', branchName: 'main', source: 'howcode' },
+    })
+    const worktree = project({
+      id: '/repo/.worktrees/feature',
+      name: 'Repo feature',
+      threads: [thread({ id: 'old-worktree-thread', lastModifiedMs: old })],
+      worktree: {
+        isMain: false,
+        rootProjectId: '/repo',
+        branchName: 'feature',
+        source: 'howcode',
+      },
+    })
+
+    const buckets = getThreadBucketsForProjectWork(root, [root, worktree], null)
+
+    expect(buckets.activeThreads).toEqual([])
+    expect(buckets.olderThreads).toMatchObject([
+      {
+        id: 'old-worktree-thread',
+        branchName: 'feature',
+        sidebarWorktreeLabel: 'feature',
+        sidebarWorktreePath: '/repo/.worktrees/feature',
+      },
+    ])
   })
 
   it('builds branch groups with current branch first and unassigned last', () => {

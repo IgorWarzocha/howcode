@@ -112,6 +112,7 @@ export type WorktreeBranchGroup = WorktreeBranch & {
 
 type SidebarThread = Thread & {
   sidebarWorktreePath?: string | undefined
+  sidebarWorktreeLabel?: string | undefined
 }
 
 type GroupedSidebarThreads = {
@@ -466,9 +467,37 @@ export function getThreadsForProjectWorktreeRows(project: Project, projects: rea
     worktreeProject.threads.map((thread) => ({
       ...thread,
       sidebarWorktreePath: worktreeProject.id,
+      sidebarWorktreeLabel: worktreeProject.worktree?.branchName ?? worktreeProject.name,
       branchName: thread.branchName ?? worktreeProject.worktree?.branchName ?? undefined,
     })),
   )
+}
+
+export function getThreadBucketsForProjectWork(
+  project: Project,
+  projects: readonly Project[],
+  selectedThreadId: string | null,
+) {
+  const rootBuckets = bucketThreads(project, selectedThreadId)
+  const worktreeBuckets = getWorktreeProjectsForRoot(project, projects).reduce(
+    (buckets, worktreeProject) => {
+      const nextBuckets = bucketThreads(worktreeProject, selectedThreadId)
+      const annotateThread = (thread: Thread): SidebarThread => ({
+        ...thread,
+        sidebarWorktreePath: worktreeProject.id,
+        sidebarWorktreeLabel: worktreeProject.worktree?.branchName ?? worktreeProject.name,
+        branchName: thread.branchName ?? worktreeProject.worktree?.branchName ?? undefined,
+      })
+      buckets.activeThreads.push(...nextBuckets.activeThreads.map(annotateThread))
+      buckets.olderThreads.push(...nextBuckets.olderThreads.map(annotateThread))
+      return buckets
+    },
+    { activeThreads: [...rootBuckets.activeThreads], olderThreads: [...rootBuckets.olderThreads] },
+  )
+  return {
+    activeThreads: sortThreads(worktreeBuckets.activeThreads),
+    olderThreads: sortThreads(worktreeBuckets.olderThreads),
+  }
 }
 
 export function filterThreadsForCurrentBranch(
