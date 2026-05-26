@@ -368,6 +368,7 @@ export function MergeCompletedWorktreesAction({
   const mergeCompleted = () => {
     setPending(true)
     setWarningMessage(null)
+    onCancel()
     void onAction('workspace.merge-completed-worktrees', {
       projectId: project.id,
       worktrees,

@@ -242,7 +242,7 @@ function getCompletedWorktreesForBulkActions(groups: readonly BranchThreadGroup[
       {
         label: group.label,
         path: group.worktreePath,
-        branchName: group.worktreeBranchName ?? group.label,
+        branchName: group.worktreeBranchName ?? null,
         complete: true,
       },
     ]

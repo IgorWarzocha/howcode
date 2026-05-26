@@ -242,7 +242,14 @@ async function handleMergeWorktreeWorkspaceAction(payload: AnyDesktopActionPaylo
   if (branchResult && 'error' in branchResult) {
     return handledAction({ didMutate: true, error: branchResult.error })
   }
-  if (cleanupError) return handledAction(cleanupError)
+  if (cleanupError) {
+    return handledAction({
+      ...cleanupError,
+      didMutate: true,
+      projectId: worktreePath,
+      rootProjectId: projectId,
+    })
+  }
 
   return handledAction({ didMutate: true, projectId: worktreePath, rootProjectId: projectId })
 }
@@ -279,7 +286,14 @@ async function cleanupWorktree(input: {
   const cleanupError = await deletePersistedThreadsForWorkspace(threadIds)
   if (!cleanupError) deleteProject(input.worktreePath)
   if (branchResult && 'error' in branchResult) return { didMutate: true, error: branchResult.error }
-  if (cleanupError) return cleanupError
+  if (cleanupError) {
+    return {
+      ...cleanupError,
+      didMutate: true,
+      projectId: input.worktreePath,
+      rootProjectId: input.projectId,
+    }
+  }
 
   return { didMutate: true }
 }
@@ -337,7 +351,14 @@ async function handleRemoveWorktreeWorkspaceAction(payload: AnyDesktopActionPayl
         : branchResult.error,
     })
   }
-  if (cleanupError) return handledAction(cleanupError)
+  if (cleanupError) {
+    return handledAction({
+      ...cleanupError,
+      didMutate: true,
+      projectId: worktreePath,
+      rootProjectId: projectId,
+    })
+  }
 
   return handledAction(removeResult)
 }

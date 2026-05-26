@@ -16,6 +16,7 @@ import type { BranchThreadGroup } from './project-work-model'
 function getStartThreadBranchName(group: BranchThreadGroup, currentBranch: string | null) {
   if (group.current) return currentBranch
   if (group.unassigned) return null
+  if (group.worktree) return group.worktreeBranchName ?? null
   return group.label
 }
 

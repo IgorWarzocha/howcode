@@ -58,7 +58,7 @@ function getBranchActionState(input: {
   pruneConfirmBranchId: string | null
 }) {
   const { group, projectId, pruneConfirmBranchId } = input
-  const canPruneBranch = !(group.unassigned || (group.worktree && !group.worktreeBranchName))
+  const canPruneBranch = !group.unassigned
   const canSwitchBranch = !(group.current || group.unassigned || group.worktree)
   const canToggleWorktreeComplete = group.worktree
   const canMergeWorktree = group.worktree && Boolean(group.worktreeBranchName)

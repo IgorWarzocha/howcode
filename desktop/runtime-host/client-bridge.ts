@@ -338,27 +338,12 @@ export async function disposeRuntimeHostsForWorkspace(request: {
   projectPath: string
   sessionPaths: string[]
 }) {
-  const targets = new Set<HostConnection>()
-  for (const sessionPath of request.sessionPaths) {
-    const host = hostByAlias.get(sessionPath)
-    if (host) targets.add(host)
-  }
   for (const host of hosts) {
-    if (host.role === 'service') targets.add(host)
+    if (!isHostRunningOrStarting(host)) continue
+    await invokeRuntimeHostOnHost(host, 'disposeRuntimeHosts', request)
+    host.busy = false
+    scheduleThreadHostIdleStop(host)
   }
-
-  await Promise.all(
-    [...targets].filter(isHostRunningOrStarting).map((host) =>
-      invokeRuntimeHostOnHost(host, 'disposeRuntimeHosts', request)
-        .then(() => {
-          host.busy = false
-          scheduleThreadHostIdleStop(host)
-        })
-        .catch((error) => {
-          console.warn(`Failed to dispose Pi runtime host sessions (${host.label}).`, error)
-        }),
-    ),
-  )
 }
 
 export function restartRuntimeHostsForEnvironmentChange() {

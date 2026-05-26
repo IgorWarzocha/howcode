@@ -60,6 +60,18 @@ async function hasDirtyWorktree(projectId: string) {
   return stdout.split('\n').some((line) => line.trim().length > 0)
 }
 
+async function hasMergeInProgress(projectId: string) {
+  try {
+    await runGitWithOptions(projectId, ['rev-parse', '-q', '--verify', 'MERGE_HEAD'], {
+      timeout: 10_000,
+      maxBuffer: 1024 * 1024,
+    })
+    return true
+  } catch {
+    return false
+  }
+}
+
 function chooseBranchAfterPrune(branches: Set<string>, branchName: string) {
   for (const candidate of ['main', 'master', 'develop', 'dev']) {
     if (candidate !== branchName && branches.has(candidate)) return candidate
@@ -97,7 +109,10 @@ export async function switchProjectBranch(projectId: string, branchName: string)
     })
     return { didMutate: true }
   } catch (error) {
-    return { error: formatGitCommandError(error) }
+    return {
+      ...((await hasMergeInProgress(projectId)) ? { didMutate: true } : {}),
+      error: formatGitCommandError(error),
+    }
   }
 }
 
