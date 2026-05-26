@@ -341,7 +341,8 @@ export function applyThreadEventToSidebarState({
           event.projectId,
         )
       : null)
-  const projectThreadScopeMatchesView = eventIsChat === (workspaceState.activeView === 'chat')
+  const projectThreadScopeMatchesView =
+    workspaceState.activeView !== 'inbox' && eventIsChat === (workspaceState.activeView === 'chat')
   if (replaceSessionPath) forgetLocalDraftThread(event.projectId, replaceSessionPath)
   upsertSidebarThread({
     queryClient,

@@ -34,6 +34,7 @@ function createRuntime(input: {
   localSessionPath: string
   projectId: string
   shellState: ShellState
+  activeView?: 'project' | 'inbox'
 }) {
   const queryData = new Map<string, unknown>([
     [JSON.stringify(desktopQueryKeys.shellState()), input.shellState],
@@ -53,7 +54,7 @@ function createRuntime(input: {
         current: {
           composerProjectId: input.projectId,
           workspaceState: {
-            activeView: 'project',
+            activeView: input.activeView ?? 'project',
             selectedProjectId: input.projectId,
             selectedThreadId: 'local-thread-draft',
             selectedSessionPath: input.localSessionPath,
@@ -143,5 +144,49 @@ describe('desktop event handlers', () => {
         sessionPath: persistedSessionPath,
       },
     ])
+  })
+
+  it('does not make inbox-only thread events mark project threads loaded with branchless data', () => {
+    const projectId = '/repo/.worktrees/feature-a'
+    const sessionPath = '/sessions/project-a/thread.jsonl'
+    const shellState = {
+      projects: [
+        {
+          id: projectId,
+          name: 'feature-a',
+          threadsLoaded: false,
+          threadCount: 1,
+          collapsed: false,
+          threads: [],
+        },
+      ],
+    } as ShellState
+    const { runtime, getQueryData } = createRuntime({
+      localSessionPath: '',
+      projectId,
+      shellState,
+      activeView: 'inbox',
+    })
+
+    handleDesktopEvent(runtime, {
+      type: 'thread-update',
+      reason: 'end',
+      projectId,
+      threadId: 'thread-1',
+      sessionPath,
+      isChat: false,
+      chatGroupId: null,
+      thread: createThreadData(sessionPath),
+      composer: createComposerState(),
+    })
+
+    const nextShellState = getQueryData(desktopQueryKeys.shellState()) as ShellState
+    expect(nextShellState.projects[0]).toMatchObject({
+      threadsLoaded: false,
+      threads: [],
+    })
+    expect(runtime.queryClient.invalidateQueries).toHaveBeenCalledWith({
+      queryKey: desktopQueryKeys.inboxThreads(),
+    })
   })
 })
