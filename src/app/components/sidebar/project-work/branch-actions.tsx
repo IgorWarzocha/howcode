@@ -1,3 +1,4 @@
+import { ActivitySpinner } from '@howcode/common/activity-spinner'
 import { Tooltip } from '@howcode/common/tooltip'
 import { CheckSquare, GitBranch, GitMerge, Square, Trash2, X, XSquare } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -250,23 +251,43 @@ export function WorktreeMergeAction({
   project: Project
   onAction: DesktopActionInvoker
 }) {
+  const [pending, setPending] = useState(false)
+  const [warningMessage, setWarningMessage] = useState<string | null>(null)
   if (!group.worktreePath) return null
+
+  const tooltipContent = pending
+    ? 'Merging worktree into parent branch…'
+    : (warningMessage ?? 'Merge worktree into parent branch')
+
   return (
-    <Tooltip content="Merge worktree into parent branch" placement="right">
+    <Tooltip content={tooltipContent} placement="right">
       <button
         type="button"
-        className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action"
+        className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-merge-action"
+        data-warning={warningMessage ? 'true' : 'false'}
+        disabled={pending}
         onClick={(event) => {
           event.stopPropagation()
+          setPending(true)
+          setWarningMessage(null)
           void onAction('workspace.merge-worktree', {
             projectId: project.id,
             branchName: group.worktreeBranchName ?? group.label,
             worktreePath: group.worktreePath ?? '',
           })
+            .then((result) => {
+              const error = result?.result?.error
+              if (typeof error === 'string' && error.trim().length > 0) {
+                setWarningMessage(
+                  'Merge needs attention in parent branch. Start a session on the parent branch to resolve it.',
+                )
+              }
+            })
+            .finally(() => setPending(false))
         }}
         aria-label={`Merge ${group.label} worktree into parent branch`}
       >
-        <GitMerge size={12} />
+        {pending ? <ActivitySpinner className="h-3 w-3 text-current" /> : <GitMerge size={12} />}
       </button>
     </Tooltip>
   )
@@ -290,23 +311,43 @@ export function MergeCompletedWorktreesAction({
   project: Project
   onAction: DesktopActionInvoker
 }) {
+  const [pending, setPending] = useState(false)
+  const [warningMessage, setWarningMessage] = useState<string | null>(null)
   const worktrees = getCompletedWorktreeTargets(group)
   if (worktrees.length === 0) return null
+
+  const tooltipContent = pending
+    ? 'Merging completed worktrees…'
+    : (warningMessage ?? 'Merge completed worktrees')
+
   return (
-    <Tooltip content="Merge completed worktrees" placement="right">
+    <Tooltip content={tooltipContent} placement="right">
       <button
         type="button"
-        className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action"
+        className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-merge-action"
+        data-warning={warningMessage ? 'true' : 'false'}
+        disabled={pending}
         onClick={(event) => {
           event.stopPropagation()
+          setPending(true)
+          setWarningMessage(null)
           void onAction('workspace.merge-completed-worktrees', {
             projectId: project.id,
             worktrees,
           })
+            .then((result) => {
+              const error = result?.result?.error
+              if (typeof error === 'string' && error.trim().length > 0) {
+                setWarningMessage(
+                  'Merge needs attention in parent branch. Start a session on the parent branch to resolve it.',
+                )
+              }
+            })
+            .finally(() => setPending(false))
         }}
         aria-label={`Merge completed worktrees under ${group.label}`}
       >
-        <GitMerge size={12} />
+        {pending ? <ActivitySpinner className="h-3 w-3 text-current" /> : <GitMerge size={12} />}
       </button>
     </Tooltip>
   )

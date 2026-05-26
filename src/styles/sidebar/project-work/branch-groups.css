@@ -249,3 +249,7 @@
 .sidebar-project-work-empty-start[data-warning="true"] {
   color: var(--danger);
 }
+
+.sidebar-project-work-merge-action[data-warning="true"] {
+  color: var(--warning);
+}

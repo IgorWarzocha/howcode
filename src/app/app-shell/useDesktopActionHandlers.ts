@@ -79,7 +79,9 @@ function shouldShowGlobalActionError(action: DesktopAction) {
     action === 'workspace.commit' ||
     action === 'workspace.commit-options' ||
     action === 'workspace.diff-preferences' ||
-    action === 'workspace.switch-branch'
+    action === 'workspace.switch-branch' ||
+    action === 'workspace.merge-worktree' ||
+    action === 'workspace.merge-completed-worktrees'
   )
 }
 
