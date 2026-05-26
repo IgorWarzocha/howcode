@@ -9,7 +9,12 @@ import {
 } from 'react'
 import { AnchoredPopoverPanel, PopoverPanel } from '../common/popover'
 import type { ComposerAttachment, ComposerFilePickerState } from '../desktop/types'
-import { appToneDangerClass, appTypeMetaClass, popoverPanelClass } from '../ui/classes'
+import {
+  appToneDangerClass,
+  appTypeMetaClass,
+  composerPopoverInputLayerClass,
+  popoverPanelClass,
+} from '../ui/classes'
 import { cn } from '../utils/cn'
 import { ComposerFilePickerAttachmentsPanel } from './composer-file-picker-attachments-panel'
 import { ComposerFilePickerFileGrid } from './composer-file-picker-file-grid'
@@ -207,7 +212,10 @@ export function ComposerFilePicker({
     'grid grid-rows-[40px_minmax(0,1fr)] overflow-hidden rounded-xl border-0 p-0',
     portalPlacementEnabled
       ? 'h-[min(378px,calc(100vh-1.5rem))] min-h-[220px] w-[min(38rem,calc(100vw-1.5rem))]'
-      : 'absolute right-0 bottom-full left-0 z-[70] h-[min(378px,calc(100vh-12rem))] min-h-[220px]',
+      : cn(
+          'absolute right-0 bottom-full left-0 h-[min(378px,calc(100vh-12rem))] min-h-[220px]',
+          composerPopoverInputLayerClass,
+        ),
     popoverPanelClass,
   )
 
@@ -218,7 +226,7 @@ export function ComposerFilePicker({
         panelRef={panelRef}
         open
         placement="right"
-        portalClassName="z-[220]"
+        portalClassName={composerPopoverInputLayerClass}
         className={panelClassName}
       >
         {panelContents}

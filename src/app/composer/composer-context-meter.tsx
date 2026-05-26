@@ -11,6 +11,7 @@ import {
   appTypeCodeClass,
   appTypeMetaClass,
   appTypeSmallClass,
+  composerPopoverContextLayerClass,
 } from '../ui/classes'
 import { cn } from '../utils/cn'
 
@@ -312,12 +313,14 @@ export function ComposerContextMeter({
       </button>
 
       {open ? (
+        // Passive hover preview: keep above the thread, but below interactive composer popovers.
         <PopoverPanel
           surface={false}
           ref={popoverRef}
           role="dialog"
           className={cn(
-            'absolute bottom-full left-0 z-[130] grid w-56 gap-2 rounded-xl bg-[color:var(--panel)] p-3',
+            'absolute bottom-full left-0 grid w-56 gap-2 rounded-xl bg-[color:var(--panel)] p-3',
+            composerPopoverContextLayerClass,
             appTypeSmallClass,
             appToneMutedClass,
           )}

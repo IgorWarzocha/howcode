@@ -15,6 +15,7 @@ import {
   appTypeMetaStrongClass,
   compactIconButtonClass,
   composerPanelClass,
+  composerPopoverExtensionLayerClass,
 } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import { ComposerGitOpsSurface } from './composer-git-ops-surface'
@@ -87,7 +88,10 @@ function GitOpsErrorDetails({ detail, onDismiss }: { detail: string; onDismiss: 
 
   return (
     <div
-      className="pointer-events-auto absolute inset-x-0 bottom-[calc(100%+0.75rem)] z-20"
+      className={cn(
+        'pointer-events-auto absolute inset-x-0 bottom-[calc(100%+0.75rem)]',
+        composerPopoverExtensionLayerClass,
+      )}
       role="alert"
       aria-live="polite"
     >

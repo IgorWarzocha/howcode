@@ -22,6 +22,7 @@ import {
   appTypeMetaClass,
   compactIconButtonClass,
   composerInlineConfirmButtonClass,
+  composerPopoverBottomRowLayerClass,
   composerPopoverInputClass,
   popoverPanelClass,
 } from '../../ui/classes'
@@ -201,7 +202,8 @@ export function ComposerGitOpsFooter({
               <PopoverPanel
                 className={cn(
                   popoverPanelClass,
-                  'absolute bottom-[calc(100%+8px)] z-20 grid min-w-56 gap-1.5 rounded-xl border-0 p-1.5',
+                  'absolute bottom-[calc(100%+8px)] grid min-w-56 gap-1.5 rounded-xl border-0 p-1.5',
+                  composerPopoverBottomRowLayerClass,
                 )}
                 style={{ left: `${optionsPopoverLeft}px` }}
                 role="menu"
