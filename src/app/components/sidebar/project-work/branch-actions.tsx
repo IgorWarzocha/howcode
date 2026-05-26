@@ -1,18 +1,19 @@
 import { Tooltip } from '@howcode/common/tooltip'
-import { CheckSquare, GitBranch, GitMerge, Square, Trash2, XSquare } from 'lucide-react'
+import { CheckSquare, GitBranch, GitMerge, Square, Trash2, X, XSquare } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project } from '../../../types'
 import type { BranchThreadGroup } from './project-work-model'
 
 function BranchConfirmPopover({
-  confirmLabel,
-  dismissLabel,
+  confirmAriaLabel,
+  confirmIcon,
   onCancel,
   onConfirm,
 }: {
-  confirmLabel: string
-  dismissLabel: string
+  confirmAriaLabel: string
+  confirmIcon: ReactNode
   onCancel: () => void
   onConfirm: () => void
 }) {
@@ -47,23 +48,25 @@ function BranchConfirmPopover({
     <div ref={popoverRef} className="sidebar-project-work-branch-confirm-popover">
       <button
         type="button"
-        className="sidebar-project-work-branch-confirm-button"
+        className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-confirm-button"
         onClick={(event) => {
           event.stopPropagation()
           onCancel()
         }}
+        aria-label="Dismiss confirmation"
       >
-        {dismissLabel}
+        <X size={12} />
       </button>
       <button
         type="button"
-        className="sidebar-project-work-branch-confirm-button sidebar-project-work-branch-confirm-button--danger"
+        className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-confirm-button sidebar-project-work-branch-confirm-button--danger"
         onClick={(event) => {
           event.stopPropagation()
           onConfirm()
         }}
+        aria-label={confirmAriaLabel}
       >
-        {confirmLabel}
+        {confirmIcon}
       </button>
     </div>
   )
@@ -173,8 +176,8 @@ export function BranchPruneAction({
           <XSquare size={12} />
         </button>
         <BranchConfirmPopover
-          dismissLabel="Dismiss"
-          confirmLabel={actionLabel}
+          confirmAriaLabel={`Confirm ${actionLabel.toLowerCase()} ${group.label}`}
+          confirmIcon={<XSquare size={12} />}
           onCancel={onCancel}
           onConfirm={() => void runPrune()}
         />
@@ -349,8 +352,8 @@ export function RemoveCompletedWorktreesAction({
           <Trash2 size={12} />
         </button>
         <BranchConfirmPopover
-          dismissLabel="Dismiss"
-          confirmLabel="Remove"
+          confirmAriaLabel={`Remove completed worktrees under ${group.label}`}
+          confirmIcon={<Trash2 size={12} />}
           onCancel={onCancel}
           onConfirm={() => void removeCompleted()}
         />
