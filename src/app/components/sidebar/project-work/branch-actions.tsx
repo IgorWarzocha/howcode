@@ -49,6 +49,7 @@ function BranchConfirmPopover({
       ref={popoverRef}
       className="sidebar-project-work-branch-actions sidebar-project-work-branch-confirm-popover"
       data-action-count="2"
+      data-confirming="true"
     >
       <span className="tooltip-anchor">
         <button
@@ -186,7 +187,7 @@ export function BranchPruneAction({
 
   if (confirming) {
     return (
-      <span className="sidebar-project-work-branch-confirm-anchor">
+      <span className="tooltip-anchor sidebar-project-work-branch-confirm-anchor">
         {actionButton}
         <BranchConfirmPopover
           confirmAriaLabel={`Confirm ${actionLabel.toLowerCase()} ${group.label}`}
@@ -355,7 +356,7 @@ export function RemoveCompletedWorktreesAction({
 
   if (confirming) {
     return (
-      <span className="sidebar-project-work-branch-confirm-anchor">
+      <span className="tooltip-anchor sidebar-project-work-branch-confirm-anchor">
         {actionButton}
         <BranchConfirmPopover
           confirmAriaLabel={`Remove completed worktrees under ${group.label}`}
