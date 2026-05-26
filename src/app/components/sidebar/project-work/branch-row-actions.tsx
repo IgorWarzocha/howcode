@@ -124,20 +124,6 @@ export function BranchInlineActions({
   onSwitchBlocked: () => void
   onSwitchFailed: () => void
 }) {
-  if (confirmingRemoveCompletedWorktrees) {
-    return (
-      <RemoveCompletedWorktreesAction
-        confirming={true}
-        group={group}
-        project={project}
-        onAction={onAction}
-        onCancel={onCancelRemoveCompletedWorktrees}
-        onConfirm={onConfirmRemoveCompletedWorktrees}
-        onRequestConfirm={onRequestRemoveCompletedWorktreesConfirm}
-      />
-    )
-  }
-
   return (
     <>
       {canPrune ? (
@@ -151,48 +137,44 @@ export function BranchInlineActions({
           onRequestConfirm={onRequestPruneConfirm}
         />
       ) : null}
-      {confirmingPrune ? null : (
-        <>
-          {canRemoveCompletedWorktrees ? (
-            <RemoveCompletedWorktreesAction
-              confirming={confirmingRemoveCompletedWorktrees}
-              group={group}
-              project={project}
-              onAction={onAction}
-              onCancel={onCancelRemoveCompletedWorktrees}
-              onConfirm={onConfirmRemoveCompletedWorktrees}
-              onRequestConfirm={onRequestRemoveCompletedWorktreesConfirm}
-            />
-          ) : null}
-          {canMergeCompletedWorktrees && !confirmingRemoveCompletedWorktrees ? (
-            <MergeCompletedWorktreesAction group={group} project={project} onAction={onAction} />
-          ) : null}
-          {canSwitch ? (
-            <BranchSwitchAction
-              blocked={switchBlocked}
-              group={group}
-              project={project}
-              onAction={onAction}
-              onBlocked={onSwitchBlocked}
-              onSwitchFailed={onSwitchFailed}
-            />
-          ) : null}
-          {canToggleWorktreeComplete ? (
-            <WorktreeCompletionAction group={group} project={project} onAction={onAction} />
-          ) : null}
-          {canMergeWorktree ? (
-            <WorktreeMergeAction group={group} project={project} onAction={onAction} />
-          ) : null}
-          <EmptyBranchStartAction
-            blocked={switchBlocked}
-            currentBranch={currentBranch}
-            group={group}
-            project={project}
-            onAction={onAction}
-            onSwitchFailed={onSwitchFailed}
-          />
-        </>
-      )}
+      {canRemoveCompletedWorktrees ? (
+        <RemoveCompletedWorktreesAction
+          confirming={confirmingRemoveCompletedWorktrees}
+          group={group}
+          project={project}
+          onAction={onAction}
+          onCancel={onCancelRemoveCompletedWorktrees}
+          onConfirm={onConfirmRemoveCompletedWorktrees}
+          onRequestConfirm={onRequestRemoveCompletedWorktreesConfirm}
+        />
+      ) : null}
+      {canMergeCompletedWorktrees ? (
+        <MergeCompletedWorktreesAction group={group} project={project} onAction={onAction} />
+      ) : null}
+      {canSwitch ? (
+        <BranchSwitchAction
+          blocked={switchBlocked}
+          group={group}
+          project={project}
+          onAction={onAction}
+          onBlocked={onSwitchBlocked}
+          onSwitchFailed={onSwitchFailed}
+        />
+      ) : null}
+      {canToggleWorktreeComplete ? (
+        <WorktreeCompletionAction group={group} project={project} onAction={onAction} />
+      ) : null}
+      {canMergeWorktree ? (
+        <WorktreeMergeAction group={group} project={project} onAction={onAction} />
+      ) : null}
+      <EmptyBranchStartAction
+        blocked={switchBlocked}
+        currentBranch={currentBranch}
+        group={group}
+        project={project}
+        onAction={onAction}
+        onSwitchFailed={onSwitchFailed}
+      />
     </>
   )
 }
