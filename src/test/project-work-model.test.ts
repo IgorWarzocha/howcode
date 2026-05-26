@@ -96,6 +96,29 @@ describe('project work sidebar model', () => {
       threads: [],
       worktree: true,
       worktreePath: '/repo/.worktrees/feature-worktree',
+      worktrees: [],
+    })
+  })
+
+  it('nests a worktree under a branch only when the branch has its own threads', () => {
+    const groups = buildBranchGroups(
+      [thread({ id: 'branch-thread', branchName: 'feature', lastModifiedMs: 20 })],
+      'main',
+      ['main', 'feature'],
+      [{ label: 'feature', path: '/repo/.worktrees/feature', branchName: 'feature' }],
+    )
+
+    expect(groups[1]).toMatchObject({
+      label: 'feature',
+      threads: [{ id: 'branch-thread' }],
+      worktree: false,
+      worktrees: [
+        {
+          label: 'feature',
+          path: '/repo/.worktrees/feature',
+          threads: [],
+        },
+      ],
     })
   })
 

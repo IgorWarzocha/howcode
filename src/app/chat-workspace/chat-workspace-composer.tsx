@@ -100,18 +100,22 @@ function getReplyActivityKey(messages: readonly Message[]) {
 
 function SidebarToggleButton({
   sidebarCollapsed,
+  sidebarCompactMode,
   onToggleSidebar,
-}: Pick<ChatWorkspaceComposerProps, 'sidebarCollapsed' | 'onToggleSidebar'>) {
+}: Pick<ChatWorkspaceComposerProps, 'sidebarCollapsed' | 'sidebarCompactMode' | 'onToggleSidebar'>) {
+  const sidebarHidden = sidebarCollapsed || sidebarCompactMode
+  if (sidebarCompactMode && !sidebarHidden) return null
+  const label = sidebarHidden ? 'Show sidebar' : 'Hide sidebar'
   return (
     <button
       type="button"
-      className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
+      className="pointer-events-auto inline-flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
       onClick={onToggleSidebar}
-      aria-label={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
-      data-tooltip={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
+      aria-label={label}
+      data-tooltip={label}
       data-tooltip-placement="right"
     >
-      {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+      {sidebarHidden ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
     </button>
   )
 }
@@ -258,7 +262,7 @@ function ChatComposerCenter(props: ChatWorkspaceComposerProps) {
 export function ChatComposerDock(props: ChatWorkspaceComposerProps) {
   const {
     sidebarAutoHidden,
-    sidebarCompactMode,
+    sidebarCollapsed,
     artifactDrawer,
     activeComposerState,
     composerProjectId,
@@ -267,8 +271,9 @@ export function ChatComposerDock(props: ChatWorkspaceComposerProps) {
   } = props
   return (
     <WorkspaceComposerDock
-      compactControls={sidebarAutoHidden}
-      left={sidebarCompactMode ? null : <SidebarToggleButton {...props} />}
+      compactControls={sidebarAutoHidden || sidebarCollapsed}
+      left={<SidebarToggleButton {...props} />}
+      leftClassName="!mb-[3.35rem]"
       center={<ChatComposerCenter {...props} />}
       rightClassName={cn(
         'min-[1400px]:opacity-100',

@@ -42,7 +42,6 @@ export type CodeWorkspaceContentProps = CodeWorkspaceViewProps &
     showWorkspaceFooter: boolean
     showThreadFooter: boolean
     showCodeSidebarFooter: boolean
-    showUtilitySidebarButton: boolean
     showDiffInMainView: boolean
     showDesktopTerminalDrawer: boolean
     centerThreadFooter: boolean
@@ -70,16 +69,6 @@ export type CodeWorkspaceContentProps = CodeWorkspaceViewProps &
     state: AppShellController['state']
     projectGitState: AppShellController['projectGitState']
   }
-
-function isCodeUtilityView(activeView: AppShellController['state']['activeView']) {
-  return (
-    activeView === 'settings' ||
-    activeView === 'extensions' ||
-    activeView === 'skills' ||
-    activeView === 'sessions' ||
-    activeView === 'archived'
-  )
-}
 
 function shouldShowDesktopTerminalDrawer(
   activeView: AppShellController['state']['activeView'],
@@ -144,7 +133,6 @@ function getCodeWorkspaceFlags(input: {
     showThreadFooter: input.activeView === 'thread',
     showCodeSidebarFooter:
       (input.activeView === 'code' || input.activeView === 'landing') && !selectedProjectIdForView,
-    showUtilitySidebarButton: isCodeUtilityView(input.activeView),
     showDiffInMainView: input.activeView === 'gitops',
   }
 }
@@ -193,7 +181,6 @@ export function CodeWorkspaceView({
     showWorkspaceFooter,
     showThreadFooter,
     showCodeSidebarFooter,
-    showUtilitySidebarButton,
     showDiffInMainView,
   } = getCodeWorkspaceFlags({
     activeView: state.activeView,
@@ -356,7 +343,6 @@ export function CodeWorkspaceView({
       toggleGitOpsFileTree={toggleGitOpsFileTree}
       toggleIncludeUntrackedDiffFiles={toggleIncludeUntrackedDiffFiles}
       showCodeSidebarFooter={showCodeSidebarFooter}
-      showUtilitySidebarButton={showUtilitySidebarButton}
       scopedRestoredQueuedPrompt={scopedRestoredQueuedPrompt}
       composerPromptResetKey={composerPromptResetKey}
       setComposerPromptResetKey={setComposerPromptResetKey}

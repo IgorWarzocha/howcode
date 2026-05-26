@@ -215,7 +215,7 @@ export function ProjectWorkSummaryBlock({
   )
   const filteredBranchGroups = filterBranchGroups(branchGroups, searchQuery)
   const compactWorktreeGroups = filteredBranchGroups.filter(
-    (group) => group.worktree && !group.current,
+    (group) => (group.worktree || group.worktrees.length > 0) && !group.current,
   )
   const searchExpanded = normalizedSearchQuery.length > 0
   const unassignedExpanded = searchExpanded || !unassignedCollapsed

@@ -1,7 +1,6 @@
 import { Sidebar } from '@howcode/sidebar'
 import { TerminalPanel } from '@howcode/workspace-shell'
-import { PanelLeftOpen, PanelRightClose } from 'lucide-react'
-import type { CSSProperties, Dispatch, RefObject, SetStateAction } from 'react'
+import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type { AppSettings, ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
 import { appToneTextClass, appTypeGroupTextClass } from '../ui/classes'
 import { cn } from '../utils/cn'
@@ -27,11 +26,7 @@ type AppShellLayoutViewProps = {
   sidebarCompactMode: boolean
   sidebarOverlayOpen: boolean
   setSidebarOverlayOpen: Dispatch<SetStateAction<boolean>>
-  utilityViewActive: boolean
   handleToggleSidebar: () => void
-  compactSidebarButtonEdgeMode: boolean
-  artifactDrawerOverlayVisible: boolean
-  closeArtifactDrawerOverlay: (() => void) | null
   mainSectionRef: RefObject<HTMLElement | null>
   takeoverVisible: boolean
   activeComposerState: AppShellController['activeComposerState']
@@ -50,8 +45,6 @@ type AppShellLayoutViewProps = {
   takeoverTerminalKey: string
   handleOpenGitOpsFromTakeover: () => Promise<void>
   terminalDrawerPresent: boolean
-  compactMode?: boolean
-  onCloseCompactSidebar?: () => void
 }
 
 const FALLBACK_APP_SETTINGS = {
@@ -90,10 +83,6 @@ const FALLBACK_APP_SETTINGS = {
   composerSendMode: 'enter',
 } satisfies AppSettings
 
-function noopCloseCompactSidebar() {
-  // Optional compact-sidebar close handler is absent for the desktop sidebar.
-}
-
 function AppShellSidebar(props: AppShellLayoutViewProps) {
   const {
     controller,
@@ -104,12 +93,11 @@ function AppShellSidebar(props: AppShellLayoutViewProps) {
     handleAction,
     handleShowView,
     handleToggleSettings,
+    handleToggleSidebar,
     handleProjectSelect,
     handleSetSelectedProject,
     handleThreadOpen,
     handleToggleProjectCollapse,
-    compactMode,
-    onCloseCompactSidebar,
   } = props
   return (
     <Sidebar
@@ -137,6 +125,7 @@ function AppShellSidebar(props: AppShellLayoutViewProps) {
       onAction={handleAction}
       onShowView={handleShowView}
       onToggleSettings={handleToggleSettings}
+      onToggleSidebar={handleToggleSidebar}
       onOpenExtensionsView={() => handleShowView('extensions')}
       onOpenAbout={controller.handleShowLanding}
       onOpenSkillsView={() => handleShowView('skills')}
@@ -161,8 +150,7 @@ function AppShellSidebar(props: AppShellLayoutViewProps) {
       onSelectInboxThread={controller.handleSelectInboxThread}
       onThreadOpen={handleThreadOpen}
       onToggleProjectCollapse={handleToggleProjectCollapse}
-      compactMode={compactMode ?? false}
-      onCloseCompactSidebar={onCloseCompactSidebar ?? noopCloseCompactSidebar}
+      compactMode={props.sidebarCompactMode}
     />
   )
 }
@@ -178,7 +166,7 @@ function DesktopSidebarFrame(props: AppShellLayoutViewProps) {
           : 'relative w-[clamp(225px,calc(100vw_-_936px),300px)] min-w-0 shrink-0 overflow-hidden opacity-100 transition-[width,opacity] duration-200 ease-out'
       }
     >
-      {hidden ? null : <AppShellSidebar {...props} compactMode={false} />}
+      {hidden ? null : <AppShellSidebar {...props} />}
     </div>
   )
 }
@@ -196,131 +184,14 @@ function CompactSidebarOverlay(props: AppShellLayoutViewProps) {
   )
 }
 
-function CompactUtilitySidebarButton(props: AppShellLayoutViewProps) {
-  const { sidebarCompactMode, sidebarOverlayOpen, utilityViewActive, handleToggleSidebar } = props
-  if (!(sidebarCompactMode && !sidebarOverlayOpen && utilityViewActive)) return null
-  return (
-    <div className="pointer-events-none absolute bottom-5 left-5 z-[45]">
-      <button
-        type="button"
-        className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--panel)] text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
-        onClick={handleToggleSidebar}
-        aria-label="Show sidebar"
-        data-tooltip="Show sidebar"
-        data-tooltip-placement="right"
-      >
-        <PanelLeftOpen size={15} />
-      </button>
-    </div>
-  )
-}
-
-function CompactWorkspaceSidebarButton(props: AppShellLayoutViewProps) {
-  const {
-    sidebarCompactMode,
-    sidebarOverlayOpen,
-    utilityViewActive,
-    compactSidebarButtonEdgeMode,
-    artifactDrawerOverlayVisible,
-    closeArtifactDrawerOverlay,
-    handleToggleSidebar,
-  } = props
-  if (!(sidebarCompactMode && !sidebarOverlayOpen && !utilityViewActive) || props.takeoverVisible)
-    return null
-  if (
-    (props.state.activeView === 'code' || props.state.activeView === 'project') &&
-    props.state.selectedProjectId
-  ) {
-    return null
-  }
-  const closeVisible = artifactDrawerOverlayVisible && closeArtifactDrawerOverlay
-  const workspaceDockStyle = {
-    '--dock-left-lane': 'max(2rem, calc((100cqw - 800px - 1rem) / 2))',
-  } as CSSProperties
-  const sidebarButtonStyle = compactSidebarButtonEdgeMode
-    ? undefined
-    : ({
-        transform: 'translateX(clamp(2rem, calc(8rem - var(--dock-left-lane)), 2.5rem))',
-      } as CSSProperties)
-  return (
-    <div
-      className={cn(
-        'pointer-events-none absolute inset-x-0 bottom-0 z-[45] pb-4',
-        compactSidebarButtonEdgeMode ? 'px-3' : 'px-5',
-      )}
-    >
-      <div
-        className="grid w-full grid-cols-[minmax(2rem,1fr)_minmax(0,800px)_minmax(2rem,1fr)] items-end gap-2 [container-type:inline-size]"
-        style={workspaceDockStyle}
-      >
-        <div
-          className={cn(
-            'pointer-events-auto mb-1.5 min-w-0 self-end transition-transform duration-100 ease-out',
-            compactSidebarButtonEdgeMode ? 'justify-self-start' : 'justify-self-end',
-          )}
-          style={sidebarButtonStyle}
-        >
-          <button
-            type="button"
-            className={cn(
-              'inline-flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--panel)] text-[color:var(--muted)] transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
-              !artifactDrawerOverlayVisible && 'opacity-70 hover:opacity-100',
-            )}
-            onClick={handleToggleSidebar}
-            aria-label="Show sidebar"
-            data-tooltip="Show sidebar"
-            data-tooltip-placement="right"
-          >
-            <PanelLeftOpen
-              size={15}
-              className={cn(
-                artifactDrawerOverlayVisible &&
-                  '[&_*]:fill-[color:var(--workspace)] [&_*]:stroke-[color:var(--muted)]',
-              )}
-            />
-          </button>
-        </div>
-        <div
-          className={cn(
-            'pointer-events-none col-start-3 mb-1.5 min-w-0 justify-self-end self-end transition-opacity duration-150 ease-out',
-            closeVisible ? 'opacity-100' : 'opacity-0',
-          )}
-        >
-          <button
-            type="button"
-            className={cn(
-              'inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
-              closeVisible ? 'pointer-events-auto' : 'pointer-events-none',
-            )}
-            onClick={() => closeArtifactDrawerOverlay?.()}
-            aria-label="Hide artifacts"
-            data-tooltip="Hide artifacts"
-            data-tooltip-placement="left"
-            tabIndex={closeVisible ? 0 : -1}
-          >
-            <PanelRightClose
-              size={15}
-              className="[&_*]:fill-[color:var(--workspace)] [&_*]:stroke-[color:var(--muted)]"
-            />
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 function CompactSidebarPanel(props: AppShellLayoutViewProps) {
-  const { sidebarCompactMode, sidebarOverlayOpen, setSidebarOverlayOpen } = props
+  const { sidebarCompactMode, sidebarOverlayOpen } = props
   if (!sidebarCompactMode) return null
   return (
     <div
       className={`absolute top-0 bottom-0 left-0 z-50 w-[min(300px,calc(100%_-_2rem))] min-w-0 overflow-hidden transition-[transform,opacity] duration-200 ease-out ${sidebarOverlayOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none'}`}
     >
-      <AppShellSidebar
-        {...props}
-        compactMode
-        onCloseCompactSidebar={() => setSidebarOverlayOpen(false)}
-      />
+      <AppShellSidebar {...props} />
     </div>
   )
 }
@@ -460,8 +331,6 @@ export function AppShellLayoutView(props: AppShellLayoutViewProps) {
       <div className={appShellRootClass}>
         <DesktopSidebarFrame {...props} />
         <CompactSidebarOverlay {...props} />
-        <CompactUtilitySidebarButton {...props} />
-        <CompactWorkspaceSidebarButton {...props} />
         <CompactSidebarPanel {...props} />
         <AppShellWorkspaceSection {...props} />
       </div>

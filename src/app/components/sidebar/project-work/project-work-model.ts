@@ -79,6 +79,7 @@ export type BranchThreadGroup = {
   id: string
   label: string
   threads: Thread[]
+  worktrees: WorktreeBranchGroup[]
   current: boolean
   unassigned: boolean
   worktree: boolean
@@ -92,32 +93,55 @@ export type WorktreeBranch = {
   branchName?: string | undefined
 }
 
-function buildWorktreeByBranch(worktreeBranches: readonly WorktreeBranch[]) {
-  const worktreeByBranch = new Map<string, WorktreeBranch>()
+export type WorktreeBranchGroup = WorktreeBranch & {
+  id: string
+  threads: Thread[]
+}
+
+type SidebarThread = Thread & {
+  sidebarWorktreePath?: string | undefined
+}
+
+function buildWorktreesByBranch(worktreeBranches: readonly WorktreeBranch[]) {
+  const worktreesByBranch = new Map<string, WorktreeBranch[]>()
   for (const worktreeBranch of worktreeBranches) {
     const branchName = (worktreeBranch.branchName ?? worktreeBranch.label).trim()
     if (!branchName) continue
-    worktreeByBranch.set(branchName, worktreeBranch)
+    const worktrees = worktreesByBranch.get(branchName) ?? []
+    worktrees.push(worktreeBranch)
+    worktreesByBranch.set(branchName, worktrees)
   }
-  return worktreeByBranch
+  return worktreesByBranch
 }
 
 function createBranchThreadGroup(input: {
   branchName: string
   current: boolean
-  groupedThreads: ReadonlyMap<string, Thread[]>
-  worktreeByBranch: ReadonlyMap<string, WorktreeBranch>
+  groupedThreads: ReadonlyMap<string, SidebarThread[]>
+  groupedWorktreeThreads: ReadonlyMap<string, ReadonlyMap<string, SidebarThread[]>>
+  worktreesByBranch: ReadonlyMap<string, readonly WorktreeBranch[]>
 }): BranchThreadGroup {
-  const worktree = input.worktreeByBranch.get(input.branchName)
+  const branchWorktrees = input.worktreesByBranch.get(input.branchName) ?? []
+  const worktreeThreadsByPath = input.groupedWorktreeThreads.get(input.branchName)
+  const worktrees = branchWorktrees
+    .map((worktree) => ({
+      ...worktree,
+      id: worktree.path,
+      threads: sortThreads([...(worktreeThreadsByPath?.get(worktree.path) ?? [])]),
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+  const branchThreads = sortThreads(input.groupedThreads.get(input.branchName) ?? [])
+  const onlyWorktree = branchThreads.length === 0 && worktrees.length === 1 ? worktrees[0] : null
   return {
     id: input.branchName,
     label: input.branchName,
-    threads: sortThreads(input.groupedThreads.get(input.branchName) ?? []),
+    threads: onlyWorktree ? onlyWorktree.threads : branchThreads,
+    worktrees: onlyWorktree ? [] : worktrees,
     current: input.current,
     unassigned: false,
-    worktree: worktree !== undefined,
-    worktreePath: worktree?.path,
-    worktreeBranchName: worktree?.branchName,
+    worktree: onlyWorktree !== null,
+    worktreePath: onlyWorktree?.path,
+    worktreeBranchName: onlyWorktree?.branchName,
   }
 }
 
@@ -154,13 +178,14 @@ export function bucketThreads(project: Project, selectedThreadId: string | null)
 }
 
 export function buildBranchGroups(
-  threads: Thread[],
+  threads: SidebarThread[],
   currentBranch: string | null,
   repositoryBranches: readonly string[],
   worktreeBranches: readonly WorktreeBranch[] = [],
 ): BranchThreadGroup[] {
-  const groupedThreads = new Map<string, Thread[]>()
-  const unassignedThreads: Thread[] = []
+  const groupedThreads = new Map<string, SidebarThread[]>()
+  const groupedWorktreeThreads = new Map<string, Map<string, SidebarThread[]>>()
+  const unassignedThreads: SidebarThread[] = []
 
   for (const thread of threads) {
     const branchName = thread.branchName?.trim()
@@ -169,9 +194,17 @@ export function buildBranchGroups(
       continue
     }
 
-    const branchThreads = groupedThreads.get(branchName) ?? []
-    branchThreads.push(thread)
-    groupedThreads.set(branchName, branchThreads)
+    if (thread.sidebarWorktreePath) {
+      const worktreeThreadsByPath = groupedWorktreeThreads.get(branchName) ?? new Map()
+      const worktreeThreads = worktreeThreadsByPath.get(thread.sidebarWorktreePath) ?? []
+      worktreeThreads.push(thread)
+      worktreeThreadsByPath.set(thread.sidebarWorktreePath, worktreeThreads)
+      groupedWorktreeThreads.set(branchName, worktreeThreadsByPath)
+    } else {
+      const branchThreads = groupedThreads.get(branchName) ?? []
+      branchThreads.push(thread)
+      groupedThreads.set(branchName, branchThreads)
+    }
   }
 
   const branchNames = new Set<string>()
@@ -182,8 +215,8 @@ export function buildBranchGroups(
   for (const branchName of groupedThreads.keys()) branchNames.add(branchName)
   if (currentBranch) branchNames.add(currentBranch)
 
-  const worktreeByBranch = buildWorktreeByBranch(worktreeBranches)
-  for (const branchName of worktreeByBranch.keys()) branchNames.add(branchName)
+  const worktreesByBranch = buildWorktreesByBranch(worktreeBranches)
+  for (const branchName of worktreesByBranch.keys()) branchNames.add(branchName)
 
   const groups: BranchThreadGroup[] = []
   if (currentBranch && branchNames.has(currentBranch)) {
@@ -192,7 +225,8 @@ export function buildBranchGroups(
         branchName: currentBranch,
         current: true,
         groupedThreads,
-        worktreeByBranch,
+        groupedWorktreeThreads,
+        worktreesByBranch,
       }),
     )
     branchNames.delete(currentBranch)
@@ -204,11 +238,14 @@ export function buildBranchGroups(
         branchName,
         current: false,
         groupedThreads,
-        worktreeByBranch,
+        groupedWorktreeThreads,
+        worktreesByBranch,
       }),
     )
     .sort((a, b) => {
-      if (a.worktree !== b.worktree) return a.worktree ? -1 : 1
+      const aHasWorktrees = a.worktree || a.worktrees.length > 0
+      const bHasWorktrees = b.worktree || b.worktrees.length > 0
+      if (aHasWorktrees !== bHasWorktrees) return aHasWorktrees ? -1 : 1
       return a.label.localeCompare(b.label)
     })
 
@@ -219,6 +256,7 @@ export function buildBranchGroups(
       id: UNASSIGNED_BRANCH_GROUP_ID,
       label: 'Unassigned',
       threads: sortThreads(unassignedThreads),
+      worktrees: [],
       current: false,
       unassigned: true,
       worktree: false,
@@ -230,6 +268,7 @@ export function buildBranchGroups(
       id: UNASSIGNED_BRANCH_GROUP_ID,
       label: 'Unassigned',
       threads: [],
+      worktrees: [],
       current: false,
       unassigned: true,
       worktree: false,
@@ -252,10 +291,30 @@ export function filterBranchGroups(groups: BranchThreadGroup[], searchQuery: str
           .toLowerCase()
           .includes(normalizedSearchQuery),
       ),
+      worktrees: group.worktrees.map((worktree) => ({
+        ...worktree,
+        threads: worktree.threads.filter((thread) =>
+          [thread.title, thread.summary ?? '', thread.branchName ?? group.label]
+            .join(' ')
+            .toLowerCase()
+            .includes(normalizedSearchQuery),
+        ),
+      })),
     }))
     .filter(
       (group) =>
-        group.label.toLowerCase().includes(normalizedSearchQuery) || group.threads.length > 0,
+        group.label.toLowerCase().includes(normalizedSearchQuery) ||
+        group.threads.length > 0 ||
+        group.worktrees.some(
+          (worktree) =>
+            worktree.label.toLowerCase().includes(normalizedSearchQuery) ||
+            worktree.threads.some((thread) =>
+              [thread.title, thread.summary ?? '', thread.branchName ?? group.label]
+                .join(' ')
+                .toLowerCase()
+                .includes(normalizedSearchQuery),
+            ),
+        ),
     )
 }
 
@@ -322,6 +381,7 @@ export function getThreadsForProjectWorktreeRows(project: Project, projects: rea
   return getWorktreeProjectsForRoot(project, projects).flatMap((worktreeProject) =>
     worktreeProject.threads.map((thread) => ({
       ...thread,
+      sidebarWorktreePath: worktreeProject.id,
       branchName: thread.branchName ?? worktreeProject.worktree?.branchName ?? undefined,
     })),
   )

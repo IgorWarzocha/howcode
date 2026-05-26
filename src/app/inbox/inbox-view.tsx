@@ -313,20 +313,24 @@ export function InboxView({
 
       <div>
         <WorkspaceComposerDock
-          compactControls={sidebarCompactMode}
+          compactControls={sidebarCompactMode || sidebarCollapsed}
           left={
-            sidebarCompactMode ? null : (
+            !sidebarCompactMode || sidebarCollapsed ? (
               <button
                 type="button"
-                className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
+                className="pointer-events-auto inline-flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
                 onClick={onToggleSidebar}
-                aria-label={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
-                data-tooltip={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
+                aria-label={sidebarCollapsed || sidebarCompactMode ? 'Show sidebar' : 'Hide sidebar'}
+                data-tooltip={sidebarCollapsed || sidebarCompactMode ? 'Show sidebar' : 'Hide sidebar'}
                 data-tooltip-placement="right"
               >
-                {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+                {sidebarCollapsed || sidebarCompactMode ? (
+                  <PanelLeftOpen size={15} />
+                ) : (
+                  <PanelLeftClose size={15} />
+                )}
               </button>
-            )
+            ) : null
           }
           center={
             <InboxComposer
