@@ -57,6 +57,7 @@ export type DesktopActionPayloadFields = {
   reset?: boolean | undefined
   sessionPath?: string | undefined | null | undefined
   streamingBehavior?: ComposerStreamingBehavior
+  suppressInbox?: boolean | undefined | null | undefined
   text?: string | undefined
   threadId?: string | undefined
   threadIds?: string[] | undefined
@@ -250,6 +251,7 @@ export type DesktopActionPayloadMap = {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined
     chatGroupId?: string | undefined | null | undefined
+    suppressInbox?: boolean | undefined | null | undefined
     text: string
     attachments?: ComposerAttachment[]
     streamingBehavior?: ComposerStreamingBehavior

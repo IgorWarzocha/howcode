@@ -175,6 +175,12 @@ const threadStateSchemaSql = `
       FOREIGN KEY (session_path) REFERENCES threads(session_path) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS inbox_reply_suppressions (
+      session_path TEXT PRIMARY KEY,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (session_path) REFERENCES threads(session_path) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS project_usage_totals (
       cwd TEXT PRIMARY KEY,
       input INTEGER NOT NULL DEFAULT 0,
@@ -283,6 +289,16 @@ function ensureInboxColumns(database: Database) {
   addColumnIfMissing(database, 'inbox_items', 'last_user_prompt TEXT')
 }
 
+function ensureInboxReplySuppressionTable(database: Database) {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS inbox_reply_suppressions (
+      session_path TEXT PRIMARY KEY,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (session_path) REFERENCES threads(session_path) ON DELETE CASCADE
+    )
+  `)
+}
+
 function ensureProjectUsageTotalsColumns(database: Database) {
   addColumnIfMissing(
     database,
@@ -308,6 +324,7 @@ function runThreadStateMigrations(database: Database) {
   ensureProjectColumns(database)
   ensureThreadColumns(database)
   ensureInboxColumns(database)
+  ensureInboxReplySuppressionTable(database)
   ensureProjectUsageTotalsColumns(database)
   ensureProjectWorktreeColumns(database)
   resetRunningThreads(database)

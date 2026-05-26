@@ -1,7 +1,9 @@
 export {
   beginInboxThreadTurn,
   clearReadInboxThreads,
+  consumeInboxReplySuppression,
   dismissInboxThread,
+  dismissInboxThreadAfterReply,
   markInboxThreadRead,
   upsertInboxThreadMessage,
   upsertInboxThreadPrompt,

@@ -47,7 +47,12 @@ function getNewThreadResult(input: NewThreadPostEffectInput) {
       : null
   const localFallback =
     !(threadId || sessionPath) && projectId && !hasDesktopBridge()
-      ? buildLocalThreadFallback(projectId)
+      ? buildLocalThreadFallback(projectId, {
+          branchName:
+            typeof input.contextualPayload.branchName === 'string'
+              ? input.contextualPayload.branchName.trim() || null
+              : null,
+        })
       : null
   return { projectId, resultProjectId, sessionPath, threadId, localFallback }
 }
