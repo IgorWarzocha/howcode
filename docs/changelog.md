@@ -21,6 +21,7 @@
 - Fixed Pi TUI new-thread sidebar handoff.
 - Added the new project-work sidebar: branch-grouped sessions, visible-project scope, Past sessions, branch actions, and cleaner project menus.
 - Added worktree layout defaults, worktree docs/blog pages, and the poll worker pieces for the worktrees write-up.
+- Tightened worktree cleanup: merge/remove now stops runtimes and terminals cleanly, handles partial Git failures, and keeps detached worktrees from pretending to have branches.
 - Made session deletion/archiving harder to do accidentally, with confirmations and archived code sessions showing up again.
 - Cleaned up sidebar popovers and project-work styling so the new sidebar feels less bolted on.
 - Quieted missing-session usage noise and checkbox layout shifts.
