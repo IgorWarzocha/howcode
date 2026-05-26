@@ -13,6 +13,7 @@ import {
   DEV_SERVER_METADATA_RELATIVE_PATH,
   DEV_SERVER_START_PORT,
 } from '../shared/dev-server'
+import { getSystemNodeExecutable } from '../src/desktop-host/node-discovery'
 import { getDevUserDataPath } from './dev-user-data-path'
 
 const projectRoot = process.cwd()
@@ -27,10 +28,6 @@ let bridge: { child: ChildProcess; port: number } | null = null
 let server: ViteDevServer | null = null
 let isShuttingDown = false
 let trustedRendererHost: string | null = null
-
-function getProcessEnvironmentVariable(name: string) {
-  return process.env[name]
-}
 
 async function buildDevWebBridge() {
   await mkdir(path.dirname(bridgeBuildPath), { recursive: true })
@@ -76,7 +73,7 @@ async function startDevWebBridge() {
     await delay(150)
   }
 
-  const nodeExecutable = getProcessEnvironmentVariable('HOWCODE_NODE_PATH')?.trim() || 'node'
+  const nodeExecutable = await getSystemNodeExecutable()
   const child = spawn(nodeExecutable, [bridgeBuildPath], {
     cwd: projectRoot,
     env: {
