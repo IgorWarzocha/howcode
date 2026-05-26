@@ -1,5 +1,5 @@
 import { IconButton } from '@howcode/common/icon-button'
-import { Archive, ChevronRight, MoreHorizontal } from 'lucide-react'
+import { Archive, ChevronRight, Home, MoreHorizontal } from 'lucide-react'
 import { type RefObject, useLayoutEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker, ProjectGitState } from '../../../desktop/types'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
@@ -77,6 +77,28 @@ function ProjectActionsMenuButton({
         />
       ) : null}
     </div>
+  )
+}
+
+function ProjectDashboardButton({
+  active,
+  project,
+  onOpenDashboard,
+}: {
+  active: boolean
+  project: Project
+  onOpenDashboard: () => void
+}) {
+  return (
+    <IconButton
+      label={`Open ${project.name} dashboard`}
+      icon={<Home size={13} />}
+      active={active}
+      tooltip="Project dashboard"
+      tooltipPlacement="right"
+      className="sidebar-project-work-project-menu-button h-7 w-7 rounded-md"
+      onClick={onOpenDashboard}
+    />
   )
 }
 
@@ -320,10 +342,16 @@ export function SingleProjectWorkContent({
     onFocusProject(project.id)
     onShowView(view)
   }
+  const openProjectDashboard = () => openProjectView('project')
 
   return (
     <>
       <div className="sidebar-project-work-toolbar">
+        <ProjectDashboardButton
+          active={activeView === 'project'}
+          project={project}
+          onOpenDashboard={openProjectDashboard}
+        />
         <ProjectActionsMenuButton project={project} onAction={onAction} />
         <NewThreadMenu
           currentBranch={currentBranch}

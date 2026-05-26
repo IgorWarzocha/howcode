@@ -1,4 +1,3 @@
-import { getLocalDraftProjectId } from '@howcode/shared/session-paths'
 import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch } from 'react'
 import type { ComposerState, DesktopActionResult } from '../../desktop/types'
@@ -58,28 +57,16 @@ function getNewThreadResult(input: NewThreadPostEffectInput) {
 }
 
 function shouldStayOnCodeDashboard(input: NewThreadPostEffectInput) {
-  return (
-    input.contextualPayload.composerMode === 'code' && input.workspaceState.activeView === 'project'
-  )
+  return input.action === 'project.add' && input.workspaceState.activeView === 'project'
 }
 
 function shouldShowCodeDashboard(input: NewThreadPostEffectInput) {
-  return input.action === 'project.add' || input.contextualPayload.composerMode === 'code'
+  return input.action === 'project.add'
 }
 
 function getComposerModeForNextView(input: NewThreadPostEffectInput): 'chat' | 'code' {
   if (input.action === 'project.add') return 'code'
   return input.workspaceState.activeView === 'chat' ? 'chat' : 'code'
-}
-
-function shouldReuseActiveProjectDraft(input: NewThreadPostEffectInput, projectId: string | null) {
-  return (
-    input.action === 'thread.new' &&
-    input.workspaceState.activeView === 'project' &&
-    input.contextualPayload.composerMode === 'code' &&
-    projectId !== null &&
-    getLocalDraftProjectId(input.workspaceState.selectedSessionPath) === projectId
-  )
 }
 
 function applyOptimisticThread(
@@ -138,7 +125,6 @@ async function handleNewThreadBridgeResult(
   result: ReturnType<typeof getNewThreadResult>,
 ) {
   const nextProjectId = result.resultProjectId ?? result.projectId
-  if (shouldReuseActiveProjectDraft(input, nextProjectId)) return true
   if (!(nextProjectId && result.threadId && result.sessionPath)) return false
   if (shouldShowCodeDashboard(input)) {
     startOptimisticProjectThread(input, {

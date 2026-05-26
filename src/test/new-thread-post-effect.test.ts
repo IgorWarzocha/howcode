@@ -60,7 +60,7 @@ function createProjectAddResult(): DesktopActionResult {
 }
 
 describe('new thread post effect', () => {
-  it('keeps code new-thread actions on the project dashboard with one optimistic sidebar draft and no refetch', async () => {
+  it('opens code new-thread actions into a clean thread composer instead of the dashboard', async () => {
     const dispatch = vi.fn()
     const loadProjectThreads = vi.fn()
     const loadComposerState = vi.fn()
@@ -82,19 +82,19 @@ describe('new thread post effect', () => {
     })
 
     expect(dispatch).toHaveBeenCalledWith({
-      type: 'start-project-thread',
+      type: 'open-thread',
       projectId: '/repo/project-a',
       threadId: 'draft-1',
       sessionPath: 'local://%2Frepo%2Fproject-a/draft-1',
     })
     expect(dispatch).not.toHaveBeenCalledWith(
       expect.objectContaining({
-        type: 'open-thread',
+        type: 'start-project-thread',
         sessionPath: 'local://%2Frepo%2Fproject-a/draft-1',
       }),
     )
     expect(setQueryData).toHaveBeenCalled()
-    expect(loadProjectThreads).not.toHaveBeenCalled()
+    expect(loadProjectThreads).toHaveBeenCalledWith('/repo/project-a', { chat: false })
     expect(loadComposerState).not.toHaveBeenCalled()
     expect(setComposerState).toHaveBeenCalledWith(createThreadNewResult().result?.composer)
   })
@@ -156,7 +156,7 @@ describe('new thread post effect', () => {
     })
   })
 
-  it('does not create another empty project draft while one is already selected', async () => {
+  it('opens a new clean composer even if the dashboard had an old selected draft', async () => {
     const dispatch = vi.fn()
     const setQueryData = vi.fn()
 
@@ -178,10 +178,15 @@ describe('new thread post effect', () => {
       setComposerState: vi.fn(),
     })
 
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'open-thread',
+        sessionPath: 'local://%2Frepo%2Fproject-a/draft-1',
+      }),
+    )
     expect(dispatch).not.toHaveBeenCalledWith(
       expect.objectContaining({ type: 'start-project-thread' }),
     )
-    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'open-thread' }))
-    expect(setQueryData).not.toHaveBeenCalled()
+    expect(setQueryData).toHaveBeenCalled()
   })
 })

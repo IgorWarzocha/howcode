@@ -109,7 +109,7 @@ function getFloatingFooterLayoutState(input: {
 }) {
   const hasThreadConversation = input.showThreadFooter && (input.activeThreadData?.length ?? 0) > 0
   const hasThreadConversationLayout = hasThreadConversation || input.activeThreadLoading
-  const centerDashboardFooter = input.activeView === 'project'
+  const centerDashboardFooter = false
   const centerThreadFooter = input.showThreadFooter && !hasThreadConversationLayout
   return {
     centerDashboardFooter,
@@ -126,10 +126,7 @@ function getCodeWorkspaceFlags(input: {
   const selectedProjectIdForView =
     input.activeView === 'project' && input.hasSelectedProject ? input.selectedProjectId : ''
   return {
-    showWorkspaceFooter:
-      input.activeView === 'thread' ||
-      input.activeView === 'gitops' ||
-      input.activeView === 'project',
+    showWorkspaceFooter: input.activeView === 'thread' || input.activeView === 'gitops',
     showThreadFooter: input.activeView === 'thread',
     showCodeSidebarFooter:
       (input.activeView === 'code' || input.activeView === 'landing') && !selectedProjectIdForView,
