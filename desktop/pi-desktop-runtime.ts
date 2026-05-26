@@ -19,7 +19,11 @@ import {
   markInternalThreadUpdate,
   rememberLiveThread,
 } from './runtime/live-thread-store.ts'
-import { invokeRuntimeHost, subscribeRuntimeHostEvents } from './runtime-host/client-bridge.ts'
+import {
+  disposeRuntimeHostsForWorkspace,
+  invokeRuntimeHost,
+  subscribeRuntimeHostEvents,
+} from './runtime-host/client-bridge.ts'
 import {
   beginInboxThreadTurn,
   consumeInboxReplySuppression,
@@ -248,6 +252,13 @@ export function sendComposerPrompt(
 
 export function stopComposerRun(request = {}) {
   return invokeRuntimeHost('stopComposerRun', { request })
+}
+
+export function disposeWorkspaceComposerRuns(request: {
+  projectPath: string
+  sessionPaths: string[]
+}) {
+  return disposeRuntimeHostsForWorkspace(request)
 }
 
 export function dequeueComposerPrompt(

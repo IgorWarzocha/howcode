@@ -82,18 +82,16 @@ export async function publishExternalThreadUpdate({
     beginInboxThreadTurn(sessionPath, latestUserPrompt)
   }
 
-  if (
-    latestAssistantMessage &&
-    !consumeInboxReplySuppression(sessionPath) &&
-    hasAssistantMessageChanged(sessionPath, latestAssistantMessage)
-  ) {
-    upsertInboxThreadMessage({
-      sessionPath,
-      userPrompt: latestUserPrompt,
-      content: latestAssistantMessage.content,
-      preview: latestAssistantMessage.preview,
-      lastAssistantAtMs: lastModifiedMs,
-    })
+  if (latestAssistantMessage && hasAssistantMessageChanged(sessionPath, latestAssistantMessage)) {
+    if (!consumeInboxReplySuppression(sessionPath)) {
+      upsertInboxThreadMessage({
+        sessionPath,
+        userPrompt: latestUserPrompt,
+        content: latestAssistantMessage.content,
+        preview: latestAssistantMessage.preview,
+        lastAssistantAtMs: lastModifiedMs,
+      })
+    }
   }
 
   emitDesktopEvent({

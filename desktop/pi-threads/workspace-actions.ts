@@ -21,6 +21,7 @@ import {
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import { setSidebarVisibleProjectIds } from '../app-settings/writers.ts'
 import { generateGitCommitMessage } from '../git-commit-message.ts'
+import { disposeWorkspaceComposerRuns } from '../pi-desktop-runtime.ts'
 import {
   commitProjectChanges,
   createProjectWorktree,
@@ -39,12 +40,14 @@ import {
   getProjectWorktreeDirectory,
   hasRunningProjectThread,
   listBranchThreadIds,
+  listProjectSessionPaths,
   listProjectThreadIds,
   setProjectGitOpsMode,
   setProjectRepoOrigin,
   setProjectWorktreeCompleted,
   setProjectWorktreeDirectory,
   setThreadDiffPreferences,
+  setThreadRunningState,
   upsertProjectWorktree,
 } from '../thread-state-db.ts'
 import type { ActionHandlerResult } from './action-router-result.ts'
@@ -58,6 +61,15 @@ async function closeWorkspaceTerminals(projectId: string) {
       .filter((snapshot) => snapshot.projectId === projectId)
       .map((snapshot) => closeTerminal({ sessionId: snapshot.sessionId, deleteHistory: true })),
   )
+}
+
+async function disposeWorkspaceSessions(projectId: string) {
+  const sessionPaths = listProjectSessionPaths(projectId)
+  await disposeWorkspaceComposerRuns({ projectPath: projectId, sessionPaths })
+  for (const sessionPath of sessionPaths) {
+    setThreadRunningState(sessionPath, false)
+  }
+  await closeWorkspaceTerminals(projectId)
 }
 
 async function deletePersistedThreadsForWorkspace(threadIds: string[]) {
@@ -207,7 +219,7 @@ async function handleMergeWorktreeWorkspaceAction(payload: AnyDesktopActionPaylo
   if (!(projectId && worktreePath && branchName)) {
     return handledAction({ error: 'Worktree branch is required.' })
   }
-  await closeWorkspaceTerminals(worktreePath)
+  await disposeWorkspaceSessions(worktreePath)
 
   const mergeResult = await mergeProjectBranch(projectId, branchName)
   if ('error' in mergeResult) return handledAction(mergeResult)
@@ -234,7 +246,7 @@ async function cleanupWorktree(input: {
   branchName: string | null
   merge: boolean
 }) {
-  await closeWorkspaceTerminals(input.worktreePath)
+  await disposeWorkspaceSessions(input.worktreePath)
 
   if (input.merge) {
     if (!input.branchName) return { error: 'Worktree branch is required.' }
@@ -287,7 +299,7 @@ async function handleRemoveWorktreeWorkspaceAction(payload: AnyDesktopActionPayl
   const worktreePath = getWorktreePath(payload)
   const branchName = getBranchName(payload)
   if (!(projectId && worktreePath)) return handledAction({ error: 'Worktree path is required.' })
-  await closeWorkspaceTerminals(worktreePath)
+  await disposeWorkspaceSessions(worktreePath)
 
   const threadIds = listProjectThreadIds(worktreePath)
   const removeResult = await removeProjectWorktree(projectId, worktreePath)

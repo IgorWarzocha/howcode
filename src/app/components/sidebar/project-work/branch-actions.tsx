@@ -252,43 +252,68 @@ export function WorktreeMergeAction({
   onAction: DesktopActionInvoker
 }) {
   const [pending, setPending] = useState(false)
+  const [confirming, setConfirming] = useState(false)
   const [warningMessage, setWarningMessage] = useState<string | null>(null)
   if (!group.worktreePath) return null
+
+  const mergeWorktree = () => {
+    setPending(true)
+    setConfirming(false)
+    setWarningMessage(null)
+    void onAction('workspace.merge-worktree', {
+      projectId: project.id,
+      branchName: group.worktreeBranchName ?? group.label,
+      worktreePath: group.worktreePath ?? '',
+    })
+      .then((result) => {
+        const error = result?.result?.error
+        if (typeof error === 'string' && error.trim().length > 0) {
+          setWarningMessage(
+            'Merge needs attention in parent branch. Start a session on the parent branch to resolve it.',
+          )
+        }
+      })
+      .finally(() => setPending(false))
+  }
 
   const tooltipContent = pending
     ? 'Merging worktree into parent branch…'
     : (warningMessage ?? 'Merge worktree into parent branch')
 
+  const actionButton = (
+    <button
+      type="button"
+      className={`sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-merge-action${confirming ? ' sidebar-project-work-branch-action--danger' : ''}`}
+      data-warning={warningMessage ? 'true' : 'false'}
+      disabled={pending}
+      onClick={(event) => {
+        event.stopPropagation()
+        setWarningMessage(null)
+        setConfirming(true)
+      }}
+      aria-label={`Merge ${group.label} worktree into parent branch`}
+    >
+      {pending ? <ActivitySpinner className="h-3 w-3 text-current" /> : <GitMerge size={12} />}
+    </button>
+  )
+
+  if (confirming) {
+    return (
+      <span className="tooltip-anchor sidebar-project-work-branch-confirm-anchor">
+        {actionButton}
+        <BranchConfirmPopover
+          confirmAriaLabel={`Confirm merge ${group.label} worktree into parent branch`}
+          confirmIcon={<GitMerge size={12} />}
+          onCancel={() => setConfirming(false)}
+          onConfirm={mergeWorktree}
+        />
+      </span>
+    )
+  }
+
   return (
     <Tooltip content={tooltipContent} placement="right">
-      <button
-        type="button"
-        className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-merge-action"
-        data-warning={warningMessage ? 'true' : 'false'}
-        disabled={pending}
-        onClick={(event) => {
-          event.stopPropagation()
-          setPending(true)
-          setWarningMessage(null)
-          void onAction('workspace.merge-worktree', {
-            projectId: project.id,
-            branchName: group.worktreeBranchName ?? group.label,
-            worktreePath: group.worktreePath ?? '',
-          })
-            .then((result) => {
-              const error = result?.result?.error
-              if (typeof error === 'string' && error.trim().length > 0) {
-                setWarningMessage(
-                  'Merge needs attention in parent branch. Start a session on the parent branch to resolve it.',
-                )
-              }
-            })
-            .finally(() => setPending(false))
-        }}
-        aria-label={`Merge ${group.label} worktree into parent branch`}
-      >
-        {pending ? <ActivitySpinner className="h-3 w-3 text-current" /> : <GitMerge size={12} />}
-      </button>
+      {actionButton}
     </Tooltip>
   )
 }

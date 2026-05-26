@@ -140,7 +140,8 @@ export async function mergeProjectBranch(projectId: string, branchName: string) 
     if (await hasDirtyWorktree(projectId))
       return { error: 'Parent worktree is dirty. Commit first.' }
 
-    await runGitWithOptions(projectId, ['merge', '--no-ff', normalizedBranchName], {
+    await runGitWithOptions(projectId, ['merge', '--no-ff', '--no-edit', normalizedBranchName], {
+      env: getNonInteractiveGitEnv(),
       timeout: 60_000,
       maxBuffer: 1024 * 1024 * 4,
     })

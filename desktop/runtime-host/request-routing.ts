@@ -6,6 +6,7 @@ export function getRuntimeHostRequestSessionPath<TName extends RuntimeHostReques
   payload: RuntimeHostRequestMap[TName],
 ) {
   if (name === 'startNewThread' || name === 'selectProjectRuntime') return null
+  if (name === 'disposeRuntimeHosts') return null
   if ('request' in payload) return payload.request.sessionPath ?? null
   if ('sessionPath' in payload) return payload.sessionPath ?? null
   return null
@@ -17,6 +18,7 @@ export function shouldUseThreadRuntimeHost<TName extends RuntimeHostRequestName>
 ) {
   if (name === 'startNewThread' || name === 'selectProjectRuntime') return false
   if (name === 'loadThreadSnapshot') return false
+  if (name === 'disposeRuntimeHosts') return false
   if (
     (name === 'getComposerSlashCommands' || name === 'getComposerSkills') &&
     !getRuntimeHostRequestSessionPath(name, payload)

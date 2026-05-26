@@ -52,16 +52,15 @@ async function sendComposerPromptFromPayload(payload: AnyDesktopActionPayload) {
   if (!text && attachments.length === 0) return handledAction()
 
   const composerRequest = getComposerRequest(payload)
-  if (payload.suppressInbox === true && composerRequest.sessionPath) {
-    dismissInboxThreadAfterReply(composerRequest.sessionPath)
-  }
-
   const composerSendResult = await sendComposerPrompt({
     ...composerRequest,
     text,
     attachments,
     streamingBehavior: getComposerStreamingBehavior(payload),
   })
+  if (payload.suppressInbox === true && composerRequest.sessionPath) {
+    dismissInboxThreadAfterReply(composerRequest.sessionPath)
+  }
   const branchName = getBranchName(payload) ?? composerRequest.branchName?.trim()
   if (composerSendResult.threadId && branchName) {
     assignThreadBranch(composerSendResult.threadId, branchName)
