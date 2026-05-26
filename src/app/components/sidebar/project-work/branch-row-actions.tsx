@@ -2,7 +2,14 @@ import { Tooltip } from '@howcode/common/tooltip'
 import { Plus } from 'lucide-react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project } from '../../../types'
-import { BranchPruneAction, BranchSwitchAction } from './branch-actions'
+import {
+  BranchPruneAction,
+  BranchSwitchAction,
+  MergeCompletedWorktreesAction,
+  RemoveCompletedWorktreesAction,
+  WorktreeCompletionAction,
+  WorktreeMergeAction,
+} from './branch-actions'
 import { createThreadForBranch, createThreadInWorktreeForBranch } from './new-thread-menu'
 import type { BranchThreadGroup } from './project-work-model'
 
@@ -75,7 +82,12 @@ function EmptyBranchStartAction({
 export function BranchInlineActions({
   canPrune,
   canSwitch,
+  canToggleWorktreeComplete,
+  canMergeWorktree,
+  canMergeCompletedWorktrees,
+  canRemoveCompletedWorktrees,
   confirmingPrune,
+  confirmingRemoveCompletedWorktrees,
   currentBranch,
   group,
   project,
@@ -84,12 +96,20 @@ export function BranchInlineActions({
   onCancelPrune,
   onConfirmPrune,
   onRequestPruneConfirm,
+  onCancelRemoveCompletedWorktrees,
+  onConfirmRemoveCompletedWorktrees,
+  onRequestRemoveCompletedWorktreesConfirm,
   onSwitchBlocked,
   onSwitchFailed,
 }: {
   canPrune: boolean
   canSwitch: boolean
+  canToggleWorktreeComplete: boolean
+  canMergeWorktree: boolean
+  canMergeCompletedWorktrees: boolean
+  canRemoveCompletedWorktrees: boolean
   confirmingPrune: boolean
+  confirmingRemoveCompletedWorktrees: boolean
   currentBranch: string | null
   group: BranchThreadGroup
   project: Project
@@ -98,9 +118,26 @@ export function BranchInlineActions({
   onCancelPrune: () => void
   onConfirmPrune: () => void
   onRequestPruneConfirm: () => void
+  onCancelRemoveCompletedWorktrees: () => void
+  onConfirmRemoveCompletedWorktrees: () => void
+  onRequestRemoveCompletedWorktreesConfirm: () => void
   onSwitchBlocked: () => void
   onSwitchFailed: () => void
 }) {
+  if (confirmingRemoveCompletedWorktrees) {
+    return (
+      <RemoveCompletedWorktreesAction
+        confirming={true}
+        group={group}
+        project={project}
+        onAction={onAction}
+        onCancel={onCancelRemoveCompletedWorktrees}
+        onConfirm={onConfirmRemoveCompletedWorktrees}
+        onRequestConfirm={onRequestRemoveCompletedWorktreesConfirm}
+      />
+    )
+  }
+
   return (
     <>
       {canPrune ? (
@@ -116,6 +153,20 @@ export function BranchInlineActions({
       ) : null}
       {confirmingPrune ? null : (
         <>
+          {canRemoveCompletedWorktrees ? (
+            <RemoveCompletedWorktreesAction
+              confirming={confirmingRemoveCompletedWorktrees}
+              group={group}
+              project={project}
+              onAction={onAction}
+              onCancel={onCancelRemoveCompletedWorktrees}
+              onConfirm={onConfirmRemoveCompletedWorktrees}
+              onRequestConfirm={onRequestRemoveCompletedWorktreesConfirm}
+            />
+          ) : null}
+          {canMergeCompletedWorktrees && !confirmingRemoveCompletedWorktrees ? (
+            <MergeCompletedWorktreesAction group={group} project={project} onAction={onAction} />
+          ) : null}
           {canSwitch ? (
             <BranchSwitchAction
               blocked={switchBlocked}
@@ -125,6 +176,12 @@ export function BranchInlineActions({
               onBlocked={onSwitchBlocked}
               onSwitchFailed={onSwitchFailed}
             />
+          ) : null}
+          {canToggleWorktreeComplete ? (
+            <WorktreeCompletionAction group={group} project={project} onAction={onAction} />
+          ) : null}
+          {canMergeWorktree ? (
+            <WorktreeMergeAction group={group} project={project} onAction={onAction} />
           ) : null}
           <EmptyBranchStartAction
             blocked={switchBlocked}

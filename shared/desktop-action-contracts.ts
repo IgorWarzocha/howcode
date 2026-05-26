@@ -43,6 +43,7 @@ export type DesktopActionPayloadFields = {
   parentPath?: string | undefined
   worktreeDirectory?: string | undefined | null | undefined
   worktreePath?: string | undefined | null | undefined
+  worktrees?: { worktreePath: string; branchName?: string | undefined | null }[] | undefined
   createIfMissing?: boolean | undefined
   provider?: string | undefined
   queueId?: string | undefined
@@ -208,6 +209,27 @@ export type DesktopActionPayloadMap = {
     projectId?: string | undefined | null | undefined
     branchName?: string | undefined | null | undefined
     worktreePath: string
+  }
+  'workspace.mark-worktree-complete': {
+    projectId?: string | undefined | null | undefined
+    worktreePath: string
+  }
+  'workspace.mark-worktree-incomplete': {
+    projectId?: string | undefined | null | undefined
+    worktreePath: string
+  }
+  'workspace.merge-worktree': {
+    projectId?: string | undefined | null | undefined
+    branchName?: string | undefined | null | undefined
+    worktreePath: string
+  }
+  'workspace.merge-completed-worktrees': {
+    projectId?: string | undefined | null | undefined
+    worktrees: { worktreePath: string; branchName?: string | undefined | null }[]
+  }
+  'workspace.remove-completed-worktrees': {
+    projectId?: string | undefined | null | undefined
+    worktrees: { worktreePath: string; branchName?: string | undefined | null }[]
   }
   'workspace.set-worktree-directory': {
     projectId?: string | undefined | null | undefined

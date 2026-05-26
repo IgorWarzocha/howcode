@@ -133,6 +133,27 @@ describe('project work sidebar model', () => {
     expect(groups.map((group) => group.id)).toEqual(['main', 'aaa-worktree', 'zzz-branch'])
   })
 
+  it('marks completed worktree-only groups as complete', () => {
+    const groups = buildBranchGroups(
+      [],
+      'main',
+      ['main'],
+      [
+        {
+          label: 'done-worktree',
+          path: '/repo/.worktrees/done-worktree',
+          complete: true,
+        },
+      ],
+    )
+
+    expect(groups[1]).toMatchObject({
+      worktree: true,
+      worktreeComplete: true,
+      worktreePath: '/repo/.worktrees/done-worktree',
+    })
+  })
+
   it('filters branch groups by branch label or matching thread content', () => {
     const groups = buildBranchGroups(
       [

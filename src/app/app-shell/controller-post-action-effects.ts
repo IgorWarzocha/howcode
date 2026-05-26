@@ -263,7 +263,13 @@ const postEffectHandlers: PostEffectHandler[] = [
   },
   {
     matches: (ctx) =>
-      ctx.action === 'workspace.create-worktree' || ctx.action === 'workspace.remove-worktree',
+      ctx.action === 'workspace.create-worktree' ||
+      ctx.action === 'workspace.remove-worktree' ||
+      ctx.action === 'workspace.mark-worktree-complete' ||
+      ctx.action === 'workspace.mark-worktree-incomplete' ||
+      ctx.action === 'workspace.merge-worktree' ||
+      ctx.action === 'workspace.merge-completed-worktrees' ||
+      ctx.action === 'workspace.remove-completed-worktrees',
     run: handleCreateWorktreeEffects,
   },
   {

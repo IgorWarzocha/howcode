@@ -238,6 +238,7 @@ const threadStateSchemaSql = `
       branch_name TEXT,
       is_main INTEGER NOT NULL DEFAULT 0,
       source TEXT NOT NULL DEFAULT 'howcode',
+      completed INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (cwd) REFERENCES projects(cwd) ON DELETE CASCADE,
@@ -290,6 +291,10 @@ function ensureProjectUsageTotalsColumns(database: Database) {
   )
 }
 
+function ensureProjectWorktreeColumns(database: Database) {
+  addColumnIfMissing(database, 'project_worktrees', 'completed INTEGER NOT NULL DEFAULT 0')
+}
+
 function resetRunningThreads(database: Database) {
   database.exec(`
     UPDATE threads
@@ -304,6 +309,7 @@ function runThreadStateMigrations(database: Database) {
   ensureThreadColumns(database)
   ensureInboxColumns(database)
   ensureProjectUsageTotalsColumns(database)
+  ensureProjectWorktreeColumns(database)
   resetRunningThreads(database)
 }
 

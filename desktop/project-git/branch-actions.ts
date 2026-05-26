@@ -131,3 +131,21 @@ export async function pruneProjectBranch(projectId: string, branchName: string) 
     return { error: formatGitCommandError(error) }
   }
 }
+
+export async function mergeProjectBranch(projectId: string, branchName: string) {
+  const normalizedBranchName = branchName.trim()
+  if (!normalizedBranchName) return { error: 'Branch name is required.' }
+
+  try {
+    if (await hasDirtyWorktree(projectId))
+      return { error: 'Parent worktree is dirty. Commit first.' }
+
+    await runGitWithOptions(projectId, ['merge', '--no-ff', normalizedBranchName], {
+      timeout: 60_000,
+      maxBuffer: 1024 * 1024 * 4,
+    })
+    return { didMutate: true }
+  } catch (error) {
+    return { error: formatGitCommandError(error) }
+  }
+}

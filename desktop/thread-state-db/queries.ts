@@ -59,6 +59,7 @@ export function listProjects(cwd: string): Project[] {
           project_worktrees.branch_name AS worktreeBranchName,
           project_worktrees.is_main AS worktreeIsMain,
           project_worktrees.source AS worktreeSource,
+          project_worktrees.completed AS worktreeCompleted,
           project_worktree_settings.worktree_dir AS worktreeDirectory,
           COUNT(threads.id) AS threadCount,
           COALESCE(MAX(threads.last_modified_ms), 0) AS latestModifiedMs
@@ -87,6 +88,7 @@ export function listProjects(cwd: string): Project[] {
           project_worktrees.branch_name,
           project_worktrees.is_main,
           project_worktrees.source,
+          project_worktrees.completed,
           project_worktree_settings.worktree_dir
         ORDER BY
           projects.pinned DESC,

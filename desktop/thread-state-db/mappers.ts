@@ -73,6 +73,7 @@ export function mapProjectRow(row: ProjectRow): Project {
           branchName: row.worktreeBranchName,
           isMain: Boolean(row.worktreeIsMain),
           source: row.worktreeSource === 'imported' ? 'imported' : 'howcode',
+          completed: Boolean(row.worktreeCompleted),
         }
       : undefined,
   }
