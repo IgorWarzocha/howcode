@@ -2,6 +2,7 @@ import { ArrowRight, Heart } from 'lucide-react'
 import { StrictMode, useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import changelogMarkdown from '../../docs/changelog.md?raw'
+import roadmapMarkdown from '../../docs/roadmap.md?raw'
 import rootPackage from '../../package.json'
 import launcherPackage from '../../packages/howcode/package.json'
 import './styles.css'
@@ -36,17 +37,15 @@ const screenshots = [
   },
 ]
 
-const roadmap = [
-  'more cards',
-  'worktrees',
-  'per-project automations',
-  'multiple terminals per session',
-  'external terminal control for agents',
-  'background mode when Pi has a server',
-  'remote sessions over SSH',
-  'Claw, a sidekick for managing the app',
-  'Work, an office-docs lane',
-]
+function getRoadmapItems(markdown: string) {
+  return markdown
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith('- '))
+    .map((line) => line.slice(2).trim())
+}
+
+const roadmap = getRoadmapItems(roadmapMarkdown)
 
 type PageId = 'home' | 'dependencies' | 'blog' | 'blog-worktrees'
 
@@ -106,7 +105,7 @@ const channels: Record<ChannelId, ChannelConfig> = {
     description:
       'The normal channel. The launcher downloads the current stable desktop build and relaunches the cached app.',
     releaseUrl: 'https://github.com/IgorWarzocha/howcode/releases/tag/channel-main',
-    changelogIndex: 1,
+    changelogIndex: 0,
     installCommands: [
       { label: 'launcher', command: 'npx howcode' },
       { label: 'global install', command: 'npm i -g howcode' },
