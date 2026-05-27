@@ -8,7 +8,7 @@ import type {
 import { buildComposerAttachmentPrompt } from './attachments.ts'
 import { promptAndReturnAfterPreflight } from './composer-preflight.ts'
 import { buildComposerSendResult } from './composer-send-result.ts'
-import type { PiRuntime } from './types.ts'
+import type { PiRuntime, RuntimeThreadReason } from './types.ts'
 
 export type ComposerPromptRequest = ComposerStateRequest & {
   text: string
@@ -25,7 +25,10 @@ export type ComposerSendOutcome = {
 export type ComposerPromptFlowAdapters = {
   emitComposerUpdate: (request?: ComposerStateRequest) => Promise<unknown>
   isRuntimeExtensionCommandRunning: (runtime: PiRuntime) => boolean
-  publishThreadUpdate: (runtime: PiRuntime, reason: 'update') => Promise<unknown>
+  publishThreadUpdate: (
+    runtime: PiRuntime,
+    reason: Extract<RuntimeThreadReason, 'update' | 'compaction'>,
+  ) => Promise<unknown>
   scheduleRuntimeDisposal: (runtime: PiRuntime) => void
 }
 
@@ -60,9 +63,59 @@ export async function compactComposerRuntime(input: {
   const entries = runtime.session.sessionManager.getBranch()
   if (entries.filter((entry) => entry.type === 'message').length < 2)
     throw new Error('Nothing to compact (no messages yet)')
-  await runtime.session.compact(compactInstructions.length > 0 ? compactInstructions : undefined)
-  await adapters.emitComposerUpdate({ ...request, sessionPath: persistedSessionPath })
+  const compactPromise = runtime.session.compact(
+    compactInstructions.length > 0 ? compactInstructions : undefined,
+  )
+  const outcome = await waitForCompactionStartOrSettlement(runtime, compactPromise)
+  if (outcome === 'started') {
+    compactPromise
+      .then(() =>
+        publishCompactionSettledState({ adapters, persistedSessionPath, request, runtime }),
+      )
+      .catch((error) => {
+        console.error('Compaction failed after composer returned.', error)
+        void publishCompactionSettledState({ adapters, persistedSessionPath, request, runtime })
+      })
+    return buildComposerSendResult(runtime, 'sent')
+  }
+  await publishCompactionSettledState({ adapters, persistedSessionPath, request, runtime })
   return buildComposerSendResult(runtime, 'sent')
+}
+
+async function waitForCompactionStartOrSettlement(
+  runtime: PiRuntime,
+  compactPromise: Promise<unknown>,
+) {
+  if (runtime.session.isCompacting) return 'started' as const
+  let pollId: ReturnType<typeof setInterval> | undefined
+  try {
+    return await Promise.race([
+      compactPromise.then(() => 'settled' as const),
+      new Promise<'started'>((resolve) => {
+        pollId = setInterval(() => {
+          if (!runtime.session.isCompacting) return
+          resolve('started')
+        }, 50)
+      }),
+    ])
+  } finally {
+    if (pollId) clearInterval(pollId)
+  }
+}
+
+async function publishCompactionSettledState(input: {
+  adapters: ComposerPromptFlowAdapters
+  persistedSessionPath: string | null
+  request: ComposerStateRequest
+  runtime: PiRuntime
+}) {
+  await input.adapters.publishThreadUpdate(input.runtime, 'compaction').catch((error) => {
+    console.error('Composer compaction settled but thread update publish failed', error)
+  })
+  await input.adapters.emitComposerUpdate({
+    ...input.request,
+    sessionPath: input.persistedSessionPath,
+  })
 }
 
 export async function promptComposerRuntime(input: {

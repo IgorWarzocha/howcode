@@ -1,7 +1,7 @@
 import { ArrowDownToLine, ListCollapse } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { Message } from '../types'
-import { appToneAccentClass, appTypeGroupTextClass, compactIconButtonClass } from '../ui/classes'
+import { appTypeSmallClass, compactIconButtonClass } from '../ui/classes'
 import { CHAT_TEXT_MAX_WIDTH_CLASS } from '../ui/layout'
 import { cn } from '../utils/cn'
 import { buildTimelineRows } from './buildTimelineRows'
@@ -353,18 +353,15 @@ export function ThreadTimeline({
         </div>
       </div>
       {isCompacting ? (
-        <div className="pointer-events-none absolute right-4 bottom-4 left-4 z-20 flex justify-center">
+        <div className="pointer-events-none absolute right-4 bottom-4 left-4 z-[5] flex justify-center">
           <div
             className={cn(
-              'rounded-full bg-[color:var(--folded-row-bg)] px-3 py-2',
-              appTypeGroupTextClass,
-              appToneAccentClass,
+              'thread-compaction-pill inline-flex h-7 max-w-none shrink-0 items-center gap-1.5 rounded-full px-3 text-[color:var(--accent)]',
+              appTypeSmallClass,
             )}
           >
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-[color:var(--accent)]" />
-              <span>Compacting session context…</span>
-            </div>
+            <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-[color:var(--accent)] opacity-70" />
+            <span className="truncate">Compacting session context…</span>
           </div>
         </div>
       ) : null}

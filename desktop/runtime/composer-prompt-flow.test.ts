@@ -1,7 +1,15 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { promptAndReturnAfterPreflight } from './composer-preflight.ts'
-import { buildComposerPromptMessage, isExtensionCommandPrompt } from './composer-prompt-flow.ts'
+import {
+  buildComposerPromptMessage,
+  compactComposerRuntime,
+  isExtensionCommandPrompt,
+} from './composer-prompt-flow.ts'
 import type { PiRuntime } from './types.ts'
+
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 describe('composer prompt flow', () => {
   it('prefixes attachment prompt before user text', () => {
@@ -67,5 +75,55 @@ describe('composer prompt flow', () => {
         },
       }),
     ).resolves.toBeUndefined()
+  })
+
+  it('returns from compact once the runtime reports compaction started', async () => {
+    vi.useFakeTimers()
+    const publishThreadUpdate = vi.fn(async () => undefined)
+    const emitComposerUpdate = vi.fn(async () => undefined)
+    const runtime = {
+      cwd: '/tmp/project',
+      session: {
+        sessionFile: '/tmp/session.jsonl',
+        sessionId: 'thread-1',
+        isStreaming: false,
+        isCompacting: false,
+        compact: vi.fn(async function (this: { isCompacting: boolean }) {
+          setTimeout(() => {
+            this.isCompacting = true
+          }, 50)
+          await new Promise(() => {
+            // Compaction keeps running; the action should not hold the composer lock forever.
+          })
+        }),
+        sessionManager: {
+          getBranch: () => [{ type: 'message' }, { type: 'message' }],
+        },
+      },
+    } as unknown as PiRuntime
+
+    const resultPromise = compactComposerRuntime({
+      adapters: {
+        emitComposerUpdate,
+        isRuntimeExtensionCommandRunning: () => false,
+        publishThreadUpdate,
+        scheduleRuntimeDisposal: () => undefined,
+      },
+      compactInstructions: '',
+      persistedSessionPath: '/tmp/session.jsonl',
+      request: { sessionPath: '/tmp/session.jsonl' },
+      runtime,
+    })
+
+    vi.advanceTimersByTime(50)
+    await Promise.resolve()
+
+    await expect(resultPromise).resolves.toEqual({
+      outcome: 'sent',
+      sessionPath: '/tmp/session.jsonl',
+      threadId: 'thread-1',
+    })
+    expect(publishThreadUpdate).not.toHaveBeenCalled()
+    expect(emitComposerUpdate).not.toHaveBeenCalled()
   })
 })

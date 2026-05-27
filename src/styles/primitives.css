@@ -771,6 +771,12 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   border-radius: 0.5rem;
 }
 
+.thread-compaction-pill {
+  border: 1px solid var(--border-strong);
+  background: var(--panel);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.34);
+}
+
 .thread-session-control {
   border-radius: 0.375rem;
 }
