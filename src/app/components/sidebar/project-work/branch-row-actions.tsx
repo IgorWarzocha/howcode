@@ -1,7 +1,7 @@
-import { Tooltip } from '@howcode/common/tooltip'
 import { Plus } from 'lucide-react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project } from '../../../types'
+import { SidebarActionTooltip } from '../sidebar-action-tooltip'
 import {
   BranchPruneAction,
   BranchSwitchAction,
@@ -63,17 +63,16 @@ function EmptyBranchStartAction({
       : group.unassigned
         ? 'Start unassigned thread'
         : `Start thread in ${group.label} worktree`
-  const tooltipContent = blocked
+  const tooltipContent = canSwitch ? 'Switch branches and start a new session.' : label
+  const warning = blocked
     ? 'You have uncommitted changes on your current branch. Commit first.'
-    : canSwitch
-      ? 'Switch branches and start a new session.'
-      : label
+    : null
 
   return (
-    <Tooltip content={tooltipContent} placement="right">
+    <SidebarActionTooltip description={tooltipContent} warning={warning}>
       <button
         type="button"
-        className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-empty-start"
+        className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--optical-up sidebar-project-work-empty-start"
         data-warning={blocked ? 'true' : 'false'}
         onClick={(event) => {
           event.stopPropagation()
@@ -83,7 +82,7 @@ function EmptyBranchStartAction({
       >
         <Plus size={12} />
       </button>
-    </Tooltip>
+    </SidebarActionTooltip>
   )
 }
 

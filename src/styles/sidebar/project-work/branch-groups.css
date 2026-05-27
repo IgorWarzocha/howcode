@@ -124,6 +124,9 @@
   height: var(--sidebar-branch-action-size);
   width: var(--sidebar-branch-action-size);
   flex: 0 0 var(--sidebar-branch-action-size);
+}
+
+.sidebar-project-work-branch-actions .sidebar-project-work-branch-action--optical-up {
   transform: translateY(-1px);
 }
 

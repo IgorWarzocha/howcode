@@ -215,3 +215,8 @@
   opacity: 1;
   transform: none;
 }
+
+.sidebar-action-warning-tooltip {
+  border-color: color-mix(in srgb, var(--danger) 30%, var(--border-strong));
+  color: var(--danger);
+}

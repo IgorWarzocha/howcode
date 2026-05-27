@@ -3,6 +3,7 @@ import { CircleOff, GitBranch, GitFork, Plus } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project, View } from '../../../types'
+import { SidebarActionTooltip } from '../sidebar-action-tooltip'
 import { BranchInlineActions, BranchSessionCount } from './branch-row-actions'
 import { createThreadForBranch } from './new-thread-menu'
 import type { BranchThreadGroup, WorktreeBranchGroup } from './project-work-model'
@@ -178,17 +179,16 @@ function EmptyBranchPrompt({
   onAction: DesktopActionInvoker
   onSwitchError: () => void
 }) {
-  const tooltip = currentBranchDirty
-    ? dirtyBranchSwitchMessage
-    : 'Switch branches and start a new session.'
+  const tooltip = 'Switch branches and start a new session.'
+  const warning = currentBranchDirty ? dirtyBranchSwitchMessage : null
   return (
     <div className="sidebar-project-work-empty-branch-row" data-action-count={actionCount}>
       <span className="sidebar-project-work-empty-branch-spacer" aria-hidden="true" />
       <span>No sessions in this branch.</span>
-      <Tooltip content={tooltip} placement="right">
+      <SidebarActionTooltip description={tooltip} warning={warning}>
         <button
           type="button"
-          className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-empty-start"
+          className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--optical-up sidebar-project-work-empty-start"
           data-warning={currentBranchDirty ? 'true' : 'false'}
           onClick={(event) => {
             event.stopPropagation()
@@ -212,7 +212,7 @@ function EmptyBranchPrompt({
         >
           <Plus size={12} />
         </button>
-      </Tooltip>
+      </SidebarActionTooltip>
     </div>
   )
 }

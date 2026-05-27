@@ -4,6 +4,7 @@ import { CheckSquare, GitBranch, GitMerge, Square, Trash2, XSquare } from 'lucid
 import { useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project } from '../../../types'
+import { SidebarActionTooltip } from '../sidebar-action-tooltip'
 import { SidebarInlineConfirmPopunder } from '../sidebar-inline-confirm-popunder'
 import type { BranchThreadGroup } from './project-work-model'
 
@@ -23,13 +24,14 @@ export function BranchSwitchAction({
   onSwitchFailed: () => void
 }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const tooltipContent =
-    errorMessage ?? (blocked ? 'Worktree is dirty. Commit first.' : `Switch to ${group.label}`)
+  const warning = errorMessage ?? (blocked ? 'Worktree is dirty. Commit first.' : null)
+  const hasWarning = Boolean(warning)
   return (
-    <Tooltip content={tooltipContent} placement="right">
+    <SidebarActionTooltip description={`Switch to ${group.label}`} warning={warning}>
       <button
         type="button"
-        className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action"
+        className={`sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action${hasWarning ? ' sidebar-project-work-branch-action--danger' : ''}`}
+        data-warning={hasWarning ? 'true' : 'false'}
         onClick={(event) => {
           event.stopPropagation()
           setErrorMessage(null)
@@ -54,7 +56,7 @@ export function BranchSwitchAction({
       >
         <GitBranch size={12} />
       </button>
-    </Tooltip>
+    </SidebarActionTooltip>
   )
 }
 
@@ -83,9 +85,8 @@ export function BranchPruneAction({
         worktreePath: worktree.path,
         branchName: worktree.branchName ?? null,
       }))
-  const actionTooltip = errorMessage
-    ? errorMessage
-    : worktreesToRemove.length > 0
+  const actionTooltip =
+    worktreesToRemove.length > 0
       ? `Remove ${group.label} and associated worktrees`
       : `${actionLabel} ${group.label}`
   const runPrune = async () => {
@@ -111,7 +112,7 @@ export function BranchPruneAction({
   const actionButton = (
     <button
       type="button"
-      className={`sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action${confirming ? ' sidebar-project-work-branch-action--danger' : ''}`}
+      className={`sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--optical-up${confirming ? ' sidebar-project-work-branch-action--danger' : ''}`}
       onClick={(event) => {
         event.stopPropagation()
         setErrorMessage(null)
@@ -137,9 +138,9 @@ export function BranchPruneAction({
   }
 
   return (
-    <Tooltip content={actionTooltip} placement="right">
+    <SidebarActionTooltip description={actionTooltip} warning={errorMessage}>
       {actionButton}
-    </Tooltip>
+    </SidebarActionTooltip>
   )
 }
 
@@ -162,7 +163,7 @@ export function WorktreeCompletionAction({
     <Tooltip content={label} placement="right">
       <button
         type="button"
-        className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action"
+        className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--optical-up"
         onClick={(event) => {
           event.stopPropagation()
           void onAction(action, {
@@ -214,12 +215,12 @@ export function WorktreeMergeAction({
 
   const tooltipContent = pending
     ? 'Merging worktree into parent branch…'
-    : (warningMessage ?? 'Merge worktree into parent branch')
+    : 'Merge worktree into parent branch'
 
   const actionButton = (
     <button
       type="button"
-      className={`sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-merge-action${confirming ? ' sidebar-project-work-branch-action--danger' : ''}`}
+      className={`sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--optical-up sidebar-project-work-merge-action${confirming ? ' sidebar-project-work-branch-action--danger' : ''}`}
       data-warning={warningMessage ? 'true' : 'false'}
       disabled={pending}
       onClick={(event) => {
@@ -247,9 +248,9 @@ export function WorktreeMergeAction({
   }
 
   return (
-    <Tooltip content={tooltipContent} placement="right">
+    <SidebarActionTooltip description={tooltipContent} warning={warningMessage}>
       {actionButton}
-    </Tooltip>
+    </SidebarActionTooltip>
   )
 }
 
@@ -326,14 +327,12 @@ export function MergeCompletedWorktreesAction({
       .finally(() => setPending(false))
   }
 
-  const tooltipContent = pending
-    ? 'Merging completed worktrees…'
-    : (warningMessage ?? 'Merge completed worktrees')
+  const tooltipContent = pending ? 'Merging completed worktrees…' : 'Merge completed worktrees'
 
   const actionButton = (
     <button
       type="button"
-      className={`sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-merge-action${confirming ? ' sidebar-project-work-branch-action--danger' : ''}`}
+      className={`sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--optical-up sidebar-project-work-merge-action${confirming ? ' sidebar-project-work-branch-action--danger' : ''}`}
       data-warning={warningMessage ? 'true' : 'false'}
       disabled={pending}
       onClick={(event) => {
@@ -361,9 +360,9 @@ export function MergeCompletedWorktreesAction({
   }
 
   return (
-    <Tooltip content={tooltipContent} placement="right">
+    <SidebarActionTooltip description={tooltipContent} warning={warningMessage}>
       {actionButton}
-    </Tooltip>
+    </SidebarActionTooltip>
   )
 }
 
@@ -398,7 +397,7 @@ export function RemoveCompletedWorktreesAction({
   const actionButton = (
     <button
       type="button"
-      className={`sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action${confirming ? ' sidebar-project-work-branch-action--danger' : ''}`}
+      className={`sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--optical-up${confirming ? ' sidebar-project-work-branch-action--danger' : ''}`}
       onClick={(event) => {
         event.stopPropagation()
         onRequestConfirm()
