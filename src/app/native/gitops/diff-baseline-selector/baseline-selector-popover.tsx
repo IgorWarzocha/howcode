@@ -7,6 +7,7 @@ import type { ProjectCommitEntry, ProjectDiffBaseline } from '../../../desktop/t
 import {
   appToneMutedClass,
   appTypeSmallClass,
+  composerPopoverBottomRowLayerClass,
   composerPopoverInputClass,
   composerPopoverSectionLabelClass,
   popoverPanelClass,
@@ -60,7 +61,8 @@ export function BaselineSelectorPortal({
       aria-label="Diff baseline selector"
       className={cn(
         popoverPanelClass,
-        'motion-popover fixed z-[120] grid max-h-[calc(100vh-1rem)] grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-1.5 rounded-xl border-0 p-1.5 transition-[opacity,transform] duration-150 ease-out',
+        composerPopoverBottomRowLayerClass,
+        'motion-popover fixed grid max-h-[calc(100vh-1rem)] grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-1.5 rounded-xl border-0 p-1.5 transition-[opacity,transform] duration-150 ease-out',
         positionReady ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-1 opacity-0',
       )}
       style={{

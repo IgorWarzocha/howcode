@@ -60,6 +60,18 @@ async function hasDirtyWorktree(projectId: string) {
   return stdout.split('\n').some((line) => line.trim().length > 0)
 }
 
+async function hasMergeInProgress(projectId: string) {
+  try {
+    await runGitWithOptions(projectId, ['rev-parse', '-q', '--verify', 'MERGE_HEAD'], {
+      timeout: 10_000,
+      maxBuffer: 1024 * 1024,
+    })
+    return true
+  } catch {
+    return false
+  }
+}
+
 function chooseBranchAfterPrune(branches: Set<string>, branchName: string) {
   for (const candidate of ['main', 'master', 'develop', 'dev']) {
     if (candidate !== branchName && branches.has(candidate)) return candidate
@@ -97,7 +109,10 @@ export async function switchProjectBranch(projectId: string, branchName: string)
     })
     return { didMutate: true }
   } catch (error) {
-    return { error: formatGitCommandError(error) }
+    return {
+      ...((await hasMergeInProgress(projectId)) ? { didMutate: true } : {}),
+      error: formatGitCommandError(error),
+    }
   }
 }
 
@@ -125,6 +140,28 @@ export async function pruneProjectBranch(projectId: string, branchName: string) 
     await runGitWithOptions(projectId, ['branch', '-D', normalizedBranchName], {
       timeout: 10_000,
       maxBuffer: 1024 * 1024,
+    })
+    return { didMutate: true }
+  } catch (error) {
+    return {
+      ...((await hasMergeInProgress(projectId)) ? { didMutate: true } : {}),
+      error: formatGitCommandError(error),
+    }
+  }
+}
+
+export async function mergeProjectBranch(projectId: string, branchName: string) {
+  const normalizedBranchName = branchName.trim()
+  if (!normalizedBranchName) return { error: 'Branch name is required.' }
+
+  try {
+    if (await hasDirtyWorktree(projectId))
+      return { error: 'Parent worktree is dirty. Commit first.' }
+
+    await runGitWithOptions(projectId, ['merge', '--no-ff', '--no-edit', normalizedBranchName], {
+      env: getNonInteractiveGitEnv(),
+      timeout: 60_000,
+      maxBuffer: 1024 * 1024 * 4,
     })
     return { didMutate: true }
   } catch (error) {

@@ -20,10 +20,12 @@ import {
   projectBlockMatchesSearch,
   sortThreads,
 } from './project-work-model'
+import { ProjectWorkThreadRow } from './project-work-thread-row'
 
 function ProjectWorkBlockHeader({
   currentBranch,
   expanded,
+  isGitRepo,
   project,
   onAction,
   onFocusProject,
@@ -31,6 +33,7 @@ function ProjectWorkBlockHeader({
 }: {
   currentBranch: string | null
   expanded: boolean
+  isGitRepo: boolean
   project: Project
   onAction: DesktopActionInvoker
   onFocusProject: (projectId: string) => void
@@ -136,7 +139,103 @@ function ProjectWorkBlockHeader({
           />
         ) : null}
       </div>
-      <NewThreadMenu currentBranch={currentBranch} onAction={onAction} projectId={project.id} />
+      <NewThreadMenu
+        currentBranch={currentBranch}
+        isGitRepo={isGitRepo}
+        onAction={onAction}
+        projectId={project.id}
+      />
+    </div>
+  )
+}
+
+function NonGitProjectBlockThreads({
+  activeView,
+  project,
+  searchQuery,
+  selectedThreadId,
+  terminalRunningSessionPaths,
+  threads,
+  onAction,
+  onThreadOpen,
+}: {
+  activeView: View
+  project: Project
+  searchQuery: string
+  selectedThreadId: string | null
+  terminalRunningSessionPaths: ReadonlySet<string>
+  threads: Thread[]
+  onAction: DesktopActionInvoker
+  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
+}) {
+  return (
+    <div className="sidebar-project-work-thread-list">
+      {filterThreadsBySearch(sortThreads(threads), searchQuery).map((thread) => (
+        <ProjectWorkThreadRow
+          key={thread.id}
+          activeView={activeView}
+          currentBranch={null}
+          project={project}
+          selectedThreadId={selectedThreadId}
+          terminalRunningSessionPaths={terminalRunningSessionPaths}
+          thread={thread}
+          onAction={onAction}
+          onThreadOpen={onThreadOpen}
+        />
+      ))}
+    </div>
+  )
+}
+
+function ProjectWorkBlockActions({
+  activeView,
+  expanded,
+  hideSessionCounts,
+  isProjectActive,
+  olderThreadCount,
+  selectedThreadId,
+  onOpenProjectSessions,
+  onOpenAutomations,
+}: {
+  activeView: View
+  expanded: boolean
+  hideSessionCounts: boolean
+  isProjectActive: boolean
+  olderThreadCount: number
+  selectedThreadId: string | null
+  onOpenProjectSessions: () => void
+  onOpenAutomations: () => void
+}) {
+  return (
+    <div className="sidebar-project-work-project-block-actions">
+      <button
+        type="button"
+        className="sidebar-compact-row sidebar-compact-row--action sidebar-project-work-action-row"
+        data-active={activeView === 'automations' && isProjectActive ? 'true' : 'false'}
+        onClick={onOpenAutomations}
+      >
+        <ChevronRight size={13} aria-hidden="true" />
+        <span>Automations</span>
+        <span className="sidebar-project-work-pill">Soon</span>
+      </button>
+      {expanded ? (
+        <button
+          type="button"
+          className="sidebar-compact-row sidebar-compact-row--action sidebar-project-work-history-row"
+          data-active={
+            activeView === 'sessions' && isProjectActive && selectedThreadId === null
+              ? 'true'
+              : 'false'
+          }
+          onClick={onOpenProjectSessions}
+        >
+          <Archive size={14} />
+          <span>Past sessions</span>
+          {hideSessionCounts ? null : (
+            <span className={cn(appTypeMetaClass, appToneSubtleClass)}>{olderThreadCount}</span>
+          )}
+        </button>
+      ) : null}
     </div>
   )
 }
@@ -148,6 +247,7 @@ export function ProjectWorkSummaryBlock({
   currentBranch,
   expanded,
   hideSessionCounts,
+  isGitRepo,
   olderThreadCount,
   project,
   pruneConfirmBranchId,
@@ -175,6 +275,7 @@ export function ProjectWorkSummaryBlock({
   currentBranch: string | null
   expanded: boolean
   hideSessionCounts: boolean
+  isGitRepo: boolean
   olderThreadCount: number
   project: Project
   pruneConfirmBranchId: string | null
@@ -204,6 +305,10 @@ export function ProjectWorkSummaryBlock({
     onShowView('sessions')
     void onAction('project.select', { projectId: project.id })
   }
+  const openProjectAutomations = () => {
+    onFocusProject(project.id)
+    onShowView('automations')
+  }
   const normalizedSearchQuery = searchQuery.trim().toLowerCase()
   const branchThreads = filterThreadsBySearch(
     filterThreadsForCurrentBranch(threads, currentBranch),
@@ -215,7 +320,7 @@ export function ProjectWorkSummaryBlock({
   )
   const filteredBranchGroups = filterBranchGroups(branchGroups, searchQuery)
   const compactWorktreeGroups = filteredBranchGroups.filter(
-    (group) => group.worktree && !group.current,
+    (group) => (group.worktree || group.worktrees.length > 0) && !group.current,
   )
   const searchExpanded = normalizedSearchQuery.length > 0
   const unassignedExpanded = searchExpanded || !unassignedCollapsed
@@ -234,97 +339,90 @@ export function ProjectWorkSummaryBlock({
       <ProjectWorkBlockHeader
         currentBranch={currentBranch}
         expanded={expanded}
+        isGitRepo={isGitRepo}
         project={project}
         onAction={onAction}
         onFocusProject={onFocusProject}
         onToggleExpanded={onToggleExpanded}
       />
 
-      <div className="sidebar-project-work-project-block-actions">
-        <button
-          type="button"
-          className="sidebar-compact-row sidebar-compact-row--action sidebar-project-work-action-row"
-          data-active={activeView === 'automations' && isProjectActive ? 'true' : 'false'}
-          onClick={() => {
-            onFocusProject(project.id)
-            onShowView('automations')
-          }}
-        >
-          <ChevronRight size={13} aria-hidden="true" />
-          <span>Automations</span>
-          <span className="sidebar-project-work-pill">Soon</span>
-        </button>
-        {expanded ? (
-          <button
-            type="button"
-            className="sidebar-compact-row sidebar-compact-row--action sidebar-project-work-history-row"
-            data-active={
-              activeView === 'sessions' && isProjectActive && selectedThreadId === null
-                ? 'true'
-                : 'false'
-            }
-            onClick={openProjectSessions}
-          >
-            <Archive size={14} />
-            <span>Past sessions</span>
-            {hideSessionCounts ? null : (
-              <span className={cn(appTypeMetaClass, appToneSubtleClass)}>{olderThreadCount}</span>
-            )}
-          </button>
-        ) : null}
-      </div>
+      <ProjectWorkBlockActions
+        activeView={activeView}
+        expanded={expanded}
+        hideSessionCounts={hideSessionCounts}
+        isProjectActive={isProjectActive}
+        olderThreadCount={olderThreadCount}
+        selectedThreadId={selectedThreadId}
+        onOpenAutomations={openProjectAutomations}
+        onOpenProjectSessions={openProjectSessions}
+      />
 
-      {expanded || searchExpanded ? (
-        <ProjectExpandedBranchGroups
-          activeView={activeView}
-          branchGroups={filteredBranchGroups}
-          collapsedBranchIds={collapsedBranchIds}
-          currentBranch={currentBranch}
-          hideSessionCounts={hideSessionCounts}
-          normalizedSearchQuery={normalizedSearchQuery}
-          project={project}
-          pruneConfirmBranchId={pruneConfirmBranchId}
-          selectedThreadId={selectedThreadId}
-          switchErrorBranchId={switchErrorBranchId}
-          terminalRunningSessionPaths={terminalRunningSessionPaths}
-          onAction={onAction}
-          onSetCollapsedBranchIds={onSetCollapsedBranchIds}
-          onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
-          onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
-          onThreadOpen={onThreadOpen}
-        />
+      {isGitRepo ? (
+        expanded || searchExpanded ? (
+          <ProjectExpandedBranchGroups
+            activeView={activeView}
+            branchGroups={filteredBranchGroups}
+            collapsedBranchIds={collapsedBranchIds}
+            currentBranch={currentBranch}
+            hideSessionCounts={hideSessionCounts}
+            normalizedSearchQuery={normalizedSearchQuery}
+            project={project}
+            pruneConfirmBranchId={pruneConfirmBranchId}
+            selectedThreadId={selectedThreadId}
+            switchErrorBranchId={switchErrorBranchId}
+            terminalRunningSessionPaths={terminalRunningSessionPaths}
+            onAction={onAction}
+            onSetCollapsedBranchIds={onSetCollapsedBranchIds}
+            onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
+            onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
+            onThreadOpen={onThreadOpen}
+          />
+        ) : (
+          <ProjectCompactBranchGroups
+            activeView={activeView}
+            branchThreads={branchThreads}
+            collapsedBranchIds={collapsedBranchIds}
+            currentBranch={currentBranch}
+            currentBranchExpanded={
+              normalizedSearchQuery.length > 0 ||
+              !(collapsedBranchIds[`${project.id}:current-branch`] ?? false)
+            }
+            hideSessionCounts={hideSessionCounts}
+            normalizedSearchQuery={normalizedSearchQuery}
+            project={project}
+            pruneConfirmBranchId={pruneConfirmBranchId}
+            selectedThreadId={selectedThreadId}
+            switchErrorBranchId={switchErrorBranchId}
+            terminalRunningSessionPaths={terminalRunningSessionPaths}
+            unassignedExpanded={unassignedExpanded}
+            unassignedThreads={unassignedThreads}
+            worktreeGroups={compactWorktreeGroups}
+            onAction={onAction}
+            onSetCollapsedBranchIds={onSetCollapsedBranchIds}
+            onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
+            onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
+            onThreadOpen={onThreadOpen}
+            onToggleCurrentBranch={() =>
+              onSetCollapsedBranchIds((current) => ({
+                ...current,
+                [`${project.id}:current-branch`]: !(
+                  current[`${project.id}:current-branch`] ?? false
+                ),
+              }))
+            }
+            onToggleUnassigned={onToggleUnassigned}
+          />
+        )
       ) : (
-        <ProjectCompactBranchGroups
+        <NonGitProjectBlockThreads
           activeView={activeView}
-          branchThreads={branchThreads}
-          collapsedBranchIds={collapsedBranchIds}
-          currentBranch={currentBranch}
-          currentBranchExpanded={
-            normalizedSearchQuery.length > 0 ||
-            !(collapsedBranchIds[`${project.id}:current-branch`] ?? false)
-          }
-          hideSessionCounts={hideSessionCounts}
-          normalizedSearchQuery={normalizedSearchQuery}
           project={project}
-          pruneConfirmBranchId={pruneConfirmBranchId}
+          searchQuery={searchQuery}
           selectedThreadId={selectedThreadId}
-          switchErrorBranchId={switchErrorBranchId}
           terminalRunningSessionPaths={terminalRunningSessionPaths}
-          unassignedExpanded={unassignedExpanded}
-          unassignedThreads={unassignedThreads}
-          worktreeGroups={compactWorktreeGroups}
+          threads={threads}
           onAction={onAction}
-          onSetCollapsedBranchIds={onSetCollapsedBranchIds}
-          onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
-          onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
           onThreadOpen={onThreadOpen}
-          onToggleCurrentBranch={() =>
-            onSetCollapsedBranchIds((current) => ({
-              ...current,
-              [`${project.id}:current-branch`]: !(current[`${project.id}:current-branch`] ?? false),
-            }))
-          }
-          onToggleUnassigned={onToggleUnassigned}
         />
       )}
     </section>

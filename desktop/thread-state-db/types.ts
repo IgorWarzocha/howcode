@@ -4,6 +4,7 @@ export type SessionSummaryRecord = {
   sessionPath: string
   title: string
   lastModifiedMs: number
+  branchName?: string | undefined | null | undefined
 }
 
 export type ProjectRow = {
@@ -20,6 +21,7 @@ export type ProjectRow = {
   worktreeBranchName: string | null
   worktreeIsMain: number | null
   worktreeSource: string | null
+  worktreeCompleted: number | null
   worktreeDirectory: string | null
 }
 

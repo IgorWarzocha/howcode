@@ -13,7 +13,7 @@ function createWorkspaceState(overrides: Partial<WorkspaceState> = {}): Workspac
     selectedThreadId: 'thread-1',
     selectedSessionPath: '/sessions/thread-1.jsonl',
     terminalVisible: false,
-    projectTerminalVisibleByProject: {},
+    workspaceTerminalVisibleByWorkspace: {},
     terminalVisibleBySession: {},
     restoreTerminalVisibleOnGitOpsClose: false,
     takeoverVisible: false,

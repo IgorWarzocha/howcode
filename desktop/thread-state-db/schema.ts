@@ -175,6 +175,12 @@ const threadStateSchemaSql = `
       FOREIGN KEY (session_path) REFERENCES threads(session_path) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS inbox_reply_suppressions (
+      session_path TEXT PRIMARY KEY,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (session_path) REFERENCES threads(session_path) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS project_usage_totals (
       cwd TEXT PRIMARY KEY,
       input INTEGER NOT NULL DEFAULT 0,
@@ -238,6 +244,7 @@ const threadStateSchemaSql = `
       branch_name TEXT,
       is_main INTEGER NOT NULL DEFAULT 0,
       source TEXT NOT NULL DEFAULT 'howcode',
+      completed INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (cwd) REFERENCES projects(cwd) ON DELETE CASCADE,
@@ -282,12 +289,26 @@ function ensureInboxColumns(database: Database) {
   addColumnIfMissing(database, 'inbox_items', 'last_user_prompt TEXT')
 }
 
+function ensureInboxReplySuppressionTable(database: Database) {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS inbox_reply_suppressions (
+      session_path TEXT PRIMARY KEY,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (session_path) REFERENCES threads(session_path) ON DELETE CASCADE
+    )
+  `)
+}
+
 function ensureProjectUsageTotalsColumns(database: Database) {
   addColumnIfMissing(
     database,
     'project_usage_totals',
     'sessions_with_usage_count INTEGER NOT NULL DEFAULT 0',
   )
+}
+
+function ensureProjectWorktreeColumns(database: Database) {
+  addColumnIfMissing(database, 'project_worktrees', 'completed INTEGER NOT NULL DEFAULT 0')
 }
 
 function resetRunningThreads(database: Database) {
@@ -303,7 +324,9 @@ function runThreadStateMigrations(database: Database) {
   ensureProjectColumns(database)
   ensureThreadColumns(database)
   ensureInboxColumns(database)
+  ensureInboxReplySuppressionTable(database)
   ensureProjectUsageTotalsColumns(database)
+  ensureProjectWorktreeColumns(database)
   resetRunningThreads(database)
 }
 

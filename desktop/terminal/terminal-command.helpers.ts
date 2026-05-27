@@ -14,6 +14,7 @@ type TerminalEnvironmentVariables = NodeJS.ProcessEnv & {
   TERM_PROGRAM?: string
   COLORTERM?: string
   HOWCODE_EMBEDDED_TERMINAL?: string
+  HOWCODE_TERMINAL_CAPABILITIES?: string
   PI_CLEAR_ON_SHRINK?: string
 }
 
@@ -102,7 +103,11 @@ export function resolveTerminalEnv(
   request: TerminalOpenRequest,
   env: NodeJS.ProcessEnv = process.env,
 ): NodeJS.ProcessEnv {
-  const nextEnv: NodeJS.ProcessEnv = { ...env, TERM: 'xterm-256color' }
+  const nextEnv: NodeJS.ProcessEnv = {
+    ...env,
+    TERM: 'xterm-256color',
+    COLORTERM: getEnvironmentVariable(env, 'COLORTERM') ?? 'truecolor',
+  }
   const nextEnvVariables = nextEnv as TerminalEnvironmentVariables
 
   if (request.launchMode !== 'pi-session') {
@@ -114,8 +119,9 @@ export function resolveTerminalEnv(
   }
 
   nextEnvVariables.TERM_PROGRAM = 'howcode'
-  nextEnvVariables.COLORTERM = nextEnvVariables.COLORTERM ?? 'truecolor'
   nextEnvVariables.HOWCODE_EMBEDDED_TERMINAL = '1'
+  nextEnvVariables.HOWCODE_TERMINAL_CAPABILITIES =
+    'ansi,256color,truecolor,unicode,no-terminal-protocols'
   nextEnvVariables.PI_CLEAR_ON_SHRINK = '1'
   return nextEnv
 }

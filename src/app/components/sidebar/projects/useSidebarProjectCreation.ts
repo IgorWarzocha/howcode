@@ -33,6 +33,12 @@ function recordCreatedProject(input: {
     ])
 }
 
+const pathLikeProjectDraftPattern = /^(~(?:[/\\]|$)|[/\\]|[A-Za-z]:[/\\])/
+
+export function isPathLikeProjectDraft(draft: string) {
+  return pathLikeProjectDraftPattern.test(draft.trim())
+}
+
 function prepareCreateProject(input: {
   appSettings: AppSettings
   createBusy: boolean
@@ -44,17 +50,32 @@ function prepareCreateProject(input: {
 }) {
   if (input.createBusy) return null
   input.setCreateErrorMessage(null)
-  if (!(input.parentPath || input.appSettings.preferredProjectLocation)) {
+  const draft = input.projectNameDraft.trim()
+  if (!draft) return null
+  const repository = parseGitHubRepositoryUrl(draft)
+  if (
+    !(
+      input.parentPath ||
+      input.appSettings.preferredProjectLocation ||
+      (isPathLikeProjectDraft(draft) && !repository)
+    )
+  ) {
     input.setCreateOpen(false)
-    input.onOpenSettingsPanel({ category: 'projects', settingId: 'projects.default-location' })
+    input.onOpenSettingsPanel({ category: 'howcode', settingId: 'projects.default-location' })
     return null
   }
-  const draft = input.projectNameDraft.trim()
-  return draft || null
+  return draft
 }
 
 function getCreateProjectPayload(draft: string, parentPath?: string | null) {
   const repository = parseGitHubRepositoryUrl(draft)
+  if (isPathLikeProjectDraft(draft) && !repository) {
+    return {
+      pendingProjectName: getSidebarFolderProjectName(draft),
+      payload: { projectPath: draft, createIfMissing: true },
+    }
+  }
+
   return {
     pendingProjectName: repository?.folderName ?? draft,
     payload: repository

@@ -16,6 +16,7 @@ import {
   appToneMutedClass,
   appTypeMetaClass,
   appTypeMetaStrongClass,
+  composerPopoverExtensionLayerClass,
   composerPopoverPanelClass,
   composerTextActionButtonClass,
 } from '../../ui/classes'
@@ -95,6 +96,7 @@ function UntrackedScopePopover({ count, onInclude }: { count: number; onInclude:
       panelRef={panelRef}
       open={open}
       placement="top-center"
+      portalClassName={composerPopoverExtensionLayerClass}
       surface={false}
       className={cn(composerPopoverPanelClass, 'w-64 p-2')}
     >

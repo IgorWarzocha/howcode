@@ -1,4 +1,8 @@
-export { pruneProjectBranch, switchProjectBranch } from './project-git/branch-actions.ts'
+export {
+  mergeProjectBranch,
+  pruneProjectBranch,
+  switchProjectBranch,
+} from './project-git/branch-actions.ts'
 export {
   commitProjectChanges,
   initializeProjectGit,

@@ -160,7 +160,7 @@ export function useAppShellController() {
     skillsProjectScopeActive: bundle.skillsProjectScopeActive,
     state: bundle.state,
     selectedInboxThread,
-    terminalRunningProjectIds: terminals.terminalRunningProjectIds,
+    terminalRunningWorkspaceIds: terminals.terminalRunningWorkspaceIds,
     terminalRunningSessionPaths: terminals.terminalRunningSessionPaths,
     toast,
     chatSidebarState: chatSidebar.chatSidebarState,

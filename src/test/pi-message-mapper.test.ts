@@ -288,7 +288,35 @@ describe('pi message mapper', () => {
         content: ['Running read...'],
         isError: false,
         args: '{\n  "path": "src/app.tsx"\n}',
+        rawArgs: { path: 'src/app.tsx' },
         running: true,
+      },
+    ])
+  })
+
+  it('preserves raw tool arguments and details for richer desktop rendering', () => {
+    expect(
+      mapAgentMessagesToUiMessages([
+        {
+          role: 'toolResult',
+          timestamp: 1,
+          toolName: 'edit',
+          isError: false,
+          args: { path: 'src/app.tsx' },
+          details: { diff: '+new line', firstChangedLine: 3 },
+          content: [{ type: 'text', text: 'Successfully replaced 1 block(s).' }],
+        },
+      ] as never[]),
+    ).toEqual([
+      {
+        id: '1-toolResult',
+        role: 'toolResult',
+        toolName: 'edit',
+        content: ['Successfully replaced 1 block(s).'],
+        isError: false,
+        args: '{\n  "path": "src/app.tsx"\n}',
+        rawArgs: { path: 'src/app.tsx' },
+        details: { diff: '+new line', firstChangedLine: 3 },
       },
     ])
   })

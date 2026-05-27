@@ -80,6 +80,27 @@ export function getWorktreePath(payload: DesktopActionPayloadInput) {
   return worktreePath.length > 0 ? worktreePath : null
 }
 
+export type WorktreeActionTarget = {
+  worktreePath: string
+  branchName: string | null
+}
+
+export function getWorktreeActionTargets(
+  payload: DesktopActionPayloadInput,
+): WorktreeActionTarget[] {
+  if (!Array.isArray(payload.worktrees)) return []
+
+  return payload.worktrees.flatMap((target): WorktreeActionTarget[] => {
+    if (typeof target !== 'object' || target === null) return []
+    const candidate = target as { worktreePath?: unknown; branchName?: unknown }
+    const worktreePath =
+      typeof candidate.worktreePath === 'string' ? candidate.worktreePath.trim() : ''
+    if (!worktreePath) return []
+    const branchName = typeof candidate.branchName === 'string' ? candidate.branchName.trim() : ''
+    return [{ worktreePath, branchName: branchName || null }]
+  })
+}
+
 export function getProjectName(payload: DesktopActionPayloadInput) {
   const projectName = typeof payload.projectName === 'string' ? payload.projectName.trim() : ''
   return projectName.length > 0 ? projectName : null

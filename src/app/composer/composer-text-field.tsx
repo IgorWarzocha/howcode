@@ -9,7 +9,7 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 import { useHoverToFocus } from '../hooks/useHoverToFocus'
-import { appToneTextClass, appTypeBodyClass } from '../ui/classes'
+import { appToneTextClass, appTypeBodyClass, composerPopoverInputLayerClass } from '../ui/classes'
 import { cn } from '../utils/cn'
 import {
   ComposerExpandButton,
@@ -144,7 +144,7 @@ export function ComposerTextField({
       ? createPortal(
           <div
             ref={inlinePopoverWrapperRef}
-            className="pointer-events-none fixed z-[120]"
+            className={cn('pointer-events-none fixed', composerPopoverInputLayerClass)}
             style={{
               left: `${inlinePopoverPosition.left}px`,
               top: `${inlinePopoverPosition.top}px`,

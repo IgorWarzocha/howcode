@@ -11,14 +11,15 @@ import { ProjectInstallTargetList } from './project-install-target-list'
 import { ProjectScopeSelector } from './project-scope-selector'
 import { MultiProjectWorkContent, SingleProjectWorkContent } from './project-work-content'
 import {
-  bucketThreads,
   buildBranchGroups,
   filterBranchGroups,
   getCurrentBranchForProject,
   getDisplayableProjects,
+  getDisplayableWorkspaces,
+  getProjectGitStateForSidebar,
   getProjectScopeLabel,
   getRepositoryBranchesForProject,
-  getThreadsForProjectWorktreeRows,
+  getThreadBucketsForProjectWork,
   getVisibleProjectIds,
   getWorktreeBranchesForProject,
   getWorktreeProjectsForRoot,
@@ -37,7 +38,7 @@ type ProjectWorkSectionProps = {
   selectedThreadId: string | null
   projectTargetMode?: boolean | undefined
   projectScopeLockActive?: boolean | undefined
-  terminalRunningProjectIds: ReadonlySet<string>
+  terminalRunningWorkspaceIds: ReadonlySet<string>
   terminalRunningSessionPaths: ReadonlySet<string>
   onAction: DesktopActionInvoker
   onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
@@ -61,7 +62,7 @@ export function ProjectWorkSection({
   initialVisibleProjectIds,
   selectedProjectId,
   selectedThreadId,
-  terminalRunningProjectIds,
+  terminalRunningWorkspaceIds,
   terminalRunningSessionPaths,
   onAction,
   onLoadProjectThreads,
@@ -82,9 +83,16 @@ export function ProjectWorkSection({
   const [scopeSelectorOrderIds, setScopeSelectorOrderIds] = useState<string[] | null>(null)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
   const appliedInitialEmptyScopeRef = useRef(false)
+  const displayableWorkspaces = useMemo(() => getDisplayableWorkspaces(projects), [projects])
   const displayableProjects = useMemo(() => getDisplayableProjects(projects), [projects])
+  const selectedWorkspace = displayableWorkspaces.find(
+    (project) => project.id === selectedProjectId,
+  )
   const selectedProject =
     displayableProjects.find((project) => project.id === selectedProjectId) ??
+    displayableProjects.find(
+      (project) => project.id === selectedWorkspace?.worktree?.rootProjectId,
+    ) ??
     displayableProjects[0] ??
     null
   const visibleProjectIds = getVisibleProjectIds(
@@ -161,7 +169,7 @@ export function ProjectWorkSection({
   useEffect(() => {
     const projectsToLoad = new Map(visibleProjects.map((project) => [project.id, project]))
     for (const project of visibleProjects) {
-      for (const worktreeProject of getWorktreeProjectsForRoot(project, displayableProjects)) {
+      for (const worktreeProject of getWorktreeProjectsForRoot(project, displayableWorkspaces)) {
         projectsToLoad.set(worktreeProject.id, worktreeProject)
       }
     }
@@ -169,7 +177,7 @@ export function ProjectWorkSection({
       if (project.threadsLoaded) continue
       void onLoadProjectThreads(project.id, { chat: false })
     }
-  }, [displayableProjects, onLoadProjectThreads, visibleProjects])
+  }, [displayableWorkspaces, onLoadProjectThreads, visibleProjects])
 
   const focusProject = (projectId: string) => {
     onProjectSelect(projectId)
@@ -204,7 +212,7 @@ export function ProjectWorkSection({
           projects={scopeSelectorProjects}
           scopeProject={null}
           selectedProject={null}
-          terminalRunningProjectIds={terminalRunningProjectIds}
+          terminalRunningWorkspaceIds={terminalRunningWorkspaceIds}
           visibleProjects={visibleProjects}
           onAction={onAction}
           onOpenChange={setProjectSwitcherOpen}
@@ -225,7 +233,7 @@ export function ProjectWorkSection({
         <ProjectInstallTargetList
           projects={displayableProjects}
           selectedProjectId={selectedProjectId}
-          terminalRunningProjectIds={terminalRunningProjectIds}
+          terminalRunningWorkspaceIds={terminalRunningWorkspaceIds}
           onAction={onAction}
           onProjectPrimeSelection={onProjectPrimeSelection}
           onProjectTargetSelected={onProjectTargetSelected}
@@ -239,7 +247,11 @@ export function ProjectWorkSection({
   const contentProject = visibleProjects.length === 1 ? visibleProjects[0] : selectedProject
   if (!contentProject) return null
 
-  const { activeThreads, olderThreads } = bucketThreads(contentProject, selectedThreadId)
+  const { activeThreads, olderThreads } = getThreadBucketsForProjectWork(
+    contentProject,
+    displayableWorkspaces,
+    selectedThreadId,
+  )
   const currentBranch = getCurrentBranchForProject(
     contentProject,
     projectGitState,
@@ -250,13 +262,19 @@ export function ProjectWorkSection({
     projectGitState,
     gitStatesByProjectId,
   )
+  const contentProjectGitState = getProjectGitStateForSidebar(
+    contentProject.id,
+    projectGitState,
+    gitStatesByProjectId,
+  )
   const worktreeBranches = getWorktreeBranchesForProject(
     contentProject,
+    displayableWorkspaces,
     projectGitState,
     gitStatesByProjectId,
   )
   const branchGroups = buildBranchGroups(
-    [...activeThreads, ...getThreadsForProjectWorktreeRows(contentProject, displayableProjects)],
+    activeThreads,
     currentBranch,
     repositoryBranches,
     worktreeBranches,
@@ -288,7 +306,7 @@ export function ProjectWorkSection({
         projects={scopeSelectorProjects}
         scopeProject={scopeProject}
         selectedProject={selectedProject}
-        terminalRunningProjectIds={terminalRunningProjectIds}
+        terminalRunningWorkspaceIds={terminalRunningWorkspaceIds}
         visibleProjects={visibleProjects}
         onAction={onAction}
         onOpenChange={setProjectSwitcherOpenState}
@@ -305,7 +323,7 @@ export function ProjectWorkSection({
       ) : multiProjectMode ? (
         <MultiProjectWorkContent
           activeView={activeView}
-          allProjects={displayableProjects}
+          allProjects={displayableWorkspaces}
           collapsedBranchIds={collapsedBranchIds}
           gitStatesByProjectId={gitStatesByProjectId}
           projectGitState={projectGitState}
@@ -337,6 +355,7 @@ export function ProjectWorkSection({
           collapsedBranchIds={collapsedBranchIds}
           currentBranch={currentBranch}
           hideSessionCounts={appSettings.hideSidebarSessionCounts}
+          isGitRepo={Boolean(contentProjectGitState?.isGitRepo)}
           normalizedSearchQuery={normalizedSearchQuery}
           olderThreadCount={olderThreads.length}
           project={contentProject}

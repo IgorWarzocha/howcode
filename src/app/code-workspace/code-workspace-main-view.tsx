@@ -269,6 +269,7 @@ export function CodeWorkspaceMainView({
       <SessionsView
         currentBranch={currentBranch}
         project={selectedProject}
+        projects={projects}
         onAction={onAction}
         onClose={onCloseUtilityView}
         onOpenThread={onOpenThread}

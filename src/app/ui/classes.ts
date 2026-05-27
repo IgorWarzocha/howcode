@@ -224,6 +224,15 @@ export const composerInlineConfirmButtonClass =
 
 export const composerPopoverInputClass = `settings-control-text h-8 min-w-0 rounded-md border-0 bg-[color:var(--surface-hover)] px-2.5 ${appTypeControlClass} ${appToneTextClass} outline-none placeholder:text-[color:var(--muted)] focus:bg-[color:var(--surface-hover)]`
 
+// Composer-local overlay ladder, from interactive footer menus down to passive thread hints.
+export const composerPopoverBottomRowLayerClass = 'z-[140]'
+
+export const composerPopoverInputLayerClass = 'z-[120]'
+
+export const composerPopoverExtensionLayerClass = 'z-[100]'
+
+export const composerPopoverContextLayerClass = 'z-[80]'
+
 export const composerPopoverPanelClass =
   'pointer-events-auto scroll-py-1.5 rounded-xl border-0 bg-[color:var(--panel)] p-1.5 shadow-[var(--shadow)]'
 

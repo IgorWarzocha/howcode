@@ -10,7 +10,7 @@ export type Thread = {
   running?: boolean | undefined
   unread?: boolean | undefined
   pinned?: boolean | undefined
-  branchName?: string | undefined
+  branchName?: string | null | undefined
 }
 
 export type ProjectWorktreeInfo = {
@@ -18,6 +18,7 @@ export type ProjectWorktreeInfo = {
   branchName: string | null
   isMain: boolean
   source: 'howcode' | 'imported'
+  completed?: boolean | undefined
 }
 
 export type InboxThread = {
@@ -132,6 +133,8 @@ export type ToolResultMessage = {
   images?: ToolResultImage[] | undefined
   isError: boolean
   args?: string | undefined
+  rawArgs?: unknown | undefined
+  details?: unknown | undefined
   running?: boolean | undefined
 }
 

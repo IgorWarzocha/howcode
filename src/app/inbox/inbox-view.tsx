@@ -72,6 +72,7 @@ function getInboxSendPayload(input: {
       sessionPath: input.thread.sessionPath,
       text: nextDraft,
       attachments: isCompactCommand ? [] : input.attachments,
+      suppressInbox: true,
       streamingBehavior: input.appSettings.composerStreamingBehavior,
       composerMode: input.thread.isChat ? 'chat' : 'code',
     } as const,
@@ -132,6 +133,104 @@ function applyInboxSendResult(input: {
     input.setAttachments([])
     input.onDismissThread(input.thread)
   }
+}
+
+function InboxEmptyState() {
+  return (
+    <div className="grid h-full min-h-0 place-items-center px-6 py-6">
+      <div className="w-full max-w-[520px]">
+        <EmptyStateCard
+          className={`grid gap-2 rounded-[18px] px-5 py-5 text-center ${appTypeGroupTextClass} ${appToneMutedClass}`}
+        >
+          <div className={`${appTypeSectionTitleClass} ${appToneTextClass}`}>Inbox is waiting</div>
+          <div>
+            Select a thread on the left to skim Pi’s latest reply and either answer or clear it.
+          </div>
+        </EmptyStateCard>
+      </div>
+    </div>
+  )
+}
+
+function InboxSidebarToggle({
+  sidebarCollapsed,
+  sidebarCompactMode,
+  onToggleSidebar,
+}: {
+  sidebarCollapsed: boolean
+  sidebarCompactMode: boolean
+  onToggleSidebar: () => void
+}) {
+  if (sidebarCompactMode && !sidebarCollapsed) return null
+  const showSidebar = sidebarCollapsed || sidebarCompactMode
+  return (
+    <button
+      type="button"
+      className="pointer-events-auto inline-flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
+      onClick={onToggleSidebar}
+      aria-label={showSidebar ? 'Show sidebar' : 'Hide sidebar'}
+      data-tooltip={showSidebar ? 'Show sidebar' : 'Hide sidebar'}
+      data-tooltip-placement="right"
+    >
+      {showSidebar ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+    </button>
+  )
+}
+
+function InboxThreadHeader({ thread }: { thread: InboxThread }) {
+  const prompt = thread.prompt?.trim() || thread.title
+  return (
+    <div className="mx-auto w-full max-w-[832px]">
+      <div className={`${threadSessionStripClass} gap-2 px-3.5 py-3`}>
+        <div
+          className={`flex min-w-0 items-center gap-2 ${appTypeMetaClass} ${appToneSubtleClass}`}
+        >
+          <span className="truncate">{thread.projectName}</span>
+          <span aria-hidden="true">•</span>
+          <span className="shrink-0 tabular-nums">{thread.age}</span>
+          {thread.running ? (
+            <>
+              <span aria-hidden="true">•</span>
+              <span className={`shrink-0 ${appTypeControlStrongClass} text-[color:var(--accent)]`}>
+                working
+              </span>
+            </>
+          ) : null}
+        </div>
+        <p
+          className={`m-0 max-h-[calc(1.68em*4)] overflow-y-auto whitespace-pre-wrap break-words ${appTypeReadableClass} ${appToneTextClass} [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}
+        >
+          {prompt}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function InboxThreadMessage({ thread }: { thread: InboxThread }) {
+  const messageMarkdown = thread.content.join('\n\n').trim()
+  return (
+    <div className="min-h-0 overflow-y-auto">
+      <div className="grid h-full w-full content-start justify-items-center pb-5">
+        <div className={`min-h-0 w-full ${WORKSPACE_CONTENT_MAX_WIDTH_CLASS} text-pretty`}>
+          <div className="border-t border-[color:var(--border)]/70 pt-2">
+            {messageMarkdown ? (
+              <MarkdownContent
+                markdown={messageMarkdown}
+                className={`gap-3 ${appTypeReadableClass} text-pretty`}
+              />
+            ) : (
+              <div
+                className={`grid min-h-28 place-items-center rounded-lg bg-[color:var(--folded-row-bg)] ${inlineEmptyNoteClass}`}
+              >
+                {thread.running ? 'Still working…' : 'No final assistant message yet.'}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export function InboxView({
@@ -238,95 +337,23 @@ export function InboxView({
   }
 
   if (!thread) {
-    return (
-      <div className="grid h-full min-h-0 place-items-center px-6 py-6">
-        <div className="w-full max-w-[520px]">
-          <EmptyStateCard
-            className={`grid gap-2 rounded-[18px] px-5 py-5 text-center ${appTypeGroupTextClass} ${appToneMutedClass}`}
-          >
-            <div className={`${appTypeSectionTitleClass} ${appToneTextClass}`}>
-              Inbox is waiting
-            </div>
-            <div>
-              Select a thread on the left to skim Pi’s latest reply and either answer or clear it.
-            </div>
-          </EmptyStateCard>
-        </div>
-      </div>
-    )
+    return <InboxEmptyState />
   }
-
-  const prompt = thread.prompt?.trim() || thread.title
-  const messageMarkdown = thread.content.join('\n\n').trim()
 
   return (
     <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] pt-6 pb-4">
-      <div className="mx-auto w-full max-w-[832px]">
-        <div className={`${threadSessionStripClass} gap-2 px-3.5 py-3`}>
-          <div
-            className={`flex min-w-0 items-center gap-2 ${appTypeMetaClass} ${appToneSubtleClass}`}
-          >
-            <span className="truncate">{thread.projectName}</span>
-            <span aria-hidden="true">•</span>
-            <span className="shrink-0 tabular-nums">{thread.age}</span>
-            {thread.running ? (
-              <>
-                <span aria-hidden="true">•</span>
-                <span
-                  className={`shrink-0 ${appTypeControlStrongClass} text-[color:var(--accent)]`}
-                >
-                  working
-                </span>
-              </>
-            ) : null}
-          </div>
-          <p
-            className={`m-0 max-h-[calc(1.68em*4)] overflow-y-auto whitespace-pre-wrap break-words ${appTypeReadableClass} ${appToneTextClass} [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}
-          >
-            {prompt}
-          </p>
-        </div>
-      </div>
-
-      <div className="min-h-0 overflow-y-auto">
-        <div className="grid h-full w-full content-start justify-items-center pb-5">
-          <div className={`min-h-0 w-full ${WORKSPACE_CONTENT_MAX_WIDTH_CLASS} text-pretty`}>
-            {messageMarkdown ? (
-              <div className="border-t border-[color:var(--border)]/70 pt-2">
-                <MarkdownContent
-                  markdown={messageMarkdown}
-                  className={`gap-3 ${appTypeReadableClass} text-pretty`}
-                />
-              </div>
-            ) : (
-              <div className="border-t border-[color:var(--border)]/70 pt-2">
-                <div
-                  className={`grid min-h-28 place-items-center rounded-lg bg-[color:var(--folded-row-bg)] ${inlineEmptyNoteClass}`}
-                >
-                  {thread.running ? 'Still working…' : 'No final assistant message yet.'}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <InboxThreadHeader thread={thread} />
+      <InboxThreadMessage thread={thread} />
 
       <div>
         <WorkspaceComposerDock
-          compactControls={sidebarCompactMode}
+          compactControls={sidebarCompactMode || sidebarCollapsed}
           left={
-            sidebarCompactMode ? null : (
-              <button
-                type="button"
-                className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
-                onClick={onToggleSidebar}
-                aria-label={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
-                data-tooltip={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
-                data-tooltip-placement="right"
-              >
-                {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
-              </button>
-            )
+            <InboxSidebarToggle
+              sidebarCollapsed={sidebarCollapsed}
+              sidebarCompactMode={sidebarCompactMode}
+              onToggleSidebar={onToggleSidebar}
+            />
           }
           center={
             <InboxComposer

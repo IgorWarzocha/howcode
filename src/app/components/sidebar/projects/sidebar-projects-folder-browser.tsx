@@ -7,8 +7,10 @@ type ProjectDirectoryState = DesktopRequestMap['listProjectDirectoryEntries']['r
 
 type SidebarProjectsFolderBrowserProps = {
   busy: boolean
+  projectNameDraft: string
   searchQuery: string
   onAddFolder: (path: string) => void
+  onCreateInCurrentFolder: () => void
   onCurrentPathChange: (path: string | null) => void
   onSearchQueryChange: (query: string) => void
 }
@@ -18,6 +20,7 @@ type DirectoryLoadResult =
   | { state: null; errorMessage: string }
 
 const pathSegmentSeparatorPattern = /[\\/]/
+const pathLikeProjectDraftPattern = /^(~(?:[/\\]|$)|[/\\]|[A-Za-z]:[/\\])/
 
 async function loadDirectory(path?: string | null): Promise<DirectoryLoadResult> {
   try {
@@ -45,10 +48,70 @@ function compactPath(path: string, homePath?: string) {
   return path
 }
 
+function CurrentFolderProjectActions({
+  busy,
+  currentPath,
+  loading,
+  projectNameDraft,
+  onAddFolder,
+  onCreateInCurrentFolder,
+}: {
+  busy: boolean
+  currentPath: string
+  loading: boolean
+  projectNameDraft: string
+  onAddFolder: (path: string) => void
+  onCreateInCurrentFolder: () => void
+}) {
+  const trimmedProjectNameDraft = projectNameDraft.trim()
+  const draftLooksLikePath = pathLikeProjectDraftPattern.test(trimmedProjectNameDraft)
+  const canTryCreateInCurrentFolder = !(draftLooksLikePath || busy || loading)
+  const disabledCreateTitle = draftLooksLikePath
+    ? 'Enter a folder name here, or use the add button to use the typed path.'
+    : 'Create a new project folder here.'
+
+  return (
+    <>
+      <button
+        type="button"
+        className="sidebar-project-folder-row sidebar-project-folder-row--add"
+        onClick={onCreateInCurrentFolder}
+        disabled={!canTryCreateInCurrentFolder}
+        title={
+          canTryCreateInCurrentFolder && trimmedProjectNameDraft
+            ? `Create ${trimmedProjectNameDraft} in ${currentPath}`
+            : disabledCreateTitle
+        }
+      >
+        <Plus size={13} />
+        <span>
+          {trimmedProjectNameDraft
+            ? `Create “${trimmedProjectNameDraft}” in this folder`
+            : 'Create new project folder here'}
+        </span>
+      </button>
+      {draftLooksLikePath ? (
+        <div className="sidebar-project-folder-hint">Use a folder name here, not a path.</div>
+      ) : null}
+      <button
+        type="button"
+        className="sidebar-project-folder-row sidebar-project-folder-row--add"
+        onClick={() => onAddFolder(currentPath)}
+        disabled={busy || loading}
+      >
+        <Plus size={13} />
+        <span>Use current folder as project</span>
+      </button>
+    </>
+  )
+}
+
 export function SidebarProjectsFolderBrowser({
   busy,
+  projectNameDraft,
   searchQuery,
   onAddFolder,
+  onCreateInCurrentFolder,
   onCurrentPathChange,
   onSearchQueryChange,
 }: SidebarProjectsFolderBrowserProps) {
@@ -92,7 +155,6 @@ export function SidebarProjectsFolderBrowser({
     if (!query) return state?.entries ?? []
     return (state?.entries ?? []).filter((entry) => entry.name.toLowerCase().includes(query))
   }, [searchQuery, state?.entries])
-
   return (
     <div className="sidebar-project-folder-browser">
       <div className="sidebar-project-folder-header">
@@ -121,15 +183,14 @@ export function SidebarProjectsFolderBrowser({
 
       <div className="sidebar-project-folder-list" aria-busy={loadingPath ? 'true' : 'false'}>
         {state ? (
-          <button
-            type="button"
-            className="sidebar-project-folder-row sidebar-project-folder-row--add"
-            onClick={() => onAddFolder(state.currentPath)}
-            disabled={busy || loading}
-          >
-            <Plus size={13} />
-            <span>Initialise project in current folder</span>
-          </button>
+          <CurrentFolderProjectActions
+            busy={busy}
+            currentPath={state.currentPath}
+            loading={loading}
+            projectNameDraft={projectNameDraft}
+            onAddFolder={onAddFolder}
+            onCreateInCurrentFolder={onCreateInCurrentFolder}
+          />
         ) : null}
 
         {filteredEntries.map((entry) => (

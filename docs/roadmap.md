@@ -1,6 +1,5 @@
 ## Coming ASAP
 - More cards.
-- Worktrees.
 - Automations per project.
 - Multiple terminals per session.
 - External terminal control for agents, probably via a small tool.

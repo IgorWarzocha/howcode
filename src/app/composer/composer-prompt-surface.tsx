@@ -5,7 +5,7 @@ import {
   useHowcodeKeybindingCommand,
 } from '../app-shell/keybinding-events'
 import { AskQuestionsCard, useComposerAskQuestionsActions } from '../features/native-extensions'
-import { composerPanelClass } from '../ui/classes'
+import { composerPanelClass, composerPopoverExtensionLayerClass } from '../ui/classes'
 import { cn } from '../utils/cn'
 import type { ComposerProps } from './composer'
 import { ComposerFooter } from './composer-footer'
@@ -294,7 +294,10 @@ export function ComposerPromptSurface({
         {showAskQuestions ? (
           <div
             ref={askQuestionsOverlayRef}
-            className="pointer-events-auto absolute right-0 bottom-full left-0 z-20"
+            className={cn(
+              'pointer-events-auto absolute right-0 bottom-full left-0',
+              composerPopoverExtensionLayerClass,
+            )}
           >
             <AskQuestionsCard
               composerDraft={draft}

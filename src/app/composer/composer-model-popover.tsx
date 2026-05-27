@@ -7,6 +7,7 @@ import {
   appToneTextClass,
   appTypeMetaClass,
   appTypeSmallClass,
+  composerPopoverBottomRowLayerClass,
   composerPopoverPanelClass,
 } from '../ui/classes'
 import { cn } from '../utils/cn'
@@ -248,7 +249,7 @@ export function ComposerModelPopover({
     appTypeSmallClass,
     preferPortalPlacement
       ? 'max-h-[calc(100vh-1.5rem)] overflow-y-auto'
-      : 'absolute bottom-[calc(100%+8px)] left-0 z-[60]',
+      : cn('absolute bottom-[calc(100%+8px)] left-0', composerPopoverBottomRowLayerClass),
     composerPopoverPanelClass,
   )
 
@@ -261,6 +262,7 @@ export function ComposerModelPopover({
         surface={false}
         id="composer-model-menu"
         placement="top-start"
+        portalClassName={composerPopoverBottomRowLayerClass}
         className={panelClassName}
       >
         {panelContents}

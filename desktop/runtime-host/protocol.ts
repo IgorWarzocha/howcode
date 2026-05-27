@@ -33,6 +33,10 @@ export type RuntimeHostRequestMap = {
     projectPath?: string | undefined | null | undefined
     chat?: boolean | undefined
   }
+  disposeRuntimeHosts: {
+    sessionPaths?: string[] | undefined
+    projectPath?: string | undefined | null | undefined
+  }
   getPiSessionStorage: {
     projectPath?: string | undefined | null | undefined
     chat?: boolean | undefined
@@ -136,6 +140,7 @@ export type RuntimeHostResponseMap = {
   selectProjectRuntime: ComposerState
   openThreadRuntime: ComposerState
   invalidateRuntimeSettings: { ok: true }
+  disposeRuntimeHosts: { ok: true }
   getPiSessionStorage: { agentDir: string; sessionDir: string }
   loadPiSettings: PiSettings
   loadPiThemeState: PiThemeState

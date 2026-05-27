@@ -11,6 +11,7 @@ import { getLatestInboxAssistantMessage } from '../../shared/thread-inbox.ts'
 import { isChatSessionPath, upsertChatThread } from '../chat-state-db.ts'
 import {
   beginInboxThreadTurn,
+  consumeInboxReplySuppression,
   getThreadAssistantSnapshot,
   hasInboxItem,
   setThreadRunningState,
@@ -138,6 +139,7 @@ function upsertPersistedThreadSummary({
     sessionPath,
     title: thread.title,
     lastModifiedMs: timestamp,
+    branchName: runtime.branchName ?? null,
   })
   if (isChatSessionPath(sessionPath)) {
     upsertChatThread({ sessionPath, groupId: runtime.chatGroupId ?? null })
@@ -177,6 +179,7 @@ function updateInboxEndState(
   timestamp: number,
 ) {
   if (reason !== 'end') return
+  if (consumeInboxReplySuppression(sessionPath)) return
   const latestAssistantMessage = getLatestInboxAssistantMessage(thread.messages)
   if (!latestAssistantMessage) return
   upsertInboxThreadMessage({
@@ -230,6 +233,7 @@ export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThr
     projectId,
     threadId,
     sessionPath,
+    branchName: runtime.branchName ?? null,
     chatGroupId: runtime.chatGroupId ?? null,
     isChat: isChatSessionPath(sessionPath),
     thread,

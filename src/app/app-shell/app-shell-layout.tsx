@@ -50,15 +50,6 @@ function getThreadId(state: AppShellController['state']) {
   return null
 }
 
-function isUtilityView(activeView: AppShellController['state']['activeView']) {
-  return (
-    activeView === 'settings' ||
-    activeView === 'extensions' ||
-    activeView === 'skills' ||
-    activeView === 'archived'
-  )
-}
-
 function updateTakeoverTerminalKey(options: {
   composerProjectId: string
   nextTakeoverTerminalKey: string
@@ -110,10 +101,6 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   )
   const [sidebarOverlayOpen, setSidebarOverlayOpen] = useState(false)
   const [terminalHiddenByCompactResize, setTerminalHiddenByCompactResize] = useState(false)
-  const [artifactDrawerOverlayVisible, setArtifactDrawerOverlayVisible] = useState(false)
-  const [closeArtifactDrawerOverlay, setCloseArtifactDrawerOverlay] = useState<(() => void) | null>(
-    null,
-  )
   const {
     activeComposerState,
     activeThreadData,
@@ -144,9 +131,6 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     (state.activeView === 'thread' || state.activeView === 'project') &&
     state.terminalVisible &&
     !(sidebarCompactMode && terminalHiddenByCompactResize)
-  const utilityViewActive = isUtilityView(state.activeView)
-  const compactSidebarButtonEdgeMode =
-    state.activeView === 'project' || terminalDrawerVisible || artifactDrawerOverlayVisible
   const animatedTerminalDrawerPresent = useAnimatedPresence(terminalDrawerVisible)
   const terminalDrawerPresent =
     sidebarCompactMode && terminalHiddenByCompactResize
@@ -195,23 +179,9 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     })
   }, [])
 
-  const handleArtifactDrawerOverlayChange = useCallback(
-    (visible: boolean, onClose?: () => void) => {
-      setArtifactDrawerOverlayVisible((current) => (current === visible ? current : visible))
-      setCloseArtifactDrawerOverlay((current) => {
-        const next = visible && onClose ? onClose : null
-        return current === next ? current : next
-      })
-    },
-    [],
-  )
-
-  useEffect(() => {
-    if (state.activeView !== 'chat') {
-      setArtifactDrawerOverlayVisible(false)
-      setCloseArtifactDrawerOverlay(null)
-    }
-  }, [state.activeView])
+  const handleArtifactDrawerOverlayChange = useCallback(() => {
+    // Artifact drawer overlay state is controlled by the drawer itself.
+  }, [])
 
   const previousWindowCompactModeRef = useRef(
     typeof window === 'undefined' ? false : window.innerWidth <= 1236,
@@ -307,11 +277,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
       sidebarCompactMode={sidebarCompactMode}
       sidebarOverlayOpen={sidebarOverlayOpen}
       setSidebarOverlayOpen={setSidebarOverlayOpen}
-      utilityViewActive={utilityViewActive}
       handleToggleSidebar={handleToggleSidebar}
-      compactSidebarButtonEdgeMode={compactSidebarButtonEdgeMode}
-      artifactDrawerOverlayVisible={artifactDrawerOverlayVisible}
-      closeArtifactDrawerOverlay={closeArtifactDrawerOverlay}
       mainSectionRef={mainSectionRef}
       takeoverVisible={takeoverVisible}
       activeComposerState={activeComposerState}

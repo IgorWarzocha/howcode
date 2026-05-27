@@ -251,7 +251,7 @@ function buildShortcutSetting(input: {
   const binding = bundledKeybindings.find((item) => item.id === input.commandId)
   return {
     id: `keybindings.${input.commandId}`,
-    category: 'keybindings',
+    category: 'shortcuts',
     title: binding?.label ?? input.commandId,
     description: commandHelp[input.commandId],
     helpDescription: commandHelp[input.commandId],
@@ -282,7 +282,7 @@ export function buildKeybindingSettingsDescriptors({
   return [
     {
       id: 'keybindings.composer-send-mode',
-      category: 'keybindings',
+      category: 'composer',
       title: 'Composer send mode',
       description: 'Choose whether Enter sends or inserts a newline.',
       keywords: 'keyboard shortcut keybinding enter composer send newline cmd ctrl',

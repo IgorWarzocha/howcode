@@ -157,7 +157,15 @@ export function applyOptimisticComposerThread({
   }
 
   const chatGroupId = activeView === 'chat' ? getContextualChatGroupId(contextualPayload) : null
-  const localFallback = buildLocalThreadFallback(contextualPayload.projectId, { chatGroupId })
+  const branchName =
+    typeof contextualPayload.branchName === 'string' &&
+    contextualPayload.branchName.trim().length > 0
+      ? contextualPayload.branchName.trim()
+      : null
+  const localFallback = buildLocalThreadFallback(contextualPayload.projectId, {
+    chatGroupId,
+    branchName,
+  })
   const nextPayload = { ...contextualPayload, sessionPath: localFallback.sessionPath }
   const thread = buildSidebarThread({
     id: localFallback.threadId,
@@ -334,7 +342,8 @@ export function applyThreadEventToSidebarState({
           event.projectId,
         )
       : null)
-  const projectThreadScopeMatchesView = eventIsChat === (workspaceState.activeView === 'chat')
+  const projectThreadScopeMatchesView =
+    workspaceState.activeView !== 'inbox' && eventIsChat === (workspaceState.activeView === 'chat')
   if (replaceSessionPath) forgetLocalDraftThread(event.projectId, replaceSessionPath)
   upsertSidebarThread({
     queryClient,
@@ -344,6 +353,7 @@ export function applyThreadEventToSidebarState({
       id: event.threadId,
       title: event.thread.title,
       sessionPath: event.sessionPath,
+      branchName: event.branchName,
       running: event.thread.isStreaming || event.thread.isCompacting,
     }),
     chatGroupId: event.isChat === true ? event.chatGroupId : undefined,

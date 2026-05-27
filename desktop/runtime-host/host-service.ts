@@ -9,6 +9,7 @@ export { generateGitCommitMessage } from './git-commit-message-service.ts'
 export { setRuntimeHostEventSink } from './host-events.ts'
 export {
   disposeAllRuntimeHosts,
+  disposeRuntimeHosts,
   invalidateRuntimeSettings,
 } from './live-runtime-registry.ts'
 export {

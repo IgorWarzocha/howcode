@@ -47,7 +47,7 @@ function createWorkspaceState(overrides: Partial<WorkspaceState> = {}): Workspac
     selectedThreadId: null,
     selectedSessionPath: null,
     terminalVisible: false,
-    projectTerminalVisibleByProject: {},
+    workspaceTerminalVisibleByWorkspace: {},
     terminalVisibleBySession: {},
     restoreTerminalVisibleOnGitOpsClose: false,
     takeoverVisible: false,

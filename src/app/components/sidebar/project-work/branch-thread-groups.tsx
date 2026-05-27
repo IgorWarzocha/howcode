@@ -1,9 +1,123 @@
-import { GitBranch, GitFork } from 'lucide-react'
+import { Tooltip } from '@howcode/common/tooltip'
+import { CircleOff, GitBranch, GitFork } from 'lucide-react'
+import type { ReactNode } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project, View } from '../../../types'
 import { BranchInlineActions, BranchSessionCount } from './branch-row-actions'
-import type { BranchThreadGroup } from './project-work-model'
+import type { BranchThreadGroup, WorktreeBranchGroup } from './project-work-model'
 import { ProjectWorkThreadRow } from './project-work-thread-row'
+
+function BranchHeadingIcon({ group }: { group: BranchThreadGroup }) {
+  if (group.unassigned) {
+    return <CircleOff size={13} className="sidebar-project-work-unassigned-icon" />
+  }
+  if (group.worktree) {
+    return <GitFork size={13} className="sidebar-project-work-branch-icon" />
+  }
+  return <GitBranch size={13} className="sidebar-project-work-branch-icon" />
+}
+
+function BranchHeadingLabel({ group }: { group: BranchThreadGroup }) {
+  return <span className="truncate">{group.label}</span>
+}
+
+function BranchHeadingRow({ children, unassigned }: { children: ReactNode; unassigned: boolean }) {
+  const row = (
+    <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading">
+      {children}
+    </div>
+  )
+  if (!unassigned) return row
+  return (
+    <Tooltip
+      content="Sessions not assigned to a git branch"
+      className="sidebar-project-work-row-tooltip"
+    >
+      {row}
+    </Tooltip>
+  )
+}
+
+function hasCompletedWorktrees(group: BranchThreadGroup) {
+  return (
+    (group.completedWorktrees?.length ?? 0) > 0 ||
+    group.worktrees.some((worktree) => worktree.complete)
+  )
+}
+
+function hasMergeableCompletedWorktrees(group: BranchThreadGroup) {
+  return (
+    (group.completedWorktrees?.some((worktree) => Boolean(worktree.branchName)) ?? false) ||
+    group.worktrees.some((worktree) => worktree.complete && Boolean(worktree.branchName))
+  )
+}
+
+function getBranchActionState(input: {
+  group: BranchThreadGroup
+  projectId: string
+  pruneConfirmBranchId: string | null
+}) {
+  const { group, projectId, pruneConfirmBranchId } = input
+  const canPruneBranch = !group.unassigned
+  const canSwitchBranch = !(group.current || group.unassigned || group.worktree)
+  const canToggleWorktreeComplete = group.worktree
+  const canMergeWorktree = group.worktree && Boolean(group.worktreeBranchName)
+  const canMergeCompletedWorktrees = !group.worktree && hasMergeableCompletedWorktrees(group)
+  const canRemoveCompletedWorktrees = !group.worktree && hasCompletedWorktrees(group)
+  const branchActionKey = `${projectId}:${group.id}`
+  const mergeCompletedWorktreesActionKey = `${branchActionKey}:merge-completed-worktrees`
+  const removeCompletedWorktreesActionKey = `${branchActionKey}:remove-completed-worktrees`
+  return {
+    actionCount:
+      (canPruneBranch ? 1 : 0) +
+      (canSwitchBranch ? 1 : 0) +
+      (canToggleWorktreeComplete ? 1 : 0) +
+      (canMergeWorktree ? 1 : 0) +
+      (canMergeCompletedWorktrees ? 1 : 0) +
+      (canRemoveCompletedWorktrees ? 1 : 0) +
+      1,
+    branchActionKey,
+    mergeCompletedWorktreesActionKey,
+    removeCompletedWorktreesActionKey,
+    canPruneBranch,
+    canSwitchBranch,
+    canToggleWorktreeComplete,
+    canMergeWorktree,
+    canMergeCompletedWorktrees,
+    canRemoveCompletedWorktrees,
+    confirmingPrune: pruneConfirmBranchId === branchActionKey,
+    confirmingMergeCompletedWorktrees: pruneConfirmBranchId === mergeCompletedWorktreesActionKey,
+    confirmingRemoveCompletedWorktrees: pruneConfirmBranchId === removeCompletedWorktreesActionKey,
+  }
+}
+
+export function getCompactBranchVisualGroupKey(
+  group: BranchThreadGroup,
+  currentBranch: string | null,
+) {
+  return group.worktree ? (currentBranch ?? group.worktreeBranchName ?? group.label) : group.label
+}
+
+function getBranchVisualGroupKey(group: BranchThreadGroup) {
+  if (group.unassigned) return 'unassigned'
+  return group.label
+}
+
+export function shouldSeparateBranchGroups(
+  group: BranchThreadGroup,
+  nextGroup: BranchThreadGroup | undefined,
+) {
+  if (!nextGroup) return false
+  const groupIsCheckoutCluster = group.current || group.worktree || group.worktrees.length > 0
+  const nextGroupIsCheckoutCluster =
+    nextGroup.current || nextGroup.worktree || nextGroup.worktrees.length > 0
+  return groupIsCheckoutCluster && !nextGroupIsCheckoutCluster
+}
+
+function getThreadAssignBranchForGroup(group: BranchThreadGroup, currentBranch: string | null) {
+  if (!group.worktree) return currentBranch
+  return group.worktreeBranchName ?? null
+}
 
 export function BranchThreadGroupSection({
   activeView,
@@ -15,6 +129,8 @@ export function BranchThreadGroupSection({
   selectedThreadId,
   terminalRunningSessionPaths,
   onAction,
+  showBottomDivider = false,
+  showTopDivider = false,
   onThreadOpen,
   onToggle,
   pruneConfirmBranchId,
@@ -31,6 +147,8 @@ export function BranchThreadGroupSection({
   selectedThreadId: string | null
   terminalRunningSessionPaths: ReadonlySet<string>
   onAction: DesktopActionInvoker
+  showBottomDivider?: boolean
+  showTopDivider?: boolean
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
   onToggle: () => void
   pruneConfirmBranchId: string | null
@@ -38,43 +156,45 @@ export function BranchThreadGroupSection({
   switchErrorBranchId: string | null
   onSetSwitchErrorBranchId: (branchId: string | null) => void
 }) {
-  const canPruneBranch = !group.unassigned
-  const canSwitchBranch = !(group.current || group.unassigned || group.worktree)
-  const actionCount = canPruneBranch && canSwitchBranch ? 3 : canPruneBranch ? 2 : 1
-  const branchActionKey = `${project.id}:${group.id}`
-  const confirmingPrune = pruneConfirmBranchId === branchActionKey
-  const switchBlocked = switchErrorBranchId === branchActionKey
+  const actionState = getBranchActionState({
+    group,
+    projectId: project.id,
+    pruneConfirmBranchId,
+  })
+  const switchBlocked = switchErrorBranchId === actionState.branchActionKey
   const threadProject = group.worktreePath ? { ...project, id: group.worktreePath } : project
+  const threadAssignBranch = getThreadAssignBranchForGroup(group, currentBranch)
   const canToggleThreads = group.threads.length > 0
+  const hasWorktrees = group.worktrees.length > 0
+  const canToggleGroup = canToggleThreads || hasWorktrees
 
   return (
     <section
       className="sidebar-project-work-branch-group"
-      data-current={group.current || group.worktree ? 'true' : 'false'}
+      data-branch-group-kind="branch"
+      data-current={group.current || (group.worktree && !group.worktreeComplete) ? 'true' : 'false'}
+      data-divider-after={showBottomDivider ? 'true' : 'false'}
+      data-divider-before={showTopDivider ? 'true' : 'false'}
     >
-      <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading">
+      <BranchHeadingRow unassigned={group.unassigned}>
         <button
           type="button"
           className="sidebar-icon-action sidebar-icon-action--xs sidebar-icon-action--no-hover sidebar-project-work-branch-disclosure"
           onClick={onToggle}
-          disabled={!canToggleThreads}
+          disabled={!canToggleGroup}
           aria-expanded={!collapsed}
           aria-label={collapsed ? `Expand ${group.label}` : `Collapse ${group.label}`}
         >
-          {group.worktree ? (
-            <GitFork size={13} className="sidebar-project-work-branch-icon" />
-          ) : (
-            <GitBranch size={13} className="sidebar-project-work-branch-icon" />
-          )}
+          <BranchHeadingIcon group={group} />
         </button>
         <button
           type="button"
           className="sidebar-project-work-branch-toggle"
           onClick={onToggle}
-          disabled={!canToggleThreads}
+          disabled={!canToggleGroup}
           aria-expanded={!collapsed}
         >
-          <span className="truncate">{group.label}</span>
+          <BranchHeadingLabel group={group} />
         </button>
         <span className="sidebar-project-work-branch-meta">
           {group.current ? (
@@ -84,13 +204,25 @@ export function BranchThreadGroupSection({
         </span>
         <span
           className="sidebar-project-work-branch-actions"
-          data-action-count={actionCount}
-          data-confirming={confirmingPrune ? 'true' : 'false'}
+          data-action-count={actionState.actionCount}
+          data-confirming={
+            actionState.confirmingPrune ||
+            actionState.confirmingMergeCompletedWorktrees ||
+            actionState.confirmingRemoveCompletedWorktrees
+              ? 'true'
+              : 'false'
+          }
         >
           <BranchInlineActions
-            canPrune={canPruneBranch}
-            canSwitch={canSwitchBranch}
-            confirmingPrune={confirmingPrune}
+            canPrune={actionState.canPruneBranch}
+            canSwitch={actionState.canSwitchBranch}
+            canToggleWorktreeComplete={actionState.canToggleWorktreeComplete}
+            canMergeWorktree={actionState.canMergeWorktree}
+            canMergeCompletedWorktrees={actionState.canMergeCompletedWorktrees}
+            canRemoveCompletedWorktrees={actionState.canRemoveCompletedWorktrees}
+            confirmingPrune={actionState.confirmingPrune}
+            confirmingMergeCompletedWorktrees={actionState.confirmingMergeCompletedWorktrees}
+            confirmingRemoveCompletedWorktrees={actionState.confirmingRemoveCompletedWorktrees}
             currentBranch={currentBranch}
             group={group}
             project={project}
@@ -98,17 +230,28 @@ export function BranchThreadGroupSection({
             onAction={onAction}
             onCancelPrune={() => onSetPruneConfirmBranchId(null)}
             onConfirmPrune={() => onSetPruneConfirmBranchId(null)}
-            onRequestPruneConfirm={() => onSetPruneConfirmBranchId(branchActionKey)}
-            onSwitchBlocked={() => onSetSwitchErrorBranchId(branchActionKey)}
+            onRequestPruneConfirm={() => onSetPruneConfirmBranchId(actionState.branchActionKey)}
+            onCancelMergeCompletedWorktrees={() => onSetPruneConfirmBranchId(null)}
+            onConfirmMergeCompletedWorktrees={() => onSetPruneConfirmBranchId(null)}
+            onRequestMergeCompletedWorktreesConfirm={() =>
+              onSetPruneConfirmBranchId(actionState.mergeCompletedWorktreesActionKey)
+            }
+            onCancelRemoveCompletedWorktrees={() => onSetPruneConfirmBranchId(null)}
+            onConfirmRemoveCompletedWorktrees={() => onSetPruneConfirmBranchId(null)}
+            onRequestRemoveCompletedWorktreesConfirm={() =>
+              onSetPruneConfirmBranchId(actionState.removeCompletedWorktreesActionKey)
+            }
+            onSwitchBlocked={() => onSetSwitchErrorBranchId(actionState.branchActionKey)}
             onSwitchFailed={() => onSetSwitchErrorBranchId(null)}
           />
         </span>
-      </div>
+      </BranchHeadingRow>
 
       {collapsed ? null : (
-        <div className="sidebar-project-work-branch-thread-list">
-          {group.threads.length > 0
-            ? group.threads.map((thread) => (
+        <div className="sidebar-project-work-branch-contents">
+          {group.threads.length > 0 ? (
+            <div className="sidebar-project-work-branch-thread-list">
+              {group.threads.map((thread) => (
                 <ProjectWorkThreadRow
                   key={thread.id}
                   activeView={activeView}
@@ -118,12 +261,148 @@ export function BranchThreadGroupSection({
                   thread={thread}
                   onAction={onAction}
                   onThreadOpen={onThreadOpen}
-                  currentBranch={currentBranch}
+                  currentBranch={threadAssignBranch}
                 />
-              ))
-            : null}
+              ))}
+            </div>
+          ) : null}
+          {group.worktrees.map((worktree, index) => (
+            <WorktreeGroupSection
+              key={worktree.id}
+              activeView={activeView}
+              currentBranch={currentBranch}
+              hideSessionCounts={hideSessionCounts}
+              isLast={index === group.worktrees.length - 1}
+              project={project}
+              selectedThreadId={selectedThreadId}
+              terminalRunningSessionPaths={terminalRunningSessionPaths}
+              worktree={worktree}
+              onAction={onAction}
+              onThreadOpen={onThreadOpen}
+              pruneConfirmBranchId={pruneConfirmBranchId}
+              onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
+            />
+          ))}
         </div>
       )}
+    </section>
+  )
+}
+
+function WorktreeGroupSection({
+  activeView,
+  currentBranch,
+  hideSessionCounts,
+  isLast,
+  project,
+  selectedThreadId,
+  terminalRunningSessionPaths,
+  worktree,
+  onAction,
+  onThreadOpen,
+  pruneConfirmBranchId,
+  onSetPruneConfirmBranchId,
+}: {
+  activeView: View
+  currentBranch: string | null
+  hideSessionCounts: boolean
+  isLast: boolean
+  project: Project
+  selectedThreadId: string | null
+  terminalRunningSessionPaths: ReadonlySet<string>
+  worktree: WorktreeBranchGroup
+  onAction: DesktopActionInvoker
+  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
+  pruneConfirmBranchId: string | null
+  onSetPruneConfirmBranchId: (branchId: string | null) => void
+}) {
+  const worktreeActionKey = `${project.id}:${worktree.id}`
+  const confirmingPrune = pruneConfirmBranchId === worktreeActionKey
+  const threadProject = { ...project, id: worktree.path }
+  const threadAssignBranch = worktree.branchName ?? null
+  const worktreeHasBranch = Boolean(worktree.branchName)
+  const worktreeActionCount = (worktreeHasBranch ? 2 : 0) + 2
+  const worktreeGroup: BranchThreadGroup = {
+    id: worktree.id,
+    label: worktree.label,
+    threads: worktree.threads,
+    worktrees: [],
+    current: false,
+    unassigned: false,
+    worktree: true,
+    worktreeComplete: worktree.complete,
+    worktreePath: worktree.path,
+    worktreeBranchName: worktree.branchName ?? null,
+  }
+
+  return (
+    <section
+      className="sidebar-project-work-worktree-group"
+      data-branch-group-kind="worktree"
+      data-current={worktree.complete ? 'false' : 'true'}
+      data-last={isLast ? 'true' : 'false'}
+    >
+      <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading sidebar-project-work-worktree-heading">
+        <span className="sidebar-icon-action sidebar-icon-action--xs sidebar-icon-action--no-hover sidebar-project-work-branch-disclosure">
+          <GitFork size={13} className="sidebar-project-work-branch-icon" />
+        </span>
+        <span className="sidebar-project-work-branch-toggle">
+          <span className="truncate">{worktree.label}</span>
+        </span>
+        <span className="sidebar-project-work-branch-meta">
+          <BranchSessionCount count={worktree.threads.length} hidden={hideSessionCounts} />
+        </span>
+        <span
+          className="sidebar-project-work-branch-actions"
+          data-action-count={worktreeActionCount}
+          data-confirming={confirmingPrune ? 'true' : 'false'}
+        >
+          <BranchInlineActions
+            canPrune={worktreeHasBranch}
+            canSwitch={false}
+            canToggleWorktreeComplete={true}
+            canMergeWorktree={worktreeHasBranch}
+            canMergeCompletedWorktrees={false}
+            canRemoveCompletedWorktrees={false}
+            confirmingPrune={confirmingPrune}
+            confirmingMergeCompletedWorktrees={false}
+            confirmingRemoveCompletedWorktrees={false}
+            currentBranch={currentBranch}
+            group={worktreeGroup}
+            project={project}
+            switchBlocked={false}
+            onAction={onAction}
+            onCancelPrune={() => onSetPruneConfirmBranchId(null)}
+            onConfirmPrune={() => onSetPruneConfirmBranchId(null)}
+            onRequestPruneConfirm={() => onSetPruneConfirmBranchId(worktreeActionKey)}
+            onCancelMergeCompletedWorktrees={() => undefined}
+            onConfirmMergeCompletedWorktrees={() => undefined}
+            onRequestMergeCompletedWorktreesConfirm={() => undefined}
+            onCancelRemoveCompletedWorktrees={() => undefined}
+            onConfirmRemoveCompletedWorktrees={() => undefined}
+            onRequestRemoveCompletedWorktreesConfirm={() => undefined}
+            onSwitchBlocked={() => undefined}
+            onSwitchFailed={() => undefined}
+          />
+        </span>
+      </div>
+      {worktree.threads.length > 0 ? (
+        <div className="sidebar-project-work-branch-thread-list sidebar-project-work-worktree-thread-list">
+          {worktree.threads.map((thread) => (
+            <ProjectWorkThreadRow
+              key={thread.id}
+              activeView={activeView}
+              project={threadProject}
+              selectedThreadId={selectedThreadId}
+              terminalRunningSessionPaths={terminalRunningSessionPaths}
+              thread={thread}
+              onAction={onAction}
+              onThreadOpen={onThreadOpen}
+              currentBranch={threadAssignBranch}
+            />
+          ))}
+        </div>
+      ) : null}
     </section>
   )
 }
@@ -167,12 +446,17 @@ export function ProjectExpandedBranchGroups({
 }) {
   return (
     <div className="sidebar-project-work-project-expanded-branches">
-      {branchGroups.map((group) => {
+      {branchGroups.map((group, index) => {
         const groupKey = `${project.id}:${group.id}`
-        const defaultCollapsed = !group.current
+        const visualGroupKey = getBranchVisualGroupKey(group)
+        const nextGroup = index < branchGroups.length - 1 ? branchGroups[index + 1] : undefined
+        const nextVisualGroupKey = nextGroup ? getBranchVisualGroupKey(nextGroup) : null
+        const defaultCollapsed = !(group.current || group.worktrees.length > 0)
         const collapsed = normalizedSearchQuery
           ? false
           : (collapsedBranchIds[groupKey] ?? defaultCollapsed)
+        const showBottomDivider =
+          nextVisualGroupKey !== null && visualGroupKey !== nextVisualGroupKey
         return (
           <BranchThreadGroupSection
             key={group.id}
@@ -185,6 +469,7 @@ export function ProjectExpandedBranchGroups({
             selectedThreadId={selectedThreadId}
             terminalRunningSessionPaths={terminalRunningSessionPaths}
             onAction={onAction}
+            showBottomDivider={showBottomDivider}
             onThreadOpen={onThreadOpen}
             onToggle={() =>
               onSetCollapsedBranchIds((current) => ({

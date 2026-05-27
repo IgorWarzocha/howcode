@@ -145,7 +145,10 @@ export async function getOrCreateRuntimeForSessionPath(
 export async function createRuntimeForNewSession(
   cwd: string,
   sessionDir?: string | undefined | null | undefined,
-  options: { chatGroupId?: string | undefined | null | undefined } = {},
+  options: {
+    branchName?: string | undefined | null | undefined
+    chatGroupId?: string | undefined | null | undefined
+  } = {},
 ) {
   const runtime = await createLiveRuntime(
     {
@@ -156,6 +159,7 @@ export async function createRuntimeForNewSession(
     },
     liveRuntimeFactoryHandlers,
   )
+  runtime.branchName = options.branchName ?? null
   const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile)
   if (runtimeKey) {
     registerRuntime(runtimeKey, Promise.resolve(runtime), sessionDir ?? null)
@@ -278,6 +282,66 @@ export async function invalidateRuntimeSettings(
       await markRuntimeRecordStale(runtimeKey, record)
     }),
   )
+  return { ok: true as const }
+}
+
+function shouldDisposeRuntime(input: {
+  projectPath: string | null
+  runtime: PiRuntime
+  runtimeKey: string
+  sessionPaths: Set<string>
+}) {
+  if (input.sessionPaths.has(input.runtimeKey)) return true
+  return Boolean(input.projectPath && path.resolve(input.runtime.cwd) === input.projectPath)
+}
+
+async function disposeRuntimeRecord(runtimeKey: string, record: RuntimeRecord, runtime: PiRuntime) {
+  clearRuntimeDisposeTimeout(runtimeKey)
+  if (runtimeRecords.get(runtimeKey) === record) runtimeRecords.delete(runtimeKey)
+  staleRuntimeGenerations.delete(runtimeKey)
+  try {
+    abortRuntimeExtensionCommand(runtime)
+    if (runtime.session.isStreaming || runtime.session.isCompacting) await runtime.session.abort()
+  } catch {
+    // Continue disposal; the workspace is being torn down.
+  }
+  try {
+    runtime.session.dispose()
+  } catch {
+    // Ignore shutdown races.
+  }
+}
+
+export async function disposeRuntimeHosts(
+  request: {
+    sessionPaths?: string[] | undefined
+    projectPath?: string | undefined | null | undefined
+  } = {},
+) {
+  const sessionPaths = new Set(
+    (request.sessionPaths ?? [])
+      .map((sessionPath) => getPersistedSessionPath(sessionPath))
+      .filter((sessionPath): sessionPath is string => Boolean(sessionPath)),
+  )
+  const projectPath = request.projectPath?.trim() ? path.resolve(request.projectPath) : null
+  const entries = [...runtimeRecords.entries()]
+
+  await Promise.all(
+    entries.map(async ([runtimeKey, record]) => {
+      let runtime: PiRuntime
+      try {
+        runtime = await record.runtimePromise
+      } catch {
+        if (runtimeRecords.get(runtimeKey) === record) runtimeRecords.delete(runtimeKey)
+        staleRuntimeGenerations.delete(runtimeKey)
+        return
+      }
+      if (!shouldDisposeRuntime({ projectPath, runtime, runtimeKey, sessionPaths })) return
+
+      await disposeRuntimeRecord(runtimeKey, record, runtime)
+    }),
+  )
+
   return { ok: true as const }
 }
 

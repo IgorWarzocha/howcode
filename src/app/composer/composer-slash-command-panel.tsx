@@ -3,6 +3,7 @@ import {
   appToneTextClass,
   appTypeCodeClass,
   appTypeSmallClass,
+  composerPopoverInputLayerClass,
   composerPopoverOptionClass,
   composerPopoverOptionSelectedClass,
   composerPopoverPanelClass,
@@ -87,7 +88,8 @@ export function SlashCommandPanel({
       aria-label="Composer slash commands"
       className={cn(
         composerPopoverPanelClass,
-        'absolute right-0 bottom-full left-0 z-20 max-h-64 overflow-y-auto overflow-x-hidden',
+        composerPopoverInputLayerClass,
+        'absolute right-0 bottom-full left-0 max-h-64 overflow-y-auto overflow-x-hidden',
       )}
     >
       {slashCommands.commands.length > 0 ? (

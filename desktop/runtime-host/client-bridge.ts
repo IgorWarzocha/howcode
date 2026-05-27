@@ -334,6 +334,18 @@ export async function invalidateRuntimeHostSettings(
   )
 }
 
+export async function disposeRuntimeHostsForWorkspace(request: {
+  projectPath: string
+  sessionPaths: string[]
+}) {
+  for (const host of hosts) {
+    if (!isHostRunningOrStarting(host)) continue
+    await invokeRuntimeHostOnHost(host, 'disposeRuntimeHosts', request)
+    host.busy = false
+    scheduleThreadHostIdleStop(host)
+  }
+}
+
 export function restartRuntimeHostsForEnvironmentChange() {
   for (const host of hosts) {
     if (host.idleTimer) {

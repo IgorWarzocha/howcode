@@ -1,7 +1,9 @@
 export {
   beginInboxThreadTurn,
   clearReadInboxThreads,
+  consumeInboxReplySuppression,
   dismissInboxThread,
+  dismissInboxThreadAfterReply,
   markInboxThreadRead,
   upsertInboxThreadMessage,
   upsertInboxThreadPrompt,
@@ -28,6 +30,7 @@ export {
   archiveThread,
   archiveThreads,
   assignThreadBranch,
+  assignThreadToProjectBranch,
   deleteThreadRecord,
   deleteThreadRecordsBySessionPaths,
   restoreThread,
@@ -40,6 +43,7 @@ export type { ProjectWorktreeMetadata, ProjectWorktreeSource } from './worktree-
 export {
   deleteProjectWorktreeMetadata,
   getProjectWorktreeDirectory,
+  setProjectWorktreeCompleted,
   setProjectWorktreeDirectory,
   upsertProjectWorktree,
 } from './worktree-writes.ts'

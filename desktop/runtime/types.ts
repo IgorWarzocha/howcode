@@ -5,6 +5,7 @@ import type { AttachmentFileAccess } from './attachment-file-tools.ts'
 export type PiRuntime = {
   cwd: string
   session: AgentSession
+  branchName?: string | undefined | null | undefined
   chatGroupId?: string | undefined | null | undefined
   attachmentFileAccess?: AttachmentFileAccess | undefined
 }

@@ -113,10 +113,10 @@ export function useRunningTerminalSessions() {
       ),
     [runningTerminalSessionsById],
   )
-  const terminalRunningProjectIds = useMemo(
+  const terminalRunningWorkspaceIds = useMemo(
     () => new Set(Object.values(runningTerminalSessionsById).map((session) => session.projectId)),
     [runningTerminalSessionsById],
   )
 
-  return { terminalRunningProjectIds, terminalRunningSessionPaths }
+  return { terminalRunningWorkspaceIds, terminalRunningSessionPaths }
 }

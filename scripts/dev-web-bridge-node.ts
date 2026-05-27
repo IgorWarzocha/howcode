@@ -29,6 +29,7 @@ import {
   DesktopServiceClient,
   type DesktopServiceModuleName,
 } from '../src/desktop-host/desktop-service-client'
+import { getSystemNodeExecutable } from '../src/desktop-host/node-discovery'
 
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
@@ -50,7 +51,7 @@ const devAppUpdateState = {
 }
 
 const desktopService = new DesktopServiceClient({
-  nodeExecutable: getProcessEnvironmentVariable('HOWCODE_NODE_PATH')?.trim() || 'node',
+  nodeExecutable: getSystemNodeExecutable,
   serviceHostPath: path.join(process.cwd(), 'build', 'desktop', 'service-host.mjs'),
   cwd: getDesktopWorkingDirectory(),
 })

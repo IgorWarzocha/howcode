@@ -53,6 +53,7 @@ export type DesktopEvent =
       projectId: string
       threadId: string
       sessionPath: string
+      branchName?: string | undefined | null | undefined
       replacesSessionPath?: string | undefined | null | undefined
       chatGroupId?: string | undefined | null | undefined
       isChat?: boolean | undefined

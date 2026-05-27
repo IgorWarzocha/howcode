@@ -251,7 +251,7 @@ function ensureProcessStarted(record: TerminalSessionRecord, reason: 'started' |
   return record.restartPromise
 }
 
-function findUnboundProjectShellTerminal(request: TerminalOpenRequest) {
+function findUnboundWorkspaceShellTerminal(request: TerminalOpenRequest) {
   if (!request.sessionPath) {
     return null
   }
@@ -284,7 +284,7 @@ function moveTranscript(fromPath: string, toPath: string) {
   }
 }
 
-function bindProjectTerminalToSession(input: {
+function bindWorkspaceTerminalToSession(input: {
   record: TerminalSessionRecord
   request: TerminalOpenRequest
   sessionId: string
@@ -344,23 +344,23 @@ export async function openTerminal(request: TerminalOpenRequest): Promise<Termin
     return existing.snapshot
   }
 
-  const unboundProjectTerminal = findUnboundProjectShellTerminal(request)
-  if (unboundProjectTerminal) {
-    const snapshot = bindProjectTerminalToSession({
-      record: unboundProjectTerminal,
+  const unboundWorkspaceTerminal = findUnboundWorkspaceShellTerminal(request)
+  if (unboundWorkspaceTerminal) {
+    const snapshot = bindWorkspaceTerminalToSession({
+      record: unboundWorkspaceTerminal,
       request,
       sessionId,
     })
-    if (isRestartableTerminalStatus(unboundProjectTerminal.snapshot.status)) {
-      unboundProjectTerminal.snapshot = {
-        ...unboundProjectTerminal.snapshot,
+    if (isRestartableTerminalStatus(unboundWorkspaceTerminal.snapshot.status)) {
+      unboundWorkspaceTerminal.snapshot = {
+        ...unboundWorkspaceTerminal.snapshot,
         status: 'starting',
         exitCode: null,
         exitSignal: null,
         updatedAt: nowIso(),
       }
-      void ensureProcessStarted(unboundProjectTerminal, 'restarted')
-      return unboundProjectTerminal.snapshot
+      void ensureProcessStarted(unboundWorkspaceTerminal, 'restarted')
+      return unboundWorkspaceTerminal.snapshot
     }
     return snapshot
   }

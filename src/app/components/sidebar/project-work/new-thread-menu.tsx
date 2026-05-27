@@ -137,10 +137,12 @@ function CreateTargetRow({
 
 export function NewThreadMenu({
   currentBranch,
+  isGitRepo = true,
   onAction,
   projectId,
 }: {
   currentBranch: string | null
+  isGitRepo?: boolean
   onAction: DesktopActionInvoker
   projectId: string
 }) {
@@ -181,7 +183,7 @@ export function NewThreadMenu({
     if (!(open && menuRef.current)) return
     const anchor = menuRef.current
     const row = anchor.closest(
-      '.sidebar-project-work-project-block-heading-row, .sidebar-project-work-section-heading',
+      '.sidebar-project-work-project-block-heading-row, .sidebar-project-work-toolbar, .sidebar-project-work-section-heading',
     )
     const rowRect = row?.getBoundingClientRect()
     const anchorRect = anchor.getBoundingClientRect()
@@ -261,63 +263,78 @@ export function NewThreadMenu({
           role="menu"
           aria-label="New thread options"
         >
-          <button
-            type="button"
-            className="sidebar-menu-item sidebar-new-thread-option sidebar-new-thread-current-branch-option"
-            onClick={() => void createAssignedThread(currentBranch)}
-            disabled={!currentBranch}
-          >
-            <span className="sidebar-new-thread-current-branch-icon" aria-hidden="true">
-              <GitBranch size={11} />
-            </span>
-            <span className="truncate">{currentBranch ?? 'No branch'}</span>
-          </button>
+          {isGitRepo ? null : (
+            <button
+              type="button"
+              className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-option"
+              onClick={() => void createAssignedThread(null)}
+            >
+              <Plus size={11} />
+              <span className="truncate">New session</span>
+            </button>
+          )}
 
-          <CreateTargetRow
-            icon={<GitBranch size={11} />}
-            inputRef={newBranchInputRef}
-            value={newBranchName}
-            error={newBranchError}
-            placeholder="New branch"
-            inputLabel="New branch name"
-            createLabel="Create branch"
-            onChange={(value) => {
-              setNewBranchName(value)
-              setNewBranchError(null)
-            }}
-            onCreate={() => void createThreadOnNewBranch()}
-            onClose={() => setOpen(false)}
-          />
+          {isGitRepo ? (
+            <>
+              <button
+                type="button"
+                className="sidebar-menu-item sidebar-new-thread-option sidebar-new-thread-current-branch-option"
+                onClick={() => void createAssignedThread(currentBranch)}
+                disabled={!currentBranch}
+              >
+                <span className="sidebar-new-thread-current-branch-icon" aria-hidden="true">
+                  <GitBranch size={11} />
+                </span>
+                <span className="truncate">{currentBranch ?? 'No branch'}</span>
+              </button>
 
-          <CreateTargetRow
-            icon={<GitFork size={11} />}
-            inputRef={newWorktreeInputRef}
-            value={newWorktreeBranchName}
-            error={newWorktreeError}
-            placeholder="New worktree"
-            inputLabel="New worktree branch name"
-            createLabel="Create worktree"
-            onChange={(value) => {
-              setNewWorktreeBranchName(value)
-              setNewWorktreeError(null)
-            }}
-            onCreate={() => void createThreadInNewWorktree()}
-            onClose={() => setOpen(false)}
-          />
+              <CreateTargetRow
+                icon={<GitBranch size={11} />}
+                inputRef={newBranchInputRef}
+                value={newBranchName}
+                error={newBranchError}
+                placeholder="New branch"
+                inputLabel="New branch name"
+                createLabel="Create branch"
+                onChange={(value) => {
+                  setNewBranchName(value)
+                  setNewBranchError(null)
+                }}
+                onCreate={() => void createThreadOnNewBranch()}
+                onClose={() => setOpen(false)}
+              />
 
-          <button
-            type="button"
-            className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-option"
-            onClick={() => void createAssignedThread(null)}
-          >
-            <X size={11} />
-            <span className="truncate">Unassigned</span>
-            <Tooltip content="Start outside git" placement="right">
-              <span className="sidebar-new-thread-option-meta sidebar-new-thread-option-plus">
-                <Plus size={12} />
-              </span>
-            </Tooltip>
-          </button>
+              <CreateTargetRow
+                icon={<GitFork size={11} />}
+                inputRef={newWorktreeInputRef}
+                value={newWorktreeBranchName}
+                error={newWorktreeError}
+                placeholder="New worktree"
+                inputLabel="New worktree branch name"
+                createLabel="Create worktree"
+                onChange={(value) => {
+                  setNewWorktreeBranchName(value)
+                  setNewWorktreeError(null)
+                }}
+                onCreate={() => void createThreadInNewWorktree()}
+                onClose={() => setOpen(false)}
+              />
+
+              <button
+                type="button"
+                className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-option"
+                onClick={() => void createAssignedThread(null)}
+              >
+                <X size={11} />
+                <span className="truncate">Unassigned</span>
+                <Tooltip content="Start outside git" placement="right">
+                  <span className="sidebar-new-thread-option-meta sidebar-new-thread-option-plus">
+                    <Plus size={12} />
+                  </span>
+                </Tooltip>
+              </button>
+            </>
+          ) : null}
         </div>
       ) : null}
     </div>

@@ -19,6 +19,24 @@ const MIN_USABLE_TERMINAL_ROWS = 2
 const TERMINAL_STICKY_BOTTOM_THRESHOLD_PX = 24
 const ANSI_ESCAPE = String.fromCharCode(27)
 
+export const DEFAULT_TERMINAL_FONT_FAMILY = [
+  'JetBrainsMono Nerd Font',
+  'JetBrains Mono NL',
+  'JetBrains Mono',
+  'Symbols Nerd Font Mono',
+  'Symbols Nerd Font',
+  'MesloLGS NF',
+  'Hack Nerd Font',
+  'FiraCode Nerd Font',
+  'CaskaydiaCove Nerd Font',
+  'Liberation Mono',
+  'Consolas',
+  'Menlo',
+  'monospace',
+]
+  .map((font) => (font.includes(' ') ? `"${font}"` : font))
+  .join(', ')
+
 export function hasVisibleTerminalHistory(history: string) {
   return (
     history
@@ -65,7 +83,7 @@ export function terminalStyleVars(backgroundCssVar: TerminalBackgroundCssVar): C
     '--term-bg': `var(${backgroundCssVar})`,
     '--term-fg': 'var(--text)',
     '--term-cursor': 'var(--accent)',
-    '--term-font-family': '"Liberation Mono", Consolas, Menlo, monospace',
+    '--term-font-family': DEFAULT_TERMINAL_FONT_FAMILY,
     '--term-font-size': '12px',
     '--term-line-height': '1.2',
     '--term-color-0': `var(${backgroundCssVar})`,

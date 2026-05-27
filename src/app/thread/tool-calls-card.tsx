@@ -18,6 +18,7 @@ import { ExpandablePanel } from '../common/expandable-panel'
 import type { Message } from '../types'
 import { cn } from '../utils/cn'
 import { getToolCallPreview, getToolCallTitle } from '../utils/thread-previews'
+import { getToolDiffSummary, ToolDiffBlock } from './tool-diff-block'
 
 type ToolCallMessage = Extract<Message, { role: 'toolResult' | 'bashExecution' }>
 
@@ -52,6 +53,7 @@ function renderToolCallBody(message: ToolCallMessage) {
             </pre>
           </div>
         ) : null}
+        <ToolDiffBlock message={message} />
         {message.content.map((paragraph) => (
           <p
             key={paragraph}
@@ -101,6 +103,36 @@ function renderToolCallBody(message: ToolCallMessage) {
   )
 }
 
+function ToolCallBadges({
+  diffSummary,
+  isError,
+  isRunning,
+}: {
+  diffSummary: { added: number; removed: number } | null
+  isError: boolean
+  isRunning: boolean
+}) {
+  return (
+    <>
+      {isError ? (
+        <span className={`shrink-0 ${appTypeTinyStrongClass} ${appToneDangerClass}`}>Error</span>
+      ) : null}
+      {diffSummary ? (
+        <span className={`shrink-0 ${appTypeTinyStrongClass}`}>
+          <span className="text-[color:var(--green)]">+{diffSummary.added}</span>
+          <span className="px-1 text-[color:var(--muted-2)]/70">/</span>
+          <span className="text-[color:var(--danger)]">-{diffSummary.removed}</span>
+        </span>
+      ) : null}
+      {isRunning ? (
+        <span className={`shrink-0 ${appTypeTinyStrongClass} text-[color:var(--accent)]`}>
+          Running
+        </span>
+      ) : null}
+    </>
+  )
+}
+
 export function ToolCallsCard({
   id,
   messages,
@@ -141,7 +173,8 @@ export function ToolCallsCard({
           const title = getToolCallTitle(message)
           const preview = getToolCallPreview(message)
           const isError = message.role === 'toolResult' && message.isError
-          const isRunning = message.role === 'toolResult' && message.running
+          const isRunning = message.role === 'toolResult' && Boolean(message.running)
+          const diffSummary = message.role === 'toolResult' ? getToolDiffSummary(message) : null
 
           return (
             <ExpandablePanel
@@ -181,18 +214,11 @@ export function ToolCallsCard({
                       {preview}
                     </span>
                   </span>
-                  {isError ? (
-                    <span className={`shrink-0 ${appTypeTinyStrongClass} ${appToneDangerClass}`}>
-                      Error
-                    </span>
-                  ) : null}
-                  {isRunning ? (
-                    <span
-                      className={`shrink-0 ${appTypeTinyStrongClass} text-[color:var(--accent)]`}
-                    >
-                      Running
-                    </span>
-                  ) : null}
+                  <ToolCallBadges
+                    diffSummary={diffSummary}
+                    isError={isError}
+                    isRunning={isRunning}
+                  />
                 </>
               }
             >

@@ -72,6 +72,17 @@ export function upsertProjectWorktree(metadata: ProjectWorktreeMetadata) {
   }
 }
 
+export function setProjectWorktreeCompleted(cwd: string, completed: boolean) {
+  const db = getThreadStateDatabase()
+  db.prepare(
+    `
+      UPDATE project_worktrees
+      SET completed = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE cwd = ? AND is_main = 0
+    `,
+  ).run(completed ? 1 : 0, cwd)
+}
+
 export function deleteProjectWorktreeMetadata(cwd: string) {
   const db = getThreadStateDatabase()
   db.prepare(

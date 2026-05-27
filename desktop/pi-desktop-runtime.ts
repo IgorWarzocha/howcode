@@ -19,9 +19,14 @@ import {
   markInternalThreadUpdate,
   rememberLiveThread,
 } from './runtime/live-thread-store.ts'
-import { invokeRuntimeHost, subscribeRuntimeHostEvents } from './runtime-host/client-bridge.ts'
+import {
+  disposeRuntimeHostsForWorkspace,
+  invokeRuntimeHost,
+  subscribeRuntimeHostEvents,
+} from './runtime-host/client-bridge.ts'
 import {
   beginInboxThreadTurn,
+  consumeInboxReplySuppression,
   hasInboxItem,
   setThreadRunningState,
   upsertInboxThreadMessage,
@@ -99,6 +104,7 @@ async function persistHostThreadUpdate(event: Extract<DesktopEvent, { type: 'thr
     sessionPath: event.sessionPath,
     title: event.thread.title,
     lastModifiedMs: timestamp,
+    branchName: event.branchName ?? null,
   })
 
   event.threadId = threadId
@@ -118,6 +124,7 @@ async function persistHostThreadUpdate(event: Extract<DesktopEvent, { type: 'thr
   }
 
   if (event.reason === 'end') {
+    if (consumeInboxReplySuppression(event.sessionPath)) return
     const latestAssistantMessage = getLatestInboxAssistantMessage(event.thread.messages)
     if (latestAssistantMessage) {
       upsertInboxThreadMessage({
@@ -245,6 +252,13 @@ export function sendComposerPrompt(
 
 export function stopComposerRun(request = {}) {
   return invokeRuntimeHost('stopComposerRun', { request })
+}
+
+export function disposeWorkspaceComposerRuns(request: {
+  projectPath: string
+  sessionPaths: string[]
+}) {
+  return disposeRuntimeHostsForWorkspace(request)
 }
 
 export function dequeueComposerPrompt(

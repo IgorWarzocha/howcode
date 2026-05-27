@@ -49,8 +49,8 @@ export function buildSettingsDescriptors({
   onAction: DesktopActionInvoker
 }): SettingDescriptor[] {
   return [
-    ...buildProjectsSettingsDescriptors({ appSettings, controller }),
     ...buildCommonSettingsDescriptors({ appSettings, controller }),
+    ...buildProjectsSettingsDescriptors({ appSettings, controller }),
     ...buildModelSettingsDescriptors({
       appSettings,
       availableModels,
