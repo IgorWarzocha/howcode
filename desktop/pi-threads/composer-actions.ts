@@ -58,7 +58,12 @@ async function sendComposerPromptFromPayload(payload: AnyDesktopActionPayload) {
     attachments,
     streamingBehavior: getComposerStreamingBehavior(payload),
   })
-  if (payload.suppressInbox === true && composerRequest.sessionPath) {
+  if (
+    payload.suppressInbox === true &&
+    composerRequest.sessionPath &&
+    composerSendResult.sessionPath &&
+    composerSendResult.threadId
+  ) {
     dismissInboxThreadAfterReply(composerRequest.sessionPath)
   }
   const branchName = getBranchName(payload) ?? composerRequest.branchName?.trim()

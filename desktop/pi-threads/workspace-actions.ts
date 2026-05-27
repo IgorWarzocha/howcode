@@ -363,6 +363,41 @@ async function handleRemoveWorktreeWorkspaceAction(payload: AnyDesktopActionPayl
   return handledAction(removeResult)
 }
 
+async function handlePruneBranchWorkspaceAction(payload: AnyDesktopActionPayload) {
+  const projectId = getProjectId(payload)
+  const branchName = getBranchName(payload)
+  if (!(projectId && branchName)) return handledAction()
+  if (hasRunningProjectThread(projectId)) {
+    return handledAction({ error: 'Stop running sessions before pruning this branch.' })
+  }
+  let didMutate = false
+  for (const worktree of getWorktreeActionTargets(payload)) {
+    const result = await cleanupWorktree({
+      projectId,
+      worktreePath: worktree.worktreePath,
+      branchName: null,
+      merge: false,
+    })
+    didMutate = didMutate || result.didMutate === true
+    if ('error' in result) {
+      return handledAction({
+        ...result,
+        didMutate,
+        failedWorktreeBranchName: worktree.branchName,
+        failedWorktreePath: worktree.worktreePath,
+      })
+    }
+  }
+  const threadIds = listBranchThreadIds(projectId, branchName)
+  const result = await pruneProjectBranch(projectId, branchName)
+  didMutate = didMutate || result.didMutate === true
+  if (!('error' in result)) {
+    const cleanupError = await deletePersistedThreadsForWorkspace(threadIds)
+    if (cleanupError) return handledAction({ ...cleanupError, didMutate: true })
+  }
+  return handledAction('error' in result ? { ...result, didMutate } : result)
+}
+
 export async function handleWorkspaceDesktopAction(
   action: DesktopAction,
   payload: AnyDesktopActionPayload,
@@ -383,19 +418,7 @@ export async function handleWorkspaceDesktopAction(
       return handledAction(await switchProjectBranch(projectId, String(payload.value ?? '')))
     }
     case 'workspace.prune-branch': {
-      const projectId = getProjectId(payload)
-      const branchName = getBranchName(payload)
-      if (!(projectId && branchName)) return handledAction()
-      if (hasRunningProjectThread(projectId)) {
-        return handledAction({ error: 'Stop running sessions before pruning this branch.' })
-      }
-      const threadIds = listBranchThreadIds(projectId, branchName)
-      const result = await pruneProjectBranch(projectId, branchName)
-      if (!('error' in result)) {
-        const cleanupError = await deletePersistedThreadsForWorkspace(threadIds)
-        if (cleanupError) return handledAction(cleanupError)
-      }
-      return handledAction(result)
+      return handlePruneBranchWorkspaceAction(payload)
     }
     case 'workspace.create-worktree':
       return handleCreateWorktreeWorkspaceAction(payload)

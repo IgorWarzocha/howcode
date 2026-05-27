@@ -152,6 +152,17 @@ export function BranchPruneAction({
 }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const actionLabel = 'Remove'
+  const worktreesToRemove = group.worktreePath
+    ? []
+    : [...group.worktrees, ...(group.completedWorktrees ?? [])].map((worktree) => ({
+        worktreePath: worktree.path,
+        branchName: worktree.branchName ?? null,
+      }))
+  const actionTooltip = errorMessage
+    ? errorMessage
+    : worktreesToRemove.length > 0
+      ? `Remove ${group.label} and associated worktrees`
+      : `${actionLabel} ${group.label}`
   const runPrune = async () => {
     const result = group.worktreePath
       ? await onAction('workspace.remove-worktree', {
@@ -162,6 +173,7 @@ export function BranchPruneAction({
       : await onAction('workspace.prune-branch', {
           projectId: project.id,
           branchName: group.label,
+          worktrees: worktreesToRemove,
         })
     const error = result?.result?.error
     if (error) {
@@ -201,7 +213,7 @@ export function BranchPruneAction({
   }
 
   return (
-    <Tooltip content={errorMessage ?? `${actionLabel} ${group.label}`} placement="right">
+    <Tooltip content={actionTooltip} placement="right">
       {actionButton}
     </Tooltip>
   )

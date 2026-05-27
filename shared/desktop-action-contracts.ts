@@ -200,6 +200,7 @@ export type DesktopActionPayloadMap = {
   'workspace.prune-branch': {
     projectId?: string | undefined | null | undefined
     branchName: string
+    worktrees?: { worktreePath: string; branchName?: string | undefined | null }[] | undefined
   }
   'workspace.create-worktree': {
     projectId?: string | undefined | null | undefined

@@ -27,7 +27,7 @@ function mergeThread(existing: Thread | undefined, next: Thread): Thread {
   return {
     ...existing,
     ...next,
-    branchName: next.branchName ?? existing?.branchName,
+    branchName: Object.hasOwn(next, 'branchName') ? next.branchName : existing?.branchName,
     pinned: existing?.pinned ?? next.pinned,
     unread: next.unread ?? existing?.unread,
   }

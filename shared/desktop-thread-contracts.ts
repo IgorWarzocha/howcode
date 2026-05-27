@@ -10,7 +10,7 @@ export type Thread = {
   running?: boolean | undefined
   unread?: boolean | undefined
   pinned?: boolean | undefined
-  branchName?: string | undefined
+  branchName?: string | null | undefined
 }
 
 export type ProjectWorktreeInfo = {
