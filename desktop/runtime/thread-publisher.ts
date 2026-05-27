@@ -27,7 +27,6 @@ import {
   shouldSuppressExternalThreadUpdate,
 } from './live-thread-store.ts'
 import { getLiveToolProgressMessages } from './live-tool-progress-store.ts'
-import { isRuntimeCompactingContext } from './runtime-active-state.ts'
 import { rememberSessionPath } from './session-path-index.ts'
 import type { PiRuntime, RuntimeThreadReason } from './types.ts'
 
@@ -58,7 +57,7 @@ function buildLiveThreadData(runtime: PiRuntime) {
     sourceMessages,
     previousMessageCount: historySlice.previousMessageCount,
     isStreaming: runtime.session.isStreaming,
-    isCompacting: isRuntimeCompactingContext(runtime),
+    isCompacting: runtime.session.isCompacting,
   })
 }
 

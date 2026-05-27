@@ -7,7 +7,6 @@ import {
 import { buildThreadHistorySlice, type SessionPathEntry } from '../../shared/thread-history.ts'
 import { isChatSessionPath } from '../chat-state-db.ts'
 import { buildComposerState } from '../runtime/composer-state.ts'
-import { isRuntimeCompactingContext } from '../runtime/runtime-active-state.ts'
 import type { PiRuntime, RuntimeThreadReason } from '../runtime/types.ts'
 import { emitDesktopEvent } from './host-events.ts'
 import { getLiveToolProgressMessages } from './live-tool-progress.ts'
@@ -42,7 +41,7 @@ function buildLiveThreadData(runtime: PiRuntime) {
     sourceMessages,
     previousMessageCount: historySlice.previousMessageCount,
     isStreaming: runtime.session.isStreaming,
-    isCompacting: isRuntimeCompactingContext(runtime),
+    isCompacting: runtime.session.isCompacting,
   })
 }
 
