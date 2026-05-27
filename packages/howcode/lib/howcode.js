@@ -554,7 +554,11 @@ async function main() {
   await fsp.mkdir(cacheRoot, { recursive: true })
 
   const channel = getReleaseChannel()
-  const current = readJsonIfPresent(path.join(cacheRoot, `current-${channel}.json`))
+  const currentFile = path.join(cacheRoot, `current-${channel}.json`)
+  const legacyCurrentFile = path.join(cacheRoot, 'current.json')
+  const current =
+    readJsonIfPresent(currentFile) ||
+    (channel === 'main' ? readJsonIfPresent(legacyCurrentFile) : null)
 
   let releaseInfo = null
   try {
@@ -563,7 +567,7 @@ async function main() {
     if (current?.executablePath) {
       const currentPaths = {
         cacheRoot,
-        currentFile: path.join(cacheRoot, `current-${channel}.json`),
+        currentFile,
         windowsCommandFile: path.join(cacheRoot, `${APP_NAME}.cmd`),
         installDir: current.installDir || path.dirname(path.dirname(current.executablePath)),
         launcherWorkingDirectory: path.dirname(current.executablePath),

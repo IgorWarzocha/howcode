@@ -26,6 +26,7 @@ import {
   applyOptimisticSettingsUpdate,
   runPostDesktopActionEffects,
 } from './controller-post-action-effects'
+import { applySwitchBranchPostEffect } from './post-effects/workspace'
 import {
   applyOptimisticComposerThread,
   removeFailedOptimisticComposerThread,
@@ -95,9 +96,14 @@ async function prepareDesktopActionPayload(input: {
   dispatch: Dispatch<WorkspaceAction>
   invokeDesktopAction: DesktopActionInvoker
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
+  loadProjectThreads: (
+    projectId: string,
+    options?: { chat?: boolean; replaceLocalDraftSessionPath?: string | null },
+  ) => Promise<unknown>
   payload: ActionPayload
   queryClient: ReturnType<typeof useQueryClient>
   selectedSessionPath: string | null
+  setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>
   setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>
   setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>
   shellState: ShellState | null
@@ -120,6 +126,14 @@ async function prepareDesktopActionPayload(input: {
       loadProjectGitState: input.loadProjectGitState,
       payload: initialContextualPayload,
       shellState: input.shellState,
+      onSwitchBranchSuccess: (switchPayload) =>
+        applySwitchBranchPostEffect({
+          contextualPayload: switchPayload,
+          queryClient: input.queryClient,
+          loadProjectGitState: input.loadProjectGitState,
+          loadProjectThreads: input.loadProjectThreads,
+          setProjectGitState: input.setProjectGitState,
+        }),
     })
     if (blockedResult) return { blockedResult }
   }
@@ -170,9 +184,11 @@ export function useDesktopActionHandlers({
         dispatch,
         invokeDesktopAction,
         loadProjectGitState,
+        loadProjectThreads,
         payload,
         queryClient,
         selectedSessionPath,
+        setProjectGitState,
         setChatSidebarState,
         setLiveThreadData,
         shellState,

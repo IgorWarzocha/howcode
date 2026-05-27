@@ -107,6 +107,7 @@ export async function guardBranchResume(input: {
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
   payload: AnyDesktopActionPayload
   shellState: ShellState | null
+  onSwitchBranchSuccess?: (payload: AnyDesktopActionPayload) => Promise<void> | void
 }): Promise<DesktopActionResult | null> {
   const projectId = getPayloadProjectId(input.payload)
   if (!projectId) return null
@@ -119,11 +120,15 @@ export async function guardBranchResume(input: {
   })
   if (!guard.shouldSwitch) return null
 
-  const switchResult = await input.invokeDesktopAction('workspace.switch-branch', {
+  const switchPayload = {
     projectId: guard.projectId,
     value: guard.targetBranch,
-  })
-  if (!switchResult?.result?.error && switchResult?.ok !== false) return null
+  }
+  const switchResult = await input.invokeDesktopAction('workspace.switch-branch', switchPayload)
+  if (!switchResult?.result?.error && switchResult?.ok !== false) {
+    await input.onSwitchBranchSuccess?.(switchPayload)
+    return null
+  }
 
   return createBlockedBranchResumeResult({
     action: input.action,
