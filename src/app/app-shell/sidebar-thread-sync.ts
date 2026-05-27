@@ -52,15 +52,17 @@ function buildSidebarThread(input: {
   running?: boolean
   lastModifiedMs?: number
 }): Thread {
-  return {
+  const thread: Thread = {
     id: input.id,
     title: input.title,
     age: 'Now',
     lastModifiedMs: input.lastModifiedMs ?? Date.now(),
     sessionPath: input.sessionPath,
-    branchName: input.branchName ?? undefined,
     running: input.running,
   }
+  const branchName = input.branchName?.trim()
+  if (branchName) thread.branchName = branchName
+  return thread
 }
 
 function upsertSidebarThread({

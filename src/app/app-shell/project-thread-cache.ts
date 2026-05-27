@@ -24,10 +24,11 @@ function sameThread(left: Thread, right: Thread, replaceSessionPath: string | nu
 }
 
 function mergeThread(existing: Thread | undefined, next: Thread): Thread {
+  const nextHasBranchName = Object.hasOwn(next, 'branchName') && next.branchName !== undefined
   return {
     ...existing,
     ...next,
-    branchName: Object.hasOwn(next, 'branchName') ? next.branchName : existing?.branchName,
+    branchName: nextHasBranchName ? next.branchName : existing?.branchName,
     pinned: existing?.pinned ?? next.pinned,
     unread: next.unread ?? existing?.unread,
   }
