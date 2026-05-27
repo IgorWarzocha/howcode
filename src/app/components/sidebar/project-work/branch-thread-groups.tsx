@@ -126,13 +126,12 @@ function getThreadAssignBranchForGroup(group: BranchThreadGroup, currentBranch: 
 
 function getBranchGroupDividerState(input: {
   collapsed: boolean
-  hasWorktrees: boolean
   showBottomDivider: boolean
   showTopDivider: boolean
 }) {
   if (input.collapsed) return { before: 'false', after: 'false' }
   return {
-    before: input.showTopDivider || input.hasWorktrees ? 'true' : 'false',
+    before: input.showTopDivider ? 'true' : 'false',
     after: input.showBottomDivider ? 'true' : 'false',
   }
 }
@@ -272,7 +271,6 @@ export function BranchThreadGroupSection({
   const visibilityState = getBranchGroupVisibilityState(group)
   const dividerState = getBranchGroupDividerState({
     collapsed,
-    hasWorktrees: visibilityState.hasWorktrees,
     showBottomDivider,
     showTopDivider,
   })
