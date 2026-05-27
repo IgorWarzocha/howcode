@@ -262,11 +262,7 @@ function getHostForRequest<TName extends RuntimeHostRequestName>(
   }
 
   const existingHost = sessionPath ? hostByAlias.get(sessionPath) : null
-  if (
-    existingHost &&
-    !existingHost.terminating &&
-    (existingHost.role === 'thread' || name === 'sendComposerPrompt')
-  ) {
+  if (existingHost && !existingHost.terminating) {
     return existingHost
   }
 
