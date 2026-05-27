@@ -24,6 +24,7 @@ import {
   createRuntimeSettingsManager,
 } from './isolated-settings-manager.ts'
 import { getNativeAskQuestionsRequest } from './native-ask-questions-state.ts'
+import { isRuntimeCompactingContext } from './runtime-active-state.ts'
 import type { PiRuntime } from './types.ts'
 
 export const DEFAULT_COMPOSER_THINKING_LEVEL: ComposerThinkingLevel = 'medium'
@@ -300,7 +301,7 @@ export async function buildComposerState(
     queuedPrompts: buildSessionQueuedPrompts(runtime.session),
     nativeAskQuestionsRequest: getNativeAskQuestionsRequest(runtime),
     contextUsage: getContextUsageForComposerState(runtime.session, options),
-    isCompacting: runtime.session.isCompacting,
+    isCompacting: isRuntimeCompactingContext(runtime),
     isExtensionCommandRunning: isHeadlessExtensionCommandRunning(runtime.session),
   }
 }

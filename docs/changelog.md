@@ -29,6 +29,7 @@
 - Fixed Pi TUI new-thread sidebar handoff.
 - Cleaned up sidebar popovers and project-work styling so the new sidebar feels like it belongs there.
 - Quieted missing-session usage noise and checkbox layout shifts.
+- Fixed extension `/end` summaries being shown as context compaction in the built app.
 
 Snapshot: May 19, 2026.
 
