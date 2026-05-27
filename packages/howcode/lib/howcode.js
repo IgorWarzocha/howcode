@@ -155,7 +155,25 @@ function shellSingleQuote(value) {
   return `'${value.replace(/'/g, `'"'"'`)}'`
 }
 
+function getLinuxSetsidPath() {
+  for (const candidate of ['/usr/bin/setsid', '/bin/setsid']) {
+    if (fs.existsSync(candidate)) return candidate
+  }
+  return null
+}
+
 function spawnLinuxDetachedLauncher(executablePath, env) {
+  const setsidPath = getLinuxSetsidPath()
+  if (setsidPath) {
+    return spawn(setsidPath, ['-f', executablePath], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+      cwd: path.dirname(executablePath),
+      env,
+    })
+  }
+
   return spawn(
     '/bin/sh',
     ['-c', `nohup ${shellSingleQuote(executablePath)} >/dev/null 2>&1 </dev/null &`],
@@ -176,7 +194,12 @@ async function writeLinuxCommandLauncher(paths) {
   const launcherContents = [
     '#!/bin/sh',
     `export HOWCODE_REPO_ROOT=${shellParameterExpansionStart}HOWCODE_REPO_ROOT:-$(pwd)}`,
-    `exec ${shellSingleQuote(paths.executablePath)} "$@"`,
+    'if command -v setsid >/dev/null 2>&1; then',
+    `  setsid -f ${shellSingleQuote(paths.executablePath)} "$@" >/dev/null 2>&1 </dev/null`,
+    'else',
+    `  nohup ${shellSingleQuote(paths.executablePath)} "$@" >/dev/null 2>&1 </dev/null &`,
+    'fi',
+    'exit 0',
     '',
   ].join('\n')
 
