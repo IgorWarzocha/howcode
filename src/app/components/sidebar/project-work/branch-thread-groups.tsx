@@ -164,12 +164,14 @@ function getBranchSwitchBlocked(input: {
 }
 
 function EmptyBranchPrompt({
+  actionCount,
   currentBranchDirty,
   group,
   project,
   onAction,
   onSwitchError,
 }: {
+  actionCount: number
   currentBranchDirty: boolean
   group: BranchThreadGroup
   project: Project
@@ -180,7 +182,8 @@ function EmptyBranchPrompt({
     ? dirtyBranchSwitchMessage
     : 'Switch branches and start a new session.'
   return (
-    <div className="sidebar-project-work-empty-branch-row">
+    <div className="sidebar-project-work-empty-branch-row" data-action-count={actionCount}>
+      <span className="sidebar-project-work-empty-branch-spacer" aria-hidden="true" />
       <span>No sessions in this branch.</span>
       <Tooltip content={tooltip} placement="right">
         <button
@@ -391,6 +394,7 @@ export function BranchThreadGroupSection({
           ))}
           {visibilityState.showEmptyBranchPrompt ? (
             <EmptyBranchPrompt
+              actionCount={actionState.actionCount}
               currentBranchDirty={currentBranchDirty}
               group={group}
               project={project}
