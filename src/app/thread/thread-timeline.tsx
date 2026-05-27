@@ -341,7 +341,7 @@ export function ThreadTimeline({
       >
         <div
           ref={contentRef}
-          className={`mx-auto flex min-h-full w-full translate-x-[1.9875rem] flex-col justify-end ${CHAT_TEXT_MAX_WIDTH_CLASS} overflow-x-hidden px-4 pt-4 pb-4`}
+          className={`mx-auto flex min-h-full w-full translate-x-[1.9875rem] flex-col justify-end ${CHAT_TEXT_MAX_WIDTH_CLASS} overflow-x-hidden px-4 pt-0 pb-4`}
           style={
             composerOverlayHeight > 0
               ? { paddingBottom: `calc(1rem + ${composerOverlayHeight}px)` }

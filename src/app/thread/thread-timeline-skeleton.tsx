@@ -22,7 +22,7 @@ export function ThreadTimelineSkeleton({
     >
       <div className={`${chatScrollableAreaClass} ml-[2.95rem] mr-[2.05rem]`}>
         <div
-          className={`mx-auto flex min-h-full w-full min-w-0 flex-col justify-end ${CHAT_TEXT_MAX_WIDTH_CLASS} overflow-x-hidden px-4 pt-4 pb-4`}
+          className={`mx-auto flex min-h-full w-full min-w-0 flex-col justify-end ${CHAT_TEXT_MAX_WIDTH_CLASS} overflow-x-hidden px-4 pt-0 pb-4`}
           style={
             composerOverlayHeight > 0
               ? { paddingBottom: `calc(1rem + ${composerOverlayHeight}px)` }

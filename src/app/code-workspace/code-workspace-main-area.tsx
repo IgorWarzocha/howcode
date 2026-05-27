@@ -14,7 +14,7 @@ function getMainPanelClass(
     activeView === 'code' ||
     activeView === 'inbox' ||
     showDiffInMainView
-    ? 'min-h-0 overflow-hidden pt-1.5'
+    ? 'min-h-0 overflow-hidden'
     : mainPanelClass
 }
 

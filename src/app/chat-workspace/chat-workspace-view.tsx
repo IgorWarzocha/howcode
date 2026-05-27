@@ -57,7 +57,7 @@ function ChatWorkspaceMain({
   handleLoadEarlierMessages,
 }: ChatWorkspaceContentProps) {
   return (
-    <main ref={mainViewRef} className="h-full min-h-0 overflow-hidden pt-1.5">
+    <main ref={mainViewRef} className="h-full min-h-0 overflow-hidden">
       <ChatView
         key={activeThreadData?.sessionPath ?? 'new-chat'}
         messages={shouldShowConversationContent ? (activeThreadData?.messages ?? []) : []}
