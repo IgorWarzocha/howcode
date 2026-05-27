@@ -93,6 +93,7 @@ export function useAppShellController() {
     loadProjectThreads: desktopShell.loadProjectThreads,
     refreshShellState: desktopShell.refreshShellState,
     selectedSessionPath: bundle.state.selectedSessionPath,
+    shellState: desktopShell.shellState,
     setArchivedThreads: bundle.setArchivedThreads,
     setChatSidebarState: chatSidebar.setChatSidebarState,
     setComposerState: bundle.setComposerState,

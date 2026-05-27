@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  createBlockedBranchResumeResult,
+  getBranchResumeGuardCheck,
+} from '../app/app-shell/branch-resume-guard'
+import {
   getOptimisticallyPinnedShellState,
   getOptimisticallyUpdatedPiSettingsState,
   getOptimisticallyUpdatedShellState,
@@ -100,6 +104,84 @@ describe('app shell hardening helpers', () => {
       ['thread-a', true],
       ['thread-b', true],
     ])
+  })
+
+  it('guards branch-assigned session resumes before sending into the wrong branch', () => {
+    const shellState = {
+      projects: [
+        {
+          id: '/repo/a',
+          name: 'a',
+          threads: [
+            {
+              id: 'thread-a',
+              title: 'A',
+              age: 'now',
+              sessionPath: '/sessions/a.jsonl',
+              branchName: 'feature-a',
+            },
+          ],
+        },
+      ],
+    } as never
+
+    expect(
+      getBranchResumeGuardCheck({
+        shellState,
+        payload: { projectId: '/repo/a', sessionPath: '/sessions/a.jsonl' },
+        gitState: { projectId: '/repo/a', branch: 'dev' } as never,
+      }),
+    ).toEqual({
+      currentBranch: 'dev',
+      projectId: '/repo/a',
+      shouldSwitch: true,
+      targetBranch: 'feature-a',
+    })
+  })
+
+  it('does not guard worktree sessions because their project id is already the cwd', () => {
+    const shellState = {
+      projects: [
+        {
+          id: '/repo/a/.worktrees/feature-a',
+          name: 'feature-a',
+          worktree: {
+            rootProjectId: '/repo/a',
+            branchName: 'feature-a',
+            isMain: false,
+            source: 'howcode',
+          },
+          threads: [
+            {
+              id: 'thread-a',
+              title: 'A',
+              age: 'now',
+              sessionPath: '/sessions/a.jsonl',
+              branchName: 'feature-a',
+            },
+          ],
+        },
+      ],
+    } as never
+
+    expect(
+      getBranchResumeGuardCheck({
+        shellState,
+        payload: { projectId: '/repo/a/.worktrees/feature-a', sessionPath: '/sessions/a.jsonl' },
+        gitState: { projectId: '/repo/a/.worktrees/feature-a', branch: 'feature-a' } as never,
+      }),
+    ).toEqual({ shouldSwitch: false })
+  })
+
+  it('formats dirty branch resume guard errors without clearing the composer draft', () => {
+    expect(
+      createBlockedBranchResumeResult({
+        action: 'composer.send',
+        currentBranch: 'dev',
+        targetBranch: 'feature-a',
+        payload: { projectId: '/repo/a', sessionPath: '/sessions/a.jsonl', text: 'ship it' },
+      }).result?.error,
+    ).toBe('dev has uncommitted changes. Commit them first, then resend your prompt.')
   })
 
   it('rejects invalid diff preference payloads before cache mutation', () => {
