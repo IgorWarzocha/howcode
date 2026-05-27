@@ -155,6 +155,20 @@ function shellSingleQuote(value) {
   return `'${value.replace(/'/g, `'"'"'`)}'`
 }
 
+function spawnLinuxDetachedLauncher(executablePath, env) {
+  return spawn(
+    '/bin/sh',
+    ['-c', `nohup ${shellSingleQuote(executablePath)} >/dev/null 2>&1 </dev/null &`],
+    {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+      cwd: path.dirname(executablePath),
+      env,
+    },
+  )
+}
+
 async function writeLinuxCommandLauncher(paths) {
   const launcherPath = getLinuxCommandLauncherPath()
   const launcherDirectory = path.dirname(launcherPath)
@@ -532,6 +546,10 @@ function spawnLauncherProcess(executablePath, options = {}) {
     ...(options.env || {}),
   }
   Reflect.deleteProperty(env, 'NODE_TLS_REJECT_UNAUTHORIZED')
+
+  if (process.platform === 'linux') {
+    return spawnLinuxDetachedLauncher(executablePath, env)
+  }
 
   return spawn(executablePath, [], {
     detached: true,

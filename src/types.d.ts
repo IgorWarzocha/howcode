@@ -57,8 +57,9 @@ import type {
 } from './app/desktop/types'
 
 declare global {
-  // Prism is installed by src/main.tsx for @mdxeditor/@lexical code highlighting.
+  // Prism is installed lazily for @mdxeditor/@lexical code highlighting.
   var Prism: unknown
+  var prism: unknown
 
   interface Window {
     howcodeDevWebBridge?: boolean
