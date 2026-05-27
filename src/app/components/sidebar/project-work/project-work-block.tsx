@@ -14,6 +14,7 @@ import { ProjectWorkActionsMenu } from './project-work-actions-menu'
 import { ProjectRenameField } from './project-work-fields'
 import {
   type BranchThreadGroup,
+  branchGroupBelongsToBranch,
   filterBranchGroups,
   filterThreadsBySearch,
   filterThreadsForCurrentBranch,
@@ -320,7 +321,10 @@ export function ProjectWorkSummaryBlock({
   )
   const filteredBranchGroups = filterBranchGroups(branchGroups, searchQuery)
   const compactWorktreeGroups = filteredBranchGroups.filter(
-    (group) => (group.worktree || group.worktrees.length > 0) && !group.current,
+    (group) =>
+      (group.worktree || group.worktrees.length > 0) &&
+      !group.current &&
+      branchGroupBelongsToBranch(group, currentBranch),
   )
   const searchExpanded = normalizedSearchQuery.length > 0
   const unassignedExpanded = searchExpanded || !unassignedCollapsed

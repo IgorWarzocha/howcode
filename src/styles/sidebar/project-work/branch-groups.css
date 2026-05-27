@@ -7,12 +7,13 @@
 
 .sidebar-project-work-branch-group[data-divider-before="true"] {
   border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
-  margin-top: 0.125rem;
-  padding-top: 0.125rem;
+  margin-top: 0.25rem;
+  padding-top: 0.25rem;
 }
 
 .sidebar-project-work-branch-group[data-divider-after="true"] {
   border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  margin-bottom: 0.25rem;
   padding-bottom: 0.25rem;
 }
 

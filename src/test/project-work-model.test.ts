@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  branchGroupBelongsToBranch,
   bucketThreads,
   buildBranchGroups,
   filterBranchGroups,
@@ -99,6 +100,107 @@ describe('project work sidebar model', () => {
     ])
   })
 
+  it('uses the worktree branch over stale thread branch assignments', () => {
+    const root = project({
+      id: '/repo',
+      name: 'Repo',
+      worktree: { isMain: true, rootProjectId: '/repo', branchName: 'dev', source: 'howcode' },
+    })
+    const worktree = project({
+      id: '/repo/.worktrees/post-worktree-fixes-automations',
+      name: 'Repo post worktree fixes',
+      threads: [
+        thread({
+          id: 'stale-thread-assignment',
+          branchName: 'dev',
+          lastModifiedMs: Date.now(),
+        }),
+      ],
+      worktree: {
+        isMain: false,
+        rootProjectId: '/repo',
+        branchName: 'post-worktree-fixes-automations',
+        source: 'howcode',
+      },
+    })
+
+    const buckets = getThreadBucketsForProjectWork(root, [root, worktree], null)
+    const groups = buildBranchGroups(
+      buckets.activeThreads,
+      'dev',
+      ['dev', 'post-worktree-fixes-automations'],
+      [
+        {
+          label: 'post-worktree-fixes-automations',
+          path: '/repo/.worktrees/post-worktree-fixes-automations',
+          branchName: 'post-worktree-fixes-automations',
+        },
+      ],
+    )
+
+    expect(groups[0]).toMatchObject({ id: 'dev', worktrees: [] })
+    expect(groups[1]).toMatchObject({
+      id: 'post-worktree-fixes-automations',
+      worktree: false,
+      worktrees: [
+        {
+          threads: [
+            { id: 'stale-thread-assignment', branchName: 'post-worktree-fixes-automations' },
+          ],
+        },
+      ],
+    })
+    expect(branchGroupBelongsToBranch(groups[1]!, 'dev')).toBe(false)
+    expect(branchGroupBelongsToBranch(groups[1]!, 'post-worktree-fixes-automations')).toBe(true)
+  })
+
+  it('does not attach completed worktrees from other branches to the current branch', () => {
+    const groups = buildBranchGroups(
+      [],
+      'dev',
+      ['dev', 'dashboard'],
+      [
+        {
+          label: 'dashboard',
+          path: '/repo/.worktrees/dashboard',
+          branchName: 'dashboard',
+          complete: true,
+        },
+      ],
+    )
+
+    expect(groups[0]?.id).toBe('dev')
+    expect(groups[0]?.completedWorktrees).toBeUndefined()
+    expect(groups[1]).toMatchObject({
+      id: 'dashboard',
+      worktree: false,
+      worktrees: [
+        {
+          path: '/repo/.worktrees/dashboard',
+          complete: true,
+        },
+      ],
+    })
+  })
+
+  it('groups active worktrees under the parent branch session instead of duplicating branch rows', () => {
+    const groups = buildBranchGroups(
+      [thread({ id: 'parent-session', branchName: 'post-worktree-fixes-automations' })],
+      'dev',
+      ['dev', 'post-worktree-fixes-automations', 'dashboard', 'automations'],
+      [
+        { label: 'dashboard', path: '/repo/.worktrees/dashboard', branchName: 'dashboard' },
+        { label: 'automations', path: '/repo/.worktrees/automations', branchName: 'automations' },
+      ],
+    )
+
+    expect(groups.map((group) => group.id)).toEqual(['dev', 'post-worktree-fixes-automations'])
+    expect(groups[1]).toMatchObject({
+      id: 'post-worktree-fixes-automations',
+      worktrees: [{ label: 'automations' }, { label: 'dashboard' }],
+    })
+  })
+
   it('builds branch groups with current branch first and unassigned last', () => {
     const groups = buildBranchGroups(
       [
@@ -128,13 +230,17 @@ describe('project work sidebar model', () => {
       [{ label: 'feature/worktree', path: '/repo/.worktrees/feature-worktree' }],
     )
 
-    expect(groups.map((group) => group.id)).toEqual(['main', '/repo/.worktrees/feature-worktree'])
+    expect(groups.map((group) => group.id)).toEqual(['main', 'feature/worktree'])
     expect(groups[1]).toMatchObject({
       label: 'feature/worktree',
       threads: [],
-      worktree: true,
-      worktreePath: '/repo/.worktrees/feature-worktree',
-      worktrees: [],
+      worktree: false,
+      worktrees: [
+        {
+          label: 'feature/worktree',
+          path: '/repo/.worktrees/feature-worktree',
+        },
+      ],
     })
   })
 
@@ -181,8 +287,11 @@ describe('project work sidebar model', () => {
       ],
     )
 
-    expect(groups.map((group) => group.id)).toEqual(['main', '/repo/.worktrees/feature-worktree'])
-    expect(groups[1]).toMatchObject({ worktree: true, threads: [{ id: 'worktree-thread' }] })
+    expect(groups.map((group) => group.id)).toEqual(['main', 'feature/worktree'])
+    expect(groups[1]).toMatchObject({
+      worktree: false,
+      worktrees: [{ threads: [{ id: 'worktree-thread' }] }],
+    })
   })
 
   it('sorts present worktrees before inactive branch-only groups', () => {
@@ -193,11 +302,7 @@ describe('project work sidebar model', () => {
       [{ label: 'aaa-worktree', path: '/repo/.worktrees/aaa-worktree' }],
     )
 
-    expect(groups.map((group) => group.id)).toEqual([
-      'main',
-      '/repo/.worktrees/aaa-worktree',
-      'zzz-branch',
-    ])
+    expect(groups.map((group) => group.id)).toEqual(['main', 'aaa-worktree', 'zzz-branch'])
   })
 
   it('marks completed nested worktrees as complete', () => {
@@ -215,10 +320,13 @@ describe('project work sidebar model', () => {
     )
 
     expect(groups[1]).toMatchObject({
-      worktree: true,
-      worktreeComplete: true,
-      worktreePath: '/repo/.worktrees/done-worktree',
-      worktrees: [],
+      worktree: false,
+      worktrees: [
+        {
+          path: '/repo/.worktrees/done-worktree',
+          complete: true,
+        },
+      ],
     })
   })
 

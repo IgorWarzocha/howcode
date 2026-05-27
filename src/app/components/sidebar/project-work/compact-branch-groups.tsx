@@ -28,6 +28,13 @@ function getCompletedWorktreesForCompactCurrentBranch(
   })
 }
 
+function getUnassignedDividerBefore(input: {
+  hasWorktreeGroups: boolean
+  unassignedExpanded: boolean
+}) {
+  return input.hasWorktreeGroups && input.unassignedExpanded ? 'true' : 'false'
+}
+
 export function ProjectCompactBranchGroups({
   activeView,
   branchThreads,
@@ -222,7 +229,7 @@ export function ProjectCompactBranchGroups({
             selectedThreadId={selectedThreadId}
             terminalRunningSessionPaths={terminalRunningSessionPaths}
             onAction={onAction}
-            showTopDivider={visualGroupKey !== previousVisualGroupKey}
+            showTopDivider={!collapsed && visualGroupKey !== previousVisualGroupKey}
             onThreadOpen={onThreadOpen}
             onToggle={() =>
               onSetCollapsedBranchIds((current) => ({
@@ -241,7 +248,10 @@ export function ProjectCompactBranchGroups({
       {unassignedThreads.length > 0 ? (
         <section
           className="sidebar-project-work-branch-group"
-          data-divider-before={worktreeGroups.length > 0 ? 'true' : 'false'}
+          data-divider-before={getUnassignedDividerBefore({
+            hasWorktreeGroups: worktreeGroups.length > 0,
+            unassignedExpanded,
+          })}
         >
           <Tooltip
             content="Sessions not assigned to a git branch"

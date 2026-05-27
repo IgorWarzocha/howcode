@@ -95,7 +95,7 @@ export function getCompactBranchVisualGroupKey(
   group: BranchThreadGroup,
   currentBranch: string | null,
 ) {
-  return group.worktree ? (currentBranch ?? group.worktreeBranchName ?? group.label) : group.label
+  return group.worktree ? (group.worktreeBranchName ?? group.label ?? currentBranch) : group.label
 }
 
 function getBranchVisualGroupKey(group: BranchThreadGroup) {
@@ -117,6 +117,19 @@ export function shouldSeparateBranchGroups(
 function getThreadAssignBranchForGroup(group: BranchThreadGroup, currentBranch: string | null) {
   if (!group.worktree) return currentBranch
   return group.worktreeBranchName ?? null
+}
+
+function getBranchGroupDividerState(input: {
+  collapsed: boolean
+  hasWorktrees: boolean
+  showBottomDivider: boolean
+  showTopDivider: boolean
+}) {
+  if (input.collapsed) return { before: 'false', after: 'false' }
+  return {
+    before: input.showTopDivider || input.hasWorktrees ? 'true' : 'false',
+    after: input.showBottomDivider ? 'true' : 'false',
+  }
 }
 
 export function BranchThreadGroupSection({
@@ -167,14 +180,20 @@ export function BranchThreadGroupSection({
   const canToggleThreads = group.threads.length > 0
   const hasWorktrees = group.worktrees.length > 0
   const canToggleGroup = canToggleThreads || hasWorktrees
+  const dividerState = getBranchGroupDividerState({
+    collapsed,
+    hasWorktrees,
+    showBottomDivider,
+    showTopDivider,
+  })
 
   return (
     <section
       className="sidebar-project-work-branch-group"
       data-branch-group-kind="branch"
       data-current={group.current || (group.worktree && !group.worktreeComplete) ? 'true' : 'false'}
-      data-divider-after={showBottomDivider ? 'true' : 'false'}
-      data-divider-before={showTopDivider ? 'true' : 'false'}
+      data-divider-after={dividerState.after}
+      data-divider-before={dividerState.before}
     >
       <BranchHeadingRow unassigned={group.unassigned}>
         <button
@@ -247,7 +266,7 @@ export function BranchThreadGroupSection({
         </span>
       </BranchHeadingRow>
 
-      {collapsed ? null : (
+      {collapsed || !canToggleGroup ? null : (
         <div className="sidebar-project-work-branch-contents">
           {group.threads.length > 0 ? (
             <div className="sidebar-project-work-branch-thread-list">
@@ -456,7 +475,7 @@ export function ProjectExpandedBranchGroups({
           ? false
           : (collapsedBranchIds[groupKey] ?? defaultCollapsed)
         const showBottomDivider =
-          nextVisualGroupKey !== null && visualGroupKey !== nextVisualGroupKey
+          !collapsed && nextVisualGroupKey !== null && visualGroupKey !== nextVisualGroupKey
         return (
           <BranchThreadGroupSection
             key={group.id}

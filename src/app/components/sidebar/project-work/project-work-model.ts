@@ -121,10 +121,38 @@ type GroupedSidebarThreads = {
   unassignedThreads: SidebarThread[]
 }
 
-function buildWorktreesByBranch(worktreeBranches: readonly WorktreeBranch[]) {
+function resolveWorktreeParentBranch(input: {
+  currentBranch: string | null
+  groupedThreads: ReadonlyMap<string, SidebarThread[]>
+  worktreeBranches: readonly WorktreeBranch[]
+}) {
+  const worktreeBranchNames = new Set(
+    input.worktreeBranches
+      .map((worktree) => (worktree.branchName ?? worktree.label).trim())
+      .filter(Boolean),
+  )
+  const candidates = [...input.groupedThreads.entries()]
+    .filter(([branchName, threads]) => {
+      if (branchName === input.currentBranch) return false
+      if (worktreeBranchNames.has(branchName)) return false
+      return threads.length > 0
+    })
+    .sort((left, right) => right[1].length - left[1].length)
+  return candidates[0]?.[0] ?? null
+}
+
+function buildWorktreesByBranch(input: {
+  currentBranch: string | null
+  parentBranch: string | null
+  worktreeBranches: readonly WorktreeBranch[]
+}) {
   const worktreesByBranch = new Map<string, WorktreeBranch[]>()
-  for (const worktreeBranch of worktreeBranches) {
-    const branchName = (worktreeBranch.branchName ?? worktreeBranch.label).trim()
+  for (const worktreeBranch of input.worktreeBranches) {
+    const ownBranchName = (worktreeBranch.branchName ?? worktreeBranch.label).trim()
+    const branchName =
+      input.parentBranch && ownBranchName !== input.currentBranch
+        ? input.parentBranch
+        : ownBranchName
     if (!branchName) continue
     const worktrees = worktreesByBranch.get(branchName) ?? []
     worktrees.push(worktreeBranch)
@@ -151,23 +179,6 @@ function createBranchThreadGroup(input: {
     }))
     .sort((a, b) => a.label.localeCompare(b.label))
   const branchThreads = sortThreads(input.groupedThreads.get(input.branchName) ?? [])
-  if (!input.current && branchThreads.length === 0 && worktrees.length === 1) {
-    const [worktree] = worktrees
-    if (worktree) {
-      return {
-        id: worktree.id,
-        label: worktree.label,
-        threads: worktree.threads,
-        worktrees: [],
-        current: false,
-        unassigned: false,
-        worktree: true,
-        worktreeComplete: worktree.complete,
-        worktreePath: worktree.path,
-        worktreeBranchName: worktree.branchName ?? null,
-      }
-    }
-  }
   return {
     id: input.branchName,
     label: input.branchName,
@@ -233,10 +244,37 @@ function collectBranchNames(input: {
   return branchNames
 }
 
-function getCompletedWorktreesForBulkActions(groups: readonly BranchThreadGroup[]) {
+function worktreeBelongsToBranch(worktree: WorktreeBranch, branchName: string | null) {
+  const normalizedBranchName = branchName?.trim()
+  if (!normalizedBranchName) return false
+  return (worktree.branchName ?? worktree.label).trim() === normalizedBranchName
+}
+
+function getCompletedWorktreesForBulkActions(
+  groups: readonly BranchThreadGroup[],
+  currentBranch: string | null,
+) {
   return groups.flatMap((group) => {
-    const nestedCompleted = group.worktrees.filter((worktree) => worktree.complete)
-    if (!(group.worktree && group.worktreeComplete && group.worktreePath)) return nestedCompleted
+    const nestedCompleted = group.worktrees.filter(
+      (worktree) => worktree.complete && worktreeBelongsToBranch(worktree, currentBranch),
+    )
+    if (
+      !(
+        group.worktree &&
+        group.worktreeComplete &&
+        group.worktreePath &&
+        worktreeBelongsToBranch(
+          {
+            label: group.label,
+            path: group.worktreePath,
+            branchName: group.worktreeBranchName ?? null,
+            complete: group.worktreeComplete,
+          },
+          currentBranch,
+        )
+      )
+    )
+      return nestedCompleted
     return [
       ...nestedCompleted,
       {
@@ -249,8 +287,11 @@ function getCompletedWorktreesForBulkActions(groups: readonly BranchThreadGroup[
   })
 }
 
-function addBulkCompletedWorktreesToCurrentBranch(groups: BranchThreadGroup[]) {
-  const completedWorktrees = getCompletedWorktreesForBulkActions(groups)
+function addBulkCompletedWorktreesToCurrentBranch(
+  groups: BranchThreadGroup[],
+  currentBranch: string | null,
+) {
+  const completedWorktrees = getCompletedWorktreesForBulkActions(groups, currentBranch)
   if (completedWorktrees.length === 0) return groups
 
   const currentGroupIndex = groups.findIndex((group) => group.current && !group.worktree)
@@ -292,13 +333,30 @@ export function buildBranchGroups(
   worktreeBranches: readonly WorktreeBranch[] = [],
 ): BranchThreadGroup[] {
   const { groupedThreads, groupedWorktreeThreads, unassignedThreads } = groupSidebarThreads(threads)
-  const worktreesByBranch = buildWorktreesByBranch(worktreeBranches)
+  const parentBranch = resolveWorktreeParentBranch({
+    currentBranch,
+    groupedThreads,
+    worktreeBranches,
+  })
+  const worktreesByBranch = buildWorktreesByBranch({
+    currentBranch,
+    parentBranch,
+    worktreeBranches,
+  })
   const branchNames = collectBranchNames({
     currentBranch,
     groupedThreads,
     repositoryBranches,
     worktreesByBranch,
   })
+  if (parentBranch) {
+    for (const worktree of worktreeBranches) {
+      const branchName = (worktree.branchName ?? worktree.label).trim()
+      if (branchName && branchName !== parentBranch && branchName !== currentBranch) {
+        branchNames.delete(branchName)
+      }
+    }
+  }
 
   const groups: BranchThreadGroup[] = []
   if (currentBranch && branchNames.has(currentBranch)) {
@@ -357,7 +415,7 @@ export function buildBranchGroups(
     })
   }
 
-  return addBulkCompletedWorktreesToCurrentBranch(groups)
+  return addBulkCompletedWorktreesToCurrentBranch(groups, currentBranch)
 }
 
 export function filterBranchGroups(groups: BranchThreadGroup[], searchQuery: string) {
@@ -398,6 +456,21 @@ export function filterBranchGroups(groups: BranchThreadGroup[], searchQuery: str
             ),
         ),
     )
+}
+
+export function branchGroupBelongsToBranch(group: BranchThreadGroup, branchName: string | null) {
+  const normalizedBranchName = branchName?.trim()
+  if (!normalizedBranchName) return false
+  if (group.current) return true
+  if (group.worktree) {
+    return (group.worktreeBranchName ?? group.label).trim() === normalizedBranchName
+  }
+  if (group.label.trim() === normalizedBranchName || group.id.trim() === normalizedBranchName) {
+    return true
+  }
+  return group.worktrees.some(
+    (worktree) => (worktree.branchName ?? worktree.label).trim() === normalizedBranchName,
+  )
 }
 
 export function getProjectGitStateForSidebar(
@@ -468,7 +541,7 @@ export function getThreadsForProjectWorktreeRows(project: Project, projects: rea
       ...thread,
       sidebarWorktreePath: worktreeProject.id,
       sidebarWorktreeLabel: worktreeProject.worktree?.branchName ?? worktreeProject.name,
-      branchName: thread.branchName ?? worktreeProject.worktree?.branchName ?? undefined,
+      branchName: worktreeProject.worktree?.branchName ?? thread.branchName ?? undefined,
     })),
   )
 }
@@ -486,7 +559,7 @@ export function getThreadBucketsForProjectWork(
         ...thread,
         sidebarWorktreePath: worktreeProject.id,
         sidebarWorktreeLabel: worktreeProject.worktree?.branchName ?? worktreeProject.name,
-        branchName: thread.branchName ?? worktreeProject.worktree?.branchName ?? undefined,
+        branchName: worktreeProject.worktree?.branchName ?? thread.branchName ?? undefined,
       })
       buckets.activeThreads.push(...nextBuckets.activeThreads.map(annotateThread))
       buckets.olderThreads.push(...nextBuckets.olderThreads.map(annotateThread))

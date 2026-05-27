@@ -410,7 +410,8 @@ export function SingleProjectWorkContent({
                 const collapsed = normalizedSearchQuery
                   ? false
                   : (collapsedBranchIds[groupKey] ?? defaultCollapsed)
-                const showBottomDivider = shouldSeparateBranchGroups(group, branchGroups[index + 1])
+                const showBottomDivider =
+                  !collapsed && shouldSeparateBranchGroups(group, branchGroups[index + 1])
                 return (
                   <BranchThreadGroupSection
                     key={group.id}
