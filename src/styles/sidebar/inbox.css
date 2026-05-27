@@ -1,0 +1,92 @@
+.sidebar-inbox-row {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) 18px;
+  align-items: start;
+  gap: 0.625rem;
+  padding: 0.625rem 0.625rem;
+}
+
+.sidebar-inbox-row[data-selected="true"] {
+  background: var(--accent-bg);
+  color: var(--text);
+  box-shadow: none;
+}
+
+.sidebar-inbox-leading {
+  display: flex;
+  height: 1.25rem;
+  align-items: center;
+  justify-content: center;
+  padding-top: 0.125rem;
+}
+
+.sidebar-inbox-content {
+  display: grid;
+  min-width: 0;
+  gap: 0.3125rem;
+  text-align: left;
+}
+
+.sidebar-inbox-meta {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--muted-2);
+  font-size: var(--app-type-meta-size);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--app-type-meta-line-height);
+}
+
+.sidebar-inbox-terminal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+
+.sidebar-inbox-title {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--app-type-group-size);
+  line-height: var(--app-type-small-comfortable-line-height);
+  text-overflow: ellipsis;
+  transition: color 150ms ease-out;
+  white-space: nowrap;
+}
+
+.sidebar-inbox-row:hover .sidebar-inbox-title,
+.sidebar-inbox-row[data-selected="true"] .sidebar-inbox-title,
+.sidebar-inbox-title[data-unread="true"] {
+  color: var(--text);
+}
+
+.sidebar-inbox-title[data-unread="true"] {
+  font-weight: 500;
+}
+
+.sidebar-inbox-preview {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--muted-2);
+  font-size: var(--app-type-small-size);
+  line-height: var(--app-type-small-comfortable-line-height);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  text-wrap: pretty;
+}
+
+.sidebar-inbox-dismiss {
+  margin-top: 0.125rem;
+  height: 1rem;
+  width: 1rem;
+  border-color: transparent;
+  background: transparent;
+  opacity: 0;
+}
+
+.sidebar-inbox-row:hover .sidebar-inbox-dismiss,
+.sidebar-inbox-row:focus-within .sidebar-inbox-dismiss,
+.sidebar-inbox-dismiss[data-visible="true"] {
+  opacity: 1;
+}

@@ -1,9 +1,8 @@
 import { type ChildProcess, spawn } from 'node:child_process'
 import crypto from 'node:crypto'
-import { rmSync } from 'node:fs'
+import { existsSync, rmSync } from 'node:fs'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import http from 'node:http'
-import { createRequire } from 'node:module'
 import type { AddressInfo } from 'node:net'
 import path from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -14,14 +13,16 @@ import {
   DEV_SERVER_METADATA_RELATIVE_PATH,
   DEV_SERVER_START_PORT,
 } from '../shared/dev-server'
+import { getSystemNodeExecutable } from '../src/desktop-host/node-discovery'
+import { getDevUserDataPath } from './dev-user-data-path'
 
 const projectRoot = process.cwd()
 const devRepoRoot = projectRoot
-const require = createRequire(import.meta.url)
-const electronPath = require('electron') as string
 const devServerMetadataPath = path.join(projectRoot, DEV_SERVER_METADATA_RELATIVE_PATH)
 const bridgeBuildPath = path.join(projectRoot, 'build', 'dev-web-bridge.mjs')
+const serviceHostBuildPath = path.join(projectRoot, 'build', 'desktop', 'service-host.mjs')
 const bridgeToken = crypto.randomUUID()
+const serviceHostWaitTimeoutMs = 30_000
 
 let bridge: { child: ChildProcess; port: number } | null = null
 let server: ViteDevServer | null = null
@@ -62,16 +63,26 @@ async function shutdown(exitCode = 0) {
 
 async function startDevWebBridge() {
   await buildDevWebBridge()
+  const serviceHostWaitStartedAt = Date.now()
+  while (!existsSync(serviceHostBuildPath)) {
+    if (Date.now() - serviceHostWaitStartedAt > serviceHostWaitTimeoutMs) {
+      throw new Error(
+        `Timed out waiting for ${path.relative(projectRoot, serviceHostBuildPath)}. Is dev:runtime running?`,
+      )
+    }
+    await delay(150)
+  }
 
-  const child = spawn(electronPath, [bridgeBuildPath], {
+  const nodeExecutable = await getSystemNodeExecutable()
+  const child = spawn(nodeExecutable, [bridgeBuildPath], {
     cwd: projectRoot,
     env: {
       ...process.env,
       HOWCODE_REPO_ROOT: devRepoRoot,
+      HOWCODE_USER_DATA_PATH: getDevUserDataPath(),
       HOWCODE_DEV_WEB_BRIDGE_HOST: DEV_SERVER_HOST,
       HOWCODE_DEV_WEB_BRIDGE_PORT: '0',
       HOWCODE_DEV_WEB_BRIDGE_TOKEN: bridgeToken,
-      ELECTRON_RUN_AS_NODE: '1',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   })

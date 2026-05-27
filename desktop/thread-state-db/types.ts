@@ -4,12 +4,12 @@ export type SessionSummaryRecord = {
   sessionPath: string
   title: string
   lastModifiedMs: number
+  branchName?: string | undefined | null | undefined
 }
 
 export type ProjectRow = {
   id: string
   name: string
-  orderIndex: number | null
   pinned: number
   collapsed: number
   threadCount: number
@@ -17,6 +17,12 @@ export type ProjectRow = {
   repoOriginUrl: string | null
   repoOriginChecked: number
   gitOpsMode: string | null
+  worktreeRootProjectId: string | null
+  worktreeBranchName: string | null
+  worktreeIsMain: number | null
+  worktreeSource: string | null
+  worktreeCompleted: number | null
+  worktreeDirectory: string | null
 }
 
 export type ThreadRow = {
@@ -27,6 +33,7 @@ export type ThreadRow = {
   running: number
   unread: number
   pinned: number
+  branchName: string | null
   lastModifiedMs: number
 }
 
@@ -69,10 +76,24 @@ export type ArchivedThreadRow = {
   projectId: string
   projectName: string
   lastModifiedMs: number
+  isChat: number
 }
 
 export type ThreadPathRow = {
+  id?: string | undefined
   sessionPath: string
+}
+
+export type ProjectUsageTotalsRow = {
+  input: number
+  output: number
+  cacheRead: number
+  cacheWrite: number
+  totalTokens: number
+  costTotal: number
+  assistantTurnCount: number
+  sessionCount: number
+  sessionsWithUsageCount: number
 }
 
 export type ThreadDiffPreferencesRow = {
@@ -82,4 +103,11 @@ export type ThreadDiffPreferencesRow = {
 
 export type ThreadCwdRow = {
   cwd: string
+}
+
+export type ThreadDeletionSnapshotRow = {
+  cwd: string
+  title: string
+  sessionPath: string
+  lastModifiedMs: number
 }

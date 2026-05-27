@@ -1,13 +1,20 @@
 import type {
+  ComposerSendMode,
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
   DictationModelId,
   GitOpsMode,
+  KeybindingOverrides,
   ModelSelection,
   ProjectDeletionMode,
   ProjectDiffDefaultBaseline,
   ProjectDiffRenderMode,
 } from '../../shared/desktop-contracts.ts'
+import {
+  isKeybindingCommandId,
+  isValidAccelerator,
+  normalizeAccelerator,
+} from '../../shared/keybindings.ts'
 
 export type PreferenceRow = {
   valueJson: string
@@ -206,5 +213,38 @@ export function parseDictationModelIdPreference(
     return parsed === 'tiny.en' || parsed === 'base.en' || parsed === 'small.en' ? parsed : null
   } catch {
     return null
+  }
+}
+
+export function parseComposerSendModePreference(
+  valueJson: string | null | undefined,
+): ComposerSendMode | null {
+  if (!valueJson) return null
+  try {
+    const parsed = JSON.parse(valueJson) as unknown
+    return parsed === 'enter' || parsed === 'cmd-enter' ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+export function parseKeybindingOverrides(
+  valueJson: string | null | undefined,
+): KeybindingOverrides {
+  if (!valueJson) return {}
+  try {
+    const parsed = JSON.parse(valueJson) as unknown
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
+    const overrides: KeybindingOverrides = {}
+    for (const [key, value] of Object.entries(parsed)) {
+      if (!isKeybindingCommandId(key)) continue
+      if (value === null) overrides[key] = null
+      else if (typeof value === 'string' && isValidAccelerator(value)) {
+        overrides[key] = normalizeAccelerator(value)
+      }
+    }
+    return overrides
+  } catch {
+    return {}
   }
 }

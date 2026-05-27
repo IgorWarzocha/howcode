@@ -1,6 +1,7 @@
 import type { ProjectGitState } from '../../shared/desktop-contracts.ts'
 import { getThreadStateDatabase } from '../thread-state-db/db.ts'
 import { hasHeadCommit, runGit, runGitWithOptions } from './git-runner.ts'
+import { loadGitWorktrees } from './worktrees.ts'
 
 const shortStatInsertionsPattern = /(\d+)\s+insertions?\(\+\)/
 const shortStatDeletionsPattern = /(\d+)\s+deletions?\(-\)/
@@ -22,6 +23,7 @@ function parseStatusSummary(output: string) {
   let fileCount = 0
   let stagedFileCount = 0
   let unstagedFileCount = 0
+  let untrackedFileCount = 0
 
   for (const line of output.split('\n')) {
     if (!line || line.startsWith('## ')) {
@@ -32,6 +34,7 @@ function parseStatusSummary(output: string) {
 
     if (line.startsWith('??')) {
       unstagedFileCount += 1
+      untrackedFileCount += 1
       continue
     }
 
@@ -51,6 +54,7 @@ function parseStatusSummary(output: string) {
     fileCount,
     stagedFileCount,
     unstagedFileCount,
+    untrackedFileCount,
   }
 }
 
@@ -75,6 +79,7 @@ async function getStatusSummary(projectId: string) {
       fileCount: 0,
       stagedFileCount: 0,
       unstagedFileCount: 0,
+      untrackedFileCount: 0,
     }
   }
 }
@@ -137,6 +142,25 @@ export async function getBranch(projectId: string) {
   return null
 }
 
+async function getBranches(projectId: string) {
+  try {
+    const { stdout } = await runGitWithOptions(
+      projectId,
+      ['branch', '--format=%(refname:short)', '--sort=-committerdate'],
+      {
+        timeout: 10_000,
+        maxBuffer: 1024 * 1024,
+      },
+    )
+    return stdout
+      .split('\n')
+      .map((branch) => branch.trim())
+      .filter((branch) => branch.length > 0)
+  } catch {
+    return []
+  }
+}
+
 async function getDiffStats(projectId: string) {
   try {
     const args = (await hasHeadCommit(projectId))
@@ -160,37 +184,45 @@ export async function loadProjectGitState(projectId: string): Promise<ProjectGit
       projectId,
       isGitRepo: false,
       branch: null,
+      branches: [],
       fileCount: 0,
       stagedFileCount: 0,
       unstagedFileCount: 0,
+      untrackedFileCount: 0,
       insertions: 0,
       deletions: 0,
       hasOrigin: false,
       originName: null,
       originUrl: null,
       gitOpsModeOverride,
+      worktrees: [],
     }
   }
 
-  const [branch, statusSummary, originUrl, stats] = await Promise.all([
+  const [branch, branches, statusSummary, originUrl, stats, worktrees] = await Promise.all([
     getBranch(projectId),
+    getBranches(projectId),
     getStatusSummary(projectId),
     getOriginUrl(projectId),
     getDiffStats(projectId),
+    loadGitWorktrees(projectId).catch(() => []),
   ])
 
   return {
     projectId,
     isGitRepo: true,
     branch,
+    branches,
     fileCount: statusSummary.fileCount,
     stagedFileCount: statusSummary.stagedFileCount,
     unstagedFileCount: statusSummary.unstagedFileCount,
+    untrackedFileCount: statusSummary.untrackedFileCount,
     insertions: stats.insertions,
     deletions: stats.deletions,
     hasOrigin: originUrl !== null,
     originName: deriveOriginName(originUrl),
     originUrl,
     gitOpsModeOverride,
+    worktrees,
   }
 }

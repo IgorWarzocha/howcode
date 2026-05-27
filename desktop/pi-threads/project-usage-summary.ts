@@ -1,10 +1,15 @@
 import { createReadStream } from 'node:fs'
+import { access } from 'node:fs/promises'
 import { createInterface } from 'node:readline'
 import type {
   ProjectUsageSessionSummary,
   ProjectUsageSummary,
 } from '../../shared/desktop-contracts.ts'
-import { listArchivedProjectThreads, listProjectThreads } from '../thread-state-db.ts'
+import {
+  getProjectStoredUsageTotals,
+  listArchivedProjectThreads,
+  listProjectThreads,
+} from '../thread-state-db.ts'
 import { mapWithConcurrency } from './map-with-concurrency.ts'
 
 type UsageEntry = {
@@ -105,6 +110,21 @@ function parseUsageEntry(line: string) {
   }
 }
 
+function isMissingFileError(error: unknown) {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT'
+}
+
+async function sessionFileExists(sessionPath: string) {
+  try {
+    await access(sessionPath)
+    return true
+  } catch (error) {
+    if (isMissingFileError(error)) return false
+
+    throw error
+  }
+}
+
 async function summarizeSession(input: {
   threadId: string
   title: string
@@ -112,6 +132,8 @@ async function summarizeSession(input: {
   lastModifiedMs?: number | undefined
 }) {
   const summary = emptySessionSummary(input)
+  if (!(await sessionFileExists(input.sessionPath))) return summary
+
   const lines = createInterface({
     input: createReadStream(input.sessionPath, { encoding: 'utf8' }),
     crlfDelay: Number.POSITIVE_INFINITY,
@@ -218,7 +240,9 @@ async function summarizeThreads(projectId: string, threads: ReturnType<typeof li
         )
         return summary
       } catch (error) {
-        console.warn(`Failed to summarize project usage for ${thread.sessionPath}.`, error)
+        if (!isMissingFileError(error)) {
+          console.warn(`Failed to summarize project usage for ${thread.sessionPath}.`, error)
+        }
         return emptySessionSummary({
           threadId: thread.id,
           title: thread.title,
@@ -249,6 +273,23 @@ function getTopSessions(sessionSummaries: ProjectUsageSessionSummary[]) {
         : right.costTotal - left.costTotal,
     )
     .slice(0, TOP_USAGE_SESSION_LIMIT)
+}
+
+function getStoredUsageSummary(projectId: string): ProjectUsageSummary {
+  const storedTotals = getProjectStoredUsageTotals(projectId)
+  return {
+    projectId,
+    sessionCount: storedTotals?.sessionCount ?? 0,
+    sessionsWithUsageCount: storedTotals?.sessionsWithUsageCount ?? 0,
+    assistantTurnCount: storedTotals?.assistantTurnCount ?? 0,
+    cacheRead: storedTotals?.cacheRead ?? 0,
+    cacheWrite: storedTotals?.cacheWrite ?? 0,
+    costTotal: storedTotals?.costTotal ?? 0,
+    input: storedTotals?.input ?? 0,
+    output: storedTotals?.output ?? 0,
+    totalTokens: storedTotals?.totalTokens ?? 0,
+    topSessions: [],
+  }
 }
 
 function getArchivedUsage(projectId: string) {
@@ -322,13 +363,22 @@ export async function loadProjectUsageSummary(projectId: string): Promise<Projec
   const activeSummary = await summarizeThreads(projectId, threads)
   const archivedUsage = getArchivedUsage(projectId)
   const archivedSummary = archivedUsage.summary
-  const totals = archivedSummary ? combineTotals(activeSummary, archivedSummary) : activeSummary
+  const storedTotalsSummary = getStoredUsageSummary(projectId)
+  const activeAndArchivedTotals = archivedSummary
+    ? combineTotals(activeSummary, archivedSummary)
+    : activeSummary
+  const totals = combineTotals(activeAndArchivedTotals, storedTotalsSummary)
 
   return {
     projectId,
-    sessionCount: activeSummary.sessionCount + (archivedSummary?.sessionCount ?? 0),
+    sessionCount:
+      activeSummary.sessionCount +
+      (archivedSummary?.sessionCount ?? 0) +
+      storedTotalsSummary.sessionCount,
     sessionsWithUsageCount:
-      activeSummary.sessionsWithUsageCount + (archivedSummary?.sessionsWithUsageCount ?? 0),
+      activeSummary.sessionsWithUsageCount +
+      (archivedSummary?.sessionsWithUsageCount ?? 0) +
+      storedTotalsSummary.sessionsWithUsageCount,
     ...totals,
     archivedUsageRefreshing: archivedUsage.refreshing,
     topSessions: getTopSessions([

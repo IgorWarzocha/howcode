@@ -1,4 +1,8 @@
-import { runGitWithOptions, withTemporaryIndex } from './git-runner.ts'
+import { createHash } from 'node:crypto'
+import { mkdir, rm, stat } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { runGitStreamingWithOptions, runGitWithOptions, withTemporaryIndex } from './git-runner.ts'
 
 export const EMPTY_TREE_OID = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 
@@ -13,6 +17,84 @@ export type WorktreeSnapshot = {
 }
 
 export type WorktreeStats = Omit<WorktreeSnapshot, 'patch'>
+
+const stagedWorktreeQueues = new Map<string, Promise<unknown>>()
+const stagedWorktreeLockRoot = join(tmpdir(), 'howcode-git-worktree-locks')
+const stagedWorktreeLockStaleMs = 120_000
+const stagedWorktreeLockPollMs = 50
+const stagedWorktreeLockTimeoutMs = 30_000
+
+function getStagedWorktreeLockPath(projectId: string) {
+  const lockKey = createHash('sha1').update(projectId).digest('hex')
+  return join(stagedWorktreeLockRoot, `${lockKey}.lock`)
+}
+
+function waitForStagedWorktreeLock() {
+  return new Promise((resolve) => setTimeout(resolve, stagedWorktreeLockPollMs))
+}
+
+function isFileAlreadyExistsError(error: unknown) {
+  return Boolean(error && typeof error === 'object' && 'code' in error && error.code === 'EEXIST')
+}
+
+async function removeStaleStagedWorktreeLock(lockPath: string) {
+  try {
+    const lockStat = await stat(lockPath)
+    if (Date.now() - lockStat.mtimeMs <= stagedWorktreeLockStaleMs) return false
+    await rm(lockPath, { force: true, recursive: true })
+    return true
+  } catch {
+    return true
+  }
+}
+
+async function acquireStagedWorktreeLock(projectId: string) {
+  await mkdir(stagedWorktreeLockRoot, { recursive: true })
+  const lockPath = getStagedWorktreeLockPath(projectId)
+  const startedAt = Date.now()
+
+  while (true) {
+    try {
+      await mkdir(lockPath)
+      return async () => {
+        await rm(lockPath, { force: true, recursive: true })
+      }
+    } catch (error) {
+      if (!isFileAlreadyExistsError(error)) throw error
+      if (await removeStaleStagedWorktreeLock(lockPath)) continue
+
+      if (Date.now() - startedAt > stagedWorktreeLockTimeoutMs) {
+        throw new Error('Timed out waiting for staged worktree diff lock.')
+      }
+
+      await waitForStagedWorktreeLock()
+    }
+  }
+}
+
+async function runWithProcessStagedWorktreeLock<T>(projectId: string, operation: () => Promise<T>) {
+  const release = await acquireStagedWorktreeLock(projectId)
+  try {
+    return await operation()
+  } finally {
+    await release()
+  }
+}
+
+function runExclusiveStagedWorktree<T>(projectId: string, operation: () => Promise<T>): Promise<T> {
+  const previous = stagedWorktreeQueues.get(projectId) ?? Promise.resolve()
+  const next = previous.then(
+    () => runWithProcessStagedWorktreeLock(projectId, operation),
+    () => runWithProcessStagedWorktreeLock(projectId, operation),
+  )
+  const cleanup = next.finally(() => {
+    if (stagedWorktreeQueues.get(projectId) === cleanup) {
+      stagedWorktreeQueues.delete(projectId)
+    }
+  })
+  stagedWorktreeQueues.set(projectId, cleanup)
+  return next
+}
 
 function parseNumStat(output: string) {
   let fileCount = 0
@@ -47,31 +129,84 @@ async function withStagedWorktree<T>(
   projectId: string,
   callback: (context: { env: NodeJS.ProcessEnv; hasHead: boolean; treeOid: string }) => Promise<T>,
 ) {
-  return withTemporaryIndex(projectId, async ({ env, hasHead }) => {
-    await runGitWithOptions(projectId, ['add', '-A', '--', '.'], {
-      env,
-      timeout: 20_000,
-      maxBuffer: 1024 * 1024 * 8,
-    })
+  return runExclusiveStagedWorktree(projectId, () =>
+    withTemporaryIndex(projectId, async ({ env, hasHead }) => {
+      await runGitWithOptions(projectId, ['add', '-A', '--', '.'], {
+        env,
+        timeout: 20_000,
+        maxBuffer: 1024 * 1024 * 8,
+      })
 
-    const { stdout } = await runGitWithOptions(projectId, ['write-tree'], {
-      env,
-      timeout: 20_000,
-      maxBuffer: 1024 * 128,
-    })
+      const { stdout } = await runGitWithOptions(projectId, ['write-tree'], {
+        env,
+        timeout: 20_000,
+        maxBuffer: 1024 * 128,
+      })
 
-    const treeOid = stdout.trim() || (hasHead ? 'HEAD^{tree}' : EMPTY_TREE_OID)
-    return callback({ env, hasHead, treeOid })
-  })
+      const treeOid = stdout.trim() || (hasHead ? 'HEAD^{tree}' : EMPTY_TREE_OID)
+      return callback({ env, hasHead, treeOid })
+    }),
+  )
 }
 
 export async function captureWorktreeTree(projectId: string): Promise<string> {
   return withStagedWorktree(projectId, async ({ treeOid }) => treeOid)
 }
 
-export async function loadWorktreeSnapshot(
+async function loadTrackedWorktreeSnapshot(
   projectId: string,
-  options: { baselineRev?: string | undefined | null | undefined } = {},
+  options: {
+    baselineRev?: string | undefined | null | undefined
+    signal?: AbortSignal | undefined
+    onPatchChunk?: ((chunk: string) => void) | undefined
+  } = {},
+): Promise<WorktreeSnapshot> {
+  return runExclusiveStagedWorktree(projectId, () =>
+    withTemporaryIndex(projectId, async ({ env, hasHead }) => {
+      await runGitWithOptions(projectId, ['add', '-u', '--', '.'], {
+        env,
+        timeout: 20_000,
+        maxBuffer: 1024 * 1024 * 8,
+      })
+
+      const baselineRev = options.baselineRev?.trim() || (hasHead ? 'HEAD' : EMPTY_TREE_OID)
+      const diffArguments = (extraArgs: string[]) => [
+        'diff',
+        '--cached',
+        ...extraArgs,
+        baselineRev,
+        '--',
+      ]
+      const patchPromise = runGitStreamingWithOptions(
+        projectId,
+        diffArguments(['--unified=1', '--no-color', '--no-ext-diff', '--find-renames']),
+        {
+          env,
+          timeout: 20_000,
+          signal: options.signal,
+          onStdoutChunk: options.onPatchChunk ?? (() => undefined),
+        },
+      ).then(({ stdout }) => stdout.trim())
+      const statsPromise = loadWorktreeStats(projectId, {
+        baselineRev,
+        env,
+        hasHead,
+        includeUntracked: false,
+      })
+
+      const [stats, patchOutput] = await Promise.all([statsPromise, patchPromise])
+      return { ...stats, patch: patchOutput }
+    }),
+  )
+}
+
+async function loadStagedWorktreeSnapshot(
+  projectId: string,
+  options: {
+    baselineRev?: string | undefined | null | undefined
+    signal?: AbortSignal | undefined
+    onPatchChunk?: ((chunk: string) => void) | undefined
+  } = {},
 ): Promise<WorktreeSnapshot> {
   return withStagedWorktree(projectId, async ({ env, hasHead }) => {
     const baselineRev = options.baselineRev?.trim() || (hasHead ? 'HEAD' : EMPTY_TREE_OID)
@@ -83,17 +218,23 @@ export async function loadWorktreeSnapshot(
       '--',
     ]
 
-    const patchPromise = runGitWithOptions(
+    const patchPromise = runGitStreamingWithOptions(
       projectId,
       diffArguments(['--unified=1', '--no-color', '--no-ext-diff', '--find-renames']),
       {
         env,
         timeout: 20_000,
-        maxBuffer: 1024 * 1024 * 24,
+        signal: options.signal,
+        onStdoutChunk: options.onPatchChunk ?? (() => undefined),
       },
     ).then(({ stdout }) => stdout.trim())
 
-    const statsPromise = loadWorktreeStats(projectId, { baselineRev, env, hasHead }).catch(() => ({
+    const statsPromise = loadWorktreeStats(projectId, {
+      baselineRev,
+      env,
+      hasHead,
+      includeUntracked: true,
+    }).catch(() => ({
       fileCount: 0,
       insertions: 0,
       deletions: 0,
@@ -111,15 +252,31 @@ export async function loadWorktreeSnapshot(
   })
 }
 
+export async function loadWorktreeSnapshot(
+  projectId: string,
+  options: {
+    baselineRev?: string | undefined | null | undefined
+    includeUntracked?: boolean | undefined
+    signal?: AbortSignal | undefined
+    onPatchChunk?: ((chunk: string) => void) | undefined
+  } = {},
+): Promise<WorktreeSnapshot> {
+  return options.includeUntracked
+    ? loadStagedWorktreeSnapshot(projectId, options)
+    : loadTrackedWorktreeSnapshot(projectId, options)
+}
+
 export async function loadWorktreeStats(
   projectId: string,
   options: {
     baselineRev?: string | undefined | null | undefined
     env?: NodeJS.ProcessEnv
     hasHead?: boolean | undefined
+    includeUntracked?: boolean | undefined
   } = {},
 ): Promise<WorktreeStats> {
   const loadStats = async (context?: {
+    cached?: boolean | undefined
     env?: NodeJS.ProcessEnv
     hasHead?: boolean | undefined
   }) => {
@@ -130,7 +287,7 @@ export async function loadWorktreeStats(
         : options.baselineRev?.trim() || (hasHead ? 'HEAD' : EMPTY_TREE_OID)
     const diffArguments = (extraArgs: string[]) => [
       'diff',
-      '--cached',
+      ...(context?.cached ? ['--cached'] : []),
       ...extraArgs,
       baselineRev,
       '--',
@@ -162,16 +319,26 @@ export async function loadWorktreeStats(
   }
 
   if (options.env) {
-    return loadStats({ env: options.env, hasHead: options.hasHead ?? false })
+    return loadStats({
+      cached: options.includeUntracked,
+      env: options.env,
+      hasHead: options.hasHead ?? false,
+    })
   }
 
-  return withTemporaryIndex(projectId, async ({ env, hasHead }) => {
-    await runGitWithOptions(projectId, ['add', '-A', '--', '.'], {
-      env,
-      timeout: 20_000,
-      maxBuffer: 1024 * 1024 * 8,
-    })
+  return runExclusiveStagedWorktree(projectId, () =>
+    withTemporaryIndex(projectId, async ({ env, hasHead }) => {
+      await runGitWithOptions(
+        projectId,
+        ['add', options.includeUntracked ? '-A' : '-u', '--', '.'],
+        {
+          env,
+          timeout: 20_000,
+          maxBuffer: 1024 * 1024 * 8,
+        },
+      )
 
-    return loadStats({ env, hasHead })
-  })
+      return loadStats({ cached: true, env, hasHead })
+    }),
+  )
 }

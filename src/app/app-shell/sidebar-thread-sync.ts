@@ -1,4 +1,4 @@
-import { isLocalSessionPath } from '../../../shared/session-paths'
+import { getLocalDraftBranchName, isLocalSessionPath } from '@howcode/shared/session-paths'
 import type {
   ChatSidebarState,
   DesktopActionResult,
@@ -6,22 +6,24 @@ import type {
   Thread,
   ThreadData,
 } from '../desktop/types'
+import { forgetLocalDraftThread } from '../hooks/useDesktopProjectThreads'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
 import {
   applyChatThreadToSidebarState,
   removeChatThreadFromSidebarState,
 } from './chat-sidebar-cache'
 import type { ActionPayload } from './controller-action-utils'
-import {
-  buildLocalThreadFallback,
-  getPayloadProjectId,
-  hasActionError,
-} from './controller-action-utils'
+import { getPayloadProjectId, hasActionError } from './controller-action-utils'
 import {
   applyProjectThreadToShellState,
   getDraftReplacementSessionPath,
   removeProjectThreadFromShellState,
 } from './project-thread-cache'
+import {
+  buildLocalThreadFallback,
+  buildOptimisticThread,
+  getInitialThreadBranchName,
+} from './thread-drafts'
 
 type QueryClientLike = Parameters<typeof applyProjectThreadToShellState>[0] & {
   getQueryData?: (queryKey: readonly unknown[]) => unknown
@@ -41,23 +43,6 @@ type OptimisticComposerThreadResult = {
 
 function getContextualChatGroupId(payload: ActionPayload) {
   return typeof payload.chatGroupId === 'string' ? payload.chatGroupId : null
-}
-
-function buildSidebarThread(input: {
-  id: string
-  title: string
-  sessionPath: string
-  running?: boolean
-  lastModifiedMs?: number
-}): Thread {
-  return {
-    id: input.id,
-    title: input.title,
-    age: 'Now',
-    lastModifiedMs: input.lastModifiedMs ?? Date.now(),
-    sessionPath: input.sessionPath,
-    running: input.running,
-  }
 }
 
 function upsertSidebarThread({
@@ -154,12 +139,16 @@ export function applyOptimisticComposerThread({
   }
 
   const chatGroupId = activeView === 'chat' ? getContextualChatGroupId(contextualPayload) : null
-  const localFallback = buildLocalThreadFallback(contextualPayload.projectId, { chatGroupId })
+  const branchName = getInitialThreadBranchName(contextualPayload.branchName)
+  const localFallback = buildLocalThreadFallback(contextualPayload.projectId, {
+    chatGroupId,
+    branchName,
+  })
   const nextPayload = { ...contextualPayload, sessionPath: localFallback.sessionPath }
-  const thread = buildSidebarThread({
+  const thread = buildOptimisticThread({
     id: localFallback.threadId,
-    title: 'New thread',
     sessionPath: localFallback.sessionPath,
+    branchName: getLocalDraftBranchName(localFallback.sessionPath),
     running: true,
   })
 
@@ -269,14 +258,16 @@ export function reconcileComposerThreadResult({
 
   const title = getCachedThreadTitle(queryClient, projectId, resultThreadId, resultSessionPath)
   const replaceSessionPath = isLocalSessionPath(submittedSessionPath) ? submittedSessionPath : null
+  if (replaceSessionPath) forgetLocalDraftThread(projectId, replaceSessionPath)
   upsertSidebarThread({
     queryClient,
     setChatSidebarState,
     projectId,
-    thread: buildSidebarThread({
+    thread: buildOptimisticThread({
       id: resultThreadId,
       title: title ?? 'New thread',
       sessionPath: resultSessionPath,
+      branchName: getLocalDraftBranchName(submittedSessionPath),
     }),
     chatGroupId:
       workspaceState.activeView === 'chat'
@@ -314,21 +305,33 @@ export function applyThreadEventToSidebarState({
   queryClient: QueryClientLike
   setChatSidebarState: SetChatSidebarState
 }) {
-  const replaceSessionPath = getDraftReplacementSessionPath(
-    workspaceState.selectedSessionPath,
-    workspaceState.selectedProjectId,
-    event.projectId,
-  )
   const eventIsChat = event.isChat === true
-  const projectThreadScopeMatchesView = eventIsChat === (workspaceState.activeView === 'chat')
+  const eventReplacementSessionPath =
+    typeof event.replacesSessionPath === 'string' ? event.replacesSessionPath : null
+  const explicitReplacementSessionPath = isLocalSessionPath(eventReplacementSessionPath)
+    ? eventReplacementSessionPath
+    : null
+  const replaceSessionPath =
+    explicitReplacementSessionPath ??
+    (event.reason === 'start'
+      ? getDraftReplacementSessionPath(
+          workspaceState.selectedSessionPath,
+          workspaceState.selectedProjectId,
+          event.projectId,
+        )
+      : null)
+  const projectThreadScopeMatchesView =
+    workspaceState.activeView !== 'inbox' && eventIsChat === (workspaceState.activeView === 'chat')
+  if (replaceSessionPath) forgetLocalDraftThread(event.projectId, replaceSessionPath)
   upsertSidebarThread({
     queryClient,
     setChatSidebarState,
     projectId: event.projectId,
-    thread: buildSidebarThread({
+    thread: buildOptimisticThread({
       id: event.threadId,
       title: event.thread.title,
       sessionPath: event.sessionPath,
+      branchName: event.branchName,
       running: event.thread.isStreaming || event.thread.isCompacting,
     }),
     chatGroupId: event.isChat === true ? event.chatGroupId : undefined,

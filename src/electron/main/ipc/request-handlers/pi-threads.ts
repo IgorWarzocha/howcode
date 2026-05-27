@@ -1,14 +1,17 @@
 import type { DesktopRequestHandlerMap } from '../../../../../shared/desktop-ipc'
+import type { PiThreadsService } from '../../../../../shared/desktop-service-contracts'
 import { getDesktopWorkingDirectory } from '../../../../../shared/desktop-working-directory'
-import type { PiThreadsModule } from '../../runtime/desktop-runtime-contracts'
 
 type PiThreadsRequestHandlers = Pick<
   DesktopRequestHandlerMap,
   | 'getShellState'
   | 'getProjectGitState'
   | 'getProjectUsageSummary'
-  | 'getProjectDiff'
+  | 'getProjectFavicon'
+  | 'startProjectDiffStream'
+  | 'cancelProjectDiffStream'
   | 'getProjectDiffStats'
+  | 'getProjectDiffImagePreview'
   | 'captureProjectDiffBaseline'
   | 'listProjectCommits'
   | 'getComposerState'
@@ -31,19 +34,34 @@ type PiThreadsRequestHandlers = Pick<
   | 'getInboxThreads'
   | 'getArchivedThreads'
   | 'getThread'
+  | 'searchThread'
   | 'watchSession'
   | 'invokeAction'
 >
 
-export function createPiThreadsHandlers(piThreads: PiThreadsModule): PiThreadsRequestHandlers {
+export function createPiThreadsHandlers(
+  piThreads: PiThreadsService,
+  onSettingsChanged?: (() => Promise<void> | void) | undefined,
+): PiThreadsRequestHandlers {
   return {
     getShellState: async () => piThreads.loadShellState(getDesktopWorkingDirectory()),
     getProjectGitState: ({ projectId }) => piThreads.loadProjectGitState(projectId),
     getProjectUsageSummary: ({ projectId }) => piThreads.loadProjectUsageSummary(projectId),
-    getProjectDiff: ({ projectId, baseline }) =>
-      piThreads.loadProjectDiff(projectId, baseline ?? null),
-    getProjectDiffStats: ({ projectId, baseline }) =>
-      piThreads.loadProjectDiffStats(projectId, baseline ?? null),
+    getProjectFavicon: ({ projectId }) => piThreads.loadProjectFavicon(projectId),
+    startProjectDiffStream: ({ projectId, baseline, streamId, includeUntracked }) =>
+      piThreads.startProjectDiffStream(
+        projectId,
+        baseline ?? null,
+        streamId ?? null,
+        includeUntracked ?? false,
+      ),
+    cancelProjectDiffStream: async ({ streamId }) => {
+      await piThreads.cancelProjectDiffStream(streamId)
+      return undefined
+    },
+    getProjectDiffStats: ({ projectId, baseline, includeUntracked }) =>
+      piThreads.loadProjectDiffStats(projectId, baseline ?? null, includeUntracked ?? false),
+    getProjectDiffImagePreview: (request) => piThreads.loadProjectDiffImagePreview(request),
     captureProjectDiffBaseline: ({ projectId }) => piThreads.captureProjectDiffBaseline(projectId),
     listProjectCommits: ({ projectId, limit }) =>
       piThreads.listProjectCommits(projectId, limit ?? null),
@@ -80,6 +98,7 @@ export function createPiThreadsHandlers(piThreads: PiThreadsModule): PiThreadsRe
     getArchivedThreads: () => piThreads.loadArchivedThreadList(),
     getThread: ({ sessionPath, historyCompactions = 0 }) =>
       piThreads.loadThread(sessionPath, { historyCompactions }),
+    searchThread: ({ sessionPath, query }) => piThreads.searchThread(sessionPath, query),
     watchSession: async ({ sessionPath }) => {
       await piThreads.setWatchedSessionPath(sessionPath)
       return { ok: true }
@@ -87,6 +106,17 @@ export function createPiThreadsHandlers(piThreads: PiThreadsModule): PiThreadsRe
     invokeAction: async ({ action, payload = {} }) => {
       try {
         const result = await piThreads.handleDesktopAction(action, payload)
+        if (action === 'settings.update') await onSettingsChanged?.()
+        if (
+          action === 'settings.update' &&
+          payload &&
+          typeof payload === 'object' &&
+          'key' in payload &&
+          payload.key === 'customPiDirectory' &&
+          result?.didMutate
+        ) {
+          await piThreads.disposeDesktopRuntime?.()
+        }
         return {
           ok: true,
           at: new Date().toISOString(),

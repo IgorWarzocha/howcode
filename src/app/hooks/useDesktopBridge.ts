@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react'
 import type { DesktopAction } from '../desktop/actions'
 import { getErrorMessage } from '../desktop/error-messages'
 import type { DesktopActionInvoker, DesktopActionResult } from '../desktop/types'
+import { hasDesktopBridgeQuery, invokeDesktopActionQuery } from '../query/desktop-query'
 
 export const desktopBridgeUnavailableMessage =
   'Desktop bridge is unavailable. Restart the dev server or run `bun run dev` for the full desktop app.'
 
 export function hasDesktopBridge() {
-  return typeof window !== 'undefined' && typeof window.piDesktop?.invokeAction === 'function'
+  return hasDesktopBridgeQuery()
 }
 
 export function useDesktopBridgeAvailable() {
@@ -68,20 +69,20 @@ export function useDesktopBridge() {
       }
     }
 
-    const desktopBridge = window.piDesktop
-    if (!desktopBridge) {
-      return {
-        ok: false,
-        at: new Date().toISOString(),
-        payload: { action, payload },
-        result: {
-          error: desktopBridgeUnavailableMessage,
-        },
-      }
-    }
-
     try {
-      return await desktopBridge.invokeAction(action, payload)
+      const result = await invokeDesktopActionQuery(action, payload)
+      if (!result) {
+        return {
+          ok: false,
+          at: new Date().toISOString(),
+          payload: { action, payload },
+          result: {
+            error: desktopBridgeUnavailableMessage,
+          },
+        }
+      }
+
+      return result
     } catch (error) {
       return {
         ok: false,

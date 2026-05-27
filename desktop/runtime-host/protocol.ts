@@ -17,6 +17,7 @@ import type {
   PiThemeState,
   SkillCreatorSessionState,
   ThreadData,
+  ThreadSearchResult,
 } from '../../shared/desktop-contracts.ts'
 import type { CommitMessageContext } from '../project-git.ts'
 
@@ -31,6 +32,10 @@ export type RuntimeHostRequestMap = {
     sessionPath?: string | undefined | null | undefined
     projectPath?: string | undefined | null | undefined
     chat?: boolean | undefined
+  }
+  disposeRuntimeHosts: {
+    sessionPaths?: string[] | undefined
+    projectPath?: string | undefined | null | undefined
   }
   getPiSessionStorage: {
     projectPath?: string | undefined | null | undefined
@@ -83,6 +88,7 @@ export type RuntimeHostRequestMap = {
     chat?: boolean | undefined
   }
   loadThreadSnapshot: { sessionPath: string; historyCompactions?: number | undefined }
+  searchThreadSnapshot: { sessionPath: string; query: string }
   startSkillCreatorSession: {
     prompt: string
     local?: boolean | undefined
@@ -134,6 +140,7 @@ export type RuntimeHostResponseMap = {
   selectProjectRuntime: ComposerState
   openThreadRuntime: ComposerState
   invalidateRuntimeSettings: { ok: true }
+  disposeRuntimeHosts: { ok: true }
   getPiSessionStorage: { agentDir: string; sessionDir: string }
   loadPiSettings: PiSettings
   loadPiThemeState: PiThemeState
@@ -149,6 +156,7 @@ export type RuntimeHostResponseMap = {
     threadId: string
     thread: ThreadData
   }
+  searchThreadSnapshot: ThreadSearchResult
   startSkillCreatorSession: SkillCreatorSessionState
   continueSkillCreatorSession: SkillCreatorSessionState
   closeSkillCreatorSession: { ok: boolean }

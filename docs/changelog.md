@@ -1,3 +1,38 @@
+### 0.1.66
+
+- Split desktop Pi/runtime work into a stock-Node service so native deps stop fighting Electron.  
+  *Reason being that Pi compiles your extensions against your system Node. Things were getting messy. The app is compiled to work with Node 24, 25 and 26.*
+- Rebuilt the project sidebar into a proper git-oriented work surface.
+- Branches: start sessions, assign/unassign sessions, remove branches.
+- Worktrees: create, start sessions inside them, mark complete, merge/remove.
+- Branches + worktrees: one-click merge/remove completed worktrees.  
+  *Please note some of these actions are irreversible. Safeguards around errors, but if it succeeds, they're gone.*
+- De-cardified a lot of the UI: quieter chat/tool rows, composer popovers, Skills/Extensions, Settings, Inbox, artifacts, and GitOps diffs.
+- Project dashboard is now it's separate thing, not connected to starting a session anymore.
+- Split up app shell, composer, terminal, GitOps, inbox, settings, artifacts, and runtime-host code.
+- Added cleaner app module boundaries with `@howcode/*` aliases and native capability folders. First step to pluginisation of the app.
+- Upgraded GitOps diffs to use Pierre's streamed CodeView renderer.
+- GitOps now shows image previews.
+- Made GitOps diffs less likely to freeze the UI.
+- Added configurable app keybindings. More coming soon™
+- Added custom Pi directory settings.
+- Added thread find and result highlights.
+- Updated dependencies.
+- Edit tool now displays diffs.
+- Sidebar fold/unfold button placement moved around.
+- Fixed packaged macOS terminal startup (thank you, BlockedPath).
+- Fixed dev-channel updater checks getting stuck on stale archives.
+- Fixed same-version update hash checks.
+- Fixed new project threads vanishing during refreshes.
+- Fixed code landing/project dashboard routing.
+- Fixed empty dashboard threads piling up.
+- Fixed Pi TUI new-thread sidebar handoff.
+- Cleaned up sidebar popovers and project-work styling.
+- Quieted missing-session noise and checkbox jumps.
+- Fixed extension summaries locking the composer.
+
+Snapshot: May 19, 2026.
+
 ### 0.1.65
 
 - Added sidebar project search.

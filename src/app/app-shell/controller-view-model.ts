@@ -3,6 +3,8 @@ import type { WorkspaceState } from '../state/workspace'
 import { getCurrentTitle, getProjectName, selectProject, selectThread } from '../state/workspace'
 import type { Project, Thread } from '../types'
 
+const pathSeparatorPattern = /[\\/]/
+
 type DeriveControllerViewModelInput = {
   projects: Project[]
   workspaceState: WorkspaceState
@@ -37,6 +39,23 @@ function buildFallbackThreadData(
   }
 }
 
+function getSelectedProjectName(project: Project | undefined, selectedProjectId: string) {
+  if (project) return getProjectName(project)
+  const pathParts = selectedProjectId.split(pathSeparatorPattern).filter(Boolean)
+  return pathParts.at(-1) ?? getProjectName(undefined)
+}
+
+function getComposerProjectId(input: {
+  selectedProject: Project | undefined
+  selectedProjectId: string
+  hasSelectedProject: boolean
+  shellCwd: string | null | undefined
+}) {
+  if (input.selectedProject) return input.selectedProject.id
+  if (input.hasSelectedProject && input.selectedProjectId) return input.selectedProjectId
+  return input.shellCwd ?? ''
+}
+
 export function deriveControllerViewModel({
   projects,
   workspaceState,
@@ -66,8 +85,17 @@ export function deriveControllerViewModel({
       workspaceState.activeView === 'chat' || workspaceState.activeView === 'thread'
         ? (activeThreadData?.title ?? selectedThread?.title ?? 'New thread')
         : getCurrentTitle(workspaceState.activeView, selectedThread),
-    currentProjectName: getProjectName(selectedProject),
-    composerProjectId: selectedProject?.id ?? shellCwd ?? '',
+    currentProjectName: getSelectedProjectName(selectedProject, workspaceState.selectedProjectId),
+    // Keep sidebar selection strict, but never let composer/runtime actions fall back
+    // to the app shell cwd while the user has a selected project. The project list can
+    // be briefly stale around project creation/new-thread transitions; the workspace
+    // selection is still the intended runtime cwd.
+    composerProjectId: getComposerProjectId({
+      selectedProject,
+      selectedProjectId: workspaceState.selectedProjectId,
+      hasSelectedProject: workspaceState.hasSelectedProject,
+      shellCwd,
+    }),
     activeComposerState: composerState ?? shellComposerState ?? null,
   }
 }

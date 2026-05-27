@@ -20,6 +20,7 @@ export {
 export { handleDesktopAction } from './pi-threads/action-router.ts'
 export { loadProjectUsageSummary } from './pi-threads/project-usage-summary.ts'
 export {
+  cancelProjectDiffStream,
   captureProjectDiffBaseline,
   disposeDesktopRuntime,
   getDictationState,
@@ -29,12 +30,13 @@ export {
   loadComposerSkills,
   loadComposerSlashCommands,
   loadComposerState,
-  loadProjectDiff,
+  loadProjectDiffImagePreview,
   loadProjectDiffStats,
   loadProjectGitState,
   loadShellState,
   removeDictationModel,
   setWatchedSessionPath,
+  startProjectDiffStream,
   subscribeDesktopEvents,
   transcribeDictation,
 } from './pi-threads/shell-loader.ts'
@@ -43,4 +45,6 @@ export {
   loadInboxThreadList,
   loadProjectThreads,
   loadThread,
+  searchThread,
 } from './pi-threads/thread-loader.ts'
+export { loadProjectFavicon } from './project-favicon.ts'

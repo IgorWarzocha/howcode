@@ -87,6 +87,7 @@ export type ComposerStateRequest = {
   composerStreamingBehavior?: ComposerStreamingBehavior | null | undefined
   composerSessionDir?: string | undefined | null | undefined
   chatGroupId?: string | undefined | null | undefined
+  branchName?: string | undefined | null | undefined
 }
 
 export type ComposerSlashCommandSource = 'app' | 'builtin' | 'extension' | 'prompt' | 'skill'

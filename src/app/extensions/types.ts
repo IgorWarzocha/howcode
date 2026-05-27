@@ -1,0 +1,15 @@
+export type ExtensionsViewProps = {
+  projectPath: string | null
+  onSetProjectScopeActive: (active: boolean) => void
+  onProjectTargetSelected?: (() => void) | undefined
+  onClose: () => void
+}
+
+export type InstallScope = 'global' | 'project' | 'chat'
+
+export type ManualSourceKind = 'npm' | 'git'
+
+export type PendingAction = {
+  kind: 'install' | 'remove'
+  source: string
+}

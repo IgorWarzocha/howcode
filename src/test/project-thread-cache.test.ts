@@ -110,6 +110,110 @@ describe('project thread shell cache helpers', () => {
     ])
   })
 
+  it('preserves an assigned branch when live updates omit branch metadata', () => {
+    const shellState = createShellState()
+    shellState.projects[0] = {
+      ...shellState.projects[0]!,
+      threadsLoaded: true,
+      threads: [
+        {
+          id: 'thread-1',
+          title: 'New thread',
+          age: 'Now',
+          sessionPath: '/sessions/thread-1.jsonl',
+          branchName: 'feature/sidebar',
+        },
+      ],
+      threadCount: 1,
+    }
+    const { queryClient, getState } = createQueryClient(shellState)
+
+    applyProjectThreadToShellState(queryClient, '/repo/project-a', {
+      id: 'thread-1',
+      title: 'Updated title',
+      age: 'Now',
+      lastModifiedMs: 300,
+      sessionPath: '/sessions/thread-1.jsonl',
+      running: true,
+    })
+
+    expect(getState()?.projects[0]?.threads[0]).toMatchObject({
+      id: 'thread-1',
+      title: 'Updated title',
+      branchName: 'feature/sidebar',
+      running: true,
+    })
+  })
+
+  it('preserves an assigned branch when live updates carry branchName as undefined', () => {
+    const shellState = createShellState()
+    shellState.projects[0] = {
+      ...shellState.projects[0]!,
+      threadsLoaded: true,
+      threads: [
+        {
+          id: 'thread-1',
+          title: 'New thread',
+          age: 'Now',
+          sessionPath: '/sessions/thread-1.jsonl',
+          branchName: 'dev',
+        },
+      ],
+      threadCount: 1,
+    }
+    const { queryClient, getState } = createQueryClient(shellState)
+
+    applyProjectThreadToShellState(queryClient, '/repo/project-a', {
+      id: 'thread-1',
+      title: 'Still running',
+      age: 'Now',
+      lastModifiedMs: 300,
+      sessionPath: '/sessions/thread-1.jsonl',
+      branchName: undefined,
+      running: true,
+    })
+
+    expect(getState()?.projects[0]?.threads[0]).toMatchObject({
+      id: 'thread-1',
+      title: 'Still running',
+      branchName: 'dev',
+      running: true,
+    })
+  })
+
+  it('clears an assigned branch only when the update is explicit', () => {
+    const shellState = createShellState()
+    shellState.projects[0] = {
+      ...shellState.projects[0]!,
+      threadsLoaded: true,
+      threads: [
+        {
+          id: 'thread-1',
+          title: 'New thread',
+          age: 'Now',
+          sessionPath: '/sessions/thread-1.jsonl',
+          branchName: 'dev',
+        },
+      ],
+      threadCount: 1,
+    }
+    const { queryClient, getState } = createQueryClient(shellState)
+
+    applyProjectThreadToShellState(queryClient, '/repo/project-a', {
+      id: 'thread-1',
+      title: 'Unassigned now',
+      age: 'Now',
+      sessionPath: '/sessions/thread-1.jsonl',
+      branchName: null,
+    })
+
+    expect(getState()?.projects[0]?.threads[0]).toMatchObject({
+      id: 'thread-1',
+      title: 'Unassigned now',
+      branchName: null,
+    })
+  })
+
   it('removes failed local drafts from the project thread cache', () => {
     const shellState = createShellState()
     shellState.projects[0] = {

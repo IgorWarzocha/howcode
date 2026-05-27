@@ -11,11 +11,13 @@ import type {
   DesktopActionInvoker,
   DesktopActionResult,
   ProjectGitState,
+  ShellState,
   ThreadData,
 } from '../desktop/types'
 import { checkAppUpdateQuery } from '../query/desktop-query'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
 import type { View } from '../types'
+import { guardBranchResume } from './branch-resume-guard'
 import { buildContextualActionPayload } from './controller-action-helpers'
 import {
   applyOptimisticPinUpdate,
@@ -24,6 +26,7 @@ import {
   applyOptimisticSettingsUpdate,
   runPostDesktopActionEffects,
 } from './controller-post-action-effects'
+import { applySwitchBranchPostEffect } from './post-effects/workspace'
 import {
   applyOptimisticComposerThread,
   removeFailedOptimisticComposerThread,
@@ -43,9 +46,13 @@ type UseDesktopActionHandlersArgs = {
     composerMode?: 'chat' | 'code' | null
   }) => Promise<ComposerState | null>
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
-  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
+  loadProjectThreads: (
+    projectId: string,
+    options?: { chat?: boolean; replaceLocalDraftSessionPath?: string | null },
+  ) => Promise<unknown>
   refreshShellState: () => Promise<unknown>
   selectedSessionPath: string | null
+  shellState: ShellState | null
   setArchivedThreads: Dispatch<SetStateAction<ArchivedThread[]>>
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>
   setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>
@@ -75,8 +82,72 @@ function shouldShowGlobalActionError(action: DesktopAction) {
     action === 'composer.stop' ||
     action === 'workspace.commit' ||
     action === 'workspace.commit-options' ||
-    action === 'workspace.diff-preferences'
+    action === 'workspace.diff-preferences' ||
+    action === 'workspace.switch-branch' ||
+    action === 'workspace.merge-worktree' ||
+    action === 'workspace.merge-completed-worktrees'
   )
+}
+
+async function prepareDesktopActionPayload(input: {
+  action: DesktopAction
+  activeView: View
+  composerProjectId: string
+  dispatch: Dispatch<WorkspaceAction>
+  invokeDesktopAction: DesktopActionInvoker
+  loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
+  loadProjectThreads: (
+    projectId: string,
+    options?: { chat?: boolean; replaceLocalDraftSessionPath?: string | null },
+  ) => Promise<unknown>
+  payload: ActionPayload
+  queryClient: ReturnType<typeof useQueryClient>
+  selectedSessionPath: string | null
+  setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>
+  setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>
+  setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>
+  shellState: ShellState | null
+}): Promise<
+  | { blockedResult: DesktopActionResult; contextualPayload?: never }
+  | { blockedResult?: never; contextualPayload: ActionPayload }
+> {
+  const initialContextualPayload = buildContextualActionPayload({
+    action: input.action,
+    payload: input.payload,
+    composerProjectId: input.composerProjectId,
+    activeView: input.activeView,
+    selectedSessionPath: input.selectedSessionPath,
+  })
+
+  if (input.action === 'composer.send' || input.action === 'thread.open') {
+    const blockedResult = await guardBranchResume({
+      action: input.action,
+      invokeDesktopAction: input.invokeDesktopAction,
+      loadProjectGitState: input.loadProjectGitState,
+      payload: initialContextualPayload,
+      shellState: input.shellState,
+      onSwitchBranchSuccess: (switchPayload) =>
+        applySwitchBranchPostEffect({
+          contextualPayload: switchPayload,
+          queryClient: input.queryClient,
+          loadProjectGitState: input.loadProjectGitState,
+          loadProjectThreads: input.loadProjectThreads,
+          setProjectGitState: input.setProjectGitState,
+        }),
+    })
+    if (blockedResult) return { blockedResult }
+  }
+
+  if (input.action !== 'composer.send') return { contextualPayload: initialContextualPayload }
+
+  return applyOptimisticComposerThread({
+    activeView: input.activeView,
+    contextualPayload: initialContextualPayload,
+    queryClient: input.queryClient,
+    dispatch: input.dispatch,
+    setChatSidebarState: input.setChatSidebarState,
+    setLiveThreadData: input.setLiveThreadData,
+  })
 }
 
 export function useDesktopActionHandlers({
@@ -90,6 +161,7 @@ export function useDesktopActionHandlers({
   loadProjectThreads,
   refreshShellState,
   selectedSessionPath,
+  shellState,
   setArchivedThreads,
   setComposerState,
   setChatSidebarState,
@@ -105,26 +177,24 @@ export function useDesktopActionHandlers({
       action: DesktopAction,
       payload: ActionPayload = {},
     ): Promise<DesktopActionResult | null> => {
-      // Build the renderer-context payload first so optimistic UI and desktop writes
-      // operate against the same project/session selection.
-      const initialContextualPayload = buildContextualActionPayload({
+      const preparedPayload = await prepareDesktopActionPayload({
         action,
-        payload,
-        composerProjectId,
         activeView,
+        composerProjectId,
+        dispatch,
+        invokeDesktopAction,
+        loadProjectGitState,
+        loadProjectThreads,
+        payload,
+        queryClient,
         selectedSessionPath,
+        setProjectGitState,
+        setChatSidebarState,
+        setLiveThreadData,
+        shellState,
       })
-      const { contextualPayload } =
-        action === 'composer.send'
-          ? applyOptimisticComposerThread({
-              activeView,
-              contextualPayload: initialContextualPayload,
-              queryClient,
-              dispatch,
-              setChatSidebarState,
-              setLiveThreadData,
-            })
-          : { contextualPayload: initialContextualPayload }
+      if (preparedPayload.blockedResult) return preparedPayload.blockedResult
+      const { contextualPayload } = preparedPayload
 
       let actionResult: DesktopActionResult | null
       try {
@@ -188,6 +258,7 @@ export function useDesktopActionHandlers({
       loadProjectThreads,
       refreshShellState,
       selectedSessionPath,
+      shellState,
       setArchivedThreads,
       setComposerState,
       setChatSidebarState,

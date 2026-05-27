@@ -1,9 +1,10 @@
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core'
-import { ChevronDown, ChevronRight, Folder, Github, MoreHorizontal, Plus, Star } from 'lucide-react'
+import { GitHubInvertocatMark } from '@howcode/common/github-invertocat-mark'
+import { Tooltip } from '@howcode/common/tooltip'
+import { ChevronDown, ChevronRight, Folder, MoreHorizontal, Plus, Star } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { compactIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { Tooltip } from '../../common/tooltip'
 
 type ProjectRowProps = {
   actionMenuId: string
@@ -259,7 +260,10 @@ export function ProjectRow({
           disabled={!canToggleExpanded}
         >
           {hasRepoOrigin ? (
-            <Github size={12} className="sidebar-project-icon sidebar-project-origin-icon" />
+            <GitHubInvertocatMark
+              size={12}
+              className="sidebar-project-icon sidebar-project-origin-icon"
+            />
           ) : (
             <Folder size={12} className="sidebar-project-icon sidebar-project-origin-icon" />
           )}

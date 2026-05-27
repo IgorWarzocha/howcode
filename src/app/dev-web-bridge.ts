@@ -1,16 +1,16 @@
-import type { DesktopAction } from '../../shared/desktop-actions'
+import type { DesktopAction } from '@howcode/shared/desktop-actions'
 import type {
   AnyDesktopActionPayload,
   ComposerAttachment,
   DesktopEvent,
-} from '../../shared/desktop-contracts'
+} from '@howcode/shared/desktop-contracts'
 import type {
   DesktopEventChannel,
   DesktopEventMap,
   DesktopRequestChannel,
   DesktopRequestMap,
-} from '../../shared/desktop-ipc'
-import type { TerminalEvent, TerminalOpenRequest } from '../../shared/terminal-contracts'
+} from '@howcode/shared/desktop-ipc'
+import type { TerminalEvent, TerminalOpenRequest } from '@howcode/shared/terminal-contracts'
 
 let bridgeTokenPromise: Promise<string> | null = null
 
@@ -118,10 +118,19 @@ export function installDevWebDesktopBridge() {
     getProjectGitState: (projectId: string) => invokeRequest('getProjectGitState', { projectId }),
     getProjectUsageSummary: (projectId: string) =>
       invokeRequest('getProjectUsageSummary', { projectId }),
-    getProjectDiff: (projectId: string, baseline = null) =>
-      invokeRequest('getProjectDiff', { projectId, baseline }),
-    getProjectDiffStats: (projectId: string, baseline = null) =>
-      invokeRequest('getProjectDiffStats', { projectId, baseline }),
+    getProjectFavicon: (projectId: string) => invokeRequest('getProjectFavicon', { projectId }),
+    startProjectDiffStream: (
+      projectId: string,
+      baseline = null,
+      streamId: string | null = null,
+      includeUntracked = false,
+    ) =>
+      invokeRequest('startProjectDiffStream', { projectId, baseline, streamId, includeUntracked }),
+    cancelProjectDiffStream: (streamId: string) =>
+      invokeRequest('cancelProjectDiffStream', { streamId }),
+    getProjectDiffStats: (projectId: string, baseline = null, includeUntracked = false) =>
+      invokeRequest('getProjectDiffStats', { projectId, baseline, includeUntracked }),
+    getProjectDiffImagePreview: (request) => invokeRequest('getProjectDiffImagePreview', request),
     captureProjectDiffBaseline: (projectId: string) =>
       invokeRequest('captureProjectDiffBaseline', { projectId }),
     listProjectCommits: (projectId: string, limit: number | null = null) =>
@@ -185,6 +194,8 @@ export function installDevWebDesktopBridge() {
     getArchivedThreads: () => invokeRequest('getArchivedThreads', {}),
     getThread: (sessionPath: string, historyCompactions = 0) =>
       invokeRequest('getThread', { sessionPath, historyCompactions }),
+    searchThread: (sessionPath: string, query: string) =>
+      invokeRequest('searchThread', { sessionPath, query }),
     watchSession: async (sessionPath: string | null) => {
       await invokeRequest('watchSession', { sessionPath })
     },

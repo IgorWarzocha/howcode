@@ -9,7 +9,9 @@ import {
   chatThinkingLevelKey,
   codeModelKey,
   codeThinkingLevelKey,
+  composerSendModeKey,
   composerStreamingBehaviorKey,
+  customPiDirectoryKey,
   devUpdateBranchKey,
   dictationMaxDurationSecondsKey,
   dictationModelIdKey,
@@ -18,18 +20,23 @@ import {
   gitCommitMessageThinkingLevelKey,
   gitDiffBaselineDefaultKey,
   gitDiffFileTreeDefaultVisibleKey,
+  gitDiffIncludeUntrackedDefaultKey,
   gitDiffRenderModeDefaultKey,
   gitOpsDefaultModeKey,
+  hideSidebarSessionCountsKey,
   hoverToBlurKey,
   hoverToFocusKey,
   howcodeNativeAskQuestionsKey,
   initializeGitOnProjectCreateKey,
+  keybindingsKey,
   legacyDevUpdateBranchKey,
   piTuiTakeoverKey,
   preferredProjectLocationKey,
+  projectDashboardEnabledKey,
   projectDeletionModeKey,
   projectImportStateKey,
   showDictationButtonKey,
+  sidebarVisibleProjectIdsKey,
   skillCreatorModelKey,
   skillCreatorThinkingLevelKey,
   useAgentsSkillsPathsKey,
@@ -37,12 +44,14 @@ import {
 import {
   type PreferenceRow,
   parseBooleanPreference,
+  parseComposerSendModePreference,
   parseComposerStreamingBehaviorPreference,
   parseDictationModelIdPreference,
   parseFavoriteFolders,
   parseGitDiffBaselineDefaultPreference,
   parseGitDiffRenderModePreference,
   parseGitOpsModePreference,
+  parseKeybindingOverrides,
   parseModelSelection,
   parseNumberPreference,
   parseProjectDeletionModePreference,
@@ -78,6 +87,28 @@ function getDevUpdateBranchValue(value: (key: string) => string | undefined) {
   return value(devUpdateBranchKey) ?? value(legacyDevUpdateBranchKey)
 }
 
+function loadKeybindingSettings(value: (key: string) => string | undefined) {
+  return {
+    keybindings: parseKeybindingOverrides(value(keybindingsKey)),
+    composerSendMode: parseComposerSendModePreference(value(composerSendModeKey)) ?? 'enter',
+  }
+}
+
+export function loadSidebarVisibleProjectIds(): string[] | null {
+  const rows = loadPreferenceRows()
+  const valueJson = rows.get(sidebarVisibleProjectIdsKey)?.valueJson
+  return valueJson === undefined ? null : parseFavoriteFolders(valueJson)
+}
+
+function loadProjectUiSettings(value: (key: string) => string | undefined) {
+  return {
+    initializeGitOnProjectCreate:
+      parseBooleanPreference(value(initializeGitOnProjectCreateKey)) ?? false,
+    projectDashboardEnabled: parseBooleanPreference(value(projectDashboardEnabledKey)) ?? true,
+    hideSidebarSessionCounts: parseBooleanPreference(value(hideSidebarSessionCountsKey)) ?? false,
+  }
+}
+
 export function loadAppSettings(): AppSettings {
   const rows = loadPreferenceRows()
   const value = (key: string) => rows.get(key)?.valueJson
@@ -103,8 +134,8 @@ export function loadAppSettings(): AppSettings {
     favoriteFolders: parseFavoriteFolders(value(favoriteFoldersKey)),
     projectImportState: parseBooleanPreference(value(projectImportStateKey)),
     preferredProjectLocation: parseStringPreference(value(preferredProjectLocationKey)),
-    initializeGitOnProjectCreate:
-      parseBooleanPreference(value(initializeGitOnProjectCreateKey)) ?? false,
+    customPiDirectory: parseStringPreference(value(customPiDirectoryKey)),
+    ...loadProjectUiSettings(value),
     gitOpsDefaultMode: parseGitOpsModePreference(value(gitOpsDefaultModeKey)) ?? 'commit',
     gitDiffBaselineDefault: parseGitDiffBaselineDefaultPreference(
       value(gitDiffBaselineDefaultKey),
@@ -113,6 +144,8 @@ export function loadAppSettings(): AppSettings {
       parseGitDiffRenderModePreference(value(gitDiffRenderModeDefaultKey)) ?? 'stacked',
     gitDiffFileTreeDefaultVisible:
       parseBooleanPreference(value(gitDiffFileTreeDefaultVisibleKey)) ?? true,
+    gitDiffIncludeUntrackedDefault:
+      parseBooleanPreference(value(gitDiffIncludeUntrackedDefaultKey)) ?? false,
     projectDeletionMode:
       parseProjectDeletionModePreference(value(projectDeletionModeKey)) ?? 'pi-only',
     useAgentsSkillsPaths: parseBooleanPreference(value(useAgentsSkillsPathsKey)) ?? false,
@@ -121,5 +154,6 @@ export function loadAppSettings(): AppSettings {
     piTuiTakeover: parseBooleanPreference(value(piTuiTakeoverKey)) ?? false,
     hoverToFocus: parseBooleanPreference(value(hoverToFocusKey)) ?? true,
     hoverToBlur: parseBooleanPreference(value(hoverToBlurKey)) ?? false,
+    ...loadKeybindingSettings(value),
   }
 }

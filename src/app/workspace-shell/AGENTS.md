@@ -1,0 +1,5 @@
+# Workspace shell guidance
+
+- Workspace shell owns docks, shared workspace footer primitives, and host wrappers that compose native modules.
+- Capability implementations belong in their modules, e.g. `@howcode/native-terminal` and `@howcode/native-gitops`.
+- Composer/footer responsiveness belongs in `WorkspaceComposerDock`; do not patch fold/sidebar spacing separately in code/chat views.

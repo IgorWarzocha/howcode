@@ -30,6 +30,16 @@ Choose the lightest mechanism that keeps the work safe and comprehensible. Prefe
 - Goal: find places where invalid states are representable or types drift across layers
 - Output: candidate fixes using derived types, discriminated unions, or domain/branded types
 
+### Discovery E: Scope + Centralization Pressure
+- Scope: recent feature growth, root app/controller size, global dispatch handlers, route/action registries, async/background task wiring, feature flags/config bloat
+- Goal: find places where low-friction feature additions are accumulating hidden architectural debt or widening product scope
+- Output: centralization hotspots, feature-local ownership candidates, explicit defer/keep recommendations for scope-expanding work
+
+### Discovery F: Positional Data + Lifecycle Drift
+- Scope: arrays/tuples/parallel arrays used as domain data, magic indexes, flattened rows, scattered state resets, nullable lifecycle flags
+- Goal: identify implicit contracts and unmodeled transitions that confuse agents and invite off-by-one or stale-state bugs
+- Output: candidates for named domain objects, discriminated lifecycle states, typed messages/events, or owned reducers
+
 ## Implementation Lane Templates
 
 ### Lane A: Quality Gates
@@ -61,6 +71,16 @@ Choose the lightest mechanism that keeps the work safe and comprehensible. Prefe
 - Scope: domain types, schemas, API/client contracts, event payloads, ambiguous function signatures
 - Goal: reduce invalid states, duplicated types, unsafe casts, ambiguous positional args, and boundary drift
 - Typical files: schemas, DB models, API handlers, client contracts, domain types
+
+### Lane G: State Ownership + Extension Points
+- Scope: root app/controller dispatch, input/action handlers, async task messages, render/view boundaries
+- Goal: move feature-specific branches and state into feature-owned modules while keeping central paths as typed routers/registries
+- Typical files: app/router/controller entrypoints, feature action modules, reducers/state machines, message/event types
+
+### Lane H: Scope Guardrails
+- Scope: architecture invariants, feature acceptance criteria, extension-point rules, minimal product map
+- Goal: prevent “easy” features from becoming accidental scope creep or central-handler bloat
+- Typical outputs: concise invariant comments, one lane-map section, checklists in existing docs; avoid new broad prose docs
 
 ## Stabilization Lane Template
 - Scope: merge conflicts, full repo checks, breakages introduced by prior lanes

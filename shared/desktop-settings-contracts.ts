@@ -9,6 +9,7 @@ import type {
   ProjectDiffRenderMode,
 } from './desktop-project-git-contracts'
 import type { Project } from './desktop-thread-contracts'
+import type { ComposerSendMode, KeybindingOverrides } from './keybindings'
 
 export type ModelSelection = {
   provider: string
@@ -34,18 +35,24 @@ export type AppSettings = {
   favoriteFolders: string[]
   projectImportState: boolean | null
   preferredProjectLocation: string | null
+  customPiDirectory: string | null
   initializeGitOnProjectCreate: boolean
+  projectDashboardEnabled: boolean
   gitOpsDefaultMode: GitOpsMode
   gitDiffBaselineDefault: ProjectDiffDefaultBaseline
   gitDiffRenderModeDefault: ProjectDiffRenderMode
   gitDiffFileTreeDefaultVisible: boolean
+  gitDiffIncludeUntrackedDefault: boolean
   projectDeletionMode: ProjectDeletionMode
   useAgentsSkillsPaths: boolean
   howcodeNativeAskQuestions: boolean
   devUpdateBranch: boolean
   piTuiTakeover: boolean
+  hideSidebarSessionCounts: boolean
   hoverToFocus: boolean
   hoverToBlur: boolean
+  keybindings: KeybindingOverrides
+  composerSendMode: ComposerSendMode
 }
 
 export type PiTransportMode = 'sse' | 'websocket' | 'auto'
@@ -124,6 +131,7 @@ export type ShellState = {
   agentDir: string
   sessionDir: string
   projects: Project[]
+  sidebarVisibleProjectIds: string[] | null
   appSettings: AppSettings
   piSettings: PiSettings
   piTheme: PiThemeState

@@ -13,7 +13,7 @@ import type {
   ProjectDiffDefaultBaseline,
   ProjectDiffRenderMode,
 } from './desktop-contracts'
-import { getPersistedSessionPath } from './session-paths'
+import { getLocalDraftBranchName, getPersistedSessionPath } from './session-paths'
 
 const composerThinkingLevels = new Set<ComposerThinkingLevel>([
   'off',
@@ -35,6 +35,12 @@ export function getComposerRequest(payload: DesktopActionPayloadInput): Composer
         ? payload.composerMode
         : null,
     chatGroupId: typeof payload.chatGroupId === 'string' ? payload.chatGroupId : null,
+    branchName:
+      typeof payload.branchName === 'string'
+        ? payload.branchName
+        : getLocalDraftBranchName(
+            typeof payload.sessionPath === 'string' ? payload.sessionPath : null,
+          ),
   }
 }
 
@@ -56,6 +62,43 @@ export function getThreadIds(payload: DesktopActionPayloadInput) {
         (threadId: unknown): threadId is string => typeof threadId === 'string',
       )
     : []
+}
+
+export function getBranchName(payload: DesktopActionPayloadInput) {
+  const branchName = typeof payload.branchName === 'string' ? payload.branchName.trim() : ''
+  return branchName.length > 0 ? branchName : null
+}
+
+export function getWorktreeDirectory(payload: DesktopActionPayloadInput) {
+  const worktreeDirectory =
+    typeof payload.worktreeDirectory === 'string' ? payload.worktreeDirectory.trim() : ''
+  return worktreeDirectory.length > 0 ? worktreeDirectory : null
+}
+
+export function getWorktreePath(payload: DesktopActionPayloadInput) {
+  const worktreePath = typeof payload.worktreePath === 'string' ? payload.worktreePath.trim() : ''
+  return worktreePath.length > 0 ? worktreePath : null
+}
+
+export type WorktreeActionTarget = {
+  worktreePath: string
+  branchName: string | null
+}
+
+export function getWorktreeActionTargets(
+  payload: DesktopActionPayloadInput,
+): WorktreeActionTarget[] {
+  if (!Array.isArray(payload.worktrees)) return []
+
+  return payload.worktrees.flatMap((target): WorktreeActionTarget[] => {
+    if (typeof target !== 'object' || target === null) return []
+    const candidate = target as { worktreePath?: unknown; branchName?: unknown }
+    const worktreePath =
+      typeof candidate.worktreePath === 'string' ? candidate.worktreePath.trim() : ''
+    if (!worktreePath) return []
+    const branchName = typeof candidate.branchName === 'string' ? candidate.branchName.trim() : ''
+    return [{ worktreePath, branchName: branchName || null }]
+  })
 }
 
 export function getProjectName(payload: DesktopActionPayloadInput) {
@@ -147,6 +190,10 @@ export function getGitCommitMessage(payload: DesktopActionPayloadInput) {
 
 export function getGitIncludeUnstaged(payload: DesktopActionPayloadInput) {
   return typeof payload.includeUnstaged === 'boolean' ? payload.includeUnstaged : true
+}
+
+export function getGitIncludeUntracked(payload: DesktopActionPayloadInput) {
+  return typeof payload.includeUntracked === 'boolean' ? payload.includeUntracked : false
 }
 
 export function getGitPush(payload: DesktopActionPayloadInput) {
@@ -265,19 +312,25 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === 'favoriteFolders' ||
     payload.key === 'projectImportState' ||
     payload.key === 'preferredProjectLocation' ||
+    payload.key === 'customPiDirectory' ||
     payload.key === 'initializeGitOnProjectCreate' ||
+    payload.key === 'projectDashboardEnabled' ||
     payload.key === 'gitOpsDefaultMode' ||
     payload.key === 'gitDiffBaselineDefault' ||
     payload.key === 'gitDiffRenderModeDefault' ||
     payload.key === 'gitDiffFileTreeDefaultVisible' ||
+    payload.key === 'gitDiffIncludeUntrackedDefault' ||
     payload.key === 'projectDeletionMode' ||
     payload.key === 'useAgentsSkillsPaths' ||
     payload.key === 'howcodeNativeAskQuestions' ||
     payload.key === 'devUpdateBranch' ||
     payload.key === 'betaUpdateBranch' ||
     payload.key === 'piTuiTakeover' ||
+    payload.key === 'hideSidebarSessionCounts' ||
     payload.key === 'hoverToFocus' ||
-    payload.key === 'hoverToBlur'
+    payload.key === 'hoverToBlur' ||
+    payload.key === 'keybindings' ||
+    payload.key === 'composerSendMode'
     ? (payload.key as keyof AppSettings)
     : null
 }

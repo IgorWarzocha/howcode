@@ -1,6 +1,7 @@
 import { type PointerEvent, type RefObject, useCallback, useEffect } from 'react'
 
 const DEFAULT_HOVER_TOLERANCE_PX = 20
+const EMPTY_BOUNDARY_REFS: readonly RefObject<HTMLElement | null>[] = []
 
 function isPointInsideRectWithTolerance({
   clientX,
@@ -30,6 +31,7 @@ export function useHoverToFocus<T extends HTMLElement>({
   blurOnLeave = false,
   tolerancePx = DEFAULT_HOVER_TOLERANCE_PX,
   isFocused,
+  extraBoundaryRefs = EMPTY_BOUNDARY_REFS,
 }: {
   enabled: boolean
   boundaryRef?: RefObject<HTMLElement | null>
@@ -39,6 +41,7 @@ export function useHoverToFocus<T extends HTMLElement>({
   blurOnLeave?: boolean
   tolerancePx?: number
   isFocused?: () => boolean
+  extraBoundaryRefs?: readonly RefObject<HTMLElement | null>[]
 }) {
   const ownsFocus = useCallback(() => {
     if (isFocused) {
@@ -75,12 +78,16 @@ export function useHoverToFocus<T extends HTMLElement>({
         return
       }
 
-      const inside = isPointInsideRectWithTolerance({
-        clientX: event.clientX,
-        clientY: event.clientY,
-        rect: boundary.getBoundingClientRect(),
-        tolerancePx,
-      })
+      const inside = [boundary, ...extraBoundaryRefs.map((ref) => ref.current)].some((element) =>
+        element
+          ? isPointInsideRectWithTolerance({
+              clientX: event.clientX,
+              clientY: event.clientY,
+              rect: element.getBoundingClientRect(),
+              tolerancePx,
+            })
+          : false,
+      )
 
       if (inside) {
         focusIfNeeded()
@@ -92,7 +99,7 @@ export function useHoverToFocus<T extends HTMLElement>({
 
     window.addEventListener('pointermove', handlePointerMove, { passive: true })
     return () => window.removeEventListener('pointermove', handlePointerMove)
-  }, [blurIfNeeded, boundaryRef, enabled, focusIfNeeded, targetRef, tolerancePx])
+  }, [blurIfNeeded, boundaryRef, enabled, extraBoundaryRefs, focusIfNeeded, targetRef, tolerancePx])
 
   return useCallback(
     (event: PointerEvent<HTMLElement>) => {

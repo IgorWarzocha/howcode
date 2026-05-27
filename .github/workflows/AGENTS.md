@@ -1,4 +1,4 @@
-- Pages deploys from `main` only. Do not suggest adding `dev` unless the release flow changes.
+- Pages deploys from `main` and `dev` so the site can show both stable and dev-channel release info.
 - PRs to `dev` must not build release artifacts. Only `push`/tag/manual runs build, publish, or upload release assets.
 - `package.json` and `packages/howcode/package.json` do not have to match. Root tracks app artifacts; `packages/howcode` tracks the npm launcher only.
 - The launcher should keep picking up current `main`/`dev` channel assets without an npm publish unless launcher code changes.

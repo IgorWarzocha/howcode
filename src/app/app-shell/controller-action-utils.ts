@@ -1,6 +1,6 @@
-import { createLocalThreadDraft } from '../../../shared/session-paths'
 import type { DesktopAction } from '../desktop/actions'
 import type { AnyDesktopActionPayload, DesktopActionResult, Thread } from '../desktop/types'
+import { hasDesktopBridgeQuery } from '../query/desktop-query'
 
 export type ActionPayload = AnyDesktopActionPayload
 
@@ -69,18 +69,7 @@ export function sortPinnedProjects<T extends { id: string; pinned?: boolean | un
 }
 
 export function hasDesktopBridge() {
-  if (typeof window === 'undefined') {
-    return false
-  }
-
-  return typeof window.piDesktop?.invokeAction === 'function'
-}
-
-export function buildLocalThreadFallback(
-  projectId: string,
-  options: { chatGroupId?: string | null } = {},
-) {
-  return createLocalThreadDraft(projectId, undefined, options)
+  return hasDesktopBridgeQuery()
 }
 
 export function isThreadPinAction(action: DesktopAction) {

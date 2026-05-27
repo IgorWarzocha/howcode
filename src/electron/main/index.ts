@@ -1,11 +1,12 @@
 import { app, BrowserWindow } from 'electron'
+import { installApplicationMenu } from './app/application-menu'
 import { createMainWindow } from './app/create-main-window'
 import { loadMainWindow } from './app/load-main-window'
 import { registerDesktopIpc } from './ipc/register-desktop-ipc'
 import { applyDevViewport } from './runtime/dev-viewport'
 import { configureDevtoolsRemoteDebugging, logDevtoolsRemoteDebugging } from './runtime/devtools'
 import { configureDesktopEnvironment } from './runtime/environment'
-import { loadDesktopRuntimeModules } from './runtime/load-desktop-runtime'
+import { loadDesktopServiceRuntime } from './runtime/load-desktop-runtime'
 import { registerDesktopRuntimeShutdown } from './runtime/shutdown'
 import { AppUpdater } from './updater/app-updater'
 
@@ -34,13 +35,16 @@ async function bootstrap() {
   configureDesktopEnvironment()
   logDevtoolsRemoteDebugging(devtoolsDebuggingPort)
 
-  const runtime = await loadDesktopRuntimeModules()
+  const runtime = await loadDesktopServiceRuntime()
   const appUpdater = new AppUpdater(async () => {
     const appSettings = await runtime.piThreads.loadAppSettings()
     return appSettings.devUpdateBranch ? 'dev' : 'main'
   })
+  const installMenu = () =>
+    installApplicationMenu({ getMainWindow: () => currentMainWindow, piThreads: runtime.piThreads })
   registerDesktopRuntimeShutdown(runtime)
-  registerDesktopIpc(() => currentMainWindow, runtime, appUpdater)
+  registerDesktopIpc(() => currentMainWindow, runtime, appUpdater, installMenu)
+  await installMenu()
   await openMainWindow()
   void appUpdater.checkForUpdate()
 

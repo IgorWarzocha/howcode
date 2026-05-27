@@ -122,12 +122,7 @@ function purgeLegacyCheckpointRefsMigration(database: Database) {
   `)
 }
 
-export function ensureThreadStateSchema(database: Database) {
-  if (schemaReady) {
-    return
-  }
-
-  database.exec(`
+const threadStateSchemaSql = `
     PRAGMA journal_mode = WAL;
     PRAGMA foreign_keys = ON;
 
@@ -135,7 +130,6 @@ export function ensureThreadStateSchema(database: Database) {
       cwd TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       custom_name TEXT,
-      order_index INTEGER,
       pinned INTEGER NOT NULL DEFAULT 0,
       hidden INTEGER NOT NULL DEFAULT 0,
       collapsed INTEGER NOT NULL DEFAULT 1,
@@ -157,6 +151,7 @@ export function ensureThreadStateSchema(database: Database) {
       running INTEGER NOT NULL DEFAULT 0,
       pinned INTEGER NOT NULL DEFAULT 0,
       archived INTEGER NOT NULL DEFAULT 0,
+      branch_name TEXT,
       diff_baseline_json TEXT,
       diff_render_mode TEXT,
       last_modified_ms INTEGER NOT NULL,
@@ -178,6 +173,25 @@ export function ensureThreadStateSchema(database: Database) {
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (session_path) REFERENCES threads(session_path) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS inbox_reply_suppressions (
+      session_path TEXT PRIMARY KEY,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (session_path) REFERENCES threads(session_path) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS project_usage_totals (
+      cwd TEXT PRIMARY KEY,
+      input INTEGER NOT NULL DEFAULT 0,
+      output INTEGER NOT NULL DEFAULT 0,
+      cache_read INTEGER NOT NULL DEFAULT 0,
+      cache_write INTEGER NOT NULL DEFAULT 0,
+      total_tokens INTEGER NOT NULL DEFAULT 0,
+      cost_total REAL NOT NULL DEFAULT 0,
+      assistant_turn_count INTEGER NOT NULL DEFAULT 0,
+      session_count INTEGER NOT NULL DEFAULT 0,
+      sessions_with_usage_count INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE INDEX IF NOT EXISTS inbox_items_by_unread_idx ON inbox_items(unread DESC, last_assistant_at_ms DESC);
@@ -215,71 +229,110 @@ export function ensureThreadStateSchema(database: Database) {
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS project_worktree_settings (
+      root_cwd TEXT PRIMARY KEY,
+      worktree_dir TEXT NOT NULL DEFAULT './.worktrees',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (root_cwd) REFERENCES projects(cwd) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS project_worktrees (
+      cwd TEXT PRIMARY KEY,
+      root_cwd TEXT NOT NULL,
+      branch_name TEXT,
+      is_main INTEGER NOT NULL DEFAULT 0,
+      source TEXT NOT NULL DEFAULT 'howcode',
+      completed INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (cwd) REFERENCES projects(cwd) ON DELETE CASCADE,
+      FOREIGN KEY (root_cwd) REFERENCES projects(cwd) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS project_worktrees_by_root_idx ON project_worktrees(root_cwd, is_main DESC, branch_name COLLATE NOCASE);
+
+`
+
+function ensureThreadStateTables(database: Database) {
+  database.exec(threadStateSchemaSql)
+}
+
+function addColumnIfMissing(database: Database, tableName: string, columnSql: string) {
+  const columnName = columnSql.split(' ', 1)[0] ?? columnSql
+  if (!hasColumn(database, tableName, columnName)) {
+    database.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnSql}`)
+  }
+}
+
+function ensureProjectColumns(database: Database) {
+  addColumnIfMissing(database, 'projects', 'custom_name TEXT')
+  addColumnIfMissing(database, 'projects', 'hidden INTEGER NOT NULL DEFAULT 0')
+  addColumnIfMissing(database, 'projects', 'pinned INTEGER NOT NULL DEFAULT 0')
+  addColumnIfMissing(database, 'projects', 'repo_origin_url TEXT')
+  addColumnIfMissing(database, 'projects', 'repo_origin_checked INTEGER NOT NULL DEFAULT 0')
+  addColumnIfMissing(database, 'projects', 'git_ops_mode TEXT')
+}
+
+function ensureThreadColumns(database: Database) {
+  addColumnIfMissing(database, 'threads', 'last_assistant_message_json TEXT')
+  addColumnIfMissing(database, 'threads', 'last_assistant_preview TEXT')
+  addColumnIfMissing(database, 'threads', 'last_assistant_at_ms INTEGER')
+  addColumnIfMissing(database, 'threads', 'running INTEGER NOT NULL DEFAULT 0')
+  addColumnIfMissing(database, 'threads', 'branch_name TEXT')
+  addColumnIfMissing(database, 'threads', 'diff_baseline_json TEXT')
+  addColumnIfMissing(database, 'threads', 'diff_render_mode TEXT')
+}
+
+function ensureInboxColumns(database: Database) {
+  addColumnIfMissing(database, 'inbox_items', 'last_user_prompt TEXT')
+}
+
+function ensureInboxReplySuppressionTable(database: Database) {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS inbox_reply_suppressions (
+      session_path TEXT PRIMARY KEY,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (session_path) REFERENCES threads(session_path) ON DELETE CASCADE
+    )
   `)
+}
 
-  purgeLegacyCheckpointRefsMigration(database)
+function ensureProjectUsageTotalsColumns(database: Database) {
+  addColumnIfMissing(
+    database,
+    'project_usage_totals',
+    'sessions_with_usage_count INTEGER NOT NULL DEFAULT 0',
+  )
+}
 
-  if (!hasColumn(database, 'projects', 'custom_name')) {
-    database.exec('ALTER TABLE projects ADD COLUMN custom_name TEXT')
-  }
+function ensureProjectWorktreeColumns(database: Database) {
+  addColumnIfMissing(database, 'project_worktrees', 'completed INTEGER NOT NULL DEFAULT 0')
+}
 
-  if (!hasColumn(database, 'projects', 'order_index')) {
-    database.exec('ALTER TABLE projects ADD COLUMN order_index INTEGER')
-  }
-
-  if (!hasColumn(database, 'projects', 'hidden')) {
-    database.exec('ALTER TABLE projects ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0')
-  }
-
-  if (!hasColumn(database, 'projects', 'pinned')) {
-    database.exec('ALTER TABLE projects ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0')
-  }
-
-  if (!hasColumn(database, 'projects', 'repo_origin_url')) {
-    database.exec('ALTER TABLE projects ADD COLUMN repo_origin_url TEXT')
-  }
-
-  if (!hasColumn(database, 'projects', 'repo_origin_checked')) {
-    database.exec('ALTER TABLE projects ADD COLUMN repo_origin_checked INTEGER NOT NULL DEFAULT 0')
-  }
-
-  if (!hasColumn(database, 'projects', 'git_ops_mode')) {
-    database.exec('ALTER TABLE projects ADD COLUMN git_ops_mode TEXT')
-  }
-
-  if (!hasColumn(database, 'threads', 'last_assistant_message_json')) {
-    database.exec('ALTER TABLE threads ADD COLUMN last_assistant_message_json TEXT')
-  }
-
-  if (!hasColumn(database, 'threads', 'last_assistant_preview')) {
-    database.exec('ALTER TABLE threads ADD COLUMN last_assistant_preview TEXT')
-  }
-
-  if (!hasColumn(database, 'threads', 'last_assistant_at_ms')) {
-    database.exec('ALTER TABLE threads ADD COLUMN last_assistant_at_ms INTEGER')
-  }
-
-  if (!hasColumn(database, 'threads', 'running')) {
-    database.exec('ALTER TABLE threads ADD COLUMN running INTEGER NOT NULL DEFAULT 0')
-  }
-
-  if (!hasColumn(database, 'threads', 'diff_baseline_json')) {
-    database.exec('ALTER TABLE threads ADD COLUMN diff_baseline_json TEXT')
-  }
-
-  if (!hasColumn(database, 'threads', 'diff_render_mode')) {
-    database.exec('ALTER TABLE threads ADD COLUMN diff_render_mode TEXT')
-  }
-
-  if (!hasColumn(database, 'inbox_items', 'last_user_prompt')) {
-    database.exec('ALTER TABLE inbox_items ADD COLUMN last_user_prompt TEXT')
-  }
-
+function resetRunningThreads(database: Database) {
   database.exec(`
     UPDATE threads
     SET running = 0
     WHERE running != 0
   `)
+}
 
+function runThreadStateMigrations(database: Database) {
+  purgeLegacyCheckpointRefsMigration(database)
+  ensureProjectColumns(database)
+  ensureThreadColumns(database)
+  ensureInboxColumns(database)
+  ensureInboxReplySuppressionTable(database)
+  ensureProjectUsageTotalsColumns(database)
+  ensureProjectWorktreeColumns(database)
+  resetRunningThreads(database)
+}
+
+export function ensureThreadStateSchema(database: Database) {
+  if (schemaReady) return
+  ensureThreadStateTables(database)
+  runThreadStateMigrations(database)
   schemaReady = true
 }

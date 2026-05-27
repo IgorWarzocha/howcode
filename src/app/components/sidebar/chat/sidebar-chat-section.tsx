@@ -1,15 +1,17 @@
 import { closestCorners, DndContext } from '@dnd-kit/core'
 import { restrictToParentElement, restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { IconButton } from '@howcode/common/icon-button'
+import { PopoverPanel } from '@howcode/common/popover'
 import { Edit2, FolderPlus, Plus, Search } from 'lucide-react'
+import { useRef } from 'react'
+import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
 import type {
   ChatGroup,
   ChatSidebarState,
   ChatThread,
   DesktopActionInvoker,
 } from '../../../desktop/types'
-import { IconButton } from '../../common/icon-button'
-import { SurfacePanel } from '../../common/surface-panel'
 import { ChatGroupRow } from './chat-group-row'
 import { ChatThreadDropItem } from './chat-thread-drop-item'
 import { SortableGroupItem } from './sortable-group-item'
@@ -38,6 +40,7 @@ export function SidebarChatSection({
   onRefresh,
   onAction,
 }: SidebarChatSectionProps) {
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const {
     containerRef,
     creating,
@@ -66,6 +69,12 @@ export function SidebarChatSection({
     ungroupedThreads,
   } = useChatSidebarController({ chatState, onCreateGroup, onRefresh, onAction })
 
+  useHowcodeKeybindingCommand('sidebar.find', (event) => {
+    event.preventDefault()
+    searchInputRef.current?.focus()
+    searchInputRef.current?.select()
+  })
+
   const renderThread = (thread: ChatThread, groupId: string | null) => (
     <ChatThreadDropItem
       key={thread.id}
@@ -88,6 +97,7 @@ export function SidebarChatSection({
         >
           <Search size={14} className="sidebar-search-icon" />
           <input
+            ref={searchInputRef}
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search"
@@ -209,7 +219,7 @@ export function SidebarChatSection({
                       />
 
                       {groupMenuOpen && editingGroupId !== group.id ? (
-                        <SurfacePanel
+                        <PopoverPanel
                           id={actionMenuId}
                           role="menu"
                           aria-label="Group actions"
@@ -228,7 +238,7 @@ export function SidebarChatSection({
                               <span className="truncate text-left">Rename</span>
                             </button>
                           </div>
-                        </SurfacePanel>
+                        </PopoverPanel>
                       ) : null}
                     </div>
 

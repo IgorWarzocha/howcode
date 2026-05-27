@@ -1,32 +1,27 @@
-import {
-  BriefcaseBusiness,
-  Code2,
-  Inbox,
-  MessageSquare,
-  PanelLeftClose,
-  PawPrint,
-  Settings,
-} from 'lucide-react'
+import { Tooltip } from '@howcode/common/tooltip'
+import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
+import { Code2, Inbox, MessageSquare, PanelLeftClose, Settings } from 'lucide-react'
 import { useCallback, useRef } from 'react'
 import type {
   AppSettings,
   ChatSidebarState,
   DesktopActionInvoker,
   InboxThread,
+  ProjectGitState,
 } from '../../desktop/types'
 import { useAnimatedPresence } from '../../hooks/useAnimatedPresence'
 import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
 import type { Project, View } from '../../types'
-import type { SettingsOpenTarget } from '../../views/settings/settingsTypes'
-import { Tooltip } from '../common/tooltip'
 
 type SidebarNavigableView = Exclude<View, 'gitops'>
 
-import { NavButton } from '../common/nav-button'
+import { AppMenu } from '@howcode/app-menu'
+import { NavButton } from '@howcode/common/nav-button'
+import { iconButtonClass } from '../../ui/classes'
+import { cn } from '../../utils/cn'
 import { SidebarChatSection } from './chat/sidebar-chat-section'
 import { SidebarInboxSection } from './inbox/sidebar-inbox-section'
-import { SidebarProjectsSection } from './projects/sidebar-projects-section'
-import { SettingsMenu } from './settings-menu'
+import { ProjectWorkSection } from './project-work-section'
 import { SidebarChatSkeleton, SidebarInboxSkeleton } from './sidebar-skeletons'
 
 type SidebarProps = {
@@ -38,6 +33,8 @@ type SidebarProps = {
   projectsLoading?: boolean
   appLaunchedAtMs: number
   appSettings: AppSettings
+  projectGitState: ProjectGitState | null
+  sidebarVisibleProjectIds: string[] | null | undefined
   protectedProjectId?: string | null
   activeView: View
   selectedInboxSessionPath: string | null
@@ -46,12 +43,13 @@ type SidebarProps = {
   selectedChatGroupId: string | null
   settingsOpen: boolean
   projectScopeLockActive: boolean
-  terminalRunningProjectIds: ReadonlySet<string>
+  terminalRunningWorkspaceIds: ReadonlySet<string>
   terminalRunningSessionPaths: ReadonlySet<string>
   collapsedProjectIds: Record<string, boolean>
   onAction: DesktopActionInvoker
   onShowView: (view: SidebarNavigableView) => void
   onToggleSettings: () => void
+  onToggleSidebar: () => void
   onOpenExtensionsView: () => void
   onOpenAbout: () => void
   onOpenSkillsView: () => void
@@ -64,13 +62,12 @@ type SidebarProps = {
   onRefreshChatSidebar: () => Promise<unknown>
   onProjectSelect: (projectId: string) => void
   onProjectPrimeSelection: (projectId: string) => void
-  onProjectReorder: (projectIds: string[]) => void
+  onProjectTargetSelected?: (() => void) | undefined
   onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
   onSelectInboxThread: (thread: InboxThread) => void
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
   onToggleProjectCollapse: (projectId: string) => void
   compactMode?: boolean
-  onCloseCompactSidebar?: () => void
 }
 
 function isCodeModeActive(activeView: View) {
@@ -88,30 +85,6 @@ function SidebarModeNav({
 }) {
   return (
     <nav className="sidebar-mode-nav" aria-label="Primary navigation">
-      <NavButton
-        icon={<PawPrint size={16} />}
-        label={
-          <span className="sidebar-mode-label">
-            <span>Claw</span>
-            <span className="sidebar-coming-soon-label">Coming soon</span>
-          </span>
-        }
-        active={activeView === 'claw'}
-        disabled
-        title="Coming soon"
-      />
-      <NavButton
-        icon={<BriefcaseBusiness size={16} />}
-        label={
-          <span className="sidebar-mode-label">
-            <span>Work</span>
-            <span className="sidebar-coming-soon-label">Coming soon</span>
-          </span>
-        }
-        active={activeView === 'work'}
-        disabled
-        title="Coming soon"
-      />
       <NavButton
         icon={<Inbox size={16} />}
         label="Inbox"
@@ -167,27 +140,54 @@ function SidebarContent(props: SidebarProps) {
       />
     )
   }
+  if (props.activeView !== 'extensions' && props.activeView !== 'skills') {
+    return (
+      <ProjectWorkSection
+        activeView={props.activeView}
+        loading={props.projectsLoading ?? false}
+        projects={props.projects}
+        projectGitState={props.projectGitState}
+        collapsedProjectIds={props.collapsedProjectIds}
+        initialVisibleProjectIds={props.sidebarVisibleProjectIds}
+        selectedProjectId={props.selectedProjectId}
+        selectedThreadId={props.selectedThreadId}
+        terminalRunningWorkspaceIds={props.terminalRunningWorkspaceIds}
+        terminalRunningSessionPaths={props.terminalRunningSessionPaths}
+        onAction={props.onAction}
+        appSettings={props.appSettings}
+        onLoadProjectThreads={props.onLoadProjectThreads}
+        onOpenSettingsPanel={props.onOpenSettingsPanel}
+        onProjectSelect={props.onProjectSelect}
+        onProjectPrimeSelection={props.onProjectPrimeSelection}
+        onThreadOpen={props.onThreadOpen}
+        onShowView={props.onShowView}
+        onToggleProjectCollapse={props.onToggleProjectCollapse}
+      />
+    )
+  }
   return (
-    <SidebarProjectsSection
+    <ProjectWorkSection
       activeView={props.activeView}
-      appLaunchedAtMs={props.appLaunchedAtMs}
-      appSettings={props.appSettings}
-      protectedProjectId={props.protectedProjectId ?? null}
-      projectScopeLockActive={props.projectScopeLockActive}
-      projects={props.projects}
       loading={props.projectsLoading ?? false}
+      projects={props.projects}
+      projectGitState={props.projectGitState}
+      collapsedProjectIds={props.collapsedProjectIds}
+      initialVisibleProjectIds={props.sidebarVisibleProjectIds}
+      projectTargetMode={true}
+      projectScopeLockActive={props.projectScopeLockActive}
       selectedProjectId={props.selectedProjectId}
       selectedThreadId={props.selectedThreadId}
-      terminalRunningProjectIds={props.terminalRunningProjectIds}
+      terminalRunningWorkspaceIds={props.terminalRunningWorkspaceIds}
       terminalRunningSessionPaths={props.terminalRunningSessionPaths}
-      collapsedProjectIds={props.collapsedProjectIds}
       onAction={props.onAction}
+      appSettings={props.appSettings}
       onLoadProjectThreads={props.onLoadProjectThreads}
       onOpenSettingsPanel={props.onOpenSettingsPanel}
       onProjectSelect={props.onProjectSelect}
       onProjectPrimeSelection={props.onProjectPrimeSelection}
-      onProjectReorder={props.onProjectReorder}
+      onProjectTargetSelected={props.onProjectTargetSelected}
       onThreadOpen={props.onThreadOpen}
+      onShowView={props.onShowView}
       onToggleProjectCollapse={props.onToggleProjectCollapse}
     />
   )
@@ -202,6 +202,8 @@ export function Sidebar({
   projectsLoading = false,
   appLaunchedAtMs,
   appSettings,
+  projectGitState,
+  sidebarVisibleProjectIds,
   protectedProjectId = null,
   activeView,
   selectedInboxSessionPath,
@@ -210,12 +212,13 @@ export function Sidebar({
   selectedChatGroupId,
   settingsOpen,
   projectScopeLockActive,
-  terminalRunningProjectIds,
+  terminalRunningWorkspaceIds,
   terminalRunningSessionPaths,
   collapsedProjectIds,
   onAction,
   onShowView,
   onToggleSettings,
+  onToggleSidebar,
   onOpenExtensionsView,
   onOpenAbout,
   onOpenSkillsView,
@@ -228,13 +231,12 @@ export function Sidebar({
   onRefreshChatSidebar,
   onProjectSelect,
   onProjectPrimeSelection,
-  onProjectReorder,
+  onProjectTargetSelected,
   onLoadProjectThreads,
   onSelectInboxThread,
   onThreadOpen,
   onToggleProjectCollapse,
   compactMode = false,
-  onCloseCompactSidebar,
 }: SidebarProps) {
   const settingsButtonRef = useRef<HTMLButtonElement>(null)
   const settingsMenuRef = useRef<HTMLDivElement>(null)
@@ -263,6 +265,8 @@ export function Sidebar({
     projectsLoading,
     appLaunchedAtMs,
     appSettings,
+    projectGitState,
+    sidebarVisibleProjectIds,
     protectedProjectId,
     activeView,
     selectedInboxSessionPath,
@@ -271,12 +275,13 @@ export function Sidebar({
     selectedChatGroupId,
     settingsOpen,
     projectScopeLockActive,
-    terminalRunningProjectIds,
+    terminalRunningWorkspaceIds,
     terminalRunningSessionPaths,
     collapsedProjectIds,
     onAction,
     onShowView,
     onToggleSettings,
+    onToggleSidebar,
     onOpenExtensionsView,
     onOpenAbout,
     onOpenSkillsView,
@@ -289,32 +294,38 @@ export function Sidebar({
     onRefreshChatSidebar,
     onProjectSelect,
     onProjectPrimeSelection,
-    onProjectReorder,
+    ...(onProjectTargetSelected ? { onProjectTargetSelected } : {}),
     onLoadProjectThreads,
     onSelectInboxThread,
     onThreadOpen,
     onToggleProjectCollapse,
     compactMode,
-    ...(onCloseCompactSidebar ? { onCloseCompactSidebar } : {}),
   }
 
   return (
     <aside
       aria-label="Workspace sidebar"
       data-pulse-active={projectScopeLockActive ? 'true' : 'false'}
+      data-project-target-mode={
+        activeView === 'extensions' || activeView === 'skills' ? 'true' : 'false'
+      }
       className="sidebar-shell motion-surface-pulse motion-sidebar-selection-pulse relative"
     >
-      {showModeSelection ? (
-        <SidebarModeNav
-          activeView={activeView}
-          codeModeActive={codeModeActive}
-          onShowView={onShowView}
-        />
-      ) : null}
+      <div className="sidebar-shell-row sidebar-shell-row--top">
+        {showModeSelection ? (
+          <SidebarModeNav
+            activeView={activeView}
+            codeModeActive={codeModeActive}
+            onShowView={onShowView}
+          />
+        ) : null}
+      </div>
 
-      <SidebarContent {...sidebarContentProps} />
+      <div className="sidebar-shell-row sidebar-shell-row--content">
+        <SidebarContent {...sidebarContentProps} />
+      </div>
 
-      <div className="sidebar-footer">
+      <div className="sidebar-shell-row sidebar-shell-row--footer sidebar-footer">
         <div className="flex items-center gap-1">
           <button
             ref={settingsButtonRef}
@@ -330,12 +341,15 @@ export function Sidebar({
             <span>Settings</span>
           </button>
 
-          {compactMode && onCloseCompactSidebar ? (
+          {compactMode ? (
             <Tooltip content="Hide sidebar" placement="right">
               <button
                 type="button"
-                className="inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] text-[color:var(--muted)] transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
-                onClick={onCloseCompactSidebar}
+                className={cn(
+                  iconButtonClass,
+                  'h-[34px] w-[34px] shrink-0 rounded-[10px] opacity-80 hover:opacity-100',
+                )}
+                onClick={onToggleSidebar}
                 aria-label="Hide sidebar"
               >
                 <PanelLeftClose size={15} />
@@ -345,7 +359,7 @@ export function Sidebar({
         </div>
 
         {settingsMenuPresent ? (
-          <SettingsMenu
+          <AppMenu
             menuId={settingsMenuId}
             open={settingsOpen}
             panelRef={settingsMenuRef}

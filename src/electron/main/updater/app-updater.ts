@@ -57,6 +57,10 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error)
 }
 
+function logUpdateFailure(operation: string, error: unknown) {
+  console.error(`[howcode updater] ${operation} failed`, error)
+}
+
 function getTarget(): UpdateTarget {
   const arch = process.arch === 'arm64' ? 'arm64' : process.arch === 'x64' ? 'x64' : null
   if (!arch) throw new Error(`Unsupported architecture: ${process.arch}`)
@@ -138,6 +142,16 @@ function hasPackagedAppBundle(installDir: string, target: UpdateTarget) {
     existsSync(path.join(resourcesPath, 'app.asar')) ||
     existsSync(path.join(resourcesPath, 'app', 'package.json'))
   )
+}
+
+function getMissingPackagedBundleMessage(installDir: string, target: UpdateTarget) {
+  const resourcesPath = getAppResourcesPath(installDir, target)
+  const appAsarPath = path.join(resourcesPath, 'app.asar')
+  const unpackedAppPath = path.join(resourcesPath, 'app', 'package.json')
+  return [
+    'Downloaded archive did not contain the packaged app bundle.',
+    `Checked ${appAsarPath} and ${unpackedAppPath}.`,
+  ].join(' ')
 }
 
 async function isValidInstall(paths: ReturnType<typeof getInstallPaths>, target: UpdateTarget) {
@@ -365,6 +379,15 @@ function getRunningCachedVersionDir(versionsRoot: string) {
   return null
 }
 
+function isSameRelease(
+  left: Pick<ReleaseInfo, 'channel' | 'version' | 'hash'>,
+  right: Pick<ReleaseInfo, 'channel' | 'version' | 'hash'>,
+) {
+  return (
+    left.channel === right.channel && left.version === right.version && left.hash === right.hash
+  )
+}
+
 export class AppUpdater {
   private readonly listeners = new Set<AppUpdaterListener>()
   private readonly getUpdateChannel: () => Promise<UpdateChannel>
@@ -403,7 +426,15 @@ export class AppUpdater {
 
   async restoreInstalledUpdate() {
     if (this.restorePromise) return this.restorePromise
+    const latestRelease = this.latestRelease
     this.restorePromise = this.readInstalledUpdate().finally(() => {
+      if (
+        latestRelease &&
+        this.installedUpdate &&
+        !isSameRelease(this.installedUpdate, latestRelease)
+      ) {
+        this.latestRelease = latestRelease
+      }
       this.restorePromise = null
     })
     return this.restorePromise
@@ -436,17 +467,6 @@ export class AppUpdater {
         return this.state
       }
 
-      await this.restoreInstalledUpdate()
-      if (this.installedUpdate) {
-        this.setState({
-          status: 'ready',
-          latestVersion: this.installedUpdate.version,
-          channel: this.installedUpdate.channel,
-          error: null,
-        })
-        return this.state
-      }
-
       this.setState({ status: 'checking', error: null })
       const target = getTarget()
       if (target.os === 'win') {
@@ -458,7 +478,34 @@ export class AppUpdater {
         })
         return this.state
       }
-      const release = await resolveLatestRelease(target, channel)
+      let release: ReleaseInfo
+      try {
+        release = await resolveLatestRelease(target, channel)
+      } catch (error) {
+        await this.restoreInstalledUpdate()
+        if (this.installedUpdate) {
+          this.setState({
+            status: 'ready',
+            latestVersion: this.installedUpdate.version,
+            channel: this.installedUpdate.channel,
+            error: null,
+          })
+          return this.state
+        }
+        throw error
+      }
+      this.latestRelease = release
+      await this.restoreInstalledUpdate()
+      if (this.installedUpdate && isSameRelease(this.installedUpdate, release)) {
+        this.setState({
+          status: 'ready',
+          latestVersion: release.version,
+          channel: release.channel,
+          error: null,
+        })
+        return this.state
+      }
+      this.installedUpdate = null
       this.latestRelease = release
       const hasUpdate = this.isUpdateCandidate(release)
       this.setState({
@@ -468,6 +515,7 @@ export class AppUpdater {
         error: null,
       })
     } catch (error) {
+      logUpdateFailure('check', error)
       this.setState({ status: 'error', error: getErrorMessage(error) })
     }
     return this.state
@@ -533,7 +581,7 @@ export class AppUpdater {
           throw new Error(`Downloaded archive did not contain ${target.executable}.`)
         }
         if (!hasPackagedAppBundle(tempInstallDir, target)) {
-          throw new Error('Downloaded archive did not contain the packaged app bundle.')
+          throw new Error(getMissingPackagedBundleMessage(tempInstallDir, target))
         }
         await rm(paths.installDir, { recursive: true, force: true })
         await mkdir(path.dirname(paths.installDir), { recursive: true })
@@ -557,6 +605,7 @@ export class AppUpdater {
         error: null,
       })
     } catch (error) {
+      logUpdateFailure('install', error)
       this.setState({ status: 'error', error: getErrorMessage(error) })
     } finally {
       await Promise.all([
@@ -576,10 +625,20 @@ export class AppUpdater {
         this.setState({ status: 'idle', latestVersion: null, error: null })
         return this.state
       }
+      if (this.latestRelease && !isSameRelease(this.installedUpdate, this.latestRelease)) {
+        this.installedUpdate = null
+        this.setState({
+          status: 'available',
+          latestVersion: this.latestRelease.version,
+          error: null,
+        })
+        return this.state
+      }
       this.setState({ status: 'restarting', channel: this.installedUpdate.channel, error: null })
       await spawnDetached(this.installedUpdate.executablePath)
       app.quit()
     } catch (error) {
+      logUpdateFailure('restart', error)
       this.setState({ status: 'error', error: getErrorMessage(error) })
     }
     return this.state
@@ -617,13 +676,11 @@ export class AppUpdater {
     if (versionDiff < 0) return false
 
     const runningRelease = getRunningReleaseFingerprint()
-    if (release.channel === 'main') return false
-
-    if (runningRelease?.version === release.version && runningRelease.hash === release.hash) {
-      return false
-    }
-
-    return true
+    return Boolean(
+      runningRelease &&
+        runningRelease.version === release.version &&
+        runningRelease.hash !== release.hash,
+    )
   }
 
   private async getPruneKeepDirs(installDir: string) {

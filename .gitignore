@@ -6,6 +6,7 @@ artifacts/
 .DS_Store
 *.log
 coverage/
+.worktrees/
 
 .pi/semantic-grep.sqlite
 .pi/semantic-grep.json

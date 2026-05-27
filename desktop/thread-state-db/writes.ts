@@ -1,7 +1,9 @@
 export {
   beginInboxThreadTurn,
   clearReadInboxThreads,
+  consumeInboxReplySuppression,
   dismissInboxThread,
+  dismissInboxThreadAfterReply,
   markInboxThreadRead,
   upsertInboxThreadMessage,
   upsertInboxThreadPrompt,
@@ -12,9 +14,7 @@ export {
   deleteProject,
   ensureProject,
   hideProject,
-  moveProjectToTop,
   renameProject,
-  reorderProjects,
   setProjectCollapsed,
   setProjectGitOpsMode,
   setProjectRepoOrigin,
@@ -26,8 +26,11 @@ export {
   upsertThreadSummary,
 } from './session-writes.ts'
 export {
+  addProjectUsageTotals,
   archiveThread,
   archiveThreads,
+  assignThreadBranch,
+  assignThreadToProjectBranch,
   deleteThreadRecord,
   deleteThreadRecordsBySessionPaths,
   restoreThread,
@@ -36,3 +39,11 @@ export {
   setThreadRunningState,
   toggleThreadPinned,
 } from './thread-writes.ts'
+export type { ProjectWorktreeMetadata, ProjectWorktreeSource } from './worktree-writes.ts'
+export {
+  deleteProjectWorktreeMetadata,
+  getProjectWorktreeDirectory,
+  setProjectWorktreeCompleted,
+  setProjectWorktreeDirectory,
+  upsertProjectWorktree,
+} from './worktree-writes.ts'

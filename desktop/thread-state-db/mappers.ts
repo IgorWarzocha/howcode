@@ -66,6 +66,16 @@ export function mapProjectRow(row: ProjectRow): Project {
     collapsed: Boolean(row.collapsed),
     repoOriginUrl: row.repoOriginUrl,
     repoOriginChecked: Boolean(row.repoOriginChecked),
+    worktreeDirectory: row.worktreeDirectory ?? './.worktrees',
+    worktree: row.worktreeRootProjectId
+      ? {
+          rootProjectId: row.worktreeRootProjectId,
+          branchName: row.worktreeBranchName,
+          isMain: Boolean(row.worktreeIsMain),
+          source: row.worktreeSource === 'imported' ? 'imported' : 'howcode',
+          completed: Boolean(row.worktreeCompleted),
+        }
+      : undefined,
   }
 }
 
@@ -80,6 +90,7 @@ export function mapThreadRow(row: ThreadRow): Thread {
     unread: Boolean(row.unread),
     pinned: Boolean(row.pinned),
     sessionPath: row.sessionPath,
+    branchName: row.branchName ?? undefined,
   }
 }
 
@@ -109,5 +120,6 @@ export function mapArchivedThreadRow(row: ArchivedThreadRow): ArchivedThread {
     projectId: row.projectId,
     projectName: row.projectName,
     sessionPath: row.sessionPath,
+    isChat: Boolean(row.isChat),
   }
 }

@@ -84,16 +84,14 @@ Desktop release builds bundle Electron with Chromium on macOS, Linux, and Window
 Main checks:
 
 ```bash
-bun run lint
-bun run typecheck
-bun run test
+bun run ai:check
 bun run check
 ```
 
 Hooks:
 
-- `.husky/pre-commit` — lint-staged, typecheck, test
-- `.husky/pre-push` — full `bun run check`
+- `.husky/pre-commit` — lint-staged, then `bun run ai:check`
+- `.husky/pre-push` — clean build outputs, then `bun run ai:check`
 
 ## Useful docs
 

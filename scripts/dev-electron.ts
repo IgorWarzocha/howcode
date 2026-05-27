@@ -1,6 +1,7 @@
 import { type ChildProcess, spawn } from 'node:child_process'
 import { existsSync, unwatchFile, watchFile } from 'node:fs'
 import path from 'node:path'
+import { getDevUserDataPath } from './dev-user-data-path'
 import { ensureElectronBinary } from './electron-binary'
 
 function getProcessEnvironmentVariable(name: string) {
@@ -14,6 +15,7 @@ const watchedFiles = [
   path.join(projectRoot, 'build', 'electron', 'preload', 'index.cjs'),
   path.join(projectRoot, 'build', 'desktop', 'pi-threads.mjs'),
   path.join(projectRoot, 'build', 'desktop', 'pi-skills.mjs'),
+  path.join(projectRoot, 'build', 'desktop', 'service-host.mjs'),
   path.join(projectRoot, 'build', 'desktop', 'skill-creator-session.mjs'),
   path.join(projectRoot, 'build', 'desktop', 'worker.mjs'),
   path.join(projectRoot, 'build', 'desktop', 'terminal-manager.mjs'),
@@ -51,6 +53,7 @@ async function startElectronProcess() {
     env: {
       ...process.env,
       HOWCODE_REPO_ROOT: projectRoot,
+      HOWCODE_USER_DATA_PATH: getDevUserDataPath(),
       HOWCODE_DEV_VIEWPORT: getRequestedViewport() ?? '',
     },
   })

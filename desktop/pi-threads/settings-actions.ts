@@ -19,12 +19,17 @@ import {
   getSettingsReset,
   getSettingsThinkingLevel,
 } from '../../shared/pi-thread-action-payloads.ts'
+import { parseKeybindingOverrides } from '../app-settings/parsers.ts'
+import { normalizeOptionalSettingsPath } from '../app-settings/path-normalization.ts'
+import { loadAppSettings } from '../app-settings/readers.ts'
 import {
   setChatModelSelection,
   setChatThinkingLevel,
   setCodeModelSelection,
   setCodeThinkingLevel,
+  setComposerSendMode,
   setComposerStreamingBehavior,
+  setCustomPiDirectory,
   setDevUpdateBranch,
   setDictationMaxDurationSeconds,
   setDictationModelId,
@@ -33,14 +38,18 @@ import {
   setGitCommitMessageThinkingLevel,
   setGitDiffBaselineDefault,
   setGitDiffFileTreeDefaultVisible,
+  setGitDiffIncludeUntrackedDefault,
   setGitDiffRenderModeDefault,
   setGitOpsDefaultMode,
+  setHideSidebarSessionCounts,
   setHoverToBlur,
   setHoverToFocus,
   setHowcodeNativeAskQuestions,
   setInitializeGitOnProjectCreate,
+  setKeybindings,
   setPiTuiTakeover,
   setPreferredProjectLocation,
+  setProjectDashboardEnabled,
   setProjectDeletionMode,
   setProjectImportState,
   setShowDictationButton,
@@ -48,6 +57,7 @@ import {
   setSkillCreatorThinkingLevel,
   setUseAgentsSkillsPaths,
 } from '../app-settings/writers.ts'
+import { restartRuntimeHostsForEnvironmentChange } from '../runtime-host/client-bridge.ts'
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
 
@@ -78,7 +88,11 @@ async function clearClipboardImageTempFiles() {
   }
 }
 
-type SettingsUpdateHandler = (payload: AnyDesktopActionPayload) => void
+type SettingsUpdateHandler = (payload: AnyDesktopActionPayload) => unknown
+
+function isSettingsUpdateResult(value: unknown) {
+  return typeof value === 'object' && value !== null
+}
 
 function setOptionalBooleanSetting(
   payload: AnyDesktopActionPayload,
@@ -143,12 +157,39 @@ const settingsUpdateHandlers = {
   devUpdateBranch: (payload) => setDevUpdateBranch(getSettingsBooleanValue(payload) ?? false),
   betaUpdateBranch: (payload) => setDevUpdateBranch(getSettingsBooleanValue(payload) ?? false),
   piTuiTakeover: (payload) => setPiTuiTakeover(getSettingsBooleanValue(payload) ?? false),
+  hideSidebarSessionCounts: (payload) =>
+    setHideSidebarSessionCounts(getSettingsBooleanValue(payload) ?? false),
   hoverToFocus: (payload) => setHoverToFocus(getSettingsBooleanValue(payload) ?? true),
   hoverToBlur: (payload) => setHoverToBlur(getSettingsBooleanValue(payload) ?? false),
+  keybindings: (payload) => {
+    const value = payload.value
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      setKeybindings(parseKeybindingOverrides(JSON.stringify(value)))
+    }
+  },
+  composerSendMode: (payload) => {
+    if (payload.value === 'enter' || payload.value === 'cmd-enter')
+      setComposerSendMode(payload.value)
+  },
   preferredProjectLocation: (payload) =>
     setPreferredProjectLocation(getSettingsPreferredProjectLocation(payload)),
+  customPiDirectory: (payload) => {
+    const currentCustomPiDirectory = normalizeOptionalSettingsPath(
+      loadAppSettings().customPiDirectory,
+    )
+    const nextCustomPiDirectory = normalizeOptionalSettingsPath(
+      getSettingsPreferredProjectLocation(payload),
+    )
+    if (currentCustomPiDirectory === nextCustomPiDirectory) return { didMutate: false }
+
+    setCustomPiDirectory(nextCustomPiDirectory)
+    restartRuntimeHostsForEnvironmentChange()
+    return { didMutate: true }
+  },
   initializeGitOnProjectCreate: (payload) =>
     setOptionalBooleanSetting(payload, setInitializeGitOnProjectCreate),
+  projectDashboardEnabled: (payload) =>
+    setOptionalBooleanSetting(payload, setProjectDashboardEnabled),
   gitOpsDefaultMode: (payload) => {
     const value = payload.value
     if (value === 'commit' || value === 'commit-push') setGitOpsDefaultMode(value)
@@ -159,6 +200,8 @@ const settingsUpdateHandlers = {
   },
   gitDiffFileTreeDefaultVisible: (payload) =>
     setOptionalBooleanSetting(payload, setGitDiffFileTreeDefaultVisible),
+  gitDiffIncludeUntrackedDefault: (payload) =>
+    setOptionalBooleanSetting(payload, setGitDiffIncludeUntrackedDefault),
   gitDiffRenderModeDefault: (payload) => {
     const value = getSettingsProjectDiffRenderModeDefault(payload)
     if (value) setGitDiffRenderModeDefault(value)
@@ -192,6 +235,6 @@ export async function handleSettingsDesktopAction(
   if (action !== 'settings.update') return unhandledAction()
 
   const key = getSettingsKey(payload)
-  if (key) settingsUpdateHandlers[key]?.(payload)
-  return handledAction()
+  const result = key ? settingsUpdateHandlers[key]?.(payload) : undefined
+  return handledAction(isSettingsUpdateResult(result) ? result : undefined)
 }

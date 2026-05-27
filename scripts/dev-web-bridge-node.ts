@@ -4,24 +4,32 @@ import { mkdir, open, readdir, realpath, stat } from 'node:fs/promises'
 import http from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
-import * as piSkills from '../desktop/pi-skills.ts'
-import * as piThreads from '../desktop/pi-threads.ts'
-import * as skillCreator from '../desktop/skill-creator-session.ts'
 import { openPathWithSystem } from '../desktop/system-open-path.ts'
-import * as terminalManager from '../desktop/terminal/manager.ts'
 import packageJson from '../package.json'
 import { getAttachmentKind } from '../shared/composer-attachments'
+import type { DesktopActionResultData } from '../shared/desktop-contracts'
 import type {
   DesktopEventMap,
   DesktopRequestChannel,
   DesktopRequestHandlerMap,
 } from '../shared/desktop-ipc'
+import type {
+  PiSkillsService,
+  PiThreadsService,
+  SkillCreatorService,
+  TerminalService,
+} from '../shared/desktop-service-contracts'
 import { getDesktopWorkingDirectory } from '../shared/desktop-working-directory'
 import { getSafeExternalUrl } from '../shared/external-url'
 import {
   listComposerAttachmentEntries,
   searchComposerAttachmentEntries,
 } from '../src/desktop-host/composer-attachments'
+import {
+  DesktopServiceClient,
+  type DesktopServiceModuleName,
+} from '../src/desktop-host/desktop-service-client'
+import { getSystemNodeExecutable } from '../src/desktop-host/node-discovery'
 
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
@@ -40,6 +48,41 @@ const devAppUpdateState = {
   latestVersion: packageJson.version,
   channel: null,
   error: null,
+}
+
+const desktopService = new DesktopServiceClient({
+  nodeExecutable: getSystemNodeExecutable,
+  serviceHostPath: path.join(process.cwd(), 'build', 'desktop', 'service-host.mjs'),
+  cwd: getDesktopWorkingDirectory(),
+})
+
+function proxyServiceModule<T extends Record<string, unknown>>(
+  moduleName: DesktopServiceModuleName,
+) {
+  return new Proxy(
+    {},
+    {
+      get(_target, property) {
+        if (property === 'subscribeDesktopEvents')
+          return desktopService.subscribeDesktopEvents.bind(desktopService)
+        if (property === 'subscribeTerminalEvents')
+          return desktopService.subscribeTerminalEvents.bind(desktopService)
+        return (...args: unknown[]) =>
+          desktopService.invokeDynamic(moduleName, String(property), args)
+      },
+    },
+  ) as T
+}
+
+const piThreads = proxyServiceModule<PiThreadsService>('piThreads')
+const piSkills = proxyServiceModule<PiSkillsService>('piSkills')
+const skillCreator = proxyServiceModule<SkillCreatorService>('skillCreator')
+const terminalManager = proxyServiceModule<TerminalService>('terminalManager')
+
+function didDesktopActionMutate(result: DesktopActionResultData | null | undefined) {
+  return Boolean(
+    result && typeof result === 'object' && 'didMutate' in result && result.didMutate === true,
+  )
 }
 
 function sendSseEvent<TChannel extends keyof DesktopEventMap>(
@@ -140,10 +183,21 @@ const handlers: DesktopRequestHandlerMap = {
   getShellState: () => piThreads.loadShellState(getDesktopWorkingDirectory()),
   getProjectGitState: ({ projectId }) => piThreads.loadProjectGitState(projectId),
   getProjectUsageSummary: ({ projectId }) => piThreads.loadProjectUsageSummary(projectId),
-  getProjectDiff: ({ projectId, baseline }) =>
-    piThreads.loadProjectDiff(projectId, baseline ?? null),
-  getProjectDiffStats: ({ projectId, baseline }) =>
-    piThreads.loadProjectDiffStats(projectId, baseline ?? null),
+  getProjectFavicon: ({ projectId }) => piThreads.loadProjectFavicon(projectId),
+  startProjectDiffStream: ({ projectId, baseline, streamId, includeUntracked }) =>
+    piThreads.startProjectDiffStream(
+      projectId,
+      baseline ?? null,
+      streamId ?? null,
+      includeUntracked ?? false,
+    ),
+  cancelProjectDiffStream: async ({ streamId }) => {
+    await piThreads.cancelProjectDiffStream(streamId)
+    return undefined
+  },
+  getProjectDiffStats: ({ projectId, baseline, includeUntracked }) =>
+    piThreads.loadProjectDiffStats(projectId, baseline ?? null, includeUntracked ?? false),
+  getProjectDiffImagePreview: (request) => piThreads.loadProjectDiffImagePreview(request),
   captureProjectDiffBaseline: ({ projectId }) => piThreads.captureProjectDiffBaseline(projectId),
   listProjectCommits: ({ projectId, limit }) =>
     piThreads.listProjectCommits(projectId, limit ?? null),
@@ -217,6 +271,7 @@ const handlers: DesktopRequestHandlerMap = {
   getArchivedThreads: () => piThreads.loadArchivedThreadList(),
   getThread: ({ sessionPath, historyCompactions = 0 }) =>
     piThreads.loadThread(sessionPath, { historyCompactions }),
+  searchThread: ({ sessionPath, query }) => piThreads.searchThread(sessionPath, query),
   watchSession: async ({ sessionPath }) => {
     await piThreads.setWatchedSessionPath(sessionPath)
     return { ok: true }
@@ -224,6 +279,16 @@ const handlers: DesktopRequestHandlerMap = {
   invokeAction: async ({ action, payload = {} }) => {
     try {
       const result = await piThreads.handleDesktopAction(action, payload)
+      if (
+        action === 'settings.update' &&
+        payload &&
+        typeof payload === 'object' &&
+        'key' in payload &&
+        payload.key === 'customPiDirectory' &&
+        didDesktopActionMutate(result)
+      ) {
+        await desktopService.dispose()
+      }
       return {
         ok: true,
         at: new Date().toISOString(),

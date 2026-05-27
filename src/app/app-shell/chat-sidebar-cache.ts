@@ -1,4 +1,5 @@
 import type { ChatSidebarState, ChatThread } from '../desktop/types'
+import { mergeThreadCacheFields } from './thread-cache-merge'
 
 type ApplyChatThreadOptions = {
   replaceSessionPath?: string | null
@@ -8,15 +9,6 @@ function sameChatThread(left: ChatThread, right: ChatThread, replaceSessionPath:
   if (left.id === right.id) return true
   if (left.sessionPath && right.sessionPath && left.sessionPath === right.sessionPath) return true
   return Boolean(replaceSessionPath && left.sessionPath === replaceSessionPath)
-}
-
-function mergeChatThread(existing: ChatThread | undefined, next: ChatThread): ChatThread {
-  return {
-    ...existing,
-    ...next,
-    pinned: next.pinned ?? existing?.pinned,
-    unread: next.unread ?? existing?.unread,
-  }
 }
 
 export function applyChatThreadToSidebarState(
@@ -38,7 +30,7 @@ export function applyChatThreadToSidebarState(
 
     if (!shouldInsert) return remainingThreads
 
-    return [mergeChatThread(existingThread, thread), ...remainingThreads]
+    return [mergeThreadCacheFields(existingThread, thread), ...remainingThreads]
   }
 
   return {

@@ -1,3 +1,4 @@
+import { importProjectWorktreesForProjectIds } from '../project-import.ts'
 import { emitDesktopEvent } from '../runtime/desktop-events.ts'
 import { syncSessionSummaries } from '../thread-state-db.ts'
 import { listAllSessionsStrict, mapSessionSummaryToRecord } from './session-index.ts'
@@ -12,11 +13,10 @@ type ShellIndexSyncResult = {
 
 async function syncShellIndex(cwd: string): Promise<ShellIndexSyncResult> {
   const { sessions, partialFailure } = await listAllSessionsStrict()
+  const sessionRecords = sessions.map((session) => mapSessionSummaryToRecord(cwd, session))
+  await importProjectWorktreesForProjectIds(sessionRecords.map((session) => session.cwd))
 
-  syncSessionSummaries(
-    cwd,
-    sessions.map((session) => mapSessionSummaryToRecord(cwd, session)),
-  )
+  syncSessionSummaries(cwd, sessionRecords)
 
   return { complete: !partialFailure, didSync: true }
 }

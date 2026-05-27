@@ -1,5 +1,5 @@
+import { getPersistedSessionPath } from '@howcode/shared/session-paths'
 import { useQuery } from '@tanstack/react-query'
-import { getPersistedSessionPath } from '../../../shared/session-paths'
 import type { ThreadData } from '../desktop/types'
 import { desktopQueryKeys, getThreadQuery } from '../query/desktop-query'
 
@@ -7,6 +7,7 @@ export function useDesktopThreadQuery(
   sessionPath: string | null | undefined,
   refreshKey = 0,
   historyCompactions = 0,
+  options: { enabled?: boolean | undefined } = {},
 ) {
   const persistedSessionPath = getPersistedSessionPath(sessionPath)
 
@@ -18,7 +19,8 @@ export function useDesktopThreadQuery(
       persistedSessionPath
         ? getThreadQuery(persistedSessionPath, historyCompactions)
         : Promise.resolve(null),
-    enabled: Boolean(persistedSessionPath),
+    placeholderData: (previousData) => previousData,
+    enabled: Boolean(persistedSessionPath) && options.enabled !== false,
     staleTime: Number.POSITIVE_INFINITY,
   })
 }

@@ -1,6 +1,11 @@
-import { getLocalDraftProjectId, getPersistedSessionPath } from '../../../shared/session-paths'
+import {
+  getLocalDraftProjectId,
+  getPersistedSessionPath,
+  isLocalSessionPath,
+} from '@howcode/shared/session-paths'
 import type { DesktopEvent } from '../desktop/types'
-import { desktopQueryKeys } from '../query/desktop-query'
+import { notifyProjectDiffInvalidated } from '../hooks/project-diff-invalidation'
+import { desktopQueryKeys, invokeDesktopActionQuery } from '../query/desktop-query'
 import type { WorkspaceState } from '../state/workspace'
 
 type QueryClientLike = {
@@ -20,7 +25,8 @@ export type DesktopEventSelectionState = Pick<
 export function getVisibleDesktopSessionPath(workspaceState: DesktopEventSelectionState) {
   return workspaceState.activeView === 'chat' ||
     workspaceState.activeView === 'thread' ||
-    workspaceState.activeView === 'gitops'
+    workspaceState.activeView === 'gitops' ||
+    workspaceState.activeView === 'project'
     ? getPersistedSessionPath(workspaceState.selectedSessionPath)
     : workspaceState.activeView === 'inbox'
       ? (workspaceState.selectedInboxSessionPath ?? null)
@@ -50,21 +56,31 @@ export function shouldDisplayStartedThreadForLocalDraft({
   reason,
   projectId,
   isChat,
+  replacesSessionPath,
   workspaceState,
 }: {
   reason: Extract<DesktopEvent, { type: 'thread-update' }>['reason']
   projectId: string
   isChat?: boolean | undefined
+  replacesSessionPath?: string | null | undefined
   workspaceState: DesktopEventSelectionState
 }) {
+  const explicitlyReplacesSelectedDraft =
+    isLocalSessionPath(replacesSessionPath) &&
+    replacesSessionPath === workspaceState.selectedSessionPath
+  if (reason !== 'start' && !explicitlyReplacesSelectedDraft) {
+    return false
+  }
+
   const localDraftProjectId = getLocalDraftProjectId(workspaceState.selectedSessionPath)
-  if (reason !== 'start' || localDraftProjectId !== projectId) {
+  if (localDraftProjectId !== projectId) {
     return false
   }
 
   return (
     (workspaceState.activeView === 'chat' && isChat === true) ||
-    (workspaceState.activeView === 'thread' && isChat !== true)
+    ((workspaceState.activeView === 'thread' || workspaceState.activeView === 'project') &&
+      isChat !== true)
   )
 }
 
@@ -77,7 +93,7 @@ export async function refreshVisibleInboxThread({
   loadProjectThreads: (projectId: string) => Promise<unknown>
   queryClient: QueryClientLike
 }) {
-  await window.piDesktop?.invokeAction('inbox.mark-read', {
+  await invokeDesktopActionQuery('inbox.mark-read', {
     sessionPath: event.sessionPath,
     projectId: event.projectId,
   })
@@ -98,13 +114,15 @@ export function invalidateProjectWorktreeQueries({
   queryClient: QueryClientLike
 }) {
   if (activeView === 'gitops') {
-    void queryClient.invalidateQueries({
-      queryKey: desktopQueryKeys.projectDiffPrefix(projectId),
-    })
+    notifyProjectDiffInvalidated(projectId)
   }
 
   void queryClient.invalidateQueries({
     queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
+  })
+
+  void queryClient.invalidateQueries({
+    queryKey: desktopQueryKeys.projectDiffImagePreviewPrefix(projectId),
   })
 
   void queryClient.invalidateQueries({

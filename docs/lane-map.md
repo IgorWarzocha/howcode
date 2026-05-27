@@ -88,9 +88,6 @@ This repo is intentionally split around future Pi desktop integration seams.
 
 ## Checks
 
-- `bun run lint`
-- `bun run format`
-- `bun run typecheck`
-- `bun run test`
+- `bun run ai:check`
 - `bun run build`
 - `bun run check`

@@ -23,11 +23,13 @@ import {
   subscribeDesktopEvents as subscribeRuntimeEvents,
 } from '../pi-desktop-runtime.ts'
 import {
+  cancelProjectDiffStream,
   captureProjectDiffBaseline,
   listProjectCommits,
-  loadProjectDiff,
+  loadProjectDiffImagePreview,
   loadProjectDiffStats,
   loadProjectGitState,
+  startProjectDiffStream,
 } from '../project-git.ts'
 import { shutdownRuntimeHosts } from '../runtime-host/client-bridge.ts'
 import { disposeSessionWatcher, setWatchedSessionPath } from './session-watch.ts'
@@ -84,12 +86,14 @@ export async function loadProjectCommitHistory(
 }
 
 export {
+  cancelProjectDiffStream,
   captureProjectDiffBaseline,
   listProjectCommits,
-  loadProjectDiff,
+  loadProjectDiffImagePreview,
   loadProjectDiffStats,
   loadProjectGitState,
   setWatchedSessionPath,
+  startProjectDiffStream,
 }
 
 export const subscribeDesktopEvents = subscribeRuntimeEvents

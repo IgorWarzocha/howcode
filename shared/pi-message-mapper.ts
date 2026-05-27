@@ -13,6 +13,7 @@ type ThinkingPart = {
 }
 
 type RuntimeMessage = {
+  id?: string | undefined
   role?: string | undefined
   content?:
     | string
@@ -34,6 +35,7 @@ type RuntimeMessage = {
   toolCallId?: string | undefined
   toolName?: string | undefined
   args?: unknown
+  details?: unknown
   running?: boolean | undefined
   isError?: boolean | undefined
   command?: string | undefined
@@ -321,17 +323,20 @@ function mapAssistantMessage(id: string, runtimeMessage: RuntimeMessage): Messag
 function mapToolResultMessage(id: string, runtimeMessage: RuntimeMessage): Message {
   const text = extractUserContent(runtimeMessage.content)
   const images = getToolResultImages(runtimeMessage.content)
-  return {
+  const message: Message = {
     id,
     role: 'toolResult',
     toolCallId: runtimeMessage.toolCallId?.trim() || undefined,
     toolName: runtimeMessage.toolName ?? 'tool',
     content: text.length > 0 ? text : [runtimeMessage.isError ? 'Tool failed.' : 'Tool finished.'],
-    images: images.length > 0 ? images : undefined,
     isError: Boolean(runtimeMessage.isError),
     args: formatToolArgs(runtimeMessage.args),
     running: runtimeMessage.running || undefined,
   }
+  if (images.length > 0) message.images = images
+  if (runtimeMessage.args !== undefined) message.rawArgs = runtimeMessage.args
+  if (runtimeMessage.details !== undefined) message.details = runtimeMessage.details
+  return message
 }
 
 function formatToolArgs(args: unknown) {
@@ -394,7 +399,9 @@ export function mapAgentMessageToUiMessage(
   messageIndex: number,
 ): Message | null {
   const runtimeMessage = agentMessage as RuntimeMessage
-  const id = `${runtimeMessage.timestamp ?? messageIndex}-${runtimeMessage.role ?? 'message'}`
+  const id =
+    runtimeMessage.id ??
+    `${runtimeMessage.timestamp ?? messageIndex}-${runtimeMessage.role ?? 'message'}`
 
   switch (runtimeMessage.role) {
     case 'user':

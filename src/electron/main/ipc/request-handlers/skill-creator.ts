@@ -1,5 +1,5 @@
 import type { DesktopRequestHandlerMap } from '../../../../../shared/desktop-ipc'
-import type { SkillCreatorModule } from '../../runtime/desktop-runtime-contracts'
+import type { SkillCreatorService } from '../../../../../shared/desktop-service-contracts'
 
 type SkillCreatorRequestHandlers = Pick<
   DesktopRequestHandlerMap,
@@ -7,7 +7,7 @@ type SkillCreatorRequestHandlers = Pick<
 >
 
 export function createSkillCreatorHandlers(
-  skillCreator: SkillCreatorModule,
+  skillCreator: SkillCreatorService,
 ): SkillCreatorRequestHandlers {
   return {
     startSkillCreatorSession: (request) => skillCreator.startSkillCreatorSession(request),

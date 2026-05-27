@@ -1,8 +1,8 @@
+import { MainView } from '@howcode/app-shell'
+import { ChatWorkspaceView } from '@howcode/chat-workspace'
+import { CodeWorkspaceView } from '@howcode/code-workspace'
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
-import { ChatWorkspaceView } from '../features/chat/chat-workspace-view'
-import { CodeWorkspaceView } from '../features/code/code-workspace-view'
 import { mainPanelClass } from '../ui/classes'
-import { MainView } from '../views/main-view'
 import type { AppShellController } from './useAppShellController'
 
 type AppShellWorkspaceProps = {
@@ -71,11 +71,15 @@ export function AppShellWorkspace({
     )
   }
 
-  if (state.activeView === 'claw' || state.activeView === 'work') {
+  if (
+    state.activeView === 'claw' ||
+    state.activeView === 'work' ||
+    state.activeView === 'automations'
+  ) {
     return (
       <div className="relative min-h-0 flex-1 px-5 pt-1.5">
         <main className={mainPanelClass}>
-          <MainView activeView={state.activeView} />
+          <MainView activeView={state.activeView} projectName={currentProjectName} />
         </main>
       </div>
     )

@@ -34,9 +34,11 @@ import type {
   PiSkillMutationResult,
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffImagePreview,
+  ProjectDiffImageSide,
   ProjectDiffResolvedBaseline,
-  ProjectDiffResult,
   ProjectDiffStatsResult,
+  ProjectDiffStreamStartResult,
   ProjectGitState,
   ProjectUsageSummary,
   ReactArtifactCompileResult,
@@ -51,6 +53,7 @@ import type {
   TerminalStatusSnapshot,
   Thread,
   ThreadData,
+  ThreadSearchResult,
 } from './app/desktop/types'
 
 declare global {
@@ -69,14 +72,25 @@ declare global {
       getShellState: () => Promise<ShellState>
       getProjectGitState?: (projectId: string) => Promise<ProjectGitState | null>
       getProjectUsageSummary?: (projectId: string) => Promise<ProjectUsageSummary>
-      getProjectDiff?: (
+      getProjectFavicon?: (projectId: string) => Promise<string | null>
+      startProjectDiffStream?: (
         projectId: string,
         baseline?: ProjectDiffBaseline | null,
-      ) => Promise<ProjectDiffResult | null>
+        streamId?: string | null,
+        includeUntracked?: boolean | null,
+      ) => Promise<ProjectDiffStreamStartResult>
+      cancelProjectDiffStream?: (streamId: string) => Promise<void>
       getProjectDiffStats?: (
         projectId: string,
         baseline?: ProjectDiffBaseline | null,
+        includeUntracked?: boolean | null,
       ) => Promise<ProjectDiffStatsResult | null>
+      getProjectDiffImagePreview?: (request: {
+        projectId: string
+        baseline?: ProjectDiffBaseline | null | undefined
+        path: string
+        side: ProjectDiffImageSide
+      }) => Promise<ProjectDiffImagePreview>
       captureProjectDiffBaseline?: (
         projectId: string,
       ) => Promise<ProjectDiffResolvedBaseline | null>
@@ -199,6 +213,7 @@ declare global {
       getInboxThreads?: () => Promise<InboxThread[]>
       getArchivedThreads?: () => Promise<ArchivedThread[]>
       getThread?: (sessionPath: string, historyCompactions?: number) => Promise<ThreadData | null>
+      searchThread?: (sessionPath: string, query: string) => Promise<ThreadSearchResult>
       watchSession?: (sessionPath: string | null) => Promise<void>
       listTerminals?: () => Promise<TerminalSessionSnapshot[]>
       openTerminal?: (request: TerminalOpenRequest) => Promise<TerminalSessionSnapshot>

@@ -104,7 +104,11 @@ function buildPatchExcerpt(context: CommitMessageContext) {
 }
 
 function buildPrompt(context: CommitMessageContext) {
-  const scopeLabel = context.includeUnstaged ? 'all current changes' : 'staged changes only'
+  const scopeLabel = context.includeUnstaged
+    ? context.includeUntracked
+      ? 'all current changes'
+      : 'tracked changes only'
+    : 'staged changes only'
   const nameStatusSection = truncateText(
     context.nameStatus || context.diffStat || context.numStat,
     MAX_FILE_SECTION_CHARS,

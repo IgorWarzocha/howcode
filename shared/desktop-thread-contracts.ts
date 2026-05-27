@@ -10,6 +10,15 @@ export type Thread = {
   running?: boolean | undefined
   unread?: boolean | undefined
   pinned?: boolean | undefined
+  branchName?: string | null | undefined
+}
+
+export type ProjectWorktreeInfo = {
+  rootProjectId: string
+  branchName: string | null
+  isMain: boolean
+  source: 'howcode' | 'imported'
+  completed?: boolean | undefined
 }
 
 export type InboxThread = {
@@ -41,6 +50,8 @@ export type Project = {
   threadCount?: number | undefined
   repoOriginUrl?: string | undefined | null
   repoOriginChecked?: boolean | undefined
+  worktreeDirectory?: string | undefined
+  worktree?: ProjectWorktreeInfo | undefined
 }
 
 export type ProjectUsageSessionSummary = {
@@ -88,6 +99,7 @@ export type ArchivedThread = {
   projectId: string
   projectName: string
   sessionPath: string
+  isChat?: boolean | undefined
 }
 
 export type ProseMessage = {
@@ -121,6 +133,8 @@ export type ToolResultMessage = {
   images?: ToolResultImage[] | undefined
   isError: boolean
   args?: string | undefined
+  rawArgs?: unknown | undefined
+  details?: unknown | undefined
   running?: boolean | undefined
 }
 

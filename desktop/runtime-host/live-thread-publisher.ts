@@ -57,6 +57,7 @@ export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThr
     projectId: runtime.cwd,
     threadId: runtime.session.sessionId,
     sessionPath,
+    branchName: runtime.branchName ?? null,
     chatGroupId: runtime.chatGroupId ?? null,
     isChat: isChatSessionPath(sessionPath),
     thread: normalizeThreadDataForReason(liveThread, reason),

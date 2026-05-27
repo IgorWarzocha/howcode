@@ -83,6 +83,10 @@ Read these before implementing a new dual native extension:
 ### 7. Wire desktop UI
 - Surface pending tool state in `ComposerState`.
 - Render composer-adjacent UI above the composer using existing overlay/measurement patterns.
+- Composer-adjacent pending-tool overlays must share the same width grammar as queued prompts and
+  the composer body. Do not use an independent centered `max-w-*` card; anchor the overlay inside
+  the composer grid and inset it to the composer/content rails so its edges line up with the
+  composer curved border treatment at narrow widths.
 - Add a specific action such as `composer.answer-native-questions` to resolve the pending tool promise.
 - Keep `shared/desktop-actions.ts`, `shared/desktop-action-contracts.ts`, and `shared/desktop-action-coverage.ts` in sync for that action.
 - Include composer context fields in action payloads if the runtime lookup depends on mode/session dir/group.

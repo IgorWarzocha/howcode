@@ -6,6 +6,7 @@ import {
   getAppUpdateStateQuery,
   installAppUpdateQuery,
   restartAppUpdateQuery,
+  subscribeDesktopEvents,
 } from '../query/desktop-query'
 
 const fallbackUpdateState: AppUpdateState = {
@@ -25,7 +26,18 @@ function getUpdateLabel(state: AppUpdateState) {
   if (state.status === 'installing') return 'Installing update…'
   if (state.status === 'ready') return `Update ${latestVersion} ready`
   if (state.status === 'restarting') return 'Restarting…'
-  return state.error ? `Update failed: ${state.error}` : 'Update failed'
+  return state.error ? 'Update failed, press F12' : 'Update failed'
+}
+
+function logUpdateError(state: AppUpdateState) {
+  if (state.status !== 'error') return
+  console.error(`[howcode updater] Update failed: ${state.error ?? 'Unknown error'}`, {
+    error: state.error,
+    channel: state.channel,
+    currentVersion: state.currentVersion,
+    latestVersion: state.latestVersion,
+    status: state.status,
+  })
 }
 
 function getUpdateAction(state: AppUpdateState) {
@@ -40,16 +52,22 @@ export function useAppUpdateFlow() {
 
   useEffect(() => {
     let cancelled = false
-    const unsubscribe = window.piDesktop?.subscribe?.((event) => {
-      if (event.type === 'app-update') setState(event.state)
+    const unsubscribe = subscribeDesktopEvents((event) => {
+      if (event.type === 'app-update') {
+        logUpdateError(event.state)
+        setState(event.state)
+      }
     })
     void getAppUpdateStateQuery().then((nextState) => {
-      if (!cancelled && nextState) setState(nextState)
+      if (!cancelled && nextState) {
+        logUpdateError(nextState)
+        setState(nextState)
+      }
     })
 
     return () => {
       cancelled = true
-      unsubscribe?.()
+      unsubscribe()
     }
   }, [])
 
@@ -60,7 +78,10 @@ export function useAppUpdateFlow() {
         : state.status === 'ready'
           ? await restartAppUpdateQuery()
           : await checkAppUpdateQuery()
-    if (nextState) setState(nextState)
+    if (nextState) {
+      logUpdateError(nextState)
+      setState(nextState)
+    }
   }, [state.status])
 
   const isRunning =

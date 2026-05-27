@@ -40,19 +40,36 @@
 @keyframes standardSurfacePulse {
   0%,
   100% {
-    opacity: 1;
-    box-shadow:
-      inset 0 0 0 1px var(--accent-bg),
-      inset 0 0 14px var(--accent-bg-subtle);
+    opacity: 0.28;
+    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+    box-shadow: none;
   }
 
   50% {
-    opacity: 1;
-    box-shadow:
-      inset 0 0 0 1px var(--accent-border),
-      inset 0 0 26px var(--accent-bg),
-      inset 0 0 42px var(--accent-bg-subtle);
+    opacity: 0.48;
+    background-color: color-mix(in srgb, var(--accent) 16%, transparent);
+    box-shadow: none;
   }
+}
+
+@keyframes composerPanelPulse {
+  0%,
+  100% {
+    box-shadow: none;
+  }
+
+  50% {
+    box-shadow: none;
+  }
+}
+
+.motion-composer-panel-pulse {
+  transition: border-color 180ms var(--motion-ease-standard);
+}
+
+.motion-composer-panel-pulse-active {
+  animation: composerPanelPulse 2.4s ease-in-out infinite;
+  animation-fill-mode: both;
 }
 
 .motion-surface-pulse {
@@ -69,7 +86,7 @@
   pointer-events: none;
   border-radius: inherit;
   background: transparent;
-  box-shadow: inset 0 0 0 1px rgba(183, 186, 245, 0);
+  box-shadow: none;
 }
 
 .motion-surface-pulse > * {
@@ -89,6 +106,14 @@
 .motion-settings-section-pulse[data-pulse-active="true"]::before {
   opacity: 1;
   animation: standardSurfacePulse 1.15s ease-out 1;
+}
+
+.motion-settings-section-pulse:has([data-popover-open="true"]) {
+  z-index: 20;
+}
+
+[data-popover-boundary]:has([data-popover-open="true"]) {
+  z-index: var(--popover-boundary-z, 20);
 }
 
 .motion-overlay-panel {

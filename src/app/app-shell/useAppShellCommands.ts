@@ -1,17 +1,17 @@
+import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
+import { isLocalSessionPath } from '@howcode/shared/session-paths'
 import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch, SetStateAction } from 'react'
 import { useCallback } from 'react'
 import type { DesktopActionResult, InboxThread, ShellState } from '../desktop/types'
+import { notifyProjectDiffInvalidated } from '../hooks/project-diff-invalidation'
+import { forgetLocalDraftThread } from '../hooks/useDesktopProjectThreads'
 import { desktopQueryKeys } from '../query/desktop-query'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
 import type { View } from '../types'
-import type { SettingsOpenTarget } from '../views/settings/settingsTypes'
+import { removeProjectThreadFromShellState } from './project-thread-cache'
 import { getProjectSelectionAction } from './scoped-project-view'
-
-type RunDesktopAction = (
-  action: 'project.reorder',
-  payload: { projectIds: string[] },
-) => Promise<DesktopActionResult | null>
+import { THREAD_CYCLE_OPEN_ACTION_DELAY_MS, useScheduledThreadOpen } from './useScheduledThreadOpen'
 
 type HandleAction = (
   action:
@@ -19,6 +19,7 @@ type HandleAction = (
     | 'project.collapse'
     | 'project.expand'
     | 'thread.open'
+    | 'thread.new'
     | 'inbox.mark-read'
     | 'inbox.dismiss'
     | 'composer.reload-settings',
@@ -26,27 +27,26 @@ type HandleAction = (
 ) => Promise<DesktopActionResult | null>
 
 type UseAppShellCommandsInput = {
-  applyProjectOrder: (projectIds: string[]) => void
   collapsedProjectIds: Record<string, boolean>
   composerProjectId: string
   dispatch: Dispatch<WorkspaceAction>
   handleAction: HandleAction
   queryClient: QueryClient
-  runDesktopAction: RunDesktopAction
-  scheduleShellStateRefresh: () => void
   setThreadHistoryCompactions: Dispatch<SetStateAction<number>>
   setThreadRefreshKey: Dispatch<SetStateAction<number>>
+  setThreadQueryDeferred: Dispatch<SetStateAction<boolean>>
   setSettingsOpenTarget: Dispatch<SetStateAction<SettingsOpenTarget | null>>
   shellState: ShellState | null
   workspaceState: WorkspaceState
 }
 
 function resetProjectDiffCaches(queryClient: QueryClient, projectId: string) {
-  queryClient.removeQueries({
-    queryKey: desktopQueryKeys.projectDiffPrefix(projectId),
-  })
+  notifyProjectDiffInvalidated(projectId)
   void queryClient.invalidateQueries({
     queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
+  })
+  void queryClient.invalidateQueries({
+    queryKey: desktopQueryKeys.projectDiffImagePreviewPrefix(projectId),
   })
   void queryClient.invalidateQueries({
     queryKey: desktopQueryKeys.projectCommitsPrefix(projectId),
@@ -54,20 +54,25 @@ function resetProjectDiffCaches(queryClient: QueryClient, projectId: string) {
 }
 
 export function useAppShellCommands({
-  applyProjectOrder,
   collapsedProjectIds,
   composerProjectId,
   dispatch,
   handleAction,
   queryClient,
-  runDesktopAction,
-  scheduleShellStateRefresh,
   setSettingsOpenTarget,
   setThreadHistoryCompactions,
   setThreadRefreshKey,
+  setThreadQueryDeferred,
   shellState,
   workspaceState,
 }: UseAppShellCommandsInput) {
+  const scheduleThreadOpenAction = useScheduledThreadOpen({
+    dispatch,
+    handleAction,
+    setThreadQueryDeferred,
+    workspaceState,
+  })
+
   const handleToggleTerminal = useCallback(() => dispatch({ type: 'toggle-terminal' }), [dispatch])
   const handleCloseTerminalDrawer = useCallback(
     () => dispatch({ type: 'set-terminal-visible', visible: false }),
@@ -100,19 +105,48 @@ export function useAppShellCommands({
     void handleAction(nextCollapsed ? 'project.collapse' : 'project.expand', { projectId })
   }
 
+  const clearSelectedUnstartedDraft = () => {
+    const selectedSessionPath = workspaceState.selectedSessionPath
+    const selectedProjectId = workspaceState.selectedProjectId
+    if (
+      workspaceState.takeoverVisible ||
+      !(selectedProjectId && isLocalSessionPath(selectedSessionPath))
+    )
+      return
+
+    const localSessionPath = selectedSessionPath ?? ''
+    forgetLocalDraftThread(selectedProjectId, localSessionPath)
+    removeProjectThreadFromShellState(queryClient, selectedProjectId, localSessionPath)
+  }
+
   const handleThreadOpen = (
     projectId: string,
     threadId: string,
     sessionPath: string,
     view?: 'chat' | 'thread' | undefined,
   ) => {
+    clearSelectedUnstartedDraft()
     setThreadHistoryCompactions(0)
     dispatch({ type: 'open-thread', projectId, threadId, sessionPath, view })
-    void handleAction('thread.open', {
+    scheduleThreadOpenAction({ projectId, threadId, sessionPath, view })
+  }
+
+  const handleThreadCycle = (
+    projectId: string,
+    threadId: string,
+    sessionPath: string,
+    view?: 'chat' | 'thread' | undefined,
+  ) => {
+    setThreadHistoryCompactions(0)
+    dispatch({ type: 'preview-thread', projectId, threadId, view })
+    scheduleThreadOpenAction({
       projectId,
       threadId,
       sessionPath,
-      composerMode: view === 'chat' ? 'chat' : 'code',
+      view,
+      delayMs: THREAD_CYCLE_OPEN_ACTION_DELAY_MS,
+      deferThreadQuery: true,
+      commitLocally: true,
     })
   }
 
@@ -134,7 +168,12 @@ export function useAppShellCommands({
     })
   }
 
-  const handleLoadEarlierMessages = () => {
+  const handleLoadEarlierMessages = (targetHistoryCompactions?: number | undefined) => {
+    if (typeof targetHistoryCompactions === 'number' && Number.isFinite(targetHistoryCompactions)) {
+      setThreadHistoryCompactions(Math.max(0, Math.floor(targetHistoryCompactions)))
+      return
+    }
+
     setThreadHistoryCompactions((current) => current + 1)
   }
 
@@ -154,12 +193,6 @@ export function useAppShellCommands({
     handleOpenGitOpsView({ filePath })
   }
 
-  const handleProjectReorder = async (projectIds: string[]) => {
-    applyProjectOrder(projectIds)
-    await runDesktopAction('project.reorder', { projectIds })
-    scheduleShellStateRefresh()
-  }
-
   const setTakeoverOverrideForSelectedSession = (visible: boolean) => {
     const sessionPath = workspaceState.selectedSessionPath
     const globalTakeoverVisible = shellState?.appSettings?.piTuiTakeover
@@ -175,7 +208,15 @@ export function useAppShellCommands({
     })
   }
 
-  const handleShowTakeoverTerminal = () => {
+  const handleShowTakeoverTerminal = async () => {
+    if (
+      workspaceState.activeView === 'project' &&
+      composerProjectId &&
+      !workspaceState.selectedSessionPath
+    ) {
+      await handleAction('thread.new', { projectId: composerProjectId })
+    }
+
     dispatch({ type: 'set-takeover-visible', visible: true })
     setTakeoverOverrideForSelectedSession(true)
   }
@@ -219,7 +260,6 @@ export function useAppShellCommands({
     handleOpenGitOpsView,
     handleOpenSettingsPanel: () => dispatch({ type: 'set-settings-panel-open', open: true }),
     handleOpenWorktreeDiffFile,
-    handleProjectReorder,
     handleProjectSelect: (projectId: string) =>
       dispatch({ type: getProjectSelectionAction(workspaceState.activeView), projectId }),
     handleSetSelectedProject: (projectId: string) =>
@@ -230,6 +270,7 @@ export function useAppShellCommands({
     handleShowView,
     handleShowLanding,
     handleThreadOpen,
+    handleThreadCycle,
     handleToggleProjectCollapse,
     handleToggleSettings: () => dispatch({ type: 'toggle-settings' }),
     handleToggleTerminal,

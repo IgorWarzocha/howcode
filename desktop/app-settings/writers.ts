@@ -1,8 +1,10 @@
 import type {
+  ComposerSendMode,
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
   DictationModelId,
   GitOpsMode,
+  KeybindingOverrides,
   ModelSelection,
   ProjectDeletionMode,
   ProjectDiffDefaultBaseline,
@@ -18,7 +20,9 @@ import {
   chatThinkingLevelKey,
   codeModelKey,
   codeThinkingLevelKey,
+  composerSendModeKey,
   composerStreamingBehaviorKey,
+  customPiDirectoryKey,
   devUpdateBranchKey,
   dictationMaxDurationSecondsKey,
   dictationModelIdKey,
@@ -27,17 +31,22 @@ import {
   gitCommitMessageThinkingLevelKey,
   gitDiffBaselineDefaultKey,
   gitDiffFileTreeDefaultVisibleKey,
+  gitDiffIncludeUntrackedDefaultKey,
   gitDiffRenderModeDefaultKey,
   gitOpsDefaultModeKey,
+  hideSidebarSessionCountsKey,
   hoverToBlurKey,
   hoverToFocusKey,
   howcodeNativeAskQuestionsKey,
   initializeGitOnProjectCreateKey,
+  keybindingsKey,
   piTuiTakeoverKey,
   preferredProjectLocationKey,
+  projectDashboardEnabledKey,
   projectDeletionModeKey,
   projectImportStateKey,
   showDictationButtonKey,
+  sidebarVisibleProjectIdsKey,
   skillCreatorModelKey,
   skillCreatorThinkingLevelKey,
   useAgentsSkillsPathsKey,
@@ -179,6 +188,13 @@ export function setFavoriteFolders(favoriteFolders: string[]) {
   writeAppPreference(favoriteFoldersKey, JSON.stringify(normalizedFavoriteFolders))
 }
 
+export function setSidebarVisibleProjectIds(projectIds: string[]) {
+  const normalizedProjectIds = [
+    ...new Set(projectIds.map((projectId) => projectId.trim()).filter(Boolean)),
+  ]
+  writeAppPreference(sidebarVisibleProjectIdsKey, JSON.stringify(normalizedProjectIds))
+}
+
 export function setProjectImportState(projectImportState: boolean | null) {
   if (projectImportState === null) {
     deleteAppPreference(projectImportStateKey)
@@ -198,8 +214,27 @@ export function setPreferredProjectLocation(preferredProjectLocation: string | n
   writeAppPreference(preferredProjectLocationKey, JSON.stringify(normalizedLocation))
 }
 
+export function setCustomPiDirectory(customPiDirectory: string | null) {
+  const normalizedDirectory = customPiDirectory?.trim() ?? ''
+  if (normalizedDirectory.length === 0) {
+    deleteAppPreference(customPiDirectoryKey)
+    return
+  }
+
+  writeAppPreference(customPiDirectoryKey, JSON.stringify(normalizedDirectory))
+}
+
 export function setInitializeGitOnProjectCreate(enabled: boolean) {
   writeAppPreference(initializeGitOnProjectCreateKey, JSON.stringify(enabled))
+}
+
+export function setProjectDashboardEnabled(enabled: boolean) {
+  if (enabled) {
+    deleteAppPreference(projectDashboardEnabledKey)
+    return
+  }
+
+  writeAppPreference(projectDashboardEnabledKey, JSON.stringify(false))
 }
 
 export function setGitOpsDefaultMode(mode: GitOpsMode) {
@@ -238,6 +273,15 @@ export function setGitDiffFileTreeDefaultVisible(visible: boolean) {
   writeAppPreference(gitDiffFileTreeDefaultVisibleKey, JSON.stringify(false))
 }
 
+export function setGitDiffIncludeUntrackedDefault(enabled: boolean) {
+  if (!enabled) {
+    deleteAppPreference(gitDiffIncludeUntrackedDefaultKey)
+    return
+  }
+
+  writeAppPreference(gitDiffIncludeUntrackedDefaultKey, JSON.stringify(true))
+}
+
 export function setProjectDeletionMode(mode: ProjectDeletionMode) {
   writeAppPreference(projectDeletionModeKey, JSON.stringify(mode))
 }
@@ -258,6 +302,15 @@ export function setPiTuiTakeover(enabled: boolean) {
   writeAppPreference(piTuiTakeoverKey, JSON.stringify(enabled))
 }
 
+export function setHideSidebarSessionCounts(enabled: boolean) {
+  if (!enabled) {
+    deleteAppPreference(hideSidebarSessionCountsKey)
+    return
+  }
+
+  writeAppPreference(hideSidebarSessionCountsKey, JSON.stringify(true))
+}
+
 export function setHoverToFocus(enabled: boolean) {
   if (enabled) {
     deleteAppPreference(hoverToFocusKey)
@@ -274,4 +327,22 @@ export function setHoverToBlur(enabled: boolean) {
   }
 
   writeAppPreference(hoverToBlurKey, JSON.stringify(true))
+}
+
+export function setKeybindings(keybindings: KeybindingOverrides) {
+  if (Object.keys(keybindings).length === 0) {
+    deleteAppPreference(keybindingsKey)
+    return
+  }
+
+  writeAppPreference(keybindingsKey, JSON.stringify(keybindings))
+}
+
+export function setComposerSendMode(mode: ComposerSendMode) {
+  if (mode === 'enter') {
+    deleteAppPreference(composerSendModeKey)
+    return
+  }
+
+  writeAppPreference(composerSendModeKey, JSON.stringify(mode))
 }

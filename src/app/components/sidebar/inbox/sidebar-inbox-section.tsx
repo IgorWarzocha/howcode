@@ -1,3 +1,6 @@
+import { EmptyStateCard } from '@howcode/common/empty-state-card'
+import { IconButton } from '@howcode/common/icon-button'
+import { PopoverPanel } from '@howcode/common/popover'
 import {
   BrushCleaning,
   Check,
@@ -9,12 +12,17 @@ import {
   SquareTerminal,
   X,
 } from 'lucide-react'
-import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
 import type { DesktopActionInvoker, InboxThread } from '../../../desktop/types'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
-import { EmptyStateCard } from '../../common/empty-state-card'
-import { IconButton } from '../../common/icon-button'
-import { SurfacePanel } from '../../common/surface-panel'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeControlClass,
+  appTypeGroupTextClass,
+} from '../../../ui/classes'
+import { cn } from '../../../utils/cn'
 import { InboxThreadRow } from './inbox-thread-row'
 
 type InboxFilterMode = 'all' | 'terminal' | 'recent'
@@ -90,7 +98,7 @@ function SidebarInboxFilterMenu({
   onSelect: (filterMode: InboxFilterMode) => void
 }) {
   return (
-    <SurfacePanel
+    <PopoverPanel
       ref={panelRef}
       id={menuId}
       role="menu"
@@ -119,7 +127,7 @@ function SidebarInboxFilterMenu({
           </button>
         )
       })}
-    </SurfacePanel>
+    </PopoverPanel>
   )
 }
 
@@ -133,7 +141,7 @@ function SidebarInboxClearMenu({
   onSelect: (olderThanDays: number | null) => void
 }) {
   return (
-    <SurfacePanel
+    <PopoverPanel
       ref={panelRef}
       id={menuId}
       role="menu"
@@ -152,7 +160,7 @@ function SidebarInboxClearMenu({
           <span className="truncate text-left">{item.label}</span>
         </button>
       ))}
-    </SurfacePanel>
+    </PopoverPanel>
   )
 }
 
@@ -174,6 +182,8 @@ export function SidebarInboxSection({
   const clearPanelRef = useRef<HTMLDivElement>(null)
   const filterButtonRef = useRef<HTMLButtonElement>(null)
   const filterPanelRef = useRef<HTMLDivElement>(null)
+  const scrollRegionRef = useRef<HTMLDivElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const dismissClear = useCallback(() => {
     setClearOpen(false)
@@ -193,6 +203,12 @@ export function SidebarInboxSection({
     open: filterOpen,
     onDismiss: dismissFilter,
     refs: [filterButtonRef, filterPanelRef],
+  })
+
+  useHowcodeKeybindingCommand('sidebar.find', (event) => {
+    event.preventDefault()
+    searchInputRef.current?.focus()
+    searchInputRef.current?.select()
   })
 
   const visibleThreads = useMemo(() => {
@@ -215,6 +231,15 @@ export function SidebarInboxSection({
   const filterIcon = getInboxFilterIcon(filterMode)
   const filterLabel = getInboxFilterLabel(filterMode)
 
+  useEffect(() => {
+    if (!selectedSessionPath) return
+    if (!visibleThreads.some((thread) => thread.sessionPath === selectedSessionPath)) return
+    const selectedRow = scrollRegionRef.current?.querySelector<HTMLElement>(
+      '[data-inbox-thread-selected="true"]',
+    )
+    selectedRow?.scrollIntoView({ block: 'nearest' })
+  }, [selectedSessionPath, visibleThreads])
+
   return (
     <section className="sidebar-section">
       <div className="sidebar-toolbar">
@@ -224,6 +249,7 @@ export function SidebarInboxSection({
         >
           <Search size={14} className="sidebar-search-icon" />
           <input
+            ref={searchInputRef}
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             onKeyDown={(event) => {
@@ -310,28 +336,40 @@ export function SidebarInboxSection({
       </div>
 
       {visibleThreads.length > 0 ? (
-        <div className="sidebar-scroll-region">
+        <div ref={scrollRegionRef} className="sidebar-scroll-region">
           <div className="sidebar-list">
             {visibleThreads.map((thread) => (
-              <InboxThreadRow
+              <div
                 key={thread.sessionPath}
-                age={thread.age}
-                preview={thread.preview}
-                projectName={thread.projectName}
-                running={thread.running}
-                terminalRunning={terminalRunningSessionPaths.has(thread.sessionPath)}
-                selected={selectedSessionPath === thread.sessionPath}
-                title={thread.title}
-                unread={thread.unread}
-                onDismiss={() => onDismissThread(thread)}
-                onSelect={() => onSelectThread(thread)}
-              />
+                data-inbox-thread-selected={
+                  selectedSessionPath === thread.sessionPath ? 'true' : 'false'
+                }
+              >
+                <InboxThreadRow
+                  age={thread.age}
+                  preview={thread.preview}
+                  projectName={thread.projectName}
+                  running={thread.running}
+                  terminalRunning={terminalRunningSessionPaths.has(thread.sessionPath)}
+                  selected={selectedSessionPath === thread.sessionPath}
+                  title={thread.title}
+                  unread={thread.unread}
+                  onDismiss={() => onDismissThread(thread)}
+                  onSelect={() => onSelectThread(thread)}
+                />
+              </div>
             ))}
           </div>
         </div>
       ) : (
-        <EmptyStateCard className="grid gap-1.5 px-3 py-4 text-center text-[12.5px] text-[color:var(--muted)]">
-          <div className="text-[13px] text-[color:var(--text)]">No inbox items</div>
+        <EmptyStateCard
+          className={cn(
+            'grid gap-1.5 px-3 py-4 text-center',
+            appTypeControlClass,
+            appToneMutedClass,
+          )}
+        >
+          <div className={cn(appTypeGroupTextClass, appToneTextClass)}>No inbox items</div>
           <div>{getEmptyInboxMessage(showUnreadOnly, filterMode)}</div>
         </EmptyStateCard>
       )}

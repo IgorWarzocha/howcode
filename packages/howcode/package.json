@@ -1,6 +1,6 @@
 {
   "name": "howcode",
-  "version": "0.1.67",
+  "version": "0.1.68",
   "description": "Desktop coding app for Pi with projects, terminal, git, and diff workflows.",
   "license": "MIT",
   "author": "Igor Warzocha",
@@ -22,7 +22,7 @@
     "LICENSE"
   ],
   "dependencies": {
-    "tar": "^7.5.1"
+    "tar": "^7.5.15"
   },
   "engines": {
     "node": ">=18"

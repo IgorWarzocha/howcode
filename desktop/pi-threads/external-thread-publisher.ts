@@ -9,6 +9,7 @@ import {
 import { rememberSessionPath } from '../runtime/session-path-index.ts'
 import {
   beginInboxThreadTurn,
+  consumeInboxReplySuppression,
   getThreadAssistantSnapshot,
   hasInboxItem,
   setThreadRunningState,
@@ -50,12 +51,14 @@ function normalizeExternalThreadData(thread: ThreadData) {
 export async function publishExternalThreadUpdate({
   lastModifiedMs,
   projectId,
+  replacesSessionPath,
   sessionPath,
   thread,
   threadId,
 }: {
   lastModifiedMs: number
   projectId: string
+  replacesSessionPath?: string | undefined | null | undefined
   sessionPath: string
   thread: ThreadData
   threadId: string
@@ -80,13 +83,15 @@ export async function publishExternalThreadUpdate({
   }
 
   if (latestAssistantMessage && hasAssistantMessageChanged(sessionPath, latestAssistantMessage)) {
-    upsertInboxThreadMessage({
-      sessionPath,
-      userPrompt: latestUserPrompt,
-      content: latestAssistantMessage.content,
-      preview: latestAssistantMessage.preview,
-      lastAssistantAtMs: lastModifiedMs,
-    })
+    if (!consumeInboxReplySuppression(sessionPath)) {
+      upsertInboxThreadMessage({
+        sessionPath,
+        userPrompt: latestUserPrompt,
+        content: latestAssistantMessage.content,
+        preview: latestAssistantMessage.preview,
+        lastAssistantAtMs: lastModifiedMs,
+      })
+    }
   }
 
   emitDesktopEvent({
@@ -95,6 +100,7 @@ export async function publishExternalThreadUpdate({
     projectId,
     threadId,
     sessionPath,
+    replacesSessionPath: replacesSessionPath ?? null,
     thread,
     composer: null,
   })

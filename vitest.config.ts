@@ -1,8 +1,9 @@
-import { defineConfig } from 'vitest/config'
+import { mergeConfig } from 'vitest/config'
+import viteConfig from './vite.config'
 
-export default defineConfig({
+export default mergeConfig(viteConfig, {
   test: {
-    environment: 'node',
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'desktop/**/*.test.ts'],
+    exclude: ['node_modules/**', 'dist/**', 'build/**', 'Frameworks/**'],
   },
 })

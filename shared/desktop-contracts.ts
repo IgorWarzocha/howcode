@@ -68,11 +68,15 @@ export type {
   ProjectCommitEntry,
   ProjectDiffBaseline,
   ProjectDiffDefaultBaseline,
+  ProjectDiffImagePreview,
+  ProjectDiffImageSide,
   ProjectDiffPreferences,
   ProjectDiffRenderMode,
   ProjectDiffResolvedBaseline,
   ProjectDiffResult,
   ProjectDiffStatsResult,
+  ProjectDiffStreamEvent,
+  ProjectDiffStreamStartResult,
   ProjectGitState,
 } from './desktop-project-git-contracts'
 export type {
@@ -107,3 +111,19 @@ export type {
   ToolResultImage,
   ToolResultMessage,
 } from './desktop-thread-contracts'
+export type {
+  ComposerSendMode,
+  KeybindingCommandId,
+  KeybindingConflict,
+  KeybindingDefinition,
+  KeybindingOverrides,
+} from './keybindings'
+export {
+  bundledKeybindings,
+  getConflictForCommand,
+  getEffectiveAccelerators,
+  getKeybindingConflicts,
+  isKeybindingCommandId,
+  normalizeAccelerator,
+} from './keybindings'
+export type { ThreadSearchMatch, ThreadSearchResult } from './thread-search'

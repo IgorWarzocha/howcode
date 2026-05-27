@@ -1,8 +1,12 @@
+import { createReadStream } from 'node:fs'
 import { unlink } from 'node:fs/promises'
+import { createInterface } from 'node:readline'
 import type { DesktopAction } from '../../shared/desktop-actions.ts'
 import type { AnyDesktopActionPayload } from '../../shared/desktop-contracts.ts'
 import {
+  getBranchName,
   getComposerRequest,
+  getProjectId,
   getSessionPath,
   getThreadId,
   getThreadIds,
@@ -11,11 +15,15 @@ import { deleteArtifactsForConversation } from '../artifact-state-db.ts'
 import { deleteChatThread } from '../chat-state-db.ts'
 import { openThreadRuntime, startNewThread } from '../pi-desktop-runtime.ts'
 import {
+  addProjectUsageTotals,
   archiveThread,
   archiveThreads,
+  assignThreadBranch,
+  assignThreadToProjectBranch,
   clearReadInboxThreads,
   deleteThreadRecord,
   dismissInboxThread,
+  getThreadDeletionSnapshot,
   getThreadSessionPath,
   markInboxThreadRead,
   restoreThread,
@@ -25,31 +33,134 @@ import {
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
 
-async function deletePersistedThread(threadId: string) {
-  const sessionPath = getThreadSessionPath(threadId)
-  if (sessionPath) {
-    try {
-      await unlink(sessionPath)
-    } catch (error) {
-      if (
-        typeof error !== 'object' ||
-        error === null ||
-        !('code' in error) ||
-        error.code !== 'ENOENT'
-      ) {
-        throw error
-      }
-    }
+type UsageTotals = {
+  input: number
+  output: number
+  cacheRead: number
+  cacheWrite: number
+  totalTokens: number
+  costTotal: number
+  assistantTurnCount: number
+}
+
+function finiteNumber(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0
+}
+
+function getAssistantUsage(entry: unknown) {
+  if (
+    typeof entry !== 'object' ||
+    entry === null ||
+    !('type' in entry) ||
+    entry.type !== 'message'
+  ) {
+    return null
+  }
+  const message =
+    typeof entry === 'object' && entry !== null && 'message' in entry ? entry.message : null
+  if (
+    typeof message !== 'object' ||
+    message === null ||
+    !('role' in message) ||
+    message.role !== 'assistant' ||
+    !('usage' in message) ||
+    typeof message.usage !== 'object' ||
+    message.usage === null
+  ) {
+    return null
   }
 
+  return message.usage
+}
+
+function addUsageTotals(
+  totals: UsageTotals,
+  usage: NonNullable<ReturnType<typeof getAssistantUsage>>,
+) {
+  const cost = 'cost' in usage ? usage.cost : null
+  totals.input += finiteNumber('input' in usage ? usage.input : undefined)
+  totals.output += finiteNumber('output' in usage ? usage.output : undefined)
+  totals.cacheRead += finiteNumber('cacheRead' in usage ? usage.cacheRead : undefined)
+  totals.cacheWrite += finiteNumber('cacheWrite' in usage ? usage.cacheWrite : undefined)
+  totals.totalTokens += finiteNumber('totalTokens' in usage ? usage.totalTokens : undefined)
+  totals.costTotal += finiteNumber(
+    typeof cost === 'object' && cost !== null && 'total' in cost ? cost.total : undefined,
+  )
+  totals.assistantTurnCount += 1
+}
+
+function isMissingFileError(error: unknown) {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT'
+}
+
+async function summarizeSessionUsageForStorage(sessionPath: string): Promise<UsageTotals> {
+  const totals: UsageTotals = {
+    input: 0,
+    output: 0,
+    cacheRead: 0,
+    cacheWrite: 0,
+    totalTokens: 0,
+    costTotal: 0,
+    assistantTurnCount: 0,
+  }
+  const lines = createInterface({
+    input: createReadStream(sessionPath, { encoding: 'utf8' }),
+    crlfDelay: Number.POSITIVE_INFINITY,
+  })
+
+  for await (const line of lines) {
+    if (!line.trim()) continue
+    let entry: unknown
+    try {
+      entry = JSON.parse(line)
+    } catch {
+      continue
+    }
+    const usage = getAssistantUsage(entry)
+    if (!usage) continue
+    addUsageTotals(totals, usage)
+  }
+
+  return totals
+}
+
+async function storeUsageBeforeDelete(threadId: string, sessionPath: string) {
+  const deletionSnapshot = getThreadDeletionSnapshot(threadId)
+  if (!deletionSnapshot) return null
+  let usage: Awaited<ReturnType<typeof summarizeSessionUsageForStorage>>
+  try {
+    usage = await summarizeSessionUsageForStorage(sessionPath)
+  } catch (error) {
+    if (!isMissingFileError(error)) throw error
+    return null
+  }
+  return {
+    cwd: deletionSnapshot.cwd,
+    ...usage,
+  }
+}
+
+async function unlinkSessionFile(sessionPath: string) {
+  try {
+    await unlink(sessionPath)
+  } catch (error) {
+    if (!isMissingFileError(error)) throw error
+  }
+}
+
+async function deletePersistedThread(threadId: string) {
+  const sessionPath = getThreadSessionPath(threadId)
+  const usageSnapshot = sessionPath ? await storeUsageBeforeDelete(threadId, sessionPath) : null
   if (sessionPath) {
+    await unlinkSessionFile(sessionPath)
     deleteArtifactsForConversation(sessionPath)
     deleteChatThread(sessionPath)
   }
   deleteThreadRecord(threadId)
+  if (usageSnapshot) addProjectUsageTotals(usageSnapshot)
 }
 
-async function deletePersistedThreads(threadIds: string[]) {
+export async function deletePersistedThreads(threadIds: string[]) {
   const deletedThreadIds: string[] = []
   const failedThreadIds: string[] = []
 
@@ -112,6 +223,13 @@ const threadActionHandlers = {
     if (threadIds.length > 0) archiveThreads(threadIds)
     return handledAction()
   },
+  'thread.assign-branch': (payload) => {
+    const threadId = getThreadId(payload)
+    if (!threadId) return handledAction()
+    return handledAction(
+      assignThreadToProjectBranch(threadId, getBranchName(payload), getProjectId(payload)),
+    )
+  },
   'thread.restore': (payload) => {
     const threadId = getThreadId(payload)
     if (threadId) restoreThread(threadId)
@@ -128,7 +246,12 @@ const threadActionHandlers = {
     return handledAction()
   },
   'thread.delete-many': deleteManyThreadsFromPayload,
-  'thread.new': async (payload) => handledAction(await startNewThread(getComposerRequest(payload))),
+  'thread.new': async (payload) => {
+    const result = await startNewThread(getComposerRequest(payload))
+    const branchName = getBranchName(payload)
+    if (branchName) assignThreadBranch(result.threadId, branchName)
+    return handledAction(result)
+  },
   'inbox.mark-read': (payload) => {
     const sessionPath = getSessionPath(payload)
     if (sessionPath) markInboxThreadRead(sessionPath)

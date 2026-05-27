@@ -1,6 +1,5 @@
 ## Coming ASAP
 - More cards.
-- Worktrees.
 - Automations per project.
 - Multiple terminals per session.
 - External terminal control for agents, probably via a small tool.
@@ -14,4 +13,4 @@
 
 Submit any ideas or suggestions to https://github.com/IgorWarzocha/howcode/issues
 
-Snapshot: May 3, 2026.
+Snapshot: May 27, 2026.
