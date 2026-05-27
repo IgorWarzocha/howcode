@@ -23,6 +23,10 @@ function getDefaultElectronUserDataPath() {
 }
 
 export function getDevUserDataPath() {
+  if (getProcessEnvironmentVariable('HOWCODE_DEV_USER_DATA_PROFILE')?.trim() === 'app') {
+    return getDefaultElectronUserDataPath()
+  }
+
   return (
     getProcessEnvironmentVariable('HOWCODE_DEV_USER_DATA_PATH')?.trim() ||
     path.join(getDefaultElectronUserDataPath(), 'dev')
