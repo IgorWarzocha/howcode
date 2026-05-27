@@ -212,13 +212,16 @@ export function ProjectCompactBranchGroups({
       {worktreeGroups.map((group, index) => {
         const groupKey = `${project.id}:${group.id}`
         const visualGroupKey = getCompactBranchVisualGroupKey(group, currentBranch)
-        const previousGroup =
-          index > 0 ? (worktreeGroups[index - 1] ?? currentBranchGroup) : currentBranchGroup
-        const previousVisualGroupKey = getCompactBranchVisualGroupKey(previousGroup, currentBranch)
+        const nextGroup = index < worktreeGroups.length - 1 ? worktreeGroups[index + 1] : undefined
+        const nextVisualGroupKey = nextGroup
+          ? getCompactBranchVisualGroupKey(nextGroup, currentBranch)
+          : null
         const collapsed = normalizedSearchQuery
           ? false
           : (collapsedBranchIds[groupKey] ??
             (group.threads.length === 0 && group.worktrees.length === 0))
+        const showBottomDivider =
+          !collapsed && nextVisualGroupKey !== null && visualGroupKey !== nextVisualGroupKey
         return (
           <BranchThreadGroupSection
             key={group.id}
@@ -232,7 +235,7 @@ export function ProjectCompactBranchGroups({
             selectedThreadId={selectedThreadId}
             terminalRunningSessionPaths={terminalRunningSessionPaths}
             onAction={onAction}
-            showTopDivider={!collapsed && visualGroupKey !== previousVisualGroupKey}
+            showBottomDivider={showBottomDivider}
             onThreadOpen={onThreadOpen}
             onToggle={() =>
               onSetCollapsedBranchIds((current) => ({
