@@ -1,8 +1,7 @@
 import { ActivitySpinner } from '@howcode/common/activity-spinner'
 import { Tooltip } from '@howcode/common/tooltip'
-import { GitBranch, SquareTerminal, Star, Trash2 } from 'lucide-react'
-import { useRef, useState } from 'react'
-import { ConfirmPopover } from '../../../common/confirm-popover'
+import { GitBranch, SquareTerminal, Star, Trash2, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '../../../utils/cn'
 
 type ThreadRowProps = {
@@ -84,6 +83,29 @@ function ThreadMetaSlot({
     setConfirmDeleteOpen((current) => !current)
   }
 
+  useEffect(() => {
+    if (!confirmDeleteOpen) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.stopPropagation()
+      setConfirmDeleteOpen(false)
+    }
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target
+      if (!(target instanceof Element)) return
+      if (target.closest('.sidebar-thread-delete-confirm-anchor')) return
+      setConfirmDeleteOpen(false)
+    }
+
+    document.addEventListener('keydown', handleKeyDown, true)
+    document.addEventListener('pointerdown', handlePointerDown, true)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, true)
+      document.removeEventListener('pointerdown', handlePointerDown, true)
+    }
+  }, [confirmDeleteOpen])
+
   return (
     <span className="sidebar-thread-meta-slot">
       <span className="sidebar-thread-meta-value" aria-hidden="true">
@@ -112,13 +134,14 @@ function ThreadMetaSlot({
         <Tooltip
           content="Delete session"
           placement="right"
-          className="sidebar-thread-action-anchor"
+          className="sidebar-thread-action-anchor sidebar-thread-delete-confirm-anchor"
         >
           <button
             ref={deleteButtonRef}
             type="button"
             className={cn(
               'sidebar-icon-action sidebar-icon-action--sm sidebar-thread-meta-action-button',
+              confirmDeleteOpen && 'sidebar-thread-meta-action-button--danger',
               'border-transparent bg-transparent hover:bg-transparent',
             )}
             onClick={handleDeleteClick}
@@ -126,19 +149,42 @@ function ThreadMetaSlot({
           >
             <Trash2 size={12} />
           </button>
+          {confirmDeleteOpen ? (
+            <span
+              className="sidebar-thread-meta-actions sidebar-thread-delete-confirm-popover"
+              data-action-count="2"
+              data-confirming="true"
+            >
+              <span className="tooltip-anchor">
+                <button
+                  type="button"
+                  className="sidebar-icon-action sidebar-icon-action--sm sidebar-thread-meta-action-button sidebar-thread-delete-confirm-button"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    setConfirmDeleteOpen(false)
+                  }}
+                  aria-label="Cancel delete session"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+              <span className="tooltip-anchor">
+                <button
+                  type="button"
+                  className="sidebar-icon-action sidebar-icon-action--sm sidebar-thread-meta-action-button sidebar-thread-meta-action-button--danger sidebar-thread-delete-confirm-button"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    setConfirmDeleteOpen(false)
+                    onDelete()
+                  }}
+                  aria-label="Delete session"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </span>
+            </span>
+          ) : null}
         </Tooltip>
-        {confirmDelete ? (
-          <ConfirmPopover
-            open={confirmDeleteOpen}
-            anchorRef={deleteButtonRef}
-            confirmLabel="Delete session"
-            onClose={() => setConfirmDeleteOpen(false)}
-            onConfirm={() => {
-              setConfirmDeleteOpen(false)
-              onDelete()
-            }}
-          />
-        ) : null}
       </span>
     </span>
   )
