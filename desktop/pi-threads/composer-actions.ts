@@ -62,7 +62,9 @@ async function sendComposerPromptFromPayload(payload: AnyDesktopActionPayload) {
     payload.suppressInbox === true &&
     composerRequest.sessionPath &&
     composerSendResult.sessionPath &&
-    composerSendResult.threadId
+    composerSendResult.threadId &&
+    composerSendResult.outcome === 'sent' &&
+    !isCompactSlashCommand(text)
   ) {
     dismissInboxThreadAfterReply(composerRequest.sessionPath)
   }

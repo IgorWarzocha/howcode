@@ -2,7 +2,13 @@
 
 - Split desktop Pi/runtime work into a stock-Node service so native deps stop fighting Electron.
   *Reason being that Pi compiles your extensions against your system Node. Things were getting messy. The app is compiled to work with Node 24, 25 and 26.*
+- Rebuilt the project sidebar into a proper git-oriented work surface.
+- Branches: start sessions, assign/unassign sessions, remove branches.
+- Worktrees: create, start sessions inside them, mark complete, merge/remove.
+- Branches + worktrees: one-click merge/remove completed worktrees.
+  *Please note some of these actions are irreversible. Safeguards around errors, but if it succeeds, they're gone.*
 - De-cardified a lot of the UI: quieter chat/tool rows, composer popovers, Skills/Extensions, Settings, Inbox, artifacts, and GitOps diffs.
+- Project dashboard is now it's separate thing, not connected to starting a session anymore.
 - Split up app shell, composer, terminal, GitOps, inbox, settings, artifacts, and runtime-host code.
 - Added cleaner app module boundaries with `@howcode/*` aliases and native capability folders. First step to pluginisation of the app.
 - Upgraded GitOps diffs to use Pierre's streamed CodeView renderer.
@@ -12,6 +18,8 @@
 - Added custom Pi directory settings.
 - Added thread find and result highlights.
 - Updated dependencies.
+- Edit tool now displays diffs.
+- Sidebar fold/unfold button placement moved around.
 - Fixed packaged macOS terminal startup (thank you, BlockedPath).
 - Fixed dev-channel updater checks getting stuck on stale archives.
 - Fixed same-version update hash checks.
@@ -19,11 +27,7 @@
 - Fixed code landing/project dashboard routing.
 - Fixed empty dashboard threads piling up.
 - Fixed Pi TUI new-thread sidebar handoff.
-- Added the new project-work sidebar: branch-grouped sessions, visible-project scope, Past sessions, branch actions, and cleaner project menus.
-- Added worktree layout defaults, worktree docs/blog pages, and the poll worker pieces for the worktrees write-up.
-- Tightened worktree cleanup: merge/remove now stops runtimes and terminals cleanly, handles partial Git failures, and keeps detached worktrees from pretending to have branches.
-- Made session deletion/archiving harder to do accidentally, with confirmations and archived code sessions showing up again.
-- Cleaned up sidebar popovers and project-work styling so the new sidebar feels less bolted on.
+- Cleaned up sidebar popovers and project-work styling so the new sidebar feels like it belongs there.
 - Quieted missing-session usage noise and checkbox layout shifts.
 
 Snapshot: May 19, 2026.
