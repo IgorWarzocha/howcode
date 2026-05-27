@@ -1,11 +1,11 @@
 ### 0.1.66
 
-- Split desktop Pi/runtime work into a stock-Node service so native deps stop fighting Electron.
+- Split desktop Pi/runtime work into a stock-Node service so native deps stop fighting Electron.  
   *Reason being that Pi compiles your extensions against your system Node. Things were getting messy. The app is compiled to work with Node 24, 25 and 26.*
 - Rebuilt the project sidebar into a proper git-oriented work surface.
 - Branches: start sessions, assign/unassign sessions, remove branches.
 - Worktrees: create, start sessions inside them, mark complete, merge/remove.
-- Branches + worktrees: one-click merge/remove completed worktrees.
+- Branches + worktrees: one-click merge/remove completed worktrees.  
   *Please note some of these actions are irreversible. Safeguards around errors, but if it succeeds, they're gone.*
 - De-cardified a lot of the UI: quieter chat/tool rows, composer popovers, Skills/Extensions, Settings, Inbox, artifacts, and GitOps diffs.
 - Project dashboard is now it's separate thing, not connected to starting a session anymore.
@@ -27,9 +27,9 @@
 - Fixed code landing/project dashboard routing.
 - Fixed empty dashboard threads piling up.
 - Fixed Pi TUI new-thread sidebar handoff.
-- Cleaned up sidebar popovers and project-work styling so the new sidebar feels like it belongs there.
-- Quieted missing-session usage noise and checkbox layout shifts.
-- Fixed extension-driven branch summaries showing as compaction without permanently locking the composer.
+- Cleaned up sidebar popovers and project-work styling.
+- Quieted missing-session noise and checkbox jumps.
+- Fixed extension summaries locking the composer.
 
 Snapshot: May 19, 2026.
 

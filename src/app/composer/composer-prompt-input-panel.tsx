@@ -1,10 +1,11 @@
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import type { ComposerSendMode, KeybindingOverrides } from '@howcode/shared/keybindings'
-import { Loader2 } from 'lucide-react'
+import { AlertTriangle, Loader2 } from 'lucide-react'
 import type { ClipboardEvent, RefObject } from 'react'
 import type { ComposerAttachment, DesktopActionInvoker } from '../desktop/types'
 import { getPathForFileQuery } from '../query/desktop-query'
-import { composerInlineStatusPillClass } from '../ui/classes'
+import { appTypeSmallClass, composerInlineStatusPillClass } from '../ui/classes'
+import { cn } from '../utils/cn'
 import { ComposerDictationControls } from './composer-dictation-controls'
 import { ComposerFileMentionPanel } from './composer-file-mention-panel'
 import { ComposerFilePicker } from './composer-file-picker'
@@ -71,6 +72,36 @@ type ComposerPromptInputPanelProps = {
   togglePendingPickerAttachment: Parameters<typeof ComposerFilePicker>[0]['onToggleFile']
 }
 
+function isBranchGuardError(errorMessage: string | null) {
+  return Boolean(errorMessage?.includes('then resend your prompt.'))
+}
+
+function getComposerStatusMessage(input: {
+  draft: string
+  errorMessage: string | null
+  showBranchGuardPopup: boolean
+}) {
+  if (!(input.errorMessage && input.draft.length > 0)) return null
+  return input.showBranchGuardPopup ? null : input.errorMessage
+}
+
+function BranchGuardPopup({ message }: { message: string | null }) {
+  if (!message) return null
+  return (
+    <div className="pointer-events-none absolute right-4 bottom-full left-[1.1rem] z-[5] mb-2 flex justify-center">
+      <div
+        className={cn(
+          'thread-compaction-pill inline-flex h-7 max-w-full shrink-0 items-center gap-1.5 rounded-full px-3 text-[color:var(--danger)]',
+          appTypeSmallClass,
+        )}
+      >
+        <AlertTriangle size={12} className="shrink-0" />
+        <span className="truncate">{message}</span>
+      </div>
+    </div>
+  )
+}
+
 export function ComposerPromptInputPanel({
   attachments,
   clearError,
@@ -118,6 +149,9 @@ export function ComposerPromptInputPanel({
   toggleDictation,
   togglePendingPickerAttachment,
 }: ComposerPromptInputPanelProps) {
+  const showBranchGuardPopup = isBranchGuardError(errorMessage)
+  const statusMessage = getComposerStatusMessage({ draft, errorMessage, showBranchGuardPopup })
+
   return (
     <>
       {pickerOpen ? (
@@ -138,7 +172,8 @@ export function ComposerPromptInputPanel({
           onToggleFile={togglePendingPickerAttachment}
         />
       ) : null}
-      <div className="grid content-end pr-4 pl-[1.1rem] pt-4 pb-1">
+      <div className="relative grid content-end pr-4 pl-[1.1rem] pt-4 pb-1">
+        <BranchGuardPopup message={showBranchGuardPopup ? errorMessage : null} />
         <div className="flex items-end justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-end gap-2">
             <div className="min-w-0 flex-1">
@@ -213,7 +248,7 @@ export function ComposerPromptInputPanel({
                 hoverToBlur={hoverToBlur}
                 hoverBoundaryRef={hoverBoundaryRef}
                 placeholderTone={errorMessage ? 'error' : 'muted'}
-                statusMessage={errorMessage && draft.length > 0 ? errorMessage : null}
+                statusMessage={statusMessage}
                 reservedLineCount={1}
                 inlinePopover={
                   fileMentions.open ? (

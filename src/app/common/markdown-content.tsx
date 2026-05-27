@@ -297,7 +297,7 @@ export function MarkdownContent({ markdown, tone = 'default', className }: Markd
               {children}
             </strong>
           ),
-          em: ({ children }) => <em className="italic">{children}</em>,
+          em: ({ children }) => <em className={cn('italic', appToneMutedClass)}>{children}</em>,
           a: MarkdownLink,
           hr: () => <hr className="my-0.5 border-0 border-t border-[color:var(--border-strong)]" />,
           blockquote: ({ children }) => (
