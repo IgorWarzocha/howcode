@@ -3,8 +3,7 @@
 
 # There are many desktop apps for coding with AI, but this one...
 
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/1d7e0599-9509-48a9-948f-23dd381aedb5" />
-
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/c81d022e-75bd-4657-8d46-821514997d9c" />
 <br />
 
 I've clanked a LOT. And during that clanking, I used a few apps. None of them really fit how I work. This one does. It's opinionated, focussed on UX and aimed at YOLOing with agents.
