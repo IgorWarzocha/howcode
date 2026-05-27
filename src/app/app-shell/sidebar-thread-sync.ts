@@ -13,16 +13,17 @@ import {
   removeChatThreadFromSidebarState,
 } from './chat-sidebar-cache'
 import type { ActionPayload } from './controller-action-utils'
-import {
-  buildLocalThreadFallback,
-  getPayloadProjectId,
-  hasActionError,
-} from './controller-action-utils'
+import { getPayloadProjectId, hasActionError } from './controller-action-utils'
 import {
   applyProjectThreadToShellState,
   getDraftReplacementSessionPath,
   removeProjectThreadFromShellState,
 } from './project-thread-cache'
+import {
+  buildLocalThreadFallback,
+  buildOptimisticThread,
+  getInitialThreadBranchName,
+} from './thread-drafts'
 
 type QueryClientLike = Parameters<typeof applyProjectThreadToShellState>[0] & {
   getQueryData?: (queryKey: readonly unknown[]) => unknown
@@ -42,27 +43,6 @@ type OptimisticComposerThreadResult = {
 
 function getContextualChatGroupId(payload: ActionPayload) {
   return typeof payload.chatGroupId === 'string' ? payload.chatGroupId : null
-}
-
-function buildSidebarThread(input: {
-  id: string
-  title: string
-  sessionPath: string
-  branchName?: string | undefined | null
-  running?: boolean
-  lastModifiedMs?: number
-}): Thread {
-  const thread: Thread = {
-    id: input.id,
-    title: input.title,
-    age: 'Now',
-    lastModifiedMs: input.lastModifiedMs ?? Date.now(),
-    sessionPath: input.sessionPath,
-    running: input.running,
-  }
-  const branchName = input.branchName?.trim()
-  if (branchName) thread.branchName = branchName
-  return thread
 }
 
 function upsertSidebarThread({
@@ -159,19 +139,14 @@ export function applyOptimisticComposerThread({
   }
 
   const chatGroupId = activeView === 'chat' ? getContextualChatGroupId(contextualPayload) : null
-  const branchName =
-    typeof contextualPayload.branchName === 'string' &&
-    contextualPayload.branchName.trim().length > 0
-      ? contextualPayload.branchName.trim()
-      : null
+  const branchName = getInitialThreadBranchName(contextualPayload.branchName)
   const localFallback = buildLocalThreadFallback(contextualPayload.projectId, {
     chatGroupId,
     branchName,
   })
   const nextPayload = { ...contextualPayload, sessionPath: localFallback.sessionPath }
-  const thread = buildSidebarThread({
+  const thread = buildOptimisticThread({
     id: localFallback.threadId,
-    title: 'New thread',
     sessionPath: localFallback.sessionPath,
     branchName: getLocalDraftBranchName(localFallback.sessionPath),
     running: true,
@@ -287,7 +262,7 @@ export function reconcileComposerThreadResult({
     queryClient,
     setChatSidebarState,
     projectId,
-    thread: buildSidebarThread({
+    thread: buildOptimisticThread({
       id: resultThreadId,
       title: title ?? 'New thread',
       sessionPath: resultSessionPath,
@@ -351,7 +326,7 @@ export function applyThreadEventToSidebarState({
     queryClient,
     setChatSidebarState,
     projectId: event.projectId,
-    thread: buildSidebarThread({
+    thread: buildOptimisticThread({
       id: event.threadId,
       title: event.thread.title,
       sessionPath: event.sessionPath,

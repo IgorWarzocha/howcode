@@ -4,11 +4,15 @@ import type { ComposerState, DesktopActionResult } from '../../desktop/types'
 import type { WorkspaceAction, WorkspaceState } from '../../state/workspace'
 import {
   type ActionPayload,
-  buildLocalThreadFallback,
   getPayloadProjectId,
   hasDesktopBridge,
 } from '../controller-action-utils'
 import { applyProjectThreadToShellState } from '../project-thread-cache'
+import {
+  buildLocalThreadFallback,
+  buildOptimisticThread,
+  getInitialThreadBranchName,
+} from '../thread-drafts'
 
 type NewThreadPostEffectInput = {
   action: 'thread.new' | 'project.add'
@@ -47,10 +51,7 @@ function getNewThreadResult(input: NewThreadPostEffectInput) {
   const localFallback =
     !(threadId || sessionPath) && projectId && !hasDesktopBridge()
       ? buildLocalThreadFallback(projectId, {
-          branchName:
-            typeof input.contextualPayload.branchName === 'string'
-              ? input.contextualPayload.branchName.trim() || null
-              : null,
+          branchName: getInitialThreadBranchName(input.contextualPayload.branchName),
         })
       : null
   return { projectId, resultProjectId, sessionPath, threadId, localFallback }
@@ -73,19 +74,11 @@ function applyOptimisticThread(
   input: NewThreadPostEffectInput,
   thread: { projectId: string; threadId: string; sessionPath: string },
 ) {
-  const branchName =
-    typeof input.contextualPayload.branchName === 'string' &&
-    input.contextualPayload.branchName.trim().length > 0
-      ? input.contextualPayload.branchName.trim()
-      : undefined
-  const optimisticThread = {
+  const optimisticThread = buildOptimisticThread({
     id: thread.threadId,
-    title: 'New thread',
-    age: 'Now',
-    lastModifiedMs: Date.now(),
     sessionPath: thread.sessionPath,
-    branchName,
-  }
+    branchName: getInitialThreadBranchName(input.contextualPayload.branchName),
+  })
   applyProjectThreadToShellState(input.queryClient, thread.projectId, optimisticThread, {
     revealProject: true,
   })

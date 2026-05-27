@@ -1,4 +1,3 @@
-import { createLocalThreadDraft } from '@howcode/shared/session-paths'
 import type { DesktopAction } from '../desktop/actions'
 import type { AnyDesktopActionPayload, DesktopActionResult, Thread } from '../desktop/types'
 import { hasDesktopBridgeQuery } from '../query/desktop-query'
@@ -71,13 +70,6 @@ export function sortPinnedProjects<T extends { id: string; pinned?: boolean | un
 
 export function hasDesktopBridge() {
   return hasDesktopBridgeQuery()
-}
-
-export function buildLocalThreadFallback(
-  projectId: string,
-  options: { chatGroupId?: string | null; branchName?: string | null } = {},
-) {
-  return createLocalThreadDraft(projectId, undefined, options)
 }
 
 export function isThreadPinAction(action: DesktopAction) {

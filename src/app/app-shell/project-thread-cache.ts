@@ -1,6 +1,7 @@
 import { isLocalSessionPath } from '@howcode/shared/session-paths'
 import type { ShellState, Thread } from '../desktop/types'
 import { desktopQueryKeys } from '../query/desktop-query'
+import { mergeThreadCacheFields } from './thread-cache-merge'
 
 type QueryClientLike = {
   setQueryData: (queryKey: readonly unknown[], updater: (current: unknown) => unknown) => void
@@ -21,17 +22,6 @@ function sameThread(left: Thread, right: Thread, replaceSessionPath: string | nu
   }
 
   return Boolean(replaceSessionPath && left.sessionPath === replaceSessionPath)
-}
-
-function mergeThread(existing: Thread | undefined, next: Thread): Thread {
-  const nextHasBranchName = Object.hasOwn(next, 'branchName') && next.branchName !== undefined
-  return {
-    ...existing,
-    ...next,
-    branchName: nextHasBranchName ? next.branchName : existing?.branchName,
-    pinned: existing?.pinned ?? next.pinned,
-    unread: next.unread ?? existing?.unread,
-  }
 }
 
 export function applyProjectThreadToShellState(
@@ -59,7 +49,7 @@ export function applyProjectThreadToShellState(
         const existingThread = project.threads.find((candidate) =>
           sameThread(candidate, thread, replaceSessionPath),
         )
-        const nextThread = mergeThread(existingThread, thread)
+        const nextThread = mergeThreadCacheFields(existingThread, thread)
         const remainingThreads = project.threads.filter(
           (candidate) => !sameThread(candidate, thread, replaceSessionPath),
         )
