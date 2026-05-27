@@ -66,6 +66,10 @@ function publishRuntimeComposerState(runtime: PiRuntime) {
 function handleExtensionCommandStateChange(runtime: PiRuntime) {
   void publishRuntimeComposerState(runtime)
   if (!isRuntimeExtensionCommandRunning(runtime)) {
+    void publishThreadUpdate(runtime, 'compaction').catch(() => {
+      // A branch-summary-like extension command just ended. If Pi exposed it through
+      // isCompacting, clear the live thread pill even when Pi does not emit compaction_end.
+    })
     const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile)
     if (runtimeKey) {
       void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {

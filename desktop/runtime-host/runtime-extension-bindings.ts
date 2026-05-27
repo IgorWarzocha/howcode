@@ -9,7 +9,7 @@ import {
 import { buildComposerState } from '../runtime/composer-state.ts'
 import type { PiRuntime } from '../runtime/types.ts'
 import { emitDesktopEvent } from './host-events.ts'
-import { publishComposerUpdate } from './live-thread-publisher.ts'
+import { publishComposerUpdate, publishThreadUpdate } from './live-thread-publisher.ts'
 
 type RuntimeExtensionBindingHandlers = {
   isRuntimeExtensionCommandRunning: (runtime: PiRuntime) => boolean
@@ -36,6 +36,10 @@ function publishRuntimeExtensionCommandState(
     .catch((error) => console.warn('Failed to publish extension command state', error))
 
   if (handlers.isRuntimeExtensionCommandRunning(runtime)) return
+  void publishThreadUpdate(runtime, 'compaction').catch(() => {
+    // Branch summaries can reuse Pi's compaction state without emitting compaction_end.
+    // Clear the live thread state when the extension command itself has finished.
+  })
   const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile)
   if (runtimeKey) {
     void handlers.reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
