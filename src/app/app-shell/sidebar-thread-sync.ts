@@ -258,6 +258,7 @@ export function reconcileComposerThreadResult({
 
   const title = getCachedThreadTitle(queryClient, projectId, resultThreadId, resultSessionPath)
   const replaceSessionPath = isLocalSessionPath(submittedSessionPath) ? submittedSessionPath : null
+  if (replaceSessionPath) forgetLocalDraftThread(projectId, replaceSessionPath)
   upsertSidebarThread({
     queryClient,
     setChatSidebarState,
