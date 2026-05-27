@@ -1,4 +1,3 @@
-import { HistoricalMarkdownPreview } from '@howcode/native-markdown-artifacts'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import {
   appToneDangerClass,
@@ -14,6 +13,7 @@ import {
   artifactPreviewSurfaceClass,
 } from '../../ui/classes'
 import { cn } from '../../utils/cn'
+import { HistoricalMarkdownPreview } from '../markdown-artifacts/artifact-markdown-preview'
 import { formatArtifactSlug } from './artifactFormat'
 import type { useArtifactPanelState } from './useArtifactPanelState'
 
@@ -22,6 +22,7 @@ const ArtifactMarkdownEditor = lazy(async () => {
   // @mdxeditor/@lexical code highlighting expects Prism on the browser global.
   // Install it only on the markdown editor path so HTML/React previews stay isolated.
   globalThis.Prism = Prism
+  Object.assign(globalThis, { prism: Prism })
   const module = await import('@howcode/native-markdown-artifacts')
   return { default: module.ArtifactMarkdownEditor }
 })

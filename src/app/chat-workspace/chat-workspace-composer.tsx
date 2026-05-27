@@ -276,7 +276,6 @@ export function ChatComposerDock(props: ChatWorkspaceComposerProps) {
     <WorkspaceComposerDock
       compactControls={sidebarAutoHidden || sidebarCollapsed}
       left={<SidebarToggleButton {...props} />}
-      leftClassName="!mb-[3.35rem]"
       center={<ChatComposerCenter {...props} />}
       rightClassName={cn(
         'min-[1400px]:opacity-100',
