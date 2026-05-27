@@ -3,7 +3,6 @@ import { Tooltip } from '@howcode/common/tooltip'
 import { GitBranch, SquareTerminal, Star, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { ConfirmPopover } from '../../../common/confirm-popover'
-import { compactIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 
 type ThreadRowProps = {
@@ -100,8 +99,8 @@ function ThreadMetaSlot({
             <button
               type="button"
               className={cn(
-                compactIconButtonClass,
-                'h-full w-full border-transparent bg-transparent hover:bg-transparent',
+                'sidebar-icon-action sidebar-icon-action--sm sidebar-thread-meta-action-button',
+                'border-transparent bg-transparent hover:bg-transparent',
               )}
               onClick={onAssignToBranch}
               aria-label={assignBranchLabel ?? 'Assign to branch'}
@@ -119,8 +118,8 @@ function ThreadMetaSlot({
             ref={deleteButtonRef}
             type="button"
             className={cn(
-              compactIconButtonClass,
-              'h-full w-full border-transparent bg-transparent hover:bg-transparent',
+              'sidebar-icon-action sidebar-icon-action--sm sidebar-thread-meta-action-button',
+              'border-transparent bg-transparent hover:bg-transparent',
             )}
             onClick={handleDeleteClick}
             aria-label="Delete session"
