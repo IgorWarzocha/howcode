@@ -200,33 +200,6 @@
   color: var(--danger);
 }
 
-.sidebar-project-work-branch-confirm-anchor {
-  position: relative;
-  display: inline-flex;
-  height: 1.5rem;
-  width: 1.5rem;
-  align-items: center;
-  justify-content: center;
-}
-
-.sidebar-project-work-branch-confirm-popover {
-  top: calc(100% + 0.25rem);
-  right: -2px;
-  z-index: 45;
-  opacity: 1;
-  transform: none;
-}
-
-.sidebar-project-work-branch-confirm-button {
-  display: inline-flex;
-  width: var(--sidebar-branch-action-size);
-  height: var(--sidebar-branch-action-size);
-  min-width: 0;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-}
-
 .sidebar-project-work-branch-thread-list {
   display: grid;
   gap: 0.125rem;

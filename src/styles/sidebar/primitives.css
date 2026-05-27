@@ -131,3 +131,87 @@
   background: transparent;
   color: var(--muted);
 }
+
+.sidebar-inline-action-strip {
+  --sidebar-inline-action-size: 1.25rem;
+  --sidebar-inline-action-gap: 0.125rem;
+  --sidebar-inline-action-pad: 0.125rem;
+  display: grid;
+  height: calc(var(--sidebar-inline-action-size) + var(--sidebar-inline-action-pad) * 2);
+  width: calc(
+    var(--sidebar-inline-action-size) *
+    2 +
+    var(--sidebar-inline-action-gap) +
+    var(--sidebar-inline-action-pad) *
+    2
+  );
+  grid-template-columns: repeat(2, var(--sidebar-inline-action-size));
+  align-items: center;
+  justify-content: center;
+  gap: var(--sidebar-inline-action-gap);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--panel);
+  padding: var(--sidebar-inline-action-pad);
+  box-shadow: none;
+}
+
+.sidebar-inline-action-strip[data-action-count="1"] {
+  width: calc(var(--sidebar-inline-action-size) + var(--sidebar-inline-action-pad) * 2);
+  grid-template-columns: var(--sidebar-inline-action-size);
+}
+
+.sidebar-inline-action-strip[data-action-count="2"] {
+  width: calc(
+    var(--sidebar-inline-action-size) *
+    2 +
+    var(--sidebar-inline-action-gap) +
+    var(--sidebar-inline-action-pad) *
+    2
+  );
+  grid-template-columns: repeat(2, var(--sidebar-inline-action-size));
+}
+
+.sidebar-inline-action-strip > .tooltip-anchor {
+  display: inline-flex;
+  height: var(--sidebar-inline-action-size);
+  width: var(--sidebar-inline-action-size);
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-inline-action-button {
+  height: var(--sidebar-inline-action-size);
+  width: var(--sidebar-inline-action-size);
+  flex: 0 0 var(--sidebar-inline-action-size);
+  transform: translateY(-1px);
+}
+
+.sidebar-inline-action-button--danger {
+  color: var(--danger);
+}
+
+.sidebar-inline-action-button--danger:hover {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+}
+
+.sidebar-inline-popunder-anchor {
+  position: relative;
+  display: inline-flex;
+  height: 1.5rem;
+  width: 1.5rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-inline-popunder {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: -2px;
+  z-index: 45;
+  pointer-events: auto;
+  opacity: 1;
+  transform: none;
+}

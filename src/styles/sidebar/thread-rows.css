@@ -58,7 +58,7 @@
   color: var(--text);
 }
 
-.sidebar-thread-row:has(.sidebar-thread-delete-confirm-popover) {
+.sidebar-thread-row:has(.sidebar-inline-popunder) {
   position: relative;
   z-index: 60;
 }
@@ -208,7 +208,7 @@
   opacity: 1;
 }
 
-.sidebar-thread-meta-actions:has(.sidebar-thread-delete-confirm-popover[data-open="true"]) {
+.sidebar-thread-meta-actions:has(.sidebar-inline-popunder) {
   z-index: 50;
   pointer-events: auto;
   opacity: 1;
@@ -237,37 +237,6 @@
   width: var(--sidebar-thread-action-size);
   flex: 0 0 var(--sidebar-thread-action-size);
   transform: translateY(-1px);
-}
-
-.sidebar-thread-meta-action-button--danger {
-  color: var(--danger);
-}
-
-.sidebar-thread-meta-action-button--danger:hover {
-  background: color-mix(in srgb, var(--danger) 12%, transparent);
-  color: var(--danger);
-}
-
-.sidebar-thread-delete-confirm-anchor {
-  position: relative;
-}
-
-.sidebar-thread-delete-confirm-popover {
-  top: calc(100% + 0.25rem);
-  right: -2px;
-  z-index: 45;
-  pointer-events: auto;
-  background: var(--panel);
-  opacity: 1;
-  transform: none;
-}
-
-.sidebar-thread-delete-confirm-button {
-  display: inline-flex;
-  min-width: 0;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
 }
 
 .sidebar-thread-action-anchor button[data-active="true"] {

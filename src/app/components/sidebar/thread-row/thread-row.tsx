@@ -1,8 +1,9 @@
 import { ActivitySpinner } from '@howcode/common/activity-spinner'
 import { Tooltip } from '@howcode/common/tooltip'
-import { GitBranch, SquareTerminal, Star, Trash2, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { GitBranch, SquareTerminal, Star, Trash2 } from 'lucide-react'
+import { useState } from 'react'
 import { cn } from '../../../utils/cn'
+import { SidebarInlineConfirmPopunder } from '../sidebar-inline-confirm-popunder'
 
 type ThreadRowProps = {
   age: string
@@ -73,8 +74,6 @@ function ThreadMetaSlot({
   const metaValue = terminalRunning ? <SquareTerminal size={12} /> : age
   const actionCount = onAssignToBranch ? 2 : 1
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
-  const deleteButtonRef = useRef<HTMLButtonElement | null>(null)
-
   const handleDeleteClick = () => {
     if (!confirmDelete) {
       onDelete()
@@ -82,29 +81,6 @@ function ThreadMetaSlot({
     }
     setConfirmDeleteOpen((current) => !current)
   }
-
-  useEffect(() => {
-    if (!confirmDeleteOpen) return
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      event.stopPropagation()
-      setConfirmDeleteOpen(false)
-    }
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target
-      if (!(target instanceof Element)) return
-      if (target.closest('.sidebar-thread-delete-confirm-anchor')) return
-      setConfirmDeleteOpen(false)
-    }
-
-    document.addEventListener('keydown', handleKeyDown, true)
-    document.addEventListener('pointerdown', handlePointerDown, true)
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown, true)
-      document.removeEventListener('pointerdown', handlePointerDown, true)
-    }
-  }, [confirmDeleteOpen])
 
   return (
     <span className="sidebar-thread-meta-slot">
@@ -134,56 +110,32 @@ function ThreadMetaSlot({
         <Tooltip
           content="Delete session"
           placement="right"
-          className="sidebar-thread-action-anchor sidebar-thread-delete-confirm-anchor"
+          className="sidebar-thread-action-anchor"
         >
-          <button
-            ref={deleteButtonRef}
-            type="button"
-            className={cn(
-              'sidebar-icon-action sidebar-icon-action--sm sidebar-thread-meta-action-button',
-              confirmDeleteOpen && 'sidebar-thread-meta-action-button--danger',
-              'border-transparent bg-transparent hover:bg-transparent',
-            )}
-            onClick={handleDeleteClick}
-            aria-label="Delete session"
-          >
-            <Trash2 size={12} />
-          </button>
-          {confirmDeleteOpen ? (
-            <span
-              className="sidebar-thread-meta-actions sidebar-thread-delete-confirm-popover"
-              data-action-count="2"
-              data-confirming="true"
-            >
-              <span className="tooltip-anchor">
-                <button
-                  type="button"
-                  className="sidebar-icon-action sidebar-icon-action--sm sidebar-thread-meta-action-button sidebar-thread-delete-confirm-button"
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    setConfirmDeleteOpen(false)
-                  }}
-                  aria-label="Cancel delete session"
-                >
-                  <X size={12} />
-                </button>
-              </span>
-              <span className="tooltip-anchor">
-                <button
-                  type="button"
-                  className="sidebar-icon-action sidebar-icon-action--sm sidebar-thread-meta-action-button sidebar-thread-meta-action-button--danger sidebar-thread-delete-confirm-button"
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    setConfirmDeleteOpen(false)
-                    onDelete()
-                  }}
-                  aria-label="Delete session"
-                >
-                  <Trash2 size={12} />
-                </button>
-              </span>
-            </span>
-          ) : null}
+          <SidebarInlineConfirmPopunder
+            open={confirmDeleteOpen}
+            trigger={
+              <button
+                type="button"
+                className={cn(
+                  'sidebar-icon-action sidebar-icon-action--sm sidebar-thread-meta-action-button',
+                  confirmDeleteOpen && 'sidebar-inline-action-button--danger',
+                  'border-transparent bg-transparent hover:bg-transparent',
+                )}
+                onClick={handleDeleteClick}
+                aria-label="Delete session"
+              >
+                <Trash2 size={12} />
+              </button>
+            }
+            confirmAriaLabel="Delete session"
+            confirmIcon={<Trash2 size={12} />}
+            onCancel={() => setConfirmDeleteOpen(false)}
+            onConfirm={() => {
+              setConfirmDeleteOpen(false)
+              onDelete()
+            }}
+          />
         </Tooltip>
       </span>
     </span>

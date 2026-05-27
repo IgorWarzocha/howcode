@@ -1,86 +1,11 @@
 import { ActivitySpinner } from '@howcode/common/activity-spinner'
 import { Tooltip } from '@howcode/common/tooltip'
-import { CheckSquare, GitBranch, GitMerge, Square, Trash2, X, XSquare } from 'lucide-react'
-import type { ReactNode } from 'react'
-import { useEffect, useRef, useState } from 'react'
+import { CheckSquare, GitBranch, GitMerge, Square, Trash2, XSquare } from 'lucide-react'
+import { useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project } from '../../../types'
+import { SidebarInlineConfirmPopunder } from '../sidebar-inline-confirm-popunder'
 import type { BranchThreadGroup } from './project-work-model'
-
-function BranchConfirmPopover({
-  confirmAriaLabel,
-  confirmIcon,
-  onCancel,
-  onConfirm,
-}: {
-  confirmAriaLabel: string
-  confirmIcon: ReactNode
-  onCancel: () => void
-  onConfirm: () => void
-}) {
-  const popoverRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      event.stopPropagation()
-      onCancel()
-    }
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target
-      if (target instanceof Node && popoverRef.current?.contains(target)) return
-      if (
-        target instanceof Element &&
-        target.closest('.sidebar-project-work-branch-confirm-anchor')
-      ) {
-        return
-      }
-      onCancel()
-    }
-    document.addEventListener('keydown', handleKeyDown, true)
-    document.addEventListener('pointerdown', handlePointerDown, true)
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown, true)
-      document.removeEventListener('pointerdown', handlePointerDown, true)
-    }
-  }, [onCancel])
-
-  return (
-    <div
-      ref={popoverRef}
-      className="sidebar-project-work-branch-actions sidebar-project-work-branch-confirm-popover"
-      data-action-count="2"
-      data-confirming="true"
-    >
-      <span className="tooltip-anchor">
-        <button
-          type="button"
-          className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-confirm-button"
-          onClick={(event) => {
-            event.stopPropagation()
-            onCancel()
-          }}
-          aria-label="Dismiss confirmation"
-        >
-          <X size={12} />
-        </button>
-      </span>
-      <span className="tooltip-anchor">
-        <button
-          type="button"
-          className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--danger sidebar-project-work-branch-confirm-button"
-          onClick={(event) => {
-            event.stopPropagation()
-            onConfirm()
-          }}
-          aria-label={confirmAriaLabel}
-        >
-          {confirmIcon}
-        </button>
-      </span>
-    </div>
-  )
-}
 
 export function BranchSwitchAction({
   blocked,
@@ -200,15 +125,14 @@ export function BranchPruneAction({
 
   if (confirming) {
     return (
-      <span className="tooltip-anchor sidebar-project-work-branch-confirm-anchor">
-        {actionButton}
-        <BranchConfirmPopover
-          confirmAriaLabel={`Confirm ${actionLabel.toLowerCase()} ${group.label}`}
-          confirmIcon={<XSquare size={12} />}
-          onCancel={onCancel}
-          onConfirm={() => void runPrune()}
-        />
-      </span>
+      <SidebarInlineConfirmPopunder
+        open={confirming}
+        trigger={actionButton}
+        confirmAriaLabel={`Confirm ${actionLabel.toLowerCase()} ${group.label}`}
+        confirmIcon={<XSquare size={12} />}
+        onCancel={onCancel}
+        onConfirm={() => void runPrune()}
+      />
     )
   }
 
@@ -311,15 +235,14 @@ export function WorktreeMergeAction({
 
   if (confirming) {
     return (
-      <span className="tooltip-anchor sidebar-project-work-branch-confirm-anchor">
-        {actionButton}
-        <BranchConfirmPopover
-          confirmAriaLabel={`Confirm merge ${group.label} worktree into parent branch`}
-          confirmIcon={<GitMerge size={12} />}
-          onCancel={() => setConfirming(false)}
-          onConfirm={mergeWorktree}
-        />
-      </span>
+      <SidebarInlineConfirmPopunder
+        open={confirming}
+        trigger={actionButton}
+        confirmAriaLabel={`Confirm merge ${group.label} worktree into parent branch`}
+        confirmIcon={<GitMerge size={12} />}
+        onCancel={() => setConfirming(false)}
+        onConfirm={mergeWorktree}
+      />
     )
   }
 
@@ -426,15 +349,14 @@ export function MergeCompletedWorktreesAction({
 
   if (confirming) {
     return (
-      <span className="tooltip-anchor sidebar-project-work-branch-confirm-anchor">
-        {actionButton}
-        <BranchConfirmPopover
-          confirmAriaLabel={`Merge completed worktrees under ${group.label}`}
-          confirmIcon={<GitMerge size={12} />}
-          onCancel={onCancel}
-          onConfirm={mergeCompleted}
-        />
-      </span>
+      <SidebarInlineConfirmPopunder
+        open={confirming}
+        trigger={actionButton}
+        confirmAriaLabel={`Merge completed worktrees under ${group.label}`}
+        confirmIcon={<GitMerge size={12} />}
+        onCancel={onCancel}
+        onConfirm={mergeCompleted}
+      />
     )
   }
 
@@ -489,15 +411,14 @@ export function RemoveCompletedWorktreesAction({
 
   if (confirming) {
     return (
-      <span className="tooltip-anchor sidebar-project-work-branch-confirm-anchor">
-        {actionButton}
-        <BranchConfirmPopover
-          confirmAriaLabel={`Remove completed worktrees under ${group.label}`}
-          confirmIcon={<Trash2 size={12} />}
-          onCancel={onCancel}
-          onConfirm={() => void removeCompleted()}
-        />
-      </span>
+      <SidebarInlineConfirmPopunder
+        open={confirming}
+        trigger={actionButton}
+        confirmAriaLabel={`Remove completed worktrees under ${group.label}`}
+        confirmIcon={<Trash2 size={12} />}
+        onCancel={onCancel}
+        onConfirm={() => void removeCompleted()}
+      />
     )
   }
 
