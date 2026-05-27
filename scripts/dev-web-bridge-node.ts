@@ -183,6 +183,7 @@ const handlers: DesktopRequestHandlerMap = {
   getShellState: () => piThreads.loadShellState(getDesktopWorkingDirectory()),
   getProjectGitState: ({ projectId }) => piThreads.loadProjectGitState(projectId),
   getProjectUsageSummary: ({ projectId }) => piThreads.loadProjectUsageSummary(projectId),
+  getProjectFavicon: ({ projectId }) => piThreads.loadProjectFavicon(projectId),
   startProjectDiffStream: ({ projectId, baseline, streamId, includeUntracked }) =>
     piThreads.startProjectDiffStream(
       projectId,

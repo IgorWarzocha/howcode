@@ -1,13 +1,13 @@
-import { GitHubInvertocatMark } from '@howcode/common/github-invertocat-mark'
 import { IconButton } from '@howcode/common/icon-button'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
-import { Check, ChevronDown, FolderCode, Plus, Search } from 'lucide-react'
+import { Check, ChevronDown, Plus, Search } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import type { AppSettings, DesktopActionInvoker } from '../../../desktop/types'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import type { Project } from '../../../types'
 import { SidebarProjectsCreatePopover } from '../projects/sidebar-projects-create-popover'
 import { useSidebarProjectCreation } from '../projects/useSidebarProjectCreation'
+import { ProjectBrandIcon } from './project-brand-icon'
 
 function ProjectScopeOptionRow({
   focused,
@@ -44,7 +44,7 @@ function ProjectScopeOptionRow({
         className="sidebar-project-work-project-focus"
         onClick={onToggleVisible}
       >
-        {project.repoOriginUrl ? <GitHubInvertocatMark size={13} /> : <FolderCode size={13} />}
+        <ProjectBrandIcon project={project} />
         <span className="truncate">{project.name}</span>
       </button>
       {running ? (
@@ -161,7 +161,7 @@ export function ProjectScopeSelector({
       >
         <span className="truncate">{label}</span>
         <span className="sidebar-project-work-project-button-meta">
-          {scopeProject?.repoOriginUrl ? <GitHubInvertocatMark size={13} /> : null}
+          {scopeProject ? <ProjectBrandIcon project={scopeProject} /> : null}
           <ChevronDown size={13} />
         </span>
       </button>

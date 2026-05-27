@@ -34,6 +34,7 @@ type ProjectWorkSectionProps = {
   loading: boolean
   projects: Project[]
   projectGitState: ProjectGitState | null
+  collapsedProjectIds: Record<string, boolean>
   initialVisibleProjectIds: string[] | null | undefined
   selectedProjectId: string
   selectedThreadId: string | null
@@ -59,6 +60,7 @@ export function ProjectWorkSection({
   loading,
   projects,
   projectGitState,
+  collapsedProjectIds,
   projectTargetMode = false,
   initialVisibleProjectIds,
   selectedProjectId,
@@ -327,6 +329,7 @@ export function ProjectWorkSection({
           activeView={activeView}
           allProjects={displayableWorkspaces}
           collapsedBranchIds={collapsedBranchIds}
+          collapsedProjectIds={collapsedProjectIds}
           gitStatesByProjectId={gitStatesByProjectId}
           projectGitState={projectGitState}
           searchInputRef={searchInputRef}
@@ -342,7 +345,6 @@ export function ProjectWorkSection({
           onSearchQueryChange={setSearchQuery}
           onSetCollapsedBranchIds={setCollapsedBranchIds}
           onToggleProjectCollapse={onToggleProjectCollapse}
-          onSetExpandedProjectIds={setCollapsedBranchIds}
           onSetPruneConfirmBranchId={setPruneConfirmBranchId}
           onSetSwitchErrorBranchId={setSwitchErrorBranchId}
           pruneConfirmBranchId={pruneConfirmBranchId}

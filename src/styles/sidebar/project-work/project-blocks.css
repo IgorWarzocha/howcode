@@ -53,6 +53,10 @@
   text-align: left;
 }
 
+.sidebar-project-work-project-block-disclosure {
+  display: inline-flex;
+}
+
 .sidebar-project-work-project-origin-icon {
   transform: translateY(-0.0625rem);
 }
@@ -135,4 +139,11 @@
   gap: 0.125rem;
   border-top: 1px solid var(--border);
   padding-top: 0.5rem;
+}
+
+.sidebar-project-work-project-favicon {
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 0.1875rem;
+  object-fit: contain;
 }

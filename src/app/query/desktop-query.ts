@@ -143,6 +143,10 @@ export async function getProjectUsageSummaryQuery(
   return (await window.piDesktop?.getProjectUsageSummary?.(projectId)) ?? null
 }
 
+export async function getProjectFaviconQuery(projectId: string): Promise<string | null> {
+  return (await window.piDesktop?.getProjectFavicon?.(projectId)) ?? null
+}
+
 export async function startProjectDiffStreamQuery(
   projectId: string,
   baseline: ProjectDiffBaseline | null = null,

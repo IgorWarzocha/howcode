@@ -120,10 +120,6 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     state,
   } = controller
   const projectScopeLockActive = extensionsProjectScopeActive || skillsProjectScopeActive
-  const effectiveCollapsedProjectIds = projectScopeLockActive
-    ? Object.fromEntries(projects.map((project) => [project.id, true]))
-    : collapsedProjectIds
-
   const terminalSessionPath = getThreadSessionPath(state)
   const activeThreadId = getThreadId(state)
   const takeoverVisible = state.takeoverVisible
@@ -265,7 +261,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
       projects={projects}
       state={state}
       projectScopeLockActive={projectScopeLockActive}
-      effectiveCollapsedProjectIds={effectiveCollapsedProjectIds}
+      collapsedProjectIds={collapsedProjectIds}
       handleAction={handleAction}
       handleShowView={handleShowView}
       handleToggleSettings={handleToggleSettings}

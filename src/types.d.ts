@@ -72,6 +72,7 @@ declare global {
       getShellState: () => Promise<ShellState>
       getProjectGitState?: (projectId: string) => Promise<ProjectGitState | null>
       getProjectUsageSummary?: (projectId: string) => Promise<ProjectUsageSummary>
+      getProjectFavicon?: (projectId: string) => Promise<string | null>
       startProjectDiffStream?: (
         projectId: string,
         baseline?: ProjectDiffBaseline | null,

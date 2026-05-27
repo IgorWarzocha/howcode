@@ -14,7 +14,7 @@ type AppShellLayoutViewProps = {
   projects: AppShellController['projects']
   state: AppShellController['state']
   projectScopeLockActive: boolean
-  effectiveCollapsedProjectIds: Record<string, boolean>
+  collapsedProjectIds: Record<string, boolean>
   handleAction: AppShellController['handleAction']
   handleShowView: AppShellController['handleShowView']
   handleToggleSettings: AppShellController['handleToggleSettings']
@@ -89,7 +89,7 @@ function AppShellSidebar(props: AppShellLayoutViewProps) {
     projects,
     state,
     projectScopeLockActive,
-    effectiveCollapsedProjectIds,
+    collapsedProjectIds,
     handleAction,
     handleShowView,
     handleToggleSettings,
@@ -121,7 +121,7 @@ function AppShellSidebar(props: AppShellLayoutViewProps) {
       projectScopeLockActive={projectScopeLockActive}
       terminalRunningWorkspaceIds={controller.terminalRunningWorkspaceIds}
       terminalRunningSessionPaths={controller.terminalRunningSessionPaths}
-      collapsedProjectIds={effectiveCollapsedProjectIds}
+      collapsedProjectIds={collapsedProjectIds}
       onAction={handleAction}
       onShowView={handleShowView}
       onToggleSettings={handleToggleSettings}

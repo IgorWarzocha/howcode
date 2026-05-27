@@ -144,6 +144,7 @@ export function MultiProjectWorkContent({
   activeView,
   allProjects,
   collapsedBranchIds,
+  collapsedProjectIds,
   gitStatesByProjectId,
   projectGitState,
   searchInputRef,
@@ -159,7 +160,6 @@ export function MultiProjectWorkContent({
   onSearchQueryChange,
   onSetCollapsedBranchIds,
   onToggleProjectCollapse,
-  onSetExpandedProjectIds,
   onSetPruneConfirmBranchId,
   onSetSwitchErrorBranchId,
   pruneConfirmBranchId,
@@ -170,6 +170,7 @@ export function MultiProjectWorkContent({
   activeView: View
   allProjects: Project[]
   collapsedBranchIds: Record<string, boolean>
+  collapsedProjectIds: Record<string, boolean>
   gitStatesByProjectId: ReadonlyMap<string, ProjectGitState | null>
   projectGitState: ProjectGitState | null
   searchInputRef: RefObject<HTMLInputElement | null>
@@ -187,9 +188,6 @@ export function MultiProjectWorkContent({
     updater: (current: Record<string, boolean>) => Record<string, boolean>,
   ) => void
   onToggleProjectCollapse: (projectId: string) => void
-  onSetExpandedProjectIds: (
-    updater: (current: Record<string, boolean>) => Record<string, boolean>,
-  ) => void
   onSetPruneConfirmBranchId: (branchId: string | null) => void
   onSetSwitchErrorBranchId: (branchId: string | null) => void
   pruneConfirmBranchId: string | null
@@ -236,7 +234,7 @@ export function MultiProjectWorkContent({
             const blockIsGitRepo = Boolean(blockGitState?.isGitRepo)
             const blockCurrentBranchDirty = hasUncommittedProjectChanges(blockGitState)
             const unassignedGroupId = `${project.id}:${UNASSIGNED_BRANCH_GROUP_ID}`
-            const expanded = collapsedBranchIds[`project:${project.id}`] === false
+            const expanded = !(collapsedProjectIds[project.id] ?? project.collapsed ?? true)
             return (
               <ProjectWorkSummaryBlock
                 key={project.id}
@@ -266,13 +264,7 @@ export function MultiProjectWorkContent({
                 onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
                 onShowView={onShowView}
                 onThreadOpen={onThreadOpen}
-                onToggleExpanded={() => {
-                  onToggleProjectCollapse(project.id)
-                  onSetExpandedProjectIds((current) => ({
-                    ...current,
-                    [`project:${project.id}`]: expanded,
-                  }))
-                }}
+                onToggleExpanded={() => onToggleProjectCollapse(project.id)}
                 onToggleUnassigned={() =>
                   onSetCollapsedBranchIds((current) => ({
                     ...current,

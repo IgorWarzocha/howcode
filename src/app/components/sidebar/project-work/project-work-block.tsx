@@ -1,6 +1,5 @@
-import { GitHubInvertocatMark } from '@howcode/common/github-invertocat-mark'
 import { IconButton } from '@howcode/common/icon-button'
-import { Archive, ChevronRight, FolderCode, MoreHorizontal } from 'lucide-react'
+import { Archive, ChevronRight, MoreHorizontal } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
@@ -10,6 +9,7 @@ import { cn } from '../../../utils/cn'
 import { ProjectExpandedBranchGroups } from './branch-thread-groups'
 import { ProjectCompactBranchGroups } from './compact-branch-groups'
 import { NewThreadMenu } from './new-thread-menu'
+import { ProjectBrandIcon } from './project-brand-icon'
 import { ProjectWorkActionsMenu } from './project-work-actions-menu'
 import { ProjectRenameField } from './project-work-fields'
 import {
@@ -78,21 +78,21 @@ function ProjectWorkBlockHeader({
     }
     void onAction('project.edit-name', { projectId: project.id, projectName: nextName })
   }
+  const handleHeadingClick = () => {
+    onFocusProject(project.id)
+    onToggleExpanded()
+  }
 
   return (
     <div className="sidebar-project-work-project-block-heading-row">
       <button
         type="button"
         className="sidebar-icon-action sidebar-icon-action--md sidebar-icon-action--no-hover sidebar-project-work-project-block-disclosure"
-        onClick={onToggleExpanded}
+        onClick={handleHeadingClick}
         aria-expanded={expanded}
         aria-label={expanded ? `Collapse ${project.name}` : `Expand ${project.name}`}
       >
-        {project.repoOriginUrl ? (
-          <GitHubInvertocatMark size={13} className="sidebar-project-work-project-origin-icon" />
-        ) : (
-          <FolderCode size={13} />
-        )}
+        <ProjectBrandIcon project={project} />
       </button>
       {editingName ? (
         <div className="sidebar-project-work-project-block-heading">
@@ -111,7 +111,7 @@ function ProjectWorkBlockHeader({
         <button
           type="button"
           className="sidebar-project-work-project-block-heading"
-          onClick={() => onFocusProject(project.id)}
+          onClick={handleHeadingClick}
         >
           <span className="truncate">{project.name}</span>
         </button>
@@ -428,7 +428,7 @@ export function ProjectWorkSummaryBlock({
           searchQuery={searchQuery}
           selectedThreadId={selectedThreadId}
           terminalRunningSessionPaths={terminalRunningSessionPaths}
-          threads={threads}
+          threads={expanded || searchExpanded ? threads : sortThreads(threads).slice(0, 5)}
           onAction={onAction}
           onThreadOpen={onThreadOpen}
         />

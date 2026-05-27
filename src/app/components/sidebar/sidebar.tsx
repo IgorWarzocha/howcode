@@ -147,6 +147,7 @@ function SidebarContent(props: SidebarProps) {
         loading={props.projectsLoading ?? false}
         projects={props.projects}
         projectGitState={props.projectGitState}
+        collapsedProjectIds={props.collapsedProjectIds}
         initialVisibleProjectIds={props.sidebarVisibleProjectIds}
         selectedProjectId={props.selectedProjectId}
         selectedThreadId={props.selectedThreadId}
@@ -170,6 +171,7 @@ function SidebarContent(props: SidebarProps) {
       loading={props.projectsLoading ?? false}
       projects={props.projects}
       projectGitState={props.projectGitState}
+      collapsedProjectIds={props.collapsedProjectIds}
       initialVisibleProjectIds={props.sidebarVisibleProjectIds}
       projectTargetMode={true}
       projectScopeLockActive={props.projectScopeLockActive}

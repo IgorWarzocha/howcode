@@ -118,6 +118,7 @@ export function installDevWebDesktopBridge() {
     getProjectGitState: (projectId: string) => invokeRequest('getProjectGitState', { projectId }),
     getProjectUsageSummary: (projectId: string) =>
       invokeRequest('getProjectUsageSummary', { projectId }),
+    getProjectFavicon: (projectId: string) => invokeRequest('getProjectFavicon', { projectId }),
     startProjectDiffStream: (
       projectId: string,
       baseline = null,

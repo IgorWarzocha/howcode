@@ -94,6 +94,7 @@ export type PiThreadsService = {
   }) => Promise<PiPackageMutationResult>
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
   loadProjectUsageSummary: (projectId: string) => Promise<ProjectUsageSummary>
+  loadProjectFavicon: (projectId: string) => Promise<string | null>
   startProjectDiffStream: (
     projectId: string,
     baseline?: ProjectDiffBaseline | null,

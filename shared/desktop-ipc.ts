@@ -72,6 +72,7 @@ export type DesktopRequestMap = {
   getShellState: { params: Record<string, never>; response: ShellState }
   getProjectGitState: { params: { projectId: string }; response: ProjectGitState | null }
   getProjectUsageSummary: { params: { projectId: string }; response: ProjectUsageSummary }
+  getProjectFavicon: { params: { projectId: string }; response: string | null }
   startProjectDiffStream: {
     params: {
       projectId: string

@@ -47,3 +47,4 @@ export {
   loadThread,
   searchThread,
 } from './pi-threads/thread-loader.ts'
+export { loadProjectFavicon } from './project-favicon.ts'
