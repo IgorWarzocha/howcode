@@ -500,6 +500,15 @@ export function getRepositoryBranchesForProject(
   return gitState?.isGitRepo ? gitState.branches : []
 }
 
+export function hasUncommittedProjectChanges(projectGitState: ProjectGitState | null) {
+  return Boolean(
+    projectGitState &&
+      (projectGitState.stagedFileCount > 0 ||
+        projectGitState.unstagedFileCount > 0 ||
+        projectGitState.untrackedFileCount > 0),
+  )
+}
+
 export function getWorktreeBranchesForProject(
   project: Project,
   projects: readonly Project[],

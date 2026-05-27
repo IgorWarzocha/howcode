@@ -237,6 +237,17 @@
   gap: 0.125rem;
 }
 
+.sidebar-project-work-empty-branch-row {
+  display: grid;
+  min-height: 1.625rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0 var(--sidebar-row-padding-x);
+  color: var(--muted-2);
+  font-size: var(--app-type-meta-size);
+}
+
 .sidebar-project-work-worktree-group {
   display: grid;
   gap: 0.125rem;

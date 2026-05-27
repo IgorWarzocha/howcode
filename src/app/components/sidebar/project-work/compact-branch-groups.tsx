@@ -40,6 +40,7 @@ export function ProjectCompactBranchGroups({
   branchThreads,
   collapsedBranchIds,
   currentBranch,
+  currentBranchDirty,
   currentBranchExpanded,
   hideSessionCounts,
   normalizedSearchQuery,
@@ -63,6 +64,7 @@ export function ProjectCompactBranchGroups({
   branchThreads: Thread[]
   collapsedBranchIds: Record<string, boolean>
   currentBranch: string | null
+  currentBranchDirty: boolean
   currentBranchExpanded: boolean
   hideSessionCounts: boolean
   normalizedSearchQuery: string
@@ -223,6 +225,7 @@ export function ProjectCompactBranchGroups({
             activeView={activeView}
             collapsed={collapsed}
             currentBranch={currentBranch}
+            currentBranchDirty={currentBranchDirty}
             group={group}
             hideSessionCounts={hideSessionCounts}
             project={project}

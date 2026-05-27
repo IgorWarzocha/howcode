@@ -246,6 +246,7 @@ export function ProjectWorkSummaryBlock({
   branchGroups,
   collapsedBranchIds,
   currentBranch,
+  currentBranchDirty,
   expanded,
   hideSessionCounts,
   isGitRepo,
@@ -274,6 +275,7 @@ export function ProjectWorkSummaryBlock({
   branchGroups: BranchThreadGroup[]
   collapsedBranchIds: Record<string, boolean>
   currentBranch: string | null
+  currentBranchDirty: boolean
   expanded: boolean
   hideSessionCounts: boolean
   isGitRepo: boolean
@@ -368,6 +370,7 @@ export function ProjectWorkSummaryBlock({
             branchGroups={filteredBranchGroups}
             collapsedBranchIds={collapsedBranchIds}
             currentBranch={currentBranch}
+            currentBranchDirty={currentBranchDirty}
             hideSessionCounts={hideSessionCounts}
             normalizedSearchQuery={normalizedSearchQuery}
             project={project}
@@ -387,6 +390,7 @@ export function ProjectWorkSummaryBlock({
             branchThreads={branchThreads}
             collapsedBranchIds={collapsedBranchIds}
             currentBranch={currentBranch}
+            currentBranchDirty={currentBranchDirty}
             currentBranchExpanded={
               normalizedSearchQuery.length > 0 ||
               !(collapsedBranchIds[`${project.id}:current-branch`] ?? false)

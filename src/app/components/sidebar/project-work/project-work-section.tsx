@@ -23,6 +23,7 @@ import {
   getVisibleProjectIds,
   getWorktreeBranchesForProject,
   getWorktreeProjectsForRoot,
+  hasUncommittedProjectChanges,
   orderProjectsForScopeSelector,
   sameStringList,
   UNASSIGNED_BRANCH_GROUP_ID,
@@ -267,6 +268,7 @@ export function ProjectWorkSection({
     projectGitState,
     gitStatesByProjectId,
   )
+  const currentBranchDirty = hasUncommittedProjectChanges(contentProjectGitState)
   const worktreeBranches = getWorktreeBranchesForProject(
     contentProject,
     displayableWorkspaces,
@@ -354,6 +356,7 @@ export function ProjectWorkSection({
           branchGroups={visibleBranchGroups}
           collapsedBranchIds={collapsedBranchIds}
           currentBranch={currentBranch}
+          currentBranchDirty={currentBranchDirty}
           hideSessionCounts={appSettings.hideSidebarSessionCounts}
           isGitRepo={Boolean(contentProjectGitState?.isGitRepo)}
           normalizedSearchQuery={normalizedSearchQuery}

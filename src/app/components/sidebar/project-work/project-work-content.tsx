@@ -18,6 +18,7 @@ import {
   getRepositoryBranchesForProject,
   getThreadBucketsForProjectWork,
   getWorktreeBranchesForProject,
+  hasUncommittedProjectChanges,
   UNASSIGNED_BRANCH_GROUP_ID,
 } from './project-work-model'
 import { ProjectWorkThreadRow } from './project-work-thread-row'
@@ -233,6 +234,7 @@ export function MultiProjectWorkContent({
             )
             const blockGitState = gitStatesByProjectId.get(project.id) ?? null
             const blockIsGitRepo = Boolean(blockGitState?.isGitRepo)
+            const blockCurrentBranchDirty = hasUncommittedProjectChanges(blockGitState)
             const unassignedGroupId = `${project.id}:${UNASSIGNED_BRANCH_GROUP_ID}`
             const expanded = collapsedBranchIds[`project:${project.id}`] === false
             return (
@@ -242,6 +244,7 @@ export function MultiProjectWorkContent({
                 branchGroups={branchGroups}
                 collapsedBranchIds={collapsedBranchIds}
                 currentBranch={blockCurrentBranch}
+                currentBranchDirty={blockCurrentBranchDirty}
                 expanded={expanded}
                 hideSessionCounts={hideSessionCounts}
                 isGitRepo={blockIsGitRepo}
@@ -290,6 +293,7 @@ export function SingleProjectWorkContent({
   branchGroups,
   collapsedBranchIds,
   currentBranch,
+  currentBranchDirty,
   hideSessionCounts,
   isGitRepo,
   olderThreadCount,
@@ -315,6 +319,7 @@ export function SingleProjectWorkContent({
   branchGroups: BranchThreadGroup[]
   collapsedBranchIds: Record<string, boolean>
   currentBranch: string | null
+  currentBranchDirty: boolean
   hideSessionCounts: boolean
   isGitRepo: boolean
   olderThreadCount: number
@@ -418,6 +423,7 @@ export function SingleProjectWorkContent({
                     activeView={activeView}
                     collapsed={collapsed}
                     currentBranch={currentBranch}
+                    currentBranchDirty={currentBranchDirty}
                     group={group}
                     hideSessionCounts={hideSessionCounts}
                     project={project}

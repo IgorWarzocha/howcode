@@ -22,6 +22,7 @@ function getStartThreadBranchName(group: BranchThreadGroup, currentBranch: strin
 
 function EmptyBranchStartAction({
   blocked,
+  canSwitch,
   currentBranch,
   group,
   project,
@@ -29,6 +30,7 @@ function EmptyBranchStartAction({
   onSwitchFailed,
 }: {
   blocked: boolean
+  canSwitch: boolean
   currentBranch: string | null
   group: BranchThreadGroup
   project: Project
@@ -61,9 +63,14 @@ function EmptyBranchStartAction({
       : group.unassigned
         ? 'Start unassigned thread'
         : `Start thread in ${group.label} worktree`
+  const tooltipContent = blocked
+    ? 'You have uncommitted changes on your current branch. Commit first.'
+    : canSwitch
+      ? 'Switch branches and start a new session.'
+      : label
 
   return (
-    <Tooltip content={blocked ? 'Worktree is dirty. Commit first.' : label} placement="right">
+    <Tooltip content={tooltipContent} placement="right">
       <button
         type="button"
         className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-empty-start"
@@ -186,6 +193,7 @@ export function BranchInlineActions({
       ) : null}
       <EmptyBranchStartAction
         blocked={switchBlocked}
+        canSwitch={canSwitch}
         currentBranch={currentBranch}
         group={group}
         project={project}

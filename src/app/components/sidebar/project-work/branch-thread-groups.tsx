@@ -1,11 +1,15 @@
 import { Tooltip } from '@howcode/common/tooltip'
-import { CircleOff, GitBranch, GitFork } from 'lucide-react'
+import { CircleOff, GitBranch, GitFork, Plus } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project, View } from '../../../types'
 import { BranchInlineActions, BranchSessionCount } from './branch-row-actions'
+import { createThreadForBranch } from './new-thread-menu'
 import type { BranchThreadGroup, WorktreeBranchGroup } from './project-work-model'
 import { ProjectWorkThreadRow } from './project-work-thread-row'
+
+const dirtyBranchSwitchMessage =
+  'You have uncommitted changes on your current branch. Commit first.'
 
 function BranchHeadingIcon({ group }: { group: BranchThreadGroup }) {
   if (group.unassigned) {
@@ -132,10 +136,89 @@ function getBranchGroupDividerState(input: {
   }
 }
 
+function isEmptySwitchableBranch(group: BranchThreadGroup) {
+  return !(group.current || group.unassigned || group.worktree)
+}
+
+function getBranchGroupVisibilityState(group: BranchThreadGroup) {
+  const canToggleThreads = group.threads.length > 0
+  const hasWorktrees = group.worktrees.length > 0
+  const emptySwitchableBranch = isEmptySwitchableBranch(group)
+  const showEmptyBranchPrompt = !(canToggleThreads || hasWorktrees) && emptySwitchableBranch
+  return {
+    canToggleThreads,
+    hasWorktrees,
+    showEmptyBranchPrompt,
+    canToggleGroup: canToggleThreads || hasWorktrees || emptySwitchableBranch,
+    showContents: canToggleThreads || hasWorktrees || showEmptyBranchPrompt,
+  }
+}
+
+function getBranchSwitchBlocked(input: {
+  actionCanSwitch: boolean
+  currentBranchDirty: boolean
+  switchBlocked: boolean
+}) {
+  if (input.switchBlocked) return true
+  return input.actionCanSwitch && input.currentBranchDirty
+}
+
+function EmptyBranchPrompt({
+  currentBranchDirty,
+  group,
+  project,
+  onAction,
+  onSwitchError,
+}: {
+  currentBranchDirty: boolean
+  group: BranchThreadGroup
+  project: Project
+  onAction: DesktopActionInvoker
+  onSwitchError: () => void
+}) {
+  const tooltip = currentBranchDirty
+    ? dirtyBranchSwitchMessage
+    : 'Switch branches and start a new session.'
+  return (
+    <div className="sidebar-project-work-empty-branch-row">
+      <span>No sessions in this branch.</span>
+      <Tooltip content={tooltip} placement="right">
+        <button
+          type="button"
+          className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-empty-start"
+          data-warning={currentBranchDirty ? 'true' : 'false'}
+          onClick={(event) => {
+            event.stopPropagation()
+            if (currentBranchDirty) return
+            void onAction('workspace.switch-branch', {
+              projectId: project.id,
+              value: group.label,
+            }).then((result) => {
+              if (result?.result?.error) {
+                onSwitchError()
+                return
+              }
+              void createThreadForBranch({
+                branchName: group.label,
+                onAction,
+                projectId: project.id,
+              })
+            })
+          }}
+          aria-label="Switch branches and start a new session"
+        >
+          <Plus size={12} />
+        </button>
+      </Tooltip>
+    </div>
+  )
+}
+
 export function BranchThreadGroupSection({
   activeView,
   collapsed,
   currentBranch,
+  currentBranchDirty = false,
   group,
   hideSessionCounts,
   project,
@@ -154,6 +237,7 @@ export function BranchThreadGroupSection({
   activeView: View
   collapsed: boolean
   currentBranch: string | null
+  currentBranchDirty?: boolean
   group: BranchThreadGroup
   hideSessionCounts: boolean
   project: Project
@@ -175,14 +259,17 @@ export function BranchThreadGroupSection({
     pruneConfirmBranchId,
   })
   const switchBlocked = switchErrorBranchId === actionState.branchActionKey
+  const branchSwitchBlocked = getBranchSwitchBlocked({
+    actionCanSwitch: actionState.canSwitchBranch,
+    currentBranchDirty,
+    switchBlocked,
+  })
   const threadProject = group.worktreePath ? { ...project, id: group.worktreePath } : project
   const threadAssignBranch = getThreadAssignBranchForGroup(group, currentBranch)
-  const canToggleThreads = group.threads.length > 0
-  const hasWorktrees = group.worktrees.length > 0
-  const canToggleGroup = canToggleThreads || hasWorktrees
+  const visibilityState = getBranchGroupVisibilityState(group)
   const dividerState = getBranchGroupDividerState({
     collapsed,
-    hasWorktrees,
+    hasWorktrees: visibilityState.hasWorktrees,
     showBottomDivider,
     showTopDivider,
   })
@@ -200,7 +287,7 @@ export function BranchThreadGroupSection({
           type="button"
           className="sidebar-icon-action sidebar-icon-action--xs sidebar-icon-action--no-hover sidebar-project-work-branch-disclosure"
           onClick={onToggle}
-          disabled={!canToggleGroup}
+          disabled={!visibilityState.canToggleGroup}
           aria-expanded={!collapsed}
           aria-label={collapsed ? `Expand ${group.label}` : `Collapse ${group.label}`}
         >
@@ -210,7 +297,7 @@ export function BranchThreadGroupSection({
           type="button"
           className="sidebar-project-work-branch-toggle"
           onClick={onToggle}
-          disabled={!canToggleGroup}
+          disabled={!visibilityState.canToggleGroup}
           aria-expanded={!collapsed}
         >
           <BranchHeadingLabel group={group} />
@@ -245,7 +332,7 @@ export function BranchThreadGroupSection({
             currentBranch={currentBranch}
             group={group}
             project={project}
-            switchBlocked={switchBlocked}
+            switchBlocked={branchSwitchBlocked}
             onAction={onAction}
             onCancelPrune={() => onSetPruneConfirmBranchId(null)}
             onConfirmPrune={() => onSetPruneConfirmBranchId(null)}
@@ -266,7 +353,7 @@ export function BranchThreadGroupSection({
         </span>
       </BranchHeadingRow>
 
-      {collapsed || !canToggleGroup ? null : (
+      {collapsed || !visibilityState.showContents ? null : (
         <div className="sidebar-project-work-branch-contents">
           {group.threads.length > 0 ? (
             <div className="sidebar-project-work-branch-thread-list">
@@ -302,6 +389,15 @@ export function BranchThreadGroupSection({
               onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
             />
           ))}
+          {visibilityState.showEmptyBranchPrompt ? (
+            <EmptyBranchPrompt
+              currentBranchDirty={currentBranchDirty}
+              group={group}
+              project={project}
+              onAction={onAction}
+              onSwitchError={() => onSetSwitchErrorBranchId(`${project.id}:${group.id}`)}
+            />
+          ) : null}
         </div>
       )}
     </section>
@@ -431,6 +527,7 @@ export function ProjectExpandedBranchGroups({
   branchGroups,
   collapsedBranchIds,
   currentBranch,
+  currentBranchDirty = false,
   hideSessionCounts,
   normalizedSearchQuery,
   project,
@@ -448,6 +545,7 @@ export function ProjectExpandedBranchGroups({
   branchGroups: BranchThreadGroup[]
   collapsedBranchIds: Record<string, boolean>
   currentBranch: string | null
+  currentBranchDirty?: boolean
   hideSessionCounts: boolean
   normalizedSearchQuery: string
   project: Project
@@ -482,6 +580,7 @@ export function ProjectExpandedBranchGroups({
             activeView={activeView}
             collapsed={collapsed}
             currentBranch={currentBranch}
+            currentBranchDirty={currentBranchDirty}
             group={group}
             hideSessionCounts={hideSessionCounts}
             project={project}
