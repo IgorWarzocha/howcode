@@ -146,11 +146,13 @@ export function useComposerController({
   }, [openMenu])
 
   const extensionCommandRunning = isExtensionCommandRunning || localExtensionCommandRunning
+  const compactionBlocksComposer = isCompacting && !extensionCommandRunning
   const canSend =
     (draft.trim().length > 0 || attachments.length > 0) &&
     !isSending &&
     !pendingSubmittedDraft &&
-    !isCompacting
+    !extensionCommandRunning &&
+    !compactionBlocksComposer
 
   useEffect(() => {
     if (
@@ -262,7 +264,7 @@ export function useComposerController({
     draftThreadId,
     isSending,
     isStreaming,
-    isCompacting,
+    isCompacting: compactionBlocksComposer,
     onAction,
     projectId,
     chatGroupId,
@@ -315,6 +317,7 @@ export function useComposerController({
       isSending ||
       pendingSubmittedDraft !== null ||
       extensionCommandRunning ||
+      compactionBlocksComposer ||
       (isStreaming && !replyActivityKey),
     pickerButtonRef,
     pickerLoading,
