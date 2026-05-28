@@ -107,12 +107,18 @@ function AssistantThinkingBlock({
           >
             {label}
           </span>
-          <span className={`shrink-0 ${appTypeMetaClass} text-[color:var(--muted-2)]/80`}>—</span>
-          <span
-            className={`min-w-0 flex-[1_1_16rem] whitespace-normal break-words ${appTypeMetaClass} italic text-[color:var(--muted-2)]/90`}
-          >
-            {preview}
-          </span>
+          {preview ? (
+            <>
+              <span className={`shrink-0 ${appTypeMetaClass} text-[color:var(--muted-2)]/80`}>
+                —
+              </span>
+              <span
+                className={`min-w-0 flex-[1_1_16rem] whitespace-normal break-words ${appTypeMetaClass} italic text-[color:var(--muted-2)]/90`}
+              >
+                {preview}
+              </span>
+            </>
+          ) : null}
         </span>
       }
     >

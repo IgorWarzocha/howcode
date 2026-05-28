@@ -5,6 +5,7 @@
 - Branch/worktree creation now normalizes messy names like `fix sidebar` into Git-safe names like `fix-sidebar`.
 - Inline branch actions can now create a child worktree under that branch.
 - Sidebar branch/worktree/project changes now patch in place instead of refetching the whole shell state.
+- Reasoning block headers no longer dump raw chain-of-thought when a model does not provide headers.
 
 Snapshot: TBD.
 
