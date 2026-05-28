@@ -50,6 +50,10 @@ function hasCompletedWorktrees(group: BranchThreadGroup) {
   )
 }
 
+export function canCreateWorktreeFromBranchGroup(group: BranchThreadGroup) {
+  return group.current
+}
+
 function hasMergeableCompletedWorktrees(group: BranchThreadGroup) {
   return (
     (group.completedWorktrees?.some((worktree) => Boolean(worktree.branchName)) ?? false) ||
@@ -69,7 +73,7 @@ function getBranchActionState(input: {
   const canMergeWorktree = group.worktree && Boolean(group.worktreeBranchName)
   const canMergeCompletedWorktrees = !group.worktree && hasMergeableCompletedWorktrees(group)
   const canRemoveCompletedWorktrees = !group.worktree && hasCompletedWorktrees(group)
-  const canCreateWorktree = !(group.worktree || group.unassigned)
+  const canCreateWorktree = canCreateWorktreeFromBranchGroup(group)
   const branchActionKey = `${projectId}:${group.id}`
   const mergeCompletedWorktreesActionKey = `${branchActionKey}:merge-completed-worktrees`
   const removeCompletedWorktreesActionKey = `${branchActionKey}:remove-completed-worktrees`
@@ -106,9 +110,8 @@ export function getCompactBranchVisualGroupKey(
   return group.worktree ? (group.worktreeBranchName ?? group.label ?? currentBranch) : group.label
 }
 
-function getBranchVisualGroupKey(group: BranchThreadGroup) {
-  if (group.unassigned) return 'unassigned'
-  return group.label
+export function shouldShowBranchGroupDivider(group: BranchThreadGroup, hasNextGroup: boolean) {
+  return hasNextGroup && (group.worktrees.length > 0 || (group.completedWorktrees?.length ?? 0) > 0)
 }
 
 export function shouldSeparateBranchGroups(
@@ -572,15 +575,12 @@ export function ProjectExpandedBranchGroups({
     <div className="sidebar-project-work-project-expanded-branches">
       {branchGroups.map((group, index) => {
         const groupKey = `${project.id}:${group.id}`
-        const visualGroupKey = getBranchVisualGroupKey(group)
-        const nextGroup = index < branchGroups.length - 1 ? branchGroups[index + 1] : undefined
-        const nextVisualGroupKey = nextGroup ? getBranchVisualGroupKey(nextGroup) : null
+        const hasNextGroup = index < branchGroups.length - 1
         const defaultCollapsed = !(group.current || group.worktrees.length > 0)
         const collapsed = normalizedSearchQuery
           ? false
           : (collapsedBranchIds[groupKey] ?? defaultCollapsed)
-        const showBottomDivider =
-          !collapsed && nextVisualGroupKey !== null && visualGroupKey !== nextVisualGroupKey
+        const showBottomDivider = shouldShowBranchGroupDivider(group, hasNextGroup)
         return (
           <BranchThreadGroupSection
             key={group.id}

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { getWorktreeParentBranchName } from '../app/components/sidebar/project-work/branch-row-actions'
+import {
+  canCreateWorktreeFromBranchGroup,
+  shouldShowBranchGroupDivider,
+} from '../app/components/sidebar/project-work/branch-thread-groups'
 import type { BranchThreadGroup } from '../app/components/sidebar/project-work/project-work-model'
 
 function group(overrides: Partial<BranchThreadGroup>): BranchThreadGroup {
@@ -16,6 +20,33 @@ function group(overrides: Partial<BranchThreadGroup>): BranchThreadGroup {
 }
 
 describe('branch row worktree actions', () => {
+  it('only allows child worktree creation from the active branch row', () => {
+    expect(canCreateWorktreeFromBranchGroup(group({ current: true }))).toBe(true)
+    expect(canCreateWorktreeFromBranchGroup(group({ current: false }))).toBe(false)
+  })
+
+  it('shows dividers after branch groups that contain worktrees', () => {
+    expect(
+      shouldShowBranchGroupDivider(
+        group({ worktrees: [{ id: 'wt', label: 'wt', path: '/repo/wt', threads: [] }] }),
+        true,
+      ),
+    ).toBe(true)
+    expect(
+      shouldShowBranchGroupDivider(
+        group({ worktrees: [{ id: 'wt', label: 'wt', path: '/repo/wt', threads: [] }] }),
+        false,
+      ),
+    ).toBe(false)
+    expect(
+      shouldShowBranchGroupDivider(
+        group({ completedWorktrees: [{ label: 'done', path: '/repo/done' }] }),
+        true,
+      ),
+    ).toBe(true)
+    expect(shouldShowBranchGroupDivider(group({ worktrees: [] }), true)).toBe(false)
+  })
+
   it('uses the current row label as parent when git state current branch is unavailable', () => {
     expect(getWorktreeParentBranchName(group({ current: true }), null)).toBe('post-0.1.66-fixes')
   })

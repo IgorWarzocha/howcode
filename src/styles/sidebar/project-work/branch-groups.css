@@ -11,7 +11,8 @@
   padding-top: 0.25rem;
 }
 
-.sidebar-project-work-branch-group[data-divider-after="true"] {
+.sidebar-project-work-branch-group[data-divider-after="true"],
+.sidebar-project-work-branch-group:has(.sidebar-project-work-worktree-group) {
   border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
   margin-bottom: 0.25rem;
   padding-bottom: 0.25rem;

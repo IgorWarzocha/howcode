@@ -3,7 +3,7 @@ import { CircleOff, GitBranch } from 'lucide-react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project, Thread, View } from '../../../types'
 import { BranchInlineActions, BranchSessionCount } from './branch-row-actions'
-import { BranchThreadGroupSection, getCompactBranchVisualGroupKey } from './branch-thread-groups'
+import { BranchThreadGroupSection, shouldShowBranchGroupDivider } from './branch-thread-groups'
 import type { BranchThreadGroup, WorktreeBranch } from './project-work-model'
 import { ProjectWorkThreadRow } from './project-work-thread-row'
 
@@ -122,7 +122,11 @@ export function ProjectCompactBranchGroups({
 
   return (
     <>
-      <section className="sidebar-project-work-branch-group" data-current="true">
+      <section
+        className="sidebar-project-work-branch-group"
+        data-current="true"
+        data-divider-after={worktreeGroups.length > 0 ? 'true' : 'false'}
+      >
         <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading">
           <button
             type="button"
@@ -212,17 +216,12 @@ export function ProjectCompactBranchGroups({
 
       {worktreeGroups.map((group, index) => {
         const groupKey = `${project.id}:${group.id}`
-        const visualGroupKey = getCompactBranchVisualGroupKey(group, currentBranch)
-        const nextGroup = index < worktreeGroups.length - 1 ? worktreeGroups[index + 1] : undefined
-        const nextVisualGroupKey = nextGroup
-          ? getCompactBranchVisualGroupKey(nextGroup, currentBranch)
-          : null
+        const hasNextGroup = index < worktreeGroups.length - 1
         const collapsed = normalizedSearchQuery
           ? false
           : (collapsedBranchIds[groupKey] ??
             (group.threads.length === 0 && group.worktrees.length === 0))
-        const showBottomDivider =
-          !collapsed && nextVisualGroupKey !== null && visualGroupKey !== nextVisualGroupKey
+        const showBottomDivider = shouldShowBranchGroupDivider(group, hasNextGroup)
         return (
           <BranchThreadGroupSection
             key={group.id}
