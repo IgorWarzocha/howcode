@@ -1,63 +1,11 @@
-import { RegisteredCustomThemes, registerCustomTheme } from '@pierre/diffs'
-import pierreDark from '@pierre/theme/pierre-dark'
-import type { ThemeRegistration } from 'shiki'
-
-const howcodeDiffThemeName = 'howcode-pierre-dark'
-
-function registerHowcodeDiffTheme() {
-  if (RegisteredCustomThemes.has(howcodeDiffThemeName)) return
-
-  const theme = {
-    ...pierreDark,
-    name: howcodeDiffThemeName,
-    colors: {
-      ...pierreDark.colors,
-      foreground: 'var(--text)',
-      'editor.foreground': 'var(--text)',
-      'editor.background': 'var(--workspace)',
-    },
-    tokenColors: [
-      ...pierreDark.tokenColors,
-      {
-        scope: ['text.html.markdown', 'meta.paragraph.markdown'],
-        settings: { foreground: 'var(--text)' },
-      },
-      {
-        scope: [
-          'entity.name.section.markdown',
-          'punctuation.definition.heading.markdown',
-          'markup.heading.setext.1.markdown',
-          'markup.heading.setext.2.markdown',
-        ],
-        settings: { foreground: 'var(--markdown-heading)' },
-      },
-      {
-        scope: [
-          'markup.underline.link.markdown',
-          'markup.underline.link.image.markdown',
-          'meta.link.inline.markdown',
-        ],
-        settings: { foreground: 'var(--markdown-link)' },
-      },
-      {
-        scope: ['markup.inline.raw.markdown', 'markup.inline.raw.string.markdown'],
-        settings: { foreground: 'var(--markdown-code)' },
-      },
-      {
-        scope: ['markup.quote.markdown', 'beginning.punctuation.definition.quote.markdown.xi'],
-        settings: { foreground: 'var(--markdown-quote)' },
-      },
-    ],
-  } as unknown as ThemeRegistration
-
-  registerCustomTheme(howcodeDiffThemeName, async () => theme)
-}
-
-registerHowcodeDiffTheme()
-
 export const DIFF_THEME_NAMES = {
   light: 'pierre-light',
-  dark: howcodeDiffThemeName,
+  dark: 'pierre-dark',
+} as const
+
+export const DIFF_THEMES = {
+  light: DIFF_THEME_NAMES.light,
+  dark: DIFF_THEME_NAMES.dark,
 } as const
 
 export type DiffThemeName = (typeof DIFF_THEME_NAMES)[keyof typeof DIFF_THEME_NAMES]
