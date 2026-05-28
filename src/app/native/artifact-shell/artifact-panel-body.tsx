@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { Component, lazy, type ReactNode, Suspense, useEffect, useState } from 'react'
 import {
   appToneDangerClass,
   appToneMutedClass,
@@ -26,6 +26,25 @@ const ArtifactMarkdownEditor = lazy(async () => {
   const module = await import('@howcode/native-markdown-artifacts')
   return { default: module.ArtifactMarkdownEditor }
 })
+
+class ArtifactMarkdownEditorBoundary extends Component<
+  { children: ReactNode },
+  { error: string | null }
+> {
+  override state = { error: null }
+
+  static getDerivedStateFromError(error: unknown) {
+    return { error: error instanceof Error ? error.message : String(error) }
+  }
+
+  override render() {
+    if (this.state.error) {
+      return <pre className={artifactErrorStripClass}>{this.state.error}</pre>
+    }
+
+    return this.props.children
+  }
+}
 
 type ArtifactPanelState = ReturnType<typeof useArtifactPanelState>
 
@@ -169,22 +188,24 @@ export function ArtifactPanelBody({
   }
   if (markdownPreviewEditable) {
     return (
-      <Suspense
-        fallback={
-          <div className={`${artifactCenteredStateClass} ${appToneMutedClass}`}>
-            Loading markdown editor…
-          </div>
-        }
-      >
-        <ArtifactMarkdownEditor
-          artifactKey={`${selectedArtifact?.slug}:${selectedArtifact?.version}`}
-          content={draft}
-          diffMarkdown={selectedArtifact?.content ?? ''}
-          fullscreen={fullscreen}
-          onChange={setDraft}
-          onError={setPreviewError}
-        />
-      </Suspense>
+      <ArtifactMarkdownEditorBoundary>
+        <Suspense
+          fallback={
+            <div className={`${artifactCenteredStateClass} ${appToneMutedClass}`}>
+              Loading markdown editor…
+            </div>
+          }
+        >
+          <ArtifactMarkdownEditor
+            artifactKey={`${selectedArtifact?.slug}:${selectedArtifact?.version}`}
+            content={draft}
+            diffMarkdown={selectedArtifact?.content ?? ''}
+            fullscreen={fullscreen}
+            onChange={setDraft}
+            onError={setPreviewError}
+          />
+        </Suspense>
+      </ArtifactMarkdownEditorBoundary>
     )
   }
   if (view === 'preview' && selectedArtifact?.kind === 'markdown' && showingHistoricalVersion) {
