@@ -24,6 +24,7 @@ export function BranchSwitchAction({
   onSwitchFailed: () => void
 }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [pending, setPending] = useState(false)
   const warning = errorMessage ?? (blocked ? 'Worktree is dirty. Commit first.' : null)
   const hasWarning = Boolean(warning)
   return (
@@ -35,26 +36,30 @@ export function BranchSwitchAction({
         onClick={(event) => {
           event.stopPropagation()
           setErrorMessage(null)
+          setPending(true)
           void onAction('workspace.switch-branch', {
             projectId: project.id,
             value: group.label,
-          }).then((result) => {
-            const error = result?.result?.error
-            if (!error) {
-              onSwitchFailed()
-              return
-            }
-            setErrorMessage(error)
-            if (typeof error === 'string' && error.includes('Worktree is dirty')) {
-              onBlocked()
-              return
-            }
-            onSwitchFailed()
           })
+            .then((result) => {
+              const error = result?.result?.error
+              if (!error) {
+                onSwitchFailed()
+                return
+              }
+              setErrorMessage(error)
+              if (typeof error === 'string' && error.includes('Worktree is dirty')) {
+                onBlocked()
+                return
+              }
+              onSwitchFailed()
+            })
+            .finally(() => setPending(false))
         }}
         aria-label={`Switch to ${group.label}`}
+        disabled={pending}
       >
-        <GitBranch size={12} />
+        {pending ? <ActivitySpinner className="h-3 w-3 text-current" /> : <GitBranch size={12} />}
       </button>
     </SidebarActionTooltip>
   )
@@ -78,6 +83,7 @@ export function BranchPruneAction({
   onRequestConfirm: () => void
 }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [pending, setPending] = useState(false)
   const actionLabel = 'Remove'
   const worktreesToRemove = group.worktreePath
     ? []
@@ -90,6 +96,7 @@ export function BranchPruneAction({
       ? `Remove ${group.label} and associated worktrees`
       : `${actionLabel} ${group.label}`
   const runPrune = async () => {
+    setPending(true)
     const result = group.worktreePath
       ? await onAction('workspace.remove-worktree', {
           projectId: project.id,
@@ -104,9 +111,11 @@ export function BranchPruneAction({
     const error = result?.result?.error
     if (error) {
       setErrorMessage(error)
+      setPending(false)
       return
     }
     onConfirm()
+    setPending(false)
   }
 
   const actionButton = (
@@ -119,8 +128,9 @@ export function BranchPruneAction({
         onRequestConfirm()
       }}
       aria-label={`${actionLabel} ${group.label}`}
+      disabled={pending}
     >
-      <XSquare size={12} />
+      {pending ? <ActivitySpinner className="h-3 w-3 text-current" /> : <XSquare size={12} />}
     </button>
   )
 
@@ -153,6 +163,7 @@ export function WorktreeCompletionAction({
   project: Project
   onAction: DesktopActionInvoker
 }) {
+  const [pending, setPending] = useState(false)
   if (!group.worktreePath) return null
   const complete = Boolean(group.worktreeComplete)
   const action = complete
@@ -166,14 +177,22 @@ export function WorktreeCompletionAction({
         className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--optical-up"
         onClick={(event) => {
           event.stopPropagation()
+          setPending(true)
           void onAction(action, {
             projectId: project.id,
             worktreePath: group.worktreePath ?? '',
-          })
+          }).finally(() => setPending(false))
         }}
         aria-label={`${label}: ${group.label}`}
+        disabled={pending}
       >
-        {complete ? <Square size={12} /> : <CheckSquare size={12} />}
+        {pending ? (
+          <ActivitySpinner className="h-3 w-3 text-current" />
+        ) : complete ? (
+          <Square size={12} />
+        ) : (
+          <CheckSquare size={12} />
+        )}
       </button>
     </Tooltip>
   )
@@ -383,15 +402,18 @@ export function RemoveCompletedWorktreesAction({
   onConfirm: () => void
   onRequestConfirm: () => void
 }) {
+  const [pending, setPending] = useState(false)
   const worktrees = getCompletedWorktreeTargets(group)
   if (worktrees.length === 0) return null
 
   const removeCompleted = async () => {
+    setPending(true)
     const result = await onAction('workspace.remove-completed-worktrees', {
       projectId: project.id,
       worktrees,
     })
     if (!result?.result?.error) onConfirm()
+    setPending(false)
   }
 
   const actionButton = (
@@ -403,8 +425,9 @@ export function RemoveCompletedWorktreesAction({
         onRequestConfirm()
       }}
       aria-label={`Remove completed worktrees under ${group.label}`}
+      disabled={pending}
     >
-      <Trash2 size={12} />
+      {pending ? <ActivitySpinner className="h-3 w-3 text-current" /> : <Trash2 size={12} />}
     </button>
   )
 

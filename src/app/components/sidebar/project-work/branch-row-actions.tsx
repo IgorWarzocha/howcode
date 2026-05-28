@@ -1,3 +1,4 @@
+import { ActivitySpinner } from '@howcode/common/activity-spinner'
 import { Tooltip } from '@howcode/common/tooltip'
 import { GitFork, Plus } from 'lucide-react'
 import type { RefObject } from 'react'
@@ -43,6 +44,7 @@ function BranchStartMenu({
   onCreateChildWorktree,
   onClose,
   onWorktreeBranchNameChange,
+  pending = false,
 }: {
   group: BranchThreadGroup
   inputRef: RefObject<HTMLInputElement | null>
@@ -54,6 +56,7 @@ function BranchStartMenu({
   onCreateChildWorktree: () => void
   onClose: () => void
   onWorktreeBranchNameChange: (value: string) => void
+  pending?: boolean
 }) {
   return (
     <div
@@ -69,7 +72,7 @@ function BranchStartMenu({
           value={worktreeBranchName}
           onChange={(event) => onWorktreeBranchNameChange(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === 'Enter') onCreateChildWorktree()
+            if (event.key === 'Enter' && !pending) onCreateChildWorktree()
             if (event.key === 'Escape') onClose()
           }}
           placeholder="New worktree"
@@ -80,9 +83,16 @@ function BranchStartMenu({
           data-warning={worktreeError ? 'true' : 'false'}
           className="sidebar-new-thread-option-meta sidebar-new-thread-option-plus"
           aria-label={worktreeError ?? 'Create worktree'}
-          onClick={() => onCreateChildWorktree()}
+          disabled={pending}
+          onClick={() => {
+            if (!pending) onCreateChildWorktree()
+          }}
         >
-          {worktreeError ?? <Plus size={12} />}
+          {pending ? (
+            <ActivitySpinner className="h-3 w-3 text-current" />
+          ) : (
+            (worktreeError ?? <Plus size={12} />)
+          )}
         </button>
       </div>
     </div>
@@ -105,6 +115,7 @@ function BranchWorktreeCreateAction({
   const [open, setOpen] = useState(false)
   const [worktreeBranchName, setWorktreeBranchName] = useState('')
   const [worktreeError, setWorktreeError] = useState<string | null>(null)
+  const [pending, setPending] = useState(false)
   const [menuWidth, setMenuWidth] = useState(240)
   const [menuRight, setMenuRight] = useState(0)
   const menuRef = useRef<HTMLDivElement | null>(null)
@@ -154,19 +165,24 @@ function BranchWorktreeCreateAction({
     const branchName = worktreeBranchName.trim()
     if (!branchName) return
     setWorktreeError(null)
-    const result = await createThreadInWorktreeForBranch({
-      branchName,
-      parentBranchName,
-      onAction,
-      projectId: project.id,
-    })
-    if (result.error) {
-      setWorktreeError(result.error)
-      onCreateFailed()
-      return
+    setPending(true)
+    try {
+      const result = await createThreadInWorktreeForBranch({
+        branchName,
+        parentBranchName,
+        onAction,
+        projectId: project.id,
+      })
+      if (result.error) {
+        setWorktreeError(result.error)
+        onCreateFailed()
+        return
+      }
+      setWorktreeBranchName('')
+      setOpen(false)
+    } finally {
+      setPending(false)
     }
-    setWorktreeBranchName('')
-    setOpen(false)
   }
 
   return (
@@ -200,6 +216,7 @@ function BranchWorktreeCreateAction({
             menuWidth={menuWidth}
             onCreateChildWorktree={() => void createChildWorktree()}
             onClose={() => setOpen(false)}
+            pending={pending}
             onWorktreeBranchNameChange={(value) => {
               setWorktreeBranchName(value)
               setWorktreeError(null)
@@ -229,23 +246,29 @@ function EmptyBranchStartAction({
   onSwitchFailed: () => void
 }) {
   const targetProjectId = group.worktreePath ?? project.id
+  const [pending, setPending] = useState(false)
   const startThread = async () => {
-    if (!(group.current || group.worktree || group.unassigned)) {
-      const worktreeResult = await createThreadInWorktreeForBranch({
-        branchName: group.label,
-        parentBranchName: currentBranch,
-        onAction,
-        projectId: project.id,
-      })
-      if (worktreeResult.error) onSwitchFailed()
-      return
-    }
+    setPending(true)
+    try {
+      if (!(group.current || group.worktree || group.unassigned)) {
+        const worktreeResult = await createThreadInWorktreeForBranch({
+          branchName: group.label,
+          parentBranchName: currentBranch,
+          onAction,
+          projectId: project.id,
+        })
+        if (worktreeResult.error) onSwitchFailed()
+        return
+      }
 
-    await createThreadForBranch({
-      branchName: getStartThreadBranchName(group, currentBranch),
-      onAction,
-      projectId: targetProjectId,
-    })
+      await createThreadForBranch({
+        branchName: getStartThreadBranchName(group, currentBranch),
+        onAction,
+        projectId: targetProjectId,
+      })
+    } finally {
+      setPending(false)
+    }
   }
 
   const label = group.worktree
@@ -266,13 +289,14 @@ function EmptyBranchStartAction({
         type="button"
         className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--optical-up sidebar-project-work-empty-start"
         data-warning={blocked ? 'true' : 'false'}
+        disabled={pending}
         onClick={(event) => {
           event.stopPropagation()
           void startThread()
         }}
         aria-label={label}
       >
-        <Plus size={12} />
+        {pending ? <ActivitySpinner className="h-3 w-3 text-current" /> : <Plus size={12} />}
       </button>
     </SidebarActionTooltip>
   )

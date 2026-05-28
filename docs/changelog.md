@@ -4,6 +4,7 @@
 - Inline branch actions can now create a child worktree under that branch.
 - Child worktrees keep their recorded parent branch after dev/app restart.
 - Worktree creation is only available from the active branch, and branch/worktree groups get consistent dividers.
+- Sidebar branch/worktree actions now show an in-place spinner while they are running.
 - Sidebar changes now patch in place instead of refetching the whole shell state.
 - Reasoning block headers no longer dump raw CoT when a model does not provide headers.
 - Theme changes now apply instantly instead of waiting for a full shell refresh.
