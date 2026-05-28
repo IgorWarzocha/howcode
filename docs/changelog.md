@@ -4,6 +4,7 @@
 - Updated bundled Pi SDK/runtime packages to 0.76.0.
 - Branch/worktree creation now normalizes messy names like `fix sidebar` into Git-safe names like `fix-sidebar`.
 - Inline branch actions can now create a child worktree under that branch.
+- Sidebar branch/worktree/project changes now patch in place instead of refetching the whole shell state.
 
 Snapshot: TBD.
 

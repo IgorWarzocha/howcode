@@ -25,9 +25,16 @@ import {
 import {
   applyCommitOptionsPostEffect,
   applyCreateWorktreePostEffect,
+  applyRemoveWorktreePostEffect,
   applySwitchBranchPostEffect,
   applyWorkspaceCommitPostEffect,
+  applyWorktreeMetadataPostEffect,
 } from './post-effects/workspace'
+import {
+  setShellSidebarVisibleProjectIds,
+  updateShellProject,
+  upsertShellProject,
+} from './project-shell-cache'
 import { reconcileComposerThreadResult } from './sidebar-thread-sync'
 
 export {
@@ -176,8 +183,29 @@ async function handleCreateWorktreeEffects(ctx: PostEffectsContext) {
     actionResult: ctx.actionResult,
     queryClient: ctx.queryClient,
     loadProjectGitState: ctx.loadProjectGitState,
-    loadProjectThreads: ctx.loadProjectThreads,
-    refreshShellState: ctx.refreshShellState,
+    setProjectGitState: ctx.setProjectGitState,
+  })
+}
+
+async function handleWorktreeMetadataEffects(ctx: PostEffectsContext) {
+  if (hasActionError(ctx.actionResult) && ctx.actionResult?.result?.didMutate !== true) return
+  await applyWorktreeMetadataPostEffect({
+    action: ctx.action,
+    contextualPayload: ctx.contextualPayload,
+    actionResult: ctx.actionResult,
+    queryClient: ctx.queryClient,
+    loadProjectGitState: ctx.loadProjectGitState,
+    setProjectGitState: ctx.setProjectGitState,
+  })
+}
+
+async function handleRemoveWorktreeEffects(ctx: PostEffectsContext) {
+  if (hasActionError(ctx.actionResult) && ctx.actionResult?.result?.didMutate !== true) return
+  await applyRemoveWorktreePostEffect({
+    contextualPayload: ctx.contextualPayload,
+    actionResult: ctx.actionResult,
+    queryClient: ctx.queryClient,
+    loadProjectGitState: ctx.loadProjectGitState,
     setProjectGitState: ctx.setProjectGitState,
   })
 }
@@ -215,20 +243,50 @@ const postEffectHandlers: PostEffectHandler[] = [
   {
     matches: (ctx) => ctx.action === 'project.edit-name',
     run: async (ctx) => {
-      await ctx.refreshShellState()
+      const projectId =
+        typeof ctx.contextualPayload.projectId === 'string' ? ctx.contextualPayload.projectId : null
+      const projectName =
+        typeof ctx.contextualPayload.projectName === 'string'
+          ? ctx.contextualPayload.projectName
+          : null
+      if (projectId && projectName) {
+        updateShellProject(ctx.queryClient, projectId, (project) =>
+          project.name === projectName ? project : { ...project, name: projectName },
+        )
+      }
       await refreshArchivedIfVisible(getThreadLifecycleInput(ctx))
     },
   },
   {
     matches: (ctx) => ctx.action === 'project.refresh-repo-origin',
-    run: (ctx) => ctx.refreshShellState(),
+    run: (ctx) => {
+      const projectId = ctx.actionResult?.result?.projectId ?? ctx.contextualPayload.projectId
+      const originUrl = ctx.actionResult?.result?.originUrl
+      if (typeof projectId !== 'string') return
+      updateShellProject(ctx.queryClient, projectId, (project) =>
+        project.repoOriginUrl === originUrl && project.repoOriginChecked === true
+          ? project
+          : { ...project, repoOriginUrl: originUrl ?? null, repoOriginChecked: true },
+      )
+    },
   },
   {
     matches: (ctx) =>
       ctx.action === 'pi-settings.update' && ctx.contextualPayload.piSettingsKey === 'theme',
     run: (ctx) => ctx.refreshShellState(),
   },
-  { matches: (ctx) => ctx.action === 'project.pin', run: (ctx) => ctx.refreshShellState() },
+  {
+    matches: (ctx) => ctx.action === 'project.pin',
+    run: (ctx) => {
+      const projectId =
+        typeof ctx.contextualPayload.projectId === 'string' ? ctx.contextualPayload.projectId : null
+      if (!projectId) return
+      updateShellProject(ctx.queryClient, projectId, (project) => ({
+        ...project,
+        pinned: !project.pinned,
+      }))
+    },
+  },
   {
     matches: (ctx) => ctx.action === 'project.archive-threads',
     run: handleProjectArchiveThreadsEffects,
@@ -254,7 +312,14 @@ const postEffectHandlers: PostEffectHandler[] = [
   { matches: (ctx) => ctx.action === 'workspace.commit-options', run: handleCommitOptionsEffects },
   {
     matches: (ctx) => ctx.action === 'workspace.sidebar-scope',
-    run: (ctx) => ctx.refreshShellState(),
+    run: (ctx) => {
+      const projectIds = Array.isArray(ctx.contextualPayload.projectIds)
+        ? ctx.contextualPayload.projectIds.filter(
+            (projectId): projectId is string => typeof projectId === 'string',
+          )
+        : []
+      setShellSidebarVisibleProjectIds(ctx.queryClient, projectIds)
+    },
   },
   {
     matches: (ctx) =>
@@ -262,15 +327,23 @@ const postEffectHandlers: PostEffectHandler[] = [
     run: handleSwitchBranchEffects,
   },
   {
+    matches: (ctx) => ctx.action === 'workspace.create-worktree',
+    run: handleCreateWorktreeEffects,
+  },
+  {
     matches: (ctx) =>
-      ctx.action === 'workspace.create-worktree' ||
-      ctx.action === 'workspace.remove-worktree' ||
       ctx.action === 'workspace.mark-worktree-complete' ||
       ctx.action === 'workspace.mark-worktree-incomplete' ||
+      ctx.action === 'workspace.set-worktree-directory',
+    run: handleWorktreeMetadataEffects,
+  },
+  {
+    matches: (ctx) =>
+      ctx.action === 'workspace.remove-worktree' ||
       ctx.action === 'workspace.merge-worktree' ||
       ctx.action === 'workspace.merge-completed-worktrees' ||
       ctx.action === 'workspace.remove-completed-worktrees',
-    run: handleCreateWorktreeEffects,
+    run: handleRemoveWorktreeEffects,
   },
   {
     matches: (ctx) => ctx.action === 'workspace.diff-preferences',
@@ -278,9 +351,17 @@ const postEffectHandlers: PostEffectHandler[] = [
   },
   { matches: (ctx) => ctx.action === 'workspace.commit', run: handleWorkspaceCommitEffects },
   {
-    matches: (ctx) =>
-      ctx.action === 'projects.import.apply' || ctx.action === 'workspace.set-worktree-directory',
-    run: (ctx) => ctx.refreshShellState(),
+    matches: (ctx) => ctx.action === 'projects.import.apply',
+    run: async (ctx) => {
+      const importedProjects = ctx.actionResult?.result?.importedProjects
+      if (!Array.isArray(importedProjects)) {
+        await ctx.refreshShellState()
+        return
+      }
+      for (const project of importedProjects) {
+        upsertShellProject(ctx.queryClient, project)
+      }
+    },
   },
 ]
 

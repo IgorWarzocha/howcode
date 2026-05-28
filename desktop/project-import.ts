@@ -70,9 +70,17 @@ export async function importProjects(projectIds: string[]) {
   }
 
   setProjectImportState(true)
+  const importedProjectIds = candidates.map((candidate) => candidate.projectId)
+  const importedProjectIdSet = new Set(importedProjectIds)
+  const importedProjects = listProjects(getDesktopWorkingDirectory()).filter(
+    (project) =>
+      importedProjectIdSet.has(project.id) ||
+      (project.worktree?.rootProjectId && importedProjectIdSet.has(project.worktree.rootProjectId)),
+  )
 
   return {
-    importedProjectIds: candidates.map((candidate) => candidate.projectId),
+    importedProjectIds,
+    importedProjects,
     checkedProjectCount: candidates.length,
     repoProjectCount,
     originProjectCount,

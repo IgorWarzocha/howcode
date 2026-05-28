@@ -335,7 +335,6 @@ function handleThreadUpdateEvent(
       setChatSidebarState: runtime.setChatSidebarState,
     })
     void runtime.queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() })
-    if (event.reason !== 'compaction') runtime.scheduleShellStateRefresh()
   }
   if (
     (event.reason === 'end' || event.reason === 'external') &&

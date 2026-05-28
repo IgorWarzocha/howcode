@@ -8,6 +8,7 @@ import type {
   DictationModelId,
   GitOpsMode,
   PiSettings,
+  Project,
   ProjectDeletionMode,
   ProjectDiffBaseline,
   ProjectDiffDefaultBaseline,
@@ -315,6 +316,7 @@ export type DesktopActionResultData = {
   failedWorktreePath?: string | undefined
   failedThreadIds?: string[] | undefined
   importedProjectIds?: string[] | undefined
+  importedProjects?: Project[] | undefined
   message?: string | undefined | null | undefined
   originProjectCount?: number | undefined
   originUrl?: string | undefined | null | undefined
