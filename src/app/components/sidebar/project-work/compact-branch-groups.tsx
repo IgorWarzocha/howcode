@@ -3,7 +3,11 @@ import { CircleOff, GitBranch } from 'lucide-react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project, Thread, View } from '../../../types'
 import { BranchInlineActions, BranchSessionCount } from './branch-row-actions'
-import { BranchThreadGroupSection, shouldShowBranchGroupDivider } from './branch-thread-groups'
+import {
+  BranchThreadGroupSection,
+  shouldShowBranchGroupDividerAfter,
+  shouldShowBranchGroupDividerBefore,
+} from './branch-thread-groups'
 import type { BranchThreadGroup, WorktreeBranch } from './project-work-model'
 import { ProjectWorkThreadRow } from './project-work-thread-row'
 
@@ -126,6 +130,7 @@ export function ProjectCompactBranchGroups({
         className="sidebar-project-work-branch-group"
         data-current="true"
         data-divider-after={worktreeGroups.length > 0 ? 'true' : 'false'}
+        data-divider-before="false"
       >
         <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading">
           <button
@@ -221,7 +226,8 @@ export function ProjectCompactBranchGroups({
           ? false
           : (collapsedBranchIds[groupKey] ??
             (group.threads.length === 0 && group.worktrees.length === 0))
-        const showBottomDivider = shouldShowBranchGroupDivider(group, hasNextGroup)
+        const showBottomDivider = shouldShowBranchGroupDividerAfter(group, hasNextGroup)
+        const showTopDivider = shouldShowBranchGroupDividerBefore(group, index + 1)
         return (
           <BranchThreadGroupSection
             key={group.id}
@@ -236,6 +242,7 @@ export function ProjectCompactBranchGroups({
             terminalRunningSessionPaths={terminalRunningSessionPaths}
             onAction={onAction}
             showBottomDivider={showBottomDivider}
+            showTopDivider={showTopDivider}
             onThreadOpen={onThreadOpen}
             onToggle={() =>
               onSetCollapsedBranchIds((current) => ({

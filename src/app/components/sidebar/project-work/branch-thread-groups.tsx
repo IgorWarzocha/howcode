@@ -110,8 +110,16 @@ export function getCompactBranchVisualGroupKey(
   return group.worktree ? (group.worktreeBranchName ?? group.label ?? currentBranch) : group.label
 }
 
-export function shouldShowBranchGroupDivider(group: BranchThreadGroup, hasNextGroup: boolean) {
-  return hasNextGroup && (group.worktrees.length > 0 || (group.completedWorktrees?.length ?? 0) > 0)
+export function branchGroupHasWorktreeDivider(group: BranchThreadGroup) {
+  return group.worktrees.length > 0 || (group.completedWorktrees?.length ?? 0) > 0
+}
+
+export function shouldShowBranchGroupDividerAfter(group: BranchThreadGroup, hasNextGroup: boolean) {
+  return hasNextGroup && branchGroupHasWorktreeDivider(group)
+}
+
+export function shouldShowBranchGroupDividerBefore(group: BranchThreadGroup, index: number) {
+  return index > 0 && branchGroupHasWorktreeDivider(group)
 }
 
 export function shouldSeparateBranchGroups(
@@ -580,7 +588,8 @@ export function ProjectExpandedBranchGroups({
         const collapsed = normalizedSearchQuery
           ? false
           : (collapsedBranchIds[groupKey] ?? defaultCollapsed)
-        const showBottomDivider = shouldShowBranchGroupDivider(group, hasNextGroup)
+        const showBottomDivider = shouldShowBranchGroupDividerAfter(group, hasNextGroup)
+        const showTopDivider = shouldShowBranchGroupDividerBefore(group, index)
         return (
           <BranchThreadGroupSection
             key={group.id}
@@ -595,6 +604,7 @@ export function ProjectExpandedBranchGroups({
             terminalRunningSessionPaths={terminalRunningSessionPaths}
             onAction={onAction}
             showBottomDivider={showBottomDivider}
+            showTopDivider={showTopDivider}
             onThreadOpen={onThreadOpen}
             onToggle={() =>
               onSetCollapsedBranchIds((current) => ({

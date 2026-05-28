@@ -5,7 +5,8 @@
   overflow: visible;
 }
 
-.sidebar-project-work-branch-group[data-divider-before="true"] {
+.sidebar-project-work-branch-group[data-divider-before="true"],
+.sidebar-project-work-branch-group:not(:first-child):has(.sidebar-project-work-worktree-group) {
   border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
   margin-top: 0.25rem;
   padding-top: 0.25rem;
