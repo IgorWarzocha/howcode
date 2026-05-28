@@ -3,7 +3,7 @@
 - Branch/worktree creation now normalizes messy names with spaces into Git-safe names.
 - Inline branch actions can now create a child worktree under that branch.
 - Child worktrees keep their recorded parent branch after dev/app restart.
-- Worktree creation is only available from the active branch, and branch/worktree groups get consistent dividers.
+- Worktrees can only be created from the active branch.
 - Sidebar branch/worktree actions now show an in-place spinner while they are running.
 - Sidebar changes now patch in place instead of refetching the whole shell state.
 - Reasoning block headers no longer dump raw CoT when a model does not provide headers.
@@ -11,8 +11,8 @@
 - Fixes to light modes
 - Dictation controls now hide while composer inputs are locked.
 - Tiny composer widths now keep the Terminal icon visible instead of dropping the whole control.
-- Git diff comparison now treats the repo's remote HEAD as the default branch instead of assuming `main`.
-- Git diff comparison now offers a parent branch baseline inside child worktrees, and drops the old Yesterday preset from the picker.
+- Git diffs use remote HEAD as the default branch.
+- Git diffs add parent-branch baseline and drop Yesterday.
 - Updated bundled Pi SDK/runtime packages to 0.76.0.
 
 Snapshot: May 28, 2026.

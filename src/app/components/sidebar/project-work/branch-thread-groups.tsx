@@ -10,8 +10,7 @@ import { createThreadForBranch } from './new-thread-menu'
 import type { BranchThreadGroup, WorktreeBranchGroup } from './project-work-model'
 import { ProjectWorkThreadRow } from './project-work-thread-row'
 
-const dirtyBranchSwitchMessage =
-  'You have uncommitted changes on your current branch. Commit first.'
+const dirtyBranchSwitchMessage = 'Worktree is dirty. Commit first.'
 
 function BranchHeadingIcon({ group }: { group: BranchThreadGroup }) {
   if (group.unassigned) {

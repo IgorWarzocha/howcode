@@ -280,9 +280,7 @@ function EmptyBranchStartAction({
         ? 'Start unassigned thread'
         : `Start thread in ${group.label} worktree`
   const tooltipContent = canSwitch ? 'Switch branches and start a new session.' : label
-  const warning = blocked
-    ? 'You have uncommitted changes on your current branch. Commit first.'
-    : null
+  const warning = blocked ? 'Worktree is dirty. Commit first.' : null
 
   return (
     <SidebarActionTooltip description={tooltipContent} warning={warning}>
