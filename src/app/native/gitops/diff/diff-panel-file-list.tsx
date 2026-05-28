@@ -45,7 +45,7 @@ import {
   getFileHeaderContextLabel,
   isImageDiffFile,
 } from './diff-panel-content.helpers'
-import { resolveDiffThemeName } from './diff-rendering'
+import { DIFF_THEMES } from './diff-rendering'
 
 type FileInteractionHandlers = {
   onLineClick: ({
@@ -406,8 +406,8 @@ export function DiffPanelFileList({
       diffStyle: diffRenderMode === 'split' ? 'split' : 'unified',
       lineDiffType: 'none',
       overflow: 'wrap',
-      theme: resolveDiffThemeName('dark'),
-      themeType: 'dark',
+      theme: DIFF_THEMES,
+      themeType: 'system',
       unsafeCSS: DIFF_PANEL_UNSAFE_CSS,
       enableGutterUtility: true,
       lineHoverHighlight: 'both',

@@ -153,14 +153,13 @@ export function buildProjectsSettingsDescriptors({
       keywords: 'git diff baseline comparison files lines default',
       render: () => (
         <div
-          className={`grid grid-cols-5 gap-1 rounded-lg bg-[color:var(--surface-hover)] p-[3px] ${appTypeSmallClass} ${appToneMutedClass} `}
+          className={`grid grid-cols-4 gap-1 rounded-lg bg-[color:var(--surface-hover)] p-[3px] ${appTypeSmallClass} ${appToneMutedClass} `}
         >
           {[
             [{ kind: 'head' }, 'Last'],
             [{ kind: 'previous' }, 'Prev'],
             [{ kind: 'dev-branch' }, 'Dev'],
-            [{ kind: 'main-branch' }, 'Main'],
-            [{ kind: 'yesterday' }, 'Yesterday'],
+            [{ kind: 'main-branch' }, 'Default'],
           ].map(([value, label]) => {
             const baseline = value as AppSettings['gitDiffBaselineDefault']
             return (

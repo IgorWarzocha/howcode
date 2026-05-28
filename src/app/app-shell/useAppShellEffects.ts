@@ -92,6 +92,7 @@ export function useAppShellEffects({
     collapsedProjectIds,
     activeView: workspaceState.activeView,
     selectedProjectId: workspaceState.selectedProjectId,
+    selectedThreadId: workspaceState.selectedThreadId,
     selectedSessionPath: workspaceState.selectedSessionPath,
     takeoverVisible: workspaceState.takeoverVisible,
     loadProjectThreads,

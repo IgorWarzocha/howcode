@@ -57,6 +57,7 @@ export function listProjects(cwd: string): Project[] {
           projects.git_ops_mode AS gitOpsMode,
           project_worktrees.root_cwd AS worktreeRootProjectId,
           project_worktrees.branch_name AS worktreeBranchName,
+          project_worktrees.parent_branch_name AS worktreeParentBranchName,
           project_worktrees.is_main AS worktreeIsMain,
           project_worktrees.source AS worktreeSource,
           project_worktrees.completed AS worktreeCompleted,
@@ -86,6 +87,7 @@ export function listProjects(cwd: string): Project[] {
           projects.git_ops_mode,
           project_worktrees.root_cwd,
           project_worktrees.branch_name,
+          project_worktrees.parent_branch_name,
           project_worktrees.is_main,
           project_worktrees.source,
           project_worktrees.completed,
@@ -147,6 +149,7 @@ function parseDiffBaseline(value: string | null): ProjectDiffBaseline | null {
     }
 
     const baseline = parsed as {
+      branchName?: unknown
       kind?: unknown
       rev?: unknown
       capturedAt?: unknown
@@ -155,10 +158,13 @@ function parseDiffBaseline(value: string | null): ProjectDiffBaseline | null {
     switch (baseline.kind) {
       case 'head':
       case 'previous':
-      case 'yesterday':
       case 'main-branch':
       case 'dev-branch':
         return { kind: baseline.kind }
+      case 'parent-branch':
+        return parseNamedDiffBaseline('parent-branch', baseline.branchName)
+      case 'branch':
+        return parseNamedDiffBaseline('branch', baseline.branchName)
       case 'last-opened':
         return typeof baseline.rev === 'string' && baseline.rev.trim().length > 0
           ? {
@@ -179,6 +185,15 @@ function parseDiffBaseline(value: string | null): ProjectDiffBaseline | null {
   } catch {
     return null
   }
+}
+
+function parseNamedDiffBaseline(
+  kind: Extract<ProjectDiffBaseline['kind'], 'branch' | 'parent-branch'>,
+  branchName: unknown,
+): ProjectDiffBaseline | null {
+  return typeof branchName === 'string' && branchName.trim().length > 0
+    ? { kind, branchName }
+    : null
 }
 
 export function getThreadDiffPreferences(sessionPath: string): ProjectDiffPreferences {
@@ -430,6 +445,29 @@ export function listBranchThreadIds(projectId: string, branchName: string) {
       `,
     )
     .all(projectId, branchName) as ThreadPathRow[]
+
+  return rows.map((row) => row.id).filter((id): id is string => typeof id === 'string')
+}
+
+export function listProjectFamilyBranchThreadIds(projectId: string, branchName: string) {
+  const db = getThreadStateDatabase()
+  const rows = db
+    .prepare(
+      `
+        SELECT id AS id, session_path AS sessionPath
+        FROM threads
+        WHERE branch_name = ?
+          AND (
+            cwd = ?
+            OR cwd IN (
+              SELECT cwd
+              FROM project_worktrees
+              WHERE root_cwd = ? AND is_main = 0
+            )
+          )
+      `,
+    )
+    .all(branchName, projectId, projectId) as ThreadPathRow[]
 
   return rows.map((row) => row.id).filter((id): id is string => typeof id === 'string')
 }

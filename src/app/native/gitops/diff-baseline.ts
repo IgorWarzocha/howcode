@@ -4,10 +4,14 @@ import type {
   ProjectDiffResolvedBaseline,
 } from '../../desktop/types'
 
-export const defaultDiffBaseline = { kind: 'head' } as const satisfies ProjectDiffBaseline
+export const defaultDiffBaseline = { kind: 'main-branch' } as const satisfies ProjectDiffBaseline
 
 export function getDiffBaselinePrefix(baseline: ProjectDiffBaseline | null | undefined) {
-  return baseline?.kind === 'main-branch' || baseline?.kind === 'dev-branch' ? 'from' : 'since'
+  return baseline?.kind === 'main-branch' ||
+    baseline?.kind === 'dev-branch' ||
+    baseline?.kind === 'branch'
+    ? 'from'
+    : 'since'
 }
 
 export function getDiffBaselineLabel(
@@ -18,16 +22,20 @@ export function getDiffBaselineLabel(
     return 'prev commit'
   }
 
-  if (baseline?.kind === 'yesterday') {
-    return 'yesterday'
-  }
-
   if (baseline?.kind === 'main-branch') {
-    return 'main branch'
+    return 'default branch'
   }
 
   if (baseline?.kind === 'dev-branch') {
     return 'dev branch'
+  }
+
+  if (baseline?.kind === 'parent-branch') {
+    return `parent · ${baseline.branchName}`
+  }
+
+  if (baseline?.kind === 'branch') {
+    return baseline.branchName
   }
 
   if (baseline?.kind === 'last-opened') {
@@ -49,12 +57,14 @@ export function getResolvedDiffBaselineLabel(
   switch (baseline?.kind ?? 'head') {
     case 'previous':
       return 'prev commit'
-    case 'yesterday':
-      return 'yesterday'
     case 'main-branch':
-      return 'main branch'
+      return resolvedBaseline?.label || 'default branch'
     case 'dev-branch':
       return 'dev branch'
+    case 'parent-branch':
+      return resolvedBaseline?.label || 'parent branch'
+    case 'branch':
+      return resolvedBaseline?.label || 'branch'
     case 'last-opened':
       return 'last opened'
     case 'commit':

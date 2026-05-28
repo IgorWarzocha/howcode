@@ -54,6 +54,7 @@ export function ComposerPromptSurface({
   projectId,
   chatGroupId,
   projectGitState,
+  parentBranchName,
   diffBaseline,
   sessionPath,
   dictationModelId,
@@ -261,7 +262,7 @@ export function ComposerPromptSurface({
     textarea.setSelectionRange(cursorPosition, cursorPosition)
   })
   useHowcodeKeybindingCommand('dictation.toggle', (event) => {
-    if (!showDictationButton) return
+    if (!(showDictationButton && !inputLocked)) return
     event.preventDefault()
     void toggleDictation()
   })
@@ -464,6 +465,7 @@ export function ComposerPromptSurface({
             onToggleTerminal={onToggleTerminal}
             onToggleArtifacts={onToggleArtifacts}
             projectGitState={projectGitState}
+            parentBranchName={parentBranchName}
             projectId={projectId}
             showTerminalControls={showTerminalControls}
             terminalVisible={terminalVisible}

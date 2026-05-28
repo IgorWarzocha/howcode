@@ -201,6 +201,28 @@ describe('project work sidebar model', () => {
     })
   })
 
+  it('groups newly created worktrees under their recorded parent branch', () => {
+    const groups = buildBranchGroups(
+      [],
+      'dev',
+      ['dev', 'dashboard'],
+      [
+        {
+          label: 'dashboard',
+          path: '/repo/.worktrees/dashboard',
+          branchName: 'dashboard',
+          parentBranchName: 'dev',
+        },
+      ],
+    )
+
+    expect(groups.map((group) => group.id)).toEqual(['dev'])
+    expect(groups[0]).toMatchObject({
+      id: 'dev',
+      worktrees: [{ label: 'dashboard', parentBranchName: 'dev' }],
+    })
+  })
+
   it('builds branch groups with current branch first and unassigned last', () => {
     const groups = buildBranchGroups(
       [

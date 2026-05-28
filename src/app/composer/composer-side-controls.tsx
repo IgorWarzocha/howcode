@@ -97,7 +97,7 @@ export function ComposerStopRail({ boundaryRef, canStopComposer, onStop }: Compo
         >
           {canStopComposer ? (
             <svg
-              className="composer-stop-button__spinner absolute text-white/50"
+              className="composer-stop-button__spinner absolute text-[color:var(--danger)]/55"
               viewBox="0 0 28 28"
               aria-hidden="true"
             >

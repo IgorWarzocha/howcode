@@ -71,6 +71,7 @@ export function mapProjectRow(row: ProjectRow): Project {
       ? {
           rootProjectId: row.worktreeRootProjectId,
           branchName: row.worktreeBranchName,
+          parentBranchName: row.worktreeParentBranchName,
           isMain: Boolean(row.worktreeIsMain),
           source: row.worktreeSource === 'imported' ? 'imported' : 'howcode',
           completed: Boolean(row.worktreeCompleted),

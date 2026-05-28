@@ -1,6 +1,6 @@
 import type { DesktopAction } from '../../shared/desktop-actions.ts'
 import type { AnyDesktopActionPayload } from '../../shared/desktop-contracts.ts'
-import { type PiSettingsKey, updatePiSetting } from '../pi-settings.ts'
+import { loadPiThemeState, type PiSettingsKey, updatePiSetting } from '../pi-settings.ts'
 import { type ActionHandlerResult, handledAction, unhandledAction } from './action-router-result.ts'
 
 const piSettingsKeys = new Set<PiSettingsKey>([
@@ -47,5 +47,10 @@ export async function handlePiSettingsDesktopAction(
   }
 
   const piSettings = await updatePiSetting(key, payload.value)
-  return handledAction({ piSettings })
+  if (key !== 'theme') {
+    return handledAction({ piSettings })
+  }
+
+  const piTheme = await loadPiThemeState()
+  return handledAction({ piSettings, piTheme })
 }

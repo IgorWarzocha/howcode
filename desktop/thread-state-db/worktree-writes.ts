@@ -6,6 +6,7 @@ export type ProjectWorktreeMetadata = {
   cwd: string
   rootCwd: string
   branchName: string | null
+  parentBranchName?: string | null | undefined
   isMain: boolean
   source: ProjectWorktreeSource
 }
@@ -43,11 +44,12 @@ export function upsertProjectWorktree(metadata: ProjectWorktreeMetadata) {
   const db = getThreadStateDatabase()
   db.prepare(
     `
-      INSERT INTO project_worktrees (cwd, root_cwd, branch_name, is_main, source)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO project_worktrees (cwd, root_cwd, branch_name, parent_branch_name, is_main, source)
+      VALUES (?, ?, ?, ?, ?, ?)
       ON CONFLICT(cwd) DO UPDATE SET
         root_cwd = excluded.root_cwd,
         branch_name = excluded.branch_name,
+        parent_branch_name = COALESCE(excluded.parent_branch_name, project_worktrees.parent_branch_name),
         is_main = excluded.is_main,
         source = excluded.source,
         updated_at = CURRENT_TIMESTAMP
@@ -56,6 +58,7 @@ export function upsertProjectWorktree(metadata: ProjectWorktreeMetadata) {
     metadata.cwd,
     metadata.rootCwd,
     metadata.branchName,
+    metadata.parentBranchName ?? null,
     metadata.isMain ? 1 : 0,
     metadata.source,
   )

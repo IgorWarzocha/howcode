@@ -12,6 +12,7 @@ import {
   getResultThreadIds,
   isThreadList,
 } from '../controller-action-utils'
+import { removeShellProjectFamily } from '../project-shell-cache'
 
 type ThreadLifecycleInput = {
   action: string
@@ -163,7 +164,8 @@ export async function applyProjectRemovePostEffect(
 
   if (input.contextualPayload.projectId === input.workspaceState.selectedProjectId)
     input.dispatch({ type: 'show-view', view: 'code' })
-  await input.refreshShellState()
+  const projectId = getPayloadProjectId(input.contextualPayload)
+  if (projectId) removeShellProjectFamily(input.queryClient, projectId)
   await refreshArchivedIfVisible(input)
   await input.invalidateInboxThreads()
 }

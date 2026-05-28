@@ -1,8 +1,10 @@
+import { ActivitySpinner } from '@howcode/common/activity-spinner'
 import { IconButton } from '@howcode/common/icon-button'
 import { Tooltip } from '@howcode/common/tooltip'
-import { GitBranch, GitFork, Plus, X } from 'lucide-react'
+import { GitBranch, Plus, X } from 'lucide-react'
 import { type ReactNode, type RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
+import { WorktreeSmallIcon } from '../../../ui/icons/worktree-small-icon'
 
 export async function createThreadForBranch({
   branchName,
@@ -27,14 +29,20 @@ function focusInput(input: HTMLInputElement | null) {
 
 export async function createThreadInWorktreeForBranch({
   branchName,
+  parentBranchName,
   onAction,
   projectId,
 }: {
   branchName: string
+  parentBranchName?: string | null | undefined
   onAction: DesktopActionInvoker
   projectId: string
 }) {
-  const worktreeResult = await onAction('workspace.create-worktree', { projectId, branchName })
+  const worktreeResult = await onAction('workspace.create-worktree', {
+    projectId,
+    branchName,
+    parentBranchName,
+  })
   const worktreeError = worktreeResult?.result?.error
   if (!worktreeResult?.ok || worktreeError || !worktreeResult.result?.projectId) {
     return {
@@ -45,8 +53,9 @@ export async function createThreadInWorktreeForBranch({
     }
   }
 
+  const normalizedBranchName = worktreeResult.result.branchName ?? branchName
   const threadResult = await createThreadForBranch({
-    branchName,
+    branchName: normalizedBranchName,
     onAction,
     projectId: worktreeResult.result.projectId,
   })
@@ -70,6 +79,10 @@ function getThreadCreationError(actionResult: Awaited<ReturnType<typeof createTh
     : 'Could not start thread.'
 }
 
+function PendingMenuIcon({ icon, pending }: { icon: ReactNode; pending: boolean }) {
+  return pending ? <ActivitySpinner className="h-3 w-3 text-current" /> : icon
+}
+
 function CreateTargetRow({
   icon,
   inputRef,
@@ -81,6 +94,8 @@ function CreateTargetRow({
   onChange,
   onCreate,
   onClose,
+  pending = false,
+  disabled = false,
 }: {
   icon: ReactNode
   inputRef: RefObject<HTMLInputElement | null>
@@ -92,6 +107,8 @@ function CreateTargetRow({
   onChange: (value: string) => void
   onCreate: () => void
   onClose: () => void
+  pending?: boolean
+  disabled?: boolean
 }) {
   const actionLabel = error ?? createLabel
   return (
@@ -108,7 +125,7 @@ function CreateTargetRow({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={(event) => {
-          if (event.key === 'Enter') onCreate()
+          if (event.key === 'Enter' && !(pending || disabled)) onCreate()
           if (event.key === 'Escape') onClose()
         }}
         placeholder={placeholder}
@@ -120,7 +137,9 @@ function CreateTargetRow({
           data-warning={error ? 'true' : 'false'}
           className="sidebar-new-thread-option-meta sidebar-new-thread-option-plus"
           aria-label={actionLabel}
+          disabled={pending || disabled}
           onClick={() => {
+            if (pending || disabled) return
             if (value.trim().length === 0) {
               focusInput(inputRef.current)
               return
@@ -128,7 +147,11 @@ function CreateTargetRow({
             onCreate()
           }}
         >
-          {error ?? <Plus size={12} />}
+          {pending ? (
+            <ActivitySpinner className="h-3 w-3 text-current" />
+          ) : (
+            (error ?? <Plus size={12} />)
+          )}
         </button>
       </Tooltip>
     </div>
@@ -151,6 +174,9 @@ export function NewThreadMenu({
   const [newBranchError, setNewBranchError] = useState<string | null>(null)
   const [newWorktreeBranchName, setNewWorktreeBranchName] = useState('')
   const [newWorktreeError, setNewWorktreeError] = useState<string | null>(null)
+  const [pendingAction, setPendingAction] = useState<
+    'current' | 'branch' | 'worktree' | 'unassigned' | null
+  >(null)
   const [menuWidth, setMenuWidth] = useState(240)
   const [menuRight, setMenuRight] = useState(0)
   const menuRef = useRef<HTMLDivElement | null>(null)
@@ -196,9 +222,17 @@ export function NewThreadMenu({
     setMenuRight(anchorRect.right - rowRect.right)
   }, [open])
 
-  const createAssignedThread = async (branchName: string | null) => {
-    await createThreadForBranch({ branchName, onAction, projectId })
-    setOpen(false)
+  const createAssignedThread = async (
+    branchName: string | null,
+    action: 'current' | 'unassigned',
+  ) => {
+    setPendingAction(action)
+    try {
+      await createThreadForBranch({ branchName, onAction, projectId })
+      setOpen(false)
+    } finally {
+      setPendingAction(null)
+    }
   }
 
   const toggleOpen = () => {
@@ -209,42 +243,62 @@ export function NewThreadMenu({
     const branchName = newWorktreeBranchName.trim()
     if (!branchName) return
     setNewWorktreeError(null)
-    const result = await createThreadInWorktreeForBranch({ branchName, onAction, projectId })
-    if (result.error) {
-      setNewWorktreeError(result.error)
-      return
+    setPendingAction('worktree')
+    try {
+      const result = await createThreadInWorktreeForBranch({
+        branchName,
+        parentBranchName: currentBranch,
+        onAction,
+        projectId,
+      })
+      if (result.error) {
+        setNewWorktreeError(result.error)
+        return
+      }
+      setNewWorktreeBranchName('')
+      setNewWorktreeError(null)
+      setOpen(false)
+    } finally {
+      setPendingAction(null)
     }
-    setNewWorktreeBranchName('')
-    setNewWorktreeError(null)
-    setOpen(false)
   }
 
   const createThreadOnNewBranch = async () => {
     const branchName = newBranchName.trim()
     if (!branchName) return
     setNewBranchError(null)
-    const switchResult = await onAction('workspace.switch-branch', {
-      projectId,
-      value: branchName,
-    })
-    const switchError = switchResult?.result?.error
-    if (!switchResult?.ok || switchError) {
-      setNewBranchError(
-        typeof switchError === 'string' && switchError.trim().length > 0
-          ? switchError
-          : 'Could not create branch.',
-      )
-      return
+    setPendingAction('branch')
+    try {
+      const switchResult = await onAction('workspace.switch-branch', {
+        projectId,
+        value: branchName,
+      })
+      const switchError = switchResult?.result?.error
+      if (!switchResult?.ok || switchError) {
+        setNewBranchError(
+          typeof switchError === 'string' && switchError.trim().length > 0
+            ? switchError
+            : 'Could not create branch.',
+        )
+        return
+      }
+      const normalizedBranchName = switchResult.result?.branchName ?? branchName
+      const threadResult = await createThreadForBranch({
+        branchName: normalizedBranchName,
+        onAction,
+        projectId,
+      })
+      const threadCreationError = getThreadCreationError(threadResult)
+      if (threadCreationError) {
+        setNewBranchError(threadCreationError)
+        return
+      }
+      setNewBranchName('')
+      setNewBranchError(null)
+      setOpen(false)
+    } finally {
+      setPendingAction(null)
     }
-    const threadResult = await createThreadForBranch({ branchName, onAction, projectId })
-    const threadCreationError = getThreadCreationError(threadResult)
-    if (threadCreationError) {
-      setNewBranchError(threadCreationError)
-      return
-    }
-    setNewBranchName('')
-    setNewBranchError(null)
-    setOpen(false)
   }
 
   return (
@@ -267,9 +321,10 @@ export function NewThreadMenu({
             <button
               type="button"
               className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-option"
-              onClick={() => void createAssignedThread(null)}
+              onClick={() => void createAssignedThread(null, 'unassigned')}
+              disabled={pendingAction !== null}
             >
-              <Plus size={11} />
+              <PendingMenuIcon icon={<Plus size={11} />} pending={pendingAction === 'unassigned'} />
               <span className="truncate">New session</span>
             </button>
           )}
@@ -279,11 +334,14 @@ export function NewThreadMenu({
               <button
                 type="button"
                 className="sidebar-menu-item sidebar-new-thread-option sidebar-new-thread-current-branch-option"
-                onClick={() => void createAssignedThread(currentBranch)}
-                disabled={!currentBranch}
+                onClick={() => void createAssignedThread(currentBranch, 'current')}
+                disabled={!currentBranch || pendingAction !== null}
               >
                 <span className="sidebar-new-thread-current-branch-icon" aria-hidden="true">
-                  <GitBranch size={11} />
+                  <PendingMenuIcon
+                    icon={<GitBranch size={11} />}
+                    pending={pendingAction === 'current'}
+                  />
                 </span>
                 <span className="truncate">{currentBranch ?? 'No branch'}</span>
               </button>
@@ -302,10 +360,12 @@ export function NewThreadMenu({
                 }}
                 onCreate={() => void createThreadOnNewBranch()}
                 onClose={() => setOpen(false)}
+                pending={pendingAction === 'branch'}
+                disabled={pendingAction !== null}
               />
 
               <CreateTargetRow
-                icon={<GitFork size={11} />}
+                icon={<WorktreeSmallIcon size={11} />}
                 inputRef={newWorktreeInputRef}
                 value={newWorktreeBranchName}
                 error={newWorktreeError}
@@ -318,14 +378,17 @@ export function NewThreadMenu({
                 }}
                 onCreate={() => void createThreadInNewWorktree()}
                 onClose={() => setOpen(false)}
+                pending={pendingAction === 'worktree'}
+                disabled={pendingAction !== null}
               />
 
               <button
                 type="button"
                 className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-option"
-                onClick={() => void createAssignedThread(null)}
+                onClick={() => void createAssignedThread(null, 'unassigned')}
+                disabled={pendingAction !== null}
               >
-                <X size={11} />
+                <PendingMenuIcon icon={<X size={11} />} pending={pendingAction === 'unassigned'} />
                 <span className="truncate">Unassigned</span>
                 <Tooltip content="Start outside git" placement="right">
                   <span className="sidebar-new-thread-option-meta sidebar-new-thread-option-plus">

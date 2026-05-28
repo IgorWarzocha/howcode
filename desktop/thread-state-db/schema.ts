@@ -242,6 +242,7 @@ const threadStateSchemaSql = `
       cwd TEXT PRIMARY KEY,
       root_cwd TEXT NOT NULL,
       branch_name TEXT,
+      parent_branch_name TEXT,
       is_main INTEGER NOT NULL DEFAULT 0,
       source TEXT NOT NULL DEFAULT 'howcode',
       completed INTEGER NOT NULL DEFAULT 0,
@@ -309,6 +310,7 @@ function ensureProjectUsageTotalsColumns(database: Database) {
 
 function ensureProjectWorktreeColumns(database: Database) {
   addColumnIfMissing(database, 'project_worktrees', 'completed INTEGER NOT NULL DEFAULT 0')
+  addColumnIfMissing(database, 'project_worktrees', 'parent_branch_name TEXT')
 }
 
 function resetRunningThreads(database: Database) {

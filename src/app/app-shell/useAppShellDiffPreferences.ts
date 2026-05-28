@@ -26,6 +26,10 @@ export function areDiffBaselinesEqual(left: ProjectDiffBaseline, right: ProjectD
   if (left.kind !== right.kind) return false
   if (left.kind === 'commit' && right.kind === 'commit') return left.sha === right.sha
   if (left.kind === 'last-opened' && right.kind === 'last-opened') return left.rev === right.rev
+  if (left.kind === 'branch' && right.kind === 'branch') return left.branchName === right.branchName
+  if (left.kind === 'parent-branch' && right.kind === 'parent-branch') {
+    return left.branchName === right.branchName
+  }
   return true
 }
 
@@ -59,6 +63,15 @@ function getNextDiffBaseline(controller: AppShellController) {
   )
 }
 
+function getEffectiveDiffBaseline(input: {
+  baseline: ProjectDiffBaseline
+  parentBranchName: string | null
+}): ProjectDiffBaseline {
+  return input.baseline.kind === 'main-branch' && input.parentBranchName
+    ? ({ kind: 'parent-branch', branchName: input.parentBranchName } satisfies ProjectDiffBaseline)
+    : input.baseline
+}
+
 function getNextDiffRenderMode(controller: AppShellController) {
   return (
     controller.activeThreadData?.diffPreferences?.renderMode ??
@@ -79,11 +92,16 @@ function promoteDiffBaselineDraft(options: {
   activeThreadId: string | null
   controllerRef: React.RefObject<AppShellController>
   current: DiffBaselineState
+  parentBranchName: string | null
   terminalSessionPath: string | null
 }) {
   const appDefault = options.controllerRef.current.shellState?.appSettings.gitDiffBaselineDefault
+  const effectiveDefault = getEffectiveDiffBaseline({
+    baseline: appDefault ?? defaultDiffBaseline,
+    parentBranchName: options.parentBranchName,
+  })
   const promotedBaseline =
-    appDefault && areDiffBaselinesEqual(options.current.baseline, appDefault)
+    effectiveDefault && areDiffBaselinesEqual(options.current.baseline, effectiveDefault)
       ? null
       : options.current.baseline
   void options.controllerRef.current.handleAction('workspace.diff-preferences', {
@@ -102,9 +120,13 @@ function nextDiffBaselineState(options: {
   controller: AppShellController
   controllerRef: React.RefObject<AppShellController>
   current: DiffBaselineState
+  parentBranchName: string | null
   terminalSessionPath: string | null
 }) {
-  const nextBaseline = getNextDiffBaseline(options.controller)
+  const nextBaseline = getEffectiveDiffBaseline({
+    baseline: getNextDiffBaseline(options.controller),
+    parentBranchName: options.parentBranchName,
+  })
   if (
     options.current.projectId === options.composerProjectId &&
     options.current.source === 'override' &&
@@ -196,11 +218,13 @@ export function useAppShellDiffPreferences({
   activeThreadId,
   composerProjectId,
   controller,
+  parentBranchName,
   terminalSessionPath,
 }: {
   activeThreadId: string | null
   composerProjectId: string
   controller: AppShellController
+  parentBranchName: string | null
   terminalSessionPath: string | null
 }) {
   const controllerRef = useRef(controller)
@@ -236,10 +260,11 @@ export function useAppShellDiffPreferences({
         controller,
         controllerRef,
         current,
+        parentBranchName,
         terminalSessionPath,
       }),
     )
-  }, [activeThreadId, composerProjectId, controller, terminalSessionPath])
+  }, [activeThreadId, composerProjectId, controller, parentBranchName, terminalSessionPath])
 
   useEffect(() => {
     setDiffRenderModeState((current) =>
@@ -256,7 +281,7 @@ export function useAppShellDiffPreferences({
 
   const diffBaseline = scopeMatches(diffBaselineState, scope)
     ? diffBaselineState.baseline
-    : getNextDiffBaseline(controller)
+    : getEffectiveDiffBaseline({ baseline: getNextDiffBaseline(controller), parentBranchName })
   const diffRenderMode = scopeMatches(diffRenderModeState, scope)
     ? diffRenderModeState.renderMode
     : getNextDiffRenderMode(controller)
@@ -264,14 +289,18 @@ export function useAppShellDiffPreferences({
   const handleSetDiffBaseline = useCallback(
     (baseline: ProjectDiffBaseline) => {
       const appDefault = controllerRef.current.shellState?.appSettings.gitDiffBaselineDefault
+      const effectiveDefault = getEffectiveDiffBaseline({
+        baseline: appDefault ?? defaultDiffBaseline,
+        parentBranchName,
+      })
       const nextBaseline =
-        appDefault && areDiffBaselinesEqual(baseline, appDefault) ? null : baseline
+        effectiveDefault && areDiffBaselinesEqual(baseline, effectiveDefault) ? null : baseline
       setDiffBaselineState({ ...scope, baseline, source: nextBaseline ? 'override' : 'default' })
       void controllerRef.current.handleAction('workspace.diff-preferences', {
         diffBaseline: nextBaseline,
       })
     },
-    [scope],
+    [parentBranchName, scope],
   )
 
   const handleSetDiffRenderMode = useCallback(

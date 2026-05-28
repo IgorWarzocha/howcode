@@ -10,6 +10,7 @@ type UseProjectShellSyncInput = {
   collapsedProjectIds: Record<string, boolean>
   activeView: WorkspaceState['activeView']
   selectedProjectId: WorkspaceState['selectedProjectId']
+  selectedThreadId: WorkspaceState['selectedThreadId']
   selectedSessionPath: WorkspaceState['selectedSessionPath']
   takeoverVisible: WorkspaceState['takeoverVisible']
   loadProjectThreads: (
@@ -26,6 +27,7 @@ export function useProjectShellSync({
   collapsedProjectIds,
   activeView,
   selectedProjectId,
+  selectedThreadId,
   selectedSessionPath,
   takeoverVisible,
   loadProjectThreads,
@@ -38,8 +40,23 @@ export function useProjectShellSync({
       return
     }
 
+    const hasSelectedProject =
+      !selectedProjectId || projects.some((project) => project.id === selectedProjectId)
+    const hasSelectedThread =
+      !selectedThreadId ||
+      projects.some((project) => project.threads.some((thread) => thread.id === selectedThreadId))
+    const hasSelectedSession =
+      !selectedSessionPath ||
+      projects.some((project) =>
+        project.threads.some((thread) => thread.sessionPath === selectedSessionPath),
+      )
+
+    if (hasSelectedProject && hasSelectedThread && hasSelectedSession) {
+      return
+    }
+
     dispatch({ type: 'sync-projects', projects })
-  }, [dispatch, projects])
+  }, [dispatch, projects, selectedProjectId, selectedSessionPath, selectedThreadId])
 
   useEffect(() => {
     const threadsScope = activeView === 'chat' ? 'chat' : 'code'

@@ -58,4 +58,21 @@ describe('desktop shell state merge', () => {
       threads: current.projects[0]?.threads,
     })
   })
+
+  it('keeps unchanged project object references across shell refreshes', () => {
+    const unchangedProject = {
+      id: '/repo/project-a',
+      name: 'project-a',
+      collapsed: false,
+      threadsLoaded: true,
+      threadsScope: 'code' as const,
+      threadCount: 0,
+      latestModifiedMs: 100,
+      threads: [],
+    }
+    const current = shellState([unchangedProject])
+    const next = shellState([{ ...unchangedProject }])
+
+    expect(mergeShellStateProjects(current, next)?.projects[0]).toBe(unchangedProject)
+  })
 })

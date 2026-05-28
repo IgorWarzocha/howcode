@@ -25,6 +25,7 @@ type GitOpsComposerPanelProps = {
   dictationModelId: string | null
   dictationMaxDurationSeconds: number
   projectGitState: ProjectGitState | null
+  parentBranchName?: string | null | undefined
   projectId: string
   sessionPath: string | null
   showDictationButton: boolean
@@ -135,6 +136,7 @@ export function GitOpsComposerPanel({
   dictationModelId,
   dictationMaxDurationSeconds,
   projectGitState,
+  parentBranchName,
   projectId,
   sessionPath,
   showDictationButton,
@@ -187,6 +189,7 @@ export function GitOpsComposerPanel({
             composerPanelRef={composerPanelRef}
             onOpenSettingsView={onOpenSettingsView}
             projectGitState={projectGitState}
+            parentBranchName={parentBranchName}
             projectId={projectId}
             sessionPath={sessionPath}
             showDictationButton={showDictationButton}

@@ -3,7 +3,11 @@ import { CircleOff, GitBranch } from 'lucide-react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project, Thread, View } from '../../../types'
 import { BranchInlineActions, BranchSessionCount } from './branch-row-actions'
-import { BranchThreadGroupSection, getCompactBranchVisualGroupKey } from './branch-thread-groups'
+import {
+  BranchThreadGroupSection,
+  shouldShowBranchGroupDividerAfter,
+  shouldShowBranchGroupDividerBefore,
+} from './branch-thread-groups'
 import type { BranchThreadGroup, WorktreeBranch } from './project-work-model'
 import { ProjectWorkThreadRow } from './project-work-thread-row'
 
@@ -109,7 +113,7 @@ export function ProjectCompactBranchGroups({
     pruneConfirmBranchId === removeCompletedWorktreesActionKey
   const canPruneCurrentBranch = Boolean(currentBranch)
   const currentBranchActionCount =
-    (canPruneCurrentBranch ? 1 : 0) + (hasCompletedWorktrees ? 2 : 0) + 1
+    (canPruneCurrentBranch ? 1 : 0) + (hasCompletedWorktrees ? 2 : 0) + (currentBranch ? 1 : 0) + 1
   const unassignedGroup: BranchThreadGroup = {
     id: 'compact-unassigned',
     label: 'Unassigned',
@@ -122,7 +126,12 @@ export function ProjectCompactBranchGroups({
 
   return (
     <>
-      <section className="sidebar-project-work-branch-group" data-current="true">
+      <section
+        className="sidebar-project-work-branch-group"
+        data-current="true"
+        data-divider-after={worktreeGroups.length > 0 ? 'true' : 'false'}
+        data-divider-before="false"
+      >
         <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading">
           <button
             type="button"
@@ -164,6 +173,7 @@ export function ProjectCompactBranchGroups({
               canMergeWorktree={false}
               canMergeCompletedWorktrees={hasCompletedWorktrees}
               canRemoveCompletedWorktrees={hasCompletedWorktrees}
+              canCreateWorktree={Boolean(currentBranch)}
               confirmingPrune={confirmingCurrentPrune}
               confirmingMergeCompletedWorktrees={confirmingMergeCompletedWorktrees}
               confirmingRemoveCompletedWorktrees={confirmingRemoveCompletedWorktrees}
@@ -211,17 +221,13 @@ export function ProjectCompactBranchGroups({
 
       {worktreeGroups.map((group, index) => {
         const groupKey = `${project.id}:${group.id}`
-        const visualGroupKey = getCompactBranchVisualGroupKey(group, currentBranch)
-        const nextGroup = index < worktreeGroups.length - 1 ? worktreeGroups[index + 1] : undefined
-        const nextVisualGroupKey = nextGroup
-          ? getCompactBranchVisualGroupKey(nextGroup, currentBranch)
-          : null
+        const hasNextGroup = index < worktreeGroups.length - 1
         const collapsed = normalizedSearchQuery
           ? false
           : (collapsedBranchIds[groupKey] ??
             (group.threads.length === 0 && group.worktrees.length === 0))
-        const showBottomDivider =
-          !collapsed && nextVisualGroupKey !== null && visualGroupKey !== nextVisualGroupKey
+        const showBottomDivider = shouldShowBranchGroupDividerAfter(group, hasNextGroup)
+        const showTopDivider = shouldShowBranchGroupDividerBefore(group, index + 1)
         return (
           <BranchThreadGroupSection
             key={group.id}
@@ -236,6 +242,7 @@ export function ProjectCompactBranchGroups({
             terminalRunningSessionPaths={terminalRunningSessionPaths}
             onAction={onAction}
             showBottomDivider={showBottomDivider}
+            showTopDivider={showTopDivider}
             onThreadOpen={onThreadOpen}
             onToggle={() =>
               onSetCollapsedBranchIds((current) => ({
@@ -294,6 +301,7 @@ export function ProjectCompactBranchGroups({
                   canMergeWorktree={false}
                   canMergeCompletedWorktrees={false}
                   canRemoveCompletedWorktrees={false}
+                  canCreateWorktree={false}
                   confirmingPrune={false}
                   confirmingMergeCompletedWorktrees={false}
                   confirmingRemoveCompletedWorktrees={false}
