@@ -1,9 +1,10 @@
 import { ActivitySpinner } from '@howcode/common/activity-spinner'
 import { IconButton } from '@howcode/common/icon-button'
 import { Tooltip } from '@howcode/common/tooltip'
-import { GitBranch, GitFork, Plus, X } from 'lucide-react'
+import { GitBranch, Plus, X } from 'lucide-react'
 import { type ReactNode, type RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
+import { WorktreeSmallIcon } from '../../../ui/icons/worktree-small-icon'
 
 export async function createThreadForBranch({
   branchName,
@@ -364,7 +365,7 @@ export function NewThreadMenu({
               />
 
               <CreateTargetRow
-                icon={<GitFork size={11} />}
+                icon={<WorktreeSmallIcon size={11} />}
                 inputRef={newWorktreeInputRef}
                 value={newWorktreeBranchName}
                 error={newWorktreeError}

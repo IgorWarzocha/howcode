@@ -1,8 +1,9 @@
 import { Tooltip } from '@howcode/common/tooltip'
-import { CircleOff, GitBranch, GitFork, Plus } from 'lucide-react'
+import { CircleOff, GitBranch, Plus } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project, View } from '../../../types'
+import { WorktreeSmallIcon } from '../../../ui/icons/worktree-small-icon'
 import { SidebarActionTooltip } from '../sidebar-action-tooltip'
 import { BranchInlineActions, BranchSessionCount } from './branch-row-actions'
 import { createThreadForBranch } from './new-thread-menu'
@@ -17,7 +18,7 @@ function BranchHeadingIcon({ group }: { group: BranchThreadGroup }) {
     return <CircleOff size={13} className="sidebar-project-work-unassigned-icon" />
   }
   if (group.worktree) {
-    return <GitFork size={13} className="sidebar-project-work-branch-icon" />
+    return <WorktreeSmallIcon size={13} className="sidebar-project-work-branch-icon" />
   }
   return <GitBranch size={13} className="sidebar-project-work-branch-icon" />
 }
@@ -476,7 +477,7 @@ function WorktreeGroupSection({
     >
       <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading sidebar-project-work-worktree-heading">
         <span className="sidebar-icon-action sidebar-icon-action--xs sidebar-icon-action--no-hover sidebar-project-work-branch-disclosure">
-          <GitFork size={13} className="sidebar-project-work-branch-icon" />
+          <WorktreeSmallIcon size={13} className="sidebar-project-work-branch-icon" />
         </span>
         <span className="sidebar-project-work-branch-toggle">
           <span className="truncate">{worktree.label}</span>

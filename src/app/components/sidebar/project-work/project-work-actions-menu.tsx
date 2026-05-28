@@ -1,7 +1,8 @@
-import { FolderOpen, GitFork, Pencil, Star, Trash2 } from 'lucide-react'
+import { FolderOpen, Pencil, Star, Trash2 } from 'lucide-react'
 import { forwardRef, useEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project } from '../../../types'
+import { WorktreeSmallIcon } from '../../../ui/icons/worktree-small-icon'
 
 export const ProjectWorkActionsMenu = forwardRef<
   HTMLDivElement,
@@ -84,7 +85,7 @@ export const ProjectWorkActionsMenu = forwardRef<
       </button>
       {editingWorktreeDir ? (
         <div className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-project-work-project-actions-menu-item sidebar-project-work-worktree-dir-item">
-          <GitFork size={12} />
+          <WorktreeSmallIcon size={12} />
           <input
             ref={worktreeDirInputRef}
             value={worktreeDirDraft}
@@ -106,7 +107,7 @@ export const ProjectWorkActionsMenu = forwardRef<
           onClick={() => setEditingWorktreeDir(true)}
           role="menuitem"
         >
-          <GitFork size={12} />
+          <WorktreeSmallIcon size={12} />
           <span>Worktree folder</span>
           <span className="sidebar-project-work-project-actions-menu-meta">
             {project.worktreeDirectory ?? './.worktrees'}

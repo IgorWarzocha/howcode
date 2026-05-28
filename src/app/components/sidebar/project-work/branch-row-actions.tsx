@@ -1,10 +1,11 @@
 import { ActivitySpinner } from '@howcode/common/activity-spinner'
 import { Tooltip } from '@howcode/common/tooltip'
-import { GitFork, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import type { RefObject } from 'react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project } from '../../../types'
+import { WorktreeSmallIcon } from '../../../ui/icons/worktree-small-icon'
 import { SidebarActionTooltip } from '../sidebar-action-tooltip'
 import {
   BranchPruneAction,
@@ -66,7 +67,7 @@ function BranchStartMenu({
       aria-label={`New work on ${parentBranchName ?? group.label}`}
     >
       <div className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-branch-create">
-        <GitFork size={11} />
+        <WorktreeSmallIcon size={11} />
         <input
           ref={inputRef}
           value={worktreeBranchName}
@@ -202,7 +203,7 @@ function BranchWorktreeCreateAction({
         aria-label={`Create worktree under ${parentBranchName ?? group.label}`}
         aria-expanded={open}
       >
-        <GitFork size={12} />
+        <WorktreeSmallIcon size={12} />
       </button>
       {open ? (
         <div ref={menuRef}>
