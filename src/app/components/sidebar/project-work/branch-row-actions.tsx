@@ -23,8 +23,11 @@ function getStartThreadBranchName(group: BranchThreadGroup, currentBranch: strin
   return group.label
 }
 
-function getWorktreeParentBranchName(group: BranchThreadGroup, currentBranch: string | null) {
-  if (group.current) return currentBranch
+export function getWorktreeParentBranchName(
+  group: BranchThreadGroup,
+  currentBranch: string | null,
+) {
+  if (group.current) return currentBranch?.trim() || group.label
   if (group.worktree || group.unassigned) return null
   return group.label
 }
