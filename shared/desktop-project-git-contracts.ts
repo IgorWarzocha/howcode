@@ -4,7 +4,6 @@ export type ProjectDiffRenderMode = 'stacked' | 'split'
 export type ProjectDiffDefaultBaseline =
   | { kind: 'head' }
   | { kind: 'previous' }
-  | { kind: 'yesterday' }
   | { kind: 'main-branch' }
   | { kind: 'dev-branch' }
 
@@ -13,6 +12,9 @@ export type ProjectGitState = {
   isGitRepo: boolean
   branch: string | null
   branches: string[]
+  defaultBranchName: string | null
+  devBranchName: string | null
+  mainBranchName: string | null
   fileCount: number
   stagedFileCount: number
   unstagedFileCount: number
@@ -37,9 +39,10 @@ export type ProjectDiffBaseline =
   | { kind: 'head' }
   | { kind: 'previous' }
   | { kind: 'last-opened'; rev: string; capturedAt?: string | undefined | null | undefined }
-  | { kind: 'yesterday' }
   | { kind: 'main-branch' }
   | { kind: 'dev-branch' }
+  | { kind: 'parent-branch'; branchName: string }
+  | { kind: 'branch'; branchName: string }
   | { kind: 'commit'; sha: string }
 
 export type ProjectDiffPreferences = {

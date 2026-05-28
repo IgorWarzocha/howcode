@@ -20,7 +20,7 @@ export const FALLBACK_APP_SETTINGS = {
   initializeGitOnProjectCreate: false,
   projectDashboardEnabled: true,
   gitOpsDefaultMode: 'commit',
-  gitDiffBaselineDefault: { kind: 'head' },
+  gitDiffBaselineDefault: { kind: 'main-branch' },
   gitDiffRenderModeDefault: 'stacked',
   gitDiffFileTreeDefaultVisible: true,
   gitDiffIncludeUntrackedDefault: false,

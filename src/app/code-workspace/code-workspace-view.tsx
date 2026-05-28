@@ -68,6 +68,7 @@ export type CodeWorkspaceContentProps = CodeWorkspaceViewProps &
     shellState: AppShellController['shellState']
     state: AppShellController['state']
     projectGitState: AppShellController['projectGitState']
+    parentBranchName: string | null
   }
 
 function shouldShowDesktopTerminalDrawer(
@@ -195,6 +196,9 @@ export function CodeWorkspaceView({
   >({})
   const gitDiffIncludeUntrackedDefault =
     shellState?.appSettings.gitDiffIncludeUntrackedDefault ?? false
+  const parentBranchName =
+    shellState?.projects.find((project) => project.id === composerProjectId)?.worktree
+      ?.parentBranchName ?? null
   const includeUntrackedDiffFiles =
     includeUntrackedDiffFilesByThread[gitOpsFileTreeStateKey] ?? gitDiffIncludeUntrackedDefault
   const toggleGitOpsFileTree = useCallback(() => {
@@ -282,6 +286,7 @@ export function CodeWorkspaceView({
       showDiffInMainView={showDiffInMainView}
       composerProjectId={composerProjectId}
       projectGitState={projectGitState}
+      parentBranchName={parentBranchName}
       diffBaseline={diffBaseline}
       selectedDiffCommentId={selectedDiffCommentId}
       selectedDiffCommentJumpKey={selectedDiffCommentJumpKey}

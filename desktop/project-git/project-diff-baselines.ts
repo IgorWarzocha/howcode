@@ -8,35 +8,19 @@ import { getProjectCommitEntry, resolveCommitRevision } from './project-commits.
 import { isGitRepository } from './project-state.ts'
 import { captureWorktreeTree, EMPTY_TREE_OID } from './worktree-snapshot.ts'
 
+const remoteHeadRefPattern = /^refs\/remotes\/(?:upstream|origin)\/(.+)$/
+const lsRemoteHeadRefPattern = /^ref:\s+refs\/heads\/(.+)\s+HEAD$/m
+
 function getLastOpenedBaselineRef(projectId: string, capturedAt: string) {
   const projectHash = createHash('sha1').update(projectId).digest('hex')
   const baselineHash = createHash('sha1').update(`${projectId}:${capturedAt}`).digest('hex')
   return `refs/howcode/diff-baselines/${projectHash}/${baselineHash}`
 }
 
-function formatLocalMidnightGitTimestamp(date = new Date()) {
-  const localMidnight = new Date(date)
-  localMidnight.setHours(0, 0, 0, 0)
-
-  const year = localMidnight.getFullYear()
-  const month = `${localMidnight.getMonth() + 1}`.padStart(2, '0')
-  const day = `${localMidnight.getDate()}`.padStart(2, '0')
-  const hours = `${localMidnight.getHours()}`.padStart(2, '0')
-  const minutes = `${localMidnight.getMinutes()}`.padStart(2, '0')
-  const seconds = `${localMidnight.getSeconds()}`.padStart(2, '0')
-  const timezoneOffsetMinutes = -localMidnight.getTimezoneOffset()
-  const offsetSign = timezoneOffsetMinutes >= 0 ? '+' : '-'
-  const absoluteOffsetMinutes = Math.abs(timezoneOffsetMinutes)
-  const offsetHours = `${Math.floor(absoluteOffsetMinutes / 60)}`.padStart(2, '0')
-  const offsetMinutes = `${absoluteOffsetMinutes % 60}`.padStart(2, '0')
-
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds} ${offsetSign}${offsetHours}${offsetMinutes}`
-}
-
 function toResolvedCommitBaseline(
   kind: Extract<
     ProjectDiffBaseline['kind'],
-    'head' | 'previous' | 'yesterday' | 'main-branch' | 'dev-branch' | 'commit'
+    'head' | 'previous' | 'main-branch' | 'dev-branch' | 'parent-branch' | 'branch' | 'commit'
   >,
   entry: Awaited<ReturnType<typeof getProjectCommitEntry>>,
 ): ProjectDiffResolvedBaseline {
@@ -63,6 +47,74 @@ async function resolveFirstExistingRef(projectId: string, candidateRefs: string[
   return null
 }
 
+function getBranchNameFromRemoteHeadRef(ref: string) {
+  const match = ref.trim().match(remoteHeadRefPattern)
+  const branchName = match?.[1]?.trim()
+  return branchName && branchName !== 'HEAD' ? branchName : null
+}
+
+function getBranchNameFromLsRemoteHead(output: string) {
+  const match = output.match(lsRemoteHeadRefPattern)
+  const branchName = match?.[1]?.trim()
+  return branchName && branchName !== 'HEAD' ? branchName : null
+}
+
+async function getRemoteDefaultBranchName(projectId: string) {
+  for (const remote of ['upstream', 'origin']) {
+    try {
+      const { stdout } = await runGitWithOptions(
+        projectId,
+        ['ls-remote', '--symref', remote, 'HEAD'],
+        {
+          timeout: 10_000,
+          maxBuffer: 1024 * 128,
+        },
+      )
+      const branchName = getBranchNameFromLsRemoteHead(stdout)
+      if (branchName) return { remote, branchName }
+    } catch {
+      // Offline repos can still use locally cached remote HEAD refs below.
+    }
+
+    try {
+      const { stdout } = await runGitWithOptions(
+        projectId,
+        ['symbolic-ref', `refs/remotes/${remote}/HEAD`],
+        {
+          timeout: 10_000,
+          maxBuffer: 1024 * 128,
+        },
+      )
+      const branchName = getBranchNameFromRemoteHeadRef(stdout)
+      if (branchName) return { remote, branchName }
+    } catch {
+      // Some repos do not have remote HEAD refs locally. Fall back below.
+    }
+  }
+
+  return null
+}
+
+async function getDefaultBranchCandidates(projectId: string) {
+  const remoteDefault = await getRemoteDefaultBranchName(projectId)
+  const symbolicCandidates = remoteDefault
+    ? [
+        `refs/remotes/${remoteDefault.remote}/${remoteDefault.branchName}`,
+        `refs/heads/${remoteDefault.branchName}`,
+      ]
+    : []
+
+  return [
+    ...symbolicCandidates,
+    'refs/heads/main',
+    'refs/remotes/origin/main',
+    'refs/remotes/upstream/main',
+    'refs/heads/master',
+    'refs/remotes/origin/master',
+    'refs/remotes/upstream/master',
+  ]
+}
+
 async function resolveMergeBaseRevision(projectId: string, targetRev: string) {
   if (!(await hasHeadCommit(projectId))) {
     return EMPTY_TREE_OID
@@ -84,7 +136,10 @@ async function resolveMergeBaseRevision(projectId: string, targetRev: string) {
 async function resolveNamedBranchBaseline(
   projectId: string,
   options: {
-    kind: Extract<ProjectDiffBaseline['kind'], 'main-branch' | 'dev-branch'>
+    kind: Extract<
+      ProjectDiffBaseline['kind'],
+      'main-branch' | 'dev-branch' | 'parent-branch' | 'branch'
+    >
     label: string
     candidateRefs: string[]
   },
@@ -121,6 +176,46 @@ async function resolveNamedBranchBaseline(
     ...toResolvedCommitBaseline(options.kind, entry),
     label: options.label,
   }
+}
+
+async function resolveParentBranchBaseline(
+  projectId: string,
+  branchName: string,
+): Promise<ProjectDiffResolvedBaseline> {
+  const trimmedBranchName = branchName.trim()
+  if (trimmedBranchName.length === 0) {
+    throw new Error('Could not find parent branch.')
+  }
+
+  return resolveNamedBranchBaseline(projectId, {
+    kind: 'parent-branch',
+    label: `Parent branch · ${trimmedBranchName}`,
+    candidateRefs: [
+      `refs/heads/${trimmedBranchName}`,
+      `refs/remotes/origin/${trimmedBranchName}`,
+      `refs/remotes/upstream/${trimmedBranchName}`,
+    ],
+  })
+}
+
+async function resolveBranchBaseline(
+  projectId: string,
+  branchName: string,
+): Promise<ProjectDiffResolvedBaseline> {
+  const trimmedBranchName = branchName.trim()
+  if (trimmedBranchName.length === 0) {
+    throw new Error('Could not find branch.')
+  }
+
+  return resolveNamedBranchBaseline(projectId, {
+    kind: 'branch',
+    label: `Branch · ${trimmedBranchName}`,
+    candidateRefs: [
+      `refs/heads/${trimmedBranchName}`,
+      `refs/remotes/origin/${trimmedBranchName}`,
+      `refs/remotes/upstream/${trimmedBranchName}`,
+    ],
+  })
 }
 
 async function resolveHeadBaseline(projectId: string): Promise<ProjectDiffResolvedBaseline> {
@@ -164,67 +259,11 @@ async function resolvePreviousCommitBaseline(
   }
 }
 
-async function resolveYesterdayBaseline(projectId: string): Promise<ProjectDiffResolvedBaseline> {
-  if (!(await hasHeadCommit(projectId))) {
-    return {
-      kind: 'yesterday',
-      rev: EMPTY_TREE_OID,
-      label: 'Initial state',
-      commitSha: null,
-      shortSha: null,
-      subject: null,
-      committedAt: null,
-      capturedAt: null,
-    }
-  }
-
-  let stdout = ''
-
-  try {
-    ;({ stdout } = await runGitWithOptions(
-      projectId,
-      ['rev-list', '-1', `--before=${formatLocalMidnightGitTimestamp()}`, 'HEAD'],
-      {
-        timeout: 10_000,
-        maxBuffer: 1024 * 128,
-      },
-    ))
-  } catch {
-    stdout = ''
-  }
-
-  const commitSha = stdout.trim()
-  if (commitSha.length === 0) {
-    return {
-      kind: 'yesterday',
-      rev: EMPTY_TREE_OID,
-      label: 'Initial state',
-      commitSha: null,
-      shortSha: null,
-      subject: null,
-      committedAt: null,
-      capturedAt: null,
-    }
-  }
-
-  const entry = await getProjectCommitEntry(projectId, commitSha)
-  if (!entry) {
-    throw new Error('Could not resolve the commit for yesterday.')
-  }
-
-  return toResolvedCommitBaseline('yesterday', entry)
-}
-
 async function resolveMainBranchBaseline(projectId: string): Promise<ProjectDiffResolvedBaseline> {
   return resolveNamedBranchBaseline(projectId, {
     kind: 'main-branch',
-    label: 'Main branch',
-    candidateRefs: [
-      'refs/heads/main',
-      'refs/remotes/origin/main',
-      'refs/heads/master',
-      'refs/remotes/origin/master',
-    ],
+    label: 'Default branch',
+    candidateRefs: await getDefaultBranchCandidates(projectId),
   })
 }
 
@@ -356,12 +395,14 @@ export async function resolveProjectDiffBaseline(
       return resolvePreviousCommitBaseline(projectId)
     case 'last-opened':
       return resolveLastOpenedBaseline(projectId, requestedBaseline)
-    case 'yesterday':
-      return resolveYesterdayBaseline(projectId)
     case 'main-branch':
       return resolveMainBranchBaseline(projectId)
     case 'dev-branch':
       return resolveDevBranchBaseline(projectId)
+    case 'parent-branch':
+      return resolveParentBranchBaseline(projectId, requestedBaseline.branchName)
+    case 'branch':
+      return resolveBranchBaseline(projectId, requestedBaseline.branchName)
     case 'commit':
       return resolveChosenCommitBaseline(projectId, requestedBaseline.sha)
     default:

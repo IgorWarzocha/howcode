@@ -54,6 +54,7 @@ export function ComposerPromptSurface({
   projectId,
   chatGroupId,
   projectGitState,
+  parentBranchName,
   diffBaseline,
   sessionPath,
   dictationModelId,
@@ -464,6 +465,7 @@ export function ComposerPromptSurface({
             onToggleTerminal={onToggleTerminal}
             onToggleArtifacts={onToggleArtifacts}
             projectGitState={projectGitState}
+            parentBranchName={parentBranchName}
             projectId={projectId}
             showTerminalControls={showTerminalControls}
             terminalVisible={terminalVisible}

@@ -49,6 +49,7 @@ type ComposerFooterProps = {
   onToggleArtifacts?: (() => void) | undefined
   onToggleTerminal: () => void
   projectGitState: ProjectGitState | null
+  parentBranchName?: string | null | undefined
   projectId: string
   showTerminalControls?: boolean | undefined
   artifactsVisible?: boolean | undefined
@@ -82,6 +83,7 @@ export function ComposerFooter({
   onToggleArtifacts,
   onToggleTerminal,
   projectGitState,
+  parentBranchName,
   projectId,
   showTerminalControls = true,
   artifactsVisible = false,
@@ -172,6 +174,7 @@ export function ComposerFooter({
           <ComposerDiffBaselineSelector
             composerPanelRef={composerPanelRef}
             branch={projectGitState.branch}
+            parentBranchName={parentBranchName}
             projectId={projectId}
             projectGitState={projectGitState}
             selectedBaseline={diffBaseline}

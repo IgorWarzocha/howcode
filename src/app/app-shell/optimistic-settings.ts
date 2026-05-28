@@ -87,7 +87,6 @@ function getOptimisticDiffBaselineDefault(
   const baseline = payload.value as { kind?: unknown }
   return baseline.kind === 'head' ||
     baseline.kind === 'previous' ||
-    baseline.kind === 'yesterday' ||
     baseline.kind === 'main-branch' ||
     baseline.kind === 'dev-branch'
     ? ({ kind: baseline.kind } as ProjectDiffDefaultBaseline)

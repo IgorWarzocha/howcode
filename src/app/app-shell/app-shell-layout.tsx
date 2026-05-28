@@ -132,11 +132,15 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     sidebarCompactMode && terminalHiddenByCompactResize
       ? terminalDrawerVisible
       : animatedTerminalDrawerPresent
+  const parentBranchName =
+    controller.shellState?.projects.find((project) => project.id === composerProjectId)?.worktree
+      ?.parentBranchName ?? null
   const { diffBaseline, diffRenderMode, handleSetDiffBaseline, handleSetDiffRenderMode } =
     useAppShellDiffPreferences({
       activeThreadId,
       composerProjectId,
       controller,
+      parentBranchName,
       terminalSessionPath,
     })
   const { mainSectionRef, takeoverPresent, workspaceContentClass } = useAppShellLayoutState({

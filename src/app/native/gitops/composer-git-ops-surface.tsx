@@ -33,6 +33,7 @@ type ComposerGitOpsSurfaceProps = {
   composerPanelRef: RefObject<HTMLDivElement | null>
   onOpenSettingsView: (target?: SettingsOpenTarget) => void
   projectGitState: ProjectGitState | null
+  parentBranchName?: string | null | undefined
   projectId: string
   sessionPath: string | null
   showDictationButton: boolean
@@ -159,6 +160,7 @@ export function ComposerGitOpsSurface({
   composerPanelRef,
   onOpenSettingsView,
   projectGitState,
+  parentBranchName,
   projectId,
   sessionPath,
   showDictationButton,
@@ -419,6 +421,7 @@ export function ComposerGitOpsSurface({
         onSaveProjectGitOpsMode={saveProjectGitOpsMode}
         previewEnabled={previewEnabled}
         projectGitState={projectGitState}
+        parentBranchName={parentBranchName}
         pushEnabled={pushEnabled}
         repoUrl={repoUrl}
       />

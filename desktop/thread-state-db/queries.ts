@@ -149,6 +149,7 @@ function parseDiffBaseline(value: string | null): ProjectDiffBaseline | null {
     }
 
     const baseline = parsed as {
+      branchName?: unknown
       kind?: unknown
       rev?: unknown
       capturedAt?: unknown
@@ -157,10 +158,13 @@ function parseDiffBaseline(value: string | null): ProjectDiffBaseline | null {
     switch (baseline.kind) {
       case 'head':
       case 'previous':
-      case 'yesterday':
       case 'main-branch':
       case 'dev-branch':
         return { kind: baseline.kind }
+      case 'parent-branch':
+        return parseNamedDiffBaseline('parent-branch', baseline.branchName)
+      case 'branch':
+        return parseNamedDiffBaseline('branch', baseline.branchName)
       case 'last-opened':
         return typeof baseline.rev === 'string' && baseline.rev.trim().length > 0
           ? {
@@ -181,6 +185,15 @@ function parseDiffBaseline(value: string | null): ProjectDiffBaseline | null {
   } catch {
     return null
   }
+}
+
+function parseNamedDiffBaseline(
+  kind: Extract<ProjectDiffBaseline['kind'], 'branch' | 'parent-branch'>,
+  branchName: unknown,
+): ProjectDiffBaseline | null {
+  return typeof branchName === 'string' && branchName.trim().length > 0
+    ? { kind, branchName }
+    : null
 }
 
 export function getThreadDiffPreferences(sessionPath: string): ProjectDiffPreferences {

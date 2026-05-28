@@ -22,6 +22,89 @@ type BaselineSelectorPanelPosition = {
   maxHeight: number
 }
 
+function getCommitMeta(commit: ProjectCommitEntry | undefined) {
+  if (!commit) return null
+  return `${commit.shortSha} · ${commit.subject || '(no subject)'}`
+}
+
+function BranchBaselineOptions({
+  defaultBranchName,
+  devBranchName,
+  mainBranchName,
+  parentBranchName,
+  selectedBaseline,
+  setOpen,
+  onSelectBaseline,
+}: {
+  defaultBranchName?: string | null | undefined
+  devBranchName?: string | null | undefined
+  mainBranchName?: string | null | undefined
+  parentBranchName?: string | null | undefined
+  selectedBaseline: ProjectDiffBaseline
+  setOpen: (open: boolean) => void
+  onSelectBaseline: (baseline: ProjectDiffBaseline) => void
+}) {
+  const defaultIsDev = defaultBranchName === 'dev'
+  const showDevBranch = Boolean(devBranchName && !defaultIsDev)
+  const showMainBranch = Boolean(
+    mainBranchName && defaultIsDev && mainBranchName !== defaultBranchName,
+  )
+
+  return (
+    <>
+      {showMainBranch && mainBranchName ? (
+        <BaselineOption
+          label="main branch"
+          meta={mainBranchName}
+          selected={
+            selectedBaseline.kind === 'branch' && selectedBaseline.branchName === mainBranchName
+          }
+          onSelect={() => {
+            onSelectBaseline({ kind: 'branch', branchName: mainBranchName })
+            setOpen(false)
+          }}
+        />
+      ) : null}
+      {showDevBranch && devBranchName ? (
+        <BaselineOption
+          label="dev branch"
+          meta={devBranchName}
+          selected={selectedBaseline.kind === 'dev-branch'}
+          onSelect={() => {
+            onSelectBaseline({ kind: 'dev-branch' })
+            setOpen(false)
+          }}
+        />
+      ) : null}
+      {defaultBranchName ? (
+        <BaselineOption
+          label="default branch"
+          meta={defaultBranchName}
+          selected={selectedBaseline.kind === 'main-branch'}
+          onSelect={() => {
+            onSelectBaseline({ kind: 'main-branch' })
+            setOpen(false)
+          }}
+        />
+      ) : null}
+      {parentBranchName ? (
+        <BaselineOption
+          label="parent branch"
+          meta={parentBranchName}
+          selected={
+            selectedBaseline.kind === 'parent-branch' &&
+            selectedBaseline.branchName === parentBranchName
+          }
+          onSelect={() => {
+            onSelectBaseline({ kind: 'parent-branch', branchName: parentBranchName })
+            setOpen(false)
+          }}
+        />
+      ) : null}
+    </>
+  )
+}
+
 export function BaselineSelectorPortal({
   commitsQuery,
   panelId,
@@ -31,6 +114,10 @@ export function BaselineSelectorPortal({
   searchQuery,
   selectedBaseline,
   selectedCommitSha,
+  parentBranchName,
+  defaultBranchName,
+  devBranchName,
+  mainBranchName,
   setOpen,
   setSearchQuery,
   visibleCommits,
@@ -45,6 +132,10 @@ export function BaselineSelectorPortal({
   searchQuery: string
   selectedBaseline: ProjectDiffBaseline
   selectedCommitSha: string | null
+  parentBranchName?: string | null | undefined
+  defaultBranchName?: string | null | undefined
+  devBranchName?: string | null | undefined
+  mainBranchName?: string | null | undefined
   setOpen: (open: boolean) => void
   setSearchQuery: (query: string) => void
   visibleCommits: ProjectCommitEntry[]
@@ -52,6 +143,9 @@ export function BaselineSelectorPortal({
   if (typeof document === 'undefined') return null
   const panelLeft = `${panelPosition.left}px`
   const panelWidth = `${panelPosition.width}px`
+  const commits = commitsQuery.data ?? []
+  const headCommit = commits.find((commit) => commit.isHead) ?? commits[0]
+  const previousCommit = commits.find((commit) => !commit.isHead && commit.sha !== headCommit?.sha)
   return createPortal(
     <PopoverPanel
       open={positionReady}
@@ -108,6 +202,7 @@ export function BaselineSelectorPortal({
         <BaselineOption
           key={option.key}
           label={option.label}
+          meta={option.key === 'head' ? getCommitMeta(headCommit) : getCommitMeta(previousCommit)}
           selected={selectedBaseline.kind === option.key}
           onSelect={() => {
             onSelectBaseline(option.baseline)
@@ -115,6 +210,15 @@ export function BaselineSelectorPortal({
           }}
         />
       ))}
+      <BranchBaselineOptions
+        defaultBranchName={defaultBranchName}
+        devBranchName={devBranchName}
+        mainBranchName={mainBranchName}
+        parentBranchName={parentBranchName}
+        selectedBaseline={selectedBaseline}
+        setOpen={setOpen}
+        onSelectBaseline={onSelectBaseline}
+      />
     </PopoverPanel>,
     document.body,
   )

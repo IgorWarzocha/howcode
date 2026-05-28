@@ -56,6 +56,7 @@ type ComposerGitOpsFooterProps = {
   onSaveProjectGitOpsMode: (mode: GitOpsMode | null) => void
   previewEnabled: boolean
   projectGitState: ProjectGitState | null
+  parentBranchName?: string | null | undefined
   pushEnabled: boolean
   repoUrl: string
 }
@@ -82,6 +83,7 @@ export function ComposerGitOpsFooter({
   onSaveProjectGitOpsMode,
   previewEnabled,
   projectGitState,
+  parentBranchName,
   pushEnabled,
   repoUrl,
 }: ComposerGitOpsFooterProps) {
@@ -323,6 +325,7 @@ export function ComposerGitOpsFooter({
           <ComposerDiffBaselineSelector
             composerPanelRef={composerPanelRef}
             branch={projectGitState?.branch ?? null}
+            parentBranchName={parentBranchName}
             projectId={projectGitState?.projectId ?? ''}
             projectGitState={projectGitState}
             selectedBaseline={diffBaseline}

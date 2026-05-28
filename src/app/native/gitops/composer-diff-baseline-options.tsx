@@ -18,16 +18,10 @@ import { cn } from '../../utils/cn'
 export const baselineOptions = [
   { key: 'head', label: 'last commit', baseline: { kind: 'head' } },
   { key: 'previous', label: 'prev commit', baseline: { kind: 'previous' } },
-  { key: 'dev-branch', label: 'dev branch', baseline: { kind: 'dev-branch' } },
-  { key: 'main-branch', label: 'main branch', baseline: { kind: 'main-branch' } },
-  { key: 'yesterday', label: 'yesterday', baseline: { kind: 'yesterday' } },
 ] as const satisfies ReadonlyArray<{
   key: ProjectDiffBaseline['kind']
   label: string
-  baseline: Extract<
-    ProjectDiffBaseline,
-    { kind: 'head' | 'previous' | 'dev-branch' | 'main-branch' | 'yesterday' }
-  >
+  baseline: Extract<ProjectDiffBaseline, { kind: 'head' | 'previous' }>
 }>
 
 export function matchesCommitSearch(commit: ProjectCommitEntry, query: string) {
@@ -107,10 +101,12 @@ export function CommitOption({
 
 export function BaselineOption({
   label,
+  meta,
   selected,
   onSelect,
 }: {
   label: string
+  meta?: string | null | undefined
   selected: boolean
   onSelect: () => void
 }) {
@@ -119,7 +115,7 @@ export function BaselineOption({
       type="button"
       className={cn(
         composerPopoverOptionClass,
-        'min-h-8 py-1.5',
+        meta ? 'min-h-10 py-1.5' : 'min-h-8 py-1.5',
         selected && composerPopoverOptionSelectedClass,
       )}
       onClick={onSelect}
@@ -127,13 +123,19 @@ export function BaselineOption({
       <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
         {selected ? <Check size={14} /> : null}
       </span>
-      <span
-        className={cn(
-          appTypeControlClass,
-          selected ? 'text-[color:var(--text)]' : 'text-[color:var(--muted)]',
-        )}
-      >
-        {label}
+      <span className="min-w-0">
+        <span
+          className={cn(
+            'block truncate',
+            appTypeControlClass,
+            selected ? 'text-[color:var(--text)]' : 'text-[color:var(--muted)]',
+          )}
+        >
+          {label}
+        </span>
+        {meta ? (
+          <span className={cn('block truncate', appTypeMetaClass, appToneMutedClass)}>{meta}</span>
+        ) : null}
       </span>
     </button>
   )

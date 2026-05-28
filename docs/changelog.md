@@ -7,6 +7,9 @@
 - Theme changes now apply instantly instead of waiting for a full shell refresh.
 - Fixes to light modes
 - Dictation controls now hide while composer inputs are locked.
+- Tiny composer widths now keep the Terminal icon visible instead of dropping the whole control.
+- Git diff comparison now treats the repo's remote HEAD as the default branch instead of assuming `main`.
+- Git diff comparison now offers a parent branch baseline inside child worktrees, and drops the old Yesterday preset from the picker.
 - Updated bundled Pi SDK/runtime packages to 0.76.0.
 
 Snapshot: May 28, 2026.

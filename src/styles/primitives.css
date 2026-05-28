@@ -403,6 +403,13 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
 
 @container (max-width: 18rem) {
   .composer-terminal-control {
+    width: 1.75rem;
+    justify-content: center;
+    gap: 0;
+    padding-inline: 0;
+  }
+
+  .composer-terminal-control span {
     display: none;
   }
 }
