@@ -69,6 +69,7 @@ function getBranchActionState(input: {
   const canMergeWorktree = group.worktree && Boolean(group.worktreeBranchName)
   const canMergeCompletedWorktrees = !group.worktree && hasMergeableCompletedWorktrees(group)
   const canRemoveCompletedWorktrees = !group.worktree && hasCompletedWorktrees(group)
+  const canCreateWorktree = !(group.worktree || group.unassigned)
   const branchActionKey = `${projectId}:${group.id}`
   const mergeCompletedWorktreesActionKey = `${branchActionKey}:merge-completed-worktrees`
   const removeCompletedWorktreesActionKey = `${branchActionKey}:remove-completed-worktrees`
@@ -80,6 +81,7 @@ function getBranchActionState(input: {
       (canMergeWorktree ? 1 : 0) +
       (canMergeCompletedWorktrees ? 1 : 0) +
       (canRemoveCompletedWorktrees ? 1 : 0) +
+      (canCreateWorktree ? 1 : 0) +
       1,
     branchActionKey,
     mergeCompletedWorktreesActionKey,
@@ -90,6 +92,7 @@ function getBranchActionState(input: {
     canMergeWorktree,
     canMergeCompletedWorktrees,
     canRemoveCompletedWorktrees,
+    canCreateWorktree,
     confirmingPrune: pruneConfirmBranchId === branchActionKey,
     confirmingMergeCompletedWorktrees: pruneConfirmBranchId === mergeCompletedWorktreesActionKey,
     confirmingRemoveCompletedWorktrees: pruneConfirmBranchId === removeCompletedWorktreesActionKey,
@@ -327,6 +330,7 @@ export function BranchThreadGroupSection({
             canMergeWorktree={actionState.canMergeWorktree}
             canMergeCompletedWorktrees={actionState.canMergeCompletedWorktrees}
             canRemoveCompletedWorktrees={actionState.canRemoveCompletedWorktrees}
+            canCreateWorktree={actionState.canCreateWorktree}
             confirmingPrune={actionState.confirmingPrune}
             confirmingMergeCompletedWorktrees={actionState.confirmingMergeCompletedWorktrees}
             confirmingRemoveCompletedWorktrees={actionState.confirmingRemoveCompletedWorktrees}
@@ -481,6 +485,7 @@ function WorktreeGroupSection({
             canMergeWorktree={worktreeHasBranch}
             canMergeCompletedWorktrees={false}
             canRemoveCompletedWorktrees={false}
+            canCreateWorktree={false}
             confirmingPrune={confirmingPrune}
             confirmingMergeCompletedWorktrees={false}
             confirmingRemoveCompletedWorktrees={false}

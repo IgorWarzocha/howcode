@@ -1,3 +1,4 @@
+import { normalizeGitBranchName } from './branch-name.ts'
 import { createBranchSwitchPlan } from './branch-switch-plan.ts'
 import { formatGitCommandError, getNonInteractiveGitEnv, runGitWithOptions } from './git-runner.ts'
 
@@ -80,7 +81,7 @@ function chooseBranchAfterPrune(branches: Set<string>, branchName: string) {
 }
 
 export async function switchProjectBranch(projectId: string, branchName: string) {
-  const normalizedBranchName = branchName.trim()
+  const normalizedBranchName = normalizeGitBranchName(branchName)
   if (!normalizedBranchName) return { error: 'Branch name is required.' }
 
   try {
@@ -107,7 +108,7 @@ export async function switchProjectBranch(projectId: string, branchName: string)
       timeout: 10_000,
       maxBuffer: 1024 * 1024,
     })
-    return { didMutate: true }
+    return { didMutate: true, branchName: normalizedBranchName }
   } catch (error) {
     return {
       ...((await hasMergeInProgress(projectId)) ? { didMutate: true } : {}),

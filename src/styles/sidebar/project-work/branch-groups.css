@@ -120,6 +120,10 @@
   justify-content: center;
 }
 
+.sidebar-project-work-branch-actions > .tooltip-anchor.sidebar-new-thread-menu-anchor {
+  position: relative;
+}
+
 .sidebar-project-work-branch-actions .sidebar-project-work-branch-action {
   height: var(--sidebar-branch-action-size);
   width: var(--sidebar-branch-action-size);

@@ -1,4 +1,7 @@
-import { Plus } from 'lucide-react'
+import { Tooltip } from '@howcode/common/tooltip'
+import { GitFork, Plus } from 'lucide-react'
+import type { RefObject } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project } from '../../../types'
 import { SidebarActionTooltip } from '../sidebar-action-tooltip'
@@ -18,6 +21,191 @@ function getStartThreadBranchName(group: BranchThreadGroup, currentBranch: strin
   if (group.unassigned) return null
   if (group.worktree) return group.worktreeBranchName ?? null
   return group.label
+}
+
+function getWorktreeParentBranchName(group: BranchThreadGroup, currentBranch: string | null) {
+  if (group.current) return currentBranch
+  if (group.worktree || group.unassigned) return null
+  return group.label
+}
+
+function BranchStartMenu({
+  group,
+  inputRef,
+  parentBranchName,
+  worktreeBranchName,
+  worktreeError,
+  menuRight,
+  menuWidth,
+  onCreateChildWorktree,
+  onClose,
+  onWorktreeBranchNameChange,
+}: {
+  group: BranchThreadGroup
+  inputRef: RefObject<HTMLInputElement | null>
+  parentBranchName: string | null
+  worktreeBranchName: string
+  worktreeError: string | null
+  menuRight: number
+  menuWidth: number
+  onCreateChildWorktree: () => void
+  onClose: () => void
+  onWorktreeBranchNameChange: (value: string) => void
+}) {
+  return (
+    <div
+      className="sidebar-menu-surface sidebar-menu-surface--below-normal sidebar-new-thread-menu"
+      style={{ right: `${menuRight}px`, width: `${menuWidth}px` }}
+      role="menu"
+      aria-label={`New work on ${parentBranchName ?? group.label}`}
+    >
+      <div className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-new-thread-branch-create">
+        <GitFork size={11} />
+        <input
+          ref={inputRef}
+          value={worktreeBranchName}
+          onChange={(event) => onWorktreeBranchNameChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') onCreateChildWorktree()
+            if (event.key === 'Escape') onClose()
+          }}
+          placeholder="New worktree"
+          aria-label="New worktree branch name"
+        />
+        <button
+          type="button"
+          data-warning={worktreeError ? 'true' : 'false'}
+          className="sidebar-new-thread-option-meta sidebar-new-thread-option-plus"
+          aria-label={worktreeError ?? 'Create worktree'}
+          onClick={() => onCreateChildWorktree()}
+        >
+          {worktreeError ?? <Plus size={12} />}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function BranchWorktreeCreateAction({
+  currentBranch,
+  group,
+  project,
+  onAction,
+  onCreateFailed,
+}: {
+  currentBranch: string | null
+  group: BranchThreadGroup
+  project: Project
+  onAction: DesktopActionInvoker
+  onCreateFailed: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [worktreeBranchName, setWorktreeBranchName] = useState('')
+  const [worktreeError, setWorktreeError] = useState<string | null>(null)
+  const [menuWidth, setMenuWidth] = useState(240)
+  const [menuRight, setMenuRight] = useState(0)
+  const menuRef = useRef<HTMLDivElement | null>(null)
+  const buttonRef = useRef<HTMLButtonElement | null>(null)
+  const inputRef = useRef<HTMLInputElement | null>(null)
+  const parentBranchName = getWorktreeParentBranchName(group, currentBranch)
+
+  useEffect(() => {
+    if (!open) return
+    inputRef.current?.focus()
+    inputRef.current?.select()
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node
+      if (menuRef.current?.contains(target) || buttonRef.current?.contains(target)) return
+      setOpen(false)
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.stopPropagation()
+      event.stopImmediatePropagation()
+      setOpen(false)
+    }
+    document.addEventListener('pointerdown', handlePointerDown, true)
+    window.addEventListener('keydown', handleKeyDown, true)
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown, true)
+      window.removeEventListener('keydown', handleKeyDown, true)
+    }
+  }, [open])
+
+  useLayoutEffect(() => {
+    if (!(open && buttonRef.current)) return
+    const anchor = buttonRef.current
+    const row = anchor.closest('.sidebar-project-work-branch-heading')
+    const rowRect = row?.getBoundingClientRect()
+    const anchorRect = anchor.getBoundingClientRect()
+    if (!rowRect) {
+      setMenuWidth(240)
+      setMenuRight(0)
+      return
+    }
+    setMenuWidth(rowRect.width)
+    setMenuRight(anchorRect.right - rowRect.right)
+  }, [open])
+
+  const createChildWorktree = async () => {
+    const branchName = worktreeBranchName.trim()
+    if (!branchName) return
+    setWorktreeError(null)
+    const result = await createThreadInWorktreeForBranch({
+      branchName,
+      parentBranchName,
+      onAction,
+      projectId: project.id,
+    })
+    if (result.error) {
+      setWorktreeError(result.error)
+      onCreateFailed()
+      return
+    }
+    setWorktreeBranchName('')
+    setOpen(false)
+  }
+
+  return (
+    <Tooltip
+      content={`Create worktree under ${parentBranchName ?? group.label}`}
+      placement="right"
+      className="sidebar-new-thread-menu-anchor"
+    >
+      <button
+        ref={buttonRef}
+        type="button"
+        className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--optical-up"
+        onClick={(event) => {
+          event.stopPropagation()
+          setOpen((current) => !current)
+        }}
+        aria-label={`Create worktree under ${parentBranchName ?? group.label}`}
+        aria-expanded={open}
+      >
+        <GitFork size={12} />
+      </button>
+      {open ? (
+        <div ref={menuRef}>
+          <BranchStartMenu
+            group={group}
+            inputRef={inputRef}
+            parentBranchName={parentBranchName}
+            worktreeBranchName={worktreeBranchName}
+            worktreeError={worktreeError}
+            menuRight={menuRight}
+            menuWidth={menuWidth}
+            onCreateChildWorktree={() => void createChildWorktree()}
+            onClose={() => setOpen(false)}
+            onWorktreeBranchNameChange={(value) => {
+              setWorktreeBranchName(value)
+              setWorktreeError(null)
+            }}
+          />
+        </div>
+      ) : null}
+    </Tooltip>
+  )
 }
 
 function EmptyBranchStartAction({
@@ -94,6 +282,7 @@ export function BranchInlineActions({
   canMergeWorktree,
   canMergeCompletedWorktrees,
   canRemoveCompletedWorktrees,
+  canCreateWorktree,
   confirmingPrune,
   confirmingMergeCompletedWorktrees,
   confirmingRemoveCompletedWorktrees,
@@ -120,6 +309,7 @@ export function BranchInlineActions({
   canMergeWorktree: boolean
   canMergeCompletedWorktrees: boolean
   canRemoveCompletedWorktrees: boolean
+  canCreateWorktree: boolean
   confirmingPrune: boolean
   confirmingMergeCompletedWorktrees: boolean
   confirmingRemoveCompletedWorktrees: boolean
@@ -190,6 +380,15 @@ export function BranchInlineActions({
       ) : null}
       {canMergeWorktree ? (
         <WorktreeMergeAction group={group} project={project} onAction={onAction} />
+      ) : null}
+      {canCreateWorktree ? (
+        <BranchWorktreeCreateAction
+          currentBranch={currentBranch}
+          group={group}
+          project={project}
+          onAction={onAction}
+          onCreateFailed={onSwitchFailed}
+        />
       ) : null}
       <EmptyBranchStartAction
         blocked={switchBlocked}

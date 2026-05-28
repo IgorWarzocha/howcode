@@ -298,6 +298,7 @@ export type DesktopActionPayload<A extends DesktopAction = DesktopAction> =
   DesktopActionPayloadMap[A]
 
 export type DesktopActionResultData = {
+  branchName?: string | undefined | null | undefined
   checkedProjectCount?: number | undefined
   clearedCount?: number | undefined
   clearFailedCount?: number | undefined

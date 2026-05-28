@@ -51,8 +51,9 @@ export async function createThreadInWorktreeForBranch({
     }
   }
 
+  const normalizedBranchName = worktreeResult.result.branchName ?? branchName
   const threadResult = await createThreadForBranch({
-    branchName,
+    branchName: normalizedBranchName,
     onAction,
     projectId: worktreeResult.result.projectId,
   })
@@ -247,7 +248,12 @@ export function NewThreadMenu({
       )
       return
     }
-    const threadResult = await createThreadForBranch({ branchName, onAction, projectId })
+    const normalizedBranchName = switchResult.result?.branchName ?? branchName
+    const threadResult = await createThreadForBranch({
+      branchName: normalizedBranchName,
+      onAction,
+      projectId,
+    })
     const threadCreationError = getThreadCreationError(threadResult)
     if (threadCreationError) {
       setNewBranchError(threadCreationError)

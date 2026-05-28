@@ -109,7 +109,7 @@ export function ProjectCompactBranchGroups({
     pruneConfirmBranchId === removeCompletedWorktreesActionKey
   const canPruneCurrentBranch = Boolean(currentBranch)
   const currentBranchActionCount =
-    (canPruneCurrentBranch ? 1 : 0) + (hasCompletedWorktrees ? 2 : 0) + 1
+    (canPruneCurrentBranch ? 1 : 0) + (hasCompletedWorktrees ? 2 : 0) + (currentBranch ? 1 : 0) + 1
   const unassignedGroup: BranchThreadGroup = {
     id: 'compact-unassigned',
     label: 'Unassigned',
@@ -164,6 +164,7 @@ export function ProjectCompactBranchGroups({
               canMergeWorktree={false}
               canMergeCompletedWorktrees={hasCompletedWorktrees}
               canRemoveCompletedWorktrees={hasCompletedWorktrees}
+              canCreateWorktree={Boolean(currentBranch)}
               confirmingPrune={confirmingCurrentPrune}
               confirmingMergeCompletedWorktrees={confirmingMergeCompletedWorktrees}
               confirmingRemoveCompletedWorktrees={confirmingRemoveCompletedWorktrees}
@@ -294,6 +295,7 @@ export function ProjectCompactBranchGroups({
                   canMergeWorktree={false}
                   canMergeCompletedWorktrees={false}
                   canRemoveCompletedWorktrees={false}
+                  canCreateWorktree={false}
                   confirmingPrune={false}
                   confirmingMergeCompletedWorktrees={false}
                   confirmingRemoveCompletedWorktrees={false}

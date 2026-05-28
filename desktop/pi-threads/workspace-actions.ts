@@ -187,6 +187,7 @@ async function handleCreateWorktreeWorkspaceAction(payload: AnyDesktopActionPayl
 
   return handledAction({
     didMutate: true,
+    branchName: result.branchName,
     projectId: result.projectId,
     rootProjectId: result.rootProjectId,
   })
