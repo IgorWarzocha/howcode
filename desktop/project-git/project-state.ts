@@ -9,7 +9,6 @@ const trailingSlashPattern = /\/$/
 const originPathSeparatorPattern = /[/:]/
 const gitSuffixPattern = /\.git$/i
 const remoteHeadRefPattern = /^refs\/remotes\/(?:upstream|origin)\/(.+)$/
-const lsRemoteHeadRefPattern = /^ref:\s+refs\/heads\/(.+)\s+HEAD$/m
 
 function parseShortStat(output: string) {
   const insertionsMatch = output.match(shortStatInsertionsPattern)
@@ -169,29 +168,8 @@ function getBranchNameFromRemoteHeadRef(ref: string) {
   return branchName && branchName !== 'HEAD' ? branchName : null
 }
 
-function getBranchNameFromLsRemoteHead(output: string) {
-  const match = output.match(lsRemoteHeadRefPattern)
-  const branchName = match?.[1]?.trim()
-  return branchName && branchName !== 'HEAD' ? branchName : null
-}
-
 async function getDefaultBranchName(projectId: string, branches: readonly string[]) {
   for (const remote of ['upstream', 'origin']) {
-    try {
-      const { stdout } = await runGitWithOptions(
-        projectId,
-        ['ls-remote', '--symref', remote, 'HEAD'],
-        {
-          timeout: 10_000,
-          maxBuffer: 1024 * 128,
-        },
-      )
-      const branchName = getBranchNameFromLsRemoteHead(stdout)
-      if (branchName) return branchName
-    } catch {
-      // Offline repos can still use locally cached remote HEAD refs below.
-    }
-
     try {
       const { stdout } = await runGitWithOptions(
         projectId,

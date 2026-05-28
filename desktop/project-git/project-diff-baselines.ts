@@ -64,21 +64,6 @@ async function getRemoteDefaultBranchName(projectId: string) {
     try {
       const { stdout } = await runGitWithOptions(
         projectId,
-        ['ls-remote', '--symref', remote, 'HEAD'],
-        {
-          timeout: 10_000,
-          maxBuffer: 1024 * 128,
-        },
-      )
-      const branchName = getBranchNameFromLsRemoteHead(stdout)
-      if (branchName) return { remote, branchName }
-    } catch {
-      // Offline repos can still use locally cached remote HEAD refs below.
-    }
-
-    try {
-      const { stdout } = await runGitWithOptions(
-        projectId,
         ['symbolic-ref', `refs/remotes/${remote}/HEAD`],
         {
           timeout: 10_000,
@@ -89,6 +74,23 @@ async function getRemoteDefaultBranchName(projectId: string) {
       if (branchName) return { remote, branchName }
     } catch {
       // Some repos do not have remote HEAD refs locally. Fall back below.
+    }
+  }
+
+  for (const remote of ['upstream', 'origin']) {
+    try {
+      const { stdout } = await runGitWithOptions(
+        projectId,
+        ['ls-remote', '--symref', remote, 'HEAD'],
+        {
+          timeout: 10_000,
+          maxBuffer: 1024 * 128,
+        },
+      )
+      const branchName = getBranchNameFromLsRemoteHead(stdout)
+      if (branchName) return { remote, branchName }
+    } catch {
+      // Offline repos can still use local main/master fallbacks below.
     }
   }
 
@@ -146,6 +148,7 @@ async function resolveNamedBranchBaseline(
 ): Promise<ProjectDiffResolvedBaseline> {
   const resolvedTarget = await resolveFirstExistingRef(projectId, options.candidateRefs)
   if (!resolvedTarget) {
+    if (options.kind === 'main-branch') return resolveHeadBaseline(projectId)
     throw new Error(`Could not find ${options.label.toLowerCase()}.`)
   }
 
@@ -271,7 +274,7 @@ async function resolveDevBranchBaseline(projectId: string): Promise<ProjectDiffR
   return resolveNamedBranchBaseline(projectId, {
     kind: 'dev-branch',
     label: 'Dev branch',
-    candidateRefs: ['refs/heads/dev', 'refs/remotes/origin/dev'],
+    candidateRefs: ['refs/heads/dev', 'refs/remotes/origin/dev', 'refs/remotes/upstream/dev'],
   })
 }
 
