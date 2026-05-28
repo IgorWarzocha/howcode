@@ -8,6 +8,8 @@ import type {
   DictationModelId,
   GitOpsMode,
   PiSettings,
+  PiThemeState,
+  Project,
   ProjectDeletionMode,
   ProjectDiffBaseline,
   ProjectDiffDefaultBaseline,
@@ -42,6 +44,7 @@ export type DesktopActionPayloadFields = {
   projectPath?: string | undefined
   parentPath?: string | undefined
   worktreeDirectory?: string | undefined | null | undefined
+  parentBranchName?: string | undefined | null | undefined
   worktreePath?: string | undefined | null | undefined
   worktrees?: { worktreePath: string; branchName?: string | undefined | null }[] | undefined
   createIfMissing?: boolean | undefined
@@ -206,6 +209,7 @@ export type DesktopActionPayloadMap = {
     projectId?: string | undefined | null | undefined
     branchName: string
     worktreeDirectory?: string | undefined | null | undefined
+    parentBranchName?: string | undefined | null | undefined
   }
   'workspace.remove-worktree': {
     projectId?: string | undefined | null | undefined
@@ -296,6 +300,7 @@ export type DesktopActionPayload<A extends DesktopAction = DesktopAction> =
   DesktopActionPayloadMap[A]
 
 export type DesktopActionResultData = {
+  branchName?: string | undefined | null | undefined
   checkedProjectCount?: number | undefined
   clearedCount?: number | undefined
   clearFailedCount?: number | undefined
@@ -312,10 +317,12 @@ export type DesktopActionResultData = {
   failedWorktreePath?: string | undefined
   failedThreadIds?: string[] | undefined
   importedProjectIds?: string[] | undefined
+  importedProjects?: Project[] | undefined
   message?: string | undefined | null | undefined
   originProjectCount?: number | undefined
   originUrl?: string | undefined | null | undefined
   piSettings?: PiSettings
+  piTheme?: PiThemeState
   previewed?: boolean | undefined
   affectedProjectIds?: string[] | undefined
   projectId?: string | undefined

@@ -134,6 +134,10 @@
   font-size: var(--app-type-small-size);
 }
 
+.sidebar-project-work-scope-empty {
+  margin-right: 0.625rem;
+}
+
 .sidebar-project-work-history {
   display: grid;
   gap: 0.125rem;

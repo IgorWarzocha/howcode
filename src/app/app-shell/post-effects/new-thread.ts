@@ -7,6 +7,7 @@ import {
   getPayloadProjectId,
   hasDesktopBridge,
 } from '../controller-action-utils'
+import { upsertShellProject } from '../project-shell-cache'
 import { applyProjectThreadToShellState } from '../project-thread-cache'
 import {
   buildLocalThreadFallback,
@@ -168,7 +169,23 @@ async function handleNewThreadNavigation(
 
 export async function applyNewThreadPostEffect(input: NewThreadPostEffectInput) {
   const result = getNewThreadResult(input)
-  if (input.action === 'project.add') await input.refreshShellState()
+  if (input.action === 'project.add') {
+    const projectId = result.resultProjectId ?? result.projectId
+    if (projectId) {
+      const projectName =
+        typeof input.contextualPayload.projectName === 'string'
+          ? input.contextualPayload.projectName
+          : null
+      upsertShellProject(
+        input.queryClient,
+        {
+          id: projectId,
+          ...(projectName ? { name: projectName } : {}),
+        },
+        { reveal: true },
+      )
+    }
+  }
   await handleNewThreadNavigation(input, result)
   if (result.localFallback) return
   const nextComposerState =

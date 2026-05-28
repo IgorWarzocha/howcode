@@ -1,23 +1,23 @@
 import { Tooltip } from '@howcode/common/tooltip'
-import { CircleOff, GitBranch, GitFork, Plus } from 'lucide-react'
+import { CircleOff, GitBranch, Plus } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project, View } from '../../../types'
+import { WorktreeSmallIcon } from '../../../ui/icons/worktree-small-icon'
 import { SidebarActionTooltip } from '../sidebar-action-tooltip'
 import { BranchInlineActions, BranchSessionCount } from './branch-row-actions'
 import { createThreadForBranch } from './new-thread-menu'
 import type { BranchThreadGroup, WorktreeBranchGroup } from './project-work-model'
 import { ProjectWorkThreadRow } from './project-work-thread-row'
 
-const dirtyBranchSwitchMessage =
-  'You have uncommitted changes on your current branch. Commit first.'
+const dirtyBranchSwitchMessage = 'Worktree is dirty. Commit first.'
 
 function BranchHeadingIcon({ group }: { group: BranchThreadGroup }) {
   if (group.unassigned) {
     return <CircleOff size={13} className="sidebar-project-work-unassigned-icon" />
   }
   if (group.worktree) {
-    return <GitFork size={13} className="sidebar-project-work-branch-icon" />
+    return <WorktreeSmallIcon size={13} className="sidebar-project-work-branch-icon" />
   }
   return <GitBranch size={13} className="sidebar-project-work-branch-icon" />
 }
@@ -50,6 +50,10 @@ function hasCompletedWorktrees(group: BranchThreadGroup) {
   )
 }
 
+export function canCreateWorktreeFromBranchGroup(group: BranchThreadGroup) {
+  return group.current
+}
+
 function hasMergeableCompletedWorktrees(group: BranchThreadGroup) {
   return (
     (group.completedWorktrees?.some((worktree) => Boolean(worktree.branchName)) ?? false) ||
@@ -69,6 +73,7 @@ function getBranchActionState(input: {
   const canMergeWorktree = group.worktree && Boolean(group.worktreeBranchName)
   const canMergeCompletedWorktrees = !group.worktree && hasMergeableCompletedWorktrees(group)
   const canRemoveCompletedWorktrees = !group.worktree && hasCompletedWorktrees(group)
+  const canCreateWorktree = canCreateWorktreeFromBranchGroup(group)
   const branchActionKey = `${projectId}:${group.id}`
   const mergeCompletedWorktreesActionKey = `${branchActionKey}:merge-completed-worktrees`
   const removeCompletedWorktreesActionKey = `${branchActionKey}:remove-completed-worktrees`
@@ -80,6 +85,7 @@ function getBranchActionState(input: {
       (canMergeWorktree ? 1 : 0) +
       (canMergeCompletedWorktrees ? 1 : 0) +
       (canRemoveCompletedWorktrees ? 1 : 0) +
+      (canCreateWorktree ? 1 : 0) +
       1,
     branchActionKey,
     mergeCompletedWorktreesActionKey,
@@ -90,6 +96,7 @@ function getBranchActionState(input: {
     canMergeWorktree,
     canMergeCompletedWorktrees,
     canRemoveCompletedWorktrees,
+    canCreateWorktree,
     confirmingPrune: pruneConfirmBranchId === branchActionKey,
     confirmingMergeCompletedWorktrees: pruneConfirmBranchId === mergeCompletedWorktreesActionKey,
     confirmingRemoveCompletedWorktrees: pruneConfirmBranchId === removeCompletedWorktreesActionKey,
@@ -103,9 +110,16 @@ export function getCompactBranchVisualGroupKey(
   return group.worktree ? (group.worktreeBranchName ?? group.label ?? currentBranch) : group.label
 }
 
-function getBranchVisualGroupKey(group: BranchThreadGroup) {
-  if (group.unassigned) return 'unassigned'
-  return group.label
+export function branchGroupHasWorktreeDivider(group: BranchThreadGroup) {
+  return group.worktrees.length > 0 || (group.completedWorktrees?.length ?? 0) > 0
+}
+
+export function shouldShowBranchGroupDividerAfter(group: BranchThreadGroup, hasNextGroup: boolean) {
+  return hasNextGroup && branchGroupHasWorktreeDivider(group)
+}
+
+export function shouldShowBranchGroupDividerBefore(group: BranchThreadGroup, index: number) {
+  return index > 0 && branchGroupHasWorktreeDivider(group)
 }
 
 export function shouldSeparateBranchGroups(
@@ -327,6 +341,7 @@ export function BranchThreadGroupSection({
             canMergeWorktree={actionState.canMergeWorktree}
             canMergeCompletedWorktrees={actionState.canMergeCompletedWorktrees}
             canRemoveCompletedWorktrees={actionState.canRemoveCompletedWorktrees}
+            canCreateWorktree={actionState.canCreateWorktree}
             confirmingPrune={actionState.confirmingPrune}
             confirmingMergeCompletedWorktrees={actionState.confirmingMergeCompletedWorktrees}
             confirmingRemoveCompletedWorktrees={actionState.confirmingRemoveCompletedWorktrees}
@@ -461,7 +476,7 @@ function WorktreeGroupSection({
     >
       <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading sidebar-project-work-worktree-heading">
         <span className="sidebar-icon-action sidebar-icon-action--xs sidebar-icon-action--no-hover sidebar-project-work-branch-disclosure">
-          <GitFork size={13} className="sidebar-project-work-branch-icon" />
+          <WorktreeSmallIcon size={13} className="sidebar-project-work-branch-icon" />
         </span>
         <span className="sidebar-project-work-branch-toggle">
           <span className="truncate">{worktree.label}</span>
@@ -481,6 +496,7 @@ function WorktreeGroupSection({
             canMergeWorktree={worktreeHasBranch}
             canMergeCompletedWorktrees={false}
             canRemoveCompletedWorktrees={false}
+            canCreateWorktree={false}
             confirmingPrune={confirmingPrune}
             confirmingMergeCompletedWorktrees={false}
             confirmingRemoveCompletedWorktrees={false}
@@ -567,15 +583,13 @@ export function ProjectExpandedBranchGroups({
     <div className="sidebar-project-work-project-expanded-branches">
       {branchGroups.map((group, index) => {
         const groupKey = `${project.id}:${group.id}`
-        const visualGroupKey = getBranchVisualGroupKey(group)
-        const nextGroup = index < branchGroups.length - 1 ? branchGroups[index + 1] : undefined
-        const nextVisualGroupKey = nextGroup ? getBranchVisualGroupKey(nextGroup) : null
+        const hasNextGroup = index < branchGroups.length - 1
         const defaultCollapsed = !(group.current || group.worktrees.length > 0)
         const collapsed = normalizedSearchQuery
           ? false
           : (collapsedBranchIds[groupKey] ?? defaultCollapsed)
-        const showBottomDivider =
-          !collapsed && nextVisualGroupKey !== null && visualGroupKey !== nextVisualGroupKey
+        const showBottomDivider = shouldShowBranchGroupDividerAfter(group, hasNextGroup)
+        const showTopDivider = shouldShowBranchGroupDividerBefore(group, index)
         return (
           <BranchThreadGroupSection
             key={group.id}
@@ -590,6 +604,7 @@ export function ProjectExpandedBranchGroups({
             terminalRunningSessionPaths={terminalRunningSessionPaths}
             onAction={onAction}
             showBottomDivider={showBottomDivider}
+            showTopDivider={showTopDivider}
             onThreadOpen={onThreadOpen}
             onToggle={() =>
               onSetCollapsedBranchIds((current) => ({

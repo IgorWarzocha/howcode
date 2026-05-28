@@ -35,6 +35,7 @@ export type ComposerProps = {
   projectId: string
   chatGroupId?: string | null
   projectGitState: ProjectGitState | null
+  parentBranchName?: string | null | undefined
   diffBaseline: ProjectDiffBaseline
   sessionPath: string | null
   dictationModelId: string | null

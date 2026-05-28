@@ -4,6 +4,12 @@ import { notifyProjectDiffInvalidated } from '../../hooks/project-diff-invalidat
 import { desktopQueryKeys } from '../../query/desktop-query'
 import type { ActionPayload } from '../controller-action-utils'
 import { getPayloadProjectId } from '../controller-action-utils'
+import {
+  removeShellWorktreeProject,
+  setShellWorktreeCompleted,
+  setShellWorktreeDirectory,
+  upsertShellWorktreeProject,
+} from '../project-shell-cache'
 
 export async function applyWorkspaceCommitPostEffect(input: {
   contextualPayload: ActionPayload
@@ -74,27 +80,107 @@ export async function applyCreateWorktreePostEffect(input: {
   actionResult: DesktopActionResult | null
   queryClient: QueryClient
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
-  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
-  refreshShellState: () => Promise<unknown>
   setProjectGitState: (state: ProjectGitState | null) => void
 }) {
   const rootProjectId =
     input.actionResult?.result?.rootProjectId ?? getPayloadProjectId(input.contextualPayload)
   const worktreeProjectId = input.actionResult?.result?.projectId
+  const branchName = input.actionResult?.result?.branchName ?? null
+  if (rootProjectId && worktreeProjectId) {
+    upsertShellWorktreeProject(input.queryClient, {
+      rootProjectId,
+      worktreeProjectId,
+      branchName,
+      parentBranchName:
+        typeof input.contextualPayload.parentBranchName === 'string'
+          ? input.contextualPayload.parentBranchName
+          : null,
+    })
+  }
   const projectIds = [...new Set([rootProjectId, worktreeProjectId].filter(Boolean))] as string[]
   if (projectIds.length === 0) return
 
   await Promise.all(
-    projectIds.flatMap((projectId) => [
+    projectIds.map((projectId) =>
       input.queryClient.invalidateQueries({
         queryKey: desktopQueryKeys.projectGitState(projectId),
       }),
-      input.queryClient.invalidateQueries({ queryKey: desktopQueryKeys.projectThreads(projectId) }),
-    ]),
+    ),
   )
-  await Promise.all(
-    projectIds.map((projectId) => input.loadProjectThreads(projectId, { chat: false })),
-  )
-  await input.refreshShellState()
   if (rootProjectId) input.setProjectGitState(await input.loadProjectGitState(rootProjectId))
+}
+
+export async function applyWorktreeMetadataPostEffect(input: {
+  action: string
+  contextualPayload: ActionPayload
+  actionResult: DesktopActionResult | null
+  queryClient: QueryClient
+  loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
+  setProjectGitState: (state: ProjectGitState | null) => void
+}) {
+  const rootProjectId =
+    input.actionResult?.result?.rootProjectId ?? getPayloadProjectId(input.contextualPayload)
+  const worktreeProjectId =
+    input.actionResult?.result?.projectId ??
+    (typeof input.contextualPayload.worktreePath === 'string'
+      ? input.contextualPayload.worktreePath
+      : null)
+  if (!rootProjectId) return
+
+  if (
+    input.contextualPayload.worktreeDirectory &&
+    typeof input.contextualPayload.worktreeDirectory === 'string'
+  ) {
+    setShellWorktreeDirectory(
+      input.queryClient,
+      rootProjectId,
+      input.contextualPayload.worktreeDirectory,
+    )
+  }
+  if (worktreeProjectId) {
+    if (input.action === 'workspace.mark-worktree-complete') {
+      setShellWorktreeCompleted(input.queryClient, worktreeProjectId, true)
+    }
+    if (input.action === 'workspace.mark-worktree-incomplete') {
+      setShellWorktreeCompleted(input.queryClient, worktreeProjectId, false)
+    }
+  }
+
+  await input.queryClient.invalidateQueries({
+    queryKey: desktopQueryKeys.projectGitState(rootProjectId),
+  })
+  input.setProjectGitState(await input.loadProjectGitState(rootProjectId))
+}
+
+export async function applyRemoveWorktreePostEffect(input: {
+  contextualPayload: ActionPayload
+  actionResult: DesktopActionResult | null
+  queryClient: QueryClient
+  loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
+  setProjectGitState: (state: ProjectGitState | null) => void
+}) {
+  const rootProjectId =
+    input.actionResult?.result?.rootProjectId ?? getPayloadProjectId(input.contextualPayload)
+  const worktreeProjectId =
+    input.actionResult?.result?.projectId ??
+    (typeof input.contextualPayload.worktreePath === 'string'
+      ? input.contextualPayload.worktreePath
+      : null)
+  const bulkWorktrees = Array.isArray(input.contextualPayload.worktrees)
+    ? input.contextualPayload.worktrees
+        .map((worktree) => worktree.worktreePath)
+        .filter((worktreePath): worktreePath is string => typeof worktreePath === 'string')
+    : []
+  const removedWorktreeIds = [
+    ...new Set([worktreeProjectId, ...bulkWorktrees].filter(Boolean)),
+  ] as string[]
+  if (!rootProjectId) return
+  await input.queryClient.invalidateQueries({
+    queryKey: desktopQueryKeys.projectGitState(rootProjectId),
+  })
+  const nextProjectGitState = await input.loadProjectGitState(rootProjectId)
+  input.setProjectGitState(nextProjectGitState)
+  for (const removedWorktreeId of removedWorktreeIds) {
+    removeShellWorktreeProject(input.queryClient, removedWorktreeId)
+  }
 }

@@ -32,6 +32,7 @@ type ComposerDiffBaselineSelectorProps = {
   projectId: string
   projectGitState: ProjectGitState | null
   branch?: string | null
+  parentBranchName?: string | null | undefined
   selectedBaseline: ProjectDiffBaseline
   includeUntracked?: boolean
   onSelectBaseline: (baseline: ProjectDiffBaseline) => void
@@ -265,6 +266,7 @@ export function ComposerDiffBaselineSelector({
   projectId,
   projectGitState,
   branch,
+  parentBranchName,
   selectedBaseline,
   onSelectBaseline,
   includeUntracked = false,
@@ -382,6 +384,10 @@ export function ComposerDiffBaselineSelector({
           searchQuery={searchQuery}
           selectedBaseline={selectedBaseline}
           selectedCommitSha={selectedCommitSha}
+          parentBranchName={parentBranchName}
+          defaultBranchName={projectGitState?.defaultBranchName}
+          devBranchName={projectGitState?.devBranchName}
+          mainBranchName={projectGitState?.mainBranchName}
           setOpen={setOpen}
           setSearchQuery={setSearchQuery}
           visibleCommits={visibleCommits}

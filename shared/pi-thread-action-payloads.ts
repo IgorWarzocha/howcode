@@ -69,6 +69,12 @@ export function getBranchName(payload: DesktopActionPayloadInput) {
   return branchName.length > 0 ? branchName : null
 }
 
+export function getParentBranchName(payload: DesktopActionPayloadInput) {
+  const branchName =
+    typeof payload.parentBranchName === 'string' ? payload.parentBranchName.trim() : ''
+  return branchName.length > 0 ? branchName : null
+}
+
 export function getWorktreeDirectory(payload: DesktopActionPayloadInput) {
   const worktreeDirectory =
     typeof payload.worktreeDirectory === 'string' ? payload.worktreeDirectory.trim() : ''
@@ -230,14 +236,16 @@ function isProjectDiffBaseline(value: unknown): value is ProjectDiffBaseline {
     return false
   }
 
-  const baseline = value as { kind?: unknown; rev?: unknown; sha?: unknown }
+  const baseline = value as { branchName?: unknown; kind?: unknown; rev?: unknown; sha?: unknown }
   switch (baseline.kind) {
     case 'head':
     case 'previous':
-    case 'yesterday':
     case 'main-branch':
     case 'dev-branch':
       return true
+    case 'parent-branch':
+    case 'branch':
+      return typeof baseline.branchName === 'string' && baseline.branchName.trim().length > 0
     case 'last-opened':
       return typeof baseline.rev === 'string' && baseline.rev.trim().length > 0
     case 'commit':
@@ -283,7 +291,6 @@ export function getSettingsProjectDiffBaselineDefault(
   return isProjectDiffBaseline(payload.value) &&
     (payload.value.kind === 'head' ||
       payload.value.kind === 'previous' ||
-      payload.value.kind === 'yesterday' ||
       payload.value.kind === 'main-branch' ||
       payload.value.kind === 'dev-branch')
     ? payload.value

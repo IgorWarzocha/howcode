@@ -8,6 +8,7 @@ const shortStatDeletionsPattern = /(\d+)\s+deletions?\(-\)/
 const trailingSlashPattern = /\/$/
 const originPathSeparatorPattern = /[/:]/
 const gitSuffixPattern = /\.git$/i
+const remoteHeadRefPattern = /^refs\/remotes\/(?:upstream|origin)\/(.+)$/
 
 function parseShortStat(output: string) {
   const insertionsMatch = output.match(shortStatInsertionsPattern)
@@ -161,6 +162,71 @@ async function getBranches(projectId: string) {
   }
 }
 
+function getBranchNameFromRemoteHeadRef(ref: string) {
+  const match = ref.trim().match(remoteHeadRefPattern)
+  const branchName = match?.[1]?.trim()
+  return branchName && branchName !== 'HEAD' ? branchName : null
+}
+
+async function getDefaultBranchName(projectId: string, branches: readonly string[]) {
+  for (const remote of ['upstream', 'origin']) {
+    try {
+      const { stdout } = await runGitWithOptions(
+        projectId,
+        ['symbolic-ref', `refs/remotes/${remote}/HEAD`],
+        {
+          timeout: 10_000,
+          maxBuffer: 1024 * 128,
+        },
+      )
+      const branchName = getBranchNameFromRemoteHeadRef(stdout)
+      if (branchName) return branchName
+    } catch {
+      // Remote HEAD can be missing in freshly-created or offline repos.
+    }
+  }
+
+  return branches.find((branch) => branch === 'main' || branch === 'master') ?? null
+}
+
+async function getDevBranchName(projectId: string, branches: readonly string[]) {
+  if (branches.includes('dev')) return 'dev'
+
+  for (const ref of ['refs/remotes/origin/dev', 'refs/remotes/upstream/dev']) {
+    try {
+      await runGitWithOptions(projectId, ['show-ref', '--verify', ref], {
+        timeout: 10_000,
+        maxBuffer: 1024 * 128,
+      })
+      return 'dev'
+    } catch {
+      // Try the next remote.
+    }
+  }
+
+  return null
+}
+
+async function getMainBranchName(projectId: string, branches: readonly string[]) {
+  for (const branch of ['main', 'master']) {
+    if (branches.includes(branch)) return branch
+
+    for (const ref of [`refs/remotes/origin/${branch}`, `refs/remotes/upstream/${branch}`]) {
+      try {
+        await runGitWithOptions(projectId, ['show-ref', '--verify', ref], {
+          timeout: 10_000,
+          maxBuffer: 1024 * 128,
+        })
+        return branch
+      } catch {
+        // Try the next branch/ref.
+      }
+    }
+  }
+
+  return null
+}
+
 async function getDiffStats(projectId: string) {
   try {
     const args = (await hasHeadCommit(projectId))
@@ -185,6 +251,9 @@ export async function loadProjectGitState(projectId: string): Promise<ProjectGit
       isGitRepo: false,
       branch: null,
       branches: [],
+      defaultBranchName: null,
+      devBranchName: null,
+      mainBranchName: null,
       fileCount: 0,
       stagedFileCount: 0,
       unstagedFileCount: 0,
@@ -208,11 +277,20 @@ export async function loadProjectGitState(projectId: string): Promise<ProjectGit
     loadGitWorktrees(projectId).catch(() => []),
   ])
 
+  const [defaultBranchName, devBranchName, mainBranchName] = await Promise.all([
+    getDefaultBranchName(projectId, branches),
+    getDevBranchName(projectId, branches),
+    getMainBranchName(projectId, branches),
+  ])
+
   return {
     projectId,
     isGitRepo: true,
     branch,
     branches,
+    defaultBranchName,
+    devBranchName,
+    mainBranchName,
     fileCount: statusSummary.fileCount,
     stagedFileCount: statusSummary.stagedFileCount,
     unstagedFileCount: statusSummary.unstagedFileCount,

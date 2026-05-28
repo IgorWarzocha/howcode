@@ -3,6 +3,11 @@ export const DIFF_THEME_NAMES = {
   dark: 'pierre-dark',
 } as const
 
+export const DIFF_THEMES = {
+  light: DIFF_THEME_NAMES.light,
+  dark: DIFF_THEME_NAMES.dark,
+} as const
+
 export type DiffThemeName = (typeof DIFF_THEME_NAMES)[keyof typeof DIFF_THEME_NAMES]
 
 export function resolveDiffThemeName(theme: 'light' | 'dark'): DiffThemeName {

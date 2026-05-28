@@ -47,6 +47,7 @@ function CodeGitOpsComposer(props: CodeWorkspaceContentProps) {
   const {
     shellState,
     projectGitState,
+    parentBranchName,
     composerProjectId,
     terminalSessionPath,
     diffBaseline,
@@ -78,6 +79,7 @@ function CodeGitOpsComposer(props: CodeWorkspaceContentProps) {
         dictationModelId={appSettings.dictationModelId}
         dictationMaxDurationSeconds={appSettings.dictationMaxDurationSeconds}
         projectGitState={projectGitState}
+        parentBranchName={parentBranchName}
         projectId={composerProjectId}
         sessionPath={terminalSessionPath}
         showDictationButton={appSettings.showDictationButton}
@@ -142,6 +144,7 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
     shellState,
     composerProjectId,
     projectGitState,
+    parentBranchName,
     diffBaseline,
     terminalSessionPath,
     diffRenderMode,
@@ -185,6 +188,7 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
       availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ['off']}
       projectId={composerProjectId}
       projectGitState={projectGitState}
+      parentBranchName={parentBranchName}
       diffBaseline={diffBaseline}
       sessionPath={terminalSessionPath}
       dictationModelId={appSettings.dictationModelId}

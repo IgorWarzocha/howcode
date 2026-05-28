@@ -1,7 +1,7 @@
 import { WorkerPoolContextProvider } from '@pierre/diffs/react'
 import DiffsWorker from '@pierre/diffs/worker/worker.js?worker'
 import { type ReactNode, useMemo } from 'react'
-import { resolveDiffThemeName } from './diff-rendering'
+import { DIFF_THEMES } from './diff-rendering'
 
 export function DiffWorkerPoolProvider({ children }: { children?: ReactNode }) {
   const workerPoolSize = useMemo(() => {
@@ -18,7 +18,7 @@ export function DiffWorkerPoolProvider({ children }: { children?: ReactNode }) {
         totalASTLRUCacheSize: 100,
       }}
       highlighterOptions={{
-        theme: resolveDiffThemeName('dark'),
+        theme: DIFF_THEMES,
         tokenizeMaxLineLength: 1_000,
       }}
     >

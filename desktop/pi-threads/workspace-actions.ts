@@ -10,6 +10,7 @@ import {
   getGitPreview,
   getGitPush,
   getGitRepoUrl,
+  getParentBranchName,
   getProjectDiffBaselinePreference,
   getProjectDiffRenderModePreference,
   getProjectId,
@@ -39,7 +40,7 @@ import {
   ensureProject,
   getProjectWorktreeDirectory,
   hasRunningProjectThread,
-  listBranchThreadIds,
+  listProjectFamilyBranchThreadIds,
   listProjectSessionPaths,
   listProjectThreadIds,
   setProjectGitOpsMode,
@@ -80,6 +81,12 @@ async function deletePersistedThreadsForWorkspace(threadIds: string[]) {
     error: `Failed to delete ${deleteResult.failedThreadIds.length} thread(s).`,
     failedThreadIds: deleteResult.failedThreadIds,
   }
+}
+
+function isMissingBranchPruneError(result: Awaited<ReturnType<typeof pruneProjectBranch>>) {
+  if (!('error' in result)) return false
+  const normalizedError = String(result.error).toLowerCase()
+  return normalizedError.includes('branch') && normalizedError.includes('not found')
 }
 
 async function handleCommitWorkspaceAction(payload: AnyDesktopActionPayload) {
@@ -151,6 +158,7 @@ function handleDiffPreferencesWorkspaceAction(payload: AnyDesktopActionPayload) 
 async function handleCreateWorktreeWorkspaceAction(payload: AnyDesktopActionPayload) {
   const projectId = getProjectId(payload)
   const branchName = getBranchName(payload)
+  const parentBranchName = getParentBranchName(payload)
   if (!(projectId && branchName)) return handledAction({ error: 'Branch name is required.' })
 
   const rootProjectId = await getMainWorktreePath(projectId)
@@ -172,12 +180,14 @@ async function handleCreateWorktreeWorkspaceAction(payload: AnyDesktopActionPayl
     cwd: result.projectId,
     rootCwd: result.rootProjectId,
     branchName: result.branchName,
+    parentBranchName,
     isMain: false,
     source: 'howcode',
   })
 
   return handledAction({
     didMutate: true,
+    branchName: result.branchName,
     projectId: result.projectId,
     rootProjectId: result.rootProjectId,
   })
@@ -388,13 +398,14 @@ async function handlePruneBranchWorkspaceAction(payload: AnyDesktopActionPayload
       })
     }
   }
-  const threadIds = listBranchThreadIds(projectId, branchName)
+  const threadIds = listProjectFamilyBranchThreadIds(projectId, branchName)
   const result = await pruneProjectBranch(projectId, branchName)
   didMutate = didMutate || result.didMutate === true
-  if (!('error' in result)) {
+  if (!('error' in result) || isMissingBranchPruneError(result)) {
     const cleanupError = await deletePersistedThreadsForWorkspace(threadIds)
     if (cleanupError) return handledAction({ ...cleanupError, didMutate: true })
   }
+  if (isMissingBranchPruneError(result)) return handledAction({ didMutate: true })
   return handledAction('error' in result ? { ...result, didMutate } : result)
 }
 

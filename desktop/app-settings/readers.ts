@@ -139,7 +139,7 @@ export function loadAppSettings(): AppSettings {
     gitOpsDefaultMode: parseGitOpsModePreference(value(gitOpsDefaultModeKey)) ?? 'commit',
     gitDiffBaselineDefault: parseGitDiffBaselineDefaultPreference(
       value(gitDiffBaselineDefaultKey),
-    ) ?? { kind: 'head' },
+    ) ?? { kind: 'main-branch' },
     gitDiffRenderModeDefault:
       parseGitDiffRenderModePreference(value(gitDiffRenderModeDefaultKey)) ?? 'stacked',
     gitDiffFileTreeDefaultVisible:

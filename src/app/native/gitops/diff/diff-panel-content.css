@@ -1,5 +1,5 @@
 :host {
-  color-scheme: dark;
+  color-scheme: inherit;
   --diffs-header-font-family: var(
     --font-sans,
     "Inter Variable",
@@ -78,7 +78,6 @@
 [data-diff-span],
 [data-line] span {
   background-color: transparent;
-  color: inherit;
   font-weight: inherit;
   font-style: inherit;
   text-decoration: none;

@@ -19,6 +19,7 @@ export type ProjectRow = {
   gitOpsMode: string | null
   worktreeRootProjectId: string | null
   worktreeBranchName: string | null
+  worktreeParentBranchName: string | null
   worktreeIsMain: number | null
   worktreeSource: string | null
   worktreeCompleted: number | null

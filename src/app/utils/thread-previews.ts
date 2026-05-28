@@ -4,7 +4,7 @@ type ToolCallMessage = Extract<Message, { role: 'toolResult' | 'bashExecution' }
 
 export function getThinkingPreview(thinkingContent: string[], thinkingRedacted?: boolean) {
   if (thinkingContent.length > 0) {
-    return thinkingContent[0]
+    return null
   }
 
   return thinkingRedacted ? 'Reasoning unavailable' : 'No reasoning captured'

@@ -1,5 +1,6 @@
 import { access } from 'node:fs/promises'
 import path from 'node:path'
+import { normalizeGitBranchName } from './branch-name.ts'
 import { formatGitCommandError, getNonInteractiveGitEnv, runGitWithOptions } from './git-runner.ts'
 
 export type GitWorktreeEntry = {
@@ -161,7 +162,7 @@ export async function createProjectWorktree(input: {
   branchName: string
   worktreeDirectory: string
 }): Promise<GitWorktreeCreateResult> {
-  const branchName = input.branchName.trim()
+  const branchName = normalizeGitBranchName(input.branchName)
   if (!branchName) return { error: 'Branch name is required.' }
 
   const folderName = sanitizeWorktreeFolderName(branchName)

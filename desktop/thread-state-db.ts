@@ -14,6 +14,7 @@ export {
   listBranchSessionPaths,
   listBranchThreadIds,
   listInboxThreads,
+  listProjectFamilyBranchThreadIds,
   listProjectFamilyProjectIds,
   listProjectFamilySessionPaths,
   listProjectSessionPaths,
