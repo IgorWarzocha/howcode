@@ -16,6 +16,7 @@ export type Thread = {
 export type ProjectWorktreeInfo = {
   rootProjectId: string
   branchName: string | null
+  parentBranchName?: string | null | undefined
   isMain: boolean
   source: 'howcode' | 'imported'
   completed?: boolean | undefined

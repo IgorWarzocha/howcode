@@ -1,3 +1,10 @@
+### 0.1.67
+
+- Future release. New work from here is meant to ship as 0.1.67.
+- Updated bundled Pi SDK/runtime packages to 0.76.0.
+
+Snapshot: TBD.
+
 ### 0.1.66
 
 - Split desktop Pi/runtime work into a stock-Node service so native deps stop fighting Electron.  

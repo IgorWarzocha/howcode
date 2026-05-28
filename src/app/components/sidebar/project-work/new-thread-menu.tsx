@@ -27,14 +27,20 @@ function focusInput(input: HTMLInputElement | null) {
 
 export async function createThreadInWorktreeForBranch({
   branchName,
+  parentBranchName,
   onAction,
   projectId,
 }: {
   branchName: string
+  parentBranchName?: string | null | undefined
   onAction: DesktopActionInvoker
   projectId: string
 }) {
-  const worktreeResult = await onAction('workspace.create-worktree', { projectId, branchName })
+  const worktreeResult = await onAction('workspace.create-worktree', {
+    projectId,
+    branchName,
+    parentBranchName,
+  })
   const worktreeError = worktreeResult?.result?.error
   if (!worktreeResult?.ok || worktreeError || !worktreeResult.result?.projectId) {
     return {
@@ -209,7 +215,12 @@ export function NewThreadMenu({
     const branchName = newWorktreeBranchName.trim()
     if (!branchName) return
     setNewWorktreeError(null)
-    const result = await createThreadInWorktreeForBranch({ branchName, onAction, projectId })
+    const result = await createThreadInWorktreeForBranch({
+      branchName,
+      parentBranchName: currentBranch,
+      onAction,
+      projectId,
+    })
     if (result.error) {
       setNewWorktreeError(result.error)
       return

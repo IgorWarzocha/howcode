@@ -42,6 +42,7 @@ function EmptyBranchStartAction({
     if (!(group.current || group.worktree || group.unassigned)) {
       const worktreeResult = await createThreadInWorktreeForBranch({
         branchName: group.label,
+        parentBranchName: currentBranch,
         onAction,
         projectId: project.id,
       })

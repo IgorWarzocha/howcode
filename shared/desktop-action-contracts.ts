@@ -42,6 +42,7 @@ export type DesktopActionPayloadFields = {
   projectPath?: string | undefined
   parentPath?: string | undefined
   worktreeDirectory?: string | undefined | null | undefined
+  parentBranchName?: string | undefined | null | undefined
   worktreePath?: string | undefined | null | undefined
   worktrees?: { worktreePath: string; branchName?: string | undefined | null }[] | undefined
   createIfMissing?: boolean | undefined
@@ -206,6 +207,7 @@ export type DesktopActionPayloadMap = {
     projectId?: string | undefined | null | undefined
     branchName: string
     worktreeDirectory?: string | undefined | null | undefined
+    parentBranchName?: string | undefined | null | undefined
   }
   'workspace.remove-worktree': {
     projectId?: string | undefined | null | undefined

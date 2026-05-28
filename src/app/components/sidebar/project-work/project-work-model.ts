@@ -102,6 +102,7 @@ export type WorktreeBranch = {
   label: string
   path: string
   branchName?: string | null | undefined
+  parentBranchName?: string | null | undefined
   complete?: boolean | undefined
 }
 
@@ -149,8 +150,10 @@ function buildWorktreesByBranch(input: {
   const worktreesByBranch = new Map<string, WorktreeBranch[]>()
   for (const worktreeBranch of input.worktreeBranches) {
     const ownBranchName = (worktreeBranch.branchName ?? worktreeBranch.label).trim()
-    const branchName =
-      input.parentBranch && ownBranchName !== input.currentBranch
+    const explicitParentBranchName = worktreeBranch.parentBranchName?.trim()
+    const branchName = explicitParentBranchName
+      ? explicitParentBranchName
+      : input.parentBranch && ownBranchName !== input.currentBranch
         ? input.parentBranch
         : ownBranchName
     if (!branchName) continue
@@ -242,6 +245,25 @@ function collectBranchNames(input: {
   if (input.currentBranch) branchNames.add(input.currentBranch)
   for (const branchName of input.worktreesByBranch.keys()) branchNames.add(branchName)
   return branchNames
+}
+
+function removeNestedWorktreeBranchNames(input: {
+  branchNames: Set<string>
+  currentBranch: string | null
+  parentBranch: string | null
+  worktreeBranches: readonly WorktreeBranch[]
+}) {
+  for (const worktree of input.worktreeBranches) {
+    const branchName = (worktree.branchName ?? worktree.label).trim()
+    if (!branchName || branchName === input.currentBranch) continue
+    if (worktree.parentBranchName?.trim()) {
+      input.branchNames.delete(branchName)
+      continue
+    }
+    if (input.parentBranch && branchName !== input.parentBranch) {
+      input.branchNames.delete(branchName)
+    }
+  }
 }
 
 function worktreeBelongsToBranch(worktree: WorktreeBranch, branchName: string | null) {
@@ -349,14 +371,7 @@ export function buildBranchGroups(
     repositoryBranches,
     worktreesByBranch,
   })
-  if (parentBranch) {
-    for (const worktree of worktreeBranches) {
-      const branchName = (worktree.branchName ?? worktree.label).trim()
-      if (branchName && branchName !== parentBranch && branchName !== currentBranch) {
-        branchNames.delete(branchName)
-      }
-    }
-  }
+  removeNestedWorktreeBranchNames({ branchNames, currentBranch, parentBranch, worktreeBranches })
 
   const groups: BranchThreadGroup[] = []
   if (currentBranch && branchNames.has(currentBranch)) {
@@ -531,6 +546,7 @@ export function getWorktreeBranchesForProject(
         worktree.path,
       path: worktree.path,
       branchName: worktree.branch ?? null,
+      parentBranchName: projectById.get(worktree.path)?.worktree?.parentBranchName ?? null,
       complete: projectById.get(worktree.path)?.worktree?.completed ?? false,
     }))
 }

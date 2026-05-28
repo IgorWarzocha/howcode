@@ -57,6 +57,7 @@ export function listProjects(cwd: string): Project[] {
           projects.git_ops_mode AS gitOpsMode,
           project_worktrees.root_cwd AS worktreeRootProjectId,
           project_worktrees.branch_name AS worktreeBranchName,
+          project_worktrees.parent_branch_name AS worktreeParentBranchName,
           project_worktrees.is_main AS worktreeIsMain,
           project_worktrees.source AS worktreeSource,
           project_worktrees.completed AS worktreeCompleted,
@@ -86,6 +87,7 @@ export function listProjects(cwd: string): Project[] {
           projects.git_ops_mode,
           project_worktrees.root_cwd,
           project_worktrees.branch_name,
+          project_worktrees.parent_branch_name,
           project_worktrees.is_main,
           project_worktrees.source,
           project_worktrees.completed,
@@ -430,6 +432,29 @@ export function listBranchThreadIds(projectId: string, branchName: string) {
       `,
     )
     .all(projectId, branchName) as ThreadPathRow[]
+
+  return rows.map((row) => row.id).filter((id): id is string => typeof id === 'string')
+}
+
+export function listProjectFamilyBranchThreadIds(projectId: string, branchName: string) {
+  const db = getThreadStateDatabase()
+  const rows = db
+    .prepare(
+      `
+        SELECT id AS id, session_path AS sessionPath
+        FROM threads
+        WHERE branch_name = ?
+          AND (
+            cwd = ?
+            OR cwd IN (
+              SELECT cwd
+              FROM project_worktrees
+              WHERE root_cwd = ? AND is_main = 0
+            )
+          )
+      `,
+    )
+    .all(branchName, projectId, projectId) as ThreadPathRow[]
 
   return rows.map((row) => row.id).filter((id): id is string => typeof id === 'string')
 }
