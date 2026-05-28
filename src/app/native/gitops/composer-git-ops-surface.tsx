@@ -221,6 +221,7 @@ export function ComposerGitOpsSurface({
     includeUntracked,
     projectGitState,
   })
+  const inputLocked = runningPrimaryAction || diffCommentsSending
 
   const untrackedFileCount = projectGitState?.untrackedFileCount ?? 0
   const hiddenUntrackedFileCount = includeUntracked ? 0 : untrackedFileCount
@@ -249,7 +250,7 @@ export function ComposerGitOpsSurface({
   }, [actionErrorMessage, onActionErrorMessageChange])
 
   useHowcodeKeybindingCommand('dictation.toggle', (event) => {
-    if (!showDictationButton) return
+    if (!(showDictationButton && !inputLocked)) return
     event.preventDefault()
     void toggleDictation()
   })
@@ -284,7 +285,7 @@ export function ComposerGitOpsSurface({
       dictationTranscribing={dictationTranscribing}
       onAction={onAction}
       onOpenSettingsView={onOpenSettingsView}
-      showDictationButton={showDictationButton}
+      showDictationButton={showDictationButton && !inputLocked}
       toggleDictation={toggleDictation}
     />
   )

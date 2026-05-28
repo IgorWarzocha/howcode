@@ -8,6 +8,7 @@ import type {
   DictationModelId,
   GitOpsMode,
   PiSettings,
+  PiThemeState,
   Project,
   ProjectDeletionMode,
   ProjectDiffBaseline,
@@ -321,6 +322,7 @@ export type DesktopActionResultData = {
   originProjectCount?: number | undefined
   originUrl?: string | undefined | null | undefined
   piSettings?: PiSettings
+  piTheme?: PiThemeState
   previewed?: boolean | undefined
   affectedProjectIds?: string[] | undefined
   projectId?: string | undefined

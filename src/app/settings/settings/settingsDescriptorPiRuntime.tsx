@@ -21,10 +21,10 @@ export function buildPiRuntimeSettingsDescriptors({
   return [
     {
       id: 'pi-runtime.theme',
-      category: 'pi',
+      category: 'howcode',
       title: 'Theme',
-      description: "Select a theme to use. Syncs with Pi's JSON files.",
-      keywords: 'theme color json pi gui terminal appearance',
+      description: 'Shared with your Pi TUI.',
+      keywords: 'theme color json pi gui terminal appearance howcode tui',
       render: () => {
         const themes =
           (piTheme?.themes.length ?? 0) > 0

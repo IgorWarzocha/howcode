@@ -182,8 +182,10 @@ export function InboxComposer({
     }
   }
 
+  const inputLocked = isSending || localActionPending
+
   useHowcodeKeybindingCommand('dictation.toggle', (event) => {
-    if (!showDictationButton) return
+    if (!(showDictationButton && !inputLocked)) return
     event.preventDefault()
     void toggleDictation()
   })
@@ -340,7 +342,7 @@ export function InboxComposer({
             draft={draft}
             errorMessage={errorMessage}
             extensionRunning={false}
-            inputLocked={isSending || localActionPending}
+            inputLocked={inputLocked}
             favoriteFolders={favoriteFolders}
             pickerLoading={pickerLoading}
             pickerOpen={openMenu === 'picker'}

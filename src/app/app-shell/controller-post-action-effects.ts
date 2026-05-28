@@ -7,6 +7,7 @@ import type {
   ComposerState,
   DesktopActionResult,
   ProjectGitState,
+  ShellState,
   ThreadData,
 } from '../desktop/types'
 import { desktopQueryKeys } from '../query/desktop-query'
@@ -118,6 +119,17 @@ async function handleProjectRemoveEffects(ctx: PostEffectsContext) {
     ...getThreadLifecycleInput(ctx),
     hasActionError: hasActionError(ctx.actionResult),
   })
+}
+
+function applyPiThemeUpdate(ctx: PostEffectsContext) {
+  const { piSettings, piTheme } = ctx.actionResult?.result ?? {}
+  if (!(piSettings && piTheme)) {
+    return ctx.refreshShellState()
+  }
+
+  ctx.queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) =>
+    currentState ? { ...currentState, piSettings, piTheme } : currentState,
+  )
 }
 
 async function handleNewThreadOrProjectEffects(ctx: PostEffectsContext) {
@@ -273,7 +285,7 @@ const postEffectHandlers: PostEffectHandler[] = [
   {
     matches: (ctx) =>
       ctx.action === 'pi-settings.update' && ctx.contextualPayload.piSettingsKey === 'theme',
-    run: (ctx) => ctx.refreshShellState(),
+    run: applyPiThemeUpdate,
   },
   {
     matches: (ctx) => ctx.action === 'project.pin',

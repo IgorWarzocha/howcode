@@ -151,6 +151,7 @@ export function ComposerPromptInputPanel({
 }: ComposerPromptInputPanelProps) {
   const showBranchGuardPopup = isBranchGuardError(errorMessage)
   const statusMessage = getComposerStatusMessage({ draft, errorMessage, showBranchGuardPopup })
+  const dictationButtonVisible = showDictationButton && !inputLocked
 
   return (
     <>
@@ -271,7 +272,7 @@ export function ComposerPromptInputPanel({
                     </div>
                   ) : null
                 }
-                trailingAdornmentEnabled={showDictationButton}
+                trailingAdornmentEnabled={dictationButtonVisible}
                 trailingAdornment={
                   <ComposerDictationControls
                     dictationActive={dictationActive}
@@ -281,7 +282,7 @@ export function ComposerPromptInputPanel({
                     placement="trailing"
                     onAction={onAction}
                     onOpenSettingsView={onOpenSettingsView}
-                    showDictationButton={showDictationButton}
+                    showDictationButton={dictationButtonVisible}
                     toggleDictation={toggleDictation}
                   />
                 }

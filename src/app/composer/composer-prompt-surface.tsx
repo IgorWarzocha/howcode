@@ -261,7 +261,7 @@ export function ComposerPromptSurface({
     textarea.setSelectionRange(cursorPosition, cursorPosition)
   })
   useHowcodeKeybindingCommand('dictation.toggle', (event) => {
-    if (!showDictationButton) return
+    if (!(showDictationButton && !inputLocked)) return
     event.preventDefault()
     void toggleDictation()
   })

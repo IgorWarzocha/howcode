@@ -1,22 +1,24 @@
-### 0.1.67
+#### 0.1.66 Hotfixes (because .67 has to be more special)
 
-- Future release. New work from here is meant to ship as 0.1.67.
-- Updated bundled Pi SDK/runtime packages to 0.76.0.
-- Branch/worktree creation now normalizes messy names like `fix sidebar` into Git-safe names like `fix-sidebar`.
+- Branch/worktree creation now normalizes messy names with spaces into Git-safe names.
 - Inline branch actions can now create a child worktree under that branch.
-- Sidebar branch/worktree/project changes now patch in place instead of refetching the whole shell state.
-- Reasoning block headers no longer dump raw chain-of-thought when a model does not provide headers.
+- Sidebar changes now patch in place instead of refetching the whole shell state.
+- Reasoning block headers no longer dump raw CoT when a model does not provide headers.
+- Theme changes now apply instantly instead of waiting for a full shell refresh.
+- Fixes to light modes
+- Dictation controls now hide while composer inputs are locked.
+- Updated bundled Pi SDK/runtime packages to 0.76.0.
 
-Snapshot: TBD.
+Snapshot: May 28, 2026.
 
 ### 0.1.66
 
-- Split desktop Pi/runtime work into a stock-Node service so native deps stop fighting Electron.  
+- Split desktop Pi/runtime work into a stock-Node service so native deps stop fighting Electron.
   *Reason being that Pi compiles your extensions against your system Node. Things were getting messy. The app is compiled to work with Node 24, 25 and 26.*
 - Rebuilt the project sidebar into a proper git-oriented work surface.
 - Branches: start sessions, assign/unassign sessions, remove branches.
 - Worktrees: create, start sessions inside them, mark complete, merge/remove.
-- Branches + worktrees: one-click merge/remove completed worktrees.  
+- Branches + worktrees: one-click merge/remove completed worktrees.
   *Please note some of these actions are irreversible. Safeguards around errors, but if it succeeds, they're gone.*
 - De-cardified a lot of the UI: quieter chat/tool rows, composer popovers, Skills/Extensions, Settings, Inbox, artifacts, and GitOps diffs.
 - Project dashboard is now it's separate thing, not connected to starting a session anymore.
@@ -42,7 +44,7 @@ Snapshot: TBD.
 - Quieted missing-session noise and checkbox jumps.
 - Fixed extension summaries locking the composer.
 
-Snapshot: May 19, 2026.
+Snapshot: May 27, 2026.
 
 ### 0.1.65
 
