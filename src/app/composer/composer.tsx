@@ -70,6 +70,7 @@ export type ComposerProps = {
   artifactsVisible?: boolean
   artifactsAvailable?: boolean
   terminalVisible: boolean
+  takeoverVisible: boolean
   preferPortalFilePicker?: boolean
   preferPortalModelPopover?: boolean
   onLayoutChange: () => void

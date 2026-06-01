@@ -167,6 +167,7 @@ export function ComposerPromptSurface({
   onListAttachmentEntries,
   onAction,
   terminalVisible,
+  takeoverVisible,
   preferPortalFilePicker = false,
   preferPortalModelPopover = false,
   artifactsVisible,
@@ -393,6 +394,7 @@ export function ComposerPromptSurface({
 
   useEffect(() => {
     if (!nativeSmartBtwEnabled) return
+    if (takeoverVisible) return
     const handleBtwShortcut = (event: KeyboardEvent) => {
       const smartBtwControlsVisible = showBtwControlsRef.current
       const cycleShortcut = getSmartBtwCycleShortcut(event, smartBtwControlsVisible)
@@ -407,7 +409,7 @@ export function ComposerPromptSurface({
     }
     window.addEventListener('keydown', handleBtwShortcut, { capture: true })
     return () => window.removeEventListener('keydown', handleBtwShortcut, { capture: true })
-  }, [nativeSmartBtwEnabled])
+  }, [nativeSmartBtwEnabled, takeoverVisible])
 
   return (
     <div

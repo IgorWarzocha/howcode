@@ -223,6 +223,7 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
       onRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
       onToggleTerminal={handleToggleTerminal}
       terminalVisible={state.terminalVisible}
+      takeoverVisible={state.takeoverVisible}
       preferPortalFilePicker={state.activeView === 'project'}
       preferPortalModelPopover={state.activeView === 'project'}
       onListAttachmentEntries={listComposerAttachmentEntries}

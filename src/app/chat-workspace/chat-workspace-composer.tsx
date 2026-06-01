@@ -250,6 +250,7 @@ function ChatComposer(props: ChatWorkspaceComposerProps) {
       showTerminalControls={false}
       artifactsVisible={artifactDrawer.artifactsVisible}
       terminalVisible={state.terminalVisible}
+      takeoverVisible={state.takeoverVisible}
       preferPortalFilePicker={!hasConversationLayout}
       preferPortalModelPopover={!hasConversationLayout}
       onListAttachmentEntries={listComposerAttachmentEntries}

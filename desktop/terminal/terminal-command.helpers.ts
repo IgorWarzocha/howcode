@@ -2,12 +2,16 @@ import { accessSync, constants } from 'node:fs'
 import path from 'node:path'
 import { getPersistedSessionPath } from '../../shared/session-paths'
 import type { TerminalOpenRequest } from '../../shared/terminal-contracts.ts'
+import { loadAppSettings } from '../app-settings/readers.ts'
 import { getBundledThemes } from '../bundled-themes.ts'
 import {
   ensureNativeExtensionRuntimePath,
   getNativeExtensionRuntimePaths,
+  type HowcodeNativeExtensionId,
 } from '../native-extensions/native-extension-paths.ts'
-import { getSessionNativeExtensions } from '../thread-state-db.ts'
+import { getSessionNativeExtensions, setSessionNativeExtensions } from '../thread-state-db.ts'
+
+const howcodeNativeExtensionIds = ['askQuestions', 'autoTrees', 'smartBtw'] as const
 
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
@@ -25,17 +29,38 @@ function getEnvironmentVariable(env: NodeJS.ProcessEnv, name: string) {
   return env[name]
 }
 
+function getDefaultNativeExtensions(): HowcodeNativeExtensionId[] {
+  const settings = loadAppSettings()
+  return [
+    ...(settings.howcodeNativeAskQuestions ? (['askQuestions'] as const) : []),
+    ...(settings.howcodeNativeAutoTrees ? (['autoTrees'] as const) : []),
+    ...(settings.howcodeNativeSmartBtw ? (['smartBtw'] as const) : []),
+  ]
+}
+
+function getPiSessionNativeExtensions(sessionPath: string | null): HowcodeNativeExtensionId[] {
+  const sessionExtensions = getSessionNativeExtensions(sessionPath)
+  if (sessionExtensions)
+    return sessionExtensions.filter((id): id is HowcodeNativeExtensionId =>
+      howcodeNativeExtensionIds.includes(id as HowcodeNativeExtensionId),
+    )
+  const defaultExtensions = getDefaultNativeExtensions()
+  if (sessionPath) setSessionNativeExtensions(sessionPath, defaultExtensions)
+  return defaultExtensions
+}
+
 function getPiSessionCommandArgs(sessionPath: string | null | undefined) {
   const persistedSessionPath = getPersistedSessionPath(sessionPath)
+  const enabledNativeExtensions = getPiSessionNativeExtensions(persistedSessionPath)
   const args = persistedSessionPath ? ['--session', persistedSessionPath] : []
   for (const theme of getBundledThemes()) {
     args.push('--theme', theme.path)
   }
-  if (getSessionNativeExtensions(persistedSessionPath)?.includes('askQuestions')) {
+  if (enabledNativeExtensions.includes('askQuestions')) {
     args.push('--extension', ensureNativeExtensionRuntimePath('askQuestions'))
   }
   for (const extensionPath of getNativeExtensionRuntimePaths(
-    getSessionNativeExtensions(persistedSessionPath)?.filter((id) => id !== 'askQuestions') ?? [],
+    enabledNativeExtensions.filter((id) => id !== 'askQuestions'),
   )) {
     args.push('--extension', extensionPath)
   }

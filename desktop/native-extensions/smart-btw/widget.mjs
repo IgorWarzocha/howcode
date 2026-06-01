@@ -2,6 +2,15 @@ import { readConfig } from './config.mjs'
 import { KEY_HINT, WIDGET_ID } from './constants.mjs'
 import { listSessions, sessionStatus } from './session-state.mjs'
 
+const KEY_HINT_PREFIX_PATTERN = /^keys\s+/u
+
+function usesDesktopWidgetProtocol() {
+  return (
+    process.env.HOWCODE_HANDLE_LOCAL_HOST_REQUESTS === '1' &&
+    process.env.HOWCODE_EMBEDDED_TERMINAL !== '1'
+  )
+}
+
 function sessionWidgetLine(session) {
   const first = session.turns[0]
   return `session ${session.index + 1} ${sessionStatus(session)} ${encodeWidgetText(first?.question ?? 'btw session')}`
@@ -19,7 +28,7 @@ function turnWidgetLines(turn) {
   return lines
 }
 
-function buildWidgetLines(state, cfg, session) {
+function buildDesktopWidgetLines(state, cfg, session) {
   const sessions = listSessions(state)
   const lines = [
     `btw ${state.folded ? 'folded' : 'open'} ${state.activeIndex + 1}/${sessions.length} ${sessionStatus(session)} ${cfg.model}:${cfg.thinking}`,
@@ -30,7 +39,82 @@ function buildWidgetLines(state, cfg, session) {
   return lines
 }
 
-export function render(ctx, state) {
+function dim(theme, value) {
+  return theme.fg('dim', value)
+}
+
+function color(theme, tone, value) {
+  return theme.fg(tone, value)
+}
+
+function truncateQuestion(question) {
+  return question.length > 120 ? `${question.slice(0, 117)}...` : question
+}
+
+function answerLines(value) {
+  return String(value || '')
+    .split('\n')
+    .filter((line, index, lines) => line.trim() || index < lines.length - 1)
+}
+
+function sessionLabel(theme, session, activeIndex) {
+  const label = String(session.index + 1)
+  if (session.index === activeIndex) return color(theme, 'accent', `[${label}]`)
+  if (sessionStatus(session) === 'running') return color(theme, 'warning', label)
+  if (sessionStatus(session) === 'unread') return color(theme, 'success', label)
+  return dim(theme, label)
+}
+
+function tuiKeyHint() {
+  return KEY_HINT.replace(KEY_HINT_PREFIX_PATTERN, '')
+}
+
+function tuiHeaderLine(theme, state, cfg, session, sessions) {
+  const status = sessionStatus(session)
+  const statusTone = status === 'running' ? 'warning' : status === 'failed' ? 'error' : 'success'
+  const sessionNumbers = sessions
+    .map((item) => sessionLabel(theme, item, state.activeIndex))
+    .join(' ')
+  return `${color(theme, 'accent', '╭─ btw')} ${color(theme, statusTone, status)} ${dim(theme, `${cfg.model || 'default'}:${cfg.thinking}`)} ${dim(theme, `sessions ${sessionNumbers}`)}`
+}
+
+function pushTurnLines(lines, theme, turn) {
+  lines.push(`${color(theme, 'muted', '│ Q')} ${truncateQuestion(turn.question)}`)
+  if (turn.error) {
+    lines.push(`${color(theme, 'error', '│ ✗')} ${turn.error}`)
+    return
+  }
+  const answer = turn.answer || turn.partial
+  if (!answer) {
+    lines.push(`${color(theme, 'warning', '│ … thinking')}`)
+    return
+  }
+  const [first = '', ...rest] = answerLines(answer)
+  lines.push(
+    `${color(theme, turn.answer ? 'success' : 'warning', turn.answer ? '│ A' : '│ A…')} ${first}`,
+  )
+  for (const line of rest) lines.push(`${color(theme, 'muted', '│  ')} ${line}`)
+}
+
+function buildTuiWidgetLines(ctx, state, cfg, session) {
+  const theme = ctx.ui.theme
+  const sessions = listSessions(state)
+  if (sessions.length === 0) return undefined
+
+  const lines = [tuiHeaderLine(theme, state, cfg, session, sessions)]
+
+  if (state.folded) {
+    lines.push(`${color(theme, 'muted', '╰─')} ${dim(theme, tuiKeyHint())}`)
+    return lines
+  }
+
+  for (const turn of session.turns.slice(-3)) pushTurnLines(lines, theme, turn)
+
+  lines.push(`${color(theme, 'muted', '╰─')} ${dim(theme, tuiKeyHint())}`)
+  return lines
+}
+
+function renderDesktop(ctx, state) {
   const cfg = readConfig()
   const sessions = listSessions(state)
   if (sessions.length === 0) {
@@ -42,5 +126,25 @@ export function render(ctx, state) {
     return
   }
   const session = state.sessions[state.activeIndex] ?? sessions[0]
-  ctx.ui.setWidget(WIDGET_ID, buildWidgetLines(state, cfg, session), { placement: 'aboveEditor' })
+  ctx.ui.setWidget(WIDGET_ID, buildDesktopWidgetLines(state, cfg, session), {
+    placement: 'aboveEditor',
+  })
+}
+
+function renderTui(ctx, state) {
+  const cfg = readConfig()
+  const sessions = listSessions(state)
+  if (sessions.length === 0) {
+    ctx.ui.setWidget(WIDGET_ID, undefined)
+    return
+  }
+  const session = state.sessions[state.activeIndex] ?? sessions[0]
+  ctx.ui.setWidget(WIDGET_ID, buildTuiWidgetLines(ctx, state, cfg, session), {
+    placement: 'aboveEditor',
+  })
+}
+
+export function render(ctx, state) {
+  if (usesDesktopWidgetProtocol()) renderDesktop(ctx, state)
+  else renderTui(ctx, state)
 }
