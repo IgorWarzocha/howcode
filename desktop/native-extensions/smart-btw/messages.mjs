@@ -1,15 +1,10 @@
 import { MESSAGE_TYPE_PREFIX } from './constants.mjs'
 
-function isDesktopGuiMode() {
-  return (
-    process.env.HOWCODE_HANDLE_LOCAL_HOST_REQUESTS === '1' &&
-    process.env.HOWCODE_EMBEDDED_TERMINAL !== '1'
-  )
-}
-
 export function isBtwResultMessage(message) {
+  const type = message.role ?? message.type
   return (
-    message.role === 'custom' && String(message.customType ?? '').startsWith(MESSAGE_TYPE_PREFIX)
+    (type === 'custom' || type === 'custom_message') &&
+    String(message.customType ?? '').startsWith(MESSAGE_TYPE_PREFIX)
   )
 }
 
@@ -27,7 +22,7 @@ export function sendResultMessage(pi, session, turn) {
   pi.sendMessage({
     customType: MESSAGE_TYPE_PREFIX,
     content: turn.answer || turn.error || '(no answer)',
-    display: !isDesktopGuiMode(),
+    display: true,
     details: {
       kind: 'result',
       label,

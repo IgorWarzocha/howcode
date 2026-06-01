@@ -9,6 +9,7 @@ export type SessionPathEntry = {
   customType?: string | undefined
   content?: string | undefined | unknown[]
   display?: boolean | undefined
+  details?: unknown | undefined
   summary?: string | undefined
   provider?: string | undefined
   modelId?: string | undefined
@@ -119,16 +120,14 @@ function appendEntryMessage(
       }
       return
     case 'custom_message':
-      if (entry.display === false) {
-        return
-      }
-
       messages.push(
         toTrustedAgentMessage({
           id: entry.id,
           role: 'custom',
           customType: entry.customType ?? 'custom',
           content: entry.content ?? '',
+          display: entry.display,
+          details: entry.details,
           timestamp: entry.timestamp ?? Date.now(),
         }),
       )

@@ -108,6 +108,7 @@ export type {
   SummaryThreadMessage,
   SystemThreadMessage,
   Thread,
+  ThreadCustomMessageRecord,
   ThreadData,
   ToolResultImage,
   ToolResultMessage,

@@ -176,6 +176,7 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
       model={activeComposerState?.currentModel ?? null}
       contextUsage={activeComposerState?.contextUsage ?? null}
       messages={activeThreadData?.messages}
+      customMessages={activeThreadData?.customMessages}
       availableModels={activeComposerState?.availableModels ?? []}
       isStreaming={activeThreadData?.isStreaming ?? false}
       replyActivityKey={getReplyActivityKey(activeThreadData?.messages ?? [])}

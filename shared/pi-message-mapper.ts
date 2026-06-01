@@ -1,6 +1,8 @@
 import type { AgentMessage } from '@earendil-works/pi-agent-core'
 import type { AssistantUsageSummary, Message, ToolResultImage } from './desktop-contracts'
 
+const hiddenDesktopCustomMessagePrefixes = ['BTW SESSION'] as const
+
 type TextPart = {
   type?: string | undefined
   text?: string | undefined
@@ -37,6 +39,7 @@ type RuntimeMessage = {
   args?: unknown
   details?: unknown
   running?: boolean | undefined
+  display?: boolean | undefined
   isError?: boolean | undefined
   command?: string | undefined
   output?: string | undefined
@@ -361,6 +364,9 @@ function mapCustomMessage(id: string, runtimeMessage: RuntimeMessage): Message |
   if (content.length === 0) return null
 
   const customType = runtimeMessage.customType ?? 'custom'
+  if (hiddenDesktopCustomMessagePrefixes.some((prefix) => customType.startsWith(prefix))) {
+    return null
+  }
   return {
     id,
     role: 'custom',
@@ -399,6 +405,7 @@ export function mapAgentMessageToUiMessage(
   messageIndex: number,
 ): Message | null {
   const runtimeMessage = agentMessage as RuntimeMessage
+  if (runtimeMessage.display === false) return null
   const id =
     runtimeMessage.id ??
     `${runtimeMessage.timestamp ?? messageIndex}-${runtimeMessage.role ?? 'message'}`

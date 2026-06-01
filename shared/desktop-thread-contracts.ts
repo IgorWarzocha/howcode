@@ -163,6 +163,14 @@ export type CustomThreadMessage = {
   isError?: boolean | undefined
 }
 
+export type ThreadCustomMessageRecord = {
+  id: string
+  customType: string
+  content: unknown
+  display?: boolean | undefined
+  details?: unknown | undefined
+}
+
 export type SystemThreadMessage = {
   id: string
   role: 'system'
@@ -188,6 +196,7 @@ export type ThreadData = {
   sessionPath: string
   title: string
   messages: Message[]
+  customMessages?: ThreadCustomMessageRecord[] | undefined
   previousMessageCount: number
   isStreaming: boolean
   isCompacting: boolean

@@ -1,4 +1,4 @@
-import { SmartBtwCard } from '@howcode/extensions'
+import { createSmartBtwWidgetFromMessages, SmartBtwCard } from '@howcode/extensions'
 import { getPersistedSessionPath } from '@howcode/shared/session-paths'
 import { type RefObject, useEffect, useRef } from 'react'
 import {
@@ -125,6 +125,14 @@ function getSmartBtwModifiedShortcut(event: KeyboardEvent) {
   return shortcuts[event.code] ?? null
 }
 
+function getSmartBtwOverlayWidget(input: {
+  customMessages: ComposerProps['customMessages']
+  widgets: ComposerProps['nativeExtensionWidgets']
+}) {
+  const restoredWidget = createSmartBtwWidgetFromMessages(input.customMessages)
+  return restoredWidget ?? input.widgets.find((widget) => widget.key === 'smart-btw')
+}
+
 export function ComposerPromptSurface({
   activeView,
   composerPanelRef,
@@ -133,6 +141,7 @@ export function ComposerPromptSurface({
   model,
   contextUsage,
   messages,
+  customMessages,
   availableModels,
   isStreaming,
   replyActivityKey,
@@ -249,9 +258,15 @@ export function ComposerPromptSurface({
   const visibleNativeExtensionWidgets = nativeExtensionWidgets.filter(
     (widget) => widget.placement === undefined || widget.placement === 'aboveEditor',
   )
-  const smartBtwWidget = visibleNativeExtensionWidgets.find((widget) => widget.key === 'smart-btw')
-  const showBtwControls = smartBtwWidget !== undefined
-  const showNativeExtensionOverlay = showAskQuestions || visibleNativeExtensionWidgets.length > 0
+  const restoredSmartBtwWidget = getSmartBtwOverlayWidget({
+    customMessages,
+    widgets: visibleNativeExtensionWidgets,
+  })
+  const showBtwControls = restoredSmartBtwWidget !== undefined
+  const showNativeExtensionOverlay =
+    showAskQuestions ||
+    visibleNativeExtensionWidgets.length > 0 ||
+    restoredSmartBtwWidget !== undefined
   const { answerNativeQuestions } = useComposerAskQuestionsActions({
     chatGroupId,
     composerMode,
@@ -440,7 +455,7 @@ export function ComposerPromptSurface({
           >
             <NativeExtensionOverlayWidgets
               widgets={visibleNativeExtensionWidgets}
-              smartBtwWidget={smartBtwWidget}
+              smartBtwWidget={restoredSmartBtwWidget}
               onFoldSmartBtw={() => runNativeShortcut('ctrl+alt+down')}
               onPreviousSmartBtw={() => runNativeShortcut('ctrl+alt+left')}
               onNextSmartBtw={() => runNativeShortcut('ctrl+alt+right')}

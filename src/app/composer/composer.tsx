@@ -14,6 +14,7 @@ import type {
   ProjectDiffBaseline,
   ProjectDiffRenderMode,
   ProjectGitState,
+  ThreadCustomMessageRecord,
 } from '../desktop/types'
 import type { Message, View } from '../types'
 import { ComposerPromptSurface } from './composer-prompt-surface'
@@ -23,6 +24,7 @@ export type ComposerProps = {
   model: ComposerModel | null
   contextUsage: ComposerContextUsage | null
   messages?: Message[] | undefined
+  customMessages?: ThreadCustomMessageRecord[] | undefined
   availableModels: ComposerModel[]
   isStreaming: boolean
   replyActivityKey: string

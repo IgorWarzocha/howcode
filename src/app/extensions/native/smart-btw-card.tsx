@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react'
-import type { NativeExtensionWidget } from '../../desktop/types'
+import type { NativeExtensionWidget, ThreadCustomMessageRecord } from '../../desktop/types'
 import {
   appToneMutedClass,
   appTypeKickerClass,
@@ -35,6 +35,104 @@ const headerPattern = /^btw\s+(folded|open)\s+(\d+)\/(\d+)\s+(\w+)\s+(.+)$/u
 const sessionPattern = /^session\s+(\d+)\s+(\w+)\s+(.+)$/u
 const turnPattern = /^turn\s+(\w+)\s+(.+)$/u
 const answerPattern = /^answer\s+(.+)$/u
+const smartBtwCustomType = 'BTW SESSION'
+
+type RestoredBtwTurn = {
+  question: string
+  answer: string
+  status: SmartBtwTurn['status']
+  turn: number
+}
+
+type RestoredBtwGeneration = {
+  slot: number
+  generation: string
+  cleared: boolean
+  turns: RestoredBtwTurn[]
+}
+
+type BtwMessageDetails = {
+  kind?: unknown
+  generation?: unknown
+  slot?: unknown
+  question?: unknown
+  answer?: unknown
+  error?: unknown
+  turn?: unknown
+}
+
+function encodeWidgetText(value: string) {
+  return JSON.stringify(value)
+}
+
+function getBtwDetails(message: ThreadCustomMessageRecord) {
+  if (!message.customType.startsWith(smartBtwCustomType)) return null
+  const details = message.details
+  if (typeof details !== 'object' || details === null) return null
+  const candidate = details as BtwMessageDetails
+  if (typeof candidate.generation !== 'string') return null
+  if (!(typeof candidate.slot === 'number' && Number.isInteger(candidate.slot))) return null
+  return candidate
+}
+
+function getRestoredGeneration(
+  generations: Map<string, RestoredBtwGeneration>,
+  details: BtwMessageDetails,
+) {
+  const slot = details.slot as number
+  const generation = details.generation as string
+  const key = `${slot}:${generation}`
+  const record = generations.get(key) ?? { slot, generation, cleared: false, turns: [] }
+  generations.set(key, record)
+  return record
+}
+
+function addRestoredMessage(
+  generations: Map<string, RestoredBtwGeneration>,
+  message: ThreadCustomMessageRecord,
+) {
+  const details = getBtwDetails(message)
+  if (!details) return
+  const record = getRestoredGeneration(generations, details)
+  if (details.kind === 'cleared') record.cleared = true
+  if (details.kind !== 'result') return
+  record.turns.push({
+    question: String(details.question ?? ''),
+    answer: String(details.answer ?? details.error ?? message.content ?? ''),
+    status: typeof details.error === 'string' ? 'failed' : 'answered',
+    turn: typeof details.turn === 'number' ? details.turn : record.turns.length + 1,
+  })
+}
+
+function getOpenBtwGenerations(messages: ThreadCustomMessageRecord[]) {
+  const generations = new Map<string, RestoredBtwGeneration>()
+  for (const message of messages) addRestoredMessage(generations, message)
+  const bySlot = new Map<number, RestoredBtwGeneration>()
+  for (const record of generations.values()) {
+    if (!(record.cleared || record.turns.length === 0)) bySlot.set(record.slot, record)
+  }
+  return [...bySlot.values()].sort((left, right) => left.slot - right.slot)
+}
+
+export function createSmartBtwWidgetFromMessages(
+  messages: ThreadCustomMessageRecord[] | undefined,
+): NativeExtensionWidget | undefined {
+  const sessions = getOpenBtwGenerations(messages ?? [])
+  if (sessions.length === 0) return undefined
+  const active = sessions[0]
+  if (!active) return undefined
+  const lines = [`btw open ${active.slot}/${sessions.length} answered restored`]
+  for (const session of sessions) {
+    const firstQuestion = session.turns[0]?.question ?? 'btw session'
+    lines.push(`session ${session.slot} answered ${encodeWidgetText(firstQuestion)}`)
+  }
+  for (const turn of active.turns.sort((left, right) => left.turn - right.turn).slice(-3)) {
+    lines.push(`turn ${turn.status} ${encodeWidgetText(turn.question)}`)
+    lines.push(`answer ${encodeWidgetText(turn.answer)}`)
+  }
+  lines.push('keys ctrl+alt: +Z compose · +C inject · +X clear · ↑/↓ fold · ←/→ switch')
+  return { key: 'smart-btw', lines, placement: 'aboveEditor' }
+}
 
 function normalizeStatus(value: string | undefined): SmartBtwTurn['status'] {
   if (value === 'failed') return 'failed'

@@ -82,6 +82,7 @@ export type {
   SkillCreatorSessionMessage,
   SkillCreatorSessionState,
   Thread,
+  ThreadCustomMessageRecord,
   ThreadData,
   ThreadSearchMatch,
   ThreadSearchResult,

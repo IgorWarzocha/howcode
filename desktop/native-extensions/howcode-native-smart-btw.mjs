@@ -37,6 +37,10 @@ function registerTuiMessageRenderer(pi) {
 
 function activate(state, ctx) {
   state.ctx = ctx
+  restoreStateFromMessages(
+    state,
+    ctx.sessionManager?.getBranch?.().filter((message) => isBtwResultMessage(message)) ?? [],
+  )
 }
 
 function injectAnswers(pi, state, ctx) {

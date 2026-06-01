@@ -1,3 +1,3 @@
 export { ExtensionsView } from './extensions-view'
 
-export { SmartBtwCard } from './native/smart-btw-card'
+export { createSmartBtwWidgetFromMessages, SmartBtwCard } from './native/smart-btw-card'
