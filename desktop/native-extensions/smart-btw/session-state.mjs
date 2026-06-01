@@ -3,7 +3,7 @@ import { NUMBERED_SESSION_PATTERN } from './constants.mjs'
 import { doneTurns } from './output.mjs'
 
 export function createInitialState() {
-  return { sessions: [], activeIndex: 0, folded: false, ctx: undefined }
+  return { sessions: [], activeIndex: 0, folded: false, ctx: undefined, restored: false }
 }
 
 export function listSessions(state) {
@@ -25,6 +25,8 @@ export function sessionStatus(session) {
 function makeSession(index) {
   return {
     index,
+    generationId: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`,
+    nextTurnIndex: 1,
     child: undefined,
     turns: [],
     running: false,
@@ -68,6 +70,17 @@ export function createSession(state, index = lowestFreeIndex(state)) {
   return session
 }
 
+export function restoreSession(state, { generationId, index, turns }) {
+  while (state.sessions.length <= index) state.sessions.push(undefined)
+  const session = makeSession(index)
+  session.generationId = generationId
+  session.turns = turns
+  session.nextTurnIndex = Math.max(0, ...turns.map((turn) => turn.turnIndex ?? 0)) + 1
+  state.sessions[index] = session
+  state.activeIndex = state.sessions[state.activeIndex] ? state.activeIndex : index
+  return session
+}
+
 export function ensureSession(state, index) {
   const session = state.sessions[index] ?? createSession(state, index)
   switchToSession(state, index)
@@ -108,6 +121,74 @@ export function parseBtwArgs(args) {
   return { sessionNumber: Number(match[1]), question: match[2]?.trim() ?? '' }
 }
 
+function getBtwDetails(message) {
+  const details = message.details
+  if (typeof details !== 'object' || details === null) return undefined
+  if (typeof details.generation !== 'string') return undefined
+  if (!Number.isInteger(details.slot) || details.slot < 1) return undefined
+  return details
+}
+
+function getGenerationRecord(generations, details) {
+  const key = `${details.slot}:${details.generation}`
+  const record = generations.get(key) ?? {
+    cleared: false,
+    generationId: details.generation,
+    slot: details.slot,
+    turns: [],
+  }
+  generations.set(key, record)
+  return record
+}
+
+function restoredTurnFromDetails(details, fallbackTurnIndex) {
+  return {
+    question: String(details.question ?? ''),
+    answer: typeof details.answer === 'string' ? details.answer : undefined,
+    error: typeof details.error === 'string' ? details.error : undefined,
+    startedAt: typeof details.startedAt === 'number' ? details.startedAt : Date.now(),
+    finishedAt: typeof details.finishedAt === 'number' ? details.finishedAt : undefined,
+    status: details.error ? 'failed' : 'answered',
+    turnIndex: Number.isInteger(details.turn) ? details.turn : fallbackTurnIndex,
+  }
+}
+
+function collectBtwGenerations(messages) {
+  const generations = new Map()
+  for (const message of messages) {
+    const details = getBtwDetails(message)
+    if (!details) continue
+    const record = getGenerationRecord(generations, details)
+    if (details.kind === 'cleared') record.cleared = true
+    if (details.kind === 'result')
+      record.turns.push(restoredTurnFromDetails(details, record.turns.length + 1))
+  }
+  return generations
+}
+
+function latestOpenGenerationsBySlot(generations) {
+  const latestBySlot = new Map()
+  for (const record of generations.values()) {
+    if (record.cleared || record.turns.length === 0) continue
+    latestBySlot.set(record.slot, record)
+  }
+  return latestBySlot
+}
+
+export function restoreStateFromMessages(state, messages) {
+  if (state.restored) return
+  state.restored = true
+  const latestBySlot = latestOpenGenerationsBySlot(collectBtwGenerations(messages))
+  for (const record of latestBySlot.values()) {
+    record.turns.sort((a, b) => (a.turnIndex ?? 0) - (b.turnIndex ?? 0))
+    restoreSession(state, {
+      generationId: record.generationId,
+      index: record.slot - 1,
+      turns: record.turns,
+    })
+  }
+}
+
 function isCurrentGeneration(session, generation) {
   return session.generation === generation
 }
@@ -138,6 +219,7 @@ export async function runBtwTurn({
   if (!isCurrentGeneration(session, generation)) return
   session.running = true
   turn.status = 'running'
+  turn.turnIndex ??= session.nextTurnIndex++
   render(ctx, state)
   try {
     if (!session.child) {

@@ -51,12 +51,6 @@ function truncateQuestion(question) {
   return question.length > 120 ? `${question.slice(0, 117)}...` : question
 }
 
-function answerLines(value) {
-  return String(value || '')
-    .split('\n')
-    .filter((line, index, lines) => line.trim() || index < lines.length - 1)
-}
-
 function sessionLabel(theme, session, activeIndex) {
   const label = String(session.index + 1)
   if (session.index === activeIndex) return color(theme, 'accent', `[${label}]`)
@@ -89,11 +83,9 @@ function pushTurnLines(lines, theme, turn) {
     lines.push(`${color(theme, 'warning', '│ … thinking')}`)
     return
   }
-  const [first = '', ...rest] = answerLines(answer)
-  lines.push(
-    `${color(theme, turn.answer ? 'success' : 'warning', turn.answer ? '│ A' : '│ A…')} ${first}`,
-  )
-  for (const line of rest) lines.push(`${color(theme, 'muted', '│  ')} ${line}`)
+  if (turn.answer)
+    lines.push(`${color(theme, 'success', '│ ✓ answered — see btw result in transcript')}`)
+  else lines.push(`${color(theme, 'warning', '│ … thinking')}`)
 }
 
 function buildTuiWidgetLines(ctx, state, cfg, session) {

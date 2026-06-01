@@ -1,5 +1,6 @@
+import { Box, Text } from '@earendil-works/pi-tui'
 import { SHORTCUTS } from './smart-btw/constants.mjs'
-import { isBtwResultMessage, sendResultMessage } from './smart-btw/messages.mjs'
+import { isBtwResultMessage, sendClearedMessage, sendResultMessage } from './smart-btw/messages.mjs'
 import { doneTurns, injectionText } from './smart-btw/output.mjs'
 import {
   activeSession,
@@ -9,10 +10,30 @@ import {
   ensureSession,
   listSessions,
   parseBtwArgs,
+  restoreStateFromMessages,
   runBtwTurn,
   switchRelativeSession,
 } from './smart-btw/session-state.mjs'
 import { render } from './smart-btw/widget.mjs'
+
+function registerTuiMessageRenderer(pi) {
+  if (
+    process.env.HOWCODE_HANDLE_LOCAL_HOST_REQUESTS === '1' &&
+    process.env.HOWCODE_EMBEDDED_TERMINAL !== '1'
+  )
+    return
+  pi.registerMessageRenderer('BTW SESSION', (message, _options, theme) => {
+    const details = message.details ?? {}
+    if (details.kind === 'cleared') return undefined
+    const box = new Box(1, 1, (value) => theme.bg('customMessageBg', value))
+    const label = details.label ?? 'BTW SESSION'
+    const status = details.error ? theme.fg('error', `${label} failed`) : theme.fg('accent', label)
+    const question = details.question ?? ''
+    const body = details.answer ?? details.error ?? String(message.content ?? '')
+    box.addChild(new Text(`${status} ${theme.fg('muted', 'Q')} ${question}\n\n${body}`, 0, 0))
+    return box
+  })
+}
 
 function activate(state, ctx) {
   state.ctx = ctx
@@ -30,6 +51,7 @@ function injectAnswers(pi, state, ctx) {
     injectionText(turns),
     state.ctx?.isIdle() ? undefined : { deliverAs: 'followUp' },
   )
+  sendClearedMessage(pi, session)
   void clearSession(state, session)
   render(state.ctx, state)
 }
@@ -51,7 +73,10 @@ function registerShortcuts(pi, state) {
     handler: async (ctx) => {
       activate(state, ctx)
       const session = activeSession(state)
-      if (session) await clearSession(state, session)
+      if (session) {
+        sendClearedMessage(pi, session)
+        await clearSession(state, session)
+      }
       if (state.ctx) render(state.ctx, state)
     },
   })
@@ -157,9 +182,14 @@ function queueQuestionTurn({ ctx, pi, question, state }) {
 export default function (pi) {
   if (process.env.PI_SMART_BTW_CHILD === '1') return
   const state = createInitialState()
-  pi.on('context', async (event) => ({
-    messages: event.messages.filter((message) => !isBtwResultMessage(message)),
-  }))
+  registerTuiMessageRenderer(pi)
+  pi.on('context', async (event) => {
+    restoreStateFromMessages(
+      state,
+      event.messages.filter((message) => isBtwResultMessage(message)),
+    )
+    return { messages: event.messages.filter((message) => !isBtwResultMessage(message)) }
+  })
   registerShortcuts(pi, state)
   registerBtwCommand(pi, state)
   pi.on('session_shutdown', async () => {
