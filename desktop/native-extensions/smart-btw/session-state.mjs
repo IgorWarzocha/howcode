@@ -75,6 +75,7 @@ export function restoreSession(state, { generationId, index, turns }) {
   const session = makeSession(index)
   session.generationId = generationId
   session.turns = turns
+  session.restored = true
   session.nextTurnIndex = Math.max(0, ...turns.map((turn) => turn.turnIndex ?? 0)) + 1
   state.sessions[index] = session
   state.activeIndex = state.sessions[state.activeIndex] ? state.activeIndex : index
@@ -193,6 +194,23 @@ function isCurrentGeneration(session, generation) {
   return session.generation === generation
 }
 
+function formatRestoredFollowUpPrompt(session, question, nextTurnIndex) {
+  const restoredTurns = doneTurns(session.turns.filter((turn) => turn.question !== question))
+  if (!(session.restored && restoredTurns.length > 0 && !session.child)) return undefined
+  return [
+    'This is a restored Q&A session. Continue from these prior turns...',
+    '',
+    ...restoredTurns.flatMap((turn, index) => [
+      `Q${index + 1}: ${turn.question}`,
+      `A${index + 1}: ${turn.answer || turn.error || '(no answer)'}`,
+      '',
+    ]),
+    'Gather context required to answer this follow-up question and naturally resume the Q&A',
+    '',
+    `Q${nextTurnIndex}: ${question}`,
+  ].join('\n')
+}
+
 function finishTurn({ ctx, pi, state, session, turn, generation, sendResultMessage, render }) {
   if (!isCurrentGeneration(session, generation)) return
   turn.finishedAt = Date.now()
@@ -227,11 +245,17 @@ export async function runBtwTurn({
       await session.child.ready()
     }
     if (!isCurrentGeneration(session, generation)) return
+    const prompt = formatRestoredFollowUpPrompt(session, question, turn.turnIndex)
     turn.answer =
-      (await session.child.ask(question, (partial) => {
-        turn.partial = partial
-        render(ctx, state)
-      })) || '(no answer)'
+      (await session.child.ask(
+        question,
+        (partial) => {
+          turn.partial = partial
+          render(ctx, state)
+        },
+        prompt,
+      )) || '(no answer)'
+    session.restored = false
     turn.partial = undefined
   } catch (error) {
     if (!isCurrentGeneration(session, generation)) return

@@ -64,19 +64,21 @@ export class BtwChild {
     await this.send({ type: 'set_auto_retry', enabled: true })
   }
 
-  async ask(question, onPartial) {
+  async ask(question, onPartial, promptMessage) {
     const before = this.agentEndCount
     this.lastAgentMessages = []
     this.currentPartial = ''
     this.onPartial = onPartial
     await this.send({
       type: 'prompt',
-      message: [
-        "Answer the user's question directly.",
-        'Use available tools only if they are needed to answer accurately.',
-        'Be concise unless the question requires detail.',
-        `Question: ${question}`,
-      ].join('\n\n'),
+      message:
+        promptMessage ??
+        [
+          "Answer the user's question directly.",
+          'Use available tools only if they are needed to answer accurately.',
+          'Be concise unless the question requires detail.',
+          `Question: ${question}`,
+        ].join('\n\n'),
       streamingBehavior: 'followUp',
     })
     await this.waitForAnswer(before)
