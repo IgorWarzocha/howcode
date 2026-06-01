@@ -130,7 +130,7 @@ export function createSmartBtwWidgetFromMessages(
     lines.push(`turn ${turn.status} ${encodeWidgetText(turn.question)}`)
     lines.push(`answer ${encodeWidgetText(turn.answer)}`)
   }
-  lines.push('keys ctrl+alt: +Z compose · +C inject · +X clear · ↑/↓ fold · ←/→ switch')
+  lines.push('keys ctrl+alt: +Z compose · +C inject & clear · +X clear · ↑/↓ fold · ←/→ switch')
   return { key: 'smart-btw', lines, placement: 'aboveEditor' }
 }
 
@@ -192,7 +192,7 @@ function KeybindHint() {
     <div
       className={cn('min-w-0 truncate whitespace-nowrap px-2', appTypeTinyClass, appToneMutedClass)}
     >
-      Ctrl+Alt: +Z compose · +C inject · +X clear · ↑/↓ fold · ←/→ switch
+      Ctrl+Alt: +Z compose · +C inject & clear · +X clear · ↑/↓ fold · ←/→ switch
     </div>
   )
 }

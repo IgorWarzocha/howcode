@@ -3,7 +3,7 @@ import { NUMBERED_SESSION_PATTERN } from './constants.mjs'
 import { doneTurns } from './output.mjs'
 
 export function createInitialState() {
-  return { sessions: [], activeIndex: 0, folded: false, ctx: undefined, restored: false }
+  return { sessions: [], activeIndex: 0, folded: false, ctx: undefined }
 }
 
 export function listSessions(state) {
@@ -176,10 +176,10 @@ function latestOpenGenerationsBySlot(generations) {
 }
 
 export function restoreStateFromMessages(state, messages) {
-  if (state.restored) return
-  state.restored = true
   const latestBySlot = latestOpenGenerationsBySlot(collectBtwGenerations(messages))
   for (const record of latestBySlot.values()) {
+    const existing = state.sessions[record.slot - 1]
+    if (existing?.generationId === record.generationId) continue
     record.turns.sort((a, b) => (a.turnIndex ?? 0) - (b.turnIndex ?? 0))
     restoreSession(state, {
       generationId: record.generationId,

@@ -69,7 +69,7 @@ function registerShortcuts(pi, state) {
     },
   })
   pi.registerShortcut(SHORTCUTS.inject, {
-    description: 'Inject latest /btw answer into the main session',
+    description: 'Inject and clear active /btw session',
     handler: async (ctx) => injectAnswers(pi, state, ctx),
   })
   pi.registerShortcut(SHORTCUTS.clear, {

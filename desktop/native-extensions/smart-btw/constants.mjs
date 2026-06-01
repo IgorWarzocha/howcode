@@ -14,4 +14,5 @@ export const RESPONSE_TIMEOUT = 30_000
 export const QUIET_MS = 500
 export const POLL_MS = 150
 export const NUMBERED_SESSION_PATTERN = /^(\d+)(?:\s+(.*))?$/u
-export const KEY_HINT = 'keys ctrl+alt: +z compose · +c inject · +x clear · ↑/↓ fold · ←/→ switch'
+export const KEY_HINT =
+  'keys ctrl+alt: +z compose · +c inject & clear · +x clear · ↑/↓ fold · ←/→ switch'

@@ -32,6 +32,7 @@ import { useComposerSlashCommands } from './useComposerSlashCommands'
 import { useGlobalComposerFileDrop } from './useGlobalComposerFileDrop'
 
 const digitShortcutPattern = /^Digit[1-9]$/u
+const smartBtwWorkingLinePattern = /\b(queued|running|thinking)\b/u
 
 type ComposerPromptSurfaceProps = ComposerProps & {
   composerPanelRef: RefObject<HTMLDivElement | null>
@@ -129,8 +130,23 @@ function getSmartBtwOverlayWidget(input: {
   customMessages: ComposerProps['customMessages']
   widgets: ComposerProps['nativeExtensionWidgets']
 }) {
+  const liveWidget = input.widgets.find((widget) => widget.key === 'smart-btw')
   const restoredWidget = createSmartBtwWidgetFromMessages(input.customMessages)
-  return restoredWidget ?? input.widgets.find((widget) => widget.key === 'smart-btw')
+  if (liveWidget && isSmartBtwLiveWidgetAhead(liveWidget, restoredWidget)) return liveWidget
+  return restoredWidget ?? liveWidget
+}
+
+function getSmartBtwSessionCount(widget: ComposerProps['nativeExtensionWidgets'][number]) {
+  return widget.lines.filter((line) => line.startsWith('session ')).length
+}
+
+function isSmartBtwLiveWidgetAhead(
+  liveWidget: ComposerProps['nativeExtensionWidgets'][number],
+  restoredWidget: ComposerProps['nativeExtensionWidgets'][number] | undefined,
+) {
+  if (!restoredWidget) return true
+  if (liveWidget.lines.some((line) => smartBtwWorkingLinePattern.test(line))) return true
+  return getSmartBtwSessionCount(liveWidget) > getSmartBtwSessionCount(restoredWidget)
 }
 
 export function ComposerPromptSurface({
