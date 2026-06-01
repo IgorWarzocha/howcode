@@ -7,9 +7,10 @@ import {
   createInitialState,
   createSession,
   ensureSession,
+  listSessions,
   parseBtwArgs,
   runBtwTurn,
-  switchToSession,
+  switchRelativeSession,
 } from './smart-btw/session-state.mjs'
 import { render } from './smart-btw/widget.mjs'
 
@@ -29,8 +30,7 @@ function injectAnswers(pi, state, ctx) {
     injectionText(turns),
     state.ctx?.isIdle() ? undefined : { deliverAs: 'followUp' },
   )
-  session.unread = false
-  state.folded = true
+  void clearSession(state, session)
   render(state.ctx, state)
 }
 
@@ -51,7 +51,7 @@ function registerShortcuts(pi, state) {
     handler: async (ctx) => {
       activate(state, ctx)
       const session = activeSession(state)
-      if (session) await clearSession(session)
+      if (session) await clearSession(state, session)
       if (state.ctx) render(state.ctx, state)
     },
   })
@@ -80,10 +80,7 @@ function registerSessionSwitchShortcuts(pi, state) {
   const switchSession = (ctx, direction) => {
     activate(state, ctx)
     if (state.sessions.length === 0) return
-    switchToSession(
-      state,
-      (state.activeIndex + direction + state.sessions.length) % state.sessions.length,
-    )
+    switchRelativeSession(state, direction)
     if (state.ctx) render(state.ctx, state)
   }
   pi.registerShortcut(SHORTCUTS.next, {
@@ -166,6 +163,6 @@ export default function (pi) {
   registerShortcuts(pi, state)
   registerBtwCommand(pi, state)
   pi.on('session_shutdown', async () => {
-    for (const session of state.sessions) await session.child?.stop()
+    for (const session of listSessions(state)) await session.child?.stop()
   })
 }

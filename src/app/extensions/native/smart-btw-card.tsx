@@ -151,14 +151,10 @@ function SessionNumberRow({
   sessions: SmartBtwSession[]
   onSelect: (index: number) => void
 }) {
-  const visibleSessions =
-    sessions.length > 0
-      ? sessions
-      : [{ index: 1, question: 'btw session', status: 'ready' as const }]
   return (
     <div className="flex min-w-max shrink-0 items-center gap-1 overflow-visible">
       <span className={cn('mr-1 shrink-0', appTypeTinyClass, appToneMutedClass)}>/BTW</span>
-      {visibleSessions.map((session) => (
+      {sessions.map((session) => (
         <SessionNumberButton
           key={session.index}
           active={session.index === activeIndex}

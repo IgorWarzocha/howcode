@@ -6,6 +6,10 @@ export function createInitialState() {
   return { sessions: [], activeIndex: 0, folded: false, ctx: undefined }
 }
 
+export function listSessions(state) {
+  return state.sessions.filter(Boolean)
+}
+
 export function activeSession(state) {
   return state.sessions[state.activeIndex]
 }
@@ -18,18 +22,9 @@ export function sessionStatus(session) {
   return 'ready'
 }
 
-export function switchToSession(state, index) {
-  if (state.sessions.length === 0) return false
-  const clamped = Math.max(0, Math.min(index, state.sessions.length - 1))
-  state.activeIndex = clamped
-  state.folded = false
-  if (state.sessions[clamped]) state.sessions[clamped].unread = false
-  return true
-}
-
-export function createSession(state) {
-  const session = {
-    index: state.sessions.length,
+function makeSession(index) {
+  return {
+    index,
     child: undefined,
     turns: [],
     running: false,
@@ -37,24 +32,69 @@ export function createSession(state) {
     generation: 0,
     queue: Promise.resolve(),
   }
-  state.sessions.push(session)
-  state.activeIndex = state.sessions.length - 1
+}
+
+function lowestFreeIndex(state) {
+  const index = state.sessions.findIndex((session) => !session)
+  return index === -1 ? state.sessions.length : index
+}
+
+export function switchToSession(state, index) {
+  const session = state.sessions[index]
+  if (!session) return false
+  state.activeIndex = index
+  state.folded = false
+  session.unread = false
+  return true
+}
+
+export function switchRelativeSession(state, direction) {
+  const sessions = listSessions(state)
+  if (sessions.length === 0) return false
+  const currentPosition = Math.max(
+    0,
+    sessions.findIndex((session) => session.index === state.activeIndex),
+  )
+  const next = sessions[(currentPosition + direction + sessions.length) % sessions.length]
+  return next ? switchToSession(state, next.index) : false
+}
+
+export function createSession(state, index = lowestFreeIndex(state)) {
+  while (state.sessions.length <= index) state.sessions.push(undefined)
+  const session = makeSession(index)
+  state.sessions[index] = session
+  state.activeIndex = index
   state.folded = false
   return session
 }
 
 export function ensureSession(state, index) {
-  while (state.sessions.length <= index) createSession(state)
+  const session = state.sessions[index] ?? createSession(state, index)
   switchToSession(state, index)
-  return activeSession(state)
+  return session
 }
 
-export async function clearSession(session) {
+function selectNearestSession(state, clearedIndex) {
+  const sessions = listSessions(state)
+  if (sessions.length === 0) {
+    state.activeIndex = 0
+    return
+  }
+  const next =
+    sessions.find((session) => session.index > clearedIndex) ??
+    sessions.findLast((session) => session.index < clearedIndex) ??
+    sessions[0]
+  state.activeIndex = next.index
+}
+
+export async function clearSession(state, session) {
   session.generation++
   session.turns = []
   session.running = false
   session.unread = false
   session.queue = Promise.resolve()
+  state.sessions[session.index] = undefined
+  selectNearestSession(state, session.index)
   const child = session.child
   session.child = undefined
   await child?.stop()
