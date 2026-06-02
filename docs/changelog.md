@@ -1,3 +1,7 @@
+### 0.1.67
+
+- Added native Smart BTW side sessions with numbered slots, GUI/Pi-TUI handoff, and restored Q&A follow-ups.
+
 #### 0.1.66 Hotfixes (because .67 has to be more special)
 
 - Branch/worktree creation now normalizes messy names with spaces into Git-safe names.
