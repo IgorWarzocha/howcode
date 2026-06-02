@@ -18,7 +18,6 @@
 - Git diffs use remote HEAD as the default branch.
 - Git diffs add parent-branch baseline and drop Yesterday.
 - Updated bundled Pi SDK/runtime packages to 0.76.0.
-- Added native Smart BTW side sessions with numbered slots, GUI/Pi-TUI handoff, and restored Q&A follow-ups.
 
 Snapshot: May 28, 2026.
 

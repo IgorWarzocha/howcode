@@ -235,7 +235,8 @@ function GitHubInvertocatMark({ size = 18 }: { size?: number }) {
   )
 }
 
-const changelogHeadingPattern = /^###\s+(.+)$/
+const changelogSectionHeadingPattern = /^###\s+(.+)$/
+const changelogAnyHeadingPattern = /^#{3,}\s+.+$/
 
 function copyCommand(command: string) {
   void navigator.clipboard?.writeText(command)
@@ -243,14 +244,20 @@ function copyCommand(command: string) {
 
 function getChangelogSections(markdown: string): ChangelogSection[] {
   const lines = markdown.split('\n')
-  const headingIndexes = lines
-    .map((line, index) => (changelogHeadingPattern.test(line) ? index : -1))
+  const sectionHeadingIndexes = lines
+    .map((line, index) => (changelogSectionHeadingPattern.test(line) ? index : -1))
     .filter((index) => index >= 0)
 
-  return headingIndexes.map((headingIndex, index) => {
-    const version = lines[headingIndex]?.match(changelogHeadingPattern)?.[1]?.trim() ?? 'current'
-    const nextHeadingIndex = headingIndexes[index + 1]
-    const sectionLines = lines.slice(headingIndex + 1, nextHeadingIndex)
+  return sectionHeadingIndexes.map((headingIndex) => {
+    const version =
+      lines[headingIndex]?.match(changelogSectionHeadingPattern)?.[1]?.trim() ?? 'current'
+    const nextHeadingIndex = lines.findIndex(
+      (line, index) => index > headingIndex && changelogAnyHeadingPattern.test(line),
+    )
+    const sectionLines = lines.slice(
+      headingIndex + 1,
+      nextHeadingIndex >= 0 ? nextHeadingIndex : undefined,
+    )
     const items = sectionLines.flatMap((line) => {
       const trimmedLine = line.trim()
       return trimmedLine.startsWith('- ') ? [trimmedLine.slice(2)] : []
