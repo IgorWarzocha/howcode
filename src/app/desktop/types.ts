@@ -49,6 +49,7 @@ export type {
   NativeAskQuestion,
   NativeAskQuestionOption,
   NativeAskQuestionsRequest,
+  NativeExtensionWidget,
   PiConfiguredPackage,
   PiConfiguredPackageType,
   PiConfiguredSkill,

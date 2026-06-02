@@ -20,6 +20,8 @@ const FALLBACK_APP_SETTINGS = {
   gitCommitMessageThinkingLevel: 'off',
   skillCreatorModel: null,
   skillCreatorThinkingLevel: 'off',
+  smartBtwModel: null,
+  smartBtwThinkingLevel: 'low',
   composerStreamingBehavior: 'followUp',
   dictationModelId: null,
   dictationMaxDurationSeconds: 180,
@@ -38,6 +40,7 @@ const FALLBACK_APP_SETTINGS = {
   projectDeletionMode: 'pi-only',
   useAgentsSkillsPaths: false,
   howcodeNativeAskQuestions: false,
+  howcodeNativeSmartBtw: false,
   devUpdateBranch: false,
   piTuiTakeover: false,
   hideSidebarSessionCounts: false,
@@ -198,6 +201,8 @@ function ChatComposer(props: ChatWorkspaceComposerProps) {
       isCompacting={activeComposerState?.isCompacting ?? false}
       isExtensionCommandRunning={activeComposerState?.isExtensionCommandRunning ?? false}
       nativeAskQuestionsRequest={activeComposerState?.nativeAskQuestionsRequest ?? null}
+      nativeExtensionWidgets={activeComposerState?.nativeExtensionWidgets ?? []}
+      nativeSmartBtwEnabled={appSettings.howcodeNativeSmartBtw}
       thinkingLevel={activeComposerState?.currentThinkingLevel ?? 'off'}
       restoredQueuedPrompt={scopedRestoredQueuedPrompt}
       streamingBehaviorPreference={appSettings.composerStreamingBehavior}

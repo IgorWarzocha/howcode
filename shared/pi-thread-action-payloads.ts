@@ -312,6 +312,8 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === 'gitCommitMessageThinkingLevel' ||
     payload.key === 'skillCreatorModel' ||
     payload.key === 'skillCreatorThinkingLevel' ||
+    payload.key === 'smartBtwModel' ||
+    payload.key === 'smartBtwThinkingLevel' ||
     payload.key === 'composerStreamingBehavior' ||
     payload.key === 'dictationModelId' ||
     payload.key === 'dictationMaxDurationSeconds' ||
@@ -330,6 +332,7 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === 'projectDeletionMode' ||
     payload.key === 'useAgentsSkillsPaths' ||
     payload.key === 'howcodeNativeAskQuestions' ||
+    payload.key === 'howcodeNativeSmartBtw' ||
     payload.key === 'devUpdateBranch' ||
     payload.key === 'betaUpdateBranch' ||
     payload.key === 'piTuiTakeover' ||
@@ -359,6 +362,10 @@ export function getNativeAskQuestionsAnswers(
           .filter(Boolean)
       : [],
   )
+}
+
+export function getNativeExtensionShortcut(payload: DesktopActionPayloadInput) {
+  return typeof payload.shortcut === 'string' ? payload.shortcut : null
 }
 
 export function getSettingsThinkingLevel(payload: DesktopActionPayloadInput) {

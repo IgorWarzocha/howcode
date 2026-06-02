@@ -40,6 +40,7 @@ export type {
   NativeAskQuestion,
   NativeAskQuestionOption,
   NativeAskQuestionsRequest,
+  NativeExtensionWidget,
 } from './desktop-composer-contracts'
 export type {
   DictationModelId,

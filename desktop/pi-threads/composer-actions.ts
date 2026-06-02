@@ -14,10 +14,12 @@ import {
   getComposerThinkingLevel,
   getNativeAskQuestionsAnswers,
   getNativeAskQuestionsRequestId,
+  getNativeExtensionShortcut,
 } from '../../shared/pi-thread-action-payloads.ts'
 import {
   answerNativeAskQuestions,
   dequeueComposerPrompt,
+  invokeNativeExtensionShortcut,
   sendComposerPrompt,
   setComposerModel,
   setComposerThinkingLevel,
@@ -109,6 +111,13 @@ async function answerNativeQuestionsFromPayload(payload: AnyDesktopActionPayload
     : handledAction({ error: 'Could not answer pending questions.' })
 }
 
+async function invokeNativeExtensionShortcutFromPayload(payload: AnyDesktopActionPayload) {
+  const shortcut = getNativeExtensionShortcut(payload)
+  if (!shortcut) return handledAction()
+  const result = await invokeNativeExtensionShortcut({ ...getComposerRequest(payload), shortcut })
+  return result.ok ? handledAction() : handledAction({ error: 'Could not run native shortcut.' })
+}
+
 const composerActionHandlers = {
   'composer.model': async (payload) => {
     const selection = getComposerModelSelection(payload)
@@ -132,6 +141,7 @@ const composerActionHandlers = {
     return handledAction()
   },
   'composer.answer-native-questions': answerNativeQuestionsFromPayload,
+  'composer.native-extension-shortcut': invokeNativeExtensionShortcutFromPayload,
 } satisfies Partial<Record<DesktopAction, ComposerActionHandler>>
 
 export async function handleComposerDesktopAction(

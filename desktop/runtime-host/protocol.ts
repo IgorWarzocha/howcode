@@ -125,6 +125,7 @@ export type RuntimeHostRequestMap = {
     requestId: string
     answers: string[][] | null
   }
+  invokeNativeExtensionShortcut: ComposerStateRequest & { shortcut: string }
 }
 
 export type RuntimeHostResponseMap = {
@@ -171,12 +172,14 @@ export type RuntimeHostResponseMap = {
   stopComposerRun: { ok: true }
   dequeueComposerPrompt: string | null
   answerNativeAskQuestions: { ok: boolean }
+  invokeNativeExtensionShortcut: { ok: boolean }
 }
 
 export type RuntimeHostMainRequestMap = {
   getSessionNativeExtensions: { sessionPath: string }
   setSessionNativeExtensions: { sessionPath: string; enabled: string[] }
   snapshotDefaultNativeExtensions: Record<string, never>
+  getNativeSmartBtwConfig: Record<string, never>
   createArtifact: {
     conversationId: string
     slug: string
@@ -201,6 +204,11 @@ export type RuntimeHostMainResponseMap = {
   getSessionNativeExtensions: string[] | null
   setSessionNativeExtensions: { ok: true }
   snapshotDefaultNativeExtensions: string[]
+  getNativeSmartBtwConfig: {
+    model: string | null
+    composerModel: string | null
+    thinking: string | null
+  }
   createArtifact: Artifact
   updateArtifact: Artifact
   editArtifact: Artifact

@@ -276,3 +276,9 @@ export function answerNativeAskQuestions(
 ) {
   return invokeRuntimeHost('answerNativeAskQuestions', withComposerModeSettings(request))
 }
+
+export function invokeNativeExtensionShortcut(
+  request: ComposerStateRequest & { shortcut: string },
+) {
+  return invokeRuntimeHost('invokeNativeExtensionShortcut', withComposerModeSettings(request))
+}

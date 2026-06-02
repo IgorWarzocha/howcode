@@ -10,6 +10,7 @@ import type {
   ComposerThinkingLevel,
   DesktopActionInvoker,
   NativeAskQuestionsRequest,
+  NativeExtensionWidget,
   ProjectDiffBaseline,
   ProjectDiffRenderMode,
   ProjectGitState,
@@ -28,6 +29,8 @@ export type ComposerProps = {
   isCompacting: boolean
   isExtensionCommandRunning: boolean
   nativeAskQuestionsRequest: NativeAskQuestionsRequest | null
+  nativeExtensionWidgets: NativeExtensionWidget[]
+  nativeSmartBtwEnabled: boolean
   thinkingLevel: ComposerThinkingLevel
   restoredQueuedPrompt: string | null
   streamingBehaviorPreference: ComposerStreamingBehavior

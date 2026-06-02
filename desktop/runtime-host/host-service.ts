@@ -18,6 +18,7 @@ export {
   getComposerSkills,
   getComposerSlashCommands,
   getComposerState,
+  invokeNativeExtensionShortcut,
   openThreadRuntime,
   selectProjectRuntime,
   sendComposerPrompt,

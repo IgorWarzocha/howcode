@@ -15,7 +15,7 @@ function getSettingsArray(value: unknown) {
 function createIsolatedSettings(
   globalSettings: Record<string, unknown>,
   projectSettings: Record<string, unknown>,
-) {
+): Record<string, unknown> & { extensions?: unknown[] } {
   return {
     ...globalSettings,
     ...projectSettings,
@@ -30,13 +30,14 @@ export function createRuntimeSettingsManager(options: {
   cwd: string
   agentDir: string
   settingsCwd?: string | null | undefined
+  additionalExtensions?: string[] | undefined
 }) {
   const diskSettingsManager = options.SettingsManager.create(
     options.settingsCwd ?? options.cwd,
     options.agentDir,
   )
 
-  if (!options.settingsCwd) {
+  if (!options.settingsCwd && (options.additionalExtensions?.length ?? 0) === 0) {
     return diskSettingsManager
   }
 
@@ -49,7 +50,16 @@ export function createRuntimeSettingsManager(options: {
     unknown
   >
 
-  return options.SettingsManager.inMemory(createIsolatedSettings(globalSettings, projectSettings))
+  const isolatedSettings = createIsolatedSettings(globalSettings, projectSettings)
+  const additionalExtensions = options.additionalExtensions ?? []
+  if (additionalExtensions.length > 0) {
+    isolatedSettings.extensions = [
+      ...getSettingsArray(isolatedSettings.extensions),
+      ...additionalExtensions,
+    ]
+  }
+
+  return options.SettingsManager.inMemory(isolatedSettings)
 }
 
 export async function createIsolatedRuntimeResourceLoader(options: {

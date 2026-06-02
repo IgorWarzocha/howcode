@@ -3,7 +3,10 @@ import path from 'node:path'
 import { getPersistedSessionPath } from '../../shared/session-paths'
 import type { TerminalOpenRequest } from '../../shared/terminal-contracts.ts'
 import { getBundledThemes } from '../bundled-themes.ts'
-import { ensureAskQuestionsExtensionRuntimePath } from '../native-extensions/ask-questions-extension-path.ts'
+import {
+  ensureNativeExtensionRuntimePath,
+  getNativeExtensionRuntimePaths,
+} from '../native-extensions/native-extension-paths.ts'
 import { getSessionNativeExtensions } from '../thread-state-db.ts'
 
 function getProcessEnvironmentVariable(name: string) {
@@ -29,7 +32,12 @@ function getPiSessionCommandArgs(sessionPath: string | null | undefined) {
     args.push('--theme', theme.path)
   }
   if (getSessionNativeExtensions(persistedSessionPath)?.includes('askQuestions')) {
-    args.push('--extension', ensureAskQuestionsExtensionRuntimePath() ?? '')
+    args.push('--extension', ensureNativeExtensionRuntimePath('askQuestions'))
+  }
+  for (const extensionPath of getNativeExtensionRuntimePaths(
+    getSessionNativeExtensions(persistedSessionPath)?.filter((id) => id !== 'askQuestions') ?? [],
+  )) {
+    args.push('--extension', extensionPath)
   }
   return args
 }

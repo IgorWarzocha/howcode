@@ -37,7 +37,7 @@ export function buildModelMenuItems(
 }
 
 export function buildModelSelectionPayload(
-  key: 'chatModel' | 'codeModel' | 'gitCommitMessageModel' | 'skillCreatorModel',
+  key: 'chatModel' | 'codeModel' | 'gitCommitMessageModel' | 'skillCreatorModel' | 'smartBtwModel',
   id: string,
 ): DesktopSettingsUpdatePayload {
   if (id === 'composer-default') {
@@ -68,6 +68,14 @@ export function buildModelSelectionPayload(
   }
 
   if (key === 'gitCommitMessageModel') {
+    return {
+      key,
+      provider,
+      modelId,
+    }
+  }
+
+  if (key === 'smartBtwModel') {
     return {
       key,
       provider,

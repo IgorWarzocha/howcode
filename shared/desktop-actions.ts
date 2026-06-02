@@ -46,6 +46,7 @@ export const desktopActions = [
   'composer.dequeue',
   'composer.reload-settings',
   'composer.answer-native-questions',
+  'composer.native-extension-shortcut',
   'inbox.mark-read',
   'inbox.dismiss',
   'inbox.clear-read',

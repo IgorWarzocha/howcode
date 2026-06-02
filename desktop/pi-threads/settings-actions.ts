@@ -45,6 +45,7 @@ import {
   setHoverToBlur,
   setHoverToFocus,
   setHowcodeNativeAskQuestions,
+  setHowcodeNativeSmartBtw,
   setInitializeGitOnProjectCreate,
   setKeybindings,
   setPiTuiTakeover,
@@ -55,6 +56,8 @@ import {
   setShowDictationButton,
   setSkillCreatorModelSelection,
   setSkillCreatorThinkingLevel,
+  setSmartBtwModelSelection,
+  setSmartBtwThinkingLevel,
   setUseAgentsSkillsPaths,
 } from '../app-settings/writers.ts'
 import { restartRuntimeHostsForEnvironmentChange } from '../runtime-host/client-bridge.ts'
@@ -152,8 +155,14 @@ const settingsUpdateHandlers = {
   projectImportState: (payload) => setProjectImportState(getSettingsProjectImportState(payload)),
   useAgentsSkillsPaths: (payload) =>
     setUseAgentsSkillsPaths(getSettingsBooleanValue(payload) ?? false),
-  howcodeNativeAskQuestions: (payload) =>
-    setHowcodeNativeAskQuestions(getSettingsBooleanValue(payload) ?? false),
+  howcodeNativeAskQuestions: (payload) => {
+    setHowcodeNativeAskQuestions(getSettingsBooleanValue(payload) ?? false)
+    restartRuntimeHostsForEnvironmentChange()
+  },
+  howcodeNativeSmartBtw: (payload) => {
+    setHowcodeNativeSmartBtw(getSettingsBooleanValue(payload) ?? false)
+    restartRuntimeHostsForEnvironmentChange()
+  },
   devUpdateBranch: (payload) => setDevUpdateBranch(getSettingsBooleanValue(payload) ?? false),
   betaUpdateBranch: (payload) => setDevUpdateBranch(getSettingsBooleanValue(payload) ?? false),
   piTuiTakeover: (payload) => setPiTuiTakeover(getSettingsBooleanValue(payload) ?? false),
@@ -220,8 +229,16 @@ const settingsUpdateHandlers = {
     setOptionalThinkingLevel(payload, setGitCommitMessageThinkingLevel),
   skillCreatorThinkingLevel: (payload) =>
     setOptionalThinkingLevel(payload, setSkillCreatorThinkingLevel),
+  smartBtwThinkingLevel: (payload) => {
+    setOptionalThinkingLevel(payload, setSmartBtwThinkingLevel)
+    restartRuntimeHostsForEnvironmentChange()
+  },
   gitCommitMessageModel: (payload) =>
     setResettableModelSelection(payload, setGitCommitMessageModelSelection),
+  smartBtwModel: (payload) => {
+    setResettableModelSelection(payload, setSmartBtwModelSelection)
+    restartRuntimeHostsForEnvironmentChange()
+  },
 } satisfies Record<string, SettingsUpdateHandler>
 
 export async function handleSettingsDesktopAction(
