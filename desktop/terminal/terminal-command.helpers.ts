@@ -11,7 +11,7 @@ import {
 } from '../native-extensions/native-extension-paths.ts'
 import { getSessionNativeExtensions, setSessionNativeExtensions } from '../thread-state-db.ts'
 
-const howcodeNativeExtensionIds = ['askQuestions', 'autoTrees', 'smartBtw'] as const
+const howcodeNativeExtensionIds = ['askQuestions', 'smartBtw'] as const
 
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
@@ -33,7 +33,6 @@ function getDefaultNativeExtensions(): HowcodeNativeExtensionId[] {
   const settings = loadAppSettings()
   return [
     ...(settings.howcodeNativeAskQuestions ? (['askQuestions'] as const) : []),
-    ...(settings.howcodeNativeAutoTrees ? (['autoTrees'] as const) : []),
     ...(settings.howcodeNativeSmartBtw ? (['smartBtw'] as const) : []),
   ]
 }
