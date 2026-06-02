@@ -22,6 +22,9 @@ type TerminalEnvironmentVariables = NodeJS.ProcessEnv & {
   COLORTERM?: string
   HOWCODE_EMBEDDED_TERMINAL?: string
   HOWCODE_TERMINAL_CAPABILITIES?: string
+  HOWCODE_SMART_BTW_MODEL?: string
+  HOWCODE_COMPOSER_MODEL?: string
+  HOWCODE_SMART_BTW_THINKING?: string
   PI_CLEAR_ON_SHRINK?: string
 }
 
@@ -64,6 +67,26 @@ function getPiSessionCommandArgs(sessionPath: string | null | undefined) {
     args.push('--extension', extensionPath)
   }
   return args
+}
+
+function applySmartBtwTerminalEnvironment(
+  env: TerminalEnvironmentVariables,
+  sessionPath: string | null,
+) {
+  delete env.HOWCODE_SMART_BTW_MODEL
+  delete env.HOWCODE_COMPOSER_MODEL
+  delete env.HOWCODE_SMART_BTW_THINKING
+
+  if (!getPiSessionNativeExtensions(sessionPath).includes('smartBtw')) return
+
+  const settings = loadAppSettings()
+  const selection = settings.smartBtwModel
+  const composerSelection = settings.codeModel ?? settings.chatModel
+  if (selection) env.HOWCODE_SMART_BTW_MODEL = `${selection.provider}/${selection.id}`
+  if (composerSelection)
+    env.HOWCODE_COMPOSER_MODEL = `${composerSelection.provider}/${composerSelection.id}`
+  if (settings.smartBtwThinkingLevel)
+    env.HOWCODE_SMART_BTW_THINKING = settings.smartBtwThinkingLevel
 }
 
 function getPiSessionShell(platform: NodeJS.Platform, env: NodeJS.ProcessEnv) {
@@ -155,5 +178,6 @@ export function resolveTerminalEnv(
   nextEnvVariables.HOWCODE_TERMINAL_CAPABILITIES =
     'ansi,256color,truecolor,unicode,no-terminal-protocols'
   nextEnvVariables.PI_CLEAR_ON_SHRINK = '1'
+  applySmartBtwTerminalEnvironment(nextEnvVariables, getPersistedSessionPath(request.sessionPath))
   return nextEnv
 }

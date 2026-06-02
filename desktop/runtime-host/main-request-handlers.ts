@@ -6,6 +6,7 @@ import {
   listArtifacts,
   updateArtifact,
 } from '../artifact-state-db.ts'
+import { howcodeNativeExtensionIds } from '../native-extensions/native-extension-paths.ts'
 import { getSessionNativeExtensions, setSessionNativeExtensions } from '../thread-state-db.ts'
 import type {
   RuntimeHostMainRequestMap,
@@ -30,8 +31,7 @@ function getDefaultNativeExtensions() {
 
 function getEffectiveNativeExtensions(enabled: string[] | null) {
   if (!enabled) return null
-  const defaults = new Set(getDefaultNativeExtensions())
-  return enabled.filter((id) => defaults.has(id))
+  return enabled.filter((id) => howcodeNativeExtensionIds.includes(id as never))
 }
 
 function getNativeSmartBtwConfig() {

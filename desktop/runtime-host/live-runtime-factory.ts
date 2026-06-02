@@ -54,11 +54,14 @@ async function getEnabledNativeExtensionsForRuntime(options: {
 async function applyNativeExtensionRuntimeEnvironment(enabledNativeExtensions: string[]) {
   if (!enabledNativeExtensions.includes('smartBtw')) return
   const cfg = await invokeMainRequest('getNativeSmartBtwConfig', {})
-  Object.assign(process.env, {
-    ...(cfg.model ? { HOWCODE_SMART_BTW_MODEL: cfg.model } : {}),
-    ...(cfg.composerModel ? { HOWCODE_COMPOSER_MODEL: cfg.composerModel } : {}),
-    ...(cfg.thinking ? { HOWCODE_SMART_BTW_THINKING: cfg.thinking } : {}),
-  })
+  updateOptionalEnvironmentValue('HOWCODE_SMART_BTW_MODEL', cfg.model)
+  updateOptionalEnvironmentValue('HOWCODE_COMPOSER_MODEL', cfg.composerModel)
+  updateOptionalEnvironmentValue('HOWCODE_SMART_BTW_THINKING', cfg.thinking)
+}
+
+function updateOptionalEnvironmentValue(key: string, value: string | null | undefined) {
+  if (value?.trim()) process.env[key] = value
+  else delete process.env[key]
 }
 
 export async function createLiveRuntime(
