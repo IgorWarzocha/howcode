@@ -20,6 +20,8 @@ const FALLBACK_APP_SETTINGS = {
   gitCommitMessageThinkingLevel: 'off',
   skillCreatorModel: null,
   skillCreatorThinkingLevel: 'off',
+  smartBtwModel: null,
+  smartBtwThinkingLevel: 'low',
   composerStreamingBehavior: 'followUp',
   dictationModelId: null,
   dictationMaxDurationSeconds: 180,
@@ -38,6 +40,7 @@ const FALLBACK_APP_SETTINGS = {
   projectDeletionMode: 'pi-only',
   useAgentsSkillsPaths: false,
   howcodeNativeAskQuestions: false,
+  howcodeNativeSmartBtw: false,
   devUpdateBranch: false,
   piTuiTakeover: false,
   hideSidebarSessionCounts: false,
@@ -192,12 +195,15 @@ function ChatComposer(props: ChatWorkspaceComposerProps) {
       model={activeComposerState?.currentModel ?? null}
       contextUsage={activeComposerState?.contextUsage ?? null}
       messages={activeThreadData?.messages}
+      customMessages={activeThreadData?.customMessages}
       availableModels={activeComposerState?.availableModels ?? []}
       isStreaming={activeThreadData?.isStreaming ?? false}
       replyActivityKey={getReplyActivityKey(activeThreadData?.messages ?? [])}
       isCompacting={activeComposerState?.isCompacting ?? false}
       isExtensionCommandRunning={activeComposerState?.isExtensionCommandRunning ?? false}
       nativeAskQuestionsRequest={activeComposerState?.nativeAskQuestionsRequest ?? null}
+      nativeExtensionWidgets={activeComposerState?.nativeExtensionWidgets ?? []}
+      nativeSmartBtwEnabled={appSettings.howcodeNativeSmartBtw}
       thinkingLevel={activeComposerState?.currentThinkingLevel ?? 'off'}
       restoredQueuedPrompt={scopedRestoredQueuedPrompt}
       streamingBehaviorPreference={appSettings.composerStreamingBehavior}
@@ -245,6 +251,7 @@ function ChatComposer(props: ChatWorkspaceComposerProps) {
       showTerminalControls={false}
       artifactsVisible={artifactDrawer.artifactsVisible}
       terminalVisible={state.terminalVisible}
+      takeoverVisible={state.takeoverVisible}
       preferPortalFilePicker={!hasConversationLayout}
       preferPortalModelPopover={!hasConversationLayout}
       onListAttachmentEntries={listComposerAttachmentEntries}

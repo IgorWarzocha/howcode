@@ -1,3 +1,7 @@
+### 0.1.67
+
+- Added native Smart BTW side sessions with numbered slots, GUI/Pi-TUI handoff, and restored Q&A follow-ups.
+
 #### 0.1.66 Hotfixes (because .67 has to be more special)
 
 - Branch/worktree creation now normalizes messy names with spaces into Git-safe names.
@@ -14,6 +18,7 @@
 - Git diffs use remote HEAD as the default branch.
 - Git diffs add parent-branch baseline and drop Yesterday.
 - Updated bundled Pi SDK/runtime packages to 0.76.0.
+- Added native Smart BTW side sessions with numbered slots, GUI/Pi-TUI handoff, and restored Q&A follow-ups.
 
 Snapshot: May 28, 2026.
 

@@ -59,6 +59,7 @@ export type DesktopActionPayloadFields = {
   repoUrl?: string | undefined | null | undefined
   reset?: boolean | undefined
   sessionPath?: string | undefined | null | undefined
+  shortcut?: string | undefined
   streamingBehavior?: ComposerStreamingBehavior
   suppressInbox?: boolean | undefined | null | undefined
   text?: string | undefined
@@ -94,6 +95,9 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'skillCreatorModel'; provider: string; modelId: string; reset?: false }
   | { key: 'skillCreatorModel'; reset: true }
   | { key: 'skillCreatorThinkingLevel'; value: ComposerThinkingLevel }
+  | { key: 'smartBtwModel'; provider: string; modelId: string; reset?: false }
+  | { key: 'smartBtwModel'; reset: true }
+  | { key: 'smartBtwThinkingLevel'; value: ComposerThinkingLevel }
   | { key: 'composerStreamingBehavior'; value: ComposerStreamingBehavior }
   | { key: 'dictationModelId'; value: DictationModelId | null }
   | { key: 'dictationMaxDurationSeconds'; value: number }
@@ -112,6 +116,7 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'projectDeletionMode'; value: ProjectDeletionMode }
   | { key: 'useAgentsSkillsPaths'; value: boolean }
   | { key: 'howcodeNativeAskQuestions'; value: boolean }
+  | { key: 'howcodeNativeSmartBtw'; value: boolean }
   | { key: 'devUpdateBranch'; value: boolean }
   | { key: 'betaUpdateBranch'; value: boolean }
   | { key: 'piTuiTakeover'; value: boolean }
@@ -283,6 +288,13 @@ export type DesktopActionPayloadMap = {
     chatGroupId?: string | undefined | null | undefined
     requestId: string
     answers: string[][] | null
+  }
+  'composer.native-extension-shortcut': {
+    projectId?: string | undefined | null | undefined
+    sessionPath?: string | undefined | null | undefined
+    composerMode?: 'chat' | 'code' | null
+    chatGroupId?: string | undefined | null | undefined
+    shortcut: string
   }
   'inbox.mark-read': { sessionPath: string; projectId?: string | undefined | null | undefined }
   'inbox.dismiss': { sessionPath: string; projectId?: string | undefined | null | undefined }

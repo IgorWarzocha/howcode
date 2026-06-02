@@ -10,9 +10,11 @@ import type {
   ComposerThinkingLevel,
   DesktopActionInvoker,
   NativeAskQuestionsRequest,
+  NativeExtensionWidget,
   ProjectDiffBaseline,
   ProjectDiffRenderMode,
   ProjectGitState,
+  ThreadCustomMessageRecord,
 } from '../desktop/types'
 import type { Message, View } from '../types'
 import { ComposerPromptSurface } from './composer-prompt-surface'
@@ -22,12 +24,15 @@ export type ComposerProps = {
   model: ComposerModel | null
   contextUsage: ComposerContextUsage | null
   messages?: Message[] | undefined
+  customMessages?: ThreadCustomMessageRecord[] | undefined
   availableModels: ComposerModel[]
   isStreaming: boolean
   replyActivityKey: string
   isCompacting: boolean
   isExtensionCommandRunning: boolean
   nativeAskQuestionsRequest: NativeAskQuestionsRequest | null
+  nativeExtensionWidgets: NativeExtensionWidget[]
+  nativeSmartBtwEnabled: boolean
   thinkingLevel: ComposerThinkingLevel
   restoredQueuedPrompt: string | null
   streamingBehaviorPreference: ComposerStreamingBehavior
@@ -67,6 +72,7 @@ export type ComposerProps = {
   artifactsVisible?: boolean
   artifactsAvailable?: boolean
   terminalVisible: boolean
+  takeoverVisible: boolean
   preferPortalFilePicker?: boolean
   preferPortalModelPopover?: boolean
   onLayoutChange: () => void

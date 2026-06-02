@@ -57,6 +57,7 @@ export function useSettingsController({
   )
   const [gitCommitMenuOpen, setGitCommitMenuOpen] = useState(false)
   const [skillCreatorMenuOpen, setSkillCreatorMenuOpen] = useState(false)
+  const [smartBtwMenuOpen, setSmartBtwMenuOpen] = useState(false)
   const [favoriteFolderDraft, setFavoriteFolderDraft] = useState('')
   const [importBusy, setImportBusy] = useState(false)
   const [importStatusMessage, setImportStatusMessage] = useState<string | null>(null)
@@ -69,6 +70,9 @@ export function useSettingsController({
   const skillCreatorButtonRef = useRef<HTMLButtonElement>(null)
   const skillCreatorPanelRef = useRef<HTMLDivElement>(null)
   const skillCreatorMenuPresent = useAnimatedPresence(skillCreatorMenuOpen)
+  const smartBtwButtonRef = useRef<HTMLButtonElement>(null)
+  const smartBtwPanelRef = useRef<HTMLDivElement>(null)
+  const smartBtwMenuPresent = useAnimatedPresence(smartBtwMenuOpen)
 
   const dictation = useSettingsDictationController({ appSettings, onAction })
   const desktopBridgeAvailable = useDesktopBridgeAvailable()
@@ -89,6 +93,10 @@ export function useSettingsController({
     setSkillCreatorMenuOpen(false)
   }
 
+  const closeSmartBtwMenu = () => {
+    setSmartBtwMenuOpen(false)
+  }
+
   useDismissibleLayer({
     open: gitCommitMenuOpen,
     onDismiss: closeGitCommitMenu,
@@ -99,6 +107,12 @@ export function useSettingsController({
     open: skillCreatorMenuOpen,
     onDismiss: closeSkillCreatorMenu,
     refs: [skillCreatorButtonRef, skillCreatorPanelRef],
+  })
+
+  useDismissibleLayer({
+    open: smartBtwMenuOpen,
+    onDismiss: closeSmartBtwMenu,
+    refs: [smartBtwButtonRef, smartBtwPanelRef],
   })
 
   const updateFavoriteFolders = (nextFavoriteFolders: string[]) => {
@@ -142,7 +156,12 @@ export function useSettingsController({
   }
 
   const selectModel = (
-    key: 'chatModel' | 'codeModel' | 'gitCommitMessageModel' | 'skillCreatorModel',
+    key:
+      | 'chatModel'
+      | 'codeModel'
+      | 'gitCommitMessageModel'
+      | 'skillCreatorModel'
+      | 'smartBtwModel',
     id: string,
     closeMenu: () => void,
   ) => {
@@ -269,17 +288,25 @@ export function useSettingsController({
       selectModel('gitCommitMessageModel', id, closeGitCommitMenu),
     selectSkillCreatorModel: (id: string) =>
       selectModel('skillCreatorModel', id, closeSkillCreatorMenu),
+    selectSmartBtwModel: (id: string) => selectModel('smartBtwModel', id, closeSmartBtwMenu),
     setFavoriteFolderDraft,
     setCustomPiDirectoryDraft,
     setGitCommitMenuOpen,
     setPreferredProjectLocationDraft,
     setSkillCreatorMenuOpen,
+    setSmartBtwMenuOpen,
     skillCreatorButtonRef,
     skillCreatorCurrentValue: getModelSettingValue(appSettings.skillCreatorModel),
     skillCreatorMenuId: 'settings-skill-creator-model-menu',
     skillCreatorMenuOpen,
     skillCreatorMenuPresent,
     skillCreatorPanelRef,
+    smartBtwButtonRef,
+    smartBtwCurrentValue: getModelSettingValue(appSettings.smartBtwModel),
+    smartBtwMenuId: 'settings-smart-btw-model-menu',
+    smartBtwMenuOpen,
+    smartBtwMenuPresent,
+    smartBtwPanelRef,
     toggleInitializeGitOnProjectCreate: () =>
       void onAction('settings.update', {
         key: 'initializeGitOnProjectCreate',
@@ -339,6 +366,11 @@ export function useSettingsController({
       void onAction('settings.update', {
         key: 'howcodeNativeAskQuestions',
         value: !appSettings.howcodeNativeAskQuestions,
+      }),
+    toggleHowcodeNativeSmartBtw: () =>
+      void onAction('settings.update', {
+        key: 'howcodeNativeSmartBtw',
+        value: !appSettings.howcodeNativeSmartBtw,
       }),
     toggleDevUpdateBranch: () =>
       void onAction('settings.update', {

@@ -28,6 +28,8 @@ export type AppSettings = {
   gitCommitMessageThinkingLevel: ComposerThinkingLevel
   skillCreatorModel: ModelSelection | null
   skillCreatorThinkingLevel: ComposerThinkingLevel
+  smartBtwModel: ModelSelection | null
+  smartBtwThinkingLevel: ComposerThinkingLevel
   composerStreamingBehavior: ComposerStreamingBehavior
   dictationModelId: DictationModelId | null
   dictationMaxDurationSeconds: number
@@ -46,6 +48,7 @@ export type AppSettings = {
   projectDeletionMode: ProjectDeletionMode
   useAgentsSkillsPaths: boolean
   howcodeNativeAskQuestions: boolean
+  howcodeNativeSmartBtw: boolean
   devUpdateBranch: boolean
   piTuiTakeover: boolean
   hideSidebarSessionCounts: boolean

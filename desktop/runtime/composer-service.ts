@@ -267,6 +267,30 @@ export async function stopComposerRun(request: ComposerStateRequest): Promise<vo
   })
 }
 
+export async function invokeNativeExtensionShortcut(
+  request: ComposerStateRequest & { shortcut: string },
+): Promise<{ ok: boolean }> {
+  const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
+  if (!persistedSessionPath) return { ok: false }
+
+  const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+    suspendDisposal: true,
+    settingsCwd: request.composerSessionDir ?? null,
+    chatGroupId: request.chatGroupId ?? null,
+  })
+  try {
+    const shortcut = runtime.session.extensionRunner
+      .getShortcuts({} as never)
+      .get(request.shortcut.toLowerCase() as never)
+    if (!shortcut) return { ok: false }
+    await shortcut.handler(runtime.session.extensionRunner.createContext())
+    await emitComposerUpdate(runtime)
+    return { ok: true }
+  } finally {
+    scheduleRuntimeDisposalForRuntime(runtime)
+  }
+}
+
 export async function dequeueComposerPrompt(
   request: ComposerStateRequest & {
     queueId: string

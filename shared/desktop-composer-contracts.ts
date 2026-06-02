@@ -27,6 +27,12 @@ export type NativeAskQuestionsRequest = {
   questions: NativeAskQuestion[]
 }
 
+export type NativeExtensionWidget = {
+  key: string
+  lines: string[]
+  placement?: 'aboveEditor' | 'belowEditor' | 'status' | undefined
+}
+
 export type ComposerModel = {
   provider: string
   id: string
@@ -48,6 +54,7 @@ export type ComposerState = {
   availableThinkingLevels: ComposerThinkingLevel[]
   queuedPrompts: ComposerQueuedPrompt[]
   nativeAskQuestionsRequest: NativeAskQuestionsRequest | null
+  nativeExtensionWidgets: NativeExtensionWidget[]
   contextUsage: ComposerContextUsage | null
   isCompacting: boolean
   isExtensionCommandRunning: boolean

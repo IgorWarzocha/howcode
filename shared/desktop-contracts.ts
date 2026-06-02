@@ -40,6 +40,7 @@ export type {
   NativeAskQuestion,
   NativeAskQuestionOption,
   NativeAskQuestionsRequest,
+  NativeExtensionWidget,
 } from './desktop-composer-contracts'
 export type {
   DictationModelId,
@@ -107,6 +108,7 @@ export type {
   SummaryThreadMessage,
   SystemThreadMessage,
   Thread,
+  ThreadCustomMessageRecord,
   ThreadData,
   ToolResultImage,
   ToolResultMessage,

@@ -65,6 +65,20 @@ export function buildCommonSettingsDescriptors({
       ),
     },
     {
+      id: 'common.howcode-native-smart-btw',
+      category: 'extensions',
+      title: 'Smart btw command',
+      description: 'Native async /btw side-session command (GUI+TUI).',
+      keywords: 'native extensions btw side session async question',
+      render: () => (
+        <ToggleBox
+          checked={appSettings.howcodeNativeSmartBtw}
+          label="Smart btw command"
+          onClick={controller.toggleHowcodeNativeSmartBtw}
+        />
+      ),
+    },
+    {
       id: 'common.pi-tui-takeover',
       category: 'howcode',
       title: 'Open in TUI',

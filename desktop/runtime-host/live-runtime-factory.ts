@@ -1,6 +1,9 @@
 import { normalizeModelRegistryContextWindows } from '../../shared/model-context-window-normalization.ts'
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
-import { ensureAskQuestionsExtensionRuntimePath } from '../native-extensions/ask-questions-extension-path.ts'
+import {
+  ensureNativeExtensionRuntimePath,
+  getNativeExtensionRuntimePaths,
+} from '../native-extensions/native-extension-paths.ts'
 import { getPiModule } from '../pi-module.ts'
 import {
   abortHeadlessExtensionCommand,
@@ -48,6 +51,19 @@ async function getEnabledNativeExtensionsForRuntime(options: {
   return await invokeMainRequest('snapshotDefaultNativeExtensions', {})
 }
 
+async function applyNativeExtensionRuntimeEnvironment(enabledNativeExtensions: string[]) {
+  if (!enabledNativeExtensions.includes('smartBtw')) return
+  const cfg = await invokeMainRequest('getNativeSmartBtwConfig', {})
+  updateOptionalEnvironmentValue('HOWCODE_SMART_BTW_MODEL', cfg.model)
+  updateOptionalEnvironmentValue('HOWCODE_COMPOSER_MODEL', cfg.composerModel)
+  updateOptionalEnvironmentValue('HOWCODE_SMART_BTW_THINKING', cfg.thinking)
+}
+
+function updateOptionalEnvironmentValue(key: string, value: string | null | undefined) {
+  if (value?.trim()) process.env[key] = value
+  else delete process.env[key]
+}
+
 export async function createLiveRuntime(
   options: {
     cwd: string
@@ -73,11 +89,18 @@ export async function createLiveRuntime(
   const modelRegistry = normalizeModelRegistryContextWindows(
     ModelRegistry.create(authStorage, `${agentDir}/models.json`),
   )
+  const enabledNativeExtensions = await getEnabledNativeExtensionsForRuntime(
+    options.sessionManager ? { sessionManager: options.sessionManager } : {},
+  )
+  await applyNativeExtensionRuntimeEnvironment(enabledNativeExtensions)
   const settingsManager = createRuntimeSettingsManager({
     SettingsManager,
     cwd: options.cwd,
     agentDir,
     settingsCwd: options.settingsCwd,
+    additionalExtensions: getNativeExtensionRuntimePaths(
+      enabledNativeExtensions.filter((id) => id !== 'askQuestions'),
+    ),
   })
   const sessionDir = options.sessionDir ?? settingsManager.getSessionDir() ?? undefined
   const resourceLoader = await createIsolatedRuntimeResourceLoader({
@@ -89,13 +112,10 @@ export async function createLiveRuntime(
     systemPrompt: getRuntimeSystemPrompt({ settingsCwd: options.settingsCwd }),
   })
   let runtime: PiRuntime | null = null
-  const enabledNativeExtensions = await getEnabledNativeExtensionsForRuntime(
-    options.sessionManager ? { sessionManager: options.sessionManager } : {},
-  )
   const nativeAskQuestionTools = enabledNativeExtensions.includes('askQuestions')
     ? await createNativeAskQuestionsTools({
         defineTool,
-        extensionPath: ensureAskQuestionsExtensionRuntimePath() ?? '',
+        extensionPath: ensureNativeExtensionRuntimePath('askQuestions'),
         getRuntime: () => runtime,
         onStateChange: () => {
           if (!runtime) return

@@ -20,6 +20,8 @@ const optimisticSettingKeys = new Set([
   'gitCommitMessageThinkingLevel',
   'skillCreatorModel',
   'skillCreatorThinkingLevel',
+  'smartBtwModel',
+  'smartBtwThinkingLevel',
   'composerStreamingBehavior',
   'dictationModelId',
   'dictationMaxDurationSeconds',
@@ -38,6 +40,7 @@ const optimisticSettingKeys = new Set([
   'projectDeletionMode',
   'useAgentsSkillsPaths',
   'howcodeNativeAskQuestions',
+  'howcodeNativeSmartBtw',
   'devUpdateBranch',
   'betaUpdateBranch',
   'piTuiTakeover',
@@ -113,6 +116,9 @@ function applyOptimisticModelSetting(
       nextSettings.skillCreatorModel,
     )
   }
+  if (payload.key === 'smartBtwModel') {
+    nextSettings.smartBtwModel = getOptimisticModelSelection(payload, nextSettings.smartBtwModel)
+  }
 }
 
 function getResettableThinkingLevel(
@@ -145,6 +151,9 @@ function applyOptimisticThinkingSetting(
   if (payload.key === 'skillCreatorThinkingLevel' && isThinkingLevel(payload.value)) {
     nextSettings.skillCreatorThinkingLevel = payload.value
   }
+  if (payload.key === 'smartBtwThinkingLevel' && isThinkingLevel(payload.value)) {
+    nextSettings.smartBtwThinkingLevel = payload.value
+  }
 }
 
 function applyOptimisticBooleanSetting(
@@ -152,18 +161,19 @@ function applyOptimisticBooleanSetting(
   payload: ActionPayload,
 ) {
   if (typeof payload.value !== 'boolean') return
-  if (payload.key === 'showDictationButton') nextSettings.showDictationButton = payload.value
-  if (payload.key === 'initializeGitOnProjectCreate')
-    nextSettings.initializeGitOnProjectCreate = payload.value
-  if (payload.key === 'projectDashboardEnabled')
-    nextSettings.projectDashboardEnabled = payload.value
-  if (payload.key === 'gitDiffFileTreeDefaultVisible')
-    nextSettings.gitDiffFileTreeDefaultVisible = payload.value
-  if (payload.key === 'gitDiffIncludeUntrackedDefault')
-    nextSettings.gitDiffIncludeUntrackedDefault = payload.value
-  if (payload.key === 'useAgentsSkillsPaths') nextSettings.useAgentsSkillsPaths = payload.value
-  if (payload.key === 'howcodeNativeAskQuestions')
-    nextSettings.howcodeNativeAskQuestions = payload.value
+  const directBooleanKeys = [
+    'showDictationButton',
+    'initializeGitOnProjectCreate',
+    'projectDashboardEnabled',
+    'gitDiffFileTreeDefaultVisible',
+    'gitDiffIncludeUntrackedDefault',
+    'useAgentsSkillsPaths',
+    'howcodeNativeAskQuestions',
+    'howcodeNativeSmartBtw',
+  ] as const
+  if (directBooleanKeys.includes(payload.key as (typeof directBooleanKeys)[number])) {
+    nextSettings[payload.key as (typeof directBooleanKeys)[number]] = payload.value
+  }
   if (payload.key === 'devUpdateBranch' || payload.key === 'betaUpdateBranch') {
     nextSettings.devUpdateBranch = payload.value
   }
