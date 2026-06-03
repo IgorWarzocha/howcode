@@ -19,7 +19,7 @@ import {
 import { getVisibleSessionTreeRowIndices, rowHasChildren } from './composer-session-tree-fold'
 
 const listboxId = 'composer-session-tree-listbox'
-const chevronSlotClass = 'inline-flex h-5 w-5 shrink-0 items-center justify-center'
+const chevronSlotClass = 'inline-flex h-4 w-4 shrink-0 items-center justify-center'
 
 function rowKindLabel(kind: ComposerSessionTreeRow['kind']) {
   switch (kind) {
@@ -58,7 +58,7 @@ function SessionTreeRowLine({
   return (
     <div
       className={cn(
-        'grid w-full min-h-8 grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-1 rounded-md py-0.5 pr-1 transition-colors duration-150 ease-out',
+        'grid w-full min-h-6 grid-cols-[1rem_minmax(0,1fr)] items-center gap-0.5 rounded-md py-0 pr-1 transition-colors duration-150 ease-out',
         row.isLeaf && 'opacity-70',
         !row.isOnActivePath && 'opacity-55',
         selected ? composerPopoverOptionSelectedClass : 'text-[color:var(--muted)]',
@@ -92,7 +92,7 @@ function SessionTreeRowLine({
         aria-selected={selected}
         disabled={row.isLeaf}
         className={cn(
-          'grid min-h-8 w-full min-w-0 grid-cols-[3.25rem_minmax(0,1fr)] items-center gap-2 rounded-md px-1.5 text-left transition-colors duration-150 ease-out',
+          'grid min-h-6 w-full min-w-0 grid-cols-[3rem_minmax(0,1fr)] items-center gap-1.5 rounded-md px-1 py-0 text-left transition-colors duration-150 ease-out',
           selected
             ? 'text-[color:var(--text)]'
             : 'hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
@@ -163,10 +163,10 @@ export function ComposerSessionTreePanel({
         tabIndex={-1}
         aria-label="Session tree"
         className={cn(
-          'grid w-full max-h-72 gap-0.5 overflow-y-auto overflow-x-hidden rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-2.5 py-2 shadow-none',
+          'grid w-full max-h-72 gap-0 overflow-y-auto overflow-x-hidden rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-2 py-1.5 shadow-none',
         )}
       >
-        <div className={cn('pl-0.5 pb-1', appTypeSmallClass, appToneMutedClass)}>Session tree</div>
+        <div className={cn('pb-0.5 pl-0.5', appTypeMetaClass, appToneMutedClass)}>Session tree</div>
         {rows.length > 0 ? (
           visibleIndices.map((rowIndex) => {
             const row = rows[rowIndex]
