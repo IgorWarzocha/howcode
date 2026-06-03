@@ -5,7 +5,6 @@ import {
   appTypeTinyClass,
   composerPopoverOptionClass,
   composerPopoverOptionSelectedClass,
-  composerPopoverPanelClass,
   composerPopoverSectionLabelClass,
   inlineEmptyNoteClass,
 } from '@howcode/ui'
@@ -112,57 +111,62 @@ export function ComposerSessionTreePanel({
   const usingDevPreview = composerSessionTreePanelDevAlwaysOpen
 
   return (
-    <PopoverPanel
-      surface={false}
-      ref={panelRef}
-      id={listboxId}
-      role="listbox"
-      tabIndex={-1}
-      aria-label="Session tree"
-      className={cn(
-        composerPopoverPanelClass,
-        'relative w-full max-h-72 overflow-y-auto overflow-x-hidden',
-      )}
-    >
-      <div
+    <div className="grid w-full overflow-visible px-4">
+      <PopoverPanel
+        surface={false}
+        ref={panelRef}
+        id={listboxId}
+        role="listbox"
+        tabIndex={-1}
+        aria-label="Session tree"
         className={cn(
-          composerPopoverSectionLabelClass,
-          'flex items-center justify-between gap-2 pb-1',
+          'grid w-full max-h-72 gap-1 overflow-y-auto overflow-x-hidden rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-2.5 py-2 shadow-none',
         )}
       >
-        <span className="inline-flex items-center gap-1.5">
-          <GitBranch size={12} className="shrink-0 opacity-80" aria-hidden />
-          Session tree
-        </span>
-        {usingDevPreview ? (
-          <span className={cn(appTypeTinyClass, 'normal-case tracking-normal', appToneMutedClass)}>
-            Preview layout
+        <div
+          className={cn(
+            composerPopoverSectionLabelClass,
+            'flex items-center justify-between gap-2 pb-1',
+          )}
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <GitBranch size={12} className="shrink-0 opacity-80" aria-hidden />
+            Session tree
           </span>
+          {usingDevPreview ? (
+            <span
+              className={cn(appTypeTinyClass, 'normal-case tracking-normal', appToneMutedClass)}
+            >
+              Preview layout
+            </span>
+          ) : (
+            <span
+              className={cn(appTypeTinyClass, 'normal-case tracking-normal', appToneMutedClass)}
+            >
+              Active path
+            </span>
+          )}
+        </div>
+        {rows.length > 0 ? (
+          rows.map((row, index) => (
+            <SessionTreeRowButton
+              key={row.id}
+              row={row}
+              selected={index === selectedIndex}
+              onSelect={(id) => {
+                setSelectedId(id)
+                onSelectEntry?.(id)
+              }}
+            />
+          ))
         ) : (
-          <span className={cn(appTypeTinyClass, 'normal-case tracking-normal', appToneMutedClass)}>
-            Active path
-          </span>
+          <div className={inlineEmptyNoteClass}>No session entries</div>
         )}
-      </div>
-      {rows.length > 0 ? (
-        rows.map((row, index) => (
-          <SessionTreeRowButton
-            key={row.id}
-            row={row}
-            selected={index === selectedIndex}
-            onSelect={(id) => {
-              setSelectedId(id)
-              onSelectEntry?.(id)
-            }}
-          />
-        ))
-      ) : (
-        <div className={inlineEmptyNoteClass}>No session entries</div>
-      )}
-      <p className={cn('px-2 pt-2 pb-1', appTypeTinyClass, appToneMutedClass)}>
-        Pick an earlier point, then summarize the branch you leave (navigation hooks next).
-      </p>
-    </PopoverPanel>
+        <p className={cn('px-0.5 pt-1 pb-0.5', appTypeTinyClass, appToneMutedClass)}>
+          Pick an earlier point, then summarize the branch you leave (navigation hooks next).
+        </p>
+      </PopoverPanel>
+    </div>
   )
 }
 
