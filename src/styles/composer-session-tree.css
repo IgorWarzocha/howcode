@@ -1,3 +1,12 @@
+.composer-session-tree-label-button.composer-session-tree-row--preview {
+  outline: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  outline-offset: -1px;
+}
+
+.composer-session-tree-anchor-mark {
+  opacity: 1;
+}
+
 .composer-session-tree-row {
   position: relative;
   z-index: 0;

@@ -8,7 +8,8 @@ export function useComposerSessionTreePanel(input: {
   const [sessionTreeOpen, setSessionTreeOpen] = useState(false)
   const persistedPath = input.sessionPath?.trim() ?? ''
 
-  const dismissSessionTree = useCallback(() => {
+  const dismissSessionTree = useCallback((options?: { restoreAnchorInThread?: () => void }) => {
+    options?.restoreAnchorInThread?.()
     setSessionTreeOpen(false)
   }, [])
 

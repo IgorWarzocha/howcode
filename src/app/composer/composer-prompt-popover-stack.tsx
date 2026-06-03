@@ -1,5 +1,5 @@
 import type { PiTreeFilterMode } from '@howcode/shared/desktop-settings-contracts'
-import type { RefObject } from 'react'
+import type { MutableRefObject, RefObject } from 'react'
 import { composerPopoverInputLayerClass } from '../ui/classes'
 import { cn } from '../utils/cn'
 import { ComposerSessionTreePanel } from './composer-session-tree-panel'
@@ -17,6 +17,9 @@ export function ComposerPromptPopoverStack({
   sessionTreeNavigateDisabled = false,
   onSessionTreeNavigate,
   onRevealSessionTreeEntryInThread,
+  onBindSessionTreeClose,
+  onSessionTreeNavigateConfirmOpenChange,
+  sessionTreeCancelNavigateConfirmRef,
 }: {
   sessionPath?: string | null | undefined
   sessionTreeOpen?: boolean | undefined
@@ -28,6 +31,9 @@ export function ComposerPromptPopoverStack({
   sessionTreeNavigateDisabled?: boolean | undefined
   onSessionTreeNavigate?: ((entryId: string, summarize: boolean) => void) | undefined
   onRevealSessionTreeEntryInThread?: ((entryId: string) => void) | undefined
+  onBindSessionTreeClose?: ((close: (() => void) | null) => void) | undefined
+  onSessionTreeNavigateConfirmOpenChange?: ((open: boolean) => void) | undefined
+  sessionTreeCancelNavigateConfirmRef?: MutableRefObject<(() => void) | null> | undefined
 }) {
   return (
     <div
@@ -45,6 +51,9 @@ export function ComposerPromptPopoverStack({
         navigateDisabled={sessionTreeNavigateDisabled}
         onNavigate={onSessionTreeNavigate}
         onRevealInThread={onRevealSessionTreeEntryInThread}
+        onBindClose={onBindSessionTreeClose}
+        onNavigateConfirmOpenChange={onSessionTreeNavigateConfirmOpenChange}
+        cancelNavigateConfirmRef={sessionTreeCancelNavigateConfirmRef}
       />
       <SlashCommandPanel panelRef={slashCommandPanelRef} slashCommands={slashCommands} />
     </div>

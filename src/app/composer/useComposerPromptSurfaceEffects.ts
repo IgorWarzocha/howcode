@@ -157,19 +157,40 @@ export function useComposerEscapeEffects({
   dictationActive,
   dictationTranscribing,
   pickerOpen,
+  sessionTreeOpen,
+  sessionTreeNavigateConfirmOpen,
+  onCloseSessionTree,
+  onCancelSessionTreeNavigateConfirm,
   setOpenMenu,
 }: {
   cancelDictation: () => Promise<void>
   dictationActive: boolean
   dictationTranscribing: boolean
   pickerOpen: boolean
+  sessionTreeOpen?: boolean | undefined
+  sessionTreeNavigateConfirmOpen?: boolean | undefined
+  onCloseSessionTree?: (() => void) | undefined
+  onCancelSessionTreeNavigateConfirm?: (() => void) | undefined
   setOpenMenu: (menu: null) => void
 }) {
   useEffect(() => {
-    if (!(pickerOpen || dictationActive || dictationTranscribing)) return
+    const sessionTreeActive = sessionTreeOpen === true
+    if (!(pickerOpen || dictationActive || dictationTranscribing || sessionTreeActive)) return
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
+      if (sessionTreeActive) {
+        if (sessionTreeNavigateConfirmOpen) {
+          event.preventDefault()
+          event.stopImmediatePropagation()
+          onCancelSessionTreeNavigateConfirm?.()
+          return
+        }
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        onCloseSessionTree?.()
+        return
+      }
       if (pickerOpen) {
         event.preventDefault()
         event.stopImmediatePropagation()
@@ -185,5 +206,15 @@ export function useComposerEscapeEffects({
 
     window.addEventListener('keydown', handleKeyDown, true)
     return () => window.removeEventListener('keydown', handleKeyDown, true)
-  }, [cancelDictation, dictationActive, dictationTranscribing, pickerOpen, setOpenMenu])
+  }, [
+    cancelDictation,
+    dictationActive,
+    dictationTranscribing,
+    onCancelSessionTreeNavigateConfirm,
+    onCloseSessionTree,
+    pickerOpen,
+    sessionTreeNavigateConfirmOpen,
+    sessionTreeOpen,
+    setOpenMenu,
+  ])
 }

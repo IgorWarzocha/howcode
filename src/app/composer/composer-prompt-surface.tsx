@@ -1,6 +1,6 @@
 import { createSmartBtwWidgetFromMessages, SmartBtwCard } from '@howcode/extensions'
 import { getPersistedSessionPath } from '@howcode/shared/session-paths'
-import { type RefObject, useCallback, useEffect, useRef } from 'react'
+import { type RefObject, useCallback, useEffect, useRef, useState } from 'react'
 import {
   howcodeDismissTransientUiEvent,
   useHowcodeKeybindingCommand,
@@ -271,6 +271,9 @@ export function ComposerPromptSurface({
   const dictationTranscribing = dictationInterimText.length > 0
   const composerMode = activeView === 'chat' ? 'chat' : 'code'
   const sessionTreePanelRef = useRef<HTMLDivElement>(null)
+  const sessionTreeCloseRef = useRef<(() => void) | null>(null)
+  const sessionTreeCancelNavigateConfirmRef = useRef<(() => void) | null>(null)
+  const [sessionTreeNavigateConfirmOpen, setSessionTreeNavigateConfirmOpen] = useState(false)
   const slashCommandPanelRef = useRef<HTMLDivElement>(null)
   const fileMentionPanelRef = useRef<HTMLDivElement>(null)
   const skillMentionPanelRef = useRef<HTMLDivElement>(null)
@@ -356,11 +359,23 @@ export function ComposerPromptSurface({
     stopButtonBoundaryRef,
   })
 
+  const closeSessionTree = useCallback(() => {
+    sessionTreeCloseRef.current?.()
+    dismissSessionTree()
+  }, [dismissSessionTree])
+
   useComposerEscapeEffects({
     cancelDictation,
     dictationActive,
     dictationTranscribing,
     pickerOpen,
+    sessionTreeOpen,
+    sessionTreeNavigateConfirmOpen,
+    onCloseSessionTree: closeSessionTree,
+    onCancelSessionTreeNavigateConfirm: () => {
+      sessionTreeCancelNavigateConfirmRef.current?.()
+      setSessionTreeNavigateConfirmOpen(false)
+    },
     setOpenMenu,
   })
 
@@ -409,7 +424,7 @@ export function ComposerPromptSurface({
   const dismissComposerTransientUi = () => {
     setOpenMenu(null)
     slashCommands.dismiss()
-    dismissSessionTree()
+    closeSessionTree()
     fileMentions.dismiss()
     skillMentions.dismiss()
   }
@@ -581,6 +596,11 @@ export function ComposerPromptSurface({
               sessionTreeNavigateDisabled={sessionTreeNavigateDisabled}
               onSessionTreeNavigate={handleSessionTreeNavigate}
               onRevealSessionTreeEntryInThread={revealSessionTreeEntryInThread}
+              onBindSessionTreeClose={(close) => {
+                sessionTreeCloseRef.current = close
+              }}
+              onSessionTreeNavigateConfirmOpenChange={setSessionTreeNavigateConfirmOpen}
+              sessionTreeCancelNavigateConfirmRef={sessionTreeCancelNavigateConfirmRef}
               slashCommandPanelRef={slashCommandPanelRef}
               slashCommands={slashCommands}
               fileMentionPanelRef={fileMentionPanelRef}

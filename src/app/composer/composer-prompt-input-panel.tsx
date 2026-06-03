@@ -2,7 +2,7 @@ import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import type { PiTreeFilterMode } from '@howcode/shared/desktop-settings-contracts'
 import type { ComposerSendMode, KeybindingOverrides } from '@howcode/shared/keybindings'
 import { AlertTriangle, Loader2 } from 'lucide-react'
-import { type ClipboardEvent, type RefObject, useRef } from 'react'
+import { type ClipboardEvent, type MutableRefObject, type RefObject, useRef } from 'react'
 import type { ComposerAttachment, DesktopActionInvoker } from '../desktop/types'
 import { getPathForFileQuery } from '../query/desktop-query'
 import { appTypeSmallClass, composerInlineStatusPillClass } from '../ui/classes'
@@ -55,6 +55,9 @@ type ComposerPromptInputPanelProps = {
   sessionTreeNavigateDisabled?: boolean | undefined
   onSessionTreeNavigate?: ((entryId: string, summarize: boolean) => void) | undefined
   onRevealSessionTreeEntryInThread?: ((entryId: string) => void) | undefined
+  onBindSessionTreeClose?: ((close: (() => void) | null) => void) | undefined
+  onSessionTreeNavigateConfirmOpenChange?: ((open: boolean) => void) | undefined
+  sessionTreeCancelNavigateConfirmRef?: MutableRefObject<(() => void) | null> | undefined
   slashCommandPanelRef: RefObject<HTMLDivElement | null>
   slashCommands: ComposerSlashCommands
   fileMentionPanelRef: RefObject<HTMLDivElement | null>
@@ -145,6 +148,9 @@ export function ComposerPromptInputPanel({
   sessionTreeNavigateDisabled = false,
   onSessionTreeNavigate,
   onRevealSessionTreeEntryInThread,
+  onBindSessionTreeClose,
+  onSessionTreeNavigateConfirmOpenChange,
+  sessionTreeCancelNavigateConfirmRef,
   slashCommandPanelRef,
   slashCommands,
   fileMentionPanelRef,
@@ -207,6 +213,9 @@ export function ComposerPromptInputPanel({
                 sessionTreeNavigateDisabled={sessionTreeNavigateDisabled}
                 onSessionTreeNavigate={onSessionTreeNavigate}
                 onRevealSessionTreeEntryInThread={onRevealSessionTreeEntryInThread}
+                onBindSessionTreeClose={onBindSessionTreeClose}
+                onSessionTreeNavigateConfirmOpenChange={onSessionTreeNavigateConfirmOpenChange}
+                sessionTreeCancelNavigateConfirmRef={sessionTreeCancelNavigateConfirmRef}
                 slashCommandPanelRef={slashCommandPanelRef}
                 slashCommands={slashCommands}
               />
