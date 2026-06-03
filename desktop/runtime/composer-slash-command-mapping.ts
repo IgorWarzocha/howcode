@@ -2,6 +2,7 @@ import {
   appNewSessionSlashCommand,
   appSettingsSlashCommand,
   compactSlashCommand,
+  sessionTreeSlashCommand,
 } from '../../shared/composer-slash-commands.ts'
 import type { ComposerSlashCommand } from '../../shared/desktop-contracts.ts'
 import type { PiRuntime } from './types.ts'
@@ -10,6 +11,7 @@ const reservedCommandNames = new Set([
   appSettingsSlashCommand.name,
   appNewSessionSlashCommand.name,
   compactSlashCommand.name,
+  sessionTreeSlashCommand.name,
 ])
 
 export function mapSessionCommands(session: PiRuntime['session']): ComposerSlashCommand[] {
@@ -17,6 +19,7 @@ export function mapSessionCommands(session: PiRuntime['session']): ComposerSlash
     appSettingsSlashCommand,
     appNewSessionSlashCommand,
     compactSlashCommand,
+    sessionTreeSlashCommand,
   ]
   const extensionCommandNames = new Set<string>()
 

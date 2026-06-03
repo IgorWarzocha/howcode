@@ -1,6 +1,8 @@
 import type { DesktopActionPayload } from '@howcode/shared/desktop-action-contracts'
 import { getPersistedSessionPath } from '@howcode/shared/session-paths'
+import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useState } from 'react'
+import { desktopQueryKeys } from '../query/desktop-query-keys'
 import type { View } from '../types'
 
 export function useComposerSessionTreeNavigate(input: {
@@ -29,6 +31,7 @@ export function useComposerSessionTreeNavigate(input: {
     sessionPath,
   } = input
   const composerMode = input.activeView === 'chat' ? 'chat' : 'code'
+  const queryClient = useQueryClient()
   const [sessionTreeHidden, setSessionTreeHidden] = useState(false)
   const persistedSessionPath = getPersistedSessionPath(sessionPath)
   const sessionTreeNavigateDisabled =
@@ -49,9 +52,25 @@ export function useComposerSessionTreeNavigate(input: {
         },
         { closeMenu: false },
       )
-      if (!ok) setSessionTreeHidden(false)
+      if (!ok) {
+        setSessionTreeHidden(false)
+        return
+      }
+      if (persistedSessionPath) {
+        void queryClient.invalidateQueries({
+          queryKey: desktopQueryKeys.sessionTreeList(persistedSessionPath),
+        })
+      }
     },
-    [chatGroupId, composerMode, projectId, runComposerAction, sessionPath],
+    [
+      chatGroupId,
+      composerMode,
+      persistedSessionPath,
+      projectId,
+      queryClient,
+      runComposerAction,
+      sessionPath,
+    ],
   )
 
   useEffect(() => {

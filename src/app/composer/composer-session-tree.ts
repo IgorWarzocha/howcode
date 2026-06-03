@@ -16,12 +16,9 @@ export type ComposerSessionTreeRow = {
   assistantToolOnly?: boolean | undefined
 }
 
-/** Keep true while session-tree UX is in progress; wire open/close like attachments before ship. */
-export const composerSessionTreePanelDevAlwaysOpen = true
-
 export function isComposerSessionTreePanelVisible(open: boolean, forceHidden: boolean) {
   if (forceHidden) return false
-  return open || composerSessionTreePanelDevAlwaysOpen
+  return open
 }
 
 function toComposerRow(row: SessionTreeListRow): ComposerSessionTreeRow {

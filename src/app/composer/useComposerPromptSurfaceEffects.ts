@@ -48,6 +48,7 @@ export function useComposerAutocompleteEffects({
   slashCommandPanelRef,
   slashCommandListSignature,
   slashCommands,
+  sessionTreePanelRef,
   stopButtonBoundaryRef,
 }: {
   composerPanelRef: RefObject<HTMLDivElement | null>
@@ -60,6 +61,7 @@ export function useComposerAutocompleteEffects({
   slashCommandPanelRef: RefObject<HTMLDivElement | null>
   slashCommandListSignature: string
   slashCommands: ComposerSlashCommands
+  sessionTreePanelRef?: RefObject<HTMLDivElement | null> | undefined
   stopButtonBoundaryRef: RefObject<HTMLDivElement | null>
 }) {
   useEffect(() => {
@@ -70,6 +72,7 @@ export function useComposerAutocompleteEffects({
       if (
         !target ||
         slashCommandPanelRef.current?.contains(target) ||
+        sessionTreePanelRef?.current?.contains(target) ||
         fileMentionPanelRef.current?.contains(target) ||
         skillMentionPanelRef.current?.contains(target) ||
         composerPanelRef.current?.contains(target) ||
@@ -91,6 +94,7 @@ export function useComposerAutocompleteEffects({
     fileMentions,
     skillMentionPanelRef,
     skillMentions,
+    sessionTreePanelRef,
     slashCommandPanelRef,
     slashCommands,
     stopButtonBoundaryRef,

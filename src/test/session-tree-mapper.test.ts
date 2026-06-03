@@ -99,6 +99,68 @@ describe('filterSessionTreeListRows', () => {
     expect(list.rows.find((row) => row.id === 'a1')?.isOnActivePath).toBe(true)
   })
 
+  it('active path includes ancestors before a branch summary leaf', () => {
+    const list = buildSessionTreeListFromPiTree(
+      [
+        {
+          entry: {
+            id: 'u1',
+            parentId: null,
+            type: 'message',
+            message: { role: 'user', content: [{ type: 'text', text: 'start' }] },
+          },
+          children: [
+            {
+              entry: {
+                id: 'a1',
+                parentId: 'u1',
+                type: 'message',
+                message: { role: 'assistant', content: [{ type: 'text', text: 'reply' }] },
+              },
+              children: [
+                {
+                  entry: {
+                    id: 'bs',
+                    parentId: 'a1',
+                    type: 'branch_summary',
+                    summary: 'abandoned work',
+                  },
+                  children: [
+                    {
+                      entry: {
+                        id: 'u-new',
+                        parentId: 'bs',
+                        type: 'message',
+                        message: { role: 'user', content: [{ type: 'text', text: 'after' }] },
+                      },
+                      children: [],
+                    },
+                  ],
+                },
+                {
+                  entry: {
+                    id: 'dead-tip',
+                    parentId: 'a1',
+                    type: 'message',
+                    message: { role: 'assistant', content: [{ type: 'text', text: 'old branch' }] },
+                  },
+                  children: [],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      'u-new',
+    )
+
+    expect(list.rows.find((row) => row.id === 'u1')?.isOnActivePath).toBe(true)
+    expect(list.rows.find((row) => row.id === 'a1')?.isOnActivePath).toBe(true)
+    expect(list.rows.find((row) => row.id === 'bs')?.isOnActivePath).toBe(true)
+    expect(list.rows.find((row) => row.id === 'u-new')?.isOnActivePath).toBe(true)
+    expect(list.rows.find((row) => row.id === 'dead-tip')?.isOnActivePath).toBe(false)
+  })
+
   it('omits bookkeeping entries from flattened tree', () => {
     const list = buildSessionTreeListFromPiTree(
       [

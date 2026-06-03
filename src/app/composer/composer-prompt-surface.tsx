@@ -1,11 +1,12 @@
 import { createSmartBtwWidgetFromMessages, SmartBtwCard } from '@howcode/extensions'
 import { getPersistedSessionPath } from '@howcode/shared/session-paths'
-import { type RefObject, useEffect, useRef } from 'react'
+import { type RefObject, useCallback, useEffect, useRef } from 'react'
 import {
   howcodeDismissTransientUiEvent,
   useHowcodeKeybindingCommand,
 } from '../app-shell/keybinding-events'
 import { AskQuestionsCard, useComposerAskQuestionsActions } from '../features/native-extensions'
+import { dispatchSessionTreeReveal } from '../thread/session-tree-reveal'
 
 import {
   appTypeCodeClass,
@@ -29,6 +30,7 @@ import {
   useComposerEscapeEffects,
 } from './useComposerPromptSurfaceEffects'
 import { useComposerSessionTreeNavigate } from './useComposerSessionTreeNavigate'
+import { useComposerSessionTreePanel } from './useComposerSessionTreePanel'
 import { useComposerSkillMentions } from './useComposerSkillMentions'
 import { useComposerSlashCommands } from './useComposerSlashCommands'
 import { useGlobalComposerFileDrop } from './useGlobalComposerFileDrop'
@@ -298,6 +300,7 @@ export function ComposerPromptSurface({
   const startNewSession = () => {
     void runComposerAction('thread.new', { projectId, chatGroupId, composerMode })
   }
+  const openSessionTreeRef = useRef<() => void>(() => undefined)
   const slashCommands = useComposerSlashCommands({
     draft,
     projectId,
@@ -308,7 +311,13 @@ export function ComposerPromptSurface({
     sendExtensionCommand,
     onOpenSettingsView,
     onStartNewSession: startNewSession,
+    onOpenSessionTree: () => openSessionTreeRef.current(),
   })
+  const { dismissSessionTree, openSessionTree, sessionTreeOpen } = useComposerSessionTreePanel({
+    sessionPath,
+    slashCommandsOpen: slashCommands.open,
+  })
+  openSessionTreeRef.current = openSessionTree
   const slashCommandListSignature = slashCommands.commands
     .map((command) => `${command.source}:${command.name}`)
     .join('|')
@@ -343,6 +352,7 @@ export function ComposerPromptSurface({
     slashCommandPanelRef,
     slashCommandListSignature,
     slashCommands,
+    sessionTreePanelRef,
     stopButtonBoundaryRef,
   })
 
@@ -375,6 +385,13 @@ export function ComposerPromptSurface({
   })
   const attachmentButtonLabel = attachments.length > 0 ? 'Manage attachments' : 'Add attachment'
   const persistedSessionPath = getPersistedSessionPath(sessionPath)
+  const revealSessionTreeEntryInThread = useCallback(
+    (entryId: string) => {
+      if (!persistedSessionPath) return
+      dispatchSessionTreeReveal({ sessionPath: persistedSessionPath, entryId })
+    },
+    [persistedSessionPath],
+  )
   const { handleSessionTreeNavigate, sessionTreeForceHidden, sessionTreeNavigateDisabled } =
     useComposerSessionTreeNavigate({
       activeView,
@@ -392,6 +409,7 @@ export function ComposerPromptSurface({
   const dismissComposerTransientUi = () => {
     setOpenMenu(null)
     slashCommands.dismiss()
+    dismissSessionTree()
     fileMentions.dismiss()
     skillMentions.dismiss()
   }
@@ -557,11 +575,12 @@ export function ComposerPromptSurface({
               projectId={projectId}
               piTreeFilterMode={piTreeFilterMode}
               sessionPath={sessionPath}
-              sessionTreeOpen
+              sessionTreeOpen={sessionTreeOpen}
               sessionTreePanelRef={sessionTreePanelRef}
               sessionTreeForceHidden={sessionTreeForceHidden}
               sessionTreeNavigateDisabled={sessionTreeNavigateDisabled}
               onSessionTreeNavigate={handleSessionTreeNavigate}
+              onRevealSessionTreeEntryInThread={revealSessionTreeEntryInThread}
               slashCommandPanelRef={slashCommandPanelRef}
               slashCommands={slashCommands}
               fileMentionPanelRef={fileMentionPanelRef}
