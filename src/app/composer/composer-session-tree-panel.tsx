@@ -92,7 +92,7 @@ function SessionTreeRowLine({
         aria-selected={selected}
         disabled={row.isLeaf}
         className={cn(
-          'grid min-h-6 w-full min-w-0 grid-cols-[3rem_minmax(0,1fr)] items-center gap-1.5 rounded-md px-1 py-0 text-left transition-colors duration-150 ease-out',
+          'grid min-h-6 w-full min-w-0 grid-cols-[3rem_minmax(0,1fr)] items-center gap-1.5 rounded-md px-2 py-0 text-left transition-colors duration-150 ease-out',
           selected
             ? 'text-[color:var(--text)]'
             : 'hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
