@@ -6,12 +6,18 @@ const rows: ComposerSessionTreeRow[] = [
   { id: 'u', depth: 0, label: 'hi', kind: 'user', isLeaf: false, isOnActivePath: true },
   { id: 'a', depth: 1, label: 'ok', kind: 'assistant', isLeaf: false, isOnActivePath: true },
   { id: 't', depth: 2, label: 'read', kind: 'tool', isLeaf: false, isOnActivePath: true },
+  { id: 'b', depth: 1, label: 'fork', kind: 'branch', isLeaf: false, isOnActivePath: true },
   { id: 's', depth: 1, label: 'sum', kind: 'summary', isLeaf: true, isOnActivePath: true },
 ]
 
 describe('filterSessionTreeRows', () => {
   it('no-tools drops tool rows', () => {
-    expect(filterSessionTreeRows(rows, 'no-tools').map((row) => row.id)).toEqual(['u', 'a', 's'])
+    expect(filterSessionTreeRows(rows, 'no-tools').map((row) => row.id)).toEqual([
+      'u',
+      'a',
+      'b',
+      's',
+    ])
   })
 
   it('user-only keeps user rows', () => {

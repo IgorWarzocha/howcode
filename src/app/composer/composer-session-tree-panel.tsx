@@ -1,5 +1,6 @@
 import type { PiTreeFilterMode } from '@howcode/shared/desktop-settings-contracts'
 import {
+  appToneAccentClass,
   appToneMutedClass,
   appToneTextClass,
   appTypeMetaClass,
@@ -10,12 +11,12 @@ import {
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { type RefObject, useEffect, useMemo, useState } from 'react'
 import { PopoverPanel } from '../common/popover'
-import type { Message } from '../types'
+import { getSessionTreeListQuery } from '../query/desktop-query'
 import { cn } from '../utils/cn'
 import {
   type ComposerSessionTreeRow,
   composerSessionTreePanelDevAlwaysOpen,
-  getComposerSessionTreeRows,
+  getComposerSessionTreeRowsFromList,
 } from './composer-session-tree'
 import { getVisibleSessionTreeRowIndices, rowHasChildren } from './composer-session-tree-fold'
 
@@ -30,14 +31,18 @@ function rowKindLabel(kind: ComposerSessionTreeRow['kind']) {
       return 'Agent'
     case 'tool':
       return 'Tool'
+    case 'branch':
+      return 'Branch'
     case 'summary':
-      return 'Summary'
+      return 'Compact'
     case 'system':
       return 'System'
     default:
       return 'Entry'
   }
 }
+
+const sessionTreeKindColumnClass = 'w-[3rem] shrink-0'
 
 function SessionTreeRowLine({
   row,
@@ -54,25 +59,26 @@ function SessionTreeRowLine({
   onToggleExpand: () => void
   onSelect: (id: string) => void
 }) {
-  const indentPx = 4 + row.depth * 14
+  const indentPx = row.depth * 14
+  const contentSurfaceClass = cn(
+    'grid min-h-6 w-full min-w-0 grid-cols-[3rem_minmax(0,1fr)] items-center gap-1.5 rounded-md px-2 py-0 text-left transition-colors duration-150 ease-out',
+    row.isLeaf && 'opacity-70',
+    !row.isOnActivePath && 'opacity-55',
+    selected
+      ? cn(composerPopoverOptionSelectedClass, 'text-[color:var(--text)]')
+      : 'text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
+  )
 
   return (
     <div
-      className={cn(
-        'grid w-full min-h-6 grid-cols-[1rem_minmax(0,1fr)] items-center gap-0.5 rounded-md py-0 pr-1 transition-colors duration-150 ease-out',
-        row.isLeaf && 'opacity-70',
-        !row.isOnActivePath && 'opacity-55',
-        selected ? composerPopoverOptionSelectedClass : 'text-[color:var(--muted)]',
-      )}
-      style={{ paddingLeft: `${indentPx}px` }}
+      className="grid w-full min-h-6 items-center gap-0.5"
+      style={{ gridTemplateColumns: `${indentPx}px 1rem minmax(0,1fr)` }}
     >
+      <span aria-hidden />
       {hasChildren ? (
         <button
           type="button"
-          className={cn(
-            chevronSlotClass,
-            'rounded-md text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
-          )}
+          className={cn(chevronSlotClass, 'text-[color:var(--muted)]')}
           aria-label={expanded ? 'Collapse subtree' : 'Expand subtree'}
           aria-expanded={expanded}
           onMouseDown={(event) => event.preventDefault()}
@@ -92,19 +98,29 @@ function SessionTreeRowLine({
         role="option"
         aria-selected={selected}
         disabled={row.isLeaf}
-        className={cn(
-          'grid min-h-6 w-full min-w-0 grid-cols-[3rem_minmax(0,1fr)] items-center gap-1.5 rounded-md px-2 py-0 text-left transition-colors duration-150 ease-out',
-          selected
-            ? 'text-[color:var(--text)]'
-            : 'hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
-        )}
+        className={contentSurfaceClass}
         onMouseDown={(event) => event.preventDefault()}
         onClick={() => onSelect(row.id)}
       >
-        <span className={cn('truncate', appTypeMetaClass, appToneMutedClass)}>
+        <span
+          className={cn(
+            sessionTreeKindColumnClass,
+            'truncate',
+            appTypeMetaClass,
+            row.kind === 'branch' ? appToneAccentClass : appToneMutedClass,
+          )}
+        >
           {rowKindLabel(row.kind)}
         </span>
-        <span className={cn('truncate', appTypeSmallClass, appToneTextClass)}>{row.label}</span>
+        <span
+          className={cn(
+            'min-w-0 truncate',
+            appTypeSmallClass,
+            row.kind === 'branch' ? appToneAccentClass : appToneTextClass,
+          )}
+        >
+          {row.label}
+        </span>
       </button>
     </div>
   )
@@ -112,7 +128,7 @@ function SessionTreeRowLine({
 
 type ComposerSessionTreePanelProps = {
   panelRef: RefObject<HTMLDivElement | null>
-  messages?: readonly Message[] | undefined
+  sessionPath?: string | null | undefined
   treeFilterMode?: PiTreeFilterMode | undefined
   open?: boolean | undefined
   onSelectEntry?: ((entryId: string) => void) | undefined
@@ -120,15 +136,32 @@ type ComposerSessionTreePanelProps = {
 
 export function ComposerSessionTreePanel({
   panelRef,
-  messages,
+  sessionPath,
   treeFilterMode = 'no-tools',
   open = false,
   onSelectEntry,
 }: ComposerSessionTreePanelProps) {
   const visible = open || composerSessionTreePanelDevAlwaysOpen
+  const [treeList, setTreeList] =
+    useState<Awaited<ReturnType<typeof getSessionTreeListQuery>>>(null)
+
+  useEffect(() => {
+    if (!(visible && sessionPath?.trim())) {
+      setTreeList(null)
+      return
+    }
+    let cancelled = false
+    void getSessionTreeListQuery(sessionPath).then((list) => {
+      if (!cancelled) setTreeList(list)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [sessionPath, visible])
+
   const rows = useMemo(
-    () => getComposerSessionTreeRows(messages, treeFilterMode),
-    [messages, treeFilterMode],
+    () => getComposerSessionTreeRowsFromList(treeList ?? undefined, treeFilterMode),
+    [treeList, treeFilterMode],
   )
   const leafId = useMemo(
     () => rows.find((row) => row.isLeaf)?.id ?? rows.at(-1)?.id ?? null,
@@ -161,43 +194,55 @@ export function ComposerSessionTreePanel({
 
   return (
     <div className="grid w-full overflow-visible px-4">
-      <PopoverPanel
-        surface={false}
-        ref={panelRef}
-        id={listboxId}
-        role="listbox"
-        tabIndex={-1}
-        aria-label="Session tree"
+      <div
         className={cn(
-          'grid w-full max-h-72 gap-0 overflow-y-auto overflow-x-hidden rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-2 py-1.5 shadow-none',
+          'grid w-full max-h-72 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] shadow-none',
         )}
       >
-        <div className={cn('pb-0.5 pl-0.5', appTypeMetaClass, appToneMutedClass)}>Session tree</div>
-        {rows.length > 0 ? (
-          visibleIndices.map((rowIndex) => {
-            const row = rows[rowIndex]
-            if (!row) return null
-            const hasChildren = rowHasChildren(rows, rowIndex)
-            const expanded = hasChildren && !collapsedIds.has(row.id)
-            return (
-              <SessionTreeRowLine
-                key={row.id}
-                row={row}
-                selected={rowIndex === selectedIndex}
-                hasChildren={hasChildren}
-                expanded={expanded}
-                onToggleExpand={() => toggleCollapsed(row.id)}
-                onSelect={(id) => {
-                  setSelectedId(id)
-                  onSelectEntry?.(id)
-                }}
-              />
-            )
-          })
-        ) : (
-          <div className={inlineEmptyNoteClass}>No session entries</div>
-        )}
-      </PopoverPanel>
+        <div
+          className={cn(
+            'sticky top-0 z-[1] bg-[color:var(--panel-2)] px-2 py-1.5',
+            appTypeMetaClass,
+            appToneMutedClass,
+          )}
+        >
+          Session tree
+        </div>
+        <PopoverPanel
+          surface={false}
+          ref={panelRef}
+          id={listboxId}
+          role="listbox"
+          tabIndex={-1}
+          aria-label="Session tree"
+          className="grid min-h-0 gap-0 overflow-y-auto overflow-x-hidden bg-[color:var(--panel)] px-2 py-1 shadow-none"
+        >
+          {rows.length > 0 ? (
+            visibleIndices.map((rowIndex) => {
+              const row = rows[rowIndex]
+              if (!row) return null
+              const hasChildren = rowHasChildren(rows, rowIndex)
+              const expanded = hasChildren && !collapsedIds.has(row.id)
+              return (
+                <SessionTreeRowLine
+                  key={row.id}
+                  row={row}
+                  selected={rowIndex === selectedIndex}
+                  hasChildren={hasChildren}
+                  expanded={expanded}
+                  onToggleExpand={() => toggleCollapsed(row.id)}
+                  onSelect={(id) => {
+                    setSelectedId(id)
+                    onSelectEntry?.(id)
+                  }}
+                />
+              )
+            })
+          ) : (
+            <div className={inlineEmptyNoteClass}>No session entries</div>
+          )}
+        </PopoverPanel>
+      </div>
     </div>
   )
 }

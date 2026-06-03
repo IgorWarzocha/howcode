@@ -41,6 +41,7 @@ import type {
   ThreadData,
   ThreadSearchResult,
 } from './desktop-contracts'
+import type { SessionTreeList } from './session-tree.ts'
 import type {
   TerminalEvent,
   TerminalOpenRequest,
@@ -145,6 +146,7 @@ export type PiThreadsService = {
   compileReactArtifact: (source: string) => Promise<ReactArtifactCompileResult>
   loadShellState: (cwd: string) => Promise<ShellState>
   loadAppSettings: () => Promise<AppSettings> | AppSettings
+  loadSessionTreeList: (sessionPath: string) => Promise<SessionTreeList | null>
   loadThread: (
     sessionPath: string,
     options?: { historyCompactions?: number },

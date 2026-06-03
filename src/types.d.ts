@@ -214,6 +214,9 @@ declare global {
       getInboxThreads?: () => Promise<InboxThread[]>
       getArchivedThreads?: () => Promise<ArchivedThread[]>
       getThread?: (sessionPath: string, historyCompactions?: number) => Promise<ThreadData | null>
+      getSessionTreeList?: (
+        sessionPath: string,
+      ) => Promise<import('@howcode/shared/session-tree').SessionTreeList | null>
       searchThread?: (sessionPath: string, query: string) => Promise<ThreadSearchResult>
       watchSession?: (sessionPath: string | null) => Promise<void>
       listTerminals?: () => Promise<TerminalSessionSnapshot[]>

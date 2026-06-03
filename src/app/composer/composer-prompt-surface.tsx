@@ -541,8 +541,9 @@ export function ComposerPromptSurface({
               pickerState={pickerState}
               placeholderText={placeholderText}
               projectId={projectId}
-              messages={messages}
               piTreeFilterMode={piTreeFilterMode}
+              sessionPath={sessionPath}
+              sessionTreeOpen
               sessionTreePanelRef={sessionTreePanelRef}
               slashCommandPanelRef={slashCommandPanelRef}
               slashCommands={slashCommands}

@@ -27,6 +27,7 @@ export {
   startNewThread,
   stopComposerRun,
 } from './live-runtime-service.ts'
+export { loadSessionTreeList } from './session-tree-service.ts'
 export {
   getPiSessionStorage,
   loadPiSettingsInHost as loadPiSettings,

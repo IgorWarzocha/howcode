@@ -47,6 +47,7 @@ import type {
   ThreadData,
   ThreadSearchResult,
 } from './desktop-contracts'
+import type { SessionTreeList } from './session-tree.ts'
 import type {
   TerminalCloseRequest,
   TerminalEvent,
@@ -289,6 +290,10 @@ export type DesktopRequestMap = {
   getThread: {
     params: { sessionPath: string; historyCompactions?: number | undefined }
     response: ThreadData | null
+  }
+  getSessionTreeList: {
+    params: { sessionPath: string }
+    response: SessionTreeList | null
   }
   searchThread: {
     params: { sessionPath: string; query: string }

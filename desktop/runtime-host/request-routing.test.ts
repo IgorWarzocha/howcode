@@ -27,5 +27,10 @@ describe('runtime host request routing', () => {
         sessionPath: '/repo/.pi/session.json',
       }),
     ).toBe(false)
+    expect(
+      shouldUseThreadRuntimeHost('loadSessionTreeList', {
+        sessionPath: '/repo/.pi/session.json',
+      }),
+    ).toBe(false)
   })
 })

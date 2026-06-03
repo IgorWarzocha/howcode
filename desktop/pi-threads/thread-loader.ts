@@ -5,6 +5,7 @@ import type {
   ThreadData,
   ThreadSearchResult,
 } from '../../shared/desktop-contracts.ts'
+import type { SessionTreeList } from '../../shared/session-tree.ts'
 import { getLiveThread } from '../pi-desktop-runtime.ts'
 import { invokeRuntimeHost } from '../runtime-host/client-bridge.ts'
 import {
@@ -91,6 +92,10 @@ export async function loadThreadSnapshot(
     ...snapshot,
     thread: attachThreadDiffPreferences(snapshot.thread),
   }
+}
+
+export async function loadSessionTreeList(sessionPath: string): Promise<SessionTreeList> {
+  return invokeRuntimeHost('loadSessionTreeList', { sessionPath })
 }
 
 export async function loadThread(

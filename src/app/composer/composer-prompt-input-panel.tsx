@@ -5,7 +5,6 @@ import { AlertTriangle, Loader2 } from 'lucide-react'
 import { type ClipboardEvent, type RefObject, useRef } from 'react'
 import type { ComposerAttachment, DesktopActionInvoker } from '../desktop/types'
 import { getPathForFileQuery } from '../query/desktop-query'
-import type { Message } from '../types'
 import { appTypeSmallClass, composerInlineStatusPillClass } from '../ui/classes'
 import { cn } from '../utils/cn'
 import { ComposerDictationControls } from './composer-dictation-controls'
@@ -48,8 +47,9 @@ type ComposerPromptInputPanelProps = {
   pickerState: Parameters<typeof ComposerFilePicker>[0]['picker']
   placeholderText: string
   projectId: string
-  messages?: readonly Message[] | undefined
   piTreeFilterMode?: PiTreeFilterMode | undefined
+  sessionPath?: string | null | undefined
+  sessionTreeOpen?: boolean | undefined
   sessionTreePanelRef?: RefObject<HTMLDivElement | null> | undefined
   slashCommandPanelRef: RefObject<HTMLDivElement | null>
   slashCommands: ComposerSlashCommands
@@ -133,8 +133,9 @@ export function ComposerPromptInputPanel({
   pickerState,
   placeholderText,
   projectId,
-  messages,
   piTreeFilterMode = 'no-tools',
+  sessionPath = null,
+  sessionTreeOpen = true,
   sessionTreePanelRef: sessionTreePanelRefProp,
   slashCommandPanelRef,
   slashCommands,
@@ -190,7 +191,8 @@ export function ComposerPromptInputPanel({
           <div className="flex min-w-0 flex-1 items-end gap-2">
             <div className="min-w-0 flex-1">
               <ComposerPromptPopoverStack
-                messages={messages}
+                sessionPath={sessionPath}
+                sessionTreeOpen={sessionTreeOpen}
                 treeFilterMode={piTreeFilterMode}
                 sessionTreePanelRef={sessionTreePanelRef}
                 slashCommandPanelRef={slashCommandPanelRef}

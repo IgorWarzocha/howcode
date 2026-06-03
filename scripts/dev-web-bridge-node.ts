@@ -271,6 +271,7 @@ const handlers: DesktopRequestHandlerMap = {
   getArchivedThreads: () => piThreads.loadArchivedThreadList(),
   getThread: ({ sessionPath, historyCompactions = 0 }) =>
     piThreads.loadThread(sessionPath, { historyCompactions }),
+  getSessionTreeList: ({ sessionPath }) => piThreads.loadSessionTreeList(sessionPath),
   searchThread: ({ sessionPath, query }) => piThreads.searchThread(sessionPath, query),
   watchSession: async ({ sessionPath }) => {
     await piThreads.setWatchedSessionPath(sessionPath)

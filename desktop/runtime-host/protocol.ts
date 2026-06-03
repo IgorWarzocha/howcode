@@ -19,6 +19,7 @@ import type {
   ThreadData,
   ThreadSearchResult,
 } from '../../shared/desktop-contracts.ts'
+import type { SessionTreeList } from '../../shared/session-tree.ts'
 import type { CommitMessageContext } from '../project-git.ts'
 
 export type RuntimeHostRequestMap = {
@@ -88,6 +89,7 @@ export type RuntimeHostRequestMap = {
     chat?: boolean | undefined
   }
   loadThreadSnapshot: { sessionPath: string; historyCompactions?: number | undefined }
+  loadSessionTreeList: { sessionPath: string }
   searchThreadSnapshot: { sessionPath: string; query: string }
   startSkillCreatorSession: {
     prompt: string
@@ -157,6 +159,7 @@ export type RuntimeHostResponseMap = {
     threadId: string
     thread: ThreadData
   }
+  loadSessionTreeList: SessionTreeList
   searchThreadSnapshot: ThreadSearchResult
   startSkillCreatorSession: SkillCreatorSessionState
   continueSkillCreatorSession: SkillCreatorSessionState
