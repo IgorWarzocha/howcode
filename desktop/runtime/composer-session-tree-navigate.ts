@@ -1,5 +1,9 @@
 import type { ComposerStateRequest } from '../../shared/desktop-contracts.ts'
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
+import {
+  publishComposerUpdate,
+  publishThreadUpdate,
+} from '../runtime-host/live-thread-publisher.ts'
 import { applyComposerModeSettings } from './composer-mode-settings.ts'
 import { buildComposerState } from './composer-state.ts'
 import {
@@ -10,7 +14,6 @@ import {
   scheduleRuntimeDisposalForRuntime,
   withRuntimeMutationLock,
 } from './runtime-registry.ts'
-import { publishComposerUpdate, publishThreadUpdate } from './thread-publisher.ts'
 import type { PiRuntime, RuntimeThreadReason } from './types.ts'
 
 export type NavigateSessionTreeOutcome = {
