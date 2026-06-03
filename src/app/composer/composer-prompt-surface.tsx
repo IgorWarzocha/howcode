@@ -265,6 +265,7 @@ export function ComposerPromptSurface({
   })
   const dictationTranscribing = dictationInterimText.length > 0
   const composerMode = activeView === 'chat' ? 'chat' : 'code'
+  const sessionTreePanelRef = useRef<HTMLDivElement>(null)
   const slashCommandPanelRef = useRef<HTMLDivElement>(null)
   const fileMentionPanelRef = useRef<HTMLDivElement>(null)
   const skillMentionPanelRef = useRef<HTMLDivElement>(null)
@@ -539,6 +540,8 @@ export function ComposerPromptSurface({
               pickerState={pickerState}
               placeholderText={placeholderText}
               projectId={projectId}
+              messages={messages}
+              sessionTreePanelRef={sessionTreePanelRef}
               slashCommandPanelRef={slashCommandPanelRef}
               slashCommands={slashCommands}
               fileMentionPanelRef={fileMentionPanelRef}

@@ -1,9 +1,10 @@
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import type { ComposerSendMode, KeybindingOverrides } from '@howcode/shared/keybindings'
 import { AlertTriangle, Loader2 } from 'lucide-react'
-import type { ClipboardEvent, RefObject } from 'react'
+import { type ClipboardEvent, type RefObject, useRef } from 'react'
 import type { ComposerAttachment, DesktopActionInvoker } from '../desktop/types'
 import { getPathForFileQuery } from '../query/desktop-query'
+import type { Message } from '../types'
 import { appTypeSmallClass, composerInlineStatusPillClass } from '../ui/classes'
 import { cn } from '../utils/cn'
 import { ComposerDictationControls } from './composer-dictation-controls'
@@ -13,8 +14,8 @@ import {
   getComposerAttachmentsFromClipboardData,
   hasAttachmentHintInClipboardData,
 } from './composer-paste-attachments'
+import { ComposerPromptPopoverStack } from './composer-prompt-popover-stack'
 import { ComposerSkillMentionPanel } from './composer-skill-mention-panel'
-import { SlashCommandPanel } from './composer-slash-command-panel'
 import { ComposerTextField } from './composer-text-field'
 import { handleComposerTextKeyDown } from './composer-text-keydown'
 import type { ComposerFileMentions } from './useComposerFileMentions'
@@ -46,6 +47,8 @@ type ComposerPromptInputPanelProps = {
   pickerState: Parameters<typeof ComposerFilePicker>[0]['picker']
   placeholderText: string
   projectId: string
+  messages?: readonly Message[] | undefined
+  sessionTreePanelRef?: RefObject<HTMLDivElement | null> | undefined
   slashCommandPanelRef: RefObject<HTMLDivElement | null>
   slashCommands: ComposerSlashCommands
   fileMentionPanelRef: RefObject<HTMLDivElement | null>
@@ -102,6 +105,7 @@ function BranchGuardPopup({ message }: { message: string | null }) {
   )
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: single surface wiring dictation, mentions, and popovers
 export function ComposerPromptInputPanel({
   attachments,
   clearError,
@@ -127,6 +131,8 @@ export function ComposerPromptInputPanel({
   pickerState,
   placeholderText,
   projectId,
+  messages,
+  sessionTreePanelRef: sessionTreePanelRefProp,
   slashCommandPanelRef,
   slashCommands,
   fileMentionPanelRef,
@@ -149,6 +155,8 @@ export function ComposerPromptInputPanel({
   toggleDictation,
   togglePendingPickerAttachment,
 }: ComposerPromptInputPanelProps) {
+  const internalSessionTreePanelRef = useRef<HTMLDivElement>(null)
+  const sessionTreePanelRef = sessionTreePanelRefProp ?? internalSessionTreePanelRef
   const showBranchGuardPopup = isBranchGuardError(errorMessage)
   const statusMessage = getComposerStatusMessage({ draft, errorMessage, showBranchGuardPopup })
   const dictationButtonVisible = showDictationButton && !inputLocked
@@ -178,7 +186,12 @@ export function ComposerPromptInputPanel({
         <div className="flex items-end justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-end gap-2">
             <div className="min-w-0 flex-1">
-              <SlashCommandPanel panelRef={slashCommandPanelRef} slashCommands={slashCommands} />
+              <ComposerPromptPopoverStack
+                messages={messages}
+                sessionTreePanelRef={sessionTreePanelRef}
+                slashCommandPanelRef={slashCommandPanelRef}
+                slashCommands={slashCommands}
+              />
               <ComposerTextField
                 value={draft}
                 onChange={setDraft}
