@@ -58,6 +58,8 @@ type ComposerPromptInputPanelProps = {
   onBindSessionTreeClose?: ((close: (() => void) | null) => void) | undefined
   onSessionTreeNavigateConfirmOpenChange?: ((open: boolean) => void) | undefined
   sessionTreeCancelNavigateConfirmRef?: MutableRefObject<(() => void) | null> | undefined
+  composerPopoverStackRef?: RefObject<HTMLDivElement | null> | undefined
+  onSessionTreeTypingDismiss?: (() => void) | undefined
   slashCommandPanelRef: RefObject<HTMLDivElement | null>
   slashCommands: ComposerSlashCommands
   fileMentionPanelRef: RefObject<HTMLDivElement | null>
@@ -151,6 +153,8 @@ export function ComposerPromptInputPanel({
   onBindSessionTreeClose,
   onSessionTreeNavigateConfirmOpenChange,
   sessionTreeCancelNavigateConfirmRef,
+  composerPopoverStackRef,
+  onSessionTreeTypingDismiss,
   slashCommandPanelRef,
   slashCommands,
   fileMentionPanelRef,
@@ -209,6 +213,7 @@ export function ComposerPromptInputPanel({
                 sessionTreeOpen={sessionTreeOpen}
                 treeFilterMode={piTreeFilterMode}
                 sessionTreePanelRef={sessionTreePanelRef}
+                popoverStackRef={composerPopoverStackRef}
                 sessionTreeForceHidden={sessionTreeForceHidden}
                 sessionTreeNavigateDisabled={sessionTreeNavigateDisabled}
                 onSessionTreeNavigate={onSessionTreeNavigate}
@@ -221,7 +226,10 @@ export function ComposerPromptInputPanel({
               />
               <ComposerTextField
                 value={draft}
-                onChange={setDraft}
+                onChange={(next) => {
+                  if (sessionTreeOpen) onSessionTreeTypingDismiss?.()
+                  setDraft(next)
+                }}
                 onInput={() => {
                   if (errorMessage) {
                     clearError()

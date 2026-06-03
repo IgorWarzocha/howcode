@@ -23,7 +23,6 @@ import {
 } from './composer-prompt-surface-helpers'
 import { ComposerAttachmentRail, ComposerStopRail } from './composer-side-controls'
 import { useComposerController } from './controller/useComposerController'
-import { useAskQuestionsOverlayHeight } from './useAskQuestionsOverlayHeight'
 import { useComposerFileMentions } from './useComposerFileMentions'
 import {
   useComposerAutocompleteEffects,
@@ -33,6 +32,7 @@ import { useComposerSessionTreeNavigate } from './useComposerSessionTreeNavigate
 import { useComposerSessionTreePanel } from './useComposerSessionTreePanel'
 import { useComposerSkillMentions } from './useComposerSkillMentions'
 import { useComposerSlashCommands } from './useComposerSlashCommands'
+import { useComposerThreadOverlayHeight } from './useComposerThreadOverlayHeight'
 import { useGlobalComposerFileDrop } from './useGlobalComposerFileDrop'
 
 const digitShortcutPattern = /^Digit[1-9]$/u
@@ -153,6 +153,7 @@ function isSmartBtwLiveWidgetAhead(
   return getSmartBtwSessionCount(liveWidget) > getSmartBtwSessionCount(restoredWidget)
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: composer surface wires session tree, slash, mentions, and native overlays
 export function ComposerPromptSurface({
   activeView,
   composerPanelRef,
@@ -271,6 +272,7 @@ export function ComposerPromptSurface({
   const dictationTranscribing = dictationInterimText.length > 0
   const composerMode = activeView === 'chat' ? 'chat' : 'code'
   const sessionTreePanelRef = useRef<HTMLDivElement>(null)
+  const composerPopoverStackRef = useRef<HTMLDivElement>(null)
   const sessionTreeCloseRef = useRef<(() => void) | null>(null)
   const sessionTreeCancelNavigateConfirmRef = useRef<(() => void) | null>(null)
   const [sessionTreeNavigateConfirmOpen, setSessionTreeNavigateConfirmOpen] = useState(false)
@@ -381,12 +383,6 @@ export function ComposerPromptSurface({
 
   useGlobalComposerFileDrop(handleDrop)
 
-  useAskQuestionsOverlayHeight({
-    overlayRef: askQuestionsOverlayRef,
-    visible: showNativeExtensionOverlay,
-    onOverlayHeightChange,
-  })
-
   const extensionRunning = extensionCommandRunning
   const askQuestionsArrowNavigationRef = useRef<
     ((direction: 'previous' | 'next') => boolean) | null
@@ -427,6 +423,15 @@ export function ComposerPromptSurface({
     },
     [closeSessionTree, handleSessionTreeNavigate],
   )
+
+  useComposerThreadOverlayHeight({
+    extensionOverlayRef: askQuestionsOverlayRef,
+    extensionOverlayVisible: showNativeExtensionOverlay,
+    popoverStackRef: composerPopoverStackRef,
+    popoverStackVisible: (sessionTreeOpen && !sessionTreeForceHidden) || slashCommands.open,
+    onOverlayHeightChange,
+  })
+
   const canStopComposer = (composerIsStreaming || extensionRunning) && !isSending && !!sessionPath
   const composerWorking = composerIsStreaming || extensionRunning
   const dismissComposerTransientUi = () => {
@@ -609,6 +614,8 @@ export function ComposerPromptSurface({
               }}
               onSessionTreeNavigateConfirmOpenChange={setSessionTreeNavigateConfirmOpen}
               sessionTreeCancelNavigateConfirmRef={sessionTreeCancelNavigateConfirmRef}
+              composerPopoverStackRef={composerPopoverStackRef}
+              onSessionTreeTypingDismiss={closeSessionTree}
               slashCommandPanelRef={slashCommandPanelRef}
               slashCommands={slashCommands}
               fileMentionPanelRef={fileMentionPanelRef}

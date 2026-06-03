@@ -20,6 +20,7 @@ export function ComposerPromptPopoverStack({
   onBindSessionTreeClose,
   onSessionTreeNavigateConfirmOpenChange,
   sessionTreeCancelNavigateConfirmRef,
+  popoverStackRef,
 }: {
   sessionPath?: string | null | undefined
   sessionTreeOpen?: boolean | undefined
@@ -34,12 +35,19 @@ export function ComposerPromptPopoverStack({
   onBindSessionTreeClose?: ((close: (() => void) | null) => void) | undefined
   onSessionTreeNavigateConfirmOpenChange?: ((open: boolean) => void) | undefined
   sessionTreeCancelNavigateConfirmRef?: MutableRefObject<(() => void) | null> | undefined
+  popoverStackRef?: RefObject<HTMLDivElement | null> | undefined
 }) {
+  const sessionTreeVisible = sessionTreeOpen && !sessionTreeForceHidden
+  const slashVisible = slashCommands.open
+  const stackVisible = sessionTreeVisible || slashVisible
+
   return (
     <div
+      ref={popoverStackRef}
       className={cn(
         'absolute right-0 bottom-full left-0 grid gap-1.5',
         composerPopoverInputLayerClass,
+        !stackVisible && 'pointer-events-none invisible h-0 min-h-0 overflow-hidden gap-0',
       )}
     >
       <ComposerSessionTreePanel
