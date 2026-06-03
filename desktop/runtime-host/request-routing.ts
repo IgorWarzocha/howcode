@@ -19,6 +19,7 @@ export function shouldUseThreadRuntimeHost<TName extends RuntimeHostRequestName>
   if (name === 'startNewThread' || name === 'selectProjectRuntime') return false
   if (name === 'loadThreadSnapshot') return false
   if (name === 'loadSessionTreeList') return false
+  if (name === 'loadThreadPreviewAtEntry') return false
   if (name === 'disposeRuntimeHosts') return false
   if (
     (name === 'getComposerSlashCommands' || name === 'getComposerSkills') &&

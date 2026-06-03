@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query'
 import { type MutableRefObject, type RefObject, useEffect, useMemo, useState } from 'react'
 import { PopoverPanel } from '../common/popover'
 import { desktopQueryKeys, getSessionTreeListQuery } from '../query/desktop-query'
+import { dispatchSessionTreePreview } from '../thread/session-tree-preview'
 import { cn } from '../utils/cn'
 import {
   getComposerSessionTreeRowsFromList,
@@ -73,6 +74,13 @@ export function ComposerSessionTreePanel({
   } = useComposerSessionTreeBrowse({
     sessionTreeOpen: visible,
     leafIdFromList: leafId,
+    onPreviewEntry: (entryId) => {
+      if (!persistedPath) return
+      dispatchSessionTreePreview({
+        sessionPath: persistedPath,
+        previewEntryId: entryId,
+      })
+    },
     onRestoreAnchorInThread: (entryId) => onRevealInThread?.(entryId),
   })
 

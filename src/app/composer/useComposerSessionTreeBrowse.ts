@@ -26,9 +26,10 @@ export type ComposerSessionTreeBrowseState = {
 export function useComposerSessionTreeBrowse(input: {
   sessionTreeOpen: boolean
   leafIdFromList: string | null
+  onPreviewEntry: (entryId: string | null) => void
   onRestoreAnchorInThread: (entryId: string) => void
 }) {
-  const { sessionTreeOpen, leafIdFromList, onRestoreAnchorInThread } = input
+  const { sessionTreeOpen, leafIdFromList, onPreviewEntry, onRestoreAnchorInThread } = input
   const [anchorEntryId, setAnchorEntryId] = useState<string | null>(null)
   const [previewEntryId, setPreviewEntryId] = useState<string | null>(null)
   const wasOpenRef = useRef(false)
@@ -59,27 +60,35 @@ export function useComposerSessionTreeBrowse(input: {
 
   const focusRow = useCallback(
     (entryId: string) => {
-      setPreviewEntryId(browsePreviewEntryIdAfterFocus(anchorEntryId, entryId))
+      const nextPreview = browsePreviewEntryIdAfterFocus(anchorEntryId, entryId)
+      setPreviewEntryId(nextPreview)
+      onPreviewEntry(nextPreview)
       onRestoreAnchorInThread(entryId)
     },
-    [anchorEntryId, onRestoreAnchorInThread],
+    [anchorEntryId, onPreviewEntry, onRestoreAnchorInThread],
   )
 
   const clearPreview = useCallback(() => {
     setPreviewEntryId(null)
-  }, [])
+    onPreviewEntry(null)
+  }, [onPreviewEntry])
 
   const restoreAnchorAndClearPreview = useCallback(() => {
+    onPreviewEntry(null)
     if (shouldRestoreAnchorWhenClosingTree(previewEntryId, anchorEntryId) && anchorEntryId) {
       onRestoreAnchorInThread(anchorEntryId)
     }
     setPreviewEntryId(null)
-  }, [anchorEntryId, onRestoreAnchorInThread, previewEntryId])
+  }, [anchorEntryId, onPreviewEntry, onRestoreAnchorInThread, previewEntryId])
 
-  const finishNavigate = useCallback((entryId: string) => {
-    setAnchorEntryId(entryId)
-    setPreviewEntryId(null)
-  }, [])
+  const finishNavigate = useCallback(
+    (entryId: string) => {
+      setAnchorEntryId(entryId)
+      setPreviewEntryId(null)
+      onPreviewEntry(null)
+    },
+    [onPreviewEntry],
+  )
 
   return {
     anchorEntryId,

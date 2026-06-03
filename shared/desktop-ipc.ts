@@ -295,6 +295,14 @@ export type DesktopRequestMap = {
     params: { sessionPath: string }
     response: SessionTreeList | null
   }
+  getThreadPreviewAtEntry: {
+    params: {
+      sessionPath: string
+      targetEntryId: string
+      historyCompactions?: number | undefined
+    }
+    response: ThreadData | null
+  }
   searchThread: {
     params: { sessionPath: string; query: string }
     response: ThreadSearchResult

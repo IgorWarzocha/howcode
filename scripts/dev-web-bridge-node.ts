@@ -272,6 +272,10 @@ const handlers: DesktopRequestHandlerMap = {
   getThread: ({ sessionPath, historyCompactions = 0 }) =>
     piThreads.loadThread(sessionPath, { historyCompactions }),
   getSessionTreeList: ({ sessionPath }) => piThreads.loadSessionTreeList(sessionPath),
+  getThreadPreviewAtEntry: ({ sessionPath, targetEntryId, historyCompactions = 0 }) =>
+    piThreads
+      .loadThreadPreviewAtEntry(sessionPath, targetEntryId, { historyCompactions })
+      .catch(() => null),
   searchThread: ({ sessionPath, query }) => piThreads.searchThread(sessionPath, query),
   watchSession: async ({ sessionPath }) => {
     await piThreads.setWatchedSessionPath(sessionPath)

@@ -147,6 +147,11 @@ export type PiThreadsService = {
   loadShellState: (cwd: string) => Promise<ShellState>
   loadAppSettings: () => Promise<AppSettings> | AppSettings
   loadSessionTreeList: (sessionPath: string) => Promise<SessionTreeList | null>
+  loadThreadPreviewAtEntry: (
+    sessionPath: string,
+    targetEntryId: string,
+    options?: { historyCompactions?: number },
+  ) => Promise<ThreadData | null>
   loadThread: (
     sessionPath: string,
     options?: { historyCompactions?: number },

@@ -68,4 +68,6 @@ export const desktopQueryKeys = {
   thread: (sessionPath: string, refreshKey = 0, historyCompactions = 0) =>
     ['desktop', 'thread', sessionPath, refreshKey, historyCompactions] as const,
   sessionTreeList: (sessionPath: string) => ['desktop', 'sessionTreeList', sessionPath] as const,
+  threadPreviewAtEntry: (sessionPath: string, targetEntryId: string, historyCompactions = 0) =>
+    ['desktop', 'threadPreviewAtEntry', sessionPath, targetEntryId, historyCompactions] as const,
 }

@@ -98,6 +98,20 @@ export async function loadSessionTreeList(sessionPath: string): Promise<SessionT
   return invokeRuntimeHost('loadSessionTreeList', { sessionPath })
 }
 
+export async function loadThreadPreviewAtEntry(
+  sessionPath: string,
+  targetEntryId: string,
+  options?: { historyCompactions?: number | undefined },
+): Promise<ThreadData> {
+  const snapshot = await invokeRuntimeHost('loadThreadPreviewAtEntry', {
+    sessionPath,
+    targetEntryId,
+    historyCompactions: options?.historyCompactions,
+  })
+
+  return attachThreadDiffPreferences(snapshot.thread)
+}
+
 export async function loadThread(
   sessionPath: string,
   options?: { historyCompactions?: number | undefined },

@@ -90,6 +90,11 @@ export type RuntimeHostRequestMap = {
   }
   loadThreadSnapshot: { sessionPath: string; historyCompactions?: number | undefined }
   loadSessionTreeList: { sessionPath: string }
+  loadThreadPreviewAtEntry: {
+    sessionPath: string
+    targetEntryId: string
+    historyCompactions?: number | undefined
+  }
   searchThreadSnapshot: { sessionPath: string; query: string }
   startSkillCreatorSession: {
     prompt: string
@@ -164,6 +169,11 @@ export type RuntimeHostResponseMap = {
     thread: ThreadData
   }
   loadSessionTreeList: SessionTreeList
+  loadThreadPreviewAtEntry: {
+    projectId: string
+    threadId: string
+    thread: ThreadData
+  }
   searchThreadSnapshot: ThreadSearchResult
   startSkillCreatorSession: SkillCreatorSessionState
   continueSkillCreatorSession: SkillCreatorSessionState

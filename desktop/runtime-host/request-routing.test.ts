@@ -39,5 +39,11 @@ describe('runtime host request routing', () => {
         sessionPath: '/repo/.pi/session.json',
       }),
     ).toBe(false)
+    expect(
+      shouldUseThreadRuntimeHost('loadThreadPreviewAtEntry', {
+        sessionPath: '/repo/.pi/session.json',
+        targetEntryId: 'entry-1',
+      }),
+    ).toBe(false)
   })
 })
