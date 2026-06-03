@@ -1,9 +1,9 @@
 import {
   appToneMutedClass,
   appToneTextClass,
+  appTypeControlClass,
   appTypeSmallClass,
   appTypeTinyClass,
-  composerPopoverOptionClass,
   composerPopoverOptionSelectedClass,
   inlineEmptyNoteClass,
 } from '@howcode/ui'
@@ -53,22 +53,27 @@ function SessionTreeRowButton({
       aria-selected={selected}
       disabled={row.isLeaf}
       className={cn(
-        composerPopoverOptionClass,
-        'grid min-h-8 grid-cols-[max-content_minmax(0,1fr)] items-center gap-2 py-1.5',
+        'flex w-full min-h-8 items-center gap-2 rounded-md px-2.5 py-1 text-left transition-colors duration-150 ease-out',
+        appTypeControlClass,
         row.isLeaf && 'opacity-70',
         !row.isOnActivePath && 'opacity-55',
         selected
           ? composerPopoverOptionSelectedClass
-          : 'text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
+          : cn(
+              appToneMutedClass,
+              'hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
+            ),
       )}
       style={{ paddingLeft: `${10 + row.depth * 14}px` }}
       onMouseDown={(event) => event.preventDefault()}
       onClick={() => onSelect(row.id)}
     >
-      <span className={cn('shrink-0 tabular-nums', appTypeTinyClass, appToneMutedClass)}>
+      <span
+        className={cn('w-[3.25rem] shrink-0 leading-none', appTypeTinyClass, appToneMutedClass)}
+      >
         {rowKindLabel(row.kind)}
       </span>
-      <span className={cn('min-w-0 truncate text-left', appTypeSmallClass, appToneTextClass)}>
+      <span className={cn('min-w-0 truncate leading-none', appTypeSmallClass, appToneTextClass)}>
         {row.label}
       </span>
     </button>
