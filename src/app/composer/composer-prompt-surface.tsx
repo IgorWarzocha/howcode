@@ -6,6 +6,7 @@ import {
   useHowcodeKeybindingCommand,
 } from '../app-shell/keybinding-events'
 import { AskQuestionsCard, useComposerAskQuestionsActions } from '../features/native-extensions'
+
 import {
   appTypeCodeClass,
   composerPanelClass,
@@ -27,6 +28,7 @@ import {
   useComposerAutocompleteEffects,
   useComposerEscapeEffects,
 } from './useComposerPromptSurfaceEffects'
+import { useComposerSessionTreeNavigate } from './useComposerSessionTreeNavigate'
 import { useComposerSkillMentions } from './useComposerSkillMentions'
 import { useComposerSlashCommands } from './useComposerSlashCommands'
 import { useGlobalComposerFileDrop } from './useGlobalComposerFileDrop'
@@ -373,6 +375,18 @@ export function ComposerPromptSurface({
   })
   const attachmentButtonLabel = attachments.length > 0 ? 'Manage attachments' : 'Add attachment'
   const persistedSessionPath = getPersistedSessionPath(sessionPath)
+  const { handleSessionTreeNavigate, sessionTreeForceHidden, sessionTreeNavigateDisabled } =
+    useComposerSessionTreeNavigate({
+      activeView,
+      chatGroupId,
+      composerIsStreaming,
+      extensionRunning,
+      isCompacting,
+      isSending,
+      projectId,
+      runComposerAction,
+      sessionPath,
+    })
   const canStopComposer = (composerIsStreaming || extensionRunning) && !isSending && !!sessionPath
   const composerWorking = composerIsStreaming || extensionRunning
   const dismissComposerTransientUi = () => {
@@ -545,6 +559,9 @@ export function ComposerPromptSurface({
               sessionPath={sessionPath}
               sessionTreeOpen
               sessionTreePanelRef={sessionTreePanelRef}
+              sessionTreeForceHidden={sessionTreeForceHidden}
+              sessionTreeNavigateDisabled={sessionTreeNavigateDisabled}
+              onSessionTreeNavigate={handleSessionTreeNavigate}
               slashCommandPanelRef={slashCommandPanelRef}
               slashCommands={slashCommands}
               fileMentionPanelRef={fileMentionPanelRef}

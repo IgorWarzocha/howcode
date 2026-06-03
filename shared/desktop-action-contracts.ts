@@ -60,8 +60,10 @@ export type DesktopActionPayloadFields = {
   reset?: boolean | undefined
   sessionPath?: string | undefined | null | undefined
   shortcut?: string | undefined
+  summarize?: boolean | undefined
   streamingBehavior?: ComposerStreamingBehavior
   suppressInbox?: boolean | undefined | null | undefined
+  targetEntryId?: string | undefined
   text?: string | undefined
   threadId?: string | undefined
   threadIds?: string[] | undefined
@@ -296,6 +298,14 @@ export type DesktopActionPayloadMap = {
     chatGroupId?: string | undefined | null | undefined
     shortcut: string
   }
+  'composer.session-tree.navigate': {
+    projectId?: string | undefined | null | undefined
+    sessionPath?: string | undefined | null | undefined
+    composerMode?: 'chat' | 'code' | null
+    chatGroupId?: string | undefined | null | undefined
+    targetEntryId: string
+    summarize?: boolean | undefined
+  }
   'inbox.mark-read': { sessionPath: string; projectId?: string | undefined | null | undefined }
   'inbox.dismiss': { sessionPath: string; projectId?: string | undefined | null | undefined }
   'inbox.clear-read': { olderThanDays?: number | undefined | null | undefined }
@@ -321,6 +331,7 @@ export type DesktopActionResultData = {
   composerSendOutcome?: 'sent' | 'stopped'
   composerSendSessionPath?: string | undefined | null | undefined
   composerSendThreadId?: string | undefined | null | undefined
+  sessionTreeNavigateEditorText?: string | undefined | null | undefined
   dequeuedText?: string | undefined | null | undefined
   deletedThreadIds?: string[] | undefined
   didMutate?: boolean | undefined

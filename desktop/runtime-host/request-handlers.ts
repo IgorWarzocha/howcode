@@ -19,6 +19,7 @@ import {
   loadPiThemeState,
   loadSessionTreeList,
   loadThreadSnapshot,
+  navigateSessionTreeInHost,
   openThreadRuntime,
   removePiPackage,
   removePiSkill,
@@ -78,6 +79,7 @@ const runtimeHostRequestHandlers = {
   startNewThread: (payload) => startNewThread(payload.request),
   startSkillCreatorSession: (payload) => startSkillCreatorSession(payload),
   stopComposerRun: (payload) => stopComposerRun(payload.request),
+  navigateSessionTree: (payload) => navigateSessionTreeInHost(payload),
   updatePiSetting: (payload) => updatePiSetting(payload.key, payload.value, payload.projectPath),
 } satisfies RuntimeHostRequestHandlerMap
 

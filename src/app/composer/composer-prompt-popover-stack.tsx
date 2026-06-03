@@ -13,6 +13,9 @@ export function ComposerPromptPopoverStack({
   sessionTreePanelRef,
   slashCommandPanelRef,
   slashCommands,
+  sessionTreeForceHidden = false,
+  sessionTreeNavigateDisabled = false,
+  onSessionTreeNavigate,
 }: {
   sessionPath?: string | null | undefined
   sessionTreeOpen?: boolean | undefined
@@ -20,6 +23,9 @@ export function ComposerPromptPopoverStack({
   sessionTreePanelRef: RefObject<HTMLDivElement | null>
   slashCommandPanelRef: RefObject<HTMLDivElement | null>
   slashCommands: ComposerSlashCommands
+  sessionTreeForceHidden?: boolean | undefined
+  sessionTreeNavigateDisabled?: boolean | undefined
+  onSessionTreeNavigate?: ((entryId: string, summarize: boolean) => void) | undefined
 }) {
   return (
     <div
@@ -33,6 +39,9 @@ export function ComposerPromptPopoverStack({
         sessionPath={sessionPath}
         treeFilterMode={treeFilterMode}
         open={sessionTreeOpen}
+        forceHidden={sessionTreeForceHidden}
+        navigateDisabled={sessionTreeNavigateDisabled}
+        onNavigate={onSessionTreeNavigate}
       />
       <SlashCommandPanel panelRef={slashCommandPanelRef} slashCommands={slashCommands} />
     </div>

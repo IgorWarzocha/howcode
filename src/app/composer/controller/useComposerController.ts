@@ -249,6 +249,12 @@ export function useComposerController({
         return false
       }
       setErrorMessage(null)
+      if (action === 'composer.session-tree.navigate') {
+        const editorText = result?.result?.sessionTreeNavigateEditorText
+        if (typeof editorText === 'string' && editorText.length > 0) {
+          setDraftValue(editorText)
+        }
+      }
       if (options?.closeMenu ?? true) {
         setOpenMenu(null)
       }

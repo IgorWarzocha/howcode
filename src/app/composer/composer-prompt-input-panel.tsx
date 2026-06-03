@@ -51,6 +51,9 @@ type ComposerPromptInputPanelProps = {
   sessionPath?: string | null | undefined
   sessionTreeOpen?: boolean | undefined
   sessionTreePanelRef?: RefObject<HTMLDivElement | null> | undefined
+  sessionTreeForceHidden?: boolean | undefined
+  sessionTreeNavigateDisabled?: boolean | undefined
+  onSessionTreeNavigate?: ((entryId: string, summarize: boolean) => void) | undefined
   slashCommandPanelRef: RefObject<HTMLDivElement | null>
   slashCommands: ComposerSlashCommands
   fileMentionPanelRef: RefObject<HTMLDivElement | null>
@@ -137,6 +140,9 @@ export function ComposerPromptInputPanel({
   sessionPath = null,
   sessionTreeOpen = true,
   sessionTreePanelRef: sessionTreePanelRefProp,
+  sessionTreeForceHidden = false,
+  sessionTreeNavigateDisabled = false,
+  onSessionTreeNavigate,
   slashCommandPanelRef,
   slashCommands,
   fileMentionPanelRef,
@@ -195,6 +201,9 @@ export function ComposerPromptInputPanel({
                 sessionTreeOpen={sessionTreeOpen}
                 treeFilterMode={piTreeFilterMode}
                 sessionTreePanelRef={sessionTreePanelRef}
+                sessionTreeForceHidden={sessionTreeForceHidden}
+                sessionTreeNavigateDisabled={sessionTreeNavigateDisabled}
+                onSessionTreeNavigate={onSessionTreeNavigate}
                 slashCommandPanelRef={slashCommandPanelRef}
                 slashCommands={slashCommands}
               />

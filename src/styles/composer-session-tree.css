@@ -1,0 +1,50 @@
+.composer-session-tree-row {
+  position: relative;
+  z-index: 0;
+}
+
+.composer-session-tree-row:has(.composer-session-tree-inline-popunder) {
+  z-index: 60;
+}
+
+.composer-session-tree-meta-slot {
+  position: relative;
+  display: inline-flex;
+  height: 1.5rem;
+  width: 1.5rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  overflow: visible;
+}
+
+.composer-session-tree-nav-trigger {
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+}
+
+.composer-session-tree-row:hover .composer-session-tree-nav-trigger,
+.composer-session-tree-row:focus-within .composer-session-tree-nav-trigger,
+.composer-session-tree-row:has(.composer-session-tree-inline-popunder)
+  .composer-session-tree-nav-trigger {
+  opacity: 1;
+}
+
+.composer-session-tree-inline-popunder {
+  top: 50%;
+  right: calc(100% + 0.25rem);
+  bottom: auto;
+  transform: translateY(-50%);
+}
+
+.sidebar-inline-action-strip[data-action-count="3"] {
+  width: calc(
+    var(--sidebar-inline-action-size) *
+    3 +
+    var(--sidebar-inline-action-gap) *
+    2 +
+    var(--sidebar-inline-action-pad) *
+    2
+  );
+  grid-template-columns: repeat(3, var(--sidebar-inline-action-size));
+}

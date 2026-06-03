@@ -254,6 +254,12 @@ export function stopComposerRun(request = {}) {
   return invokeRuntimeHost('stopComposerRun', { request })
 }
 
+export function navigateSessionTree(
+  request: ComposerStateRequest & { targetEntryId: string; summarize: boolean },
+) {
+  return invokeRuntimeHost('navigateSessionTree', withComposerModeSettings(request))
+}
+
 export function disposeWorkspaceComposerRuns(request: {
   projectPath: string
   sessionPaths: string[]

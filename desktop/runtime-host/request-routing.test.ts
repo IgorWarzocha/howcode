@@ -19,6 +19,13 @@ describe('runtime host request routing', () => {
     )
     expect(shouldUseThreadRuntimeHost('openThreadRuntime', payload)).toBe(true)
     expect(shouldUseThreadRuntimeHost('stopComposerRun', payload)).toBe(true)
+    expect(
+      shouldUseThreadRuntimeHost('navigateSessionTree', {
+        ...payload,
+        targetEntryId: 'entry-1',
+        summarize: false,
+      }),
+    ).toBe(true)
   })
 
   test('keeps snapshot reads on the service host even with a session path', () => {

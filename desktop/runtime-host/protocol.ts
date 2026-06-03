@@ -128,6 +128,10 @@ export type RuntimeHostRequestMap = {
     answers: string[][] | null
   }
   invokeNativeExtensionShortcut: ComposerStateRequest & { shortcut: string }
+  navigateSessionTree: ComposerStateRequest & {
+    targetEntryId: string
+    summarize: boolean
+  }
 }
 
 export type RuntimeHostResponseMap = {
@@ -176,6 +180,11 @@ export type RuntimeHostResponseMap = {
   dequeueComposerPrompt: string | null
   answerNativeAskQuestions: { ok: boolean }
   invokeNativeExtensionShortcut: { ok: boolean }
+  navigateSessionTree: {
+    cancelled: boolean
+    aborted?: boolean
+    editorText?: string
+  }
 }
 
 export type RuntimeHostMainRequestMap = {

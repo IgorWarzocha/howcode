@@ -19,6 +19,11 @@ export type ComposerSessionTreeRow = {
 /** Keep true while session-tree UX is in progress; wire open/close like attachments before ship. */
 export const composerSessionTreePanelDevAlwaysOpen = true
 
+export function isComposerSessionTreePanelVisible(open: boolean, forceHidden: boolean) {
+  if (forceHidden) return false
+  return open || composerSessionTreePanelDevAlwaysOpen
+}
+
 function toComposerRow(row: SessionTreeListRow): ComposerSessionTreeRow {
   return {
     id: row.id,

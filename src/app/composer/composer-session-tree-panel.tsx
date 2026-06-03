@@ -1,3 +1,4 @@
+import { Tooltip } from '@howcode/common/tooltip'
 import type { PiTreeFilterMode } from '@howcode/shared/desktop-settings-contracts'
 import {
   appToneAccentClass,
@@ -5,21 +6,23 @@ import {
   appToneTextClass,
   appTypeMetaClass,
   appTypeSmallClass,
+  compactIconButtonClass,
   composerPopoverOptionSelectedClass,
   inlineEmptyNoteClass,
 } from '@howcode/ui'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, History } from 'lucide-react'
 import { type RefObject, useEffect, useMemo, useState } from 'react'
 import { PopoverPanel } from '../common/popover'
 import { desktopQueryKeys, getSessionTreeListQuery } from '../query/desktop-query'
 import { cn } from '../utils/cn'
 import {
   type ComposerSessionTreeRow,
-  composerSessionTreePanelDevAlwaysOpen,
   getComposerSessionTreeRowsFromList,
+  isComposerSessionTreePanelVisible,
 } from './composer-session-tree'
 import { getVisibleSessionTreeRowIndices, rowHasChildren } from './composer-session-tree-fold'
+import { ComposerSessionTreeNavigateConfirm } from './composer-session-tree-navigate-confirm'
 
 const listboxId = 'composer-session-tree-listbox'
 const chevronSlotClass = 'inline-flex h-4 w-4 shrink-0 items-center justify-center'
@@ -50,32 +53,43 @@ function SessionTreeRowLine({
   selected,
   hasChildren,
   expanded,
+  navigateDisabled,
+  canNavigate,
+  confirmOpen,
   onToggleExpand,
-  onSelect,
-  canRevealInThread,
+  onOpenNavigateConfirm,
+  onCancelNavigateConfirm,
+  onNavigateWithoutSummary,
+  onNavigateWithSummary,
 }: {
   row: ComposerSessionTreeRow
   selected: boolean
   hasChildren: boolean
   expanded: boolean
+  navigateDisabled: boolean
+  canNavigate: boolean
+  confirmOpen: boolean
   onToggleExpand: () => void
-  onSelect: (id: string) => void
-  canRevealInThread: boolean
+  onOpenNavigateConfirm: () => void
+  onCancelNavigateConfirm: () => void
+  onNavigateWithoutSummary: () => void
+  onNavigateWithSummary: () => void
 }) {
   const indentPx = row.depth * 14
   const contentSurfaceClass = cn(
-    'grid min-h-6 w-full min-w-0 grid-cols-[3rem_minmax(0,1fr)] items-center gap-1.5 rounded-md px-2 py-0 text-left transition-colors duration-150 ease-out',
+    'composer-session-tree-label-button grid min-h-6 w-full min-w-0 grid-cols-[3rem_minmax(0,1fr)] items-center gap-1.5 rounded-md px-2 py-0 text-left transition-colors duration-150 ease-out',
     row.isLeaf && 'opacity-70',
     !row.isOnActivePath && 'opacity-55',
     selected
       ? cn(composerPopoverOptionSelectedClass, 'text-[color:var(--text)]')
-      : 'text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
+      : 'text-[color:var(--muted)]',
   )
 
   return (
     <div
-      className="grid w-full min-h-6 items-center gap-0.5"
-      style={{ gridTemplateColumns: `${indentPx}px 1rem minmax(0,1fr)` }}
+      className="composer-session-tree-row grid w-full min-h-6 items-center gap-0.5"
+      data-can-navigate={canNavigate ? 'true' : 'false'}
+      style={{ gridTemplateColumns: `${indentPx}px 1rem minmax(0,1fr) 1.5rem` }}
     >
       <span aria-hidden />
       {hasChildren ? (
@@ -95,19 +109,7 @@ function SessionTreeRowLine({
       ) : (
         <span className={chevronSlotClass} aria-hidden />
       )}
-      <button
-        id={`composer-session-tree-option-${row.id}`}
-        type="button"
-        role="option"
-        aria-selected={selected}
-        disabled={!canRevealInThread}
-        className={contentSurfaceClass}
-        onMouseDown={(event) => event.preventDefault()}
-        onClick={() => {
-          if (!canRevealInThread) return
-          onSelect(row.id)
-        }}
-      >
+      <div className={contentSurfaceClass} role="presentation">
         <span
           className={cn(
             sessionTreeKindColumnClass,
@@ -127,7 +129,38 @@ function SessionTreeRowLine({
         >
           {row.label}
         </span>
-      </button>
+      </div>
+      <span className="composer-session-tree-meta-slot">
+        {canNavigate ? (
+          <ComposerSessionTreeNavigateConfirm
+            open={confirmOpen}
+            onCancel={onCancelNavigateConfirm}
+            onNavigateWithoutSummary={onNavigateWithoutSummary}
+            onNavigateWithSummary={onNavigateWithSummary}
+            trigger={
+              <Tooltip content="Go to this point in the session" placement="left">
+                <button
+                  type="button"
+                  className={cn(
+                    compactIconButtonClass,
+                    'composer-session-tree-nav-trigger sidebar-icon-action sidebar-icon-action--sm h-5 w-5 border-transparent bg-transparent text-[color:var(--muted)]',
+                  )}
+                  disabled={navigateDisabled}
+                  aria-label="Go to this point in the session"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    if (navigateDisabled) return
+                    onOpenNavigateConfirm()
+                  }}
+                >
+                  <History size={12} />
+                </button>
+              </Tooltip>
+            }
+          />
+        ) : null}
+      </span>
     </div>
   )
 }
@@ -137,8 +170,9 @@ type ComposerSessionTreePanelProps = {
   sessionPath?: string | null | undefined
   treeFilterMode?: PiTreeFilterMode | undefined
   open?: boolean | undefined
-  onSelectEntry?: ((entryId: string) => void) | undefined
-  onRevealInThread?: ((entryId: string) => void) | undefined
+  forceHidden?: boolean | undefined
+  navigateDisabled?: boolean | undefined
+  onNavigate?: ((entryId: string, summarize: boolean) => void) | undefined
 }
 
 export function ComposerSessionTreePanel({
@@ -146,10 +180,11 @@ export function ComposerSessionTreePanel({
   sessionPath,
   treeFilterMode = 'no-tools',
   open = false,
-  onSelectEntry,
-  onRevealInThread,
+  forceHidden = false,
+  navigateDisabled = false,
+  onNavigate,
 }: ComposerSessionTreePanelProps) {
-  const visible = open || composerSessionTreePanelDevAlwaysOpen
+  const visible = isComposerSessionTreePanelVisible(open, forceHidden)
   const persistedPath = sessionPath?.trim() ?? ''
   const { data: treeList = null } = useQuery({
     queryKey: desktopQueryKeys.sessionTreeList(persistedPath),
@@ -168,10 +203,15 @@ export function ComposerSessionTreePanel({
   )
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [collapsedIds, setCollapsedIds] = useState<ReadonlySet<string>>(() => new Set())
+  const [confirmEntryId, setConfirmEntryId] = useState<string | null>(null)
 
   useEffect(() => {
     setSelectedId(leafId)
   }, [leafId])
+
+  useEffect(() => {
+    if (!visible) setConfirmEntryId(null)
+  }, [visible])
 
   const visibleIndices = useMemo(
     () => getVisibleSessionTreeRowIndices(rows, collapsedIds),
@@ -189,6 +229,12 @@ export function ComposerSessionTreePanel({
       else next.add(id)
       return next
     })
+  }
+
+  const finishNavigate = (entryId: string, summarize: boolean) => {
+    setConfirmEntryId(null)
+    setSelectedId(entryId)
+    onNavigate?.(entryId, summarize)
   }
 
   return (
@@ -222,6 +268,7 @@ export function ComposerSessionTreePanel({
               if (!row) return null
               const hasChildren = rowHasChildren(rows, rowIndex)
               const expanded = hasChildren && !collapsedIds.has(row.id)
+              const canNavigate = Boolean(onNavigate && leafId && row.id !== leafId)
               return (
                 <SessionTreeRowLine
                   key={row.id}
@@ -229,13 +276,14 @@ export function ComposerSessionTreePanel({
                   selected={rowIndex === selectedIndex}
                   hasChildren={hasChildren}
                   expanded={expanded}
+                  navigateDisabled={navigateDisabled}
+                  canNavigate={canNavigate}
+                  confirmOpen={confirmEntryId === row.id}
                   onToggleExpand={() => toggleCollapsed(row.id)}
-                  canRevealInThread={row.isOnActivePath}
-                  onSelect={(id) => {
-                    setSelectedId(id)
-                    onSelectEntry?.(id)
-                    onRevealInThread?.(id)
-                  }}
+                  onOpenNavigateConfirm={() => setConfirmEntryId(row.id)}
+                  onCancelNavigateConfirm={() => setConfirmEntryId(null)}
+                  onNavigateWithoutSummary={() => finishNavigate(row.id, false)}
+                  onNavigateWithSummary={() => finishNavigate(row.id, true)}
                 />
               )
             })
