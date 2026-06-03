@@ -1,6 +1,7 @@
 import {
   appToneMutedClass,
   appToneTextClass,
+  appTypeMetaClass,
   appTypeSmallClass,
   composerPopoverOptionSelectedClass,
   inlineEmptyNoteClass,
@@ -51,8 +52,7 @@ function SessionTreeRowButton({
       aria-selected={selected}
       disabled={row.isLeaf}
       className={cn(
-        'flex w-full min-h-8 items-baseline gap-2 rounded-md px-2.5 py-1.5 text-left transition-colors duration-150 ease-out',
-        appTypeSmallClass,
+        'flex w-full min-h-8 items-baseline gap-2 rounded-md px-2.5 py-1 text-left transition-colors duration-150 ease-out',
         row.isLeaf && 'opacity-70',
         !row.isOnActivePath && 'opacity-55',
         selected
@@ -66,10 +66,12 @@ function SessionTreeRowButton({
       onMouseDown={(event) => event.preventDefault()}
       onClick={() => onSelect(row.id)}
     >
-      <span className={cn('w-[3.25rem] shrink-0', appToneMutedClass)}>
+      <span className={cn('w-[3.25rem] shrink-0', appTypeMetaClass, appToneMutedClass)}>
         {rowKindLabel(row.kind)}
       </span>
-      <span className={cn('min-w-0 truncate', appToneTextClass)}>{row.label}</span>
+      <span className={cn('min-w-0 truncate', appTypeSmallClass, appToneTextClass)}>
+        {row.label}
+      </span>
     </button>
   )
 }
