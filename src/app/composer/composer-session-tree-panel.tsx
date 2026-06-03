@@ -28,7 +28,7 @@ type ComposerSessionTreePanelProps = {
   open?: boolean | undefined
   forceHidden?: boolean | undefined
   navigateDisabled?: boolean | undefined
-  onNavigate?: ((entryId: string, summarize: boolean) => void) | undefined
+  onNavigate?: ((entryId: string, summarize: boolean) => Promise<boolean>) | undefined
   onRevealInThread?: ((entryId: string) => void) | undefined
   onBindClose?: ((close: (() => void) | null) => void) | undefined
   onNavigateConfirmOpenChange?: ((open: boolean) => void) | undefined
@@ -130,10 +130,10 @@ export function ComposerSessionTreePanel({
     })
   }
 
-  const finishNavigateConfirm = (entryId: string, summarize: boolean) => {
+  const finishNavigateConfirm = async (entryId: string, summarize: boolean) => {
     setConfirmEntryId(null)
     finishNavigate(entryId)
-    onNavigate?.(entryId, summarize)
+    await onNavigate?.(entryId, summarize)
   }
 
   return (

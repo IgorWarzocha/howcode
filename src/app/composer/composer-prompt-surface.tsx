@@ -419,6 +419,14 @@ export function ComposerPromptSurface({
       runComposerAction,
       sessionPath,
     })
+  const handleSessionTreeNavigateAndClose = useCallback(
+    async (entryId: string, summarize: boolean) => {
+      const ok = await handleSessionTreeNavigate(entryId, summarize)
+      if (ok) closeSessionTree()
+      return ok
+    },
+    [closeSessionTree, handleSessionTreeNavigate],
+  )
   const canStopComposer = (composerIsStreaming || extensionRunning) && !isSending && !!sessionPath
   const composerWorking = composerIsStreaming || extensionRunning
   const dismissComposerTransientUi = () => {
@@ -594,7 +602,7 @@ export function ComposerPromptSurface({
               sessionTreePanelRef={sessionTreePanelRef}
               sessionTreeForceHidden={sessionTreeForceHidden}
               sessionTreeNavigateDisabled={sessionTreeNavigateDisabled}
-              onSessionTreeNavigate={handleSessionTreeNavigate}
+              onSessionTreeNavigate={handleSessionTreeNavigateAndClose}
               onRevealSessionTreeEntryInThread={revealSessionTreeEntryInThread}
               onBindSessionTreeClose={(close) => {
                 sessionTreeCloseRef.current = close

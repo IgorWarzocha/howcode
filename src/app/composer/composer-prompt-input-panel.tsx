@@ -53,7 +53,7 @@ type ComposerPromptInputPanelProps = {
   sessionTreePanelRef?: RefObject<HTMLDivElement | null> | undefined
   sessionTreeForceHidden?: boolean | undefined
   sessionTreeNavigateDisabled?: boolean | undefined
-  onSessionTreeNavigate?: ((entryId: string, summarize: boolean) => void) | undefined
+  onSessionTreeNavigate?: ((entryId: string, summarize: boolean) => Promise<boolean>) | undefined
   onRevealSessionTreeEntryInThread?: ((entryId: string) => void) | undefined
   onBindSessionTreeClose?: ((close: (() => void) | null) => void) | undefined
   onSessionTreeNavigateConfirmOpenChange?: ((open: boolean) => void) | undefined

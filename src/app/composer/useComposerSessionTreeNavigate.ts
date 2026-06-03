@@ -38,28 +38,30 @@ export function useComposerSessionTreeNavigate(input: {
     !persistedSessionPath || isSending || composerIsStreaming || extensionRunning || isCompacting
 
   const handleSessionTreeNavigate = useCallback(
-    async (entryId: string, summarize: boolean) => {
-      setSessionTreeHidden(true)
-      const ok = await runComposerAction(
-        'composer.session-tree.navigate',
-        {
-          projectId,
-          sessionPath,
-          composerMode,
-          chatGroupId,
-          targetEntryId: entryId,
-          summarize,
-        },
-        { closeMenu: false },
-      )
-      if (!ok) {
-        setSessionTreeHidden(false)
-        return
-      }
-      if (persistedSessionPath) {
-        void queryClient.invalidateQueries({
-          queryKey: desktopQueryKeys.sessionTreeList(persistedSessionPath),
-        })
+    async (entryId: string, summarize: boolean): Promise<boolean> => {
+      if (summarize) setSessionTreeHidden(true)
+      try {
+        const ok = await runComposerAction(
+          'composer.session-tree.navigate',
+          {
+            projectId,
+            sessionPath,
+            composerMode,
+            chatGroupId,
+            targetEntryId: entryId,
+            summarize,
+          },
+          { closeMenu: false },
+        )
+        if (!ok) return false
+        if (persistedSessionPath) {
+          void queryClient.invalidateQueries({
+            queryKey: desktopQueryKeys.sessionTreeList(persistedSessionPath),
+          })
+        }
+        return true
+      } finally {
+        if (!summarize) setSessionTreeHidden(false)
       }
     },
     [
