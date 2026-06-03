@@ -19,6 +19,7 @@ import {
 import { getVisibleSessionTreeRowIndices, rowHasChildren } from './composer-session-tree-fold'
 
 const listboxId = 'composer-session-tree-listbox'
+const chevronSlotClass = 'inline-flex h-5 w-5 shrink-0 items-center justify-center'
 
 function rowKindLabel(kind: ComposerSessionTreeRow['kind']) {
   switch (kind) {
@@ -52,12 +53,12 @@ function SessionTreeRowLine({
   onToggleExpand: () => void
   onSelect: (id: string) => void
 }) {
-  const indentPx = 6 + row.depth * 14
+  const indentPx = 4 + row.depth * 14
 
   return (
     <div
       className={cn(
-        'flex w-full min-h-8 items-baseline gap-1 rounded-md py-1 pr-2.5 pl-1 transition-colors duration-150 ease-out',
+        'grid w-full min-h-8 grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-1 rounded-md py-0.5 pr-1 transition-colors duration-150 ease-out',
         row.isLeaf && 'opacity-70',
         !row.isOnActivePath && 'opacity-55',
         selected ? composerPopoverOptionSelectedClass : 'text-[color:var(--muted)]',
@@ -67,7 +68,10 @@ function SessionTreeRowLine({
       {hasChildren ? (
         <button
           type="button"
-          className="mt-px inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
+          className={cn(
+            chevronSlotClass,
+            'rounded-md text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
+          )}
           aria-label={expanded ? 'Collapse subtree' : 'Expand subtree'}
           aria-expanded={expanded}
           onMouseDown={(event) => event.preventDefault()}
@@ -79,7 +83,7 @@ function SessionTreeRowLine({
           {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
         </button>
       ) : (
-        <span className="inline-block h-5 w-5 shrink-0" aria-hidden />
+        <span className={chevronSlotClass} aria-hidden />
       )}
       <button
         id={`composer-session-tree-option-${row.id}`}
@@ -88,7 +92,7 @@ function SessionTreeRowLine({
         aria-selected={selected}
         disabled={row.isLeaf}
         className={cn(
-          'flex min-w-0 flex-1 items-baseline gap-2 rounded-md text-left transition-colors duration-150 ease-out',
+          'grid min-h-8 w-full min-w-0 grid-cols-[3.25rem_minmax(0,1fr)] items-center gap-2 rounded-md px-1.5 text-left transition-colors duration-150 ease-out',
           selected
             ? 'text-[color:var(--text)]'
             : 'hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
@@ -96,12 +100,10 @@ function SessionTreeRowLine({
         onMouseDown={(event) => event.preventDefault()}
         onClick={() => onSelect(row.id)}
       >
-        <span className={cn('w-[3.25rem] shrink-0', appTypeMetaClass, appToneMutedClass)}>
+        <span className={cn('truncate', appTypeMetaClass, appToneMutedClass)}>
           {rowKindLabel(row.kind)}
         </span>
-        <span className={cn('min-w-0 truncate', appTypeSmallClass, appToneTextClass)}>
-          {row.label}
-        </span>
+        <span className={cn('truncate', appTypeSmallClass, appToneTextClass)}>{row.label}</span>
       </button>
     </div>
   )
@@ -161,7 +163,7 @@ export function ComposerSessionTreePanel({
         tabIndex={-1}
         aria-label="Session tree"
         className={cn(
-          'grid w-full max-h-72 gap-1 overflow-y-auto overflow-x-hidden rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-2.5 py-2 shadow-none',
+          'grid w-full max-h-72 gap-0.5 overflow-y-auto overflow-x-hidden rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-2.5 py-2 shadow-none',
         )}
       >
         <div className={cn('pl-0.5 pb-1', appTypeSmallClass, appToneMutedClass)}>Session tree</div>
