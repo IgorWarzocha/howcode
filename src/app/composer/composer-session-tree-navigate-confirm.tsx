@@ -1,5 +1,5 @@
 import { Tooltip } from '@howcode/common/tooltip'
-import { X } from 'lucide-react'
+import { ListCollapse, Undo2, X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useEffect, useRef } from 'react'
 import { cn } from '../utils/cn'
@@ -56,7 +56,7 @@ export function ComposerSessionTreeNavigateConfirm({
           data-action-count="3"
           data-confirming="true"
         >
-          <span className="tooltip-anchor">
+          <Tooltip content="Cancel" placement="top">
             <button
               type="button"
               className="sidebar-icon-action sidebar-icon-action--sm sidebar-inline-action-button sidebar-inline-popunder-button"
@@ -68,31 +68,31 @@ export function ComposerSessionTreeNavigateConfirm({
             >
               <X size={12} />
             </button>
-          </span>
-          <Tooltip content="Go here without summarizing the branch you leave" placement="left">
+          </Tooltip>
+          <Tooltip content="Go without summary" placement="top">
             <button
               type="button"
-              className="sidebar-icon-action sidebar-icon-action--sm sidebar-inline-action-button sidebar-inline-popunder-button text-[length:var(--app-type-meta-size)]"
+              className="sidebar-icon-action sidebar-icon-action--sm sidebar-inline-action-button sidebar-inline-popunder-button"
               onClick={(event) => {
                 event.stopPropagation()
                 onNavigateWithoutSummary()
               }}
               aria-label="Go without summary"
             >
-              No
+              <Undo2 size={12} />
             </button>
           </Tooltip>
-          <Tooltip content="Summarize the branch you leave, then go here" placement="left">
+          <Tooltip content="Summarize branch" placement="top">
             <button
               type="button"
-              className="sidebar-icon-action sidebar-icon-action--sm sidebar-inline-action-button sidebar-inline-popunder-button sidebar-inline-action-button--danger text-[length:var(--app-type-meta-size)]"
+              className="sidebar-icon-action sidebar-icon-action--sm sidebar-inline-action-button sidebar-inline-popunder-button sidebar-inline-action-button--danger"
               onClick={(event) => {
                 event.stopPropagation()
                 onNavigateWithSummary()
               }}
-              aria-label="Go with branch summary"
+              aria-label="Summarize branch"
             >
-              Sum
+              <ListCollapse size={12} />
             </button>
           </Tooltip>
         </span>

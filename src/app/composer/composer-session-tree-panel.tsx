@@ -138,7 +138,7 @@ function SessionTreeRowLine({
             onNavigateWithoutSummary={onNavigateWithoutSummary}
             onNavigateWithSummary={onNavigateWithSummary}
             trigger={
-              <Tooltip content="Go to this point in the session" placement="left">
+              <Tooltip content="Go to this point in the session" placement="right">
                 <button
                   type="button"
                   className={cn(
