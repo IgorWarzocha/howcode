@@ -60,6 +60,45 @@ describe('buildSessionTreeListFromPiTree', () => {
 })
 
 describe('filterSessionTreeListRows', () => {
+  it('marks active path through omitted bookkeeping parents', () => {
+    const list = buildSessionTreeListFromPiTree(
+      [
+        {
+          entry: {
+            id: 'u1',
+            parentId: null,
+            type: 'message',
+            message: { role: 'user', content: [{ type: 'text', text: 'hi' }] },
+          },
+          children: [
+            {
+              entry: {
+                id: 'mc',
+                parentId: 'u1',
+                type: 'model_change',
+              },
+              children: [
+                {
+                  entry: {
+                    id: 'a1',
+                    parentId: 'mc',
+                    type: 'message',
+                    message: { role: 'assistant', content: [{ type: 'text', text: 'ok' }] },
+                  },
+                  children: [],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      'a1',
+    )
+    expect(list.rows.map((row) => row.id)).toEqual(['u1', 'a1'])
+    expect(list.rows.find((row) => row.id === 'u1')?.isOnActivePath).toBe(true)
+    expect(list.rows.find((row) => row.id === 'a1')?.isOnActivePath).toBe(true)
+  })
+
   it('omits bookkeeping entries from flattened tree', () => {
     const list = buildSessionTreeListFromPiTree(
       [

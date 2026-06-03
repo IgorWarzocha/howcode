@@ -8,10 +8,11 @@ import {
   composerPopoverOptionSelectedClass,
   inlineEmptyNoteClass,
 } from '@howcode/ui'
+import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { type RefObject, useEffect, useMemo, useState } from 'react'
 import { PopoverPanel } from '../common/popover'
-import { getSessionTreeListQuery } from '../query/desktop-query'
+import { desktopQueryKeys, getSessionTreeListQuery } from '../query/desktop-query'
 import { cn } from '../utils/cn'
 import {
   type ComposerSessionTreeRow,
@@ -51,6 +52,7 @@ function SessionTreeRowLine({
   expanded,
   onToggleExpand,
   onSelect,
+  canRevealInThread,
 }: {
   row: ComposerSessionTreeRow
   selected: boolean
@@ -58,6 +60,7 @@ function SessionTreeRowLine({
   expanded: boolean
   onToggleExpand: () => void
   onSelect: (id: string) => void
+  canRevealInThread: boolean
 }) {
   const indentPx = row.depth * 14
   const contentSurfaceClass = cn(
@@ -97,10 +100,13 @@ function SessionTreeRowLine({
         type="button"
         role="option"
         aria-selected={selected}
-        disabled={row.isLeaf}
+        disabled={!canRevealInThread}
         className={contentSurfaceClass}
         onMouseDown={(event) => event.preventDefault()}
-        onClick={() => onSelect(row.id)}
+        onClick={() => {
+          if (!canRevealInThread) return
+          onSelect(row.id)
+        }}
       >
         <span
           className={cn(
@@ -132,6 +138,7 @@ type ComposerSessionTreePanelProps = {
   treeFilterMode?: PiTreeFilterMode | undefined
   open?: boolean | undefined
   onSelectEntry?: ((entryId: string) => void) | undefined
+  onRevealInThread?: ((entryId: string) => void) | undefined
 }
 
 export function ComposerSessionTreePanel({
@@ -140,24 +147,16 @@ export function ComposerSessionTreePanel({
   treeFilterMode = 'no-tools',
   open = false,
   onSelectEntry,
+  onRevealInThread,
 }: ComposerSessionTreePanelProps) {
   const visible = open || composerSessionTreePanelDevAlwaysOpen
-  const [treeList, setTreeList] =
-    useState<Awaited<ReturnType<typeof getSessionTreeListQuery>>>(null)
-
-  useEffect(() => {
-    if (!(visible && sessionPath?.trim())) {
-      setTreeList(null)
-      return
-    }
-    let cancelled = false
-    void getSessionTreeListQuery(sessionPath).then((list) => {
-      if (!cancelled) setTreeList(list)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [sessionPath, visible])
+  const persistedPath = sessionPath?.trim() ?? ''
+  const { data: treeList = null } = useQuery({
+    queryKey: desktopQueryKeys.sessionTreeList(persistedPath),
+    queryFn: () => getSessionTreeListQuery(persistedPath),
+    enabled: visible && persistedPath.length > 0,
+    staleTime: 0,
+  })
 
   const rows = useMemo(
     () => getComposerSessionTreeRowsFromList(treeList ?? undefined, treeFilterMode),
@@ -231,9 +230,11 @@ export function ComposerSessionTreePanel({
                   hasChildren={hasChildren}
                   expanded={expanded}
                   onToggleExpand={() => toggleCollapsed(row.id)}
+                  canRevealInThread={row.isOnActivePath}
                   onSelect={(id) => {
                     setSelectedId(id)
                     onSelectEntry?.(id)
+                    onRevealInThread?.(id)
                   }}
                 />
               )

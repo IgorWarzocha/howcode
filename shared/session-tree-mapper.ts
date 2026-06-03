@@ -120,13 +120,23 @@ function entryMeta(entry: PiSessionTreeNode['entry']): string | undefined {
   return undefined
 }
 
-function buildActivePathIds(leafId: string | null, rows: SessionTreeListRow[]): Set<string> {
-  const byId = new Map(rows.map((row) => [row.id, row]))
+function buildEntryParentById(roots: PiSessionTreeNode[]): Map<string, string | null> {
+  const byId = new Map<string, string | null>()
+  for (const node of collectAllNodes(roots)) {
+    byId.set(node.entry.id, node.entry.parentId)
+  }
+  return byId
+}
+
+function buildActivePathIds(
+  leafId: string | null,
+  entryParentById: Map<string, string | null>,
+): Set<string> {
   const path = new Set<string>()
   let current: string | null = leafId
   while (current) {
     path.add(current)
-    current = byId.get(current)?.parentId ?? null
+    current = entryParentById.get(current) ?? null
   }
   return path
 }
@@ -236,7 +246,8 @@ function flattenPiTree(
     }
   }
 
-  const activePath = buildActivePathIds(leafId, rows)
+  const entryParentById = buildEntryParentById(roots)
+  const activePath = buildActivePathIds(leafId, entryParentById)
   for (const row of rows) {
     row.isOnActivePath = activePath.has(row.id)
     row.isLeaf = row.id === leafId
