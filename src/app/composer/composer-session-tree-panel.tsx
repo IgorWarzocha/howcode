@@ -3,7 +3,6 @@ import {
   appToneTextClass,
   appTypeMetaClass,
   appTypeSmallClass,
-  compactIconButtonClass,
   composerPopoverOptionSelectedClass,
   inlineEmptyNoteClass,
 } from '@howcode/ui'
@@ -68,10 +67,7 @@ function SessionTreeRowLine({
       {hasChildren ? (
         <button
           type="button"
-          className={cn(
-            compactIconButtonClass,
-            'mt-px h-5 w-5 shrink-0 self-start text-[color:var(--muted)]',
-          )}
+          className="mt-px inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
           aria-label={expanded ? 'Collapse subtree' : 'Expand subtree'}
           aria-expanded={expanded}
           onMouseDown={(event) => event.preventDefault()}
@@ -80,7 +76,7 @@ function SessionTreeRowLine({
             onToggleExpand()
           }}
         >
-          {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
         </button>
       ) : (
         <span className="inline-block h-5 w-5 shrink-0" aria-hidden />
