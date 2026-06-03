@@ -1,3 +1,4 @@
+import type { PiTreeFilterMode } from '@howcode/shared/desktop-settings-contracts'
 import {
   appToneMutedClass,
   appToneTextClass,
@@ -112,6 +113,7 @@ function SessionTreeRowLine({
 type ComposerSessionTreePanelProps = {
   panelRef: RefObject<HTMLDivElement | null>
   messages?: readonly Message[] | undefined
+  treeFilterMode?: PiTreeFilterMode | undefined
   open?: boolean | undefined
   onSelectEntry?: ((entryId: string) => void) | undefined
 }
@@ -119,11 +121,15 @@ type ComposerSessionTreePanelProps = {
 export function ComposerSessionTreePanel({
   panelRef,
   messages,
+  treeFilterMode = 'no-tools',
   open = false,
   onSelectEntry,
 }: ComposerSessionTreePanelProps) {
   const visible = open || composerSessionTreePanelDevAlwaysOpen
-  const rows = useMemo(() => getComposerSessionTreeRows(messages), [messages])
+  const rows = useMemo(
+    () => getComposerSessionTreeRows(messages, treeFilterMode),
+    [messages, treeFilterMode],
+  )
   const leafId = useMemo(
     () => rows.find((row) => row.isLeaf)?.id ?? rows.at(-1)?.id ?? null,
     [rows],

@@ -1,4 +1,5 @@
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
+import type { PiTreeFilterMode } from '@howcode/shared/desktop-settings-contracts'
 import type { ComposerSendMode, KeybindingOverrides } from '@howcode/shared/keybindings'
 import { AlertTriangle, Loader2 } from 'lucide-react'
 import { type ClipboardEvent, type RefObject, useRef } from 'react'
@@ -48,6 +49,7 @@ type ComposerPromptInputPanelProps = {
   placeholderText: string
   projectId: string
   messages?: readonly Message[] | undefined
+  piTreeFilterMode?: PiTreeFilterMode | undefined
   sessionTreePanelRef?: RefObject<HTMLDivElement | null> | undefined
   slashCommandPanelRef: RefObject<HTMLDivElement | null>
   slashCommands: ComposerSlashCommands
@@ -132,6 +134,7 @@ export function ComposerPromptInputPanel({
   placeholderText,
   projectId,
   messages,
+  piTreeFilterMode = 'no-tools',
   sessionTreePanelRef: sessionTreePanelRefProp,
   slashCommandPanelRef,
   slashCommands,
@@ -188,6 +191,7 @@ export function ComposerPromptInputPanel({
             <div className="min-w-0 flex-1">
               <ComposerPromptPopoverStack
                 messages={messages}
+                treeFilterMode={piTreeFilterMode}
                 sessionTreePanelRef={sessionTreePanelRef}
                 slashCommandPanelRef={slashCommandPanelRef}
                 slashCommands={slashCommands}

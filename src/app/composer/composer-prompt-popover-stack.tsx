@@ -1,3 +1,4 @@
+import type { PiTreeFilterMode } from '@howcode/shared/desktop-settings-contracts'
 import type { RefObject } from 'react'
 import type { Message } from '../types'
 import { composerPopoverInputLayerClass } from '../ui/classes'
@@ -8,11 +9,13 @@ import type { ComposerSlashCommands } from './useComposerSlashCommands'
 
 export function ComposerPromptPopoverStack({
   messages,
+  treeFilterMode = 'no-tools',
   sessionTreePanelRef,
   slashCommandPanelRef,
   slashCommands,
 }: {
   messages?: readonly Message[] | undefined
+  treeFilterMode?: PiTreeFilterMode | undefined
   sessionTreePanelRef: RefObject<HTMLDivElement | null>
   slashCommandPanelRef: RefObject<HTMLDivElement | null>
   slashCommands: ComposerSlashCommands
@@ -24,7 +27,11 @@ export function ComposerPromptPopoverStack({
         composerPopoverInputLayerClass,
       )}
     >
-      <ComposerSessionTreePanel panelRef={sessionTreePanelRef} messages={messages} />
+      <ComposerSessionTreePanel
+        panelRef={sessionTreePanelRef}
+        messages={messages}
+        treeFilterMode={treeFilterMode}
+      />
       <SlashCommandPanel panelRef={slashCommandPanelRef} slashCommands={slashCommands} />
     </div>
   )

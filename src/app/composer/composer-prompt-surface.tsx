@@ -184,6 +184,7 @@ export function ComposerPromptSurface({
   hoverToBlur,
   composerSendMode,
   keybindings,
+  piTreeFilterMode = 'no-tools',
   onOpenTakeoverTerminal,
   onToggleTerminal,
   onToggleArtifacts,
@@ -541,6 +542,7 @@ export function ComposerPromptSurface({
               placeholderText={placeholderText}
               projectId={projectId}
               messages={messages}
+              piTreeFilterMode={piTreeFilterMode}
               sessionTreePanelRef={sessionTreePanelRef}
               slashCommandPanelRef={slashCommandPanelRef}
               slashCommands={slashCommands}

@@ -1,5 +1,6 @@
 import type { SavedDiffComment } from '@howcode/native-gitops'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
+import type { PiTreeFilterMode } from '@howcode/shared/desktop-settings-contracts'
 import type { ComposerSendMode, KeybindingOverrides } from '@howcode/shared/keybindings'
 import { type RefObject, useRef } from 'react'
 import type {
@@ -51,6 +52,7 @@ export type ComposerProps = {
   hoverToBlur: boolean
   composerSendMode: ComposerSendMode
   keybindings: KeybindingOverrides
+  piTreeFilterMode?: PiTreeFilterMode | undefined
   diffRenderMode: ProjectDiffRenderMode
   diffComments: SavedDiffComment[]
   diffCommentCount: number

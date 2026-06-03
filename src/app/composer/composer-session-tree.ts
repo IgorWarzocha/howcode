@@ -1,4 +1,6 @@
+import type { PiTreeFilterMode } from '@howcode/shared/desktop-settings-contracts'
 import type { Message } from '../types'
+import { filterSessionTreeRows } from './composer-session-tree-filter'
 
 export type ComposerSessionTreeRow = {
   id: string
@@ -139,9 +141,13 @@ export function getSessionTreeDevPreviewRows(): ComposerSessionTreeRow[] {
 
 export function getComposerSessionTreeRows(
   messages: readonly Message[] | undefined,
+  treeFilterMode: PiTreeFilterMode = 'no-tools',
 ): ComposerSessionTreeRow[] {
-  if (composerSessionTreePanelDevAlwaysOpen) return getSessionTreeDevPreviewRows()
-  const fromMessages = messagesToSessionTreeRows(messages)
-  if (fromMessages.length > 0) return fromMessages
-  return getSessionTreeDevPreviewRows()
+  const source = composerSessionTreePanelDevAlwaysOpen
+    ? getSessionTreeDevPreviewRows()
+    : (() => {
+        const fromMessages = messagesToSessionTreeRows(messages)
+        return fromMessages.length > 0 ? fromMessages : getSessionTreeDevPreviewRows()
+      })()
+  return filterSessionTreeRows(source, treeFilterMode)
 }
