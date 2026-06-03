@@ -11,7 +11,7 @@ import {
   withRuntimeMutationLock,
 } from './runtime-registry.ts'
 import { publishComposerUpdate, publishThreadUpdate } from './thread-publisher.ts'
-import type { PiRuntime } from './types.ts'
+import type { PiRuntime, RuntimeThreadReason } from './types.ts'
 
 export type NavigateSessionTreeOutcome = {
   cancelled: boolean
@@ -52,6 +52,14 @@ function assertNavigateAllowed(runtime: PiRuntime) {
   }
 }
 
+async function publishNavigateCompactionStarted(runtime: PiRuntime) {
+  await navigateTreeAdapters.publishThreadUpdate(runtime, 'compaction-start')
+  await navigateTreeAdapters.emitComposerUpdate({
+    projectId: runtime.cwd,
+    sessionPath: runtime.session.sessionFile ?? null,
+  })
+}
+
 async function runNavigateOnRuntime(
   runtime: PiRuntime,
   targetEntryId: string,
@@ -66,20 +74,29 @@ async function runNavigateOnRuntime(
   const navigatePromise = runtime.session.navigateTree(targetEntryId, { summarize })
 
   if (summarize) {
+    let compactionUiPublished = false
+    const ensureCompactionUi = async () => {
+      if (compactionUiPublished) return
+      compactionUiPublished = true
+      await publishNavigateCompactionStarted(runtime)
+    }
+
+    if (runtime.session.isCompacting) await ensureCompactionUi()
     const started = await waitForBranchSummaryStartOrSettlement(runtime, navigatePromise)
     if (started === 'started') {
+      await ensureCompactionUi()
       navigatePromise
-        .then(() => publishNavigateSettled(runtime))
+        .then(() => publishNavigateSettled(runtime, 'compaction'))
         .catch((error) => {
           console.error('Session tree navigation failed after composer returned.', error)
-          void publishNavigateSettled(runtime)
+          void publishNavigateSettled(runtime, 'compaction')
         })
       return { cancelled: false }
     }
   }
 
   const result = await navigatePromise
-  await publishNavigateSettled(runtime)
+  await publishNavigateSettled(runtime, summarize ? 'compaction' : 'update')
   if (result.cancelled) {
     return { cancelled: true, ...(result.aborted ? { aborted: true } : {}) }
   }
@@ -110,8 +127,11 @@ async function waitForBranchSummaryStartOrSettlement(
   }
 }
 
-async function publishNavigateSettled(runtime: PiRuntime) {
-  await navigateTreeAdapters.publishThreadUpdate(runtime, 'update').catch((error) => {
+async function publishNavigateSettled(
+  runtime: PiRuntime,
+  reason: Extract<RuntimeThreadReason, 'update' | 'compaction'>,
+) {
+  await navigateTreeAdapters.publishThreadUpdate(runtime, reason).catch((error) => {
     console.error('Session tree navigation settled but thread update publish failed', error)
   })
   await navigateTreeAdapters.emitComposerUpdate({
