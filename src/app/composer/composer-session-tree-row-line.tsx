@@ -16,7 +16,9 @@ import { ComposerSessionTreeNavigateConfirm } from './composer-session-tree-navi
 const chevronSlotClass = 'inline-flex h-4 w-4 shrink-0 items-center justify-center'
 const sessionTreeKindColumnClass = 'w-[3rem] shrink-0'
 
-function rowKindLabel(kind: ComposerSessionTreeRow['kind']) {
+function rowKindLabel(row: ComposerSessionTreeRow) {
+  if (row.customLabel) return row.customLabel
+  const kind = row.kind
   switch (kind) {
     case 'user':
       return 'You'
@@ -39,20 +41,12 @@ function SessionTreeEntryText({ row }: { row: ComposerSessionTreeRow }) {
   return (
     <span
       className={cn(
-        'flex min-w-0 items-center gap-1 truncate',
+        'min-w-0 truncate',
         appTypeSmallClass,
         row.kind === 'branch' ? appToneAccentClass : appToneTextClass,
       )}
     >
-      {row.customLabel ? (
-        <span
-          className="shrink-0 truncate text-[color:var(--warning,var(--accent))]"
-          title={row.customLabel}
-        >
-          [{row.customLabel}]
-        </span>
-      ) : null}
-      <span className="min-w-0 truncate">{row.label}</span>
+      {row.label}
     </span>
   )
 }
@@ -137,8 +131,8 @@ export function ComposerSessionTreeRowLine({
   onFocusRow: () => void
   onOpenNavigateConfirm: () => void
   onCancelNavigateConfirm: () => void
-  onNavigateWithoutSummary: () => void
-  onNavigateWithSummary: () => void
+  onNavigateWithoutSummary: (label?: string) => void
+  onNavigateWithSummary: (label?: string) => void
 }) {
   const indentPx = row.depth * 14
   const contentSurfaceClass = cn(
@@ -188,10 +182,11 @@ export function ComposerSessionTreeRowLine({
             sessionTreeKindColumnClass,
             'truncate',
             appTypeMetaClass,
-            row.kind === 'branch' ? appToneAccentClass : appToneMutedClass,
+            row.customLabel || row.kind === 'branch' ? appToneAccentClass : appToneMutedClass,
           )}
+          title={row.customLabel}
         >
-          {rowKindLabel(row.kind)}
+          {rowKindLabel(row)}
         </span>
         <SessionTreeEntryText row={row} />
       </button>

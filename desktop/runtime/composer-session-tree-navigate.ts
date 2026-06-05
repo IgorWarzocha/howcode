@@ -67,6 +67,7 @@ async function runNavigateOnRuntime(
   runtime: PiRuntime,
   targetEntryId: string,
   summarize: boolean,
+  label?: string | undefined,
 ): Promise<NavigateSessionTreeOutcome> {
   assertNavigateAllowed(runtime)
   const leafId = runtime.session.sessionManager.getLeafId()
@@ -74,7 +75,11 @@ async function runNavigateOnRuntime(
     return { cancelled: false }
   }
 
-  const navigatePromise = runtime.session.navigateTree(targetEntryId, { summarize })
+  const trimmedLabel = label?.trim() || undefined
+  const navigatePromise = runtime.session.navigateTree(targetEntryId, {
+    summarize,
+    ...(trimmedLabel ? { label: trimmedLabel } : {}),
+  })
 
   if (summarize) {
     let compactionUiPublished = false
@@ -89,7 +94,10 @@ async function runNavigateOnRuntime(
     if (started === 'started') {
       await ensureCompactionUi()
       navigatePromise
-        .then(() => publishNavigateSettled(runtime, 'compaction'))
+        .then(async (navigateResult) => {
+          await ensureBranchSummaryLabel(runtime, navigateResult, trimmedLabel)
+          await publishNavigateSettled(runtime, 'compaction')
+        })
         .catch((error) => {
           console.error('Session tree navigation failed after composer returned.', error)
           void publishNavigateSettled(runtime, 'compaction')
@@ -99,6 +107,7 @@ async function runNavigateOnRuntime(
   }
 
   const result = await navigatePromise
+  if (summarize) await ensureBranchSummaryLabel(runtime, result, trimmedLabel)
   await publishNavigateSettled(runtime, summarize ? 'compaction' : 'update')
   if (result.cancelled) {
     return { cancelled: true, ...(result.aborted ? { aborted: true } : {}) }
@@ -109,9 +118,26 @@ async function runNavigateOnRuntime(
   }
 }
 
+function ensureBranchSummaryLabel(
+  runtime: PiRuntime,
+  result: { summaryEntry?: { id: string } | undefined },
+  label?: string | undefined,
+) {
+  const summaryId = result.summaryEntry?.id
+  if (!(summaryId && label)) return
+  const existingLabel = runtime.session.sessionManager.getLabel?.(summaryId)?.trim()
+  if (existingLabel === label) return
+  runtime.session.sessionManager.appendLabelChange(summaryId, label)
+}
+
 async function waitForBranchSummaryStartOrSettlement(
   runtime: PiRuntime,
-  navigatePromise: Promise<{ cancelled: boolean; aborted?: boolean; editorText?: string }>,
+  navigatePromise: Promise<{
+    cancelled: boolean
+    aborted?: boolean
+    editorText?: string
+    summaryEntry?: { id: string }
+  }>,
 ) {
   if (runtime.session.isCompacting) return 'started' as const
   let pollId: ReturnType<typeof setInterval> | undefined
@@ -147,6 +173,7 @@ export async function navigateSessionTree(input: {
   request: ComposerStateRequest
   targetEntryId: string
   summarize: boolean
+  label?: string | undefined | null
 }): Promise<NavigateSessionTreeOutcome> {
   const persistedSessionPath = getPersistedSessionPath(input.request.sessionPath)
   if (!persistedSessionPath) {
@@ -168,7 +195,12 @@ export async function navigateSessionTree(input: {
     runtime.branchName = input.request.branchName ?? runtime.branchName ?? null
     await applyComposerModeSettings(runtime, input.request)
     try {
-      return await runNavigateOnRuntime(runtime, targetEntryId, input.summarize)
+      return await runNavigateOnRuntime(
+        runtime,
+        targetEntryId,
+        input.summarize,
+        input.label?.trim() || undefined,
+      )
     } finally {
       scheduleRuntimeDisposalForRuntime(runtime)
     }

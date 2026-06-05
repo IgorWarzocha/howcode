@@ -28,7 +28,9 @@ type ComposerSessionTreePanelProps = {
   open?: boolean | undefined
   forceHidden?: boolean | undefined
   navigateDisabled?: boolean | undefined
-  onNavigate?: ((entryId: string, summarize: boolean) => Promise<boolean>) | undefined
+  onNavigate?:
+    | ((entryId: string, summarize: boolean, label?: string) => Promise<boolean>)
+    | undefined
   onRevealInThread?: ((entryId: string) => void) | undefined
   onBindClose?: ((close: (() => void) | null) => void) | undefined
   onNavigateConfirmOpenChange?: ((open: boolean) => void) | undefined
@@ -130,10 +132,10 @@ export function ComposerSessionTreePanel({
     })
   }
 
-  const finishNavigateConfirm = async (entryId: string, summarize: boolean) => {
+  const finishNavigateConfirm = async (entryId: string, summarize: boolean, label?: string) => {
     setConfirmEntryId(null)
     finishNavigate(entryId)
-    await onNavigate?.(entryId, summarize)
+    await onNavigate?.(entryId, summarize, label)
   }
 
   return (
@@ -162,7 +164,10 @@ export function ComposerSessionTreePanel({
           role="listbox"
           tabIndex={-1}
           aria-label="Session tree"
-          className="grid min-h-0 gap-0 overflow-y-auto overflow-x-hidden bg-[color:var(--panel)] px-2 py-1 shadow-none"
+          className={cn(
+            'grid min-h-0 gap-0 overflow-y-auto overflow-x-hidden bg-[color:var(--panel)] px-2 pt-1 shadow-none',
+            confirmEntryId ? 'pb-8' : 'pb-1',
+          )}
         >
           {rows.length > 0 ? (
             visibleIndices.map((rowIndex) => {
@@ -189,8 +194,8 @@ export function ComposerSessionTreePanel({
                   onToggleExpand={() => toggleCollapsed(row.id)}
                   onOpenNavigateConfirm={() => setConfirmEntryId(row.id)}
                   onCancelNavigateConfirm={() => setConfirmEntryId(null)}
-                  onNavigateWithoutSummary={() => finishNavigateConfirm(row.id, false)}
-                  onNavigateWithSummary={() => finishNavigateConfirm(row.id, true)}
+                  onNavigateWithoutSummary={(label) => finishNavigateConfirm(row.id, false, label)}
+                  onNavigateWithSummary={(label) => finishNavigateConfirm(row.id, true, label)}
                 />
               )
             })
