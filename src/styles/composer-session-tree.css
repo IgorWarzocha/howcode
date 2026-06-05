@@ -34,7 +34,7 @@
 
 .composer-session-tree-row:hover .composer-session-tree-nav-trigger,
 .composer-session-tree-row:focus-within .composer-session-tree-nav-trigger,
-.composer-session-tree-row:has(.composer-session-tree-inline-popunder)
+.composer-session-tree-row:has(.composer-session-tree-inline-anchor[data-open="true"])
   .composer-session-tree-nav-trigger {
   opacity: 1;
 }
@@ -45,6 +45,14 @@
   left: auto;
   bottom: auto;
   transform: translateY(-50%);
+}
+
+.composer-session-tree-inline-popunder--portal {
+  position: fixed;
+  right: auto;
+  bottom: auto;
+  z-index: 160;
+  transform: none;
 }
 
 .composer-session-tree-label-popunder {
@@ -69,11 +77,6 @@
   background: var(--panel);
   padding: var(--sidebar-inline-action-pad);
   transform: translateX(-50%);
-}
-
-.composer-session-tree-label-popunder--portal {
-  position: fixed;
-  z-index: 160;
 }
 
 .composer-session-tree-label-input {
