@@ -95,7 +95,12 @@ async function runNavigateOnRuntime(
       await ensureCompactionUi()
       navigatePromise
         .then(async (navigateResult) => {
-          await ensureBranchSummaryLabel(runtime, navigateResult, trimmedLabel)
+          await ensureNavigateLabelApplied(runtime, {
+            result: navigateResult,
+            label: trimmedLabel,
+            summarize,
+            targetEntryId,
+          })
           await publishNavigateSettled(runtime, 'compaction')
         })
         .catch((error) => {
@@ -107,7 +112,12 @@ async function runNavigateOnRuntime(
   }
 
   const result = await navigatePromise
-  if (summarize) await ensureBranchSummaryLabel(runtime, result, trimmedLabel)
+  await ensureNavigateLabelApplied(runtime, {
+    result,
+    label: trimmedLabel,
+    summarize,
+    targetEntryId,
+  })
   await publishNavigateSettled(runtime, summarize ? 'compaction' : 'update')
   if (result.cancelled) {
     return { cancelled: true, ...(result.aborted ? { aborted: true } : {}) }
@@ -118,16 +128,21 @@ async function runNavigateOnRuntime(
   }
 }
 
-function ensureBranchSummaryLabel(
+function ensureNavigateLabelApplied(
   runtime: PiRuntime,
-  result: { summaryEntry?: { id: string } | undefined },
-  label?: string | undefined,
+  input: {
+    result: { cancelled?: boolean; summaryEntry?: { id: string } | undefined }
+    label?: string | undefined
+    summarize: boolean
+    targetEntryId: string
+  },
 ) {
-  const summaryId = result.summaryEntry?.id
-  if (!(summaryId && label)) return
-  const existingLabel = runtime.session.sessionManager.getLabel?.(summaryId)?.trim()
-  if (existingLabel === label) return
-  runtime.session.sessionManager.appendLabelChange(summaryId, label)
+  if (input.result.cancelled || !input.label) return
+  const labelTargetId = input.summarize ? input.result.summaryEntry?.id : input.targetEntryId
+  if (!labelTargetId) return
+  const existingLabel = runtime.session.sessionManager.getLabel?.(labelTargetId)?.trim()
+  if (existingLabel === input.label) return
+  runtime.session.sessionManager.appendLabelChange(labelTargetId, input.label)
 }
 
 async function waitForBranchSummaryStartOrSettlement(

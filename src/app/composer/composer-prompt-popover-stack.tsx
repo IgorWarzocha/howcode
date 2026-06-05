@@ -30,7 +30,9 @@ export function ComposerPromptPopoverStack({
   slashCommands: ComposerSlashCommands
   sessionTreeForceHidden?: boolean | undefined
   sessionTreeNavigateDisabled?: boolean | undefined
-  onSessionTreeNavigate?: ((entryId: string, summarize: boolean) => Promise<boolean>) | undefined
+  onSessionTreeNavigate?:
+    | ((entryId: string, summarize: boolean, label?: string) => Promise<boolean>)
+    | undefined
   onRevealSessionTreeEntryInThread?: ((entryId: string) => void) | undefined
   onBindSessionTreeClose?: ((close: (() => void) | null) => void) | undefined
   onSessionTreeNavigateConfirmOpenChange?: ((open: boolean) => void) | undefined
