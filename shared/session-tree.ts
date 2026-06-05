@@ -8,6 +8,7 @@ export type SessionTreeListRow = {
   parentId: string | null
   depth: number
   label: string
+  customLabel?: string | undefined
   meta?: string | undefined
   kind: 'user' | 'assistant' | 'tool' | 'branch' | 'summary' | 'system' | 'other'
   isLeaf: boolean
@@ -48,7 +49,7 @@ function passesPiAlignedTreeFilter(
     case 'no-tools':
       return passesDefaultComposerTreeRow(row)
     case 'labeled-only':
-      return Boolean(row.label?.trim())
+      return Boolean(row.customLabel?.trim())
     case 'all':
       return true
     default:

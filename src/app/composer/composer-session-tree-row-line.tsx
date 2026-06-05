@@ -16,7 +16,9 @@ import { ComposerSessionTreeNavigateConfirm } from './composer-session-tree-navi
 const chevronSlotClass = 'inline-flex h-4 w-4 shrink-0 items-center justify-center'
 const sessionTreeKindColumnClass = 'w-[3rem] shrink-0'
 
-function rowKindLabel(kind: ComposerSessionTreeRow['kind']) {
+function rowKindLabel(row: ComposerSessionTreeRow) {
+  if (row.customLabel) return row.customLabel
+  const kind = row.kind
   switch (kind) {
     case 'user':
       return 'You'
@@ -63,7 +65,7 @@ function SessionTreeNavigateTrigger({
   onOpenNavigateConfirm: () => void
 }) {
   return (
-    <Tooltip content="Go to this point in the session" placement="right">
+    <Tooltip content="Go to this point in the session" placement="top">
       <button
         type="button"
         className={cn(
@@ -115,8 +117,8 @@ export function ComposerSessionTreeRowLine({
   onFocusRow: () => void
   onOpenNavigateConfirm: () => void
   onCancelNavigateConfirm: () => void
-  onNavigateWithoutSummary: () => void
-  onNavigateWithSummary: () => void
+  onNavigateWithoutSummary: (label?: string) => void
+  onNavigateWithSummary: (label?: string) => void
 }) {
   const indentPx = row.depth * 14
   const contentSurfaceClass = cn(
@@ -168,8 +170,9 @@ export function ComposerSessionTreeRowLine({
             appTypeMetaClass,
             row.kind === 'branch' ? appToneAccentClass : appToneMutedClass,
           )}
+          title={row.customLabel}
         >
-          {rowKindLabel(row.kind)}
+          {rowKindLabel(row)}
         </span>
         <span
           className={cn(

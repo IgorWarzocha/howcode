@@ -68,6 +68,7 @@ export type DesktopActionPayloadFields = {
   threadId?: string | undefined
   threadIds?: string[] | undefined
   branchName?: string | undefined | null | undefined
+  label?: string | undefined | null | undefined
   value?:
     | string
     | undefined
@@ -305,6 +306,7 @@ export type DesktopActionPayloadMap = {
     chatGroupId?: string | undefined | null | undefined
     targetEntryId: string
     summarize?: boolean | undefined
+    label?: string | undefined | null | undefined
   }
   'inbox.mark-read': { sessionPath: string; projectId?: string | undefined | null | undefined }
   'inbox.dismiss': { sessionPath: string; projectId?: string | undefined | null | undefined }

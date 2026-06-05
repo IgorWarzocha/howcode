@@ -67,6 +67,7 @@ async function runNavigateOnRuntime(
   runtime: PiRuntime,
   targetEntryId: string,
   summarize: boolean,
+  label?: string | undefined,
 ): Promise<NavigateSessionTreeOutcome> {
   assertNavigateAllowed(runtime)
   const leafId = runtime.session.sessionManager.getLeafId()
@@ -74,7 +75,11 @@ async function runNavigateOnRuntime(
     return { cancelled: false }
   }
 
-  const navigatePromise = runtime.session.navigateTree(targetEntryId, { summarize })
+  const trimmedLabel = label?.trim() || undefined
+  const navigatePromise = runtime.session.navigateTree(targetEntryId, {
+    summarize,
+    ...(trimmedLabel ? { label: trimmedLabel } : {}),
+  })
 
   if (summarize) {
     let compactionUiPublished = false
@@ -89,7 +94,15 @@ async function runNavigateOnRuntime(
     if (started === 'started') {
       await ensureCompactionUi()
       navigatePromise
-        .then(() => publishNavigateSettled(runtime, 'compaction'))
+        .then(async (navigateResult) => {
+          await ensureNavigateLabelApplied(runtime, {
+            result: navigateResult,
+            summarize,
+            label: trimmedLabel,
+            targetEntryId,
+          })
+          await publishNavigateSettled(runtime, 'compaction')
+        })
         .catch((error) => {
           console.error('Session tree navigation failed after composer returned.', error)
           void publishNavigateSettled(runtime, 'compaction')
@@ -99,6 +112,12 @@ async function runNavigateOnRuntime(
   }
 
   const result = await navigatePromise
+  await ensureNavigateLabelApplied(runtime, {
+    result,
+    summarize,
+    label: trimmedLabel,
+    targetEntryId,
+  })
   await publishNavigateSettled(runtime, summarize ? 'compaction' : 'update')
   if (result.cancelled) {
     return { cancelled: true, ...(result.aborted ? { aborted: true } : {}) }
@@ -107,6 +126,48 @@ async function runNavigateOnRuntime(
     cancelled: false,
     ...(result.editorText === undefined ? {} : { editorText: result.editorText }),
   }
+}
+
+function findTreeNodeLabel(
+  nodes: Array<{ entry: { id: string }; children?: unknown; label?: string | undefined }>,
+  entryId: string,
+): string | undefined {
+  for (const node of nodes) {
+    if (node.entry.id === entryId) return node.label
+    const children = Array.isArray(node.children) ? node.children : []
+    const childLabel = findTreeNodeLabel(
+      children as Array<{ entry: { id: string }; children?: unknown; label?: string | undefined }>,
+      entryId,
+    )
+    if (childLabel !== undefined) return childLabel
+  }
+  return undefined
+}
+
+async function ensureNavigateLabelApplied(
+  runtime: PiRuntime,
+  input: {
+    result: { summaryEntry?: { id: string } | undefined }
+    summarize: boolean
+    label?: string | undefined
+    targetEntryId: string
+  },
+) {
+  if (!input.label) return
+  const labelTargetId = input.summarize ? input.result.summaryEntry?.id : input.targetEntryId
+  if (!labelTargetId) return
+
+  const getTree = runtime.session.sessionManager.getTree
+  const appendLabelChange = runtime.session.sessionManager.appendLabelChange
+  if (typeof getTree !== 'function' || typeof appendLabelChange !== 'function') return
+
+  const roots = getTree.call(runtime.session.sessionManager) as Array<{
+    entry: { id: string }
+    children?: unknown
+    label?: string | undefined
+  }>
+  if (findTreeNodeLabel(roots, labelTargetId)?.trim() === input.label) return
+  appendLabelChange.call(runtime.session.sessionManager, labelTargetId, input.label)
 }
 
 async function waitForBranchSummaryStartOrSettlement(
@@ -147,6 +208,7 @@ export async function navigateSessionTree(input: {
   request: ComposerStateRequest
   targetEntryId: string
   summarize: boolean
+  label?: string | undefined | null
 }): Promise<NavigateSessionTreeOutcome> {
   const persistedSessionPath = getPersistedSessionPath(input.request.sessionPath)
   if (!persistedSessionPath) {
@@ -168,7 +230,12 @@ export async function navigateSessionTree(input: {
     runtime.branchName = input.request.branchName ?? runtime.branchName ?? null
     await applyComposerModeSettings(runtime, input.request)
     try {
-      return await runNavigateOnRuntime(runtime, targetEntryId, input.summarize)
+      return await runNavigateOnRuntime(
+        runtime,
+        targetEntryId,
+        input.summarize,
+        input.label?.trim() || undefined,
+      )
     } finally {
       scheduleRuntimeDisposalForRuntime(runtime)
     }

@@ -38,7 +38,7 @@ export function useComposerSessionTreeNavigate(input: {
     !persistedSessionPath || isSending || composerIsStreaming || extensionRunning || isCompacting
 
   const handleSessionTreeNavigate = useCallback(
-    async (entryId: string, summarize: boolean): Promise<boolean> => {
+    async (entryId: string, summarize: boolean, label?: string): Promise<boolean> => {
       if (summarize) setSessionTreeHidden(true)
       try {
         const ok = await runComposerAction(
@@ -50,6 +50,7 @@ export function useComposerSessionTreeNavigate(input: {
             chatGroupId,
             targetEntryId: entryId,
             summarize,
+            label: label?.trim() || undefined,
           },
           { closeMenu: false },
         )
