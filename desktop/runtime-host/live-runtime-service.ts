@@ -231,12 +231,17 @@ export async function sendComposerPrompt(
 }
 
 export async function navigateSessionTreeInHost(
-  request: ComposerStateRequest & { targetEntryId: string; summarize: boolean },
+  request: ComposerStateRequest & {
+    targetEntryId: string
+    summarize: boolean
+    label?: string | undefined | null
+  },
 ) {
   return navigateSessionTree({
     request,
     targetEntryId: request.targetEntryId,
     summarize: request.summarize,
+    label: request.label,
   })
 }
 
