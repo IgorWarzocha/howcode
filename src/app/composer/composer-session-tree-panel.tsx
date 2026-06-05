@@ -164,10 +164,7 @@ export function ComposerSessionTreePanel({
           role="listbox"
           tabIndex={-1}
           aria-label="Session tree"
-          className={cn(
-            'grid min-h-0 gap-0 overflow-y-auto overflow-x-hidden bg-[color:var(--panel)] px-2 pt-1 shadow-none',
-            confirmEntryId ? 'pb-8' : 'pb-1',
-          )}
+          className="grid min-h-0 gap-0 overflow-y-auto overflow-x-hidden bg-[color:var(--panel)] px-2 py-1 shadow-none"
         >
           {rows.length > 0 ? (
             visibleIndices.map((rowIndex) => {

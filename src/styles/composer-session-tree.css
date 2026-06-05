@@ -71,6 +71,11 @@
   transform: translateX(-50%);
 }
 
+.composer-session-tree-label-popunder--portal {
+  position: fixed;
+  z-index: 160;
+}
+
 .composer-session-tree-label-input {
   display: block;
   width: 100%;
@@ -99,8 +104,4 @@
     2
   );
   grid-template-columns: repeat(3, var(--sidebar-inline-action-size));
-}
-
-.composer-session-tree-row:has(.composer-session-tree-label-popunder) {
-  margin-bottom: 1.75rem;
 }

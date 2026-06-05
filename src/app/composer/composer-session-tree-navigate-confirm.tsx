@@ -1,7 +1,8 @@
 import { Tooltip } from '@howcode/common/tooltip'
 import { ListCollapse, Undo2, X } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '../utils/cn'
 
 type ComposerSessionTreeNavigateConfirmProps = {
@@ -20,8 +21,14 @@ export function ComposerSessionTreeNavigateConfirm({
   onNavigateWithSummary,
 }: ComposerSessionTreeNavigateConfirmProps) {
   const popunderRef = useRef<HTMLSpanElement>(null)
+  const labelPopunderRef = useRef<HTMLSpanElement>(null)
   const [label, setLabel] = useState('')
   const [labelFieldVisible, setLabelFieldVisible] = useState(false)
+  const [labelPosition, setLabelPosition] = useState<{
+    left: number
+    top: number
+    width: number
+  } | null>(null)
 
   const showLabelField = () => setLabelFieldVisible(true)
   const submitNavigate = (summarize: boolean) => {
@@ -41,6 +48,7 @@ export function ComposerSessionTreeNavigateConfirm({
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target
       if (target instanceof Node && popunderRef.current?.contains(target)) return
+      if (target instanceof Node && labelPopunderRef.current?.contains(target)) return
       if (target instanceof Element && target.closest('.composer-session-tree-inline-anchor')) {
         return
       }
@@ -59,7 +67,63 @@ export function ComposerSessionTreeNavigateConfirm({
     if (open) return
     setLabel('')
     setLabelFieldVisible(false)
+    setLabelPosition(null)
   }, [open])
+
+  const labelVisible = labelFieldVisible || Boolean(label.trim())
+
+  useLayoutEffect(() => {
+    if (!(open && labelVisible)) return
+
+    const updatePosition = () => {
+      const strip = popunderRef.current
+      if (!strip) return
+      const rect = strip.getBoundingClientRect()
+      const width = rect.width * 1.5
+      setLabelPosition({
+        left: rect.left + rect.width / 2 - width / 2,
+        top: rect.bottom + 2,
+        width,
+      })
+    }
+
+    updatePosition()
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [labelVisible, open])
+
+  const labelPopunder =
+    labelVisible && labelPosition && typeof document !== 'undefined'
+      ? createPortal(
+          <span
+            ref={labelPopunderRef}
+            className="composer-session-tree-label-popunder composer-session-tree-label-popunder--portal"
+            style={{
+              left: `${labelPosition.left}px`,
+              top: `${labelPosition.top}px`,
+              width: `${labelPosition.width}px`,
+            }}
+          >
+            <input
+              value={label}
+              onChange={(event) => setLabel(event.target.value)}
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => {
+                event.stopPropagation()
+                if (event.key === 'Escape') onCancel()
+              }}
+              placeholder="Label branch"
+              aria-label="Branch label"
+              className="composer-session-tree-label-input"
+            />
+          </span>,
+          document.body,
+        )
+      : null
 
   return (
     <span className={cn('tooltip-anchor composer-session-tree-inline-anchor')}>
@@ -114,24 +178,9 @@ export function ComposerSessionTreeNavigateConfirm({
               <ListCollapse size={12} />
             </button>
           </Tooltip>
-          {labelFieldVisible || label.trim() ? (
-            <span className="composer-session-tree-label-popunder">
-              <input
-                value={label}
-                onChange={(event) => setLabel(event.target.value)}
-                onClick={(event) => event.stopPropagation()}
-                onKeyDown={(event) => {
-                  event.stopPropagation()
-                  if (event.key === 'Escape') onCancel()
-                }}
-                placeholder="Label branch"
-                aria-label="Branch label"
-                className="composer-session-tree-label-input"
-              />
-            </span>
-          ) : null}
         </span>
       ) : null}
+      {labelPopunder}
     </span>
   )
 }
