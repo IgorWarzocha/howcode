@@ -93,26 +93,7 @@ async function runNavigateOnRuntime(
 
     if (runtime.session.isCompacting) await ensureCompactionUi()
     const started = await waitForBranchSummaryStartOrSettlement(runtime, navigatePromise)
-    if (started === 'started') {
-      await ensureCompactionUi()
-      navigatePromise
-        .then(async (navigateResult) => {
-          await ensureNavigateLabelApplied(runtime, {
-            result: navigateResult,
-            label: trimmedLabel,
-            summarize,
-            targetEntryId,
-            branchSummaryIdsBeforeNavigate,
-            navigateStartedAt,
-          })
-          await publishNavigateSettled(runtime, 'compaction')
-        })
-        .catch((error) => {
-          console.error('Session tree navigation failed after composer returned.', error)
-          void publishNavigateSettled(runtime, 'compaction')
-        })
-      return { cancelled: false }
-    }
+    if (started === 'started') await ensureCompactionUi()
   }
 
   const result = await navigatePromise
