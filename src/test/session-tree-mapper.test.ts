@@ -5,6 +5,27 @@ import {
 } from '../../shared/session-tree'
 
 describe('buildSessionTreeListFromPiTree', () => {
+  it('keeps Pi labels separate from generated entry text', () => {
+    const list = buildSessionTreeListFromPiTree(
+      [
+        {
+          entry: {
+            id: 'u1',
+            parentId: null,
+            type: 'message',
+            message: { role: 'user', content: [{ type: 'text', text: 'root prompt' }] },
+          },
+          label: 'test2',
+          children: [],
+        },
+      ],
+      'u1',
+    )
+
+    expect(list.rows[0]?.label).toBe('root prompt')
+    expect(list.rows[0]?.customLabel).toBe('test2')
+  })
+
   it('flattens a branched tree and marks active path', () => {
     const list = buildSessionTreeListFromPiTree(
       [

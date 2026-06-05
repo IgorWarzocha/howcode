@@ -35,6 +35,28 @@ function rowKindLabel(kind: ComposerSessionTreeRow['kind']) {
   }
 }
 
+function SessionTreeEntryText({ row }: { row: ComposerSessionTreeRow }) {
+  return (
+    <span
+      className={cn(
+        'flex min-w-0 items-center gap-1 truncate',
+        appTypeSmallClass,
+        row.kind === 'branch' ? appToneAccentClass : appToneTextClass,
+      )}
+    >
+      {row.customLabel ? (
+        <span
+          className="shrink-0 truncate text-[color:var(--warning,var(--accent))]"
+          title={row.customLabel}
+        >
+          [{row.customLabel}]
+        </span>
+      ) : null}
+      <span className="min-w-0 truncate">{row.label}</span>
+    </span>
+  )
+}
+
 function sessionTreeRowAriaLabel(isAnchor: boolean, isPreviewing: boolean) {
   if (isAnchor) return 'Current position in session'
   if (isPreviewing) return 'Previewing this point in the thread'
@@ -63,7 +85,7 @@ function SessionTreeNavigateTrigger({
   onOpenNavigateConfirm: () => void
 }) {
   return (
-    <Tooltip content="Go to this point in the session" placement="right">
+    <Tooltip content="Go to this point in the session" placement="top">
       <button
         type="button"
         className={cn(
@@ -171,15 +193,7 @@ export function ComposerSessionTreeRowLine({
         >
           {rowKindLabel(row.kind)}
         </span>
-        <span
-          className={cn(
-            'min-w-0 truncate',
-            appTypeSmallClass,
-            row.kind === 'branch' ? appToneAccentClass : appToneTextClass,
-          )}
-        >
-          {row.label}
-        </span>
+        <SessionTreeEntryText row={row} />
       </button>
       <span className="composer-session-tree-meta-slot">
         {isAnchor ? <SessionTreeAnchorMark /> : null}

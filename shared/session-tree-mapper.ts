@@ -96,7 +96,6 @@ function messageEntryLabel(entry: PiSessionTreeNode['entry']): string {
 }
 
 function entryLabel(node: PiSessionTreeNode): string {
-  if (node.label?.trim()) return node.label.trim().slice(0, 120)
   const entry = node.entry
   if (entry.type === 'message') return messageEntryLabel(entry)
   if (entry.type === 'branch_summary') {
@@ -111,6 +110,11 @@ function entryLabel(node: PiSessionTreeNode): string {
   if (entry.type === 'session_info') return 'Session info'
   if (entry.type === 'label') return 'Label'
   return entry.type
+}
+
+function customEntryLabel(node: PiSessionTreeNode): string | undefined {
+  const label = node.label?.trim()
+  return label ? label.slice(0, 120) : undefined
 }
 
 function entryMeta(entry: PiSessionTreeNode['entry']): string | undefined {
@@ -203,6 +207,7 @@ function appendVisibleTreeRow(
     parentId: entry.parentId,
     depth: indent,
     label: entryLabel(node),
+    customLabel: customEntryLabel(node),
     meta: entryMeta(entry),
     kind: entryKind(entry),
     isLeaf: isCurrentLeaf,
