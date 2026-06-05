@@ -76,6 +76,8 @@ async function runNavigateOnRuntime(
   }
 
   const trimmedLabel = label?.trim() || undefined
+  const branchSummaryIdsBeforeNavigate = collectBranchSummaryIds(runtime)
+  const navigateStartedAt = Date.now()
   const navigatePromise = runtime.session.navigateTree(targetEntryId, {
     summarize,
     ...(trimmedLabel ? { label: trimmedLabel } : {}),
@@ -100,6 +102,8 @@ async function runNavigateOnRuntime(
             label: trimmedLabel,
             summarize,
             targetEntryId,
+            branchSummaryIdsBeforeNavigate,
+            navigateStartedAt,
           })
           await publishNavigateSettled(runtime, 'compaction')
         })
@@ -117,6 +121,8 @@ async function runNavigateOnRuntime(
     label: trimmedLabel,
     summarize,
     targetEntryId,
+    branchSummaryIdsBeforeNavigate,
+    navigateStartedAt,
   })
   await publishNavigateSettled(runtime, summarize ? 'compaction' : 'update')
   if (result.cancelled) {
@@ -135,14 +141,45 @@ function ensureNavigateLabelApplied(
     label?: string | undefined
     summarize: boolean
     targetEntryId: string
+    branchSummaryIdsBeforeNavigate: ReadonlySet<string>
+    navigateStartedAt: number
   },
 ) {
   if (input.result.cancelled || !input.label) return
-  const labelTargetId = input.summarize ? input.result.summaryEntry?.id : input.targetEntryId
+  const labelTargetId = input.summarize
+    ? (input.result.summaryEntry?.id ?? findNewBranchSummaryId(runtime, input))
+    : input.targetEntryId
   if (!labelTargetId) return
   const existingLabel = runtime.session.sessionManager.getLabel?.(labelTargetId)?.trim()
   if (existingLabel === input.label) return
   runtime.session.sessionManager.appendLabelChange(labelTargetId, input.label)
+}
+
+function collectBranchSummaryIds(runtime: PiRuntime): Set<string> {
+  return new Set(
+    runtime.session.sessionManager
+      .getEntries()
+      .filter((entry) => entry.type === 'branch_summary')
+      .map((entry) => entry.id),
+  )
+}
+
+function findNewBranchSummaryId(
+  runtime: PiRuntime,
+  input: {
+    branchSummaryIdsBeforeNavigate: ReadonlySet<string>
+    navigateStartedAt: number
+  },
+): string | undefined {
+  const newSummaries = runtime.session.sessionManager
+    .getEntries()
+    .filter((entry) => {
+      if (entry.type !== 'branch_summary') return false
+      if (input.branchSummaryIdsBeforeNavigate.has(entry.id)) return false
+      return new Date(entry.timestamp).getTime() >= input.navigateStartedAt - 1_000
+    })
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+  return newSummaries[0]?.id
 }
 
 async function waitForBranchSummaryStartOrSettlement(

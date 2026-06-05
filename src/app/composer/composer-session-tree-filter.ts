@@ -23,7 +23,7 @@ function passesSessionTreeFilter(
       if (row.kind === 'tool' || row.kind === 'system' || row.kind === 'other') return false
       return true
     case 'labeled-only':
-      return Boolean(row.label?.trim())
+      return Boolean(row.customLabel?.trim())
     case 'all':
       return true
     default:
