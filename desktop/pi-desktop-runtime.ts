@@ -264,6 +264,15 @@ export function navigateSessionTree(
   return invokeRuntimeHost('navigateSessionTree', withComposerModeSettings(request))
 }
 
+export function labelSessionTreeEntry(
+  request: ComposerStateRequest & {
+    targetEntryId: string
+    label?: string | undefined | null
+  },
+) {
+  return invokeRuntimeHost('labelSessionTreeEntry', withComposerModeSettings(request))
+}
+
 export function disposeWorkspaceComposerRuns(request: {
   projectPath: string
   sessionPaths: string[]

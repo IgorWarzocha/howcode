@@ -299,6 +299,14 @@ export type DesktopActionPayloadMap = {
     chatGroupId?: string | undefined | null | undefined
     shortcut: string
   }
+  'composer.session-tree.label': {
+    projectId?: string | undefined | null | undefined
+    sessionPath?: string | undefined | null | undefined
+    composerMode?: 'chat' | 'code' | null
+    chatGroupId?: string | undefined | null | undefined
+    targetEntryId: string
+    label?: string | undefined | null | undefined
+  }
   'composer.session-tree.navigate': {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined

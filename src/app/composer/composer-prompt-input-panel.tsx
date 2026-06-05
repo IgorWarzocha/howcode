@@ -56,6 +56,7 @@ type ComposerPromptInputPanelProps = {
   onSessionTreeNavigate?:
     | ((entryId: string, summarize: boolean, label?: string) => Promise<boolean>)
     | undefined
+  onSessionTreeLabel?: ((entryId: string, label: string) => Promise<boolean> | boolean) | undefined
   onRevealSessionTreeEntryInThread?: ((entryId: string) => void) | undefined
   onBindSessionTreeClose?: ((close: (() => void) | null) => void) | undefined
   onSessionTreeNavigateConfirmOpenChange?: ((open: boolean) => void) | undefined
@@ -151,6 +152,7 @@ export function ComposerPromptInputPanel({
   sessionTreeForceHidden = false,
   sessionTreeNavigateDisabled = false,
   onSessionTreeNavigate,
+  onSessionTreeLabel,
   onRevealSessionTreeEntryInThread,
   onBindSessionTreeClose,
   onSessionTreeNavigateConfirmOpenChange,
@@ -219,6 +221,7 @@ export function ComposerPromptInputPanel({
                 sessionTreeForceHidden={sessionTreeForceHidden}
                 sessionTreeNavigateDisabled={sessionTreeNavigateDisabled}
                 onSessionTreeNavigate={onSessionTreeNavigate}
+                onSessionTreeLabel={onSessionTreeLabel}
                 onRevealSessionTreeEntryInThread={onRevealSessionTreeEntryInThread}
                 onBindSessionTreeClose={onBindSessionTreeClose}
                 onSessionTreeNavigateConfirmOpenChange={onSessionTreeNavigateConfirmOpenChange}

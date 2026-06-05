@@ -97,6 +97,33 @@
   color: var(--muted-2);
 }
 
+.composer-session-tree-entry-label-anchor {
+  display: inline-flex;
+  min-width: 0;
+}
+
+.composer-session-tree-entry-label-popover {
+  position: fixed;
+  z-index: 160;
+  display: grid;
+  width: 7rem;
+  grid-template-columns: minmax(0, 1fr) 1rem;
+  align-items: center;
+  gap: 0.125rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--panel);
+  padding: var(--sidebar-inline-action-pad);
+  pointer-events: auto;
+}
+
+.composer-session-tree-entry-label-save {
+  height: 1rem;
+  width: 1rem;
+  min-width: 0;
+  color: var(--accent);
+}
+
 .sidebar-inline-action-strip[data-action-count="3"] {
   width: calc(
     var(--sidebar-inline-action-size) *

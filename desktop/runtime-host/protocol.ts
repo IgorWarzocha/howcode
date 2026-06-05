@@ -133,6 +133,10 @@ export type RuntimeHostRequestMap = {
     answers: string[][] | null
   }
   invokeNativeExtensionShortcut: ComposerStateRequest & { shortcut: string }
+  labelSessionTreeEntry: ComposerStateRequest & {
+    targetEntryId: string
+    label?: string | undefined | null
+  }
   navigateSessionTree: ComposerStateRequest & {
     targetEntryId: string
     summarize: boolean
@@ -191,6 +195,7 @@ export type RuntimeHostResponseMap = {
   dequeueComposerPrompt: string | null
   answerNativeAskQuestions: { ok: boolean }
   invokeNativeExtensionShortcut: { ok: boolean }
+  labelSessionTreeEntry: { ok: true }
   navigateSessionTree: {
     cancelled: boolean
     aborted?: boolean

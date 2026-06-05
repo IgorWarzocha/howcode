@@ -19,6 +19,7 @@ export {
   getComposerSlashCommands,
   getComposerState,
   invokeNativeExtensionShortcut,
+  labelSessionTreeEntryInHost,
   navigateSessionTreeInHost,
   openThreadRuntime,
   selectProjectRuntime,

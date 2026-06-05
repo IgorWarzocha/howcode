@@ -15,12 +15,14 @@ import {
   getNativeAskQuestionsAnswers,
   getNativeAskQuestionsRequestId,
   getNativeExtensionShortcut,
+  getSessionTreeLabel,
   getSessionTreeNavigate,
 } from '../../shared/pi-thread-action-payloads.ts'
 import {
   answerNativeAskQuestions,
   dequeueComposerPrompt,
   invokeNativeExtensionShortcut,
+  labelSessionTreeEntry,
   navigateSessionTree,
   sendComposerPrompt,
   setComposerModel,
@@ -142,6 +144,22 @@ async function navigateSessionTreeFromPayload(payload: AnyDesktopActionPayload) 
   }
 }
 
+async function labelSessionTreeEntryFromPayload(payload: AnyDesktopActionPayload) {
+  const labelRequest = getSessionTreeLabel(payload)
+  if (!labelRequest) return handledAction({ error: 'Session tree entry is required.' })
+  try {
+    await labelSessionTreeEntry({
+      ...getComposerRequest(payload),
+      targetEntryId: labelRequest.targetEntryId,
+      label: labelRequest.label,
+    })
+    return handledAction()
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return handledAction({ error: message })
+  }
+}
+
 const composerActionHandlers = {
   'composer.model': async (payload) => {
     const selection = getComposerModelSelection(payload)
@@ -166,6 +184,7 @@ const composerActionHandlers = {
   },
   'composer.answer-native-questions': answerNativeQuestionsFromPayload,
   'composer.native-extension-shortcut': invokeNativeExtensionShortcutFromPayload,
+  'composer.session-tree.label': labelSessionTreeEntryFromPayload,
   'composer.session-tree.navigate': navigateSessionTreeFromPayload,
 } satisfies Partial<Record<DesktopAction, ComposerActionHandler>>
 

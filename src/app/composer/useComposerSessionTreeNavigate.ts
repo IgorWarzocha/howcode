@@ -14,8 +14,10 @@ export function useComposerSessionTreeNavigate(input: {
   isSending: boolean
   projectId: string
   runComposerAction: (
-    action: 'composer.session-tree.navigate',
-    payload: DesktopActionPayload<'composer.session-tree.navigate'>,
+    action: 'composer.session-tree.navigate' | 'composer.session-tree.label',
+    payload:
+      | DesktopActionPayload<'composer.session-tree.navigate'>
+      | DesktopActionPayload<'composer.session-tree.label'>,
     options?: { closeMenu?: boolean },
   ) => Promise<boolean>
   sessionPath: string | null
@@ -76,12 +78,46 @@ export function useComposerSessionTreeNavigate(input: {
     ],
   )
 
+  const handleSessionTreeLabel = useCallback(
+    async (entryId: string, label: string): Promise<boolean> => {
+      const ok = await runComposerAction(
+        'composer.session-tree.label',
+        {
+          projectId,
+          sessionPath,
+          composerMode,
+          chatGroupId,
+          targetEntryId: entryId,
+          label,
+        },
+        { closeMenu: false },
+      )
+      if (!ok) return false
+      if (persistedSessionPath) {
+        void queryClient.invalidateQueries({
+          queryKey: desktopQueryKeys.sessionTreeList(persistedSessionPath),
+        })
+      }
+      return true
+    },
+    [
+      chatGroupId,
+      composerMode,
+      persistedSessionPath,
+      projectId,
+      queryClient,
+      runComposerAction,
+      sessionPath,
+    ],
+  )
+
   useEffect(() => {
     if (!isCompacting) setSessionTreeHidden(false)
   }, [isCompacting])
 
   return {
     handleSessionTreeNavigate,
+    handleSessionTreeLabel,
     sessionTreeForceHidden: sessionTreeHidden,
     sessionTreeNavigateDisabled,
   }

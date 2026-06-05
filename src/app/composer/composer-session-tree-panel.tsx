@@ -31,6 +31,7 @@ type ComposerSessionTreePanelProps = {
   onNavigate?:
     | ((entryId: string, summarize: boolean, label?: string) => Promise<boolean>)
     | undefined
+  onLabelEntry?: ((entryId: string, label: string) => Promise<boolean> | boolean) | undefined
   onRevealInThread?: ((entryId: string) => void) | undefined
   onBindClose?: ((close: (() => void) | null) => void) | undefined
   onNavigateConfirmOpenChange?: ((open: boolean) => void) | undefined
@@ -45,6 +46,7 @@ export function ComposerSessionTreePanel({
   forceHidden = false,
   navigateDisabled = false,
   onNavigate,
+  onLabelEntry,
   onRevealInThread,
   onBindClose,
   onNavigateConfirmOpenChange,
@@ -193,6 +195,7 @@ export function ComposerSessionTreePanel({
                   onCancelNavigateConfirm={() => setConfirmEntryId(null)}
                   onNavigateWithoutSummary={(label) => finishNavigateConfirm(row.id, false, label)}
                   onNavigateWithSummary={(label) => finishNavigateConfirm(row.id, true, label)}
+                  onLabelEntry={onLabelEntry ?? (() => false)}
                 />
               )
             })

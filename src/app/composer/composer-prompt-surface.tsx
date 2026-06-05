@@ -403,18 +403,22 @@ export function ComposerPromptSurface({
     },
     [persistedSessionPath],
   )
-  const { handleSessionTreeNavigate, sessionTreeForceHidden, sessionTreeNavigateDisabled } =
-    useComposerSessionTreeNavigate({
-      activeView,
-      chatGroupId,
-      composerIsStreaming,
-      extensionRunning,
-      isCompacting,
-      isSending,
-      projectId,
-      runComposerAction,
-      sessionPath,
-    })
+  const {
+    handleSessionTreeLabel,
+    handleSessionTreeNavigate,
+    sessionTreeForceHidden,
+    sessionTreeNavigateDisabled,
+  } = useComposerSessionTreeNavigate({
+    activeView,
+    chatGroupId,
+    composerIsStreaming,
+    extensionRunning,
+    isCompacting,
+    isSending,
+    projectId,
+    runComposerAction,
+    sessionPath,
+  })
   const handleSessionTreeNavigateAndClose = useCallback(
     async (entryId: string, summarize: boolean, label?: string) => {
       const ok = await handleSessionTreeNavigate(entryId, summarize, label)
@@ -608,6 +612,7 @@ export function ComposerPromptSurface({
               sessionTreeForceHidden={sessionTreeForceHidden}
               sessionTreeNavigateDisabled={sessionTreeNavigateDisabled}
               onSessionTreeNavigate={handleSessionTreeNavigateAndClose}
+              onSessionTreeLabel={handleSessionTreeLabel}
               onRevealSessionTreeEntryInThread={revealSessionTreeEntryInThread}
               onBindSessionTreeClose={(close) => {
                 sessionTreeCloseRef.current = close

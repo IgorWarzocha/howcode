@@ -9,8 +9,10 @@ import {
   composerPopoverOptionSelectedClass,
 } from '@howcode/ui'
 import { Check, ChevronDown, ChevronRight, History } from 'lucide-react'
+import { useState } from 'react'
 import { cn } from '../utils/cn'
 import type { ComposerSessionTreeRow } from './composer-session-tree'
+import { ComposerSessionTreeLabelPopover } from './composer-session-tree-label-popover'
 import { ComposerSessionTreeNavigateConfirm } from './composer-session-tree-navigate-confirm'
 
 const chevronSlotClass = 'inline-flex h-4 w-4 shrink-0 items-center justify-center'
@@ -117,6 +119,7 @@ export function ComposerSessionTreeRowLine({
   onCancelNavigateConfirm,
   onNavigateWithoutSummary,
   onNavigateWithSummary,
+  onLabelEntry,
 }: {
   row: ComposerSessionTreeRow
   selected: boolean
@@ -133,7 +136,9 @@ export function ComposerSessionTreeRowLine({
   onCancelNavigateConfirm: () => void
   onNavigateWithoutSummary: (label?: string) => void
   onNavigateWithSummary: (label?: string) => void
+  onLabelEntry: (entryId: string, label: string) => Promise<boolean> | boolean
 }) {
+  const [labelPopoverOpen, setLabelPopoverOpen] = useState(false)
   const indentPx = row.depth * 14
   const contentSurfaceClass = cn(
     'composer-session-tree-label-button grid min-h-6 w-full min-w-0 grid-cols-[3rem_minmax(0,1fr)] items-center gap-1.5 rounded-md px-2 py-0 text-left transition-colors duration-150 ease-out',
@@ -175,19 +180,36 @@ export function ComposerSessionTreeRowLine({
         className={contentSurfaceClass}
         aria-label={sessionTreeRowAriaLabel(isAnchor, isPreviewing)}
         onMouseDown={(event) => event.preventDefault()}
+        onMouseMove={(event) => {
+          const target = event.target
+          if (
+            target instanceof Element &&
+            target.closest('.composer-session-tree-entry-label-anchor')
+          ) {
+            setLabelPopoverOpen(true)
+          }
+        }}
         onClick={() => onFocusRow()}
       >
-        <span
-          className={cn(
-            sessionTreeKindColumnClass,
-            'truncate',
-            appTypeMetaClass,
-            row.customLabel || row.kind === 'branch' ? appToneAccentClass : appToneMutedClass,
-          )}
-          title={row.customLabel}
+        <ComposerSessionTreeLabelPopover
+          entryId={row.id}
+          label={row.customLabel}
+          open={labelPopoverOpen}
+          onLabel={onLabelEntry}
+          onOpenChange={setLabelPopoverOpen}
         >
-          {rowKindLabel(row)}
-        </span>
+          <span
+            className={cn(
+              sessionTreeKindColumnClass,
+              'truncate',
+              appTypeMetaClass,
+              row.customLabel || row.kind === 'branch' ? appToneAccentClass : appToneMutedClass,
+            )}
+            title={row.customLabel}
+          >
+            {rowKindLabel(row)}
+          </span>
+        </ComposerSessionTreeLabelPopover>
         <SessionTreeEntryText row={row} />
       </button>
       <span className="composer-session-tree-meta-slot">

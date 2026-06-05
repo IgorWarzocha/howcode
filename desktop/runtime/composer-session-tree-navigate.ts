@@ -239,3 +239,41 @@ export async function navigateSessionTree(input: {
     }
   })
 }
+
+export async function labelSessionTreeEntry(input: {
+  request: ComposerStateRequest
+  targetEntryId: string
+  label?: string | undefined | null
+}): Promise<{ ok: true }> {
+  const persistedSessionPath = getPersistedSessionPath(input.request.sessionPath)
+  if (!persistedSessionPath) {
+    throw new Error('Open a saved session before labelling the session tree.')
+  }
+
+  const targetEntryId = input.targetEntryId.trim()
+  if (!targetEntryId) {
+    throw new Error('Session tree entry is required.')
+  }
+
+  return await withRuntimeMutationLock(persistedSessionPath, async () => {
+    await reloadRuntimeSettingsIfSafe(persistedSessionPath, { useMutationLock: false })
+    const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+      suspendDisposal: true,
+      settingsCwd: input.request.composerSessionDir ?? null,
+      chatGroupId: input.request.chatGroupId ?? null,
+    })
+    runtime.branchName = input.request.branchName ?? runtime.branchName ?? null
+    await applyComposerModeSettings(runtime, input.request)
+    try {
+      const label = input.label?.trim() || ''
+      const existingLabel = runtime.session.sessionManager.getLabel?.(targetEntryId)?.trim() || ''
+      if (existingLabel !== label) {
+        runtime.session.sessionManager.appendLabelChange(targetEntryId, label)
+      }
+      await publishNavigateSettled(runtime, 'update')
+      return { ok: true as const }
+    } finally {
+      scheduleRuntimeDisposalForRuntime(runtime)
+    }
+  })
+}
