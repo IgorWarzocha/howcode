@@ -255,11 +255,7 @@ export function stopComposerRun(request = {}) {
 }
 
 export function navigateSessionTree(
-  request: ComposerStateRequest & {
-    targetEntryId: string
-    summarize: boolean
-    label?: string | undefined | null
-  },
+  request: ComposerStateRequest & { targetEntryId: string; summarize: boolean },
 ) {
   return invokeRuntimeHost('navigateSessionTree', withComposerModeSettings(request))
 }

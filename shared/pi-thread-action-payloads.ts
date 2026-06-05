@@ -375,7 +375,6 @@ export function getSessionTreeNavigate(payload: DesktopActionPayloadInput) {
   return {
     targetEntryId,
     summarize: payload.summarize === true,
-    label: typeof payload.label === 'string' ? payload.label.trim() : '',
   }
 }
 

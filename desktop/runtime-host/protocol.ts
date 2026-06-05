@@ -136,7 +136,6 @@ export type RuntimeHostRequestMap = {
   navigateSessionTree: ComposerStateRequest & {
     targetEntryId: string
     summarize: boolean
-    label?: string | undefined | null
   }
 }
 

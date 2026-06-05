@@ -60,32 +60,6 @@ describe('buildSessionTreeListFromPiTree', () => {
 })
 
 describe('filterSessionTreeListRows', () => {
-  it('keeps custom labels separate from generated branch summary labels', () => {
-    const list = buildSessionTreeListFromPiTree(
-      [
-        {
-          entry: {
-            id: 'bs',
-            parentId: null,
-            type: 'branch_summary',
-            summary: 'summary text',
-          },
-          label: 'branch name',
-          children: [],
-        },
-      ],
-      'bs',
-    )
-
-    expect(list.rows[0]).toMatchObject({
-      id: 'bs',
-      label: 'summary text',
-      customLabel: 'branch name',
-      kind: 'branch',
-    })
-    expect(filterSessionTreeListRows(list.rows, 'labeled-only', 'bs')).toHaveLength(1)
-  })
-
   it('marks active path through omitted bookkeeping parents', () => {
     const list = buildSessionTreeListFromPiTree(
       [

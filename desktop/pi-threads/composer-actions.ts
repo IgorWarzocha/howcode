@@ -128,7 +128,6 @@ async function navigateSessionTreeFromPayload(payload: AnyDesktopActionPayload) 
       ...getComposerRequest(payload),
       targetEntryId: navigate.targetEntryId,
       summarize: navigate.summarize,
-      label: navigate.label,
     })
     if (result.cancelled) return handledAction()
     return handledAction({

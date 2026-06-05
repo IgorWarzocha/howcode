@@ -416,8 +416,8 @@ export function ComposerPromptSurface({
       sessionPath,
     })
   const handleSessionTreeNavigateAndClose = useCallback(
-    async (entryId: string, summarize: boolean, label?: string) => {
-      const ok = await handleSessionTreeNavigate(entryId, summarize, label)
+    async (entryId: string, summarize: boolean) => {
+      const ok = await handleSessionTreeNavigate(entryId, summarize)
       if (ok) closeSessionTree()
       return ok
     },

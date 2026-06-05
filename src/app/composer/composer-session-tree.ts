@@ -9,7 +9,6 @@ export type ComposerSessionTreeRow = {
   id: string
   depth: number
   label: string
-  customLabel?: string | undefined
   meta?: string | undefined
   kind: SessionTreeListRow['kind']
   isLeaf: boolean
@@ -27,7 +26,6 @@ function toComposerRow(row: SessionTreeListRow): ComposerSessionTreeRow {
     id: row.id,
     depth: row.depth,
     label: row.label,
-    customLabel: row.customLabel,
     meta: row.meta,
     kind: row.kind,
     isLeaf: row.isLeaf,

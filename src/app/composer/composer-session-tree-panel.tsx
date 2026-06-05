@@ -28,9 +28,7 @@ type ComposerSessionTreePanelProps = {
   open?: boolean | undefined
   forceHidden?: boolean | undefined
   navigateDisabled?: boolean | undefined
-  onNavigate?:
-    | ((entryId: string, summarize: boolean, label?: string) => Promise<boolean>)
-    | undefined
+  onNavigate?: ((entryId: string, summarize: boolean) => Promise<boolean>) | undefined
   onRevealInThread?: ((entryId: string) => void) | undefined
   onBindClose?: ((close: (() => void) | null) => void) | undefined
   onNavigateConfirmOpenChange?: ((open: boolean) => void) | undefined
@@ -132,10 +130,10 @@ export function ComposerSessionTreePanel({
     })
   }
 
-  const finishNavigateConfirm = async (entryId: string, summarize: boolean, label?: string) => {
+  const finishNavigateConfirm = async (entryId: string, summarize: boolean) => {
     setConfirmEntryId(null)
     finishNavigate(entryId)
-    await onNavigate?.(entryId, summarize, label)
+    await onNavigate?.(entryId, summarize)
   }
 
   return (
@@ -191,8 +189,8 @@ export function ComposerSessionTreePanel({
                   onToggleExpand={() => toggleCollapsed(row.id)}
                   onOpenNavigateConfirm={() => setConfirmEntryId(row.id)}
                   onCancelNavigateConfirm={() => setConfirmEntryId(null)}
-                  onNavigateWithoutSummary={(label) => finishNavigateConfirm(row.id, false, label)}
-                  onNavigateWithSummary={(label) => finishNavigateConfirm(row.id, true, label)}
+                  onNavigateWithoutSummary={() => finishNavigateConfirm(row.id, false)}
+                  onNavigateWithSummary={() => finishNavigateConfirm(row.id, true)}
                 />
               )
             })
