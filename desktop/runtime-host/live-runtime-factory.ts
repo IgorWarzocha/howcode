@@ -16,6 +16,7 @@ import { buildComposerState } from '../runtime/composer-state.ts'
 import {
   createIsolatedRuntimeResourceLoader,
   createRuntimeSettingsManager,
+  resolveRuntimeProjectTrust,
 } from '../runtime/isolated-settings-manager.ts'
 import type { PiRuntime } from '../runtime/types.ts'
 import { publishComposerUpdate } from './live-thread-publisher.ts'
@@ -80,11 +81,20 @@ export async function createLiveRuntime(
     SessionManager,
     SettingsManager,
     DefaultResourceLoader,
+    ProjectTrustStore,
     createAgentSession,
     defineTool,
     getAgentDir,
+    hasProjectTrustInputs,
   } = await getPiModule()
   const agentDir = getAgentDir()
+  const projectTrusted = resolveRuntimeProjectTrust({
+    ProjectTrustStore,
+    agentDir,
+    cwd: options.cwd,
+    hasProjectTrustInputs,
+    settingsCwd: options.settingsCwd,
+  })
   const authStorage = AuthStorage.create()
   const modelRegistry = normalizeModelRegistryContextWindows(
     ModelRegistry.create(authStorage, `${agentDir}/models.json`),
@@ -98,6 +108,7 @@ export async function createLiveRuntime(
     cwd: options.cwd,
     agentDir,
     settingsCwd: options.settingsCwd,
+    projectTrusted,
     additionalExtensions: getNativeExtensionRuntimePaths(
       enabledNativeExtensions.filter((id) => id !== 'askQuestions'),
     ),
@@ -109,6 +120,7 @@ export async function createLiveRuntime(
     agentDir,
     settingsCwd: options.settingsCwd,
     settingsManager,
+    projectTrusted,
     systemPrompt: getRuntimeSystemPrompt({ settingsCwd: options.settingsCwd }),
   })
   let runtime: PiRuntime | null = null
@@ -141,7 +153,7 @@ export async function createLiveRuntime(
     authStorage,
     modelRegistry,
     settingsManager,
-    ...(resourceLoader ? { resourceLoader } : {}),
+    resourceLoader,
     sessionManager: options.sessionManager ?? SessionManager.create(options.cwd, sessionDir),
     ...(options.settingsCwd
       ? {

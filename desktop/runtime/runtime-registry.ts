@@ -14,6 +14,7 @@ import { buildComposerState } from './composer-state.ts'
 import {
   createIsolatedRuntimeResourceLoader,
   createRuntimeSettingsManager,
+  resolveRuntimeProjectTrust,
 } from './isolated-settings-manager.ts'
 import {
   deleteRuntimeRecordIfCurrent,
@@ -120,10 +121,19 @@ async function createRuntime(options: {
     SessionManager,
     SettingsManager,
     DefaultResourceLoader,
+    ProjectTrustStore,
     createAgentSession,
     getAgentDir,
+    hasProjectTrustInputs,
   } = await getPiModule()
   const agentDir = getAgentDir()
+  const projectTrusted = resolveRuntimeProjectTrust({
+    ProjectTrustStore,
+    agentDir,
+    cwd: options.cwd,
+    hasProjectTrustInputs,
+    settingsCwd: options.settingsCwd,
+  })
   const authStorage = AuthStorage.create()
   const modelRegistry = normalizeModelRegistryContextWindows(
     ModelRegistry.create(authStorage, `${agentDir}/models.json`),
@@ -133,6 +143,7 @@ async function createRuntime(options: {
     cwd: options.cwd,
     agentDir,
     settingsCwd: options.settingsCwd,
+    projectTrusted,
   })
   const sessionDir = options.sessionDir ?? settingsManager.getSessionDir() ?? undefined
   const resourceLoader = await createIsolatedRuntimeResourceLoader({
@@ -141,6 +152,7 @@ async function createRuntime(options: {
     agentDir,
     settingsCwd: options.settingsCwd,
     settingsManager,
+    projectTrusted,
     systemPrompt: getRuntimeSystemPrompt({ settingsCwd: options.settingsCwd }),
   })
   const attachmentFileTools = options.settingsCwd
@@ -155,7 +167,7 @@ async function createRuntime(options: {
     authStorage,
     modelRegistry,
     settingsManager,
-    ...(resourceLoader ? { resourceLoader } : {}),
+    resourceLoader,
     sessionManager: options.sessionManager ?? SessionManager.create(options.cwd, sessionDir),
     ...(options.settingsCwd
       ? {

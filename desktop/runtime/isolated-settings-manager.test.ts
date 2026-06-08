@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { createRuntimeSettingsManager } from './isolated-settings-manager.ts'
+import {
+  createRuntimeSettingsManager,
+  resolveRuntimeProjectTrust,
+} from './isolated-settings-manager.ts'
 
 type Settings = Record<string, unknown>
 
@@ -46,5 +49,63 @@ describe('createRuntimeSettingsManager', () => {
       prompts: ['chat-prompt'],
       themes: ['chat-theme'],
     })
+  })
+})
+
+describe('resolveRuntimeProjectTrust', () => {
+  function createTrustStoreFactory(decision: boolean | null) {
+    return class ProjectTrustStore {
+      agentDir: string
+
+      constructor(agentDir: string) {
+        this.agentDir = agentDir
+      }
+
+      get() {
+        return decision
+      }
+    }
+  }
+
+  it('trusts projects with no trust inputs', () => {
+    expect(
+      resolveRuntimeProjectTrust({
+        ProjectTrustStore: createTrustStoreFactory(false),
+        agentDir: '/agent',
+        cwd: '/repo',
+        hasProjectTrustInputs: () => false,
+      }),
+    ).toBe(true)
+  })
+
+  it('uses stored project trust decisions', () => {
+    expect(
+      resolveRuntimeProjectTrust({
+        ProjectTrustStore: createTrustStoreFactory(true),
+        agentDir: '/agent',
+        cwd: '/repo',
+        hasProjectTrustInputs: () => true,
+      }),
+    ).toBe(true)
+
+    expect(
+      resolveRuntimeProjectTrust({
+        ProjectTrustStore: createTrustStoreFactory(false),
+        agentDir: '/agent',
+        cwd: '/repo',
+        hasProjectTrustInputs: () => true,
+      }),
+    ).toBe(false)
+  })
+
+  it('keeps unknown projects untrusted until UI records a decision', () => {
+    expect(
+      resolveRuntimeProjectTrust({
+        ProjectTrustStore: createTrustStoreFactory(null),
+        agentDir: '/agent',
+        cwd: '/repo',
+        hasProjectTrustInputs: () => true,
+      }),
+    ).toBe(false)
   })
 })

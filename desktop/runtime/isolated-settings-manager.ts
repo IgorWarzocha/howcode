@@ -2,8 +2,18 @@ import path from 'node:path'
 import type { ResourceLoader, SettingsManager } from '@earendil-works/pi-coding-agent'
 
 type SettingsManagerFactory = {
-  create: (cwd: string, agentDir?: string | undefined) => SettingsManager
+  create: (
+    cwd: string,
+    agentDir?: string | undefined,
+    options?: { projectTrusted: boolean } | undefined,
+  ) => SettingsManager
   inMemory: (settings?: Record<string, unknown>) => SettingsManager
+}
+
+type ProjectTrustStoreFactory = new (
+  agentDir: string,
+) => {
+  get: (cwd: string) => boolean | null
 }
 
 const isolatedResourceSettingsKeys = ['packages', 'extensions', 'skills', 'prompts', 'themes']
@@ -31,10 +41,12 @@ export function createRuntimeSettingsManager(options: {
   agentDir: string
   settingsCwd?: string | null | undefined
   additionalExtensions?: string[] | undefined
+  projectTrusted?: boolean | undefined
 }) {
   const diskSettingsManager = options.SettingsManager.create(
     options.settingsCwd ?? options.cwd,
     options.agentDir,
+    options.projectTrusted === undefined ? undefined : { projectTrusted: options.projectTrusted },
   )
 
   if (!options.settingsCwd && (options.additionalExtensions?.length ?? 0) === 0) {
@@ -75,23 +87,40 @@ export async function createIsolatedRuntimeResourceLoader(options: {
   agentDir: string
   settingsCwd?: string | null | undefined
   settingsManager: SettingsManager
+  projectTrusted?: boolean | undefined
   systemPrompt?: string | undefined
 }) {
-  if (!options.settingsCwd) {
-    return undefined
-  }
-
   const resourceLoader = new options.DefaultResourceLoader({
     cwd: options.cwd,
     agentDir: options.agentDir,
     settingsManager: options.settingsManager,
-    noSkills: true,
     ...(options.systemPrompt ? { systemPrompt: options.systemPrompt } : {}),
-    additionalSkillPaths: [
-      path.join(options.settingsCwd, '.pi', 'skills'),
-      path.join(options.settingsCwd, '.agents', 'skills'),
-    ],
+    ...(options.settingsCwd
+      ? {
+          noSkills: true,
+          additionalSkillPaths: [
+            path.join(options.settingsCwd, '.pi', 'skills'),
+            path.join(options.settingsCwd, '.agents', 'skills'),
+          ],
+        }
+      : {}),
   })
-  await resourceLoader.reload()
+  await resourceLoader.reload({
+    resolveProjectTrust: async () => options.projectTrusted ?? false,
+  })
   return resourceLoader
+}
+
+export function resolveRuntimeProjectTrust(options: {
+  ProjectTrustStore: ProjectTrustStoreFactory
+  agentDir: string
+  cwd: string
+  hasProjectTrustInputs: (cwd: string) => boolean
+  settingsCwd?: string | null | undefined
+}) {
+  const trustCwd = options.settingsCwd ?? options.cwd
+  if (!options.hasProjectTrustInputs(trustCwd)) return true
+
+  const storedDecision = new options.ProjectTrustStore(options.agentDir).get(trustCwd)
+  return storedDecision ?? false
 }

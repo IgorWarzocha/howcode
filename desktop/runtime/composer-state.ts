@@ -22,6 +22,7 @@ import { buildQueuedPrompts } from './composer-queue'
 import {
   createIsolatedRuntimeResourceLoader,
   createRuntimeSettingsManager,
+  resolveRuntimeProjectTrust,
 } from './isolated-settings-manager.ts'
 import { getNativeAskQuestionsRequest } from './native-ask-questions-state.ts'
 import { getNativeExtensionWidgets } from './native-extension-ui-state.ts'
@@ -218,13 +219,22 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
     SessionManager,
     SettingsManager,
     DefaultResourceLoader,
+    ProjectTrustStore,
     createAgentSession,
     getAgentDir,
+    hasProjectTrustInputs,
   } = await getPiModule()
   const cwd = persistedSessionPath
     ? SessionManager.open(persistedSessionPath).getCwd()
     : (request.projectId ?? getDesktopWorkingDirectory())
   const agentDir = getAgentDir()
+  const projectTrusted = resolveRuntimeProjectTrust({
+    ProjectTrustStore,
+    agentDir,
+    cwd,
+    hasProjectTrustInputs,
+    settingsCwd: request.composerSessionDir,
+  })
   const authStorage = AuthStorage.create()
   const modelRegistry = normalizeModelRegistryContextWindows(
     ModelRegistry.create(authStorage, `${agentDir}/models.json`),
@@ -234,6 +244,7 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
     cwd,
     agentDir,
     settingsCwd: request.composerSessionDir,
+    projectTrusted,
   })
   const sessionManager = persistedSessionPath
     ? SessionManager.open(persistedSessionPath)
@@ -244,6 +255,7 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
     agentDir,
     settingsCwd: request.composerSessionDir,
     settingsManager,
+    projectTrusted,
     systemPrompt: getRuntimeSystemPrompt({ settingsCwd: request.composerSessionDir }),
   })
   const { session } = await createAgentSession({
@@ -252,7 +264,7 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
     authStorage,
     modelRegistry,
     settingsManager,
-    ...(resourceLoader ? { resourceLoader } : {}),
+    resourceLoader,
     sessionManager,
     tools: [],
   })

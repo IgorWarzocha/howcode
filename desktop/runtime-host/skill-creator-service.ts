@@ -15,6 +15,7 @@ import {
   createComposerSnapshotSession,
   getAvailableThinkingLevelsForModel,
 } from '../runtime/composer-state.ts'
+import { resolveRuntimeProjectTrust } from '../runtime/isolated-settings-manager.ts'
 import {
   getActiveChatSkillsRoot,
   getActiveGlobalSkillsRoot,
@@ -161,15 +162,23 @@ async function createSkillCreatorSession(
     ModelRegistry,
     SessionManager,
     SettingsManager,
+    ProjectTrustStore,
     createAgentSession,
     getAgentDir,
+    hasProjectTrustInputs,
   } = await getPiModule()
   const agentDir = getAgentDir()
+  const projectTrusted = resolveRuntimeProjectTrust({
+    ProjectTrustStore,
+    agentDir,
+    cwd: projectPath ?? cwd,
+    hasProjectTrustInputs,
+  })
   const authStorage = AuthStorage.create()
   const modelRegistry = normalizeModelRegistryContextWindows(
     ModelRegistry.create(authStorage, `${agentDir}/models.json`),
   )
-  const settingsManager = SettingsManager.create(cwd, agentDir)
+  const settingsManager = SettingsManager.create(cwd, agentDir, { projectTrusted })
   const bundledSkillsPath = await resolveBundledSkillsPath()
   const resourceLoader = new DefaultResourceLoader({
     cwd,
@@ -177,7 +186,7 @@ async function createSkillCreatorSession(
     settingsManager,
     additionalSkillPaths: [bundledSkillsPath],
   })
-  await resourceLoader.reload()
+  await resourceLoader.reload({ resolveProjectTrust: async () => projectTrusted })
 
   const appSettings = loadAppSettings()
   const selectedModel = appSettings.skillCreatorModel
