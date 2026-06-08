@@ -33,6 +33,8 @@ export function NativeExtensionDialogCard({ request, onAnswer }: NativeExtension
     if (!ok) setBusy(false)
   }
 
+  const submitTextValue = () => answer({ value })
+
   return (
     <div className="grid w-full overflow-visible px-4">
       <div className={nativeExtensionDialogCardClass}>
@@ -48,16 +50,49 @@ export function NativeExtensionDialogCard({ request, onAnswer }: NativeExtension
             ) : null}
           </div>
 
-          <button
-            type="button"
-            aria-label="Cancel extension UI request"
-            title="Cancel"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:opacity-55"
-            disabled={busy}
-            onClick={() => void answer({ cancelled: true })}
-          >
-            <X size={13} />
-          </button>
+          <div className="flex items-center gap-1">
+            {request.method === 'confirm' ? (
+              <button
+                type="button"
+                aria-label="Reject"
+                title="Reject"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:opacity-55"
+                disabled={busy}
+                onClick={() => void answer({ confirmed: false })}
+              >
+                <X size={13} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                aria-label="Cancel extension UI request"
+                title="Cancel"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:opacity-55"
+                disabled={busy}
+                onClick={() => void answer({ cancelled: true })}
+              >
+                <X size={13} />
+              </button>
+            )}
+            {request.method === 'confirm' ||
+            request.method === 'input' ||
+            request.method === 'editor' ? (
+              <button
+                type="button"
+                aria-label={request.method === 'confirm' ? 'Accept' : 'Submit'}
+                title={request.method === 'confirm' ? 'Accept' : 'Submit'}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-[color:var(--surface-hover)] text-[color:var(--text)] transition-colors hover:bg-[color:var(--panel-3)] disabled:opacity-55"
+                disabled={busy}
+                onClick={() =>
+                  void (request.method === 'confirm'
+                    ? answer({ confirmed: true })
+                    : submitTextValue())
+                }
+              >
+                <Check size={13} />
+              </button>
+            ) : null}
+          </div>
         </div>
 
         {request.method === 'select' ? (
@@ -92,46 +127,6 @@ export function NativeExtensionDialogCard({ request, onAnswer }: NativeExtension
             onChange={(event) => setValue(event.target.value)}
           />
         ) : null}
-
-        {request.method === 'select' ? null : (
-          <div className="flex justify-end gap-1.5">
-            {request.method === 'confirm' ? (
-              <>
-                <button
-                  type="button"
-                  aria-label="Reject"
-                  title="Reject"
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:opacity-55"
-                  disabled={busy}
-                  onClick={() => void answer({ confirmed: false })}
-                >
-                  <X size={13} />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Accept"
-                  title="Accept"
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-[color:var(--surface-hover)] text-[color:var(--text)] transition-colors hover:bg-[color:var(--panel-3)] disabled:opacity-55"
-                  disabled={busy}
-                  onClick={() => void answer({ confirmed: true })}
-                >
-                  <Check size={13} />
-                </button>
-              </>
-            ) : (
-              <button
-                type="button"
-                aria-label="Submit"
-                title="Submit"
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-[color:var(--surface-hover)] text-[color:var(--text)] transition-colors hover:bg-[color:var(--panel-3)] disabled:opacity-55"
-                disabled={busy}
-                onClick={() => void answer({ value })}
-              >
-                <Check size={13} />
-              </button>
-            )}
-          </div>
-        )}
       </div>
     </div>
   )
