@@ -1,4 +1,4 @@
-import { Shield, ShieldAlert } from 'lucide-react'
+import { Check, ShieldAlert, X } from 'lucide-react'
 import { useState } from 'react'
 import type { ProjectTrustRequest } from '../../desktop/types'
 import {
@@ -16,7 +16,7 @@ type ProjectTrustCardProps = {
 }
 
 const projectTrustCardClass =
-  'relative grid w-full content-start gap-2 rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-3 pt-2.5 pb-3.5 shadow-none'
+  'relative grid w-full content-start rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-3 py-2.5 shadow-none'
 
 export function ProjectTrustCard({ request, onDecide }: ProjectTrustCardProps) {
   const [busy, setBusy] = useState<false | 'trust' | 'untrust'>(false)
@@ -31,8 +31,8 @@ export function ProjectTrustCard({ request, onDecide }: ProjectTrustCardProps) {
   return (
     <div className="grid w-full overflow-visible px-4">
       <div className={projectTrustCardClass}>
-        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-2 px-2">
-          <ShieldAlert size={15} className="mt-0.5 text-[color:var(--accent)]" />
+        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-2">
+          <ShieldAlert size={15} className="text-[color:var(--accent)]" />
           <div className="grid min-w-0 gap-0.5">
             <div className={cn(appTypeGroupTextClass, appToneTextClass)}>Trust this project?</div>
             <div
@@ -42,38 +42,35 @@ export function ProjectTrustCard({ request, onDecide }: ProjectTrustCardProps) {
               {request.cwd}
             </div>
           </div>
-        </div>
 
-        <div className={cn('px-2', appTypeTinyClass, appToneMutedClass)}>
-          Project-local settings, packages, skills, prompts and instructions are disabled until you
-          trust it.
-        </div>
-
-        <div className="flex justify-end gap-1.5 px-2 pt-1">
-          <button
-            type="button"
-            className={cn(
-              'inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 transition-colors hover:bg-[color:var(--surface-hover)] disabled:opacity-55',
-              appTypeTinyClass,
-              appToneMutedClass,
-            )}
-            disabled={Boolean(busy)}
-            onClick={() => void decide(false)}
-          >
-            Keep untrusted
-          </button>
-          <button
-            type="button"
-            className={cn(
-              'inline-flex h-7 items-center gap-1.5 rounded-md bg-[color:var(--surface-hover)] px-2.5 text-[color:var(--text)] transition-colors hover:bg-[color:var(--panel-3)] disabled:opacity-55',
-              appTypeTinyClass,
-            )}
-            disabled={Boolean(busy)}
-            onClick={() => void decide(true)}
-          >
-            <Shield size={12} />
-            Trust project
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              aria-label="Keep project untrusted"
+              title="Keep untrusted"
+              className={cn(
+                'inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:opacity-55',
+                appTypeTinyClass,
+              )}
+              disabled={Boolean(busy)}
+              onClick={() => void decide(false)}
+            >
+              <X size={13} />
+            </button>
+            <button
+              type="button"
+              aria-label="Trust project"
+              title="Trust project"
+              className={cn(
+                'inline-flex h-7 w-7 items-center justify-center rounded-md bg-[color:var(--surface-hover)] text-[color:var(--text)] transition-colors hover:bg-[color:var(--panel-3)] disabled:opacity-55',
+                appTypeTinyClass,
+              )}
+              disabled={Boolean(busy)}
+              onClick={() => void decide(true)}
+            >
+              <Check size={13} />
+            </button>
+          </div>
         </div>
       </div>
     </div>
