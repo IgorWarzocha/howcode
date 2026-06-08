@@ -16,6 +16,10 @@ export function useSessionTreePreviewThread(
   const persistedPath = getPersistedSessionPath(selectedSessionPath)
 
   useEffect(() => {
+    setPreview((current) => (current?.sessionPath === persistedPath ? current : null))
+  }, [persistedPath])
+
+  useEffect(() => {
     const handlePreview = (event: Event) => {
       const detail = (event as CustomEvent<SessionTreePreviewDetail>).detail
       if (!detail?.sessionPath?.trim()) return
@@ -39,24 +43,28 @@ export function useSessionTreePreviewThread(
   }, [persistedPath])
 
   const previewQuery = useQuery<ThreadData | null>({
-    queryKey: preview?.previewEntryId
-      ? desktopQueryKeys.threadPreviewAtEntry(
-          persistedPath ?? '',
-          preview.previewEntryId,
-          historyCompactions,
-        )
-      : ['desktop', 'threadPreview', null],
+    queryKey:
+      preview?.previewEntryId && preview.sessionPath === persistedPath
+        ? desktopQueryKeys.threadPreviewAtEntry(
+            persistedPath ?? '',
+            preview.previewEntryId,
+            historyCompactions,
+          )
+        : ['desktop', 'threadPreview', null],
     queryFn: () =>
-      persistedPath && preview?.previewEntryId
+      persistedPath && preview?.previewEntryId && preview.sessionPath === persistedPath
         ? getThreadPreviewAtEntryQuery(persistedPath, preview.previewEntryId, historyCompactions)
         : Promise.resolve(null),
-    enabled: Boolean(persistedPath && preview?.previewEntryId),
+    enabled: Boolean(
+      persistedPath && preview?.previewEntryId && preview.sessionPath === persistedPath,
+    ),
     staleTime: 30_000,
   })
 
   return {
-    previewEntryId: preview?.previewEntryId ?? null,
-    previewThreadData: previewQuery.data ?? null,
+    previewEntryId:
+      preview?.sessionPath === persistedPath ? (preview.previewEntryId ?? null) : null,
+    previewThreadData: preview?.sessionPath === persistedPath ? (previewQuery.data ?? null) : null,
     previewThreadLoading: previewQuery.isLoading || previewQuery.isFetching,
   }
 }

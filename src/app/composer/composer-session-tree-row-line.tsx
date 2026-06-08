@@ -9,7 +9,7 @@ import {
   composerPopoverOptionSelectedClass,
 } from '@howcode/ui'
 import { Check, ChevronDown, ChevronRight, History } from 'lucide-react'
-import { useState } from 'react'
+import { type MutableRefObject, useCallback, useEffect, useState } from 'react'
 import { cn } from '../utils/cn'
 import type { ComposerSessionTreeRow } from './composer-session-tree'
 import { ComposerSessionTreeLabelPopover } from './composer-session-tree-label-popover'
@@ -120,6 +120,8 @@ export function ComposerSessionTreeRowLine({
   onNavigateWithoutSummary,
   onNavigateWithSummary,
   onLabelEntry,
+  onLabelPopoverOpenChange,
+  cancelLabelPopoverRef,
 }: {
   row: ComposerSessionTreeRow
   selected: boolean
@@ -137,8 +139,25 @@ export function ComposerSessionTreeRowLine({
   onNavigateWithoutSummary: (label?: string) => void
   onNavigateWithSummary: (label?: string) => void
   onLabelEntry: (entryId: string, label: string) => Promise<boolean> | boolean
+  onLabelPopoverOpenChange?: ((open: boolean) => void) | undefined
+  cancelLabelPopoverRef?: MutableRefObject<(() => void) | null> | undefined
 }) {
   const [labelPopoverOpen, setLabelPopoverOpen] = useState(false)
+  const setLabelPopoverOpenState = useCallback(
+    (open: boolean) => {
+      setLabelPopoverOpen(open)
+      onLabelPopoverOpenChange?.(open)
+    },
+    [onLabelPopoverOpenChange],
+  )
+
+  useEffect(() => {
+    if (!(cancelLabelPopoverRef && labelPopoverOpen)) return
+    cancelLabelPopoverRef.current = () => setLabelPopoverOpenState(false)
+    return () => {
+      cancelLabelPopoverRef.current = null
+    }
+  }, [cancelLabelPopoverRef, labelPopoverOpen, setLabelPopoverOpenState])
   const indentPx = row.depth * 14
   const contentSurfaceClass = cn(
     'composer-session-tree-label-button grid min-h-6 w-full min-w-0 grid-cols-[3rem_minmax(0,1fr)] items-center gap-1.5 rounded-md px-2 py-0 text-left transition-colors duration-150 ease-out',
@@ -186,7 +205,7 @@ export function ComposerSessionTreeRowLine({
             target instanceof Element &&
             target.closest('.composer-session-tree-entry-label-anchor')
           ) {
-            setLabelPopoverOpen(true)
+            setLabelPopoverOpenState(true)
           }
         }}
         onClick={() => onFocusRow()}
@@ -196,7 +215,7 @@ export function ComposerSessionTreeRowLine({
           label={row.customLabel}
           open={labelPopoverOpen}
           onLabel={onLabelEntry}
-          onOpenChange={setLabelPopoverOpen}
+          onOpenChange={setLabelPopoverOpenState}
         >
           <span
             className={cn(

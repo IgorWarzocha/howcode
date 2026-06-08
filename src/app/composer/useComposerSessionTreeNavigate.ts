@@ -64,7 +64,7 @@ export function useComposerSessionTreeNavigate(input: {
         }
         return true
       } finally {
-        if (!summarize) setSessionTreeHidden(false)
+        setSessionTreeHidden(false)
       }
     },
     [

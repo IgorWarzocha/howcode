@@ -159,8 +159,10 @@ export function useComposerEscapeEffects({
   pickerOpen,
   sessionTreeOpen,
   sessionTreeNavigateConfirmOpen,
+  sessionTreeLabelPopoverOpen,
   onCloseSessionTree,
   onCancelSessionTreeNavigateConfirm,
+  onCancelSessionTreeLabelPopover,
   setOpenMenu,
 }: {
   cancelDictation: () => Promise<void>
@@ -169,37 +171,47 @@ export function useComposerEscapeEffects({
   pickerOpen: boolean
   sessionTreeOpen?: boolean | undefined
   sessionTreeNavigateConfirmOpen?: boolean | undefined
+  sessionTreeLabelPopoverOpen?: boolean | undefined
   onCloseSessionTree?: (() => void) | undefined
   onCancelSessionTreeNavigateConfirm?: (() => void) | undefined
+  onCancelSessionTreeLabelPopover?: (() => void) | undefined
   setOpenMenu: (menu: null) => void
 }) {
   useEffect(() => {
     const sessionTreeActive = sessionTreeOpen === true
     if (!(pickerOpen || dictationActive || dictationTranscribing || sessionTreeActive)) return
 
+    const consumeEscape = (event: KeyboardEvent) => {
+      event.preventDefault()
+      event.stopImmediatePropagation()
+    }
+
+    const handleSessionTreeEscape = (event: KeyboardEvent) => {
+      consumeEscape(event)
+      if (sessionTreeLabelPopoverOpen) {
+        onCancelSessionTreeLabelPopover?.()
+        return
+      }
+      if (sessionTreeNavigateConfirmOpen) {
+        onCancelSessionTreeNavigateConfirm?.()
+        return
+      }
+      onCloseSessionTree?.()
+    }
+
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       if (sessionTreeActive) {
-        if (sessionTreeNavigateConfirmOpen) {
-          event.preventDefault()
-          event.stopImmediatePropagation()
-          onCancelSessionTreeNavigateConfirm?.()
-          return
-        }
-        event.preventDefault()
-        event.stopImmediatePropagation()
-        onCloseSessionTree?.()
+        handleSessionTreeEscape(event)
         return
       }
       if (pickerOpen) {
-        event.preventDefault()
-        event.stopImmediatePropagation()
+        consumeEscape(event)
         setOpenMenu(null)
         return
       }
 
-      event.preventDefault()
-      event.stopImmediatePropagation()
+      consumeEscape(event)
       ;(document.activeElement as HTMLElement | null)?.blur?.()
       void cancelDictation()
     }
@@ -211,8 +223,10 @@ export function useComposerEscapeEffects({
     dictationActive,
     dictationTranscribing,
     onCancelSessionTreeNavigateConfirm,
+    onCancelSessionTreeLabelPopover,
     onCloseSessionTree,
     pickerOpen,
+    sessionTreeLabelPopoverOpen,
     sessionTreeNavigateConfirmOpen,
     sessionTreeOpen,
     setOpenMenu,

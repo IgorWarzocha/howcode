@@ -20,7 +20,9 @@ export function ComposerPromptPopoverStack({
   onRevealSessionTreeEntryInThread,
   onBindSessionTreeClose,
   onSessionTreeNavigateConfirmOpenChange,
+  onSessionTreeLabelPopoverOpenChange,
   sessionTreeCancelNavigateConfirmRef,
+  sessionTreeCancelLabelPopoverRef,
   popoverStackRef,
 }: {
   sessionPath?: string | null | undefined
@@ -38,7 +40,9 @@ export function ComposerPromptPopoverStack({
   onRevealSessionTreeEntryInThread?: ((entryId: string) => void) | undefined
   onBindSessionTreeClose?: ((close: (() => void) | null) => void) | undefined
   onSessionTreeNavigateConfirmOpenChange?: ((open: boolean) => void) | undefined
+  onSessionTreeLabelPopoverOpenChange?: ((open: boolean) => void) | undefined
   sessionTreeCancelNavigateConfirmRef?: MutableRefObject<(() => void) | null> | undefined
+  sessionTreeCancelLabelPopoverRef?: MutableRefObject<(() => void) | null> | undefined
   popoverStackRef?: RefObject<HTMLDivElement | null> | undefined
 }) {
   const sessionTreeVisible = sessionTreeOpen && !sessionTreeForceHidden
@@ -66,7 +70,9 @@ export function ComposerPromptPopoverStack({
         onRevealInThread={onRevealSessionTreeEntryInThread}
         onBindClose={onBindSessionTreeClose}
         onNavigateConfirmOpenChange={onSessionTreeNavigateConfirmOpenChange}
+        onLabelPopoverOpenChange={onSessionTreeLabelPopoverOpenChange}
         cancelNavigateConfirmRef={sessionTreeCancelNavigateConfirmRef}
+        cancelLabelPopoverRef={sessionTreeCancelLabelPopoverRef}
       />
       <SlashCommandPanel panelRef={slashCommandPanelRef} slashCommands={slashCommands} />
     </div>

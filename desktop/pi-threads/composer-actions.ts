@@ -132,7 +132,7 @@ async function navigateSessionTreeFromPayload(payload: AnyDesktopActionPayload) 
       summarize: navigate.summarize,
       label: navigate.label,
     })
-    if (result.cancelled) return handledAction()
+    if (result.cancelled) return handledAction({ sessionTreeNavigateCancelled: true })
     return handledAction({
       ...(result.editorText === undefined
         ? {}

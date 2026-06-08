@@ -1,3 +1,4 @@
+import { getPersistedSessionPath } from '@howcode/shared/session-paths'
 import { useCallback, useEffect, useState } from 'react'
 import { useComposerPopoverDismissSignal } from './composer-popover-coordination'
 
@@ -6,7 +7,7 @@ export function useComposerSessionTreePanel(input: {
   slashCommandsOpen: boolean
 }) {
   const [sessionTreeOpen, setSessionTreeOpen] = useState(false)
-  const persistedPath = input.sessionPath?.trim() ?? ''
+  const persistedPath = getPersistedSessionPath(input.sessionPath) ?? ''
 
   const dismissSessionTree = useCallback((options?: { restoreAnchorInThread?: () => void }) => {
     options?.restoreAnchorInThread?.()

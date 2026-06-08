@@ -341,6 +341,7 @@ export type DesktopActionResultData = {
   composerSendOutcome?: 'sent' | 'stopped'
   composerSendSessionPath?: string | undefined | null | undefined
   composerSendThreadId?: string | undefined | null | undefined
+  sessionTreeNavigateCancelled?: boolean | undefined
   sessionTreeNavigateEditorText?: string | undefined | null | undefined
   dequeuedText?: string | undefined | null | undefined
   deletedThreadIds?: string[] | undefined

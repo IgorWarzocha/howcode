@@ -275,7 +275,9 @@ export function ComposerPromptSurface({
   const composerPopoverStackRef = useRef<HTMLDivElement>(null)
   const sessionTreeCloseRef = useRef<(() => void) | null>(null)
   const sessionTreeCancelNavigateConfirmRef = useRef<(() => void) | null>(null)
+  const sessionTreeCancelLabelPopoverRef = useRef<(() => void) | null>(null)
   const [sessionTreeNavigateConfirmOpen, setSessionTreeNavigateConfirmOpen] = useState(false)
+  const [sessionTreeLabelPopoverOpen, setSessionTreeLabelPopoverOpen] = useState(false)
   const slashCommandPanelRef = useRef<HTMLDivElement>(null)
   const fileMentionPanelRef = useRef<HTMLDivElement>(null)
   const skillMentionPanelRef = useRef<HTMLDivElement>(null)
@@ -373,10 +375,15 @@ export function ComposerPromptSurface({
     pickerOpen,
     sessionTreeOpen,
     sessionTreeNavigateConfirmOpen,
+    sessionTreeLabelPopoverOpen,
     onCloseSessionTree: closeSessionTree,
     onCancelSessionTreeNavigateConfirm: () => {
       sessionTreeCancelNavigateConfirmRef.current?.()
       setSessionTreeNavigateConfirmOpen(false)
+    },
+    onCancelSessionTreeLabelPopover: () => {
+      sessionTreeCancelLabelPopoverRef.current?.()
+      setSessionTreeLabelPopoverOpen(false)
     },
     setOpenMenu,
   })
@@ -618,7 +625,9 @@ export function ComposerPromptSurface({
                 sessionTreeCloseRef.current = close
               }}
               onSessionTreeNavigateConfirmOpenChange={setSessionTreeNavigateConfirmOpen}
+              onSessionTreeLabelPopoverOpenChange={setSessionTreeLabelPopoverOpen}
               sessionTreeCancelNavigateConfirmRef={sessionTreeCancelNavigateConfirmRef}
+              sessionTreeCancelLabelPopoverRef={sessionTreeCancelLabelPopoverRef}
               composerPopoverStackRef={composerPopoverStackRef}
               onSessionTreeTypingDismiss={closeSessionTree}
               slashCommandPanelRef={slashCommandPanelRef}

@@ -35,7 +35,9 @@ type ComposerSessionTreePanelProps = {
   onRevealInThread?: ((entryId: string) => void) | undefined
   onBindClose?: ((close: (() => void) | null) => void) | undefined
   onNavigateConfirmOpenChange?: ((open: boolean) => void) | undefined
+  onLabelPopoverOpenChange?: ((open: boolean) => void) | undefined
   cancelNavigateConfirmRef?: MutableRefObject<(() => void) | null> | undefined
+  cancelLabelPopoverRef?: MutableRefObject<(() => void) | null> | undefined
 }
 
 export function ComposerSessionTreePanel({
@@ -50,7 +52,9 @@ export function ComposerSessionTreePanel({
   onRevealInThread,
   onBindClose,
   onNavigateConfirmOpenChange,
+  onLabelPopoverOpenChange,
   cancelNavigateConfirmRef,
+  cancelLabelPopoverRef,
 }: ComposerSessionTreePanelProps) {
   const visible = isComposerSessionTreePanelVisible(open, forceHidden)
   const persistedPath = sessionPath?.trim() ?? ''
@@ -92,8 +96,10 @@ export function ComposerSessionTreePanel({
   const [confirmEntryId, setConfirmEntryId] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!visible) setConfirmEntryId(null)
-  }, [visible])
+    if (visible) return
+    setConfirmEntryId(null)
+    onLabelPopoverOpenChange?.(false)
+  }, [onLabelPopoverOpenChange, visible])
 
   useEffect(() => {
     onNavigateConfirmOpenChange?.(confirmEntryId !== null)
@@ -136,8 +142,8 @@ export function ComposerSessionTreePanel({
 
   const finishNavigateConfirm = async (entryId: string, summarize: boolean, label?: string) => {
     setConfirmEntryId(null)
-    finishNavigate(entryId)
-    await onNavigate?.(entryId, summarize, label)
+    const ok = await onNavigate?.(entryId, summarize, label)
+    if (ok) finishNavigate(entryId)
   }
 
   return (
@@ -196,6 +202,8 @@ export function ComposerSessionTreePanel({
                   onNavigateWithoutSummary={(label) => finishNavigateConfirm(row.id, false, label)}
                   onNavigateWithSummary={(label) => finishNavigateConfirm(row.id, true, label)}
                   onLabelEntry={onLabelEntry ?? (() => false)}
+                  onLabelPopoverOpenChange={onLabelPopoverOpenChange}
+                  cancelLabelPopoverRef={cancelLabelPopoverRef}
                 />
               )
             })
