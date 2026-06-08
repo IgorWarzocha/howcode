@@ -23,10 +23,7 @@ type RuntimeHostMainRequestHandlerMap = {
 
 function getDefaultNativeExtensions() {
   const settings = loadAppSettings()
-  return [
-    ...(settings.howcodeNativeAskQuestions ? ['askQuestions'] : []),
-    ...(settings.howcodeNativeSmartBtw ? ['smartBtw'] : []),
-  ]
+  return [...(settings.howcodeNativeSmartBtw ? ['smartBtw'] : [])]
 }
 
 function getEffectiveNativeExtensions(enabled: string[] | null) {

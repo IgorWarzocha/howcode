@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Editor, Key, matchesKey, Text, truncateToWidth } from '@earendil-works/pi-tui'
 import { Type } from 'typebox'
 
@@ -172,7 +173,7 @@ async function askInTui(ctx, questions) {
   if (!ctx.hasUI) return null
   return await ctx.ui.custom((tui, theme, _kb, done) => {
     const state = { tab: 0, focus: 0, editing: false }
-    let cached
+    let cached = undefined as string[] | undefined
     const answers = questions.map(() => [])
     const custom = questions.map(() => '')
     const customOn = questions.map(() => false)
@@ -246,7 +247,7 @@ async function askInTui(ctx, questions) {
     }
     const render = (width) => {
       if (cached) return cached
-      const lines = []
+      const lines = [] as string[]
       const add = (line = '') => lines.push(truncateToWidth(line, width))
       add(theme.fg('accent', '─'.repeat(width)))
       add(renderAskTabs({ answered, questions, tab: state.tab, theme }))
@@ -299,7 +300,7 @@ async function askSingleWithPiUi(ctx, question) {
 
 async function askMultipleWithPiUi(ctx, question) {
   const options = question.options.map((option) => option.label)
-  const picked = []
+  const picked = [] as string[]
   while (true) {
     const next = await ctx.ui.select(question.question, [
       ...options.filter((option) => !picked.includes(option)),
@@ -319,7 +320,7 @@ async function askMultipleWithPiUi(ctx, question) {
 
 async function askWithPiUi(ctx, questions) {
   if (!ctx.hasUI) return null
-  const answers = []
+  const answers = [] as string[][]
   for (const question of questions) {
     const answer = question.multiple
       ? await askMultipleWithPiUi(ctx, question)

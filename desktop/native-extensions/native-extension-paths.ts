@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 export type HowcodeNativeExtensionId = 'askQuestions' | 'smartBtw'
 
 const nativeExtensionFiles = {
-  askQuestions: 'howcode-native-ask-questions.mjs',
+  askQuestions: 'howcode-native-ask-questions.ts',
   smartBtw: 'howcode-native-smart-btw.mjs',
 } satisfies Record<HowcodeNativeExtensionId, string>
 
@@ -33,5 +33,6 @@ export function getNativeExtensionRuntimePaths(ids: readonly string[]) {
     .filter((id): id is HowcodeNativeExtensionId =>
       howcodeNativeExtensionIds.includes(id as HowcodeNativeExtensionId),
     )
+    .filter((id) => id !== 'askQuestions')
     .map((id) => ensureNativeExtensionRuntimePath(id))
 }

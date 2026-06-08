@@ -64,6 +64,7 @@ export type PiDoubleEscapeAction = 'fork' | 'tree' | 'none'
 export type PiTreeFilterMode = 'default' | 'no-tools' | 'user-only' | 'labeled-only' | 'all'
 
 export type PiSettings = {
+  extensions: string[]
   theme: string
   autoCompact: boolean
   enableSkillCommands: boolean

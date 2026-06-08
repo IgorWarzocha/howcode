@@ -55,10 +55,7 @@ async function prepareBuildDirectories() {
   await mkdir(path.join(buildRoot, 'desktop'), { recursive: true })
 }
 
-const nativeExtensionFileNames = [
-  'howcode-native-ask-questions.mjs',
-  'howcode-native-smart-btw.mjs',
-]
+const nativeExtensionFileNames = ['howcode-native-ask-questions.ts', 'howcode-native-smart-btw.mjs']
 const nativeExtensionDirectoryNames = ['smart-btw']
 const nativeExtensionsSourceDir = path.join(projectRoot, 'desktop', 'native-extensions')
 const nativeExtensionsOutputDir = path.join(buildRoot, 'desktop', 'native-extensions')

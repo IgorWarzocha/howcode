@@ -76,6 +76,7 @@ export type DesktopActionPayloadFields = {
     | boolean
     | ProjectDiffDefaultBaseline
     | AppSettings['keybindings']
+    | string[]
     | null
 }
 
@@ -313,7 +314,10 @@ export type DesktopActionPayloadMap = {
   'inbox.clear-read': { olderThanDays?: number | undefined | null | undefined }
   'settings.update': DesktopSettingsUpdatePayload
   'settings.clear-clipboard-images': EmptyActionPayload
-  'pi-settings.update': { piSettingsKey: keyof PiSettings; value: string | number | boolean }
+  'pi-settings.update': {
+    piSettingsKey: keyof PiSettings
+    value: string | number | boolean | string[]
+  }
   'projects.import.scan': { projectIds: string[] }
   'projects.import.apply': { projectIds: string[] }
 }

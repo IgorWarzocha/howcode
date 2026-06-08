@@ -5,6 +5,7 @@ import { type ActionHandlerResult, handledAction, unhandledAction } from './acti
 
 const piSettingsKeys = new Set<PiSettingsKey>([
   'theme',
+  'extensions',
   'autoCompact',
   'enableSkillCommands',
   'hideThinkingBlock',

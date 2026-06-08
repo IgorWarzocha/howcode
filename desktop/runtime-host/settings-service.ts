@@ -32,6 +32,7 @@ export async function loadPiSettingsInHost(
 ): Promise<PiSettings> {
   const settingsManager = await getPiSettingsManager(projectPath)
   return {
+    extensions: settingsManager.getExtensionPaths(),
     theme: settingsManager.getTheme() ?? defaultPiSettings.theme,
     autoCompact: settingsManager.getCompactionEnabled(),
     enableSkillCommands: settingsManager.getEnableSkillCommands(),
@@ -203,6 +204,11 @@ async function updateNonBooleanSetting(
   value: unknown,
   projectPath?: string | null | undefined,
 ) {
+  if (key === 'extensions') {
+    if (!(Array.isArray(value) && value.every((item) => typeof item === 'string'))) return false
+    settingsManager.setExtensionPaths(value)
+    return true
+  }
   if (key === 'theme') return await updateThemeSetting(settingsManager, value, projectPath)
   if (key === 'transport') return updateTransportSetting(settingsManager, value)
   if (updateQueueModeSetting(settingsManager, key, value)) return true

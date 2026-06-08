@@ -1,6 +1,7 @@
 import type { PiSettings } from './desktop-settings-contracts'
 
 export const defaultPiSettings: PiSettings = {
+  extensions: [],
   theme: 'howcode-default',
   autoCompact: true,
   enableSkillCommands: true,

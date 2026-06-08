@@ -5,7 +5,6 @@ import type { TerminalOpenRequest } from '../../shared/terminal-contracts.ts'
 import { loadAppSettings } from '../app-settings/readers.ts'
 import { getBundledThemes } from '../bundled-themes.ts'
 import {
-  ensureNativeExtensionRuntimePath,
   getNativeExtensionRuntimePaths,
   type HowcodeNativeExtensionId,
 } from '../native-extensions/native-extension-paths.ts'
@@ -34,10 +33,7 @@ function getEnvironmentVariable(env: NodeJS.ProcessEnv, name: string) {
 
 function getDefaultNativeExtensions(): HowcodeNativeExtensionId[] {
   const settings = loadAppSettings()
-  return [
-    ...(settings.howcodeNativeAskQuestions ? (['askQuestions'] as const) : []),
-    ...(settings.howcodeNativeSmartBtw ? (['smartBtw'] as const) : []),
-  ]
+  return [...(settings.howcodeNativeSmartBtw ? (['smartBtw'] as const) : [])]
 }
 
 function getPiSessionNativeExtensions(sessionPath: string | null): HowcodeNativeExtensionId[] {
@@ -58,12 +54,7 @@ function getPiSessionCommandArgs(sessionPath: string | null | undefined) {
   for (const theme of getBundledThemes()) {
     args.push('--theme', theme.path)
   }
-  if (enabledNativeExtensions.includes('askQuestions')) {
-    args.push('--extension', ensureNativeExtensionRuntimePath('askQuestions'))
-  }
-  for (const extensionPath of getNativeExtensionRuntimePaths(
-    enabledNativeExtensions.filter((id) => id !== 'askQuestions'),
-  )) {
+  for (const extensionPath of getNativeExtensionRuntimePaths(enabledNativeExtensions)) {
     args.push('--extension', extensionPath)
   }
   return args
