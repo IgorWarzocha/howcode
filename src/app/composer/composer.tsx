@@ -14,6 +14,7 @@ import type {
   ProjectDiffBaseline,
   ProjectDiffRenderMode,
   ProjectGitState,
+  ProjectTrustRequest,
   ThreadCustomMessageRecord,
 } from '../desktop/types'
 import type { Message, View } from '../types'
@@ -32,6 +33,7 @@ export type ComposerProps = {
   isExtensionCommandRunning: boolean
   nativeAskQuestionsRequest: NativeAskQuestionsRequest | null
   nativeExtensionWidgets: NativeExtensionWidget[]
+  projectTrustRequest: ProjectTrustRequest | null
   nativeSmartBtwEnabled: boolean
   thinkingLevel: ComposerThinkingLevel
   restoredQueuedPrompt: string | null

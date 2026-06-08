@@ -184,6 +184,7 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
       isExtensionCommandRunning={activeComposerState?.isExtensionCommandRunning ?? false}
       nativeAskQuestionsRequest={activeComposerState?.nativeAskQuestionsRequest ?? null}
       nativeExtensionWidgets={activeComposerState?.nativeExtensionWidgets ?? []}
+      projectTrustRequest={activeComposerState?.projectTrustRequest ?? null}
       nativeSmartBtwEnabled={appSettings.howcodeNativeSmartBtw}
       thinkingLevel={activeComposerState?.currentThinkingLevel ?? 'off'}
       restoredQueuedPrompt={scopedRestoredQueuedPrompt}

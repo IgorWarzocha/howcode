@@ -24,6 +24,7 @@ export {
   sendComposerPrompt,
   setComposerModel,
   setComposerThinkingLevel,
+  setProjectTrust,
   startNewThread,
   stopComposerRun,
 } from './live-runtime-service.ts'

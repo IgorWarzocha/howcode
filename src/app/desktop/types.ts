@@ -75,6 +75,7 @@ export type {
   ProjectDiffStreamStartResult,
   ProjectGitState,
   ProjectImportCandidate,
+  ProjectTrustRequest,
   ProjectUsageSessionSummary,
   ProjectUsageSummary,
   ReactArtifactCompileResult,

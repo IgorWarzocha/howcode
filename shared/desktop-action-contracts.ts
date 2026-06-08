@@ -63,6 +63,7 @@ export type DesktopActionPayloadFields = {
   streamingBehavior?: ComposerStreamingBehavior
   suppressInbox?: boolean | undefined | null | undefined
   text?: string | undefined
+  trusted?: boolean | undefined
   threadId?: string | undefined
   threadIds?: string[] | undefined
   branchName?: string | undefined | null | undefined
@@ -295,6 +296,13 @@ export type DesktopActionPayloadMap = {
     composerMode?: 'chat' | 'code' | null
     chatGroupId?: string | undefined | null | undefined
     shortcut: string
+  }
+  'composer.set-project-trust': {
+    projectId?: string | undefined | null | undefined
+    sessionPath?: string | undefined | null | undefined
+    composerMode?: 'chat' | 'code' | null
+    chatGroupId?: string | undefined | null | undefined
+    trusted: boolean
   }
   'inbox.mark-read': { sessionPath: string; projectId?: string | undefined | null | undefined }
   'inbox.dismiss': { sessionPath: string; projectId?: string | undefined | null | undefined }

@@ -26,6 +26,7 @@ import {
   sendComposerPrompt,
   setComposerModel,
   setComposerThinkingLevel,
+  setProjectTrust,
   startNewThread,
   startSkillCreatorSession,
   stopComposerRun,
@@ -72,6 +73,7 @@ const runtimeHostRequestHandlers = {
   sendComposerPrompt: (payload) => sendComposerPrompt(payload),
   setComposerModel: (payload) =>
     setComposerModel(payload.request, payload.provider, payload.modelId),
+  setProjectTrust: (payload) => setProjectTrust(payload),
   setComposerThinkingLevel: (payload) => setComposerThinkingLevel(payload.request, payload.level),
   startNewThread: (payload) => startNewThread(payload.request),
   startSkillCreatorSession: (payload) => startSkillCreatorSession(payload),

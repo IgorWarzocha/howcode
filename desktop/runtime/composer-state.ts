@@ -22,6 +22,7 @@ import { buildQueuedPrompts } from './composer-queue'
 import {
   createIsolatedRuntimeResourceLoader,
   createRuntimeSettingsManager,
+  getRuntimeProjectTrustRequest,
   resolveRuntimeProjectTrust,
 } from './isolated-settings-manager.ts'
 import { getNativeAskQuestionsRequest } from './native-ask-questions-state.ts'
@@ -177,7 +178,7 @@ function getModeThinkingLevel(request: ComposerStateRequest) {
 }
 
 async function resolveComposerStateSnapshot(request: ComposerStateRequest = {}) {
-  const { cwd, session } = await createComposerSnapshotSession(request)
+  const { cwd, projectTrustServices, session } = await createComposerSnapshotSession(request)
 
   try {
     const availableModels = (await session.modelRegistry.getAvailable()) as ComposerSourceModel[]
@@ -205,6 +206,10 @@ async function resolveComposerStateSnapshot(request: ComposerStateRequest = {}) 
       ),
       availableThinkingLevels,
       contextUsage: mapContextUsage(session),
+      projectTrustRequest: getRuntimeProjectTrustRequest({
+        ...projectTrustServices,
+        cwd,
+      }),
     }
   } finally {
     session.dispose()
@@ -271,6 +276,7 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
 
   return {
     cwd,
+    projectTrustServices: { ProjectTrustStore, agentDir, hasProjectTrustInputs },
     session,
   }
 }
@@ -304,6 +310,7 @@ export async function buildComposerStateSnapshot(
     queuedPrompts: [],
     nativeAskQuestionsRequest: null,
     nativeExtensionWidgets: [],
+    projectTrustRequest: snapshot.projectTrustRequest,
     contextUsage: snapshot.contextUsage,
     isCompacting: false,
     isExtensionCommandRunning: false,
@@ -314,6 +321,7 @@ export async function buildComposerState(
   runtime: PiRuntime,
   options: BuildComposerStateOptions = {},
 ): Promise<ComposerState> {
+  const { ProjectTrustStore, getAgentDir, hasProjectTrustInputs } = await getPiModule()
   const availableModels = (await runtime.session.modelRegistry.getAvailable()).map((model) => ({
     provider: model.provider,
     id: model.id,
@@ -330,6 +338,12 @@ export async function buildComposerState(
     queuedPrompts: buildSessionQueuedPrompts(runtime.session),
     nativeAskQuestionsRequest: getNativeAskQuestionsRequest(runtime),
     nativeExtensionWidgets: getNativeExtensionWidgets(runtime),
+    projectTrustRequest: getRuntimeProjectTrustRequest({
+      ProjectTrustStore,
+      agentDir: getAgentDir(),
+      cwd: runtime.cwd,
+      hasProjectTrustInputs,
+    }),
     contextUsage: getContextUsageForComposerState(runtime.session, options),
     isCompacting: runtime.session.isCompacting,
     isExtensionCommandRunning: isHeadlessExtensionCommandRunning(runtime.session),

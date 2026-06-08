@@ -282,3 +282,11 @@ export function invokeNativeExtensionShortcut(
 ) {
   return invokeRuntimeHost('invokeNativeExtensionShortcut', withComposerModeSettings(request))
 }
+
+export function refreshComposerAfterProjectTrust(request: ComposerStateRequest) {
+  return invokeRuntimeHost('getComposerState', { request: withComposerModeSettings(request) })
+}
+
+export function setProjectTrust(request: ComposerStateRequest & { trusted: boolean }) {
+  return invokeRuntimeHost('setProjectTrust', withComposerModeSettings(request))
+}

@@ -8,6 +8,7 @@ import type {
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
 import { createLocalThreadDraft, getPersistedSessionPath } from '../../shared/session-paths.ts'
 import { loadAppSettings } from '../app-settings/readers.ts'
+import { getPiModule } from '../pi-module.ts'
 import { dequeueComposerPromptFromRuntime } from '../runtime/composer-dequeue.ts'
 import {
   applyComposerModeSettings,
@@ -25,6 +26,7 @@ import {
 } from '../runtime/composer-skill-references.ts'
 import { buildComposerState, buildComposerStateSnapshot } from '../runtime/composer-state.ts'
 import { stopComposerRuntime } from '../runtime/composer-stop.ts'
+import { setRuntimeProjectTrust } from '../runtime/isolated-settings-manager.ts'
 import { answerNativeAskQuestions as answerNativeAskQuestionsForRuntime } from '../runtime/native-ask-questions-state.ts'
 import type { PiRuntime } from '../runtime/types.ts'
 import { getComposerSessionResources } from './composer-resource-service.ts'
@@ -381,4 +383,20 @@ export async function invokeNativeExtensionShortcut(
       scheduleRuntimeDisposalForRuntime(runtime)
     }
   })
+}
+
+export async function setProjectTrust(
+  request: ComposerStateRequest & { trusted: boolean },
+): Promise<{ ok: true }> {
+  const cwd = request.projectId
+  if (!cwd) return { ok: true }
+
+  const { ProjectTrustStore, getAgentDir } = await getPiModule()
+  setRuntimeProjectTrust({
+    ProjectTrustStore,
+    agentDir: getAgentDir(),
+    cwd,
+    trusted: request.trusted,
+  })
+  return { ok: true }
 }

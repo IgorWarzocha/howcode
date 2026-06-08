@@ -14,6 +14,7 @@ type ProjectTrustStoreFactory = new (
   agentDir: string,
 ) => {
   get: (cwd: string) => boolean | null
+  set: (cwd: string, decision: boolean | null) => void
 }
 
 const isolatedResourceSettingsKeys = ['packages', 'extensions', 'skills', 'prompts', 'themes']
@@ -46,7 +47,9 @@ export function createRuntimeSettingsManager(options: {
   const diskSettingsManager = options.SettingsManager.create(
     options.settingsCwd ?? options.cwd,
     options.agentDir,
-    options.projectTrusted === undefined ? undefined : { projectTrusted: options.projectTrusted },
+    options.projectTrusted === undefined || options.settingsCwd
+      ? undefined
+      : { projectTrusted: options.projectTrusted },
   )
 
   if (!options.settingsCwd && (options.additionalExtensions?.length ?? 0) === 0) {
@@ -118,9 +121,29 @@ export function resolveRuntimeProjectTrust(options: {
   hasProjectTrustInputs: (cwd: string) => boolean
   settingsCwd?: string | null | undefined
 }) {
-  const trustCwd = options.settingsCwd ?? options.cwd
+  const trustCwd = options.cwd
   if (!options.hasProjectTrustInputs(trustCwd)) return true
 
   const storedDecision = new options.ProjectTrustStore(options.agentDir).get(trustCwd)
   return storedDecision ?? false
+}
+
+export function getRuntimeProjectTrustRequest(options: {
+  ProjectTrustStore: ProjectTrustStoreFactory
+  agentDir: string
+  cwd: string
+  hasProjectTrustInputs: (cwd: string) => boolean
+}) {
+  if (!options.hasProjectTrustInputs(options.cwd)) return null
+  const storedDecision = new options.ProjectTrustStore(options.agentDir).get(options.cwd)
+  return storedDecision === null ? { cwd: options.cwd } : null
+}
+
+export function setRuntimeProjectTrust(options: {
+  ProjectTrustStore: ProjectTrustStoreFactory
+  agentDir: string
+  cwd: string
+  trusted: boolean
+}) {
+  new options.ProjectTrustStore(options.agentDir).set(options.cwd, options.trusted)
 }

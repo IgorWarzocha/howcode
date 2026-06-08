@@ -5,7 +5,11 @@ import {
   howcodeDismissTransientUiEvent,
   useHowcodeKeybindingCommand,
 } from '../app-shell/keybinding-events'
-import { AskQuestionsCard, useComposerAskQuestionsActions } from '../features/native-extensions'
+import {
+  AskQuestionsCard,
+  ProjectTrustCard,
+  useComposerAskQuestionsActions,
+} from '../features/native-extensions'
 import {
   appTypeCodeClass,
   composerPanelClass,
@@ -49,6 +53,48 @@ type NativeExtensionOverlayWidgetsProps = {
   onNextSmartBtw: () => void
   onSelectSmartBtw: (index: number) => void
   onClearSmartBtw: () => void
+}
+
+type NativeExtensionOverlayContentProps = NativeExtensionOverlayWidgetsProps & {
+  askQuestions: {
+    composerDraft: string
+    request: NonNullable<ComposerProps['nativeAskQuestionsRequest']> | null
+    onUseComposerDraft: () => string
+    onAnswered: (answers: string[][]) => Promise<boolean>
+    onDismiss: () => Promise<boolean>
+    registerArrowNavigation: (handler: ((direction: 'previous' | 'next') => boolean) | null) => void
+    registerComposerSubmit: (handler: (() => boolean) | null) => void
+  }
+  projectTrust: {
+    request: NonNullable<ComposerProps['projectTrustRequest']> | null
+    onDecide: (trusted: boolean) => Promise<boolean>
+  }
+}
+
+function NativeExtensionOverlayContent({
+  askQuestions,
+  projectTrust,
+  ...widgetsProps
+}: NativeExtensionOverlayContentProps) {
+  return (
+    <>
+      <NativeExtensionOverlayWidgets {...widgetsProps} />
+      {projectTrust.request ? (
+        <ProjectTrustCard request={projectTrust.request} onDecide={projectTrust.onDecide} />
+      ) : null}
+      {askQuestions.request ? (
+        <AskQuestionsCard
+          composerDraft={askQuestions.composerDraft}
+          questions={askQuestions.request.questions}
+          onUseComposerDraft={askQuestions.onUseComposerDraft}
+          onAnswered={askQuestions.onAnswered}
+          onDismiss={askQuestions.onDismiss}
+          registerArrowNavigation={askQuestions.registerArrowNavigation}
+          registerComposerSubmit={askQuestions.registerComposerSubmit}
+        />
+      ) : null}
+    </>
+  )
 }
 
 function NativeExtensionOverlayWidgets({
@@ -165,6 +211,7 @@ export function ComposerPromptSurface({
   isExtensionCommandRunning,
   nativeAskQuestionsRequest,
   nativeExtensionWidgets,
+  projectTrustRequest,
   nativeSmartBtwEnabled,
   thinkingLevel,
   restoredQueuedPrompt,
@@ -271,6 +318,7 @@ export function ComposerPromptSurface({
   const stopButtonBoundaryRef = useRef<HTMLDivElement>(null)
   const askQuestionsOverlayRef = useRef<HTMLDivElement>(null)
   const showAskQuestions = nativeAskQuestionsRequest !== null
+  const showProjectTrust = projectTrustRequest !== null
   const visibleNativeExtensionWidgets = nativeExtensionWidgets.filter(
     (widget) => widget.placement === undefined || widget.placement === 'aboveEditor',
   )
@@ -281,6 +329,7 @@ export function ComposerPromptSurface({
   const showBtwControls = restoredSmartBtwWidget !== undefined
   const showNativeExtensionOverlay =
     showAskQuestions ||
+    showProjectTrust ||
     visibleNativeExtensionWidgets.length > 0 ||
     restoredSmartBtwWidget !== undefined
   const { answerNativeQuestions } = useComposerAskQuestionsActions({
@@ -469,7 +518,7 @@ export function ComposerPromptSurface({
               composerPopoverExtensionLayerClass,
             )}
           >
-            <NativeExtensionOverlayWidgets
+            <NativeExtensionOverlayContent
               widgets={visibleNativeExtensionWidgets}
               smartBtwWidget={restoredSmartBtwWidget}
               onFoldSmartBtw={() => runNativeShortcut('ctrl+alt+down')}
@@ -477,32 +526,42 @@ export function ComposerPromptSurface({
               onNextSmartBtw={() => runNativeShortcut('ctrl+alt+right')}
               onSelectSmartBtw={(index) => runNativeShortcut(`ctrl+alt+${index}`)}
               onClearSmartBtw={() => runNativeShortcut('ctrl+alt+x')}
-            />
-            {showAskQuestions ? (
-              <AskQuestionsCard
-                composerDraft={draft}
-                questions={nativeAskQuestionsRequest.questions}
-                onUseComposerDraft={() => {
+              projectTrust={{
+                request: projectTrustRequest,
+                onDecide: async (trusted) => {
+                  return await runComposerAction('composer.set-project-trust', {
+                    projectId,
+                    sessionPath,
+                    composerMode,
+                    chatGroupId,
+                    trusted,
+                  })
+                },
+              }}
+              askQuestions={{
+                composerDraft: draft,
+                request: nativeAskQuestionsRequest,
+                onUseComposerDraft: () => {
                   const value = draft
                   setDraft('')
                   return value
-                }}
-                onAnswered={async (answers) => {
+                },
+                onAnswered: async (answers) => {
                   const ok = await answerNativeQuestions(answers)
                   if (ok) setDraft('')
                   return ok
-                }}
-                onDismiss={() => {
+                },
+                onDismiss: () => {
                   return answerNativeQuestions(null)
-                }}
-                registerArrowNavigation={(handler) => {
+                },
+                registerArrowNavigation: (handler) => {
                   askQuestionsArrowNavigationRef.current = handler
-                }}
-                registerComposerSubmit={(handler) => {
+                },
+                registerComposerSubmit: (handler) => {
                   askQuestionsSubmitRef.current = handler
-                }}
-              />
-            ) : null}
+                },
+              }}
+            />
           </div>
         ) : null}
         <section

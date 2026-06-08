@@ -33,6 +33,10 @@ export type NativeExtensionWidget = {
   placement?: 'aboveEditor' | 'belowEditor' | 'status' | undefined
 }
 
+export type ProjectTrustRequest = {
+  cwd: string
+}
+
 export type ComposerModel = {
   provider: string
   id: string
@@ -56,6 +60,7 @@ export type ComposerState = {
   queuedPrompts: ComposerQueuedPrompt[]
   nativeAskQuestionsRequest: NativeAskQuestionsRequest | null
   nativeExtensionWidgets: NativeExtensionWidget[]
+  projectTrustRequest: ProjectTrustRequest | null
   contextUsage: ComposerContextUsage | null
   isCompacting: boolean
   isExtensionCommandRunning: boolean

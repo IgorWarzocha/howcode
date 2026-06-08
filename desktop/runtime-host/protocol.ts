@@ -126,6 +126,7 @@ export type RuntimeHostRequestMap = {
     answers: string[][] | null
   }
   invokeNativeExtensionShortcut: ComposerStateRequest & { shortcut: string }
+  setProjectTrust: ComposerStateRequest & { trusted: boolean }
 }
 
 export type RuntimeHostResponseMap = {
@@ -173,6 +174,7 @@ export type RuntimeHostResponseMap = {
   dequeueComposerPrompt: string | null
   answerNativeAskQuestions: { ok: boolean }
   invokeNativeExtensionShortcut: { ok: boolean }
+  setProjectTrust: { ok: true }
 }
 
 export type RuntimeHostMainRequestMap = {

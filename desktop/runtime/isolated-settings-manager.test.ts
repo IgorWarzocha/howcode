@@ -64,6 +64,10 @@ describe('resolveRuntimeProjectTrust', () => {
       get() {
         return decision
       }
+
+      set() {
+        // Not needed for resolver tests.
+      }
     }
   }
 

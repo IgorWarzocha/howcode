@@ -15,14 +15,17 @@ import {
   getNativeAskQuestionsAnswers,
   getNativeAskQuestionsRequestId,
   getNativeExtensionShortcut,
+  getProjectTrustDecision,
 } from '../../shared/pi-thread-action-payloads.ts'
 import {
   answerNativeAskQuestions,
   dequeueComposerPrompt,
   invokeNativeExtensionShortcut,
+  refreshComposerAfterProjectTrust,
   sendComposerPrompt,
   setComposerModel,
   setComposerThinkingLevel,
+  setProjectTrust,
   stopComposerRun,
 } from '../pi-desktop-runtime.ts'
 import { invalidateRuntimeHostSettings } from '../runtime-host/client-bridge.ts'
@@ -118,6 +121,17 @@ async function invokeNativeExtensionShortcutFromPayload(payload: AnyDesktopActio
   return result.ok ? handledAction() : handledAction({ error: 'Could not run native shortcut.' })
 }
 
+async function setProjectTrustFromPayload(payload: AnyDesktopActionPayload) {
+  const trusted = getProjectTrustDecision(payload)
+  const composerRequest = getComposerRequest(payload)
+  if (trusted === null || !composerRequest.projectId) return handledAction()
+
+  await setProjectTrust({ ...composerRequest, trusted })
+  await invalidateRuntimeHostSettings({ sessionPath: composerRequest.sessionPath })
+  const composer = await refreshComposerAfterProjectTrust(composerRequest)
+  return handledAction({ composer })
+}
+
 const composerActionHandlers = {
   'composer.model': async (payload) => {
     const selection = getComposerModelSelection(payload)
@@ -142,6 +156,7 @@ const composerActionHandlers = {
   },
   'composer.answer-native-questions': answerNativeQuestionsFromPayload,
   'composer.native-extension-shortcut': invokeNativeExtensionShortcutFromPayload,
+  'composer.set-project-trust': setProjectTrustFromPayload,
 } satisfies Partial<Record<DesktopAction, ComposerActionHandler>>
 
 export async function handleComposerDesktopAction(

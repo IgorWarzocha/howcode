@@ -368,6 +368,10 @@ export function getNativeExtensionShortcut(payload: DesktopActionPayloadInput) {
   return typeof payload.shortcut === 'string' ? payload.shortcut : null
 }
 
+export function getProjectTrustDecision(payload: DesktopActionPayloadInput) {
+  return typeof payload.trusted === 'boolean' ? payload.trusted : null
+}
+
 export function getSettingsThinkingLevel(payload: DesktopActionPayloadInput) {
   const level = typeof payload.value === 'string' ? payload.value : null
   return level && composerThinkingLevels.has(level as ComposerThinkingLevel)
