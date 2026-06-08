@@ -161,6 +161,7 @@ export type CustomThreadMessage = {
   customType: string
   content: string[]
   isError?: boolean | undefined
+  details?: unknown | undefined
 }
 
 export type ThreadCustomMessageRecord = {

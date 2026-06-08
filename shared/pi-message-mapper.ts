@@ -373,6 +373,7 @@ function mapCustomMessage(id: string, runtimeMessage: RuntimeMessage): Message |
     customType,
     content,
     isError: customType === 'howcode.extension.error' || undefined,
+    details: runtimeMessage.details,
   }
 }
 
