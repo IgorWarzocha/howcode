@@ -1,4 +1,4 @@
-import { Check, ShieldAlert, X } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 import { useState } from 'react'
 import type { ProjectTrustRequest } from '../../desktop/types'
 import {
@@ -32,15 +32,16 @@ export function ProjectTrustCard({ request, onDecide }: ProjectTrustCardProps) {
     <div className="grid w-full overflow-visible px-4">
       <div className={projectTrustCardClass}>
         <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-2">
-          <ShieldAlert size={15} className="text-[color:var(--accent)]" />
-          <div className="grid min-w-0 gap-0.5">
-            <div className={cn(appTypeGroupTextClass, appToneTextClass)}>Trust this project?</div>
-            <div
+          <div className="flex min-w-0 items-baseline gap-2">
+            <span className={cn('shrink-0', appTypeGroupTextClass, appToneTextClass)}>
+              Trust this project?
+            </span>
+            <span
               className={cn('truncate', appTypeMetaClass, appToneMutedClass)}
               title={request.cwd}
             >
               {request.cwd}
-            </div>
+            </span>
           </div>
 
           <div className="flex items-center gap-1">
