@@ -18,10 +18,14 @@ function isSummaryMessage(
 }
 
 function isStandaloneStatusMessage(message: Message) {
-  return (
+  if (
     message.role === 'system' &&
     (message.label === 'Model changed' || message.label === 'Reasoning changed')
-  )
+  ) {
+    return true
+  }
+
+  return message.role === 'custom' && message.customType === 'Extension:'
 }
 
 function getToolGroupMessageKey(message: ToolCallMessage) {
@@ -40,7 +44,6 @@ export function buildTimelineRows({
   let pendingToolMessages: ToolCallMessage[] = []
   let currentTurn: Extract<TimelineRow, { kind: 'turn' }> | null = null
   let pendingImplicitTurnId: string | null = null
-  let conversationStarted = previousMessageCount > 0
 
   const flushPendingToolMessages = () => {
     if (pendingToolMessages.length === 0) {
@@ -95,7 +98,7 @@ export function buildTimelineRows({
       return true
     }
 
-    if (!(conversationStarted || currentTurn) && isStandaloneStatusMessage(message)) {
+    if (isStandaloneStatusMessage(message)) {
       flushCurrentTurn()
       nextRows.push(timelineMessage)
       pendingImplicitTurnId = null
@@ -130,7 +133,6 @@ export function buildTimelineRows({
     if (message.role === 'user') {
       flushCurrentTurn()
       pendingImplicitTurnId = null
-      conversationStarted = true
       currentTurn = {
         kind: 'turn',
         id: `turn:${message.id}`,
@@ -143,8 +145,6 @@ export function buildTimelineRows({
     if (appendStandaloneMessage(timelineMessage)) {
       continue
     }
-
-    conversationStarted = true
 
     if (currentTurn) {
       currentTurn.items.push(timelineMessage)
