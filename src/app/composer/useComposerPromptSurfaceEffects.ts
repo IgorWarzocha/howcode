@@ -48,6 +48,7 @@ export function useComposerAutocompleteEffects({
   slashCommandPanelRef,
   slashCommandListSignature,
   slashCommands,
+  sessionTreePanelRef,
   stopButtonBoundaryRef,
 }: {
   composerPanelRef: RefObject<HTMLDivElement | null>
@@ -60,6 +61,7 @@ export function useComposerAutocompleteEffects({
   slashCommandPanelRef: RefObject<HTMLDivElement | null>
   slashCommandListSignature: string
   slashCommands: ComposerSlashCommands
+  sessionTreePanelRef?: RefObject<HTMLDivElement | null> | undefined
   stopButtonBoundaryRef: RefObject<HTMLDivElement | null>
 }) {
   useEffect(() => {
@@ -70,6 +72,7 @@ export function useComposerAutocompleteEffects({
       if (
         !target ||
         slashCommandPanelRef.current?.contains(target) ||
+        sessionTreePanelRef?.current?.contains(target) ||
         fileMentionPanelRef.current?.contains(target) ||
         skillMentionPanelRef.current?.contains(target) ||
         composerPanelRef.current?.contains(target) ||
@@ -91,6 +94,7 @@ export function useComposerAutocompleteEffects({
     fileMentions,
     skillMentionPanelRef,
     skillMentions,
+    sessionTreePanelRef,
     slashCommandPanelRef,
     slashCommands,
     stopButtonBoundaryRef,
@@ -153,33 +157,78 @@ export function useComposerEscapeEffects({
   dictationActive,
   dictationTranscribing,
   pickerOpen,
+  sessionTreeOpen,
+  sessionTreeNavigateConfirmOpen,
+  sessionTreeLabelPopoverOpen,
+  onCloseSessionTree,
+  onCancelSessionTreeNavigateConfirm,
+  onCancelSessionTreeLabelPopover,
   setOpenMenu,
 }: {
   cancelDictation: () => Promise<void>
   dictationActive: boolean
   dictationTranscribing: boolean
   pickerOpen: boolean
+  sessionTreeOpen?: boolean | undefined
+  sessionTreeNavigateConfirmOpen?: boolean | undefined
+  sessionTreeLabelPopoverOpen?: boolean | undefined
+  onCloseSessionTree?: (() => void) | undefined
+  onCancelSessionTreeNavigateConfirm?: (() => void) | undefined
+  onCancelSessionTreeLabelPopover?: (() => void) | undefined
   setOpenMenu: (menu: null) => void
 }) {
   useEffect(() => {
-    if (!(pickerOpen || dictationActive || dictationTranscribing)) return
+    const sessionTreeActive = sessionTreeOpen === true
+    if (!(pickerOpen || dictationActive || dictationTranscribing || sessionTreeActive)) return
+
+    const consumeEscape = (event: KeyboardEvent) => {
+      event.preventDefault()
+      event.stopImmediatePropagation()
+    }
+
+    const handleSessionTreeEscape = (event: KeyboardEvent) => {
+      consumeEscape(event)
+      if (sessionTreeLabelPopoverOpen) {
+        onCancelSessionTreeLabelPopover?.()
+        return
+      }
+      if (sessionTreeNavigateConfirmOpen) {
+        onCancelSessionTreeNavigateConfirm?.()
+        return
+      }
+      onCloseSessionTree?.()
+    }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
+      if (sessionTreeActive) {
+        handleSessionTreeEscape(event)
+        return
+      }
       if (pickerOpen) {
-        event.preventDefault()
-        event.stopImmediatePropagation()
+        consumeEscape(event)
         setOpenMenu(null)
         return
       }
 
-      event.preventDefault()
-      event.stopImmediatePropagation()
+      consumeEscape(event)
       ;(document.activeElement as HTMLElement | null)?.blur?.()
       void cancelDictation()
     }
 
     window.addEventListener('keydown', handleKeyDown, true)
     return () => window.removeEventListener('keydown', handleKeyDown, true)
-  }, [cancelDictation, dictationActive, dictationTranscribing, pickerOpen, setOpenMenu])
+  }, [
+    cancelDictation,
+    dictationActive,
+    dictationTranscribing,
+    onCancelSessionTreeNavigateConfirm,
+    onCancelSessionTreeLabelPopover,
+    onCloseSessionTree,
+    pickerOpen,
+    sessionTreeLabelPopoverOpen,
+    sessionTreeNavigateConfirmOpen,
+    sessionTreeOpen,
+    setOpenMenu,
+  ])
 }

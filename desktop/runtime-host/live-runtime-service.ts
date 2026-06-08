@@ -20,6 +20,10 @@ import {
   promptComposerRuntime,
 } from '../runtime/composer-prompt-flow.ts'
 import {
+  labelSessionTreeEntry,
+  navigateSessionTree,
+} from '../runtime/composer-session-tree-navigate.ts'
+import {
   expandRuntimeDollarSkillReferences,
   mapSessionSkills,
 } from '../runtime/composer-skill-references.ts'
@@ -226,6 +230,34 @@ export async function sendComposerPrompt(
     runtime.branchName = request.branchName ?? runtime.branchName ?? null
     await applyComposerModeSettings(runtime, request)
     return await runSend(runtime)
+  })
+}
+
+export async function navigateSessionTreeInHost(
+  request: ComposerStateRequest & {
+    targetEntryId: string
+    summarize: boolean
+    label?: string | undefined | null
+  },
+) {
+  return navigateSessionTree({
+    request,
+    targetEntryId: request.targetEntryId,
+    summarize: request.summarize,
+    label: request.label,
+  })
+}
+
+export async function labelSessionTreeEntryInHost(
+  request: ComposerStateRequest & {
+    targetEntryId: string
+    label?: string | undefined | null
+  },
+) {
+  return labelSessionTreeEntry({
+    request,
+    targetEntryId: request.targetEntryId,
+    label: request.label,
   })
 }
 

@@ -19,6 +19,7 @@ import type {
   ThreadData,
   ThreadSearchResult,
 } from '../../shared/desktop-contracts.ts'
+import type { SessionTreeList } from '../../shared/session-tree.ts'
 import type { CommitMessageContext } from '../project-git.ts'
 
 export type RuntimeHostRequestMap = {
@@ -88,6 +89,12 @@ export type RuntimeHostRequestMap = {
     chat?: boolean | undefined
   }
   loadThreadSnapshot: { sessionPath: string; historyCompactions?: number | undefined }
+  loadSessionTreeList: { sessionPath: string }
+  loadThreadPreviewAtEntry: {
+    sessionPath: string
+    targetEntryId: string
+    historyCompactions?: number | undefined
+  }
   searchThreadSnapshot: { sessionPath: string; query: string }
   startSkillCreatorSession: {
     prompt: string
@@ -126,6 +133,15 @@ export type RuntimeHostRequestMap = {
     answers: string[][] | null
   }
   invokeNativeExtensionShortcut: ComposerStateRequest & { shortcut: string }
+  labelSessionTreeEntry: ComposerStateRequest & {
+    targetEntryId: string
+    label?: string | undefined | null
+  }
+  navigateSessionTree: ComposerStateRequest & {
+    targetEntryId: string
+    summarize: boolean
+    label?: string | undefined | null
+  }
 }
 
 export type RuntimeHostResponseMap = {
@@ -157,6 +173,12 @@ export type RuntimeHostResponseMap = {
     threadId: string
     thread: ThreadData
   }
+  loadSessionTreeList: SessionTreeList
+  loadThreadPreviewAtEntry: {
+    projectId: string
+    threadId: string
+    thread: ThreadData
+  }
   searchThreadSnapshot: ThreadSearchResult
   startSkillCreatorSession: SkillCreatorSessionState
   continueSkillCreatorSession: SkillCreatorSessionState
@@ -173,6 +195,12 @@ export type RuntimeHostResponseMap = {
   dequeueComposerPrompt: string | null
   answerNativeAskQuestions: { ok: boolean }
   invokeNativeExtensionShortcut: { ok: boolean }
+  labelSessionTreeEntry: { ok: true }
+  navigateSessionTree: {
+    cancelled: boolean
+    aborted?: boolean
+    editorText?: string
+  }
 }
 
 export type RuntimeHostMainRequestMap = {

@@ -1,4 +1,5 @@
 import { isLocalSessionPath } from '@howcode/shared/session-paths'
+import { sessionTreeRefreshWithSessionWatch } from '@howcode/shared/session-tree-watch'
 import type { Dispatch, SetStateAction } from 'react'
 import type {
   ChatSidebarState,
@@ -348,6 +349,21 @@ function handleThreadUpdateEvent(
   }
   dispatchThreadOpenIfNeeded({ dispatch: runtime.dispatch, event, flags, latestWorkspaceState })
   refreshThreadEndState({ event, latestComposerProjectId, latestWorkspaceState, runtime })
+  if (sessionTreeRefreshWithSessionWatch) {
+    void runtime.queryClient.invalidateQueries({
+      queryKey: desktopQueryKeys.sessionTreeList(event.sessionPath),
+    })
+  }
+}
+
+function handleSessionTreeRefreshEvent(
+  runtime: DesktopEventSyncRuntime,
+  event: Extract<DesktopEvent, { type: 'session-tree-refresh' }>,
+) {
+  if (!sessionTreeRefreshWithSessionWatch) return
+  void runtime.queryClient.invalidateQueries({
+    queryKey: desktopQueryKeys.sessionTreeList(event.sessionPath),
+  })
 }
 
 export function handleDesktopEvent(runtime: DesktopEventSyncRuntime, event: DesktopEvent) {
@@ -370,4 +386,5 @@ export function handleDesktopEvent(runtime: DesktopEventSyncRuntime, event: Desk
     return
   }
   if (event.type === 'thread-update') handleThreadUpdateEvent(runtime, event)
+  if (event.type === 'session-tree-refresh') handleSessionTreeRefreshEvent(runtime, event)
 }

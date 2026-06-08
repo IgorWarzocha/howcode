@@ -35,6 +35,8 @@ export const implementedDesktopActions = [
   'composer.reload-settings',
   'composer.answer-native-questions',
   'composer.native-extension-shortcut',
+  'composer.session-tree.label',
+  'composer.session-tree.navigate',
   'inbox.mark-read',
   'inbox.dismiss',
   'inbox.clear-read',

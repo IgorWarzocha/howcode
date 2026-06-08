@@ -15,11 +15,15 @@ import {
   getNativeAskQuestionsAnswers,
   getNativeAskQuestionsRequestId,
   getNativeExtensionShortcut,
+  getSessionTreeLabel,
+  getSessionTreeNavigate,
 } from '../../shared/pi-thread-action-payloads.ts'
 import {
   answerNativeAskQuestions,
   dequeueComposerPrompt,
   invokeNativeExtensionShortcut,
+  labelSessionTreeEntry,
+  navigateSessionTree,
   sendComposerPrompt,
   setComposerModel,
   setComposerThinkingLevel,
@@ -118,6 +122,44 @@ async function invokeNativeExtensionShortcutFromPayload(payload: AnyDesktopActio
   return result.ok ? handledAction() : handledAction({ error: 'Could not run native shortcut.' })
 }
 
+async function navigateSessionTreeFromPayload(payload: AnyDesktopActionPayload) {
+  const navigate = getSessionTreeNavigate(payload)
+  if (!navigate) return handledAction({ error: 'Session tree entry is required.' })
+  try {
+    const result = await navigateSessionTree({
+      ...getComposerRequest(payload),
+      targetEntryId: navigate.targetEntryId,
+      summarize: navigate.summarize,
+      label: navigate.label,
+    })
+    if (result.cancelled) return handledAction({ sessionTreeNavigateCancelled: true })
+    return handledAction({
+      ...(result.editorText === undefined
+        ? {}
+        : { sessionTreeNavigateEditorText: result.editorText }),
+    })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return handledAction({ error: message })
+  }
+}
+
+async function labelSessionTreeEntryFromPayload(payload: AnyDesktopActionPayload) {
+  const labelRequest = getSessionTreeLabel(payload)
+  if (!labelRequest) return handledAction({ error: 'Session tree entry is required.' })
+  try {
+    await labelSessionTreeEntry({
+      ...getComposerRequest(payload),
+      targetEntryId: labelRequest.targetEntryId,
+      label: labelRequest.label,
+    })
+    return handledAction()
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return handledAction({ error: message })
+  }
+}
+
 const composerActionHandlers = {
   'composer.model': async (payload) => {
     const selection = getComposerModelSelection(payload)
@@ -142,6 +184,8 @@ const composerActionHandlers = {
   },
   'composer.answer-native-questions': answerNativeQuestionsFromPayload,
   'composer.native-extension-shortcut': invokeNativeExtensionShortcutFromPayload,
+  'composer.session-tree.label': labelSessionTreeEntryFromPayload,
+  'composer.session-tree.navigate': navigateSessionTreeFromPayload,
 } satisfies Partial<Record<DesktopAction, ComposerActionHandler>>
 
 export async function handleComposerDesktopAction(

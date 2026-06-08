@@ -1,6 +1,7 @@
 ### 0.1.67
 
 - Added native Smart BTW side sessions with numbered slots, GUI/Pi-TUI handoff, and restored Q&A follow-ups.
+- Session tree labels now work from the tree itself, without jumping around first.
 
 #### 0.1.66 Hotfixes (because .67 has to be more special)
 

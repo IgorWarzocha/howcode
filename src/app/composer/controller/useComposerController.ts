@@ -8,6 +8,7 @@ import type {
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
   DesktopActionInvoker,
+  DesktopActionResult,
 } from '../../desktop/types'
 import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
 import type { View } from '../../types'
@@ -32,6 +33,10 @@ function getModelLabel(model: ComposerModel | null) {
   }
 
   return model.name
+}
+
+function isCancelledSessionTreeNavigate(action: DesktopAction, result: DesktopActionResult | null) {
+  return action === 'composer.session-tree.navigate' && result?.result?.sessionTreeNavigateCancelled
 }
 
 type UseComposerControllerProps = {
@@ -248,7 +253,16 @@ export function useComposerController({
         setErrorMessage(actionErrorMessage)
         return false
       }
+      if (isCancelledSessionTreeNavigate(action, result)) {
+        return false
+      }
       setErrorMessage(null)
+      if (action === 'composer.session-tree.navigate') {
+        const editorText = result?.result?.sessionTreeNavigateEditorText
+        if (typeof editorText === 'string') {
+          setDraftValue(editorText)
+        }
+      }
       if (options?.closeMenu ?? true) {
         setOpenMenu(null)
       }

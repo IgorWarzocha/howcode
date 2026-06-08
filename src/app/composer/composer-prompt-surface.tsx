@@ -1,11 +1,13 @@
 import { createSmartBtwWidgetFromMessages, SmartBtwCard } from '@howcode/extensions'
 import { getPersistedSessionPath } from '@howcode/shared/session-paths'
-import { type RefObject, useEffect, useRef } from 'react'
+import { type RefObject, useCallback, useEffect, useRef, useState } from 'react'
 import {
   howcodeDismissTransientUiEvent,
   useHowcodeKeybindingCommand,
 } from '../app-shell/keybinding-events'
 import { AskQuestionsCard, useComposerAskQuestionsActions } from '../features/native-extensions'
+import { dispatchSessionTreeReveal } from '../thread/session-tree-reveal'
+
 import {
   appTypeCodeClass,
   composerPanelClass,
@@ -21,14 +23,16 @@ import {
 } from './composer-prompt-surface-helpers'
 import { ComposerAttachmentRail, ComposerStopRail } from './composer-side-controls'
 import { useComposerController } from './controller/useComposerController'
-import { useAskQuestionsOverlayHeight } from './useAskQuestionsOverlayHeight'
 import { useComposerFileMentions } from './useComposerFileMentions'
 import {
   useComposerAutocompleteEffects,
   useComposerEscapeEffects,
 } from './useComposerPromptSurfaceEffects'
+import { useComposerSessionTreeNavigate } from './useComposerSessionTreeNavigate'
+import { useComposerSessionTreePanel } from './useComposerSessionTreePanel'
 import { useComposerSkillMentions } from './useComposerSkillMentions'
 import { useComposerSlashCommands } from './useComposerSlashCommands'
+import { useComposerThreadOverlayHeight } from './useComposerThreadOverlayHeight'
 import { useGlobalComposerFileDrop } from './useGlobalComposerFileDrop'
 
 const digitShortcutPattern = /^Digit[1-9]$/u
@@ -149,6 +153,7 @@ function isSmartBtwLiveWidgetAhead(
   return getSmartBtwSessionCount(liveWidget) > getSmartBtwSessionCount(restoredWidget)
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: composer surface wires session tree, slash, mentions, and native overlays
 export function ComposerPromptSurface({
   activeView,
   composerPanelRef,
@@ -184,6 +189,7 @@ export function ComposerPromptSurface({
   hoverToBlur,
   composerSendMode,
   keybindings,
+  piTreeFilterMode = 'no-tools',
   onOpenTakeoverTerminal,
   onToggleTerminal,
   onToggleArtifacts,
@@ -265,6 +271,13 @@ export function ComposerPromptSurface({
   })
   const dictationTranscribing = dictationInterimText.length > 0
   const composerMode = activeView === 'chat' ? 'chat' : 'code'
+  const sessionTreePanelRef = useRef<HTMLDivElement>(null)
+  const composerPopoverStackRef = useRef<HTMLDivElement>(null)
+  const sessionTreeCloseRef = useRef<(() => void) | null>(null)
+  const sessionTreeCancelNavigateConfirmRef = useRef<(() => void) | null>(null)
+  const sessionTreeCancelLabelPopoverRef = useRef<(() => void) | null>(null)
+  const [sessionTreeNavigateConfirmOpen, setSessionTreeNavigateConfirmOpen] = useState(false)
+  const [sessionTreeLabelPopoverOpen, setSessionTreeLabelPopoverOpen] = useState(false)
   const slashCommandPanelRef = useRef<HTMLDivElement>(null)
   const fileMentionPanelRef = useRef<HTMLDivElement>(null)
   const skillMentionPanelRef = useRef<HTMLDivElement>(null)
@@ -294,6 +307,7 @@ export function ComposerPromptSurface({
   const startNewSession = () => {
     void runComposerAction('thread.new', { projectId, chatGroupId, composerMode })
   }
+  const openSessionTreeRef = useRef<() => void>(() => undefined)
   const slashCommands = useComposerSlashCommands({
     draft,
     projectId,
@@ -304,7 +318,13 @@ export function ComposerPromptSurface({
     sendExtensionCommand,
     onOpenSettingsView,
     onStartNewSession: startNewSession,
+    onOpenSessionTree: () => openSessionTreeRef.current(),
   })
+  const { dismissSessionTree, openSessionTree, sessionTreeOpen } = useComposerSessionTreePanel({
+    sessionPath,
+    slashCommandsOpen: slashCommands.open,
+  })
+  openSessionTreeRef.current = openSessionTree
   const slashCommandListSignature = slashCommands.commands
     .map((command) => `${command.source}:${command.name}`)
     .join('|')
@@ -339,24 +359,36 @@ export function ComposerPromptSurface({
     slashCommandPanelRef,
     slashCommandListSignature,
     slashCommands,
+    sessionTreePanelRef,
     stopButtonBoundaryRef,
   })
+
+  const closeSessionTree = useCallback(() => {
+    sessionTreeCloseRef.current?.()
+    dismissSessionTree()
+  }, [dismissSessionTree])
 
   useComposerEscapeEffects({
     cancelDictation,
     dictationActive,
     dictationTranscribing,
     pickerOpen,
+    sessionTreeOpen,
+    sessionTreeNavigateConfirmOpen,
+    sessionTreeLabelPopoverOpen,
+    onCloseSessionTree: closeSessionTree,
+    onCancelSessionTreeNavigateConfirm: () => {
+      sessionTreeCancelNavigateConfirmRef.current?.()
+      setSessionTreeNavigateConfirmOpen(false)
+    },
+    onCancelSessionTreeLabelPopover: () => {
+      sessionTreeCancelLabelPopoverRef.current?.()
+      setSessionTreeLabelPopoverOpen(false)
+    },
     setOpenMenu,
   })
 
   useGlobalComposerFileDrop(handleDrop)
-
-  useAskQuestionsOverlayHeight({
-    overlayRef: askQuestionsOverlayRef,
-    visible: showNativeExtensionOverlay,
-    onOverlayHeightChange,
-  })
 
   const extensionRunning = extensionCommandRunning
   const askQuestionsArrowNavigationRef = useRef<
@@ -371,11 +403,52 @@ export function ComposerPromptSurface({
   })
   const attachmentButtonLabel = attachments.length > 0 ? 'Manage attachments' : 'Add attachment'
   const persistedSessionPath = getPersistedSessionPath(sessionPath)
+  const revealSessionTreeEntryInThread = useCallback(
+    (entryId: string) => {
+      if (!persistedSessionPath) return
+      dispatchSessionTreeReveal({ sessionPath: persistedSessionPath, entryId })
+    },
+    [persistedSessionPath],
+  )
+  const {
+    handleSessionTreeLabel,
+    handleSessionTreeNavigate,
+    sessionTreeForceHidden,
+    sessionTreeNavigateDisabled,
+  } = useComposerSessionTreeNavigate({
+    activeView,
+    chatGroupId,
+    composerIsStreaming,
+    extensionRunning,
+    isCompacting,
+    isSending,
+    projectId,
+    runComposerAction,
+    sessionPath,
+  })
+  const handleSessionTreeNavigateAndClose = useCallback(
+    async (entryId: string, summarize: boolean, label?: string) => {
+      const ok = await handleSessionTreeNavigate(entryId, summarize, label)
+      if (ok) closeSessionTree()
+      return ok
+    },
+    [closeSessionTree, handleSessionTreeNavigate],
+  )
+
+  useComposerThreadOverlayHeight({
+    extensionOverlayRef: askQuestionsOverlayRef,
+    extensionOverlayVisible: showNativeExtensionOverlay,
+    popoverStackRef: composerPopoverStackRef,
+    popoverStackVisible: (sessionTreeOpen && !sessionTreeForceHidden) || slashCommands.open,
+    onOverlayHeightChange,
+  })
+
   const canStopComposer = (composerIsStreaming || extensionRunning) && !isSending && !!sessionPath
   const composerWorking = composerIsStreaming || extensionRunning
   const dismissComposerTransientUi = () => {
     setOpenMenu(null)
     slashCommands.dismiss()
+    closeSessionTree()
     fileMentions.dismiss()
     skillMentions.dismiss()
   }
@@ -539,6 +612,24 @@ export function ComposerPromptSurface({
               pickerState={pickerState}
               placeholderText={placeholderText}
               projectId={projectId}
+              piTreeFilterMode={piTreeFilterMode}
+              sessionPath={sessionPath}
+              sessionTreeOpen={sessionTreeOpen}
+              sessionTreePanelRef={sessionTreePanelRef}
+              sessionTreeForceHidden={sessionTreeForceHidden}
+              sessionTreeNavigateDisabled={sessionTreeNavigateDisabled}
+              onSessionTreeNavigate={handleSessionTreeNavigateAndClose}
+              onSessionTreeLabel={handleSessionTreeLabel}
+              onRevealSessionTreeEntryInThread={revealSessionTreeEntryInThread}
+              onBindSessionTreeClose={(close) => {
+                sessionTreeCloseRef.current = close
+              }}
+              onSessionTreeNavigateConfirmOpenChange={setSessionTreeNavigateConfirmOpen}
+              onSessionTreeLabelPopoverOpenChange={setSessionTreeLabelPopoverOpen}
+              sessionTreeCancelNavigateConfirmRef={sessionTreeCancelNavigateConfirmRef}
+              sessionTreeCancelLabelPopoverRef={sessionTreeCancelLabelPopoverRef}
+              composerPopoverStackRef={composerPopoverStackRef}
+              onSessionTreeTypingDismiss={closeSessionTree}
               slashCommandPanelRef={slashCommandPanelRef}
               slashCommands={slashCommands}
               fileMentionPanelRef={fileMentionPanelRef}

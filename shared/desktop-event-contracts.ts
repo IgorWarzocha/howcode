@@ -43,6 +43,10 @@ export type DesktopEvent =
       sessionPath: string
     }
   | {
+      type: 'session-tree-refresh'
+      sessionPath: string
+    }
+  | {
       type: 'artifact-update'
       conversationId: string
       artifact: Artifact

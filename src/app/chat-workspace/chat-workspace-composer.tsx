@@ -221,6 +221,7 @@ function ChatComposer(props: ChatWorkspaceComposerProps) {
       hoverToBlur={appSettings.hoverToBlur}
       composerSendMode={appSettings.composerSendMode}
       keybindings={appSettings.keybindings}
+      piTreeFilterMode={shellState?.piSettings.treeFilterMode ?? 'no-tools'}
       diffRenderMode={diffRenderMode}
       diffComments={[]}
       diffCommentCount={0}

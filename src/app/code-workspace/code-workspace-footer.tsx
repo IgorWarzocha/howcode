@@ -202,6 +202,7 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
       hoverToBlur={appSettings.hoverToBlur}
       composerSendMode={appSettings.composerSendMode}
       keybindings={appSettings.keybindings}
+      piTreeFilterMode={shellState?.piSettings.treeFilterMode ?? 'no-tools'}
       diffRenderMode={diffRenderMode}
       diffComments={diffComments}
       diffCommentCount={diffCommentCount}

@@ -368,6 +368,27 @@ export function getNativeExtensionShortcut(payload: DesktopActionPayloadInput) {
   return typeof payload.shortcut === 'string' ? payload.shortcut : null
 }
 
+export function getSessionTreeNavigate(payload: DesktopActionPayloadInput) {
+  const targetEntryId =
+    typeof payload.targetEntryId === 'string' ? payload.targetEntryId.trim() : ''
+  if (!targetEntryId) return null
+  return {
+    targetEntryId,
+    summarize: payload.summarize === true,
+    label: typeof payload.label === 'string' ? payload.label.trim() : '',
+  }
+}
+
+export function getSessionTreeLabel(payload: DesktopActionPayloadInput) {
+  const targetEntryId =
+    typeof payload.targetEntryId === 'string' ? payload.targetEntryId.trim() : ''
+  if (!targetEntryId) return null
+  return {
+    targetEntryId,
+    label: typeof payload.label === 'string' ? payload.label.trim() : '',
+  }
+}
+
 export function getSettingsThinkingLevel(payload: DesktopActionPayloadInput) {
   const level = typeof payload.value === 'string' ? payload.value : null
   return level && composerThinkingLevels.has(level as ComposerThinkingLevel)
