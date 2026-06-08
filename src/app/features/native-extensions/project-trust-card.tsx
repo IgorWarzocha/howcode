@@ -31,7 +31,7 @@ export function ProjectTrustCard({ request, onDecide }: ProjectTrustCardProps) {
   return (
     <div className="grid w-full overflow-visible px-4">
       <div className={projectTrustCardClass}>
-        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-2">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-2">
           <div className="flex min-w-0 items-baseline gap-2">
             <span className={cn('shrink-0', appTypeGroupTextClass, appToneTextClass)}>
               Trust this project?
