@@ -3,11 +3,51 @@ import type { ComposerSessionTreeRow } from '../app/composer/composer-session-tr
 import { filterSessionTreeRows } from '../app/composer/composer-session-tree-filter'
 
 const rows: ComposerSessionTreeRow[] = [
-  { id: 'u', depth: 0, label: 'hi', kind: 'user', isLeaf: false, isOnActivePath: true },
-  { id: 'a', depth: 1, label: 'ok', kind: 'assistant', isLeaf: false, isOnActivePath: true },
-  { id: 't', depth: 2, label: 'read', kind: 'tool', isLeaf: false, isOnActivePath: true },
-  { id: 'b', depth: 1, label: 'fork', kind: 'branch', isLeaf: false, isOnActivePath: true },
-  { id: 's', depth: 1, label: 'sum', kind: 'summary', isLeaf: true, isOnActivePath: true },
+  {
+    id: 'u',
+    parentId: null,
+    depth: 0,
+    label: 'hi',
+    kind: 'user',
+    isLeaf: false,
+    isOnActivePath: true,
+  },
+  {
+    id: 'a',
+    parentId: 'u',
+    depth: 1,
+    label: 'ok',
+    kind: 'assistant',
+    isLeaf: false,
+    isOnActivePath: true,
+  },
+  {
+    id: 't',
+    parentId: 'a',
+    depth: 2,
+    label: 'read',
+    kind: 'tool',
+    isLeaf: false,
+    isOnActivePath: true,
+  },
+  {
+    id: 'b',
+    parentId: 'u',
+    depth: 1,
+    label: 'fork',
+    kind: 'branch',
+    isLeaf: false,
+    isOnActivePath: true,
+  },
+  {
+    id: 's',
+    parentId: 'u',
+    depth: 1,
+    label: 'sum',
+    kind: 'summary',
+    isLeaf: true,
+    isOnActivePath: true,
+  },
 ]
 
 describe('filterSessionTreeRows', () => {

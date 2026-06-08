@@ -7,6 +7,7 @@ import {
 
 export type ComposerSessionTreeRow = {
   id: string
+  parentId: string | null
   depth: number
   label: string
   customLabel?: string | undefined
@@ -25,6 +26,7 @@ export function isComposerSessionTreePanelVisible(open: boolean, forceHidden: bo
 function toComposerRow(row: SessionTreeListRow): ComposerSessionTreeRow {
   return {
     id: row.id,
+    parentId: row.parentId,
     depth: row.depth,
     label: row.label,
     customLabel: row.customLabel,

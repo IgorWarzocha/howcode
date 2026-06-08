@@ -259,7 +259,7 @@ export function useComposerController({
       setErrorMessage(null)
       if (action === 'composer.session-tree.navigate') {
         const editorText = result?.result?.sessionTreeNavigateEditorText
-        if (typeof editorText === 'string' && editorText.length > 0) {
+        if (typeof editorText === 'string') {
           setDraftValue(editorText)
         }
       }

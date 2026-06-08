@@ -48,8 +48,9 @@ export function useComposerSessionTreeBrowse(input: {
     if (justClosed) {
       setAnchorEntryId(null)
       setPreviewEntryId(null)
+      onPreviewEntry(null)
     }
-  }, [leafIdFromList, sessionTreeOpen])
+  }, [leafIdFromList, onPreviewEntry, sessionTreeOpen])
 
   useEffect(() => {
     if (!(sessionTreeOpen && leafIdFromList)) return

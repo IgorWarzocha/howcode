@@ -9,9 +9,14 @@ export function rowHasChildren(rows: readonly ComposerSessionTreeRow[], index: n
 function findParentIndex(rows: readonly ComposerSessionTreeRow[], index: number) {
   const depth = rows[index]?.depth
   if (depth === undefined || depth === 0) return -1
+  const parentId = rows[index]?.parentId
+  if (parentId) {
+    const parentIndex = rows.findIndex((row) => row.id === parentId)
+    if (parentIndex >= 0) return parentIndex
+  }
   for (let candidate = index - 1; candidate >= 0; candidate -= 1) {
     const row = rows[candidate]
-    if (row && row.depth === depth - 1) return candidate
+    if (row && row.depth < depth) return candidate
   }
   return -1
 }
