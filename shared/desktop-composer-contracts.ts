@@ -45,6 +45,7 @@ export type ComposerContextUsage = {
   tokens: number | null
   contextWindow: number
   percent: number | null
+  latestCacheHitRate: number | null
 }
 
 export type ComposerState = {

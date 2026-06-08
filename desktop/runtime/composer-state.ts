@@ -75,9 +75,25 @@ function mapContextUsage(session: AgentSession): ComposerContextUsage | null {
     tokens: usage.tokens,
     contextWindow,
     percent: usage.tokens === null ? usage.percent : (usage.tokens / contextWindow) * 100,
+    latestCacheHitRate: getLatestCacheHitRate(session),
   }
   contextUsageCache.set(session, contextUsage)
   return contextUsage
+}
+
+function getLatestCacheHitRate(session: AgentSession) {
+  let latestCacheHitRate: number | null = null
+
+  for (const entry of session.sessionManager.getEntries()) {
+    if (entry.type !== 'message' || entry.message.role !== 'assistant') continue
+
+    const usage = entry.message.usage
+    const latestPromptTokens = usage.input + usage.cacheRead + usage.cacheWrite
+    latestCacheHitRate =
+      latestPromptTokens > 0 ? (usage.cacheRead / latestPromptTokens) * 100 : null
+  }
+
+  return latestCacheHitRate
 }
 
 function getContextUsageForComposerState(

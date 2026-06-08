@@ -59,6 +59,11 @@ function formatCost(value: number | null | undefined) {
   return costFormatter.format(value)
 }
 
+function formatPercent(value: number | null | undefined) {
+  if (value === null || value === undefined) return 'Unknown'
+  return `${value.toFixed(1)}%`
+}
+
 function getMessageUsageTotals(messages: Message[] | undefined): UsageTotals | null {
   if (!messages || messages.length === 0) return null
 
@@ -387,7 +392,13 @@ export function ComposerContextMeter({
             <div className="flex justify-between gap-3">
               <span>Usage</span>
               <span className={cn(appTypeCodeClass, appToneTextClass)}>
-                {percent === null || percent === undefined ? 'Unknown' : `${percent.toFixed(1)}%`}
+                {formatPercent(percent)}
+              </span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span>Latest cache hit</span>
+              <span className={cn(appTypeCodeClass, appToneTextClass)}>
+                {formatPercent(contextUsage?.latestCacheHitRate)}
               </span>
             </div>
           </div>
