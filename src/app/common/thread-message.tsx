@@ -227,6 +227,15 @@ function getAssistantStatusClassName(message: ProseMessage) {
 }
 
 function CustomMessageBlock({ message }: { message: CustomThreadMessage }) {
+  if (message.customType.startsWith('Extension ')) {
+    return (
+      <div className={systemStatusClass}>
+        <span className={systemStatusLabelClass}>{message.customType}</span>
+        <span className={systemStatusValueClass}>{message.content.join('')}</span>
+      </div>
+    )
+  }
+
   return (
     <div className={message.isError ? threadSessionErrorStripClass : threadSessionStripClass}>
       <div className={customMessageTypeClass}>

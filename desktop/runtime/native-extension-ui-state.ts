@@ -14,6 +14,7 @@ const plainTheme = new Proxy(
 
 const widgetsBySession = new Map<string, Map<string, NativeExtensionWidget>>()
 const dialogsBySession = new Map<string, PendingNativeExtensionDialog>()
+const extensionNotificationType = 'Extension notification'
 
 type PendingNativeExtensionDialog = NativeExtensionDialogRequest & {
   resolve: (answer: NativeExtensionDialogAnswer) => void
@@ -23,6 +24,12 @@ type NativeExtensionDialogAnswer = {
   cancelled?: boolean | undefined
   confirmed?: boolean | undefined
   value?: string | undefined
+}
+
+function getNotificationCustomType(type: 'info' | 'warning' | 'error' | undefined) {
+  if (type === 'warning') return 'Extension warning'
+  if (type === 'error') return 'Extension error'
+  return extensionNotificationType
 }
 
 function getSessionPath(runtime: PiRuntime) {
@@ -126,7 +133,15 @@ export function createNativeExtensionUiContext(
       )
       return answer.cancelled ? undefined : answer.value
     },
-    notify: () => undefined,
+    notify: (message, type) => {
+      runtime.session.sessionManager.appendCustomMessageEntry(
+        getNotificationCustomType(type),
+        message,
+        true,
+        { source: 'extension-notify', severity: type ?? 'info' },
+      )
+      onStateChange()
+    },
     onTerminalInput: () => () => undefined,
     setStatus: () => undefined,
     setWorkingMessage: () => undefined,
