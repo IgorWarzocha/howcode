@@ -126,17 +126,7 @@ export function createNativeExtensionUiContext(
       )
       return answer.cancelled ? undefined : answer.value
     },
-    notify: (message, type) => {
-      const sessionPath = getSessionPath(runtime)
-      if (!sessionPath) return
-      const widgets = getSessionWidgets(sessionPath)
-      widgets.set(`notify:${Date.now().toString(36)}`, {
-        key: `notify:${Date.now().toString(36)}`,
-        lines: [message],
-        placement: type === 'error' || type === 'warning' ? 'aboveEditor' : 'status',
-      })
-      onStateChange()
-    },
+    notify: () => undefined,
     onTerminalInput: () => () => undefined,
     setStatus: () => undefined,
     setWorkingMessage: () => undefined,
