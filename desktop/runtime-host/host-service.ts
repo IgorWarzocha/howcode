@@ -13,7 +13,7 @@ export {
   invalidateRuntimeSettings,
 } from './live-runtime-registry.ts'
 export {
-  answerNativeAskQuestions,
+  answerNativeExtensionDialog,
   dequeueComposerPrompt,
   getComposerSkills,
   getComposerSlashCommands,

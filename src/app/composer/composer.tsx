@@ -9,7 +9,7 @@ import type {
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
   DesktopActionInvoker,
-  NativeAskQuestionsRequest,
+  NativeExtensionDialogRequest,
   NativeExtensionWidget,
   ProjectDiffBaseline,
   ProjectDiffRenderMode,
@@ -31,8 +31,8 @@ export type ComposerProps = {
   replyActivityKey: string
   isCompacting: boolean
   isExtensionCommandRunning: boolean
-  nativeAskQuestionsRequest: NativeAskQuestionsRequest | null
   nativeExtensionWidgets: NativeExtensionWidget[]
+  nativeExtensionDialogRequest: NativeExtensionDialogRequest | null
   projectTrustRequest: ProjectTrustRequest | null
   nativeSmartBtwEnabled: boolean
   thinkingLevel: ComposerThinkingLevel

@@ -5,11 +5,7 @@ import {
   howcodeDismissTransientUiEvent,
   useHowcodeKeybindingCommand,
 } from '../app-shell/keybinding-events'
-import {
-  AskQuestionsCard,
-  ProjectTrustCard,
-  useComposerAskQuestionsActions,
-} from '../features/native-extensions'
+import { NativeExtensionDialogCard, ProjectTrustCard } from '../features/native-extensions'
 import {
   appTypeCodeClass,
   composerPanelClass,
@@ -56,23 +52,22 @@ type NativeExtensionOverlayWidgetsProps = {
 }
 
 type NativeExtensionOverlayContentProps = NativeExtensionOverlayWidgetsProps & {
-  askQuestions: {
-    composerDraft: string
-    request: NonNullable<ComposerProps['nativeAskQuestionsRequest']> | null
-    onUseComposerDraft: () => string
-    onAnswered: (answers: string[][]) => Promise<boolean>
-    onDismiss: () => Promise<boolean>
-    registerArrowNavigation: (handler: ((direction: 'previous' | 'next') => boolean) | null) => void
-    registerComposerSubmit: (handler: (() => boolean) | null) => void
-  }
   projectTrust: {
     request: NonNullable<ComposerProps['projectTrustRequest']> | null
     onDecide: (trusted: boolean) => Promise<boolean>
   }
+  nativeDialog: {
+    request: NonNullable<ComposerProps['nativeExtensionDialogRequest']> | null
+    onAnswer: (answer: {
+      cancelled?: boolean | undefined
+      confirmed?: boolean | undefined
+      value?: string | undefined
+    }) => Promise<boolean>
+  }
 }
 
 function NativeExtensionOverlayContent({
-  askQuestions,
+  nativeDialog,
   projectTrust,
   ...widgetsProps
 }: NativeExtensionOverlayContentProps) {
@@ -82,15 +77,10 @@ function NativeExtensionOverlayContent({
       {projectTrust.request ? (
         <ProjectTrustCard request={projectTrust.request} onDecide={projectTrust.onDecide} />
       ) : null}
-      {askQuestions.request ? (
-        <AskQuestionsCard
-          composerDraft={askQuestions.composerDraft}
-          questions={askQuestions.request.questions}
-          onUseComposerDraft={askQuestions.onUseComposerDraft}
-          onAnswered={askQuestions.onAnswered}
-          onDismiss={askQuestions.onDismiss}
-          registerArrowNavigation={askQuestions.registerArrowNavigation}
-          registerComposerSubmit={askQuestions.registerComposerSubmit}
+      {nativeDialog.request ? (
+        <NativeExtensionDialogCard
+          request={nativeDialog.request}
+          onAnswer={nativeDialog.onAnswer}
         />
       ) : null}
     </>
@@ -209,7 +199,7 @@ export function ComposerPromptSurface({
   replyActivityKey,
   isCompacting,
   isExtensionCommandRunning,
-  nativeAskQuestionsRequest,
+  nativeExtensionDialogRequest,
   nativeExtensionWidgets,
   projectTrustRequest,
   nativeSmartBtwEnabled,
@@ -316,8 +306,8 @@ export function ComposerPromptSurface({
   const fileMentionPanelRef = useRef<HTMLDivElement>(null)
   const skillMentionPanelRef = useRef<HTMLDivElement>(null)
   const stopButtonBoundaryRef = useRef<HTMLDivElement>(null)
-  const askQuestionsOverlayRef = useRef<HTMLDivElement>(null)
-  const showAskQuestions = nativeAskQuestionsRequest !== null
+  const nativeExtensionOverlayRef = useRef<HTMLDivElement>(null)
+  const showNativeDialog = nativeExtensionDialogRequest !== null
   const showProjectTrust = projectTrustRequest !== null
   const visibleNativeExtensionWidgets = nativeExtensionWidgets.filter(
     (widget) => widget.placement === undefined || widget.placement === 'aboveEditor',
@@ -328,18 +318,10 @@ export function ComposerPromptSurface({
   })
   const showBtwControls = restoredSmartBtwWidget !== undefined
   const showNativeExtensionOverlay =
-    showAskQuestions ||
+    showNativeDialog ||
     showProjectTrust ||
     visibleNativeExtensionWidgets.length > 0 ||
     restoredSmartBtwWidget !== undefined
-  const { answerNativeQuestions } = useComposerAskQuestionsActions({
-    chatGroupId,
-    composerMode,
-    nativeAskQuestionsRequest,
-    projectId,
-    runComposerAction,
-    sessionPath,
-  })
   const startNewSession = () => {
     void runComposerAction('thread.new', { projectId, chatGroupId, composerMode })
   }
@@ -402,21 +384,17 @@ export function ComposerPromptSurface({
   useGlobalComposerFileDrop(handleDrop)
 
   useAskQuestionsOverlayHeight({
-    overlayRef: askQuestionsOverlayRef,
+    overlayRef: nativeExtensionOverlayRef,
     visible: showNativeExtensionOverlay,
     onOverlayHeightChange,
   })
 
   const extensionRunning = extensionCommandRunning
-  const askQuestionsArrowNavigationRef = useRef<
-    ((direction: 'previous' | 'next') => boolean) | null
-  >(null)
-  const askQuestionsSubmitRef = useRef<(() => boolean) | null>(null)
   const placeholderText = getComposerPlaceholderText({
     activeView,
     composerSendMode,
     errorMessage,
-    showAskQuestions,
+    showAskQuestions: false,
   })
   const attachmentButtonLabel = attachments.length > 0 ? 'Manage attachments' : 'Add attachment'
   const persistedSessionPath = getPersistedSessionPath(sessionPath)
@@ -512,7 +490,7 @@ export function ComposerPromptSurface({
       <div className="relative grid gap-0 overflow-visible">
         {showNativeExtensionOverlay ? (
           <div
-            ref={askQuestionsOverlayRef}
+            ref={nativeExtensionOverlayRef}
             className={cn(
               'pointer-events-auto absolute right-0 bottom-full left-0 grid gap-2',
               composerPopoverExtensionLayerClass,
@@ -538,27 +516,18 @@ export function ComposerPromptSurface({
                   })
                 },
               }}
-              askQuestions={{
-                composerDraft: draft,
-                request: nativeAskQuestionsRequest,
-                onUseComposerDraft: () => {
-                  const value = draft
-                  setDraft('')
-                  return value
-                },
-                onAnswered: async (answers) => {
-                  const ok = await answerNativeQuestions(answers)
-                  if (ok) setDraft('')
-                  return ok
-                },
-                onDismiss: () => {
-                  return answerNativeQuestions(null)
-                },
-                registerArrowNavigation: (handler) => {
-                  askQuestionsArrowNavigationRef.current = handler
-                },
-                registerComposerSubmit: (handler) => {
-                  askQuestionsSubmitRef.current = handler
+              nativeDialog={{
+                request: nativeExtensionDialogRequest,
+                onAnswer: async (answer) => {
+                  if (!nativeExtensionDialogRequest) return false
+                  return await runComposerAction('composer.answer-native-extension-dialog', {
+                    projectId,
+                    sessionPath,
+                    composerMode,
+                    chatGroupId,
+                    requestId: nativeExtensionDialogRequest.id,
+                    ...answer,
+                  })
                 },
               }}
             />
@@ -621,22 +590,6 @@ export function ComposerPromptSurface({
               setDraft={setDraft}
               toggleDictation={toggleDictation}
               togglePendingPickerAttachment={togglePendingPickerAttachment}
-              onSubmitOverride={
-                showAskQuestions ? () => askQuestionsSubmitRef.current?.() ?? true : undefined
-              }
-              onEscapeOverride={
-                showAskQuestions
-                  ? () => {
-                      void answerNativeQuestions(null)
-                      return true
-                    }
-                  : undefined
-              }
-              onArrowNavigationOverride={
-                showAskQuestions
-                  ? (direction) => askQuestionsArrowNavigationRef.current?.(direction) ?? true
-                  : undefined
-              }
             />
           </div>
           {errorMessage ? (

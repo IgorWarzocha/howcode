@@ -25,8 +25,7 @@ import {
   getRuntimeProjectTrustRequest,
   resolveRuntimeProjectTrust,
 } from './isolated-settings-manager.ts'
-import { getNativeAskQuestionsRequest } from './native-ask-questions-state.ts'
-import { getNativeExtensionWidgets } from './native-extension-ui-state.ts'
+import { getNativeExtensionDialog, getNativeExtensionWidgets } from './native-extension-ui-state.ts'
 import type { PiRuntime } from './types.ts'
 
 export const DEFAULT_COMPOSER_THINKING_LEVEL: ComposerThinkingLevel = 'medium'
@@ -308,8 +307,8 @@ export async function buildComposerStateSnapshot(
     currentThinkingLevel: snapshot.currentThinkingLevel,
     availableThinkingLevels: snapshot.availableThinkingLevels,
     queuedPrompts: [],
-    nativeAskQuestionsRequest: null,
     nativeExtensionWidgets: [],
+    nativeExtensionDialogRequest: null,
     projectTrustRequest: snapshot.projectTrustRequest,
     contextUsage: snapshot.contextUsage,
     isCompacting: false,
@@ -336,8 +335,8 @@ export async function buildComposerState(
     currentThinkingLevel: runtime.session.thinkingLevel as ComposerThinkingLevel,
     availableThinkingLevels: mapThinkingLevels(runtime.session.getAvailableThinkingLevels()),
     queuedPrompts: buildSessionQueuedPrompts(runtime.session),
-    nativeAskQuestionsRequest: getNativeAskQuestionsRequest(runtime),
     nativeExtensionWidgets: getNativeExtensionWidgets(runtime),
+    nativeExtensionDialogRequest: getNativeExtensionDialog(runtime),
     projectTrustRequest: getRuntimeProjectTrustRequest({
       ProjectTrustStore,
       agentDir: getAgentDir(),

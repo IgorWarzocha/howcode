@@ -45,7 +45,7 @@ export const desktopActions = [
   'composer.stop',
   'composer.dequeue',
   'composer.reload-settings',
-  'composer.answer-native-questions',
+  'composer.answer-native-extension-dialog',
   'composer.native-extension-shortcut',
   'composer.set-project-trust',
   'inbox.mark-read',

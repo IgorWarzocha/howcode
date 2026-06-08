@@ -1,5 +1,5 @@
 import {
-  answerNativeAskQuestions,
+  answerNativeExtensionDialog,
   closeSkillCreatorSession,
   continueSkillCreatorSession,
   dequeueComposerPrompt,
@@ -46,7 +46,7 @@ type RuntimeHostRequestHandlerMap = {
 }
 
 const runtimeHostRequestHandlers = {
-  answerNativeAskQuestions: (payload) => answerNativeAskQuestions(payload),
+  answerNativeExtensionDialog: (payload) => answerNativeExtensionDialog(payload),
   closeSkillCreatorSession: (payload) => closeSkillCreatorSession(payload),
   continueSkillCreatorSession: (payload) => continueSkillCreatorSession(payload),
   dequeueComposerPrompt: (payload) => dequeueComposerPrompt(payload),

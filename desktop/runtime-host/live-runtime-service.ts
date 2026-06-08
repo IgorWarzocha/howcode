@@ -27,7 +27,7 @@ import {
 import { buildComposerState, buildComposerStateSnapshot } from '../runtime/composer-state.ts'
 import { stopComposerRuntime } from '../runtime/composer-stop.ts'
 import { setRuntimeProjectTrust } from '../runtime/isolated-settings-manager.ts'
-import { answerNativeAskQuestions as answerNativeAskQuestionsForRuntime } from '../runtime/native-ask-questions-state.ts'
+import { answerNativeExtensionDialog as answerNativeExtensionDialogForRuntime } from '../runtime/native-extension-ui-state.ts'
 import type { PiRuntime } from '../runtime/types.ts'
 import { getComposerSessionResources } from './composer-resource-service.ts'
 import {
@@ -293,8 +293,13 @@ export async function dequeueComposerPrompt(
   })
 }
 
-export async function answerNativeAskQuestions(
-  request: ComposerStateRequest & { requestId: string; answers: string[][] | null },
+export async function answerNativeExtensionDialog(
+  request: ComposerStateRequest & {
+    requestId: string
+    cancelled?: boolean | undefined
+    confirmed?: boolean | undefined
+    value?: string | undefined
+  },
 ) {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
   if (!persistedSessionPath) return { ok: false }
@@ -305,7 +310,11 @@ export async function answerNativeAskQuestions(
       settingsCwd: request.composerSessionDir ?? null,
       chatGroupId: request.chatGroupId ?? null,
     })
-    const ok = answerNativeAskQuestionsForRuntime(runtime, request.requestId, request.answers)
+    const ok = answerNativeExtensionDialogForRuntime(runtime, request.requestId, {
+      cancelled: request.cancelled,
+      confirmed: request.confirmed,
+      value: request.value,
+    })
     await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath })
     return { ok }
   } finally {

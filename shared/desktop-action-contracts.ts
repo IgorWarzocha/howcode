@@ -52,6 +52,8 @@ export type DesktopActionPayloadFields = {
   queueId?: string | undefined
   answers?: string[][] | undefined | null
   requestId?: string | undefined
+  confirmed?: boolean | undefined
+  cancelled?: boolean | undefined
   queueSnapshotKey?: string | undefined
   push?: boolean | undefined
   queueIndex?: number | undefined
@@ -282,13 +284,15 @@ export type DesktopActionPayloadMap = {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined
   }
-  'composer.answer-native-questions': {
+  'composer.answer-native-extension-dialog': {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined
     composerMode?: 'chat' | 'code' | null
     chatGroupId?: string | undefined | null | undefined
     requestId: string
-    answers: string[][] | null
+    value?: string | undefined | null
+    confirmed?: boolean | undefined
+    cancelled?: boolean | undefined
   }
   'composer.native-extension-shortcut': {
     projectId?: string | undefined | null | undefined

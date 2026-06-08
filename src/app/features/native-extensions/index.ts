@@ -1,3 +1,2 @@
-export { AskQuestionsCard } from './ask-questions-card'
+export { NativeExtensionDialogCard } from './native-extension-dialog-card'
 export { ProjectTrustCard } from './project-trust-card'
-export { useComposerAskQuestionsActions } from './useComposerAskQuestionsActions'

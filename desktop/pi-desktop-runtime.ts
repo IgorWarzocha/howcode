@@ -271,10 +271,15 @@ export function dequeueComposerPrompt(
   return invokeRuntimeHost('dequeueComposerPrompt', withComposerModeSettings(request))
 }
 
-export function answerNativeAskQuestions(
-  request: ComposerStateRequest & { requestId: string; answers: string[][] | null },
+export function answerNativeExtensionDialog(
+  request: ComposerStateRequest & {
+    requestId: string
+    cancelled?: boolean | undefined
+    confirmed?: boolean | undefined
+    value?: string | undefined
+  },
 ) {
-  return invokeRuntimeHost('answerNativeAskQuestions', withComposerModeSettings(request))
+  return invokeRuntimeHost('answerNativeExtensionDialog', withComposerModeSettings(request))
 }
 
 export function invokeNativeExtensionShortcut(

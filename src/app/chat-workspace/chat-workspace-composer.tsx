@@ -201,8 +201,8 @@ function ChatComposer(props: ChatWorkspaceComposerProps) {
       replyActivityKey={getReplyActivityKey(activeThreadData?.messages ?? [])}
       isCompacting={activeComposerState?.isCompacting ?? false}
       isExtensionCommandRunning={activeComposerState?.isExtensionCommandRunning ?? false}
-      nativeAskQuestionsRequest={activeComposerState?.nativeAskQuestionsRequest ?? null}
       nativeExtensionWidgets={activeComposerState?.nativeExtensionWidgets ?? []}
+      nativeExtensionDialogRequest={activeComposerState?.nativeExtensionDialogRequest ?? null}
       projectTrustRequest={activeComposerState?.projectTrustRequest ?? null}
       nativeSmartBtwEnabled={appSettings.howcodeNativeSmartBtw}
       thinkingLevel={activeComposerState?.currentThinkingLevel ?? 'off'}

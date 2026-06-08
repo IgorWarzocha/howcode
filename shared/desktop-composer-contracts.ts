@@ -10,27 +10,20 @@ export type ComposerQueuedPrompt = {
   text: string
 }
 
-export type NativeAskQuestionOption = {
-  label: string
-  description?: string | undefined
-}
-
-export type NativeAskQuestion = {
-  id: string
-  question: string
-  multiple?: boolean | undefined
-  options: NativeAskQuestionOption[]
-}
-
-export type NativeAskQuestionsRequest = {
-  id: string
-  questions: NativeAskQuestion[]
-}
-
 export type NativeExtensionWidget = {
   key: string
   lines: string[]
   placement?: 'aboveEditor' | 'belowEditor' | 'status' | undefined
+}
+
+export type NativeExtensionDialogRequest = {
+  id: string
+  method: 'select' | 'confirm' | 'input' | 'editor'
+  title: string
+  message?: string | undefined
+  options?: string[] | undefined
+  placeholder?: string | undefined
+  prefill?: string | undefined
 }
 
 export type ProjectTrustRequest = {
@@ -58,8 +51,8 @@ export type ComposerState = {
   currentThinkingLevel: ComposerThinkingLevel
   availableThinkingLevels: ComposerThinkingLevel[]
   queuedPrompts: ComposerQueuedPrompt[]
-  nativeAskQuestionsRequest: NativeAskQuestionsRequest | null
   nativeExtensionWidgets: NativeExtensionWidget[]
+  nativeExtensionDialogRequest: NativeExtensionDialogRequest | null
   projectTrustRequest: ProjectTrustRequest | null
   contextUsage: ComposerContextUsage | null
   isCompacting: boolean

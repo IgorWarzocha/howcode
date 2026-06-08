@@ -280,6 +280,56 @@ async function askInTui(ctx, questions) {
   })
 }
 
+async function askOther(ctx, question) {
+  const value = await ctx.ui.input(question.question, 'Type an answer')
+  return value?.trim() || null
+}
+
+async function askSingleWithPiUi(ctx, question) {
+  const options = question.options.map((option) => option.label)
+  const picked =
+    options.length > 0
+      ? await ctx.ui.select(question.question, [...options, 'Other'])
+      : await ctx.ui.input(question.question, 'Type an answer')
+  if (!picked) return null
+  if (picked !== 'Other') return [picked]
+  const other = await askOther(ctx, question)
+  return other ? [other] : []
+}
+
+async function askMultipleWithPiUi(ctx, question) {
+  const options = question.options.map((option) => option.label)
+  const picked = []
+  while (true) {
+    const next = await ctx.ui.select(question.question, [
+      ...options.filter((option) => !picked.includes(option)),
+      'Other',
+      'Done',
+    ])
+    if (!next) return null
+    if (next === 'Done') return picked
+    if (next === 'Other') {
+      const other = await askOther(ctx, question)
+      if (other) picked.push(other)
+    } else {
+      picked.push(next)
+    }
+  }
+}
+
+async function askWithPiUi(ctx, questions) {
+  if (!ctx.hasUI) return null
+  const answers = []
+  for (const question of questions) {
+    const answer = question.multiple
+      ? await askMultipleWithPiUi(ctx, question)
+      : await askSingleWithPiUi(ctx, question)
+    if (!answer) return null
+    answers.push(answer)
+  }
+  return answers
+}
+
 export function createHowcodeAskQuestionsTool({ defineTool, askInComposer } = {}) {
   if (!defineTool) throw new Error('defineTool is required')
   return defineTool({
@@ -301,7 +351,9 @@ export function createHowcodeAskQuestionsTool({ defineTool, askInComposer } = {}
 
       const answers = askInComposer
         ? await askInComposer(questions, signal)
-        : await askInTui(ctx, questions)
+        : ctx.mode === 'tui'
+          ? await askInTui(ctx, questions)
+          : await askWithPiUi(ctx, questions)
       if (!answers) {
         return { content: [textContent('Questions dismissed.')], isError: true }
       }

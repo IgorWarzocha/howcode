@@ -37,9 +37,7 @@ export type {
   ComposerStateRequest,
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
-  NativeAskQuestion,
-  NativeAskQuestionOption,
-  NativeAskQuestionsRequest,
+  NativeExtensionDialogRequest,
   NativeExtensionWidget,
   ProjectTrustRequest,
 } from './desktop-composer-contracts'

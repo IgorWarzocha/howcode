@@ -1,9 +1,6 @@
 import { normalizeModelRegistryContextWindows } from '../../shared/model-context-window-normalization.ts'
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
-import {
-  ensureNativeExtensionRuntimePath,
-  getNativeExtensionRuntimePaths,
-} from '../native-extensions/native-extension-paths.ts'
+import { getNativeExtensionRuntimePaths } from '../native-extensions/native-extension-paths.ts'
 import { getPiModule } from '../pi-module.ts'
 import {
   abortHeadlessExtensionCommand,
@@ -12,16 +9,13 @@ import {
 import { createArtifactTools } from '../runtime/artifact-tools.ts'
 import { createAttachmentFileTools } from '../runtime/attachment-file-tools.ts'
 import { getRuntimeSystemPrompt } from '../runtime/chat-system-prompt.ts'
-import { buildComposerState } from '../runtime/composer-state.ts'
 import {
   createIsolatedRuntimeResourceLoader,
   createRuntimeSettingsManager,
   resolveRuntimeProjectTrust,
 } from '../runtime/isolated-settings-manager.ts'
 import type { PiRuntime } from '../runtime/types.ts'
-import { publishComposerUpdate } from './live-thread-publisher.ts'
 import { invokeMainRequest } from './main-request-client.ts'
-import { createNativeAskQuestionsTools } from './native-ask-questions-tool.ts'
 import {
   bindRuntimeExtensionHandlers,
   refreshRuntimeExtensionHandlers,
@@ -83,7 +77,6 @@ export async function createLiveRuntime(
     DefaultResourceLoader,
     ProjectTrustStore,
     createAgentSession,
-    defineTool,
     getAgentDir,
     hasProjectTrustInputs,
   } = await getPiModule()
@@ -109,9 +102,7 @@ export async function createLiveRuntime(
     agentDir,
     settingsCwd: options.settingsCwd,
     projectTrusted,
-    additionalExtensions: getNativeExtensionRuntimePaths(
-      enabledNativeExtensions.filter((id) => id !== 'askQuestions'),
-    ),
+    additionalExtensions: getNativeExtensionRuntimePaths(enabledNativeExtensions),
   })
   const sessionDir = options.sessionDir ?? settingsManager.getSessionDir() ?? undefined
   const resourceLoader = await createIsolatedRuntimeResourceLoader({
@@ -123,24 +114,6 @@ export async function createLiveRuntime(
     projectTrusted,
     systemPrompt: getRuntimeSystemPrompt({ settingsCwd: options.settingsCwd }),
   })
-  let runtime: PiRuntime | null = null
-  const nativeAskQuestionTools = enabledNativeExtensions.includes('askQuestions')
-    ? await createNativeAskQuestionsTools({
-        defineTool,
-        extensionPath: ensureNativeExtensionRuntimePath('askQuestions'),
-        getRuntime: () => runtime,
-        onStateChange: () => {
-          if (!runtime) return
-          const activeRuntime = runtime
-          void buildComposerState(activeRuntime).then((composer) => {
-            publishComposerUpdate(composer, {
-              projectId: activeRuntime.cwd,
-              sessionPath: activeRuntime.session.sessionFile,
-            })
-          })
-        },
-      })
-    : []
   const attachmentFileTools = options.settingsCwd
     ? createAttachmentFileTools({
         cwd: options.cwd,
@@ -168,14 +141,11 @@ export async function createLiveRuntime(
               listArtifacts: (conversationId) =>
                 invokeMainRequest('listArtifacts', { conversationId }),
             }),
-            ...nativeAskQuestionTools,
           ],
         }
-      : nativeAskQuestionTools.length > 0
-        ? { customTools: nativeAskQuestionTools }
-        : {}),
+      : {}),
   })
-  runtime = {
+  const runtime = {
     cwd: options.cwd,
     session,
     chatGroupId: options.chatGroupId ?? null,

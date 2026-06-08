@@ -12,7 +12,7 @@ export type {
   DesktopActionInvoker,
   DesktopActionResult,
   InboxThread,
-  NativeAskQuestionsRequest,
+  NativeExtensionDialogRequest,
   ProjectDiffBaseline,
   ProjectDiffRenderMode,
   ProjectGitState,

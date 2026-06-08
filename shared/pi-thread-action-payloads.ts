@@ -345,27 +345,20 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     : null
 }
 
-export function getNativeAskQuestionsRequestId(payload: DesktopActionPayloadInput) {
+export function getNativeExtensionRequestId(payload: DesktopActionPayloadInput) {
   return typeof payload.requestId === 'string' ? payload.requestId : null
-}
-
-export function getNativeAskQuestionsAnswers(
-  payload: DesktopActionPayloadInput,
-): string[][] | null {
-  if (payload.answers === null) return null
-  if (!Array.isArray(payload.answers)) return []
-  return payload.answers.map((answer) =>
-    Array.isArray(answer)
-      ? answer
-          .filter((item): item is string => typeof item === 'string')
-          .map((item) => item.trim())
-          .filter(Boolean)
-      : [],
-  )
 }
 
 export function getNativeExtensionShortcut(payload: DesktopActionPayloadInput) {
   return typeof payload.shortcut === 'string' ? payload.shortcut : null
+}
+
+export function getNativeExtensionDialogAnswer(payload: DesktopActionPayloadInput) {
+  return {
+    cancelled: payload.cancelled === true,
+    confirmed: payload.confirmed === true,
+    value: typeof payload.value === 'string' ? payload.value : undefined,
+  }
 }
 
 export function getProjectTrustDecision(payload: DesktopActionPayloadInput) {

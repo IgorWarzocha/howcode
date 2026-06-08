@@ -121,9 +121,11 @@ export type RuntimeHostRequestMap = {
     queueSnapshotKey: string
     queueMode: Exclude<ComposerStreamingBehavior, 'stop'>
   }
-  answerNativeAskQuestions: ComposerStateRequest & {
+  answerNativeExtensionDialog: ComposerStateRequest & {
     requestId: string
-    answers: string[][] | null
+    cancelled?: boolean | undefined
+    confirmed?: boolean | undefined
+    value?: string | undefined
   }
   invokeNativeExtensionShortcut: ComposerStateRequest & { shortcut: string }
   setProjectTrust: ComposerStateRequest & { trusted: boolean }
@@ -172,7 +174,7 @@ export type RuntimeHostResponseMap = {
   }
   stopComposerRun: { ok: true }
   dequeueComposerPrompt: string | null
-  answerNativeAskQuestions: { ok: boolean }
+  answerNativeExtensionDialog: { ok: boolean }
   invokeNativeExtensionShortcut: { ok: boolean }
   setProjectTrust: { ok: true }
 }

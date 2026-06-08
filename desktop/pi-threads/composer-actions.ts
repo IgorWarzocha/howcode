@@ -12,13 +12,13 @@ import {
   getComposerStreamingBehavior,
   getComposerText,
   getComposerThinkingLevel,
-  getNativeAskQuestionsAnswers,
-  getNativeAskQuestionsRequestId,
+  getNativeExtensionDialogAnswer,
+  getNativeExtensionRequestId,
   getNativeExtensionShortcut,
   getProjectTrustDecision,
 } from '../../shared/pi-thread-action-payloads.ts'
 import {
-  answerNativeAskQuestions,
+  answerNativeExtensionDialog,
   dequeueComposerPrompt,
   invokeNativeExtensionShortcut,
   refreshComposerAfterProjectTrust,
@@ -101,24 +101,24 @@ async function dequeueComposerPromptFromPayload(payload: AnyDesktopActionPayload
   return handledAction({ dequeuedText })
 }
 
-async function answerNativeQuestionsFromPayload(payload: AnyDesktopActionPayload) {
-  const requestId = getNativeAskQuestionsRequestId(payload)
-  if (!requestId) return handledAction()
-  const result = await answerNativeAskQuestions({
-    ...getComposerRequest(payload),
-    requestId,
-    answers: getNativeAskQuestionsAnswers(payload),
-  })
-  return result?.ok
-    ? handledAction()
-    : handledAction({ error: 'Could not answer pending questions.' })
-}
-
 async function invokeNativeExtensionShortcutFromPayload(payload: AnyDesktopActionPayload) {
   const shortcut = getNativeExtensionShortcut(payload)
   if (!shortcut) return handledAction()
   const result = await invokeNativeExtensionShortcut({ ...getComposerRequest(payload), shortcut })
   return result.ok ? handledAction() : handledAction({ error: 'Could not run native shortcut.' })
+}
+
+async function answerNativeExtensionDialogFromPayload(payload: AnyDesktopActionPayload) {
+  const requestId = getNativeExtensionRequestId(payload)
+  if (!requestId) return handledAction()
+  const result = await answerNativeExtensionDialog({
+    ...getComposerRequest(payload),
+    requestId,
+    ...getNativeExtensionDialogAnswer(payload),
+  })
+  return result?.ok
+    ? handledAction()
+    : handledAction({ error: 'Could not answer extension UI request.' })
 }
 
 async function setProjectTrustFromPayload(payload: AnyDesktopActionPayload) {
@@ -154,7 +154,7 @@ const composerActionHandlers = {
     await invalidateRuntimeHostSettings({ sessionPath: getComposerRequest(payload).sessionPath })
     return handledAction()
   },
-  'composer.answer-native-questions': answerNativeQuestionsFromPayload,
+  'composer.answer-native-extension-dialog': answerNativeExtensionDialogFromPayload,
   'composer.native-extension-shortcut': invokeNativeExtensionShortcutFromPayload,
   'composer.set-project-trust': setProjectTrustFromPayload,
 } satisfies Partial<Record<DesktopAction, ComposerActionHandler>>
