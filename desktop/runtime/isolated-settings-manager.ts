@@ -31,8 +31,27 @@ function createIsolatedSettings(
     ...globalSettings,
     ...projectSettings,
     ...Object.fromEntries(
-      isolatedResourceSettingsKeys.map((key) => [key, getSettingsArray(projectSettings[key])]),
+      isolatedResourceSettingsKeys.map((key) => [
+        key,
+        [...getSettingsArray(globalSettings[key]), ...getSettingsArray(projectSettings[key])],
+      ]),
     ),
+  }
+}
+
+function getStoredProjectTrustDecision(options: {
+  ProjectTrustStore: ProjectTrustStoreFactory
+  agentDir: string
+  cwd: string
+}) {
+  const trustStore = new options.ProjectTrustStore(options.agentDir)
+  let currentDir = path.resolve(options.cwd)
+  while (true) {
+    const decision = trustStore.get(currentDir)
+    if (decision !== null) return decision
+    const parentDir = path.dirname(currentDir)
+    if (parentDir === currentDir) return null
+    currentDir = parentDir
   }
 }
 
@@ -124,7 +143,7 @@ export function resolveRuntimeProjectTrust(options: {
   const trustCwd = options.cwd
   if (!options.hasProjectTrustInputs(trustCwd)) return true
 
-  const storedDecision = new options.ProjectTrustStore(options.agentDir).get(trustCwd)
+  const storedDecision = getStoredProjectTrustDecision(options)
   return storedDecision ?? false
 }
 
@@ -135,7 +154,7 @@ export function getRuntimeProjectTrustRequest(options: {
   hasProjectTrustInputs: (cwd: string) => boolean
 }) {
   if (!options.hasProjectTrustInputs(options.cwd)) return null
-  const storedDecision = new options.ProjectTrustStore(options.agentDir).get(options.cwd)
+  const storedDecision = getStoredProjectTrustDecision(options)
   return storedDecision === null ? { cwd: options.cwd } : null
 }
 

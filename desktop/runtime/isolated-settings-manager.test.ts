@@ -17,7 +17,7 @@ function createSettingsManagerFactory(globalSettings: Settings, projectSettings:
 }
 
 describe('createRuntimeSettingsManager', () => {
-  it('isolates configured resources from global settings when using an internal settings cwd', () => {
+  it('keeps global resources and adds internal project resources when using an internal settings cwd', () => {
     const settingsManager = createRuntimeSettingsManager({
       SettingsManager: createSettingsManagerFactory(
         {
@@ -43,17 +43,17 @@ describe('createRuntimeSettingsManager', () => {
 
     expect(settingsManager).toMatchObject({
       model: 'global-model',
-      packages: ['chat-package'],
-      extensions: ['chat-extension'],
-      skills: ['chat-skill'],
-      prompts: ['chat-prompt'],
-      themes: ['chat-theme'],
+      packages: ['global-package', 'chat-package'],
+      extensions: ['global-extension', 'chat-extension'],
+      skills: ['global-skill', 'chat-skill'],
+      prompts: ['global-prompt', 'chat-prompt'],
+      themes: ['global-theme', 'chat-theme'],
     })
   })
 })
 
 describe('resolveRuntimeProjectTrust', () => {
-  function createTrustStoreFactory(decision: boolean | null) {
+  function createTrustStoreFactory(decision: boolean | null | Record<string, boolean | null>) {
     return class ProjectTrustStore {
       agentDir: string
 
@@ -61,8 +61,10 @@ describe('resolveRuntimeProjectTrust', () => {
         this.agentDir = agentDir
       }
 
-      get() {
-        return decision
+      get(cwd: string) {
+        return typeof decision === 'object' && decision !== null
+          ? (decision[cwd] ?? null)
+          : decision
       }
 
       set() {
@@ -111,5 +113,16 @@ describe('resolveRuntimeProjectTrust', () => {
         hasProjectTrustInputs: () => true,
       }),
     ).toBe(false)
+  })
+
+  it('uses trusted ancestor decisions', () => {
+    expect(
+      resolveRuntimeProjectTrust({
+        ProjectTrustStore: createTrustStoreFactory({ '/home/igorw': true }),
+        agentDir: '/agent',
+        cwd: '/home/igorw/Work/howcode',
+        hasProjectTrustInputs: () => true,
+      }),
+    ).toBe(true)
   })
 })
