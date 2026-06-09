@@ -22,6 +22,17 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.window-drag-region {
+  display: none;
+}
+
+:root[data-desktop-platform="darwin"] .window-drag-region {
+  display: block;
+  height: 2.375rem;
+  flex: none;
+  -webkit-app-region: drag;
+}
+
 button,
 input,
 textarea {

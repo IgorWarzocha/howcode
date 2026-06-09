@@ -43,6 +43,14 @@
   padding-top: 2.375rem;
 }
 
+:root[data-desktop-platform="darwin"] .sidebar-shell::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2.375rem;
+  content: "";
+  -webkit-app-region: drag;
+}
+
 .sidebar-mode-nav {
   display: grid;
   gap: 0.125rem;

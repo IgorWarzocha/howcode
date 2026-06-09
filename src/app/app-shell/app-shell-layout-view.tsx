@@ -228,6 +228,7 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
       ref={mainSectionRef}
       className="flex min-w-0 min-h-0 h-full flex-1 flex-col overflow-hidden bg-[color:var(--workspace)]"
     >
+      {sidebarCollapsed || sidebarCompactMode ? <div className="window-drag-region" /> : null}
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         <div
           data-open={takeoverVisible ? 'false' : 'true'}
