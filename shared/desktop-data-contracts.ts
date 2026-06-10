@@ -25,8 +25,8 @@ export type {
   ComposerStateRequest,
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
-  NativeExtensionDialogRequest,
-  NativeExtensionWidget,
+  PiExtensionDialogRequest,
+  PiExtensionWidget,
   ProjectTrustRequest,
 } from './desktop-composer-contracts'
 export type {

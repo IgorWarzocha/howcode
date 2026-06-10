@@ -39,8 +39,6 @@ const FALLBACK_APP_SETTINGS = {
   gitDiffIncludeUntrackedDefault: false,
   projectDeletionMode: 'pi-only',
   useAgentsSkillsPaths: false,
-  howcodeNativeAskQuestions: false,
-  howcodeNativeSmartBtw: false,
   devUpdateBranch: false,
   piTuiTakeover: false,
   hideSidebarSessionCounts: false,
@@ -201,12 +199,11 @@ function ChatComposer(props: ChatWorkspaceComposerProps) {
       replyActivityKey={getReplyActivityKey(activeThreadData?.messages ?? [])}
       isCompacting={activeComposerState?.isCompacting ?? false}
       isExtensionCommandRunning={activeComposerState?.isExtensionCommandRunning ?? false}
-      nativeExtensionWidgets={activeComposerState?.nativeExtensionWidgets ?? []}
-      nativeExtensionStatuses={activeComposerState?.nativeExtensionStatuses ?? []}
-      nativeExtensionShortcuts={activeComposerState?.nativeExtensionShortcuts ?? []}
-      nativeExtensionDialogRequest={activeComposerState?.nativeExtensionDialogRequest ?? null}
+      piExtensionWidgets={activeComposerState?.piExtensionWidgets ?? []}
+      piExtensionStatuses={activeComposerState?.piExtensionStatuses ?? []}
+      piExtensionShortcuts={activeComposerState?.piExtensionShortcuts ?? []}
+      piExtensionDialogRequest={activeComposerState?.piExtensionDialogRequest ?? null}
       projectTrustRequest={activeComposerState?.projectTrustRequest ?? null}
-      nativeSmartBtwEnabled={appSettings.howcodeNativeSmartBtw}
       thinkingLevel={activeComposerState?.currentThinkingLevel ?? 'off'}
       restoredQueuedPrompt={scopedRestoredQueuedPrompt}
       streamingBehaviorPreference={appSettings.composerStreamingBehavior}

@@ -13,7 +13,7 @@
     "pages/src/main.tsx",
     "packages/howcode/bin/howcode.js",
     "packages/howcode/lib/howcode.js",
-    "desktop/native-extensions/howcode-native-ask-questions.ts"
+    "desktop/pi-extensions/howcode-ask-questions.ts"
   ],
   "project": [
     "src/**/*.{ts,tsx}",

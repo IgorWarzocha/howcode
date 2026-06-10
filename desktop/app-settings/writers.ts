@@ -37,8 +37,6 @@ import {
   hideSidebarSessionCountsKey,
   hoverToBlurKey,
   hoverToFocusKey,
-  howcodeNativeAskQuestionsKey,
-  howcodeNativeSmartBtwKey,
   initializeGitOnProjectCreateKey,
   keybindingsKey,
   piTuiTakeoverKey,
@@ -304,14 +302,6 @@ export function setProjectDeletionMode(mode: ProjectDeletionMode) {
 
 export function setUseAgentsSkillsPaths(enabled: boolean) {
   writeAppPreference(useAgentsSkillsPathsKey, JSON.stringify(enabled))
-}
-
-export function setHowcodeNativeAskQuestions(enabled: boolean) {
-  writeAppPreference(howcodeNativeAskQuestionsKey, JSON.stringify(enabled))
-}
-
-export function setHowcodeNativeSmartBtw(enabled: boolean) {
-  writeAppPreference(howcodeNativeSmartBtwKey, JSON.stringify(enabled))
 }
 
 export function setDevUpdateBranch(enabled: boolean) {

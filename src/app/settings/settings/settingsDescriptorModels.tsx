@@ -286,7 +286,7 @@ export function buildModelSettingsDescriptors({
     },
     {
       id: 'extensions.smart-btw-model',
-      category: 'extensions',
+      category: 'models',
       title: 'Smart btw model',
       description: 'Small side-session model for /btw questions.',
       keywords: 'btw side session model provider reasoning thinking extension',

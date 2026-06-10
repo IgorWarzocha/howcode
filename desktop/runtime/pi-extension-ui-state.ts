@@ -1,9 +1,9 @@
 import type { ExtensionUIContext, ExtensionWidgetOptions } from '@earendil-works/pi-coding-agent'
 import type {
-  NativeExtensionDialogRequest,
-  NativeExtensionShortcut,
-  NativeExtensionStatus,
-  NativeExtensionWidget,
+  PiExtensionDialogRequest,
+  PiExtensionShortcut,
+  PiExtensionStatus,
+  PiExtensionWidget,
 } from '../../shared/desktop-contracts.ts'
 import type { PiRuntime } from './types.ts'
 
@@ -27,15 +27,15 @@ const plainTheme = new Proxy(
   },
 ) as ExtensionUIContext['theme']
 
-const widgetsBySession = new Map<string, Map<string, NativeExtensionWidget>>()
-const statusesBySession = new Map<string, Map<string, NativeExtensionStatus>>()
-const dialogsBySession = new Map<string, PendingNativeExtensionDialog>()
+const widgetsBySession = new Map<string, Map<string, PiExtensionWidget>>()
+const statusesBySession = new Map<string, Map<string, PiExtensionStatus>>()
+const dialogsBySession = new Map<string, PendingPiExtensionDialog>()
 
-type PendingNativeExtensionDialog = NativeExtensionDialogRequest & {
-  resolve: (answer: NativeExtensionDialogAnswer) => void
+type PendingPiExtensionDialog = PiExtensionDialogRequest & {
+  resolve: (answer: PiExtensionDialogAnswer) => void
 }
 
-type NativeExtensionDialogAnswer = {
+type PiExtensionDialogAnswer = {
   cancelled?: boolean | undefined
   confirmed?: boolean | undefined
   value?: string | undefined
@@ -101,19 +101,19 @@ function normalizeWidgetContent(content: unknown) {
   return [String(content)]
 }
 
-export function getNativeExtensionWidgets(runtime: PiRuntime): NativeExtensionWidget[] {
+export function getPiExtensionWidgets(runtime: PiRuntime): PiExtensionWidget[] {
   const sessionPath = getSessionPath(runtime)
   if (!sessionPath) return []
   return [...(widgetsBySession.get(sessionPath)?.values() ?? [])]
 }
 
-export function getNativeExtensionStatuses(runtime: PiRuntime): NativeExtensionStatus[] {
+export function getPiExtensionStatuses(runtime: PiRuntime): PiExtensionStatus[] {
   const sessionPath = getSessionPath(runtime)
   if (!sessionPath) return []
   return [...(statusesBySession.get(sessionPath)?.values() ?? [])]
 }
 
-export function getNativeExtensionShortcuts(runtime: PiRuntime): NativeExtensionShortcut[] {
+export function getPiExtensionShortcuts(runtime: PiRuntime): PiExtensionShortcut[] {
   return [...runtime.session.extensionRunner.getShortcuts({} as never).values()].map(
     (shortcut) => ({
       shortcut: String(shortcut.shortcut),
@@ -123,7 +123,7 @@ export function getNativeExtensionShortcuts(runtime: PiRuntime): NativeExtension
   )
 }
 
-export function getNativeExtensionDialog(runtime: PiRuntime): NativeExtensionDialogRequest | null {
+export function getPiExtensionDialog(runtime: PiRuntime): PiExtensionDialogRequest | null {
   const sessionPath = getSessionPath(runtime)
   if (!sessionPath) return null
   const dialog = dialogsBySession.get(sessionPath)
@@ -132,7 +132,7 @@ export function getNativeExtensionDialog(runtime: PiRuntime): NativeExtensionDia
   return request
 }
 
-export function clearNativeExtensionUi(runtime: PiRuntime) {
+export function clearPiExtensionUi(runtime: PiRuntime) {
   const sessionPath = getSessionPath(runtime)
   if (!sessionPath) return
   widgetsBySession.delete(sessionPath)
@@ -141,10 +141,10 @@ export function clearNativeExtensionUi(runtime: PiRuntime) {
   dialogsBySession.delete(sessionPath)
 }
 
-export function answerNativeExtensionDialog(
+export function answerPiExtensionDialog(
   runtime: PiRuntime,
   requestId: string,
-  answer: NativeExtensionDialogAnswer,
+  answer: PiExtensionDialogAnswer,
 ) {
   const sessionPath = getSessionPath(runtime)
   if (!sessionPath) return false
@@ -157,20 +157,20 @@ export function answerNativeExtensionDialog(
 
 function createDialogRequest(
   runtime: PiRuntime,
-  request: Omit<NativeExtensionDialogRequest, 'id'>,
+  request: Omit<PiExtensionDialogRequest, 'id'>,
   onStateChange: () => void,
 ) {
   const sessionPath = getSessionPath(runtime)
-  if (!sessionPath) return Promise.resolve<NativeExtensionDialogAnswer>({ cancelled: true })
+  if (!sessionPath) return Promise.resolve<PiExtensionDialogAnswer>({ cancelled: true })
   const id = `ui_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`
   dialogsBySession.get(sessionPath)?.resolve({ cancelled: true })
-  return new Promise<NativeExtensionDialogAnswer>((resolve) => {
+  return new Promise<PiExtensionDialogAnswer>((resolve) => {
     dialogsBySession.set(sessionPath, { id, ...request, resolve })
     onStateChange()
   }).finally(onStateChange)
 }
 
-export function createNativeExtensionUiContext(
+export function createPiExtensionUiContext(
   runtime: PiRuntime,
   onStateChange: () => void,
 ): ExtensionUIContext {

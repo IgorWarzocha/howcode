@@ -1,5 +1,5 @@
 import {
-  answerNativeExtensionDialog,
+  answerPiExtensionDialog,
   closeSkillCreatorSession,
   continueSkillCreatorSession,
   dequeueComposerPrompt,
@@ -12,7 +12,7 @@ import {
   installPiPackage,
   installPiSkill,
   invalidateRuntimeSettings,
-  invokeNativeExtensionShortcut,
+  invokePiExtensionShortcut,
   listConfiguredPiPackages,
   listConfiguredPiSkills,
   loadPiSettings,
@@ -46,7 +46,7 @@ type RuntimeHostRequestHandlerMap = {
 }
 
 const runtimeHostRequestHandlers = {
-  answerNativeExtensionDialog: (payload) => answerNativeExtensionDialog(payload),
+  answerPiExtensionDialog: (payload) => answerPiExtensionDialog(payload),
   closeSkillCreatorSession: (payload) => closeSkillCreatorSession(payload),
   continueSkillCreatorSession: (payload) => continueSkillCreatorSession(payload),
   dequeueComposerPrompt: (payload) => dequeueComposerPrompt(payload),
@@ -55,7 +55,7 @@ const runtimeHostRequestHandlers = {
   getComposerSkills: (payload) => getComposerSkills(payload.request),
   getComposerSlashCommands: (payload) => getComposerSlashCommands(payload.request),
   getComposerState: (payload) => getComposerState(payload.request),
-  invokeNativeExtensionShortcut: (payload) => invokeNativeExtensionShortcut(payload),
+  invokePiExtensionShortcut: (payload) => invokePiExtensionShortcut(payload),
   getPiSessionStorage: (payload) => getPiSessionStorage(payload.projectPath),
   installPiPackage: (payload) => installPiPackage(payload),
   installPiSkill: (payload) => installPiSkill(payload),

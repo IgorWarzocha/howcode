@@ -27,7 +27,7 @@ import {
 import { buildComposerState, buildComposerStateSnapshot } from '../runtime/composer-state.ts'
 import { stopComposerRuntime } from '../runtime/composer-stop.ts'
 import { setRuntimeProjectTrust } from '../runtime/isolated-settings-manager.ts'
-import { answerNativeExtensionDialog as answerNativeExtensionDialogForRuntime } from '../runtime/native-extension-ui-state.ts'
+import { answerPiExtensionDialog as answerPiExtensionDialogForRuntime } from '../runtime/pi-extension-ui-state.ts'
 import type { PiRuntime } from '../runtime/types.ts'
 import { getComposerSessionResources } from './composer-resource-service.ts'
 import {
@@ -293,7 +293,7 @@ export async function dequeueComposerPrompt(
   })
 }
 
-export async function answerNativeExtensionDialog(
+export async function answerPiExtensionDialog(
   request: ComposerStateRequest & {
     requestId: string
     cancelled?: boolean | undefined
@@ -310,7 +310,7 @@ export async function answerNativeExtensionDialog(
       settingsCwd: request.composerSessionDir ?? null,
       chatGroupId: request.chatGroupId ?? null,
     })
-    const ok = answerNativeExtensionDialogForRuntime(runtime, request.requestId, {
+    const ok = answerPiExtensionDialogForRuntime(runtime, request.requestId, {
       cancelled: request.cancelled,
       confirmed: request.confirmed,
       value: request.value,
@@ -364,7 +364,7 @@ export async function openThreadRuntime(request: ComposerStateRequest) {
   })
 }
 
-export async function invokeNativeExtensionShortcut(
+export async function invokePiExtensionShortcut(
   request: ComposerStateRequest & { shortcut: string },
 ): Promise<{ ok: boolean }> {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath)

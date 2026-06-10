@@ -119,8 +119,6 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'gitDiffIncludeUntrackedDefault'; value: boolean }
   | { key: 'projectDeletionMode'; value: ProjectDeletionMode }
   | { key: 'useAgentsSkillsPaths'; value: boolean }
-  | { key: 'howcodeNativeAskQuestions'; value: boolean }
-  | { key: 'howcodeNativeSmartBtw'; value: boolean }
   | { key: 'devUpdateBranch'; value: boolean }
   | { key: 'betaUpdateBranch'; value: boolean }
   | { key: 'piTuiTakeover'; value: boolean }
@@ -285,7 +283,7 @@ export type DesktopActionPayloadMap = {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined
   }
-  'composer.answer-native-extension-dialog': {
+  'composer.answer-pi-extension-dialog': {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined
     composerMode?: 'chat' | 'code' | null
@@ -295,7 +293,7 @@ export type DesktopActionPayloadMap = {
     confirmed?: boolean | undefined
     cancelled?: boolean | undefined
   }
-  'composer.native-extension-shortcut': {
+  'composer.pi-extension-shortcut': {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined
     composerMode?: 'chat' | 'code' | null

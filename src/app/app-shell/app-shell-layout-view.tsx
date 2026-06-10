@@ -75,8 +75,6 @@ const FALLBACK_APP_SETTINGS = {
   gitDiffIncludeUntrackedDefault: false,
   projectDeletionMode: 'pi-only',
   useAgentsSkillsPaths: false,
-  howcodeNativeAskQuestions: false,
-  howcodeNativeSmartBtw: false,
   devUpdateBranch: false,
   piTuiTakeover: false,
   hideSidebarSessionCounts: false,

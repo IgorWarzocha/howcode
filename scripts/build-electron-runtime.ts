@@ -55,41 +55,41 @@ async function prepareBuildDirectories() {
   await mkdir(path.join(buildRoot, 'desktop'), { recursive: true })
 }
 
-const nativeExtensionFileNames = ['howcode-native-ask-questions.ts', 'howcode-native-smart-btw.mjs']
-const nativeExtensionDirectoryNames = ['smart-btw']
-const nativeExtensionsSourceDir = path.join(projectRoot, 'desktop', 'native-extensions')
-const nativeExtensionsOutputDir = path.join(buildRoot, 'desktop', 'native-extensions')
+const piExtensionFileNames = ['howcode-ask-questions.ts']
+const piExtensionDirectoryNames: string[] = []
+const piExtensionsSourceDir = path.join(projectRoot, 'desktop', 'pi-extensions')
+const piExtensionsOutputDir = path.join(buildRoot, 'desktop', 'pi-extensions')
 
-async function copyNativeExtensionAssets() {
-  await mkdir(nativeExtensionsOutputDir, { recursive: true })
+async function copyPiExtensionAssets() {
+  await mkdir(piExtensionsOutputDir, { recursive: true })
   await Promise.all(
-    nativeExtensionFileNames.map((fileName) =>
+    piExtensionFileNames.map((fileName) =>
       copyFile(
-        path.join(nativeExtensionsSourceDir, fileName),
-        path.join(nativeExtensionsOutputDir, fileName),
+        path.join(piExtensionsSourceDir, fileName),
+        path.join(piExtensionsOutputDir, fileName),
       ),
     ),
   )
   await Promise.all(
-    nativeExtensionDirectoryNames.map((directoryName) =>
+    piExtensionDirectoryNames.map((directoryName) =>
       cp(
-        path.join(nativeExtensionsSourceDir, directoryName),
-        path.join(nativeExtensionsOutputDir, directoryName),
+        path.join(piExtensionsSourceDir, directoryName),
+        path.join(piExtensionsOutputDir, directoryName),
         { recursive: true },
       ),
     ),
   )
 }
 
-async function isNativeExtensionAsset(filename: string | Buffer | null) {
+async function isPiExtensionAsset(filename: string | Buffer | null) {
   if (!filename) return true
   const relativePath = filename.toString()
-  if (nativeExtensionFileNames.includes(relativePath)) return true
+  if (piExtensionFileNames.includes(relativePath)) return true
   const topLevelName = relativePath.split(path.sep)[0]
-  if (topLevelName && nativeExtensionDirectoryNames.includes(topLevelName)) return true
+  if (topLevelName && piExtensionDirectoryNames.includes(topLevelName)) return true
   try {
-    const entry = await stat(path.join(nativeExtensionsSourceDir, relativePath))
-    return entry.isFile() && nativeExtensionFileNames.includes(path.basename(relativePath))
+    const entry = await stat(path.join(piExtensionsSourceDir, relativePath))
+    return entry.isFile() && piExtensionFileNames.includes(path.basename(relativePath))
   } catch {
     return false
   }
@@ -129,16 +129,16 @@ async function runBuild() {
     )
   }
 
-  await copyNativeExtensionAssets()
+  await copyPiExtensionAssets()
   await copyDesktopResources()
 
   if (isWatchMode) {
     console.log('Watching Electron runtime bundles...')
     void (async () => {
-      for await (const event of watch(nativeExtensionsSourceDir, { recursive: true })) {
-        if (await isNativeExtensionAsset(event.filename)) {
-          await copyNativeExtensionAssets()
-          console.log('Copied native extension assets.')
+      for await (const event of watch(piExtensionsSourceDir, { recursive: true })) {
+        if (await isPiExtensionAsset(event.filename)) {
+          await copyPiExtensionAssets()
+          console.log('Copied Pi extension assets.')
         }
       }
     })()

@@ -1,6 +1,4 @@
 import { normalizeModelRegistryContextWindows } from '../../shared/model-context-window-normalization.ts'
-import { getPersistedSessionPath } from '../../shared/session-paths.ts'
-import { getNativeExtensionRuntimePaths } from '../native-extensions/native-extension-paths.ts'
 import { getPiModule } from '../pi-module.ts'
 import {
   abortHeadlessExtensionCommand,
@@ -28,26 +26,7 @@ type LiveRuntimeFactoryHandlers = {
   suspendRuntimeDisposal: (runtimeKey: string) => void
 }
 
-async function getEnabledNativeExtensionsForRuntime(options: {
-  sessionManager?: PiRuntime['session']['sessionManager']
-}) {
-  const sessionPath = options.sessionManager?.getSessionFile?.() ?? null
-  if (sessionPath) {
-    const enabled = await invokeMainRequest('getSessionNativeExtensions', { sessionPath })
-    if (enabled) return enabled
-    const defaultEnabled = await invokeMainRequest('snapshotDefaultNativeExtensions', {})
-    await invokeMainRequest('setSessionNativeExtensions', {
-      sessionPath,
-      enabled: defaultEnabled,
-    })
-    return defaultEnabled
-  }
-
-  return await invokeMainRequest('snapshotDefaultNativeExtensions', {})
-}
-
-async function applyNativeExtensionRuntimeEnvironment(enabledNativeExtensions: string[]) {
-  if (!enabledNativeExtensions.includes('smartBtw')) return
+async function applyPiExtensionRuntimeEnvironment() {
   const cfg = await invokeMainRequest('getNativeSmartBtwConfig', {})
   updateOptionalEnvironmentValue('HOWCODE_SMART_BTW_MODEL', cfg.model)
   updateOptionalEnvironmentValue('HOWCODE_COMPOSER_MODEL', cfg.composerModel)
@@ -92,17 +71,13 @@ export async function createLiveRuntime(
   const modelRegistry = normalizeModelRegistryContextWindows(
     ModelRegistry.create(authStorage, `${agentDir}/models.json`),
   )
-  const enabledNativeExtensions = await getEnabledNativeExtensionsForRuntime(
-    options.sessionManager ? { sessionManager: options.sessionManager } : {},
-  )
-  await applyNativeExtensionRuntimeEnvironment(enabledNativeExtensions)
+  await applyPiExtensionRuntimeEnvironment()
   const settingsManager = createRuntimeSettingsManager({
     SettingsManager,
     cwd: options.cwd,
     agentDir,
     settingsCwd: options.settingsCwd,
     projectTrusted,
-    additionalExtensions: getNativeExtensionRuntimePaths(enabledNativeExtensions),
   })
   const sessionDir = options.sessionDir ?? settingsManager.getSessionDir() ?? undefined
   const resourceLoader = await createIsolatedRuntimeResourceLoader({
@@ -151,16 +126,6 @@ export async function createLiveRuntime(
     chatGroupId: options.chatGroupId ?? null,
     attachmentFileAccess: attachmentFileTools?.access,
   } satisfies PiRuntime
-
-  if (!options.sessionManager) {
-    const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile)
-    if (runtimeKey) {
-      await invokeMainRequest('setSessionNativeExtensions', {
-        sessionPath: runtimeKey,
-        enabled: enabledNativeExtensions,
-      })
-    }
-  }
 
   session.subscribe((event) =>
     handleRuntimeSessionEvent(runtime, event, {

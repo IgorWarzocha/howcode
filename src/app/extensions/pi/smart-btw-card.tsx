@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react'
-import type { NativeExtensionWidget, ThreadCustomMessageRecord } from '../../desktop/types'
+import type { PiExtensionWidget, ThreadCustomMessageRecord } from '../../desktop/types'
 import {
   appToneMutedClass,
   appTypeKickerClass,
@@ -9,7 +9,7 @@ import {
 import { cn } from '../../utils/cn'
 
 type SmartBtwCardProps = {
-  widget: NativeExtensionWidget
+  widget: PiExtensionWidget
   onFold: () => void
   onPrevious: () => void
   onNext: () => void
@@ -116,7 +116,7 @@ function getOpenBtwGenerations(messages: ThreadCustomMessageRecord[]) {
 
 export function createSmartBtwWidgetFromMessages(
   messages: ThreadCustomMessageRecord[] | undefined,
-): NativeExtensionWidget | undefined {
+): PiExtensionWidget | undefined {
   const sessions = getOpenBtwGenerations(messages ?? [])
   if (sessions.length === 0) return undefined
   const active = sessions[0]
@@ -153,7 +153,7 @@ function parseWidgetText(value: string | undefined, fallback: string) {
   }
 }
 
-function parseSmartBtwWidget(widget: NativeExtensionWidget) {
+function parseSmartBtwWidget(widget: PiExtensionWidget) {
   const header = widget.lines[0]?.match(headerPattern)
   const folded = header?.[1] === 'folded'
   const activeIndex = Number(header?.[2] ?? '1')

@@ -3,7 +3,6 @@ import type { SettingDescriptor, SettingsCategory, SettingsCategoryId } from './
 export const settingsCategories: SettingsCategory[] = [
   { id: 'howcode', label: 'Howcode' },
   { id: 'composer', label: 'Composer' },
-  { id: 'extensions', label: 'Extensions' },
   { id: 'models', label: 'Models' },
   { id: 'git-diffs', label: 'Git & Diffs' },
   { id: 'pi', label: 'Pi' },

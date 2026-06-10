@@ -12,15 +12,15 @@ import {
   getComposerStreamingBehavior,
   getComposerText,
   getComposerThinkingLevel,
-  getNativeExtensionDialogAnswer,
-  getNativeExtensionRequestId,
-  getNativeExtensionShortcut,
+  getPiExtensionDialogAnswer,
+  getPiExtensionRequestId,
+  getPiExtensionShortcut,
   getProjectTrustDecision,
 } from '../../shared/pi-thread-action-payloads.ts'
 import {
-  answerNativeExtensionDialog,
+  answerPiExtensionDialog,
   dequeueComposerPrompt,
-  invokeNativeExtensionShortcut,
+  invokePiExtensionShortcut,
   refreshComposerAfterProjectTrust,
   sendComposerPrompt,
   setComposerModel,
@@ -101,20 +101,22 @@ async function dequeueComposerPromptFromPayload(payload: AnyDesktopActionPayload
   return handledAction({ dequeuedText })
 }
 
-async function invokeNativeExtensionShortcutFromPayload(payload: AnyDesktopActionPayload) {
-  const shortcut = getNativeExtensionShortcut(payload)
+async function invokePiExtensionShortcutFromPayload(payload: AnyDesktopActionPayload) {
+  const shortcut = getPiExtensionShortcut(payload)
   if (!shortcut) return handledAction()
-  const result = await invokeNativeExtensionShortcut({ ...getComposerRequest(payload), shortcut })
-  return result.ok ? handledAction() : handledAction({ error: 'Could not run native shortcut.' })
+  const result = await invokePiExtensionShortcut({ ...getComposerRequest(payload), shortcut })
+  return result.ok
+    ? handledAction()
+    : handledAction({ error: 'Could not run Pi extension shortcut.' })
 }
 
-async function answerNativeExtensionDialogFromPayload(payload: AnyDesktopActionPayload) {
-  const requestId = getNativeExtensionRequestId(payload)
+async function answerPiExtensionDialogFromPayload(payload: AnyDesktopActionPayload) {
+  const requestId = getPiExtensionRequestId(payload)
   if (!requestId) return handledAction()
-  const result = await answerNativeExtensionDialog({
+  const result = await answerPiExtensionDialog({
     ...getComposerRequest(payload),
     requestId,
-    ...getNativeExtensionDialogAnswer(payload),
+    ...getPiExtensionDialogAnswer(payload),
   })
   return result?.ok
     ? handledAction()
@@ -154,8 +156,8 @@ const composerActionHandlers = {
     await invalidateRuntimeHostSettings({ sessionPath: getComposerRequest(payload).sessionPath })
     return handledAction()
   },
-  'composer.answer-native-extension-dialog': answerNativeExtensionDialogFromPayload,
-  'composer.native-extension-shortcut': invokeNativeExtensionShortcutFromPayload,
+  'composer.answer-pi-extension-dialog': answerPiExtensionDialogFromPayload,
+  'composer.pi-extension-shortcut': invokePiExtensionShortcutFromPayload,
   'composer.set-project-trust': setProjectTrustFromPayload,
 } satisfies Partial<Record<DesktopAction, ComposerActionHandler>>
 

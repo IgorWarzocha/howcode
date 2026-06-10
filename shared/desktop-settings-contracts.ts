@@ -47,8 +47,6 @@ export type AppSettings = {
   gitDiffIncludeUntrackedDefault: boolean
   projectDeletionMode: ProjectDeletionMode
   useAgentsSkillsPaths: boolean
-  howcodeNativeAskQuestions: boolean
-  howcodeNativeSmartBtw: boolean
   devUpdateBranch: boolean
   piTuiTakeover: boolean
   hideSidebarSessionCounts: boolean

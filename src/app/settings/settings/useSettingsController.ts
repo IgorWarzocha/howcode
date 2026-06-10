@@ -362,16 +362,6 @@ export function useSettingsController({
         key: 'hideSidebarSessionCounts',
         value: !appSettings.hideSidebarSessionCounts,
       }),
-    toggleHowcodeNativeAskQuestions: () =>
-      void onAction('settings.update', {
-        key: 'howcodeNativeAskQuestions',
-        value: !appSettings.howcodeNativeAskQuestions,
-      }),
-    toggleHowcodeNativeSmartBtw: () =>
-      void onAction('settings.update', {
-        key: 'howcodeNativeSmartBtw',
-        value: !appSettings.howcodeNativeSmartBtw,
-      }),
     toggleDevUpdateBranch: () =>
       void onAction('settings.update', {
         key: 'devUpdateBranch',

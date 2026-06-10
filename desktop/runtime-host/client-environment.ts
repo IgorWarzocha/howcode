@@ -104,7 +104,7 @@ export async function getNodeExecutable() {
     return cachedNodeExecutable
   }
 
-  // Do not use Electron's process.execPath here: it would put native extensions back on the
+  // Do not use Electron's process.execPath here: it would put Pi extensions back on the
   // Electron ABI. If discovery reaches this fallback, spawn will fail with a clear host error.
   cachedNodeExecutable = 'node'
   return cachedNodeExecutable

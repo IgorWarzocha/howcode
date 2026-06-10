@@ -1,16 +1,8 @@
 import { accessSync, constants } from 'node:fs'
 import path from 'node:path'
-import { getPersistedSessionPath } from '../../shared/session-paths'
 import type { TerminalOpenRequest } from '../../shared/terminal-contracts.ts'
 import { loadAppSettings } from '../app-settings/readers.ts'
 import { getBundledThemes } from '../bundled-themes.ts'
-import {
-  getNativeExtensionRuntimePaths,
-  type HowcodeNativeExtensionId,
-} from '../native-extensions/native-extension-paths.ts'
-import { getSessionNativeExtensions, setSessionNativeExtensions } from '../thread-state-db.ts'
-
-const howcodeNativeExtensionIds = ['askQuestions', 'smartBtw'] as const
 
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
@@ -31,44 +23,19 @@ function getEnvironmentVariable(env: NodeJS.ProcessEnv, name: string) {
   return env[name]
 }
 
-function getDefaultNativeExtensions(): HowcodeNativeExtensionId[] {
-  const settings = loadAppSettings()
-  return [...(settings.howcodeNativeSmartBtw ? (['smartBtw'] as const) : [])]
-}
-
-function getPiSessionNativeExtensions(sessionPath: string | null): HowcodeNativeExtensionId[] {
-  const sessionExtensions = getSessionNativeExtensions(sessionPath)
-  if (sessionExtensions)
-    return sessionExtensions.filter((id): id is HowcodeNativeExtensionId =>
-      howcodeNativeExtensionIds.includes(id as HowcodeNativeExtensionId),
-    )
-  const defaultExtensions = getDefaultNativeExtensions()
-  if (sessionPath) setSessionNativeExtensions(sessionPath, defaultExtensions)
-  return defaultExtensions
-}
-
 function getPiSessionCommandArgs(sessionPath: string | null | undefined) {
-  const persistedSessionPath = getPersistedSessionPath(sessionPath)
-  const enabledNativeExtensions = getPiSessionNativeExtensions(persistedSessionPath)
-  const args = persistedSessionPath ? ['--session', persistedSessionPath] : []
+  const args = sessionPath ? ['--session', sessionPath] : []
   for (const theme of getBundledThemes()) {
     args.push('--theme', theme.path)
   }
-  for (const extensionPath of getNativeExtensionRuntimePaths(enabledNativeExtensions)) {
-    args.push('--extension', extensionPath)
-  }
+
   return args
 }
 
-function applySmartBtwTerminalEnvironment(
-  env: TerminalEnvironmentVariables,
-  sessionPath: string | null,
-) {
+function applySmartBtwTerminalEnvironment(env: TerminalEnvironmentVariables) {
   delete env.HOWCODE_SMART_BTW_MODEL
   delete env.HOWCODE_COMPOSER_MODEL
   delete env.HOWCODE_SMART_BTW_THINKING
-
-  if (!getPiSessionNativeExtensions(sessionPath).includes('smartBtw')) return
 
   const settings = loadAppSettings()
   const selection = settings.smartBtwModel
@@ -169,6 +136,6 @@ export function resolveTerminalEnv(
   nextEnvVariables.HOWCODE_TERMINAL_CAPABILITIES =
     'ansi,256color,truecolor,unicode,no-terminal-protocols'
   nextEnvVariables.PI_CLEAR_ON_SHRINK = '1'
-  applySmartBtwTerminalEnvironment(nextEnvVariables, getPersistedSessionPath(request.sessionPath))
+  applySmartBtwTerminalEnvironment(nextEnvVariables)
   return nextEnv
 }

@@ -10,24 +10,24 @@ export type ComposerQueuedPrompt = {
   text: string
 }
 
-export type NativeExtensionWidget = {
+export type PiExtensionWidget = {
   key: string
   lines: string[]
   placement?: 'aboveEditor' | 'belowEditor' | 'status' | undefined
 }
 
-export type NativeExtensionStatus = {
+export type PiExtensionStatus = {
   key: string
   text: string
 }
 
-export type NativeExtensionShortcut = {
+export type PiExtensionShortcut = {
   shortcut: string
   description?: string | undefined
   extensionPath: string
 }
 
-export type NativeExtensionDialogRequest = {
+export type PiExtensionDialogRequest = {
   id: string
   method: 'select' | 'confirm' | 'input' | 'editor'
   title: string
@@ -62,10 +62,10 @@ export type ComposerState = {
   currentThinkingLevel: ComposerThinkingLevel
   availableThinkingLevels: ComposerThinkingLevel[]
   queuedPrompts: ComposerQueuedPrompt[]
-  nativeExtensionWidgets: NativeExtensionWidget[]
-  nativeExtensionStatuses: NativeExtensionStatus[]
-  nativeExtensionShortcuts: NativeExtensionShortcut[]
-  nativeExtensionDialogRequest: NativeExtensionDialogRequest | null
+  piExtensionWidgets: PiExtensionWidget[]
+  piExtensionStatuses: PiExtensionStatus[]
+  piExtensionShortcuts: PiExtensionShortcut[]
+  piExtensionDialogRequest: PiExtensionDialogRequest | null
   projectTrustRequest: ProjectTrustRequest | null
   contextUsage: ComposerContextUsage | null
   isCompacting: boolean

@@ -331,8 +331,6 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === 'gitDiffIncludeUntrackedDefault' ||
     payload.key === 'projectDeletionMode' ||
     payload.key === 'useAgentsSkillsPaths' ||
-    payload.key === 'howcodeNativeAskQuestions' ||
-    payload.key === 'howcodeNativeSmartBtw' ||
     payload.key === 'devUpdateBranch' ||
     payload.key === 'betaUpdateBranch' ||
     payload.key === 'piTuiTakeover' ||
@@ -345,15 +343,15 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     : null
 }
 
-export function getNativeExtensionRequestId(payload: DesktopActionPayloadInput) {
+export function getPiExtensionRequestId(payload: DesktopActionPayloadInput) {
   return typeof payload.requestId === 'string' ? payload.requestId : null
 }
 
-export function getNativeExtensionShortcut(payload: DesktopActionPayloadInput) {
+export function getPiExtensionShortcut(payload: DesktopActionPayloadInput) {
   return typeof payload.shortcut === 'string' ? payload.shortcut : null
 }
 
-export function getNativeExtensionDialogAnswer(payload: DesktopActionPayloadInput) {
+export function getPiExtensionDialogAnswer(payload: DesktopActionPayloadInput) {
   return {
     cancelled: payload.cancelled === true,
     confirmed: payload.confirmed === true,

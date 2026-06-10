@@ -376,6 +376,6 @@ export function createHowcodeAskQuestionsTool({ defineTool, askInComposer } = {}
   })
 }
 
-export default function howcodeNativeAskQuestions(pi) {
+export default function howcodeAskQuestions(pi) {
   pi.registerTool(createHowcodeAskQuestionsTool({ defineTool: (tool) => tool }))
 }

@@ -6,8 +6,6 @@ import {
   listArtifacts,
   updateArtifact,
 } from '../artifact-state-db.ts'
-import { howcodeNativeExtensionIds } from '../native-extensions/native-extension-paths.ts'
-import { getSessionNativeExtensions, setSessionNativeExtensions } from '../thread-state-db.ts'
 import type {
   RuntimeHostMainRequestMap,
   RuntimeHostMainRequestMessage,
@@ -19,16 +17,6 @@ type RuntimeHostMainRequestHandlerMap = {
   [TName in RuntimeHostMainRequestName]: (
     payload: RuntimeHostMainRequestMap[TName],
   ) => RuntimeHostMainResponseMap[TName]
-}
-
-function getDefaultNativeExtensions() {
-  const settings = loadAppSettings()
-  return [...(settings.howcodeNativeSmartBtw ? ['smartBtw'] : [])]
-}
-
-function getEffectiveNativeExtensions(enabled: string[] | null) {
-  if (!enabled) return null
-  return enabled.filter((id) => howcodeNativeExtensionIds.includes(id as never))
 }
 
 function getNativeSmartBtwConfig() {
@@ -49,14 +37,8 @@ const runtimeHostMainRequestHandlers = {
   editArtifact: (payload) => editArtifact(payload),
   getArtifact: (payload) => getArtifact(payload.artifactSlug, payload.conversationId),
   getNativeSmartBtwConfig: () => getNativeSmartBtwConfig(),
-  getSessionNativeExtensions: (payload) =>
-    getEffectiveNativeExtensions(getSessionNativeExtensions(payload.sessionPath)),
   listArtifacts: (payload) => listArtifacts(payload.conversationId),
-  setSessionNativeExtensions: (payload) => {
-    setSessionNativeExtensions(payload.sessionPath, payload.enabled)
-    return { ok: true }
-  },
-  snapshotDefaultNativeExtensions: () => getDefaultNativeExtensions(),
+
   updateArtifact: (payload) => updateArtifact(payload),
 } satisfies RuntimeHostMainRequestHandlerMap
 

@@ -1,6 +1,5 @@
 export {
   getProjectStoredUsageTotals,
-  getSessionNativeExtensions,
   getThreadAssistantSnapshot,
   getThreadCwd,
   getThreadDeletionSnapshot,
@@ -56,7 +55,6 @@ export {
   setProjectRepoOrigin,
   setProjectWorktreeCompleted,
   setProjectWorktreeDirectory,
-  setSessionNativeExtensions,
   setThreadDiffPreferences,
   setThreadRunningState,
   syncSessionSummaries,

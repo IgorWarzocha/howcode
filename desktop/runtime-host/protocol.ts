@@ -121,13 +121,13 @@ export type RuntimeHostRequestMap = {
     queueSnapshotKey: string
     queueMode: Exclude<ComposerStreamingBehavior, 'stop'>
   }
-  answerNativeExtensionDialog: ComposerStateRequest & {
+  answerPiExtensionDialog: ComposerStateRequest & {
     requestId: string
     cancelled?: boolean | undefined
     confirmed?: boolean | undefined
     value?: string | undefined
   }
-  invokeNativeExtensionShortcut: ComposerStateRequest & { shortcut: string }
+  invokePiExtensionShortcut: ComposerStateRequest & { shortcut: string }
   setProjectTrust: ComposerStateRequest & { trusted: boolean }
 }
 
@@ -174,15 +174,12 @@ export type RuntimeHostResponseMap = {
   }
   stopComposerRun: { ok: true }
   dequeueComposerPrompt: string | null
-  answerNativeExtensionDialog: { ok: boolean }
-  invokeNativeExtensionShortcut: { ok: boolean }
+  answerPiExtensionDialog: { ok: boolean }
+  invokePiExtensionShortcut: { ok: boolean }
   setProjectTrust: { ok: true }
 }
 
 export type RuntimeHostMainRequestMap = {
-  getSessionNativeExtensions: { sessionPath: string }
-  setSessionNativeExtensions: { sessionPath: string; enabled: string[] }
-  snapshotDefaultNativeExtensions: Record<string, never>
   getNativeSmartBtwConfig: Record<string, never>
   createArtifact: {
     conversationId: string
@@ -205,9 +202,6 @@ export type RuntimeHostMainRequestMap = {
 }
 
 export type RuntimeHostMainResponseMap = {
-  getSessionNativeExtensions: string[] | null
-  setSessionNativeExtensions: { ok: true }
-  snapshotDefaultNativeExtensions: string[]
   getNativeSmartBtwConfig: {
     model: string | null
     composerModel: string | null

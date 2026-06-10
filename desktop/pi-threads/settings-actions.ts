@@ -44,8 +44,6 @@ import {
   setHideSidebarSessionCounts,
   setHoverToBlur,
   setHoverToFocus,
-  setHowcodeNativeAskQuestions,
-  setHowcodeNativeSmartBtw,
   setInitializeGitOnProjectCreate,
   setKeybindings,
   setPiTuiTakeover,
@@ -60,8 +58,6 @@ import {
   setSmartBtwThinkingLevel,
   setUseAgentsSkillsPaths,
 } from '../app-settings/writers.ts'
-import { ensureNativeExtensionRuntimePath } from '../native-extensions/native-extension-paths.ts'
-import { loadPiSettings, updatePiSetting } from '../pi-settings.ts'
 import { restartRuntimeHostsForEnvironmentChange } from '../runtime-host/client-bridge.ts'
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
@@ -133,16 +129,6 @@ function setResettableThinkingLevel(
   if (level) setter(level)
 }
 
-async function setAskQuestionsExtensionEnabled(enabled: boolean) {
-  setHowcodeNativeAskQuestions(enabled)
-  const extensionPath = ensureNativeExtensionRuntimePath('askQuestions')
-  const piSettings = await loadPiSettings()
-  const extensions = piSettings.extensions.filter((item) => item !== extensionPath)
-  if (enabled) extensions.push(extensionPath)
-  await updatePiSetting('extensions', extensions)
-  restartRuntimeHostsForEnvironmentChange()
-}
-
 function setOptionalThinkingLevel(
   payload: AnyDesktopActionPayload,
   setter: (value: NonNullable<ReturnType<typeof getSettingsThinkingLevel>>) => void,
@@ -167,12 +153,7 @@ const settingsUpdateHandlers = {
   projectImportState: (payload) => setProjectImportState(getSettingsProjectImportState(payload)),
   useAgentsSkillsPaths: (payload) =>
     setUseAgentsSkillsPaths(getSettingsBooleanValue(payload) ?? false),
-  howcodeNativeAskQuestions: (payload) =>
-    setAskQuestionsExtensionEnabled(getSettingsBooleanValue(payload) ?? false),
-  howcodeNativeSmartBtw: (payload) => {
-    setHowcodeNativeSmartBtw(getSettingsBooleanValue(payload) ?? false)
-    restartRuntimeHostsForEnvironmentChange()
-  },
+
   devUpdateBranch: (payload) => setDevUpdateBranch(getSettingsBooleanValue(payload) ?? false),
   betaUpdateBranch: (payload) => setDevUpdateBranch(getSettingsBooleanValue(payload) ?? false),
   piTuiTakeover: (payload) => setPiTuiTakeover(getSettingsBooleanValue(payload) ?? false),

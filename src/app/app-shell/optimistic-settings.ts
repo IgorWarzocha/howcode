@@ -39,8 +39,6 @@ const optimisticSettingKeys = new Set([
   'gitDiffIncludeUntrackedDefault',
   'projectDeletionMode',
   'useAgentsSkillsPaths',
-  'howcodeNativeAskQuestions',
-  'howcodeNativeSmartBtw',
   'devUpdateBranch',
   'betaUpdateBranch',
   'piTuiTakeover',
@@ -168,8 +166,6 @@ function applyOptimisticBooleanSetting(
     'gitDiffFileTreeDefaultVisible',
     'gitDiffIncludeUntrackedDefault',
     'useAgentsSkillsPaths',
-    'howcodeNativeAskQuestions',
-    'howcodeNativeSmartBtw',
   ] as const
   if (directBooleanKeys.includes(payload.key as (typeof directBooleanKeys)[number])) {
     nextSettings[payload.key as (typeof directBooleanKeys)[number]] = payload.value

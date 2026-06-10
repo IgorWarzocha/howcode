@@ -234,9 +234,9 @@ export const composerPopoverInputLayerClass = 'z-[120]'
 
 export const composerPopoverExtensionLayerClass = 'z-[100]'
 
-export const nativeExtensionMonoClass = 'native-extension-mono'
+export const piExtensionMonoClass = 'pi-extension-mono'
 
-export const nativeExtensionTextClass = nativeExtensionMonoClass
+export const piExtensionTextClass = piExtensionMonoClass
 
 export const composerPopoverPanelClass =
   'pointer-events-auto scroll-py-1.5 rounded-xl border-0 bg-[color:var(--panel)] p-1.5 shadow-[var(--shadow)]'

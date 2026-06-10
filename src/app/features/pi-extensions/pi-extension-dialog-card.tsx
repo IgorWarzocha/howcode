@@ -1,18 +1,18 @@
 import { Check, X } from 'lucide-react'
 import { useState } from 'react'
-import type { NativeExtensionDialogRequest } from '../../desktop/types'
+import type { PiExtensionDialogRequest } from '../../desktop/types'
 import {
   appToneMutedClass,
   appToneTextClass,
   appTypeGroupTextClass,
   appTypeMetaClass,
   appTypeTinyClass,
-  nativeExtensionTextClass,
+  piExtensionTextClass,
 } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 
-type NativeExtensionDialogCardProps = {
-  request: NativeExtensionDialogRequest
+type PiExtensionDialogCardProps = {
+  request: PiExtensionDialogRequest
   embedded?: boolean | undefined
   onAnswer: (answer: {
     cancelled?: boolean | undefined
@@ -21,20 +21,20 @@ type NativeExtensionDialogCardProps = {
   }) => Promise<boolean> | boolean
 }
 
-const nativeExtensionDialogCardClass =
+const piExtensionDialogCardClass =
   'relative grid w-full content-start gap-2 rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-5 py-3 shadow-none'
-const nativeExtensionDialogContentClass = `relative grid w-full content-start gap-1 ${nativeExtensionTextClass}`
-type NativeExtensionDialogAnswer = Parameters<NativeExtensionDialogCardProps['onAnswer']>[0]
+const piExtensionDialogContentClass = `relative grid w-full content-start gap-1 ${piExtensionTextClass}`
+type PiExtensionDialogAnswer = Parameters<PiExtensionDialogCardProps['onAnswer']>[0]
 
-function NativeExtensionDialogActions({
+function PiExtensionDialogActions({
   busy,
   method,
   onAnswer,
   onSubmitTextValue,
 }: {
   busy: boolean
-  method: NativeExtensionDialogRequest['method']
-  onAnswer: (answer: NativeExtensionDialogAnswer) => void
+  method: PiExtensionDialogRequest['method']
+  onAnswer: (answer: PiExtensionDialogAnswer) => void
   onSubmitTextValue: () => void
 }) {
   const canSubmit = method === 'confirm' || method === 'input' || method === 'editor'
@@ -70,15 +70,15 @@ function NativeExtensionDialogActions({
   )
 }
 
-export function NativeExtensionDialogCard({
+export function PiExtensionDialogCard({
   request,
   embedded = false,
   onAnswer,
-}: NativeExtensionDialogCardProps) {
+}: PiExtensionDialogCardProps) {
   const [busy, setBusy] = useState(false)
   const [value, setValue] = useState(request.prefill ?? '')
 
-  const answer = async (next: NativeExtensionDialogAnswer) => {
+  const answer = async (next: PiExtensionDialogAnswer) => {
     if (busy) return
     setBusy(true)
     const ok = await onAnswer(next)
@@ -88,7 +88,7 @@ export function NativeExtensionDialogCard({
   const submitTextValue = () => answer({ value })
 
   const content = (
-    <div className={embedded ? nativeExtensionDialogContentClass : nativeExtensionDialogCardClass}>
+    <div className={embedded ? piExtensionDialogContentClass : piExtensionDialogCardClass}>
       <div className="grid min-w-0 gap-0.5 pr-6">
         <div className="grid min-w-0 gap-0.5">
           <div className={cn('truncate', appTypeGroupTextClass, appToneTextClass)}>
@@ -136,7 +136,7 @@ export function NativeExtensionDialogCard({
       ) : null}
 
       <div className="absolute right-[-8px] bottom-[-2px] flex justify-end">
-        <NativeExtensionDialogActions
+        <PiExtensionDialogActions
           busy={busy}
           method={request.method}
           onAnswer={(next) => void answer(next)}

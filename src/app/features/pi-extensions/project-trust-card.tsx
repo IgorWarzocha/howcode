@@ -7,7 +7,7 @@ import {
   appTypeGroupTextClass,
   appTypeMetaClass,
   appTypeTinyClass,
-  nativeExtensionTextClass,
+  piExtensionTextClass,
 } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 
@@ -19,7 +19,7 @@ type ProjectTrustCardProps = {
 
 const projectTrustCardClass =
   'relative grid w-full content-start rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-3 py-2.5 shadow-none'
-const projectTrustContentClass = `relative grid w-full content-start ${nativeExtensionTextClass}`
+const projectTrustContentClass = `relative grid w-full content-start ${piExtensionTextClass}`
 
 export function ProjectTrustCard({ request, embedded = false, onDecide }: ProjectTrustCardProps) {
   const [busy, setBusy] = useState<false | 'trust' | 'untrust'>(false)

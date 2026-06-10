@@ -26,11 +26,11 @@ import {
   resolveRuntimeProjectTrust,
 } from './isolated-settings-manager.ts'
 import {
-  getNativeExtensionDialog,
-  getNativeExtensionShortcuts,
-  getNativeExtensionStatuses,
-  getNativeExtensionWidgets,
-} from './native-extension-ui-state.ts'
+  getPiExtensionDialog,
+  getPiExtensionShortcuts,
+  getPiExtensionStatuses,
+  getPiExtensionWidgets,
+} from './pi-extension-ui-state.ts'
 import type { PiRuntime } from './types.ts'
 
 export const DEFAULT_COMPOSER_THINKING_LEVEL: ComposerThinkingLevel = 'medium'
@@ -312,10 +312,10 @@ export async function buildComposerStateSnapshot(
     currentThinkingLevel: snapshot.currentThinkingLevel,
     availableThinkingLevels: snapshot.availableThinkingLevels,
     queuedPrompts: [],
-    nativeExtensionWidgets: [],
-    nativeExtensionStatuses: [],
-    nativeExtensionShortcuts: [],
-    nativeExtensionDialogRequest: null,
+    piExtensionWidgets: [],
+    piExtensionStatuses: [],
+    piExtensionShortcuts: [],
+    piExtensionDialogRequest: null,
     projectTrustRequest: snapshot.projectTrustRequest,
     contextUsage: snapshot.contextUsage,
     isCompacting: false,
@@ -342,10 +342,10 @@ export async function buildComposerState(
     currentThinkingLevel: runtime.session.thinkingLevel as ComposerThinkingLevel,
     availableThinkingLevels: mapThinkingLevels(runtime.session.getAvailableThinkingLevels()),
     queuedPrompts: buildSessionQueuedPrompts(runtime.session),
-    nativeExtensionWidgets: getNativeExtensionWidgets(runtime),
-    nativeExtensionStatuses: getNativeExtensionStatuses(runtime),
-    nativeExtensionShortcuts: getNativeExtensionShortcuts(runtime),
-    nativeExtensionDialogRequest: getNativeExtensionDialog(runtime),
+    piExtensionWidgets: getPiExtensionWidgets(runtime),
+    piExtensionStatuses: getPiExtensionStatuses(runtime),
+    piExtensionShortcuts: getPiExtensionShortcuts(runtime),
+    piExtensionDialogRequest: getPiExtensionDialog(runtime),
     projectTrustRequest: getRuntimeProjectTrustRequest({
       ProjectTrustStore,
       agentDir: getAgentDir(),

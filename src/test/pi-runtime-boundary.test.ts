@@ -7,14 +7,14 @@ const repoRoot = path.resolve(__dirname, '../..')
 const desktopRoot = path.join(repoRoot, 'desktop')
 const askQuestionsExtensionPath = path.join(
   repoRoot,
-  'desktop/native-extensions/howcode-native-ask-questions.ts',
+  'desktop/pi-extensions/howcode-ask-questions.ts',
 )
 const sourceFileExtensionPattern = /\.(?:cts|ts|mts|tsx)$/
 
 const allowedPiRuntimeImportPrefixes = [
   'desktop/runtime-host/',
   'desktop/runtime/',
-  'desktop/native-extensions/',
+  'desktop/pi-extensions/',
   'desktop/service-host.ts',
   'desktop/service-host-runtime.ts',
   'desktop/pi-module.ts',

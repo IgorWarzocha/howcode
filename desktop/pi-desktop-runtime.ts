@@ -271,7 +271,7 @@ export function dequeueComposerPrompt(
   return invokeRuntimeHost('dequeueComposerPrompt', withComposerModeSettings(request))
 }
 
-export function answerNativeExtensionDialog(
+export function answerPiExtensionDialog(
   request: ComposerStateRequest & {
     requestId: string
     cancelled?: boolean | undefined
@@ -279,13 +279,11 @@ export function answerNativeExtensionDialog(
     value?: string | undefined
   },
 ) {
-  return invokeRuntimeHost('answerNativeExtensionDialog', withComposerModeSettings(request))
+  return invokeRuntimeHost('answerPiExtensionDialog', withComposerModeSettings(request))
 }
 
-export function invokeNativeExtensionShortcut(
-  request: ComposerStateRequest & { shortcut: string },
-) {
-  return invokeRuntimeHost('invokeNativeExtensionShortcut', withComposerModeSettings(request))
+export function invokePiExtensionShortcut(request: ComposerStateRequest & { shortcut: string }) {
+  return invokeRuntimeHost('invokePiExtensionShortcut', withComposerModeSettings(request))
 }
 
 export function refreshComposerAfterProjectTrust(request: ComposerStateRequest) {

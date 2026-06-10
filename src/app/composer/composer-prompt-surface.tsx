@@ -5,14 +5,14 @@ import {
   howcodeDismissTransientUiEvent,
   useHowcodeKeybindingCommand,
 } from '../app-shell/keybinding-events'
-import { NativeExtensionDialogCard, ProjectTrustCard } from '../features/native-extensions'
+import { PiExtensionDialogCard, ProjectTrustCard } from '../features/pi-extensions'
 import {
   appToneSubtleClass,
   appTypeCompactWidgetClass,
   appTypeTinyClass,
   composerPanelClass,
   composerPopoverExtensionLayerClass,
-  nativeExtensionTextClass,
+  piExtensionTextClass,
 } from '../ui/classes'
 import { cn } from '../utils/cn'
 import type { ComposerProps } from './composer'
@@ -35,13 +35,13 @@ import { useComposerSlashCommands } from './useComposerSlashCommands'
 import { useGlobalComposerFileDrop } from './useGlobalComposerFileDrop'
 
 const extensionStatusExpandedStorageKey = 'howcode.extensionStatusExpanded'
-const nativeExtensionFoldedStorageKey = 'howcode.nativeExtensionFolded'
-const nativeExtensionStyleMarkerOpen = '\u001b]howcode-style;'
-const nativeExtensionStyleMarkerClose = '\u0007'
-const nativeExtensionBoxGlyphPattern = /([╭╰│─]+)/gu
-const nativeExtensionKeySeparatorPattern = /[-_.]+/u
+const piExtensionFoldedStorageKey = 'howcode.piExtensionFolded'
+const piExtensionStyleMarkerOpen = '\u001b]howcode-style;'
+const piExtensionStyleMarkerClose = '\u0007'
+const piExtensionBoxGlyphPattern = /([╭╰│─]+)/gu
+const piExtensionKeySeparatorPattern = /[-_.]+/u
 
-type NativeExtensionOverlaySection = {
+type PiExtensionOverlaySection = {
   id: string
   name: string
   type: 'dialog' | 'widget'
@@ -55,17 +55,17 @@ type ComposerPromptSurfaceProps = ComposerProps & {
   onOpenGitOps: () => void
 }
 
-type NativeExtensionOverlayWidgetsProps = {
-  widgets: ComposerProps['nativeExtensionWidgets']
+type PiExtensionOverlayWidgetsProps = {
+  widgets: ComposerProps['piExtensionWidgets']
 }
 
-type NativeExtensionOverlayContentProps = NativeExtensionOverlayWidgetsProps & {
+type PiExtensionOverlayContentProps = PiExtensionOverlayWidgetsProps & {
   projectTrust: {
     request: NonNullable<ComposerProps['projectTrustRequest']> | null
     onDecide: (trusted: boolean) => Promise<boolean>
   }
   nativeDialog: {
-    request: NonNullable<ComposerProps['nativeExtensionDialogRequest']> | null
+    request: NonNullable<ComposerProps['piExtensionDialogRequest']> | null
     onAnswer: (answer: {
       cancelled?: boolean | undefined
       confirmed?: boolean | undefined
@@ -79,33 +79,29 @@ function readExtensionStatusExpandedPreference() {
   return window.localStorage.getItem(extensionStatusExpandedStorageKey) === 'true'
 }
 
-function readNativeExtensionFoldedPreference() {
+function readPiExtensionFoldedPreference() {
   if (typeof window === 'undefined') return new Set<string>()
   try {
-    const parsed = JSON.parse(window.localStorage.getItem(nativeExtensionFoldedStorageKey) ?? '[]')
+    const parsed = JSON.parse(window.localStorage.getItem(piExtensionFoldedStorageKey) ?? '[]')
     return new Set(Array.isArray(parsed) ? parsed.filter((item) => typeof item === 'string') : [])
   } catch {
     return new Set<string>()
   }
 }
 
-function writeNativeExtensionFoldedPreference(folded: Set<string>) {
-  window.localStorage.setItem(nativeExtensionFoldedStorageKey, JSON.stringify([...folded]))
+function writePiExtensionFoldedPreference(folded: Set<string>) {
+  window.localStorage.setItem(piExtensionFoldedStorageKey, JSON.stringify([...folded]))
 }
 
-function getNativeExtensionDisplayName(key: string) {
+function getPiExtensionDisplayName(key: string) {
   return key
-    .split(nativeExtensionKeySeparatorPattern)
+    .split(piExtensionKeySeparatorPattern)
     .filter(Boolean)
     .map((part) => part[0]?.toUpperCase() + part.slice(1))
     .join(' ')
 }
 
-function NativeExtensionStatusLine({
-  statuses,
-}: {
-  statuses: ComposerProps['nativeExtensionStatuses']
-}) {
+function PiExtensionStatusLine({ statuses }: { statuses: ComposerProps['piExtensionStatuses'] }) {
   const [expanded, setExpanded] = useState(readExtensionStatusExpandedPreference)
   if (statuses.length === 0) return null
 
@@ -163,18 +159,18 @@ function NativeExtensionStatusLine({
   )
 }
 
-function NativeExtensionOverlayContent({
+function PiExtensionOverlayContent({
   nativeDialog,
   projectTrust,
   widgets,
-}: NativeExtensionOverlayContentProps) {
-  const [foldedSections, setFoldedSections] = useState(readNativeExtensionFoldedPreference)
-  const sections: NativeExtensionOverlaySection[] = [
+}: PiExtensionOverlayContentProps) {
+  const [foldedSections, setFoldedSections] = useState(readPiExtensionFoldedPreference)
+  const sections: PiExtensionOverlaySection[] = [
     ...widgets.map((widget) => ({
       id: `widget:${widget.key}`,
-      name: getNativeExtensionDisplayName(widget.key),
+      name: getPiExtensionDisplayName(widget.key),
       type: 'widget' as const,
-      content: <NativeExtensionWidgetLines widget={widget} />,
+      content: <PiExtensionWidgetLines widget={widget} />,
     })),
     ...(projectTrust.request
       ? [
@@ -199,7 +195,7 @@ function NativeExtensionOverlayContent({
             name: 'Extension',
             type: 'dialog' as const,
             content: (
-              <NativeExtensionDialogCard
+              <PiExtensionDialogCard
                 request={nativeDialog.request}
                 embedded
                 onAnswer={nativeDialog.onAnswer}
@@ -217,7 +213,7 @@ function NativeExtensionOverlayContent({
       const next = new Set(current)
       if (next.has(sectionId)) next.delete(sectionId)
       else next.add(sectionId)
-      writeNativeExtensionFoldedPreference(next)
+      writePiExtensionFoldedPreference(next)
       return next
     })
   }
@@ -226,7 +222,7 @@ function NativeExtensionOverlayContent({
     <div className="grid w-full overflow-visible px-4">
       <div className="grid rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] text-left shadow-none">
         {sections.map((section, index) => (
-          <NativeExtensionOverlaySection
+          <PiExtensionOverlaySection
             key={section.id}
             section={section}
             folded={foldedSections.has(section.id)}
@@ -239,7 +235,7 @@ function NativeExtensionOverlayContent({
   )
 }
 
-function NativeExtensionOverlaySection({
+function PiExtensionOverlaySection({
   divided,
   folded,
   onToggle,
@@ -248,7 +244,7 @@ function NativeExtensionOverlaySection({
   divided: boolean
   folded: boolean
   onToggle: () => void
-  section: NativeExtensionOverlaySection
+  section: PiExtensionOverlaySection
 }) {
   if (!folded) {
     return (
@@ -257,7 +253,7 @@ function NativeExtensionOverlaySection({
           type="button"
           className={cn(
             'absolute top-1 right-2 z-10 inline-flex h-5 w-5 items-center justify-center text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]',
-            nativeExtensionTextClass,
+            piExtensionTextClass,
           )}
           aria-expanded
           aria-label={`Collapse ${section.name}`}
@@ -276,7 +272,7 @@ function NativeExtensionOverlaySection({
         type="button"
         className={cn(
           'grid w-full items-center px-3 py-1.5 pr-9 text-left text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]',
-          nativeExtensionTextClass,
+          piExtensionTextClass,
         )}
         aria-expanded={false}
         aria-label={`Expand ${section.name}`}
@@ -293,14 +289,14 @@ function NativeExtensionOverlaySection({
   )
 }
 
-function NativeExtensionWidgetLines({
+function PiExtensionWidgetLines({
   widget,
 }: {
-  widget: ComposerProps['nativeExtensionWidgets'][number]
+  widget: ComposerProps['piExtensionWidgets'][number]
 }) {
   const lineCounts = new Map<string, number>()
   const boxedByExtension = widget.lines.some((line) =>
-    stripNativeExtensionStyleMarkers(line).trimStart().startsWith('╭'),
+    stripPiExtensionStyleMarkers(line).trimStart().startsWith('╭'),
   )
 
   if (boxedByExtension) {
@@ -308,10 +304,10 @@ function NativeExtensionWidgetLines({
       <pre
         className={cn(
           'm-0 overflow-hidden truncate whitespace-pre text-[11.5px] leading-[1rem] text-[color:var(--muted-2)]/88',
-          nativeExtensionTextClass,
+          piExtensionTextClass,
         )}
       >
-        {renderNativeExtensionWidgetLine(widget.lines.join('\n'), { monoBoxGlyphs: false })}
+        {renderPiExtensionWidgetLine(widget.lines.join('\n'), { monoBoxGlyphs: false })}
       </pre>
     )
   }
@@ -327,28 +323,28 @@ function NativeExtensionWidgetLines({
           appTypeCompactWidgetClass,
         )}
       >
-        {renderNativeExtensionWidgetLine(line)}
+        {renderPiExtensionWidgetLine(line)}
       </div>
     )
   })
 }
 
-function stripNativeExtensionStyleMarkers(line: string) {
+function stripPiExtensionStyleMarkers(line: string) {
   let output = ''
   let cursor = 0
   while (cursor < line.length) {
-    const markerStart = line.indexOf(nativeExtensionStyleMarkerOpen, cursor)
+    const markerStart = line.indexOf(piExtensionStyleMarkerOpen, cursor)
     if (markerStart < 0) return output + line.slice(cursor)
     output += line.slice(cursor, markerStart)
-    const valueStart = markerStart + nativeExtensionStyleMarkerOpen.length
-    const markerEnd = line.indexOf(nativeExtensionStyleMarkerClose, valueStart)
+    const valueStart = markerStart + piExtensionStyleMarkerOpen.length
+    const markerEnd = line.indexOf(piExtensionStyleMarkerClose, valueStart)
     if (markerEnd < 0) return output + line.slice(markerStart)
-    cursor = markerEnd + nativeExtensionStyleMarkerClose.length
+    cursor = markerEnd + piExtensionStyleMarkerClose.length
   }
   return output
 }
 
-function renderNativeExtensionWidgetLine(
+function renderPiExtensionWidgetLine(
   line: string,
   options: { monoBoxGlyphs: boolean } = { monoBoxGlyphs: true },
 ) {
@@ -357,14 +353,14 @@ function renderNativeExtensionWidgetLine(
   let className: string | undefined
 
   while (cursor < line.length) {
-    const markerStart = line.indexOf(nativeExtensionStyleMarkerOpen, cursor)
+    const markerStart = line.indexOf(piExtensionStyleMarkerOpen, cursor)
     if (markerStart < 0) break
     if (markerStart > cursor) segments.push({ className, text: line.slice(cursor, markerStart) })
-    const valueStart = markerStart + nativeExtensionStyleMarkerOpen.length
-    const markerEnd = line.indexOf(nativeExtensionStyleMarkerClose, valueStart)
+    const valueStart = markerStart + piExtensionStyleMarkerOpen.length
+    const markerEnd = line.indexOf(piExtensionStyleMarkerClose, valueStart)
     if (markerEnd < 0) break
-    className = getNativeExtensionStyleClass(line.slice(valueStart, markerEnd))
-    cursor = markerEnd + nativeExtensionStyleMarkerClose.length
+    className = getPiExtensionStyleClass(line.slice(valueStart, markerEnd))
+    cursor = markerEnd + piExtensionStyleMarkerClose.length
   }
 
   if (cursor < line.length) segments.push({ className, text: line.slice(cursor) })
@@ -375,22 +371,22 @@ function renderNativeExtensionWidgetLine(
     const keyBase = `${segment.className ?? 'plain'}:${segment.text}`
     const count = segmentCounts.get(keyBase) ?? 0
     segmentCounts.set(keyBase, count + 1)
-    return renderNativeExtensionWidgetSegment(segment, `${count}:${keyBase}`, options)
+    return renderPiExtensionWidgetSegment(segment, `${count}:${keyBase}`, options)
   })
 }
 
-function renderNativeExtensionWidgetSegment(
+function renderPiExtensionWidgetSegment(
   segment: { className?: string | undefined; text: string },
   keyPrefix: string,
   options: { monoBoxGlyphs: boolean },
 ) {
-  const parts = segment.text.split(nativeExtensionBoxGlyphPattern)
+  const parts = segment.text.split(piExtensionBoxGlyphPattern)
   const partCounts = new Map<string, number>()
   return parts.map((part) => {
     const count = partCounts.get(part) ?? 0
     partCounts.set(part, count + 1)
-    const isBoxGlyph = nativeExtensionBoxGlyphPattern.test(part)
-    nativeExtensionBoxGlyphPattern.lastIndex = 0
+    const isBoxGlyph = piExtensionBoxGlyphPattern.test(part)
+    piExtensionBoxGlyphPattern.lastIndex = 0
     return (
       <span
         key={`${keyPrefix}:${count}:${part}`}
@@ -402,16 +398,16 @@ function renderNativeExtensionWidgetSegment(
   })
 }
 
-function getNativeExtensionStyleClass(marker: string) {
+function getPiExtensionStyleClass(marker: string) {
   if (marker === 'reset') return undefined
   if (marker === 'bold:bold') return 'font-medium text-[color:var(--text)]'
   const [kind, name] = marker.split(':')
-  if (kind === 'bg') return getNativeExtensionBgClass(name)
-  if (kind === 'fg') return getNativeExtensionFgClass(name)
+  if (kind === 'bg') return getPiExtensionBgClass(name)
+  if (kind === 'fg') return getPiExtensionFgClass(name)
   return undefined
 }
 
-function getNativeExtensionFgClass(name: string | undefined) {
+function getPiExtensionFgClass(name: string | undefined) {
   switch (name) {
     case 'accent':
     case 'toolTitle':
@@ -435,7 +431,7 @@ function getNativeExtensionFgClass(name: string | undefined) {
   }
 }
 
-function getNativeExtensionBgClass(name: string | undefined) {
+function getPiExtensionBgClass(name: string | undefined) {
   switch (name) {
     case 'selectedBg':
     case 'customMessageBg':
@@ -445,9 +441,9 @@ function getNativeExtensionBgClass(name: string | undefined) {
   }
 }
 
-function getNativeExtensionShortcutKey(event: KeyboardEvent) {
+function getPiExtensionShortcutKey(event: KeyboardEvent) {
   if (event.isComposing) return null
-  const key = getNativeExtensionShortcutBaseKey(event)
+  const key = getPiExtensionShortcutBaseKey(event)
   if (!key) return null
   const modifiers = [
     event.ctrlKey ? 'ctrl' : null,
@@ -458,7 +454,7 @@ function getNativeExtensionShortcutKey(event: KeyboardEvent) {
   return [...modifiers, key].join('+')
 }
 
-function getNativeExtensionShortcutBaseKey(event: KeyboardEvent) {
+function getPiExtensionShortcutBaseKey(event: KeyboardEvent) {
   if (event.code.startsWith('Key')) return event.code.slice(3).toLowerCase()
   if (event.code.startsWith('Digit')) return event.code.slice(5)
   if (event.code === 'ArrowLeft') return 'left'
@@ -485,10 +481,10 @@ export function ComposerPromptSurface({
   replyActivityKey,
   isCompacting,
   isExtensionCommandRunning,
-  nativeExtensionDialogRequest,
-  nativeExtensionShortcuts,
-  nativeExtensionStatuses,
-  nativeExtensionWidgets,
+  piExtensionDialogRequest,
+  piExtensionShortcuts,
+  piExtensionStatuses,
+  piExtensionWidgets,
   projectTrustRequest,
   thinkingLevel,
   restoredQueuedPrompt,
@@ -592,14 +588,14 @@ export function ComposerPromptSurface({
   const fileMentionPanelRef = useRef<HTMLDivElement>(null)
   const skillMentionPanelRef = useRef<HTMLDivElement>(null)
   const stopButtonBoundaryRef = useRef<HTMLDivElement>(null)
-  const nativeExtensionOverlayRef = useRef<HTMLDivElement>(null)
-  const showNativeDialog = nativeExtensionDialogRequest !== null
+  const piExtensionOverlayRef = useRef<HTMLDivElement>(null)
+  const showNativeDialog = piExtensionDialogRequest !== null
   const showProjectTrust = projectTrustRequest !== null
-  const visibleNativeExtensionWidgets = nativeExtensionWidgets.filter(
+  const visiblePiExtensionWidgets = piExtensionWidgets.filter(
     (widget) => widget.placement === undefined || widget.placement === 'aboveEditor',
   )
-  const showNativeExtensionOverlay =
-    showNativeDialog || showProjectTrust || visibleNativeExtensionWidgets.length > 0
+  const showPiExtensionOverlay =
+    showNativeDialog || showProjectTrust || visiblePiExtensionWidgets.length > 0
   const startNewSession = () => {
     void runComposerAction('thread.new', { projectId, chatGroupId, composerMode })
   }
@@ -662,8 +658,8 @@ export function ComposerPromptSurface({
   useGlobalComposerFileDrop(handleDrop)
 
   useAskQuestionsOverlayHeight({
-    overlayRef: nativeExtensionOverlayRef,
-    visible: showNativeExtensionOverlay,
+    overlayRef: piExtensionOverlayRef,
+    visible: showPiExtensionOverlay,
     onOverlayHeightChange,
   })
 
@@ -710,16 +706,16 @@ export function ComposerPromptSurface({
   })
 
   useEffect(() => {
-    if (nativeExtensionShortcuts.length === 0) return
+    if (piExtensionShortcuts.length === 0) return
     const registeredShortcuts = new Set(
-      nativeExtensionShortcuts.map((shortcut) => shortcut.shortcut.toLowerCase()),
+      piExtensionShortcuts.map((shortcut) => shortcut.shortcut.toLowerCase()),
     )
-    const handleNativeExtensionShortcut = (event: KeyboardEvent) => {
-      const shortcut = getNativeExtensionShortcutKey(event)
+    const handlePiExtensionShortcut = (event: KeyboardEvent) => {
+      const shortcut = getPiExtensionShortcutKey(event)
       if (!(shortcut && registeredShortcuts.has(shortcut))) return
       event.preventDefault()
       event.stopPropagation()
-      void runComposerAction('composer.native-extension-shortcut', {
+      void runComposerAction('composer.pi-extension-shortcut', {
         projectId,
         sessionPath,
         composerMode,
@@ -727,17 +723,9 @@ export function ComposerPromptSurface({
         shortcut,
       })
     }
-    window.addEventListener('keydown', handleNativeExtensionShortcut, { capture: true })
-    return () =>
-      window.removeEventListener('keydown', handleNativeExtensionShortcut, { capture: true })
-  }, [
-    chatGroupId,
-    composerMode,
-    nativeExtensionShortcuts,
-    projectId,
-    runComposerAction,
-    sessionPath,
-  ])
+    window.addEventListener('keydown', handlePiExtensionShortcut, { capture: true })
+    return () => window.removeEventListener('keydown', handlePiExtensionShortcut, { capture: true })
+  }, [chatGroupId, composerMode, piExtensionShortcuts, projectId, runComposerAction, sessionPath])
 
   return (
     <div
@@ -758,16 +746,16 @@ export function ComposerPromptSurface({
       />
 
       <div className="relative grid gap-0 overflow-visible">
-        {showNativeExtensionOverlay ? (
+        {showPiExtensionOverlay ? (
           <div
-            ref={nativeExtensionOverlayRef}
+            ref={piExtensionOverlayRef}
             className={cn(
               'pointer-events-auto absolute right-0 bottom-full left-0 grid gap-2',
               composerPopoverExtensionLayerClass,
             )}
           >
-            <NativeExtensionOverlayContent
-              widgets={visibleNativeExtensionWidgets}
+            <PiExtensionOverlayContent
+              widgets={visiblePiExtensionWidgets}
               projectTrust={{
                 request: projectTrustRequest,
                 onDecide: async (trusted) => {
@@ -781,15 +769,15 @@ export function ComposerPromptSurface({
                 },
               }}
               nativeDialog={{
-                request: nativeExtensionDialogRequest,
+                request: piExtensionDialogRequest,
                 onAnswer: async (answer) => {
-                  if (!nativeExtensionDialogRequest) return false
-                  return await runComposerAction('composer.answer-native-extension-dialog', {
+                  if (!piExtensionDialogRequest) return false
+                  return await runComposerAction('composer.answer-pi-extension-dialog', {
                     projectId,
                     sessionPath,
                     composerMode,
                     chatGroupId,
-                    requestId: nativeExtensionDialogRequest.id,
+                    requestId: piExtensionDialogRequest.id,
                     ...answer,
                   })
                 },
@@ -931,7 +919,7 @@ export function ComposerPromptSurface({
             thinkingLevelLabels={thinkingLevelLabels}
           />
         </section>
-        <NativeExtensionStatusLine statuses={nativeExtensionStatuses} />
+        <PiExtensionStatusLine statuses={piExtensionStatuses} />
       </div>
 
       <ComposerStopRail
