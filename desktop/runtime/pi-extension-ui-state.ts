@@ -34,6 +34,14 @@ const plainTheme = new Proxy(
 const widgetsBySession = new Map<string, Map<string, PiExtensionWidget>>()
 const statusesBySession = new Map<string, Map<string, PiExtensionStatus>>()
 const dialogsBySession = new Map<string, PendingPiExtensionDialog>()
+const editorStatesBySession = new Map<string, PiExtensionEditorState>()
+
+export type PiExtensionEditorState = {
+  text: string
+  selectionStart: number
+  selectionEnd: number
+  changed: boolean
+}
 
 type PendingPiExtensionDialog = PiExtensionDialogRequest & {
   cleanup: () => void
@@ -142,6 +150,21 @@ export function hasPendingPiExtensionDialog(runtime: PiRuntime) {
   return Boolean(sessionPath && dialogsBySession.has(sessionPath))
 }
 
+export function bindPiExtensionEditorState(runtime: PiRuntime, state: PiExtensionEditorState) {
+  const sessionPath = getSessionPath(runtime)
+  if (!sessionPath) return () => state
+  editorStatesBySession.set(sessionPath, state)
+  return () => {
+    editorStatesBySession.delete(sessionPath)
+    return state
+  }
+}
+
+function getEditorState(runtime: PiRuntime) {
+  const sessionPath = getSessionPath(runtime)
+  return sessionPath ? editorStatesBySession.get(sessionPath) : undefined
+}
+
 export function clearPiExtensionUi(runtime: PiRuntime) {
   const sessionPath = getSessionPath(runtime)
   if (!sessionPath) return
@@ -198,6 +221,23 @@ function createDialogRequest(
     dialogsBySession.set(sessionPath, { id, ...request, cleanup, resolve })
     onStateChange()
   }).finally(onStateChange)
+}
+
+function clampEditorSelection(position: number, text: string) {
+  return Math.max(0, Math.min(position, text.length))
+}
+
+function replaceEditorSelection(state: PiExtensionEditorState, text: string) {
+  const selectionStart = clampEditorSelection(state.selectionStart, state.text)
+  const selectionEnd = clampEditorSelection(state.selectionEnd, state.text)
+  const start = Math.min(selectionStart, selectionEnd)
+  const end = Math.max(selectionStart, selectionEnd)
+  const nextText = `${state.text.slice(0, start)}${text}${state.text.slice(end)}`
+  const cursorPosition = start + text.length
+  state.text = nextText
+  state.selectionStart = cursorPosition
+  state.selectionEnd = cursorPosition
+  state.changed = true
 }
 
 export function createPiExtensionUiContext(
@@ -267,9 +307,19 @@ export function createPiExtensionUiContext(
     setHeader: () => undefined,
     setTitle: () => undefined,
     custom: async () => undefined as never,
-    pasteToEditor: () => undefined,
-    setEditorText: () => undefined,
-    getEditorText: () => '',
+    pasteToEditor: (text) => {
+      const state = getEditorState(runtime)
+      if (state) replaceEditorSelection(state, String(text))
+    },
+    setEditorText: (text) => {
+      const state = getEditorState(runtime)
+      if (!state) return
+      state.text = String(text)
+      state.selectionStart = state.text.length
+      state.selectionEnd = state.text.length
+      state.changed = true
+    },
+    getEditorText: () => getEditorState(runtime)?.text ?? '',
     editor: async (title, prefill) => {
       const answer = await createDialogRequest(
         runtime,

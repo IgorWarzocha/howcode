@@ -13,6 +13,7 @@ import {
   getComposerText,
   getComposerThinkingLevel,
   getPiExtensionDialogAnswer,
+  getPiExtensionEditorState,
   getPiExtensionRequestId,
   getPiExtensionShortcut,
   getProjectTrustCwd,
@@ -105,9 +106,17 @@ async function dequeueComposerPromptFromPayload(payload: AnyDesktopActionPayload
 async function invokePiExtensionShortcutFromPayload(payload: AnyDesktopActionPayload) {
   const shortcut = getPiExtensionShortcut(payload)
   if (!shortcut) return handledAction()
-  const result = await invokePiExtensionShortcut({ ...getComposerRequest(payload), shortcut })
+  const result = await invokePiExtensionShortcut({
+    ...getComposerRequest(payload),
+    ...getPiExtensionEditorState(payload),
+    shortcut,
+  })
   return result.ok
-    ? handledAction()
+    ? handledAction({
+        editorSelectionEnd: result.editorSelectionEnd,
+        editorSelectionStart: result.editorSelectionStart,
+        editorText: result.editorText,
+      })
     : handledAction({ error: 'Could not run Pi extension shortcut.' })
 }
 

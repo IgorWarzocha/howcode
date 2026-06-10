@@ -27,7 +27,10 @@ import {
 import { buildComposerState, buildComposerStateSnapshot } from '../runtime/composer-state.ts'
 import { stopComposerRuntime } from '../runtime/composer-stop.ts'
 import { setRuntimeProjectTrust } from '../runtime/isolated-settings-manager.ts'
-import { answerPiExtensionDialog as answerPiExtensionDialogForRuntime } from '../runtime/pi-extension-ui-state.ts'
+import {
+  answerPiExtensionDialog as answerPiExtensionDialogForRuntime,
+  bindPiExtensionEditorState,
+} from '../runtime/pi-extension-ui-state.ts'
 import type { PiRuntime } from '../runtime/types.ts'
 import { getComposerSessionResources } from './composer-resource-service.ts'
 import {
@@ -365,8 +368,18 @@ export async function openThreadRuntime(request: ComposerStateRequest) {
 }
 
 export async function invokePiExtensionShortcut(
-  request: ComposerStateRequest & { shortcut: string },
-): Promise<{ ok: boolean }> {
+  request: ComposerStateRequest & {
+    editorSelectionEnd?: number | undefined
+    editorSelectionStart?: number | undefined
+    editorText?: string | undefined
+    shortcut: string
+  },
+): Promise<{
+  editorSelectionEnd?: number | undefined
+  editorSelectionStart?: number | undefined
+  editorText?: string | undefined
+  ok: boolean
+}> {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
   if (!persistedSessionPath) return { ok: false }
 
@@ -381,13 +394,31 @@ export async function invokePiExtensionShortcut(
         .getShortcuts({} as never)
         .get(request.shortcut.toLowerCase() as never)
       if (!shortcut) return { ok: false }
-      await shortcut.handler(runtime.session.extensionRunner.createContext())
+      const unbindEditorState = bindPiExtensionEditorState(runtime, {
+        changed: false,
+        selectionEnd: request.editorSelectionEnd ?? request.editorText?.length ?? 0,
+        selectionStart: request.editorSelectionStart ?? request.editorText?.length ?? 0,
+        text: request.editorText ?? '',
+      })
+      let editorState: ReturnType<typeof unbindEditorState>
+      try {
+        await shortcut.handler(runtime.session.extensionRunner.createContext())
+      } finally {
+        editorState = unbindEditorState()
+      }
       const composer = await buildComposerState(runtime)
       publishComposerUpdate(composer, {
         projectId: request.projectId ?? runtime.cwd,
         sessionPath: persistedSessionPath,
       })
-      return { ok: true }
+      return editorState.changed
+        ? {
+            editorSelectionEnd: editorState.selectionEnd,
+            editorSelectionStart: editorState.selectionStart,
+            editorText: editorState.text,
+            ok: true,
+          }
+        : { ok: true }
     } finally {
       scheduleRuntimeDisposalForRuntime(runtime)
     }

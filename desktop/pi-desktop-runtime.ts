@@ -282,7 +282,14 @@ export function answerPiExtensionDialog(
   return invokeRuntimeHost('answerPiExtensionDialog', withComposerModeSettings(request))
 }
 
-export function invokePiExtensionShortcut(request: ComposerStateRequest & { shortcut: string }) {
+export function invokePiExtensionShortcut(
+  request: ComposerStateRequest & {
+    editorSelectionEnd?: number | undefined
+    editorSelectionStart?: number | undefined
+    editorText?: string | undefined
+    shortcut: string
+  },
+) {
   return invokeRuntimeHost('invokePiExtensionShortcut', withComposerModeSettings(request))
 }
 

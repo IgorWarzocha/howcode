@@ -467,6 +467,29 @@ function isPiExtensionOverlayHovered(overlay: HTMLElement | null) {
   return Boolean(overlay?.matches(':hover'))
 }
 
+function getComposerTextarea(composerPanel: HTMLElement | null) {
+  const textarea = composerPanel?.querySelector('textarea')
+  return textarea instanceof HTMLTextAreaElement ? textarea : undefined
+}
+
+function applyPiExtensionEditorResult(input: {
+  composerPanel: HTMLElement | null
+  editorSelectionEnd?: number | undefined
+  editorSelectionStart?: number | undefined
+  editorText: string
+  setDraft: (value: string) => void
+}) {
+  input.setDraft(input.editorText)
+  const selectionStart = input.editorSelectionStart ?? input.editorText.length
+  const selectionEnd = input.editorSelectionEnd ?? selectionStart
+  window.requestAnimationFrame(() => {
+    const textarea = getComposerTextarea(input.composerPanel)
+    if (!textarea) return
+    textarea.focus()
+    textarea.setSelectionRange(selectionStart, selectionEnd)
+  })
+}
+
 function getPiExtensionShortcutBaseKey(event: KeyboardEvent) {
   if (event.code.startsWith('Key')) return event.code.slice(3).toLowerCase()
   if (event.code.startsWith('Digit')) return event.code.slice(5)
@@ -727,21 +750,46 @@ export function ComposerPromptSurface({
       const shortcut = getPiExtensionShortcutKey(event)
       if (!(shortcut && registeredShortcuts.has(shortcut))) return
       const overlayHovered = isPiExtensionOverlayHovered(piExtensionOverlayRef.current)
-      if (isPlainPiExtensionShortcut(shortcut) && !overlayHovered) return
-      if (isEditableEventTarget(event.target)) return
+      const plainShortcut = isPlainPiExtensionShortcut(shortcut)
+      if (plainShortcut && !overlayHovered) return
+      if (plainShortcut && isEditableEventTarget(event.target)) return
+      const textarea = getComposerTextarea(composerPanelRef.current)
       event.preventDefault()
       event.stopPropagation()
-      void runComposerAction('composer.pi-extension-shortcut', {
+      void onAction('composer.pi-extension-shortcut', {
         projectId,
         sessionPath,
         composerMode,
         chatGroupId,
+        editorSelectionEnd: textarea?.selectionEnd,
+        editorSelectionStart: textarea?.selectionStart,
+        editorText: textarea?.value ?? draft,
         shortcut,
+      }).then((result) => {
+        const editorText = result?.result?.editorText
+        if (typeof editorText !== 'string') return
+        applyPiExtensionEditorResult({
+          composerPanel: composerPanelRef.current,
+          editorSelectionEnd: result?.result?.editorSelectionEnd,
+          editorSelectionStart: result?.result?.editorSelectionStart,
+          editorText,
+          setDraft,
+        })
       })
     }
     window.addEventListener('keydown', handlePiExtensionShortcut, { capture: true })
     return () => window.removeEventListener('keydown', handlePiExtensionShortcut, { capture: true })
-  }, [chatGroupId, composerMode, piExtensionShortcuts, projectId, runComposerAction, sessionPath])
+  }, [
+    chatGroupId,
+    composerMode,
+    composerPanelRef,
+    draft,
+    onAction,
+    piExtensionShortcuts,
+    projectId,
+    sessionPath,
+    setDraft,
+  ])
 
   return (
     <div

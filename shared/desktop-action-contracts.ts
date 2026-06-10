@@ -49,6 +49,9 @@ export type DesktopActionPayloadFields = {
   worktrees?: { worktreePath: string; branchName?: string | undefined | null }[] | undefined
   createIfMissing?: boolean | undefined
   cwd?: string | undefined
+  editorSelectionEnd?: number | undefined
+  editorSelectionStart?: number | undefined
+  editorText?: string | undefined
   provider?: string | undefined
   queueId?: string | undefined
   answers?: string[][] | undefined | null
@@ -299,6 +302,9 @@ export type DesktopActionPayloadMap = {
     sessionPath?: string | undefined | null | undefined
     composerMode?: 'chat' | 'code' | null
     chatGroupId?: string | undefined | null | undefined
+    editorSelectionEnd?: number | undefined
+    editorSelectionStart?: number | undefined
+    editorText?: string | undefined
     shortcut: string
   }
   'composer.set-project-trust': {
@@ -341,6 +347,9 @@ export type DesktopActionResultData = {
   deletedThreadIds?: string[] | undefined
   didMutate?: boolean | undefined
   error?: string | undefined
+  editorSelectionEnd?: number | undefined
+  editorSelectionStart?: number | undefined
+  editorText?: string | undefined
   failedWorktreeBranchName?: string | undefined | null | undefined
   failedWorktreePath?: string | undefined
   failedThreadIds?: string[] | undefined

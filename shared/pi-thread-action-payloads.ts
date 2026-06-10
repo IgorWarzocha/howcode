@@ -351,6 +351,16 @@ export function getPiExtensionShortcut(payload: DesktopActionPayloadInput) {
   return typeof payload.shortcut === 'string' ? payload.shortcut : null
 }
 
+export function getPiExtensionEditorState(payload: DesktopActionPayloadInput) {
+  return {
+    editorSelectionEnd:
+      typeof payload.editorSelectionEnd === 'number' ? payload.editorSelectionEnd : undefined,
+    editorSelectionStart:
+      typeof payload.editorSelectionStart === 'number' ? payload.editorSelectionStart : undefined,
+    editorText: typeof payload.editorText === 'string' ? payload.editorText : undefined,
+  }
+}
+
 export function getPiExtensionDialogAnswer(payload: DesktopActionPayloadInput) {
   return {
     cancelled: payload.cancelled === true,

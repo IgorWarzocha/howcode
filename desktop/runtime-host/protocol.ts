@@ -127,7 +127,12 @@ export type RuntimeHostRequestMap = {
     confirmed?: boolean | undefined
     value?: string | undefined
   }
-  invokePiExtensionShortcut: ComposerStateRequest & { shortcut: string }
+  invokePiExtensionShortcut: ComposerStateRequest & {
+    editorSelectionEnd?: number | undefined
+    editorSelectionStart?: number | undefined
+    editorText?: string | undefined
+    shortcut: string
+  }
   setProjectTrust: ComposerStateRequest & { cwd: string; trusted: boolean }
 }
 
@@ -175,7 +180,12 @@ export type RuntimeHostResponseMap = {
   stopComposerRun: { ok: true }
   dequeueComposerPrompt: string | null
   answerPiExtensionDialog: { ok: boolean }
-  invokePiExtensionShortcut: { ok: boolean }
+  invokePiExtensionShortcut: {
+    editorSelectionEnd?: number | undefined
+    editorSelectionStart?: number | undefined
+    editorText?: string | undefined
+    ok: boolean
+  }
   setProjectTrust: { ok: true }
 }
 
