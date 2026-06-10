@@ -1,3 +1,4 @@
+import { keybindingCommandIsActiveInMode } from '@howcode/shared/keybindings'
 import { isLocalSessionPath } from '@howcode/shared/session-paths'
 import type { Dispatch, SetStateAction } from 'react'
 import type {
@@ -356,7 +357,9 @@ export function handleDesktopEvent(runtime: DesktopEventSyncRuntime, event: Desk
     return
   }
   if (event.type === 'keybinding-command') {
-    const { activeView } = runtime.desktopEventStateRef.current.workspaceState
+    const { activeView, takeoverVisible } = runtime.desktopEventStateRef.current.workspaceState
+    const mode = takeoverVisible ? 'pi-tui' : 'desktop'
+    if (!keybindingCommandIsActiveInMode(event.commandId, mode)) return
     const allowedOverSettings =
       event.commandId === 'settings.open' ||
       event.commandId === 'sidebar.toggle' ||

@@ -61,6 +61,7 @@ export function useDesktopEventSync({
       selectedThreadId: workspaceState.selectedThreadId,
       selectedSessionPath: workspaceState.selectedSessionPath,
       selectedInboxSessionPath: workspaceState.selectedInboxSessionPath,
+      takeoverVisible: workspaceState.takeoverVisible,
     } satisfies DesktopEventSelectionState,
   })
   const localDraftSessionPathByPersistedSessionPathRef = useRef(new Map<string, string>())
@@ -74,6 +75,7 @@ export function useDesktopEventSync({
         selectedThreadId: workspaceState.selectedThreadId,
         selectedSessionPath: workspaceState.selectedSessionPath,
         selectedInboxSessionPath: workspaceState.selectedInboxSessionPath,
+        takeoverVisible: workspaceState.takeoverVisible,
       },
     }
   }, [
@@ -83,6 +85,7 @@ export function useDesktopEventSync({
     workspaceState.selectedThreadId,
     workspaceState.selectedInboxSessionPath,
     workspaceState.selectedSessionPath,
+    workspaceState.takeoverVisible,
   ])
 
   useEffect(() => {

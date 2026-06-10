@@ -20,7 +20,7 @@ export type DesktopEventSelectionState = Pick<
   | 'selectedThreadId'
   | 'selectedSessionPath'
   | 'selectedInboxSessionPath'
->
+> & { takeoverVisible?: boolean | undefined }
 
 export function getVisibleDesktopSessionPath(workspaceState: DesktopEventSelectionState) {
   return workspaceState.activeView === 'chat' ||

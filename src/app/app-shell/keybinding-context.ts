@@ -1,4 +1,7 @@
-import type { KeybindingCommandId } from '@howcode/shared/keybindings'
+import {
+  type KeybindingCommandId,
+  keybindingCommandIsActiveInMode,
+} from '@howcode/shared/keybindings'
 import type { KeybindingRuntime } from './keybinding-runtime'
 
 export const rendererCommandIds = new Set<KeybindingCommandId>([
@@ -63,10 +66,12 @@ export function appLevelShortcutsAreBlocked(
   commandId: KeybindingCommandId,
   runtime: KeybindingRuntime,
 ) {
+  const { state } = runtime.appController
+  const mode = state.takeoverVisible ? 'pi-tui' : 'desktop'
+  if (!keybindingCommandIsActiveInMode(commandId, mode)) return true
   if (commandId === 'sidebar.toggle' || commandId === 'app.commandPalette') {
     return false
   }
-  const { state } = runtime.appController
   if (commandId === 'composer.focus' || commandId === 'terminal.focus') {
     return (
       state.activeView === 'settings' ||
