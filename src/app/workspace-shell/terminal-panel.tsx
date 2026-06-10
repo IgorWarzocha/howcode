@@ -1,5 +1,5 @@
 import { ComposerDiffBaselineSelector, getGitOpsEntryButtonClass } from '@howcode/native-gitops'
-import { TerminalViewport } from '@howcode/native-terminal'
+import { PiTuiViewport, ShellTerminalViewport } from '@howcode/native-terminal'
 import { GitBranch, PanelRightClose, SquareTerminal } from 'lucide-react'
 import { memo, useRef } from 'react'
 import { HowcodeLogoMark } from '../common/howcode-logo-mark'
@@ -65,16 +65,12 @@ function TerminalPanelComponent({
         className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto] bg-transparent"
         {...getFeatureStatusDataAttributes(statusId)}
       >
-        <TerminalViewport
+        <PiTuiViewport
           projectId={projectId}
           sessionPath={sessionPath}
-          launchMode="pi-session"
           keepAliveMsOnUnmount={PI_TUI_KEEP_ALIVE_MS}
           closeWhenSessionFileIdleMs={PI_TUI_SESSION_FILE_IDLE_POLL_MS}
           backgroundCssVar="--workspace"
-          hoverToFocus={false}
-          hoverToBlur={false}
-          stickToBottomOnOutput={false}
           className="terminal-viewport--flush relative z-0 min-h-0 rounded-none bg-[color:var(--workspace)]"
         />
         <div className={terminalTakeoverFooterClass}>
@@ -129,10 +125,9 @@ function TerminalPanelComponent({
       {...getFeatureStatusDataAttributes(statusId)}
     >
       <div className="min-h-0 min-w-0 flex-1 overflow-hidden bg-[color:var(--sidebar)]">
-        <TerminalViewport
+        <ShellTerminalViewport
           projectId={projectId}
           sessionPath={sessionPath}
-          launchMode="shell"
           preserveSessionOnUnmount
           backgroundCssVar="--sidebar"
           hoverToFocus={hoverToFocus}
