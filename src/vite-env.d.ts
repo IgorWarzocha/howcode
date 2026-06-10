@@ -11,3 +11,4 @@ declare module '*.md?raw' {
 }
 
 declare module '@fontsource-variable/inter'
+declare module '@fontsource-variable/geist-mono'

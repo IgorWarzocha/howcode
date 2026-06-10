@@ -25,6 +25,7 @@ export {
   appTypeBodyClass,
   appTypeCodeBlockClass,
   appTypeCodeClass,
+  appTypeCompactWidgetClass,
   appTypeControlClass,
   appTypeControlNormalClass,
   appTypeControlStrongClass,

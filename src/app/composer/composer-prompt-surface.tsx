@@ -8,7 +8,7 @@ import {
 import { NativeExtensionDialogCard, ProjectTrustCard } from '../features/native-extensions'
 import {
   appToneSubtleClass,
-  appTypeCodeClass,
+  appTypeCompactWidgetClass,
   appTypeTinyClass,
   composerPanelClass,
   composerPopoverExtensionLayerClass,
@@ -34,6 +34,9 @@ import { useComposerSlashCommands } from './useComposerSlashCommands'
 import { useGlobalComposerFileDrop } from './useGlobalComposerFileDrop'
 
 const extensionStatusExpandedStorageKey = 'howcode.extensionStatusExpanded'
+const nativeExtensionStyleMarkerOpen = '\u001b]howcode-style;'
+const nativeExtensionStyleMarkerClose = '\u0007'
+const nativeExtensionBoxGlyphPattern = /([╭╰│─]+)/gu
 
 type ComposerPromptSurfaceProps = ComposerProps & {
   composerPanelRef: RefObject<HTMLDivElement | null>
@@ -155,22 +158,146 @@ function NativeExtensionWidgetLines({
   widget: ComposerProps['nativeExtensionWidgets'][number]
 }) {
   const lineCounts = new Map<string, number>()
+  const boxedByExtension = widget.lines.some((line) =>
+    stripNativeExtensionStyleMarkers(line).trimStart().startsWith('╭'),
+  )
   return (
-    <div className="grid gap-1 rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-3 py-2 text-left shadow-none">
-      {widget.lines.map((line) => {
-        const count = lineCounts.get(line) ?? 0
-        lineCounts.set(line, count + 1)
-        return (
-          <div
-            key={`${widget.key}:${count}:${line}`}
-            className={cn('truncate text-[color:var(--muted)]', appTypeCodeClass)}
-          >
-            {line}
-          </div>
-        )
-      })}
+    <div className="grid gap-0 rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-3 py-1.5 text-left shadow-none">
+      {boxedByExtension ? (
+        <pre className="m-0 overflow-hidden truncate whitespace-pre font-['Geist_Mono','JetBrains_Mono','SFMono-Regular',Consolas,monospace] text-[11.5px] leading-[1rem] text-[color:var(--muted-2)]/88">
+          {renderNativeExtensionWidgetLine(widget.lines.join('\n'), { monoBoxGlyphs: false })}
+        </pre>
+      ) : (
+        widget.lines.map((line) => {
+          const count = lineCounts.get(line) ?? 0
+          lineCounts.set(line, count + 1)
+          return (
+            <div
+              key={`${widget.key}:${count}:${line}`}
+              className={cn(
+                'truncate whitespace-pre text-[color:var(--muted-2)]/88',
+                appTypeCompactWidgetClass,
+              )}
+            >
+              {renderNativeExtensionWidgetLine(line)}
+            </div>
+          )
+        })
+      )}
     </div>
   )
+}
+
+function stripNativeExtensionStyleMarkers(line: string) {
+  let output = ''
+  let cursor = 0
+  while (cursor < line.length) {
+    const markerStart = line.indexOf(nativeExtensionStyleMarkerOpen, cursor)
+    if (markerStart < 0) return output + line.slice(cursor)
+    output += line.slice(cursor, markerStart)
+    const valueStart = markerStart + nativeExtensionStyleMarkerOpen.length
+    const markerEnd = line.indexOf(nativeExtensionStyleMarkerClose, valueStart)
+    if (markerEnd < 0) return output + line.slice(markerStart)
+    cursor = markerEnd + nativeExtensionStyleMarkerClose.length
+  }
+  return output
+}
+
+function renderNativeExtensionWidgetLine(
+  line: string,
+  options: { monoBoxGlyphs: boolean } = { monoBoxGlyphs: true },
+) {
+  const segments: Array<{ className?: string | undefined; text: string }> = []
+  let cursor = 0
+  let className: string | undefined
+
+  while (cursor < line.length) {
+    const markerStart = line.indexOf(nativeExtensionStyleMarkerOpen, cursor)
+    if (markerStart < 0) break
+    if (markerStart > cursor) segments.push({ className, text: line.slice(cursor, markerStart) })
+    const valueStart = markerStart + nativeExtensionStyleMarkerOpen.length
+    const markerEnd = line.indexOf(nativeExtensionStyleMarkerClose, valueStart)
+    if (markerEnd < 0) break
+    className = getNativeExtensionStyleClass(line.slice(valueStart, markerEnd))
+    cursor = markerEnd + nativeExtensionStyleMarkerClose.length
+  }
+
+  if (cursor < line.length) segments.push({ className, text: line.slice(cursor) })
+  if (segments.length === 0) return line
+
+  const segmentCounts = new Map<string, number>()
+  return segments.flatMap((segment) => {
+    const keyBase = `${segment.className ?? 'plain'}:${segment.text}`
+    const count = segmentCounts.get(keyBase) ?? 0
+    segmentCounts.set(keyBase, count + 1)
+    return renderNativeExtensionWidgetSegment(segment, `${count}:${keyBase}`, options)
+  })
+}
+
+function renderNativeExtensionWidgetSegment(
+  segment: { className?: string | undefined; text: string },
+  keyPrefix: string,
+  options: { monoBoxGlyphs: boolean },
+) {
+  const parts = segment.text.split(nativeExtensionBoxGlyphPattern)
+  const partCounts = new Map<string, number>()
+  return parts.map((part) => {
+    const count = partCounts.get(part) ?? 0
+    partCounts.set(part, count + 1)
+    const isBoxGlyph = nativeExtensionBoxGlyphPattern.test(part)
+    nativeExtensionBoxGlyphPattern.lastIndex = 0
+    return (
+      <span
+        key={`${keyPrefix}:${count}:${part}`}
+        className={cn(segment.className, options.monoBoxGlyphs && isBoxGlyph && 'font-mono')}
+      >
+        {part}
+      </span>
+    )
+  })
+}
+
+function getNativeExtensionStyleClass(marker: string) {
+  if (marker === 'reset') return undefined
+  if (marker === 'bold:bold') return 'font-medium text-[color:var(--text)]'
+  const [kind, name] = marker.split(':')
+  if (kind === 'bg') return getNativeExtensionBgClass(name)
+  if (kind === 'fg') return getNativeExtensionFgClass(name)
+  return undefined
+}
+
+function getNativeExtensionFgClass(name: string | undefined) {
+  switch (name) {
+    case 'accent':
+    case 'toolTitle':
+    case 'customMessageLabel':
+      return 'text-[color:var(--accent)]'
+    case 'success':
+      return 'text-[color:var(--success,var(--accent))]'
+    case 'warning':
+      return 'text-[color:var(--warning)]'
+    case 'error':
+      return 'text-[color:var(--danger)]'
+    case 'text':
+    case 'customMessageText':
+      return 'text-[color:var(--text)]'
+    case 'dim':
+      return 'text-[color:var(--muted-2)]/70'
+    case 'muted':
+      return 'text-[color:var(--muted)]/88'
+    default:
+      return undefined
+  }
+}
+
+function getNativeExtensionBgClass(name: string | undefined) {
+  switch (name) {
+    case 'selectedBg':
+    case 'customMessageBg':
+      return 'bg-[color:var(--surface-hover)] text-[color:var(--text)]'
+    default:
+      return undefined
+  }
 }
 
 function NativeExtensionOverlayWidgets({ widgets }: NativeExtensionOverlayWidgetsProps) {

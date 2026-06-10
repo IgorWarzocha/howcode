@@ -7,10 +7,23 @@ import type {
 } from '../../shared/desktop-contracts.ts'
 import type { PiRuntime } from './types.ts'
 
+const styleMarkerOpen = '\u001b]howcode-style;'
+const styleMarkerClose = '\u0007'
+const styleMarkerReset = `${styleMarkerOpen}reset${styleMarkerClose}`
+
+function wrapStyle(kind: 'bg' | 'bold' | 'fg', name: string, value: string) {
+  return `${styleMarkerOpen}${kind}:${name}${styleMarkerClose}${value}${styleMarkerReset}`
+}
+
 const plainTheme = new Proxy(
   {},
   {
-    get: () => (_name: string, value: string) => value,
+    get: (_target, property) => {
+      if (property === 'fg') return (name: string, value: string) => wrapStyle('fg', name, value)
+      if (property === 'bg') return (name: string, value: string) => wrapStyle('bg', name, value)
+      if (property === 'bold') return (value: string) => wrapStyle('bold', 'bold', value)
+      return (_name: string, value: string) => value
+    },
   },
 ) as ExtensionUIContext['theme']
 
@@ -63,6 +76,20 @@ function stripAnsi(text: string) {
       if (code >= 64 && code <= 126) break
       index += 1
     }
+  }
+  return output
+}
+
+function stripStyleMarkers(text: string) {
+  let output = ''
+  let cursor = 0
+  while (cursor < text.length) {
+    const markerStart = text.indexOf(styleMarkerOpen, cursor)
+    if (markerStart < 0) return output + text.slice(cursor)
+    output += text.slice(cursor, markerStart)
+    const markerEnd = text.indexOf(styleMarkerClose, markerStart + styleMarkerOpen.length)
+    if (markerEnd < 0) return output + text.slice(markerStart)
+    cursor = markerEnd + styleMarkerClose.length
   }
   return output
 }
@@ -184,7 +211,8 @@ export function createNativeExtensionUiContext(
       const sessionPath = getSessionPath(runtime)
       if (!sessionPath) return
       const statuses = getSessionStatuses(sessionPath)
-      const normalizedText = text === undefined ? '' : stripAnsi(String(text)).trim()
+      const normalizedText =
+        text === undefined ? '' : stripStyleMarkers(stripAnsi(String(text))).trim()
       if (normalizedText) statuses.set(key, { key, text: normalizedText })
       else statuses.delete(key)
       onStateChange()
