@@ -94,6 +94,7 @@ function getLatestCacheHitRate(session: AgentSession) {
     if (entry.type !== 'message' || entry.message.role !== 'assistant') continue
 
     const usage = entry.message.usage
+    if (!usage) continue
     const latestPromptTokens = usage.input + usage.cacheRead + usage.cacheWrite
     latestCacheHitRate =
       latestPromptTokens > 0 ? (usage.cacheRead / latestPromptTokens) * 100 : null

@@ -1,4 +1,8 @@
-import type { ExtensionUIContext, ExtensionWidgetOptions } from '@earendil-works/pi-coding-agent'
+import type {
+  ExtensionUIContext,
+  ExtensionUIDialogOptions,
+  ExtensionWidgetOptions,
+} from '@earendil-works/pi-coding-agent'
 import type {
   PiExtensionDialogRequest,
   PiExtensionShortcut,
@@ -32,6 +36,7 @@ const statusesBySession = new Map<string, Map<string, PiExtensionStatus>>()
 const dialogsBySession = new Map<string, PendingPiExtensionDialog>()
 
 type PendingPiExtensionDialog = PiExtensionDialogRequest & {
+  cleanup: () => void
   resolve: (answer: PiExtensionDialogAnswer) => void
 }
 
@@ -137,8 +142,16 @@ export function clearPiExtensionUi(runtime: PiRuntime) {
   if (!sessionPath) return
   widgetsBySession.delete(sessionPath)
   statusesBySession.delete(sessionPath)
-  dialogsBySession.get(sessionPath)?.resolve({ cancelled: true })
+  resolvePendingDialog(sessionPath, { cancelled: true })
+}
+
+function resolvePendingDialog(sessionPath: string, answer: PiExtensionDialogAnswer) {
+  const dialog = dialogsBySession.get(sessionPath)
+  if (!dialog) return false
   dialogsBySession.delete(sessionPath)
+  dialog.cleanup()
+  dialog.resolve(answer)
+  return true
 }
 
 export function answerPiExtensionDialog(
@@ -150,22 +163,34 @@ export function answerPiExtensionDialog(
   if (!sessionPath) return false
   const dialog = dialogsBySession.get(sessionPath)
   if (!dialog || dialog.id !== requestId) return false
-  dialogsBySession.delete(sessionPath)
-  dialog.resolve(answer)
-  return true
+  return resolvePendingDialog(sessionPath, answer)
 }
 
 function createDialogRequest(
   runtime: PiRuntime,
   request: Omit<PiExtensionDialogRequest, 'id'>,
   onStateChange: () => void,
+  options?: ExtensionUIDialogOptions,
 ) {
   const sessionPath = getSessionPath(runtime)
   if (!sessionPath) return Promise.resolve<PiExtensionDialogAnswer>({ cancelled: true })
+  if (options?.signal?.aborted) {
+    return Promise.resolve<PiExtensionDialogAnswer>({ cancelled: true })
+  }
   const id = `ui_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`
-  dialogsBySession.get(sessionPath)?.resolve({ cancelled: true })
+  resolvePendingDialog(sessionPath, { cancelled: true })
   return new Promise<PiExtensionDialogAnswer>((resolve) => {
-    dialogsBySession.set(sessionPath, { id, ...request, resolve })
+    const abortDialog = () => {
+      resolvePendingDialog(sessionPath, { cancelled: true })
+      onStateChange()
+    }
+    const timeout = options?.timeout ? setTimeout(abortDialog, options.timeout) : undefined
+    options?.signal?.addEventListener('abort', abortDialog, { once: true })
+    const cleanup = () => {
+      if (timeout) clearTimeout(timeout)
+      options?.signal?.removeEventListener('abort', abortDialog)
+    }
+    dialogsBySession.set(sessionPath, { id, ...request, cleanup, resolve })
     onStateChange()
   }).finally(onStateChange)
 }
@@ -175,27 +200,30 @@ export function createPiExtensionUiContext(
   onStateChange: () => void,
 ): ExtensionUIContext {
   return {
-    select: async (title, options) => {
+    select: async (title, options, dialogOptions) => {
       const answer = await createDialogRequest(
         runtime,
         { method: 'select', title, options },
         onStateChange,
+        dialogOptions,
       )
       return answer.cancelled ? undefined : answer.value
     },
-    confirm: async (title, message) => {
+    confirm: async (title, message, dialogOptions) => {
       const answer = await createDialogRequest(
         runtime,
         { method: 'confirm', title, message },
         onStateChange,
+        dialogOptions,
       )
       return answer.cancelled ? false : answer.confirmed === true
     },
-    input: async (title, placeholder) => {
+    input: async (title, placeholder, dialogOptions) => {
       const answer = await createDialogRequest(
         runtime,
         { method: 'input', title, placeholder },
         onStateChange,
+        dialogOptions,
       )
       return answer.cancelled ? undefined : answer.value
     },
