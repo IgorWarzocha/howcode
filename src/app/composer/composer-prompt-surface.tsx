@@ -8,6 +8,7 @@ import {
 } from '../app-shell/keybinding-events'
 import { NativeExtensionDialogCard, ProjectTrustCard } from '../features/native-extensions'
 import {
+  appToneSubtleClass,
   appTypeCodeClass,
   appTypeTinyClass,
   composerPanelClass,
@@ -95,20 +96,36 @@ function NativeExtensionStatusLine({
       <button
         type="button"
         className={cn(
-          'grid min-w-0 grid-cols-[24px_minmax(0,1fr)_24px] items-start gap-0 rounded-md py-0.5 text-left text-[color:var(--muted-2)]/82 transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--muted)]',
+          'grid min-w-0 grid-cols-[24px_minmax(0,1fr)_24px] items-start gap-0 rounded-md py-0.5 text-left transition-colors hover:bg-[color:var(--surface-hover)]',
           appTypeTinyClass,
+          appToneSubtleClass,
         )}
         aria-expanded={expanded}
         aria-label={expanded ? 'Collapse extension status' : 'Expand extension status'}
         onClick={toggleExpanded}
       >
-        <span className="inline-flex h-4 w-5 shrink-0 items-center justify-center text-[color:var(--muted-2)]/82">
+        <span
+          className={cn(
+            'inline-flex h-4 w-5 shrink-0 items-center justify-center',
+            appToneSubtleClass,
+          )}
+        >
           {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
         </span>
-        <span className={cn('min-w-0', expanded ? 'grid gap-0.5' : 'truncate')}>
+        <span
+          className={cn(
+            'min-w-0',
+            appTypeTinyClass,
+            appToneSubtleClass,
+            expanded ? 'grid gap-0.5' : 'truncate',
+          )}
+        >
           {expanded
             ? statuses.map((status) => (
-                <span key={status.key} className="truncate">
+                <span
+                  key={status.key}
+                  className={cn('truncate', appTypeTinyClass, appToneSubtleClass)}
+                >
                   {status.text}
                 </span>
               ))
