@@ -2,6 +2,10 @@ import path from 'node:path'
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import { getPiModule } from '../pi-module.ts'
 import { buildComposerState } from '../runtime/composer-state.ts'
+import {
+  clearPiExtensionUi,
+  hasPendingPiExtensionDialog,
+} from '../runtime/pi-extension-ui-state.ts'
 import { normalizeRuntimeSettingsCwd } from '../runtime/runtime-settings-cwd.ts'
 import type { PiRuntime } from '../runtime/types.ts'
 import {
@@ -36,21 +40,30 @@ export async function refreshRuntimeExtensionBindings(runtime: PiRuntime) {
   await refreshRuntimeExtensionBindingsWithReload(runtime, reloadRuntimeSettingsIfSafe)
 }
 
+function isLiveRuntimeWorking(runtime: PiRuntime) {
+  return (
+    runtime.session.isStreaming ||
+    runtime.session.isCompacting ||
+    isRuntimeExtensionCommandRunning(runtime)
+  )
+}
+
 async function disposeRuntimeIfIdle(runtimeKey: string, record: RuntimeRecord) {
   const currentRecord = runtimeRecords.get(runtimeKey)
   if (!currentRecord || currentRecord !== record) return
+  record.disposeTimeout = null
   try {
     const runtime = await record.runtimePromise
-    if (
-      runtime.session.isStreaming ||
-      runtime.session.isCompacting ||
-      isRuntimeExtensionCommandRunning(runtime)
-    ) {
+    if (hasPendingPiExtensionDialog(runtime)) return
+    if (isLiveRuntimeWorking(runtime)) {
       scheduleRuntimeDisposal(runtimeKey)
       return
     }
+    clearPiExtensionUi(runtime)
     runtime.session.dispose()
-  } finally {
+    if (runtimeRecords.get(runtimeKey) === record) runtimeRecords.delete(runtimeKey)
+    staleRuntimeGenerations.delete(runtimeKey)
+  } catch {
     if (runtimeRecords.get(runtimeKey) === record) runtimeRecords.delete(runtimeKey)
     staleRuntimeGenerations.delete(runtimeKey)
   }
@@ -117,6 +130,7 @@ export async function getOrCreateRuntimeForSessionPath(
       return await existingRuntime.runtimePromise
     } else {
       const runtime = await existingRuntime.runtimePromise
+      clearPiExtensionUi(runtime)
       runtime.session.dispose()
       runtimeRecords.delete(persistedSessionPath)
     }
@@ -306,6 +320,7 @@ async function disposeRuntimeRecord(runtimeKey: string, record: RuntimeRecord, r
     // Continue disposal; the workspace is being torn down.
   }
   try {
+    clearPiExtensionUi(runtime)
     runtime.session.dispose()
   } catch {
     // Ignore shutdown races.
@@ -353,7 +368,9 @@ export async function disposeAllRuntimeHosts() {
     entries.map(async ([runtimeKey, record]) => {
       clearRuntimeDisposeTimeout(runtimeKey)
       try {
-        ;(await record.runtimePromise).session.dispose()
+        const runtime = await record.runtimePromise
+        clearPiExtensionUi(runtime)
+        runtime.session.dispose()
       } catch {
         // Ignore shutdown races.
       }

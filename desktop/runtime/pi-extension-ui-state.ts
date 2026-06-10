@@ -137,6 +137,11 @@ export function getPiExtensionDialog(runtime: PiRuntime): PiExtensionDialogReque
   return request
 }
 
+export function hasPendingPiExtensionDialog(runtime: PiRuntime) {
+  const sessionPath = getSessionPath(runtime)
+  return Boolean(sessionPath && dialogsBySession.has(sessionPath))
+}
+
 export function clearPiExtensionUi(runtime: PiRuntime) {
   const sessionPath = getSessionPath(runtime)
   if (!sessionPath) return
