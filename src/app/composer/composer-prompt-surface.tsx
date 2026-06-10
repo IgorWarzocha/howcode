@@ -114,7 +114,7 @@ function NativeExtensionStatusLine({
         </span>
         <span
           className={cn(
-            'min-w-0 pt-[2px]',
+            'min-w-0 pt-[2px] pl-px',
             appTypeTinyClass,
             appToneSubtleClass,
             expanded ? 'grid gap-0.5' : 'truncate',
