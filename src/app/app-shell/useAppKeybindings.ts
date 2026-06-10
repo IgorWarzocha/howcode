@@ -13,7 +13,10 @@ import {
   rendererCommandIds,
 } from './keybinding-context'
 import type { HowcodeKeybindingCommandDetail } from './keybinding-events'
-import { howcodeKeybindingCommandEvent } from './keybinding-events'
+import {
+  dispatchHowcodeKeybindingCommand,
+  howcodeKeybindingCommandEvent,
+} from './keybinding-events'
 import type { KeybindingRuntime } from './keybinding-runtime'
 import type { AppShellController } from './useAppShellController'
 
@@ -33,7 +36,10 @@ function handleEscape(
   lastEscapeAtRef.current = now
   const commandId = runtime.acceleratorToCommand.get('Escape Escape')
   if (!(isDoubleEscape && commandId === 'agent.interrupt')) return
-  if (!stopActiveRun(runtime)) return
+  if (!stopActiveRun(runtime)) {
+    if (appLevelShortcutsAreBlocked('agent.interrupt', runtime)) return
+    if (!dispatchHowcodeKeybindingCommand('agent.interrupt')) return
+  }
   event.preventDefault()
   event.stopImmediatePropagation()
 }

@@ -804,6 +804,12 @@ export function ComposerPromptSurface({
     const cursorPosition = textarea.value.length
     textarea.setSelectionRange(cursorPosition, cursorPosition)
   })
+  useHowcodeKeybindingCommand('agent.interrupt', (event) => {
+    if (composerWorking) return
+    event.preventDefault()
+    dismissComposerTransientUi()
+    openSessionTree()
+  })
   useHowcodeKeybindingCommand('dictation.toggle', (event) => {
     if (!(showDictationButton && !inputLocked)) return
     event.preventDefault()
