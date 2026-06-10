@@ -28,7 +28,7 @@ import {
   setProjectTrust,
   stopComposerRun,
 } from '../pi-desktop-runtime.ts'
-import { invalidateRuntimeHostSettings } from '../runtime-host/client-bridge.ts'
+import { invalidateRuntimeHostSettings, invokeRuntimeHost } from '../runtime-host/client-bridge.ts'
 import { assignThreadBranch, dismissInboxThreadAfterReply } from '../thread-state-db.ts'
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
@@ -129,7 +129,10 @@ async function setProjectTrustFromPayload(payload: AnyDesktopActionPayload) {
   if (trusted === null || !composerRequest.projectId) return handledAction()
 
   await setProjectTrust({ ...composerRequest, trusted })
-  await invalidateRuntimeHostSettings({ sessionPath: composerRequest.sessionPath })
+  await invokeRuntimeHost('disposeRuntimeHosts', {
+    projectPath: composerRequest.projectId,
+    sessionPaths: composerRequest.sessionPath ? [composerRequest.sessionPath] : [],
+  })
   const composer = await refreshComposerAfterProjectTrust(composerRequest)
   return handledAction({ composer })
 }

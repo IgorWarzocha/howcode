@@ -1,5 +1,5 @@
 import { Check, X } from 'lucide-react'
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { PiExtensionDialogRequest } from '../../desktop/types'
 import {
   appToneMutedClass,
@@ -78,14 +78,29 @@ export function PiExtensionDialogCard({
   const [busy, setBusy] = useState(false)
   const [value, setValue] = useState(request.prefill ?? '')
 
-  const answer = async (next: PiExtensionDialogAnswer) => {
-    if (busy) return
-    setBusy(true)
-    const ok = await onAnswer(next)
-    if (!ok) setBusy(false)
-  }
+  const answer = useCallback(
+    async (next: PiExtensionDialogAnswer) => {
+      if (busy) return
+      setBusy(true)
+      const ok = await onAnswer(next)
+      if (!ok) setBusy(false)
+    },
+    [busy, onAnswer],
+  )
 
   const submitTextValue = () => answer({ value })
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      event.stopPropagation()
+      void answer(request.method === 'confirm' ? { confirmed: false } : { cancelled: true })
+    }
+
+    window.addEventListener('keydown', handleEscape, { capture: true })
+    return () => window.removeEventListener('keydown', handleEscape, { capture: true })
+  }, [answer, request.method])
 
   const content = (
     <div className={embedded ? piExtensionDialogContentClass : piExtensionDialogCardClass}>

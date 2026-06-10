@@ -454,6 +454,19 @@ function getPiExtensionShortcutKey(event: KeyboardEvent) {
   return [...modifiers, key].join('+')
 }
 
+function isPlainPiExtensionShortcut(shortcut: string) {
+  return !shortcut.includes('+')
+}
+
+function isEditableEventTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false
+  return Boolean(target.closest('input, textarea, select, [contenteditable="true"]'))
+}
+
+function isPiExtensionOverlayHovered(overlay: HTMLElement | null) {
+  return Boolean(overlay?.matches(':hover'))
+}
+
 function getPiExtensionShortcutBaseKey(event: KeyboardEvent) {
   if (event.code.startsWith('Key')) return event.code.slice(3).toLowerCase()
   if (event.code.startsWith('Digit')) return event.code.slice(5)
@@ -713,6 +726,9 @@ export function ComposerPromptSurface({
     const handlePiExtensionShortcut = (event: KeyboardEvent) => {
       const shortcut = getPiExtensionShortcutKey(event)
       if (!(shortcut && registeredShortcuts.has(shortcut))) return
+      const overlayHovered = isPiExtensionOverlayHovered(piExtensionOverlayRef.current)
+      if (isPlainPiExtensionShortcut(shortcut) && !overlayHovered) return
+      if (isEditableEventTarget(event.target)) return
       event.preventDefault()
       event.stopPropagation()
       void runComposerAction('composer.pi-extension-shortcut', {

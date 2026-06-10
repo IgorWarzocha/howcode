@@ -1,5 +1,6 @@
 import { accessSync, constants } from 'node:fs'
 import path from 'node:path'
+import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import type { TerminalOpenRequest } from '../../shared/terminal-contracts.ts'
 import { loadAppSettings } from '../app-settings/readers.ts'
 import { getBundledThemes } from '../bundled-themes.ts'
@@ -24,7 +25,8 @@ function getEnvironmentVariable(env: NodeJS.ProcessEnv, name: string) {
 }
 
 function getPiSessionCommandArgs(sessionPath: string | null | undefined) {
-  const args = sessionPath ? ['--session', sessionPath] : []
+  const persistedSessionPath = getPersistedSessionPath(sessionPath)
+  const args = persistedSessionPath ? ['--session', persistedSessionPath] : []
   for (const theme of getBundledThemes()) {
     args.push('--theme', theme.path)
   }
