@@ -1,6 +1,6 @@
 import { getPersistedSessionPath } from '@howcode/shared/session-paths'
-import { ChevronDown, ChevronRight } from 'lucide-react'
-import { type RefObject, useEffect, useRef, useState } from 'react'
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { type ReactNode, type RefObject, useEffect, useRef, useState } from 'react'
 import {
   howcodeDismissTransientUiEvent,
   useHowcodeKeybindingCommand,
@@ -12,6 +12,7 @@ import {
   appTypeTinyClass,
   composerPanelClass,
   composerPopoverExtensionLayerClass,
+  nativeExtensionTextClass,
 } from '../ui/classes'
 import { cn } from '../utils/cn'
 import type { ComposerProps } from './composer'
@@ -34,9 +35,18 @@ import { useComposerSlashCommands } from './useComposerSlashCommands'
 import { useGlobalComposerFileDrop } from './useGlobalComposerFileDrop'
 
 const extensionStatusExpandedStorageKey = 'howcode.extensionStatusExpanded'
+const nativeExtensionFoldedStorageKey = 'howcode.nativeExtensionFolded'
 const nativeExtensionStyleMarkerOpen = '\u001b]howcode-style;'
 const nativeExtensionStyleMarkerClose = '\u0007'
 const nativeExtensionBoxGlyphPattern = /([╭╰│─]+)/gu
+const nativeExtensionKeySeparatorPattern = /[-_.]+/u
+
+type NativeExtensionOverlaySection = {
+  id: string
+  name: string
+  type: 'dialog' | 'widget'
+  content: ReactNode
+}
 
 type ComposerPromptSurfaceProps = ComposerProps & {
   composerPanelRef: RefObject<HTMLDivElement | null>
@@ -67,6 +77,28 @@ type NativeExtensionOverlayContentProps = NativeExtensionOverlayWidgetsProps & {
 function readExtensionStatusExpandedPreference() {
   if (typeof window === 'undefined') return false
   return window.localStorage.getItem(extensionStatusExpandedStorageKey) === 'true'
+}
+
+function readNativeExtensionFoldedPreference() {
+  if (typeof window === 'undefined') return new Set<string>()
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(nativeExtensionFoldedStorageKey) ?? '[]')
+    return new Set(Array.isArray(parsed) ? parsed.filter((item) => typeof item === 'string') : [])
+  } catch {
+    return new Set<string>()
+  }
+}
+
+function writeNativeExtensionFoldedPreference(folded: Set<string>) {
+  window.localStorage.setItem(nativeExtensionFoldedStorageKey, JSON.stringify([...folded]))
+}
+
+function getNativeExtensionDisplayName(key: string) {
+  return key
+    .split(nativeExtensionKeySeparatorPattern)
+    .filter(Boolean)
+    .map((part) => part[0]?.toUpperCase() + part.slice(1))
+    .join(' ')
 }
 
 function NativeExtensionStatusLine({
@@ -134,21 +166,130 @@ function NativeExtensionStatusLine({
 function NativeExtensionOverlayContent({
   nativeDialog,
   projectTrust,
-  ...widgetsProps
+  widgets,
 }: NativeExtensionOverlayContentProps) {
+  const [foldedSections, setFoldedSections] = useState(readNativeExtensionFoldedPreference)
+  const sections: NativeExtensionOverlaySection[] = [
+    ...widgets.map((widget) => ({
+      id: `widget:${widget.key}`,
+      name: getNativeExtensionDisplayName(widget.key),
+      type: 'widget' as const,
+      content: <NativeExtensionWidgetLines widget={widget} />,
+    })),
+    ...(projectTrust.request
+      ? [
+          {
+            id: 'dialog:project-trust',
+            name: 'Project trust',
+            type: 'dialog' as const,
+            content: (
+              <ProjectTrustCard
+                request={projectTrust.request}
+                embedded
+                onDecide={projectTrust.onDecide}
+              />
+            ),
+          },
+        ]
+      : []),
+    ...(nativeDialog.request
+      ? [
+          {
+            id: `dialog:${nativeDialog.request.id}`,
+            name: 'Extension',
+            type: 'dialog' as const,
+            content: (
+              <NativeExtensionDialogCard
+                request={nativeDialog.request}
+                embedded
+                onAnswer={nativeDialog.onAnswer}
+              />
+            ),
+          },
+        ]
+      : []),
+  ]
+
+  if (sections.length === 0) return null
+
+  const toggleSection = (sectionId: string) => {
+    setFoldedSections((current) => {
+      const next = new Set(current)
+      if (next.has(sectionId)) next.delete(sectionId)
+      else next.add(sectionId)
+      writeNativeExtensionFoldedPreference(next)
+      return next
+    })
+  }
+
   return (
-    <>
-      <NativeExtensionOverlayWidgets {...widgetsProps} />
-      {projectTrust.request ? (
-        <ProjectTrustCard request={projectTrust.request} onDecide={projectTrust.onDecide} />
-      ) : null}
-      {nativeDialog.request ? (
-        <NativeExtensionDialogCard
-          request={nativeDialog.request}
-          onAnswer={nativeDialog.onAnswer}
-        />
-      ) : null}
-    </>
+    <div className="grid w-full overflow-visible px-4">
+      <div className="grid rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] text-left shadow-none">
+        {sections.map((section, index) => (
+          <NativeExtensionOverlaySection
+            key={section.id}
+            section={section}
+            folded={foldedSections.has(section.id)}
+            divided={index > 0}
+            onToggle={() => toggleSection(section.id)}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function NativeExtensionOverlaySection({
+  divided,
+  folded,
+  onToggle,
+  section,
+}: {
+  divided: boolean
+  folded: boolean
+  onToggle: () => void
+  section: NativeExtensionOverlaySection
+}) {
+  if (!folded) {
+    return (
+      <section className={cn('relative', divided && 'border-t border-[color:var(--border)]/70')}>
+        <button
+          type="button"
+          className={cn(
+            'absolute top-1 right-2 z-10 inline-flex h-5 w-5 items-center justify-center text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]',
+            nativeExtensionTextClass,
+          )}
+          aria-expanded
+          aria-label={`Collapse ${section.name}`}
+          onClick={onToggle}
+        >
+          <ChevronDown size={13} />
+        </button>
+        <div className="px-3 py-1.5">{section.content}</div>
+      </section>
+    )
+  }
+
+  return (
+    <section className={cn('relative', divided && 'border-t border-[color:var(--border)]/70')}>
+      <button
+        type="button"
+        className={cn(
+          'grid w-full items-center px-3 py-1.5 pr-9 text-left text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]',
+          nativeExtensionTextClass,
+        )}
+        aria-expanded={false}
+        aria-label={`Expand ${section.name}`}
+        onClick={onToggle}
+      >
+        <span className="truncate">
+          {section.name} - {section.type}
+        </span>
+        <span className="absolute top-1 right-2 inline-flex h-5 w-5 items-center justify-center">
+          <ChevronLeft size={13} />
+        </span>
+      </button>
+    </section>
   )
 }
 
@@ -161,31 +302,35 @@ function NativeExtensionWidgetLines({
   const boxedByExtension = widget.lines.some((line) =>
     stripNativeExtensionStyleMarkers(line).trimStart().startsWith('╭'),
   )
-  return (
-    <div className="grid gap-0 rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-3 py-1.5 text-left shadow-none">
-      {boxedByExtension ? (
-        <pre className="m-0 overflow-hidden truncate whitespace-pre font-mono text-[11.5px] leading-[1rem] text-[color:var(--muted-2)]/88">
-          {renderNativeExtensionWidgetLine(widget.lines.join('\n'), { monoBoxGlyphs: false })}
-        </pre>
-      ) : (
-        widget.lines.map((line) => {
-          const count = lineCounts.get(line) ?? 0
-          lineCounts.set(line, count + 1)
-          return (
-            <div
-              key={`${widget.key}:${count}:${line}`}
-              className={cn(
-                'truncate whitespace-pre text-[color:var(--muted-2)]/88',
-                appTypeCompactWidgetClass,
-              )}
-            >
-              {renderNativeExtensionWidgetLine(line)}
-            </div>
-          )
-        })
-      )}
-    </div>
-  )
+
+  if (boxedByExtension) {
+    return (
+      <pre
+        className={cn(
+          'm-0 overflow-hidden truncate whitespace-pre text-[11.5px] leading-[1rem] text-[color:var(--muted-2)]/88',
+          nativeExtensionTextClass,
+        )}
+      >
+        {renderNativeExtensionWidgetLine(widget.lines.join('\n'), { monoBoxGlyphs: false })}
+      </pre>
+    )
+  }
+
+  return widget.lines.map((line) => {
+    const count = lineCounts.get(line) ?? 0
+    lineCounts.set(line, count + 1)
+    return (
+      <div
+        key={`${widget.key}:${count}:${line}`}
+        className={cn(
+          'truncate whitespace-pre text-[color:var(--muted-2)]/88',
+          appTypeCompactWidgetClass,
+        )}
+      >
+        {renderNativeExtensionWidgetLine(line)}
+      </div>
+    )
+  })
 }
 
 function stripNativeExtensionStyleMarkers(line: string) {
@@ -298,18 +443,6 @@ function getNativeExtensionBgClass(name: string | undefined) {
     default:
       return undefined
   }
-}
-
-function NativeExtensionOverlayWidgets({ widgets }: NativeExtensionOverlayWidgetsProps) {
-  return (
-    <>
-      {widgets.map((widget) => (
-        <div key={widget.key} className="grid w-full overflow-visible px-4">
-          <NativeExtensionWidgetLines widget={widget} />
-        </div>
-      ))}
-    </>
-  )
 }
 
 function getNativeExtensionShortcutKey(event: KeyboardEvent) {

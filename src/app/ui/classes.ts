@@ -232,6 +232,10 @@ export const composerPopoverInputLayerClass = 'z-[120]'
 
 export const composerPopoverExtensionLayerClass = 'z-[100]'
 
+export const nativeExtensionMonoClass = 'native-extension-mono'
+
+export const nativeExtensionTextClass = nativeExtensionMonoClass
+
 export const composerPopoverContextLayerClass = 'z-[80]'
 
 export const composerPopoverPanelClass =

@@ -25,7 +25,7 @@ function isStandaloneStatusMessage(message: Message) {
     return true
   }
 
-  return message.role === 'custom' && message.customType === 'Extension:'
+  return message.role === 'custom'
 }
 
 function getToolGroupMessageKey(message: ToolCallMessage) {

@@ -8,7 +8,8 @@
     system-ui,
     sans-serif
   );
-  --diffs-font-family: "Geist Mono", "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  --diffs-font-family:
+    "Geist Mono Variable", "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
   --diffs-light-bg: var(--workspace);
   --diffs-dark-bg: var(--workspace);
   --diffs-bg: var(--workspace);

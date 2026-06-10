@@ -7,11 +7,13 @@ import {
   appTypeGroupTextClass,
   appTypeMetaClass,
   appTypeTinyClass,
+  nativeExtensionTextClass,
 } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 
 type NativeExtensionDialogCardProps = {
   request: NativeExtensionDialogRequest
+  embedded?: boolean | undefined
   onAnswer: (answer: {
     cancelled?: boolean | undefined
     confirmed?: boolean | undefined
@@ -21,12 +23,62 @@ type NativeExtensionDialogCardProps = {
 
 const nativeExtensionDialogCardClass =
   'relative grid w-full content-start gap-2 rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-5 py-3 shadow-none'
+const nativeExtensionDialogContentClass = `relative grid w-full content-start gap-1 ${nativeExtensionTextClass}`
+type NativeExtensionDialogAnswer = Parameters<NativeExtensionDialogCardProps['onAnswer']>[0]
 
-export function NativeExtensionDialogCard({ request, onAnswer }: NativeExtensionDialogCardProps) {
+function NativeExtensionDialogActions({
+  busy,
+  method,
+  onAnswer,
+  onSubmitTextValue,
+}: {
+  busy: boolean
+  method: NativeExtensionDialogRequest['method']
+  onAnswer: (answer: NativeExtensionDialogAnswer) => void
+  onSubmitTextValue: () => void
+}) {
+  const canSubmit = method === 'confirm' || method === 'input' || method === 'editor'
+  const acceptLabel = method === 'confirm' ? 'Accept' : 'Submit'
+
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        type="button"
+        aria-label={method === 'confirm' ? 'Reject' : 'Cancel extension UI request'}
+        title={method === 'confirm' ? 'Reject' : 'Cancel'}
+        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:opacity-55"
+        disabled={busy}
+        onClick={() => onAnswer(method === 'confirm' ? { confirmed: false } : { cancelled: true })}
+      >
+        <X size={13} />
+      </button>
+      {canSubmit ? (
+        <button
+          type="button"
+          aria-label={acceptLabel}
+          title={acceptLabel}
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-[color:var(--surface-hover)] text-[color:var(--text)] transition-colors hover:bg-[color:var(--panel-3)] disabled:opacity-55"
+          disabled={busy}
+          onClick={() =>
+            method === 'confirm' ? onAnswer({ confirmed: true }) : onSubmitTextValue()
+          }
+        >
+          <Check size={13} />
+        </button>
+      ) : null}
+    </div>
+  )
+}
+
+export function NativeExtensionDialogCard({
+  request,
+  embedded = false,
+  onAnswer,
+}: NativeExtensionDialogCardProps) {
   const [busy, setBusy] = useState(false)
   const [value, setValue] = useState(request.prefill ?? '')
 
-  const answer = async (next: Parameters<NativeExtensionDialogCardProps['onAnswer']>[0]) => {
+  const answer = async (next: NativeExtensionDialogAnswer) => {
     if (busy) return
     setBusy(true)
     const ok = await onAnswer(next)
@@ -35,99 +87,64 @@ export function NativeExtensionDialogCard({ request, onAnswer }: NativeExtension
 
   const submitTextValue = () => answer({ value })
 
-  return (
-    <div className="grid w-full overflow-visible px-4">
-      <div className={nativeExtensionDialogCardClass}>
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-          <div className="grid min-w-0 gap-0.5">
-            <div className={cn('truncate', appTypeGroupTextClass, appToneTextClass)}>
-              {request.title}
+  const content = (
+    <div className={embedded ? nativeExtensionDialogContentClass : nativeExtensionDialogCardClass}>
+      <div className="grid min-w-0 gap-0.5 pr-6">
+        <div className="grid min-w-0 gap-0.5">
+          <div className={cn('truncate', appTypeGroupTextClass, appToneTextClass)}>
+            {request.title}
+          </div>
+          {request.message ? (
+            <div className={cn('truncate', appTypeMetaClass, appToneMutedClass)}>
+              {request.message}
             </div>
-            {request.message ? (
-              <div className={cn('truncate', appTypeMetaClass, appToneMutedClass)}>
-                {request.message}
-              </div>
-            ) : null}
-          </div>
-
-          <div className="flex items-center gap-1">
-            {request.method === 'confirm' ? (
-              <button
-                type="button"
-                aria-label="Reject"
-                title="Reject"
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:opacity-55"
-                disabled={busy}
-                onClick={() => void answer({ confirmed: false })}
-              >
-                <X size={13} />
-              </button>
-            ) : (
-              <button
-                type="button"
-                aria-label="Cancel extension UI request"
-                title="Cancel"
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:opacity-55"
-                disabled={busy}
-                onClick={() => void answer({ cancelled: true })}
-              >
-                <X size={13} />
-              </button>
-            )}
-            {request.method === 'confirm' ||
-            request.method === 'input' ||
-            request.method === 'editor' ? (
-              <button
-                type="button"
-                aria-label={request.method === 'confirm' ? 'Accept' : 'Submit'}
-                title={request.method === 'confirm' ? 'Accept' : 'Submit'}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-[color:var(--surface-hover)] text-[color:var(--text)] transition-colors hover:bg-[color:var(--panel-3)] disabled:opacity-55"
-                disabled={busy}
-                onClick={() =>
-                  void (request.method === 'confirm'
-                    ? answer({ confirmed: true })
-                    : submitTextValue())
-                }
-              >
-                <Check size={13} />
-              </button>
-            ) : null}
-          </div>
+          ) : null}
         </div>
+      </div>
 
-        {request.method === 'select' ? (
-          <div className="flex flex-wrap gap-1.5">
-            {(request.options ?? []).map((option) => (
-              <button
-                key={option}
-                type="button"
-                className={cn(
-                  'inline-flex min-h-7 items-center rounded-md bg-[color:var(--surface-hover)] px-2.5 text-[color:var(--text)] transition-colors hover:bg-[color:var(--panel-3)] disabled:opacity-55',
-                  appTypeTinyClass,
-                )}
-                disabled={busy}
-                onClick={() => void answer({ value: option })}
-              >
-                {option}
-              </button>
-            ))}
-          </div>
-        ) : null}
+      {request.method === 'select' ? (
+        <div className="flex flex-wrap gap-1.5">
+          {(request.options ?? []).map((option) => (
+            <button
+              key={option}
+              type="button"
+              className={cn(
+                'inline-flex min-h-6 items-center rounded-md bg-[color:var(--surface-hover)] px-2 text-[color:var(--text)] transition-colors hover:bg-[color:var(--panel-3)] disabled:opacity-55',
+                appTypeTinyClass,
+              )}
+              disabled={busy}
+              onClick={() => void answer({ value: option })}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
-        {request.method === 'input' || request.method === 'editor' ? (
-          <textarea
-            className={cn(
-              'min-h-16 resize-none rounded-md border border-[color:var(--border)] bg-[color:var(--panel-2)] px-2 py-1.5 text-[color:var(--text)] outline-none placeholder:text-[color:var(--dim)] focus:border-[color:var(--border-strong)]',
-              appTypeTinyClass,
-            )}
-            value={value}
-            placeholder={request.placeholder}
-            rows={request.method === 'editor' ? 5 : 2}
-            disabled={busy}
-            onChange={(event) => setValue(event.target.value)}
-          />
-        ) : null}
+      {request.method === 'input' || request.method === 'editor' ? (
+        <textarea
+          className={cn(
+            'min-h-16 resize-none rounded-md border border-[color:var(--border)] bg-[color:var(--panel-2)] px-2 py-1.5 text-[color:var(--text)] outline-none placeholder:text-[color:var(--dim)] focus:border-[color:var(--border-strong)]',
+            appTypeTinyClass,
+          )}
+          value={value}
+          placeholder={request.placeholder}
+          rows={request.method === 'editor' ? 5 : 2}
+          disabled={busy}
+          onChange={(event) => setValue(event.target.value)}
+        />
+      ) : null}
+
+      <div className="absolute right-[-8px] bottom-[-2px] flex justify-end">
+        <NativeExtensionDialogActions
+          busy={busy}
+          method={request.method}
+          onAnswer={(next) => void answer(next)}
+          onSubmitTextValue={() => void submitTextValue()}
+        />
       </div>
     </div>
   )
+
+  return embedded ? content : <div className="grid w-full overflow-visible px-4">{content}</div>
 }
