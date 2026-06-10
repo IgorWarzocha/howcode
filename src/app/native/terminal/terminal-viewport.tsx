@@ -150,12 +150,14 @@ export function TerminalViewport({
   )
 
   useHowcodeKeybindingCommand('terminal.clear', (event) => {
+    if (effectiveLaunchMode !== 'shell') return
     if (!isTerminalFocused()) return
     event.preventDefault()
     resetTerminal('')
   })
 
   useHowcodeKeybindingCommand('terminal.focus', (event) => {
+    if (effectiveLaunchMode !== 'shell') return
     event.preventDefault()
     focusTerminal()
   })
