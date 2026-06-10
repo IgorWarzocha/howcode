@@ -318,13 +318,13 @@ export function ComposerContextMeter({
       </button>
 
       {open ? (
-        // Passive hover preview: keep above the thread, but below interactive composer popovers.
+        // Passive hover preview: keep above composer-adjacent extension UI.
         <PopoverPanel
           surface={false}
           ref={popoverRef}
           role="dialog"
           className={cn(
-            'absolute bottom-full left-0 grid w-56 gap-2 rounded-xl bg-[color:var(--panel)] p-3',
+            'absolute bottom-full left-0 grid w-56 gap-2 rounded-xl bg-[color:var(--panel)] p-3 shadow-[0_18px_42px_rgba(0,0,0,0.34)]',
             composerPopoverContextLayerClass,
             appTypeSmallClass,
             appToneMutedClass,
