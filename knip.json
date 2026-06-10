@@ -12,8 +12,7 @@
     "scripts/*.ts",
     "pages/src/main.tsx",
     "packages/howcode/bin/howcode.js",
-    "packages/howcode/lib/howcode.js",
-    "desktop/pi-extensions/howcode-ask-questions.ts"
+    "packages/howcode/lib/howcode.js"
   ],
   "project": [
     "src/**/*.{ts,tsx}",

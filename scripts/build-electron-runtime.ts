@@ -1,4 +1,4 @@
-import { copyFile, cp, mkdir, rm, stat, watch } from 'node:fs/promises'
+import { cp, mkdir, rm, watch } from 'node:fs/promises'
 import path from 'node:path'
 
 const isWatchMode = process.argv.includes('--watch')
@@ -55,46 +55,6 @@ async function prepareBuildDirectories() {
   await mkdir(path.join(buildRoot, 'desktop'), { recursive: true })
 }
 
-const piExtensionFileNames = ['howcode-ask-questions.ts']
-const piExtensionDirectoryNames: string[] = []
-const piExtensionsSourceDir = path.join(projectRoot, 'desktop', 'pi-extensions')
-const piExtensionsOutputDir = path.join(buildRoot, 'desktop', 'pi-extensions')
-
-async function copyPiExtensionAssets() {
-  await mkdir(piExtensionsOutputDir, { recursive: true })
-  await Promise.all(
-    piExtensionFileNames.map((fileName) =>
-      copyFile(
-        path.join(piExtensionsSourceDir, fileName),
-        path.join(piExtensionsOutputDir, fileName),
-      ),
-    ),
-  )
-  await Promise.all(
-    piExtensionDirectoryNames.map((directoryName) =>
-      cp(
-        path.join(piExtensionsSourceDir, directoryName),
-        path.join(piExtensionsOutputDir, directoryName),
-        { recursive: true },
-      ),
-    ),
-  )
-}
-
-async function isPiExtensionAsset(filename: string | Buffer | null) {
-  if (!filename) return true
-  const relativePath = filename.toString()
-  if (piExtensionFileNames.includes(relativePath)) return true
-  const topLevelName = relativePath.split(path.sep)[0]
-  if (topLevelName && piExtensionDirectoryNames.includes(topLevelName)) return true
-  try {
-    const entry = await stat(path.join(piExtensionsSourceDir, relativePath))
-    return entry.isFile() && piExtensionFileNames.includes(path.basename(relativePath))
-  } catch {
-    return false
-  }
-}
-
 async function copyDesktopResources() {
   const outputPath = path.join(buildRoot, 'resources')
   await rm(outputPath, { recursive: true, force: true })
@@ -129,19 +89,11 @@ async function runBuild() {
     )
   }
 
-  await copyPiExtensionAssets()
   await copyDesktopResources()
 
   if (isWatchMode) {
     console.log('Watching Electron runtime bundles...')
-    void (async () => {
-      for await (const event of watch(piExtensionsSourceDir, { recursive: true })) {
-        if (await isPiExtensionAsset(event.filename)) {
-          await copyPiExtensionAssets()
-          console.log('Copied Pi extension assets.')
-        }
-      }
-    })()
+
     void (async () => {
       for await (const _event of watch(path.join(projectRoot, 'desktop', 'resources'), {
         recursive: true,
