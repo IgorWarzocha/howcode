@@ -22,6 +22,11 @@ function isPointInsideRectWithTolerance({
   )
 }
 
+function elementContainsPointTarget(element: HTMLElement, event: globalThis.PointerEvent) {
+  const target = document.elementFromPoint(event.clientX, event.clientY)
+  return target === null || element.contains(target)
+}
+
 export function useHoverToFocus<T extends HTMLElement>({
   enabled,
   boundaryRef,
@@ -78,15 +83,16 @@ export function useHoverToFocus<T extends HTMLElement>({
         return
       }
 
-      const inside = [boundary, ...extraBoundaryRefs.map((ref) => ref.current)].some((element) =>
-        element
-          ? isPointInsideRectWithTolerance({
-              clientX: event.clientX,
-              clientY: event.clientY,
-              rect: element.getBoundingClientRect(),
-              tolerancePx,
-            })
-          : false,
+      const inside = [boundary, ...extraBoundaryRefs.map((ref) => ref.current)].some(
+        (element) =>
+          element &&
+          elementContainsPointTarget(element, event) &&
+          isPointInsideRectWithTolerance({
+            clientX: event.clientX,
+            clientY: event.clientY,
+            rect: element.getBoundingClientRect(),
+            tolerancePx,
+          }),
       )
 
       if (inside) {

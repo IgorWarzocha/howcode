@@ -548,6 +548,7 @@ export function ComposerPromptSurface({
   onListAttachmentEntries,
   onAction,
   terminalVisible,
+  takeoverVisible,
   preferPortalFilePicker = false,
   preferPortalModelPopover = false,
   artifactsVisible,
@@ -619,6 +620,8 @@ export function ComposerPromptSurface({
     onListAttachmentEntries,
   })
   const dictationTranscribing = dictationInterimText.length > 0
+  const composerHoverToFocus = hoverToFocus && !takeoverVisible
+  const composerHoverToBlur = hoverToBlur && !takeoverVisible
   const composerMode = activeView === 'chat' ? 'chat' : 'code'
   const slashCommandPanelRef = useRef<HTMLDivElement>(null)
   const fileMentionPanelRef = useRef<HTMLDivElement>(null)
@@ -895,8 +898,8 @@ export function ComposerPromptSurface({
               attachPickerAttachments={attachPickerAttachments}
               cancelDictation={cancelDictation}
               handlePaste={handlePaste}
-              hoverToFocus={hoverToFocus}
-              hoverToBlur={hoverToBlur}
+              hoverToFocus={composerHoverToFocus}
+              hoverToBlur={composerHoverToBlur}
               composerSendMode={composerSendMode}
               keybindings={keybindings}
               hoverBoundaryRef={composerPanelRef}
