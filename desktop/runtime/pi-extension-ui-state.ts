@@ -103,7 +103,7 @@ function normalizeWidgetContent(content: unknown) {
   if (content === undefined) return null
   if (Array.isArray(content)) return content.map((line) => String(line))
   if (typeof content === 'string') return content.split('\n')
-  return [String(content)]
+  return ['Component-based widgets are not yet compatible with Howcode.']
 }
 
 export function getPiExtensionWidgets(runtime: PiRuntime): PiExtensionWidget[] {
