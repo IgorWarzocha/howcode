@@ -9,7 +9,7 @@ import {
 import { NativeExtensionDialogCard, ProjectTrustCard } from '../features/native-extensions'
 import {
   appTypeCodeClass,
-  appTypeMetaClass,
+  appTypeTinyClass,
   composerPanelClass,
   composerPopoverExtensionLayerClass,
 } from '../ui/classes'
@@ -95,14 +95,14 @@ function NativeExtensionStatusLine({
       <button
         type="button"
         className={cn(
-          'flex min-w-0 items-start gap-1.5 rounded-md px-1.5 py-1 text-left text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
-          appTypeMetaClass,
+          'grid min-w-0 grid-cols-[24px_minmax(0,1fr)_24px] items-start gap-0 rounded-md py-0.5 text-left text-[color:var(--muted-2)]/82 transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--muted)]',
+          appTypeTinyClass,
         )}
         aria-expanded={expanded}
         aria-label={expanded ? 'Collapse extension status' : 'Expand extension status'}
         onClick={toggleExpanded}
       >
-        <span className="mt-[0.12rem] inline-flex h-4 w-4 shrink-0 items-center justify-center text-[color:var(--muted-2)]">
+        <span className="inline-flex h-4 w-5 shrink-0 items-center justify-center text-[color:var(--muted-2)]/82">
           {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
         </span>
         <span className={cn('min-w-0', expanded ? 'grid gap-0.5' : 'truncate')}>
@@ -114,6 +114,7 @@ function NativeExtensionStatusLine({
               ))
             : statuses.map((status) => status.text).join(' · ')}
         </span>
+        <span />
       </button>
     </div>
   )
