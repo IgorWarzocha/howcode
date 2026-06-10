@@ -21,6 +21,12 @@ export type NativeExtensionStatus = {
   text: string
 }
 
+export type NativeExtensionShortcut = {
+  shortcut: string
+  description?: string | undefined
+  extensionPath: string
+}
+
 export type NativeExtensionDialogRequest = {
   id: string
   method: 'select' | 'confirm' | 'input' | 'editor'
@@ -58,6 +64,7 @@ export type ComposerState = {
   queuedPrompts: ComposerQueuedPrompt[]
   nativeExtensionWidgets: NativeExtensionWidget[]
   nativeExtensionStatuses: NativeExtensionStatus[]
+  nativeExtensionShortcuts: NativeExtensionShortcut[]
   nativeExtensionDialogRequest: NativeExtensionDialogRequest | null
   projectTrustRequest: ProjectTrustRequest | null
   contextUsage: ComposerContextUsage | null

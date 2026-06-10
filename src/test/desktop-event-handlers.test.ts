@@ -14,6 +14,7 @@ function createComposerState(): ComposerState {
     queuedPrompts: [],
     nativeExtensionWidgets: [],
     nativeExtensionStatuses: [],
+    nativeExtensionShortcuts: [],
     nativeExtensionDialogRequest: null,
     projectTrustRequest: null,
     contextUsage: null,

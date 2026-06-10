@@ -10,6 +10,7 @@ import type {
   ComposerThinkingLevel,
   DesktopActionInvoker,
   NativeExtensionDialogRequest,
+  NativeExtensionShortcut,
   NativeExtensionStatus,
   NativeExtensionWidget,
   ProjectDiffBaseline,
@@ -34,6 +35,7 @@ export type ComposerProps = {
   isExtensionCommandRunning: boolean
   nativeExtensionWidgets: NativeExtensionWidget[]
   nativeExtensionStatuses: NativeExtensionStatus[]
+  nativeExtensionShortcuts: NativeExtensionShortcut[]
   nativeExtensionDialogRequest: NativeExtensionDialogRequest | null
   projectTrustRequest: ProjectTrustRequest | null
   nativeSmartBtwEnabled: boolean

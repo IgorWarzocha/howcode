@@ -1,6 +1,7 @@
 import type { ExtensionUIContext, ExtensionWidgetOptions } from '@earendil-works/pi-coding-agent'
 import type {
   NativeExtensionDialogRequest,
+  NativeExtensionShortcut,
   NativeExtensionStatus,
   NativeExtensionWidget,
 } from '../../shared/desktop-contracts.ts'
@@ -83,6 +84,16 @@ export function getNativeExtensionStatuses(runtime: PiRuntime): NativeExtensionS
   const sessionPath = getSessionPath(runtime)
   if (!sessionPath) return []
   return [...(statusesBySession.get(sessionPath)?.values() ?? [])]
+}
+
+export function getNativeExtensionShortcuts(runtime: PiRuntime): NativeExtensionShortcut[] {
+  return [...runtime.session.extensionRunner.getShortcuts({} as never).values()].map(
+    (shortcut) => ({
+      shortcut: String(shortcut.shortcut),
+      description: shortcut.description,
+      extensionPath: shortcut.extensionPath,
+    }),
+  )
 }
 
 export function getNativeExtensionDialog(runtime: PiRuntime): NativeExtensionDialogRequest | null {

@@ -203,6 +203,7 @@ function ChatComposer(props: ChatWorkspaceComposerProps) {
       isExtensionCommandRunning={activeComposerState?.isExtensionCommandRunning ?? false}
       nativeExtensionWidgets={activeComposerState?.nativeExtensionWidgets ?? []}
       nativeExtensionStatuses={activeComposerState?.nativeExtensionStatuses ?? []}
+      nativeExtensionShortcuts={activeComposerState?.nativeExtensionShortcuts ?? []}
       nativeExtensionDialogRequest={activeComposerState?.nativeExtensionDialogRequest ?? null}
       projectTrustRequest={activeComposerState?.projectTrustRequest ?? null}
       nativeSmartBtwEnabled={appSettings.howcodeNativeSmartBtw}

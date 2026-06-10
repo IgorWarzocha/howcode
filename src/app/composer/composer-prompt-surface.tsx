@@ -1,4 +1,3 @@
-import { createSmartBtwWidgetFromMessages, SmartBtwCard } from '@howcode/extensions'
 import { getPersistedSessionPath } from '@howcode/shared/session-paths'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { type RefObject, useEffect, useRef, useState } from 'react'
@@ -34,8 +33,6 @@ import { useComposerSkillMentions } from './useComposerSkillMentions'
 import { useComposerSlashCommands } from './useComposerSlashCommands'
 import { useGlobalComposerFileDrop } from './useGlobalComposerFileDrop'
 
-const digitShortcutPattern = /^Digit[1-9]$/u
-const smartBtwWorkingLinePattern = /\b(queued|running|thinking)\b/u
 const extensionStatusExpandedStorageKey = 'howcode.extensionStatusExpanded'
 
 type ComposerPromptSurfaceProps = ComposerProps & {
@@ -47,12 +44,6 @@ type ComposerPromptSurfaceProps = ComposerProps & {
 
 type NativeExtensionOverlayWidgetsProps = {
   widgets: ComposerProps['nativeExtensionWidgets']
-  smartBtwWidget: ComposerProps['nativeExtensionWidgets'][number] | undefined
-  onFoldSmartBtw: () => void
-  onPreviousSmartBtw: () => void
-  onNextSmartBtw: () => void
-  onSelectSmartBtw: (index: number) => void
-  onClearSmartBtw: () => void
 }
 
 type NativeExtensionOverlayContentProps = NativeExtensionOverlayWidgetsProps & {
@@ -158,102 +149,67 @@ function NativeExtensionOverlayContent({
   )
 }
 
-function NativeExtensionOverlayWidgets({
-  widgets,
-  smartBtwWidget,
-  onFoldSmartBtw,
-  onPreviousSmartBtw,
-  onNextSmartBtw,
-  onSelectSmartBtw,
-  onClearSmartBtw,
-}: NativeExtensionOverlayWidgetsProps) {
+function NativeExtensionWidgetLines({
+  widget,
+}: {
+  widget: ComposerProps['nativeExtensionWidgets'][number]
+}) {
+  const lineCounts = new Map<string, number>()
+  return (
+    <div className="grid gap-1 rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-3 py-2 text-left shadow-none">
+      {widget.lines.map((line) => {
+        const count = lineCounts.get(line) ?? 0
+        lineCounts.set(line, count + 1)
+        return (
+          <div
+            key={`${widget.key}:${count}:${line}`}
+            className={cn('truncate text-[color:var(--muted)]', appTypeCodeClass)}
+          >
+            {line}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function NativeExtensionOverlayWidgets({ widgets }: NativeExtensionOverlayWidgetsProps) {
   return (
     <>
-      {smartBtwWidget ? (
-        <SmartBtwCard
-          widget={smartBtwWidget}
-          onFold={onFoldSmartBtw}
-          onPrevious={onPreviousSmartBtw}
-          onNext={onNextSmartBtw}
-          onSelect={onSelectSmartBtw}
-          onClear={onClearSmartBtw}
-        />
-      ) : null}
-      {widgets
-        .filter((widget) => widget.key !== 'smart-btw')
-        .map((widget) => (
-          <div key={widget.key} className="grid w-full overflow-visible px-4">
-            <div className="grid gap-1 rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-3 py-2 text-left shadow-none">
-              {widget.lines.map((line) => (
-                <div
-                  key={`${widget.key}:${line}`}
-                  className={cn('truncate text-[color:var(--muted)]', appTypeCodeClass)}
-                >
-                  {line}
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
+      {widgets.map((widget) => (
+        <div key={widget.key} className="grid w-full overflow-visible px-4">
+          <NativeExtensionWidgetLines widget={widget} />
+        </div>
+      ))}
     </>
   )
 }
 
-function isEditableKeyboardTarget(target: EventTarget | null) {
-  return (
-    target instanceof HTMLTextAreaElement ||
-    target instanceof HTMLInputElement ||
-    (target instanceof HTMLElement && target.isContentEditable)
-  )
+function getNativeExtensionShortcutKey(event: KeyboardEvent) {
+  if (event.isComposing) return null
+  const key = getNativeExtensionShortcutBaseKey(event)
+  if (!key) return null
+  const modifiers = [
+    event.ctrlKey ? 'ctrl' : null,
+    event.altKey ? 'alt' : null,
+    event.shiftKey ? 'shift' : null,
+    event.metaKey ? 'meta' : null,
+  ].filter(Boolean)
+  return [...modifiers, key].join('+')
 }
 
-function getSmartBtwCycleShortcut(event: KeyboardEvent, showBtwControls: boolean) {
-  if (!showBtwControls || isEditableKeyboardTarget(event.target)) return null
-  if (!(event.altKey && event.ctrlKey) || event.metaKey || event.shiftKey) return null
-  if (digitShortcutPattern.test(event.code)) return `ctrl+alt+${event.code.slice(-1)}`
-  if (event.code === 'ArrowLeft') return 'ctrl+alt+left'
-  if (event.code === 'ArrowRight') return 'ctrl+alt+right'
-  if (event.code === 'ArrowUp') return 'ctrl+alt+up'
-  if (event.code === 'ArrowDown') return 'ctrl+alt+down'
-  return null
-}
-
-function getSmartBtwModifiedShortcut(event: KeyboardEvent) {
-  if (!event.altKey || event.metaKey || event.shiftKey) return null
-  if (!event.ctrlKey) return null
-  const shortcuts: Partial<Record<string, string>> = {
-    ArrowLeft: 'ctrl+alt+left',
-    ArrowRight: 'ctrl+alt+right',
-    ArrowUp: 'ctrl+alt+up',
-    ArrowDown: 'ctrl+alt+down',
-    KeyC: 'ctrl+alt+c',
-    KeyX: 'ctrl+alt+x',
-    KeyZ: 'ctrl+alt+z',
-  }
-  return shortcuts[event.code] ?? null
-}
-
-function getSmartBtwOverlayWidget(input: {
-  customMessages: ComposerProps['customMessages']
-  widgets: ComposerProps['nativeExtensionWidgets']
-}) {
-  const liveWidget = input.widgets.find((widget) => widget.key === 'smart-btw')
-  const restoredWidget = createSmartBtwWidgetFromMessages(input.customMessages)
-  if (liveWidget && isSmartBtwLiveWidgetAhead(liveWidget, restoredWidget)) return liveWidget
-  return restoredWidget ?? liveWidget
-}
-
-function getSmartBtwSessionCount(widget: ComposerProps['nativeExtensionWidgets'][number]) {
-  return widget.lines.filter((line) => line.startsWith('session ')).length
-}
-
-function isSmartBtwLiveWidgetAhead(
-  liveWidget: ComposerProps['nativeExtensionWidgets'][number],
-  restoredWidget: ComposerProps['nativeExtensionWidgets'][number] | undefined,
-) {
-  if (!restoredWidget) return true
-  if (liveWidget.lines.some((line) => smartBtwWorkingLinePattern.test(line))) return true
-  return getSmartBtwSessionCount(liveWidget) > getSmartBtwSessionCount(restoredWidget)
+function getNativeExtensionShortcutBaseKey(event: KeyboardEvent) {
+  if (event.code.startsWith('Key')) return event.code.slice(3).toLowerCase()
+  if (event.code.startsWith('Digit')) return event.code.slice(5)
+  if (event.code === 'ArrowLeft') return 'left'
+  if (event.code === 'ArrowRight') return 'right'
+  if (event.code === 'ArrowUp') return 'up'
+  if (event.code === 'ArrowDown') return 'down'
+  if (event.code === 'Escape') return 'escape'
+  if (event.code === 'Enter') return 'enter'
+  if (event.code === 'Space') return 'space'
+  if (event.key.length === 1) return event.key.toLowerCase()
+  return event.key.toLowerCase() || null
 }
 
 export function ComposerPromptSurface({
@@ -264,17 +220,16 @@ export function ComposerPromptSurface({
   model,
   contextUsage,
   messages,
-  customMessages,
   availableModels,
   isStreaming,
   replyActivityKey,
   isCompacting,
   isExtensionCommandRunning,
   nativeExtensionDialogRequest,
+  nativeExtensionShortcuts,
   nativeExtensionStatuses,
   nativeExtensionWidgets,
   projectTrustRequest,
-  nativeSmartBtwEnabled,
   thinkingLevel,
   restoredQueuedPrompt,
   streamingBehaviorPreference,
@@ -301,7 +256,6 @@ export function ComposerPromptSurface({
   onListAttachmentEntries,
   onAction,
   terminalVisible,
-  takeoverVisible,
   preferPortalFilePicker = false,
   preferPortalModelPopover = false,
   artifactsVisible,
@@ -384,16 +338,8 @@ export function ComposerPromptSurface({
   const visibleNativeExtensionWidgets = nativeExtensionWidgets.filter(
     (widget) => widget.placement === undefined || widget.placement === 'aboveEditor',
   )
-  const restoredSmartBtwWidget = getSmartBtwOverlayWidget({
-    customMessages,
-    widgets: visibleNativeExtensionWidgets,
-  })
-  const showBtwControls = restoredSmartBtwWidget !== undefined
   const showNativeExtensionOverlay =
-    showNativeDialog ||
-    showProjectTrust ||
-    visibleNativeExtensionWidgets.length > 0 ||
-    restoredSmartBtwWidget !== undefined
+    showNativeDialog || showProjectTrust || visibleNativeExtensionWidgets.length > 0
   const startNewSession = () => {
     void runComposerAction('thread.new', { projectId, chatGroupId, composerMode })
   }
@@ -478,9 +424,6 @@ export function ComposerPromptSurface({
     fileMentions.dismiss()
     skillMentions.dismiss()
   }
-  const composeSmartBtw = () => setDraft(draft.trim() ? `${draft.trimEnd()} /btw ` : '/btw ')
-  const composeSmartBtwRef = useRef(composeSmartBtw)
-
   useHowcodeKeybindingCommand('composer.submit', (event) => {
     event.preventDefault()
     void send()
@@ -506,40 +449,35 @@ export function ComposerPromptSurface({
       window.removeEventListener(howcodeDismissTransientUiEvent, dismissComposerTransientUi)
   })
 
-  const runNativeShortcut = (shortcut: string) => {
-    if (!showBtwControls) return
-    void runComposerAction('composer.native-extension-shortcut', {
-      projectId,
-      sessionPath,
-      composerMode,
-      chatGroupId,
-      shortcut,
-    })
-  }
-  const runNativeShortcutRef = useRef(runNativeShortcut)
-  const showBtwControlsRef = useRef(showBtwControls)
-  composeSmartBtwRef.current = composeSmartBtw
-  runNativeShortcutRef.current = runNativeShortcut
-  showBtwControlsRef.current = showBtwControls
-
   useEffect(() => {
-    if (!nativeSmartBtwEnabled) return
-    if (takeoverVisible) return
-    const handleBtwShortcut = (event: KeyboardEvent) => {
-      const smartBtwControlsVisible = showBtwControlsRef.current
-      const cycleShortcut = getSmartBtwCycleShortcut(event, smartBtwControlsVisible)
-      const modifiedShortcut = smartBtwControlsVisible ? getSmartBtwModifiedShortcut(event) : null
-      const composeShortcut =
-        event.altKey && event.ctrlKey && !event.metaKey && !event.shiftKey && event.code === 'KeyZ'
-      if (!(cycleShortcut || modifiedShortcut || composeShortcut)) return
+    if (nativeExtensionShortcuts.length === 0) return
+    const registeredShortcuts = new Set(
+      nativeExtensionShortcuts.map((shortcut) => shortcut.shortcut.toLowerCase()),
+    )
+    const handleNativeExtensionShortcut = (event: KeyboardEvent) => {
+      const shortcut = getNativeExtensionShortcutKey(event)
+      if (!(shortcut && registeredShortcuts.has(shortcut))) return
       event.preventDefault()
       event.stopPropagation()
-      if (composeShortcut) composeSmartBtwRef.current()
-      else runNativeShortcutRef.current(cycleShortcut ?? modifiedShortcut ?? '')
+      void runComposerAction('composer.native-extension-shortcut', {
+        projectId,
+        sessionPath,
+        composerMode,
+        chatGroupId,
+        shortcut,
+      })
     }
-    window.addEventListener('keydown', handleBtwShortcut, { capture: true })
-    return () => window.removeEventListener('keydown', handleBtwShortcut, { capture: true })
-  }, [nativeSmartBtwEnabled, takeoverVisible])
+    window.addEventListener('keydown', handleNativeExtensionShortcut, { capture: true })
+    return () =>
+      window.removeEventListener('keydown', handleNativeExtensionShortcut, { capture: true })
+  }, [
+    chatGroupId,
+    composerMode,
+    nativeExtensionShortcuts,
+    projectId,
+    runComposerAction,
+    sessionPath,
+  ])
 
   return (
     <div
@@ -570,12 +508,6 @@ export function ComposerPromptSurface({
           >
             <NativeExtensionOverlayContent
               widgets={visibleNativeExtensionWidgets}
-              smartBtwWidget={restoredSmartBtwWidget}
-              onFoldSmartBtw={() => runNativeShortcut('ctrl+alt+down')}
-              onPreviousSmartBtw={() => runNativeShortcut('ctrl+alt+left')}
-              onNextSmartBtw={() => runNativeShortcut('ctrl+alt+right')}
-              onSelectSmartBtw={(index) => runNativeShortcut(`ctrl+alt+${index}`)}
-              onClearSmartBtw={() => runNativeShortcut('ctrl+alt+x')}
               projectTrust={{
                 request: projectTrustRequest,
                 onDecide: async (trusted) => {

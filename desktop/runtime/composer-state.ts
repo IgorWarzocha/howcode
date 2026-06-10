@@ -27,6 +27,7 @@ import {
 } from './isolated-settings-manager.ts'
 import {
   getNativeExtensionDialog,
+  getNativeExtensionShortcuts,
   getNativeExtensionStatuses,
   getNativeExtensionWidgets,
 } from './native-extension-ui-state.ts'
@@ -313,6 +314,7 @@ export async function buildComposerStateSnapshot(
     queuedPrompts: [],
     nativeExtensionWidgets: [],
     nativeExtensionStatuses: [],
+    nativeExtensionShortcuts: [],
     nativeExtensionDialogRequest: null,
     projectTrustRequest: snapshot.projectTrustRequest,
     contextUsage: snapshot.contextUsage,
@@ -342,6 +344,7 @@ export async function buildComposerState(
     queuedPrompts: buildSessionQueuedPrompts(runtime.session),
     nativeExtensionWidgets: getNativeExtensionWidgets(runtime),
     nativeExtensionStatuses: getNativeExtensionStatuses(runtime),
+    nativeExtensionShortcuts: getNativeExtensionShortcuts(runtime),
     nativeExtensionDialogRequest: getNativeExtensionDialog(runtime),
     projectTrustRequest: getRuntimeProjectTrustRequest({
       ProjectTrustStore,

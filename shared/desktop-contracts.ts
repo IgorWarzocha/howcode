@@ -38,6 +38,7 @@ export type {
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
   NativeExtensionDialogRequest,
+  NativeExtensionShortcut,
   NativeExtensionStatus,
   NativeExtensionWidget,
   ProjectTrustRequest,

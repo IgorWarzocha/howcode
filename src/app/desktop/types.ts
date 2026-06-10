@@ -47,6 +47,7 @@ export type {
   KeybindingOverrides,
   ModelSelection,
   NativeExtensionDialogRequest,
+  NativeExtensionShortcut,
   NativeExtensionStatus,
   NativeExtensionWidget,
   PiConfiguredPackage,
