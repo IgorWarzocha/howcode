@@ -1,6 +1,9 @@
 ### 0.1.67
 
-- Added native Smart BTW side sessions with numbered slots, GUI/Pi-TUI handoff, and restored Q&A follow-ups.
+- Updated Pi SDK/runtime packages to 0.79.0.
+- Added Pi project trust prompts in desktop, backed by Pi's trust store.
+- Pi extension UI now renders generic dialogs, widgets, status lines, notifications, and shortcuts instead of Howcode-native extension hacks.
+- Pi TUI takeover and the shell terminal drawer now behave like separate surfaces, including focus and shortcut handling.
 
 #### 0.1.66 Hotfixes (because .67 has to be more special)
 
