@@ -12,7 +12,7 @@ process.on('message', (message: RuntimeMainToHostMessage) => {
     handleMainResponse(message)
     return
   }
-  if (!message || message.type !== 'request') {
+  if (message?.type !== 'request') {
     return
   }
 
