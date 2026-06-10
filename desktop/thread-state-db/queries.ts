@@ -595,30 +595,3 @@ export function getThreadAssistantSnapshot(sessionPath: string) {
 
   return row
 }
-
-export function getSessionNativeExtensions(
-  sessionPath: string | null | undefined,
-): string[] | null {
-  if (!sessionPath) return null
-  const db = getThreadStateDatabase()
-  const row = db
-    .prepare(
-      `
-        SELECT enabled_json AS enabledJson
-        FROM session_native_extensions
-        WHERE session_path = ?
-      `,
-    )
-    .get(sessionPath) as { enabledJson?: string | undefined } | undefined
-
-  if (!row?.enabledJson) return null
-
-  try {
-    const parsed = JSON.parse(row.enabledJson) as unknown
-    return Array.isArray(parsed)
-      ? parsed.filter((item): item is string => typeof item === 'string')
-      : null
-  } catch {
-    return null
-  }
-}

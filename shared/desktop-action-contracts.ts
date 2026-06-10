@@ -48,10 +48,16 @@ export type DesktopActionPayloadFields = {
   worktreePath?: string | undefined | null | undefined
   worktrees?: { worktreePath: string; branchName?: string | undefined | null }[] | undefined
   createIfMissing?: boolean | undefined
+  cwd?: string | undefined
+  editorSelectionEnd?: number | undefined
+  editorSelectionStart?: number | undefined
+  editorText?: string | undefined
   provider?: string | undefined
   queueId?: string | undefined
   answers?: string[][] | undefined | null
   requestId?: string | undefined
+  confirmed?: boolean | undefined
+  cancelled?: boolean | undefined
   queueSnapshotKey?: string | undefined
   push?: boolean | undefined
   queueIndex?: number | undefined
@@ -65,6 +71,7 @@ export type DesktopActionPayloadFields = {
   suppressInbox?: boolean | undefined | null | undefined
   targetEntryId?: string | undefined
   text?: string | undefined
+  trusted?: boolean | undefined
   threadId?: string | undefined
   threadIds?: string[] | undefined
   branchName?: string | undefined | null | undefined
@@ -76,6 +83,7 @@ export type DesktopActionPayloadFields = {
     | boolean
     | ProjectDiffDefaultBaseline
     | AppSettings['keybindings']
+    | string[]
     | null
 }
 
@@ -98,9 +106,6 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'skillCreatorModel'; provider: string; modelId: string; reset?: false }
   | { key: 'skillCreatorModel'; reset: true }
   | { key: 'skillCreatorThinkingLevel'; value: ComposerThinkingLevel }
-  | { key: 'smartBtwModel'; provider: string; modelId: string; reset?: false }
-  | { key: 'smartBtwModel'; reset: true }
-  | { key: 'smartBtwThinkingLevel'; value: ComposerThinkingLevel }
   | { key: 'composerStreamingBehavior'; value: ComposerStreamingBehavior }
   | { key: 'dictationModelId'; value: DictationModelId | null }
   | { key: 'dictationMaxDurationSeconds'; value: number }
@@ -118,8 +123,6 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'gitDiffIncludeUntrackedDefault'; value: boolean }
   | { key: 'projectDeletionMode'; value: ProjectDeletionMode }
   | { key: 'useAgentsSkillsPaths'; value: boolean }
-  | { key: 'howcodeNativeAskQuestions'; value: boolean }
-  | { key: 'howcodeNativeSmartBtw'; value: boolean }
   | { key: 'devUpdateBranch'; value: boolean }
   | { key: 'betaUpdateBranch'; value: boolean }
   | { key: 'piTuiTakeover'; value: boolean }
@@ -284,20 +287,33 @@ export type DesktopActionPayloadMap = {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined
   }
-  'composer.answer-native-questions': {
+  'composer.answer-pi-extension-dialog': {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined
     composerMode?: 'chat' | 'code' | null
     chatGroupId?: string | undefined | null | undefined
     requestId: string
-    answers: string[][] | null
+    value?: string | undefined | null
+    confirmed?: boolean | undefined
+    cancelled?: boolean | undefined
   }
-  'composer.native-extension-shortcut': {
+  'composer.pi-extension-shortcut': {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined
     composerMode?: 'chat' | 'code' | null
     chatGroupId?: string | undefined | null | undefined
+    editorSelectionEnd?: number | undefined
+    editorSelectionStart?: number | undefined
+    editorText?: string | undefined
     shortcut: string
+  }
+  'composer.set-project-trust': {
+    projectId?: string | undefined | null | undefined
+    sessionPath?: string | undefined | null | undefined
+    composerMode?: 'chat' | 'code' | null
+    chatGroupId?: string | undefined | null | undefined
+    cwd: string
+    trusted: boolean
   }
   'composer.session-tree.label': {
     projectId?: string | undefined | null | undefined
@@ -321,7 +337,10 @@ export type DesktopActionPayloadMap = {
   'inbox.clear-read': { olderThanDays?: number | undefined | null | undefined }
   'settings.update': DesktopSettingsUpdatePayload
   'settings.clear-clipboard-images': EmptyActionPayload
-  'pi-settings.update': { piSettingsKey: keyof PiSettings; value: string | number | boolean }
+  'pi-settings.update': {
+    piSettingsKey: keyof PiSettings
+    value: string | number | boolean | string[]
+  }
   'projects.import.scan': { projectIds: string[] }
   'projects.import.apply': { projectIds: string[] }
 }
@@ -347,6 +366,9 @@ export type DesktopActionResultData = {
   deletedThreadIds?: string[] | undefined
   didMutate?: boolean | undefined
   error?: string | undefined
+  editorSelectionEnd?: number | undefined
+  editorSelectionStart?: number | undefined
+  editorText?: string | undefined
   failedWorktreeBranchName?: string | undefined | null | undefined
   failedWorktreePath?: string | undefined
   failedThreadIds?: string[] | undefined

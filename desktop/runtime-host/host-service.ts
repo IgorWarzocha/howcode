@@ -13,12 +13,12 @@ export {
   invalidateRuntimeSettings,
 } from './live-runtime-registry.ts'
 export {
-  answerNativeAskQuestions,
+  answerPiExtensionDialog,
   dequeueComposerPrompt,
   getComposerSkills,
   getComposerSlashCommands,
   getComposerState,
-  invokeNativeExtensionShortcut,
+  invokePiExtensionShortcut,
   labelSessionTreeEntryInHost,
   navigateSessionTreeInHost,
   openThreadRuntime,
@@ -26,6 +26,7 @@ export {
   sendComposerPrompt,
   setComposerModel,
   setComposerThinkingLevel,
+  setProjectTrust,
   startNewThread,
   stopComposerRun,
 } from './live-runtime-service.ts'

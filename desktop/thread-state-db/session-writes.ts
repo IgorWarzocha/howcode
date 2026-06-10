@@ -175,17 +175,3 @@ export function upsertThreadSummary(session: SessionSummaryRecord) {
 
   return threadId
 }
-
-export function setSessionNativeExtensions(sessionPath: string, enabled: string[]) {
-  const db = getThreadStateDatabase()
-  const normalized = [...new Set(enabled.map((item) => item.trim()).filter(Boolean))]
-  db.prepare(
-    `
-      INSERT INTO session_native_extensions (session_path, enabled_json)
-      VALUES (?, ?)
-      ON CONFLICT(session_path) DO UPDATE SET
-        enabled_json = excluded.enabled_json,
-        updated_at = CURRENT_TIMESTAMP
-    `,
-  ).run(sessionPath, JSON.stringify(normalized))
-}

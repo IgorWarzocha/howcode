@@ -190,6 +190,11 @@ export function buildPiRuntimeSettingsDescriptors({
       [
         ['treeFilterMode', 'Session tree filter', 'What the session tree shows in the composer.'],
         ['doubleEscapeAction', 'Double Escape', 'Double Escape in an empty editor.'],
+        [
+          'defaultProjectTrust',
+          'Project trust',
+          'What Pi does when a project has no saved trust decision.',
+        ],
         ['showImages', 'Show images', 'Show images in supported terminals.'],
         ['hideThinkingBlock', 'Hide thinking blocks', 'Hide reasoning blocks in TUI output.'],
         ['showHardwareCursor', 'Hardware cursor', 'Show the native terminal cursor.'],
@@ -200,7 +205,8 @@ export function buildPiRuntimeSettingsDescriptors({
     ).map(([key, title, description]) => ({
       id: `pi-tui.${key}`,
       category: 'pi' as const,
-      dividerBefore: key === 'treeFilterMode' || key === 'doubleEscapeAction',
+      dividerBefore:
+        key === 'treeFilterMode' || key === 'doubleEscapeAction' || key === 'defaultProjectTrust',
       title,
       description,
       keywords: 'terminal tui editor cursor changelog thinking images escape',
@@ -253,6 +259,34 @@ export function buildPiRuntimeSettingsDescriptors({
                 )}
                 onClick={() =>
                   setDraftPiSetting('doubleEscapeAction', value as PiSettings['doubleEscapeAction'])
+                }
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : key === 'defaultProjectTrust' ? (
+          <div
+            className={`grid grid-cols-3 rounded-lg bg-[color:var(--surface-hover)] p-[3px] ${appTypeSmallClass} ${appToneMutedClass}`}
+          >
+            {[
+              ['ask', 'Ask'],
+              ['always', 'Always'],
+              ['never', 'Never'],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                className={cn(
+                  'rounded-md px-2.5 py-1 transition-colors hover:bg-[color:var(--surface-hover)] active:scale-[0.98]',
+                  draftPiSettings.defaultProjectTrust === value &&
+                    'bg-[color:var(--folded-row-hover-bg)] text-[color:var(--text)]',
+                )}
+                onClick={() =>
+                  setDraftPiSetting(
+                    'defaultProjectTrust',
+                    value as PiSettings['defaultProjectTrust'],
+                  )
                 }
               >
                 {label}

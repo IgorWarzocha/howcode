@@ -10,27 +10,35 @@ export type ComposerQueuedPrompt = {
   text: string
 }
 
-export type NativeAskQuestionOption = {
-  label: string
-  description?: string | undefined
-}
-
-export type NativeAskQuestion = {
-  id: string
-  question: string
-  multiple?: boolean | undefined
-  options: NativeAskQuestionOption[]
-}
-
-export type NativeAskQuestionsRequest = {
-  id: string
-  questions: NativeAskQuestion[]
-}
-
-export type NativeExtensionWidget = {
+export type PiExtensionWidget = {
   key: string
   lines: string[]
   placement?: 'aboveEditor' | 'belowEditor' | 'status' | undefined
+}
+
+export type PiExtensionStatus = {
+  key: string
+  text: string
+}
+
+export type PiExtensionShortcut = {
+  shortcut: string
+  description?: string | undefined
+  extensionPath: string
+}
+
+export type PiExtensionDialogRequest = {
+  id: string
+  method: 'select' | 'confirm' | 'input' | 'editor'
+  title: string
+  message?: string | undefined
+  options?: string[] | undefined
+  placeholder?: string | undefined
+  prefill?: string | undefined
+}
+
+export type ProjectTrustRequest = {
+  cwd: string
 }
 
 export type ComposerModel = {
@@ -45,6 +53,7 @@ export type ComposerContextUsage = {
   tokens: number | null
   contextWindow: number
   percent: number | null
+  latestCacheHitRate: number | null
 }
 
 export type ComposerState = {
@@ -53,8 +62,11 @@ export type ComposerState = {
   currentThinkingLevel: ComposerThinkingLevel
   availableThinkingLevels: ComposerThinkingLevel[]
   queuedPrompts: ComposerQueuedPrompt[]
-  nativeAskQuestionsRequest: NativeAskQuestionsRequest | null
-  nativeExtensionWidgets: NativeExtensionWidget[]
+  piExtensionWidgets: PiExtensionWidget[]
+  piExtensionStatuses: PiExtensionStatus[]
+  piExtensionShortcuts: PiExtensionShortcut[]
+  piExtensionDialogRequest: PiExtensionDialogRequest | null
+  projectTrustRequest: ProjectTrustRequest | null
   contextUsage: ComposerContextUsage | null
   isCompacting: boolean
   isExtensionCommandRunning: boolean

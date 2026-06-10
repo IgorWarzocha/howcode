@@ -21,12 +21,15 @@ export type KeybindingCommandId =
   | 'dictation.toggle'
 
 export type KeybindingOverrides = Partial<Record<KeybindingCommandId, string | null>>
+export type KeybindingMode = 'desktop' | 'pi-tui'
+export type KeybindingScope = 'desktop' | 'global' | 'pi-tui'
 
 export type KeybindingDefinition = {
   id: KeybindingCommandId
   label: string
   defaults: readonly string[]
   reserved?: boolean
+  scope?: KeybindingScope | readonly KeybindingScope[]
 }
 
 export const bundledKeybindings: readonly KeybindingDefinition[] = [
@@ -35,16 +38,42 @@ export const bundledKeybindings: readonly KeybindingDefinition[] = [
     label: 'Open command palette',
     defaults: ['CmdOrCtrl+K', 'CmdOrCtrl+Shift+P'],
     reserved: true,
+    scope: 'global',
   },
-  { id: 'settings.open', label: 'Open settings', defaults: ['CmdOrCtrl+,'] },
-  { id: 'thread.new', label: 'New thread', defaults: ['CmdOrCtrl+N'] },
+  { id: 'settings.open', label: 'Open settings', defaults: ['CmdOrCtrl+,'], scope: 'global' },
+  {
+    id: 'thread.new',
+    label: 'New thread',
+    defaults: ['CmdOrCtrl+N'],
+    scope: ['desktop', 'pi-tui'],
+  },
   { id: 'thread.find', label: 'Find in current thread', defaults: ['CmdOrCtrl+F'] },
-  { id: 'sidebar.find', label: 'Find in sidebar', defaults: ['CmdOrCtrl+Shift+F'] },
-  { id: 'sidebar.toggle', label: 'Toggle sidebar', defaults: ['CmdOrCtrl+B'] },
-  { id: 'terminal.toggle', label: 'Toggle terminal', defaults: ['CmdOrCtrl+J'] },
+  {
+    id: 'sidebar.find',
+    label: 'Find in sidebar',
+    defaults: ['CmdOrCtrl+Shift+F'],
+    scope: ['desktop', 'pi-tui'],
+  },
+  { id: 'sidebar.toggle', label: 'Toggle sidebar', defaults: ['CmdOrCtrl+B'], scope: 'global' },
+  {
+    id: 'terminal.toggle',
+    label: 'Toggle terminal',
+    defaults: ['CmdOrCtrl+J'],
+    scope: ['desktop', 'pi-tui'],
+  },
   { id: 'terminal.focus', label: 'Open and focus terminal', defaults: ['Ctrl+Shift+/'] },
-  { id: 'terminal.clear', label: 'Clear terminal', defaults: ['Ctrl+L'] },
-  { id: 'gitops.open', label: 'Open GitOps', defaults: ['CmdOrCtrl+G'] },
+  {
+    id: 'terminal.clear',
+    label: 'Clear terminal',
+    defaults: ['Ctrl+L'],
+    scope: ['desktop', 'pi-tui'],
+  },
+  {
+    id: 'gitops.open',
+    label: 'Open GitOps',
+    defaults: ['CmdOrCtrl+G'],
+    scope: ['desktop', 'pi-tui'],
+  },
   {
     id: 'gitops.toggleChangedFiles',
     label: 'Toggle changed files',
@@ -54,11 +83,13 @@ export const bundledKeybindings: readonly KeybindingDefinition[] = [
     id: 'thread.previousInProject',
     label: 'Previous thread in current project',
     defaults: ['CmdOrCtrl+Shift+['],
+    scope: ['desktop', 'pi-tui'],
   },
   {
     id: 'thread.nextInProject',
     label: 'Next thread in current project',
     defaults: ['CmdOrCtrl+Shift+]'],
+    scope: ['desktop', 'pi-tui'],
   },
   { id: 'composer.submit', label: 'Submit prompt', defaults: ['Enter'] },
   { id: 'composer.newline', label: 'Insert newline', defaults: ['Shift+Enter'] },
@@ -70,9 +101,23 @@ export const bundledKeybindings: readonly KeybindingDefinition[] = [
 const knownCommandIds = new Set<KeybindingCommandId>(
   bundledKeybindings.map((binding) => binding.id),
 )
+const bundledKeybindingsById = new Map(bundledKeybindings.map((binding) => [binding.id, binding]))
 
 export function isKeybindingCommandId(value: unknown): value is KeybindingCommandId {
   return typeof value === 'string' && knownCommandIds.has(value as KeybindingCommandId)
+}
+
+export function getKeybindingScopes(commandId: KeybindingCommandId): readonly KeybindingScope[] {
+  const scope = bundledKeybindingsById.get(commandId)?.scope ?? 'desktop'
+  return typeof scope === 'string' ? [scope] : scope
+}
+
+export function keybindingCommandIsActiveInMode(
+  commandId: KeybindingCommandId,
+  mode: KeybindingMode,
+) {
+  const scopes = getKeybindingScopes(commandId)
+  return scopes.includes('global') || scopes.includes(mode)
 }
 
 const modifierAliasMap = new Map([

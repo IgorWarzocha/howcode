@@ -1,5 +1,5 @@
 import {
-  answerNativeAskQuestions,
+  answerPiExtensionDialog,
   closeSkillCreatorSession,
   continueSkillCreatorSession,
   dequeueComposerPrompt,
@@ -12,7 +12,7 @@ import {
   installPiPackage,
   installPiSkill,
   invalidateRuntimeSettings,
-  invokeNativeExtensionShortcut,
+  invokePiExtensionShortcut,
   labelSessionTreeEntryInHost,
   listConfiguredPiPackages,
   listConfiguredPiSkills,
@@ -30,6 +30,7 @@ import {
   sendComposerPrompt,
   setComposerModel,
   setComposerThinkingLevel,
+  setProjectTrust,
   startNewThread,
   startSkillCreatorSession,
   stopComposerRun,
@@ -49,7 +50,7 @@ type RuntimeHostRequestHandlerMap = {
 }
 
 const runtimeHostRequestHandlers = {
-  answerNativeAskQuestions: (payload) => answerNativeAskQuestions(payload),
+  answerPiExtensionDialog: (payload) => answerPiExtensionDialog(payload),
   closeSkillCreatorSession: (payload) => closeSkillCreatorSession(payload),
   continueSkillCreatorSession: (payload) => continueSkillCreatorSession(payload),
   dequeueComposerPrompt: (payload) => dequeueComposerPrompt(payload),
@@ -58,7 +59,7 @@ const runtimeHostRequestHandlers = {
   getComposerSkills: (payload) => getComposerSkills(payload.request),
   getComposerSlashCommands: (payload) => getComposerSlashCommands(payload.request),
   getComposerState: (payload) => getComposerState(payload.request),
-  invokeNativeExtensionShortcut: (payload) => invokeNativeExtensionShortcut(payload),
+  invokePiExtensionShortcut: (payload) => invokePiExtensionShortcut(payload),
   labelSessionTreeEntry: (payload) => labelSessionTreeEntryInHost(payload),
   getPiSessionStorage: (payload) => getPiSessionStorage(payload.projectPath),
   installPiPackage: (payload) => installPiPackage(payload),
@@ -79,6 +80,7 @@ const runtimeHostRequestHandlers = {
   sendComposerPrompt: (payload) => sendComposerPrompt(payload),
   setComposerModel: (payload) =>
     setComposerModel(payload.request, payload.provider, payload.modelId),
+  setProjectTrust: (payload) => setProjectTrust(payload),
   setComposerThinkingLevel: (payload) => setComposerThinkingLevel(payload.request, payload.level),
   startNewThread: (payload) => startNewThread(payload.request),
   startSkillCreatorSession: (payload) => startSkillCreatorSession(payload),

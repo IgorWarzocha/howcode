@@ -1,8 +1,6 @@
 import type { AgentMessage } from '@earendil-works/pi-agent-core'
 import type { AssistantUsageSummary, Message, ToolResultImage } from './desktop-contracts'
 
-const hiddenDesktopCustomMessagePrefixes = ['BTW SESSION'] as const
-
 type TextPart = {
   type?: string | undefined
   text?: string | undefined
@@ -364,15 +362,13 @@ function mapCustomMessage(id: string, runtimeMessage: RuntimeMessage): Message |
   if (content.length === 0) return null
 
   const customType = runtimeMessage.customType ?? 'custom'
-  if (hiddenDesktopCustomMessagePrefixes.some((prefix) => customType.startsWith(prefix))) {
-    return null
-  }
   return {
     id,
     role: 'custom',
     customType,
     content,
     isError: customType === 'howcode.extension.error' || undefined,
+    details: runtimeMessage.details,
   }
 }
 

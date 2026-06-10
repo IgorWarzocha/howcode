@@ -135,6 +135,25 @@ function CodeQueuedPrompts(props: CodeWorkspaceContentProps) {
   )
 }
 
+function getComposerRuntimeProps(
+  activeComposerState: CodeWorkspaceContentProps['activeComposerState'],
+) {
+  return {
+    availableModels: activeComposerState?.availableModels ?? [],
+    availableThinkingLevels: activeComposerState?.availableThinkingLevels ?? ['off'],
+    contextUsage: activeComposerState?.contextUsage ?? null,
+    currentModel: activeComposerState?.currentModel ?? null,
+    currentThinkingLevel: activeComposerState?.currentThinkingLevel ?? 'off',
+    isCompacting: activeComposerState?.isCompacting ?? false,
+    isExtensionCommandRunning: activeComposerState?.isExtensionCommandRunning ?? false,
+    piExtensionDialogRequest: activeComposerState?.piExtensionDialogRequest ?? null,
+    piExtensionShortcuts: activeComposerState?.piExtensionShortcuts ?? [],
+    piExtensionStatuses: activeComposerState?.piExtensionStatuses ?? [],
+    piExtensionWidgets: activeComposerState?.piExtensionWidgets ?? [],
+    projectTrustRequest: activeComposerState?.projectTrustRequest ?? null,
+  }
+}
+
 function CodeThreadComposer(props: CodeWorkspaceContentProps) {
   const {
     state,
@@ -170,25 +189,28 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
     handleAction,
   } = props
   const appSettings = shellState?.appSettings ?? FALLBACK_APP_SETTINGS
+  const composerRuntime = getComposerRuntimeProps(activeComposerState)
   return (
     <Composer
       activeView={state.activeView}
-      model={activeComposerState?.currentModel ?? null}
-      contextUsage={activeComposerState?.contextUsage ?? null}
+      model={composerRuntime.currentModel}
+      contextUsage={composerRuntime.contextUsage}
       messages={activeThreadData?.messages}
       customMessages={activeThreadData?.customMessages}
-      availableModels={activeComposerState?.availableModels ?? []}
+      availableModels={composerRuntime.availableModels}
       isStreaming={activeThreadData?.isStreaming ?? false}
       replyActivityKey={getReplyActivityKey(activeThreadData?.messages ?? [])}
-      isCompacting={activeComposerState?.isCompacting ?? false}
-      isExtensionCommandRunning={activeComposerState?.isExtensionCommandRunning ?? false}
-      nativeAskQuestionsRequest={activeComposerState?.nativeAskQuestionsRequest ?? null}
-      nativeExtensionWidgets={activeComposerState?.nativeExtensionWidgets ?? []}
-      nativeSmartBtwEnabled={appSettings.howcodeNativeSmartBtw}
-      thinkingLevel={activeComposerState?.currentThinkingLevel ?? 'off'}
+      isCompacting={composerRuntime.isCompacting}
+      isExtensionCommandRunning={composerRuntime.isExtensionCommandRunning}
+      piExtensionWidgets={composerRuntime.piExtensionWidgets}
+      piExtensionStatuses={composerRuntime.piExtensionStatuses}
+      piExtensionShortcuts={composerRuntime.piExtensionShortcuts}
+      piExtensionDialogRequest={composerRuntime.piExtensionDialogRequest}
+      projectTrustRequest={composerRuntime.projectTrustRequest}
+      thinkingLevel={composerRuntime.currentThinkingLevel}
       restoredQueuedPrompt={scopedRestoredQueuedPrompt}
       streamingBehaviorPreference={appSettings.composerStreamingBehavior}
-      availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ['off']}
+      availableThinkingLevels={composerRuntime.availableThinkingLevels}
       projectId={composerProjectId}
       projectGitState={projectGitState}
       parentBranchName={parentBranchName}

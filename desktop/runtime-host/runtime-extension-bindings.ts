@@ -7,7 +7,7 @@ import {
   refreshHeadlessAgentSessionExtensionBindings,
 } from '../runtime/agent-session-extensions.ts'
 import { buildComposerState } from '../runtime/composer-state.ts'
-import { createNativeExtensionUiContext } from '../runtime/native-extension-ui-state.ts'
+import { createPiExtensionUiContext } from '../runtime/pi-extension-ui-state.ts'
 import type { PiRuntime } from '../runtime/types.ts'
 import { emitDesktopEvent } from './host-events.ts'
 import { publishComposerUpdate, publishThreadUpdate } from './live-thread-publisher.ts'
@@ -54,7 +54,7 @@ export async function bindRuntimeExtensionHandlers(
   handlers: RuntimeExtensionBindingHandlers,
 ) {
   await bindHeadlessAgentSessionExtensions(runtime.session, {
-    uiContext: createNativeExtensionUiContext(runtime, () =>
+    uiContext: createPiExtensionUiContext(runtime, () =>
       publishRuntimeExtensionCommandState(runtime, handlers),
     ),
     onExtensionCommandStateChange: () => publishRuntimeExtensionCommandState(runtime, handlers),

@@ -1,7 +1,15 @@
 ### 0.1.67
 
-- Added native Smart BTW side sessions with numbered slots, GUI/Pi-TUI handoff, and restored Q&A follow-ups.
-- Session tree labels now work from the tree itself, without jumping around first.
+- Implemented /tree functionality with labelling and summarisation.
+- Added native Smart BTW extension, and subsequently removed it, because...
+- Howcode now uses new Pi SDK to render dialogs, widgets, statuslines and notifications.
+- Extensions pass through shortcuts.
+- Fancy react-rendered extensions not supported yet. Only normal-ish widgets.
+- Split Pi TUI takeover and the terminal drawer properly.
+- Shortcut handling improved when Pi TUI is on.
+- Resolved an annoying bug that didn't allow typing into Pi TUI.
+- Added Pi project trust prompts in desktop, backed by Pi's trust store.
+- Updated Pi SDK/runtime packages to 0.79.1.
 
 #### 0.1.66 Hotfixes (because .67 has to be more special)
 

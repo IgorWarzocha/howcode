@@ -12,7 +12,7 @@ export type {
   DesktopActionInvoker,
   DesktopActionResult,
   InboxThread,
-  NativeAskQuestionsRequest,
+  PiExtensionDialogRequest,
   ProjectDiffBaseline,
   ProjectDiffRenderMode,
   ProjectGitState,

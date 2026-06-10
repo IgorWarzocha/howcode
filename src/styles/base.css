@@ -37,7 +37,13 @@ button {
 }
 
 code {
-  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-family: "Geist Mono Variable", "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+}
+
+.pi-extension-mono {
+  font-family: "Geist Mono Variable", "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 11.5px;
+  line-height: 1rem;
 }
 
 ::-webkit-scrollbar {

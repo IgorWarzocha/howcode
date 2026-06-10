@@ -37,10 +37,11 @@ export type {
   ComposerStateRequest,
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
-  NativeAskQuestion,
-  NativeAskQuestionOption,
-  NativeAskQuestionsRequest,
-  NativeExtensionWidget,
+  PiExtensionDialogRequest,
+  PiExtensionShortcut,
+  PiExtensionStatus,
+  PiExtensionWidget,
+  ProjectTrustRequest,
 } from './desktop-composer-contracts'
 export type {
   DictationModelId,

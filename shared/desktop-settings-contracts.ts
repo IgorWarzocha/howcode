@@ -28,8 +28,6 @@ export type AppSettings = {
   gitCommitMessageThinkingLevel: ComposerThinkingLevel
   skillCreatorModel: ModelSelection | null
   skillCreatorThinkingLevel: ComposerThinkingLevel
-  smartBtwModel: ModelSelection | null
-  smartBtwThinkingLevel: ComposerThinkingLevel
   composerStreamingBehavior: ComposerStreamingBehavior
   dictationModelId: DictationModelId | null
   dictationMaxDurationSeconds: number
@@ -47,8 +45,6 @@ export type AppSettings = {
   gitDiffIncludeUntrackedDefault: boolean
   projectDeletionMode: ProjectDeletionMode
   useAgentsSkillsPaths: boolean
-  howcodeNativeAskQuestions: boolean
-  howcodeNativeSmartBtw: boolean
   devUpdateBranch: boolean
   piTuiTakeover: boolean
   hideSidebarSessionCounts: boolean
@@ -62,8 +58,10 @@ export type PiTransportMode = 'sse' | 'websocket' | 'auto'
 export type PiQueueMode = 'all' | 'one-at-a-time'
 export type PiDoubleEscapeAction = 'fork' | 'tree' | 'none'
 export type PiTreeFilterMode = 'default' | 'no-tools' | 'user-only' | 'labeled-only' | 'all'
+export type PiDefaultProjectTrust = 'ask' | 'always' | 'never'
 
 export type PiSettings = {
+  extensions: string[]
   theme: string
   autoCompact: boolean
   enableSkillCommands: boolean
@@ -80,6 +78,7 @@ export type PiSettings = {
   steeringMode: PiQueueMode
   followUpMode: PiQueueMode
   doubleEscapeAction: PiDoubleEscapeAction
+  defaultProjectTrust: PiDefaultProjectTrust
   treeFilterMode: PiTreeFilterMode
   editorPaddingX: number
   autocompleteMaxVisible: number

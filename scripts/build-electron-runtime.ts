@@ -1,4 +1,4 @@
-import { copyFile, cp, mkdir, rm, stat, watch } from 'node:fs/promises'
+import { cp, mkdir, rm, watch } from 'node:fs/promises'
 import path from 'node:path'
 
 const isWatchMode = process.argv.includes('--watch')
@@ -55,49 +55,6 @@ async function prepareBuildDirectories() {
   await mkdir(path.join(buildRoot, 'desktop'), { recursive: true })
 }
 
-const nativeExtensionFileNames = [
-  'howcode-native-ask-questions.mjs',
-  'howcode-native-smart-btw.mjs',
-]
-const nativeExtensionDirectoryNames = ['smart-btw']
-const nativeExtensionsSourceDir = path.join(projectRoot, 'desktop', 'native-extensions')
-const nativeExtensionsOutputDir = path.join(buildRoot, 'desktop', 'native-extensions')
-
-async function copyNativeExtensionAssets() {
-  await mkdir(nativeExtensionsOutputDir, { recursive: true })
-  await Promise.all(
-    nativeExtensionFileNames.map((fileName) =>
-      copyFile(
-        path.join(nativeExtensionsSourceDir, fileName),
-        path.join(nativeExtensionsOutputDir, fileName),
-      ),
-    ),
-  )
-  await Promise.all(
-    nativeExtensionDirectoryNames.map((directoryName) =>
-      cp(
-        path.join(nativeExtensionsSourceDir, directoryName),
-        path.join(nativeExtensionsOutputDir, directoryName),
-        { recursive: true },
-      ),
-    ),
-  )
-}
-
-async function isNativeExtensionAsset(filename: string | Buffer | null) {
-  if (!filename) return true
-  const relativePath = filename.toString()
-  if (nativeExtensionFileNames.includes(relativePath)) return true
-  const topLevelName = relativePath.split(path.sep)[0]
-  if (topLevelName && nativeExtensionDirectoryNames.includes(topLevelName)) return true
-  try {
-    const entry = await stat(path.join(nativeExtensionsSourceDir, relativePath))
-    return entry.isFile() && nativeExtensionFileNames.includes(path.basename(relativePath))
-  } catch {
-    return false
-  }
-}
-
 async function copyDesktopResources() {
   const outputPath = path.join(buildRoot, 'resources')
   await rm(outputPath, { recursive: true, force: true })
@@ -132,19 +89,11 @@ async function runBuild() {
     )
   }
 
-  await copyNativeExtensionAssets()
   await copyDesktopResources()
 
   if (isWatchMode) {
     console.log('Watching Electron runtime bundles...')
-    void (async () => {
-      for await (const event of watch(nativeExtensionsSourceDir, { recursive: true })) {
-        if (await isNativeExtensionAsset(event.filename)) {
-          await copyNativeExtensionAssets()
-          console.log('Copied native extension assets.')
-        }
-      }
-    })()
+
     void (async () => {
       for await (const _event of watch(path.join(projectRoot, 'desktop', 'resources'), {
         recursive: true,

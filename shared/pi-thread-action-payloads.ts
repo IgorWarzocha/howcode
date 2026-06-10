@@ -312,8 +312,6 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === 'gitCommitMessageThinkingLevel' ||
     payload.key === 'skillCreatorModel' ||
     payload.key === 'skillCreatorThinkingLevel' ||
-    payload.key === 'smartBtwModel' ||
-    payload.key === 'smartBtwThinkingLevel' ||
     payload.key === 'composerStreamingBehavior' ||
     payload.key === 'dictationModelId' ||
     payload.key === 'dictationMaxDurationSeconds' ||
@@ -331,8 +329,6 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === 'gitDiffIncludeUntrackedDefault' ||
     payload.key === 'projectDeletionMode' ||
     payload.key === 'useAgentsSkillsPaths' ||
-    payload.key === 'howcodeNativeAskQuestions' ||
-    payload.key === 'howcodeNativeSmartBtw' ||
     payload.key === 'devUpdateBranch' ||
     payload.key === 'betaUpdateBranch' ||
     payload.key === 'piTuiTakeover' ||
@@ -345,27 +341,38 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     : null
 }
 
-export function getNativeAskQuestionsRequestId(payload: DesktopActionPayloadInput) {
+export function getPiExtensionRequestId(payload: DesktopActionPayloadInput) {
   return typeof payload.requestId === 'string' ? payload.requestId : null
 }
 
-export function getNativeAskQuestionsAnswers(
-  payload: DesktopActionPayloadInput,
-): string[][] | null {
-  if (payload.answers === null) return null
-  if (!Array.isArray(payload.answers)) return []
-  return payload.answers.map((answer) =>
-    Array.isArray(answer)
-      ? answer
-          .filter((item): item is string => typeof item === 'string')
-          .map((item) => item.trim())
-          .filter(Boolean)
-      : [],
-  )
+export function getPiExtensionShortcut(payload: DesktopActionPayloadInput) {
+  return typeof payload.shortcut === 'string' ? payload.shortcut : null
 }
 
-export function getNativeExtensionShortcut(payload: DesktopActionPayloadInput) {
-  return typeof payload.shortcut === 'string' ? payload.shortcut : null
+export function getPiExtensionEditorState(payload: DesktopActionPayloadInput) {
+  return {
+    editorSelectionEnd:
+      typeof payload.editorSelectionEnd === 'number' ? payload.editorSelectionEnd : undefined,
+    editorSelectionStart:
+      typeof payload.editorSelectionStart === 'number' ? payload.editorSelectionStart : undefined,
+    editorText: typeof payload.editorText === 'string' ? payload.editorText : undefined,
+  }
+}
+
+export function getPiExtensionDialogAnswer(payload: DesktopActionPayloadInput) {
+  return {
+    cancelled: payload.cancelled === true,
+    confirmed: payload.confirmed === true,
+    value: typeof payload.value === 'string' ? payload.value : undefined,
+  }
+}
+
+export function getProjectTrustDecision(payload: DesktopActionPayloadInput) {
+  return typeof payload.trusted === 'boolean' ? payload.trusted : null
+}
+
+export function getProjectTrustCwd(payload: DesktopActionPayloadInput) {
+  return typeof payload.cwd === 'string' && payload.cwd.length > 0 ? payload.cwd : null
 }
 
 export function getSessionTreeNavigate(payload: DesktopActionPayloadInput) {

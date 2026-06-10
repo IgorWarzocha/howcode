@@ -3,7 +3,6 @@ import type { ReactNode } from 'react'
 export type SettingsCategoryId =
   | 'howcode'
   | 'composer'
-  | 'extensions'
   | 'models'
   | 'git-diffs'
   | 'pi'

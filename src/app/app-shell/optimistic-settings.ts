@@ -20,8 +20,6 @@ const optimisticSettingKeys = new Set([
   'gitCommitMessageThinkingLevel',
   'skillCreatorModel',
   'skillCreatorThinkingLevel',
-  'smartBtwModel',
-  'smartBtwThinkingLevel',
   'composerStreamingBehavior',
   'dictationModelId',
   'dictationMaxDurationSeconds',
@@ -39,8 +37,6 @@ const optimisticSettingKeys = new Set([
   'gitDiffIncludeUntrackedDefault',
   'projectDeletionMode',
   'useAgentsSkillsPaths',
-  'howcodeNativeAskQuestions',
-  'howcodeNativeSmartBtw',
   'devUpdateBranch',
   'betaUpdateBranch',
   'piTuiTakeover',
@@ -116,9 +112,6 @@ function applyOptimisticModelSetting(
       nextSettings.skillCreatorModel,
     )
   }
-  if (payload.key === 'smartBtwModel') {
-    nextSettings.smartBtwModel = getOptimisticModelSelection(payload, nextSettings.smartBtwModel)
-  }
 }
 
 function getResettableThinkingLevel(
@@ -151,9 +144,6 @@ function applyOptimisticThinkingSetting(
   if (payload.key === 'skillCreatorThinkingLevel' && isThinkingLevel(payload.value)) {
     nextSettings.skillCreatorThinkingLevel = payload.value
   }
-  if (payload.key === 'smartBtwThinkingLevel' && isThinkingLevel(payload.value)) {
-    nextSettings.smartBtwThinkingLevel = payload.value
-  }
 }
 
 function applyOptimisticBooleanSetting(
@@ -168,8 +158,6 @@ function applyOptimisticBooleanSetting(
     'gitDiffFileTreeDefaultVisible',
     'gitDiffIncludeUntrackedDefault',
     'useAgentsSkillsPaths',
-    'howcodeNativeAskQuestions',
-    'howcodeNativeSmartBtw',
   ] as const
   if (directBooleanKeys.includes(payload.key as (typeof directBooleanKeys)[number])) {
     nextSettings[payload.key as (typeof directBooleanKeys)[number]] = payload.value

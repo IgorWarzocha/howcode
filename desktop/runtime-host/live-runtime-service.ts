@@ -8,6 +8,7 @@ import type {
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
 import { createLocalThreadDraft, getPersistedSessionPath } from '../../shared/session-paths.ts'
 import { loadAppSettings } from '../app-settings/readers.ts'
+import { getPiModule } from '../pi-module.ts'
 import { dequeueComposerPromptFromRuntime } from '../runtime/composer-dequeue.ts'
 import {
   applyComposerModeSettings,
@@ -29,7 +30,11 @@ import {
 } from '../runtime/composer-skill-references.ts'
 import { buildComposerState, buildComposerStateSnapshot } from '../runtime/composer-state.ts'
 import { stopComposerRuntime } from '../runtime/composer-stop.ts'
-import { answerNativeAskQuestions as answerNativeAskQuestionsForRuntime } from '../runtime/native-ask-questions-state.ts'
+import { setRuntimeProjectTrust } from '../runtime/isolated-settings-manager.ts'
+import {
+  answerPiExtensionDialog as answerPiExtensionDialogForRuntime,
+  bindPiExtensionEditorState,
+} from '../runtime/pi-extension-ui-state.ts'
 import type { PiRuntime } from '../runtime/types.ts'
 import { getComposerSessionResources } from './composer-resource-service.ts'
 import {
@@ -323,8 +328,13 @@ export async function dequeueComposerPrompt(
   })
 }
 
-export async function answerNativeAskQuestions(
-  request: ComposerStateRequest & { requestId: string; answers: string[][] | null },
+export async function answerPiExtensionDialog(
+  request: ComposerStateRequest & {
+    requestId: string
+    cancelled?: boolean | undefined
+    confirmed?: boolean | undefined
+    value?: string | undefined
+  },
 ) {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
   if (!persistedSessionPath) return { ok: false }
@@ -335,7 +345,11 @@ export async function answerNativeAskQuestions(
       settingsCwd: request.composerSessionDir ?? null,
       chatGroupId: request.chatGroupId ?? null,
     })
-    const ok = answerNativeAskQuestionsForRuntime(runtime, request.requestId, request.answers)
+    const ok = answerPiExtensionDialogForRuntime(runtime, request.requestId, {
+      cancelled: request.cancelled,
+      confirmed: request.confirmed,
+      value: request.value,
+    })
     await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath })
     return { ok }
   } finally {
@@ -385,9 +399,19 @@ export async function openThreadRuntime(request: ComposerStateRequest) {
   })
 }
 
-export async function invokeNativeExtensionShortcut(
-  request: ComposerStateRequest & { shortcut: string },
-): Promise<{ ok: boolean }> {
+export async function invokePiExtensionShortcut(
+  request: ComposerStateRequest & {
+    editorSelectionEnd?: number | undefined
+    editorSelectionStart?: number | undefined
+    editorText?: string | undefined
+    shortcut: string
+  },
+): Promise<{
+  editorSelectionEnd?: number | undefined
+  editorSelectionStart?: number | undefined
+  editorText?: string | undefined
+  ok: boolean
+}> {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
   if (!persistedSessionPath) return { ok: false }
 
@@ -402,15 +426,46 @@ export async function invokeNativeExtensionShortcut(
         .getShortcuts({} as never)
         .get(request.shortcut.toLowerCase() as never)
       if (!shortcut) return { ok: false }
-      await shortcut.handler(runtime.session.extensionRunner.createContext())
+      const unbindEditorState = bindPiExtensionEditorState(runtime, {
+        changed: false,
+        selectionEnd: request.editorSelectionEnd ?? request.editorText?.length ?? 0,
+        selectionStart: request.editorSelectionStart ?? request.editorText?.length ?? 0,
+        text: request.editorText ?? '',
+      })
+      let editorState: ReturnType<typeof unbindEditorState>
+      try {
+        await shortcut.handler(runtime.session.extensionRunner.createContext())
+      } finally {
+        editorState = unbindEditorState()
+      }
       const composer = await buildComposerState(runtime)
       publishComposerUpdate(composer, {
         projectId: request.projectId ?? runtime.cwd,
         sessionPath: persistedSessionPath,
       })
-      return { ok: true }
+      return editorState.changed
+        ? {
+            editorSelectionEnd: editorState.selectionEnd,
+            editorSelectionStart: editorState.selectionStart,
+            editorText: editorState.text,
+            ok: true,
+          }
+        : { ok: true }
     } finally {
       scheduleRuntimeDisposalForRuntime(runtime)
     }
   })
+}
+
+export async function setProjectTrust(
+  request: ComposerStateRequest & { cwd: string; trusted: boolean },
+): Promise<{ ok: true }> {
+  const { ProjectTrustStore, getAgentDir } = await getPiModule()
+  setRuntimeProjectTrust({
+    ProjectTrustStore,
+    agentDir: getAgentDir(),
+    cwd: request.cwd,
+    trusted: request.trusted,
+  })
+  return { ok: true }
 }

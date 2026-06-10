@@ -128,11 +128,19 @@ export type RuntimeHostRequestMap = {
     queueSnapshotKey: string
     queueMode: Exclude<ComposerStreamingBehavior, 'stop'>
   }
-  answerNativeAskQuestions: ComposerStateRequest & {
+  answerPiExtensionDialog: ComposerStateRequest & {
     requestId: string
-    answers: string[][] | null
+    cancelled?: boolean | undefined
+    confirmed?: boolean | undefined
+    value?: string | undefined
   }
-  invokeNativeExtensionShortcut: ComposerStateRequest & { shortcut: string }
+  invokePiExtensionShortcut: ComposerStateRequest & {
+    editorSelectionEnd?: number | undefined
+    editorSelectionStart?: number | undefined
+    editorText?: string | undefined
+    shortcut: string
+  }
+  setProjectTrust: ComposerStateRequest & { cwd: string; trusted: boolean }
   labelSessionTreeEntry: ComposerStateRequest & {
     targetEntryId: string
     label?: string | undefined | null
@@ -193,8 +201,14 @@ export type RuntimeHostResponseMap = {
   }
   stopComposerRun: { ok: true }
   dequeueComposerPrompt: string | null
-  answerNativeAskQuestions: { ok: boolean }
-  invokeNativeExtensionShortcut: { ok: boolean }
+  answerPiExtensionDialog: { ok: boolean }
+  invokePiExtensionShortcut: {
+    editorSelectionEnd?: number | undefined
+    editorSelectionStart?: number | undefined
+    editorText?: string | undefined
+    ok: boolean
+  }
+  setProjectTrust: { ok: true }
   labelSessionTreeEntry: { ok: true }
   navigateSessionTree: {
     cancelled: boolean
@@ -204,10 +218,6 @@ export type RuntimeHostResponseMap = {
 }
 
 export type RuntimeHostMainRequestMap = {
-  getSessionNativeExtensions: { sessionPath: string }
-  setSessionNativeExtensions: { sessionPath: string; enabled: string[] }
-  snapshotDefaultNativeExtensions: Record<string, never>
-  getNativeSmartBtwConfig: Record<string, never>
   createArtifact: {
     conversationId: string
     slug: string
@@ -229,14 +239,6 @@ export type RuntimeHostMainRequestMap = {
 }
 
 export type RuntimeHostMainResponseMap = {
-  getSessionNativeExtensions: string[] | null
-  setSessionNativeExtensions: { ok: true }
-  snapshotDefaultNativeExtensions: string[]
-  getNativeSmartBtwConfig: {
-    model: string | null
-    composerModel: string | null
-    thinking: string | null
-  }
   createArtifact: Artifact
   updateArtifact: Artifact
   editArtifact: Artifact

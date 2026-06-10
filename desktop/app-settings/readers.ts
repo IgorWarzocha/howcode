@@ -26,8 +26,6 @@ import {
   hideSidebarSessionCountsKey,
   hoverToBlurKey,
   hoverToFocusKey,
-  howcodeNativeAskQuestionsKey,
-  howcodeNativeSmartBtwKey,
   initializeGitOnProjectCreateKey,
   keybindingsKey,
   legacyDevUpdateBranchKey,
@@ -40,8 +38,6 @@ import {
   sidebarVisibleProjectIdsKey,
   skillCreatorModelKey,
   skillCreatorThinkingLevelKey,
-  smartBtwModelKey,
-  smartBtwThinkingLevelKey,
   useAgentsSkillsPathsKey,
 } from './keys.ts'
 import {
@@ -112,13 +108,6 @@ function loadProjectUiSettings(value: (key: string) => string | undefined) {
   }
 }
 
-function loadNativeExtensionSettings(value: (key: string) => string | undefined) {
-  return {
-    howcodeNativeAskQuestions: parseBooleanPreference(value(howcodeNativeAskQuestionsKey)) ?? false,
-    howcodeNativeSmartBtw: parseBooleanPreference(value(howcodeNativeSmartBtwKey)) ?? false,
-  }
-}
-
 export function loadAppSettings(): AppSettings {
   const rows = loadPreferenceRows()
   const value = (key: string) => rows.get(key)?.valueJson
@@ -134,8 +123,6 @@ export function loadAppSettings(): AppSettings {
     skillCreatorModel: parseModelSelection(value(skillCreatorModelKey)),
     skillCreatorThinkingLevel:
       parseThinkingLevelPreference(value(skillCreatorThinkingLevelKey)) ?? 'off',
-    smartBtwModel: parseModelSelection(value(smartBtwModelKey)),
-    smartBtwThinkingLevel: parseThinkingLevelPreference(value(smartBtwThinkingLevelKey)) ?? 'low',
     composerStreamingBehavior:
       parseComposerStreamingBehaviorPreference(value(composerStreamingBehaviorKey)) ?? 'followUp',
     dictationModelId: parseDictationModelIdPreference(value(dictationModelIdKey)),
@@ -161,7 +148,6 @@ export function loadAppSettings(): AppSettings {
     projectDeletionMode:
       parseProjectDeletionModePreference(value(projectDeletionModeKey)) ?? 'pi-only',
     useAgentsSkillsPaths: parseBooleanPreference(value(useAgentsSkillsPathsKey)) ?? false,
-    ...loadNativeExtensionSettings(value),
     devUpdateBranch: getDevUpdateBranch(getDevUpdateBranchValue(value)),
     piTuiTakeover: parseBooleanPreference(value(piTuiTakeoverKey)) ?? false,
     hoverToFocus: parseBooleanPreference(value(hoverToFocusKey)) ?? true,

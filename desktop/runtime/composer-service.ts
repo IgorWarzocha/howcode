@@ -267,7 +267,7 @@ export async function stopComposerRun(request: ComposerStateRequest): Promise<vo
   })
 }
 
-export async function invokeNativeExtensionShortcut(
+export async function invokePiExtensionShortcut(
   request: ComposerStateRequest & { shortcut: string },
 ): Promise<{ ok: boolean }> {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath)

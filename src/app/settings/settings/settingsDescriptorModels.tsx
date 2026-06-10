@@ -284,24 +284,5 @@ export function buildModelSettingsDescriptors({
             }),
         ),
     },
-    {
-      id: 'extensions.smart-btw-model',
-      category: 'extensions',
-      title: 'Smart btw model',
-      description: 'Small side-session model for /btw questions.',
-      keywords: 'btw side session model provider reasoning thinking extension',
-      render: () =>
-        renderModelWorkflowControls(
-          'smart-btw-models',
-          appSettings.smartBtwModel,
-          appSettings.smartBtwThinkingLevel,
-          controller.selectSmartBtwModel,
-          (value) =>
-            void onAction('settings.update', {
-              key: 'smartBtwThinkingLevel',
-              value: value ?? 'off',
-            }),
-        ),
-    },
   ]
 }

@@ -1,14 +1,9 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 const repoRoot = path.resolve(__dirname, '../..')
 const desktopRoot = path.join(repoRoot, 'desktop')
-const askQuestionsExtensionPath = path.join(
-  repoRoot,
-  'desktop/native-extensions/howcode-native-ask-questions.mjs',
-)
 const sourceFileExtensionPattern = /\.(?:cts|ts|mts|tsx)$/
 
 const allowedPiRuntimeImportPrefixes = [
@@ -94,14 +89,5 @@ describe('Pi runtime import boundary', () => {
       })
 
     expect(violations).toEqual([])
-  })
-
-  it('keeps the bundled ask-questions extension loadable', async () => {
-    await expect(import(pathToFileURL(askQuestionsExtensionPath).href)).resolves.toEqual(
-      expect.objectContaining({
-        createHowcodeAskQuestionsTool: expect.any(Function),
-        default: expect.any(Function),
-      }),
-    )
   })
 })

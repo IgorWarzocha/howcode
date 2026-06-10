@@ -11,6 +11,7 @@ export const appTypographyTokens = {
   group: { size: '13px', lineHeight: '1.25rem' },
   control: { size: '12.5px', lineHeight: '1.25rem' },
   small: { size: '12px', lineHeight: '1rem' },
+  compactWidget: { size: '12px', lineHeight: '0.92rem' },
   smallComfortable: { size: '12px', lineHeight: '1.2rem' },
   meta: { size: '11px', lineHeight: '1rem' },
   tooltip: { size: '11.5px', lineHeight: '1rem' },
@@ -44,6 +45,10 @@ const tokenCssVars: Record<
   group: { size: '--app-type-group-size', lineHeight: '--app-type-group-line-height' },
   control: { size: '--app-type-control-size', lineHeight: '--app-type-control-line-height' },
   small: { size: '--app-type-small-size', lineHeight: '--app-type-small-line-height' },
+  compactWidget: {
+    size: '--app-type-small-size',
+    lineHeight: '--app-type-compact-widget-line-height',
+  },
   smallComfortable: {
     size: '--app-type-small-size',
     lineHeight: '--app-type-small-comfortable-line-height',
@@ -114,6 +119,8 @@ const tokenClasses: Record<TypographyTokenName, string> = {
   control:
     'text-[length:var(--app-type-control-size)] leading-[var(--app-type-control-line-height)]',
   small: 'text-[length:var(--app-type-small-size)] leading-[var(--app-type-small-line-height)]',
+  compactWidget:
+    'text-[length:var(--app-type-small-size)] leading-[var(--app-type-compact-widget-line-height)]',
   smallComfortable:
     'text-[length:var(--app-type-small-size)] leading-[var(--app-type-small-comfortable-line-height)]',
   meta: 'text-[length:var(--app-type-meta-size)] leading-[var(--app-type-meta-line-height)]',
@@ -154,6 +161,7 @@ export const appTypeControlNormalClass = `${appTypeControlClass} font-normal`
 export const appTypeControlStrongClass = `${appTypeControlClass} font-medium`
 export const appTypeSmallClass = typeClass('smallComfortable')
 export const appTypeSmallStrongClass = `${appTypeSmallClass} font-medium`
+export const appTypeCompactWidgetClass = typeClass('compactWidget')
 export const appTypeMetaClass = typeClass('meta')
 export const appTypeTinyClass = typeClass('tiny')
 export const appTypeTinyStrongClass = `${appTypeTinyClass} font-medium`

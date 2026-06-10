@@ -21,7 +21,6 @@ export {
   toggleProjectPinned,
 } from './project-writes.ts'
 export {
-  setSessionNativeExtensions,
   syncSessionSummaries,
   upsertThreadSummary,
 } from './session-writes.ts'

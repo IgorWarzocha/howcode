@@ -27,7 +27,7 @@ import {
 } from './useTerminalSessionLifecycle'
 import { useTerminalXtermInstance } from './useTerminalXtermInstance'
 
-type TerminalViewportProps = {
+export type TerminalViewportBaseProps = {
   projectId: string
   sessionPath: string | null
   launchMode?: 'shell' | 'pi-session' | undefined
@@ -44,7 +44,7 @@ type TerminalViewportProps = {
   className?: string | undefined
 }
 
-export function TerminalViewport({
+export function TerminalViewportBase({
   projectId,
   sessionPath,
   launchMode = 'shell',
@@ -59,7 +59,7 @@ export function TerminalViewport({
   stickToBottomOnOutput = true,
   bottomAlignInitialContent = false,
   className,
-}: TerminalViewportProps) {
+}: TerminalViewportBaseProps) {
   const viewportRef = useRef<HTMLDivElement | null>(null)
   const terminalMountRef = useRef<HTMLDivElement | null>(null)
   const terminalInstanceRef = useRef<XTerm | null>(null)
@@ -150,12 +150,14 @@ export function TerminalViewport({
   )
 
   useHowcodeKeybindingCommand('terminal.clear', (event) => {
+    if (effectiveLaunchMode !== 'shell') return
     if (!isTerminalFocused()) return
     event.preventDefault()
     resetTerminal('')
   })
 
   useHowcodeKeybindingCommand('terminal.focus', (event) => {
+    if (effectiveLaunchMode !== 'shell') return
     event.preventDefault()
     focusTerminal()
   })

@@ -1,9 +1,4 @@
 import { normalizeModelRegistryContextWindows } from '../../shared/model-context-window-normalization.ts'
-import { getPersistedSessionPath } from '../../shared/session-paths.ts'
-import {
-  ensureNativeExtensionRuntimePath,
-  getNativeExtensionRuntimePaths,
-} from '../native-extensions/native-extension-paths.ts'
 import { getPiModule } from '../pi-module.ts'
 import {
   abortHeadlessExtensionCommand,
@@ -12,15 +7,14 @@ import {
 import { createArtifactTools } from '../runtime/artifact-tools.ts'
 import { createAttachmentFileTools } from '../runtime/attachment-file-tools.ts'
 import { getRuntimeSystemPrompt } from '../runtime/chat-system-prompt.ts'
-import { buildComposerState } from '../runtime/composer-state.ts'
 import {
   createIsolatedRuntimeResourceLoader,
   createRuntimeSettingsManager,
+  getRuntimeDefaultProjectTrust,
+  resolveRuntimeProjectTrust,
 } from '../runtime/isolated-settings-manager.ts'
 import type { PiRuntime } from '../runtime/types.ts'
-import { publishComposerUpdate } from './live-thread-publisher.ts'
 import { invokeMainRequest } from './main-request-client.ts'
-import { createNativeAskQuestionsTools } from './native-ask-questions-tool.ts'
 import {
   bindRuntimeExtensionHandlers,
   refreshRuntimeExtensionHandlers,
@@ -31,37 +25,6 @@ type LiveRuntimeFactoryHandlers = {
   reloadRuntimeSettingsIfSafe: (runtimeKey: string) => Promise<boolean>
   scheduleRuntimeDisposal: (runtimeKey: string) => void
   suspendRuntimeDisposal: (runtimeKey: string) => void
-}
-
-async function getEnabledNativeExtensionsForRuntime(options: {
-  sessionManager?: PiRuntime['session']['sessionManager']
-}) {
-  const sessionPath = options.sessionManager?.getSessionFile?.() ?? null
-  if (sessionPath) {
-    const enabled = await invokeMainRequest('getSessionNativeExtensions', { sessionPath })
-    if (enabled) return enabled
-    const defaultEnabled = await invokeMainRequest('snapshotDefaultNativeExtensions', {})
-    await invokeMainRequest('setSessionNativeExtensions', {
-      sessionPath,
-      enabled: defaultEnabled,
-    })
-    return defaultEnabled
-  }
-
-  return await invokeMainRequest('snapshotDefaultNativeExtensions', {})
-}
-
-async function applyNativeExtensionRuntimeEnvironment(enabledNativeExtensions: string[]) {
-  if (!enabledNativeExtensions.includes('smartBtw')) return
-  const cfg = await invokeMainRequest('getNativeSmartBtwConfig', {})
-  updateOptionalEnvironmentValue('HOWCODE_SMART_BTW_MODEL', cfg.model)
-  updateOptionalEnvironmentValue('HOWCODE_COMPOSER_MODEL', cfg.composerModel)
-  updateOptionalEnvironmentValue('HOWCODE_SMART_BTW_THINKING', cfg.thinking)
-}
-
-function updateOptionalEnvironmentValue(key: string, value: string | null | undefined) {
-  if (value?.trim()) process.env[key] = value
-  else delete process.env[key]
 }
 
 export async function createLiveRuntime(
@@ -80,27 +43,35 @@ export async function createLiveRuntime(
     SessionManager,
     SettingsManager,
     DefaultResourceLoader,
+    ProjectTrustStore,
     createAgentSession,
-    defineTool,
     getAgentDir,
+    hasProjectTrustInputs,
   } = await getPiModule()
   const agentDir = getAgentDir()
+  const defaultProjectTrust = getRuntimeDefaultProjectTrust({
+    SettingsManager,
+    agentDir,
+    cwd: options.cwd,
+  })
+  const projectTrusted = resolveRuntimeProjectTrust({
+    ProjectTrustStore,
+    agentDir,
+    cwd: options.cwd,
+    defaultProjectTrust,
+    hasProjectTrustInputs,
+    settingsCwd: options.settingsCwd,
+  })
   const authStorage = AuthStorage.create()
   const modelRegistry = normalizeModelRegistryContextWindows(
     ModelRegistry.create(authStorage, `${agentDir}/models.json`),
   )
-  const enabledNativeExtensions = await getEnabledNativeExtensionsForRuntime(
-    options.sessionManager ? { sessionManager: options.sessionManager } : {},
-  )
-  await applyNativeExtensionRuntimeEnvironment(enabledNativeExtensions)
   const settingsManager = createRuntimeSettingsManager({
     SettingsManager,
     cwd: options.cwd,
     agentDir,
     settingsCwd: options.settingsCwd,
-    additionalExtensions: getNativeExtensionRuntimePaths(
-      enabledNativeExtensions.filter((id) => id !== 'askQuestions'),
-    ),
+    projectTrusted,
   })
   const sessionDir = options.sessionDir ?? settingsManager.getSessionDir() ?? undefined
   const resourceLoader = await createIsolatedRuntimeResourceLoader({
@@ -109,26 +80,9 @@ export async function createLiveRuntime(
     agentDir,
     settingsCwd: options.settingsCwd,
     settingsManager,
+    projectTrusted,
     systemPrompt: getRuntimeSystemPrompt({ settingsCwd: options.settingsCwd }),
   })
-  let runtime: PiRuntime | null = null
-  const nativeAskQuestionTools = enabledNativeExtensions.includes('askQuestions')
-    ? await createNativeAskQuestionsTools({
-        defineTool,
-        extensionPath: ensureNativeExtensionRuntimePath('askQuestions'),
-        getRuntime: () => runtime,
-        onStateChange: () => {
-          if (!runtime) return
-          const activeRuntime = runtime
-          void buildComposerState(activeRuntime).then((composer) => {
-            publishComposerUpdate(composer, {
-              projectId: activeRuntime.cwd,
-              sessionPath: activeRuntime.session.sessionFile,
-            })
-          })
-        },
-      })
-    : []
   const attachmentFileTools = options.settingsCwd
     ? createAttachmentFileTools({
         cwd: options.cwd,
@@ -141,7 +95,7 @@ export async function createLiveRuntime(
     authStorage,
     modelRegistry,
     settingsManager,
-    ...(resourceLoader ? { resourceLoader } : {}),
+    resourceLoader,
     sessionManager: options.sessionManager ?? SessionManager.create(options.cwd, sessionDir),
     ...(options.settingsCwd
       ? {
@@ -156,29 +110,16 @@ export async function createLiveRuntime(
               listArtifacts: (conversationId) =>
                 invokeMainRequest('listArtifacts', { conversationId }),
             }),
-            ...nativeAskQuestionTools,
           ],
         }
-      : nativeAskQuestionTools.length > 0
-        ? { customTools: nativeAskQuestionTools }
-        : {}),
+      : {}),
   })
-  runtime = {
+  const runtime = {
     cwd: options.cwd,
     session,
     chatGroupId: options.chatGroupId ?? null,
     attachmentFileAccess: attachmentFileTools?.access,
   } satisfies PiRuntime
-
-  if (!options.sessionManager) {
-    const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile)
-    if (runtimeKey) {
-      await invokeMainRequest('setSessionNativeExtensions', {
-        sessionPath: runtimeKey,
-        enabled: enabledNativeExtensions,
-      })
-    }
-  }
 
   session.subscribe((event) =>
     handleRuntimeSessionEvent(runtime, event, {

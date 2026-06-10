@@ -290,14 +290,32 @@ export function dequeueComposerPrompt(
   return invokeRuntimeHost('dequeueComposerPrompt', withComposerModeSettings(request))
 }
 
-export function answerNativeAskQuestions(
-  request: ComposerStateRequest & { requestId: string; answers: string[][] | null },
+export function answerPiExtensionDialog(
+  request: ComposerStateRequest & {
+    requestId: string
+    cancelled?: boolean | undefined
+    confirmed?: boolean | undefined
+    value?: string | undefined
+  },
 ) {
-  return invokeRuntimeHost('answerNativeAskQuestions', withComposerModeSettings(request))
+  return invokeRuntimeHost('answerPiExtensionDialog', withComposerModeSettings(request))
 }
 
-export function invokeNativeExtensionShortcut(
-  request: ComposerStateRequest & { shortcut: string },
+export function invokePiExtensionShortcut(
+  request: ComposerStateRequest & {
+    editorSelectionEnd?: number | undefined
+    editorSelectionStart?: number | undefined
+    editorText?: string | undefined
+    shortcut: string
+  },
 ) {
-  return invokeRuntimeHost('invokeNativeExtensionShortcut', withComposerModeSettings(request))
+  return invokeRuntimeHost('invokePiExtensionShortcut', withComposerModeSettings(request))
+}
+
+export function refreshComposerAfterProjectTrust(request: ComposerStateRequest) {
+  return invokeRuntimeHost('getComposerState', { request: withComposerModeSettings(request) })
+}
+
+export function setProjectTrust(request: ComposerStateRequest & { cwd: string; trusted: boolean }) {
+  return invokeRuntimeHost('setProjectTrust', withComposerModeSettings(request))
 }

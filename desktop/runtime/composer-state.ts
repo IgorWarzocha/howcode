@@ -22,9 +22,16 @@ import { buildQueuedPrompts } from './composer-queue'
 import {
   createIsolatedRuntimeResourceLoader,
   createRuntimeSettingsManager,
+  getRuntimeDefaultProjectTrust,
+  getRuntimeProjectTrustRequest,
+  resolveRuntimeProjectTrust,
 } from './isolated-settings-manager.ts'
-import { getNativeAskQuestionsRequest } from './native-ask-questions-state.ts'
-import { getNativeExtensionWidgets } from './native-extension-ui-state.ts'
+import {
+  getPiExtensionDialog,
+  getPiExtensionShortcuts,
+  getPiExtensionStatuses,
+  getPiExtensionWidgets,
+} from './pi-extension-ui-state.ts'
 import type { PiRuntime } from './types.ts'
 
 export const DEFAULT_COMPOSER_THINKING_LEVEL: ComposerThinkingLevel = 'medium'
@@ -75,9 +82,26 @@ function mapContextUsage(session: AgentSession): ComposerContextUsage | null {
     tokens: usage.tokens,
     contextWindow,
     percent: usage.tokens === null ? usage.percent : (usage.tokens / contextWindow) * 100,
+    latestCacheHitRate: getLatestCacheHitRate(session),
   }
   contextUsageCache.set(session, contextUsage)
   return contextUsage
+}
+
+function getLatestCacheHitRate(session: AgentSession) {
+  let latestCacheHitRate: number | null = null
+
+  for (const entry of session.sessionManager.getBranch()) {
+    if (entry.type !== 'message' || entry.message.role !== 'assistant') continue
+
+    const usage = entry.message.usage
+    if (!usage) continue
+    const latestPromptTokens = usage.input + usage.cacheRead + usage.cacheWrite
+    latestCacheHitRate =
+      latestPromptTokens > 0 ? (usage.cacheRead / latestPromptTokens) * 100 : null
+  }
+
+  return latestCacheHitRate
 }
 
 function getContextUsageForComposerState(
@@ -160,7 +184,7 @@ function getModeThinkingLevel(request: ComposerStateRequest) {
 }
 
 async function resolveComposerStateSnapshot(request: ComposerStateRequest = {}) {
-  const { cwd, session } = await createComposerSnapshotSession(request)
+  const { cwd, projectTrustServices, session } = await createComposerSnapshotSession(request)
 
   try {
     const availableModels = (await session.modelRegistry.getAvailable()) as ComposerSourceModel[]
@@ -188,6 +212,10 @@ async function resolveComposerStateSnapshot(request: ComposerStateRequest = {}) 
       ),
       availableThinkingLevels,
       contextUsage: mapContextUsage(session),
+      projectTrustRequest: getRuntimeProjectTrustRequest({
+        ...projectTrustServices,
+        cwd,
+      }),
     }
   } finally {
     session.dispose()
@@ -202,13 +230,24 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
     SessionManager,
     SettingsManager,
     DefaultResourceLoader,
+    ProjectTrustStore,
     createAgentSession,
     getAgentDir,
+    hasProjectTrustInputs,
   } = await getPiModule()
   const cwd = persistedSessionPath
     ? SessionManager.open(persistedSessionPath).getCwd()
     : (request.projectId ?? getDesktopWorkingDirectory())
   const agentDir = getAgentDir()
+  const defaultProjectTrust = getRuntimeDefaultProjectTrust({ SettingsManager, agentDir, cwd })
+  const projectTrusted = resolveRuntimeProjectTrust({
+    ProjectTrustStore,
+    agentDir,
+    cwd,
+    defaultProjectTrust,
+    hasProjectTrustInputs,
+    settingsCwd: request.composerSessionDir,
+  })
   const authStorage = AuthStorage.create()
   const modelRegistry = normalizeModelRegistryContextWindows(
     ModelRegistry.create(authStorage, `${agentDir}/models.json`),
@@ -218,6 +257,7 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
     cwd,
     agentDir,
     settingsCwd: request.composerSessionDir,
+    projectTrusted,
   })
   const sessionManager = persistedSessionPath
     ? SessionManager.open(persistedSessionPath)
@@ -228,6 +268,7 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
     agentDir,
     settingsCwd: request.composerSessionDir,
     settingsManager,
+    projectTrusted,
     systemPrompt: getRuntimeSystemPrompt({ settingsCwd: request.composerSessionDir }),
   })
   const { session } = await createAgentSession({
@@ -236,13 +277,14 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
     authStorage,
     modelRegistry,
     settingsManager,
-    ...(resourceLoader ? { resourceLoader } : {}),
+    resourceLoader,
     sessionManager,
     tools: [],
   })
 
   return {
     cwd,
+    projectTrustServices: { ProjectTrustStore, agentDir, hasProjectTrustInputs },
     session,
   }
 }
@@ -274,8 +316,11 @@ export async function buildComposerStateSnapshot(
     currentThinkingLevel: snapshot.currentThinkingLevel,
     availableThinkingLevels: snapshot.availableThinkingLevels,
     queuedPrompts: [],
-    nativeAskQuestionsRequest: null,
-    nativeExtensionWidgets: [],
+    piExtensionWidgets: [],
+    piExtensionStatuses: [],
+    piExtensionShortcuts: [],
+    piExtensionDialogRequest: null,
+    projectTrustRequest: snapshot.projectTrustRequest,
     contextUsage: snapshot.contextUsage,
     isCompacting: false,
     isExtensionCommandRunning: false,
@@ -286,6 +331,14 @@ export async function buildComposerState(
   runtime: PiRuntime,
   options: BuildComposerStateOptions = {},
 ): Promise<ComposerState> {
+  const { ProjectTrustStore, SettingsManager, getAgentDir, hasProjectTrustInputs } =
+    await getPiModule()
+  const agentDir = getAgentDir()
+  const defaultProjectTrust = getRuntimeDefaultProjectTrust({
+    SettingsManager,
+    agentDir,
+    cwd: runtime.cwd,
+  })
   const availableModels = (await runtime.session.modelRegistry.getAvailable()).map((model) => ({
     provider: model.provider,
     id: model.id,
@@ -300,8 +353,17 @@ export async function buildComposerState(
     currentThinkingLevel: runtime.session.thinkingLevel as ComposerThinkingLevel,
     availableThinkingLevels: mapThinkingLevels(runtime.session.getAvailableThinkingLevels()),
     queuedPrompts: buildSessionQueuedPrompts(runtime.session),
-    nativeAskQuestionsRequest: getNativeAskQuestionsRequest(runtime),
-    nativeExtensionWidgets: getNativeExtensionWidgets(runtime),
+    piExtensionWidgets: getPiExtensionWidgets(runtime),
+    piExtensionStatuses: getPiExtensionStatuses(runtime),
+    piExtensionShortcuts: getPiExtensionShortcuts(runtime),
+    piExtensionDialogRequest: getPiExtensionDialog(runtime),
+    projectTrustRequest: getRuntimeProjectTrustRequest({
+      ProjectTrustStore,
+      agentDir,
+      cwd: runtime.cwd,
+      defaultProjectTrust,
+      hasProjectTrustInputs,
+    }),
     contextUsage: getContextUsageForComposerState(runtime.session, options),
     isCompacting: runtime.session.isCompacting,
     isExtensionCommandRunning: isHeadlessExtensionCommandRunning(runtime.session),

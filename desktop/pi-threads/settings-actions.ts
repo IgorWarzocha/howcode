@@ -44,8 +44,6 @@ import {
   setHideSidebarSessionCounts,
   setHoverToBlur,
   setHoverToFocus,
-  setHowcodeNativeAskQuestions,
-  setHowcodeNativeSmartBtw,
   setInitializeGitOnProjectCreate,
   setKeybindings,
   setPiTuiTakeover,
@@ -56,8 +54,6 @@ import {
   setShowDictationButton,
   setSkillCreatorModelSelection,
   setSkillCreatorThinkingLevel,
-  setSmartBtwModelSelection,
-  setSmartBtwThinkingLevel,
   setUseAgentsSkillsPaths,
 } from '../app-settings/writers.ts'
 import { restartRuntimeHostsForEnvironmentChange } from '../runtime-host/client-bridge.ts'
@@ -91,7 +87,7 @@ async function clearClipboardImageTempFiles() {
   }
 }
 
-type SettingsUpdateHandler = (payload: AnyDesktopActionPayload) => unknown
+type SettingsUpdateHandler = (payload: AnyDesktopActionPayload) => unknown | Promise<unknown>
 
 function isSettingsUpdateResult(value: unknown) {
   return typeof value === 'object' && value !== null
@@ -155,14 +151,7 @@ const settingsUpdateHandlers = {
   projectImportState: (payload) => setProjectImportState(getSettingsProjectImportState(payload)),
   useAgentsSkillsPaths: (payload) =>
     setUseAgentsSkillsPaths(getSettingsBooleanValue(payload) ?? false),
-  howcodeNativeAskQuestions: (payload) => {
-    setHowcodeNativeAskQuestions(getSettingsBooleanValue(payload) ?? false)
-    restartRuntimeHostsForEnvironmentChange()
-  },
-  howcodeNativeSmartBtw: (payload) => {
-    setHowcodeNativeSmartBtw(getSettingsBooleanValue(payload) ?? false)
-    restartRuntimeHostsForEnvironmentChange()
-  },
+
   devUpdateBranch: (payload) => setDevUpdateBranch(getSettingsBooleanValue(payload) ?? false),
   betaUpdateBranch: (payload) => setDevUpdateBranch(getSettingsBooleanValue(payload) ?? false),
   piTuiTakeover: (payload) => setPiTuiTakeover(getSettingsBooleanValue(payload) ?? false),
@@ -229,16 +218,8 @@ const settingsUpdateHandlers = {
     setOptionalThinkingLevel(payload, setGitCommitMessageThinkingLevel),
   skillCreatorThinkingLevel: (payload) =>
     setOptionalThinkingLevel(payload, setSkillCreatorThinkingLevel),
-  smartBtwThinkingLevel: (payload) => {
-    setOptionalThinkingLevel(payload, setSmartBtwThinkingLevel)
-    restartRuntimeHostsForEnvironmentChange()
-  },
   gitCommitMessageModel: (payload) =>
     setResettableModelSelection(payload, setGitCommitMessageModelSelection),
-  smartBtwModel: (payload) => {
-    setResettableModelSelection(payload, setSmartBtwModelSelection)
-    restartRuntimeHostsForEnvironmentChange()
-  },
 } satisfies Record<string, SettingsUpdateHandler>
 
 export async function handleSettingsDesktopAction(
@@ -252,6 +233,6 @@ export async function handleSettingsDesktopAction(
   if (action !== 'settings.update') return unhandledAction()
 
   const key = getSettingsKey(payload)
-  const result = key ? settingsUpdateHandlers[key]?.(payload) : undefined
+  const result = key ? await settingsUpdateHandlers[key]?.(payload) : undefined
   return handledAction(isSettingsUpdateResult(result) ? result : undefined)
 }

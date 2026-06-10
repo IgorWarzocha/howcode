@@ -47,6 +47,20 @@ type ThreadMessageProps = {
   onToggleExpanded?: (() => void) | undefined
 }
 
+function getExtensionNotificationSeverity(message: CustomThreadMessage) {
+  const details = message.details
+  if (typeof details !== 'object' || details === null || !('severity' in details)) return 'info'
+  const severity = details.severity
+  return severity === 'warning' || severity === 'error' ? severity : 'info'
+}
+
+function getExtensionNotificationClass(message: CustomThreadMessage) {
+  const severity = getExtensionNotificationSeverity(message)
+  if (severity === 'error') return 'text-[color:var(--danger)]'
+  if (severity === 'warning') return 'text-[color:var(--warning)]'
+  return ''
+}
+
 function AssistantThinkingBlock({
   thinkingContent,
   thinkingHeaders,
@@ -227,6 +241,15 @@ function getAssistantStatusClassName(message: ProseMessage) {
 }
 
 function CustomMessageBlock({ message }: { message: CustomThreadMessage }) {
+  if (message.customType === 'Extension:') {
+    return (
+      <div className={`${systemStatusClass} ${getExtensionNotificationClass(message)}`}>
+        <span className={systemStatusLabelClass}>{message.customType}</span>
+        <span className={`${systemStatusValueClass} text-current`}>{message.content.join('')}</span>
+      </div>
+    )
+  }
+
   return (
     <div className={message.isError ? threadSessionErrorStripClass : threadSessionStripClass}>
       <div className={customMessageTypeClass}>

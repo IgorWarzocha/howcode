@@ -10,11 +10,14 @@ import type {
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
   DesktopActionInvoker,
-  NativeAskQuestionsRequest,
-  NativeExtensionWidget,
+  PiExtensionDialogRequest,
+  PiExtensionShortcut,
+  PiExtensionStatus,
+  PiExtensionWidget,
   ProjectDiffBaseline,
   ProjectDiffRenderMode,
   ProjectGitState,
+  ProjectTrustRequest,
   ThreadCustomMessageRecord,
 } from '../desktop/types'
 import type { Message, View } from '../types'
@@ -31,9 +34,11 @@ export type ComposerProps = {
   replyActivityKey: string
   isCompacting: boolean
   isExtensionCommandRunning: boolean
-  nativeAskQuestionsRequest: NativeAskQuestionsRequest | null
-  nativeExtensionWidgets: NativeExtensionWidget[]
-  nativeSmartBtwEnabled: boolean
+  piExtensionWidgets: PiExtensionWidget[]
+  piExtensionStatuses: PiExtensionStatus[]
+  piExtensionShortcuts: PiExtensionShortcut[]
+  piExtensionDialogRequest: PiExtensionDialogRequest | null
+  projectTrustRequest: ProjectTrustRequest | null
   thinkingLevel: ComposerThinkingLevel
   restoredQueuedPrompt: string | null
   streamingBehaviorPreference: ComposerStreamingBehavior

@@ -1,17 +1,8 @@
 import { accessSync, constants } from 'node:fs'
 import path from 'node:path'
-import { getPersistedSessionPath } from '../../shared/session-paths'
+import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import type { TerminalOpenRequest } from '../../shared/terminal-contracts.ts'
-import { loadAppSettings } from '../app-settings/readers.ts'
 import { getBundledThemes } from '../bundled-themes.ts'
-import {
-  ensureNativeExtensionRuntimePath,
-  getNativeExtensionRuntimePaths,
-  type HowcodeNativeExtensionId,
-} from '../native-extensions/native-extension-paths.ts'
-import { getSessionNativeExtensions, setSessionNativeExtensions } from '../thread-state-db.ts'
-
-const howcodeNativeExtensionIds = ['askQuestions', 'smartBtw'] as const
 
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
@@ -22,9 +13,6 @@ type TerminalEnvironmentVariables = NodeJS.ProcessEnv & {
   COLORTERM?: string
   HOWCODE_EMBEDDED_TERMINAL?: string
   HOWCODE_TERMINAL_CAPABILITIES?: string
-  HOWCODE_SMART_BTW_MODEL?: string
-  HOWCODE_COMPOSER_MODEL?: string
-  HOWCODE_SMART_BTW_THINKING?: string
   PI_CLEAR_ON_SHRINK?: string
 }
 
@@ -32,61 +20,14 @@ function getEnvironmentVariable(env: NodeJS.ProcessEnv, name: string) {
   return env[name]
 }
 
-function getDefaultNativeExtensions(): HowcodeNativeExtensionId[] {
-  const settings = loadAppSettings()
-  return [
-    ...(settings.howcodeNativeAskQuestions ? (['askQuestions'] as const) : []),
-    ...(settings.howcodeNativeSmartBtw ? (['smartBtw'] as const) : []),
-  ]
-}
-
-function getPiSessionNativeExtensions(sessionPath: string | null): HowcodeNativeExtensionId[] {
-  const sessionExtensions = getSessionNativeExtensions(sessionPath)
-  if (sessionExtensions)
-    return sessionExtensions.filter((id): id is HowcodeNativeExtensionId =>
-      howcodeNativeExtensionIds.includes(id as HowcodeNativeExtensionId),
-    )
-  const defaultExtensions = getDefaultNativeExtensions()
-  if (sessionPath) setSessionNativeExtensions(sessionPath, defaultExtensions)
-  return defaultExtensions
-}
-
 function getPiSessionCommandArgs(sessionPath: string | null | undefined) {
   const persistedSessionPath = getPersistedSessionPath(sessionPath)
-  const enabledNativeExtensions = getPiSessionNativeExtensions(persistedSessionPath)
   const args = persistedSessionPath ? ['--session', persistedSessionPath] : []
   for (const theme of getBundledThemes()) {
     args.push('--theme', theme.path)
   }
-  if (enabledNativeExtensions.includes('askQuestions')) {
-    args.push('--extension', ensureNativeExtensionRuntimePath('askQuestions'))
-  }
-  for (const extensionPath of getNativeExtensionRuntimePaths(
-    enabledNativeExtensions.filter((id) => id !== 'askQuestions'),
-  )) {
-    args.push('--extension', extensionPath)
-  }
+
   return args
-}
-
-function applySmartBtwTerminalEnvironment(
-  env: TerminalEnvironmentVariables,
-  sessionPath: string | null,
-) {
-  delete env.HOWCODE_SMART_BTW_MODEL
-  delete env.HOWCODE_COMPOSER_MODEL
-  delete env.HOWCODE_SMART_BTW_THINKING
-
-  if (!getPiSessionNativeExtensions(sessionPath).includes('smartBtw')) return
-
-  const settings = loadAppSettings()
-  const selection = settings.smartBtwModel
-  const composerSelection = settings.codeModel ?? settings.chatModel
-  if (selection) env.HOWCODE_SMART_BTW_MODEL = `${selection.provider}/${selection.id}`
-  if (composerSelection)
-    env.HOWCODE_COMPOSER_MODEL = `${composerSelection.provider}/${composerSelection.id}`
-  if (settings.smartBtwThinkingLevel)
-    env.HOWCODE_SMART_BTW_THINKING = settings.smartBtwThinkingLevel
 }
 
 function getPiSessionShell(platform: NodeJS.Platform, env: NodeJS.ProcessEnv) {
@@ -178,6 +119,5 @@ export function resolveTerminalEnv(
   nextEnvVariables.HOWCODE_TERMINAL_CAPABILITIES =
     'ansi,256color,truecolor,unicode,no-terminal-protocols'
   nextEnvVariables.PI_CLEAR_ON_SHRINK = '1'
-  applySmartBtwTerminalEnvironment(nextEnvVariables, getPersistedSessionPath(request.sessionPath))
   return nextEnv
 }

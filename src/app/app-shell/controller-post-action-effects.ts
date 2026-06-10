@@ -229,6 +229,12 @@ type PostEffectHandler = {
 
 const postEffectHandlers: PostEffectHandler[] = [
   {
+    matches: (ctx) => Boolean(ctx.actionResult?.result?.composer),
+    run: (ctx) => {
+      if (ctx.actionResult?.result?.composer) ctx.setComposerState(ctx.actionResult.result.composer)
+    },
+  },
+  {
     matches: (ctx) =>
       ctx.action === 'thread.pin' ||
       ctx.action === 'thread.archive' ||

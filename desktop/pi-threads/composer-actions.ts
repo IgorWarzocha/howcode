@@ -12,21 +12,27 @@ import {
   getComposerStreamingBehavior,
   getComposerText,
   getComposerThinkingLevel,
-  getNativeAskQuestionsAnswers,
-  getNativeAskQuestionsRequestId,
-  getNativeExtensionShortcut,
+  getPiExtensionDialogAnswer,
+  getPiExtensionEditorState,
+  getPiExtensionRequestId,
+  getPiExtensionShortcut,
+  getProjectTrustCwd,
+  getProjectTrustDecision,
   getSessionTreeLabel,
   getSessionTreeNavigate,
 } from '../../shared/pi-thread-action-payloads.ts'
 import {
-  answerNativeAskQuestions,
+  answerPiExtensionDialog,
   dequeueComposerPrompt,
-  invokeNativeExtensionShortcut,
+  disposeWorkspaceComposerRuns,
+  invokePiExtensionShortcut,
   labelSessionTreeEntry,
   navigateSessionTree,
+  refreshComposerAfterProjectTrust,
   sendComposerPrompt,
   setComposerModel,
   setComposerThinkingLevel,
+  setProjectTrust,
   stopComposerRun,
 } from '../pi-desktop-runtime.ts'
 import { invalidateRuntimeHostSettings } from '../runtime-host/client-bridge.ts'
@@ -102,24 +108,49 @@ async function dequeueComposerPromptFromPayload(payload: AnyDesktopActionPayload
   return handledAction({ dequeuedText })
 }
 
-async function answerNativeQuestionsFromPayload(payload: AnyDesktopActionPayload) {
-  const requestId = getNativeAskQuestionsRequestId(payload)
+async function invokePiExtensionShortcutFromPayload(payload: AnyDesktopActionPayload) {
+  const shortcut = getPiExtensionShortcut(payload)
+  if (!shortcut) return handledAction()
+  const result = await invokePiExtensionShortcut({
+    ...getComposerRequest(payload),
+    ...getPiExtensionEditorState(payload),
+    shortcut,
+  })
+  return result.ok
+    ? handledAction({
+        editorSelectionEnd: result.editorSelectionEnd,
+        editorSelectionStart: result.editorSelectionStart,
+        editorText: result.editorText,
+      })
+    : handledAction({ error: 'Could not run Pi extension shortcut.' })
+}
+
+async function answerPiExtensionDialogFromPayload(payload: AnyDesktopActionPayload) {
+  const requestId = getPiExtensionRequestId(payload)
   if (!requestId) return handledAction()
-  const result = await answerNativeAskQuestions({
+  const result = await answerPiExtensionDialog({
     ...getComposerRequest(payload),
     requestId,
-    answers: getNativeAskQuestionsAnswers(payload),
+    ...getPiExtensionDialogAnswer(payload),
   })
   return result?.ok
     ? handledAction()
-    : handledAction({ error: 'Could not answer pending questions.' })
+    : handledAction({ error: 'Could not answer extension UI request.' })
 }
 
-async function invokeNativeExtensionShortcutFromPayload(payload: AnyDesktopActionPayload) {
-  const shortcut = getNativeExtensionShortcut(payload)
-  if (!shortcut) return handledAction()
-  const result = await invokeNativeExtensionShortcut({ ...getComposerRequest(payload), shortcut })
-  return result.ok ? handledAction() : handledAction({ error: 'Could not run native shortcut.' })
+async function setProjectTrustFromPayload(payload: AnyDesktopActionPayload) {
+  const trusted = getProjectTrustDecision(payload)
+  const cwd = getProjectTrustCwd(payload)
+  const composerRequest = getComposerRequest(payload)
+  if (trusted === null || !cwd) return handledAction()
+
+  await setProjectTrust({ ...composerRequest, cwd, trusted })
+  await disposeWorkspaceComposerRuns({
+    projectPath: cwd,
+    sessionPaths: composerRequest.sessionPath ? [composerRequest.sessionPath] : [],
+  })
+  const composer = await refreshComposerAfterProjectTrust(composerRequest)
+  return handledAction({ composer })
 }
 
 async function navigateSessionTreeFromPayload(payload: AnyDesktopActionPayload) {
@@ -182,8 +213,9 @@ const composerActionHandlers = {
     await invalidateRuntimeHostSettings({ sessionPath: getComposerRequest(payload).sessionPath })
     return handledAction()
   },
-  'composer.answer-native-questions': answerNativeQuestionsFromPayload,
-  'composer.native-extension-shortcut': invokeNativeExtensionShortcutFromPayload,
+  'composer.answer-pi-extension-dialog': answerPiExtensionDialogFromPayload,
+  'composer.pi-extension-shortcut': invokePiExtensionShortcutFromPayload,
+  'composer.set-project-trust': setProjectTrustFromPayload,
   'composer.session-tree.label': labelSessionTreeEntryFromPayload,
   'composer.session-tree.navigate': navigateSessionTreeFromPayload,
 } satisfies Partial<Record<DesktopAction, ComposerActionHandler>>

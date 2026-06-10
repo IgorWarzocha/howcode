@@ -1,0 +1,2 @@
+- Composer-adjacent Pi extension overlays must follow the queued-prompt/composer width grammar; do not add independent centered max-width cards.
+- Keep this surface generic: render Pi SDK UI primitives, not Howcode-only extension assumptions.

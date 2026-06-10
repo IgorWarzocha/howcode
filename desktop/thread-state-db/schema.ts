@@ -223,13 +223,6 @@ const threadStateSchemaSql = `
     CREATE INDEX IF NOT EXISTS chat_groups_order_idx ON chat_groups(order_index, name COLLATE NOCASE);
     CREATE INDEX IF NOT EXISTS chat_threads_group_idx ON chat_threads(group_id, order_index);
 
-    CREATE TABLE IF NOT EXISTS session_native_extensions (
-      session_path TEXT PRIMARY KEY,
-      enabled_json TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
-
     CREATE TABLE IF NOT EXISTS project_worktree_settings (
       root_cwd TEXT PRIMARY KEY,
       worktree_dir TEXT NOT NULL DEFAULT './.worktrees',
