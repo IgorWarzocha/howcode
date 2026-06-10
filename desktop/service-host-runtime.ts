@@ -97,7 +97,7 @@ async function handleRequest(message: ServiceRequest): Promise<ServiceResponse> 
 }
 
 process.on('message', (message: ServiceRequest) => {
-  if (!message || message.type !== 'request') return
+  if (message?.type !== 'request') return
   void handleRequest(message).then((response) => process.send?.(response))
 })
 

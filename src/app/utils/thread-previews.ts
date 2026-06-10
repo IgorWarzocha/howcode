@@ -11,7 +11,7 @@ export function getThinkingPreview(thinkingContent: string[], thinkingRedacted?:
 }
 
 export function getAssistantPreview(message: Message | null | undefined) {
-  if (!message || message.role !== 'assistant') {
+  if (message?.role !== 'assistant') {
     return null
   }
 

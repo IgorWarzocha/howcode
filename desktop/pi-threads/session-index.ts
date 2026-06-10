@@ -192,7 +192,7 @@ async function readSessionSummary(filePath: string): Promise<SessionSummaryReadR
 
   const { firstMessage, header, lastActivityTimeMs, name } = parsedFile
 
-  if (!header || header.type !== 'session' || typeof header.id !== 'string') {
+  if (header?.type !== 'session' || typeof header.id !== 'string') {
     console.warn(`Invalid session header while refreshing shell index: ${filePath}`)
     return { summary: null, failed: true }
   }
