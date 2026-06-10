@@ -164,7 +164,7 @@ function NativeExtensionWidgetLines({
   return (
     <div className="grid gap-0 rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-3 py-1.5 text-left shadow-none">
       {boxedByExtension ? (
-        <pre className="m-0 overflow-hidden truncate whitespace-pre font-['Geist_Mono','JetBrains_Mono','SFMono-Regular',Consolas,monospace] text-[11.5px] leading-[1rem] text-[color:var(--muted-2)]/88">
+        <pre className="m-0 overflow-hidden truncate whitespace-pre font-mono text-[11.5px] leading-[1rem] text-[color:var(--muted-2)]/88">
           {renderNativeExtensionWidgetLine(widget.lines.join('\n'), { monoBoxGlyphs: false })}
         </pre>
       ) : (

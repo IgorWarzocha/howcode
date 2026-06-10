@@ -21,6 +21,7 @@ const ANSI_ESCAPE = String.fromCharCode(27)
 
 export const DEFAULT_TERMINAL_FONT_FAMILY = [
   'JetBrainsMono Nerd Font',
+  'Geist Mono',
   'JetBrains Mono NL',
   'JetBrains Mono',
   'Symbols Nerd Font Mono',
