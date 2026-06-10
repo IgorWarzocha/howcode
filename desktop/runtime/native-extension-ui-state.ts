@@ -1,6 +1,7 @@
 import type { ExtensionUIContext, ExtensionWidgetOptions } from '@earendil-works/pi-coding-agent'
 import type {
   NativeExtensionDialogRequest,
+  NativeExtensionStatus,
   NativeExtensionWidget,
 } from '../../shared/desktop-contracts.ts'
 import type { PiRuntime } from './types.ts'
@@ -13,6 +14,7 @@ const plainTheme = new Proxy(
 ) as ExtensionUIContext['theme']
 
 const widgetsBySession = new Map<string, Map<string, NativeExtensionWidget>>()
+const statusesBySession = new Map<string, Map<string, NativeExtensionStatus>>()
 const dialogsBySession = new Map<string, PendingNativeExtensionDialog>()
 
 type PendingNativeExtensionDialog = NativeExtensionDialogRequest & {
@@ -38,6 +40,32 @@ function getSessionWidgets(sessionPath: string) {
   return widgets
 }
 
+function getSessionStatuses(sessionPath: string) {
+  let statuses = statusesBySession.get(sessionPath)
+  if (!statuses) {
+    statuses = new Map()
+    statusesBySession.set(sessionPath, statuses)
+  }
+  return statuses
+}
+
+function stripAnsi(text: string) {
+  let output = ''
+  for (let index = 0; index < text.length; index += 1) {
+    if (text.charCodeAt(index) !== 27 || text[index + 1] !== '[') {
+      output += text[index]
+      continue
+    }
+    index += 2
+    while (index < text.length) {
+      const code = text.charCodeAt(index)
+      if (code >= 64 && code <= 126) break
+      index += 1
+    }
+  }
+  return output
+}
+
 function normalizeWidgetContent(content: unknown) {
   if (content === undefined) return null
   if (Array.isArray(content)) return content.map((line) => String(line))
@@ -49,6 +77,12 @@ export function getNativeExtensionWidgets(runtime: PiRuntime): NativeExtensionWi
   const sessionPath = getSessionPath(runtime)
   if (!sessionPath) return []
   return [...(widgetsBySession.get(sessionPath)?.values() ?? [])]
+}
+
+export function getNativeExtensionStatuses(runtime: PiRuntime): NativeExtensionStatus[] {
+  const sessionPath = getSessionPath(runtime)
+  if (!sessionPath) return []
+  return [...(statusesBySession.get(sessionPath)?.values() ?? [])]
 }
 
 export function getNativeExtensionDialog(runtime: PiRuntime): NativeExtensionDialogRequest | null {
@@ -64,6 +98,7 @@ export function clearNativeExtensionUi(runtime: PiRuntime) {
   const sessionPath = getSessionPath(runtime)
   if (!sessionPath) return
   widgetsBySession.delete(sessionPath)
+  statusesBySession.delete(sessionPath)
   dialogsBySession.get(sessionPath)?.resolve({ cancelled: true })
   dialogsBySession.delete(sessionPath)
 }
@@ -134,7 +169,15 @@ export function createNativeExtensionUiContext(
       onStateChange()
     },
     onTerminalInput: () => () => undefined,
-    setStatus: () => undefined,
+    setStatus: (key, text) => {
+      const sessionPath = getSessionPath(runtime)
+      if (!sessionPath) return
+      const statuses = getSessionStatuses(sessionPath)
+      const normalizedText = text === undefined ? '' : stripAnsi(String(text)).trim()
+      if (normalizedText) statuses.set(key, { key, text: normalizedText })
+      else statuses.delete(key)
+      onStateChange()
+    },
     setWorkingMessage: () => undefined,
     setWorkingVisible: () => undefined,
     setWorkingIndicator: () => undefined,

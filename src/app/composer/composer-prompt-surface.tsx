@@ -1,6 +1,7 @@
 import { createSmartBtwWidgetFromMessages, SmartBtwCard } from '@howcode/extensions'
 import { getPersistedSessionPath } from '@howcode/shared/session-paths'
-import { type RefObject, useEffect, useRef } from 'react'
+import { ChevronDown, ChevronRight } from 'lucide-react'
+import { type RefObject, useEffect, useRef, useState } from 'react'
 import {
   howcodeDismissTransientUiEvent,
   useHowcodeKeybindingCommand,
@@ -8,6 +9,7 @@ import {
 import { NativeExtensionDialogCard, ProjectTrustCard } from '../features/native-extensions'
 import {
   appTypeCodeClass,
+  appTypeMetaClass,
   composerPanelClass,
   composerPopoverExtensionLayerClass,
 } from '../ui/classes'
@@ -33,6 +35,7 @@ import { useGlobalComposerFileDrop } from './useGlobalComposerFileDrop'
 
 const digitShortcutPattern = /^Digit[1-9]$/u
 const smartBtwWorkingLinePattern = /\b(queued|running|thinking)\b/u
+const extensionStatusExpandedStorageKey = 'howcode.extensionStatusExpanded'
 
 type ComposerPromptSurfaceProps = ComposerProps & {
   composerPanelRef: RefObject<HTMLDivElement | null>
@@ -64,6 +67,56 @@ type NativeExtensionOverlayContentProps = NativeExtensionOverlayWidgetsProps & {
       value?: string | undefined
     }) => Promise<boolean>
   }
+}
+
+function readExtensionStatusExpandedPreference() {
+  if (typeof window === 'undefined') return false
+  return window.localStorage.getItem(extensionStatusExpandedStorageKey) === 'true'
+}
+
+function NativeExtensionStatusLine({
+  statuses,
+}: {
+  statuses: ComposerProps['nativeExtensionStatuses']
+}) {
+  const [expanded, setExpanded] = useState(readExtensionStatusExpandedPreference)
+  if (statuses.length === 0) return null
+
+  const toggleExpanded = () => {
+    setExpanded((current) => {
+      const next = !current
+      window.localStorage.setItem(extensionStatusExpandedStorageKey, String(next))
+      return next
+    })
+  }
+
+  return (
+    <div className="grid px-4 pt-1">
+      <button
+        type="button"
+        className={cn(
+          'flex min-w-0 items-start gap-1.5 rounded-md px-1.5 py-1 text-left text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
+          appTypeMetaClass,
+        )}
+        aria-expanded={expanded}
+        aria-label={expanded ? 'Collapse extension status' : 'Expand extension status'}
+        onClick={toggleExpanded}
+      >
+        <span className="mt-[0.12rem] inline-flex h-4 w-4 shrink-0 items-center justify-center text-[color:var(--muted-2)]">
+          {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+        </span>
+        <span className={cn('min-w-0', expanded ? 'grid gap-0.5' : 'truncate')}>
+          {expanded
+            ? statuses.map((status) => (
+                <span key={status.key} className="truncate">
+                  {status.text}
+                </span>
+              ))
+            : statuses.map((status) => status.text).join(' · ')}
+        </span>
+      </button>
+    </div>
+  )
 }
 
 function NativeExtensionOverlayContent({
@@ -200,6 +253,7 @@ export function ComposerPromptSurface({
   isCompacting,
   isExtensionCommandRunning,
   nativeExtensionDialogRequest,
+  nativeExtensionStatuses,
   nativeExtensionWidgets,
   projectTrustRequest,
   nativeSmartBtwEnabled,
@@ -667,6 +721,7 @@ export function ComposerPromptSurface({
             thinkingLevelLabels={thinkingLevelLabels}
           />
         </section>
+        <NativeExtensionStatusLine statuses={nativeExtensionStatuses} />
       </div>
 
       <ComposerStopRail

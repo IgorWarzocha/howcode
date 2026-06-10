@@ -44,6 +44,7 @@ function createThreadNewResult(): DesktopActionResult {
         availableThinkingLevels: [],
         queuedPrompts: [],
         nativeExtensionWidgets: [],
+        nativeExtensionStatuses: [],
         nativeExtensionDialogRequest: null,
         projectTrustRequest: null,
         contextUsage: null,

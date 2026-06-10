@@ -13,6 +13,7 @@ function createComposerState(): ComposerState {
     availableThinkingLevels: [],
     queuedPrompts: [],
     nativeExtensionWidgets: [],
+    nativeExtensionStatuses: [],
     nativeExtensionDialogRequest: null,
     projectTrustRequest: null,
     contextUsage: null,

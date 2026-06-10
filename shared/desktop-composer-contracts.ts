@@ -16,6 +16,11 @@ export type NativeExtensionWidget = {
   placement?: 'aboveEditor' | 'belowEditor' | 'status' | undefined
 }
 
+export type NativeExtensionStatus = {
+  key: string
+  text: string
+}
+
 export type NativeExtensionDialogRequest = {
   id: string
   method: 'select' | 'confirm' | 'input' | 'editor'
@@ -52,6 +57,7 @@ export type ComposerState = {
   availableThinkingLevels: ComposerThinkingLevel[]
   queuedPrompts: ComposerQueuedPrompt[]
   nativeExtensionWidgets: NativeExtensionWidget[]
+  nativeExtensionStatuses: NativeExtensionStatus[]
   nativeExtensionDialogRequest: NativeExtensionDialogRequest | null
   projectTrustRequest: ProjectTrustRequest | null
   contextUsage: ComposerContextUsage | null

@@ -38,6 +38,7 @@ export type {
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
   NativeExtensionDialogRequest,
+  NativeExtensionStatus,
   NativeExtensionWidget,
   ProjectTrustRequest,
 } from './desktop-composer-contracts'
