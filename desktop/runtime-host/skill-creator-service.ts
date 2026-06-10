@@ -15,7 +15,10 @@ import {
   createComposerSnapshotSession,
   getAvailableThinkingLevelsForModel,
 } from '../runtime/composer-state.ts'
-import { resolveRuntimeProjectTrust } from '../runtime/isolated-settings-manager.ts'
+import {
+  getRuntimeDefaultProjectTrust,
+  resolveRuntimeProjectTrust,
+} from '../runtime/isolated-settings-manager.ts'
 import {
   getActiveChatSkillsRoot,
   getActiveGlobalSkillsRoot,
@@ -168,10 +171,17 @@ async function createSkillCreatorSession(
     hasProjectTrustInputs,
   } = await getPiModule()
   const agentDir = getAgentDir()
+  const trustCwd = projectPath ?? cwd
+  const defaultProjectTrust = getRuntimeDefaultProjectTrust({
+    SettingsManager,
+    agentDir,
+    cwd: trustCwd,
+  })
   const projectTrusted = resolveRuntimeProjectTrust({
     ProjectTrustStore,
     agentDir,
-    cwd: projectPath ?? cwd,
+    cwd: trustCwd,
+    defaultProjectTrust,
     hasProjectTrustInputs,
   })
   const authStorage = AuthStorage.create()

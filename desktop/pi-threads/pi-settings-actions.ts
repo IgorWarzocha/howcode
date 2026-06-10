@@ -21,6 +21,7 @@ const piSettingsKeys = new Set<PiSettingsKey>([
   'steeringMode',
   'followUpMode',
   'doubleEscapeAction',
+  'defaultProjectTrust',
   'treeFilterMode',
   'editorPaddingX',
   'autocompleteMaxVisible',

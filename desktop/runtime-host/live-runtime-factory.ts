@@ -10,6 +10,7 @@ import { getRuntimeSystemPrompt } from '../runtime/chat-system-prompt.ts'
 import {
   createIsolatedRuntimeResourceLoader,
   createRuntimeSettingsManager,
+  getRuntimeDefaultProjectTrust,
   resolveRuntimeProjectTrust,
 } from '../runtime/isolated-settings-manager.ts'
 import type { PiRuntime } from '../runtime/types.ts'
@@ -48,10 +49,16 @@ export async function createLiveRuntime(
     hasProjectTrustInputs,
   } = await getPiModule()
   const agentDir = getAgentDir()
+  const defaultProjectTrust = getRuntimeDefaultProjectTrust({
+    SettingsManager,
+    agentDir,
+    cwd: options.cwd,
+  })
   const projectTrusted = resolveRuntimeProjectTrust({
     ProjectTrustStore,
     agentDir,
     cwd: options.cwd,
+    defaultProjectTrust,
     hasProjectTrustInputs,
     settingsCwd: options.settingsCwd,
   })

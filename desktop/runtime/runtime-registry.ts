@@ -14,6 +14,7 @@ import { buildComposerState } from './composer-state.ts'
 import {
   createIsolatedRuntimeResourceLoader,
   createRuntimeSettingsManager,
+  getRuntimeDefaultProjectTrust,
   resolveRuntimeProjectTrust,
 } from './isolated-settings-manager.ts'
 import {
@@ -127,10 +128,16 @@ async function createRuntime(options: {
     hasProjectTrustInputs,
   } = await getPiModule()
   const agentDir = getAgentDir()
+  const defaultProjectTrust = getRuntimeDefaultProjectTrust({
+    SettingsManager,
+    agentDir,
+    cwd: options.cwd,
+  })
   const projectTrusted = resolveRuntimeProjectTrust({
     ProjectTrustStore,
     agentDir,
     cwd: options.cwd,
+    defaultProjectTrust,
     hasProjectTrustInputs,
     settingsCwd: options.settingsCwd,
   })

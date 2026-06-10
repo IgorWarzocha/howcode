@@ -18,6 +18,7 @@ export const defaultPiSettings: PiSettings = {
   steeringMode: 'one-at-a-time',
   followUpMode: 'one-at-a-time',
   doubleEscapeAction: 'tree',
+  defaultProjectTrust: 'ask',
   treeFilterMode: 'no-tools',
   editorPaddingX: 0,
   autocompleteMaxVisible: 5,

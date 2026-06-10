@@ -22,6 +22,7 @@ import { buildQueuedPrompts } from './composer-queue'
 import {
   createIsolatedRuntimeResourceLoader,
   createRuntimeSettingsManager,
+  getRuntimeDefaultProjectTrust,
   getRuntimeProjectTrustRequest,
   resolveRuntimeProjectTrust,
 } from './isolated-settings-manager.ts'
@@ -238,10 +239,12 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
     ? SessionManager.open(persistedSessionPath).getCwd()
     : (request.projectId ?? getDesktopWorkingDirectory())
   const agentDir = getAgentDir()
+  const defaultProjectTrust = getRuntimeDefaultProjectTrust({ SettingsManager, agentDir, cwd })
   const projectTrusted = resolveRuntimeProjectTrust({
     ProjectTrustStore,
     agentDir,
     cwd,
+    defaultProjectTrust,
     hasProjectTrustInputs,
     settingsCwd: request.composerSessionDir,
   })
@@ -328,7 +331,14 @@ export async function buildComposerState(
   runtime: PiRuntime,
   options: BuildComposerStateOptions = {},
 ): Promise<ComposerState> {
-  const { ProjectTrustStore, getAgentDir, hasProjectTrustInputs } = await getPiModule()
+  const { ProjectTrustStore, SettingsManager, getAgentDir, hasProjectTrustInputs } =
+    await getPiModule()
+  const agentDir = getAgentDir()
+  const defaultProjectTrust = getRuntimeDefaultProjectTrust({
+    SettingsManager,
+    agentDir,
+    cwd: runtime.cwd,
+  })
   const availableModels = (await runtime.session.modelRegistry.getAvailable()).map((model) => ({
     provider: model.provider,
     id: model.id,
@@ -349,8 +359,9 @@ export async function buildComposerState(
     piExtensionDialogRequest: getPiExtensionDialog(runtime),
     projectTrustRequest: getRuntimeProjectTrustRequest({
       ProjectTrustStore,
-      agentDir: getAgentDir(),
+      agentDir,
       cwd: runtime.cwd,
+      defaultProjectTrust,
       hasProjectTrustInputs,
     }),
     contextUsage: getContextUsageForComposerState(runtime.session, options),

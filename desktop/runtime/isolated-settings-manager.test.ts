@@ -104,12 +104,35 @@ describe('resolveRuntimeProjectTrust', () => {
     ).toBe(false)
   })
 
-  it('keeps unknown projects untrusted until UI records a decision', () => {
+  it('keeps unknown projects untrusted while default trust asks', () => {
     expect(
       resolveRuntimeProjectTrust({
         ProjectTrustStore: createTrustStoreFactory(null),
         agentDir: '/agent',
         cwd: '/repo',
+        defaultProjectTrust: 'ask',
+        hasProjectTrustInputs: () => true,
+      }),
+    ).toBe(false)
+  })
+
+  it('uses default project trust when no stored decision exists', () => {
+    expect(
+      resolveRuntimeProjectTrust({
+        ProjectTrustStore: createTrustStoreFactory(null),
+        agentDir: '/agent',
+        cwd: '/repo',
+        defaultProjectTrust: 'always',
+        hasProjectTrustInputs: () => true,
+      }),
+    ).toBe(true)
+
+    expect(
+      resolveRuntimeProjectTrust({
+        ProjectTrustStore: createTrustStoreFactory(null),
+        agentDir: '/agent',
+        cwd: '/repo',
+        defaultProjectTrust: 'never',
         hasProjectTrustInputs: () => true,
       }),
     ).toBe(false)

@@ -1,5 +1,6 @@
 import path from 'node:path'
 import type { ResourceLoader, SettingsManager } from '@earendil-works/pi-coding-agent'
+import type { PiDefaultProjectTrust } from '../../shared/desktop-settings-contracts.ts'
 
 type SettingsManagerFactory = {
   create: (
@@ -8,6 +9,14 @@ type SettingsManagerFactory = {
     options?: { projectTrusted: boolean } | undefined,
   ) => SettingsManager
   inMemory: (settings?: Record<string, unknown>) => SettingsManager
+}
+
+export function getRuntimeDefaultProjectTrust(options: {
+  SettingsManager: SettingsManagerFactory
+  agentDir: string
+  cwd: string
+}): PiDefaultProjectTrust {
+  return options.SettingsManager.create(options.cwd, options.agentDir).getDefaultProjectTrust()
 }
 
 type ProjectTrustStoreFactory = new (
@@ -137,6 +146,7 @@ export function resolveRuntimeProjectTrust(options: {
   ProjectTrustStore: ProjectTrustStoreFactory
   agentDir: string
   cwd: string
+  defaultProjectTrust?: PiDefaultProjectTrust | undefined
   hasProjectTrustInputs: (cwd: string) => boolean
   settingsCwd?: string | null | undefined
 }) {
@@ -144,18 +154,22 @@ export function resolveRuntimeProjectTrust(options: {
   if (!options.hasProjectTrustInputs(trustCwd)) return true
 
   const storedDecision = getStoredProjectTrustDecision(options)
-  return storedDecision ?? false
+  if (storedDecision !== null) return storedDecision
+  return options.defaultProjectTrust === 'always'
 }
 
 export function getRuntimeProjectTrustRequest(options: {
   ProjectTrustStore: ProjectTrustStoreFactory
   agentDir: string
   cwd: string
+  defaultProjectTrust?: PiDefaultProjectTrust | undefined
   hasProjectTrustInputs: (cwd: string) => boolean
 }) {
   if (!options.hasProjectTrustInputs(options.cwd)) return null
   const storedDecision = getStoredProjectTrustDecision(options)
-  return storedDecision === null ? { cwd: options.cwd } : null
+  return storedDecision === null && (options.defaultProjectTrust ?? 'ask') === 'ask'
+    ? { cwd: options.cwd }
+    : null
 }
 
 export function setRuntimeProjectTrust(options: {

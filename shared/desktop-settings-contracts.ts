@@ -58,6 +58,7 @@ export type PiTransportMode = 'sse' | 'websocket' | 'auto'
 export type PiQueueMode = 'all' | 'one-at-a-time'
 export type PiDoubleEscapeAction = 'fork' | 'tree' | 'none'
 export type PiTreeFilterMode = 'default' | 'no-tools' | 'user-only' | 'labeled-only' | 'all'
+export type PiDefaultProjectTrust = 'ask' | 'always' | 'never'
 
 export type PiSettings = {
   extensions: string[]
@@ -77,6 +78,7 @@ export type PiSettings = {
   steeringMode: PiQueueMode
   followUpMode: PiQueueMode
   doubleEscapeAction: PiDoubleEscapeAction
+  defaultProjectTrust: PiDefaultProjectTrust
   treeFilterMode: PiTreeFilterMode
   editorPaddingX: number
   autocompleteMaxVisible: number
