@@ -128,7 +128,7 @@ export type RuntimeHostRequestMap = {
     value?: string | undefined
   }
   invokePiExtensionShortcut: ComposerStateRequest & { shortcut: string }
-  setProjectTrust: ComposerStateRequest & { trusted: boolean }
+  setProjectTrust: ComposerStateRequest & { cwd: string; trusted: boolean }
 }
 
 export type RuntimeHostResponseMap = {

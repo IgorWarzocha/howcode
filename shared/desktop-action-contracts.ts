@@ -48,6 +48,7 @@ export type DesktopActionPayloadFields = {
   worktreePath?: string | undefined | null | undefined
   worktrees?: { worktreePath: string; branchName?: string | undefined | null }[] | undefined
   createIfMissing?: boolean | undefined
+  cwd?: string | undefined
   provider?: string | undefined
   queueId?: string | undefined
   answers?: string[][] | undefined | null
@@ -305,6 +306,7 @@ export type DesktopActionPayloadMap = {
     sessionPath?: string | undefined | null | undefined
     composerMode?: 'chat' | 'code' | null
     chatGroupId?: string | undefined | null | undefined
+    cwd: string
     trusted: boolean
   }
   'inbox.mark-read': { sessionPath: string; projectId?: string | undefined | null | undefined }

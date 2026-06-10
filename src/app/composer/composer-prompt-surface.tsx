@@ -775,11 +775,13 @@ export function ComposerPromptSurface({
               projectTrust={{
                 request: projectTrustRequest,
                 onDecide: async (trusted) => {
+                  if (!projectTrustRequest) return false
                   return await runComposerAction('composer.set-project-trust', {
                     projectId,
                     sessionPath,
                     composerMode,
                     chatGroupId,
+                    cwd: projectTrustRequest.cwd,
                     trusted,
                   })
                 },

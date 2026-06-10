@@ -395,16 +395,13 @@ export async function invokePiExtensionShortcut(
 }
 
 export async function setProjectTrust(
-  request: ComposerStateRequest & { trusted: boolean },
+  request: ComposerStateRequest & { cwd: string; trusted: boolean },
 ): Promise<{ ok: true }> {
-  const cwd = request.projectId
-  if (!cwd) return { ok: true }
-
   const { ProjectTrustStore, getAgentDir } = await getPiModule()
   setRuntimeProjectTrust({
     ProjectTrustStore,
     agentDir: getAgentDir(),
-    cwd,
+    cwd: request.cwd,
     trusted: request.trusted,
   })
   return { ok: true }

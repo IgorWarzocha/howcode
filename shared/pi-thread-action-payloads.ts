@@ -363,6 +363,10 @@ export function getProjectTrustDecision(payload: DesktopActionPayloadInput) {
   return typeof payload.trusted === 'boolean' ? payload.trusted : null
 }
 
+export function getProjectTrustCwd(payload: DesktopActionPayloadInput) {
+  return typeof payload.cwd === 'string' && payload.cwd.length > 0 ? payload.cwd : null
+}
+
 export function getSettingsThinkingLevel(payload: DesktopActionPayloadInput) {
   const level = typeof payload.value === 'string' ? payload.value : null
   return level && composerThinkingLevels.has(level as ComposerThinkingLevel)

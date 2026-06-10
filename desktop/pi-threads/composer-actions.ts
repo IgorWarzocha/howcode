@@ -15,6 +15,7 @@ import {
   getPiExtensionDialogAnswer,
   getPiExtensionRequestId,
   getPiExtensionShortcut,
+  getProjectTrustCwd,
   getProjectTrustDecision,
 } from '../../shared/pi-thread-action-payloads.ts'
 import {
@@ -125,12 +126,13 @@ async function answerPiExtensionDialogFromPayload(payload: AnyDesktopActionPaylo
 
 async function setProjectTrustFromPayload(payload: AnyDesktopActionPayload) {
   const trusted = getProjectTrustDecision(payload)
+  const cwd = getProjectTrustCwd(payload)
   const composerRequest = getComposerRequest(payload)
-  if (trusted === null || !composerRequest.projectId) return handledAction()
+  if (trusted === null || !cwd) return handledAction()
 
-  await setProjectTrust({ ...composerRequest, trusted })
+  await setProjectTrust({ ...composerRequest, cwd, trusted })
   await invokeRuntimeHost('disposeRuntimeHosts', {
-    projectPath: composerRequest.projectId,
+    projectPath: cwd,
     sessionPaths: composerRequest.sessionPath ? [composerRequest.sessionPath] : [],
   })
   const composer = await refreshComposerAfterProjectTrust(composerRequest)

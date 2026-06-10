@@ -290,6 +290,6 @@ export function refreshComposerAfterProjectTrust(request: ComposerStateRequest) 
   return invokeRuntimeHost('getComposerState', { request: withComposerModeSettings(request) })
 }
 
-export function setProjectTrust(request: ComposerStateRequest & { trusted: boolean }) {
+export function setProjectTrust(request: ComposerStateRequest & { cwd: string; trusted: boolean }) {
   return invokeRuntimeHost('setProjectTrust', withComposerModeSettings(request))
 }
