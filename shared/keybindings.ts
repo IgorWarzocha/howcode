@@ -62,7 +62,12 @@ export const bundledKeybindings: readonly KeybindingDefinition[] = [
     scope: ['desktop', 'pi-tui'],
   },
   { id: 'terminal.focus', label: 'Open and focus terminal', defaults: ['Ctrl+Shift+/'] },
-  { id: 'terminal.clear', label: 'Clear terminal', defaults: ['Ctrl+L'] },
+  {
+    id: 'terminal.clear',
+    label: 'Clear terminal',
+    defaults: ['Ctrl+L'],
+    scope: ['desktop', 'pi-tui'],
+  },
   {
     id: 'gitops.open',
     label: 'Open GitOps',
