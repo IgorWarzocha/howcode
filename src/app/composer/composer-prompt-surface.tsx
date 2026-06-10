@@ -92,11 +92,11 @@ function NativeExtensionStatusLine({
   }
 
   return (
-    <div className="grid px-4 pt-1">
+    <div className="grid px-4 py-1">
       <button
         type="button"
         className={cn(
-          'grid min-w-0 grid-cols-[24px_minmax(0,1fr)_24px] items-start gap-0 rounded-md py-0.5 text-left transition-colors hover:bg-[color:var(--surface-hover)]',
+          'grid min-w-0 grid-cols-[1.75rem_minmax(0,1fr)_1.75rem] items-center gap-0 rounded-md py-1 text-left transition-colors hover:bg-[color:var(--surface-hover)]',
           appTypeTinyClass,
           appToneSubtleClass,
         )}
@@ -106,7 +106,7 @@ function NativeExtensionStatusLine({
       >
         <span
           className={cn(
-            'inline-flex h-4 w-5 shrink-0 items-center justify-center',
+            'inline-flex h-5 w-7 shrink-0 items-center justify-center',
             appToneSubtleClass,
           )}
         >
