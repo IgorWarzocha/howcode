@@ -38,8 +38,6 @@ import {
   sidebarVisibleProjectIdsKey,
   skillCreatorModelKey,
   skillCreatorThinkingLevelKey,
-  smartBtwModelKey,
-  smartBtwThinkingLevelKey,
   useAgentsSkillsPathsKey,
 } from './keys.ts'
 import {
@@ -125,8 +123,6 @@ export function loadAppSettings(): AppSettings {
     skillCreatorModel: parseModelSelection(value(skillCreatorModelKey)),
     skillCreatorThinkingLevel:
       parseThinkingLevelPreference(value(skillCreatorThinkingLevelKey)) ?? 'off',
-    smartBtwModel: parseModelSelection(value(smartBtwModelKey)),
-    smartBtwThinkingLevel: parseThinkingLevelPreference(value(smartBtwThinkingLevelKey)) ?? 'low',
     composerStreamingBehavior:
       parseComposerStreamingBehaviorPreference(value(composerStreamingBehaviorKey)) ?? 'followUp',
     dictationModelId: parseDictationModelIdPreference(value(dictationModelIdKey)),

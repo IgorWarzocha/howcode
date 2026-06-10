@@ -103,9 +103,6 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'skillCreatorModel'; provider: string; modelId: string; reset?: false }
   | { key: 'skillCreatorModel'; reset: true }
   | { key: 'skillCreatorThinkingLevel'; value: ComposerThinkingLevel }
-  | { key: 'smartBtwModel'; provider: string; modelId: string; reset?: false }
-  | { key: 'smartBtwModel'; reset: true }
-  | { key: 'smartBtwThinkingLevel'; value: ComposerThinkingLevel }
   | { key: 'composerStreamingBehavior'; value: ComposerStreamingBehavior }
   | { key: 'dictationModelId'; value: DictationModelId | null }
   | { key: 'dictationMaxDurationSeconds'; value: number }

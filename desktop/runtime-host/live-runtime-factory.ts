@@ -26,18 +26,6 @@ type LiveRuntimeFactoryHandlers = {
   suspendRuntimeDisposal: (runtimeKey: string) => void
 }
 
-async function applyPiExtensionRuntimeEnvironment() {
-  const cfg = await invokeMainRequest('getNativeSmartBtwConfig', {})
-  updateOptionalEnvironmentValue('HOWCODE_SMART_BTW_MODEL', cfg.model)
-  updateOptionalEnvironmentValue('HOWCODE_COMPOSER_MODEL', cfg.composerModel)
-  updateOptionalEnvironmentValue('HOWCODE_SMART_BTW_THINKING', cfg.thinking)
-}
-
-function updateOptionalEnvironmentValue(key: string, value: string | null | undefined) {
-  if (value?.trim()) process.env[key] = value
-  else delete process.env[key]
-}
-
 export async function createLiveRuntime(
   options: {
     cwd: string
@@ -71,7 +59,6 @@ export async function createLiveRuntime(
   const modelRegistry = normalizeModelRegistryContextWindows(
     ModelRegistry.create(authStorage, `${agentDir}/models.json`),
   )
-  await applyPiExtensionRuntimeEnvironment()
   const settingsManager = createRuntimeSettingsManager({
     SettingsManager,
     cwd: options.cwd,

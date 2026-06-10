@@ -190,7 +190,6 @@ export type RuntimeHostResponseMap = {
 }
 
 export type RuntimeHostMainRequestMap = {
-  getNativeSmartBtwConfig: Record<string, never>
   createArtifact: {
     conversationId: string
     slug: string
@@ -212,11 +211,6 @@ export type RuntimeHostMainRequestMap = {
 }
 
 export type RuntimeHostMainResponseMap = {
-  getNativeSmartBtwConfig: {
-    model: string | null
-    composerModel: string | null
-    thinking: string | null
-  }
   createArtifact: Artifact
   updateArtifact: Artifact
   editArtifact: Artifact

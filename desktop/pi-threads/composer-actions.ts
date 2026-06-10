@@ -22,6 +22,7 @@ import {
 import {
   answerPiExtensionDialog,
   dequeueComposerPrompt,
+  disposeWorkspaceComposerRuns,
   invokePiExtensionShortcut,
   refreshComposerAfterProjectTrust,
   sendComposerPrompt,
@@ -30,7 +31,7 @@ import {
   setProjectTrust,
   stopComposerRun,
 } from '../pi-desktop-runtime.ts'
-import { invalidateRuntimeHostSettings, invokeRuntimeHost } from '../runtime-host/client-bridge.ts'
+import { invalidateRuntimeHostSettings } from '../runtime-host/client-bridge.ts'
 import { assignThreadBranch, dismissInboxThreadAfterReply } from '../thread-state-db.ts'
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
@@ -140,7 +141,7 @@ async function setProjectTrustFromPayload(payload: AnyDesktopActionPayload) {
   if (trusted === null || !cwd) return handledAction()
 
   await setProjectTrust({ ...composerRequest, cwd, trusted })
-  await invokeRuntimeHost('disposeRuntimeHosts', {
+  await disposeWorkspaceComposerRuns({
     projectPath: cwd,
     sessionPaths: composerRequest.sessionPath ? [composerRequest.sessionPath] : [],
   })

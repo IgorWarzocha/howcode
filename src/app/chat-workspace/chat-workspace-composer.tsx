@@ -20,8 +20,6 @@ const FALLBACK_APP_SETTINGS = {
   gitCommitMessageThinkingLevel: 'off',
   skillCreatorModel: null,
   skillCreatorThinkingLevel: 'off',
-  smartBtwModel: null,
-  smartBtwThinkingLevel: 'low',
   composerStreamingBehavior: 'followUp',
   dictationModelId: null,
   dictationMaxDurationSeconds: 180,

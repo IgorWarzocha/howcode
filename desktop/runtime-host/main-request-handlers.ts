@@ -1,4 +1,3 @@
-import { loadAppSettings } from '../app-settings/readers.ts'
 import {
   createArtifact,
   editArtifact,
@@ -19,24 +18,10 @@ type RuntimeHostMainRequestHandlerMap = {
   ) => RuntimeHostMainResponseMap[TName]
 }
 
-function getNativeSmartBtwConfig() {
-  const settings = loadAppSettings()
-  const selection = settings.smartBtwModel
-  const composerSelection = settings.codeModel ?? settings.chatModel
-  return {
-    model: selection ? `${selection.provider}/${selection.id}` : null,
-    composerModel: composerSelection
-      ? `${composerSelection.provider}/${composerSelection.id}`
-      : null,
-    thinking: settings.smartBtwThinkingLevel,
-  }
-}
-
 const runtimeHostMainRequestHandlers = {
   createArtifact: (payload) => createArtifact(payload),
   editArtifact: (payload) => editArtifact(payload),
   getArtifact: (payload) => getArtifact(payload.artifactSlug, payload.conversationId),
-  getNativeSmartBtwConfig: () => getNativeSmartBtwConfig(),
   listArtifacts: (payload) => listArtifacts(payload.conversationId),
 
   updateArtifact: (payload) => updateArtifact(payload),

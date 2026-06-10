@@ -141,7 +141,7 @@ export function getPiExtensionDialog(runtime: PiRuntime): PiExtensionDialogReque
   if (!sessionPath) return null
   const dialog = dialogsBySession.get(sessionPath)
   if (!dialog) return null
-  const { resolve: _resolve, ...request } = dialog
+  const { cleanup: _cleanup, resolve: _resolve, ...request } = dialog
   return request
 }
 

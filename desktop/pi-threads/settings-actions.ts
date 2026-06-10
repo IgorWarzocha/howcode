@@ -54,8 +54,6 @@ import {
   setShowDictationButton,
   setSkillCreatorModelSelection,
   setSkillCreatorThinkingLevel,
-  setSmartBtwModelSelection,
-  setSmartBtwThinkingLevel,
   setUseAgentsSkillsPaths,
 } from '../app-settings/writers.ts'
 import { restartRuntimeHostsForEnvironmentChange } from '../runtime-host/client-bridge.ts'
@@ -220,16 +218,8 @@ const settingsUpdateHandlers = {
     setOptionalThinkingLevel(payload, setGitCommitMessageThinkingLevel),
   skillCreatorThinkingLevel: (payload) =>
     setOptionalThinkingLevel(payload, setSkillCreatorThinkingLevel),
-  smartBtwThinkingLevel: (payload) => {
-    setOptionalThinkingLevel(payload, setSmartBtwThinkingLevel)
-    restartRuntimeHostsForEnvironmentChange()
-  },
   gitCommitMessageModel: (payload) =>
     setResettableModelSelection(payload, setGitCommitMessageModelSelection),
-  smartBtwModel: (payload) => {
-    setResettableModelSelection(payload, setSmartBtwModelSelection)
-    restartRuntimeHostsForEnvironmentChange()
-  },
 } satisfies Record<string, SettingsUpdateHandler>
 
 export async function handleSettingsDesktopAction(

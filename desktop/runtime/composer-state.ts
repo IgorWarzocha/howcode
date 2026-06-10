@@ -90,7 +90,7 @@ function mapContextUsage(session: AgentSession): ComposerContextUsage | null {
 function getLatestCacheHitRate(session: AgentSession) {
   let latestCacheHitRate: number | null = null
 
-  for (const entry of session.sessionManager.getEntries()) {
+  for (const entry of session.sessionManager.getBranch()) {
     if (entry.type !== 'message' || entry.message.role !== 'assistant') continue
 
     const usage = entry.message.usage

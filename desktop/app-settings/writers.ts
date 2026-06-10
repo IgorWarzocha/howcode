@@ -48,8 +48,6 @@ import {
   sidebarVisibleProjectIdsKey,
   skillCreatorModelKey,
   skillCreatorThinkingLevelKey,
-  smartBtwModelKey,
-  smartBtwThinkingLevelKey,
   useAgentsSkillsPathsKey,
 } from './keys.ts'
 
@@ -136,19 +134,6 @@ export function setSkillCreatorModelSelection(selection: ModelSelection | null) 
 
 export function setSkillCreatorThinkingLevel(level: ComposerThinkingLevel) {
   writeAppPreference(skillCreatorThinkingLevelKey, JSON.stringify(level))
-}
-
-export function setSmartBtwModelSelection(selection: ModelSelection | null) {
-  if (!selection) {
-    deleteAppPreference(smartBtwModelKey)
-    return
-  }
-
-  writeAppPreference(smartBtwModelKey, JSON.stringify(selection))
-}
-
-export function setSmartBtwThinkingLevel(level: ComposerThinkingLevel) {
-  writeAppPreference(smartBtwThinkingLevelKey, JSON.stringify(level))
 }
 
 export function setComposerStreamingBehavior(behavior: ComposerStreamingBehavior) {
