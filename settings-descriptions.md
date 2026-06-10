@@ -94,14 +94,6 @@ Delete temp clipboard images.
 
 Composer follow-up messages behavior.
 
-### Ask questions tool
-
-- ID: `common.howcode-native-ask-questions`
-- Category: `pi-runtime`
-- Description:
-
-Native ask questions tool (GUI+TUI).
-
 ### Open in TUI
 
 - ID: `common.pi-tui-takeover`

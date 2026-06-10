@@ -6,8 +6,7 @@
         "files": [
           "src/app/components/workspace/terminal/terminal-viewport.tsx",
           "src/app/components/workspace/composer/composer-text-field.tsx",
-          "src/app/views/settings-view.tsx",
-          "src/app/components/workspace/composer/ask-questions-card.tsx"
+          "src/app/views/settings-view.tsx"
         ],
         "rules": ["react-doctor/rerender-state-only-in-handlers"]
       },
@@ -16,10 +15,7 @@
         "rules": ["react-doctor/async-defer-await"]
       },
       {
-        "files": [
-          "src/app/views/settings-view.tsx",
-          "src/app/components/workspace/composer/ask-questions-card.tsx"
-        ],
+        "files": ["src/app/views/settings-view.tsx"],
         "rules": ["react-doctor/no-derived-state-effect"]
       }
     ]
