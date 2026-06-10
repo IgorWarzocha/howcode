@@ -198,6 +198,14 @@ function createArtifactAndThreadApi() {
     getArchivedThreads: () => invokeRequest('getArchivedThreads', {}),
     getThread: (sessionPath: string, historyCompactions = 0) =>
       invokeRequest('getThread', { sessionPath, historyCompactions }),
+    getSessionTreeList: (sessionPath: string) =>
+      invokeRequest('getSessionTreeList', { sessionPath }),
+    getThreadPreviewAtEntry: (sessionPath: string, targetEntryId: string, historyCompactions = 0) =>
+      invokeRequest('getThreadPreviewAtEntry', {
+        sessionPath,
+        targetEntryId,
+        historyCompactions,
+      }),
     searchThread: (sessionPath: string, query: string) =>
       invokeRequest('searchThread', { sessionPath, query }),
     watchSession: async (sessionPath: string | null) => {

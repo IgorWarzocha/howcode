@@ -19,12 +19,30 @@ describe('runtime host request routing', () => {
     )
     expect(shouldUseThreadRuntimeHost('openThreadRuntime', payload)).toBe(true)
     expect(shouldUseThreadRuntimeHost('stopComposerRun', payload)).toBe(true)
+    expect(
+      shouldUseThreadRuntimeHost('navigateSessionTree', {
+        ...payload,
+        targetEntryId: 'entry-1',
+        summarize: false,
+      }),
+    ).toBe(true)
   })
 
   test('keeps snapshot reads on the service host even with a session path', () => {
     expect(
       shouldUseThreadRuntimeHost('loadThreadSnapshot', {
         sessionPath: '/repo/.pi/session.json',
+      }),
+    ).toBe(false)
+    expect(
+      shouldUseThreadRuntimeHost('loadSessionTreeList', {
+        sessionPath: '/repo/.pi/session.json',
+      }),
+    ).toBe(false)
+    expect(
+      shouldUseThreadRuntimeHost('loadThreadPreviewAtEntry', {
+        sessionPath: '/repo/.pi/session.json',
+        targetEntryId: 'entry-1',
       }),
     ).toBe(false)
   })

@@ -18,12 +18,16 @@ import {
   getPiExtensionShortcut,
   getProjectTrustCwd,
   getProjectTrustDecision,
+  getSessionTreeLabel,
+  getSessionTreeNavigate,
 } from '../../shared/pi-thread-action-payloads.ts'
 import {
   answerPiExtensionDialog,
   dequeueComposerPrompt,
   disposeWorkspaceComposerRuns,
   invokePiExtensionShortcut,
+  labelSessionTreeEntry,
+  navigateSessionTree,
   refreshComposerAfterProjectTrust,
   sendComposerPrompt,
   setComposerModel,
@@ -149,6 +153,44 @@ async function setProjectTrustFromPayload(payload: AnyDesktopActionPayload) {
   return handledAction({ composer })
 }
 
+async function navigateSessionTreeFromPayload(payload: AnyDesktopActionPayload) {
+  const navigate = getSessionTreeNavigate(payload)
+  if (!navigate) return handledAction({ error: 'Session tree entry is required.' })
+  try {
+    const result = await navigateSessionTree({
+      ...getComposerRequest(payload),
+      targetEntryId: navigate.targetEntryId,
+      summarize: navigate.summarize,
+      label: navigate.label,
+    })
+    if (result.cancelled) return handledAction({ sessionTreeNavigateCancelled: true })
+    return handledAction({
+      ...(result.editorText === undefined
+        ? {}
+        : { sessionTreeNavigateEditorText: result.editorText }),
+    })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return handledAction({ error: message })
+  }
+}
+
+async function labelSessionTreeEntryFromPayload(payload: AnyDesktopActionPayload) {
+  const labelRequest = getSessionTreeLabel(payload)
+  if (!labelRequest) return handledAction({ error: 'Session tree entry is required.' })
+  try {
+    await labelSessionTreeEntry({
+      ...getComposerRequest(payload),
+      targetEntryId: labelRequest.targetEntryId,
+      label: labelRequest.label,
+    })
+    return handledAction()
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return handledAction({ error: message })
+  }
+}
+
 const composerActionHandlers = {
   'composer.model': async (payload) => {
     const selection = getComposerModelSelection(payload)
@@ -174,6 +216,8 @@ const composerActionHandlers = {
   'composer.answer-pi-extension-dialog': answerPiExtensionDialogFromPayload,
   'composer.pi-extension-shortcut': invokePiExtensionShortcutFromPayload,
   'composer.set-project-trust': setProjectTrustFromPayload,
+  'composer.session-tree.label': labelSessionTreeEntryFromPayload,
+  'composer.session-tree.navigate': navigateSessionTreeFromPayload,
 } satisfies Partial<Record<DesktopAction, ComposerActionHandler>>
 
 export async function handleComposerDesktopAction(

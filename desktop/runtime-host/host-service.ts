@@ -19,6 +19,8 @@ export {
   getComposerSlashCommands,
   getComposerState,
   invokePiExtensionShortcut,
+  labelSessionTreeEntryInHost,
+  navigateSessionTreeInHost,
   openThreadRuntime,
   selectProjectRuntime,
   sendComposerPrompt,
@@ -28,6 +30,7 @@ export {
   startNewThread,
   stopComposerRun,
 } from './live-runtime-service.ts'
+export { loadSessionTreeList } from './session-tree-service.ts'
 export {
   getPiSessionStorage,
   loadPiSettingsInHost as loadPiSettings,
@@ -39,4 +42,5 @@ export {
   startSkillCreatorSession,
 } from './skill-creator-service.ts'
 export { loadPiThemeStateInHost as loadPiThemeState } from './theme-service.ts'
+export { loadThreadPreviewAtEntry } from './thread-preview-service.ts'
 export { loadThreadSnapshot, searchThreadSnapshot } from './thread-snapshot-service.ts'

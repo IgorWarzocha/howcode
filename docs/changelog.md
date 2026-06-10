@@ -4,6 +4,7 @@
 - Added Pi project trust prompts in desktop, backed by Pi's trust store.
 - Pi extension UI now renders generic dialogs, widgets, status lines, notifications, and shortcuts instead of Howcode-native extension hacks.
 - Pi TUI takeover and the shell terminal drawer now behave like separate surfaces, including focus and shortcut handling.
+- Session tree labels now work from the tree itself, without jumping around first.
 
 #### 0.1.66 Hotfixes (because .67 has to be more special)
 

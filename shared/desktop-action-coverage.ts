@@ -36,6 +36,8 @@ export const implementedDesktopActions = [
   'composer.answer-pi-extension-dialog',
   'composer.pi-extension-shortcut',
   'composer.set-project-trust',
+  'composer.session-tree.label',
+  'composer.session-tree.navigate',
   'inbox.mark-read',
   'inbox.dismiss',
   'inbox.clear-read',

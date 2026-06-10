@@ -188,6 +188,7 @@ export function buildPiRuntimeSettingsDescriptors({
     })),
     ...(
       [
+        ['treeFilterMode', 'Session tree filter', 'What the session tree shows in the composer.'],
         ['doubleEscapeAction', 'Double Escape', 'Double Escape in an empty editor.'],
         ['showImages', 'Show images', 'Show images in supported terminals.'],
         ['hideThinkingBlock', 'Hide thinking blocks', 'Hide reasoning blocks in TUI output.'],
@@ -199,12 +200,41 @@ export function buildPiRuntimeSettingsDescriptors({
     ).map(([key, title, description]) => ({
       id: `pi-tui.${key}`,
       category: 'pi' as const,
-      dividerBefore: key === 'doubleEscapeAction',
+      dividerBefore: key === 'treeFilterMode' || key === 'doubleEscapeAction',
       title,
       description,
       keywords: 'terminal tui editor cursor changelog thinking images escape',
       render: () =>
-        key === 'doubleEscapeAction' ? (
+        key === 'treeFilterMode' ? (
+          <div
+            className={`grid grid-cols-2 gap-[3px] rounded-lg bg-[color:var(--surface-hover)] p-[3px] sm:grid-cols-3 ${appTypeSmallClass} ${appToneMutedClass}`}
+          >
+            {(
+              [
+                ['no-tools', 'No tools'],
+                ['default', 'Default'],
+                ['user-only', 'User only'],
+                ['labeled-only', 'Labeled'],
+                ['all', 'All'],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                className={cn(
+                  'rounded-md px-2 py-1 transition-colors hover:bg-[color:var(--surface-hover)] active:scale-[0.98]',
+                  draftPiSettings.treeFilterMode === value &&
+                    'bg-[color:var(--folded-row-hover-bg)] text-[color:var(--text)]',
+                )}
+                onClick={() =>
+                  setDraftPiSetting('treeFilterMode', value as PiSettings['treeFilterMode'])
+                }
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : key === 'doubleEscapeAction' ? (
           <div
             className={`grid grid-cols-3 rounded-lg bg-[color:var(--surface-hover)] p-[3px] ${appTypeSmallClass} ${appToneMutedClass}`}
           >

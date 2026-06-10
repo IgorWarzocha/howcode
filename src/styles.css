@@ -5,4 +5,5 @@
 @import "./styles/primitives.css";
 @import "./styles/settings.css";
 @import "./styles/sidebar.css";
+@import "./styles/composer-session-tree.css";
 @import "./styles/vendor/xterm.css";

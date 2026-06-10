@@ -3,6 +3,7 @@ import {
   appNewSessionSlashCommand,
   appSettingsSlashCommand,
   fallbackAppSlashCommands,
+  sessionTreeSlashCommand,
 } from '@howcode/shared/composer-slash-commands'
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
 import type { ComposerSlashCommand } from '../desktop/types'
@@ -33,6 +34,7 @@ type UseComposerSlashCommandsOptions = {
   sendExtensionCommand?: () => void
   onOpenSettingsView: (target?: SettingsOpenTarget) => void
   onStartNewSession?: () => void
+  onOpenSessionTree?: () => void
 }
 
 export type ComposerSlashCommands = ReturnType<typeof useComposerSlashCommands>
@@ -47,6 +49,7 @@ export function useComposerSlashCommands({
   sendExtensionCommand,
   onOpenSettingsView,
   onStartNewSession,
+  onOpenSessionTree,
 }: UseComposerSlashCommandsOptions) {
   const [commands, setCommands] = useState<ComposerSlashCommand[]>([])
   const [loading, setLoading] = useState(false)
@@ -75,18 +78,28 @@ export function useComposerSlashCommands({
     return commands.find((command) => command.name === commandName) ?? null
   }
 
-  const selectCommand = (command: ComposerSlashCommand) => {
-    if (command.source === 'app' && command.name === 'settings') {
+  const runAppSlashCommand = (command: ComposerSlashCommand) => {
+    if (command.source !== 'app') return false
+    if (command.name === 'settings') {
       setDraft('')
       onOpenSettingsView()
-      return
+      return true
     }
-
-    if (command.source === 'app' && command.name === 'new') {
+    if (command.name === 'new') {
       setDraft('')
       onStartNewSession?.()
-      return
+      return true
     }
+    if (command.name === 'tree') {
+      setDraft('')
+      onOpenSessionTree?.()
+      return true
+    }
+    return false
+  }
+
+  const selectCommand = (command: ComposerSlashCommand) => {
+    if (runAppSlashCommand(command)) return
 
     if (isExactCommandDraft(command)) {
       dismiss()
@@ -128,6 +141,11 @@ export function useComposerSlashCommands({
 
     if (draft === '/new') {
       selectCommand(appNewSessionSlashCommand)
+      return
+    }
+
+    if (draft === '/tree') {
+      selectCommand(sessionTreeSlashCommand)
       return
     }
 

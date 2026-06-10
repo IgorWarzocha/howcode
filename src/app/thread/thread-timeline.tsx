@@ -12,6 +12,7 @@ import { getTimelineRowMessageIds } from './thread-message-ids'
 import { ThreadTimelineRow } from './thread-timeline-row'
 import { buildThreadTimelineState } from './thread-timeline-state'
 import type { TimelineRow } from './timeline-row'
+import { useSessionTreeReveal } from './useSessionTreeReveal'
 import { useThreadFindNavigation } from './useThreadFindNavigation'
 
 type ThreadTimelineProps = {
@@ -70,6 +71,16 @@ export function ThreadTimeline({
       setCollapsedRowIds,
       shouldStickToBottomRef,
     })
+
+  useSessionTreeReveal({
+    containerRef,
+    programmaticScrollFrameRef,
+    rowStructureSignature: findRowStructureSignature,
+    rows,
+    sessionPath,
+    setCollapsedRowIds,
+    shouldStickToBottomRef,
+  })
 
   const {
     bottomAnchorKey,

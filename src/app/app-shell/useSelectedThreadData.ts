@@ -1,6 +1,8 @@
 import { getPersistedSessionPath } from '@howcode/shared/session-paths'
 import type { ThreadCustomMessageRecord, ThreadData } from '../desktop/types'
 import { useDesktopThreadQuery } from '../hooks/useDesktopThread'
+import { useSessionTreePreviewThread } from '../hooks/useSessionTreePreviewThread'
+import { mergePreviewThreadWithLive } from '../thread/session-tree-preview'
 
 function mergeCustomMessages(
   liveMessages: ThreadCustomMessageRecord[] | undefined,
@@ -39,16 +41,23 @@ export function useSelectedThreadData(input: {
     { enabled: !input.threadQueryDeferred },
   )
   const threadData = threadQuery.data ?? null
+  const sessionTreePreview = useSessionTreePreviewThread(
+    input.selectedSessionPath,
+    input.threadHistoryCompactions,
+  )
   const selectedPersistedSessionPath = getPersistedSessionPath(input.selectedSessionPath)
   const threadDataMatchesSelection = threadData?.sessionPath === selectedPersistedSessionPath
   const liveDataMatchesSelection =
     input.liveThreadData?.sessionPath === selectedPersistedSessionPath
   const activeThreadLoading = Boolean(
     selectedPersistedSessionPath &&
-      (threadQuery.isLoading || threadQuery.isFetching) &&
+      (threadQuery.isLoading ||
+        threadQuery.isFetching ||
+        (sessionTreePreview.previewEntryId && sessionTreePreview.previewThreadLoading)) &&
       !(liveDataMatchesSelection || threadDataMatchesSelection),
   )
-  const effectiveThreadData =
+
+  const baseEffectiveThreadData =
     input.threadHistoryCompactions === 0 &&
     input.liveThreadData?.sessionPath === input.selectedSessionPath
       ? mergeThreadHistorySideChannels(
@@ -58,6 +67,11 @@ export function useSelectedThreadData(input: {
       : threadDataMatchesSelection
         ? threadData
         : null
+
+  const effectiveThreadData =
+    sessionTreePreview.previewThreadData && sessionTreePreview.previewEntryId
+      ? mergePreviewThreadWithLive(sessionTreePreview.previewThreadData, baseEffectiveThreadData)
+      : baseEffectiveThreadData
 
   return { activeThreadLoading, effectiveThreadData }
 }

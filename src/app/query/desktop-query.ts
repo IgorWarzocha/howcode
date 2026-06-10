@@ -287,6 +287,24 @@ export async function getThreadQuery(
   return (await window.piDesktop?.getThread?.(sessionPath, historyCompactions)) ?? null
 }
 
+export async function getSessionTreeListQuery(sessionPath: string) {
+  return (await window.piDesktop?.getSessionTreeList?.(sessionPath)) ?? null
+}
+
+export async function getThreadPreviewAtEntryQuery(
+  sessionPath: string,
+  targetEntryId: string,
+  historyCompactions = 0,
+): Promise<ThreadData | null> {
+  return (
+    (await window.piDesktop?.getThreadPreviewAtEntry?.(
+      sessionPath,
+      targetEntryId,
+      historyCompactions,
+    )) ?? null
+  )
+}
+
 export async function searchThreadQuery(
   sessionPath: string,
   query: string,

@@ -1,7 +1,8 @@
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
+import type { PiTreeFilterMode } from '@howcode/shared/desktop-settings-contracts'
 import type { ComposerSendMode, KeybindingOverrides } from '@howcode/shared/keybindings'
 import { AlertTriangle, Loader2 } from 'lucide-react'
-import type { ClipboardEvent, RefObject } from 'react'
+import { type ClipboardEvent, type MutableRefObject, type RefObject, useRef } from 'react'
 import type { ComposerAttachment, DesktopActionInvoker } from '../desktop/types'
 import { getPathForFileQuery } from '../query/desktop-query'
 import { appTypeSmallClass, composerInlineStatusPillClass } from '../ui/classes'
@@ -13,8 +14,8 @@ import {
   getComposerAttachmentsFromClipboardData,
   hasAttachmentHintInClipboardData,
 } from './composer-paste-attachments'
+import { ComposerPromptPopoverStack } from './composer-prompt-popover-stack'
 import { ComposerSkillMentionPanel } from './composer-skill-mention-panel'
-import { SlashCommandPanel } from './composer-slash-command-panel'
 import { ComposerTextField } from './composer-text-field'
 import { handleComposerTextKeyDown } from './composer-text-keydown'
 import type { ComposerFileMentions } from './useComposerFileMentions'
@@ -46,6 +47,24 @@ type ComposerPromptInputPanelProps = {
   pickerState: Parameters<typeof ComposerFilePicker>[0]['picker']
   placeholderText: string
   projectId: string
+  piTreeFilterMode?: PiTreeFilterMode | undefined
+  sessionPath?: string | null | undefined
+  sessionTreeOpen?: boolean | undefined
+  sessionTreePanelRef?: RefObject<HTMLDivElement | null> | undefined
+  sessionTreeForceHidden?: boolean | undefined
+  sessionTreeNavigateDisabled?: boolean | undefined
+  onSessionTreeNavigate?:
+    | ((entryId: string, summarize: boolean, label?: string) => Promise<boolean>)
+    | undefined
+  onSessionTreeLabel?: ((entryId: string, label: string) => Promise<boolean> | boolean) | undefined
+  onRevealSessionTreeEntryInThread?: ((entryId: string) => void) | undefined
+  onBindSessionTreeClose?: ((close: (() => void) | null) => void) | undefined
+  onSessionTreeNavigateConfirmOpenChange?: ((open: boolean) => void) | undefined
+  onSessionTreeLabelPopoverOpenChange?: ((open: boolean) => void) | undefined
+  sessionTreeCancelNavigateConfirmRef?: MutableRefObject<(() => void) | null> | undefined
+  sessionTreeCancelLabelPopoverRef?: MutableRefObject<(() => void) | null> | undefined
+  composerPopoverStackRef?: RefObject<HTMLDivElement | null> | undefined
+  onSessionTreeTypingDismiss?: (() => void) | undefined
   slashCommandPanelRef: RefObject<HTMLDivElement | null>
   slashCommands: ComposerSlashCommands
   fileMentionPanelRef: RefObject<HTMLDivElement | null>
@@ -102,6 +121,7 @@ function BranchGuardPopup({ message }: { message: string | null }) {
   )
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: single surface wiring dictation, mentions, and popovers
 export function ComposerPromptInputPanel({
   attachments,
   clearError,
@@ -127,6 +147,22 @@ export function ComposerPromptInputPanel({
   pickerState,
   placeholderText,
   projectId,
+  piTreeFilterMode = 'no-tools',
+  sessionPath = null,
+  sessionTreeOpen = false,
+  sessionTreePanelRef: sessionTreePanelRefProp,
+  sessionTreeForceHidden = false,
+  sessionTreeNavigateDisabled = false,
+  onSessionTreeNavigate,
+  onSessionTreeLabel,
+  onRevealSessionTreeEntryInThread,
+  onBindSessionTreeClose,
+  onSessionTreeNavigateConfirmOpenChange,
+  onSessionTreeLabelPopoverOpenChange,
+  sessionTreeCancelNavigateConfirmRef,
+  sessionTreeCancelLabelPopoverRef,
+  composerPopoverStackRef,
+  onSessionTreeTypingDismiss,
   slashCommandPanelRef,
   slashCommands,
   fileMentionPanelRef,
@@ -149,6 +185,8 @@ export function ComposerPromptInputPanel({
   toggleDictation,
   togglePendingPickerAttachment,
 }: ComposerPromptInputPanelProps) {
+  const internalSessionTreePanelRef = useRef<HTMLDivElement>(null)
+  const sessionTreePanelRef = sessionTreePanelRefProp ?? internalSessionTreePanelRef
   const showBranchGuardPopup = isBranchGuardError(errorMessage)
   const statusMessage = getComposerStatusMessage({ draft, errorMessage, showBranchGuardPopup })
   const dictationButtonVisible = showDictationButton && !inputLocked
@@ -178,10 +216,31 @@ export function ComposerPromptInputPanel({
         <div className="flex items-end justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-end gap-2">
             <div className="min-w-0 flex-1">
-              <SlashCommandPanel panelRef={slashCommandPanelRef} slashCommands={slashCommands} />
+              <ComposerPromptPopoverStack
+                sessionPath={sessionPath}
+                sessionTreeOpen={sessionTreeOpen}
+                treeFilterMode={piTreeFilterMode}
+                sessionTreePanelRef={sessionTreePanelRef}
+                popoverStackRef={composerPopoverStackRef}
+                sessionTreeForceHidden={sessionTreeForceHidden}
+                sessionTreeNavigateDisabled={sessionTreeNavigateDisabled}
+                onSessionTreeNavigate={onSessionTreeNavigate}
+                onSessionTreeLabel={onSessionTreeLabel}
+                onRevealSessionTreeEntryInThread={onRevealSessionTreeEntryInThread}
+                onBindSessionTreeClose={onBindSessionTreeClose}
+                onSessionTreeNavigateConfirmOpenChange={onSessionTreeNavigateConfirmOpenChange}
+                onSessionTreeLabelPopoverOpenChange={onSessionTreeLabelPopoverOpenChange}
+                sessionTreeCancelNavigateConfirmRef={sessionTreeCancelNavigateConfirmRef}
+                sessionTreeCancelLabelPopoverRef={sessionTreeCancelLabelPopoverRef}
+                slashCommandPanelRef={slashCommandPanelRef}
+                slashCommands={slashCommands}
+              />
               <ComposerTextField
                 value={draft}
-                onChange={setDraft}
+                onChange={(next) => {
+                  if (sessionTreeOpen) onSessionTreeTypingDismiss?.()
+                  setDraft(next)
+                }}
                 onInput={() => {
                   if (errorMessage) {
                     clearError()

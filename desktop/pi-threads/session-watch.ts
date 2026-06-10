@@ -1,6 +1,8 @@
 import { type FSWatcher, watch } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import path from 'node:path'
+import { sessionTreeRefreshWithSessionWatch } from '../../shared/session-tree-watch.ts'
+import { emitDesktopEvent } from '../runtime/desktop-events.ts'
 import {
   publishExternalThreadUpdate,
   shouldSuppressExternalThreadUpdate,
@@ -65,6 +67,9 @@ async function refreshWatchedSession(sessionPath: string, watchToken: number) {
       thread: snapshot.thread,
       lastModifiedMs: fileStats.mtimeMs,
     })
+    if (sessionTreeRefreshWithSessionWatch) {
+      emitDesktopEvent({ type: 'session-tree-refresh', sessionPath })
+    }
   } catch (error) {
     console.warn(`Failed to refresh watched Pi session: ${sessionPath}`, error)
   }
