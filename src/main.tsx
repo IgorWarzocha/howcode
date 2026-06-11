@@ -17,6 +17,9 @@ function applyDesktopPlatformAttribute() {
 
 if (import.meta.env.DEV) {
   void import('react-grab')
+}
+
+if (!window.piDesktop && window.location.protocol.startsWith('http')) {
   installDevWebDesktopBridge()
 }
 

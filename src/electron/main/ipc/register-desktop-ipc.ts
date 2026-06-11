@@ -10,13 +10,7 @@ import { resolveConfiguredDevServerUrl } from '../../../../shared/dev-server'
 import { isTrustedRendererUrl } from '../app/navigation-security'
 import { getRendererDistDirectory } from '../runtime/app-paths'
 import type { AppUpdater } from '../updater/app-updater'
-import { createAppUpdateHandlers } from './request-handlers/app-update'
-import { createPiPackagesHandlers } from './request-handlers/pi-packages'
-import { createPiSkillsHandlers } from './request-handlers/pi-skills'
-import { createPiThreadsHandlers } from './request-handlers/pi-threads'
-import { createSkillCreatorHandlers } from './request-handlers/skill-creator'
-import { createSystemHandlers } from './request-handlers/system'
-import { createTerminalHandlers } from './request-handlers/terminal'
+import { createDesktopRequestHandlers } from './desktop-request-handlers'
 
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
@@ -69,15 +63,7 @@ export function registerDesktopIpc(
   appUpdater: AppUpdater,
   onSettingsChanged?: (() => Promise<void> | void) | undefined,
 ) {
-  const handlers: DesktopRequestHandlerMap = {
-    ...createAppUpdateHandlers(appUpdater),
-    ...createPiThreadsHandlers(runtime.piThreads, onSettingsChanged),
-    ...createPiPackagesHandlers(runtime.piThreads),
-    ...createPiSkillsHandlers(runtime.piSkills),
-    ...createSkillCreatorHandlers(runtime.skillCreator),
-    ...createTerminalHandlers(runtime.terminalManager),
-    ...createSystemHandlers(),
-  }
+  const handlers = createDesktopRequestHandlers(runtime, appUpdater, onSettingsChanged)
 
   registerRequestHandlers(handlers, getMainWindow)
 

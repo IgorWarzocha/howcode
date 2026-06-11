@@ -82,6 +82,15 @@ bun run dev:headless:host
 
 This exposes the local desktop bridge to that browser session, so keep it on a trusted network.
 
+Installed builds can also run without opening the desktop window:
+
+```bash
+howcode --headless
+howcode --headless --host 0.0.0.0 --port 5173
+```
+
+The default headless host is `127.0.0.1`. Use `--host 0.0.0.0` only on a trusted network.
+
 ## Issues and updates
 
 > [!IMPORTANT]

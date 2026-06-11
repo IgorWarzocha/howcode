@@ -19,6 +19,15 @@ npm i -g howcode
 howcode
 ```
 
+Headless/browser mode:
+
+```bash
+howcode --headless
+howcode --headless --host 0.0.0.0 --port 5173
+```
+
+Remote host mode exposes the local desktop bridge to browsers that can reach that address, so keep it on a trusted network.
+
 This npm package is a small launcher.
 
 On first run, it downloads the matching desktop app for your platform from GitHub Releases and caches it locally.
