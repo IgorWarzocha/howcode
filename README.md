@@ -77,19 +77,22 @@ To try it from another device on your network:
 
 ```bash
 bun run dev:headless:host
-# open http://<this-machine-ip>:5173
+# open http://<this-machine-ip>:5173/#token=<printed-token>
 ```
 
-This exposes the local desktop bridge to that browser session, so keep it on a trusted network.
+Remote dev mode requires the printed access token before the browser can use the local desktop bridge.
+Keep it on a trusted network.
 
 Installed builds can also run without opening the desktop window:
 
 ```bash
 howcode --headless
 howcode --headless --host 0.0.0.0 --port 5173
+howcode --headless --host 0.0.0.0 --token my-secret
 ```
 
-The default headless host is `127.0.0.1`. Use `--host 0.0.0.0` only on a trusted network.
+The default headless host is `127.0.0.1`. Remote headless mode requires a token; pass `--token` /
+`HOWCODE_HEADLESS_TOKEN` or use the random one printed at startup. Use `--host 0.0.0.0` only on a trusted network.
 In browser mode, files picked, pasted, or dropped from the browser device are uploaded to a temp
 folder on the host and attached from there. Host file browsing still uses the host filesystem.
 

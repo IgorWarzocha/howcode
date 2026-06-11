@@ -36,8 +36,14 @@ const mimeTypes: Record<string, string> = {
 type HeadlessServerInput = {
   runtime: DesktopServiceRuntime
   appUpdater: AppUpdater
-  options: Pick<HeadlessServerOptions, 'host' | 'port'>
+  options: Pick<HeadlessServerOptions, 'accessToken' | 'authRequired' | 'host' | 'port'>
   onSettingsChanged?: (() => Promise<void> | void) | undefined
+}
+
+type HeadlessAuthState = {
+  accessToken: string | null
+  required: boolean
+  sessionToken: string
 }
 
 type HeadlessRequestContext = {
@@ -45,12 +51,14 @@ type HeadlessRequestContext = {
   desktopEventClients: Set<http.ServerResponse>
   handlers: DesktopRequestHandlerMap
   indexHtml: string
+  auth: HeadlessAuthState
   isTrustedHost: (host: string | undefined) => boolean
   rendererDistDirectory: string
   terminalEventClients: Set<http.ServerResponse>
 }
 
 const headlessBridgeToken = randomUUID()
+const headlessSessionCookieName = 'howcode_headless_session'
 const maxBridgeJsonBodyBytes = 2 * 1024 * 1024
 
 function sendJson(response: http.ServerResponse, statusCode: number, payload: unknown) {
@@ -63,6 +71,37 @@ function sendText(response: http.ServerResponse, statusCode: number, message: st
   response.statusCode = statusCode
   response.setHeader('content-type', 'text/plain; charset=utf-8')
   response.end(message)
+}
+
+function parseCookieHeader(cookieHeader: string | string[] | undefined) {
+  const header = Array.isArray(cookieHeader) ? cookieHeader.join(';') : cookieHeader
+  const cookies = new Map<string, string>()
+  if (!header) return cookies
+
+  for (const part of header.split(';')) {
+    const [rawName, ...rawValueParts] = part.trim().split('=')
+    if (!rawName) continue
+    cookies.set(rawName, decodeURIComponent(rawValueParts.join('=')))
+  }
+
+  return cookies
+}
+
+function hasAuthenticatedSession(request: http.IncomingMessage, auth: HeadlessAuthState) {
+  if (!auth.required) {
+    return true
+  }
+
+  return (
+    parseCookieHeader(request.headers.cookie).get(headlessSessionCookieName) === auth.sessionToken
+  )
+}
+
+function setAuthenticatedSessionCookie(response: http.ServerResponse, auth: HeadlessAuthState) {
+  response.setHeader(
+    'set-cookie',
+    `${headlessSessionCookieName}=${encodeURIComponent(auth.sessionToken)}; Path=/; HttpOnly; SameSite=Lax`,
+  )
 }
 
 async function readJsonBody(request: http.IncomingMessage, maxBytes = maxBridgeJsonBodyBytes) {
@@ -137,6 +176,45 @@ function hasTrustedBrowserOrigin(
 
 function hasValidBridgeToken(request: http.IncomingMessage) {
   return request.headers['x-howcode-dev-web-bridge-token'] === headlessBridgeToken
+}
+
+async function handleHeadlessAuthRequest(
+  request: http.IncomingMessage,
+  response: http.ServerResponse,
+  auth: HeadlessAuthState,
+  isTrustedHost: (host: string | undefined) => boolean,
+) {
+  if (!hasTrustedBrowserOrigin(request, isTrustedHost)) {
+    sendText(response, 403, 'Forbidden')
+    return
+  }
+
+  if (request.method === 'GET') {
+    sendJson(response, 200, {
+      required: auth.required,
+      authenticated: hasAuthenticatedSession(request, auth),
+    })
+    return
+  }
+
+  if (request.method !== 'POST') {
+    sendJson(response, 405, { error: 'Auth requests must use GET or POST.' })
+    return
+  }
+
+  if (!auth.required) {
+    sendJson(response, 200, { authenticated: true, required: false })
+    return
+  }
+
+  const body = (await readJsonBody(request).catch(() => null)) as { token?: unknown } | null
+  if (typeof body?.token !== 'string' || body.token !== auth.accessToken) {
+    sendJson(response, 401, { error: 'Invalid access token.' })
+    return
+  }
+
+  setAuthenticatedSessionCookie(response, auth)
+  sendJson(response, 200, { authenticated: true, required: true })
 }
 
 function sendSseEvent<TChannel extends DesktopEventChannel>(
@@ -215,6 +293,7 @@ function resolveStaticPath(rendererDistDirectory: string, rawPathname: string) {
 function handleBridgeConfig(
   request: http.IncomingMessage,
   response: http.ServerResponse,
+  auth: HeadlessAuthState,
   isTrustedHost: (host: string | undefined) => boolean,
 ) {
   if (!hasTrustedBrowserOrigin(request, isTrustedHost)) {
@@ -222,13 +301,18 @@ function handleBridgeConfig(
     return
   }
 
-  sendJson(response, 200, { bridgeToken: headlessBridgeToken })
+  if (!hasAuthenticatedSession(request, auth)) {
+    sendJson(response, 401, { error: 'Headless access token required.' })
+    return
+  }
+
+  sendJson(response, 200, { authRequired: auth.required, bridgeToken: headlessBridgeToken })
 }
 
 function handleBridgeEventRequest(
   context: Pick<
     HeadlessRequestContext,
-    'allSseClients' | 'desktopEventClients' | 'isTrustedHost' | 'terminalEventClients'
+    'allSseClients' | 'auth' | 'desktopEventClients' | 'isTrustedHost' | 'terminalEventClients'
   >,
   request: http.IncomingMessage,
   response: http.ServerResponse,
@@ -236,6 +320,11 @@ function handleBridgeEventRequest(
 ) {
   if (!hasTrustedBrowserOrigin(request, context.isTrustedHost)) {
     sendText(response, 403, 'Forbidden')
+    return
+  }
+
+  if (!hasAuthenticatedSession(request, context.auth)) {
+    sendText(response, 401, 'Headless access token required.')
     return
   }
 
@@ -254,12 +343,18 @@ function handleBridgeEventRequest(
 }
 
 function handleBridgeRequestEndpoint(
-  context: Pick<HeadlessRequestContext, 'handlers' | 'isTrustedHost'>,
+  context: Pick<HeadlessRequestContext, 'auth' | 'handlers' | 'isTrustedHost'>,
   request: http.IncomingMessage,
   response: http.ServerResponse,
   pathname: string,
 ) {
-  if (!(hasTrustedBrowserOrigin(request, context.isTrustedHost) && hasValidBridgeToken(request))) {
+  if (
+    !(
+      hasTrustedBrowserOrigin(request, context.isTrustedHost) &&
+      hasAuthenticatedSession(request, context.auth) &&
+      hasValidBridgeToken(request)
+    )
+  ) {
     sendText(response, 403, 'Forbidden')
     return
   }
@@ -274,11 +369,17 @@ function handleBridgeRequestEndpoint(
 }
 
 async function handleBrowserUploadRequest(
-  context: Pick<HeadlessRequestContext, 'isTrustedHost'>,
+  context: Pick<HeadlessRequestContext, 'auth' | 'isTrustedHost'>,
   request: http.IncomingMessage,
   response: http.ServerResponse,
 ) {
-  if (!(hasTrustedBrowserOrigin(request, context.isTrustedHost) && hasValidBridgeToken(request))) {
+  if (
+    !(
+      hasTrustedBrowserOrigin(request, context.isTrustedHost) &&
+      hasAuthenticatedSession(request, context.auth) &&
+      hasValidBridgeToken(request)
+    )
+  ) {
     sendText(response, 403, 'Forbidden')
     return
   }
@@ -309,8 +410,13 @@ function handleHeadlessHttpRequest(
 ) {
   const { pathname } = new URL(request.url ?? '/', 'http://headless')
 
+  if (pathname === '/__howcode/auth') {
+    void handleHeadlessAuthRequest(request, response, context.auth, context.isTrustedHost)
+    return
+  }
+
   if (pathname === '/__howcode/config') {
-    handleBridgeConfig(request, response, context.isTrustedHost)
+    handleBridgeConfig(request, response, context.auth, context.isTrustedHost)
     return
   }
 
@@ -402,6 +508,11 @@ export async function startHeadlessServer(input: HeadlessServerInput) {
   const desktopEventClients = new Set<http.ServerResponse>()
   const terminalEventClients = new Set<http.ServerResponse>()
   const allSseClients = new Set<http.ServerResponse>()
+  const auth: HeadlessAuthState = {
+    accessToken: input.options.accessToken,
+    required: input.options.authRequired,
+    sessionToken: randomUUID(),
+  }
 
   const unsubscribeDesktopEvents = input.runtime.piThreads.subscribeDesktopEvents((event) => {
     sendSseEvent(desktopEventClients, 'desktopEvent', event)
@@ -417,6 +528,7 @@ export async function startHeadlessServer(input: HeadlessServerInput) {
 
   const requestContext = {
     allSseClients,
+    auth,
     desktopEventClients,
     handlers,
     indexHtml,

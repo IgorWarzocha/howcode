@@ -66,6 +66,9 @@ async function bootstrap() {
         'Howcode headless is reachable from other devices. Keep it on a trusted network.',
       )
     }
+    if (headlessOptions.authRequired) {
+      console.log(`Howcode headless access token: ${headlessOptions.accessToken}`)
+    }
     return
   }
 

@@ -15,9 +15,163 @@ import { getSafeExternalUrl } from '@howcode/shared/external-url'
 import type { TerminalEvent, TerminalOpenRequest } from '@howcode/shared/terminal-contracts'
 
 let bridgeTokenPromise: Promise<string> | null = null
+let authPromise: Promise<void> | null = null
+const leadingHashPattern = /^#/
+
+type HeadlessAuthState = {
+  authenticated?: boolean
+  required?: boolean
+}
+
+function getAccessTokenFromLocation() {
+  const params = new URLSearchParams(window.location.hash.replace(leadingHashPattern, ''))
+  return params.get('token')?.trim() || null
+}
+
+function clearAccessTokenFromLocation() {
+  if (!window.location.hash.includes('token=')) {
+    return
+  }
+
+  history.replaceState(null, document.title, `${window.location.pathname}${window.location.search}`)
+}
+
+async function fetchAuthState() {
+  const response = await fetch('/__howcode/auth', { cache: 'no-store' })
+  if (!response.ok) {
+    throw new Error('Unable to load headless auth state.')
+  }
+
+  return (await response.json()) as HeadlessAuthState
+}
+
+async function submitAccessToken(token: string) {
+  const response = await fetch('/__howcode/auth', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ token }),
+  })
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { error?: string } | null
+    throw new Error(payload?.error ?? 'Invalid access token.')
+  }
+}
+
+async function tryAuthenticateWithLocationToken() {
+  const urlToken = getAccessTokenFromLocation()
+  if (!urlToken) {
+    return null
+  }
+
+  try {
+    await submitAccessToken(urlToken)
+    clearAccessTokenFromLocation()
+    return true
+  } catch (error) {
+    clearAccessTokenFromLocation()
+    return error instanceof Error ? error.message : 'Invalid access token.'
+  }
+}
+
+async function promptForAccessToken(initialError: string | null) {
+  let promptError = initialError
+  while (true) {
+    const token = await showHeadlessAuthPrompt(promptError)
+    try {
+      await submitAccessToken(token)
+      return
+    } catch (error) {
+      promptError = error instanceof Error ? error.message : 'Invalid access token.'
+    }
+  }
+}
+
+function showHeadlessAuthPrompt(errorMessage: string | null = null) {
+  return new Promise<string>((resolve) => {
+    const existing = document.querySelector('[data-howcode-headless-auth]')
+    existing?.remove()
+
+    const overlay = document.createElement('div')
+    overlay.setAttribute('data-howcode-headless-auth', 'true')
+    overlay.className = 'headless-auth-shell'
+
+    const panel = document.createElement('form')
+    panel.className = 'headless-auth-panel'
+
+    const eyebrow = document.createElement('div')
+    eyebrow.className = 'headless-auth-eyebrow'
+    eyebrow.textContent = 'Headless access'
+
+    const title = document.createElement('h1')
+    title.className = 'headless-auth-title'
+    title.textContent = 'Enter token'
+
+    const description = document.createElement('p')
+    description.className = 'headless-auth-description'
+    description.textContent = 'Use the token printed by the Howcode headless process.'
+
+    const input = document.createElement('input')
+    input.className = 'headless-auth-input'
+    input.type = 'password'
+    input.name = 'token'
+    input.autocomplete = 'one-time-code'
+    input.placeholder = 'hc_…'
+
+    const error = document.createElement('p')
+    error.className = 'headless-auth-error'
+    error.hidden = !errorMessage
+    error.textContent = errorMessage ?? ''
+
+    const button = document.createElement('button')
+    button.className = 'headless-auth-button'
+    button.type = 'submit'
+    button.textContent = 'Unlock'
+
+    panel.append(eyebrow, title, description, input, error, button)
+    overlay.append(panel)
+    document.body.append(overlay)
+
+    panel.addEventListener('submit', (event) => {
+      event.preventDefault()
+      const token = input.value.trim()
+      if (!token) {
+        error.textContent = 'Paste the access token.'
+        error.hidden = false
+        return
+      }
+
+      overlay.remove()
+      resolve(token)
+    })
+
+    input.focus()
+  })
+}
+
+async function ensureAuthenticated() {
+  authPromise ??= (async () => {
+    const authState = await fetchAuthState()
+    if (!authState.required || authState.authenticated) {
+      return
+    }
+
+    const locationTokenResult = await tryAuthenticateWithLocationToken()
+    if (locationTokenResult === true) {
+      return
+    }
+
+    await promptForAccessToken(locationTokenResult)
+  })().catch((error) => {
+    authPromise = null
+    throw error
+  })
+
+  return authPromise
+}
 
 function getBridgeToken() {
-  bridgeTokenPromise ??= fetch('/__howcode/config')
+  bridgeTokenPromise ??= ensureAuthenticated()
+    .then(() => fetch('/__howcode/config'))
     .then((response) => {
       if (!response.ok) {
         throw new Error('Unable to load dev:web bridge config.')
@@ -134,7 +288,7 @@ function subscribeToEvent<K extends DesktopEventChannel>(
   }
 }
 
-export function installDevWebDesktopBridge() {
+export async function installDevWebDesktopBridge() {
   if (window.piDesktop) {
     return
   }
@@ -269,4 +423,7 @@ export function installDevWebDesktopBridge() {
     subscribeTerminal: (listener: (event: TerminalEvent) => void) =>
       subscribeToEvent('terminalEvent', listener),
   }
+
+  await ensureAuthenticated()
+  await getBridgeToken()
 }

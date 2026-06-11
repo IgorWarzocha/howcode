@@ -30,6 +30,16 @@ const devServerPublicHost = resolveDevServerPublicHost(devServerListenHost)
 const allowRemoteRendererHosts =
   isDevServerWildcardHost(devServerListenHost) || !isDevServerLoopbackHost(devServerListenHost)
 const bridgeToken = crypto.randomUUID()
+function getEnvironmentVariable(name: string) {
+  return process.env[name]
+}
+const devWebAuthRequired = allowRemoteRendererHosts
+const devWebAccessToken =
+  getEnvironmentVariable('HOWCODE_DEV_WEB_TOKEN')?.trim() ||
+  getEnvironmentVariable('HOWCODE_HEADLESS_TOKEN')?.trim() ||
+  (devWebAuthRequired ? `hc_${crypto.randomBytes(18).toString('base64url')}` : null)
+const devWebSessionToken = crypto.randomUUID()
+const devWebSessionCookieName = 'howcode_dev_web_session'
 const serviceHostWaitTimeoutMs = 30_000
 
 let bridge: { child: ChildProcess; port: number } | null = null
@@ -222,6 +232,93 @@ function isTrustedBrowserRequest(request: http.IncomingMessage) {
   }
 }
 
+function sendJson(response: http.ServerResponse, statusCode: number, payload: unknown) {
+  response.statusCode = statusCode
+  response.setHeader('content-type', 'application/json; charset=utf-8')
+  response.end(JSON.stringify(payload))
+}
+
+async function readJsonBody(request: http.IncomingMessage) {
+  const chunks: Buffer[] = []
+  let byteLength = 0
+  for await (const chunk of request) {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+    byteLength += buffer.length
+    if (byteLength > 16 * 1024) {
+      throw new Error('Request body is too large.')
+    }
+    chunks.push(buffer)
+  }
+
+  if (chunks.length === 0) return {}
+  return JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown
+}
+
+function parseCookieHeader(cookieHeader: string | string[] | undefined) {
+  const header = Array.isArray(cookieHeader) ? cookieHeader.join(';') : cookieHeader
+  const cookies = new Map<string, string>()
+  if (!header) return cookies
+
+  for (const part of header.split(';')) {
+    const [rawName, ...rawValueParts] = part.trim().split('=')
+    if (!rawName) continue
+    cookies.set(rawName, decodeURIComponent(rawValueParts.join('=')))
+  }
+
+  return cookies
+}
+
+function hasAuthenticatedDevWebSession(request: http.IncomingMessage) {
+  if (!devWebAuthRequired) {
+    return true
+  }
+
+  return (
+    parseCookieHeader(request.headers.cookie).get(devWebSessionCookieName) === devWebSessionToken
+  )
+}
+
+async function handleDevWebAuthRequest(
+  request: http.IncomingMessage,
+  response: http.ServerResponse,
+) {
+  if (!isTrustedBrowserRequest(request)) {
+    response.statusCode = 403
+    response.end('Forbidden')
+    return
+  }
+
+  if (request.method === 'GET') {
+    sendJson(response, 200, {
+      required: devWebAuthRequired,
+      authenticated: hasAuthenticatedDevWebSession(request),
+    })
+    return
+  }
+
+  if (request.method !== 'POST') {
+    sendJson(response, 405, { error: 'Auth requests must use GET or POST.' })
+    return
+  }
+
+  if (!devWebAuthRequired) {
+    sendJson(response, 200, { authenticated: true, required: false })
+    return
+  }
+
+  const body = (await readJsonBody(request).catch(() => null)) as { token?: unknown } | null
+  if (typeof body?.token !== 'string' || body.token !== devWebAccessToken) {
+    sendJson(response, 401, { error: 'Invalid access token.' })
+    return
+  }
+
+  response.setHeader(
+    'set-cookie',
+    `${devWebSessionCookieName}=${encodeURIComponent(devWebSessionToken)}; Path=/; HttpOnly; SameSite=Lax`,
+  )
+  sendJson(response, 200, { authenticated: true, required: true })
+}
+
 function getHostPort(host: string) {
   try {
     const parsedHost = new URL(`http://${host}`)
@@ -290,6 +387,11 @@ try {
   ) => {
     const requestUrl = new URL(request.url ?? '/', 'http://localhost')
 
+    if (requestUrl.pathname === '/__howcode/auth') {
+      void handleDevWebAuthRequest(request, response)
+      return
+    }
+
     if (requestUrl.pathname === '/__howcode/config') {
       if (!isTrustedBrowserRequest(request)) {
         response.statusCode = 403
@@ -297,8 +399,13 @@ try {
         return
       }
 
+      if (!hasAuthenticatedDevWebSession(request)) {
+        sendJson(response, 401, { error: 'Headless access token required.' })
+        return
+      }
+
       response.setHeader('content-type', 'application/json; charset=utf-8')
-      response.end(JSON.stringify({ bridgeToken }))
+      response.end(JSON.stringify({ authRequired: devWebAuthRequired, bridgeToken }))
       return
     }
 
@@ -310,6 +417,11 @@ try {
       if (!isTrustedBrowserRequest(request)) {
         response.statusCode = 403
         response.end('Forbidden')
+        return
+      }
+
+      if (!hasAuthenticatedDevWebSession(request)) {
+        sendJson(response, 401, { error: 'Headless access token required.' })
         return
       }
 
@@ -361,6 +473,9 @@ try {
   if (allowRemoteRendererHosts) {
     console.warn(
       `[howcode] dev:web is accepting browser hosts on port ${port}. Keep this on a trusted network.`,
+    )
+    console.warn(
+      `[howcode] dev:web access token URL: http://${devServerPublicHost}:${port}/#token=${encodeURIComponent(devWebAccessToken ?? '')}`,
     )
   }
   console.warn(
