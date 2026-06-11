@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { WORKSPACE_COMPOSER_CENTER_GRID_CLASS } from '../ui/layout'
+import { WORKSPACE_CONTENT_MAX_WIDTH_CLASS } from '../ui/layout'
 import { cn } from '../utils/cn'
 
 type WorkspaceComposerDockProps = {
@@ -15,23 +15,18 @@ export function WorkspaceComposerDock({
   left,
   center,
   right,
-  compactControls = false,
+  compactControls: _compactControls = false,
   leftClassName,
   rightClassName,
 }: WorkspaceComposerDockProps) {
   return (
     <div
       className={cn(
-        'grid w-full items-end [container-type:inline-size]',
-        WORKSPACE_COMPOSER_CENTER_GRID_CLASS,
+        'relative mx-auto w-full [container-type:inline-size]',
+        WORKSPACE_CONTENT_MAX_WIDTH_CLASS,
       )}
     >
-      <div
-        className={cn(
-          'relative z-10 col-start-2 w-full',
-          compactControls && '[--composer-overlay-compact-right-inset:0.5rem]',
-        )}
-      >
+      <div className="relative z-10 w-full">
         {left ? (
           <div
             className={cn(
@@ -47,7 +42,7 @@ export function WorkspaceComposerDock({
       {right ? (
         <div
           className={cn(
-            'relative z-20 col-start-3 mb-[calc(0.375rem+var(--composer-extension-status-height,0px))] min-w-0 justify-self-start self-end',
+            'absolute right-0 bottom-[calc(0.375rem+var(--composer-extension-status-height,0px))] z-20 min-w-0 translate-x-[calc(100%+0.5rem)]',
             rightClassName,
           )}
         >

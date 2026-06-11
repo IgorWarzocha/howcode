@@ -2,6 +2,8 @@ import { DiffPanel } from '@howcode/native-gitops'
 import { defaultPiSettings } from '@howcode/shared/default-pi-settings'
 import type { AppShellController } from '../app-shell/useAppShellController'
 import { mainPanelClass } from '../ui/classes'
+import { WORKSPACE_EDGE_PADDING_CLASS } from '../ui/layout'
+import { cn } from '../utils/cn'
 import { FALLBACK_APP_SETTINGS } from './code-workspace-defaults'
 import { CodeWorkspaceMainView } from './code-workspace-main-view'
 import type { CodeWorkspaceContentProps } from './code-workspace-view'
@@ -92,7 +94,10 @@ function CodeWorkspaceDefaultMain(props: CodeWorkspaceContentProps) {
 export function CodeWorkspaceMainArea(props: CodeWorkspaceContentProps) {
   return (
     <div
-      className="motion-terminal-drawer-offset absolute inset-x-0 top-0 overflow-hidden px-[clamp(0.5rem,2.5vw,1.25rem)]"
+      className={cn(
+        'motion-terminal-drawer-offset absolute inset-x-0 top-0 overflow-hidden',
+        WORKSPACE_EDGE_PADDING_CLASS,
+      )}
       style={{ ...props.terminalDrawerInsetStyle, bottom: `${props.footerInset}px` }}
     >
       <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 overflow-hidden">

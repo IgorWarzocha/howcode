@@ -2,7 +2,7 @@ import { ArrowDownToLine, ListCollapse } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { Message } from '../types'
 import { appTypeSmallClass, compactIconButtonClass } from '../ui/classes'
-import { WORKSPACE_COMPOSER_CENTER_GRID_CLASS, WORKSPACE_COMPOSER_GRID_CLASS } from '../ui/layout'
+import { WORKSPACE_RAIL_GRID_CLASS, WORKSPACE_RAIL_ROOT_CLASS } from '../ui/layout'
 import { cn } from '../utils/cn'
 import { buildTimelineRows } from './buildTimelineRows'
 import { CHAT_AUTO_SCROLL_BOTTOM_THRESHOLD_PX, isScrollContainerNearBottom } from './chat-scroll'
@@ -336,7 +336,7 @@ export function ThreadTimeline({
   )
 
   return (
-    <div className={cn('relative grid h-full w-full', WORKSPACE_COMPOSER_CENTER_GRID_CLASS)}>
+    <div className={cn('relative h-full', WORKSPACE_RAIL_ROOT_CLASS)}>
       <ThreadFindBar
         sessionPath={sessionPath}
         onActiveMatchChange={revealFindMatch}
@@ -344,8 +344,8 @@ export function ThreadTimeline({
       />
       <div
         className={cn(
-          'thread-timeline-viewport relative col-start-2 row-start-1 grid h-full min-w-0 overflow-visible',
-          WORKSPACE_COMPOSER_GRID_CLASS,
+          'thread-timeline-viewport relative col-span-3 col-start-1 row-start-1 grid h-full min-w-0 overflow-visible',
+          WORKSPACE_RAIL_GRID_CLASS,
         )}
       >
         <div

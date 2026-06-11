@@ -253,8 +253,7 @@ export const composerPopoverSectionLabelClass = `px-2 pt-1 ${appTypeTinyClass} u
 
 export const composerAttachmentPickerTextClass = appTypeMetaClass
 
-export const composerOverlayPanelInsetClass =
-  'pl-4 pr-[calc(1rem+var(--composer-overlay-compact-right-inset,0px))]'
+export const composerOverlayPanelInsetClass = 'px-4'
 
 export const sectionShellClass = 'grid w-full max-w-[980px] content-start gap-[18px]'
 

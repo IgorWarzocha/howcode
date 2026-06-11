@@ -3,6 +3,7 @@ import { GitOpsComposerPanel } from '@howcode/native-gitops'
 import { Composer } from '@howcode/workspace-shell'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import type { Message } from '../types'
+import { WORKSPACE_EDGE_PADDING_CLASS } from '../ui/layout'
 import { cn } from '../utils/cn'
 import { WorkspaceComposerDock } from '../workspace-shell/workspace-composer-dock'
 import { FALLBACK_APP_SETTINGS } from './code-workspace-defaults'
@@ -309,7 +310,8 @@ function CodeWorkspaceThreadFooter(props: CodeWorkspaceContentProps) {
     <footer
       ref={footerRef}
       className={cn(
-        'motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-10 px-[clamp(0.5rem,2.5vw,1.25rem)] pb-4',
+        'motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-10 pb-4',
+        WORKSPACE_EDGE_PADDING_CLASS,
         centerThreadFooter || state.activeView === 'project'
           ? 'transition-[top,transform] duration-300 ease-out'
           : 'bottom-0',

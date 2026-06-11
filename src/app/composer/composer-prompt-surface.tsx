@@ -25,7 +25,7 @@ import {
   composerPopoverExtensionLayerClass,
   piExtensionTextClass,
 } from '../ui/classes'
-import { WORKSPACE_COMPOSER_GRID_CLASS } from '../ui/layout'
+import { WORKSPACE_RAIL_GRID_CLASS } from '../ui/layout'
 import { cn } from '../utils/cn'
 import type { ComposerProps } from './composer'
 import { ComposerFilePicker } from './composer-file-picker'
@@ -943,10 +943,7 @@ export function ComposerPromptSurface({
 
   return (
     <div
-      className={cn(
-        'relative grid w-full items-end overflow-visible',
-        WORKSPACE_COMPOSER_GRID_CLASS,
-      )}
+      className={cn('relative grid w-full items-end overflow-visible', WORKSPACE_RAIL_GRID_CLASS)}
       data-composer-root="true"
     >
       <ComposerAttachmentRail

@@ -4,6 +4,7 @@ import type { AppShellController } from '../app-shell/useAppShellController'
 import { useQueuedPromptRestore } from '../code-workspace/useQueuedPromptRestore'
 import { useWorkspaceFooterHeight } from '../code-workspace/useWorkspaceFooterHeight'
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
+import { WORKSPACE_EDGE_PADDING_CLASS } from '../ui/layout'
 import { cn } from '../utils/cn'
 import { ChatView } from './chat-view'
 import { ChatComposerDock, type ChatWorkspaceComposerProps } from './chat-workspace-composer'
@@ -91,7 +92,7 @@ function ChatDesktopContent(props: ChatWorkspaceContentProps) {
       }
     >
       <div
-        className="absolute inset-x-0 top-0 overflow-hidden px-[clamp(0.5rem,2.5vw,1.25rem)]"
+        className={cn('absolute inset-x-0 top-0 overflow-hidden', WORKSPACE_EDGE_PADDING_CLASS)}
         style={{ bottom: hasConversationLayout ? `${footerHeight}px` : '0px' }}
       >
         <ChatWorkspaceMain {...props} />
@@ -99,7 +100,8 @@ function ChatDesktopContent(props: ChatWorkspaceContentProps) {
       <footer
         ref={footerRef}
         className={cn(
-          'motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-10 px-[clamp(0.5rem,2.5vw,1.25rem)] pb-4',
+          'motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-10 pb-4',
+          WORKSPACE_EDGE_PADDING_CLASS,
           hasConversationLayout
             ? 'bottom-0 translate-y-0'
             : '-translate-y-1/2 transition-[top,transform] duration-300 ease-out',
