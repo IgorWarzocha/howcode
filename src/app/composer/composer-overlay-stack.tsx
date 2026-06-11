@@ -19,7 +19,7 @@ export function ComposerOverlayStack({
     <div
       ref={stackRef}
       className={cn(
-        'pointer-events-none absolute right-[var(--composer-overlay-compact-inset,0px)] bottom-full left-[var(--composer-overlay-compact-inset,0px)] z-[120] grid max-h-[min(70vh,42rem)] min-w-0 overflow-hidden',
+        'pointer-events-none absolute right-0 bottom-full left-0 z-[120] grid max-h-[min(70vh,42rem)] min-w-0 overflow-hidden',
         visibleItems.length === 0 && 'invisible h-0 min-h-0 overflow-hidden',
       )}
     >

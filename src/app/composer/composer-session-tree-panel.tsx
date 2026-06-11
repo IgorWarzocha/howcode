@@ -3,6 +3,7 @@ import {
   appToneAccentClass,
   appToneMutedClass,
   appTypeMetaClass,
+  composerOverlayPanelInsetClass,
   inlineEmptyNoteClass,
 } from '@howcode/ui'
 import { useQuery } from '@tanstack/react-query'
@@ -149,7 +150,7 @@ export function ComposerSessionTreePanel({
   }
 
   return (
-    <div className="grid w-full overflow-visible px-[clamp(0.5rem,2cqw,1rem)]">
+    <div className={cn('grid w-full overflow-visible', composerOverlayPanelInsetClass)}>
       <div
         className={cn(
           topRounded ? 'rounded-t-lg' : 'rounded-t-none',

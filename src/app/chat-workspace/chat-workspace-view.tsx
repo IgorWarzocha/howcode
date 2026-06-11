@@ -91,7 +91,7 @@ function ChatDesktopContent(props: ChatWorkspaceContentProps) {
       }
     >
       <div
-        className="absolute inset-x-0 top-0 overflow-hidden px-5"
+        className="absolute inset-x-0 top-0 overflow-hidden px-[clamp(0.5rem,2.5vw,1.25rem)]"
         style={{ bottom: hasConversationLayout ? `${footerHeight}px` : '0px' }}
       >
         <ChatWorkspaceMain {...props} />

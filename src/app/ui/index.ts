@@ -50,6 +50,7 @@ export {
   composerDividerClass,
   composerInlineConfirmButtonClass,
   composerInlineStatusPillClass,
+  composerOverlayPanelInsetClass,
   composerPanelClass,
   composerPopoverBottomRowLayerClass,
   composerPopoverContextLayerClass,

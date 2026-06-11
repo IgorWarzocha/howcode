@@ -92,7 +92,7 @@ function CodeWorkspaceDefaultMain(props: CodeWorkspaceContentProps) {
 export function CodeWorkspaceMainArea(props: CodeWorkspaceContentProps) {
   return (
     <div
-      className="motion-terminal-drawer-offset absolute inset-x-0 top-0 overflow-hidden px-5"
+      className="motion-terminal-drawer-offset absolute inset-x-0 top-0 overflow-hidden px-[clamp(0.5rem,2.5vw,1.25rem)]"
       style={{ ...props.terminalDrawerInsetStyle, bottom: `${props.footerInset}px` }}
     >
       <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 overflow-hidden">

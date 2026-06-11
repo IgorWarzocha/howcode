@@ -2,6 +2,7 @@ import {
   appToneMutedClass,
   appToneTextClass,
   appTypeSmallClass,
+  composerOverlayPanelInsetClass,
   composerPopoverOptionClass,
   composerPopoverOptionSelectedClass,
   composerPopoverPanelClass,
@@ -79,7 +80,7 @@ export function SlashCommandPanel({
 }) {
   if (!slashCommands.open) return null
   return (
-    <div className="px-[clamp(0.5rem,2cqw,1rem)]">
+    <div className={composerOverlayPanelInsetClass}>
       <PopoverPanel
         surface={false}
         ref={panelRef}

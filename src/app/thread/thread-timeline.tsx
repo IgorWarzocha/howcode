@@ -2,12 +2,12 @@ import { ArrowDownToLine, ListCollapse } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { Message } from '../types'
 import { appTypeSmallClass, compactIconButtonClass } from '../ui/classes'
-import { CHAT_TEXT_MAX_WIDTH_CLASS } from '../ui/layout'
+import { WORKSPACE_COMPOSER_CENTER_GRID_CLASS, WORKSPACE_COMPOSER_GRID_CLASS } from '../ui/layout'
 import { cn } from '../utils/cn'
 import { buildTimelineRows } from './buildTimelineRows'
 import { CHAT_AUTO_SCROLL_BOTTOM_THRESHOLD_PX, isScrollContainerNearBottom } from './chat-scroll'
 import { ThreadFindBar } from './thread-find-bar'
-import { chatScrollableAreaClass, chatViewportClass } from './thread-layout'
+import { chatScrollableAreaClass } from './thread-layout'
 import { getTimelineRowMessageIds } from './thread-message-ids'
 import { ThreadTimelineRow } from './thread-timeline-row'
 import { buildThreadTimelineState } from './thread-timeline-state'
@@ -336,31 +336,60 @@ export function ThreadTimeline({
   )
 
   return (
-    <div className={`${chatViewportClass} thread-timeline-viewport relative`}>
+    <div className={cn('relative grid h-full w-full', WORKSPACE_COMPOSER_CENTER_GRID_CLASS)}>
       <ThreadFindBar
         sessionPath={sessionPath}
         onActiveMatchChange={revealFindMatch}
         onQueryChange={setFindQuery}
       />
       <div
-        ref={containerRef}
         className={cn(
-          chatScrollableAreaClass,
-          'thread-timeline-scroll-shell ml-[2.95rem] mr-[3.375rem] -translate-x-[1.325rem]',
+          'thread-timeline-viewport relative col-start-2 row-start-1 grid h-full min-w-0 overflow-visible',
+          WORKSPACE_COMPOSER_GRID_CLASS,
         )}
-        onScroll={handleScroll}
       >
         <div
-          ref={contentRef}
-          className={`mx-auto flex min-h-full w-full translate-x-[1.9875rem] flex-col justify-end ${CHAT_TEXT_MAX_WIDTH_CLASS} overflow-x-hidden px-4 pt-0 pb-4`}
-          style={
-            composerOverlayHeight > 0
-              ? { paddingBottom: `calc(1rem + ${composerOverlayHeight}px)` }
-              : undefined
-          }
+          ref={containerRef}
+          className={cn(
+            chatScrollableAreaClass,
+            'thread-timeline-scroll-shell col-start-2 row-start-1 min-w-0',
+          )}
+          onScroll={handleScroll}
         >
-          <div className="grid min-w-0 gap-3">{rows.map(renderRow)}</div>
-          <div ref={bottomSentinelRef} aria-hidden="true" className="h-px w-full" />
+          <div
+            ref={contentRef}
+            className="flex min-h-full w-full flex-col justify-end overflow-x-hidden px-4 pt-0 pb-4"
+            style={
+              composerOverlayHeight > 0
+                ? { paddingBottom: `calc(1rem + ${composerOverlayHeight}px)` }
+                : undefined
+            }
+          >
+            <div className="grid min-w-0 gap-3">{rows.map(renderRow)}</div>
+            <div ref={bottomSentinelRef} aria-hidden="true" className="h-px w-full" />
+          </div>
+        </div>
+        <div className="pointer-events-none z-10 col-start-3 row-start-1 mb-4 flex w-7 flex-col items-center gap-1.5 self-end justify-self-center">
+          <button
+            type="button"
+            className={cn(compactIconButtonClass, timelineQuickActionButtonClass)}
+            onClick={handleFoldEverything}
+            disabled={foldableRows.length === 0}
+            aria-label="Fold all"
+            data-tooltip="Fold all"
+          >
+            <ListCollapse size={13} strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            className={cn(compactIconButtonClass, timelineQuickActionButtonClass)}
+            onClick={scrollToBottom}
+            disabled={nearBottom}
+            aria-label="Scroll to bottom"
+            data-tooltip="Scroll to bottom"
+          >
+            <ArrowDownToLine size={13} strokeWidth={2} />
+          </button>
         </div>
       </div>
       {isCompacting ? (
@@ -376,28 +405,6 @@ export function ThreadTimeline({
           </div>
         </div>
       ) : null}
-      <div className="pointer-events-none absolute right-10 bottom-4 z-10 flex w-7 flex-col items-center gap-1.5">
-        <button
-          type="button"
-          className={cn(compactIconButtonClass, timelineQuickActionButtonClass)}
-          onClick={handleFoldEverything}
-          disabled={foldableRows.length === 0}
-          aria-label="Fold all"
-          data-tooltip="Fold all"
-        >
-          <ListCollapse size={13} strokeWidth={2} />
-        </button>
-        <button
-          type="button"
-          className={cn(compactIconButtonClass, timelineQuickActionButtonClass)}
-          onClick={scrollToBottom}
-          disabled={nearBottom}
-          aria-label="Scroll to bottom"
-          data-tooltip="Scroll to bottom"
-        >
-          <ArrowDownToLine size={13} strokeWidth={2} />
-        </button>
-      </div>
     </div>
   )
 }

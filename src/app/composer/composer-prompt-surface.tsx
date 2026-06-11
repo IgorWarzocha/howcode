@@ -20,10 +20,12 @@ import {
   appToneSubtleClass,
   appTypeCompactWidgetClass,
   appTypeTinyClass,
+  composerOverlayPanelInsetClass,
   composerPanelClass,
   composerPopoverExtensionLayerClass,
   piExtensionTextClass,
 } from '../ui/classes'
+import { WORKSPACE_COMPOSER_GRID_CLASS } from '../ui/layout'
 import { cn } from '../utils/cn'
 import type { ComposerProps } from './composer'
 import { ComposerFilePicker } from './composer-file-picker'
@@ -269,7 +271,7 @@ function PiExtensionOverlayContent({
   }
 
   return (
-    <div className="grid w-full min-w-0 overflow-visible px-[clamp(0.5rem,2cqw,1rem)]">
+    <div className={cn('grid w-full min-w-0 overflow-visible', composerOverlayPanelInsetClass)}>
       <div className="grid w-full min-w-0 rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] text-left shadow-none">
         {sections.map((section, index) => (
           <PiExtensionOverlaySection
@@ -941,7 +943,10 @@ export function ComposerPromptSurface({
 
   return (
     <div
-      className="relative grid w-full grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible"
+      className={cn(
+        'relative grid w-full items-end overflow-visible',
+        WORKSPACE_COMPOSER_GRID_CLASS,
+      )}
       data-composer-root="true"
     >
       <ComposerAttachmentRail
@@ -957,7 +962,7 @@ export function ComposerPromptSurface({
         }}
       />
 
-      <div className="relative grid gap-0 overflow-visible">
+      <div className="relative grid gap-0 overflow-visible [container-type:inline-size]">
         <ComposerOverlayStack
           stackRef={composerOverlayStackRef}
           items={[
@@ -1006,7 +1011,7 @@ export function ComposerPromptSurface({
               id: 'attachments',
               visible: pickerOpen,
               node: (
-                <div className="px-[clamp(0.5rem,2cqw,1rem)]">
+                <div className={composerOverlayPanelInsetClass}>
                   <ComposerFilePicker
                     anchorRef={pickerButtonRef}
                     attachments={attachments}
