@@ -1,16 +1,16 @@
 > [!IMPORTANT]
 > This is a one-man project. Only so many things I can check. Expect weird edge cases.
 
-# There are many desktop apps for coding with AI, but this one...
+# Howcode
 
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/c81d022e-75bd-4657-8d46-821514997d9c" />
+<img width="1920" height="1080" alt="Howcode screenshot" src="https://github.com/user-attachments/assets/c81d022e-75bd-4657-8d46-821514997d9c" />
 <br />
 
-I've clanked a LOT. And during that clanking, I used a few apps. None of them really fit how I work. This one does. It's opinionated, focussed on UX and aimed at YOLOing with agents.
+Howcode is a desktop app for coding with Pi.
 
-You won't find a file editor. You won't see a turn-by-turn diff. Some things might not instantly click. But when they do, you'll understand the idea behind all of it.
+It is not trying to be a file editor. It is not trying to be VS Code with a chat panel glued on. The idea is simpler: keep the agent, terminal, project state, diffs, threads, and messy follow-up work in one place.
 
-The UI is meant to speak for itself. When it doesn't, it's a fail. So if you don't "get it", file an issue. Tell me how to improve it. I might agree.
+I built it because I clank a lot, and the existing apps kept making me babysit too many tabs, terminals, branches, and half-finished sessions. This one fits how I work. Maybe it fits how you work too.
 
 ## Install
 
@@ -21,46 +21,74 @@ npm i -g howcode
 howcode
 ```
 
-There's a launcher. It downloads the correct version and relaunches the cached desktop app.
-On Windows, the launcher also creates a Start Menu shortcut after the first successful download.
+The npm package is a launcher. It downloads the right desktop build from GitHub Releases, caches it, and relaunches the app.
 
-Or check releases tabs for latest stable-ish version you can just download. Windows releases include
-an installer; Linux releases include an AppImage.
-
-Built on Linux, compatible with Mac and Windows (hopefully).
+You can also download builds from the Releases page. Windows has an installer. Linux has an AppImage. macOS exists, but I build and test primarily on Linux, so please yell if it does something cursed.
 
 Works on my machine™
 
-## What you can do
+## What it does
 
-- **Coding with Pi in a desktop environment** — the main dish.
-- **Sidebar stuff** — pretty much everything you'd expect. 
-- **Inbox view** — collating all the recent messages.
-- **Built in terminal** — with persisted transcript history, apparently.
-- **Git-ops composer** — a separate view tailored to doing things with git.
-- **Reviewing diffs** — comment-based workflow.
-- **Pi as-is when you want it** — an embedded Pi TUI takeover mode.
+- **Pi sessions tied to projects** — start threads from projects, branches, worktrees, or chat.
+- **Project sidebar** — projects, branches, worktrees, sessions, favorites, and recent activity.
+- **Session tree** — navigate, label, and summarize parts of long agent threads with `/tree`.
+- **Built-in terminal** — persisted transcript history, terminal drawer, and Pi TUI takeover mode when you want raw Pi.
+- **Git/worktree flow** — create branches and worktrees, run sessions inside them, review diffs, and merge/remove completed work.
+- **GitOps composer** — a separate composer for reviewing changed files and sending diff comments.
+- **Inbox** — recent local session activity in one place.
+- **Artifacts** — preview generated HTML/React-ish output without leaving the app.
 - **Voice input** — local dictation through sherpa-ONNX, running on CPU.
 - **Skills and extensions** — browse, install, remove, and configure Pi skills/extensions from inside the app.
+- **Pi SDK extension UI** — dialogs, widgets, status lines, notifications, shortcuts, and project trust prompts.
+- **Headless/browser mode** — run the app as a local server and use it from another browser on your LAN or Tailscale.
 
-## Coming next
+## What it deliberately is not
 
-The near-term direction is:
+- A general-purpose code editor.
+- A polished SaaS IDE.
+- A safe multi-tenant server for strangers.
+- A replacement for understanding what your agent is doing.
 
-- more cards /s
-- worktrees - please use only one session per project
-- per-project automations
-- multiple terminals per session
-- external terminal control for agents
-- responsive-layout polish
-- background mode when Pi has a server, unless I find a workaround
-- remote sessions over SSH... see above?
+It is a cockpit for local/remote-ish agent work on a machine you trust.
 
-And additional views for just chatting, with some basic websearch etc., a claw-like sidekick for the app that can use it for/with you and co-work-style environment.
+## Headless / browser mode
 
-## For developers
+Installed builds can run without opening the desktop window:
 
-If you want to run from source:
+```bash
+bunx howcode --headless
+```
+
+To access it from another device on your network:
+
+```bash
+bunx howcode --headless --host 0.0.0.0 --port 4173
+```
+
+Howcode prints an access URL with a token:
+
+```text
+http://<server-ip>:4173/#token=<printed-token>
+```
+
+For a stable token:
+
+```bash
+bunx howcode --headless --host 0.0.0.0 --port 4173 --token my-secret
+# or
+HOWCODE_HEADLESS_TOKEN=my-secret bunx howcode --headless --host 0.0.0.0 --port 4173
+```
+
+Notes:
+
+- Default host is `127.0.0.1`.
+- Use `--host 0.0.0.0` only on a trusted network, Tailscale, WireGuard, etc.
+- Browser-picked, pasted, or dropped files are uploaded to a temp folder on the host before attaching.
+- Host file browsing still browses the host filesystem.
+- `openPath` and terminal actions happen on the host machine.
+- This is not hardened SaaS auth. Treat it more like SSH with a UI.
+
+## Run from source
 
 ```bash
 bun install
@@ -73,30 +101,24 @@ Headless/browser dev mode skips the Electron window and serves the app through V
 bun run dev:headless
 ```
 
-To try it from another device on your network:
+To try dev mode from another device on your network:
 
 ```bash
 bun run dev:headless:host
 # open http://<this-machine-ip>:5173/#token=<printed-token>
 ```
 
-Remote dev mode requires the printed access token before the browser can use the local desktop bridge.
-Keep it on a trusted network.
-
-Installed builds can also run without opening the desktop window:
+Repo-wide verification:
 
 ```bash
-bunx howcode --headless
-bunx howcode --headless --host 0.0.0.0 --port 4173
-bunx howcode --headless --host 0.0.0.0 --port 4173 --token my-secret
+bun run ai:check
 ```
 
-Open `http://<server-ip>:4173/#token=<printed-token>` from another device.
+## Project status
 
-The default headless host is `127.0.0.1`. Remote headless mode requires a token; pass `--token`,
-set `HOWCODE_HEADLESS_TOKEN`, or use the random one printed at startup. Use `--host 0.0.0.0` only on a trusted network.
-In browser mode, files picked, pasted, or dropped from the browser device are uploaded to a temp
-folder on the host and attached from there. Host file browsing still uses the host filesystem.
+This is moving fast and occasionally cuts itself.
+
+The current shape is useful, but not all of it is equally finished. Some parts are sturdy. Some parts are “I needed this yesterday and now it exists”. If something feels wrong, file an issue. Screenshots help.
 
 ## Issues and updates
 
