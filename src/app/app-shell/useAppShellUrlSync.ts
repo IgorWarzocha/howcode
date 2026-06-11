@@ -170,6 +170,10 @@ function dispatchRouteAction(
   }
 }
 
+function getRouteKey(snapshot: AppRouteSnapshot) {
+  return JSON.stringify(snapshot)
+}
+
 export function useAppShellUrlSync({ dispatch, projects, state }: AppShellUrlSyncInput) {
   const router = useRouter()
   const snapshot = useRouterState({
@@ -183,25 +187,39 @@ export function useAppShellUrlSync({ dispatch, projects, state }: AppShellUrlSyn
     [snapshot.pathname, snapshot.search],
   )
   const stateRoute = useMemo(() => getRouteForState(state), [state])
-  const routeApplyRef = useRef<string | null>(null)
+  const syncRef = useRef<{ routeKey: string | null; stateKey: string | null }>({
+    routeKey: null,
+    stateKey: null,
+  })
+  const routeKey = getRouteKey(routeSnapshot)
+  const stateKey = getRouteKey(stateRoute)
 
   useEffect(() => {
-    if (routesMatch(routeSnapshot, stateRoute)) return
-    const routeKey = JSON.stringify(routeSnapshot)
-    if (routeApplyRef.current === routeKey) return
-    const action = getRouteAction(routeSnapshot, projects)
-    if (!action) return
-    routeApplyRef.current = routeKey
-    dispatchRouteAction(dispatch, action)
-  }, [dispatch, projects, routeSnapshot, stateRoute])
+    const previous = syncRef.current
+    const routeChanged = previous.routeKey !== routeKey
+    const stateChanged = previous.stateKey !== stateKey
 
-  useEffect(() => {
-    if (routesMatch(routeSnapshot, stateRoute)) return
-    if (isWaitingForRouteData(routeSnapshot, projects)) return
-    routeApplyRef.current = null
+    if (routesMatch(routeSnapshot, stateRoute)) {
+      syncRef.current = { routeKey, stateKey }
+      return
+    }
+
+    if (routeChanged && (previous.routeKey === null || !stateChanged)) {
+      const action = getRouteAction(routeSnapshot, projects)
+      if (!action) return
+      syncRef.current = { routeKey, stateKey: previous.stateKey }
+      dispatchRouteAction(dispatch, action)
+      return
+    }
+
+    if (!stateChanged || isWaitingForRouteData(routeSnapshot, projects)) {
+      return
+    }
+
+    syncRef.current = { routeKey, stateKey }
     void router.navigate({
       to: stateRoute.pathname,
       search: stateRoute.search,
     })
-  }, [projects, routeSnapshot, router, stateRoute])
+  }, [dispatch, projects, routeKey, routeSnapshot, router, stateKey, stateRoute])
 }
