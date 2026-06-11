@@ -38,6 +38,7 @@ type ComposerSessionTreePanelProps = {
   onLabelPopoverOpenChange?: ((open: boolean) => void) | undefined
   cancelNavigateConfirmRef?: MutableRefObject<(() => void) | null> | undefined
   cancelLabelPopoverRef?: MutableRefObject<(() => void) | null> | undefined
+  topRounded?: boolean | undefined
 }
 
 export function ComposerSessionTreePanel({
@@ -55,6 +56,7 @@ export function ComposerSessionTreePanel({
   onLabelPopoverOpenChange,
   cancelNavigateConfirmRef,
   cancelLabelPopoverRef,
+  topRounded = true,
 }: ComposerSessionTreePanelProps) {
   const visible = isComposerSessionTreePanelVisible(open, forceHidden)
   const persistedPath = sessionPath?.trim() ?? ''
@@ -147,10 +149,11 @@ export function ComposerSessionTreePanel({
   }
 
   return (
-    <div className="grid w-full overflow-visible px-4">
+    <div className="grid w-full overflow-visible px-[clamp(0.5rem,2cqw,1rem)]">
       <div
         className={cn(
-          'grid w-full max-h-72 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] shadow-none',
+          topRounded ? 'rounded-t-lg' : 'rounded-t-none',
+          'grid w-full max-h-72 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-b-none bg-[color:var(--panel)] shadow-none outline outline-1 -outline-offset-1 outline-[color:var(--border)]',
         )}
       >
         <div

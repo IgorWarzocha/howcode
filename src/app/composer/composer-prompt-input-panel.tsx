@@ -65,6 +65,7 @@ type ComposerPromptInputPanelProps = {
   sessionTreeCancelLabelPopoverRef?: MutableRefObject<(() => void) | null> | undefined
   composerPopoverStackRef?: RefObject<HTMLDivElement | null> | undefined
   onSessionTreeTypingDismiss?: (() => void) | undefined
+  overlaysManagedExternally?: boolean | undefined
   slashCommandPanelRef: RefObject<HTMLDivElement | null>
   slashCommands: ComposerSlashCommands
   fileMentionPanelRef: RefObject<HTMLDivElement | null>
@@ -163,6 +164,7 @@ export function ComposerPromptInputPanel({
   sessionTreeCancelLabelPopoverRef,
   composerPopoverStackRef,
   onSessionTreeTypingDismiss,
+  overlaysManagedExternally = false,
   slashCommandPanelRef,
   slashCommands,
   fileMentionPanelRef,
@@ -193,7 +195,7 @@ export function ComposerPromptInputPanel({
 
   return (
     <>
-      {pickerOpen ? (
+      {pickerOpen && !overlaysManagedExternally ? (
         <ComposerFilePicker
           anchorRef={pickerButtonRef}
           attachments={attachments}
@@ -216,25 +218,27 @@ export function ComposerPromptInputPanel({
         <div className="flex items-end justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-end gap-2">
             <div className="min-w-0 flex-1">
-              <ComposerPromptPopoverStack
-                sessionPath={sessionPath}
-                sessionTreeOpen={sessionTreeOpen}
-                treeFilterMode={piTreeFilterMode}
-                sessionTreePanelRef={sessionTreePanelRef}
-                popoverStackRef={composerPopoverStackRef}
-                sessionTreeForceHidden={sessionTreeForceHidden}
-                sessionTreeNavigateDisabled={sessionTreeNavigateDisabled}
-                onSessionTreeNavigate={onSessionTreeNavigate}
-                onSessionTreeLabel={onSessionTreeLabel}
-                onRevealSessionTreeEntryInThread={onRevealSessionTreeEntryInThread}
-                onBindSessionTreeClose={onBindSessionTreeClose}
-                onSessionTreeNavigateConfirmOpenChange={onSessionTreeNavigateConfirmOpenChange}
-                onSessionTreeLabelPopoverOpenChange={onSessionTreeLabelPopoverOpenChange}
-                sessionTreeCancelNavigateConfirmRef={sessionTreeCancelNavigateConfirmRef}
-                sessionTreeCancelLabelPopoverRef={sessionTreeCancelLabelPopoverRef}
-                slashCommandPanelRef={slashCommandPanelRef}
-                slashCommands={slashCommands}
-              />
+              {overlaysManagedExternally ? null : (
+                <ComposerPromptPopoverStack
+                  sessionPath={sessionPath}
+                  sessionTreeOpen={sessionTreeOpen}
+                  treeFilterMode={piTreeFilterMode}
+                  sessionTreePanelRef={sessionTreePanelRef}
+                  popoverStackRef={composerPopoverStackRef}
+                  sessionTreeForceHidden={sessionTreeForceHidden}
+                  sessionTreeNavigateDisabled={sessionTreeNavigateDisabled}
+                  onSessionTreeNavigate={onSessionTreeNavigate}
+                  onSessionTreeLabel={onSessionTreeLabel}
+                  onRevealSessionTreeEntryInThread={onRevealSessionTreeEntryInThread}
+                  onBindSessionTreeClose={onBindSessionTreeClose}
+                  onSessionTreeNavigateConfirmOpenChange={onSessionTreeNavigateConfirmOpenChange}
+                  onSessionTreeLabelPopoverOpenChange={onSessionTreeLabelPopoverOpenChange}
+                  sessionTreeCancelNavigateConfirmRef={sessionTreeCancelNavigateConfirmRef}
+                  sessionTreeCancelLabelPopoverRef={sessionTreeCancelLabelPopoverRef}
+                  slashCommandPanelRef={slashCommandPanelRef}
+                  slashCommands={slashCommands}
+                />
+              )}
               <ComposerTextField
                 value={draft}
                 onChange={(next) => {

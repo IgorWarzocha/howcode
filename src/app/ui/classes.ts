@@ -251,6 +251,8 @@ export const composerPopoverOptionSelectedClass =
 
 export const composerPopoverSectionLabelClass = `px-2 pt-1 ${appTypeTinyClass} uppercase tracking-[0.08em] ${appToneMutedClass}`
 
+export const composerAttachmentPickerTextClass = appTypeMetaClass
+
 export const sectionShellClass = 'grid w-full max-w-[980px] content-start gap-[18px]'
 
 export const menuItemClass = `flex items-center gap-2.5 rounded-xl border border-transparent px-2.5 py-2 text-left ${appTypeBodyClass}`

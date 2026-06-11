@@ -1,7 +1,7 @@
 import { Check, File, Folder } from 'lucide-react'
 import { type DragEvent, useState } from 'react'
 import type { ComposerAttachment } from '../desktop/types'
-import { appToneTextClass, appTypeTinyClass } from '../ui/classes'
+import { appToneTextClass, composerAttachmentPickerTextClass } from '../ui/classes'
 import { cn } from '../utils/cn'
 import { resolveFileEntryActivation } from './composer-file-picker.helpers'
 
@@ -43,8 +43,8 @@ export function FileEntryButton({
       type="button"
       draggable={!isAlreadyAttached}
       className={cn(
-        'flex h-8 min-w-0 w-full items-center gap-1 rounded-md bg-transparent px-2 text-left transition-colors',
-        appTypeTinyClass,
+        'flex min-h-5 min-w-0 w-full items-center gap-1 rounded-md bg-transparent px-1.5 py-0.5 text-left transition-colors',
+        composerAttachmentPickerTextClass,
         appToneTextClass,
         isAlreadyAttached && 'bg-[color:var(--surface-hover)]',
         isAlreadyAttached &&

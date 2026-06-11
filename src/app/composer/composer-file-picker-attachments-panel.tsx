@@ -6,10 +6,9 @@ import {
   appToneMutedClass,
   appToneTextClass,
   appTypeTinyClass,
-  toolbarButtonClass,
+  composerAttachmentPickerTextClass,
 } from '../ui/classes'
 import { cn } from '../utils/cn'
-import { workspaceFooterTextClass } from '../workspace-shell/footer/workspace-footer-primitives'
 import {
   getAttachmentDisplayLabel,
   getOpenAttachmentLabel,
@@ -57,7 +56,7 @@ export function ComposerFilePickerAttachmentsPanel({
     <section
       role="application"
       className={cn(
-        'min-h-0 overflow-x-hidden overflow-y-auto border-r border-[color:var(--border)] py-2 pr-2 pl-2',
+        'min-h-0 overflow-x-hidden overflow-y-auto border-r border-[color:var(--border)] p-1.5',
         dropActive && 'bg-[color:var(--surface-hover)]',
         className,
       )}
@@ -78,9 +77,8 @@ export function ComposerFilePickerAttachmentsPanel({
           <button
             type="button"
             className={cn(
-              toolbarButtonClass,
-              workspaceFooterTextClass,
-              'mb-2 min-w-0 px-1.5 disabled:opacity-60',
+              'mb-1 inline-flex h-5 min-w-0 items-center gap-1.5 rounded-md px-1.5 text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:opacity-60',
+              composerAttachmentPickerTextClass,
             )}
             onClick={onPickDeviceFiles}
             disabled={uploadingDeviceFiles}
@@ -98,8 +96,8 @@ export function ComposerFilePickerAttachmentsPanel({
             <div
               key={attachment.path}
               className={cn(
-                'flex h-5 min-w-0 items-center gap-1 rounded-sm border border-transparent bg-transparent px-1.5 transition-colors hover:bg-[color:var(--surface-hover)]',
-                appTypeTinyClass,
+                'flex min-h-5 min-w-0 items-center gap-1 rounded-sm border border-transparent bg-transparent px-1 py-0.5 transition-colors hover:bg-[color:var(--surface-hover)]',
+                composerAttachmentPickerTextClass,
                 appToneTextClass,
               )}
               title={attachment.path}

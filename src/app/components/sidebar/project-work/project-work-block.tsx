@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import type { Project, Thread, View } from '../../../types'
-import { appToneSubtleClass, appTypeMetaClass } from '../../../ui/classes'
+import { appToneSubtleClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { ProjectExpandedBranchGroups } from './branch-thread-groups'
 import { ProjectCompactBranchGroups } from './compact-branch-groups'
@@ -233,7 +233,9 @@ function ProjectWorkBlockActions({
           <Archive size={14} />
           <span>Past sessions</span>
           {hideSessionCounts ? null : (
-            <span className={cn(appTypeMetaClass, appToneSubtleClass)}>{olderThreadCount}</span>
+            <span className={cn('sidebar-project-work-history-count', appToneSubtleClass)}>
+              {olderThreadCount}
+            </span>
           )}
         </button>
       ) : null}

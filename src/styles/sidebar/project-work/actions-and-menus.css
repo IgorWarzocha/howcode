@@ -42,6 +42,16 @@
   text-transform: uppercase;
 }
 
+.sidebar-project-work-history-count {
+  min-width: 1.5rem;
+  justify-self: end;
+  padding-right: var(--sidebar-row-meta-inset, 0.3125rem);
+  font-size: var(--app-type-meta-size);
+  line-height: var(--app-type-meta-line-height);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .sidebar-project-work-lane {
   display: flex;
   min-height: 0;

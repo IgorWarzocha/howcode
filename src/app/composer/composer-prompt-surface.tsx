@@ -26,8 +26,11 @@ import {
 } from '../ui/classes'
 import { cn } from '../utils/cn'
 import type { ComposerProps } from './composer'
+import { ComposerFilePicker } from './composer-file-picker'
 import { ComposerFooter } from './composer-footer'
+import { ComposerOverlayStack } from './composer-overlay-stack'
 import { ComposerPromptInputPanel } from './composer-prompt-input-panel'
+import { ComposerPromptPopoverStack } from './composer-prompt-popover-stack'
 import {
   getComposerPlaceholderText,
   isConversationComposerView,
@@ -266,8 +269,8 @@ function PiExtensionOverlayContent({
   }
 
   return (
-    <div className="grid w-full overflow-visible px-4">
-      <div className="grid rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] text-left shadow-none">
+    <div className="grid w-full min-w-0 overflow-visible px-[clamp(0.5rem,2cqw,1rem)]">
+      <div className="grid w-full min-w-0 rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] text-left shadow-none">
         {sections.map((section, index) => (
           <PiExtensionOverlaySection
             key={section.id}
@@ -295,7 +298,9 @@ function PiExtensionOverlaySection({
 }) {
   if (!folded) {
     return (
-      <section className={cn('relative', divided && 'border-t border-[color:var(--border)]/70')}>
+      <section
+        className={cn('relative min-w-0', divided && 'border-t border-[color:var(--border)]/70')}
+      >
         <button
           type="button"
           className={cn(
@@ -308,13 +313,15 @@ function PiExtensionOverlaySection({
         >
           <ChevronDown size={13} />
         </button>
-        <div className="px-3 py-1.5">{section.content}</div>
+        <div className="min-w-0 px-3 py-1.5">{section.content}</div>
       </section>
     )
   }
 
   return (
-    <section className={cn('relative', divided && 'border-t border-[color:var(--border)]/70')}>
+    <section
+      className={cn('relative min-w-0', divided && 'border-t border-[color:var(--border)]/70')}
+    >
       <button
         type="button"
         className={cn(
@@ -350,7 +357,7 @@ function PiExtensionWidgetLines({
     return (
       <pre
         className={cn(
-          'm-0 overflow-hidden truncate whitespace-pre text-[11.5px] leading-[1rem] text-[color:var(--muted-2)]/88',
+          'm-0 block max-w-full min-w-0 overflow-hidden truncate whitespace-pre text-[11.5px] leading-[1rem] text-[color:var(--muted-2)]/88',
           piExtensionTextClass,
         )}
       >
@@ -366,7 +373,7 @@ function PiExtensionWidgetLines({
       <div
         key={`${widget.key}:${count}:${line}`}
         className={cn(
-          'truncate whitespace-pre text-[color:var(--muted-2)]/88',
+          'min-w-0 truncate whitespace-pre text-[color:var(--muted-2)]/88',
           appTypeCompactWidgetClass,
         )}
       >
@@ -512,6 +519,10 @@ function isEditableEventTarget(target: EventTarget | null) {
 
 function isPiExtensionOverlayHovered(overlay: HTMLElement | null) {
   return Boolean(overlay?.matches(':hover'))
+}
+
+function hasComposerOverlayAbove(...visibleFlags: boolean[]) {
+  return visibleFlags.some(Boolean)
 }
 
 function getComposerTextarea(composerPanel: HTMLElement | null) {
@@ -682,7 +693,7 @@ export function ComposerPromptSurface({
   const fileMentionPanelRef = useRef<HTMLDivElement>(null)
   const skillMentionPanelRef = useRef<HTMLDivElement>(null)
   const stopButtonBoundaryRef = useRef<HTMLDivElement>(null)
-  const piExtensionOverlayRef = useRef<HTMLDivElement>(null)
+  const composerOverlayStackRef = useRef<HTMLDivElement>(null)
   const piExtensionStatusLineRef = useRef<HTMLDivElement>(null)
   const showNativeDialog = piExtensionDialogRequest !== null
   const showProjectTrust = projectTrustRequest !== null
@@ -691,6 +702,8 @@ export function ComposerPromptSurface({
   )
   const showPiExtensionOverlay =
     showNativeDialog || showProjectTrust || visiblePiExtensionWidgets.length > 0
+  const attachmentsTopRounded = !hasComposerOverlayAbove(showPiExtensionOverlay)
+  const inputPopoversTopRounded = !hasComposerOverlayAbove(showPiExtensionOverlay, pickerOpen)
   const startNewSession = () => {
     void runComposerAction('thread.new', { projectId, chatGroupId, composerMode })
   }
@@ -819,10 +832,14 @@ export function ComposerPromptSurface({
   )
 
   useComposerThreadOverlayHeight({
-    extensionOverlayRef: piExtensionOverlayRef,
-    extensionOverlayVisible: showPiExtensionOverlay,
+    extensionOverlayRef: composerOverlayStackRef,
+    extensionOverlayVisible:
+      showPiExtensionOverlay ||
+      pickerOpen ||
+      (sessionTreeOpen && !sessionTreeForceHidden) ||
+      slashCommands.open,
     popoverStackRef: composerPopoverStackRef,
-    popoverStackVisible: (sessionTreeOpen && !sessionTreeForceHidden) || slashCommands.open,
+    popoverStackVisible: false,
     onOverlayHeightChange,
   })
 
@@ -880,7 +897,7 @@ export function ComposerPromptSurface({
     const handlePiExtensionShortcut = (event: KeyboardEvent) => {
       const shortcut = getPiExtensionShortcutKey(event)
       if (!(shortcut && registeredShortcuts.has(shortcut))) return
-      const overlayHovered = isPiExtensionOverlayHovered(piExtensionOverlayRef.current)
+      const overlayHovered = isPiExtensionOverlayHovered(composerOverlayStackRef.current)
       const plainShortcut = isPlainPiExtensionShortcut(shortcut)
       if (plainShortcut && !overlayHovered) return
       if (plainShortcut && isEditableEventTarget(event.target)) return
@@ -941,47 +958,106 @@ export function ComposerPromptSurface({
       />
 
       <div className="relative grid gap-0 overflow-visible">
-        {showPiExtensionOverlay ? (
-          <div
-            ref={piExtensionOverlayRef}
-            className={cn(
-              'pointer-events-auto absolute right-0 bottom-full left-0 grid gap-2',
-              composerPopoverExtensionLayerClass,
-            )}
-          >
-            <PiExtensionOverlayContent
-              widgets={visiblePiExtensionWidgets}
-              projectTrust={{
-                request: projectTrustRequest,
-                onDecide: async (trusted) => {
-                  if (!projectTrustRequest) return false
-                  return await runComposerAction('composer.set-project-trust', {
-                    projectId,
-                    sessionPath,
-                    composerMode,
-                    chatGroupId,
-                    cwd: projectTrustRequest.cwd,
-                    trusted,
-                  })
-                },
-              }}
-              nativeDialog={{
-                request: piExtensionDialogRequest,
-                onAnswer: async (answer) => {
-                  if (!piExtensionDialogRequest) return false
-                  return await runComposerAction('composer.answer-pi-extension-dialog', {
-                    projectId,
-                    sessionPath,
-                    composerMode,
-                    chatGroupId,
-                    requestId: piExtensionDialogRequest.id,
-                    ...answer,
-                  })
-                },
-              }}
-            />
-          </div>
-        ) : null}
+        <ComposerOverlayStack
+          stackRef={composerOverlayStackRef}
+          items={[
+            {
+              id: 'extensions',
+              visible: showPiExtensionOverlay,
+              node: (
+                <div
+                  className={cn('grid w-full min-w-0 gap-2', composerPopoverExtensionLayerClass)}
+                >
+                  <PiExtensionOverlayContent
+                    widgets={visiblePiExtensionWidgets}
+                    projectTrust={{
+                      request: projectTrustRequest,
+                      onDecide: async (trusted) => {
+                        if (!projectTrustRequest) return false
+                        return await runComposerAction('composer.set-project-trust', {
+                          projectId,
+                          sessionPath,
+                          composerMode,
+                          chatGroupId,
+                          cwd: projectTrustRequest.cwd,
+                          trusted,
+                        })
+                      },
+                    }}
+                    nativeDialog={{
+                      request: piExtensionDialogRequest,
+                      onAnswer: async (answer) => {
+                        if (!piExtensionDialogRequest) return false
+                        return await runComposerAction('composer.answer-pi-extension-dialog', {
+                          projectId,
+                          sessionPath,
+                          composerMode,
+                          chatGroupId,
+                          requestId: piExtensionDialogRequest.id,
+                          ...answer,
+                        })
+                      },
+                    }}
+                  />
+                </div>
+              ),
+            },
+            {
+              id: 'attachments',
+              visible: pickerOpen,
+              node: (
+                <div className="px-[clamp(0.5rem,2cqw,1rem)]">
+                  <ComposerFilePicker
+                    anchorRef={pickerButtonRef}
+                    attachments={attachments}
+                    errorMessage={errorMessage}
+                    favoriteFolders={favoriteFolders}
+                    loading={pickerLoading}
+                    picker={pickerState}
+                    panelRef={pickerPanelRef}
+                    embedded
+                    embeddedTopRounded={attachmentsTopRounded}
+                    projectRootPath={projectId}
+                    onAttachAttachments={attachPickerAttachments}
+                    onOpenRoot={openPickerRoot}
+                    onOpenDirectory={openPickerDirectory}
+                    onRemoveAttachment={removeAttachment}
+                    onToggleFile={togglePendingPickerAttachment}
+                  />
+                </div>
+              ),
+            },
+            {
+              id: 'input-popovers',
+              visible: (sessionTreeOpen && !sessionTreeForceHidden) || slashCommands.open,
+              node: (
+                <ComposerPromptPopoverStack
+                  sessionPath={sessionPath}
+                  sessionTreeOpen={sessionTreeOpen}
+                  treeFilterMode={piTreeFilterMode}
+                  sessionTreePanelRef={sessionTreePanelRef}
+                  popoverStackRef={composerPopoverStackRef}
+                  sessionTreeForceHidden={sessionTreeForceHidden}
+                  sessionTreeNavigateDisabled={sessionTreeNavigateDisabled}
+                  onSessionTreeNavigate={handleSessionTreeNavigateAndClose}
+                  onSessionTreeLabel={handleSessionTreeLabel}
+                  onRevealSessionTreeEntryInThread={revealSessionTreeEntryInThread}
+                  onBindSessionTreeClose={(close) => {
+                    sessionTreeCloseRef.current = close
+                  }}
+                  onSessionTreeNavigateConfirmOpenChange={setSessionTreeNavigateConfirmOpen}
+                  onSessionTreeLabelPopoverOpenChange={setSessionTreeLabelPopoverOpen}
+                  sessionTreeCancelNavigateConfirmRef={sessionTreeCancelNavigateConfirmRef}
+                  sessionTreeCancelLabelPopoverRef={sessionTreeCancelLabelPopoverRef}
+                  slashCommandPanelRef={slashCommandPanelRef}
+                  slashCommands={slashCommands}
+                  embedded
+                  topRounded={inputPopoversTopRounded}
+                />
+              ),
+            },
+          ]}
+        />
         <section
           ref={composerPanelRef}
           className={cn(
@@ -1033,6 +1109,7 @@ export function ComposerPromptSurface({
               sessionTreeCancelNavigateConfirmRef={sessionTreeCancelNavigateConfirmRef}
               sessionTreeCancelLabelPopoverRef={sessionTreeCancelLabelPopoverRef}
               composerPopoverStackRef={composerPopoverStackRef}
+              overlaysManagedExternally
               onSessionTreeTypingDismiss={closeSessionTree}
               slashCommandPanelRef={slashCommandPanelRef}
               slashCommands={slashCommands}

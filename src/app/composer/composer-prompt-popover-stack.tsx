@@ -24,6 +24,8 @@ export function ComposerPromptPopoverStack({
   sessionTreeCancelNavigateConfirmRef,
   sessionTreeCancelLabelPopoverRef,
   popoverStackRef,
+  embedded = false,
+  topRounded = true,
 }: {
   sessionPath?: string | null | undefined
   sessionTreeOpen?: boolean | undefined
@@ -44,6 +46,8 @@ export function ComposerPromptPopoverStack({
   sessionTreeCancelNavigateConfirmRef?: MutableRefObject<(() => void) | null> | undefined
   sessionTreeCancelLabelPopoverRef?: MutableRefObject<(() => void) | null> | undefined
   popoverStackRef?: RefObject<HTMLDivElement | null> | undefined
+  embedded?: boolean | undefined
+  topRounded?: boolean | undefined
 }) {
   const sessionTreeVisible = sessionTreeOpen && !sessionTreeForceHidden
   const slashVisible = slashCommands.open
@@ -53,7 +57,7 @@ export function ComposerPromptPopoverStack({
     <div
       ref={popoverStackRef}
       className={cn(
-        'absolute right-0 bottom-full left-0 grid gap-1.5',
+        embedded ? 'relative grid gap-1.5' : 'absolute right-0 bottom-full left-0 grid gap-1.5',
         composerPopoverInputLayerClass,
         !stackVisible && 'pointer-events-none invisible h-0 min-h-0 overflow-hidden gap-0',
       )}
@@ -73,8 +77,13 @@ export function ComposerPromptPopoverStack({
         onLabelPopoverOpenChange={onSessionTreeLabelPopoverOpenChange}
         cancelNavigateConfirmRef={sessionTreeCancelNavigateConfirmRef}
         cancelLabelPopoverRef={sessionTreeCancelLabelPopoverRef}
+        topRounded={topRounded}
       />
-      <SlashCommandPanel panelRef={slashCommandPanelRef} slashCommands={slashCommands} />
+      <SlashCommandPanel
+        panelRef={slashCommandPanelRef}
+        slashCommands={slashCommands}
+        topRounded={topRounded && !sessionTreeVisible}
+      />
     </div>
   )
 }

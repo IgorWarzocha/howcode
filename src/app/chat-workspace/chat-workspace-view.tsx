@@ -99,7 +99,7 @@ function ChatDesktopContent(props: ChatWorkspaceContentProps) {
       <footer
         ref={footerRef}
         className={cn(
-          'motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-10 px-5 pb-4',
+          'motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-10 px-[clamp(0.5rem,2.5vw,1.25rem)] pb-4',
           hasConversationLayout
             ? 'bottom-0 translate-y-0'
             : '-translate-y-1/2 transition-[top,transform] duration-300 ease-out',

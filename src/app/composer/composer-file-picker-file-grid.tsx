@@ -32,7 +32,7 @@ export function ComposerFilePickerFileGrid({
   onToggleFile,
 }: ComposerFilePickerFileGridProps) {
   return (
-    <div className={cn('min-h-0 w-full overflow-x-hidden overflow-y-auto p-2 pt-1', className)}>
+    <div className={cn('min-h-0 w-full overflow-x-hidden overflow-y-auto p-1.5 pt-1', className)}>
       {!picker && loading ? (
         <div className={cn('px-2 py-8 text-center', appTypeSmallClass, appToneMutedClass)}>
           Loading files…
@@ -40,7 +40,7 @@ export function ComposerFilePickerFileGrid({
       ) : entries.length > 0 ? (
         <div
           className={cn(
-            'grid w-full grid-cols-3 gap-1 max-[640px]:grid-cols-2',
+            'grid w-full grid-cols-3 gap-0.5 max-[640px]:grid-cols-2',
             loading && 'pointer-events-none opacity-70',
           )}
         >

@@ -12,6 +12,7 @@ import type { ComposerAttachment, ComposerFilePickerState } from '../desktop/typ
 import {
   appToneDangerClass,
   appTypeMetaClass,
+  composerAttachmentPickerTextClass,
   composerPopoverInputLayerClass,
   popoverPanelClass,
 } from '../ui/classes'
@@ -37,6 +38,8 @@ type ComposerFilePickerProps = {
   loading: boolean
   picker: ComposerFilePickerState | null
   panelRef: RefObject<HTMLDivElement | null>
+  embedded?: boolean
+  embeddedTopRounded?: boolean | undefined
   preferPortalPlacement?: boolean
   projectRootPath: string
   onAttachAttachments: (
@@ -57,6 +60,8 @@ export function ComposerFilePicker({
   loading,
   picker,
   panelRef,
+  embedded = false,
+  embeddedTopRounded = true,
   preferPortalPlacement = false,
   projectRootPath,
   onAttachAttachments,
@@ -77,6 +82,10 @@ export function ComposerFilePicker({
 
   useLayoutEffect(() => {
     const updatePlacementMode = () => {
+      if (embedded) {
+        setPortalPlacementEnabled(false)
+        return
+      }
       const anchorRect = anchorRef?.current?.getBoundingClientRect()
       const estimatedPanelHeight = Math.min(378, window.innerHeight - 12 * 2)
       setPortalPlacementEnabled(
@@ -93,7 +102,7 @@ export function ComposerFilePicker({
       window.removeEventListener('resize', updatePlacementMode)
       window.removeEventListener('scroll', updatePlacementMode, true)
     }
-  }, [anchorRef, preferPortalPlacement])
+  }, [anchorRef, embedded, preferPortalPlacement])
 
   const attachedByPath = useMemo(
     () => new Set(attachments.map((attachment) => attachment.path)),
@@ -252,14 +261,30 @@ export function ComposerFilePicker({
 
   const panelClassName = cn(
     'grid grid-rows-[40px_minmax(0,1fr)] overflow-hidden rounded-xl border-0 p-0',
-    portalPlacementEnabled
-      ? 'h-[min(378px,calc(100vh-1.5rem))] min-h-[220px] w-[min(38rem,calc(100vw-1.5rem))]'
-      : cn(
-          'absolute right-0 bottom-full left-0 h-[min(378px,calc(100vh-12rem))] min-h-[220px]',
-          composerPopoverInputLayerClass,
-        ),
-    popoverPanelClass,
+    composerAttachmentPickerTextClass,
+    embedded
+      ? 'relative h-[min(378px,calc(70vh-8rem))] min-h-[220px] w-full'
+      : portalPlacementEnabled
+        ? 'h-[min(378px,calc(100vh-1.5rem))] min-h-[220px] w-[min(38rem,calc(100vw-1.5rem))]'
+        : cn(
+            'absolute right-0 bottom-full left-0 h-[min(378px,calc(100vh-12rem))] min-h-[220px]',
+            composerPopoverInputLayerClass,
+          ),
+    embedded
+      ? cn(
+          embeddedTopRounded ? 'rounded-t-lg' : 'rounded-t-none',
+          'rounded-b-none bg-[color:var(--panel)] shadow-none outline outline-1 -outline-offset-1 outline-[color:var(--border)]',
+        )
+      : popoverPanelClass,
   )
+
+  if (embedded) {
+    return (
+      <PopoverPanel ref={panelRef} className={panelClassName}>
+        {panelContents}
+      </PopoverPanel>
+    )
+  }
 
   if (portalPlacementEnabled && anchorRef) {
     return (

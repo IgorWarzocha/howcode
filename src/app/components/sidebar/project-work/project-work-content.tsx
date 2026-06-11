@@ -4,7 +4,7 @@ import { type RefObject, useLayoutEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker, ProjectGitState } from '../../../desktop/types'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import type { Project, View } from '../../../types'
-import { appToneSubtleClass, appTypeMetaClass } from '../../../ui/classes'
+import { appToneSubtleClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { BranchThreadGroupSection, shouldSeparateBranchGroups } from './branch-thread-groups'
 import { NewThreadMenu } from './new-thread-menu'
@@ -380,7 +380,9 @@ export function SingleProjectWorkContent({
           <Archive size={14} />
           <span>Past sessions</span>
           {hideSessionCounts ? null : (
-            <span className={cn(appTypeMetaClass, appToneSubtleClass)}>{olderThreadCount}</span>
+            <span className={cn('sidebar-project-work-history-count', appToneSubtleClass)}>
+              {olderThreadCount}
+            </span>
           )}
         </button>
       </div>
