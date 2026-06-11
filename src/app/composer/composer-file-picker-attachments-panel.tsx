@@ -84,9 +84,7 @@ export function ComposerFilePickerAttachmentsPanel({
             ) : (
               <Upload size={11} className="shrink-0" />
             )}
-            <span className="truncate">
-              {uploadingDeviceFiles ? 'Uploading…' : 'Attach from this device'}
-            </span>
+            <span className="truncate">{uploadingDeviceFiles ? 'Uploading…' : 'This device'}</span>
           </button>
         ) : null}
         {attachments.length > 0 ? (
