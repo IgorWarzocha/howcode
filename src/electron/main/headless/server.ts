@@ -12,10 +12,8 @@ import type {
 import type { DesktopServiceRuntime } from '../../../../shared/desktop-service-contracts'
 import { isDevServerLoopbackHost, isDevServerWildcardHost } from '../../../../shared/dev-server'
 import {
-  type BrowserUploadAttachmentsRequest,
-  browserUploadAttachmentLimits,
   scheduleBrowserUploadComposerAttachmentsCleanup,
-  writeBrowserUploadComposerAttachments,
+  writeBrowserUploadComposerAttachmentsFromMultipart,
 } from '../../../desktop-host/browser-upload-attachments'
 import { createDesktopRequestHandlers } from '../ipc/desktop-request-handlers'
 import { getRendererDistDirectory } from '../runtime/app-paths'
@@ -54,7 +52,6 @@ type HeadlessRequestContext = {
 
 const headlessBridgeToken = randomUUID()
 const maxBridgeJsonBodyBytes = 2 * 1024 * 1024
-const maxUploadJsonBodyBytes = Math.ceil(browserUploadAttachmentLimits.maxTotalBytes * 1.4)
 
 function sendJson(response: http.ServerResponse, statusCode: number, payload: unknown) {
   response.statusCode = statusCode
@@ -292,9 +289,9 @@ async function handleBrowserUploadRequest(
   }
 
   try {
-    const params = await readJsonBody(request, maxUploadJsonBodyBytes)
-    const attachments = await writeBrowserUploadComposerAttachments(
-      params as BrowserUploadAttachmentsRequest,
+    const attachments = await writeBrowserUploadComposerAttachmentsFromMultipart(
+      request,
+      request.headers['content-type'],
     )
     sendJson(response, 200, { attachments })
   } catch (error) {

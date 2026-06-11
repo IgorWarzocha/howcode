@@ -22,10 +22,8 @@ import type {
 import { getDesktopWorkingDirectory } from '../shared/desktop-working-directory'
 import { getSafeExternalUrl } from '../shared/external-url'
 import {
-  type BrowserUploadAttachmentsRequest,
-  browserUploadAttachmentLimits,
   scheduleBrowserUploadComposerAttachmentsCleanup,
-  writeBrowserUploadComposerAttachments,
+  writeBrowserUploadComposerAttachmentsFromMultipart,
 } from '../src/desktop-host/browser-upload-attachments'
 import {
   listComposerAttachmentEntries,
@@ -357,7 +355,6 @@ const handlers: DesktopRequestHandlerMap = {
 }
 
 const maxBridgeJsonBodyBytes = 2 * 1024 * 1024
-const maxUploadJsonBodyBytes = Math.ceil(browserUploadAttachmentLimits.maxTotalBytes * 1.4)
 
 async function readJsonBody(request: http.IncomingMessage, maxBytes = maxBridgeJsonBodyBytes) {
   const chunks: Buffer[] = []
@@ -417,9 +414,9 @@ async function handleBrowserUploadRequest(
   }
 
   try {
-    const params = await readJsonBody(request, maxUploadJsonBodyBytes)
-    const attachments = await writeBrowserUploadComposerAttachments(
-      params as BrowserUploadAttachmentsRequest,
+    const attachments = await writeBrowserUploadComposerAttachmentsFromMultipart(
+      request,
+      request.headers['content-type'],
     )
     sendJson(response, 200, { attachments })
   } catch (error) {

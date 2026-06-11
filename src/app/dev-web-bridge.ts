@@ -60,38 +60,23 @@ async function invokeRequest<K extends DesktopRequestChannel>(
   return (await response.json()) as DesktopRequestMap[K]['response']
 }
 
-function arrayBufferToBase64(buffer: ArrayBuffer) {
-  const bytes = new Uint8Array(buffer)
-  const chunkSize = 0x8000
-  let binary = ''
-
-  for (let index = 0; index < bytes.length; index += chunkSize) {
-    binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize))
-  }
-
-  return btoa(binary)
-}
-
 async function uploadComposerFiles(files: File[]) {
   if (files.length === 0) {
     return []
   }
 
   const bridgeToken = await getBridgeToken()
-  const uploadFiles = await Promise.all(
-    files.map(async (file) => ({
-      name: file.name,
-      type: file.type,
-      dataBase64: arrayBufferToBase64(await file.arrayBuffer()),
-    })),
-  )
+  const formData = new FormData()
+  for (const file of files) {
+    formData.append('files', file, file.name || 'upload')
+  }
+
   const response = await fetch('/__howcode/upload/composer-attachments', {
     method: 'POST',
     headers: {
-      'content-type': 'application/json',
       'x-howcode-dev-web-bridge-token': bridgeToken,
     },
-    body: JSON.stringify({ files: uploadFiles }),
+    body: formData,
   })
 
   if (!response.ok) {
