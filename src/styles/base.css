@@ -22,6 +22,28 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.mac-window-drag-zones {
+  display: none;
+}
+
+:root[data-desktop-platform="darwin"][data-desktop-shell="electron"] .mac-window-drag-zones {
+  display: block;
+}
+
+.mac-window-drag-zone {
+  position: fixed;
+  z-index: 45;
+  background: transparent;
+  -webkit-app-region: drag;
+}
+
+.mac-window-drag-zone--titlebar {
+  top: 0;
+  left: 5.5rem;
+  width: 13.25rem;
+  height: 2rem;
+}
+
 button,
 input,
 textarea {
