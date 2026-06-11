@@ -67,6 +67,21 @@ bun install
 bun run dev
 ```
 
+Headless/browser dev mode skips the Electron window and serves the app through Vite:
+
+```bash
+bun run dev:headless
+```
+
+To try it from another device on your network:
+
+```bash
+bun run dev:headless:host
+# open http://<this-machine-ip>:5173
+```
+
+This exposes the local desktop bridge to that browser session, so keep it on a trusted network.
+
 ## Issues and updates
 
 > [!IMPORTANT]

@@ -12,6 +12,10 @@ import {
   DEV_SERVER_HOST,
   DEV_SERVER_METADATA_RELATIVE_PATH,
   DEV_SERVER_START_PORT,
+  isDevServerLoopbackHost,
+  isDevServerWildcardHost,
+  resolveDevServerListenHost,
+  resolveDevServerPublicHost,
 } from '../shared/dev-server'
 import { getSystemNodeExecutable } from '../src/desktop-host/node-discovery'
 import { getDevUserDataPath } from './dev-user-data-path'
@@ -21,13 +25,18 @@ const devRepoRoot = projectRoot
 const devServerMetadataPath = path.join(projectRoot, DEV_SERVER_METADATA_RELATIVE_PATH)
 const bridgeBuildPath = path.join(projectRoot, 'build', 'dev-web-bridge.mjs')
 const serviceHostBuildPath = path.join(projectRoot, 'build', 'desktop', 'service-host.mjs')
+const devServerListenHost = resolveDevServerListenHost()
+const devServerPublicHost = resolveDevServerPublicHost(devServerListenHost)
+const allowRemoteRendererHosts =
+  isDevServerWildcardHost(devServerListenHost) || !isDevServerLoopbackHost(devServerListenHost)
 const bridgeToken = crypto.randomUUID()
 const serviceHostWaitTimeoutMs = 30_000
 
 let bridge: { child: ChildProcess; port: number } | null = null
 let server: ViteDevServer | null = null
 let isShuttingDown = false
-let trustedRendererHost: string | null = null
+let trustedRendererPort: number | null = null
+let trustedRendererHosts = new Set<string>()
 
 async function buildDevWebBridge() {
   await mkdir(path.dirname(bridgeBuildPath), { recursive: true })
@@ -191,7 +200,12 @@ function proxyDevWebBridgeRequest(
 }
 
 function isTrustedBrowserRequest(request: http.IncomingMessage) {
-  if (!trustedRendererHost || request.headers.host !== trustedRendererHost) {
+  if (trustedRendererPort === null) {
+    return false
+  }
+
+  const requestHost = request.headers.host
+  if (typeof requestHost !== 'string' || !isTrustedRendererHost(requestHost)) {
     return false
   }
 
@@ -202,10 +216,27 @@ function isTrustedBrowserRequest(request: http.IncomingMessage) {
 
   try {
     const originUrl = new URL(origin)
-    return originUrl.host === trustedRendererHost
+    return isTrustedRendererHost(originUrl.host)
   } catch {
     return false
   }
+}
+
+function getHostPort(host: string) {
+  try {
+    const parsedHost = new URL(`http://${host}`)
+    return parsedHost.port ? Number(parsedHost.port) : null
+  } catch {
+    return null
+  }
+}
+
+function isTrustedRendererHost(host: string) {
+  if (trustedRendererHosts.has(host)) {
+    return true
+  }
+
+  return allowRemoteRendererHosts && getHostPort(host) === trustedRendererPort
 }
 
 async function writeDevServerMetadata(url: string, port: number) {
@@ -214,7 +245,8 @@ async function writeDevServerMetadata(url: string, port: number) {
     devServerMetadataPath,
     JSON.stringify(
       {
-        host: DEV_SERVER_HOST,
+        host: devServerListenHost,
+        accessHost: devServerPublicHost,
         port,
         url,
       },
@@ -245,7 +277,7 @@ try {
   server = await createServer({
     configFile: path.join(projectRoot, 'vite.config.ts'),
     server: {
-      host: DEV_SERVER_HOST,
+      host: devServerListenHost,
       port: DEV_SERVER_START_PORT,
       strictPort: false,
     },
@@ -317,9 +349,19 @@ try {
   }
 
   const { port } = address as AddressInfo
-  trustedRendererHost = `${DEV_SERVER_HOST}:${port}`
-  await writeDevServerMetadata(`http://${DEV_SERVER_HOST}:${port}`, port)
+  trustedRendererPort = port
+  trustedRendererHosts = new Set([
+    `${DEV_SERVER_HOST}:${port}`,
+    `${devServerPublicHost}:${port}`,
+    ...(isDevServerWildcardHost(devServerListenHost) ? [] : [`${devServerListenHost}:${port}`]),
+  ])
+  await writeDevServerMetadata(`http://${devServerPublicHost}:${port}`, port)
   server.printUrls()
+  if (allowRemoteRendererHosts) {
+    console.warn(
+      `[howcode] dev:web is accepting browser hosts on port ${port}. Keep this on a trusted network.`,
+    )
+  }
   console.warn(
     '\n[howcode] dev:web local desktop bridge is enabled for project sync/import. `bun run dev` remains the preferred full desktop dev loop.\n',
   )

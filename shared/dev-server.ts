@@ -4,6 +4,11 @@ import path from 'node:path'
 export const DEV_SERVER_HOST = '127.0.0.1'
 export const DEV_SERVER_START_PORT = 5173
 export const DEV_SERVER_METADATA_RELATIVE_PATH = path.join('build', 'dev-server.json')
+export const DEV_SERVER_HOST_ENV = 'HOWCODE_DEV_SERVER_HOST'
+export const DEV_SERVER_PUBLIC_HOST_ENV = 'HOWCODE_DEV_SERVER_PUBLIC_HOST'
+
+const wildcardHosts = new Set(['0.0.0.0', '::', '[::]'])
+const loopbackHosts = new Set(['127.0.0.1', 'localhost', '::1', '[::1]'])
 
 const REPO_ROOT_MARKERS = ['package.json', 'tsconfig.json'] as const
 
@@ -72,6 +77,43 @@ export function parseDevServerMetadata(rawMetadata: string) {
   }
 
   return null
+}
+
+function normalizeDevServerHost(host: string | null | undefined) {
+  const trimmedHost = host?.trim() ?? ''
+  if (trimmedHost.length === 0) {
+    return null
+  }
+
+  if (trimmedHost.includes('://') || trimmedHost.includes('/') || trimmedHost.includes(' ')) {
+    return null
+  }
+
+  return trimmedHost
+}
+
+export function resolveDevServerListenHost(env: NodeJS.ProcessEnv = process.env) {
+  return normalizeDevServerHost(env[DEV_SERVER_HOST_ENV]) ?? DEV_SERVER_HOST
+}
+
+export function resolveDevServerPublicHost(
+  listenHost: string,
+  env: NodeJS.ProcessEnv = process.env,
+) {
+  const configuredPublicHost = normalizeDevServerHost(env[DEV_SERVER_PUBLIC_HOST_ENV])
+  if (configuredPublicHost) {
+    return configuredPublicHost
+  }
+
+  return wildcardHosts.has(listenHost) ? DEV_SERVER_HOST : listenHost
+}
+
+export function isDevServerWildcardHost(host: string) {
+  return wildcardHosts.has(host)
+}
+
+export function isDevServerLoopbackHost(host: string) {
+  return loopbackHosts.has(host)
 }
 
 export function resolveConfiguredDevServerUrl(searchStartPaths: readonly string[]) {
