@@ -11,6 +11,7 @@
 - Added Pi project trust prompts in desktop, backed by Pi's trust store.
 - Updated Pi SDK/runtime packages to 0.79.1.
 - Bumped app/build dependencies, including Electron 41.7.2.
+- Added headless/browser mode, including LAN access with token auth and browser-side file uploads.
 
 #### 0.1.66 Hotfixes (because .67 has to be more special)
 
