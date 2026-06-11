@@ -2,7 +2,12 @@ import { isSafeExternalUrl } from '@howcode/shared/external-url'
 import { File, Folder, Globe, Loader2, Upload, X } from 'lucide-react'
 import type { DragEvent } from 'react'
 import type { ComposerAttachment } from '../desktop/types'
-import { appToneMutedClass, appToneTextClass, appTypeTinyClass } from '../ui/classes'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeKickerClass,
+  appTypeTinyClass,
+} from '../ui/classes'
 import { cn } from '../utils/cn'
 import {
   getAttachmentDisplayLabel,
@@ -72,17 +77,17 @@ export function ComposerFilePickerAttachmentsPanel({
           <button
             type="button"
             className={cn(
-              'mb-2 inline-flex h-6 min-w-0 items-center gap-1.5 rounded-md border border-[color:var(--border)] px-2 text-left transition-colors hover:bg-[color:var(--surface-hover)] disabled:opacity-60',
-              appTypeTinyClass,
-              appToneTextClass,
+              'mb-2 inline-flex h-5 min-w-0 items-center gap-1 rounded-md border border-[color:var(--border)] px-1.5 text-left transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:opacity-60',
+              appTypeKickerClass,
+              appToneMutedClass,
             )}
             onClick={onPickDeviceFiles}
             disabled={uploadingDeviceFiles}
           >
             {uploadingDeviceFiles ? (
-              <Loader2 size={11} className="shrink-0 animate-spin" />
+              <Loader2 size={10} className="shrink-0 animate-spin" />
             ) : (
-              <Upload size={11} className="shrink-0" />
+              <Upload size={10} className="shrink-0" />
             )}
             <span className="truncate">{uploadingDeviceFiles ? 'Uploading…' : 'This device'}</span>
           </button>
