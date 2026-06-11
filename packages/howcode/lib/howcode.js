@@ -195,7 +195,11 @@ function isHeadlessLaunchArgs(args) {
 }
 
 function getAppLaunchArgs(args) {
-  return args.map((arg) => (arg === '--headless' ? '--howcode-headless' : arg))
+  const appArgs = args.map((arg) => (arg === '--headless' ? '--howcode-headless' : arg))
+  if (isHeadlessLaunchArgs(args) && !appArgs.some((arg) => arg.startsWith('--ozone-platform'))) {
+    appArgs.push('--ozone-platform=headless')
+  }
+  return appArgs
 }
 
 async function writeLinuxCommandLauncher(paths) {
