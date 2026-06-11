@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { mkdir, open } from 'node:fs/promises'
+import { mkdir, open, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { getAttachmentKind } from '../../shared/composer-attachments'
@@ -12,6 +12,11 @@ export const browserUploadAttachmentLimits = {
   maxFiles: 20,
   maxFileBytes: 50 * 1024 * 1024,
   maxTotalBytes: 100 * 1024 * 1024,
+}
+
+export const browserUploadAttachmentCleanup = {
+  maxAgeDays: 14,
+  markerFileName: '.last-cleanup-date',
 }
 
 export type BrowserUploadAttachmentFile = {
@@ -127,6 +132,76 @@ function getUploadFiles(request: BrowserUploadAttachmentsRequest) {
   )
 }
 
+function getUploadRootDirectory(rootDirectory?: string | undefined) {
+  return rootDirectory ?? path.join(tmpdir(), 'howcode-browser-uploads')
+}
+
+function getDateKey(date: Date) {
+  return date.toISOString().slice(0, 10)
+}
+
+async function readCleanupMarker(markerPath: string) {
+  try {
+    return (await readFile(markerPath, 'utf8')).trim()
+  } catch {
+    return null
+  }
+}
+
+export async function cleanupBrowserUploadComposerAttachments(
+  options: { rootDirectory?: string | undefined; now?: Date | undefined } = {},
+) {
+  const rootDirectory = getUploadRootDirectory(options.rootDirectory)
+  const now = options.now ?? new Date()
+  const todayKey = getDateKey(now)
+  const markerPath = path.join(rootDirectory, browserUploadAttachmentCleanup.markerFileName)
+
+  await mkdir(rootDirectory, { recursive: true, mode: 0o700 })
+
+  if ((await readCleanupMarker(markerPath)) === todayKey) {
+    return { removedEntries: 0, skipped: true }
+  }
+
+  const cutoffMs = now.getTime() - browserUploadAttachmentCleanup.maxAgeDays * 24 * 60 * 60 * 1000
+  let removedEntries = 0
+
+  const entries = await readdir(rootDirectory, { withFileTypes: true })
+  await Promise.all(
+    entries.map(async (entry) => {
+      if (entry.name === browserUploadAttachmentCleanup.markerFileName) {
+        return
+      }
+
+      const entryPath = path.join(rootDirectory, entry.name)
+      const entryStats = await stat(entryPath).catch(() => null)
+      if (!entryStats || entryStats.mtimeMs >= cutoffMs) {
+        return
+      }
+
+      await rm(entryPath, { recursive: true, force: true })
+      removedEntries += 1
+    }),
+  )
+
+  await writeFile(markerPath, `${todayKey}\n`, { mode: 0o600 })
+  return { removedEntries, skipped: false }
+}
+
+export function scheduleBrowserUploadComposerAttachmentsCleanup(
+  options: {
+    rootDirectory?: string | undefined
+    onError?: ((error: unknown) => void) | undefined
+  } = {},
+) {
+  setTimeout(() => {
+    void cleanupBrowserUploadComposerAttachments({ rootDirectory: options.rootDirectory }).catch(
+      (error) => {
+        options.onError?.(error)
+      },
+    )
+  }, 0)
+}
+
 export async function writeBrowserUploadComposerAttachments(
   request: BrowserUploadAttachmentsRequest,
   options: { rootDirectory?: string | undefined } = {},
@@ -136,32 +211,34 @@ export async function writeBrowserUploadComposerAttachments(
     return []
   }
 
-  const uploadDirectory = path.join(
-    options.rootDirectory ?? path.join(tmpdir(), 'howcode-browser-uploads'),
-    randomUUID(),
-  )
+  const uploadDirectory = path.join(getUploadRootDirectory(options.rootDirectory), randomUUID())
   await mkdir(uploadDirectory, { recursive: true, mode: 0o700 })
 
-  let totalBytes = 0
-  const attachments: ComposerAttachment[] = []
-  for (const [index, file] of files.entries()) {
-    const buffer = decodeUploadDataBase64(file)
-    totalBytes += buffer.length
-    if (totalBytes > browserUploadAttachmentLimits.maxTotalBytes) {
-      throw new Error('Uploaded files are too large.')
+  try {
+    let totalBytes = 0
+    const attachments: ComposerAttachment[] = []
+    for (const [index, file] of files.entries()) {
+      const buffer = decodeUploadDataBase64(file)
+      totalBytes += buffer.length
+      if (totalBytes > browserUploadAttachmentLimits.maxTotalBytes) {
+        throw new Error('Uploaded files are too large.')
+      }
+
+      const name = getSafeUploadFileName(file, index)
+      const filePath = await writeUniqueUploadFile(uploadDirectory, name, buffer)
+      attachments.push({
+        path: filePath,
+        name,
+        kind:
+          typeof file.type === 'string' && file.type.startsWith('image/')
+            ? 'image'
+            : getAttachmentKind(filePath),
+      })
     }
 
-    const name = getSafeUploadFileName(file, index)
-    const filePath = await writeUniqueUploadFile(uploadDirectory, name, buffer)
-    attachments.push({
-      path: filePath,
-      name,
-      kind:
-        typeof file.type === 'string' && file.type.startsWith('image/')
-          ? 'image'
-          : getAttachmentKind(filePath),
-    })
+    return attachments
+  } catch (error) {
+    await rm(uploadDirectory, { recursive: true, force: true })
+    throw error
   }
-
-  return attachments
 }

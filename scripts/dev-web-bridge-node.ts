@@ -24,6 +24,7 @@ import { getSafeExternalUrl } from '../shared/external-url'
 import {
   type BrowserUploadAttachmentsRequest,
   browserUploadAttachmentLimits,
+  scheduleBrowserUploadComposerAttachmentsCleanup,
   writeBrowserUploadComposerAttachments,
 } from '../src/desktop-host/browser-upload-attachments'
 import {
@@ -498,6 +499,9 @@ server.listen(port, host, () => {
     throw new Error('dev:web bridge did not expose a numeric port.')
   }
 
+  scheduleBrowserUploadComposerAttachmentsCleanup({
+    onError: (error) => console.warn('dev:web browser upload cleanup failed', { error }),
+  })
   console.log(`HOWCODE_DEV_WEB_BRIDGE_READY ${JSON.stringify({ host, port: address.port })}`)
 })
 

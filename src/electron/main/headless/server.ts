@@ -14,6 +14,7 @@ import { isDevServerLoopbackHost, isDevServerWildcardHost } from '../../../../sh
 import {
   type BrowserUploadAttachmentsRequest,
   browserUploadAttachmentLimits,
+  scheduleBrowserUploadComposerAttachmentsCleanup,
   writeBrowserUploadComposerAttachments,
 } from '../../../desktop-host/browser-upload-attachments'
 import { createDesktopRequestHandlers } from '../ipc/desktop-request-handlers'
@@ -435,6 +436,9 @@ export async function startHeadlessServer(input: HeadlessServerInput) {
     server.once('error', reject)
     server.listen(input.options.port, input.options.host, () => {
       server.off('error', reject)
+      scheduleBrowserUploadComposerAttachmentsCleanup({
+        onError: (error) => console.warn('headless browser upload cleanup failed', { error }),
+      })
       resolve()
     })
   })
