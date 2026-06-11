@@ -5,7 +5,7 @@ import type { ComposerAttachment } from '../desktop/types'
 import {
   appToneMutedClass,
   appToneTextClass,
-  appTypeKickerClass,
+  appTypeMicroClass,
   appTypeTinyClass,
 } from '../ui/classes'
 import { cn } from '../utils/cn'
@@ -78,7 +78,7 @@ export function ComposerFilePickerAttachmentsPanel({
             type="button"
             className={cn(
               'mb-2 inline-flex h-5 min-w-0 items-center gap-1 rounded-md border border-[color:var(--border)] px-1.5 text-left transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:opacity-60',
-              appTypeKickerClass,
+              appTypeMicroClass,
               appToneMutedClass,
             )}
             onClick={onPickDeviceFiles}
@@ -89,7 +89,7 @@ export function ComposerFilePickerAttachmentsPanel({
             ) : (
               <Upload size={10} className="shrink-0" />
             )}
-            <span className="truncate">{uploadingDeviceFiles ? 'Uploading…' : 'This device'}</span>
+            <span className="truncate">{uploadingDeviceFiles ? 'Uploading…' : 'Device'}</span>
           </button>
         ) : null}
         {attachments.length > 0 ? (

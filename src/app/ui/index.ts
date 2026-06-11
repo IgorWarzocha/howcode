@@ -21,6 +21,7 @@ export {
   appTypeLogoMarkClass,
   appTypeMetaClass,
   appTypeMetaStrongClass,
+  appTypeMicroClass,
   appTypeReadableClass,
   appTypeReadableStrongClass,
   appTypeSectionTitleClass,

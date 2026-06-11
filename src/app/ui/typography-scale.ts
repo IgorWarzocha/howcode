@@ -165,6 +165,7 @@ export const appTypeCompactWidgetClass = typeClass('compactWidget')
 export const appTypeMetaClass = typeClass('meta')
 export const appTypeTinyClass = typeClass('tiny')
 export const appTypeTinyStrongClass = `${appTypeTinyClass} font-medium`
+export const appTypeMicroClass = typeClass('kicker')
 export const appTypeKickerClass = `${typeClass('kicker')} tracking-[0.035em] uppercase`
 export const appTypeCodeClass = `font-mono ${typeClass('code')}`
 export const appTypeCodeBlockClass = `font-mono ${typeClass('codeBlock')}`
