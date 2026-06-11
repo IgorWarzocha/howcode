@@ -20,6 +20,7 @@ const devtoolsDebuggingPort = configureDevtoolsRemoteDebugging()
 if (headlessOptions.enabled) {
   app.commandLine.removeSwitch('headless')
   app.commandLine.appendSwitch('disable-gpu')
+  app.commandLine.appendSwitch('ozone-platform', 'headless')
 }
 
 app.setName('howcode')
