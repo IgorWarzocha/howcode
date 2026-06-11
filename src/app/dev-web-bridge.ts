@@ -113,6 +113,10 @@ export function installDevWebDesktopBridge() {
 
   window.piDesktop = {
     platform: navigator.platform.toLowerCase().includes('mac') ? 'darwin' : 'browser',
+    getAppUpdateState: () => invokeRequest('getAppUpdateState', {}),
+    checkAppUpdate: () => invokeRequest('checkAppUpdate', {}),
+    installAppUpdate: () => invokeRequest('installAppUpdate', {}),
+    restartAppUpdate: () => invokeRequest('restartAppUpdate', {}),
     clearClipboardImages: () => invokeRequest('clearClipboardImages', {}),
     getShellState: () => invokeRequest('getShellState', {}),
     getProjectGitState: (projectId: string) => invokeRequest('getProjectGitState', { projectId }),
@@ -194,6 +198,10 @@ export function installDevWebDesktopBridge() {
     getArchivedThreads: () => invokeRequest('getArchivedThreads', {}),
     getThread: (sessionPath: string, historyCompactions = 0) =>
       invokeRequest('getThread', { sessionPath, historyCompactions }),
+    getSessionTreeList: (sessionPath: string) =>
+      invokeRequest('getSessionTreeList', { sessionPath }),
+    getThreadPreviewAtEntry: (sessionPath: string, targetEntryId: string, historyCompactions = 0) =>
+      invokeRequest('getThreadPreviewAtEntry', { sessionPath, targetEntryId, historyCompactions }),
     searchThread: (sessionPath: string, query: string) =>
       invokeRequest('searchThread', { sessionPath, query }),
     watchSession: async (sessionPath: string | null) => {
