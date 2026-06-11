@@ -324,10 +324,21 @@ function AppShellToast(props: AppShellLayoutViewProps) {
   )
 }
 
+function MacWindowDragZones() {
+  return (
+    <div className="mac-window-drag-zones" aria-hidden="true">
+      <div className="mac-window-drag-zone mac-window-drag-zone--top-left" />
+      <div className="mac-window-drag-zone mac-window-drag-zone--left-edge" />
+      <div className="mac-window-drag-zone mac-window-drag-zone--bottom-left" />
+    </div>
+  )
+}
+
 export function AppShellLayoutView(props: AppShellLayoutViewProps) {
   return (
     <>
       <div className={appShellRootClass}>
+        <MacWindowDragZones />
         <DesktopSidebarFrame {...props} />
         <CompactSidebarOverlay {...props} />
         <CompactSidebarPanel {...props} />
