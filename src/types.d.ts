@@ -1,3 +1,4 @@
+import type { DesktopBridgeCapabilities } from '@howcode/shared/desktop-bridge-capabilities'
 import type { DesktopRequestMap } from '../shared/desktop-ipc'
 import type { DesktopAction } from './app/desktop/actions'
 import type {
@@ -65,6 +66,7 @@ declare global {
     howcodeDevWebBridge?: boolean
     piDesktop?: {
       platform?: string
+      capabilities?: DesktopBridgeCapabilities
       getAppUpdateState?: () => Promise<AppUpdateState>
       checkAppUpdate?: () => Promise<AppUpdateState>
       installAppUpdate?: () => Promise<AppUpdateState>
@@ -164,6 +166,7 @@ declare global {
         paths: string[],
       ) => Promise<Record<string, ComposerAttachment['kind'] | null>>
       getPathForFile?: (file: File) => string | null
+      uploadComposerFiles?: (files: File[]) => Promise<ComposerAttachment[]>
       listComposerAttachmentEntries?: (request?: {
         projectId?: string | null | undefined
         path?: string | null | undefined

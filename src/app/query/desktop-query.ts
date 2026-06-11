@@ -1,6 +1,10 @@
 const pathSeparatorPattern = /[\\/]/
 
 import { fallbackAppSlashCommands } from '@howcode/shared/composer-slash-commands'
+import {
+  browserDesktopBridgeCapabilities,
+  electronDesktopBridgeCapabilities,
+} from '@howcode/shared/desktop-bridge-capabilities'
 import type { DesktopRequestMap } from '@howcode/shared/desktop-ipc'
 import type {
   AppUpdateState,
@@ -66,6 +70,25 @@ export {
 
 export function hasDesktopBridgeQuery() {
   return typeof window !== 'undefined' && typeof window.piDesktop?.invokeAction === 'function'
+}
+
+export function getDesktopBridgeCapabilitiesQuery() {
+  if (typeof window === 'undefined') {
+    return browserDesktopBridgeCapabilities
+  }
+
+  return (
+    window.piDesktop?.capabilities ??
+    (window.piDesktop ? electronDesktopBridgeCapabilities : browserDesktopBridgeCapabilities)
+  )
+}
+
+export function canUploadComposerFilesQuery() {
+  return Boolean(
+    getDesktopBridgeCapabilitiesQuery().browserUploads &&
+      typeof window !== 'undefined' &&
+      window.piDesktop?.uploadComposerFiles,
+  )
 }
 
 export async function invokeDesktopActionQuery(
@@ -270,6 +293,14 @@ export async function getAttachmentKindsForPathsQuery(paths: string[]) {
 
 export function getPathForFileQuery(file: File) {
   return window.piDesktop?.getPathForFile?.(file) ?? null
+}
+
+export async function uploadComposerFilesQuery(files: File[]): Promise<ComposerAttachment[]> {
+  if (!canUploadComposerFilesQuery()) {
+    return []
+  }
+
+  return (await window.piDesktop?.uploadComposerFiles?.(files)) ?? []
 }
 
 export async function openExternalQuery(url: string) {

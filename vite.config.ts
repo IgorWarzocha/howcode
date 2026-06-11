@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
+import { DEV_SERVER_START_PORT, resolveDevServerListenHost } from './shared/dev-server'
 
 const projectRoot = fileURLToPath(new URL('.', import.meta.url))
 
@@ -129,8 +130,8 @@ export default defineConfig({
     format: 'es',
   },
   server: {
-    host: '127.0.0.1',
-    port: 5173,
+    host: resolveDevServerListenHost(),
+    port: DEV_SERVER_START_PORT,
     strictPort: false,
     watch: {
       ignored: ['**/.worktrees/**'],

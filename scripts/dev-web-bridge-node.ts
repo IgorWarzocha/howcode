@@ -22,6 +22,10 @@ import type {
 import { getDesktopWorkingDirectory } from '../shared/desktop-working-directory'
 import { getSafeExternalUrl } from '../shared/external-url'
 import {
+  scheduleBrowserUploadComposerAttachmentsCleanup,
+  writeBrowserUploadComposerAttachmentsFromMultipart,
+} from '../src/desktop-host/browser-upload-attachments'
+import {
   listComposerAttachmentEntries,
   searchComposerAttachmentEntries,
 } from '../src/desktop-host/composer-attachments'
@@ -350,10 +354,18 @@ const handlers: DesktopRequestHandlerMap = {
   },
 }
 
-async function readJsonBody(request: http.IncomingMessage) {
+const maxBridgeJsonBodyBytes = 2 * 1024 * 1024
+
+async function readJsonBody(request: http.IncomingMessage, maxBytes = maxBridgeJsonBodyBytes) {
   const chunks: Buffer[] = []
+  let byteLength = 0
   for await (const chunk of request) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+    byteLength += buffer.length
+    if (byteLength > maxBytes) {
+      throw new Error('Request body is too large.')
+    }
+    chunks.push(buffer)
   }
 
   if (chunks.length === 0) {
@@ -388,6 +400,29 @@ async function handleBridgeRequest(
     console.error('dev:web bridge request failed', { channel, error })
     sendJson(response, 500, {
       error: error instanceof Error ? error.message : 'Desktop bridge request failed.',
+    })
+  }
+}
+
+async function handleBrowserUploadRequest(
+  request: http.IncomingMessage,
+  response: http.ServerResponse,
+) {
+  if (request.method !== 'POST') {
+    sendJson(response, 405, { error: 'Upload requests must use POST.' })
+    return
+  }
+
+  try {
+    const attachments = await writeBrowserUploadComposerAttachmentsFromMultipart(
+      request,
+      request.headers['content-type'],
+    )
+    sendJson(response, 200, { attachments })
+  } catch (error) {
+    console.error('dev:web browser upload failed', { error })
+    sendJson(response, 500, {
+      error: error instanceof Error ? error.message : 'Browser upload failed.',
     })
   }
 }
@@ -447,6 +482,11 @@ const server = http.createServer((request, response) => {
     return
   }
 
+  if (requestUrl.pathname === '/__howcode/upload/composer-attachments') {
+    void handleBrowserUploadRequest(request, response)
+    return
+  }
+
   sendJson(response, 404, { error: 'Unknown dev:web bridge endpoint.' })
 })
 
@@ -456,6 +496,9 @@ server.listen(port, host, () => {
     throw new Error('dev:web bridge did not expose a numeric port.')
   }
 
+  scheduleBrowserUploadComposerAttachmentsCleanup({
+    onError: (error) => console.warn('dev:web browser upload cleanup failed', { error }),
+  })
   console.log(`HOWCODE_DEV_WEB_BRIDGE_READY ${JSON.stringify({ host, port: address.port })}`)
 })
 

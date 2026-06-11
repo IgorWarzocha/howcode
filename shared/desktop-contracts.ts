@@ -16,6 +16,7 @@ export type {
   ArtifactVersion,
   ReactArtifactCompileResult,
 } from './desktop-artifact-contracts'
+export type { DesktopBridgeCapabilities } from './desktop-bridge-capabilities'
 export type { ChatGroup, ChatSidebarState, ChatThread } from './desktop-chat-contracts'
 export type {
   DesktopClipboardFilePaths,

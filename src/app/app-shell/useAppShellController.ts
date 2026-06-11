@@ -9,6 +9,7 @@ import { useAppShellChatSidebar } from './useAppShellChatSidebar'
 import { useAppShellCommands } from './useAppShellCommands'
 import { useAppShellEffects } from './useAppShellEffects'
 import { useAppShellStateBundle } from './useAppShellStateBundle'
+import { useAppShellUrlSync } from './useAppShellUrlSync'
 import { useDesktopActionHandlers } from './useDesktopActionHandlers'
 import { useInboxAutoReadSync } from './useInboxAutoReadSync'
 import { useProjectRepoOriginRefresh } from './useProjectRepoOriginRefresh'
@@ -24,6 +25,7 @@ export function useAppShellController() {
   const desktopShell = useDesktopShell()
   const invokeDesktopAction = useDesktopBridge()
   const projects = desktopShell.shellState?.projects ?? []
+  useAppShellUrlSync({ dispatch: bundle.dispatch, projects, state: bundle.state })
   const selectedThread = useSelectedThreadData({
     liveThreadData: bundle.liveThreadData,
     selectedSessionPath: bundle.state.selectedSessionPath,

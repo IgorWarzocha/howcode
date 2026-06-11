@@ -16,6 +16,10 @@ import {
   popoverPanelClass,
 } from '../ui/classes'
 import { cn } from '../utils/cn'
+import {
+  canUploadComposerFiles,
+  uploadComposerFilesAsAttachments,
+} from './composer-browser-file-uploads'
 import { ComposerFilePickerAttachmentsPanel } from './composer-file-picker-attachments-panel'
 import { ComposerFilePickerFileGrid } from './composer-file-picker-file-grid'
 import { ComposerFilePickerHeader } from './composer-file-picker-header'
@@ -65,8 +69,11 @@ export function ComposerFilePicker({
   const [dropActive, setDropActive] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchExpanded, setSearchExpanded] = useState(false)
+  const [uploadingDeviceFiles, setUploadingDeviceFiles] = useState(false)
   const [portalPlacementEnabled, setPortalPlacementEnabled] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const deviceFileInputRef = useRef<HTMLInputElement>(null)
+  const browserUploadAvailable = canUploadComposerFiles()
 
   useLayoutEffect(() => {
     const updatePlacementMode = () => {
@@ -100,7 +107,8 @@ export function ComposerFilePicker({
     () => filterFilePickerEntries(picker?.entries ?? [], searchQuery),
     [picker?.entries, searchQuery],
   )
-  const showAttachmentsPanel = attachments.length > 0 || draggedAttachments.length > 0 || dropActive
+  const showAttachmentsPanel =
+    browserUploadAvailable || attachments.length > 0 || draggedAttachments.length > 0 || dropActive
 
   const handleEntryDragStart = (
     attachment: ComposerAttachment,
@@ -140,6 +148,28 @@ export function ComposerFilePicker({
     }
   }
 
+  const handleDeviceFiles = async (fileList: FileList | null) => {
+    const files = Array.from(fileList ?? [])
+    if (files.length === 0) {
+      return
+    }
+
+    setUploadingDeviceFiles(true)
+    try {
+      const uploadedAttachments = await uploadComposerFilesAsAttachments(files)
+      if (uploadedAttachments.length > 0) {
+        onAttachAttachments(uploadedAttachments)
+      }
+    } catch (error) {
+      console.error('Failed to attach browser files.', error)
+    } finally {
+      setUploadingDeviceFiles(false)
+      if (deviceFileInputRef.current) {
+        deviceFileInputRef.current.value = ''
+      }
+    }
+  }
+
   useEffect(() => {
     if (searchExpanded) {
       searchInputRef.current?.focus()
@@ -148,6 +178,15 @@ export function ComposerFilePicker({
 
   const panelContents = (
     <>
+      {browserUploadAvailable ? (
+        <input
+          ref={deviceFileInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={(event) => void handleDeviceFiles(event.currentTarget.files)}
+        />
+      ) : null}
       <ComposerFilePickerHeader
         picker={picker}
         projectRootPath={projectRootPath}
@@ -172,10 +211,13 @@ export function ComposerFilePicker({
         {showAttachmentsPanel ? (
           <ComposerFilePickerAttachmentsPanel
             attachments={attachments}
+            browserUploadAvailable={browserUploadAvailable}
             draggedAttachments={draggedAttachments}
             dropActive={dropActive}
+            uploadingDeviceFiles={uploadingDeviceFiles}
             onDragActiveChange={setDropActive}
             onDrop={handleDropIntoAttachments}
+            onPickDeviceFiles={() => deviceFileInputRef.current?.click()}
             onRemoveAttachment={onRemoveAttachment}
           />
         ) : null}

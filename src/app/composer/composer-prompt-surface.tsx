@@ -1,6 +1,14 @@
 import { getPersistedSessionPath } from '@howcode/shared/session-paths'
 import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
-import { type ReactNode, type RefObject, useCallback, useEffect, useRef, useState } from 'react'
+import {
+  type ReactNode,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 import {
   howcodeDismissTransientUiEvent,
   useHowcodeKeybindingCommand,
@@ -161,6 +169,41 @@ function PiExtensionStatusLine({ statuses }: { statuses: ComposerProps['piExtens
       </button>
     </div>
   )
+}
+
+function useComposerExtensionStatusFooterOffset(input: {
+  statusLineRef: RefObject<HTMLDivElement | null>
+  workspaceFooterRef: RefObject<HTMLElement | null>
+  visible: boolean
+}) {
+  const { statusLineRef, workspaceFooterRef, visible } = input
+
+  useLayoutEffect(() => {
+    const footer = workspaceFooterRef.current
+    if (!footer) return
+
+    const updateOffset = () => {
+      const statusLine = statusLineRef.current
+      const height =
+        visible && statusLine ? Math.ceil(statusLine.getBoundingClientRect().height) : 0
+      footer.style.setProperty('--composer-extension-status-height', `${height}px`)
+    }
+
+    updateOffset()
+
+    if (typeof ResizeObserver === 'undefined' || !statusLineRef.current) {
+      return () => {
+        footer.style.removeProperty('--composer-extension-status-height')
+      }
+    }
+
+    const observer = new ResizeObserver(updateOffset)
+    observer.observe(statusLineRef.current)
+    return () => {
+      observer.disconnect()
+      footer.style.removeProperty('--composer-extension-status-height')
+    }
+  }, [statusLineRef, visible, workspaceFooterRef])
 }
 
 function PiExtensionOverlayContent({
@@ -640,6 +683,7 @@ export function ComposerPromptSurface({
   const skillMentionPanelRef = useRef<HTMLDivElement>(null)
   const stopButtonBoundaryRef = useRef<HTMLDivElement>(null)
   const piExtensionOverlayRef = useRef<HTMLDivElement>(null)
+  const piExtensionStatusLineRef = useRef<HTMLDivElement>(null)
   const showNativeDialog = piExtensionDialogRequest !== null
   const showProjectTrust = projectTrustRequest !== null
   const visiblePiExtensionWidgets = piExtensionWidgets.filter(
@@ -780,6 +824,12 @@ export function ComposerPromptSurface({
     popoverStackRef: composerPopoverStackRef,
     popoverStackVisible: (sessionTreeOpen && !sessionTreeForceHidden) || slashCommands.open,
     onOverlayHeightChange,
+  })
+
+  useComposerExtensionStatusFooterOffset({
+    statusLineRef: piExtensionStatusLineRef,
+    visible: piExtensionStatuses.length > 0,
+    workspaceFooterRef,
   })
 
   const canStopComposer = (composerIsStreaming || extensionRunning) && !isSending && !!sessionPath
@@ -1084,7 +1134,9 @@ export function ComposerPromptSurface({
             thinkingLevelLabels={thinkingLevelLabels}
           />
         </section>
-        <PiExtensionStatusLine statuses={piExtensionStatuses} />
+        <div ref={piExtensionStatusLineRef}>
+          <PiExtensionStatusLine statuses={piExtensionStatuses} />
+        </div>
       </div>
 
       <ComposerStopRail

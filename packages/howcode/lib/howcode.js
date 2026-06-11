@@ -162,10 +162,10 @@ function getLinuxSetsidPath() {
   return null
 }
 
-function spawnLinuxDetachedLauncher(executablePath, env) {
+function spawnLinuxDetachedLauncher(executablePath, args, env) {
   const setsidPath = getLinuxSetsidPath()
   if (setsidPath) {
-    return spawn(setsidPath, ['-f', executablePath], {
+    return spawn(setsidPath, ['-f', executablePath, ...args], {
       detached: true,
       stdio: 'ignore',
       windowsHide: true,
@@ -176,7 +176,10 @@ function spawnLinuxDetachedLauncher(executablePath, env) {
 
   return spawn(
     '/bin/sh',
-    ['-c', `nohup ${shellSingleQuote(executablePath)} >/dev/null 2>&1 </dev/null &`],
+    [
+      '-c',
+      `nohup ${[executablePath, ...args].map(shellSingleQuote).join(' ')} >/dev/null 2>&1 </dev/null &`,
+    ],
     {
       detached: true,
       stdio: 'ignore',
@@ -187,6 +190,18 @@ function spawnLinuxDetachedLauncher(executablePath, env) {
   )
 }
 
+function isHeadlessLaunchArgs(args) {
+  return args.includes('--headless') || process.env.HOWCODE_HEADLESS === '1'
+}
+
+function getAppLaunchArgs(args) {
+  const appArgs = args.map((arg) => (arg === '--headless' ? '--howcode-headless' : arg))
+  if (isHeadlessLaunchArgs(args) && !appArgs.some((arg) => arg.startsWith('--ozone-platform'))) {
+    appArgs.push('--ozone-platform=headless')
+  }
+  return appArgs
+}
+
 async function writeLinuxCommandLauncher(paths) {
   const launcherPath = getLinuxCommandLauncherPath()
   const launcherDirectory = path.dirname(launcherPath)
@@ -194,6 +209,13 @@ async function writeLinuxCommandLauncher(paths) {
   const launcherContents = [
     '#!/bin/sh',
     `export HOWCODE_REPO_ROOT=${shellParameterExpansionStart}HOWCODE_REPO_ROOT:-$(pwd)}`,
+    'if [ "$1" = "--headless" ] || [ "$HOWCODE_HEADLESS" = "1" ]; then',
+    '  if [ "$1" = "--headless" ]; then',
+    '    shift',
+    `    exec ${shellSingleQuote(paths.executablePath)} --howcode-headless --ozone-platform=headless "$@"`,
+    '  fi',
+    `  exec ${shellSingleQuote(paths.executablePath)} --ozone-platform=headless "$@"`,
+    'fi',
     'if command -v setsid >/dev/null 2>&1; then',
     `  setsid -f ${shellSingleQuote(paths.executablePath)} "$@" >/dev/null 2>&1 </dev/null`,
     'else',
@@ -260,7 +282,16 @@ async function writeWindowsCommandLauncher(paths) {
     `  echo Run npx ${APP_NAME} to repair the local install.`,
     '  exit /b 1',
     ')',
-    'start "" /D "%HOWCODE_REPO_ROOT%" "%HOWCODE_EXE%"',
+    'if "%~1"=="--headless" (',
+    '  shift /1',
+    '  "%HOWCODE_EXE%" --howcode-headless --ozone-platform=headless %*',
+    '  exit /b %ERRORLEVEL%',
+    ')',
+    'if "%HOWCODE_HEADLESS%"=="1" (',
+    '  "%HOWCODE_EXE%" --ozone-platform=headless %*',
+    '  exit /b %ERRORLEVEL%',
+    ')',
+    'start "" /D "%HOWCODE_REPO_ROOT%" "%HOWCODE_EXE%" %*',
     'endlocal',
     '',
   ].join('\r\n')
@@ -563,6 +594,7 @@ async function pruneOldVersions(cacheRoot, keepDir) {
 }
 
 function spawnLauncherProcess(executablePath, options = {}) {
+  const args = options.args || []
   const env = {
     ...process.env,
     HOWCODE_REPO_ROOT: process.env.HOWCODE_REPO_ROOT || process.cwd(),
@@ -570,11 +602,21 @@ function spawnLauncherProcess(executablePath, options = {}) {
   }
   Reflect.deleteProperty(env, 'NODE_TLS_REJECT_UNAUTHORIZED')
 
-  if (process.platform === 'linux') {
-    return spawnLinuxDetachedLauncher(executablePath, env)
+  if (options.foreground) {
+    return spawn(executablePath, args, {
+      detached: false,
+      stdio: options.stdio || 'inherit',
+      windowsHide: false,
+      cwd: path.dirname(executablePath),
+      env,
+    })
   }
 
-  return spawn(executablePath, [], {
+  if (process.platform === 'linux') {
+    return spawnLinuxDetachedLauncher(executablePath, args, env)
+  }
+
+  return spawn(executablePath, args, {
     detached: true,
     stdio: options.stdio || 'ignore',
     windowsHide: true,
@@ -583,13 +625,31 @@ function spawnLauncherProcess(executablePath, options = {}) {
   })
 }
 
-async function launch(executablePath) {
-  const child = spawnLauncherProcess(executablePath)
+async function launch(executablePath, args) {
+  const foreground = isHeadlessLaunchArgs(args)
+  const child = spawnLauncherProcess(executablePath, { args: getAppLaunchArgs(args), foreground })
+
+  if (foreground) {
+    await new Promise((resolve, reject) => {
+      child.once('error', reject)
+      child.once('exit', (code, signal) => {
+        if (signal) {
+          reject(new Error(`${APP_NAME} exited with signal ${signal}`))
+          return
+        }
+        resolve(code || 0)
+      })
+    }).then((code) => {
+      process.exitCode = code
+    })
+    return
+  }
 
   child.unref()
 }
 
 async function main() {
+  const launchArgs = process.argv.slice(2)
   const target = getTarget()
   const cacheRoot = getCacheRoot()
   await fsp.mkdir(cacheRoot, { recursive: true })
@@ -620,7 +680,7 @@ async function main() {
       await ensureCommandLaunchIntegration(target, {
         ...currentPaths,
       })
-      await launch(current.executablePath)
+      await launch(current.executablePath, launchArgs)
       return
     }
 
@@ -638,7 +698,7 @@ async function main() {
     console.log(`${APP_NAME}: installed. You can relaunch it from the Windows Start Menu.`)
   }
   await pruneOldVersions(cacheRoot, paths.installDir)
-  await launch(paths.executablePath)
+  await launch(paths.executablePath, launchArgs)
 }
 
 module.exports = {

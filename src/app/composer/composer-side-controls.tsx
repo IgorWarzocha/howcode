@@ -25,7 +25,7 @@ export function ComposerAttachmentRail({
 }: ComposerAttachmentRailProps) {
   return (
     <div className="relative h-full min-h-0 w-8 shrink-0 self-stretch text-[color:var(--muted)]">
-      <div className="absolute bottom-[3.35rem] left-0 flex w-7 flex-col-reverse items-center gap-1">
+      <div className="absolute bottom-[calc(3.35rem+var(--composer-extension-status-height,0px))] left-0 flex w-7 flex-col-reverse items-center gap-1">
         {attachmentCount > 0 ? (
           <>
             <span
@@ -79,7 +79,7 @@ export function ComposerStopRail({ boundaryRef, canStopComposer, onStop }: Compo
     <div className="relative h-full min-h-0 w-8 shrink-0 self-stretch text-[color:var(--muted)]">
       <div
         ref={boundaryRef}
-        className="absolute right-0 bottom-[3.35rem] flex w-7 items-center justify-center"
+        className="absolute right-0 bottom-[calc(3.35rem+var(--composer-extension-status-height,0px))] flex w-7 items-center justify-center"
       >
         <button
           type="button"

@@ -67,6 +67,37 @@ bun install
 bun run dev
 ```
 
+Headless/browser dev mode skips the Electron window and serves the app through Vite:
+
+```bash
+bun run dev:headless
+```
+
+To try it from another device on your network:
+
+```bash
+bun run dev:headless:host
+# open http://<this-machine-ip>:5173/#token=<printed-token>
+```
+
+Remote dev mode requires the printed access token before the browser can use the local desktop bridge.
+Keep it on a trusted network.
+
+Installed builds can also run without opening the desktop window:
+
+```bash
+bunx howcode --headless
+bunx howcode --headless --host 0.0.0.0 --port 4173
+bunx howcode --headless --host 0.0.0.0 --port 4173 --token my-secret
+```
+
+Open `http://<server-ip>:4173/#token=<printed-token>` from another device.
+
+The default headless host is `127.0.0.1`. Remote headless mode requires a token; pass `--token`,
+set `HOWCODE_HEADLESS_TOKEN`, or use the random one printed at startup. Use `--host 0.0.0.0` only on a trusted network.
+In browser mode, files picked, pasted, or dropped from the browser device are uploaded to a temp
+folder on the host and attached from there. Host file browsing still uses the host filesystem.
+
 ## Issues and updates
 
 > [!IMPORTANT]
