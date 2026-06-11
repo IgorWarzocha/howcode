@@ -21,6 +21,12 @@ describe('headless options', () => {
     })
   })
 
+  it('accepts the internal Electron-safe flag', () => {
+    expect(parseHeadlessServerOptions(['--howcode-headless'], {})).toMatchObject({
+      enabled: true,
+    })
+  })
+
   it('uses env fallback', () => {
     expect(
       parseHeadlessServerOptions([], {

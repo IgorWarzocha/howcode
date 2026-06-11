@@ -18,6 +18,7 @@ const headlessOptions = parseHeadlessServerOptions()
 const devtoolsDebuggingPort = configureDevtoolsRemoteDebugging()
 
 if (headlessOptions.enabled) {
+  app.commandLine.removeSwitch('headless')
   app.commandLine.appendSwitch('disable-gpu')
 }
 

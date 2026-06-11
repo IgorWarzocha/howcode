@@ -194,6 +194,10 @@ function isHeadlessLaunchArgs(args) {
   return args.includes('--headless') || process.env.HOWCODE_HEADLESS === '1'
 }
 
+function getAppLaunchArgs(args) {
+  return args.map((arg) => (arg === '--headless' ? '--howcode-headless' : arg))
+}
+
 async function writeLinuxCommandLauncher(paths) {
   const launcherPath = getLinuxCommandLauncherPath()
   const launcherDirectory = path.dirname(launcherPath)
@@ -202,6 +206,10 @@ async function writeLinuxCommandLauncher(paths) {
     '#!/bin/sh',
     `export HOWCODE_REPO_ROOT=${shellParameterExpansionStart}HOWCODE_REPO_ROOT:-$(pwd)}`,
     'if [ "$1" = "--headless" ] || [ "$HOWCODE_HEADLESS" = "1" ]; then',
+    '  if [ "$1" = "--headless" ]; then',
+    '    shift',
+    `    exec ${shellSingleQuote(paths.executablePath)} --howcode-headless "$@"`,
+    '  fi',
     `  exec ${shellSingleQuote(paths.executablePath)} "$@"`,
     'fi',
     'if command -v setsid >/dev/null 2>&1; then',
@@ -271,7 +279,8 @@ async function writeWindowsCommandLauncher(paths) {
     '  exit /b 1',
     ')',
     'if "%~1"=="--headless" (',
-    '  "%HOWCODE_EXE%" %*',
+    '  shift /1',
+    '  "%HOWCODE_EXE%" --howcode-headless %*',
     '  exit /b %ERRORLEVEL%',
     ')',
     'if "%HOWCODE_HEADLESS%"=="1" (',
@@ -614,7 +623,7 @@ function spawnLauncherProcess(executablePath, options = {}) {
 
 async function launch(executablePath, args) {
   const foreground = isHeadlessLaunchArgs(args)
-  const child = spawnLauncherProcess(executablePath, { args, foreground })
+  const child = spawnLauncherProcess(executablePath, { args: getAppLaunchArgs(args), foreground })
 
   if (foreground) {
     await new Promise((resolve, reject) => {

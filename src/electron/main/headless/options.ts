@@ -32,7 +32,9 @@ function parsePort(value: string | null | undefined) {
 }
 
 function isHeadlessRequested(args: readonly string[], env: NodeJS.ProcessEnv) {
-  return args.includes('--headless') || env[HEADLESS_ENV] === '1'
+  return (
+    args.includes('--headless') || args.includes('--howcode-headless') || env[HEADLESS_ENV] === '1'
+  )
 }
 
 export function parseHeadlessServerOptions(
