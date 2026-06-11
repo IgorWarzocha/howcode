@@ -2,8 +2,14 @@ import { isSafeExternalUrl } from '@howcode/shared/external-url'
 import { File, Folder, Globe, Loader2, Upload, X } from 'lucide-react'
 import type { DragEvent } from 'react'
 import type { ComposerAttachment } from '../desktop/types'
-import { appToneMutedClass, appToneTextClass, appTypeTinyClass } from '../ui/classes'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeTinyClass,
+  toolbarButtonClass,
+} from '../ui/classes'
 import { cn } from '../utils/cn'
+import { workspaceFooterTextClass } from '../workspace-shell/footer/workspace-footer-primitives'
 import {
   getAttachmentDisplayLabel,
   getOpenAttachmentLabel,
@@ -72,9 +78,9 @@ export function ComposerFilePickerAttachmentsPanel({
           <button
             type="button"
             className={cn(
-              'mb-2 inline-flex min-h-7 min-w-0 items-center gap-2 rounded-md px-2 py-1 text-left transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:opacity-60',
-              appTypeTinyClass,
-              appToneMutedClass,
+              toolbarButtonClass,
+              workspaceFooterTextClass,
+              'mb-2 min-w-0 px-1.5 disabled:opacity-60',
             )}
             onClick={onPickDeviceFiles}
             disabled={uploadingDeviceFiles}
