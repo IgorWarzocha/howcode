@@ -77,8 +77,8 @@ export function buildProjectsSettingsDescriptors({
             className={cn(settingsInputClass, 'w-full pl-9')}
             placeholder={
               controller.resolvedPiDirectory
-                ? `Default: ${controller.resolvedPiDirectory}`
-                : 'Default: ~/.pi/agent'
+                ? `Default: ${controller.resolvedPiDirectory} (useful for WSL)`
+                : 'Default: ~/.pi/agent (useful for WSL)'
             }
             aria-label="Custom Pi directory"
           />

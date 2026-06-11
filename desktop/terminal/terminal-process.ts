@@ -34,7 +34,7 @@ export async function startProcess(record: TerminalSessionRecord, reason: 'start
     const processHandle = await adapter.spawn({
       shell: command.shell,
       args: command.args,
-      cwd: record.snapshot.cwd,
+      cwd: command.cwd ?? record.snapshot.cwd,
       cols: record.snapshot.cols,
       rows: record.snapshot.rows,
       env: resolveTerminalEnv(request),
