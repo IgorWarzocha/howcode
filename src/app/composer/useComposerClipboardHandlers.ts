@@ -12,6 +12,7 @@ import {
   readClipboardSnapshotQuery,
 } from '../query/desktop-query'
 import { buildLocalAttachmentKindLookup } from './composer-attachment-kind-lookup'
+import { uploadTransferFilesAsAttachments } from './composer-browser-file-uploads'
 import {
   attachmentClipboardSnapshotFormats,
   getComposerAttachmentsFromClipboardData,
@@ -110,6 +111,48 @@ async function tryApplyClipboardImage(context: PasteContext, hasDirectFilePayloa
   return applyAttachmentPaste(context, [clipboardImageAttachment])
 }
 
+async function tryApplyBrowserUploadedFiles(
+  context: PasteContext,
+  clipboardData: DataTransfer | null,
+) {
+  const uploadedAttachments = await uploadTransferFilesAsAttachments(clipboardData)
+  return applyAttachmentPaste(context, uploadedAttachments)
+}
+
+async function tryApplyDirectDesktopAttachments(
+  context: PasteContext,
+  clipboardData: DataTransfer | null,
+) {
+  const directAttachments = getComposerAttachmentsFromClipboardData(clipboardData, {
+    resolveFilePath: resolveDesktopFilePath,
+  })
+  const normalizedDirectAttachments = await normalizeDesktopAttachments(directAttachments)
+  return {
+    applied: applyAttachmentPaste(context, normalizedDirectAttachments),
+    directAttachmentCount: directAttachments.length,
+  }
+}
+
+async function tryApplyClipboardFilePathAttachments(context: PasteContext) {
+  const fallbackClipboardFilePaths = await readFallbackClipboardFilePaths()
+  const nativeAttachments = getComposerAttachmentsFromClipboardFilePaths(fallbackClipboardFilePaths)
+  const normalizedNativeAttachments = await normalizeDesktopAttachments(nativeAttachments)
+  return {
+    applied: applyAttachmentPaste(context, normalizedNativeAttachments),
+    fallbackClipboardFilePaths,
+  }
+}
+
+async function tryApplyClipboardSnapshotAttachments(context: PasteContext) {
+  const fallbackSnapshot = await readFallbackClipboardSnapshot()
+  const fallbackAttachments = getComposerAttachmentsFromClipboardSnapshot(fallbackSnapshot)
+  const normalizedFallbackAttachments = await normalizeDesktopAttachments(fallbackAttachments)
+  return {
+    applied: applyAttachmentPaste(context, normalizedFallbackAttachments),
+    fallbackSnapshot,
+  }
+}
+
 function resolvePastedText(input: {
   directPastedText: string | null
   fallbackClipboardFilePaths: Awaited<ReturnType<typeof readFallbackClipboardFilePaths>>
@@ -138,6 +181,56 @@ function reportUnattachedFilePath(
   return true
 }
 
+async function firstAppliedPasteAttempt(attempts: Array<() => boolean | Promise<boolean>>) {
+  for (const attempt of attempts) {
+    if (await attempt()) {
+      return true
+    }
+  }
+
+  return false
+}
+
+function tryApplyDirectTextPaste(
+  context: PasteContext,
+  textarea: HTMLTextAreaElement,
+  input: { directPastedText: string | null; hasDirectAttachmentHint: boolean },
+) {
+  if (!(input.directPastedText && !input.hasDirectAttachmentHint)) {
+    return false
+  }
+
+  applyTextPaste(context, textarea, input.directPastedText)
+  return true
+}
+
+function applyResolvedPastedText(
+  context: PasteContext,
+  textarea: HTMLTextAreaElement,
+  input: {
+    directAttachmentCount: number
+    directPastedText: string | null
+    fallbackClipboardFilePaths: Awaited<ReturnType<typeof readFallbackClipboardFilePaths>>
+    fallbackSnapshot: Awaited<ReturnType<typeof readFallbackClipboardSnapshot>>
+    hasDirectAttachmentHint: boolean
+  },
+) {
+  const pastedText = resolvePastedText(input)
+  if (
+    reportUnattachedFilePath(context, {
+      directAttachmentCount: input.directAttachmentCount,
+      hasDirectAttachmentHint: input.hasDirectAttachmentHint,
+      pastedText,
+    }) ||
+    !pastedText
+  ) {
+    return true
+  }
+
+  applyTextPaste(context, textarea, pastedText)
+  return true
+}
+
 type UseComposerClipboardHandlersInput = {
   setAttachments: Dispatch<SetStateAction<ComposerAttachment[]>>
   setDraftValue: (value: SetStateAction<string>) => void
@@ -156,51 +249,53 @@ export function useComposerClipboardHandlers({
       const directPastedText = getPreferredClipboardTextFromClipboardData(clipboardData)
       const hasDirectAttachmentHint = hasAttachmentHintInClipboardData(clipboardData)
       const hasDirectFilePayload = hasFilePayloadInClipboardData(clipboardData)
-      const directAttachments = getComposerAttachmentsFromClipboardData(clipboardData, {
-        resolveFilePath: resolveDesktopFilePath,
-      })
-      const normalizedDirectAttachments = await normalizeDesktopAttachments(directAttachments)
-      if (applyAttachmentPaste(context, normalizedDirectAttachments)) return
-      if (directPastedText && !hasDirectAttachmentHint) {
-        applyTextPaste(context, textarea, directPastedText)
-        return
-      }
+      let directAttachmentCount = 0
+      let fallbackClipboardFilePaths: Awaited<ReturnType<typeof readFallbackClipboardFilePaths>> =
+        null
+      let fallbackSnapshot: Awaited<ReturnType<typeof readFallbackClipboardSnapshot>> = null
 
-      const fallbackClipboardFilePaths = await readFallbackClipboardFilePaths()
-      const nativeAttachments = getComposerAttachmentsFromClipboardFilePaths(
-        fallbackClipboardFilePaths,
-      )
-      const normalizedNativeAttachments = await normalizeDesktopAttachments(nativeAttachments)
-      if (applyAttachmentPaste(context, normalizedNativeAttachments)) return
-
-      const fallbackSnapshot = await readFallbackClipboardSnapshot()
-      const fallbackAttachments = getComposerAttachmentsFromClipboardSnapshot(fallbackSnapshot)
-      const normalizedFallbackAttachments = await normalizeDesktopAttachments(fallbackAttachments)
-      if (applyAttachmentPaste(context, normalizedFallbackAttachments)) return
-      if (await tryApplyClipboardImage(context, hasDirectFilePayload)) return
-
-      const pastedText = resolvePastedText({
-        directPastedText,
-        fallbackClipboardFilePaths,
-        fallbackSnapshot,
-      })
-      if (
-        reportUnattachedFilePath(context, {
-          directAttachmentCount: directAttachments.length,
-          hasDirectAttachmentHint,
-          pastedText,
-        }) ||
-        !pastedText
-      ) {
-        return
-      }
-      applyTextPaste(context, textarea, pastedText)
+      await firstAppliedPasteAttempt([
+        async () => {
+          const result = await tryApplyDirectDesktopAttachments(context, clipboardData)
+          directAttachmentCount = result.directAttachmentCount
+          return result.applied
+        },
+        () => tryApplyBrowserUploadedFiles(context, clipboardData),
+        () =>
+          tryApplyDirectTextPaste(context, textarea, { directPastedText, hasDirectAttachmentHint }),
+        async () => {
+          const result = await tryApplyClipboardFilePathAttachments(context)
+          fallbackClipboardFilePaths = result.fallbackClipboardFilePaths
+          return result.applied
+        },
+        async () => {
+          const result = await tryApplyClipboardSnapshotAttachments(context)
+          fallbackSnapshot = result.fallbackSnapshot
+          return result.applied
+        },
+        () => tryApplyClipboardImage(context, hasDirectFilePayload),
+        () =>
+          applyResolvedPastedText(context, textarea, {
+            directAttachmentCount,
+            directPastedText,
+            fallbackClipboardFilePaths,
+            fallbackSnapshot,
+            hasDirectAttachmentHint,
+          }),
+      ])
     },
     [setAttachments, setDraftValue, setErrorMessage],
   )
 
   const handleDrop = useCallback(
     async (dataTransfer: DataTransfer | null) => {
+      const uploadedAttachments = await uploadTransferFilesAsAttachments(dataTransfer)
+      if (uploadedAttachments.length > 0) {
+        setAttachments((current) => mergeComposerAttachments(current, uploadedAttachments))
+        setErrorMessage(null)
+        return true
+      }
+
       const droppedAttachments = await normalizeDesktopAttachments(
         getComposerAttachmentsFromClipboardData(dataTransfer, {
           resolveFilePath: resolveDesktopFilePath,

@@ -1,4 +1,7 @@
-import { normalizeComposerAttachments } from '@howcode/shared/composer-attachments'
+import {
+  mergeComposerAttachments,
+  normalizeComposerAttachments,
+} from '@howcode/shared/composer-attachments'
 import { isSafeExternalUrl } from '@howcode/shared/external-url'
 import type { ComposerAttachment, ComposerFilePickerState } from '../desktop/types'
 import {
@@ -8,6 +11,7 @@ import {
   openPathQuery,
 } from '../query/desktop-query'
 import { buildLocalAttachmentKindLookup } from './composer-attachment-kind-lookup'
+import { uploadTransferFilesAsAttachments } from './composer-browser-file-uploads'
 import { getComposerAttachmentsFromClipboardData } from './composer-paste-attachments'
 
 const pathSeparatorPattern = /[\\/]/
@@ -113,10 +117,12 @@ function resolveAttachmentKindFromLookup(
 }
 
 export async function getDroppedComposerAttachments(dataTransfer: DataTransfer) {
+  const uploadedAttachments = await uploadTransferFilesAsAttachments(dataTransfer)
   const rawAttachments = getComposerAttachmentsFromClipboardData(dataTransfer, {
     resolveFilePath: (file) => getPathForFileQuery(file as File) ?? null,
   })
-  const { fallbackKindsByPath, localPaths } = buildLocalAttachmentKindLookup(rawAttachments)
+  const mergedAttachments = mergeComposerAttachments(rawAttachments, uploadedAttachments)
+  const { fallbackKindsByPath, localPaths } = buildLocalAttachmentKindLookup(mergedAttachments)
   let kindsByPath: Record<string, ComposerAttachment['kind'] | null> | null = null
 
   try {
@@ -125,7 +131,7 @@ export async function getDroppedComposerAttachments(dataTransfer: DataTransfer) 
     kindsByPath = null
   }
 
-  return normalizeComposerAttachments(rawAttachments, {
+  return normalizeComposerAttachments(mergedAttachments, {
     resolveAttachmentKind: (path) =>
       resolveAttachmentKindFromLookup(path, kindsByPath, fallbackKindsByPath),
   })

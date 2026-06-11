@@ -1,4 +1,5 @@
 import { type IpcRendererEvent, ipcRenderer, webUtils } from 'electron'
+import { electronDesktopBridgeCapabilities } from '../../../shared/desktop-bridge-capabilities'
 import {
   type DesktopEventChannel,
   type DesktopEventMap,
@@ -149,6 +150,7 @@ function createComposerAndClipboardApi() {
         return null
       }
     },
+    uploadComposerFiles: () => Promise.resolve([]),
     listComposerAttachmentEntries: (request = {}) =>
       invokeRequest('listComposerAttachmentEntries', request),
     searchComposerAttachmentEntries: (request = {}) =>
@@ -246,6 +248,7 @@ function createTerminalAndSystemApi() {
 export function createDesktopApi() {
   return {
     platform: process.platform,
+    capabilities: electronDesktopBridgeCapabilities,
     ...createAppUpdateApi(),
     ...createProjectApi(),
     ...createPackageAndSkillApi(),

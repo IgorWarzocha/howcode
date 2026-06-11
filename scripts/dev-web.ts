@@ -304,7 +304,8 @@ try {
 
     if (
       requestUrl.pathname.startsWith('/__howcode/events') ||
-      requestUrl.pathname.startsWith('/__howcode/request/')
+      requestUrl.pathname.startsWith('/__howcode/request/') ||
+      requestUrl.pathname === '/__howcode/upload/composer-attachments'
     ) {
       if (!isTrustedBrowserRequest(request)) {
         response.statusCode = 403

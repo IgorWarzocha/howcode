@@ -11,6 +11,11 @@ import type {
 } from '../../../../shared/desktop-ipc'
 import type { DesktopServiceRuntime } from '../../../../shared/desktop-service-contracts'
 import { isDevServerLoopbackHost, isDevServerWildcardHost } from '../../../../shared/dev-server'
+import {
+  type BrowserUploadAttachmentsRequest,
+  browserUploadAttachmentLimits,
+  writeBrowserUploadComposerAttachments,
+} from '../../../desktop-host/browser-upload-attachments'
 import { createDesktopRequestHandlers } from '../ipc/desktop-request-handlers'
 import { getRendererDistDirectory } from '../runtime/app-paths'
 import type { AppUpdater } from '../updater/app-updater'
@@ -47,6 +52,8 @@ type HeadlessRequestContext = {
 }
 
 const headlessBridgeToken = randomUUID()
+const maxBridgeJsonBodyBytes = 2 * 1024 * 1024
+const maxUploadJsonBodyBytes = Math.ceil(browserUploadAttachmentLimits.maxTotalBytes * 1.4)
 
 function sendJson(response: http.ServerResponse, statusCode: number, payload: unknown) {
   response.statusCode = statusCode
@@ -60,10 +67,16 @@ function sendText(response: http.ServerResponse, statusCode: number, message: st
   response.end(message)
 }
 
-async function readJsonBody(request: http.IncomingMessage) {
+async function readJsonBody(request: http.IncomingMessage, maxBytes = maxBridgeJsonBodyBytes) {
   const chunks: Buffer[] = []
+  let byteLength = 0
   for await (const chunk of request) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+    byteLength += buffer.length
+    if (byteLength > maxBytes) {
+      throw new Error('Request body is too large.')
+    }
+    chunks.push(buffer)
   }
 
   if (chunks.length === 0) {
@@ -262,6 +275,35 @@ function handleBridgeRequestEndpoint(
   void handleBridgeRequest(context.handlers, channel as DesktopRequestChannel, request, response)
 }
 
+async function handleBrowserUploadRequest(
+  context: Pick<HeadlessRequestContext, 'isTrustedHost'>,
+  request: http.IncomingMessage,
+  response: http.ServerResponse,
+) {
+  if (!(hasTrustedBrowserOrigin(request, context.isTrustedHost) && hasValidBridgeToken(request))) {
+    sendText(response, 403, 'Forbidden')
+    return
+  }
+
+  if (request.method !== 'POST') {
+    sendJson(response, 405, { error: 'Upload requests must use POST.' })
+    return
+  }
+
+  try {
+    const params = await readJsonBody(request, maxUploadJsonBodyBytes)
+    const attachments = await writeBrowserUploadComposerAttachments(
+      params as BrowserUploadAttachmentsRequest,
+    )
+    sendJson(response, 200, { attachments })
+  } catch (error) {
+    console.error('headless browser upload failed', { error })
+    sendJson(response, 500, {
+      error: error instanceof Error ? error.message : 'Browser upload failed.',
+    })
+  }
+}
+
 function handleHeadlessHttpRequest(
   context: HeadlessRequestContext,
   request: http.IncomingMessage,
@@ -281,6 +323,11 @@ function handleHeadlessHttpRequest(
 
   if (pathname.startsWith('/__howcode/request/')) {
     handleBridgeRequestEndpoint(context, request, response, pathname)
+    return
+  }
+
+  if (pathname === '/__howcode/upload/composer-attachments') {
+    void handleBrowserUploadRequest(context, request, response)
     return
   }
 

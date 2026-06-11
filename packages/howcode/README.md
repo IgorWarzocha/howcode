@@ -27,6 +27,7 @@ howcode --headless --host 0.0.0.0 --port 5173
 ```
 
 Remote host mode exposes the local desktop bridge to browsers that can reach that address, so keep it on a trusted network.
+Files picked, pasted, or dropped from a browser device are uploaded to a temp folder on the host before attaching.
 
 This npm package is a small launcher.
 

@@ -90,6 +90,8 @@ howcode --headless --host 0.0.0.0 --port 5173
 ```
 
 The default headless host is `127.0.0.1`. Use `--host 0.0.0.0` only on a trusted network.
+In browser mode, files picked, pasted, or dropped from the browser device are uploaded to a temp
+folder on the host and attached from there. Host file browsing still uses the host filesystem.
 
 ## Issues and updates
 

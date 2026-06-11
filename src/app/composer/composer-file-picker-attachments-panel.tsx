@@ -1,5 +1,5 @@
 import { isSafeExternalUrl } from '@howcode/shared/external-url'
-import { File, Folder, Globe, X } from 'lucide-react'
+import { File, Folder, Globe, Loader2, Upload, X } from 'lucide-react'
 import type { DragEvent } from 'react'
 import type { ComposerAttachment } from '../desktop/types'
 import { appToneMutedClass, appToneTextClass, appTypeTinyClass } from '../ui/classes'
@@ -15,8 +15,11 @@ type ComposerFilePickerAttachmentsPanelProps = {
   className?: string
   draggedAttachments: ComposerAttachment[]
   dropActive: boolean
+  browserUploadAvailable: boolean
+  uploadingDeviceFiles: boolean
   onDragActiveChange: (active: boolean) => void
   onDrop: (event: DragEvent<HTMLDivElement>) => void
+  onPickDeviceFiles: () => void
   onRemoveAttachment: (attachmentPath: string) => void
 }
 
@@ -37,8 +40,11 @@ export function ComposerFilePickerAttachmentsPanel({
   className,
   draggedAttachments,
   dropActive,
+  browserUploadAvailable,
+  uploadingDeviceFiles,
   onDragActiveChange,
   onDrop,
+  onPickDeviceFiles,
   onRemoveAttachment,
 }: ComposerFilePickerAttachmentsPanelProps) {
   return (
@@ -62,6 +68,27 @@ export function ComposerFilePickerAttachmentsPanel({
       onDrop={onDrop}
     >
       <div className="grid min-h-full content-start gap-0 max-[520px]:min-h-0 max-[520px]:gap-1">
+        {browserUploadAvailable ? (
+          <button
+            type="button"
+            className={cn(
+              'mb-2 inline-flex h-6 min-w-0 items-center gap-1.5 rounded-md border border-[color:var(--border)] px-2 text-left transition-colors hover:bg-[color:var(--surface-hover)] disabled:opacity-60',
+              appTypeTinyClass,
+              appToneTextClass,
+            )}
+            onClick={onPickDeviceFiles}
+            disabled={uploadingDeviceFiles}
+          >
+            {uploadingDeviceFiles ? (
+              <Loader2 size={11} className="shrink-0 animate-spin" />
+            ) : (
+              <Upload size={11} className="shrink-0" />
+            )}
+            <span className="truncate">
+              {uploadingDeviceFiles ? 'Uploading…' : 'Attach from this device'}
+            </span>
+          </button>
+        ) : null}
         {attachments.length > 0 ? (
           attachments.map((attachment) => (
             <div

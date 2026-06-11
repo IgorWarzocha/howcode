@@ -1,4 +1,5 @@
 import type { DesktopAction } from '@howcode/shared/desktop-actions'
+import { browserDesktopBridgeCapabilities } from '@howcode/shared/desktop-bridge-capabilities'
 import type {
   AnyDesktopActionPayload,
   ComposerAttachment,
@@ -10,6 +11,7 @@ import type {
   DesktopRequestChannel,
   DesktopRequestMap,
 } from '@howcode/shared/desktop-ipc'
+import { getSafeExternalUrl } from '@howcode/shared/external-url'
 import type { TerminalEvent, TerminalOpenRequest } from '@howcode/shared/terminal-contracts'
 
 let bridgeTokenPromise: Promise<string> | null = null
@@ -56,6 +58,49 @@ async function invokeRequest<K extends DesktopRequestChannel>(
   }
 
   return (await response.json()) as DesktopRequestMap[K]['response']
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  const bytes = new Uint8Array(buffer)
+  const chunkSize = 0x8000
+  let binary = ''
+
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize))
+  }
+
+  return btoa(binary)
+}
+
+async function uploadComposerFiles(files: File[]) {
+  if (files.length === 0) {
+    return []
+  }
+
+  const bridgeToken = await getBridgeToken()
+  const uploadFiles = await Promise.all(
+    files.map(async (file) => ({
+      name: file.name,
+      type: file.type,
+      dataBase64: arrayBufferToBase64(await file.arrayBuffer()),
+    })),
+  )
+  const response = await fetch('/__howcode/upload/composer-attachments', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-howcode-dev-web-bridge-token': bridgeToken,
+    },
+    body: JSON.stringify({ files: uploadFiles }),
+  })
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { error?: string } | null
+    throw new Error(payload?.error ?? 'File upload failed.')
+  }
+
+  const payload = (await response.json()) as { attachments?: ComposerAttachment[] }
+  return payload.attachments ?? []
 }
 
 type EventSubscription = {
@@ -113,6 +158,7 @@ export function installDevWebDesktopBridge() {
 
   window.piDesktop = {
     platform: navigator.platform.toLowerCase().includes('mac') ? 'darwin' : 'browser',
+    capabilities: browserDesktopBridgeCapabilities,
     getAppUpdateState: () => invokeRequest('getAppUpdateState', {}),
     checkAppUpdate: () => invokeRequest('checkAppUpdate', {}),
     installAppUpdate: () => invokeRequest('installAppUpdate', {}),
@@ -161,6 +207,7 @@ export function installDevWebDesktopBridge() {
     getAttachmentKindsForPaths: (paths: string[]) =>
       invokeRequest('getAttachmentKindsForPaths', { paths }),
     getPathForFile: () => null,
+    uploadComposerFiles: (files: File[]) => uploadComposerFiles(files),
     listComposerAttachmentEntries: (request = {}) =>
       invokeRequest('listComposerAttachmentEntries', request),
     searchComposerAttachmentEntries: (request = {}) =>
@@ -223,7 +270,12 @@ export function installDevWebDesktopBridge() {
     statTerminalSessionFile: (sessionId: string) =>
       invokeRequest('terminalSessionFileStat', { sessionId }),
     getTerminalStatus: (sessionId: string) => invokeRequest('terminalStatus', { sessionId }),
-    openExternal: (url: string) => invokeRequest('openExternal', { url }).then(({ ok }) => ok),
+    openExternal: (url: string) => {
+      const safeUrl = getSafeExternalUrl(url)
+      if (!safeUrl) return Promise.resolve(false)
+      window.open(safeUrl, '_blank', 'noopener,noreferrer')
+      return Promise.resolve(true)
+    },
     openPath: (path: string) => invokeRequest('openPath', { path }).then(({ ok }) => ok),
     saveTextToDownloads: (fileName: string, content: string) =>
       invokeRequest('saveTextToDownloads', { fileName, content }),
