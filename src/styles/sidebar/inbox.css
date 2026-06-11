@@ -1,9 +1,9 @@
 .sidebar-inbox-row {
   display: grid;
-  grid-template-columns: 12px minmax(0, 1fr) 18px;
+  grid-template-columns: var(--sidebar-row-leading-width) minmax(0, 1fr) 18px;
   align-items: start;
-  gap: 0.625rem;
-  padding: 0.625rem 0.625rem;
+  gap: var(--sidebar-row-gap);
+  padding: 0.4375rem 0.3125rem;
 }
 
 .sidebar-inbox-row[data-selected="true"] {
@@ -14,16 +14,18 @@
 
 .sidebar-inbox-leading {
   display: flex;
-  height: 1.25rem;
+  height: 1rem;
+  width: var(--sidebar-row-leading-width);
   align-items: center;
   justify-content: center;
-  padding-top: 0.125rem;
+  padding-top: 0.0625rem;
 }
 
 .sidebar-inbox-content {
   display: grid;
+  width: 100%;
   min-width: 0;
-  gap: 0.3125rem;
+  gap: 0.125rem;
   text-align: left;
 }
 
@@ -72,7 +74,7 @@
   font-size: var(--app-type-small-size);
   line-height: var(--app-type-small-comfortable-line-height);
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   text-wrap: pretty;
 }
 

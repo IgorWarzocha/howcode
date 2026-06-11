@@ -90,7 +90,7 @@ export function SidebarChatSection({
 
   return (
     <div ref={containerRef} className="sidebar-project-tree">
-      <div className="sidebar-toolbar mb-2">
+      <div className="sidebar-toolbar sidebar-toolbar--chat mb-2">
         <label
           className="sidebar-search-field"
           data-active={searchQuery.trim().length > 0 ? 'true' : 'false'}
