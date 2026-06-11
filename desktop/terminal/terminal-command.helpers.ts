@@ -105,8 +105,25 @@ export function resolveTerminalCommand(
 ) {
   const platform = options?.platform ?? process.platform
   const env = options?.env ?? process.env
+  const wslLaunch = getWslTerminalLaunch(request.cwd, { platform, env })
 
   if (request.launchMode === 'pi-session') {
+    if (wslLaunch) {
+      return {
+        shell: findExecutable('wsl.exe', getEnvironmentVariable(env, 'PATH') ?? ''),
+        args: [
+          '-d',
+          wslLaunch.distro,
+          '--cd',
+          wslLaunch.linuxPath,
+          '--',
+          'pi',
+          ...getPiSessionCommandArgs(request.sessionPath),
+        ],
+        cwd: wslLaunch.windowsSpawnCwd,
+      }
+    }
+
     return {
       shell: getPiSessionShell(platform, env),
       args: getPiSessionCommandArgs(request.sessionPath),
@@ -114,7 +131,6 @@ export function resolveTerminalCommand(
     }
   }
 
-  const wslLaunch = getWslTerminalLaunch(request.cwd, { platform, env })
   if (wslLaunch) {
     return {
       shell: findExecutable('wsl.exe', getEnvironmentVariable(env, 'PATH') ?? ''),
