@@ -86,13 +86,15 @@ Keep it on a trusted network.
 Installed builds can also run without opening the desktop window:
 
 ```bash
-howcode --headless
-howcode --headless --host 0.0.0.0 --port 5173
-howcode --headless --host 0.0.0.0 --token my-secret
+bunx howcode --headless
+bunx howcode --headless --host 0.0.0.0 --port 4173
+bunx howcode --headless --host 0.0.0.0 --port 4173 --token my-secret
 ```
 
-The default headless host is `127.0.0.1`. Remote headless mode requires a token; pass `--token` /
-`HOWCODE_HEADLESS_TOKEN` or use the random one printed at startup. Use `--host 0.0.0.0` only on a trusted network.
+Open `http://<server-ip>:4173/#token=<printed-token>` from another device.
+
+The default headless host is `127.0.0.1`. Remote headless mode requires a token; pass `--token`,
+set `HOWCODE_HEADLESS_TOKEN`, or use the random one printed at startup. Use `--host 0.0.0.0` only on a trusted network.
 In browser mode, files picked, pasted, or dropped from the browser device are uploaded to a temp
 folder on the host and attached from there. Host file browsing still uses the host filesystem.
 

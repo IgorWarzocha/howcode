@@ -22,13 +22,15 @@ howcode
 Headless/browser mode:
 
 ```bash
-howcode --headless
-howcode --headless --host 0.0.0.0 --port 5173
-howcode --headless --host 0.0.0.0 --token my-secret
+bunx howcode --headless
+bunx howcode --headless --host 0.0.0.0 --port 4173
+bunx howcode --headless --host 0.0.0.0 --port 4173 --token my-secret
 ```
 
-Remote host mode requires an access token before the browser can use the local desktop bridge. Pass `--token` /
-`HOWCODE_HEADLESS_TOKEN`, or use the random token printed at startup. Keep it on a trusted network.
+Open `http://<server-ip>:4173/#token=<printed-token>` from another device.
+
+Remote host mode requires an access token before the browser can use the local desktop bridge. Pass `--token`,
+set `HOWCODE_HEADLESS_TOKEN`, or use the random token printed at startup. Keep it on a trusted network.
 Files picked, pasted, or dropped from a browser device are uploaded to a temp folder on the host before attaching.
 
 This npm package is a small launcher.
