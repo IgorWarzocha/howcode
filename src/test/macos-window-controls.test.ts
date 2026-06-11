@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 const projectRoot = path.resolve(__dirname, '..', '..')
 const macDragZonesPattern =
-  /:root\[data-desktop-platform="darwin"\] \.mac-window-drag-zones\s*\{[^}]*display:\s*block;/s
+  /:root\[data-desktop-platform="darwin"\]\[data-desktop-shell="electron"\] \.mac-window-drag-zones\s*\{[^}]*display:\s*block;/s
 const dragRegionPattern = /\.mac-window-drag-zone\s*\{[^}]*-webkit-app-region:\s*drag;/s
 
 function readProjectFile(filePath: string) {
@@ -30,6 +30,7 @@ describe('macOS window controls', () => {
 
     expect(baseStyles).toMatch(macDragZonesPattern)
     expect(baseStyles).toMatch(dragRegionPattern)
-    expect(baseStyles).not.toContain('mac-window-drag-zone--right')
+    expect(baseStyles).not.toContain('mac-window-drag-zone--left-edge')
+    expect(baseStyles).not.toContain('mac-window-drag-zone--bottom-left')
   })
 })

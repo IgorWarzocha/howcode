@@ -13,6 +13,10 @@ import { queryClient } from './app/query/query-client'
 function applyDesktopPlatformAttribute() {
   const platform = window.piDesktop?.platform ?? 'browser'
   document.documentElement.setAttribute('data-desktop-platform', platform)
+  document.documentElement.setAttribute(
+    'data-desktop-shell',
+    window.piDesktop && !window.howcodeDevWebBridge ? 'electron' : 'browser',
+  )
 }
 
 if (import.meta.env.DEV) {

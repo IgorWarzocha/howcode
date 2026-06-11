@@ -26,7 +26,7 @@ body {
   display: none;
 }
 
-:root[data-desktop-platform="darwin"] .mac-window-drag-zones {
+:root[data-desktop-platform="darwin"][data-desktop-shell="electron"] .mac-window-drag-zones {
   display: block;
 }
 
@@ -37,25 +37,11 @@ body {
   -webkit-app-region: drag;
 }
 
-.mac-window-drag-zone--top-left {
+.mac-window-drag-zone--titlebar {
   top: 0;
   left: 5.5rem;
   width: 13.25rem;
   height: 2rem;
-}
-
-.mac-window-drag-zone--left-edge {
-  top: 5rem;
-  bottom: 5rem;
-  left: 0;
-  width: 0.5rem;
-}
-
-.mac-window-drag-zone--bottom-left {
-  bottom: 0;
-  left: 0;
-  width: 4rem;
-  height: 1rem;
 }
 
 button,
