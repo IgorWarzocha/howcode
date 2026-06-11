@@ -42,6 +42,7 @@ type HeadlessServerInput = {
 
 type HeadlessAuthState = {
   accessToken: string | null
+  cookieName: string
   required: boolean
   sessionToken: string
 }
@@ -58,8 +59,11 @@ type HeadlessRequestContext = {
 }
 
 const headlessBridgeToken = randomUUID()
-const headlessSessionCookieName = 'howcode_headless_session'
 const maxBridgeJsonBodyBytes = 2 * 1024 * 1024
+
+function getHeadlessSessionCookieName(port: number) {
+  return `howcode_headless_session_${port}`
+}
 
 function sendJson(response: http.ServerResponse, statusCode: number, payload: unknown) {
   response.statusCode = statusCode
@@ -81,7 +85,12 @@ function parseCookieHeader(cookieHeader: string | string[] | undefined) {
   for (const part of header.split(';')) {
     const [rawName, ...rawValueParts] = part.trim().split('=')
     if (!rawName) continue
-    cookies.set(rawName, decodeURIComponent(rawValueParts.join('=')))
+    try {
+      cookies.set(rawName, decodeURIComponent(rawValueParts.join('=')))
+    } catch {
+      // Ignore malformed cookie values instead of letting a bad Cookie header
+      // take down the headless server.
+    }
   }
 
   return cookies
@@ -92,15 +101,13 @@ function hasAuthenticatedSession(request: http.IncomingMessage, auth: HeadlessAu
     return true
   }
 
-  return (
-    parseCookieHeader(request.headers.cookie).get(headlessSessionCookieName) === auth.sessionToken
-  )
+  return parseCookieHeader(request.headers.cookie).get(auth.cookieName) === auth.sessionToken
 }
 
 function setAuthenticatedSessionCookie(response: http.ServerResponse, auth: HeadlessAuthState) {
   response.setHeader(
     'set-cookie',
-    `${headlessSessionCookieName}=${encodeURIComponent(auth.sessionToken)}; Path=/; HttpOnly; SameSite=Lax`,
+    `${auth.cookieName}=${encodeURIComponent(auth.sessionToken)}; Path=/; HttpOnly; SameSite=Lax`,
   )
 }
 
@@ -510,6 +517,7 @@ export async function startHeadlessServer(input: HeadlessServerInput) {
   const allSseClients = new Set<http.ServerResponse>()
   const auth: HeadlessAuthState = {
     accessToken: input.options.accessToken,
+    cookieName: getHeadlessSessionCookieName(input.options.port),
     required: input.options.authRequired,
     sessionToken: randomUUID(),
   }

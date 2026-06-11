@@ -119,6 +119,11 @@ async function tryApplyBrowserUploadedFiles(
   return applyAttachmentPaste(context, uploadedAttachments)
 }
 
+function getBrowserUploadErrorMessage(error: unknown, action: 'dropped' | 'pasted') {
+  const detail = error instanceof Error ? error.message : 'Upload failed.'
+  return `Could not attach ${action} file. ${detail}`
+}
+
 async function tryApplyDirectDesktopAttachments(
   context: PasteContext,
   clipboardData: DataTransfer | null,
@@ -250,6 +255,7 @@ export function useComposerClipboardHandlers({
       const hasDirectAttachmentHint = hasAttachmentHintInClipboardData(clipboardData)
       const hasDirectFilePayload = hasFilePayloadInClipboardData(clipboardData)
       let directAttachmentCount = 0
+      let browserUploadErrorMessage: string | null = null
       let fallbackClipboardFilePaths: Awaited<ReturnType<typeof readFallbackClipboardFilePaths>> =
         null
       let fallbackSnapshot: Awaited<ReturnType<typeof readFallbackClipboardSnapshot>> = null
@@ -260,7 +266,15 @@ export function useComposerClipboardHandlers({
           directAttachmentCount = result.directAttachmentCount
           return result.applied
         },
-        () => tryApplyBrowserUploadedFiles(context, clipboardData),
+        async () => {
+          try {
+            return await tryApplyBrowserUploadedFiles(context, clipboardData)
+          } catch (error) {
+            browserUploadErrorMessage = getBrowserUploadErrorMessage(error, 'pasted')
+            setErrorMessage(browserUploadErrorMessage)
+            return false
+          }
+        },
         () =>
           tryApplyDirectTextPaste(context, textarea, { directPastedText, hasDirectAttachmentHint }),
         async () => {
@@ -283,13 +297,23 @@ export function useComposerClipboardHandlers({
             hasDirectAttachmentHint,
           }),
       ])
+
+      if (browserUploadErrorMessage) {
+        setErrorMessage(browserUploadErrorMessage)
+      }
     },
     [setAttachments, setDraftValue, setErrorMessage],
   )
 
   const handleDrop = useCallback(
     async (dataTransfer: DataTransfer | null) => {
-      const uploadedAttachments = await uploadTransferFilesAsAttachments(dataTransfer)
+      let browserUploadErrorMessage: string | null = null
+      const uploadedAttachments = await uploadTransferFilesAsAttachments(dataTransfer).catch(
+        (error) => {
+          browserUploadErrorMessage = getBrowserUploadErrorMessage(error, 'dropped')
+          return []
+        },
+      )
       if (uploadedAttachments.length > 0) {
         setAttachments((current) => mergeComposerAttachments(current, uploadedAttachments))
         setErrorMessage(null)
@@ -302,11 +326,15 @@ export function useComposerClipboardHandlers({
         }),
       )
       if (droppedAttachments.length === 0) {
+        if (browserUploadErrorMessage) {
+          setErrorMessage(browserUploadErrorMessage)
+          return true
+        }
         return false
       }
 
       setAttachments((current) => mergeComposerAttachments(current, droppedAttachments))
-      setErrorMessage(null)
+      setErrorMessage(browserUploadErrorMessage)
       return true
     },
     [setAttachments, setErrorMessage],

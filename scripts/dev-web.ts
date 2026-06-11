@@ -39,7 +39,9 @@ const devWebAccessToken =
   getEnvironmentVariable('HOWCODE_HEADLESS_TOKEN')?.trim() ||
   (devWebAuthRequired ? `hc_${crypto.randomBytes(18).toString('base64url')}` : null)
 const devWebSessionToken = crypto.randomUUID()
-const devWebSessionCookieName = 'howcode_dev_web_session'
+function getDevWebSessionCookieName(port: number | null) {
+  return `howcode_dev_web_session_${port ?? 'pending'}`
+}
 const serviceHostWaitTimeoutMs = 30_000
 
 let bridge: { child: ChildProcess; port: number } | null = null
@@ -262,7 +264,11 @@ function parseCookieHeader(cookieHeader: string | string[] | undefined) {
   for (const part of header.split(';')) {
     const [rawName, ...rawValueParts] = part.trim().split('=')
     if (!rawName) continue
-    cookies.set(rawName, decodeURIComponent(rawValueParts.join('=')))
+    try {
+      cookies.set(rawName, decodeURIComponent(rawValueParts.join('=')))
+    } catch {
+      // Ignore malformed cookie values instead of crashing the dev bridge.
+    }
   }
 
   return cookies
@@ -274,7 +280,9 @@ function hasAuthenticatedDevWebSession(request: http.IncomingMessage) {
   }
 
   return (
-    parseCookieHeader(request.headers.cookie).get(devWebSessionCookieName) === devWebSessionToken
+    parseCookieHeader(request.headers.cookie).get(
+      getDevWebSessionCookieName(trustedRendererPort),
+    ) === devWebSessionToken
   )
 }
 
@@ -314,7 +322,7 @@ async function handleDevWebAuthRequest(
 
   response.setHeader(
     'set-cookie',
-    `${devWebSessionCookieName}=${encodeURIComponent(devWebSessionToken)}; Path=/; HttpOnly; SameSite=Lax`,
+    `${getDevWebSessionCookieName(trustedRendererPort)}=${encodeURIComponent(devWebSessionToken)}; Path=/; HttpOnly; SameSite=Lax`,
   )
   sendJson(response, 200, { authenticated: true, required: true })
 }

@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, statSync } from 'node:fs'
+import { networkInterfaces } from 'node:os'
 import path from 'node:path'
 
 export const DEV_SERVER_HOST = '127.0.0.1'
@@ -105,7 +106,19 @@ export function resolveDevServerPublicHost(
     return configuredPublicHost
   }
 
-  return wildcardHosts.has(listenHost) ? DEV_SERVER_HOST : listenHost
+  if (!wildcardHosts.has(listenHost)) {
+    return listenHost
+  }
+
+  for (const entries of Object.values(networkInterfaces())) {
+    for (const entry of entries ?? []) {
+      if (entry.family === 'IPv4' && !entry.internal) {
+        return entry.address
+      }
+    }
+  }
+
+  return DEV_SERVER_HOST
 }
 
 export function isDevServerWildcardHost(host: string) {

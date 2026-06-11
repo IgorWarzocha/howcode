@@ -1,5 +1,17 @@
-import { createRootRoute, createRoute, createRouter, RouterProvider } from '@tanstack/react-router'
+import {
+  createBrowserHistory,
+  createHashHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  RouterProvider,
+} from '@tanstack/react-router'
 import { AppShell } from './app-shell'
+
+const history =
+  typeof window !== 'undefined' && window.location.protocol === 'file:'
+    ? createHashHistory()
+    : createBrowserHistory()
 
 const rootRoute = createRootRoute({ component: AppShell })
 
@@ -28,7 +40,7 @@ const appRoutes = [
 
 const routeTree = rootRoute.addChildren(appRoutes)
 
-export const router = createRouter({ routeTree })
+export const router = createRouter({ history, routeTree })
 
 declare module '@tanstack/react-router' {
   interface Register {

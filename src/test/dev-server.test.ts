@@ -20,8 +20,10 @@ describe('dev server helpers', () => {
     expect(resolveDevServerListenHost({ [DEV_SERVER_HOST_ENV]: '0.0.0.0' })).toBe('0.0.0.0')
   })
 
-  it('falls back to loopback access for wildcard binds', () => {
-    expect(resolveDevServerPublicHost('0.0.0.0', {})).toBe(DEV_SERVER_HOST)
+  it('resolves a concrete access host for wildcard binds', () => {
+    const publicHost = resolveDevServerPublicHost('0.0.0.0', {})
+    expect(publicHost).not.toBe('0.0.0.0')
+    expect(publicHost.length).toBeGreaterThan(0)
   })
 
   it('allows an explicit public access host', () => {
