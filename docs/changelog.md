@@ -12,6 +12,13 @@
 - Updated Pi SDK/runtime packages to 0.79.1.
 - Bumped app/build dependencies, including Electron 41.7.2.
 - Added headless/browser mode, including LAN access with token auth and browser-side file uploads.
+- Dev headless now uses the predictable `dev` token. Less copy-pasting nonsense.
+- Reworked composer overlays so extension widgets, dialogs, attachments, `/commands`, and session tree stack as one surface.
+- Tightened attachment picker and `/commands` spacing so they behave better on narrow windows.
+- Rebuilt the workspace rails around the composer/thread. The scrollbar, fold buttons, overlays, attachment button, and stop button should stop wandering around while resizing.
+- Thread cards are wider now, with fold chevrons sitting outside the card instead of stealing text width.
+- Fixed the empty composer being taller than a composer with text in it.
+- Fixed Past sessions count alignment in the sidebar.
 - Fixed macOS window dragging and native Cmd+A select-all.
 
 #### 0.1.66 Hotfixes (because .67 has to be more special)
