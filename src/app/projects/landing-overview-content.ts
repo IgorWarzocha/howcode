@@ -1,6 +1,6 @@
+import aboutMarkdown from '../../../docs/about.md?raw'
 import changelogMarkdown from '../../../docs/changelog.md?raw'
 import roadmapMarkdown from '../../../docs/roadmap.md?raw'
-import releaseMarkdown from '../../../release.md?raw'
 
 type LandingOverviewSection = {
   title: string
@@ -17,7 +17,7 @@ const landingOverviewContent: LandingOverviewContent = {
   sections: [
     {
       title: 'About',
-      markdown: releaseMarkdown,
+      markdown: aboutMarkdown,
     },
     {
       title: 'Roadmap',

@@ -1,25 +1,25 @@
 ### 0.1.67
 
-- Implemented /tree functionality with labelling and summarisation.
+
+- Added **server** headless/browser mode. Use `howcode --server --host 0.0.0.0 --token xyz`. The app is usable in a mobile browser if you wish to do so.
 - Added native Smart BTW extension, and subsequently removed it, because...
 - Howcode now uses new Pi SDK to render dialogs, widgets, statuslines and notifications.
 - Extensions pass through shortcuts.
 - Fancy react-rendered extensions not supported yet. Only normal-ish widgets.
+- Implemented /tree functionality with labelling and summarisation.
 - Split Pi TUI takeover and the terminal drawer properly.
 - Shortcut handling improved when Pi TUI is on.
 - Resolved an annoying bug that didn't allow typing into Pi TUI.
 - Added Pi project trust prompts in desktop, backed by Pi's trust store.
-- Updated Pi SDK/runtime packages to 0.79.1.
-- Bumped app/build dependencies, including Electron 41.7.2.
-- Added headless/browser mode, including LAN access with token auth and browser-side file uploads.
-- Dev headless now uses the predictable `dev` token. Less copy-pasting nonsense.
-- Reworked composer overlays so extension widgets, dialogs, attachments, `/commands`, and session tree stack as one surface.
-- Tightened attachment picker and `/commands` spacing so they behave better on narrow windows.
-- Rebuilt the workspace rails around the composer/thread. The scrollbar, fold buttons, overlays, attachment button, and stop button should stop wandering around while resizing.
-- Thread cards are wider now, with fold chevrons sitting outside the card instead of stealing text width.
+- Reworked widgets, dialogs, attachments, `/commands` to feel like a coherent stack.
+- Rebuilt the workspace rails around the composer/thread. Better responsiveness.
 - Fixed the empty composer being taller than a composer with text in it.
 - Fixed Past sessions count alignment in the sidebar.
 - Fixed macOS window dragging and native Cmd+A select-all.
+- Updated Pi SDK/runtime packages to 0.79.1.
+- Bumped app/build dependencies.
+
+Snapshot: 12 June 2026.
 
 #### 0.1.66 Hotfixes (because .67 has to be more special)
 
@@ -38,7 +38,7 @@
 - Git diffs add parent-branch baseline and drop Yesterday.
 - Updated bundled Pi SDK/runtime packages to 0.76.0.
 
-Snapshot: May 28, 2026.
+Snapshot: 28 May 2026.
 
 ### 0.1.66
 
@@ -73,7 +73,7 @@ Snapshot: May 28, 2026.
 - Quieted missing-session noise and checkbox jumps.
 - Fixed extension summaries locking the composer.
 
-Snapshot: May 27, 2026.
+Snapshot: 27 May 2026.
 
 ### 0.1.65
 
@@ -89,7 +89,7 @@ Snapshot: May 27, 2026.
 - Fixed updater rechecks, self-update detection, and launcher download timeouts.
 - Fixed a bunch of small sidebar, composer, GitOps, and artifact rough edges.
 
-Snapshot: May 15, 2026.
+Snapshot: 15 May 2026.
 
 ### 0.1.64
 
@@ -113,7 +113,7 @@ Snapshot: May 15, 2026.
 - Fixed compact terminal/sidebar behavior, including Pi TUI takeover fold-button alignment.
 - Improved macOS window chrome and quit behavior.
 
-Snapshot: May 10, 2026.
+Snapshot: 10 May 2026.
 
 ### 0.1.61-6x hotfixes
 
@@ -124,7 +124,7 @@ Snapshot: May 10, 2026.
 - Isolated markdown editor dependencies from HTML and React artifacts.
 - Fixed React artifact hooks and import handling.
 
-Snapshot: May 7, 2026.
+Snapshot: 7 May 2026.
 
 ### 0.1.6
 
@@ -142,7 +142,7 @@ Snapshot: May 7, 2026.
 - Now on `@earendil-works` packages. RIP.
 - https://igorwarzocha.github.io/howcode/ is now live.
 
-Snapshot: May 7, 2026.
+Snapshot: 7 May 2026.
 
 ### 0.1.5
 
@@ -151,7 +151,7 @@ Snapshot: May 7, 2026.
 - Fixed composer follow-ups opening in the wrong session.
 - Fixed tooltips clipping near window edges.
 
-Snapshot: May 4, 2026.
+Snapshot: 4 May 2026.
 
 ### 0.1.4
 
@@ -165,7 +165,7 @@ Snapshot: May 4, 2026.
 - Fixed clean desktop shutdown.
 - Updated Pi packages to 0.72.1.
 
-Snapshot: May 3, 2026.
+Snapshot: 3 May 2026.
 
 ### 0.1.3
 
@@ -182,4 +182,4 @@ Snapshot: May 3, 2026.
 - Kept composer content visible during send handoff.
 - Fixed pasted image paths and screenshot clipboard attachments.
 
-Snapshot: April 29, 2026.
+Snapshot: 29 April 2026.

@@ -1,6 +1,7 @@
 import { ArrowRight, Heart } from 'lucide-react'
 import { StrictMode, useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
+import ReactMarkdown from 'react-markdown'
 import changelogMarkdown from '../../docs/changelog.md?raw'
 import roadmapMarkdown from '../../docs/roadmap.md?raw'
 import rootPackage from '../../package.json'
@@ -12,20 +13,6 @@ const asset = (path: string) => `${import.meta.env.BASE_URL}${path}`
 if (import.meta.env.DEV) {
   void import('react-grab')
 }
-
-const keepClose = [
-  'composer, terminal, and git operations',
-  'comments-based diff review',
-  'chat mode with artifacts and minimal tools',
-  'Pi TUI takeover inside the app',
-  'local dictation on CPU',
-]
-
-const refuses = [
-  'a file tree by default',
-  'turn-by-turn diff playback',
-  'extra panels for decoration',
-]
 
 const screenshots = [
   { id: 'code-mode', src: 'screenshots/code-mode.webp', alt: 'Howcode Code mode screenshot' },
@@ -46,6 +33,20 @@ function getRoadmapItems(markdown: string) {
 }
 
 const roadmap = getRoadmapItems(roadmapMarkdown)
+
+function BulletMarkdown({ children: markdown }: { children: string }) {
+  return (
+    <span className="bullet-markdown">
+      <ReactMarkdown
+        components={{
+          p: ({ children }) => <>{children}</>,
+        }}
+      >
+        {markdown}
+      </ReactMarkdown>
+    </span>
+  )
+}
 
 type PageId = 'home' | 'dependencies' | 'blog' | 'blog-worktrees'
 
@@ -356,7 +357,7 @@ function HomePage() {
           </div>
         </div>
 
-        <div className="hero-installer">
+        <div className="hero-installer" id="install">
           <fieldset className="channel-switcher hero-channel-switcher">
             <legend className="sr-only">Release channel</legend>
             {channelOrder.map((channelId) => (
@@ -436,55 +437,6 @@ function HomePage() {
         </p>
       </section>
 
-      <section className="two-column">
-        <article>
-          <span className="label">keeps close</span>
-          <ul>
-            {keepClose.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </article>
-        <article>
-          <span className="label">refuses, for now</span>
-          <ul>
-            {refuses.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </article>
-      </section>
-
-      <section className="section install" id="install">
-        <div>
-          <p className="eyebrow">install · {channel.eyebrow}</p>
-          <h2>{channel.title}</h2>
-        </div>
-        <div className="install-copy">
-          <p>
-            {channel.description} Releases include a Windows installer and a Linux AppImage. Mac
-            should work. Hopefully.
-          </p>
-          <button
-            type="button"
-            className="install-command"
-            onClick={() => copyCommand(channel.installCommands[0]?.command ?? 'npx howcode')}
-            aria-label="Copy install command"
-          >
-            <code>{channel.installCommands[0]?.command ?? 'npx howcode'}</code>
-            <span>copy</span>
-          </button>
-          <div className="install-links">
-            <a className="text-link" href={channel.releaseUrl}>
-              See {channel.label.toLowerCase()} release →
-            </a>
-            <a className="text-link" href="https://github.com/IgorWarzocha/howcode/issues">
-              Report a weird case →
-            </a>
-          </div>
-        </div>
-      </section>
-
       <section className="section roadmap" id="roadmap">
         <div>
           <p className="eyebrow">next</p>
@@ -492,7 +444,9 @@ function HomePage() {
         </div>
         <ol>
           {roadmap.map((item) => (
-            <li key={item}>{item}</li>
+            <li key={item}>
+              <BulletMarkdown>{item}</BulletMarkdown>
+            </li>
           ))}
         </ol>
       </section>
@@ -510,7 +464,9 @@ function HomePage() {
         </div>
         <ol>
           {changelog.items.map((item) => (
-            <li key={item}>{item}</li>
+            <li key={item}>
+              <BulletMarkdown>{item}</BulletMarkdown>
+            </li>
           ))}
         </ol>
       </section>
