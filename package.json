@@ -20,7 +20,7 @@
     "dev:web": "bun ./scripts/dev-web.ts",
     "dev:runtime": "bun ./scripts/build-electron-runtime.ts --watch",
     "dev:desktop": "bun ./scripts/dev-electron.ts",
-    "dev:headless": "bun run dev:clean && concurrently -k \"bun run dev:web\" \"bun run dev:runtime\"",
+    "dev:headless": "HOWCODE_HEADLESS_TOKEN=dev bun run dev:clean && HOWCODE_HEADLESS_TOKEN=dev concurrently -k \"bun run dev:web\" \"bun run dev:runtime\"",
     "dev:headless:host": "HOWCODE_DEV_SERVER_HOST=0.0.0.0 bun run dev:headless",
     "build:runtime": "bun ./scripts/build-electron-runtime.ts",
     "build": "vite build && bun run build:runtime && electron-builder --dir --config electron-builder.yml",

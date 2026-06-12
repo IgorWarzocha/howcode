@@ -352,13 +352,13 @@ export function ThreadTimeline({
           ref={containerRef}
           className={cn(
             chatScrollableAreaClass,
-            'thread-timeline-scroll-shell col-start-2 row-start-1 min-w-0',
+            'thread-timeline-scroll-shell col-start-2 row-start-1 -ml-4 w-[calc(100%+1rem)] min-w-0',
           )}
           onScroll={handleScroll}
         >
           <div
             ref={contentRef}
-            className="flex min-h-full w-full flex-col justify-end overflow-x-hidden px-4 pt-0 pb-4"
+            className="flex min-h-full w-full flex-col justify-end overflow-x-visible pt-0 pr-2 pb-4 pl-8"
             style={
               composerOverlayHeight > 0
                 ? { paddingBottom: `calc(1rem + ${composerOverlayHeight}px)` }
