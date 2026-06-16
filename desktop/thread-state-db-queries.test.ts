@@ -92,7 +92,7 @@ describe('thread state db branch queries', () => {
       inferredWorktreeSessionPath,
       'Inferred worktree chat',
       4,
-      null,
+      '',
     )
     db.prepare('INSERT INTO chat_threads (session_path, group_id) VALUES (?, ?)').run(
       chatSessionPath,

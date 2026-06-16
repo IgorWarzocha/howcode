@@ -112,4 +112,37 @@ describe('start-project-thread state', () => {
     expect(chatThreadState.selectedThreadId).toBe('chat-thread-1')
     expect(chatThreadState.lastCodeThreadSelection).toEqual(codeSelection)
   })
+
+  it('does not remember a chat thread as code while visiting git ops', () => {
+    const next = workspaceReducer(
+      createWorkspaceState({
+        activeView: 'gitops',
+        selectedThreadId: 'chat-thread-1',
+        selectedSessionPath: '/chat-sessions/chat-thread.jsonl',
+      }),
+      { type: 'show-view', view: 'code' },
+    )
+
+    expect(next.activeView).toBe('code')
+    expect(next.selectedThreadId).toBeNull()
+    expect(next.selectedSessionPath).toBeNull()
+    expect(next.lastCodeThreadSelection).toBeNull()
+  })
+
+  it('clears remembered code threads when selecting another project', () => {
+    const next = workspaceReducer(
+      createWorkspaceState({
+        activeView: 'chat',
+        lastCodeThreadSelection: {
+          projectId: '/repo/project-a',
+          threadId: 'code-thread-1',
+          sessionPath: '/sessions/project-a/code-thread.jsonl',
+        },
+      }),
+      { type: 'select-project', projectId: '/repo/project-b' },
+    )
+
+    expect(next.selectedProjectId).toBe('/repo/project-b')
+    expect(next.lastCodeThreadSelection).toBeNull()
+  })
 })

@@ -70,7 +70,7 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
 
 function getCurrentCodeThreadSelection(state: WorkspaceState): CodeThreadSelection | null {
   if (
-    state.activeView !== 'chat' &&
+    (state.activeView === 'thread' || state.activeView === 'project') &&
     state.selectedProjectId &&
     state.selectedThreadId &&
     state.selectedSessionPath
@@ -83,6 +83,15 @@ function getCurrentCodeThreadSelection(state: WorkspaceState): CodeThreadSelecti
   }
 
   return state.lastCodeThreadSelection
+}
+
+function getScopedCodeThreadSelection(
+  state: WorkspaceState,
+  projectId: string,
+): CodeThreadSelection | null {
+  return state.lastCodeThreadSelection?.projectId === projectId
+    ? state.lastCodeThreadSelection
+    : null
 }
 
 function withCodeThreadSelection(
@@ -475,6 +484,7 @@ export const workspaceActionHandlers = {
     takeoverVisible: false,
     gitOpsReturnView: 'project',
     utilityViewReturnState: null,
+    lastCodeThreadSelection: getScopedCodeThreadSelection(state, action.projectId),
   }),
   'set-selected-project': (
     state: WorkspaceState,
@@ -484,6 +494,7 @@ export const workspaceActionHandlers = {
     selectedProjectId: action.projectId,
     hasSelectedProject: true,
     landingVisible: false,
+    lastCodeThreadSelection: getScopedCodeThreadSelection(state, action.projectId),
   }),
   'start-project-thread': startProjectThreadState,
   'preview-thread': previewThreadState,

@@ -254,7 +254,7 @@ export function listProjectThreads(
           threads.running AS running,
           COALESCE(inbox_items.unread, 0) AS unread,
           threads.pinned AS pinned,
-          COALESCE(threads.branch_name, project_worktrees.branch_name) AS branchName,
+          COALESCE(NULLIF(TRIM(threads.branch_name), ''), project_worktrees.branch_name) AS branchName,
           threads.last_modified_ms AS lastModifiedMs
         FROM threads
         LEFT JOIN inbox_items ON inbox_items.session_path = threads.session_path
@@ -293,7 +293,7 @@ export function listArchivedProjectThreads(
           threads.running AS running,
           COALESCE(inbox_items.unread, 0) AS unread,
           threads.pinned AS pinned,
-          COALESCE(threads.branch_name, project_worktrees.branch_name) AS branchName,
+          COALESCE(NULLIF(TRIM(threads.branch_name), ''), project_worktrees.branch_name) AS branchName,
           threads.last_modified_ms AS lastModifiedMs
         FROM threads
         LEFT JOIN inbox_items ON inbox_items.session_path = threads.session_path
@@ -332,7 +332,7 @@ export function listInboxThreads(): InboxThread[] {
           inbox_items.last_assistant_preview AS lastAssistantPreview,
           threads.running AS running,
           inbox_items.unread AS unread,
-          COALESCE(threads.branch_name, project_worktrees.branch_name) AS branchName,
+          COALESCE(NULLIF(TRIM(threads.branch_name), ''), project_worktrees.branch_name) AS branchName,
           COALESCE(inbox_items.last_assistant_at_ms, threads.last_modified_ms) AS lastActivityMs,
           CASE WHEN chat_threads.session_path IS NULL THEN 0 ELSE 1 END AS isChat
         FROM inbox_items
