@@ -56,6 +56,7 @@ type InboxViewProps = {
     threadId: string,
     sessionPath: string,
     view?: 'chat' | 'thread' | undefined,
+    branchName?: string | null | undefined,
   ) => void
   onOpenSettingsView: (target?: SettingsOpenTarget) => void
   sidebarCollapsed: boolean
@@ -397,6 +398,7 @@ export function InboxView({
                   thread.threadId,
                   thread.sessionPath,
                   getInboxThreadOpenView(thread),
+                  thread.branchName,
                 )
               }
               onOpenSettingsView={onOpenSettingsView}

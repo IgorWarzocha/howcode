@@ -124,11 +124,12 @@ export function useAppShellCommands({
     threadId: string,
     sessionPath: string,
     view?: 'chat' | 'thread' | undefined,
+    branchName?: string | null | undefined,
   ) => {
     clearSelectedUnstartedDraft()
     setThreadHistoryCompactions(0)
     dispatch({ type: 'open-thread', projectId, threadId, sessionPath, view })
-    scheduleThreadOpenAction({ projectId, threadId, sessionPath, view })
+    scheduleThreadOpenAction({ projectId, threadId, sessionPath, view, branchName })
   }
 
   const handleThreadCycle = (

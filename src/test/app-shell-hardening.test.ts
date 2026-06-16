@@ -11,6 +11,7 @@ import {
 import { applyDiffPreferencesToThread } from '../app/app-shell/controller-post-action-effects'
 import { deriveControllerViewModel } from '../app/app-shell/controller-view-model'
 import { getDiffPreferencesPatch } from '../app/app-shell/post-effects/diff-preferences'
+import { getScheduledThreadOpenActionPayload } from '../app/app-shell/useScheduledThreadOpen'
 import type { ThreadData } from '../app/desktop/types'
 import type { WorkspaceState } from '../app/state/workspace'
 
@@ -137,6 +138,24 @@ describe('app shell hardening helpers', () => {
       projectId: '/repo/a',
       shouldSwitch: true,
       targetBranch: 'feature-a',
+    })
+  })
+
+  it('keeps branch metadata when opening an inbox thread', () => {
+    expect(
+      getScheduledThreadOpenActionPayload({
+        projectId: '/repo/a',
+        threadId: 'thread-a',
+        sessionPath: '/sessions/a.jsonl',
+        view: 'thread',
+        branchName: 'feature-a',
+      }),
+    ).toMatchObject({
+      branchName: 'feature-a',
+      composerMode: 'code',
+      projectId: '/repo/a',
+      sessionPath: '/sessions/a.jsonl',
+      threadId: 'thread-a',
     })
   })
 

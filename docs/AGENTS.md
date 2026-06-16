@@ -4,5 +4,6 @@
 - Do not use robotic product-speak, corporate filler, or polished AI brochure language.
 - Prefer blunt bullets, plain English, and "probably / maybe / unsure" when that is the honest state.
 - Keep roadmap notes lightweight unless the user asks for a full spec.
-- Try to match lengths of other bullet points - avoid long ones.
+- Changelog bullets should be short, user-facing, and snappy.
+- Aim for one-line bullets around 50–70 chars; avoid >90 chars unless needed.
 - Do NOT use American date formats.

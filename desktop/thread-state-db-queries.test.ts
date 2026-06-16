@@ -52,11 +52,20 @@ describe('thread state db branch queries', () => {
       1,
       'feature',
     )
+    insertThread.run(
+      'inferred-worktree-thread',
+      '/repo/.worktrees/feature',
+      '/sessions/inferred-worktree.jsonl',
+      'Inferred worktree',
+      1,
+      '',
+    )
     insertThread.run('other-branch', '/repo', '/sessions/other.jsonl', 'Other', 1, 'main')
 
     expect(listProjectFamilyBranchThreadIds('/repo', 'feature')).toEqual([
       'root-thread',
       'worktree-thread',
+      'inferred-worktree-thread',
     ])
   })
 

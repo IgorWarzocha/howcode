@@ -16,9 +16,20 @@ export type ScheduledThreadOpenInput = {
   threadId: string
   sessionPath: string
   view?: 'chat' | 'thread' | undefined
+  branchName?: string | null | undefined
   delayMs?: number | undefined
   deferThreadQuery?: boolean | undefined
   commitLocally?: boolean | undefined
+}
+
+export function getScheduledThreadOpenActionPayload(input: ScheduledThreadOpenInput) {
+  return {
+    projectId: input.projectId,
+    threadId: input.threadId,
+    sessionPath: input.sessionPath,
+    composerMode: input.view === 'chat' ? 'chat' : 'code',
+    branchName: input.branchName,
+  }
 }
 
 function shouldCommitScheduledThreadOpen(input: ScheduledThreadOpenInput, state: WorkspaceState) {
@@ -77,12 +88,7 @@ export function useScheduledThreadOpen(input: {
             view: scheduledThreadOpen.view,
           })
         }
-        void handleAction('thread.open', {
-          projectId: scheduledThreadOpen.projectId,
-          threadId: scheduledThreadOpen.threadId,
-          sessionPath: scheduledThreadOpen.sessionPath,
-          composerMode: scheduledThreadOpen.view === 'chat' ? 'chat' : 'code',
-        })
+        void handleAction('thread.open', getScheduledThreadOpenActionPayload(scheduledThreadOpen))
       }, scheduledThreadOpen.delayMs ?? THREAD_OPEN_ACTION_DELAY_MS)
     },
     [dispatch, handleAction, setThreadQueryDeferred],

@@ -94,6 +94,47 @@ function getScopedCodeThreadSelection(
     : null
 }
 
+function isProjectLoadedForCodeThreads(project: Project) {
+  return project.threadsLoaded === true && project.threadsScope !== 'chat'
+}
+
+function getThreadCodeSelection(
+  project: Project,
+  thread: Project['threads'][number],
+  fallbackSessionPath: string,
+): CodeThreadSelection {
+  return {
+    projectId: project.id,
+    threadId: thread.id,
+    sessionPath: thread.sessionPath ?? fallbackSessionPath,
+  }
+}
+
+export function resolveCodeThreadSelection(
+  projects: Project[],
+  selection: CodeThreadSelection | null,
+): CodeThreadSelection | null {
+  if (!selection) return null
+
+  for (const project of projects) {
+    if (!isProjectLoadedForCodeThreads(project)) continue
+    const thread = project.threads.find(
+      (candidate) => candidate.sessionPath === selection.sessionPath,
+    )
+    if (thread) return getThreadCodeSelection(project, thread, selection.sessionPath)
+  }
+
+  for (const project of projects) {
+    if (!isProjectLoadedForCodeThreads(project)) continue
+    const thread = project.threads.find((candidate) => candidate.id === selection.threadId)
+    if (thread) return getThreadCodeSelection(project, thread, selection.sessionPath)
+  }
+
+  const rememberedProject = projects.find((project) => project.id === selection.projectId)
+  if (!rememberedProject) return null
+  return isProjectLoadedForCodeThreads(rememberedProject) ? null : selection
+}
+
 function withCodeThreadSelection(
   state: WorkspaceState,
   selection: CodeThreadSelection,
@@ -165,6 +206,10 @@ function syncProjectsState(
   state: WorkspaceState,
   action: Extract<WorkspaceAction, { type: 'sync-projects' }>,
 ): WorkspaceState {
+  const lastCodeThreadSelection = resolveCodeThreadSelection(
+    action.projects,
+    state.lastCodeThreadSelection,
+  )
   const hasSelectedProject = action.projects.some(
     (project) => project.id === state.selectedProjectId,
   )
@@ -224,6 +269,7 @@ function syncProjectsState(
       shouldPreserveProjectSelection,
       state.utilityViewReturnState,
     ),
+    lastCodeThreadSelection,
     collapsedProjectIds,
   }
 }

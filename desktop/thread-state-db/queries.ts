@@ -481,10 +481,11 @@ export function listProjectFamilyBranchThreadIds(projectId: string, branchName: 
       `
         SELECT id AS id, session_path AS sessionPath
         FROM threads
-        WHERE branch_name = ?
+        LEFT JOIN project_worktrees ON project_worktrees.cwd = threads.cwd AND project_worktrees.is_main = 0
+        WHERE COALESCE(NULLIF(TRIM(threads.branch_name), ''), project_worktrees.branch_name) = ?
           AND (
-            cwd = ?
-            OR cwd IN (
+            threads.cwd = ?
+            OR threads.cwd IN (
               SELECT cwd
               FROM project_worktrees
               WHERE root_cwd = ? AND is_main = 0

@@ -163,4 +163,69 @@ describe('start-project-thread state', () => {
     expect(next.selectedProjectId).toBe('')
     expect(next.lastCodeThreadSelection).toBeNull()
   })
+
+  it('clears remembered code threads when loaded project data no longer contains them', () => {
+    const next = workspaceReducer(
+      createWorkspaceState({
+        activeView: 'chat',
+        lastCodeThreadSelection: {
+          projectId: '/repo/project-a',
+          threadId: 'deleted-thread',
+          sessionPath: '/sessions/project-a/deleted.jsonl',
+        },
+      }),
+      {
+        type: 'sync-projects',
+        projects: [
+          {
+            id: '/repo/project-a',
+            name: 'Project A',
+            threads: [],
+            threadsLoaded: true,
+            threadsScope: 'code',
+          },
+        ],
+      },
+    )
+
+    expect(next.lastCodeThreadSelection).toBeNull()
+  })
+
+  it('updates remembered code threads when loaded project data moved them', () => {
+    const next = workspaceReducer(
+      createWorkspaceState({
+        activeView: 'chat',
+        lastCodeThreadSelection: {
+          projectId: '/repo/project-a',
+          threadId: 'thread-a',
+          sessionPath: '/sessions/shared.jsonl',
+        },
+      }),
+      {
+        type: 'sync-projects',
+        projects: [
+          {
+            id: '/repo/project-b',
+            name: 'Project B',
+            threads: [
+              {
+                id: 'thread-b',
+                title: 'Moved',
+                age: 'now',
+                sessionPath: '/sessions/shared.jsonl',
+              },
+            ],
+            threadsLoaded: true,
+            threadsScope: 'code',
+          },
+        ],
+      },
+    )
+
+    expect(next.lastCodeThreadSelection).toEqual({
+      projectId: '/repo/project-b',
+      threadId: 'thread-b',
+      sessionPath: '/sessions/shared.jsonl',
+    })
+  })
 })
