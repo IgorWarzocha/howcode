@@ -37,6 +37,12 @@ export type PiExtensionDialogRequest = {
   prefill?: string | undefined
 }
 
+export type PiExtensionUiState = {
+  piExtensionWidgets: PiExtensionWidget[]
+  piExtensionStatuses: PiExtensionStatus[]
+  piExtensionDialogRequest: PiExtensionDialogRequest | null
+}
+
 export type ProjectTrustRequest = {
   cwd: string
 }

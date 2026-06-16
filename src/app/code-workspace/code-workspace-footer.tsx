@@ -138,6 +138,7 @@ function CodeQueuedPrompts(props: CodeWorkspaceContentProps) {
 
 function getComposerRuntimeProps(
   activeComposerState: CodeWorkspaceContentProps['activeComposerState'],
+  activePiExtensionUiState: CodeWorkspaceContentProps['activePiExtensionUiState'],
 ) {
   return {
     availableModels: activeComposerState?.availableModels ?? [],
@@ -147,10 +148,17 @@ function getComposerRuntimeProps(
     currentThinkingLevel: activeComposerState?.currentThinkingLevel ?? 'off',
     isCompacting: activeComposerState?.isCompacting ?? false,
     isExtensionCommandRunning: activeComposerState?.isExtensionCommandRunning ?? false,
-    piExtensionDialogRequest: activeComposerState?.piExtensionDialogRequest ?? null,
+    piExtensionDialogRequest:
+      activePiExtensionUiState?.piExtensionDialogRequest ??
+      activeComposerState?.piExtensionDialogRequest ??
+      null,
     piExtensionShortcuts: activeComposerState?.piExtensionShortcuts ?? [],
-    piExtensionStatuses: activeComposerState?.piExtensionStatuses ?? [],
-    piExtensionWidgets: activeComposerState?.piExtensionWidgets ?? [],
+    piExtensionStatuses:
+      activePiExtensionUiState?.piExtensionStatuses ??
+      activeComposerState?.piExtensionStatuses ??
+      [],
+    piExtensionWidgets:
+      activePiExtensionUiState?.piExtensionWidgets ?? activeComposerState?.piExtensionWidgets ?? [],
     projectTrustRequest: activeComposerState?.projectTrustRequest ?? null,
   }
 }
@@ -159,6 +167,7 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
   const {
     state,
     activeComposerState,
+    activePiExtensionUiState,
     activeThreadData,
     scopedRestoredQueuedPrompt,
     shellState,
@@ -190,7 +199,7 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
     handleAction,
   } = props
   const appSettings = shellState?.appSettings ?? FALLBACK_APP_SETTINGS
-  const composerRuntime = getComposerRuntimeProps(activeComposerState)
+  const composerRuntime = getComposerRuntimeProps(activeComposerState, activePiExtensionUiState)
   return (
     <Composer
       activeView={state.activeView}

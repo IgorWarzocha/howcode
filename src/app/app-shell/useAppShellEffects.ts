@@ -5,6 +5,7 @@ import type {
   ChatSidebarState,
   ComposerState,
   InboxThread,
+  PiExtensionUiState,
   ProjectGitState,
   ThreadData,
 } from '../desktop/types'
@@ -50,6 +51,7 @@ export function useAppShellEffects({
   setComposerState,
   setChatSidebarState,
   setLiveThreadData,
+  setPiExtensionUiStateBySession,
   setProjectGitState,
   setProjectGitLoading,
   setThreadHistoryCompactions,
@@ -83,6 +85,7 @@ export function useAppShellEffects({
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>
   setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>
   setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>
+  setPiExtensionUiStateBySession: Dispatch<SetStateAction<Record<string, PiExtensionUiState>>>
   setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>
   setProjectGitLoading: Dispatch<SetStateAction<boolean>>
   setThreadHistoryCompactions: Dispatch<SetStateAction<number>>
@@ -132,6 +135,7 @@ export function useAppShellEffects({
     setComposerState,
     setChatSidebarState,
     setLiveThreadData,
+    setPiExtensionUiStateBySession,
     setProjectGitState,
     setThreadHistoryCompactions,
   })

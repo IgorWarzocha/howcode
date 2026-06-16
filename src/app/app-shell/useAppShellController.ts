@@ -5,6 +5,7 @@ import { useDesktopInbox } from '../hooks/useDesktopInbox'
 import { useDesktopShell } from '../hooks/useDesktopShell'
 import { useToast } from '../hooks/useToast'
 import { deriveControllerViewModel } from './controller-view-model'
+import { getVisibleDesktopSessionPath } from './desktop-event-sync'
 import { useAppShellChatSidebar } from './useAppShellChatSidebar'
 import { useAppShellCommands } from './useAppShellCommands'
 import { useAppShellEffects } from './useAppShellEffects'
@@ -42,6 +43,10 @@ export function useAppShellController() {
     [inboxThreads, bundle.state.selectedInboxSessionPath],
   )
   const terminals = useRunningTerminalSessions()
+  const visibleExtensionUiSessionPath = getVisibleDesktopSessionPath(bundle.state)
+  const activePiExtensionUiState = visibleExtensionUiSessionPath
+    ? (bundle.piExtensionUiStateBySession[visibleExtensionUiSessionPath] ?? null)
+    : null
   const viewModel = useMemo(
     () =>
       deriveControllerViewModel({
@@ -80,6 +85,7 @@ export function useAppShellController() {
     setComposerState: bundle.setComposerState,
     setChatSidebarState: chatSidebar.setChatSidebarState,
     setLiveThreadData: bundle.setLiveThreadData,
+    setPiExtensionUiStateBySession: bundle.setPiExtensionUiStateBySession,
     setProjectGitState: bundle.setProjectGitState,
     setProjectGitLoading: bundle.setProjectGitLoading,
     setThreadHistoryCompactions: bundle.setThreadHistoryCompactions,
@@ -163,6 +169,7 @@ export function useAppShellController() {
     skillsProjectScopeActive: bundle.skillsProjectScopeActive,
     state: bundle.state,
     selectedInboxThread,
+    activePiExtensionUiState,
     terminalRunningWorkspaceIds: terminals.terminalRunningWorkspaceIds,
     terminalRunningSessionPaths: terminals.terminalRunningSessionPaths,
     toast,

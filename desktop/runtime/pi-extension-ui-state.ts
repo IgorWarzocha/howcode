@@ -7,6 +7,7 @@ import type {
   PiExtensionDialogRequest,
   PiExtensionShortcut,
   PiExtensionStatus,
+  PiExtensionUiState,
   PiExtensionWidget,
 } from '../../shared/desktop-contracts.ts'
 import type { PiRuntime } from './types.ts'
@@ -114,6 +115,15 @@ function normalizeWidgetContent(content: unknown) {
   return ['Component-based widgets are not yet compatible with Howcode.']
 }
 
+function widgetLinesEqual(left: string[], right: string[]) {
+  return left.length === right.length && left.every((line, index) => line === right[index])
+}
+
+function widgetEqual(left: PiExtensionWidget | undefined, right: PiExtensionWidget | undefined) {
+  if (!(left && right)) return left === right
+  return left.placement === right.placement && widgetLinesEqual(left.lines, right.lines)
+}
+
 export function getPiExtensionWidgets(runtime: PiRuntime): PiExtensionWidget[] {
   const sessionPath = getSessionPath(runtime)
   if (!sessionPath) return []
@@ -143,6 +153,14 @@ export function getPiExtensionDialog(runtime: PiRuntime): PiExtensionDialogReque
   if (!dialog) return null
   const { cleanup: _cleanup, resolve: _resolve, ...request } = dialog
   return request
+}
+
+export function getPiExtensionUiState(runtime: PiRuntime): PiExtensionUiState {
+  return {
+    piExtensionWidgets: getPiExtensionWidgets(runtime),
+    piExtensionStatuses: getPiExtensionStatuses(runtime),
+    piExtensionDialogRequest: getPiExtensionDialog(runtime),
+  }
 }
 
 export function hasPendingPiExtensionDialog(runtime: PiRuntime) {
@@ -242,14 +260,15 @@ function replaceEditorSelection(state: PiExtensionEditorState, text: string) {
 
 export function createPiExtensionUiContext(
   runtime: PiRuntime,
-  onStateChange: () => void,
+  onUiStateChange: () => void,
+  onSessionStateChange: () => void,
 ): ExtensionUIContext {
   return {
     select: async (title, options, dialogOptions) => {
       const answer = await createDialogRequest(
         runtime,
         { method: 'select', title, options },
-        onStateChange,
+        onUiStateChange,
         dialogOptions,
       )
       return answer.cancelled ? undefined : answer.value
@@ -258,7 +277,7 @@ export function createPiExtensionUiContext(
       const answer = await createDialogRequest(
         runtime,
         { method: 'confirm', title, message },
-        onStateChange,
+        onUiStateChange,
         dialogOptions,
       )
       return answer.cancelled ? false : answer.confirmed === true
@@ -267,7 +286,7 @@ export function createPiExtensionUiContext(
       const answer = await createDialogRequest(
         runtime,
         { method: 'input', title, placeholder },
-        onStateChange,
+        onUiStateChange,
         dialogOptions,
       )
       return answer.cancelled ? undefined : answer.value
@@ -277,7 +296,7 @@ export function createPiExtensionUiContext(
         source: 'extension-notify',
         severity: type ?? 'info',
       })
-      onStateChange()
+      onSessionStateChange()
     },
     onTerminalInput: () => () => undefined,
     setStatus: (key, text) => {
@@ -286,9 +305,15 @@ export function createPiExtensionUiContext(
       const statuses = getSessionStatuses(sessionPath)
       const normalizedText =
         text === undefined ? '' : stripStyleMarkers(stripAnsi(String(text))).trim()
-      if (normalizedText) statuses.set(key, { key, text: normalizedText })
-      else statuses.delete(key)
-      onStateChange()
+      const current = statuses.get(key)
+      if (normalizedText) {
+        if (current?.text === normalizedText) return
+        statuses.set(key, { key, text: normalizedText })
+      } else {
+        if (!current) return
+        statuses.delete(key)
+      }
+      onUiStateChange()
     },
     setWorkingMessage: () => undefined,
     setWorkingVisible: () => undefined,
@@ -299,9 +324,15 @@ export function createPiExtensionUiContext(
       if (!sessionPath) return
       const widgets = getSessionWidgets(sessionPath)
       const lines = normalizeWidgetContent(content)
-      if (lines) widgets.set(key, { key, lines, placement: options?.placement })
-      else widgets.delete(key)
-      onStateChange()
+      if (lines) {
+        const nextWidget = { key, lines, placement: options?.placement }
+        if (widgetEqual(widgets.get(key), nextWidget)) return
+        widgets.set(key, nextWidget)
+      } else {
+        if (!widgets.has(key)) return
+        widgets.delete(key)
+      }
+      onUiStateChange()
     },
     setFooter: () => undefined,
     setHeader: () => undefined,
@@ -324,7 +355,7 @@ export function createPiExtensionUiContext(
       const answer = await createDialogRequest(
         runtime,
         { method: 'editor', title, prefill },
-        onStateChange,
+        onUiStateChange,
       )
       return answer.cancelled ? undefined : answer.value
     },

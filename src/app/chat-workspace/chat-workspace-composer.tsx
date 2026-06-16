@@ -48,6 +48,7 @@ const FALLBACK_APP_SETTINGS = {
 
 export type ChatWorkspaceComposerProps = {
   activeComposerState: AppShellController['activeComposerState']
+  activePiExtensionUiState: AppShellController['activePiExtensionUiState']
   activeThreadData: AppShellController['activeThreadData']
   artifactDrawer: ChatArtifactDrawerState
   composerProjectId: string
@@ -158,6 +159,7 @@ function ChatQueuedPrompts({
 
 function getComposerRuntimeProps(
   activeComposerState: ChatWorkspaceComposerProps['activeComposerState'],
+  activePiExtensionUiState: ChatWorkspaceComposerProps['activePiExtensionUiState'],
 ) {
   return {
     availableModels: activeComposerState?.availableModels ?? [],
@@ -167,10 +169,17 @@ function getComposerRuntimeProps(
     currentThinkingLevel: activeComposerState?.currentThinkingLevel ?? 'off',
     isCompacting: activeComposerState?.isCompacting ?? false,
     isExtensionCommandRunning: activeComposerState?.isExtensionCommandRunning ?? false,
-    piExtensionDialogRequest: activeComposerState?.piExtensionDialogRequest ?? null,
+    piExtensionDialogRequest:
+      activePiExtensionUiState?.piExtensionDialogRequest ??
+      activeComposerState?.piExtensionDialogRequest ??
+      null,
     piExtensionShortcuts: activeComposerState?.piExtensionShortcuts ?? [],
-    piExtensionStatuses: activeComposerState?.piExtensionStatuses ?? [],
-    piExtensionWidgets: activeComposerState?.piExtensionWidgets ?? [],
+    piExtensionStatuses:
+      activePiExtensionUiState?.piExtensionStatuses ??
+      activeComposerState?.piExtensionStatuses ??
+      [],
+    piExtensionWidgets:
+      activePiExtensionUiState?.piExtensionWidgets ?? activeComposerState?.piExtensionWidgets ?? [],
     projectTrustRequest: activeComposerState?.projectTrustRequest ?? null,
   }
 }
@@ -178,6 +187,7 @@ function getComposerRuntimeProps(
 function ChatComposer(props: ChatWorkspaceComposerProps) {
   const {
     activeComposerState,
+    activePiExtensionUiState,
     state,
     activeThreadData,
     scopedRestoredQueuedPrompt,
@@ -204,7 +214,7 @@ function ChatComposer(props: ChatWorkspaceComposerProps) {
     controller,
   } = props
   const appSettings = shellState?.appSettings ?? FALLBACK_APP_SETTINGS
-  const composerRuntime = getComposerRuntimeProps(activeComposerState)
+  const composerRuntime = getComposerRuntimeProps(activeComposerState, activePiExtensionUiState)
   return (
     <Composer
       activeView={state.activeView}

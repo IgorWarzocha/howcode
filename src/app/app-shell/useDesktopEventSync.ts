@@ -4,6 +4,7 @@ import type {
   ChatSidebarState,
   ComposerState,
   DesktopEvent,
+  PiExtensionUiState,
   ProjectGitState,
   ThreadData,
 } from '../desktop/types'
@@ -34,6 +35,7 @@ type UseDesktopEventSyncInput = {
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>
   setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>
   setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>
+  setPiExtensionUiStateBySession: Dispatch<SetStateAction<Record<string, PiExtensionUiState>>>
   setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>
   setThreadHistoryCompactions: Dispatch<SetStateAction<number>>
 }
@@ -50,6 +52,7 @@ export function useDesktopEventSync({
   setComposerState,
   setChatSidebarState,
   setLiveThreadData,
+  setPiExtensionUiStateBySession,
   setProjectGitState,
   setThreadHistoryCompactions,
 }: UseDesktopEventSyncInput) {
@@ -101,6 +104,7 @@ export function useDesktopEventSync({
       setChatSidebarState,
       setComposerState,
       setLiveThreadData,
+      setPiExtensionUiStateBySession,
       setProjectGitState,
       setThreadHistoryCompactions,
       desktopEventStateRef,
@@ -117,6 +121,7 @@ export function useDesktopEventSync({
     setChatSidebarState,
     setComposerState,
     setLiveThreadData,
+    setPiExtensionUiStateBySession,
     setProjectGitState,
     setThreadHistoryCompactions,
   ])

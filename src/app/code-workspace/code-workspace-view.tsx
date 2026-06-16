@@ -12,6 +12,7 @@ import { useWorkspaceFooterHeight } from './useWorkspaceFooterHeight'
 type CodeWorkspaceViewProps = {
   controller: AppShellController
   activeComposerState: AppShellController['activeComposerState']
+  activePiExtensionUiState: AppShellController['activePiExtensionUiState']
   activeThreadData: AppShellController['activeThreadData']
   composerProjectId: string
   currentProjectName: string
@@ -138,6 +139,7 @@ function getCodeWorkspaceFlags(input: {
 export function CodeWorkspaceView({
   controller,
   activeComposerState,
+  activePiExtensionUiState,
   activeThreadData,
   composerProjectId,
   currentProjectName,
@@ -296,6 +298,7 @@ export function CodeWorkspaceView({
       controller={controller}
       shellState={shellState}
       activeComposerState={activeComposerState}
+      activePiExtensionUiState={activePiExtensionUiState}
       currentProjectName={currentProjectName}
       workspaceContentClass={workspaceContentClass}
       activeThreadData={activeThreadData}

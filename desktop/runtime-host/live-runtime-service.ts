@@ -47,7 +47,11 @@ import {
   scheduleRuntimeDisposal,
   withRuntimeMutationLock,
 } from './live-runtime-registry.ts'
-import { publishComposerUpdate, publishThreadUpdate } from './live-thread-publisher.ts'
+import {
+  publishComposerUpdate,
+  publishPiExtensionUiUpdate,
+  publishThreadUpdate,
+} from './live-thread-publisher.ts'
 import { mapSessionCommands } from './slash-command-service.ts'
 
 async function emitComposerUpdate(request: ComposerStateRequest = {}) {
@@ -350,6 +354,7 @@ export async function answerPiExtensionDialog(
       confirmed: request.confirmed,
       value: request.value,
     })
+    publishPiExtensionUiUpdate(runtime)
     await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath })
     return { ok }
   } finally {

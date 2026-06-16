@@ -6,6 +6,7 @@ import type {
   ChatSidebarState,
   ComposerState,
   DesktopEvent,
+  PiExtensionUiState,
   ProjectGitState,
   ThreadData,
 } from '../desktop/types'
@@ -45,6 +46,7 @@ type UseDesktopEventSyncInput = {
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>
   setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>
   setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>
+  setPiExtensionUiStateBySession: Dispatch<SetStateAction<Record<string, PiExtensionUiState>>>
   setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>
   setThreadHistoryCompactions: Dispatch<SetStateAction<number>>
 }
@@ -85,6 +87,84 @@ function shouldApplyComposerUpdate(input: {
   )
 }
 
+function extensionWidgetListsEqual(
+  left: PiExtensionUiState['piExtensionWidgets'],
+  right: PiExtensionUiState['piExtensionWidgets'],
+) {
+  return (
+    left.length === right.length &&
+    left.every((widget, index) => {
+      const other = right[index]
+      return (
+        other?.key === widget.key &&
+        other.placement === widget.placement &&
+        other.lines.length === widget.lines.length &&
+        other.lines.every((line, lineIndex) => line === widget.lines[lineIndex])
+      )
+    })
+  )
+}
+
+function extensionStatusListsEqual(
+  left: PiExtensionUiState['piExtensionStatuses'],
+  right: PiExtensionUiState['piExtensionStatuses'],
+) {
+  return (
+    left.length === right.length &&
+    left.every((status, index) => {
+      const other = right[index]
+      return other?.key === status.key && other.text === status.text
+    })
+  )
+}
+
+function extensionDialogsEqual(
+  left: PiExtensionUiState['piExtensionDialogRequest'],
+  right: PiExtensionUiState['piExtensionDialogRequest'],
+) {
+  if (!(left && right)) return left === right
+  return (
+    left.id === right.id &&
+    left.method === right.method &&
+    left.title === right.title &&
+    left.message === right.message &&
+    left.placeholder === right.placeholder &&
+    left.prefill === right.prefill &&
+    (left.options ?? []).length === (right.options ?? []).length &&
+    (left.options ?? []).every((option, index) => option === right.options?.[index])
+  )
+}
+
+function extensionUiStatesEqual(left: PiExtensionUiState, right: PiExtensionUiState) {
+  return (
+    extensionWidgetListsEqual(left.piExtensionWidgets, right.piExtensionWidgets) &&
+    extensionStatusListsEqual(left.piExtensionStatuses, right.piExtensionStatuses) &&
+    extensionDialogsEqual(left.piExtensionDialogRequest, right.piExtensionDialogRequest)
+  )
+}
+
+function composerExtensionUi(composer: ComposerState): PiExtensionUiState {
+  return {
+    piExtensionWidgets: composer.piExtensionWidgets,
+    piExtensionStatuses: composer.piExtensionStatuses,
+    piExtensionDialogRequest: composer.piExtensionDialogRequest,
+  }
+}
+
+function applyPiExtensionUiState(input: {
+  extensionUi: PiExtensionUiState
+  sessionPath: string | null
+  setPiExtensionUiStateBySession: Dispatch<SetStateAction<Record<string, PiExtensionUiState>>>
+}) {
+  if (!input.sessionPath) return
+  const sessionPath = input.sessionPath
+  input.setPiExtensionUiStateBySession((current) => {
+    const currentUi = current[sessionPath]
+    if (currentUi && extensionUiStatesEqual(currentUi, input.extensionUi)) return current
+    return { ...current, [sessionPath]: input.extensionUi }
+  })
+}
+
 function handleComposerUpdateEvent(
   runtime: DesktopEventSyncRuntime,
   event: Extract<DesktopEvent, { type: 'composer-update' }>,
@@ -103,6 +183,11 @@ function handleComposerUpdateEvent(
     })
   )
     runtime.setComposerState(event.composer)
+  applyPiExtensionUiState({
+    extensionUi: composerExtensionUi(event.composer),
+    sessionPath: event.sessionPath,
+    setPiExtensionUiStateBySession: runtime.setPiExtensionUiStateBySession,
+  })
 }
 
 function mergeThreadPreferences(input: {
@@ -324,6 +409,12 @@ function handleThreadUpdateEvent(
       aliasedLocalDraftSessionPath === latestWorkspaceState.selectedSessionPath)
   )
     runtime.setComposerState(event.composer)
+  if (event.composer)
+    applyPiExtensionUiState({
+      extensionUi: composerExtensionUi(event.composer),
+      sessionPath: event.sessionPath,
+      setPiExtensionUiStateBySession: runtime.setPiExtensionUiStateBySession,
+    })
   if (
     event.reason === 'start' ||
     event.reason === 'end' ||
@@ -367,6 +458,17 @@ function handleSessionTreeRefreshEvent(
   })
 }
 
+function handlePiExtensionUiUpdateEvent(
+  runtime: DesktopEventSyncRuntime,
+  event: Extract<DesktopEvent, { type: 'pi-extension-ui-update' }>,
+) {
+  applyPiExtensionUiState({
+    extensionUi: event.extensionUi,
+    sessionPath: event.sessionPath,
+    setPiExtensionUiStateBySession: runtime.setPiExtensionUiStateBySession,
+  })
+}
+
 export function handleDesktopEvent(runtime: DesktopEventSyncRuntime, event: DesktopEvent) {
   if (event.type === 'shell-state-refresh') {
     runtime.scheduleShellStateRefresh()
@@ -386,6 +488,10 @@ export function handleDesktopEvent(runtime: DesktopEventSyncRuntime, event: Desk
   }
   if (event.type === 'composer-update') {
     handleComposerUpdateEvent(runtime, event)
+    return
+  }
+  if (event.type === 'pi-extension-ui-update') {
+    handlePiExtensionUiUpdateEvent(runtime, event)
     return
   }
   if (event.type === 'thread-update') handleThreadUpdateEvent(runtime, event)

@@ -10,12 +10,19 @@ import { buildComposerState } from '../runtime/composer-state.ts'
 import { createPiExtensionUiContext } from '../runtime/pi-extension-ui-state.ts'
 import type { PiRuntime } from '../runtime/types.ts'
 import { emitDesktopEvent } from './host-events.ts'
-import { publishComposerUpdate, publishThreadUpdate } from './live-thread-publisher.ts'
+import {
+  publishComposerUpdate,
+  publishPiExtensionUiUpdate,
+  publishThreadUpdate,
+} from './live-thread-publisher.ts'
 
 type RuntimeExtensionBindingHandlers = {
   isRuntimeExtensionCommandRunning: (runtime: PiRuntime) => boolean
   reloadRuntimeSettingsIfSafe: (runtimeKey: string) => Promise<boolean>
 }
+
+const PI_EXTENSION_UI_UPDATE_FRAME_MS = 16
+const piExtensionUiUpdateTimers = new WeakMap<PiRuntime, ReturnType<typeof setTimeout>>()
 
 function getRuntimeDiagnosticExtensionLabel(extensionPath: string) {
   if (extensionPath.startsWith('command:')) return `/${extensionPath.slice('command:'.length)}`
@@ -49,13 +56,24 @@ function publishRuntimeExtensionCommandState(
   }
 }
 
+function scheduleRuntimeExtensionUiUpdate(runtime: PiRuntime) {
+  if (piExtensionUiUpdateTimers.has(runtime)) return
+  const timer = setTimeout(() => {
+    piExtensionUiUpdateTimers.delete(runtime)
+    publishPiExtensionUiUpdate(runtime)
+  }, PI_EXTENSION_UI_UPDATE_FRAME_MS)
+  piExtensionUiUpdateTimers.set(runtime, timer)
+}
+
 export async function bindRuntimeExtensionHandlers(
   runtime: PiRuntime,
   handlers: RuntimeExtensionBindingHandlers,
 ) {
   await bindHeadlessAgentSessionExtensions(runtime.session, {
-    uiContext: createPiExtensionUiContext(runtime, () =>
-      publishRuntimeExtensionCommandState(runtime, handlers),
+    uiContext: createPiExtensionUiContext(
+      runtime,
+      () => scheduleRuntimeExtensionUiUpdate(runtime),
+      () => publishRuntimeExtensionCommandState(runtime, handlers),
     ),
     onExtensionCommandStateChange: () => publishRuntimeExtensionCommandState(runtime, handlers),
     onExtensionError: (error) => {
