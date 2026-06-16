@@ -103,6 +103,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const [terminalHiddenByCompactResize, setTerminalHiddenByCompactResize] = useState(false)
   const {
     activeComposerState,
+    activePiExtensionUiState,
     activeThreadData,
     collapsedProjectIds,
     composerProjectId,
@@ -281,6 +282,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
       mainSectionRef={mainSectionRef}
       takeoverVisible={takeoverVisible}
       activeComposerState={activeComposerState}
+      activePiExtensionUiState={activePiExtensionUiState}
       activeThreadData={activeThreadData}
       composerProjectId={composerProjectId}
       currentProjectName={currentProjectName}

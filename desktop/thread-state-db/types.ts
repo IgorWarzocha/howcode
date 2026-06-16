@@ -49,6 +49,7 @@ export type InboxThreadRow = {
   lastAssistantPreview: string | null
   running: number
   unread: number
+  branchName: string | null
   lastActivityMs: number
   isChat: number
 }

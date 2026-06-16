@@ -8,6 +8,7 @@ import type { AppShellController } from './useAppShellController'
 type AppShellWorkspaceProps = {
   controller: AppShellController
   activeComposerState: AppShellController['activeComposerState']
+  activePiExtensionUiState: AppShellController['activePiExtensionUiState']
   activeThreadData: AppShellController['activeThreadData']
   composerProjectId: string
   currentProjectName: string
@@ -31,6 +32,7 @@ type AppShellWorkspaceProps = {
 export function AppShellWorkspace({
   controller,
   activeComposerState,
+  activePiExtensionUiState,
   activeThreadData,
   composerProjectId,
   currentProjectName,
@@ -55,6 +57,7 @@ export function AppShellWorkspace({
       <ChatWorkspaceView
         controller={controller}
         activeComposerState={activeComposerState}
+        activePiExtensionUiState={activePiExtensionUiState}
         activeThreadData={activeThreadData}
         composerProjectId={composerProjectId}
         diffBaseline={diffBaseline}
@@ -89,6 +92,7 @@ export function AppShellWorkspace({
     <CodeWorkspaceView
       controller={controller}
       activeComposerState={activeComposerState}
+      activePiExtensionUiState={activePiExtensionUiState}
       activeThreadData={activeThreadData}
       composerProjectId={composerProjectId}
       currentProjectName={currentProjectName}

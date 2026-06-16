@@ -41,6 +41,7 @@ export type {
   PiExtensionDialogRequest,
   PiExtensionShortcut,
   PiExtensionStatus,
+  PiExtensionUiState,
   PiExtensionWidget,
   ProjectTrustRequest,
 } from './desktop-composer-contracts'

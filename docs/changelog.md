@@ -12,6 +12,9 @@
 - Resolved an annoying bug that didn't allow typing into Pi TUI.
 - Added Pi project trust prompts in desktop, backed by Pi's trust store.
 - Reworked widgets, dialogs, attachments, `/commands` to feel like a coherent stack.
+- Extension widgets no longer shake the thread view.
+- Inbox keeps branch-assigned threads in Code context.
+- Thread URLs no longer stick to local draft ids.
 - Rebuilt the workspace rails around the composer/thread. Better responsiveness.
 - Fixed the empty composer being taller than a composer with text in it.
 - Fixed Past sessions count alignment in the sidebar.

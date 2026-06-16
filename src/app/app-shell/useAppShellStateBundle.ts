@@ -1,6 +1,12 @@
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { useReducer, useState } from 'react'
-import type { ArchivedThread, ComposerState, ProjectGitState, ThreadData } from '../desktop/types'
+import type {
+  ArchivedThread,
+  ComposerState,
+  PiExtensionUiState,
+  ProjectGitState,
+  ThreadData,
+} from '../desktop/types'
 import { createInitialWorkspaceState, workspaceReducer } from '../state/workspace'
 
 export function useAppShellStateBundle() {
@@ -8,6 +14,9 @@ export function useAppShellStateBundle() {
   const [state, dispatch] = useReducer(workspaceReducer, [], createInitialWorkspaceState)
   const [archivedThreads, setArchivedThreads] = useState<ArchivedThread[]>([])
   const [composerState, setComposerState] = useState<ComposerState | null>(null)
+  const [piExtensionUiStateBySession, setPiExtensionUiStateBySession] = useState<
+    Record<string, PiExtensionUiState>
+  >({})
   const [liveThreadData, setLiveThreadData] = useState<ThreadData | null>(null)
   const [projectGitState, setProjectGitState] = useState<ProjectGitState | null>(null)
   const [projectGitLoading, setProjectGitLoading] = useState(false)
@@ -25,12 +34,14 @@ export function useAppShellStateBundle() {
     dispatch,
     extensionsProjectScopeActive,
     liveThreadData,
+    piExtensionUiStateBySession,
     projectGitLoading,
     projectGitState,
     setArchivedThreads,
     setComposerState,
     setExtensionsProjectScopeActive,
     setLiveThreadData,
+    setPiExtensionUiStateBySession,
     setProjectGitLoading,
     setProjectGitState,
     setSettingsOpenTarget,

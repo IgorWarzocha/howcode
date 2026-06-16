@@ -52,6 +52,7 @@ export type {
   PiExtensionDialogRequest,
   PiExtensionShortcut,
   PiExtensionStatus,
+  PiExtensionUiState,
   PiExtensionWidget,
   PiPackageCatalogItem,
   PiPackageCatalogPage,

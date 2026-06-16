@@ -19,6 +19,7 @@ const ArtifactPanel = lazy(() =>
 type ChatWorkspaceViewProps = {
   controller: AppShellController
   activeComposerState: AppShellController['activeComposerState']
+  activePiExtensionUiState: AppShellController['activePiExtensionUiState']
   activeThreadData: AppShellController['activeThreadData']
   composerProjectId: string
   diffBaseline: ProjectDiffBaseline
@@ -175,6 +176,7 @@ function ChatWorkspaceViewContent(props: ChatWorkspaceContentProps) {
 export function ChatWorkspaceView({
   controller,
   activeComposerState,
+  activePiExtensionUiState,
   activeThreadData,
   composerProjectId,
   diffBaseline,
@@ -248,6 +250,7 @@ export function ChatWorkspaceView({
       onToggleSidebar={onToggleSidebar}
       sidebarCollapsed={sidebarCollapsed}
       activeComposerState={activeComposerState}
+      activePiExtensionUiState={activePiExtensionUiState}
       pendingQueuedPromptIdsForSession={pendingQueuedPromptIdsForSession}
       handleEditQueuedPrompt={handleEditQueuedPrompt}
       handleRemoveQueuedPrompt={handleRemoveQueuedPrompt}

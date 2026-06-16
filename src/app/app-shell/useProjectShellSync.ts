@@ -2,7 +2,8 @@ import { isLocalSessionPath } from '@howcode/shared/session-paths'
 import type { Dispatch } from 'react'
 import { useEffect } from 'react'
 import type { ArchivedThread } from '../desktop/types'
-import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
+import type { CodeThreadSelection, WorkspaceAction, WorkspaceState } from '../state/workspace'
+import { resolveCodeThreadSelection } from '../state/workspace-action-handlers'
 import type { Project } from '../types'
 
 type UseProjectShellSyncInput = {
@@ -12,6 +13,7 @@ type UseProjectShellSyncInput = {
   selectedProjectId: WorkspaceState['selectedProjectId']
   selectedThreadId: WorkspaceState['selectedThreadId']
   selectedSessionPath: WorkspaceState['selectedSessionPath']
+  lastCodeThreadSelection: CodeThreadSelection | null
   takeoverVisible: WorkspaceState['takeoverVisible']
   loadProjectThreads: (
     projectId: string,
@@ -29,6 +31,7 @@ export function useProjectShellSync({
   selectedProjectId,
   selectedThreadId,
   selectedSessionPath,
+  lastCodeThreadSelection,
   takeoverVisible,
   loadProjectThreads,
   loadArchivedThreads,
@@ -51,12 +54,33 @@ export function useProjectShellSync({
         project.threads.some((thread) => thread.sessionPath === selectedSessionPath),
       )
 
-    if (hasSelectedProject && hasSelectedThread && hasSelectedSession) {
+    const resolvedLastCodeThreadSelection = resolveCodeThreadSelection(
+      projects,
+      lastCodeThreadSelection,
+    )
+    const hasSyncedRememberedCodeThread =
+      resolvedLastCodeThreadSelection?.projectId === lastCodeThreadSelection?.projectId &&
+      resolvedLastCodeThreadSelection?.threadId === lastCodeThreadSelection?.threadId &&
+      resolvedLastCodeThreadSelection?.sessionPath === lastCodeThreadSelection?.sessionPath
+
+    if (
+      hasSelectedProject &&
+      hasSelectedThread &&
+      hasSelectedSession &&
+      hasSyncedRememberedCodeThread
+    ) {
       return
     }
 
     dispatch({ type: 'sync-projects', projects })
-  }, [dispatch, projects, selectedProjectId, selectedSessionPath, selectedThreadId])
+  }, [
+    dispatch,
+    lastCodeThreadSelection,
+    projects,
+    selectedProjectId,
+    selectedSessionPath,
+    selectedThreadId,
+  ])
 
   useEffect(() => {
     const threadsScope = activeView === 'chat' ? 'chat' : 'code'

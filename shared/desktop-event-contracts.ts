@@ -1,6 +1,6 @@
 import type { AppUpdateState } from './desktop-app-update-contracts'
 import type { Artifact } from './desktop-artifact-contracts'
-import type { ComposerState } from './desktop-composer-contracts'
+import type { ComposerState, PiExtensionUiState } from './desktop-composer-contracts'
 import type { DictationModelId } from './desktop-dictation-contracts'
 import type { ProjectDiffStreamEvent } from './desktop-project-git-contracts'
 import type { ThreadData } from './desktop-thread-contracts'
@@ -69,4 +69,10 @@ export type DesktopEvent =
       projectId: string | null
       sessionPath: string | null
       composer: ComposerState
+    }
+  | {
+      type: 'pi-extension-ui-update'
+      projectId: string | null
+      sessionPath: string
+      extensionUi: PiExtensionUiState
     }

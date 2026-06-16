@@ -66,9 +66,15 @@ function shouldShowCodeDashboard(input: NewThreadPostEffectInput) {
   return input.action === 'project.add'
 }
 
-function getComposerModeForNextView(input: NewThreadPostEffectInput): 'chat' | 'code' {
+function getRequestedComposerMode(input: NewThreadPostEffectInput): 'chat' | 'code' {
   if (input.action === 'project.add') return 'code'
+  if (input.contextualPayload.composerMode === 'chat') return 'chat'
+  if (input.contextualPayload.composerMode === 'code') return 'code'
   return input.workspaceState.activeView === 'chat' ? 'chat' : 'code'
+}
+
+function getComposerModeForNextView(input: NewThreadPostEffectInput): 'chat' | 'code' {
+  return getRequestedComposerMode(input)
 }
 
 function applyOptimisticThread(
@@ -96,6 +102,7 @@ function openOptimisticThread(
     projectId: thread.projectId,
     threadId: thread.threadId,
     sessionPath: thread.sessionPath,
+    view: getRequestedComposerMode(input) === 'chat' ? 'chat' : 'thread',
   })
   return optimisticThread
 }
@@ -134,7 +141,7 @@ async function handleNewThreadBridgeResult(
     sessionPath: result.sessionPath,
   })
   await input.loadProjectThreads(nextProjectId, {
-    chat: input.workspaceState.activeView === 'chat',
+    chat: getRequestedComposerMode(input) === 'chat',
   })
   applyProjectThreadToShellState(input.queryClient, nextProjectId, optimisticThread, {
     revealProject: true,

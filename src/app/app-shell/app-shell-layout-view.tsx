@@ -30,6 +30,7 @@ type AppShellLayoutViewProps = {
   mainSectionRef: RefObject<HTMLElement | null>
   takeoverVisible: boolean
   activeComposerState: AppShellController['activeComposerState']
+  activePiExtensionUiState: AppShellController['activePiExtensionUiState']
   activeThreadData: AppShellController['activeThreadData']
   composerProjectId: string
   currentProjectName: string
@@ -232,6 +233,7 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
           <AppShellWorkspace
             controller={controller}
             activeComposerState={activeComposerState}
+            activePiExtensionUiState={props.activePiExtensionUiState}
             activeThreadData={activeThreadData}
             composerProjectId={composerProjectId}
             currentProjectName={currentProjectName}

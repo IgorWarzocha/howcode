@@ -75,6 +75,7 @@ function createRuntime(input: {
       setChatSidebarState: vi.fn(),
       setComposerState: vi.fn(),
       setLiveThreadData: vi.fn(),
+      setPiExtensionUiStateBySession: vi.fn(),
       setProjectGitState: vi.fn(),
       setThreadHistoryCompactions: vi.fn(),
       localDraftSessionPathByPersistedSessionPathRef: { current: new Map<string, string>() },

@@ -7,6 +7,7 @@ import {
 import { buildThreadHistorySlice, type SessionPathEntry } from '../../shared/thread-history.ts'
 import { isChatSessionPath } from '../chat-state-db.ts'
 import { buildComposerState } from '../runtime/composer-state.ts'
+import { getPiExtensionUiState } from '../runtime/pi-extension-ui-state.ts'
 import type { PiRuntime, RuntimeThreadReason } from '../runtime/types.ts'
 import { emitDesktopEvent } from './host-events.ts'
 import { getLiveToolProgressMessages } from './live-tool-progress.ts'
@@ -77,6 +78,17 @@ export function publishComposerUpdate(
     composer,
     projectId: context.projectId ?? null,
     sessionPath: context.sessionPath ?? null,
+  })
+}
+
+export function publishPiExtensionUiUpdate(runtime: PiRuntime) {
+  const sessionPath = runtime.session.sessionFile
+  if (!sessionPath) return
+  emitDesktopEvent({
+    type: 'pi-extension-ui-update',
+    projectId: runtime.cwd,
+    sessionPath,
+    extensionUi: getPiExtensionUiState(runtime),
   })
 }
 

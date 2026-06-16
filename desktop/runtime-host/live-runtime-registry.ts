@@ -14,7 +14,7 @@ import {
   isRuntimeExtensionCommandRunning,
   refreshRuntimeExtensionBindings as refreshRuntimeExtensionBindingsWithReload,
 } from './live-runtime-factory.ts'
-import { publishComposerUpdate } from './live-thread-publisher.ts'
+import { publishComposerUpdate, publishPiExtensionUiUpdate } from './live-thread-publisher.ts'
 
 export { abortRuntimeExtensionCommand, isRuntimeExtensionCommandRunning }
 
@@ -34,6 +34,11 @@ const liveRuntimeFactoryHandlers = {
   reloadRuntimeSettingsIfSafe,
   scheduleRuntimeDisposal,
   suspendRuntimeDisposal,
+}
+
+function clearAndPublishPiExtensionUi(runtime: PiRuntime) {
+  clearPiExtensionUi(runtime)
+  publishPiExtensionUiUpdate(runtime)
 }
 
 export async function refreshRuntimeExtensionBindings(runtime: PiRuntime) {
@@ -59,7 +64,7 @@ async function disposeRuntimeIfIdle(runtimeKey: string, record: RuntimeRecord) {
       scheduleRuntimeDisposal(runtimeKey)
       return
     }
-    clearPiExtensionUi(runtime)
+    clearAndPublishPiExtensionUi(runtime)
     runtime.session.dispose()
     if (runtimeRecords.get(runtimeKey) === record) runtimeRecords.delete(runtimeKey)
     staleRuntimeGenerations.delete(runtimeKey)
@@ -130,7 +135,7 @@ export async function getOrCreateRuntimeForSessionPath(
       return await existingRuntime.runtimePromise
     } else {
       const runtime = await existingRuntime.runtimePromise
-      clearPiExtensionUi(runtime)
+      clearAndPublishPiExtensionUi(runtime)
       runtime.session.dispose()
       runtimeRecords.delete(persistedSessionPath)
     }
@@ -320,7 +325,7 @@ async function disposeRuntimeRecord(runtimeKey: string, record: RuntimeRecord, r
     // Continue disposal; the workspace is being torn down.
   }
   try {
-    clearPiExtensionUi(runtime)
+    clearAndPublishPiExtensionUi(runtime)
     runtime.session.dispose()
   } catch {
     // Ignore shutdown races.
@@ -369,7 +374,7 @@ export async function disposeAllRuntimeHosts() {
       clearRuntimeDisposeTimeout(runtimeKey)
       try {
         const runtime = await record.runtimePromise
-        clearPiExtensionUi(runtime)
+        clearAndPublishPiExtensionUi(runtime)
         runtime.session.dispose()
       } catch {
         // Ignore shutdown races.
