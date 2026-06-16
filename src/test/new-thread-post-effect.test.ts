@@ -64,6 +64,14 @@ function createProjectAddResult(): DesktopActionResult {
   }
 }
 
+function createThreadNewResultWithoutComposer(): DesktopActionResult {
+  const result = createThreadNewResult()
+  if (!result.result) return result
+  const resultData = { ...result.result }
+  delete resultData.composer
+  return { ...result, result: resultData }
+}
+
 describe('new thread post effect', () => {
   it('opens code new-thread actions into a clean thread composer instead of the dashboard', async () => {
     const dispatch = vi.fn()
@@ -91,6 +99,7 @@ describe('new thread post effect', () => {
       projectId: '/repo/project-a',
       threadId: 'draft-1',
       sessionPath: 'local://%2Frepo%2Fproject-a/draft-1',
+      view: 'thread',
     })
     expect(dispatch).not.toHaveBeenCalledWith(
       expect.objectContaining({
@@ -126,9 +135,42 @@ describe('new thread post effect', () => {
       expect.objectContaining({
         type: 'open-thread',
         sessionPath: 'local://%2Frepo%2Fproject-a/draft-1',
+        view: 'chat',
       }),
     )
     expect(setQueryData).toHaveBeenCalled()
+  })
+
+  it('honors explicit chat mode when starting a new inbox session', async () => {
+    const dispatch = vi.fn()
+    const loadProjectThreads = vi.fn()
+    const loadComposerState = vi.fn(async () => createThreadNewResult().result?.composer ?? null)
+
+    await applyNewThreadPostEffect({
+      action: 'thread.new',
+      contextualPayload: { projectId: '/repo/project-a', composerMode: 'chat' },
+      actionResult: createThreadNewResultWithoutComposer(),
+      workspaceState: createWorkspaceState({ activeView: 'inbox' }),
+      composerProjectId: '/repo/project-a',
+      queryClient: { setQueryData: vi.fn() } as never,
+      dispatch,
+      refreshShellState: vi.fn(),
+      loadProjectThreads,
+      loadComposerState,
+      setComposerState: vi.fn(),
+    })
+
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'open-thread',
+        view: 'chat',
+      }),
+    )
+    expect(loadProjectThreads).toHaveBeenCalledWith('/repo/project-a', { chat: true })
+    expect(loadComposerState).toHaveBeenCalledWith({
+      projectId: '/repo/project-a',
+      composerMode: 'chat',
+    })
   })
 
   it('loads code composer defaults after adding a project from chat', async () => {

@@ -145,4 +145,22 @@ describe('start-project-thread state', () => {
     expect(next.selectedProjectId).toBe('/repo/project-b')
     expect(next.lastCodeThreadSelection).toBeNull()
   })
+
+  it('clears remembered code threads when returning to landing', () => {
+    const next = workspaceReducer(
+      createWorkspaceState({
+        activeView: 'chat',
+        lastCodeThreadSelection: {
+          projectId: '/repo/project-a',
+          threadId: 'code-thread-1',
+          sessionPath: '/sessions/project-a/code-thread.jsonl',
+        },
+      }),
+      { type: 'show-landing' },
+    )
+
+    expect(next.activeView).toBe('landing')
+    expect(next.selectedProjectId).toBe('')
+    expect(next.lastCodeThreadSelection).toBeNull()
+  })
 })

@@ -437,6 +437,7 @@ export const workspaceActionHandlers = {
     selectedThreadId: null,
     selectedSessionPath: null,
     selectedDiffFilePath: null,
+    lastCodeThreadSelection: null,
     takeoverVisible: false,
     settingsOpen: false,
     settingsPanelOpen: false,
