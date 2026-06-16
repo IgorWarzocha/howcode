@@ -7,7 +7,7 @@ type NonGitOpsView = Exclude<View, 'gitops'>
 
 type AppRouteSearch = Record<string, unknown>
 
-type AppRouteSnapshot = {
+export type AppRouteSnapshot = {
   pathname: string
   search: AppRouteSearch
 }
@@ -174,6 +174,16 @@ function getRouteKey(snapshot: AppRouteSnapshot) {
   return JSON.stringify(snapshot)
 }
 
+export function shouldDeferStateRouteNavigation(input: {
+  projects: Project[]
+  routeChanged: boolean
+  routeSnapshot: AppRouteSnapshot
+  stateChanged: boolean
+}) {
+  if (!input.stateChanged) return true
+  return input.routeChanged && isWaitingForRouteData(input.routeSnapshot, input.projects)
+}
+
 export function useAppShellUrlSync({ dispatch, projects, state }: AppShellUrlSyncInput) {
   const router = useRouter()
   const snapshot = useRouterState({
@@ -212,7 +222,7 @@ export function useAppShellUrlSync({ dispatch, projects, state }: AppShellUrlSyn
       return
     }
 
-    if (!stateChanged || isWaitingForRouteData(routeSnapshot, projects)) {
+    if (shouldDeferStateRouteNavigation({ projects, routeChanged, routeSnapshot, stateChanged })) {
       return
     }
 

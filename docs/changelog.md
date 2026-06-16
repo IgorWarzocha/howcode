@@ -14,6 +14,7 @@
 - Reworked widgets, dialogs, attachments, `/commands` to feel like a coherent stack.
 - Extension status/widgets now refresh separately and clear cleanly, so animated statuslines should stop shaking the thread view.
 - Code/worktree sessions now survive Chat/Inbox/sidebar detours, and Inbox keeps branch-assigned threads in the right code/worktree context.
+- Thread URLs now follow the persisted session after a local draft is saved, instead of getting stuck on stale draft ids.
 - Rebuilt the workspace rails around the composer/thread. Better responsiveness.
 - Fixed the empty composer being taller than a composer with text in it.
 - Fixed Past sessions count alignment in the sidebar.
