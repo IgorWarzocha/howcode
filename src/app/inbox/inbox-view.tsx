@@ -3,6 +3,7 @@ import { isCompactSlashCommand } from '@howcode/shared/composer-slash-commands'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { useState } from 'react'
 import { EmptyStateCard } from '../common/empty-state-card'
+import { getInboxThreadComposerMode, getInboxThreadOpenView } from '../common/inbox-thread-scope'
 import { MarkdownContent } from '../common/markdown-content'
 import { getDesktopActionErrorMessage } from '../desktop/action-results'
 import { getErrorMessage } from '../desktop/error-messages'
@@ -50,7 +51,12 @@ type InboxViewProps = {
     path?: string | null
     rootPath?: string | null
   }) => Promise<ComposerFilePickerState | null>
-  onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void
+  onOpenThread: (
+    projectId: string,
+    threadId: string,
+    sessionPath: string,
+    view?: 'chat' | 'thread' | undefined,
+  ) => void
   onOpenSettingsView: (target?: SettingsOpenTarget) => void
   sidebarCollapsed: boolean
   sidebarCompactMode: boolean
@@ -74,7 +80,8 @@ function getInboxSendPayload(input: {
       attachments: isCompactCommand ? [] : input.attachments,
       suppressInbox: true,
       streamingBehavior: input.appSettings.composerStreamingBehavior,
-      composerMode: input.thread.isChat ? 'chat' : 'code',
+      composerMode: getInboxThreadComposerMode(input.thread),
+      branchName: input.thread.branchName,
     } as const,
   }
 }
@@ -186,6 +193,12 @@ function InboxThreadHeader({ thread }: { thread: InboxThread }) {
           className={`flex min-w-0 items-center gap-2 ${appTypeMetaClass} ${appToneSubtleClass}`}
         >
           <span className="truncate">{thread.projectName}</span>
+          {thread.branchName ? (
+            <>
+              <span aria-hidden="true">•</span>
+              <span className="truncate">{thread.branchName}</span>
+            </>
+          ) : null}
           <span aria-hidden="true">•</span>
           <span className="shrink-0 tabular-nums">{thread.age}</span>
           {thread.running ? (
@@ -379,13 +392,19 @@ export function InboxView({
               onDismiss={() => onDismissThread(thread)}
               onListAttachmentEntries={onListAttachmentEntries}
               onOpenThread={() =>
-                onOpenThread(thread.projectId, thread.threadId, thread.sessionPath)
+                onOpenThread(
+                  thread.projectId,
+                  thread.threadId,
+                  thread.sessionPath,
+                  getInboxThreadOpenView(thread),
+                )
               }
               onOpenSettingsView={onOpenSettingsView}
               onStartNewSession={() =>
                 void onAction('thread.new', {
                   projectId: thread.projectId,
-                  composerMode: thread.isChat ? 'chat' : 'code',
+                  composerMode: getInboxThreadComposerMode(thread),
+                  branchName: thread.branchName,
                 })
               }
               onSend={(sendInput) => handleSend(sendInput)}

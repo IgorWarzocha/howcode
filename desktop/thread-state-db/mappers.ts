@@ -109,6 +109,7 @@ export function mapInboxThreadRow(row: InboxThreadRow): InboxThread {
     preview: row.lastAssistantPreview,
     running: Boolean(row.running),
     unread: Boolean(row.unread),
+    branchName: row.branchName ?? undefined,
     isChat: Boolean(row.isChat),
   }
 }

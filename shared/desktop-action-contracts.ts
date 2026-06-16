@@ -175,6 +175,8 @@ export type DesktopActionPayloadMap = {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined
     threadId?: string | undefined
+    composerMode?: 'chat' | 'code' | null
+    branchName?: string | undefined | null | undefined
   }
   'thread.archive': { threadId: string }
   'thread.archive-many': { projectId?: string | undefined | null | undefined; threadIds: string[] }

@@ -35,6 +35,7 @@ export type InboxThread = {
   preview: string | null
   running: boolean
   unread: boolean
+  branchName?: string | null | undefined
   isChat?: boolean | undefined
 }
 

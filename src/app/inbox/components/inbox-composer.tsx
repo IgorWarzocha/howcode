@@ -1,6 +1,7 @@
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { type Dispatch, type SetStateAction, useRef, useState } from 'react'
 import { useHowcodeKeybindingCommand } from '../../app-shell/keybinding-events'
+import { getInboxThreadComposerMode } from '../../common/inbox-thread-scope'
 import { ComposerPromptInputPanel } from '../../composer/composer-prompt-input-panel'
 import { useComposerAttachmentPicker } from '../../composer/useComposerAttachmentPicker'
 import { useComposerClipboardHandlers } from '../../composer/useComposerClipboardHandlers'
@@ -105,6 +106,7 @@ export function InboxComposer({
   const skillMentionPanelRef = useRef<HTMLDivElement>(null)
   const sendLockRef = useRef(false)
   const [localActionPending, setLocalActionPending] = useState(false)
+  const composerMode = getInboxThreadComposerMode(thread)
   const { attachmentsRef, draftValueRef, setAttachmentValue, setDraftValue } =
     useInboxComposerStateRefs({
       attachments,
@@ -196,6 +198,7 @@ export function InboxComposer({
     sessionPath: thread.sessionPath,
     setDraft: setDraftValue,
     send: () => void send(),
+    composerMode,
     onOpenSettingsView,
     onStartNewSession,
   })
@@ -207,6 +210,7 @@ export function InboxComposer({
     draft,
     projectId: thread.projectId,
     sessionPath: thread.sessionPath,
+    composerMode,
     setDraft: setDraftValue,
   })
   const skillMentionListSignature = skillMentions.skills
@@ -270,7 +274,8 @@ export function InboxComposer({
         text: '/compact',
         attachments: [],
         streamingBehavior: appSettings.composerStreamingBehavior,
-        composerMode: thread.isChat ? 'chat' : 'code',
+        composerMode,
+        branchName: thread.branchName,
       })
 
       const actionErrorMessage = getDesktopActionErrorMessage(result, 'Could not compact context.')
@@ -404,6 +409,7 @@ export function InboxComposer({
                 modelId: availableModel.id,
                 projectId: thread.projectId,
                 sessionPath: thread.sessionPath,
+                composerMode,
               })
             }}
             onSelectThinkingLevel={(level) => {
@@ -411,6 +417,7 @@ export function InboxComposer({
                 level,
                 projectId: thread.projectId,
                 sessionPath: thread.sessionPath,
+                composerMode,
               })
             }}
             onToggleModelMenu={() =>

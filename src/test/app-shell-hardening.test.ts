@@ -62,6 +62,7 @@ function createWorkspaceState(overrides: Partial<WorkspaceState> = {}): Workspac
     settingsOpen: false,
     settingsPanelOpen: false,
     collapsedProjectIds: {},
+    lastCodeThreadSelection: null,
     ...overrides,
   }
 }

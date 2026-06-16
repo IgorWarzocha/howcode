@@ -1,5 +1,6 @@
 import type { Project, View } from '../types'
 import type {
+  CodeThreadSelection,
   UtilityView,
   UtilityViewReturnState,
   WorkspaceAction,
@@ -60,9 +61,52 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
     utilityViewReturnState: null,
     settingsOpen: false,
     settingsPanelOpen: false,
+    lastCodeThreadSelection: null,
     collapsedProjectIds: Object.fromEntries(
       projects.map((project) => [project.id, project.collapsed ?? true]),
     ),
+  }
+}
+
+function getCurrentCodeThreadSelection(state: WorkspaceState): CodeThreadSelection | null {
+  if (
+    state.activeView !== 'chat' &&
+    state.selectedProjectId &&
+    state.selectedThreadId &&
+    state.selectedSessionPath
+  ) {
+    return {
+      projectId: state.selectedProjectId,
+      threadId: state.selectedThreadId,
+      sessionPath: state.selectedSessionPath,
+    }
+  }
+
+  return state.lastCodeThreadSelection
+}
+
+function withCodeThreadSelection(
+  state: WorkspaceState,
+  selection: CodeThreadSelection,
+): WorkspaceState {
+  return {
+    ...state,
+    activeView: 'thread',
+    selectedProjectId: selection.projectId,
+    hasSelectedProject: true,
+    landingVisible: false,
+    selectedThreadId: selection.threadId,
+    selectedSessionPath: selection.sessionPath,
+    terminalVisible: getTerminalVisibilityForSession(
+      state.terminalVisibleBySession,
+      selection.sessionPath,
+    ),
+    selectedDiffFilePath: null,
+    takeoverVisible: false,
+    gitOpsReturnView: 'thread',
+    utilityViewReturnState: null,
+    collapsedProjectIds: { ...state.collapsedProjectIds, [selection.projectId]: false },
+    lastCodeThreadSelection: selection,
   }
 }
 
@@ -179,6 +223,11 @@ function showViewState(
   state: WorkspaceState,
   action: Extract<WorkspaceAction, { type: 'show-view' }>,
 ): WorkspaceState {
+  const lastCodeThreadSelection = getCurrentCodeThreadSelection(state)
+  if (action.view === 'code' && lastCodeThreadSelection) {
+    return withCodeThreadSelection(state, lastCodeThreadSelection)
+  }
+
   const utilityViewReturnState = isUtilityView(action.view)
     ? isUtilityView(state.activeView)
       ? state.utilityViewReturnState
@@ -191,6 +240,7 @@ function showViewState(
     landingVisible: action.view === 'code' ? state.landingVisible : false,
     settingsOpen: false,
     settingsPanelOpen: false,
+    lastCodeThreadSelection,
     selectedThreadId:
       action.view === 'thread' || (action.view === 'chat' && state.activeView === 'chat')
         ? state.selectedThreadId
@@ -209,6 +259,7 @@ function openThreadState(
   state: WorkspaceState,
   action: Extract<WorkspaceAction, { type: 'open-thread' }>,
 ): WorkspaceState {
+  const activeView = action.view ?? (state.activeView === 'chat' ? 'chat' : 'thread')
   const nextTerminalVisibleBySession = shouldMigrateTerminalVisibilityForOpenedThread(state, action)
     ? {
         ...state.terminalVisibleBySession,
@@ -223,7 +274,7 @@ function openThreadState(
     : state.terminalVisibleBySession
   return {
     ...state,
-    activeView: action.view ?? (state.activeView === 'chat' ? 'chat' : 'thread'),
+    activeView,
     selectedProjectId: action.projectId,
     hasSelectedProject: true,
     landingVisible: false,
@@ -243,6 +294,14 @@ function openThreadState(
     gitOpsReturnView: 'thread',
     utilityViewReturnState: null,
     collapsedProjectIds: { ...state.collapsedProjectIds, [action.projectId]: false },
+    lastCodeThreadSelection:
+      activeView === 'chat'
+        ? state.lastCodeThreadSelection
+        : {
+            projectId: action.projectId,
+            threadId: action.threadId,
+            sessionPath: action.sessionPath,
+          },
   }
 }
 
@@ -278,6 +337,11 @@ function startProjectThreadState(
     gitOpsReturnView: 'project',
     utilityViewReturnState: null,
     collapsedProjectIds: { ...state.collapsedProjectIds, [action.projectId]: false },
+    lastCodeThreadSelection: {
+      projectId: action.projectId,
+      threadId: action.threadId,
+      sessionPath: action.sessionPath,
+    },
   }
 }
 
@@ -388,6 +452,7 @@ export const workspaceActionHandlers = {
     selectedSessionPath: null,
     selectedDiffFilePath: null,
     takeoverVisible: false,
+    lastCodeThreadSelection: null,
   }),
   'select-inbox-thread': (
     state: WorkspaceState,

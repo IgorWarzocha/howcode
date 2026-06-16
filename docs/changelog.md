@@ -13,6 +13,7 @@
 - Added Pi project trust prompts in desktop, backed by Pi's trust store.
 - Reworked widgets, dialogs, attachments, `/commands` to feel like a coherent stack.
 - Extension status/widgets now refresh separately, so animated statuslines should stop shaking the thread view.
+- Code/worktree sessions now survive Chat/Inbox/sidebar detours, and Inbox keeps branch-assigned threads in the right code/worktree context.
 - Rebuilt the workspace rails around the composer/thread. Better responsiveness.
 - Fixed the empty composer being taller than a composer with text in it.
 - Fixed Past sessions count alignment in the sidebar.

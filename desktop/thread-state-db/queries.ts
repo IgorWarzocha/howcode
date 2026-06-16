@@ -31,8 +31,13 @@ import type {
 } from './types.ts'
 import { ensureProject } from './writes.ts'
 
-function matchesThreadScope(sessionPath: string, options: { chat?: boolean | undefined } = {}) {
-  return options.chat ? isChatSessionPath(sessionPath) : !isChatSessionPath(sessionPath)
+function matchesThreadScope(
+  row: { branchName?: string | null | undefined; sessionPath: string },
+  options: { chat?: boolean | undefined } = {},
+) {
+  const isChat = isChatSessionPath(row.sessionPath)
+  if (options.chat) return isChat && !row.branchName?.trim()
+  return !isChat || Boolean(row.branchName?.trim())
 }
 
 function getChatSessionLikePattern() {
@@ -72,9 +77,25 @@ export function listProjects(cwd: string): Project[] {
         LEFT JOIN threads
           ON threads.cwd = projects.cwd
           AND threads.archived = 0
-          AND threads.session_path NOT LIKE ?
-          AND NOT EXISTS (
-            SELECT 1 FROM chat_threads WHERE chat_threads.session_path = threads.session_path
+          AND (
+            (
+              threads.branch_name IS NOT NULL
+              AND TRIM(threads.branch_name) != ''
+            )
+            OR EXISTS (
+              SELECT 1
+              FROM project_worktrees AS thread_worktrees
+              WHERE thread_worktrees.cwd = threads.cwd
+                AND thread_worktrees.is_main = 0
+                AND thread_worktrees.branch_name IS NOT NULL
+                AND TRIM(thread_worktrees.branch_name) != ''
+            )
+            OR (
+              threads.session_path NOT LIKE ?
+              AND NOT EXISTS (
+                SELECT 1 FROM chat_threads WHERE chat_threads.session_path = threads.session_path
+              )
+            )
           )
         WHERE projects.hidden = 0
         GROUP BY
@@ -233,10 +254,11 @@ export function listProjectThreads(
           threads.running AS running,
           COALESCE(inbox_items.unread, 0) AS unread,
           threads.pinned AS pinned,
-          threads.branch_name AS branchName,
+          COALESCE(threads.branch_name, project_worktrees.branch_name) AS branchName,
           threads.last_modified_ms AS lastModifiedMs
         FROM threads
         LEFT JOIN inbox_items ON inbox_items.session_path = threads.session_path
+        LEFT JOIN project_worktrees ON project_worktrees.cwd = threads.cwd AND project_worktrees.is_main = 0
         WHERE threads.cwd = ? AND threads.archived = 0
         ORDER BY threads.pinned DESC, threads.last_modified_ms DESC, threads.title COLLATE NOCASE ASC
       `,
@@ -244,7 +266,7 @@ export function listProjectThreads(
     .all(projectId) as ThreadRow[]
 
   return rows
-    .filter((row) => matchesThreadScope(row.sessionPath, options))
+    .filter((row) => matchesThreadScope(row, options))
     .map((row) =>
       mapThreadRow({
         ...row,
@@ -271,10 +293,11 @@ export function listArchivedProjectThreads(
           threads.running AS running,
           COALESCE(inbox_items.unread, 0) AS unread,
           threads.pinned AS pinned,
-          threads.branch_name AS branchName,
+          COALESCE(threads.branch_name, project_worktrees.branch_name) AS branchName,
           threads.last_modified_ms AS lastModifiedMs
         FROM threads
         LEFT JOIN inbox_items ON inbox_items.session_path = threads.session_path
+        LEFT JOIN project_worktrees ON project_worktrees.cwd = threads.cwd AND project_worktrees.is_main = 0
         WHERE threads.cwd = ? AND threads.archived = 1
         ORDER BY threads.last_modified_ms DESC, threads.title COLLATE NOCASE ASC
       `,
@@ -282,7 +305,7 @@ export function listArchivedProjectThreads(
     .all(projectId) as ThreadRow[]
 
   return rows
-    .filter((row) => matchesThreadScope(row.sessionPath, options))
+    .filter((row) => matchesThreadScope(row, options))
     .map((row) =>
       mapThreadRow({
         ...row,
@@ -309,11 +332,13 @@ export function listInboxThreads(): InboxThread[] {
           inbox_items.last_assistant_preview AS lastAssistantPreview,
           threads.running AS running,
           inbox_items.unread AS unread,
+          COALESCE(threads.branch_name, project_worktrees.branch_name) AS branchName,
           COALESCE(inbox_items.last_assistant_at_ms, threads.last_modified_ms) AS lastActivityMs,
           CASE WHEN chat_threads.session_path IS NULL THEN 0 ELSE 1 END AS isChat
         FROM inbox_items
         INNER JOIN threads ON threads.session_path = inbox_items.session_path
         INNER JOIN projects ON projects.cwd = threads.cwd
+        LEFT JOIN project_worktrees ON project_worktrees.cwd = threads.cwd AND project_worktrees.is_main = 0
         LEFT JOIN chat_threads ON chat_threads.session_path = threads.session_path
         WHERE
           projects.hidden = 0

@@ -4,6 +4,12 @@ import { workspaceActionHandlers } from './workspace-action-handlers'
 export type NonGitOpsView = Exclude<View, 'gitops'>
 export type UtilityView = Extract<View, 'settings' | 'extensions' | 'skills' | 'sessions'>
 
+export type CodeThreadSelection = {
+  projectId: string
+  threadId: string
+  sessionPath: string
+}
+
 export type UtilityViewReturnState = {
   activeView: View
   selectedProjectId: string
@@ -40,6 +46,7 @@ export type WorkspaceState = {
   settingsOpen: boolean
   settingsPanelOpen: boolean
   collapsedProjectIds: Record<string, boolean>
+  lastCodeThreadSelection: CodeThreadSelection | null
 }
 
 export type WorkspaceAction =
@@ -112,6 +119,7 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
     collapsedProjectIds: Object.fromEntries(
       projects.map((project) => [project.id, project.collapsed ?? true]),
     ),
+    lastCodeThreadSelection: null,
   }
 }
 
