@@ -79,7 +79,7 @@ describe('resolveRuntimeProjectTrust', () => {
         ProjectTrustStore: createTrustStoreFactory(false),
         agentDir: '/agent',
         cwd: '/repo',
-        hasProjectTrustInputs: () => false,
+        hasTrustRequiringProjectResources: () => false,
       }),
     ).toBe(true)
   })
@@ -90,7 +90,7 @@ describe('resolveRuntimeProjectTrust', () => {
         ProjectTrustStore: createTrustStoreFactory(true),
         agentDir: '/agent',
         cwd: '/repo',
-        hasProjectTrustInputs: () => true,
+        hasTrustRequiringProjectResources: () => true,
       }),
     ).toBe(true)
 
@@ -99,7 +99,7 @@ describe('resolveRuntimeProjectTrust', () => {
         ProjectTrustStore: createTrustStoreFactory(false),
         agentDir: '/agent',
         cwd: '/repo',
-        hasProjectTrustInputs: () => true,
+        hasTrustRequiringProjectResources: () => true,
       }),
     ).toBe(false)
   })
@@ -111,7 +111,7 @@ describe('resolveRuntimeProjectTrust', () => {
         agentDir: '/agent',
         cwd: '/repo',
         defaultProjectTrust: 'ask',
-        hasProjectTrustInputs: () => true,
+        hasTrustRequiringProjectResources: () => true,
       }),
     ).toBe(false)
   })
@@ -123,7 +123,7 @@ describe('resolveRuntimeProjectTrust', () => {
         agentDir: '/agent',
         cwd: '/repo',
         defaultProjectTrust: 'always',
-        hasProjectTrustInputs: () => true,
+        hasTrustRequiringProjectResources: () => true,
       }),
     ).toBe(true)
 
@@ -133,7 +133,7 @@ describe('resolveRuntimeProjectTrust', () => {
         agentDir: '/agent',
         cwd: '/repo',
         defaultProjectTrust: 'never',
-        hasProjectTrustInputs: () => true,
+        hasTrustRequiringProjectResources: () => true,
       }),
     ).toBe(false)
   })
@@ -144,7 +144,7 @@ describe('resolveRuntimeProjectTrust', () => {
         ProjectTrustStore: createTrustStoreFactory({ '/home/igorw': true }),
         agentDir: '/agent',
         cwd: '/home/igorw/Work/howcode',
-        hasProjectTrustInputs: () => true,
+        hasTrustRequiringProjectResources: () => true,
       }),
     ).toBe(true)
   })

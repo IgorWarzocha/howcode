@@ -147,11 +147,11 @@ export function resolveRuntimeProjectTrust(options: {
   agentDir: string
   cwd: string
   defaultProjectTrust?: PiDefaultProjectTrust | undefined
-  hasProjectTrustInputs: (cwd: string) => boolean
+  hasTrustRequiringProjectResources: (cwd: string) => boolean
   settingsCwd?: string | null | undefined
 }) {
   const trustCwd = options.cwd
-  if (!options.hasProjectTrustInputs(trustCwd)) return true
+  if (!options.hasTrustRequiringProjectResources(trustCwd)) return true
 
   const storedDecision = getStoredProjectTrustDecision(options)
   if (storedDecision !== null) return storedDecision
@@ -163,9 +163,9 @@ export function getRuntimeProjectTrustRequest(options: {
   agentDir: string
   cwd: string
   defaultProjectTrust?: PiDefaultProjectTrust | undefined
-  hasProjectTrustInputs: (cwd: string) => boolean
+  hasTrustRequiringProjectResources: (cwd: string) => boolean
 }) {
-  if (!options.hasProjectTrustInputs(options.cwd)) return null
+  if (!options.hasTrustRequiringProjectResources(options.cwd)) return null
   const storedDecision = getStoredProjectTrustDecision(options)
   return storedDecision === null && (options.defaultProjectTrust ?? 'ask') === 'ask'
     ? { cwd: options.cwd }

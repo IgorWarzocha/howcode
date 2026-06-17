@@ -125,7 +125,7 @@ async function createRuntime(options: {
     ProjectTrustStore,
     createAgentSession,
     getAgentDir,
-    hasProjectTrustInputs,
+    hasTrustRequiringProjectResources,
   } = await getPiModule()
   const agentDir = getAgentDir()
   const defaultProjectTrust = getRuntimeDefaultProjectTrust({
@@ -138,7 +138,7 @@ async function createRuntime(options: {
     agentDir,
     cwd: options.cwd,
     defaultProjectTrust,
-    hasProjectTrustInputs,
+    hasTrustRequiringProjectResources,
     settingsCwd: options.settingsCwd,
   })
   const authStorage = AuthStorage.create()
