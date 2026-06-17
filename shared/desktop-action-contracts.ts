@@ -190,6 +190,12 @@ export type DesktopActionPayloadMap = {
   'thread.delete': { threadId: string }
   'thread.delete-many': { threadIds: string[]; projectIds?: string[] | undefined }
   'thread.pin': { threadId: string; projectId?: string | undefined | null | undefined }
+  'thread.rename': {
+    threadId: string
+    projectId?: string | undefined | null | undefined
+    sessionPath?: string | undefined | null | undefined
+    value: string
+  }
   'workspace.commit': {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined
@@ -390,6 +396,7 @@ export type DesktopActionResultData = {
   pushFailed?: boolean | undefined
   repoProjectCount?: number | undefined
   sessionPath?: string | undefined | null | undefined
+  title?: string | undefined
   threadId?: string | undefined
 }
 

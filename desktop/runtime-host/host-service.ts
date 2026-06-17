@@ -43,4 +43,8 @@ export {
 } from './skill-creator-service.ts'
 export { loadPiThemeStateInHost as loadPiThemeState } from './theme-service.ts'
 export { loadThreadPreviewAtEntry } from './thread-preview-service.ts'
-export { loadThreadSnapshot, searchThreadSnapshot } from './thread-snapshot-service.ts'
+export {
+  loadThreadSnapshot,
+  renameThreadSession,
+  searchThreadSnapshot,
+} from './thread-snapshot-service.ts'

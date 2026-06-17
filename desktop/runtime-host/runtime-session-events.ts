@@ -105,6 +105,10 @@ export function handleRuntimeSessionEvent(
         })
       }, 0)
       return
+    case 'session_info_changed':
+      cancelLiveThreadUpdate(runtime)
+      void publishThreadUpdate(runtime, 'update')
+      return
     case 'tool_execution_start':
     case 'tool_execution_update':
     case 'tool_execution_end':

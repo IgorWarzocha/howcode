@@ -52,6 +52,14 @@ export function ChatThreadDropItem({
           onThreadOpen(thread.projectId, thread.id, thread.sessionPath, 'chat')
         }
         onPin={() => void onAction('thread.pin', { threadId: thread.id }).then(onRefresh)}
+        onRename={(title) =>
+          void onAction('thread.rename', {
+            projectId: thread.projectId,
+            sessionPath: thread.sessionPath,
+            threadId: thread.id,
+            value: title,
+          })
+        }
       />
     </li>
   )

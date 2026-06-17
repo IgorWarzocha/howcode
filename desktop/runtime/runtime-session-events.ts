@@ -149,6 +149,11 @@ export function handleRuntimeSessionEvent(
   }
   if (event.type === 'compaction_end')
     return handleRuntimeCompactionEnd(runtime, runtimeKey, handlers)
+  if (event.type === 'session_info_changed') {
+    cancelLiveThreadUpdate(runtime)
+    void handlers.publishThreadUpdate(runtime, 'update')
+    return
+  }
   if (
     event.type === 'tool_execution_start' ||
     event.type === 'tool_execution_update' ||

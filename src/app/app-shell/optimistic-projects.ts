@@ -31,6 +31,31 @@ export function getOptimisticallyRenamedShellState(
   } satisfies ShellState
 }
 
+export function getOptimisticallyRenamedThreadShellState(
+  currentState: ShellState | null,
+  payload: ActionPayload,
+) {
+  if (!currentState) return null
+  const projectId = getPayloadProjectId(payload)
+  const threadId = getPayloadThreadId(payload)
+  const title = typeof payload.value === 'string' ? payload.value.trim() : ''
+  if (!(projectId && threadId && title)) return currentState
+
+  return {
+    ...currentState,
+    projects: currentState.projects.map((project) =>
+      project.id === projectId
+        ? {
+            ...project,
+            threads: project.threads.map((thread) =>
+              thread.id === threadId ? { ...thread, title } : thread,
+            ),
+          }
+        : project,
+    ),
+  } satisfies ShellState
+}
+
 export function getOptimisticallyPinnedShellState(
   currentState: ShellState | null,
   action: DesktopAction,

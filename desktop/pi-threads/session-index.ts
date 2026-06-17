@@ -219,7 +219,7 @@ export function mapSessionSummaryToRecord(cwd: string, session: SessionSummary) 
     id: session.id,
     cwd: session.cwd || cwd,
     sessionPath: session.path,
-    title: normalizeThreadTitle(session.firstMessage || session.name),
+    title: normalizeThreadTitle(session.name || session.firstMessage),
     lastModifiedMs: session.modified.getTime(),
   }
 }
