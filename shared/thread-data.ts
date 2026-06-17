@@ -1,10 +1,15 @@
 import type { AgentMessage } from '@earendil-works/pi-agent-core'
 import type { ThreadCustomMessageRecord, ThreadData } from './desktop-contracts'
-import { getFirstUserTurnTitle, mapAgentMessagesToUiMessages } from './pi-message-mapper'
+import {
+  getFirstUserTurnTitle,
+  mapAgentMessagesToUiMessages,
+  normalizeThreadTitle,
+} from './pi-message-mapper'
 
 type BuildThreadDataInput = {
   sessionPath: string
   sourceMessages: readonly AgentMessage[]
+  sessionName?: string | undefined
   previousMessageCount: number
   isStreaming: boolean
   isCompacting?: boolean | undefined
@@ -37,16 +42,20 @@ function getThreadCustomMessages(sourceMessages: readonly AgentMessage[]) {
 
 export function buildThreadData({
   sessionPath,
+  sessionName,
   sourceMessages,
   previousMessageCount,
   isStreaming,
   isCompacting = false,
 }: BuildThreadDataInput): ThreadData {
   const messages = mapAgentMessagesToUiMessages([...sourceMessages])
+  const trimmedSessionName = sessionName?.trim()
 
   return {
     sessionPath,
-    title: getFirstUserTurnTitle(messages),
+    title: trimmedSessionName
+      ? normalizeThreadTitle(trimmedSessionName)
+      : getFirstUserTurnTitle(messages),
     messages,
     customMessages: getThreadCustomMessages(sourceMessages),
     previousMessageCount,

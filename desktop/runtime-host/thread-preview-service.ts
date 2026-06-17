@@ -33,6 +33,7 @@ export async function loadThreadPreviewAtEntry(request: {
     thread: buildThreadData({
       sessionPath: request.sessionPath,
       sourceMessages: historySlice.sourceMessages,
+      sessionName: manager.getSessionName(),
       previousMessageCount: historySlice.previousMessageCount,
       isStreaming: false,
       isCompacting: false,

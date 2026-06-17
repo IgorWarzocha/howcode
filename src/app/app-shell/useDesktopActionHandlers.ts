@@ -24,6 +24,7 @@ import {
   applyOptimisticPiSettingsUpdate,
   applyOptimisticProjectRename,
   applyOptimisticSettingsUpdate,
+  applyOptimisticThreadRename,
   runPostDesktopActionEffects,
 } from './controller-post-action-effects'
 import { applySwitchBranchPostEffect } from './post-effects/workspace'
@@ -287,6 +288,10 @@ export function useDesktopActionHandlers({
 
       if (action === 'project.edit-name') {
         applyOptimisticProjectRename(queryClient, payload)
+      }
+
+      if (action === 'thread.rename') {
+        applyOptimisticThreadRename(queryClient, payload)
       }
 
       if (action === 'thread.pin' || action === 'project.pin') {

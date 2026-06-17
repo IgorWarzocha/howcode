@@ -46,7 +46,7 @@ export async function createLiveRuntime(
     ProjectTrustStore,
     createAgentSession,
     getAgentDir,
-    hasProjectTrustInputs,
+    hasTrustRequiringProjectResources,
   } = await getPiModule()
   const agentDir = getAgentDir()
   const defaultProjectTrust = getRuntimeDefaultProjectTrust({
@@ -59,7 +59,7 @@ export async function createLiveRuntime(
     agentDir,
     cwd: options.cwd,
     defaultProjectTrust,
-    hasProjectTrustInputs,
+    hasTrustRequiringProjectResources,
     settingsCwd: options.settingsCwd,
   })
   const authStorage = AuthStorage.create()

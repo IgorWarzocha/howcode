@@ -48,6 +48,7 @@ export {
   hideProject,
   markInboxThreadRead,
   renameProject,
+  renameThreadTitle,
   restoreThread,
   restoreThreads,
   setProjectCollapsed,

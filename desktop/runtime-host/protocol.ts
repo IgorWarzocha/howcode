@@ -96,6 +96,7 @@ export type RuntimeHostRequestMap = {
     historyCompactions?: number | undefined
   }
   searchThreadSnapshot: { sessionPath: string; query: string }
+  renameThreadSession: { sessionPath: string; name: string }
   startSkillCreatorSession: {
     prompt: string
     local?: boolean | undefined
@@ -188,6 +189,7 @@ export type RuntimeHostResponseMap = {
     thread: ThreadData
   }
   searchThreadSnapshot: ThreadSearchResult
+  renameThreadSession: { projectId: string; threadId: string; title: string }
   startSkillCreatorSession: SkillCreatorSessionState
   continueSkillCreatorSession: SkillCreatorSessionState
   closeSkillCreatorSession: { ok: boolean }

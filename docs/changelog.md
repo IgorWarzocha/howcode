@@ -15,11 +15,13 @@
 - Extension widgets no longer shake the thread view.
 - Inbox keeps branch-assigned threads in Code context.
 - Thread URLs no longer stick to local draft ids.
+- Sidebar sessions can be renamed inline now.
 - Rebuilt the workspace rails around the composer/thread. Better responsiveness.
 - Fixed the empty composer being taller than a composer with text in it.
+- Compaction status now stays above composer widgets.
 - Fixed Past sessions count alignment in the sidebar.
 - Fixed macOS window dragging and native Cmd+A select-all.
-- Updated Pi SDK/runtime packages to 0.79.1.
+- Updated Pi SDK/runtime packages to 0.79.6.
 - Bumped app/build dependencies.
 
 Snapshot: 12 June 2026.

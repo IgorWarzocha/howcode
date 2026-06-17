@@ -40,6 +40,7 @@ function buildLiveThreadData(runtime: PiRuntime) {
   return buildThreadData({
     sessionPath,
     sourceMessages,
+    sessionName: runtime.session.sessionManager.getSessionName(),
     previousMessageCount: historySlice.previousMessageCount,
     isStreaming: runtime.session.isStreaming,
     isCompacting: runtime.session.isCompacting,

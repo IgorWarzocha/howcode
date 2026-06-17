@@ -393,7 +393,14 @@ export function ThreadTimeline({
         </div>
       </div>
       {isCompacting ? (
-        <div className="pointer-events-none absolute right-4 bottom-4 left-4 z-[5] flex justify-center">
+        <div
+          className="pointer-events-none absolute right-4 bottom-4 left-4 z-[5] flex justify-center"
+          style={
+            composerOverlayHeight > 0
+              ? { bottom: `calc(1rem + ${composerOverlayHeight}px)` }
+              : undefined
+          }
+        >
           <div
             className={cn(
               'thread-compaction-pill inline-flex h-7 max-w-none shrink-0 items-center gap-1.5 rounded-full px-3 text-[color:var(--accent)]',

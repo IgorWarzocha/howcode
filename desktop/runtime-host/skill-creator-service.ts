@@ -168,7 +168,7 @@ async function createSkillCreatorSession(
     ProjectTrustStore,
     createAgentSession,
     getAgentDir,
-    hasProjectTrustInputs,
+    hasTrustRequiringProjectResources,
   } = await getPiModule()
   const agentDir = getAgentDir()
   const trustCwd = projectPath ?? cwd
@@ -182,7 +182,7 @@ async function createSkillCreatorSession(
     agentDir,
     cwd: trustCwd,
     defaultProjectTrust,
-    hasProjectTrustInputs,
+    hasTrustRequiringProjectResources,
   })
   const authStorage = AuthStorage.create()
   const modelRegistry = normalizeModelRegistryContextWindows(

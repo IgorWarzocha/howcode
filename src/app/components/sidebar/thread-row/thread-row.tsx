@@ -1,7 +1,7 @@
 import { ActivitySpinner } from '@howcode/common/activity-spinner'
 import { Tooltip } from '@howcode/common/tooltip'
-import { GitBranch, SquareTerminal, Star, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { GitBranch, Pencil, SquareTerminal, Star, Trash2 } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '../../../utils/cn'
 import { SidebarInlineConfirmPopunder } from '../sidebar-inline-confirm-popunder'
 
@@ -18,6 +18,7 @@ type ThreadRowProps = {
   onAssignToBranch?: (() => void) | undefined
   onOpen: () => void
   onPin: () => void
+  onRename?: ((title: string) => unknown) | undefined
   confirmDelete?: boolean | undefined
 }
 
@@ -61,6 +62,7 @@ function ThreadMetaSlot({
   confirmDelete,
   onDelete,
   onAssignToBranch,
+  onRenameStart,
   terminalRunning,
 }: Pick<
   ThreadRowProps,
@@ -70,9 +72,9 @@ function ThreadMetaSlot({
   | 'onDelete'
   | 'onAssignToBranch'
   | 'terminalRunning'
->) {
+> & { onRenameStart?: (() => void) | undefined }) {
   const metaValue = terminalRunning ? <SquareTerminal size={12} /> : age
-  const actionCount = onAssignToBranch ? 2 : 1
+  const actionCount = 1 + (onAssignToBranch ? 1 : 0) + (onRenameStart ? 1 : 0)
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const handleDeleteClick = () => {
     if (!confirmDelete) {
@@ -88,6 +90,25 @@ function ThreadMetaSlot({
         {metaValue}
       </span>
       <span className="sidebar-thread-meta-actions" data-action-count={actionCount}>
+        {onRenameStart ? (
+          <Tooltip
+            content="Rename session"
+            placement="right"
+            className="sidebar-thread-action-anchor"
+          >
+            <button
+              type="button"
+              className={cn(
+                'sidebar-icon-action sidebar-icon-action--sm sidebar-thread-meta-action-button',
+                'border-transparent bg-transparent hover:bg-transparent',
+              )}
+              onClick={onRenameStart}
+              aria-label="Rename session"
+            >
+              <Pencil size={12} />
+            </button>
+          </Tooltip>
+        ) : null}
         {onAssignToBranch ? (
           <Tooltip
             content={assignBranchLabel ?? 'Assign to branch'}
@@ -155,8 +176,45 @@ export function ThreadRow({
   onAssignToBranch,
   onOpen,
   onPin,
+  onRename,
   confirmDelete,
 }: ThreadRowProps) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(title)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const skipBlurSubmitRef = useRef(false)
+
+  useEffect(() => {
+    if (!editing) setDraft(title)
+  }, [editing, title])
+
+  useEffect(() => {
+    if (!editing) return
+    inputRef.current?.focus()
+  }, [editing])
+
+  const startRename = () => {
+    setDraft('')
+    setEditing(true)
+  }
+
+  const cancelRename = () => {
+    skipBlurSubmitRef.current = true
+    setDraft(title)
+    setEditing(false)
+  }
+
+  const submitRename = () => {
+    const nextTitle = draft.trim()
+    if (!nextTitle || nextTitle === title) {
+      cancelRename()
+      return
+    }
+    skipBlurSubmitRef.current = true
+    setEditing(false)
+    void onRename?.(nextTitle)
+  }
+
   return (
     <div
       className="sidebar-row-surface sidebar-thread-row"
@@ -170,14 +228,46 @@ export function ThreadRow({
         unread={unread}
       />
 
-      <button
-        type="button"
-        className="sidebar-thread-button"
-        onClick={onOpen}
-        aria-current={isSelected ? 'page' : undefined}
-      >
-        <span className="sidebar-thread-title-text">{title}</span>
-      </button>
+      {editing ? (
+        <form
+          className="sidebar-thread-button"
+          onSubmit={(event) => {
+            event.preventDefault()
+            submitRename()
+          }}
+        >
+          <input
+            ref={inputRef}
+            className="sidebar-thread-title-input"
+            placeholder={title}
+            value={draft}
+            onBlur={() => {
+              if (skipBlurSubmitRef.current) {
+                skipBlurSubmitRef.current = false
+                return
+              }
+              submitRename()
+            }}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.preventDefault()
+                cancelRename()
+              }
+            }}
+            aria-label="Session name"
+          />
+        </form>
+      ) : (
+        <button
+          type="button"
+          className="sidebar-thread-button"
+          onClick={onOpen}
+          aria-current={isSelected ? 'page' : undefined}
+        >
+          <span className="sidebar-thread-title-text">{title}</span>
+        </button>
+      )}
 
       <ThreadMetaSlot
         age={age}
@@ -185,6 +275,7 @@ export function ThreadRow({
         confirmDelete={confirmDelete}
         onDelete={onDelete}
         onAssignToBranch={onAssignToBranch}
+        onRenameStart={onRename ? startRename : undefined}
         terminalRunning={terminalRunning}
       />
     </div>

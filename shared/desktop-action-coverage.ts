@@ -27,6 +27,7 @@ export const implementedDesktopActions = [
   'thread.delete',
   'thread.delete-many',
   'thread.new',
+  'thread.rename',
   'composer.model',
   'composer.thinking',
   'composer.send',

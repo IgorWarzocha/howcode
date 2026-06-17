@@ -113,7 +113,8 @@ async function persistHostThreadUpdate(event: Extract<DesktopEvent, { type: 'thr
   }
   setThreadRunningState(
     event.sessionPath,
-    event.reason === 'update' ||
+    event.thread.isStreaming ||
+      event.thread.isCompacting ||
       event.reason === 'compaction-start' ||
       (event.reason === 'start' && event.thread.messages.length > 0),
   )

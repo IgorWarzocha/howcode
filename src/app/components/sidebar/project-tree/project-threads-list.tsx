@@ -190,6 +190,14 @@ export function ProjectThreadsList({
               threadId: thread.id,
             })
           }
+          onRename={(title) =>
+            onAction('thread.rename', {
+              projectId: project.id,
+              sessionPath: thread.sessionPath,
+              threadId: thread.id,
+              value: title,
+            })
+          }
         />
       </div>
     )

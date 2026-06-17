@@ -233,7 +233,7 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
     ProjectTrustStore,
     createAgentSession,
     getAgentDir,
-    hasProjectTrustInputs,
+    hasTrustRequiringProjectResources,
   } = await getPiModule()
   const cwd = persistedSessionPath
     ? SessionManager.open(persistedSessionPath).getCwd()
@@ -245,7 +245,7 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
     agentDir,
     cwd,
     defaultProjectTrust,
-    hasProjectTrustInputs,
+    hasTrustRequiringProjectResources,
     settingsCwd: request.composerSessionDir,
   })
   const authStorage = AuthStorage.create()
@@ -284,7 +284,7 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
 
   return {
     cwd,
-    projectTrustServices: { ProjectTrustStore, agentDir, hasProjectTrustInputs },
+    projectTrustServices: { ProjectTrustStore, agentDir, hasTrustRequiringProjectResources },
     session,
   }
 }
@@ -331,7 +331,7 @@ export async function buildComposerState(
   runtime: PiRuntime,
   options: BuildComposerStateOptions = {},
 ): Promise<ComposerState> {
-  const { ProjectTrustStore, SettingsManager, getAgentDir, hasProjectTrustInputs } =
+  const { ProjectTrustStore, SettingsManager, getAgentDir, hasTrustRequiringProjectResources } =
     await getPiModule()
   const agentDir = getAgentDir()
   const defaultProjectTrust = getRuntimeDefaultProjectTrust({
@@ -362,7 +362,7 @@ export async function buildComposerState(
       agentDir,
       cwd: runtime.cwd,
       defaultProjectTrust,
-      hasProjectTrustInputs,
+      hasTrustRequiringProjectResources,
     }),
     contextUsage: getContextUsageForComposerState(runtime.session, options),
     isCompacting: runtime.session.isCompacting,

@@ -32,6 +32,7 @@ export {
   assignThreadToProjectBranch,
   deleteThreadRecord,
   deleteThreadRecordsBySessionPaths,
+  renameThreadTitle,
   restoreThread,
   restoreThreads,
   setThreadDiffPreferences,

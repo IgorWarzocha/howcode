@@ -14,6 +14,7 @@ import {
 import { deleteArtifactsForConversation } from '../artifact-state-db.ts'
 import { deleteChatThread } from '../chat-state-db.ts'
 import { openThreadRuntime, startNewThread } from '../pi-desktop-runtime.ts'
+import { invokeRuntimeHost } from '../runtime-host/client-bridge.ts'
 import {
   addProjectUsageTotals,
   archiveThread,
@@ -26,6 +27,7 @@ import {
   getThreadDeletionSnapshot,
   getThreadSessionPath,
   markInboxThreadRead,
+  renameThreadTitle,
   restoreThread,
   restoreThreads,
   toggleThreadPinned,
@@ -201,6 +203,23 @@ async function deleteManyThreadsFromPayload(payload: AnyDesktopActionPayload) {
   return handledAction({ deletedThreadIds: deleteResult.deletedThreadIds })
 }
 
+function getRenameValue(payload: AnyDesktopActionPayload) {
+  return typeof payload.value === 'string' ? payload.value.trim() : ''
+}
+
+async function renameThreadFromPayload(payload: AnyDesktopActionPayload) {
+  const threadId = getThreadId(payload)
+  const name = getRenameValue(payload)
+  if (!(threadId && name)) return handledAction()
+
+  const sessionPath = getSessionPath(payload) ?? getThreadSessionPath(threadId)
+  if (!sessionPath) return handledAction({ error: 'Thread session not found.' })
+
+  const result = await invokeRuntimeHost('renameThreadSession', { sessionPath, name })
+  renameThreadTitle(threadId, result.title)
+  return handledAction({ ...result, sessionPath, threadId })
+}
+
 const threadActionHandlers = {
   'thread.pin': (payload) => {
     const threadId = getThreadId(payload)
@@ -246,6 +265,7 @@ const threadActionHandlers = {
     return handledAction()
   },
   'thread.delete-many': deleteManyThreadsFromPayload,
+  'thread.rename': renameThreadFromPayload,
   'thread.new': async (payload) => {
     const result = await startNewThread(getComposerRequest(payload))
     const branchName = getBranchName(payload)

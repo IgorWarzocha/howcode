@@ -25,6 +25,7 @@ export const desktopActions = [
   'thread.delete',
   'thread.delete-many',
   'thread.pin',
+  'thread.rename',
   'workspace.commit',
   'workspace.commit-options',
   'workspace.diff-preferences',
