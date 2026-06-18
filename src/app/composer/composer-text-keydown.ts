@@ -1,6 +1,8 @@
 import {
   type ComposerSendMode,
   eventToAcceleratorCandidates,
+  isRightAltKeyEvent,
+  isRightAltShortcutEvent,
   type KeybindingOverrides,
   normalizeAccelerator,
 } from '@howcode/shared/keybindings'
@@ -10,6 +12,44 @@ import type { ComposerSkillMentions } from './useComposerSkillMentions'
 import type { ComposerSlashCommands } from './useComposerSlashCommands'
 
 let graphemeSegmenter: Intl.Segmenter | null = null
+let rightAltPressed = false
+
+function updateComposerTextRightAltState(event: KeyboardEvent<HTMLTextAreaElement>) {
+  if (isRightAltKeyEvent(event)) {
+    rightAltPressed = true
+    return
+  }
+  if (!event.altKey) rightAltPressed = false
+}
+
+function shouldSkipComposerTextShortcutForRightAlt(event: KeyboardEvent<HTMLTextAreaElement>) {
+  updateComposerTextRightAltState(event)
+  return isRightAltShortcutEvent(event, rightAltPressed)
+}
+
+function handleLockedComposerTextKey(
+  event: KeyboardEvent<HTMLTextAreaElement>,
+  inputLocked: boolean,
+) {
+  if (!inputLocked) return false
+  event.preventDefault()
+  return true
+}
+
+function handleComposerEscapeKey(
+  event: KeyboardEvent<HTMLTextAreaElement>,
+  input: ComposerKeyDownInput,
+) {
+  if (event.key !== 'Escape') return false
+  if (input.dictationActive || input.dictationTranscribing) {
+    event.preventDefault()
+    void input.cancelDictation()
+    return true
+  }
+  if (!input.onEscapeOverride?.()) return false
+  event.preventDefault()
+  return true
+}
 
 function getTextSegments(value: string) {
   if (!('Segmenter' in Intl)) {
@@ -131,6 +171,7 @@ function matchesComposerCommandKey(
   input: ComposerKeyDownInput,
   commandId: 'composer.newline' | 'composer.submit',
 ) {
+  if (isRightAltShortcutEvent(event, rightAltPressed)) return false
   const override = input.keybindings[commandId]
   if (override === null) return false
   const accelerators =
@@ -177,19 +218,9 @@ export function handleComposerTextKeyDown(
   event: KeyboardEvent<HTMLTextAreaElement>,
   input: ComposerKeyDownInput,
 ) {
-  if (input.inputLocked) {
-    event.preventDefault()
-    return
-  }
-  if (event.key === 'Escape' && (input.dictationActive || input.dictationTranscribing)) {
-    event.preventDefault()
-    void input.cancelDictation()
-    return
-  }
-  if (event.key === 'Escape' && input.onEscapeOverride?.()) {
-    event.preventDefault()
-    return
-  }
+  if (handleLockedComposerTextKey(event, input.inputLocked)) return
+  if (shouldSkipComposerTextShortcutForRightAlt(event)) return
+  if (handleComposerEscapeKey(event, input)) return
   if (handleDeleteTextKey(event, input.setDraft, input.clearError)) return
   if (handleOpenAutocompleteKeyDown(event, input)) return
   if (handleComposerNewlineCommand(event, input)) return

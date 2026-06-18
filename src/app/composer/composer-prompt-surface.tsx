@@ -39,6 +39,13 @@ import {
 } from './composer-prompt-surface-helpers'
 import { ComposerAttachmentRail, ComposerStopRail } from './composer-side-controls'
 import { useComposerController } from './controller/useComposerController'
+import {
+  getPiExtensionShortcutKey,
+  isEditableEventTarget,
+  isPlainPiExtensionShortcut,
+  isRightAltKeyEvent,
+  isRightAltPiExtensionShortcutEvent,
+} from './pi-extension-shortcuts'
 import { useComposerFileMentions } from './useComposerFileMentions'
 import {
   useComposerAutocompleteEffects,
@@ -497,30 +504,28 @@ function getPiExtensionBgClass(name: string | undefined) {
   }
 }
 
-function getPiExtensionShortcutKey(event: KeyboardEvent) {
-  if (event.isComposing) return null
-  const key = getPiExtensionShortcutBaseKey(event)
-  if (!key) return null
-  const modifiers = [
-    event.ctrlKey ? 'ctrl' : null,
-    event.altKey ? 'alt' : null,
-    event.shiftKey ? 'shift' : null,
-    event.metaKey ? 'meta' : null,
-  ].filter(Boolean)
-  return [...modifiers, key].join('+')
-}
-
-function isPlainPiExtensionShortcut(shortcut: string) {
-  return !shortcut.includes('+')
-}
-
-function isEditableEventTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) return false
-  return Boolean(target.closest('input, textarea, select, [contenteditable="true"]'))
-}
-
 function isPiExtensionOverlayHovered(overlay: HTMLElement | null) {
   return Boolean(overlay?.matches(':hover'))
+}
+
+function shouldSkipPiExtensionShortcutForRightAlt(
+  event: KeyboardEvent,
+  rightAltPressedRef: React.MutableRefObject<boolean>,
+) {
+  if (isRightAltKeyEvent(event)) {
+    rightAltPressedRef.current = true
+    return true
+  }
+  return isRightAltPiExtensionShortcutEvent(event, rightAltPressedRef.current)
+}
+
+function canRunPiExtensionShortcut(input: {
+  overlayHovered: boolean
+  shortcut: string
+  target: EventTarget | null
+}) {
+  if (!isPlainPiExtensionShortcut(input.shortcut)) return true
+  return input.overlayHovered && !isEditableEventTarget(input.target)
 }
 
 function hasComposerOverlayAbove(...visibleFlags: boolean[]) {
@@ -548,20 +553,6 @@ function applyPiExtensionEditorResult(input: {
     textarea.focus()
     textarea.setSelectionRange(selectionStart, selectionEnd)
   })
-}
-
-function getPiExtensionShortcutBaseKey(event: KeyboardEvent) {
-  if (event.code.startsWith('Key')) return event.code.slice(3).toLowerCase()
-  if (event.code.startsWith('Digit')) return event.code.slice(5)
-  if (event.code === 'ArrowLeft') return 'left'
-  if (event.code === 'ArrowRight') return 'right'
-  if (event.code === 'ArrowUp') return 'up'
-  if (event.code === 'ArrowDown') return 'down'
-  if (event.code === 'Escape') return 'escape'
-  if (event.code === 'Enter') return 'enter'
-  if (event.code === 'Space') return 'space'
-  if (event.key.length === 1) return event.key.toLowerCase()
-  return event.key.toLowerCase() || null
 }
 
 export function ComposerPromptSurface({
@@ -697,6 +688,7 @@ export function ComposerPromptSurface({
   const stopButtonBoundaryRef = useRef<HTMLDivElement>(null)
   const composerOverlayStackRef = useRef<HTMLDivElement>(null)
   const piExtensionStatusLineRef = useRef<HTMLDivElement>(null)
+  const rightAltPressedRef = useRef(false)
   const showNativeDialog = piExtensionDialogRequest !== null
   const showProjectTrust = projectTrustRequest !== null
   const visiblePiExtensionWidgets = piExtensionWidgets.filter(
@@ -897,12 +889,11 @@ export function ComposerPromptSurface({
       piExtensionShortcuts.map((shortcut) => shortcut.shortcut.toLowerCase()),
     )
     const handlePiExtensionShortcut = (event: KeyboardEvent) => {
+      if (shouldSkipPiExtensionShortcutForRightAlt(event, rightAltPressedRef)) return
       const shortcut = getPiExtensionShortcutKey(event)
       if (!(shortcut && registeredShortcuts.has(shortcut))) return
       const overlayHovered = isPiExtensionOverlayHovered(composerOverlayStackRef.current)
-      const plainShortcut = isPlainPiExtensionShortcut(shortcut)
-      if (plainShortcut && !overlayHovered) return
-      if (plainShortcut && isEditableEventTarget(event.target)) return
+      if (!canRunPiExtensionShortcut({ overlayHovered, shortcut, target: event.target })) return
       const textarea = getComposerTextarea(composerPanelRef.current)
       event.preventDefault()
       event.stopPropagation()
@@ -927,8 +918,20 @@ export function ComposerPromptSurface({
         })
       })
     }
+    const handlePiExtensionKeyUp = (event: KeyboardEvent) => {
+      if (isRightAltKeyEvent(event)) rightAltPressedRef.current = false
+    }
+    const resetRightAltPressed = () => {
+      rightAltPressedRef.current = false
+    }
     window.addEventListener('keydown', handlePiExtensionShortcut, { capture: true })
-    return () => window.removeEventListener('keydown', handlePiExtensionShortcut, { capture: true })
+    window.addEventListener('keyup', handlePiExtensionKeyUp, { capture: true })
+    window.addEventListener('blur', resetRightAltPressed)
+    return () => {
+      window.removeEventListener('keydown', handlePiExtensionShortcut, { capture: true })
+      window.removeEventListener('keyup', handlePiExtensionKeyUp, { capture: true })
+      window.removeEventListener('blur', resetRightAltPressed)
+    }
   }, [
     chatGroupId,
     composerMode,

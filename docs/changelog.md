@@ -5,6 +5,7 @@
 - Added native Smart BTW extension, and subsequently removed it, because...
 - Howcode now uses new Pi SDK to render dialogs, widgets, statuslines and notifications.
 - Extensions pass through shortcuts.
+- Right Alt no longer triggers app or extension shortcuts.
 - Fancy react-rendered extensions not supported yet. Only normal-ish widgets.
 - Implemented /tree functionality with labelling and summarisation.
 - Split Pi TUI takeover and the terminal drawer properly.

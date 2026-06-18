@@ -1,6 +1,8 @@
 import {
   eventToAcceleratorCandidates,
   getEffectiveAccelerators,
+  isRightAltKeyEvent,
+  isRightAltShortcutEvent,
   type KeybindingCommandId,
   type KeybindingOverrides,
 } from '@howcode/shared/keybindings'
@@ -62,6 +64,18 @@ function handleShortcut(event: KeyboardEvent, runtime: KeybindingRuntime) {
   event.stopImmediatePropagation()
 }
 
+function shouldSkipShortcutForRightAlt(
+  event: KeyboardEvent,
+  rightAltPressedRef: React.MutableRefObject<boolean>,
+) {
+  if (isRightAltKeyEvent(event)) {
+    rightAltPressedRef.current = true
+    return true
+  }
+  if (!event.altKey) rightAltPressedRef.current = false
+  return isRightAltShortcutEvent(event, rightAltPressedRef.current)
+}
+
 export function useAppKeybindings(input: {
   controller: AppShellController
   keybindings: KeybindingOverrides
@@ -88,6 +102,7 @@ export function useAppKeybindings(input: {
     return map
   }, [keybindings])
   const lastEscapeAtRef = useRef(0)
+  const rightAltPressedRef = useRef(false)
   const cycleSelectionRef = useRef<KeybindingRuntime['cycleSelectionRef']['current']>(null)
   const latest = useLatest({
     acceleratorToCommand,
@@ -118,8 +133,15 @@ export function useAppKeybindings(input: {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return
+      if (shouldSkipShortcutForRightAlt(event, rightAltPressedRef)) return
       if (event.key === 'Escape') handleEscape(event, latest.current, lastEscapeAtRef)
       else handleShortcut(event, latest.current)
+    }
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (isRightAltKeyEvent(event)) rightAltPressedRef.current = false
+    }
+    const resetRightAltPressed = () => {
+      rightAltPressedRef.current = false
     }
     const handleCommand = (event: Event) => {
       const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
@@ -129,9 +151,13 @@ export function useAppKeybindings(input: {
     }
 
     window.addEventListener('keydown', handleKeyDown, { capture: true })
+    window.addEventListener('keyup', handleKeyUp, { capture: true })
+    window.addEventListener('blur', resetRightAltPressed)
     window.addEventListener(howcodeKeybindingCommandEvent, handleCommand)
     return () => {
       window.removeEventListener('keydown', handleKeyDown, { capture: true })
+      window.removeEventListener('keyup', handleKeyUp, { capture: true })
+      window.removeEventListener('blur', resetRightAltPressed)
       window.removeEventListener(howcodeKeybindingCommandEvent, handleCommand)
     }
   }, [latest])
