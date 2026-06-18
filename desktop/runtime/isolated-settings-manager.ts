@@ -1,5 +1,5 @@
 import path from 'node:path'
-import type { ResourceLoader, SettingsManager } from '@earendil-works/pi-coding-agent'
+import type { SettingsManager } from '@earendil-works/pi-coding-agent'
 import type { PiDefaultProjectTrust } from '../../shared/desktop-settings-contracts.ts'
 
 type SettingsManagerFactory = {
@@ -10,6 +10,9 @@ type SettingsManagerFactory = {
   ) => SettingsManager
   inMemory: (settings?: Record<string, unknown>) => SettingsManager
 }
+
+type DefaultResourceLoaderFactory =
+  typeof import('@earendil-works/pi-coding-agent').DefaultResourceLoader
 
 export function getRuntimeDefaultProjectTrust(options: {
   SettingsManager: SettingsManagerFactory
@@ -106,14 +109,7 @@ export function createRuntimeSettingsManager(options: {
 }
 
 export async function createIsolatedRuntimeResourceLoader(options: {
-  DefaultResourceLoader: new (loaderOptions: {
-    cwd: string
-    agentDir: string
-    settingsManager: SettingsManager
-    noSkills?: boolean
-    additionalSkillPaths?: string[]
-    systemPrompt?: string
-  }) => ResourceLoader
+  DefaultResourceLoader: DefaultResourceLoaderFactory
   cwd: string
   agentDir: string
   settingsCwd?: string | null | undefined
