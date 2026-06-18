@@ -211,9 +211,32 @@ export type KeybindingKeyboardEventLike = {
   altKey: boolean
   code: string
   ctrlKey: boolean
+  getModifierState?: ((keyArg: 'AltGraph') => boolean) | undefined
   key: string
+  location?: number | undefined
   metaKey: boolean
   shiftKey: boolean
+}
+
+const rightKeyboardLocation = 2
+
+export function isRightAltKeyEvent(
+  event: Pick<KeybindingKeyboardEventLike, 'code' | 'key' | 'location'>,
+) {
+  return (
+    event.code === 'AltRight' ||
+    event.key === 'AltGraph' ||
+    (event.key === 'Alt' && event.location === rightKeyboardLocation)
+  )
+}
+
+export function isRightAltShortcutEvent(
+  event: Pick<KeybindingKeyboardEventLike, 'code' | 'getModifierState' | 'key' | 'location'>,
+  rightAltPressed: boolean,
+) {
+  return (
+    rightAltPressed || event.getModifierState?.('AltGraph') === true || isRightAltKeyEvent(event)
+  )
 }
 
 export function getKeybindingEventKey(event: Pick<KeybindingKeyboardEventLike, 'code' | 'key'>) {

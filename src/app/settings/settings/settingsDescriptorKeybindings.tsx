@@ -2,12 +2,14 @@ import {
   bundledKeybindings,
   eventToAcceleratorCandidates,
   getConflictForCommand,
+  isRightAltKeyEvent,
+  isRightAltShortcutEvent,
   isValidAccelerator,
   normalizeAccelerator,
 } from '@howcode/shared/keybindings'
 import { Ban, CheckCircle2, RotateCcw } from 'lucide-react'
 import type { KeyboardEvent } from 'react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { AppSettings, DesktopActionInvoker, KeybindingCommandId } from '../../desktop/types'
 import {
   appToneTextClass,
@@ -108,9 +110,10 @@ function formatAccelerator(value: string, platform: Platform) {
     .join(' then ')
 }
 
-function keyEventToAccelerator(event: KeyboardEvent<HTMLButtonElement>) {
+function keyEventToAccelerator(event: KeyboardEvent<HTMLButtonElement>, rightAltPressed: boolean) {
   if (event.key === 'Tab') return null
   if (event.key === 'Escape') return null
+  if (isRightAltKeyEvent(event) || isRightAltShortcutEvent(event, rightAltPressed)) return null
   if (['Control', 'Shift', 'Alt', 'Meta'].includes(event.key)) return null
   if (!(event.metaKey || event.ctrlKey || event.altKey || event.shiftKey)) return null
   return eventToAcceleratorCandidates(event)[0] ?? null
@@ -156,6 +159,7 @@ function ShortcutRecorder({
   const persistedOverride = getKeybindingOverride(appSettings, commandId)
   const [draft, setDraft] = useState(persistedOverride)
   const [recording, setRecording] = useState(false)
+  const rightAltPressedRef = useRef(false)
   const conflict = getConflictForCommand(commandId, appSettings.keybindings)
   const disabled = appSettings.keybindings[commandId] === null
   const binding = bundledKeybindings.find((item) => item.id === commandId)
@@ -189,7 +193,10 @@ function ShortcutRecorder({
           disabled && 'opacity-45',
         )}
         onFocus={() => setRecording(true)}
-        onBlur={() => setRecording(false)}
+        onBlur={() => {
+          rightAltPressedRef.current = false
+          setRecording(false)
+        }}
         onClick={() => setRecording(true)}
         onKeyDown={(event) => {
           if (event.key === 'Tab') return
@@ -198,16 +205,24 @@ function ShortcutRecorder({
             return
           }
           event.preventDefault()
+          if (isRightAltKeyEvent(event)) {
+            rightAltPressedRef.current = true
+            return
+          }
+          if (!event.altKey) rightAltPressedRef.current = false
           if (event.key === 'Backspace' || event.key === 'Delete') {
             setDraft('')
             resetKeybinding({ appSettings, commandId, onAction })
             return
           }
-          const accelerator = keyEventToAccelerator(event)
+          const accelerator = keyEventToAccelerator(event, rightAltPressedRef.current)
           if (!accelerator) return
           setDraft(accelerator)
           updateKeybinding({ appSettings, commandId, value: accelerator, onAction })
           event.currentTarget.blur()
+        }}
+        onKeyUp={(event) => {
+          if (isRightAltKeyEvent(event)) rightAltPressedRef.current = false
         }}
         aria-label={`Record shortcut for ${binding?.label ?? commandId}`}
       >
