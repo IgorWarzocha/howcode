@@ -42,14 +42,15 @@ type ComposerDiffBaselineSelectorProps = {
 
 function useComposerBaselinePopoverControls({
   activeAnchorRef,
+  closePopover,
   open,
   setOpen,
 }: {
   activeAnchorRef: RefObject<BaselineAnchorKind>
+  closePopover: () => void
   open: boolean
-  setOpen: (open: boolean | ((current: boolean) => boolean)) => void
+  setOpen: (open: boolean) => void
 }) {
-  const closePopover = () => setOpen(false)
   const openBaselinePopover = (anchor: 'summary' | 'branch' | 'compact') => {
     notifyComposerPopoverOpened('diff-baseline')
     activeAnchorRef.current = anchor
@@ -57,11 +58,12 @@ function useComposerBaselinePopoverControls({
   }
   const toggleBaselinePopover = (anchor: 'summary' | 'branch' | 'compact') => {
     activeAnchorRef.current = anchor
-    setOpen((current) => {
-      if (current) return false
-      notifyComposerPopoverOpened('diff-baseline')
-      return true
-    })
+    if (open) {
+      closePopover()
+      return
+    }
+    notifyComposerPopoverOpened('diff-baseline')
+    setOpen(true)
   }
   const previewBaselinePopover = (anchor: 'summary' | 'branch') => {
     open && openBaselinePopover(anchor)
@@ -281,13 +283,14 @@ export function ComposerDiffBaselineSelector({
   const compactAnchorRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const activeAnchorRef = useRef<BaselineAnchorKind>('summary')
+  const closePopover = () => {
+    setOpen(false)
+    setSearchQuery('')
+  }
 
   useComposerPopoverDismissSignal({
     ignoreSource: 'diff-baseline',
-    onDismiss: () => {
-      setOpen(false)
-      setSearchQuery('')
-    },
+    onDismiss: closePopover,
   })
 
   const { baselineLabel, commitsQuery, counts, selectedCommitSha, visibleCommits } =
@@ -301,19 +304,16 @@ export function ComposerDiffBaselineSelector({
     })
   const baselinePrefix = getDiffBaselinePrefix(selectedBaseline)
 
-  const { closePopover, previewBaselinePopover, toggleBaselinePopover } =
-    useComposerBaselinePopoverControls({
-      activeAnchorRef,
-      open,
-      setOpen,
-    })
+  const { previewBaselinePopover, toggleBaselinePopover } = useComposerBaselinePopoverControls({
+    activeAnchorRef,
+    closePopover,
+    open,
+    setOpen,
+  })
 
   useDismissibleLayer({
     open,
-    onDismiss: () => {
-      closePopover()
-      setSearchQuery('')
-    },
+    onDismiss: closePopover,
     refs: [anchorRef, branchAnchorRef, compactAnchorRef, panelRef],
   })
 
@@ -386,7 +386,10 @@ export function ComposerDiffBaselineSelector({
           defaultBranchName={projectGitState?.defaultBranchName}
           devBranchName={projectGitState?.devBranchName}
           mainBranchName={projectGitState?.mainBranchName}
-          setOpen={setOpen}
+          setOpen={(nextOpen) => {
+            if (nextOpen) setOpen(true)
+            else closePopover()
+          }}
           setSearchQuery={setSearchQuery}
           visibleCommits={visibleCommits}
           onSelectBaseline={onSelectBaseline}

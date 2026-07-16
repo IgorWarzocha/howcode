@@ -155,7 +155,7 @@ async function addSearchIndexEntry(input: {
   const entryPath = path.join(input.currentPath, input.entry.name)
   const relativePath = path.relative(input.rootPath, entryPath)
   const symlinkKind = input.entry.isSymbolicLink()
-    ? await getSymlinkSearchEntryKind(entryPath)
+    ? await getSymlinkSearchEntryKind(entryPath, input.rootPath)
     : null
   const kind = symlinkKind ?? (input.entry.isDirectory() ? 'directory' : null)
 
@@ -183,9 +183,12 @@ async function addSearchIndexEntry(input: {
 
 async function getSymlinkSearchEntryKind(
   entryPath: string,
+  rootPath: string,
 ): Promise<'directory' | 'text' | 'image' | null> {
   try {
-    const stats = await stat(entryPath)
+    const resolvedPath = await realpath(entryPath)
+    if (!isPathWithinRoot(resolvedPath, rootPath)) return null
+    const stats = await stat(resolvedPath)
     return stats.isDirectory() ? 'directory' : getAttachmentKind(entryPath)
   } catch {
     return null
@@ -262,10 +265,10 @@ export async function listComposerAttachmentEntries(request: {
   rootPath?: string | null | undefined
 }): Promise<ComposerFilePickerState> {
   const homePath = os.homedir()
-  const rootPath = path.resolve(
-    request.rootPath ?? request.projectId ?? getDesktopWorkingDirectory(),
+  const rootPath = await realpath(
+    path.resolve(request.rootPath ?? request.projectId ?? getDesktopWorkingDirectory()),
   )
-  const requestedPath = path.resolve(request.path ?? rootPath)
+  const requestedPath = await realpath(path.resolve(request.path ?? rootPath)).catch(() => rootPath)
   const currentPath = isPathWithinRoot(requestedPath, rootPath) ? requestedPath : rootPath
   const directoryEntries = await readdir(currentPath, { withFileTypes: true })
 

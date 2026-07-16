@@ -29,6 +29,16 @@ type ComposerDictationControlsProps = {
   toggleDictation: () => Promise<'started' | 'stopped' | 'setup-required' | 'unavailable'>
 }
 
+function useEligiblePromptState(eligible: boolean) {
+  const [open, setOpen] = useState(false)
+  const [previousEligible, setPreviousEligible] = useState(eligible)
+  if (previousEligible !== eligible) {
+    setPreviousEligible(eligible)
+    if (!eligible) setOpen(false)
+  }
+  return [open, setOpen] as const
+}
+
 function getDictationButtonAriaLabel(input: {
   dictationActive: boolean
   dictationTranscribing: boolean
@@ -149,11 +159,11 @@ export function ComposerDictationControls({
   showDictationButton,
   toggleDictation,
 }: ComposerDictationControlsProps) {
-  const [dictationPromptOpen, setDictationPromptOpen] = useState(false)
+  const promptEligible = showDictationButton && dictationMissingModel
+  const [dictationPromptOpen, setDictationPromptOpen] = useEligiblePromptState(promptEligible)
   const dictationButtonRef = useRef<HTMLButtonElement>(null)
   const dictationPromptRef = useRef<HTMLDivElement>(null)
-  const effectiveDictationPromptOpen =
-    dictationPromptOpen && showDictationButton && dictationMissingModel
+  const effectiveDictationPromptOpen = dictationPromptOpen && promptEligible
   const dictationPromptPresent = useAnimatedPresence(effectiveDictationPromptOpen)
 
   useDismissibleLayer({
