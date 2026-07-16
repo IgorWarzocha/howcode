@@ -130,7 +130,8 @@ export function clampThinkingLevel(
   level: ComposerThinkingLevel,
   availableLevels: ComposerThinkingLevel[],
 ): ComposerThinkingLevel {
-  if (availableLevels.includes(level)) {
+  const availableLevelSet = new Set(availableLevels)
+  if (availableLevelSet.has(level)) {
     return level
   }
 
@@ -150,7 +151,7 @@ export function clampThinkingLevel(
 
   for (let index = requestedIndex; index >= 0; index -= 1) {
     const candidate = orderedLevels[index]
-    if (candidate && availableLevels.includes(candidate)) {
+    if (candidate && availableLevelSet.has(candidate)) {
       return candidate
     }
   }

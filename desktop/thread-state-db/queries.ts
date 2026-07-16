@@ -265,16 +265,18 @@ export function listProjectThreads(
     )
     .all(projectId) as ThreadRow[]
 
-  return rows
-    .filter((row) => matchesThreadScope(row, options))
-    .map((row) =>
-      mapThreadRow({
-        ...row,
-        running: getEffectiveThreadRunningState(row.running, getLiveThread(row.sessionPath))
-          ? 1
-          : 0,
-      }),
-    )
+  return rows.flatMap((row) =>
+    matchesThreadScope(row, options)
+      ? [
+          mapThreadRow({
+            ...row,
+            running: getEffectiveThreadRunningState(row.running, getLiveThread(row.sessionPath))
+              ? 1
+              : 0,
+          }),
+        ]
+      : [],
+  )
 }
 
 export function listArchivedProjectThreads(
@@ -304,16 +306,18 @@ export function listArchivedProjectThreads(
     )
     .all(projectId) as ThreadRow[]
 
-  return rows
-    .filter((row) => matchesThreadScope(row, options))
-    .map((row) =>
-      mapThreadRow({
-        ...row,
-        running: getEffectiveThreadRunningState(row.running, getLiveThread(row.sessionPath))
-          ? 1
-          : 0,
-      }),
-    )
+  return rows.flatMap((row) =>
+    matchesThreadScope(row, options)
+      ? [
+          mapThreadRow({
+            ...row,
+            running: getEffectiveThreadRunningState(row.running, getLiveThread(row.sessionPath))
+              ? 1
+              : 0,
+          }),
+        ]
+      : [],
+  )
 }
 
 export function listInboxThreads(): InboxThread[] {

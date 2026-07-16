@@ -294,12 +294,9 @@ export function getKeybindingConflicts(overrides: KeybindingOverrides | null | u
     }
   }
 
-  return [...acceleratorCommands.entries()]
-    .filter(([, conflictingCommandIds]) => conflictingCommandIds.length > 1)
-    .map(([accelerator, conflictingCommandIds]) => ({
-      accelerator,
-      commandIds: conflictingCommandIds,
-    }))
+  return [...acceleratorCommands.entries()].flatMap(([accelerator, conflictingCommandIds]) =>
+    conflictingCommandIds.length > 1 ? [{ accelerator, commandIds: conflictingCommandIds }] : [],
+  )
 }
 
 export function getConflictForCommand(

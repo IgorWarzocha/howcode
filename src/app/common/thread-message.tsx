@@ -22,9 +22,10 @@ import {
 import { memo, useEffect, useId, useRef, useState } from 'react'
 import type { Message } from '../types'
 import { getThinkingPreview } from '../utils/thread-previews'
+import { CopyMessageButton } from './copy-message-button'
 import { ExpandablePanel } from './expandable-panel'
 import { MarkdownContent } from './markdown-content'
-import { CopyMessageButton, renderProse, renderThinking } from './thread-message-utils'
+import { renderProse, renderThinking } from './thread-message-utils'
 import { useThreadFindHighlight } from './useThreadFindHighlight'
 
 const assistantStatusLabelClass = `mb-2 ${appTypeMetaStrongClass} tracking-[0.08em] uppercase opacity-85`

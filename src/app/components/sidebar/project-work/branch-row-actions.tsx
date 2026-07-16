@@ -15,22 +15,14 @@ import {
   WorktreeCompletionAction,
   WorktreeMergeAction,
 } from './branch-actions'
-import { createThreadForBranch, createThreadInWorktreeForBranch } from './new-thread-menu'
+import { getWorktreeParentBranchName } from './branch-row-helpers'
+import { createThreadForBranch, createThreadInWorktreeForBranch } from './new-thread-actions'
 import type { BranchThreadGroup } from './project-work-model'
 
 function getStartThreadBranchName(group: BranchThreadGroup, currentBranch: string | null) {
   if (group.current) return currentBranch
   if (group.unassigned) return null
   if (group.worktree) return group.worktreeBranchName ?? null
-  return group.label
-}
-
-export function getWorktreeParentBranchName(
-  group: BranchThreadGroup,
-  currentBranch: string | null,
-) {
-  if (group.current) return currentBranch?.trim() || group.label
-  if (group.worktree || group.unassigned) return null
   return group.label
 }
 

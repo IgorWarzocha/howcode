@@ -1,6 +1,6 @@
 import { X } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useEffectEvent, useRef } from 'react'
 import { cn } from '../../utils/cn'
 
 type SidebarInlineConfirmPopunderProps = {
@@ -25,6 +25,7 @@ export function SidebarInlineConfirmPopunder({
   confirmButtonClassName,
 }: SidebarInlineConfirmPopunderProps) {
   const popunderRef = useRef<HTMLSpanElement>(null)
+  const cancel = useEffectEvent(onCancel)
 
   useEffect(() => {
     if (!open) return
@@ -32,13 +33,13 @@ export function SidebarInlineConfirmPopunder({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       event.stopPropagation()
-      onCancel()
+      cancel()
     }
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target
       if (target instanceof Node && popunderRef.current?.contains(target)) return
       if (target instanceof Element && target.closest('.sidebar-inline-popunder-anchor')) return
-      onCancel()
+      cancel()
     }
 
     document.addEventListener('keydown', handleKeyDown, true)
@@ -47,7 +48,7 @@ export function SidebarInlineConfirmPopunder({
       document.removeEventListener('keydown', handleKeyDown, true)
       document.removeEventListener('pointerdown', handlePointerDown, true)
     }
-  }, [onCancel, open])
+  }, [open])
 
   return (
     <span className={cn('tooltip-anchor sidebar-inline-popunder-anchor', className)}>

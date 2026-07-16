@@ -585,11 +585,11 @@ async function pruneOldVersions(cacheRoot, keepDir) {
   }
 
   await Promise.all(
-    entries
-      .filter((entry) => entry.isDirectory())
-      .map((entry) => path.join(versionsRoot, entry.name))
-      .filter((dirPath) => !keepDirs.has(dirPath))
-      .map((dirPath) => fsp.rm(dirPath, { recursive: true, force: true })),
+    entries.flatMap((entry) => {
+      if (!entry.isDirectory()) return []
+      const dirPath = path.join(versionsRoot, entry.name)
+      return keepDirs.has(dirPath) ? [] : [fsp.rm(dirPath, { recursive: true, force: true })]
+    }),
   )
 }
 

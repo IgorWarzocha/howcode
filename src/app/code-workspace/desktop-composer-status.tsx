@@ -57,7 +57,7 @@ function formatContextPercent(contextUsage: ComposerContextUsage | null) {
   return `${contextUsage.percent.toFixed(0)}%`
 }
 
-export function DesktopComposerStatus({
+function DesktopComposerStatus({
   className,
   contextUsage,
   interactive = false,

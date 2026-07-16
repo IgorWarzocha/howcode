@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import type { PiConfiguredSkill } from '../../desktop/types'
 import {
   desktopQueryKeys,
@@ -14,6 +14,8 @@ import {
   isDesktopSkillsAvailable,
   isSkillCreatorCandidate,
 } from '../utils'
+
+const EMPTY_CONFIGURED_SKILLS: [] = []
 
 export function useSkillsController({
   projectPath,
@@ -55,7 +57,7 @@ export function useSkillsController({
     enabled: desktopSkillsAvailable,
   })
 
-  const configuredSkills = configuredSkillsQuery.data ?? []
+  const configuredSkills = configuredSkillsQuery.data ?? EMPTY_CONFIGURED_SKILLS
   const activeScope =
     installScope === 'chat' ? 'chat' : installScope === 'project' ? 'project' : 'user'
   const globalSkillCount = configuredSkills.filter((skill) => skill.scope === 'user').length
@@ -76,14 +78,15 @@ export function useSkillsController({
     () => getInstalledSkillSlugs(visibleConfiguredSkills),
     [visibleConfiguredSkills],
   )
+  const notifyProjectScopeActive = useEffectEvent(onSetProjectScopeActive)
 
   useEffect(() => {
-    onSetProjectScopeActive(installScope === 'project' || installScope === 'chat')
+    notifyProjectScopeActive(installScope === 'project' || installScope === 'chat')
 
     return () => {
-      onSetProjectScopeActive(false)
+      notifyProjectScopeActive(false)
     }
-  }, [installScope, onSetProjectScopeActive])
+  }, [installScope])
 
   const invalidateConfiguredSkillsCaches = (skills?: PiConfiguredSkill[]) => {
     if (skills) {

@@ -16,7 +16,6 @@ const MAX_FRONTEND_HISTORY_CHARS = 200_000
 const TRIMMED_FRONTEND_HISTORY_CHARS = 160_000
 const MIN_USABLE_TERMINAL_COLS = 2
 const MIN_USABLE_TERMINAL_ROWS = 2
-const TERMINAL_STICKY_BOTTOM_THRESHOLD_PX = 24
 const ANSI_ESCAPE = String.fromCharCode(27)
 
 export const DEFAULT_TERMINAL_FONT_FAMILY = [
@@ -104,11 +103,4 @@ export function terminalStyleVars(backgroundCssVar: TerminalBackgroundCssVar): C
     '--term-color-14': 'var(--text)',
     '--term-color-15': '#f7f9ff',
   } as CSSProperties
-}
-
-export function isTerminalElementNearBottom(element: HTMLElement) {
-  return (
-    element.scrollHeight - element.clientHeight - element.scrollTop <=
-    TERMINAL_STICKY_BOTTOM_THRESHOLD_PX
-  )
 }

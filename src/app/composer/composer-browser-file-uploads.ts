@@ -18,10 +18,11 @@ export function getUploadableFilesFromTransfer(transfer: DataTransfer | null) {
   }
 
   const files = toArray(transfer.files).filter(isBrowserFile)
-  const itemFiles = toArray(transfer.items)
-    .filter((item) => item.kind === 'file')
-    .map((item) => item.getAsFile())
-    .filter(isBrowserFile)
+  const itemFiles = toArray(transfer.items).flatMap((item) => {
+    if (item.kind !== 'file') return []
+    const file = item.getAsFile()
+    return isBrowserFile(file) ? [file] : []
+  })
 
   return [...new Set([...files, ...itemFiles])]
 }

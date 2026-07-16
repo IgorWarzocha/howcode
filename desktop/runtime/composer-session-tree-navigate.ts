@@ -140,8 +140,7 @@ function collectBranchSummaryIds(runtime: PiRuntime): Set<string> {
   return new Set(
     runtime.session.sessionManager
       .getEntries()
-      .filter((entry) => entry.type === 'branch_summary')
-      .map((entry) => entry.id),
+      .flatMap((entry) => (entry.type === 'branch_summary' ? [entry.id] : [])),
   )
 }
 

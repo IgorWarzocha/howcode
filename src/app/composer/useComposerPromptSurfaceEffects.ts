@@ -1,4 +1,4 @@
-import { type RefObject, useEffect } from 'react'
+import { type RefObject, useEffect, useEffectEvent } from 'react'
 import type { ComposerFileMentions } from './useComposerFileMentions'
 import type { ComposerSkillMentions } from './useComposerSkillMentions'
 import type { ComposerSlashCommands } from './useComposerSlashCommands'
@@ -177,58 +177,38 @@ export function useComposerEscapeEffects({
   onCancelSessionTreeLabelPopover?: (() => void) | undefined
   setOpenMenu: (menu: null) => void
 }) {
+  const handleKeyDown = useEffectEvent((event: KeyboardEvent) => {
+    if (event.key !== 'Escape') return
+    if (sessionTreeOpen === true) {
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      if (sessionTreeLabelPopoverOpen) {
+        onCancelSessionTreeLabelPopover?.()
+      } else if (sessionTreeNavigateConfirmOpen) {
+        onCancelSessionTreeNavigateConfirm?.()
+      } else {
+        onCloseSessionTree?.()
+      }
+      return
+    }
+    if (pickerOpen) {
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      setOpenMenu(null)
+      return
+    }
+
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    ;(document.activeElement as HTMLElement | null)?.blur?.()
+    void cancelDictation()
+  })
+
   useEffect(() => {
     const sessionTreeActive = sessionTreeOpen === true
     if (!(pickerOpen || dictationActive || dictationTranscribing || sessionTreeActive)) return
 
-    const consumeEscape = (event: KeyboardEvent) => {
-      event.preventDefault()
-      event.stopImmediatePropagation()
-    }
-
-    const handleSessionTreeEscape = (event: KeyboardEvent) => {
-      consumeEscape(event)
-      if (sessionTreeLabelPopoverOpen) {
-        onCancelSessionTreeLabelPopover?.()
-        return
-      }
-      if (sessionTreeNavigateConfirmOpen) {
-        onCancelSessionTreeNavigateConfirm?.()
-        return
-      }
-      onCloseSessionTree?.()
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      if (sessionTreeActive) {
-        handleSessionTreeEscape(event)
-        return
-      }
-      if (pickerOpen) {
-        consumeEscape(event)
-        setOpenMenu(null)
-        return
-      }
-
-      consumeEscape(event)
-      ;(document.activeElement as HTMLElement | null)?.blur?.()
-      void cancelDictation()
-    }
-
     window.addEventListener('keydown', handleKeyDown, true)
     return () => window.removeEventListener('keydown', handleKeyDown, true)
-  }, [
-    cancelDictation,
-    dictationActive,
-    dictationTranscribing,
-    onCancelSessionTreeNavigateConfirm,
-    onCancelSessionTreeLabelPopover,
-    onCloseSessionTree,
-    pickerOpen,
-    sessionTreeLabelPopoverOpen,
-    sessionTreeNavigateConfirmOpen,
-    sessionTreeOpen,
-    setOpenMenu,
-  ])
+  }, [dictationActive, dictationTranscribing, pickerOpen, sessionTreeOpen])
 }

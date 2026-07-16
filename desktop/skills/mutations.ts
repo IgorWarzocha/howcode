@@ -145,10 +145,14 @@ export async function removePiSkill(request: {
   projectPath?: string | undefined | null | undefined
   chat?: boolean | undefined
 }): Promise<PiSkillMutationResult> {
-  const installedPath = path.resolve(request.installedPath)
   const globalRootPaths = getGlobalSkillsDirs()
   const projectRootPaths = getProjectSkillsDirs(request.projectPath)
   const chatRootPaths = getChatSkillsDirs()
+  const installedPath = resolveRemovableSkillPath(request.installedPath, [
+    ...globalRootPaths,
+    ...projectRootPaths,
+    ...chatRootPaths,
+  ])
 
   const isGlobalSkill = globalRootPaths.some((rootPath) =>
     isPathWithinRootDescendant(installedPath, rootPath),
@@ -175,4 +179,12 @@ export async function removePiSkill(request: {
       chat: request.chat,
     }),
   }
+}
+
+function resolveRemovableSkillPath(installedPath: string, allowedRoots: string[]) {
+  const resolvedPath = path.resolve(installedPath)
+  if (!allowedRoots.some((rootPath) => isPathWithinRootDescendant(resolvedPath, rootPath))) {
+    throw new Error('That skill cannot be removed from here.')
+  }
+  return resolvedPath
 }

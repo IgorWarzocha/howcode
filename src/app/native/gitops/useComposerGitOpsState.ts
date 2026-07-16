@@ -7,6 +7,7 @@ import type {
   GitOpsMode,
   ProjectGitState,
 } from '../../desktop/types'
+import { useLatestRef } from '../../hooks/useLatestRef'
 import {
   buildGitOpsCommentCards,
   getActionResultCommitted,
@@ -140,9 +141,7 @@ export function useComposerGitOpsState({
   const [actionStatusMessage, setActionStatusMessage] = useState<string | null>(null)
   const [repoUrl, setRepoUrl] = useState('')
   const previousProjectIdRef = useRef<string | null>(projectGitState?.projectId ?? null)
-  const commitMessageRef = useRef(commitMessage)
-
-  commitMessageRef.current = commitMessage
+  const commitMessageRef = useLatestRef(commitMessage)
 
   const isGitRepo = projectGitState?.isGitRepo ?? false
   const hasOrigin = projectGitState?.hasOrigin ?? false
@@ -200,13 +199,11 @@ export function useComposerGitOpsState({
     setActionStatusMessage(null)
   }, [projectGitState])
 
-  useEffect(() => {
-    if (!isTreeClean && persistedCleanMessage && commitMessage === persistedCleanMessage) {
-      setCommitMessage('')
-      setPersistedCleanMessage(null)
-      setActionStatusMessage(null)
-    }
-  }, [commitMessage, isTreeClean, persistedCleanMessage])
+  if (!isTreeClean && persistedCleanMessage && commitMessage === persistedCleanMessage) {
+    setCommitMessage('')
+    setPersistedCleanMessage(null)
+    setActionStatusMessage(null)
+  }
 
   const handleCommitMessageChange = useCallback(
     (nextMessage: string) => {
@@ -272,7 +269,7 @@ export function useComposerGitOpsState({
 
       handleCommitMessageChange(nextMessage)
     },
-    [handleCommitMessageChange],
+    [commitMessageRef, handleCommitMessageChange],
   )
 
   const handleSaveOrigin = useCallback(async () => {

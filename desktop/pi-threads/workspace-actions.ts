@@ -58,9 +58,11 @@ import { deletePersistedThreads } from './thread-actions.ts'
 async function closeWorkspaceTerminals(projectId: string) {
   const terminalSnapshots = await listTerminals()
   await Promise.all(
-    terminalSnapshots
-      .filter((snapshot) => snapshot.projectId === projectId)
-      .map((snapshot) => closeTerminal({ sessionId: snapshot.sessionId, deleteHistory: true })),
+    terminalSnapshots.flatMap((snapshot) =>
+      snapshot.projectId === projectId
+        ? [closeTerminal({ sessionId: snapshot.sessionId, deleteHistory: true })]
+        : [],
+    ),
   )
 }
 
@@ -246,8 +248,10 @@ async function handleMergeWorktreeWorkspaceAction(payload: AnyDesktopActionPaylo
     })
   }
 
-  const branchResult = await pruneProjectBranch(projectId, branchName)
-  const cleanupError = await deletePersistedThreadsForWorkspace(threadIds)
+  const [branchResult, cleanupError] = await Promise.all([
+    pruneProjectBranch(projectId, branchName),
+    deletePersistedThreadsForWorkspace(threadIds),
+  ])
   if (!cleanupError) deleteProject(worktreePath)
   if (branchResult && 'error' in branchResult) {
     return handledAction({ didMutate: true, error: branchResult.error })

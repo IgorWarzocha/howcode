@@ -22,7 +22,6 @@ import type {
   ProjectDiffBaseline,
   ProjectDiffImagePreview,
   ProjectDiffImageSide,
-  ProjectDiffResolvedBaseline,
   ProjectDiffStatsResult,
   ProjectGitState,
   ProjectUsageSummary,
@@ -34,8 +33,6 @@ import type {
 
 export {
   compileReactArtifactQuery,
-  editArtifactQuery,
-  getArtifactQuery,
   listArtifactsQuery,
   listArtifactVersionsQuery,
   saveTextToDownloadsQuery,
@@ -215,12 +212,6 @@ export async function getProjectDiffImagePreviewQuery(request: {
   return (await window.piDesktop?.getProjectDiffImagePreview?.(request)) ?? null
 }
 
-export async function captureProjectDiffBaselineQuery(
-  projectId: string,
-): Promise<ProjectDiffResolvedBaseline | null> {
-  return (await window.piDesktop?.captureProjectDiffBaseline?.(projectId)) ?? null
-}
-
 export async function listProjectCommitsQuery(
   projectId: string,
   limit = 50,
@@ -238,10 +229,6 @@ export async function listProjectDirectoryEntriesQuery(
   request: DesktopRequestMap['listProjectDirectoryEntries']['params'] = {},
 ): Promise<DesktopRequestMap['listProjectDirectoryEntries']['response'] | null> {
   return (await window.piDesktop?.listProjectDirectoryEntries?.(request)) ?? null
-}
-
-export async function clearClipboardImagesQuery() {
-  return (await window.piDesktop?.clearClipboardImages?.()) ?? { clearedCount: 0 }
 }
 
 export async function listComposerAttachmentEntriesQuery(

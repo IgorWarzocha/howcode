@@ -76,13 +76,14 @@ function SearchExtensionsResults({
     )
   }
   if (catalogItems.length === 0) return <div className={inlineEmptyNoteClass}>No pi packages.</div>
+  const selectedCatalogSourceSet = new Set(selectedCatalogSources)
   return (
     <div className={expanded ? skillsListClass : skillsPreviewListClass}>
       {catalogItems.map((item) => (
         <CatalogItemRow
           key={item.name}
           item={item}
-          selected={selectedCatalogSources.includes(item.source)}
+          selected={selectedCatalogSourceSet.has(item.source)}
           installed={installedIdentityKeys.has(item.identityKey)}
           pendingInstall={isInstallPending(item.source)}
           onToggleSelected={onToggleSelectedSource}

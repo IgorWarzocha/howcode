@@ -1,6 +1,7 @@
 import { getPersistedSessionPath, isLocalSessionPath } from '@howcode/shared/session-paths'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence'
+import { useLatestRef } from '../hooks/useLatestRef'
 import { AppShellLayoutView } from './app-shell-layout-view'
 import { useAppKeybindings } from './useAppKeybindings'
 import type { AppShellController } from './useAppShellController'
@@ -94,7 +95,7 @@ type AppShellLayoutProps = {
 }
 
 export function AppShellLayout({ controller }: AppShellLayoutProps) {
-  const controllerRef = useRef(controller)
+  const controllerRef = useLatestRef(controller)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [sidebarCompactMode, setSidebarCompactMode] = useState(() =>
     typeof window === 'undefined' ? false : window.innerWidth <= 1236,
@@ -170,19 +171,13 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   })
 
   const takeoverTerminalKey = takeoverTerminalKeyRef.current?.key ?? nextTakeoverTerminalKey
-  controllerRef.current = controller
-
   const handleOpenGitOpsFromTakeover = useCallback(async () => {
     controllerRef.current.handleOpenGitOpsView()
     await controllerRef.current.handleCloseTakeoverTerminal({
       preserveSessionOverride: true,
       refreshThread: false,
     })
-  }, [])
-
-  const handleArtifactDrawerOverlayChange = useCallback(() => {
-    // Artifact drawer overlay state is controlled by the drawer itself.
-  }, [])
+  }, [controllerRef])
 
   const previousWindowCompactModeRef = useRef(
     typeof window === 'undefined' ? false : window.innerWidth <= 1236,
@@ -201,7 +196,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     updateSidebarCompactMode()
     window.addEventListener('resize', updateSidebarCompactMode)
     return () => window.removeEventListener('resize', updateSidebarCompactMode)
-  }, [])
+  }, [controllerRef])
 
   useEffect(() => {
     if (!sidebarCompactMode) setSidebarOverlayOpen(false)
@@ -222,7 +217,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     }
     window.addEventListener('keydown', handleKeyDown, { capture: true })
     return () => window.removeEventListener('keydown', handleKeyDown, { capture: true })
-  }, [sidebarOverlayOpen])
+  }, [controllerRef, sidebarOverlayOpen])
 
   const handleToggleSidebar = useCallback(() => {
     if (sidebarCompactMode) {
@@ -244,7 +239,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     if (controllerRef.current.state.terminalVisible) {
       controllerRef.current.handleCloseTerminalDrawer()
     }
-  }, [sidebarCompactMode])
+  }, [controllerRef, sidebarCompactMode])
 
   const handleFocusTerminal = useCallback(() => {
     if (!sidebarCompactMode) return
@@ -293,7 +288,6 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
       workspaceContentClass={workspaceContentClass}
       handleSetDiffBaseline={handleSetDiffBaseline}
       handleSetDiffRenderMode={handleSetDiffRenderMode}
-      handleArtifactDrawerOverlayChange={handleArtifactDrawerOverlayChange}
       takeoverPresent={takeoverPresent}
       takeoverTerminalKey={takeoverTerminalKey}
       handleOpenGitOpsFromTakeover={handleOpenGitOpsFromTakeover}

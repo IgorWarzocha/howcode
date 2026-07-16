@@ -223,6 +223,7 @@ function BrowseSectionContent({
     )
   }
   if (catalogItems.length === 0) return <div className={inlineEmptyNoteClass}>No skills found.</div>
+  const selectedCatalogSourceSet = new Set(selectedCatalogSources)
   return (
     <div className={expanded ? skillsListClass : skillsPreviewListClass}>
       {catalogItems.map((item) => (
@@ -231,13 +232,15 @@ function BrowseSectionContent({
           installed={installedSkillSlugs.has(normalizeSkillSlug(item.skillId))}
           isPendingInstall={isPendingInstall}
           item={item}
-          selected={selectedCatalogSources.includes(item.identityKey)}
+          selected={selectedCatalogSourceSet.has(item.identityKey)}
           setSelectedCatalogSources={setSelectedCatalogSources}
         />
       ))}
     </div>
   )
 }
+
+const EMPTY_CATALOG_ITEMS: [] = []
 
 type BrowseSkillsSectionProps = {
   appSettings: AppSettings
@@ -276,7 +279,7 @@ export function BrowseSkillsSection({
     enabled: submittedSearchInput.length >= 2,
   })
 
-  const catalogItems = skillsQuery.data?.items ?? []
+  const catalogItems = skillsQuery.data?.items ?? EMPTY_CATALOG_ITEMS
 
   useEffect(() => {
     setSelectedCatalogSources((current) =>

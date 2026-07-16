@@ -7,9 +7,10 @@ function isExternalReference(path: string) {
 }
 
 export function buildComposerAttachmentPrompt(attachments: ComposerAttachment[]): string {
-  const normalizedAttachments = attachments
-    .map((attachment) => ({ ...attachment, path: attachment.path.trim() }))
-    .filter((attachment) => attachment.path.length > 0)
+  const normalizedAttachments = attachments.flatMap((attachment) => {
+    const normalized = { ...attachment, path: attachment.path.trim() }
+    return normalized.path ? [normalized] : []
+  })
 
   if (normalizedAttachments.length === 0) {
     return ''

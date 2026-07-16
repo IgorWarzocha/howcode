@@ -79,6 +79,16 @@ export function SettingRow({
   )
 }
 
+function useInlineSelectSearch(open: boolean) {
+  const [search, setSearch] = useState('')
+  const [previousOpen, setPreviousOpen] = useState(open)
+  if (previousOpen !== open) {
+    setPreviousOpen(open)
+    if (!open) setSearch('')
+  }
+  return [search, setSearch] as const
+}
+
 export function InlineSelect({
   id,
   value,
@@ -98,7 +108,7 @@ export function InlineSelect({
   onChange: (value: string) => void
   onOpenChange: (open: boolean) => void
 }) {
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useInlineSelectSearch(open)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const selectedOption = options.find((option) => option.value === value) ?? options[0] ?? null
   const showSearch = options.length > 12
@@ -120,12 +130,7 @@ export function InlineSelect({
   )
 
   useEffect(() => {
-    if (!open) {
-      setSearch('')
-      return
-    }
-
-    if (showSearch) {
+    if (open && showSearch) {
       searchInputRef.current?.focus()
     }
   }, [open, showSearch])

@@ -1,4 +1,4 @@
-import { appTypeCodeClass } from '@howcode/ui'
+import { appTypeCodeClass, appTypeTinyStrongClass } from '@howcode/ui'
 import type { Message } from '../types'
 
 type ToolResultMessage = Extract<Message, { role: 'toolResult' }>
@@ -145,10 +145,22 @@ function getToolDiffs(message: ToolResultMessage) {
   return []
 }
 
-export function getToolDiffSummary(message: ToolResultMessage) {
+function getToolDiffSummary(message: ToolResultMessage) {
   const diffs = getToolDiffs(message)
   if (diffs.length === 0) return null
   return countChangedLines(diffs)
+}
+
+export function ToolDiffSummary({ message }: { message: ToolResultMessage }) {
+  const summary = getToolDiffSummary(message)
+  if (!summary) return null
+  return (
+    <span className={`shrink-0 ${appTypeTinyStrongClass}`}>
+      <span className="text-[color:var(--green)]">+{summary.added}</span>
+      <span className="px-1 text-[color:var(--muted-2)]/70">/</span>
+      <span className="text-[color:var(--danger)]">-{summary.removed}</span>
+    </span>
+  )
 }
 
 function getLineKind(line: string): DiffLine['kind'] {

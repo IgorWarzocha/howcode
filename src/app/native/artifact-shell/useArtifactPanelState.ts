@@ -1,6 +1,7 @@
 import { useArtifactPreview } from '@howcode/native-interactive-artifacts'
 import { useRef, useState } from 'react'
 import type { Artifact, ArtifactVersion } from '../../desktop/types'
+import { useLatestRef } from '../../hooks/useLatestRef'
 import { useArtifactCollection } from './useArtifactCollection'
 import { useArtifactDerivedState } from './useArtifactDerivedState'
 import { useArtifactDownload } from './useArtifactDownload'
@@ -20,8 +21,6 @@ export function useArtifactPanelState(conversationId: string | null) {
   const [selectedVersion, setSelectedVersion] = useState<number | 'latest'>('latest')
   const [previewRevision, setPreviewRevision] = useState(0)
   const previousSelectedArtifactSlugRef = useRef<string | null>(null)
-  const draftDirtyRef = useRef(false)
-  const displayedContentRef = useRef('')
 
   const derivedState = useArtifactDerivedState({
     artifacts,
@@ -41,8 +40,8 @@ export function useArtifactPanelState(conversationId: string | null) {
     selectedArtifactVersion,
     showingHistoricalVersion,
   } = derivedState
-  displayedContentRef.current = displayedContent
-  draftDirtyRef.current = draftDirty
+  const displayedContentRef = useLatestRef(displayedContent)
+  const draftDirtyRef = useLatestRef(draftDirty)
   const { artifactLoadError, loadingArtifacts, setArtifactLoadError } = useArtifactCollection({
     conversationId,
     setArtifacts,

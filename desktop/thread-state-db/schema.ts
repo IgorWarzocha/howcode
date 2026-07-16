@@ -66,7 +66,14 @@ function listLegacyCheckpointRefs(database: Database) {
     )
     .all() as ProjectPathRow[]
 
-  return [...new Set(rows.map((row) => row.cwd.trim()).filter(Boolean))]
+  return [
+    ...new Set(
+      rows.flatMap((row) => {
+        const cwd = row.cwd.trim()
+        return cwd ? [cwd] : []
+      }),
+    ),
+  ]
 }
 
 function purgeLegacyCheckpointRefsForProject(projectId: string) {

@@ -498,7 +498,7 @@ export async function runPostDesktopActionEffects(input: RunPostDesktopActionEff
       input.queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() }),
   }
 
-  for (const handler of postEffectHandlers) {
-    if (handler.matches(ctx)) await handler.run(ctx)
-  }
+  await Promise.all(
+    postEffectHandlers.flatMap((handler) => (handler.matches(ctx) ? [handler.run(ctx)] : [])),
+  )
 }

@@ -322,10 +322,14 @@ export async function invalidateRuntimeHostSettings(
   }
 
   await Promise.all(
-    [...targets].filter(isHostRunningOrStarting).map((host) =>
-      invokeRuntimeHostOnHost(host, 'invalidateRuntimeSettings', request).catch((error) => {
-        console.warn(`Failed to invalidate Pi runtime host settings (${host.label}).`, error)
-      }),
+    [...targets].flatMap((host) =>
+      isHostRunningOrStarting(host)
+        ? [
+            invokeRuntimeHostOnHost(host, 'invalidateRuntimeSettings', request).catch((error) => {
+              console.warn(`Failed to invalidate Pi runtime host settings (${host.label}).`, error)
+            }),
+          ]
+        : [],
     ),
   )
 }
@@ -334,12 +338,18 @@ export async function disposeRuntimeHostsForWorkspace(request: {
   projectPath: string
   sessionPaths: string[]
 }) {
-  for (const host of hosts) {
-    if (!isHostRunningOrStarting(host)) continue
-    await invokeRuntimeHostOnHost(host, 'disposeRuntimeHosts', request)
-    host.busy = false
-    scheduleThreadHostIdleStop(host)
-  }
+  await Promise.all(
+    [...hosts].flatMap((host) =>
+      isHostRunningOrStarting(host)
+        ? [
+            invokeRuntimeHostOnHost(host, 'disposeRuntimeHosts', request).then(() => {
+              host.busy = false
+              scheduleThreadHostIdleStop(host)
+            }),
+          ]
+        : [],
+    ),
+  )
 }
 
 export function restartRuntimeHostsForEnvironmentChange() {

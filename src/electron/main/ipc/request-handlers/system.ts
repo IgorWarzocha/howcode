@@ -117,24 +117,25 @@ async function listProjectDirectoryEntries(request: { path?: string | null | und
   )
   const directoryEntries = await readdir(currentPath, { withFileTypes: true })
 
-  const entries = directoryEntries
-    .filter(
-      (entry) => !entry.name.startsWith('.') && (entry.isDirectory() || entry.isSymbolicLink()),
-    )
-    .map(async (entry) => {
-      const entryPath = path.join(currentPath, entry.name)
-      if (entry.isDirectory())
-        return { path: entryPath, name: entry.name, kind: 'directory' as const }
+  const entries = directoryEntries.flatMap((entry) => {
+    if (entry.name.startsWith('.') || !(entry.isDirectory() || entry.isSymbolicLink())) return []
+    return [
+      (async () => {
+        const entryPath = path.join(currentPath, entry.name)
+        if (entry.isDirectory())
+          return { path: entryPath, name: entry.name, kind: 'directory' as const }
 
-      try {
-        const stats = await stat(entryPath)
-        return stats.isDirectory()
-          ? { path: entryPath, name: entry.name, kind: 'directory' as const }
-          : null
-      } catch {
-        return null
-      }
-    })
+        try {
+          const stats = await stat(entryPath)
+          return stats.isDirectory()
+            ? { path: entryPath, name: entry.name, kind: 'directory' as const }
+            : null
+        } catch {
+          return null
+        }
+      })(),
+    ]
+  })
 
   return {
     homePath,
@@ -163,13 +164,17 @@ export function createSystemHandlers(): SystemRequestHandlers {
 
       const normalizedFilePaths = await normalizeDialogFilePaths(result.filePaths)
 
-      return normalizedFilePaths
-        .filter((filePath) => filePath.length > 0)
-        .map((filePath) => ({
-          path: filePath,
-          name: filePath.split(pathSeparatorPattern).pop() ?? filePath,
-          kind: getAttachmentKind(filePath),
-        }))
+      return normalizedFilePaths.flatMap((filePath) =>
+        filePath
+          ? [
+              {
+                path: filePath,
+                name: filePath.split(pathSeparatorPattern).pop() ?? filePath,
+                kind: getAttachmentKind(filePath),
+              },
+            ]
+          : [],
+      )
     },
     listProjectDirectoryEntries,
     readClipboardSnapshot: ({ formats: requestedFormats }) => {

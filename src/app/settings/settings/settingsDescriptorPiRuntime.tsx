@@ -334,6 +334,7 @@ export function buildPiRuntimeSettingsDescriptors({
       keywords: 'terminal tui editor autocomplete image width padding rows',
       render: () => (
         <input
+          aria-label={title}
           type="number"
           min={min}
           max={max}

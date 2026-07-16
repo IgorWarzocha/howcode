@@ -308,26 +308,27 @@ export function SessionsView({
 
   const runBulkAction = async (action: SessionBulkAction, threadIds = selectedThreadIds) => {
     if (!project || threadIds.length === 0) return
+    const threadIdSet = new Set(threadIds)
     if (action === 'delete') {
       const projectIds = [
         ...new Set(
-          oldThreads
-            .filter((thread) => threadIds.includes(thread.id))
-            .map((thread) => thread.projectId),
+          oldThreads.flatMap((thread) => (threadIdSet.has(thread.id) ? [thread.projectId] : [])),
         ),
       ]
       await onAction('thread.delete-many', { projectIds, threadIds })
     } else {
       await Promise.all(
-        oldThreads
-          .filter((thread) => threadIds.includes(thread.id))
-          .map((thread) =>
-            onAction('thread.assign-branch', {
-              projectId: thread.projectId,
-              threadId: thread.id,
-              branchName: action === 'assign-current' ? currentBranch : null,
-            }),
-          ),
+        oldThreads.flatMap((thread) =>
+          threadIdSet.has(thread.id)
+            ? [
+                onAction('thread.assign-branch', {
+                  projectId: thread.projectId,
+                  threadId: thread.id,
+                  branchName: action === 'assign-current' ? currentBranch : null,
+                }),
+              ]
+            : [],
+        ),
       )
     }
     setSelectedThreadIds([])
@@ -392,7 +393,7 @@ export function SessionsView({
                   onOpenThread={onOpenThread}
                   onToggleSelected={() =>
                     setSelectedThreadIds((current) =>
-                      current.includes(thread.id)
+                      new Set(current).has(thread.id)
                         ? current.filter((threadId) => threadId !== thread.id)
                         : [...current, thread.id],
                     )

@@ -5,8 +5,9 @@ import {
   fallbackAppSlashCommands,
   sessionTreeSlashCommand,
 } from '@howcode/shared/composer-slash-commands'
-import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { type KeyboardEvent, useEffect, useMemo, useState } from 'react'
 import type { ComposerSlashCommand } from '../desktop/types'
+import { useLatestRef } from '../hooks/useLatestRef'
 import { getComposerSlashCommandsQuery } from '../query/desktop-query'
 
 import { handleOpenSlashCommandKey } from './composer-slash-command-keydown'
@@ -59,10 +60,8 @@ export function useComposerSlashCommands({
   const filter = draft === dismissedDraft ? null : candidateFilter
   const open = filter !== null
   const commandScopeKey = `${projectId}\0${sessionPath ?? ''}\0${composerMode}`
-  const draftRef = useRef(draft)
-  const commandScopeKeyRef = useRef(commandScopeKey)
-  draftRef.current = draft
-  commandScopeKeyRef.current = commandScopeKey
+  const draftRef = useLatestRef(draft)
+  const commandScopeKeyRef = useLatestRef(commandScopeKey)
   const filteredCommands = useMemo(
     () => filterComposerSlashCommands(commands, filter),
     [commands, filter],

@@ -424,10 +424,11 @@ export function getSettingsFavoriteFolders(payload: DesktopActionPayloadInput): 
   return Array.isArray(payload.folders)
     ? [
         ...new Set(
-          payload.folders
-            .filter((folder: unknown): folder is string => typeof folder === 'string')
-            .map((folder) => folder.trim())
-            .filter(Boolean),
+          payload.folders.flatMap((folder: unknown) => {
+            if (typeof folder !== 'string') return []
+            const trimmed = folder.trim()
+            return trimmed ? [trimmed] : []
+          }),
         ),
       ]
     : []

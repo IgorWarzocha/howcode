@@ -1,5 +1,5 @@
 import { Loader2, Search, X } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
 import { useHowcodeKeybindingCommand } from '../app-shell/keybinding-events'
 import type { ThreadSearchMatch, ThreadSearchResult } from '../desktop/types'
 import { searchThreadQuery } from '../query/desktop-query'
@@ -66,6 +66,9 @@ export function ThreadFindBar({
   )
 
   const openFind = useCallback(() => setOpen(true), [])
+  const closeFind = useEffectEvent(close)
+  const notifyQueryChange = useEffectEvent(onQueryChange)
+  const notifyActiveMatchChange = useEffectEvent(onActiveMatchChange)
 
   useEffect(() => {
     if (!open) return
@@ -82,12 +85,12 @@ export function ThreadFindBar({
       if (event.key !== 'Escape') return
       event.preventDefault()
       event.stopPropagation()
-      close()
+      closeFind()
     }
 
     window.addEventListener('keydown', handleKeyDown, { capture: true })
     return () => window.removeEventListener('keydown', handleKeyDown, { capture: true })
-  }, [close, open])
+  }, [open])
 
   useHowcodeKeybindingCommand('thread.find', (event) => {
     event.preventDefault()
@@ -95,11 +98,11 @@ export function ThreadFindBar({
   })
 
   useEffect(() => {
-    onQueryChange(open ? query : '')
+    notifyQueryChange(open ? query : '')
     if (!(open && sessionPath && query.trim())) {
       setResult({ matches: [], searchedMessageCount: 0 })
       setSearching(false)
-      onActiveMatchChange(null)
+      notifyActiveMatchChange(null)
       return
     }
 
@@ -113,19 +116,19 @@ export function ThreadFindBar({
           setResult(nextResult)
           setSearching(false)
           setMatchIndex(0)
-          onActiveMatchChange(null)
+          notifyActiveMatchChange(null)
         })
         .catch(() => {
           if (requestIdRef.current !== requestId) return
           setResult({ matches: [], searchedMessageCount: 0 })
           setSearching(false)
           setMatchIndex(0)
-          onActiveMatchChange(null)
+          notifyActiveMatchChange(null)
         })
     }, 220)
 
     return () => window.clearTimeout(timeout)
-  }, [onActiveMatchChange, onQueryChange, open, query, sessionPath])
+  }, [open, query, sessionPath])
 
   if (!open) return null
 

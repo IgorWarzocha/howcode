@@ -11,19 +11,12 @@ import type {
 } from '../desktop/types'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
 import type { Project } from '../types'
-import { getVisibleDesktopSessionPath, shouldAutoOpenStartedThread } from './desktop-event-sync'
 import { useComposerGitStateSync } from './useComposerGitStateSync'
 import { useDesktopEventSync } from './useDesktopEventSync'
 import { useProjectShellSync } from './useProjectShellSync'
 import { useTakeoverVisibilitySync } from './useTakeoverVisibilitySync'
 import { useTerminalGitStateSync } from './useTerminalGitStateSync'
-import {
-  shouldCloseUtilityViewOnEscape,
-  useUtilityViewEscape,
-  useWatchedSessionSync,
-} from './useWindowShellSync'
-
-export { getVisibleDesktopSessionPath, shouldAutoOpenStartedThread, shouldCloseUtilityViewOnEscape }
+import { useUtilityViewEscape, useWatchedSessionSync } from './useWindowShellSync'
 
 type QueryClientLike = {
   setQueryData: (queryKey: readonly unknown[], updater: unknown) => void

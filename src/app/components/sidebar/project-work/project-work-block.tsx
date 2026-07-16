@@ -1,6 +1,6 @@
 import { IconButton } from '@howcode/common/icon-button'
 import { Archive, ChevronRight, MoreHorizontal } from 'lucide-react'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import type { Project, Thread, View } from '../../../types'
@@ -52,9 +52,6 @@ function ProjectWorkBlockHeader({
     onDismiss: () => setProjectMenuOpen(false),
     refs: [menuButtonRef, menuRef],
   })
-  useEffect(() => {
-    if (!editingName) setRenameDraft(project.name)
-  }, [editingName, project.name])
   useLayoutEffect(() => {
     if (!(projectMenuOpen && menuButtonRef.current)) return
     const anchor = menuButtonRef.current
@@ -135,6 +132,7 @@ function ProjectWorkBlockHeader({
             onClose={() => setProjectMenuOpen(false)}
             onRename={() => {
               setProjectMenuOpen(false)
+              setRenameDraft(project.name)
               setEditingName(true)
             }}
           />

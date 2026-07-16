@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import {
+  type Dispatch,
+  type SetStateAction,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 import { ViewHeader } from '../common/view-header'
 import { ViewShell } from '../common/view-shell'
 import type {
@@ -24,6 +32,8 @@ import { normalizeManagedDictationModelId } from './settings/settingsDictationHe
 import { filterSettings, groupSettingsByCategory } from './settings/settingsGroups'
 import type { SettingsCategoryId, SettingsOpenTarget } from './settings/settingsTypes'
 import { useSettingsController } from './settings/useSettingsController'
+
+const resolvedPromise = Promise.resolve()
 
 type SettingsViewProps = {
   appSettings: AppSettings
@@ -62,12 +72,35 @@ export function SettingsView({
   const draftPiSettingsRef = useRef(draftPiSettings)
   const settingsScrollRef = useRef<HTMLDivElement>(null)
   const dirtyPiSettingsRef = useRef(new Set<keyof PiSettings>())
-  const themeUpdateQueueRef = useRef<Promise<unknown>>(Promise.resolve())
+  const themeUpdateQueueRef = useRef<Promise<unknown>>(resolvedPromise)
   const pendingThemeRef = useRef<string | null>(null)
   const [filter, setFilter] = useState('')
   const [activeCategory, setActiveCategory] = useState<SettingsCategoryId | null>(null)
   const [openSelectId, setOpenSelectId] = useState<string | null>(null)
-  const [dictationModelDraft, setDictationModelDraft] = useState<DictationModelId | null>(null)
+  const configuredDictationModelId = normalizeManagedDictationModelId(appSettings.dictationModelId)
+  const [dictationModelEdit, setDictationModelEdit] = useState<{
+    source: DictationModelId | null
+    value: DictationModelId | null
+  } | null>(null)
+  const dictationModelDraft =
+    dictationModelEdit?.source === configuredDictationModelId
+      ? dictationModelEdit.value
+      : configuredDictationModelId
+  const setDictationModelDraft: Dispatch<SetStateAction<DictationModelId | null>> = useCallback(
+    (value) => {
+      setDictationModelEdit((current) => {
+        const currentValue =
+          current?.source === configuredDictationModelId
+            ? current.value
+            : configuredDictationModelId
+        return {
+          source: configuredDictationModelId,
+          value: typeof value === 'function' ? value(currentValue) : value,
+        }
+      })
+    },
+    [configuredDictationModelId],
+  )
   const [showHelp, setShowHelp] = useState(false)
   const [highlightedSettingId, setHighlightedSettingId] = useState<string | null>(null)
   const [highlightedCategoryId, setHighlightedCategoryId] = useState<SettingsCategoryId | null>(
@@ -167,12 +200,16 @@ export function SettingsView({
 
     dirtyPiSettingsRef.current.clear()
     const snapshot = draftPiSettingsRef.current
-    for (const key of dirtyKeys) {
-      await onAction('pi-settings.update', {
-        piSettingsKey: key,
-        value: snapshot[key],
-      })
-    }
+    await dirtyKeys.reduce<Promise<void>>(
+      (pending, key) =>
+        pending.then(async () => {
+          await onAction('pi-settings.update', {
+            piSettingsKey: key,
+            value: snapshot[key],
+          })
+        }),
+      Promise.resolve(),
+    )
   }, [onAction])
 
   useEffect(() => {
@@ -216,11 +253,6 @@ export function SettingsView({
       window.removeEventListener('keydown', handleKeyDown, true)
     }
   }, [openSelectId])
-
-  const configuredDictationModelId = normalizeManagedDictationModelId(appSettings.dictationModelId)
-  useEffect(() => {
-    setDictationModelDraft(configuredDictationModelId)
-  }, [configuredDictationModelId])
 
   const settings = buildSettingsDescriptors({
     appSettings,

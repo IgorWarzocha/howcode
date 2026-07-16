@@ -189,7 +189,12 @@ export function setFavoriteFolders(favoriteFolders: string[]) {
 
 export function setSidebarVisibleProjectIds(projectIds: string[]) {
   const normalizedProjectIds = [
-    ...new Set(projectIds.map((projectId) => projectId.trim()).filter(Boolean)),
+    ...new Set(
+      projectIds.flatMap((projectId) => {
+        const trimmed = projectId.trim()
+        return trimmed ? [trimmed] : []
+      }),
+    ),
   ]
   writeAppPreference(sidebarVisibleProjectIdsKey, JSON.stringify(normalizedProjectIds))
 }

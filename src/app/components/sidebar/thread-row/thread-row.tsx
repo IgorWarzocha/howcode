@@ -185,10 +185,6 @@ export function ThreadRow({
   const skipBlurSubmitRef = useRef(false)
 
   useEffect(() => {
-    if (!editing) setDraft(title)
-  }, [editing, title])
-
-  useEffect(() => {
     if (!editing) return
     inputRef.current?.focus()
   }, [editing])

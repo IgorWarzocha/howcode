@@ -1,6 +1,6 @@
 import { Check, X } from 'lucide-react'
 import type { RefObject } from 'react'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useDismissibleLayer } from '../hooks/useDismissibleLayer'
 import { appToneDangerClass, appTypeMetaStrongClass, confirmPopoverClass } from '../ui/classes'
 import { cn } from '../utils/cn'
@@ -27,10 +27,6 @@ export function ConfirmPopover({
 }: ConfirmPopoverProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const [confirming, setConfirming] = useState(false)
-
-  useEffect(() => {
-    if (!open) setConfirming(false)
-  }, [open])
 
   const handleConfirm = () => {
     if (confirming) return

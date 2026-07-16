@@ -12,7 +12,7 @@ export function getEffectiveThreadRunningState(
 }
 
 export function sortInboxThreadsByPriority(threads: InboxThread[]) {
-  return [...threads].sort((left, right) => {
+  return threads.toSorted((left, right) => {
     if (left.unread !== right.unread) {
       return left.unread ? -1 : 1
     }

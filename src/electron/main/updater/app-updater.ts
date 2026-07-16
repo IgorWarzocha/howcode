@@ -237,11 +237,17 @@ async function resolveLatestRelease(
     await fetchJson(updateUrl),
     updateUrl,
   )
+  const fallbackAssetUrl = `${releaseBaseUrl}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`
+  const resolvedAssetUrl = new URL(assetUrl || fallbackAssetUrl)
+  const trustedReleaseBase = new URL(`${releaseBaseUrl}/`)
+  if (resolvedAssetUrl.origin !== trustedReleaseBase.origin) {
+    throw new Error(`Update metadata points to an untrusted asset host: ${resolvedAssetUrl.origin}`)
+  }
   return {
     channel,
     version,
     hash,
-    assetUrl: assetUrl || `${releaseBaseUrl}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`,
+    assetUrl: resolvedAssetUrl.toString(),
   }
 }
 
@@ -332,12 +338,13 @@ async function pruneOldVersions(cacheRoot: string, keepDirs: ReadonlySet<string>
     return
   }
   await Promise.all(
-    entries
-      .filter((entry) => entry.isDirectory())
-      .map((entry) => path.join(versionsRoot, entry.name))
-      .filter((dirPath) => !keepDirs.has(dirPath))
-      .filter((dirPath) => dirPath !== runningVersionDir)
-      .map((dirPath) => rm(dirPath, { recursive: true, force: true })),
+    entries.flatMap((entry) => {
+      if (!entry.isDirectory()) return []
+      const dirPath = path.join(versionsRoot, entry.name)
+      return keepDirs.has(dirPath) || dirPath === runningVersionDir
+        ? []
+        : [rm(dirPath, { recursive: true, force: true })]
+    }),
   )
 }
 

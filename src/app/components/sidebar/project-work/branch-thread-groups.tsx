@@ -5,8 +5,13 @@ import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project, View } from '../../../types'
 import { WorktreeSmallIcon } from '../../../ui/icons/worktree-small-icon'
 import { SidebarActionTooltip } from '../sidebar-action-tooltip'
+import {
+  canCreateWorktreeFromBranchGroup,
+  shouldShowBranchGroupDividerAfter,
+  shouldShowBranchGroupDividerBefore,
+} from './branch-group-layout'
 import { BranchInlineActions, BranchSessionCount } from './branch-row-actions'
-import { createThreadForBranch } from './new-thread-menu'
+import { createThreadForBranch } from './new-thread-actions'
 import type { BranchThreadGroup, WorktreeBranchGroup } from './project-work-model'
 import { ProjectWorkThreadRow } from './project-work-thread-row'
 
@@ -48,10 +53,6 @@ function hasCompletedWorktrees(group: BranchThreadGroup) {
     (group.completedWorktrees?.length ?? 0) > 0 ||
     group.worktrees.some((worktree) => worktree.complete)
   )
-}
-
-export function canCreateWorktreeFromBranchGroup(group: BranchThreadGroup) {
-  return group.current
 }
 
 function hasMergeableCompletedWorktrees(group: BranchThreadGroup) {
@@ -101,36 +102,6 @@ function getBranchActionState(input: {
     confirmingMergeCompletedWorktrees: pruneConfirmBranchId === mergeCompletedWorktreesActionKey,
     confirmingRemoveCompletedWorktrees: pruneConfirmBranchId === removeCompletedWorktreesActionKey,
   }
-}
-
-export function getCompactBranchVisualGroupKey(
-  group: BranchThreadGroup,
-  currentBranch: string | null,
-) {
-  return group.worktree ? (group.worktreeBranchName ?? group.label ?? currentBranch) : group.label
-}
-
-export function branchGroupHasWorktreeDivider(group: BranchThreadGroup) {
-  return group.worktrees.length > 0 || (group.completedWorktrees?.length ?? 0) > 0
-}
-
-export function shouldShowBranchGroupDividerAfter(group: BranchThreadGroup, hasNextGroup: boolean) {
-  return hasNextGroup && branchGroupHasWorktreeDivider(group)
-}
-
-export function shouldShowBranchGroupDividerBefore(group: BranchThreadGroup, index: number) {
-  return index > 0 && branchGroupHasWorktreeDivider(group)
-}
-
-export function shouldSeparateBranchGroups(
-  group: BranchThreadGroup,
-  nextGroup: BranchThreadGroup | undefined,
-) {
-  if (!nextGroup) return false
-  const groupIsCheckoutCluster = group.current || group.worktree || group.worktrees.length > 0
-  const nextGroupIsCheckoutCluster =
-    nextGroup.current || nextGroup.worktree || nextGroup.worktrees.length > 0
-  return groupIsCheckoutCluster && !nextGroupIsCheckoutCluster
 }
 
 function getThreadAssignBranchForGroup(group: BranchThreadGroup, currentBranch: string | null) {

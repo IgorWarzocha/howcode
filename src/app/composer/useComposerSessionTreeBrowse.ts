@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useEffectEvent, useState } from 'react'
 
 export function browsePreviewEntryIdAfterFocus(
   anchorEntryId: string | null,
@@ -32,30 +32,30 @@ export function useComposerSessionTreeBrowse(input: {
   const { sessionTreeOpen, leafIdFromList, onPreviewEntry, onRestoreAnchorInThread } = input
   const [anchorEntryId, setAnchorEntryId] = useState<string | null>(null)
   const [previewEntryId, setPreviewEntryId] = useState<string | null>(null)
-  const wasOpenRef = useRef(false)
+  const [previousInput, setPreviousInput] = useState({
+    sessionTreeOpen,
+    leafIdFromList,
+  })
+  const notifyPreviewEntry = useEffectEvent(onPreviewEntry)
 
-  useEffect(() => {
-    const justOpened = sessionTreeOpen && !wasOpenRef.current
-    const justClosed = !sessionTreeOpen && wasOpenRef.current
-    wasOpenRef.current = sessionTreeOpen
-
-    if (justOpened && leafIdFromList) {
+  if (
+    previousInput.sessionTreeOpen !== sessionTreeOpen ||
+    previousInput.leafIdFromList !== leafIdFromList
+  ) {
+    const justOpened = sessionTreeOpen && !previousInput.sessionTreeOpen
+    setPreviousInput({ sessionTreeOpen, leafIdFromList })
+    if (sessionTreeOpen && leafIdFromList) {
       setAnchorEntryId(leafIdFromList)
-      setPreviewEntryId(null)
-      return
-    }
-
-    if (justClosed) {
+      if (justOpened) setPreviewEntryId(null)
+    } else if (!sessionTreeOpen) {
       setAnchorEntryId(null)
       setPreviewEntryId(null)
-      onPreviewEntry(null)
     }
-  }, [leafIdFromList, onPreviewEntry, sessionTreeOpen])
+  }
 
   useEffect(() => {
-    if (!(sessionTreeOpen && leafIdFromList)) return
-    setAnchorEntryId(leafIdFromList)
-  }, [leafIdFromList, sessionTreeOpen])
+    if (!sessionTreeOpen) notifyPreviewEntry(null)
+  }, [sessionTreeOpen])
 
   const focusEntryId = previewEntryId ?? anchorEntryId
 

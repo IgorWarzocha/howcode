@@ -125,7 +125,12 @@ function createTuiSessionDetection(
 
 function getThreadUserPrompts(snapshot: Awaited<ReturnType<typeof loadThreadSnapshot>>) {
   return snapshot.thread.messages.flatMap((message) =>
-    message.role === 'user' ? message.content.map((content) => content.trim()).filter(Boolean) : [],
+    message.role === 'user'
+      ? message.content.flatMap((content) => {
+          const trimmed = content.trim()
+          return trimmed ? [trimmed] : []
+        })
+      : [],
   )
 }
 
@@ -134,8 +139,8 @@ function hasDetectedPrompt(input: {
   submittedPrompts: string[]
 }) {
   if (input.submittedPrompts.length === 0) return false
-  const userPrompts = getThreadUserPrompts(input.snapshot)
-  return input.submittedPrompts.some((prompt) => userPrompts.includes(prompt))
+  const userPrompts = new Set(getThreadUserPrompts(input.snapshot))
+  return input.submittedPrompts.some((prompt) => userPrompts.has(prompt))
 }
 
 function shouldKeepDetecting(detection: NonNullable<TerminalSessionRecord['tuiSessionDetection']>) {
@@ -145,10 +150,12 @@ function shouldKeepDetecting(detection: NonNullable<TerminalSessionRecord['tuiSe
 function rememberSubmittedPrompts(record: TerminalSessionRecord, submittedLines: string[]) {
   const detection = record.tuiSessionDetection
   if (!detection) return
+  const submittedPromptSet = new Set(detection.submittedPrompts)
 
   for (const line of submittedLines) {
     const prompt = line.trim()
-    if (prompt && prompt !== 'clear' && !detection.submittedPrompts.includes(prompt)) {
+    if (prompt && prompt !== 'clear' && !submittedPromptSet.has(prompt)) {
+      submittedPromptSet.add(prompt)
       detection.submittedPrompts.push(prompt)
     }
   }

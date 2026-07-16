@@ -5,7 +5,9 @@ import {
   type RefObject,
   useCallback,
   useEffect,
+  useEffectEvent,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react'
@@ -130,11 +132,9 @@ function PiExtensionStatusLine({ statuses }: { statuses: ComposerProps['piExtens
   if (statuses.length === 0) return null
 
   const toggleExpanded = () => {
-    setExpanded((current) => {
-      const next = !current
-      window.localStorage.setItem(extensionStatusExpandedStorageKey, String(next))
-      return next
-    })
+    const next = !expanded
+    window.localStorage.setItem(extensionStatusExpandedStorageKey, String(next))
+    setExpanded(next)
   }
 
   return (
@@ -718,7 +718,9 @@ export function ComposerPromptSurface({
     sessionPath,
     slashCommandsOpen: slashCommands.open,
   })
-  openSessionTreeRef.current = openSessionTree
+  useLayoutEffect(() => {
+    openSessionTreeRef.current = openSessionTree
+  })
   const slashCommandListSignature = slashCommands.commands
     .map((command) => `${command.source}:${command.name}`)
     .join('|')
@@ -883,41 +885,43 @@ export function ComposerPromptSurface({
       window.removeEventListener(howcodeDismissTransientUiEvent, dismissComposerTransientUi)
   })
 
+  const registeredPiExtensionShortcuts = useMemo(
+    () => new Set(piExtensionShortcuts.map((shortcut) => shortcut.shortcut.toLowerCase())),
+    [piExtensionShortcuts],
+  )
+  const handlePiExtensionShortcut = useEffectEvent((event: KeyboardEvent) => {
+    if (shouldSkipPiExtensionShortcutForRightAlt(event, rightAltPressedRef)) return
+    const shortcut = getPiExtensionShortcutKey(event)
+    if (!(shortcut && registeredPiExtensionShortcuts.has(shortcut))) return
+    const overlayHovered = isPiExtensionOverlayHovered(composerOverlayStackRef.current)
+    if (!canRunPiExtensionShortcut({ overlayHovered, shortcut, target: event.target })) return
+    const textarea = getComposerTextarea(composerPanelRef.current)
+    event.preventDefault()
+    event.stopPropagation()
+    void onAction('composer.pi-extension-shortcut', {
+      projectId,
+      sessionPath,
+      composerMode,
+      chatGroupId,
+      editorSelectionEnd: textarea?.selectionEnd,
+      editorSelectionStart: textarea?.selectionStart,
+      editorText: textarea?.value ?? draft,
+      shortcut,
+    }).then((result) => {
+      const editorText = result?.result?.editorText
+      if (typeof editorText !== 'string') return
+      applyPiExtensionEditorResult({
+        composerPanel: composerPanelRef.current,
+        editorSelectionEnd: result?.result?.editorSelectionEnd,
+        editorSelectionStart: result?.result?.editorSelectionStart,
+        editorText,
+        setDraft,
+      })
+    })
+  })
+
   useEffect(() => {
     if (piExtensionShortcuts.length === 0) return
-    const registeredShortcuts = new Set(
-      piExtensionShortcuts.map((shortcut) => shortcut.shortcut.toLowerCase()),
-    )
-    const handlePiExtensionShortcut = (event: KeyboardEvent) => {
-      if (shouldSkipPiExtensionShortcutForRightAlt(event, rightAltPressedRef)) return
-      const shortcut = getPiExtensionShortcutKey(event)
-      if (!(shortcut && registeredShortcuts.has(shortcut))) return
-      const overlayHovered = isPiExtensionOverlayHovered(composerOverlayStackRef.current)
-      if (!canRunPiExtensionShortcut({ overlayHovered, shortcut, target: event.target })) return
-      const textarea = getComposerTextarea(composerPanelRef.current)
-      event.preventDefault()
-      event.stopPropagation()
-      void onAction('composer.pi-extension-shortcut', {
-        projectId,
-        sessionPath,
-        composerMode,
-        chatGroupId,
-        editorSelectionEnd: textarea?.selectionEnd,
-        editorSelectionStart: textarea?.selectionStart,
-        editorText: textarea?.value ?? draft,
-        shortcut,
-      }).then((result) => {
-        const editorText = result?.result?.editorText
-        if (typeof editorText !== 'string') return
-        applyPiExtensionEditorResult({
-          composerPanel: composerPanelRef.current,
-          editorSelectionEnd: result?.result?.editorSelectionEnd,
-          editorSelectionStart: result?.result?.editorSelectionStart,
-          editorText,
-          setDraft,
-        })
-      })
-    }
     const handlePiExtensionKeyUp = (event: KeyboardEvent) => {
       if (isRightAltKeyEvent(event)) rightAltPressedRef.current = false
     }
@@ -932,17 +936,7 @@ export function ComposerPromptSurface({
       window.removeEventListener('keyup', handlePiExtensionKeyUp, { capture: true })
       window.removeEventListener('blur', resetRightAltPressed)
     }
-  }, [
-    chatGroupId,
-    composerMode,
-    composerPanelRef,
-    draft,
-    onAction,
-    piExtensionShortcuts,
-    projectId,
-    sessionPath,
-    setDraft,
-  ])
+  }, [piExtensionShortcuts.length])
 
   return (
     <div

@@ -123,6 +123,8 @@ function extensionDialogsEqual(
   right: PiExtensionUiState['piExtensionDialogRequest'],
 ) {
   if (!(left && right)) return left === right
+  const leftOptions = left.options ?? []
+  const rightOptions = right.options ?? []
   return (
     left.id === right.id &&
     left.method === right.method &&
@@ -130,8 +132,8 @@ function extensionDialogsEqual(
     left.message === right.message &&
     left.placeholder === right.placeholder &&
     left.prefill === right.prefill &&
-    (left.options ?? []).length === (right.options ?? []).length &&
-    (left.options ?? []).every((option, index) => option === right.options?.[index])
+    leftOptions.length === rightOptions.length &&
+    leftOptions.every((option, index) => option === rightOptions[index])
   )
 }
 

@@ -100,15 +100,17 @@ function getTextSourceTypes(source: ComposerClipboardTextSourceLike) {
 }
 
 function getClipboardTextValues(source: ComposerClipboardTextSourceLike) {
-  return getTextSourceTypes(source)
-    .map((type) => ({ type, value: normalizeClipboardPayloadByType(type, source.getData(type)) }))
-    .filter(({ value }) => value.length > 0)
+  return getTextSourceTypes(source).flatMap((type) => {
+    const value = normalizeClipboardPayloadByType(type, source.getData(type))
+    return value ? [{ type, value }] : []
+  })
 }
 
 function getClipboardRawTextValues(source: ComposerClipboardTextSourceLike) {
-  return getTextSourceTypes(source)
-    .map((type) => ({ type, value: normalizeClipboardRawText(source.getData(type)) }))
-    .filter(({ value }) => value.length > 0)
+  return getTextSourceTypes(source).flatMap((type) => {
+    const value = normalizeClipboardRawText(source.getData(type))
+    return value ? [{ type, value }] : []
+  })
 }
 
 function getClipboardTextValueByType(source: ComposerClipboardTextSourceLike, type: string) {
@@ -188,10 +190,11 @@ function getClipboardFileAttachments(
   const directFiles = toArray(clipboardData.files).map((file) =>
     getClipboardFileAttachment(file, resolveFilePath),
   )
-  const itemFiles = toArray(clipboardData.items)
-    .filter((item) => item.kind === 'file')
-    .map((item) => item.getAsFile?.() ?? null)
-    .map((file) => (file ? getClipboardFileAttachment(file, resolveFilePath) : null))
+  const itemFiles = toArray(clipboardData.items).flatMap((item) => {
+    if (item.kind !== 'file') return []
+    const file = item.getAsFile?.()
+    return [file ? getClipboardFileAttachment(file, resolveFilePath) : null]
+  })
 
   return mergeComposerAttachments(
     [],

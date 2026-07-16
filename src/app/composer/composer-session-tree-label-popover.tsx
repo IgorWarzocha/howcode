@@ -1,6 +1,6 @@
 import { Check } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 type ComposerSessionTreeLabelPopoverProps = {
@@ -24,6 +24,7 @@ export function ComposerSessionTreeLabelPopover({
   const popoverRef = useRef<HTMLSpanElement>(null)
   const [draft, setDraft] = useState(label)
   const [position, setPosition] = useState<{ left: number; top: number } | null>(null)
+  const closePopover = useEffectEvent(() => onOpenChange(false))
 
   useEffect(() => {
     if (!open) setDraft(label)
@@ -34,13 +35,13 @@ export function ComposerSessionTreeLabelPopover({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       event.stopPropagation()
-      onOpenChange(false)
+      closePopover()
     }
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target
       if (target instanceof Node && popoverRef.current?.contains(target)) return
       if (target instanceof Node && anchorRef.current?.contains(target)) return
-      onOpenChange(false)
+      closePopover()
     }
     document.addEventListener('keydown', handleKeyDown, true)
     document.addEventListener('pointerdown', handlePointerDown, true)
@@ -48,7 +49,7 @@ export function ComposerSessionTreeLabelPopover({
       document.removeEventListener('keydown', handleKeyDown, true)
       document.removeEventListener('pointerdown', handlePointerDown, true)
     }
-  }, [onOpenChange, open])
+  }, [open])
 
   useLayoutEffect(() => {
     if (!open) return

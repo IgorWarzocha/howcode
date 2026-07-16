@@ -1,7 +1,8 @@
 import { defaultDiffBaseline } from '@howcode/native-gitops'
 import { getPersistedSessionPath, isLocalSessionPath } from '@howcode/shared/session-paths'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
+import { useLatestRef } from '../hooks/useLatestRef'
 import type { AppShellController } from './useAppShellController'
 
 type DiffPreferenceSource = 'init' | 'override' | 'default'
@@ -227,8 +228,7 @@ export function useAppShellDiffPreferences({
   parentBranchName: string | null
   terminalSessionPath: string | null
 }) {
-  const controllerRef = useRef(controller)
-  controllerRef.current = controller
+  const controllerRef = useLatestRef(controller)
   const scope = useMemo(
     () => ({
       projectId: composerProjectId,
@@ -264,7 +264,14 @@ export function useAppShellDiffPreferences({
         terminalSessionPath,
       }),
     )
-  }, [activeThreadId, composerProjectId, controller, parentBranchName, terminalSessionPath])
+  }, [
+    activeThreadId,
+    composerProjectId,
+    controller,
+    controllerRef,
+    parentBranchName,
+    terminalSessionPath,
+  ])
 
   useEffect(() => {
     setDiffRenderModeState((current) =>
@@ -277,7 +284,7 @@ export function useAppShellDiffPreferences({
         terminalSessionPath,
       }),
     )
-  }, [activeThreadId, composerProjectId, controller, terminalSessionPath])
+  }, [activeThreadId, composerProjectId, controller, controllerRef, terminalSessionPath])
 
   const diffBaseline = scopeMatches(diffBaselineState, scope)
     ? diffBaselineState.baseline
@@ -300,7 +307,7 @@ export function useAppShellDiffPreferences({
         diffBaseline: nextBaseline,
       })
     },
-    [parentBranchName, scope],
+    [controllerRef, parentBranchName, scope],
   )
 
   const handleSetDiffRenderMode = useCallback(
@@ -316,7 +323,7 @@ export function useAppShellDiffPreferences({
         diffRenderMode: nextRenderMode,
       })
     },
-    [scope],
+    [controllerRef, scope],
   )
 
   return { diffBaseline, diffRenderMode, handleSetDiffBaseline, handleSetDiffRenderMode }

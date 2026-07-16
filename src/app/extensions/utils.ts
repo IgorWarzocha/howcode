@@ -35,13 +35,12 @@ export async function openExternalUrl(url: string) {
 
 export function getInstalledIdentityKeys(packages: PiConfiguredPackage[]) {
   return new Set(
-    packages
-      .filter(
-        (configuredPackage) =>
-          configuredPackage.resourceKind === 'package' &&
-          typeof configuredPackage.installedPath === 'string',
-      )
-      .map((configuredPackage) => configuredPackage.identityKey),
+    packages.flatMap((configuredPackage) =>
+      configuredPackage.resourceKind === 'package' &&
+      typeof configuredPackage.installedPath === 'string'
+        ? [configuredPackage.identityKey]
+        : [],
+    ),
   )
 }
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import type { AppSettings, DesktopActionInvoker, PiSettings } from '../../desktop/types'
 import { useAnimatedPresence } from '../../hooks/useAnimatedPresence'
 import {
@@ -49,12 +49,28 @@ export function useSettingsController({
   projects: Project[]
   onAction: DesktopActionInvoker
 }) {
-  const [preferredProjectLocationDraft, setPreferredProjectLocationDraft] = useState(
-    appSettings.preferredProjectLocation ?? '',
-  )
-  const [customPiDirectoryDraft, setCustomPiDirectoryDraft] = useState(
-    appSettings.customPiDirectory ?? '',
-  )
+  const preferredProjectLocation = appSettings.preferredProjectLocation ?? ''
+  const customPiDirectory = appSettings.customPiDirectory ?? ''
+  const [preferredProjectLocationEdit, setPreferredProjectLocationEdit] = useState<{
+    source: string
+    value: string
+  } | null>(null)
+  const [customPiDirectoryEdit, setCustomPiDirectoryEdit] = useState<{
+    source: string
+    value: string
+  } | null>(null)
+  const preferredProjectLocationDraft =
+    preferredProjectLocationEdit?.source === preferredProjectLocation
+      ? preferredProjectLocationEdit.value
+      : preferredProjectLocation
+  const customPiDirectoryDraft =
+    customPiDirectoryEdit?.source === customPiDirectory
+      ? customPiDirectoryEdit.value
+      : customPiDirectory
+  const setPreferredProjectLocationDraft = (value: string) =>
+    setPreferredProjectLocationEdit({ source: preferredProjectLocation, value })
+  const setCustomPiDirectoryDraft = (value: string) =>
+    setCustomPiDirectoryEdit({ source: customPiDirectory, value })
   const [gitCommitMenuOpen, setGitCommitMenuOpen] = useState(false)
   const [skillCreatorMenuOpen, setSkillCreatorMenuOpen] = useState(false)
   const [favoriteFolderDraft, setFavoriteFolderDraft] = useState('')
@@ -72,14 +88,6 @@ export function useSettingsController({
 
   const dictation = useSettingsDictationController({ appSettings, onAction })
   const desktopBridgeAvailable = useDesktopBridgeAvailable()
-
-  useEffect(() => {
-    setPreferredProjectLocationDraft(appSettings.preferredProjectLocation ?? '')
-  }, [appSettings.preferredProjectLocation])
-
-  useEffect(() => {
-    setCustomPiDirectoryDraft(appSettings.customPiDirectory ?? '')
-  }, [appSettings.customPiDirectory])
 
   const closeGitCommitMenu = () => {
     setGitCommitMenuOpen(false)

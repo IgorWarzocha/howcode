@@ -2,12 +2,12 @@ import { Tooltip } from '@howcode/common/tooltip'
 import { CircleOff, GitBranch } from 'lucide-react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project, Thread, View } from '../../../types'
-import { BranchInlineActions, BranchSessionCount } from './branch-row-actions'
 import {
-  BranchThreadGroupSection,
   shouldShowBranchGroupDividerAfter,
   shouldShowBranchGroupDividerBefore,
-} from './branch-thread-groups'
+} from './branch-group-layout'
+import { BranchInlineActions, BranchSessionCount } from './branch-row-actions'
+import { BranchThreadGroupSection } from './branch-thread-groups'
 import type { BranchThreadGroup, WorktreeBranch } from './project-work-model'
 import { ProjectWorkThreadRow } from './project-work-thread-row'
 

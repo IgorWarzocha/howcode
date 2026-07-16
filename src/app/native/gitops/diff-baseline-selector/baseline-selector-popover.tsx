@@ -13,7 +13,8 @@ import {
   popoverPanelClass,
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { BaselineOption, baselineOptions, CommitOption } from '../composer-diff-baseline-options'
+import { baselineOptions } from '../composer-diff-baseline-data'
+import { BaselineOption, CommitOption } from '../composer-diff-baseline-options'
 
 type BaselineSelectorPanelPosition = {
   left: number

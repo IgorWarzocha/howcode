@@ -226,7 +226,7 @@ function flattenPiTree(
 
   type StackItem = [PiSessionTreeNode, number, boolean]
   const stack: StackItem[] = []
-  const orderedRoots = [...roots].sort(
+  const orderedRoots = roots.toSorted(
     (a, b) => Number(containsActive.get(b)) - Number(containsActive.get(a)),
   )
   for (let i = orderedRoots.length - 1; i >= 0; i -= 1) {

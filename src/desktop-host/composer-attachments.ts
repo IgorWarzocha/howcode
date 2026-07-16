@@ -1,5 +1,5 @@
 import type { Dirent } from 'node:fs'
-import { readdir, stat } from 'node:fs/promises'
+import { readdir, realpath, stat } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { getAttachmentKind } from '../../shared/composer-attachments'
@@ -128,11 +128,15 @@ async function buildSearchIndex(rootPath: string) {
       continue
     }
 
-    for (const entry of directoryEntries) {
-      visitedEntries += 1
-      if (visitedEntries > maxVisitedSearchEntries) break
-      await addSearchIndexEntry({ entries, entry, currentPath, pendingDirectories, rootPath })
-    }
+    const entriesToVisit = directoryEntries.slice(0, maxVisitedSearchEntries - visitedEntries)
+    await entriesToVisit.reduce<Promise<void>>(
+      (pending, entry) =>
+        pending.then(() => {
+          visitedEntries += 1
+          return addSearchIndexEntry({ entries, entry, currentPath, pendingDirectories, rootPath })
+        }),
+      Promise.resolve(),
+    )
   }
 
   searchIndexes.set(rootPath, { entries, expiresAt: Date.now() + searchCacheTtlMs })
@@ -194,17 +198,21 @@ function compareSearchIndexEntries(left: SearchIndexEntry, right: SearchIndexEnt
   return left.relativePath.localeCompare(right.relativePath, undefined, { sensitivity: 'base' })
 }
 
-export async function searchComposerAttachmentEntries(request: {
+async function resolveComposerSearchRoot(projectPath?: string | null) {
+  return realpath(projectPath ?? getDesktopWorkingDirectory())
+}
+
+export async function searchComposerAttachmentEntries(input: {
   projectId?: string | null | undefined
   query?: string | null | undefined
   limit?: number | null | undefined
 }): Promise<ComposerFileSearchEntry[]> {
-  const rootPath = path.resolve(request.projectId ?? getDesktopWorkingDirectory())
-  const query = (request.query?.trim() ?? '').toLowerCase()
-  const limit = Math.max(1, Math.min(request.limit ?? 50, 100))
+  const rootPath = await resolveComposerSearchRoot(input.projectId)
+  const query = (input.query?.trim() ?? '').toLowerCase()
+  const limit = Math.max(1, Math.min(input.limit ?? 50, 100))
   const index = await buildSearchIndex(rootPath)
   if (!query)
-    return [...index].sort(compareSearchIndexEntries).slice(0, limit).map(toFileSearchEntry)
+    return index.toSorted(compareSearchIndexEntries).slice(0, limit).map(toFileSearchEntry)
 
   const matches: Array<{ entry: SearchIndexEntry; score: number }> = []
   for (const entry of index) {
@@ -262,23 +270,27 @@ export async function listComposerAttachmentEntries(request: {
   const directoryEntries = await readdir(currentPath, { withFileTypes: true })
 
   const entries: ComposerFilePickerEntry[] = directoryEntries
-    .filter((entry) => !entry.name.startsWith('.'))
-    .map((entry) => {
+    .flatMap((entry) => {
+      if (entry.name.startsWith('.')) return []
       const entryPath = path.join(currentPath, entry.name)
 
       if (entry.isDirectory()) {
-        return {
-          path: entryPath,
-          name: entry.name,
-          kind: 'directory',
-        } satisfies ComposerFilePickerEntry
+        return [
+          {
+            path: entryPath,
+            name: entry.name,
+            kind: 'directory',
+          } satisfies ComposerFilePickerEntry,
+        ]
       }
 
-      return {
-        path: entryPath,
-        name: entry.name,
-        kind: getAttachmentKind(entryPath),
-      } satisfies ComposerFilePickerEntry
+      return [
+        {
+          path: entryPath,
+          name: entry.name,
+          kind: getAttachmentKind(entryPath),
+        } satisfies ComposerFilePickerEntry,
+      ]
     })
     .sort((left, right) => {
       if (left.kind === 'directory' && right.kind !== 'directory') {

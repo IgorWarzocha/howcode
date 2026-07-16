@@ -1,7 +1,7 @@
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { useQueries } from '@tanstack/react-query'
 import { FolderCode } from 'lucide-react'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
 import type { AppSettings, DesktopActionInvoker, ProjectGitState } from '../../../desktop/types'
 import { desktopQueryKeys, getProjectGitStateQuery } from '../../../query/desktop-query'
@@ -25,7 +25,6 @@ import {
   getWorktreeProjectsForRoot,
   hasUncommittedProjectChanges,
   orderProjectsForScopeSelector,
-  sameStringList,
   UNASSIGNED_BRANCH_GROUP_ID,
 } from './project-work-model'
 
@@ -52,6 +51,49 @@ type ProjectWorkSectionProps = {
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
   onShowView: (view: Exclude<View, 'gitops'>) => void
   onToggleProjectCollapse: (projectId: string) => void
+}
+
+function filterVisibleProjectIds(
+  configuredProjectIds: string[] | null | undefined,
+  projects: Project[],
+) {
+  if (!configuredProjectIds) return configuredProjectIds
+  const validProjectIds = new Set(projects.map((project) => project.id))
+  return configuredProjectIds.filter((projectId) => validProjectIds.has(projectId))
+}
+
+function useInitialEmptyProjectScope({
+  initialVisibleProjectIds,
+  onShowView,
+  projectTargetMode,
+}: Pick<ProjectWorkSectionProps, 'initialVisibleProjectIds' | 'onShowView' | 'projectTargetMode'>) {
+  const appliedRef = useRef(false)
+  useEffect(() => {
+    if (appliedRef.current || initialVisibleProjectIds === undefined) return
+    appliedRef.current = true
+    if (projectTargetMode) return
+    if (initialVisibleProjectIds === null || initialVisibleProjectIds.length > 0) return
+    onShowView('landing')
+  }, [initialVisibleProjectIds, onShowView, projectTargetMode])
+}
+
+function applyVisibleProjectToggle(input: {
+  projectId: string
+  visibleProjectIds: string[]
+  setVisibleProjectIds: (projectIds: string[]) => void
+  focusProject: (projectId: string) => void
+  showLanding: () => void
+}) {
+  const wasVisible = input.visibleProjectIds.includes(input.projectId)
+  const nextProjectIds = wasVisible
+    ? input.visibleProjectIds.filter((id) => id !== input.projectId)
+    : [...input.visibleProjectIds, input.projectId]
+  input.setVisibleProjectIds(nextProjectIds)
+  if (!wasVisible && input.visibleProjectIds.length === 0) {
+    input.focusProject(input.projectId)
+  } else if (nextProjectIds.length === 0) {
+    input.showLanding()
+  }
 }
 
 export function ProjectWorkSection({
@@ -82,10 +124,11 @@ export function ProjectWorkSection({
   const [collapsedBranchIds, setCollapsedBranchIds] = useState<Record<string, boolean>>({})
   const [pruneConfirmBranchId, setPruneConfirmBranchId] = useState<string | null>(null)
   const [switchErrorBranchId, setSwitchErrorBranchId] = useState<string | null>(null)
-  const [storedVisibleProjectIds, setStoredVisibleProjectIds] = useState<string[] | null>(null)
+  const [visibleProjectIdsOverride, setStoredVisibleProjectIds] = useState<
+    string[] | null | undefined
+  >(undefined)
   const [scopeSelectorOrderIds, setScopeSelectorOrderIds] = useState<string[] | null>(null)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
-  const appliedInitialEmptyScopeRef = useRef(false)
   const displayableWorkspaces = useMemo(() => getDisplayableWorkspaces(projects), [projects])
   const displayableProjects = useMemo(() => getDisplayableProjects(projects), [projects])
   const selectedWorkspace = displayableWorkspaces.find(
@@ -98,33 +141,17 @@ export function ProjectWorkSection({
     ) ??
     displayableProjects[0] ??
     null
+  const configuredVisibleProjectIds =
+    visibleProjectIdsOverride === undefined ? initialVisibleProjectIds : visibleProjectIdsOverride
+  const storedVisibleProjectIds = useMemo(() => {
+    return filterVisibleProjectIds(configuredVisibleProjectIds, displayableProjects)
+  }, [configuredVisibleProjectIds, displayableProjects])
   const visibleProjectIds = getVisibleProjectIds(
-    storedVisibleProjectIds,
-    initialVisibleProjectIds,
+    storedVisibleProjectIds ?? null,
+    null,
     selectedProject,
   )
-  useEffect(() => {
-    if (appliedInitialEmptyScopeRef.current || initialVisibleProjectIds === undefined) return
-    appliedInitialEmptyScopeRef.current = true
-    if (projectTargetMode) return
-    if (initialVisibleProjectIds === null || initialVisibleProjectIds.length > 0) return
-    onShowView('landing')
-  }, [initialVisibleProjectIds, onShowView, projectTargetMode])
-
-  useEffect(() => {
-    if (initialVisibleProjectIds === undefined) return
-    setStoredVisibleProjectIds((current) => current ?? initialVisibleProjectIds)
-  }, [initialVisibleProjectIds])
-
-  useEffect(() => {
-    if (!storedVisibleProjectIds) return
-    setStoredVisibleProjectIds((current) => {
-      if (!current) return current
-      const validProjectIds = new Set(displayableProjects.map((project) => project.id))
-      const nextProjectIds = current.filter((projectId) => validProjectIds.has(projectId))
-      return sameStringList(current, nextProjectIds) ? current : nextProjectIds
-    })
-  }, [displayableProjects, storedVisibleProjectIds])
+  useInitialEmptyProjectScope({ initialVisibleProjectIds, onShowView, projectTargetMode })
 
   const visibleProjects = useMemo(() => {
     const visibleIds = new Set(visibleProjectIds)
@@ -168,6 +195,7 @@ export function ProjectWorkSection({
     if (projectGitState) states.set(projectGitState.projectId, projectGitState)
     return states
   }, [gitStateQueries, projectGitState, visibleProjects])
+  const loadProjectThreads = useEffectEvent(onLoadProjectThreads)
 
   useEffect(() => {
     const projectsToLoad = new Map(visibleProjects.map((project) => [project.id, project]))
@@ -178,9 +206,9 @@ export function ProjectWorkSection({
     }
     for (const project of projectsToLoad.values()) {
       if (project.threadsLoaded) continue
-      void onLoadProjectThreads(project.id, { chat: false })
+      void loadProjectThreads(project.id, { chat: false })
     }
-  }, [displayableWorkspaces, onLoadProjectThreads, visibleProjects])
+  }, [displayableWorkspaces, visibleProjects])
 
   const focusProject = (projectId: string) => {
     onProjectSelect(projectId)
@@ -191,21 +219,17 @@ export function ProjectWorkSection({
     void onAction('project.select', { projectId })
   }
   const toggleVisibleProject = (projectId: string) => {
-    const wasVisible = visibleProjectIds.includes(projectId)
-    const nextProjectIds = wasVisible
-      ? visibleProjectIds.filter((id) => id !== projectId)
-      : [...visibleProjectIds, projectId]
-    setStoredVisibleProjectIds(nextProjectIds)
-    if (!wasVisible && visibleProjectIds.length === 0) {
-      focusProject(projectId)
-    } else if (nextProjectIds.length === 0) {
-      onShowView('landing')
-    }
+    applyVisibleProjectToggle({
+      projectId,
+      visibleProjectIds,
+      setVisibleProjectIds: setStoredVisibleProjectIds,
+      focusProject,
+      showLanding: () => onShowView('landing'),
+    })
   }
 
-  if (loading && displayableProjects.length === 0) return <SidebarProjectsSkeleton />
-
-  if (!selectedProject && displayableProjects.length === 0) {
+  if (displayableProjects.length === 0) {
+    if (loading) return <SidebarProjectsSkeleton />
     return (
       <section className="sidebar-project-work-section" aria-label="Work">
         <ProjectScopeSelector
@@ -247,8 +271,8 @@ export function ProjectWorkSection({
 
   if (!selectedProject) return null
 
-  const contentProject = visibleProjects.length === 1 ? visibleProjects[0] : selectedProject
-  if (!contentProject) return null
+  const contentProject =
+    visibleProjects.length === 1 ? (visibleProjects[0] ?? selectedProject) : selectedProject
 
   const { activeThreads, olderThreads } = getThreadBucketsForProjectWork(
     contentProject,

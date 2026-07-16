@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { howcodeSessionTreeRevealEvent, type SessionTreeRevealDetail } from './session-tree-reveal'
 import { getTimelineRowMessageIds } from './thread-message-ids'
 import type { TimelineRow } from './timeline-row'
@@ -23,6 +23,11 @@ export function useSessionTreeReveal({
   shouldStickToBottomRef,
 }: UseSessionTreeRevealInput) {
   const [pendingScrollEntryId, setPendingScrollEntryId] = useState<string | null>(null)
+  const rowByMessageId = useMemo(
+    () =>
+      new Map(rows.flatMap((row) => getTimelineRowMessageIds(row).map((id) => [id, row] as const))),
+    [rows],
+  )
 
   useEffect(() => {
     const handleReveal = (event: Event) => {
@@ -34,7 +39,7 @@ export function useSessionTreeReveal({
       shouldStickToBottomRef.current = false
       setPendingScrollEntryId(detail.entryId)
 
-      const matchingRow = rows.find((row) => getTimelineRowMessageIds(row).includes(detail.entryId))
+      const matchingRow = rowByMessageId.get(detail.entryId)
       if (!matchingRow) return
 
       setCollapsedRowIds((current) => {
@@ -45,7 +50,7 @@ export function useSessionTreeReveal({
 
     window.addEventListener(howcodeSessionTreeRevealEvent, handleReveal)
     return () => window.removeEventListener(howcodeSessionTreeRevealEvent, handleReveal)
-  }, [rows, sessionPath, setCollapsedRowIds, shouldStickToBottomRef])
+  }, [rowByMessageId, sessionPath, setCollapsedRowIds, shouldStickToBottomRef])
 
   useEffect(() => {
     void rowStructureSignature
@@ -62,7 +67,7 @@ export function useSessionTreeReveal({
       const rowElement =
         exactMessage ??
         [...container.querySelectorAll<HTMLElement>('[data-message-ids]')].find((element) =>
-          (element.getAttribute('data-message-ids') ?? '').split(' ').includes(targetId),
+          new Set((element.getAttribute('data-message-ids') ?? '').split(' ')).has(targetId),
         )
       if (!rowElement) return
 

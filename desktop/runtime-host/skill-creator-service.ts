@@ -1,4 +1,4 @@
-import { mkdir, readdir, stat } from 'node:fs/promises'
+import { mkdir, readdir, realpath, stat } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -46,24 +46,21 @@ async function listSkillPaths(skillsRootPath: string) {
   }
 
   const entries = await readdir(skillsRootPath, { withFileTypes: true })
-  const skillPaths: Array<{ path: string; mtimeMs: number }> = []
-
-  for (const entry of entries) {
-    if (!entry.isDirectory()) {
-      continue
-    }
-
-    const skillPath = path.join(skillsRootPath, entry.name)
-    const skillFilePath = path.join(skillPath, 'SKILL.md')
-    if (!(await pathExists(skillFilePath))) {
-      continue
-    }
-
-    const skillStats = await stat(skillFilePath)
-    skillPaths.push({ path: skillPath, mtimeMs: skillStats.mtimeMs })
-  }
-
-  return skillPaths
+  const skillPaths = await Promise.all(
+    entries.flatMap((entry) => {
+      if (!entry.isDirectory()) return []
+      const skillPath = path.join(skillsRootPath, entry.name)
+      const skillFilePath = path.join(skillPath, 'SKILL.md')
+      return [
+        (async () => {
+          if (!(await pathExists(skillFilePath))) return null
+          const skillStats = await stat(skillFilePath)
+          return { path: skillPath, mtimeMs: skillStats.mtimeMs }
+        })(),
+      ]
+    }),
+  )
+  return skillPaths.filter((entry): entry is NonNullable<typeof entry> => entry !== null)
 }
 
 function pickDetectedSkillPath(
@@ -284,15 +281,16 @@ export async function startSkillCreatorSession(request: {
   chat?: boolean | undefined
 }) {
   const local = request.local === true
+  const projectPath = local && request.projectPath ? await realpath(request.projectPath) : null
   const launchCwd = request.chat
     ? getChatSessionDir()
     : local
-      ? path.resolve(request.projectPath ?? '')
+      ? (projectPath ?? os.homedir())
       : os.homedir()
   const targetRootPath = request.chat
     ? getActiveChatSkillsRoot()
     : local
-      ? getActiveProjectSkillsRoot(request.projectPath)
+      ? getActiveProjectSkillsRoot(projectPath)
       : getActiveGlobalSkillsRoot()
 
   if (!targetRootPath) {
@@ -304,7 +302,7 @@ export async function startSkillCreatorSession(request: {
   const initialSkillPaths = new Set(
     (await listSkillPaths(targetRootPath)).map((skillPath) => skillPath.path),
   )
-  const { session } = await createSkillCreatorSession(launchCwd, request.projectPath)
+  const { session } = await createSkillCreatorSession(launchCwd, projectPath)
   const sessionEntry: SkillCreatorSessionEntry = {
     session,
     targetRootPath,

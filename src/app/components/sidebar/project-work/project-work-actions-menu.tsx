@@ -29,10 +29,6 @@ export const ProjectWorkActionsMenu = forwardRef<
     worktreeDirInputRef.current?.focus()
     worktreeDirInputRef.current?.select()
   }, [editingWorktreeDir])
-  useEffect(() => {
-    if (editingWorktreeDir) return
-    setWorktreeDirDraft(project.worktreeDirectory ?? './.worktrees')
-  }, [editingWorktreeDir, project.worktreeDirectory])
   const runProjectAction = (
     action: 'project.open-in-file-manager' | 'project.pin' | 'project.remove-project',
   ) => {
@@ -104,7 +100,10 @@ export const ProjectWorkActionsMenu = forwardRef<
         <button
           type="button"
           className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-project-work-project-actions-menu-item"
-          onClick={() => setEditingWorktreeDir(true)}
+          onClick={() => {
+            setWorktreeDirDraft(project.worktreeDirectory ?? './.worktrees')
+            setEditingWorktreeDir(true)
+          }}
           role="menuitem"
         >
           <WorktreeSmallIcon size={12} />

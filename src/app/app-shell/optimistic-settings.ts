@@ -69,10 +69,11 @@ function getOptimisticFavoriteFolders(payload: ActionPayload, fallback: string[]
   return Array.isArray(payload.folders)
     ? [
         ...new Set(
-          payload.folders
-            .filter((folder): folder is string => typeof folder === 'string')
-            .map((folder) => folder.trim())
-            .filter(Boolean),
+          payload.folders.flatMap((folder) => {
+            if (typeof folder !== 'string') return []
+            const trimmed = folder.trim()
+            return trimmed ? [trimmed] : []
+          }),
         ),
       ]
     : fallback

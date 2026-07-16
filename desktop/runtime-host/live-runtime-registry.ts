@@ -343,7 +343,8 @@ export async function disposeRuntimeHosts(
       .map((sessionPath) => getPersistedSessionPath(sessionPath))
       .filter((sessionPath): sessionPath is string => Boolean(sessionPath)),
   )
-  const projectPath = request.projectPath?.trim() ? path.resolve(request.projectPath) : null
+  const requestedProjectPath = request.projectPath
+  const projectPath = requestedProjectPath?.trim() ? path.resolve(requestedProjectPath) : null
   const entries = [...runtimeRecords.entries()]
 
   await Promise.all(

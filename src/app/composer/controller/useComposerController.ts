@@ -1,4 +1,4 @@
-import { type RefObject, useEffect, useMemo, useRef, useState } from 'react'
+import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getDesktopActionErrorMessage } from '../../desktop/action-results'
 import type { DesktopAction } from '../../desktop/actions'
 import { getErrorMessage } from '../../desktop/error-messages'
@@ -84,7 +84,9 @@ export function useComposerController({
   onListAttachmentEntries,
 }: UseComposerControllerProps) {
   const [openMenu, setOpenMenu] = useState<'model' | 'picker' | null>(null)
-  const [localExtensionCommandRunning, setLocalExtensionCommandRunning] = useState(false)
+  const [localExtensionCommandRunningScopeKey, setLocalExtensionCommandRunningScopeKey] = useState<
+    string | null
+  >(null)
   const [isSending, setIsSending] = useState(false)
   const [pendingSubmittedDraft, setPendingSubmittedDraft] = useState<string | null>(null)
   const pendingSubmittedReplyActivityKeyRef = useRef<string | null>(null)
@@ -118,6 +120,18 @@ export function useComposerController({
     restoredQueuedPrompt,
     onRestoredQueuedPromptApplied,
   })
+  const localExtensionCommandRunning = localExtensionCommandRunningScopeKey === composerScopeKey
+  const setLocalExtensionCommandRunning: React.Dispatch<React.SetStateAction<boolean>> =
+    useCallback(
+      (value) => {
+        setLocalExtensionCommandRunningScopeKey((currentScopeKey) => {
+          const current = currentScopeKey === composerScopeKey
+          const next = typeof value === 'function' ? value(current) : value
+          return next ? composerScopeKey : null
+        })
+      },
+      [composerScopeKey],
+    )
 
   useDismissibleLayer({
     open: openMenu === 'model',
@@ -193,11 +207,6 @@ export function useComposerController({
     pendingSubmittedReplyActivityKeyRef.current = null
     setPendingSubmittedDraft(null)
   }, [composerScopeKey, isStreaming, pendingSubmittedDraft, replyActivityKey])
-
-  useEffect(() => {
-    void composerScopeKey
-    setLocalExtensionCommandRunning(false)
-  }, [composerScopeKey])
 
   const {
     cancelDictation,

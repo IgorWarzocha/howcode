@@ -15,7 +15,7 @@ function sortConfiguredPackages(packages: PiConfiguredPackage[]) {
     chat: 2,
   }
 
-  return [...packages].sort((left, right) => {
+  return packages.toSorted((left, right) => {
     if (left.scope !== right.scope) {
       return scopeRank[left.scope] - scopeRank[right.scope]
     }

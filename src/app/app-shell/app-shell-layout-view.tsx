@@ -41,7 +41,6 @@ type AppShellLayoutViewProps = {
   workspaceContentClass: string
   handleSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
   handleSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void
-  handleArtifactDrawerOverlayChange: (visible: boolean, onClose?: (() => void) | undefined) => void
   takeoverPresent: boolean
   takeoverTerminalKey: string
   handleOpenGitOpsFromTakeover: () => Promise<void>
@@ -215,7 +214,6 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
     sidebarCollapsed,
     sidebarCompactMode,
     handleToggleSidebar,
-    handleArtifactDrawerOverlayChange,
     takeoverPresent,
     takeoverTerminalKey,
     handleOpenGitOpsFromTakeover,
@@ -248,7 +246,6 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
             sidebarAutoHidden={sidebarCompactMode}
             sidebarCompactMode={sidebarCompactMode}
             onToggleSidebar={handleToggleSidebar}
-            onArtifactDrawerOverlayChange={handleArtifactDrawerOverlayChange}
           />
         </div>
         <AppShellOverlays

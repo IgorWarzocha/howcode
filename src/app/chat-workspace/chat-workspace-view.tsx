@@ -31,9 +31,6 @@ type ChatWorkspaceViewProps = {
   sidebarAutoHidden: boolean
   sidebarCompactMode: boolean
   onToggleSidebar: () => void
-  onArtifactDrawerOverlayChange?:
-    | ((visible: boolean, onClose?: (() => void) | undefined) => void)
-    | undefined
 }
 
 const NEW_CHAT_COMPOSER_TOP = '60%'
@@ -188,7 +185,6 @@ export function ChatWorkspaceView({
   sidebarAutoHidden,
   sidebarCompactMode,
   onToggleSidebar,
-  onArtifactDrawerOverlayChange,
 }: ChatWorkspaceViewProps) {
   const [composerPromptResetKey] = useState(0)
   const [composerLayoutVersion, setComposerLayoutVersion] = useState(0)
@@ -216,7 +212,6 @@ export function ChatWorkspaceView({
     conversationId,
     sidebarCompactMode,
     settingsOpen: state.settingsOpen,
-    onArtifactDrawerOverlayChange,
   })
   const {
     handleEditQueuedPrompt,

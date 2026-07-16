@@ -18,6 +18,8 @@ import { useRunningTerminalSessions } from './useRunningTerminalSessions'
 import { useScopedProjectViewSync } from './useScopedProjectViewSync'
 import { useSelectedThreadData } from './useSelectedThreadData'
 
+const EMPTY_LIST: [] = []
+
 export function useAppShellController() {
   const queryClient = useQueryClient()
   const bundle = useAppShellStateBundle()
@@ -25,7 +27,7 @@ export function useAppShellController() {
   const { toast, showToast } = useToast()
   const desktopShell = useDesktopShell()
   const invokeDesktopAction = useDesktopBridge()
-  const projects = desktopShell.shellState?.projects ?? []
+  const projects = desktopShell.shellState?.projects ?? EMPTY_LIST
   useAppShellUrlSync({ dispatch: bundle.dispatch, projects, state: bundle.state })
   const selectedThread = useSelectedThreadData({
     liveThreadData: bundle.liveThreadData,
@@ -35,7 +37,7 @@ export function useAppShellController() {
     threadRefreshKey: bundle.threadRefreshKey,
   })
   const inboxQuery = useDesktopInbox()
-  const inboxThreads = inboxQuery.data ?? []
+  const inboxThreads = inboxQuery.data ?? EMPTY_LIST
   const selectedInboxThread = useMemo(
     () =>
       inboxThreads.find((thread) => thread.sessionPath === bundle.state.selectedInboxSessionPath) ??

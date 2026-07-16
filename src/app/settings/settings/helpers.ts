@@ -1,5 +1,4 @@
 import type {
-  ComposerModel,
   DesktopActionResult,
   DesktopSettingsUpdatePayload,
   ModelSelection,
@@ -11,29 +10,6 @@ export function getActionError(result: DesktopActionResult | null) {
 
 export function getModelSettingValue(selection: ModelSelection | null) {
   return selection ? `${selection.provider}/${selection.id}` : 'Use composer model'
-}
-
-export function buildModelMenuItems(
-  selectedModel: ModelSelection | null,
-  currentModel: ComposerModel | null,
-  availableModels: ComposerModel[],
-) {
-  return [
-    {
-      id: 'composer-default',
-      label: 'Use composer model',
-      description: currentModel
-        ? `${currentModel.provider}/${currentModel.id}`
-        : 'No active composer model',
-      selected: !selectedModel,
-    },
-    ...availableModels.map((model) => ({
-      id: `${model.provider}/${model.id}`,
-      label: model.name,
-      description: `${model.provider}/${model.id}`,
-      selected: selectedModel?.provider === model.provider && selectedModel.id === model.id,
-    })),
-  ]
 }
 
 export function buildModelSelectionPayload(

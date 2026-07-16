@@ -101,7 +101,10 @@ function splitParagraphs(text: string) {
 }
 
 function trimTextDocuments(parts: string[]) {
-  return parts.map((part) => part.trim()).filter(Boolean)
+  return parts.flatMap((part) => {
+    const trimmed = part.trim()
+    return trimmed ? [trimmed] : []
+  })
 }
 
 function normalizeThinkingHeader(value: string) {

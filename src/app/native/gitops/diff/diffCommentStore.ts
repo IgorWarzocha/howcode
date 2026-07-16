@@ -259,6 +259,4 @@ export function createDiffCommentStore({
   }
 }
 
-export const diffCommentStorageKey = DEFAULT_STORAGE_KEY
-
 export const diffCommentStore = createDiffCommentStore()

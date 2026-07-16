@@ -84,15 +84,16 @@ export function useRunningTerminalSessions() {
       setRunningTerminalSessionsById((current) => ({
         ...current,
         ...Object.fromEntries(
-          snapshots
-            .filter(
-              (snapshot) =>
-                !touchedSessionIds.has(snapshot.sessionId) && shouldShowTerminalSnapshot(snapshot),
-            )
-            .map((snapshot) => [
-              snapshot.sessionId,
-              { projectId: snapshot.projectId, sessionPath: snapshot.sessionPath },
-            ]),
+          snapshots.flatMap((snapshot) =>
+            !touchedSessionIds.has(snapshot.sessionId) && shouldShowTerminalSnapshot(snapshot)
+              ? [
+                  [
+                    snapshot.sessionId,
+                    { projectId: snapshot.projectId, sessionPath: snapshot.sessionPath },
+                  ] as const,
+                ]
+              : [],
+          ),
         ),
       }))
     }

@@ -54,20 +54,21 @@ export async function importProjects(projectIds: string[]) {
   let originProjectCount = 0
   let worktreeProjectCount = 0
 
-  for (const candidate of candidates) {
-    if (candidate.isGitRepo) {
-      repoProjectCount += 1
-    }
+  const worktreeCounts = await Promise.all(
+    candidates.map(async (candidate) => {
+      if (candidate.isGitRepo) {
+        repoProjectCount += 1
+      }
 
-    if (candidate.hasOrigin) {
-      originProjectCount += 1
-    }
+      if (candidate.hasOrigin) {
+        originProjectCount += 1
+      }
 
-    setProjectRepoOrigin(candidate.projectId, candidate.originUrl)
-    if (candidate.isGitRepo) {
-      worktreeProjectCount += await importProjectWorktrees(candidate.projectId)
-    }
-  }
+      setProjectRepoOrigin(candidate.projectId, candidate.originUrl)
+      return candidate.isGitRepo ? importProjectWorktrees(candidate.projectId) : 0
+    }),
+  )
+  worktreeProjectCount = worktreeCounts.reduce((total, count) => total + count, 0)
 
   setProjectImportState(true)
   const importedProjectIds = candidates.map((candidate) => candidate.projectId)
@@ -149,9 +150,6 @@ export async function importProjectWorktrees(projectId: string) {
 }
 
 export async function importProjectWorktreesForProjectIds(projectIds: Iterable<string>) {
-  let worktreeProjectCount = 0
-  for (const projectId of new Set(projectIds)) {
-    worktreeProjectCount += await importProjectWorktrees(projectId)
-  }
-  return worktreeProjectCount
+  const counts = await Promise.all([...new Set(projectIds)].map(importProjectWorktrees))
+  return counts.reduce((total, count) => total + count, 0)
 }

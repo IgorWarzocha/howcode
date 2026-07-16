@@ -170,7 +170,6 @@ export const appTypeCodeClass = `font-mono ${typeClass('code')}`
 export const appTypeCodeBlockClass = `font-mono ${typeClass('codeBlock')}`
 export const appTypeMetaStrongClass = `${appTypeMetaClass} font-medium`
 export const appTypeReadableStrongClass = `${appTypeReadableClass} font-semibold`
-export const appTypeHeroTitleClass = `${typeClass('heroTitle')} font-medium`
 export const appTypeDashboardTitleClass = `${typeClass('dashboardTitle')} font-medium`
 export const appTypeDashboardMetricClass = `${typeClass('dashboardMetric')} font-medium tabular-nums`
 export const appTypeDashboardLabelClass = typeClass('dashboardLabel')

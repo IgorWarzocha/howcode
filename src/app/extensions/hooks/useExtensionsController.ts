@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import type { PiConfiguredPackage } from '../../desktop/types'
 import {
   desktopQueryKeys,
@@ -10,6 +10,8 @@ import {
 } from '../../query/desktop-query'
 import type { ExtensionsViewProps, InstallScope, ManualSourceKind, PendingAction } from '../types'
 import { getActionError, getInstalledIdentityKeys, isDesktopPackagesAvailable } from '../utils'
+
+const EMPTY_CONFIGURED_PACKAGES: [] = []
 
 export function useExtensionsController({
   projectPath,
@@ -67,7 +69,7 @@ export function useExtensionsController({
     enabled: desktopPackagesAvailable && submittedSearchInput.length >= 2,
   })
 
-  const configuredPackages = configuredPackagesQuery.data ?? []
+  const configuredPackages = configuredPackagesQuery.data ?? EMPTY_CONFIGURED_PACKAGES
   const installedEntries = useMemo(
     () =>
       configuredPackages.filter(
@@ -103,14 +105,15 @@ export function useExtensionsController({
     () => packagesQuery.data?.pages.flatMap((page) => page.items) ?? [],
     [packagesQuery.data?.pages],
   )
+  const notifyProjectScopeActive = useEffectEvent(onSetProjectScopeActive)
 
   useEffect(() => {
-    onSetProjectScopeActive(installScope === 'project' || installScope === 'chat')
+    notifyProjectScopeActive(installScope === 'project' || installScope === 'chat')
 
     return () => {
-      onSetProjectScopeActive(false)
+      notifyProjectScopeActive(false)
     }
-  }, [installScope, onSetProjectScopeActive])
+  }, [installScope])
 
   useEffect(() => {
     setSelectedCatalogSources((current) =>
@@ -238,12 +241,15 @@ export function useExtensionsController({
 
     const successfulSources = new Set<string>()
 
-    for (const source of selectedCatalogSources) {
-      const installed = await handleInstall(source, 'npm')
-      if (installed) {
-        successfulSources.add(source.trim().toLowerCase())
-      }
-    }
+    await selectedCatalogSources.reduce<Promise<void>>(
+      (pending, source) =>
+        pending.then(async () => {
+          if (await handleInstall(source, 'npm')) {
+            successfulSources.add(source.trim().toLowerCase())
+          }
+        }),
+      Promise.resolve(),
+    )
 
     if (successfulSources.size > 0) {
       setSelectedCatalogSources((current) =>

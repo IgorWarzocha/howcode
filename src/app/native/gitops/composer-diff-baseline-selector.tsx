@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { GitCompareArrows } from 'lucide-react'
-import { type RefObject, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { type RefObject, useId, useMemo, useRef, useState } from 'react'
 import {
   notifyComposerPopoverOpened,
   useComposerPopoverDismissSignal,
@@ -22,10 +22,12 @@ import {
   listProjectCommitsQuery,
 } from '../../query/desktop-query'
 import { cn } from '../../utils/cn'
-import { getBaselineCounts, matchesCommitSearch } from './composer-diff-baseline-options'
+import { getBaselineCounts, matchesCommitSearch } from './composer-diff-baseline-data'
 import { getDiffBaselineLabel, getDiffBaselinePrefix } from './diff-baseline'
 import { BaselineSelectorPortal } from './diff-baseline-selector/baseline-selector-popover'
 import { formatGitCount } from './git-ops'
+
+const EMPTY_COMMITS: [] = []
 
 type ComposerDiffBaselineSelectorProps = {
   composerPanelRef: RefObject<HTMLDivElement | null>
@@ -114,7 +116,7 @@ function useComposerBaselineData({
     staleTime: Number.POSITIVE_INFINITY,
   })
 
-  const commits = commitsQuery.data ?? []
+  const commits = commitsQuery.data ?? EMPTY_COMMITS
   const selectedCommitSha = selectedBaseline.kind === 'commit' ? selectedBaseline.sha : null
   const baselineLabel = useMemo(
     () => getDiffBaselineLabel(selectedBaseline, commits),
@@ -284,6 +286,7 @@ export function ComposerDiffBaselineSelector({
     ignoreSource: 'diff-baseline',
     onDismiss: () => {
       setOpen(false)
+      setSearchQuery('')
     },
   })
 
@@ -309,15 +312,10 @@ export function ComposerDiffBaselineSelector({
     open,
     onDismiss: () => {
       closePopover()
+      setSearchQuery('')
     },
     refs: [anchorRef, branchAnchorRef, compactAnchorRef, panelRef],
   })
-
-  useEffect(() => {
-    if (!open) {
-      setSearchQuery('')
-    }
-  }, [open])
 
   const { panelPosition, positionReady } = useDiffBaselinePopoverPosition({
     activeAnchorRef,

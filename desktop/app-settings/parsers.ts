@@ -45,10 +45,11 @@ export function parseFavoriteFolders(valueJson: string | null | undefined): stri
     return Array.isArray(parsed)
       ? [
           ...new Set(
-            parsed
-              .filter((value): value is string => typeof value === 'string')
-              .map((value) => value.trim())
-              .filter(Boolean),
+            parsed.flatMap((value) => {
+              if (typeof value !== 'string') return []
+              const trimmed = value.trim()
+              return trimmed ? [trimmed] : []
+            }),
           ),
         ]
       : []

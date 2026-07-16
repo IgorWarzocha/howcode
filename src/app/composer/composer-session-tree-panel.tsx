@@ -7,7 +7,14 @@ import {
   inlineEmptyNoteClass,
 } from '@howcode/ui'
 import { useQuery } from '@tanstack/react-query'
-import { type MutableRefObject, type RefObject, useEffect, useMemo, useState } from 'react'
+import {
+  type MutableRefObject,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import { PopoverPanel } from '../common/popover'
 import { desktopQueryKeys, getSessionTreeListQuery } from '../query/desktop-query'
 import { dispatchSessionTreePreview } from '../thread/session-tree-preview'
@@ -97,24 +104,27 @@ export function ComposerSessionTreePanel({
 
   const [collapsedIds, setCollapsedIds] = useState<ReadonlySet<string>>(() => new Set())
   const [confirmEntryId, setConfirmEntryId] = useState<string | null>(null)
+  const setNavigateConfirmEntryId = useCallback(
+    (entryId: string | null) => {
+      setConfirmEntryId(entryId)
+      onNavigateConfirmOpenChange?.(entryId !== null)
+    },
+    [onNavigateConfirmOpenChange],
+  )
 
   useEffect(() => {
     if (visible) return
-    setConfirmEntryId(null)
+    setNavigateConfirmEntryId(null)
     onLabelPopoverOpenChange?.(false)
-  }, [onLabelPopoverOpenChange, visible])
-
-  useEffect(() => {
-    onNavigateConfirmOpenChange?.(confirmEntryId !== null)
-  }, [confirmEntryId, onNavigateConfirmOpenChange])
+  }, [onLabelPopoverOpenChange, setNavigateConfirmEntryId, visible])
 
   useEffect(() => {
     if (!cancelNavigateConfirmRef) return
-    cancelNavigateConfirmRef.current = () => setConfirmEntryId(null)
+    cancelNavigateConfirmRef.current = () => setNavigateConfirmEntryId(null)
     return () => {
       cancelNavigateConfirmRef.current = null
     }
-  }, [cancelNavigateConfirmRef])
+  }, [cancelNavigateConfirmRef, setNavigateConfirmEntryId])
 
   useEffect(() => {
     if (!onBindClose) return
@@ -144,7 +154,7 @@ export function ComposerSessionTreePanel({
   }
 
   const finishNavigateConfirm = async (entryId: string, summarize: boolean, label?: string) => {
-    setConfirmEntryId(null)
+    setNavigateConfirmEntryId(null)
     const ok = await onNavigate?.(entryId, summarize, label)
     if (ok) finishNavigate(entryId)
   }
@@ -201,8 +211,8 @@ export function ComposerSessionTreePanel({
                   confirmOpen={confirmEntryId === row.id}
                   onFocusRow={() => focusRow(row.id)}
                   onToggleExpand={() => toggleCollapsed(row.id)}
-                  onOpenNavigateConfirm={() => setConfirmEntryId(row.id)}
-                  onCancelNavigateConfirm={() => setConfirmEntryId(null)}
+                  onOpenNavigateConfirm={() => setNavigateConfirmEntryId(row.id)}
+                  onCancelNavigateConfirm={() => setNavigateConfirmEntryId(null)}
                   onNavigateWithoutSummary={(label) => finishNavigateConfirm(row.id, false, label)}
                   onNavigateWithSummary={(label) => finishNavigateConfirm(row.id, true, label)}
                   onLabelEntry={onLabelEntry ?? (() => false)}

@@ -19,7 +19,6 @@ type DirectoryLoadResult =
   | { state: ProjectDirectoryState; errorMessage: null }
   | { state: null; errorMessage: string }
 
-const pathSegmentSeparatorPattern = /[\\/]/
 const pathLikeProjectDraftPattern = /^(~(?:[/\\]|$)|[/\\]|[A-Za-z]:[/\\])/
 
 async function loadDirectory(path?: string | null): Promise<DirectoryLoadResult> {
@@ -35,10 +34,6 @@ async function loadDirectory(path?: string | null): Promise<DirectoryLoadResult>
       errorMessage: error instanceof Error ? error.message : 'Unable to open folder.',
     }
   }
-}
-
-function getPathTail(path: string) {
-  return path.split(pathSegmentSeparatorPattern).filter(Boolean).pop() ?? path
 }
 
 function compactPath(path: string, homePath?: string) {
@@ -231,8 +226,4 @@ export function SidebarProjectsFolderBrowser({
       {errorMessage ? <div className="sidebar-inline-error">{errorMessage}</div> : null}
     </div>
   )
-}
-
-export function getSidebarFolderProjectName(projectPath: string) {
-  return getPathTail(projectPath)
 }

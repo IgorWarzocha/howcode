@@ -25,7 +25,7 @@ type VisibleSettingsGroup = (typeof settingsCategories)[number] & {
   settings: Parameters<typeof SettingRow>[0]['setting'][]
 }
 
-export function DevBranchToggle({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
+function DevBranchToggle({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
   return (
     <label
       className={`mt-2 flex min-h-8 cursor-pointer items-center justify-between gap-2 px-3 ${appTypeSmallClass} ${appToneMutedClass} transition-colors hover:text-[color:var(--text)]`}

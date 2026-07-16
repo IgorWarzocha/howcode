@@ -1,5 +1,3 @@
-const trailingSlashPattern = /\/$/
-const leadingCurrentDirectoryPattern = /^\.\//
 const imageDiffFilePattern = /\.(?:apng|avif|bmp|gif|jpe?g|png|svg|webp)$/i
 
 import { parsePatchFiles } from '@pierre/diffs'
@@ -52,12 +50,6 @@ export function buildFileDiffRenderKey(fileDiff: FileDiffMetadata): string {
   return JSON.stringify([fileDiff.prevName ?? null, fileDiff.name])
 }
 
-export function joinProjectFilePath(projectId: string, filePath: string) {
-  const normalizedProjectId = projectId.replace(trailingSlashPattern, '')
-  const normalizedFilePath = filePath.replace(leadingCurrentDirectoryPattern, '')
-  return `${normalizedProjectId}/${normalizedFilePath}`
-}
-
 export function describeCollapsedLines(count: number) {
   return `${count} unmodified line${count === 1 ? '' : 's'}`
 }
@@ -84,7 +76,7 @@ export function isImageDiffFile(fileDiff: FileDiffMetadata) {
 }
 
 export function orderRenderableFiles(fileDiffs: readonly FileDiffMetadata[]) {
-  return [...fileDiffs].sort((left, right) =>
+  return fileDiffs.toSorted((left, right) =>
     resolveFileDiffPath(left).localeCompare(resolveFileDiffPath(right), undefined, {
       numeric: true,
       sensitivity: 'base',

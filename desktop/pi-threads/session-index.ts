@@ -249,9 +249,11 @@ export async function listAllSessionsStrict(): Promise<SessionIndexReadResult> {
       }
 
       return {
-        filePaths: sessionFiles
-          .filter((entry) => entry.isFile() && entry.name.endsWith('.jsonl'))
-          .map((entry) => path.join(sessionDirectoryPath, entry.name)),
+        filePaths: sessionFiles.flatMap((entry) =>
+          entry.isFile() && entry.name.endsWith('.jsonl')
+            ? [path.join(sessionDirectoryPath, entry.name)]
+            : [],
+        ),
         failed: false,
       }
     }),

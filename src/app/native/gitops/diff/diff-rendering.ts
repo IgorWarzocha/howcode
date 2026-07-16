@@ -10,10 +10,6 @@ export const DIFF_THEMES = {
 
 export type DiffThemeName = (typeof DIFF_THEME_NAMES)[keyof typeof DIFF_THEME_NAMES]
 
-export function resolveDiffThemeName(theme: 'light' | 'dark'): DiffThemeName {
-  return theme === 'dark' ? DIFF_THEME_NAMES.dark : DIFF_THEME_NAMES.light
-}
-
 const FNV_OFFSET_BASIS_32 = 0x811c9dc5
 const FNV_PRIME_32 = 0x01000193
 const SECONDARY_HASH_SEED = 0x9e3779b9

@@ -53,7 +53,10 @@ function getPathBasename(targetPath: string) {
 
 export function getInstalledSkillSlugs(skills: PiConfiguredSkill[]) {
   return new Set(
-    skills.map((skill) => normalizeSkillSlug(getPathBasename(skill.installedPath))).filter(Boolean),
+    skills.flatMap((skill) => {
+      const slug = normalizeSkillSlug(getPathBasename(skill.installedPath))
+      return slug ? [slug] : []
+    }),
   )
 }
 

@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { getErrorMessage } from '../desktop/error-messages'
 import type { DictationState } from '../desktop/types'
+import { useLatestRef } from '../hooks/useLatestRef'
 import {
   canTranscribeDictationQuery,
   getDictationStateQuery,
@@ -181,9 +182,7 @@ export function useComposerDictation({
     () => `${activeView}::${projectId}::${sessionPath ?? ''}::${draftThreadId ?? ''}`,
     [activeView, draftThreadId, projectId, sessionPath],
   )
-  const activeDictationScopeKeyRef = useRef(dictationScopeKey)
-
-  activeDictationScopeKeyRef.current = dictationScopeKey
+  const activeDictationScopeKeyRef = useLatestRef(dictationScopeKey)
 
   const clearPendingDictationFlush = useCallback(() => {
     dictationFlushPromiseRef.current = null
@@ -247,7 +246,7 @@ export function useComposerDictation({
 
     dictationFlushPromiseRef.current = flushPromise
     await flushPromise
-  }, [clearDictationSession, setDraftValue, setErrorMessage])
+  }, [activeDictationScopeKeyRef, clearDictationSession, setDraftValue, setErrorMessage])
 
   useEffect(() => {
     void dictationScopeKey

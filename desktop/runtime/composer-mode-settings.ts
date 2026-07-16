@@ -95,11 +95,10 @@ export async function setDraftComposerThinkingLevel(input: {
   cwd: string
   level: ComposerThinkingLevel
 }) {
-  const { SettingsManager, getAgentDir } = await getPiModule()
-  const currentComposer = await buildComposerStateSnapshot({
-    projectId: input.cwd,
-    sessionPath: null,
-  })
+  const [{ SettingsManager, getAgentDir }, currentComposer] = await Promise.all([
+    getPiModule(),
+    buildComposerStateSnapshot({ projectId: input.cwd, sessionPath: null }),
+  ])
   SettingsManager.create(input.cwd, getAgentDir()).setDefaultThinkingLevel(
     clampThinkingLevel(input.level, currentComposer.availableThinkingLevels),
   )

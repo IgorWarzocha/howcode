@@ -6,7 +6,7 @@ import {
   type KeybindingCommandId,
   type KeybindingOverrides,
 } from '@howcode/shared/keybindings'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { runAppCommand, stopActiveRun } from './keybinding-command-handlers'
 import {
   appLevelShortcutsAreBlocked,
@@ -24,7 +24,9 @@ import type { AppShellController } from './useAppShellController'
 
 function useLatest<T>(value: T) {
   const ref = useRef(value)
-  ref.current = value
+  useLayoutEffect(() => {
+    ref.current = value
+  })
   return ref
 }
 

@@ -279,12 +279,11 @@ function getCompletedWorktreeTargets(
 ) {
   const completedWorktrees =
     group.completedWorktrees ?? group.worktrees.filter((worktree) => worktree.complete)
-  return completedWorktrees
-    .filter((worktree) => !options.requireBranch || Boolean(worktree.branchName))
-    .map((worktree) => ({
-      worktreePath: worktree.path,
-      branchName: worktree.branchName ?? null,
-    }))
+  return completedWorktrees.flatMap((worktree) =>
+    !options.requireBranch || worktree.branchName
+      ? [{ worktreePath: worktree.path, branchName: worktree.branchName ?? null }]
+      : [],
+  )
 }
 
 function getCompletedWorktreeFailureLabel(

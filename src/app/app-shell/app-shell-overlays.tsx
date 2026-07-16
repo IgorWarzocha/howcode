@@ -1,7 +1,8 @@
 import { TerminalPanel } from '@howcode/workspace-shell'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
-import { useCallback, useRef } from 'react'
+import { useCallback } from 'react'
 import type { ProjectDiffBaseline } from '../desktop/types'
+import { useLatestRef } from '../hooks/useLatestRef'
 import { cn } from '../utils/cn'
 import type { AppShellController } from './useAppShellController'
 
@@ -86,17 +87,16 @@ export function AppShellOverlays({
   hoverToFocus = true,
   hoverToBlur = false,
 }: AppShellOverlaysProps) {
-  const controllerRef = useRef(controller)
+  const controllerRef = useLatestRef(controller)
   const { projectGitState } = controller
-  controllerRef.current = controller
 
   const handleReturnToDesktopFromTakeover = useCallback(() => {
     controllerRef.current.handleReturnToDesktopFromTakeover()
-  }, [])
+  }, [controllerRef])
 
   const handleToggleTerminal = useCallback(() => {
     controllerRef.current.handleToggleTerminal()
-  }, [])
+  }, [controllerRef])
   const sidebarButtonProps = {
     sidebarCollapsed,
     sidebarCompactMode,

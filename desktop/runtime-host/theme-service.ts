@@ -184,8 +184,10 @@ export async function loadPiThemeStateInHost(
       exportColors,
       isLight: isResolvedLightTheme(selectedTheme, colors, exportColors, isLightTheme),
       diagnostics: themesResult.diagnostics
-        .map(asDiagnostic)
-        .filter(Boolean)
+        .flatMap((input) => {
+          const diagnostic = asDiagnostic(input)
+          return diagnostic ? [diagnostic] : []
+        })
         .concat(bundled.diagnostics) as PiThemeState['diagnostics'],
     }
   } catch (error) {
@@ -199,7 +201,10 @@ export async function loadPiThemeStateInHost(
       exportColors: getThemeExportColors(fallbackTheme),
       isLight: fallbackTheme === 'light',
       diagnostics: [
-        ...themesResult.diagnostics.map(asDiagnostic).filter(Boolean),
+        ...themesResult.diagnostics.flatMap((input) => {
+          const diagnostic = asDiagnostic(input)
+          return diagnostic ? [diagnostic] : []
+        }),
         ...bundled.diagnostics,
         {
           type: 'warning',

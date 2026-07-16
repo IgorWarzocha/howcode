@@ -1,7 +1,7 @@
 import { Tooltip } from '@howcode/common/tooltip'
 import { ListCollapse, Undo2, X } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '../utils/cn'
 
@@ -24,10 +24,20 @@ export function ComposerSessionTreeNavigateConfirm({
   const popunderRef = useRef<HTMLSpanElement>(null)
   const [label, setLabel] = useState('')
   const [labelFieldVisible, setLabelFieldVisible] = useState(false)
+  const [previousOpen, setPreviousOpen] = useState(open)
   const [popunderPosition, setPopunderPosition] = useState<{
     left: number
     top: number
   } | null>(null)
+  if (previousOpen !== open) {
+    setPreviousOpen(open)
+    if (!open) {
+      setLabel('')
+      setLabelFieldVisible(false)
+      setPopunderPosition(null)
+    }
+  }
+  const cancel = useEffectEvent(onCancel)
 
   const showLabelField = () => setLabelFieldVisible(true)
   const submitNavigate = (summarize: boolean) => {
@@ -42,7 +52,7 @@ export function ComposerSessionTreeNavigateConfirm({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       event.stopPropagation()
-      onCancel()
+      cancel()
     }
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target
@@ -50,7 +60,7 @@ export function ComposerSessionTreeNavigateConfirm({
       if (target instanceof Element && target.closest('.composer-session-tree-inline-anchor')) {
         return
       }
-      onCancel()
+      cancel()
     }
 
     document.addEventListener('keydown', handleKeyDown, true)
@@ -59,13 +69,6 @@ export function ComposerSessionTreeNavigateConfirm({
       document.removeEventListener('keydown', handleKeyDown, true)
       document.removeEventListener('pointerdown', handlePointerDown, true)
     }
-  }, [onCancel, open])
-
-  useEffect(() => {
-    if (open) return
-    setLabel('')
-    setLabelFieldVisible(false)
-    setPopunderPosition(null)
   }, [open])
 
   const labelVisible = labelFieldVisible || Boolean(label.trim())
