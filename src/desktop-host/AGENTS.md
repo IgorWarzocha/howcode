@@ -1,0 +1,3 @@
+- This boundary is shared by Electron and the dev/headless web host; keep it free of renderer assumptions.
+- The desktop service runs under a discovered stock Node, not Electron's Node. Preserve startup/restart/timeouts and typed request/event routing.
+- Packaged native dependencies resolve from the ABI bundle under `app.asar.unpacked`; missing or unsupported ABIs must fail explicitly.

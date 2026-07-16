@@ -1,4 +1,6 @@
 - Keep app-wide orchestration in `app-shell`; avoid new global controllers elsewhere.
 - Use `query/desktop-query.ts` and existing hooks for desktop access; avoid direct `window.piDesktop` calls.
-- Route mutable desktop actions through `app-shell/useDesktopActionHandlers.ts` and keep optimistic updates.
-- Reuse existing components/styles and use `features/feature-status.tsx` for mock or partial UI states.
+- Route mutable desktop actions through `app-shell/useDesktopActionHandlers.ts`; update optimistically, then reconcile through events/post-effects.
+- When a module exposes an `@howcode/*` surface, cross it there rather than through implementation files; keep internal imports relative.
+- Use `features/feature-status.tsx` for mock or partial UI states.
+- Popovers, menus, and custom selects close on Escape and outside click. Nested Escape handlers run in capture phase and stop propagation.

@@ -1,4 +1,5 @@
-- `desktop/` is backend runtime code for threads, skills, and terminal lanes.
-- Keep entrypoints stable: `pi-threads.ts`, `pi-skills.ts`, `skill-creator-session.ts`, and `terminal/manager.ts`.
-- Update `shared/*` contracts and the matching action router/handlers together.
-- Keep event/state flow on the existing publisher and `thread-state-db.ts` paths.
+- This backend is bundled separately and loaded under stock Node; do not introduce Electron or DOM dependencies.
+- Keep public entrypoints such as `pi-threads.ts`, `pi-skills.ts`, `service-host.ts`, and `skill-creator-session.ts` thin and compatibility-stable.
+- API or event changes must update their `shared/*` contracts, action routing, host bridge, and transport consumers together.
+- Publish runtime changes through the existing event publishers; persistence belongs in the relevant state DB, not view-model caches.
+- `artifact-compiler.ts` resolves allowed React imports from Howcode's runtime; artifacts otherwise remain self-contained.

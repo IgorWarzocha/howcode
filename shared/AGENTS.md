@@ -1,5 +1,3 @@
 - `shared/` is a cross-runtime contract boundary; treat edits here as API changes.
-- Keep `desktop-actions.ts`, `desktop-action-contracts.ts`, and `desktop-action-coverage.ts` in sync.
-- Re-verify all consumers when contracts change: Electron IPC, desktop runtime modules, and the renderer bridge.
-- Keep shared helpers pure and runtime-agnostic.
-- After edits, run the targeted shared tests and the affected runtime typechecks.
+- Keep action definitions, payload contracts, coverage maps, IPC channels, and bridge capabilities synchronized.
+- Shared helpers stay pure and runtime-agnostic; verify Electron, desktop-service, headless, and renderer consumers after contract changes.

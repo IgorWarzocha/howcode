@@ -1,2 +1,0 @@
-- This folder is for ordinary Pi package/extension UI helpers.
-- Keep composer-adjacent Pi extension overlays generic; do not add Howcode-only extension assumptions.

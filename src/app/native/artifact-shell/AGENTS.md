@@ -1,6 +1,4 @@
-# Native artifacts guidance
-
-- Owns the artifact drawer shell, artifact list, selection, versions, saving, and downloading.
+- Keep drawer/list/selection/version/save/download state here.
+- Bootstrap Prism before lazy-loading `@howcode/native-markdown-artifacts`; do not leak it into the interactive preview path.
 - Markdown editing/preview belongs in `@howcode/native-markdown-artifacts`.
 - HTML and React iframe preview runtime belongs in `@howcode/native-interactive-artifacts`.
-- Public imports go through `@howcode/native-artifacts`.
