@@ -5,7 +5,7 @@ import { listAllSessionsStrict } from '../pi-threads/session-index.ts'
 import { loadThreadSnapshot } from '../pi-threads/thread-loader.ts'
 import { nowIso } from './session-history.ts'
 import type { TerminalSessionRecord } from './session-record.ts'
-import { emitTerminalEvent } from './session-store.ts'
+import type { TerminalSessionStore } from './session-store.ts'
 
 const detectionDelayMs = 180
 const detectionRetryMs = 700
@@ -16,6 +16,7 @@ function shouldDetect(record: TerminalSessionRecord) {
     record.snapshot.launchMode === 'pi-session' &&
     !getPersistedSessionPath(record.snapshot.sessionPath) &&
     record.tuiSessionDetection !== null &&
+    !record.tuiSessionDetection.stopped &&
     !record.tuiSessionDetection.resolvedSessionPath
   )
 }
@@ -30,7 +31,8 @@ export function createTuiSessionDetection(
     submittedPrompts: [],
     resolvedSessionPath: null,
     refreshTimer: null,
-    inFlight: false,
+    inFlight: null,
+    stopped: false,
   }
 }
 
@@ -92,15 +94,14 @@ async function findStartedSession(record: TerminalSessionRecord) {
   return null
 }
 
-async function bindDetectedSession(record: TerminalSessionRecord) {
+async function bindDetectedSession(store: TerminalSessionStore, record: TerminalSessionRecord) {
   const detection = record.tuiSessionDetection
-  if (!detection || detection.inFlight || detection.resolvedSessionPath) return
-  detection.inFlight = true
+  if (!detection || detection.stopped || detection.resolvedSessionPath) return
 
   try {
     const detected = await findStartedSession(record)
     if (!detected) {
-      if (shouldKeepDetecting(detection)) scheduleTuiSessionDetection(record, 'retry')
+      if (shouldKeepDetecting(detection)) scheduleTuiSessionDetection(store, record, 'retry')
       return
     }
     const { session, snapshot } = detected
@@ -114,7 +115,7 @@ async function bindDetectedSession(record: TerminalSessionRecord) {
       sessionPath: session.path,
       updatedAt: nowIso(),
     }
-    emitTerminalEvent({
+    store.emit({
       type: 'updated',
       sessionId: record.snapshot.sessionId,
       snapshot: record.snapshot,
@@ -130,13 +131,21 @@ async function bindDetectedSession(record: TerminalSessionRecord) {
     })
   } catch (error) {
     console.warn('Failed to detect Pi TUI session started from takeover.', error)
-    if (shouldKeepDetecting(detection)) scheduleTuiSessionDetection(record, 'retry')
-  } finally {
-    detection.inFlight = false
+    if (shouldKeepDetecting(detection)) scheduleTuiSessionDetection(store, record, 'retry')
   }
 }
 
+function startBindingDetectedSession(store: TerminalSessionStore, record: TerminalSessionRecord) {
+  const detection = record.tuiSessionDetection
+  if (!detection || detection.stopped || detection.inFlight) return
+  const inFlight = bindDetectedSession(store, record).finally(() => {
+    if (detection.inFlight === inFlight) detection.inFlight = null
+  })
+  detection.inFlight = inFlight
+}
+
 export function scheduleTuiSessionDetection(
+  store: TerminalSessionStore,
   record: TerminalSessionRecord,
   timing: 'debounce' | 'retry' = 'debounce',
 ) {
@@ -147,15 +156,19 @@ export function scheduleTuiSessionDetection(
   detection.refreshTimer = setTimeout(
     () => {
       detection.refreshTimer = null
-      void bindDetectedSession(record)
+      startBindingDetectedSession(store, record)
     },
     timing === 'retry' ? detectionRetryMs : detectionDelayMs,
   )
 }
 
-export function stopTuiSessionDetection(record: TerminalSessionRecord) {
-  const timer = record.tuiSessionDetection?.refreshTimer
-  if (!timer) return
-  clearTimeout(timer)
-  if (record.tuiSessionDetection) record.tuiSessionDetection.refreshTimer = null
+export async function stopTuiSessionDetection(record: TerminalSessionRecord) {
+  const detection = record.tuiSessionDetection
+  if (!detection) return
+  detection.stopped = true
+  if (detection.refreshTimer) clearTimeout(detection.refreshTimer)
+  detection.refreshTimer = null
+  await detection.inFlight?.catch(() => {
+    // bindDetectedSession already reports and contains detection failures.
+  })
 }

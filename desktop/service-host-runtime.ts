@@ -4,8 +4,8 @@ import { getPiModule } from './pi-module.ts'
 import * as piSkills from './pi-skills.ts'
 import * as piThreads from './pi-threads.ts'
 import * as skillCreator from './skill-creator-session.ts'
-import * as terminalManager from './terminal/manager.ts'
 import { createTerminalRpcServer } from './terminal/rpc-server.ts'
+import * as terminalManager from './terminal/runtime.ts'
 import { getDesktopUserDataPath } from './user-data-path.ts'
 
 type ServiceRequest = {
@@ -73,9 +73,13 @@ piThreads.subscribeDesktopEvents((event) => {
   process.send?.({ type: 'desktop-event', event })
 })
 
-const terminalRpcServerPromise = createTerminalRpcServer(terminalManager, (message) =>
-  process.send?.({ type: 'terminal-rpc-response', message }),
-)
+const terminalRpcServerPromise = terminalManager
+  .getTerminalEffectService()
+  .then((service) =>
+    createTerminalRpcServer(service, (message) =>
+      process.send?.({ type: 'terminal-rpc-response', message }),
+    ),
+  )
 
 async function handleRequest(message: ServiceRequest): Promise<ServiceResponse> {
   try {
@@ -119,6 +123,7 @@ async function shutdown() {
     piThreads.disposeDesktopRuntime?.(),
     terminalManager.closeAllTerminals(),
   ])
+  await Promise.allSettled([terminalManager.disposeTerminalRuntime()])
   process.exit(0)
 }
 

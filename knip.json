@@ -8,7 +8,7 @@
     "desktop/pi-skills.ts",
     "desktop/skill-creator-session.ts",
     "desktop/runtime-host/worker.ts",
-    "desktop/terminal/manager.ts",
+    "desktop/terminal/runtime.ts",
     "scripts/*.ts",
     "pages/src/main.tsx",
     "workers/polls/src/index.ts",

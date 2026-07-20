@@ -34,7 +34,7 @@ import {
   setProjectOrigin,
   switchProjectBranch,
 } from '../project-git.ts'
-import { closeTerminal, listTerminals } from '../terminal/manager.ts'
+import { closeTerminal, listTerminals } from '../terminal/runtime.ts'
 import {
   deleteProject,
   ensureProject,

@@ -1,20 +1,22 @@
 import * as Deferred from 'effect/Deferred'
 import * as Effect from 'effect/Effect'
 import * as Fiber from 'effect/Fiber'
+import * as PubSub from 'effect/PubSub'
 import * as Queue from 'effect/Queue'
 import * as Schema from 'effect/Schema'
 import * as Stream from 'effect/Stream'
 import * as RpcClient from 'effect/unstable/rpc/RpcClient'
 import { RpcClientDefect, RpcClientError } from 'effect/unstable/rpc/RpcClientError'
 import { describe, expect, it } from 'vitest'
-import type { TerminalService } from '../../shared/desktop-service-contracts.ts'
 import {
+  TerminalError,
   type TerminalEvent,
   TerminalOpenRequest,
   type TerminalSessionSnapshot,
 } from '../../shared/terminal-contracts.ts'
 import { TerminalRpcGroup, type TerminalRpcResponse } from '../../shared/terminal-rpc.ts'
 import { createTerminalRpcServer } from './rpc-server.ts'
+import type { Interface } from './service.ts'
 
 const snapshot: TerminalSessionSnapshot = {
   sessionId: 'terminal-1',
@@ -61,29 +63,25 @@ describe('terminal Effect RPC', () => {
       Effect.scoped(
         Effect.gen(function* () {
           const streamReady = yield* Deferred.make<void>()
-          let eventListener: ((event: TerminalEvent) => void) | null = null
+          const terminalEvents = yield* PubSub.unbounded<TerminalEvent>()
           let closeAllCount = 0
 
           const terminal = {
-            closeAllTerminals: async () => {
-              closeAllCount += 1
-            },
-            closeTerminal: async () => undefined,
-            getTerminalStatus: async (sessionId) => ({ sessionId, status: 'running' as const }),
-            listTerminals: async () => [snapshot],
-            openTerminal: async () => {
-              throw new Error('PTY unavailable')
-            },
-            resizeTerminal: async () => undefined,
-            statSessionFile: async () => null,
-            subscribeTerminalEvents: (listener) => {
-              eventListener = listener
-              return () => {
-                eventListener = null
-              }
-            },
-            writeTerminal: async () => undefined,
-          } satisfies TerminalService
+            events: Stream.fromPubSub(terminalEvents),
+            eventSubscription: PubSub.subscribe(terminalEvents),
+            closeAll: () =>
+              Effect.sync(() => {
+                closeAllCount += 1
+              }),
+            close: () => Effect.void,
+            status: (sessionId) => Effect.succeed({ sessionId, status: 'running' as const }),
+            list: () => Effect.succeed([snapshot]),
+            open: () =>
+              Effect.fail(new TerminalError({ operation: 'open', message: 'PTY unavailable' })),
+            resize: () => Effect.void,
+            statSessionFile: () => Effect.succeed(null),
+            write: () => Effect.void,
+          } satisfies Interface
 
           const responses = yield* Queue.unbounded<TerminalRpcResponse>()
           const server = yield* Effect.acquireRelease(
@@ -140,13 +138,11 @@ describe('terminal Effect RPC', () => {
             Effect.forkScoped,
           )
           yield* Deferred.await(streamReady)
-          yield* Effect.sync(() => {
-            eventListener?.({
-              type: 'output',
-              sessionId: snapshot.sessionId,
-              data: 'hello',
-              createdAt: '2026-03-21T00:00:01.000Z',
-            })
+          yield* PubSub.publish(terminalEvents, {
+            type: 'output',
+            sessionId: snapshot.sessionId,
+            data: 'hello',
+            createdAt: '2026-03-21T00:00:01.000Z',
           })
           const events = yield* Fiber.join(eventFiber)
           const eventMessages = Array.from(events)

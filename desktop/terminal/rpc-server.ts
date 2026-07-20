@@ -6,16 +6,16 @@ import * as Queue from 'effect/Queue'
 import * as Scope from 'effect/Scope'
 import * as Stream from 'effect/Stream'
 import * as RpcServer from 'effect/unstable/rpc/RpcServer'
-import type { TerminalService } from '../../shared/desktop-service-contracts.ts'
 import {
   TerminalRpcGroup,
   type TerminalRpcRequest,
   type TerminalRpcResponse,
 } from '../../shared/terminal-rpc.ts'
 import { createTerminalRpcHandlers } from './rpc-handlers.ts'
+import type { Interface } from './service.ts'
 
 export async function createTerminalRpcServer(
-  terminal: TerminalService,
+  terminal: Interface,
   send: (message: TerminalRpcResponse) => void,
 ) {
   const scope = Scope.makeUnsafe()

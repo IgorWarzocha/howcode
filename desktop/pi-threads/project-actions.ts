@@ -16,7 +16,7 @@ import { addProjectFromPath, createProject, createProjectFromGitHubUrl } from '.
 import { getOriginUrl } from '../project-git/project-state.ts'
 import { importProjects, scanKnownProjects } from '../project-import.ts'
 import { openPathWithSystem } from '../system-open-path.ts'
-import { listTerminals } from '../terminal/manager.ts'
+import { listTerminals } from '../terminal/runtime.ts'
 import {
   archiveProjectThreads,
   collapseAllProjects,

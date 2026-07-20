@@ -38,7 +38,7 @@ const buildTargets = [
   },
   {
     label: 'terminal-manager',
-    entrypoints: [path.join(projectRoot, 'desktop', 'terminal', 'manager.ts')],
+    entrypoints: [path.join(projectRoot, 'desktop', 'terminal', 'runtime.ts')],
     outdir: path.join(buildRoot, 'desktop'),
     root: path.join(projectRoot, 'desktop', 'terminal'),
     naming: {

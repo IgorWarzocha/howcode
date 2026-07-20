@@ -2,24 +2,24 @@ import { renameSync } from 'node:fs'
 import type { TerminalOpenRequest } from '../../shared/terminal-contracts.ts'
 import { getTranscriptPath, nowIso } from './session-history.ts'
 import type { TerminalSessionRecord } from './session-record.ts'
-import {
-  deleteTerminalSession,
-  emitTerminalEvent,
-  listTerminalSessions,
-  setTerminalSession,
-} from './session-store.ts'
+import type { TerminalSessionStore } from './session-store.ts'
 
-export function findUnboundWorkspaceShellTerminal(request: TerminalOpenRequest) {
+export function findUnboundWorkspaceShellTerminal(
+  store: TerminalSessionStore,
+  request: TerminalOpenRequest,
+) {
   if (!request.sessionPath) return null
   const cwd = request.cwd ?? request.projectId
   return (
-    listTerminalSessions().find(
-      (record) =>
-        record.snapshot.projectId === request.projectId &&
-        record.snapshot.sessionPath === null &&
-        record.snapshot.cwd === cwd &&
-        record.snapshot.launchMode === (request.launchMode ?? 'shell'),
-    ) ?? null
+    store
+      .list()
+      .find(
+        (record) =>
+          record.snapshot.projectId === request.projectId &&
+          record.snapshot.sessionPath === null &&
+          record.snapshot.cwd === cwd &&
+          record.snapshot.launchMode === (request.launchMode ?? 'shell'),
+      ) ?? null
   )
 }
 
@@ -36,6 +36,7 @@ function moveTranscript(fromPath: string, toPath: string) {
 }
 
 export function bindWorkspaceTerminalToSession(input: {
+  store: TerminalSessionStore
   record: TerminalSessionRecord
   request: TerminalOpenRequest
   sessionId: string
@@ -43,7 +44,7 @@ export function bindWorkspaceTerminalToSession(input: {
   const previousSessionId = input.record.snapshot.sessionId
   const nextTranscriptPath = getTranscriptPath(input.sessionId)
 
-  deleteTerminalSession(previousSessionId)
+  input.store.delete(previousSessionId)
   if (moveTranscript(input.record.transcriptPath, nextTranscriptPath)) {
     input.record.transcriptPath = nextTranscriptPath
   }
@@ -55,9 +56,9 @@ export function bindWorkspaceTerminalToSession(input: {
     rows: input.request.rows,
     updatedAt: nowIso(),
   }
-  setTerminalSession(input.sessionId, input.record)
+  input.store.set(input.sessionId, input.record)
   input.record.process?.resize(input.request.cols, input.request.rows)
-  emitTerminalEvent({
+  input.store.emit({
     type: 'updated',
     sessionId: input.sessionId,
     snapshot: input.record.snapshot,

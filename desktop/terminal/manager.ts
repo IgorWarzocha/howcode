@@ -1,226 +1,71 @@
-import { rmSync } from 'node:fs'
 import { stat } from 'node:fs/promises'
+import * as Effect from 'effect/Effect'
+import * as Exit from 'effect/Exit'
+import * as Scope from 'effect/Scope'
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import type {
   TerminalCloseRequest,
   TerminalOpenRequest,
+  TerminalSessionFileStat,
   TerminalSessionSnapshot,
+  TerminalStatusSnapshot,
 } from '../../shared/terminal-contracts.ts'
-import {
-  bindWorkspaceTerminalToSession,
-  findUnboundWorkspaceShellTerminal,
-} from './session-binding.ts'
-import { flushSession, getTranscriptPath, nowIso, readTranscript } from './session-history.ts'
+import { findUnboundWorkspaceShellTerminal } from './session-binding.ts'
+import { nowIso } from './session-history.ts'
 import { makeSessionId } from './session-id.ts'
-import type { TerminalSessionRecord } from './session-record.ts'
 import {
-  deleteTerminalSession,
-  emitTerminalEvent,
-  getTerminalSession,
-  listTerminalSessions,
-  setTerminalSession,
-  subscribeTerminalEvents,
-} from './session-store.ts'
-import { clearSessionBindings, startProcess } from './terminal-process.ts'
-import { hasVisibleTerminalContent } from './terminal-visibility.ts'
-import {
-  createTuiSessionDetection,
-  rememberSubmittedPrompts,
-  scheduleTuiSessionDetection,
-  stopTuiSessionDetection,
-} from './tui-session-detection.ts'
+  createTerminalRecord,
+  ensureProcessStarted,
+  isRestartableTerminalStatus,
+  rebindWorkspaceTerminal,
+  reopenExistingTerminal,
+} from './session-lifecycle.ts'
+import type { TerminalSessionStore } from './session-store.ts'
+import { clearTerminalHistory, didSubmitClear, rememberTerminalInput } from './terminal-input.ts'
+import type { PtyAdapter } from './types.ts'
 
-function applyTerminalInputToBuffer(buffer: string, data: string) {
-  let nextBuffer = buffer
-  const submittedLines: string[] = []
-
-  for (const char of data) {
-    if (char === '\r' || char === '\n') {
-      submittedLines.push(nextBuffer)
-      nextBuffer = ''
-      continue
-    }
-
-    if (char === '\u0003' || char === '\u0015') {
-      nextBuffer = ''
-      continue
-    }
-
-    if (char === '\b' || char === '\u007f') {
-      nextBuffer = nextBuffer.slice(0, -1)
-      continue
-    }
-
-    if (char >= ' ') {
-      nextBuffer += char
-    }
-  }
-
-  return { nextBuffer, submittedLines }
+export interface TerminalManager {
+  readonly closeAllTerminals: () => Promise<void>
+  readonly closeTerminal: (request: TerminalCloseRequest) => Promise<void>
+  readonly getTerminalStatus: (sessionId: string) => Promise<TerminalStatusSnapshot>
+  readonly listTerminals: () => Promise<TerminalSessionSnapshot[]>
+  readonly openTerminal: (request: TerminalOpenRequest) => Promise<TerminalSessionSnapshot>
+  readonly resizeTerminal: (sessionId: string, cols: number, rows: number) => Promise<void>
+  readonly statSessionFile: (sessionId: string) => Promise<TerminalSessionFileStat | null>
+  readonly writeTerminal: (sessionId: string, data: string) => Promise<void>
 }
 
-function clearTerminalHistory(record: TerminalSessionRecord) {
-  if (record.persistTimer) {
-    clearTimeout(record.persistTimer)
-    record.persistTimer = null
-  }
+export function makeTerminalManager(
+  store: TerminalSessionStore,
+  rootScope: Scope.Scope,
+  adapter: PtyAdapter,
+): TerminalManager {
+  async function openTerminal(request: TerminalOpenRequest): Promise<TerminalSessionSnapshot> {
+    const sessionId = makeSessionId(request)
+    const existing = store.get(sessionId)
+    if (existing) return reopenExistingTerminal({ store, adapter, record: existing, request })
 
-  record.snapshot = {
-    ...record.snapshot,
-    history: '',
-    hasVisibleContent: false,
-    updatedAt: nowIso(),
-  }
-  record.suppressOutputVisibilityUntilInput = true
-  rmSync(record.transcriptPath, { force: true })
-  emitTerminalEvent({
-    type: 'cleared',
-    sessionId: record.snapshot.sessionId,
-    snapshot: record.snapshot,
-    createdAt: nowIso(),
-  })
-}
-
-function markTerminalVisible(record: TerminalSessionRecord) {
-  if (record.snapshot.hasVisibleContent) {
-    return
-  }
-
-  record.snapshot = {
-    ...record.snapshot,
-    hasVisibleContent: true,
-    updatedAt: nowIso(),
-  }
-  emitTerminalEvent({
-    type: 'updated',
-    sessionId: record.snapshot.sessionId,
-    snapshot: record.snapshot,
-    createdAt: nowIso(),
-  })
-}
-
-function isRestartableTerminalStatus(status: TerminalSessionSnapshot['status']) {
-  return status === 'exited' || status === 'error'
-}
-
-function ensureProcessStarted(record: TerminalSessionRecord, reason: 'started' | 'restarted') {
-  if (record.process) {
-    return Promise.resolve()
-  }
-
-  if (record.restartPromise) {
-    return record.restartPromise
-  }
-
-  record.restartPromise = startProcess(record, reason).finally(() => {
-    record.restartPromise = null
-  })
-  return record.restartPromise
-}
-
-export async function openTerminal(request: TerminalOpenRequest): Promise<TerminalSessionSnapshot> {
-  const cwd = request.cwd ?? request.projectId
-  const sessionId = makeSessionId(request)
-  const existing = getTerminalSession(sessionId)
-
-  if (existing) {
-    existing.snapshot = {
-      ...existing.snapshot,
-      cols: request.cols,
-      rows: request.rows,
-      updatedAt: nowIso(),
+    const unboundWorkspaceTerminal = findUnboundWorkspaceShellTerminal(store, request)
+    if (unboundWorkspaceTerminal) {
+      return rebindWorkspaceTerminal({
+        store,
+        adapter,
+        record: unboundWorkspaceTerminal,
+        request,
+        sessionId,
+      })
     }
 
-    if (existing.process) {
-      existing.process.resize(request.cols, request.rows)
-    } else if (isRestartableTerminalStatus(existing.snapshot.status)) {
-      existing.snapshot = {
-        ...existing.snapshot,
-        status: 'starting',
-        exitCode: null,
-        exitSignal: null,
-        updatedAt: nowIso(),
-      }
-      void ensureProcessStarted(existing, 'restarted')
-    }
-
-    return existing.snapshot
+    return await createTerminalRecord({ store, rootScope, adapter, request, sessionId })
   }
 
-  const unboundWorkspaceTerminal = findUnboundWorkspaceShellTerminal(request)
-  if (unboundWorkspaceTerminal) {
-    const snapshot = bindWorkspaceTerminalToSession({
-      record: unboundWorkspaceTerminal,
-      request,
-      sessionId,
-    })
-    if (isRestartableTerminalStatus(unboundWorkspaceTerminal.snapshot.status)) {
-      unboundWorkspaceTerminal.snapshot = {
-        ...unboundWorkspaceTerminal.snapshot,
-        status: 'starting',
-        exitCode: null,
-        exitSignal: null,
-        updatedAt: nowIso(),
-      }
-      void ensureProcessStarted(unboundWorkspaceTerminal, 'restarted')
-      return unboundWorkspaceTerminal.snapshot
-    }
-    return snapshot
-  }
+  async function writeTerminal(sessionId: string, data: string) {
+    const record = store.get(sessionId)
+    if (!record) return
+    const input = rememberTerminalInput(store, record, data)
+    if (data.length === 0) return
 
-  const history = readTranscript(getTranscriptPath(sessionId))
-  const snapshot: TerminalSessionSnapshot = {
-    sessionId,
-    projectId: request.projectId,
-    sessionPath: request.sessionPath ?? null,
-    cwd,
-    launchMode: request.launchMode ?? 'shell',
-    status: 'starting',
-    pid: null,
-    cols: request.cols,
-    rows: request.rows,
-    history,
-    hasVisibleContent:
-      (request.launchMode ?? 'shell') === 'shell' || hasVisibleTerminalContent(history),
-    exitCode: null,
-    exitSignal: null,
-    updatedAt: nowIso(),
-  }
-
-  const record: TerminalSessionRecord = {
-    snapshot,
-    process: null,
-    restartPromise: null,
-    transcriptPath: getTranscriptPath(sessionId),
-    inputBuffer: '',
-    suppressOutputVisibilityUntilInput: false,
-    persistTimer: null,
-    tuiSessionDetection: createTuiSessionDetection(request),
-    cleanup: [],
-  }
-
-  setTerminalSession(sessionId, record)
-  scheduleTuiSessionDetection(record, 'retry')
-  void ensureProcessStarted(record, 'started')
-  return snapshot
-}
-
-export async function writeTerminal(sessionId: string, data: string) {
-  const record = getTerminalSession(sessionId)
-  const input = record ? applyTerminalInputToBuffer(record.inputBuffer, data) : null
-
-  if (record && input) {
-    record.inputBuffer = input.nextBuffer
-    if (input.submittedLines.some((line) => line.trim() && line.trim() !== 'clear')) {
-      rememberSubmittedPrompts(record, input.submittedLines)
-      record.suppressOutputVisibilityUntilInput = false
-      markTerminalVisible(record)
-      scheduleTuiSessionDetection(record)
-    }
-  }
-
-  if (!(record?.process && data.length > 0)) {
-    if (record && data.length > 0 && isRestartableTerminalStatus(record.snapshot.status)) {
+    if (!record.process && isRestartableTerminalStatus(record.snapshot.status)) {
       record.snapshot = {
         ...record.snapshot,
         status: 'starting',
@@ -228,97 +73,62 @@ export async function writeTerminal(sessionId: string, data: string) {
         exitSignal: null,
         updatedAt: nowIso(),
       }
-      await ensureProcessStarted(record, 'restarted')
-      record.process?.write(data)
-      if (input?.submittedLines.some((line) => line.trim() === 'clear')) {
-        clearTerminalHistory(record)
-      }
+      await ensureProcessStarted(store, adapter, record, 'restarted')
     }
-    return
+
+    record.process?.write(data)
+    if (didSubmitClear(input)) clearTerminalHistory(store, record)
   }
 
-  record.process.write(data)
-
-  if (input?.submittedLines.some((line) => line.trim() === 'clear')) {
-    clearTerminalHistory(record)
-  }
-}
-
-export async function resizeTerminal(sessionId: string, cols: number, rows: number) {
-  const record = getTerminalSession(sessionId)
-  if (!record) {
-    return
+  async function resizeTerminal(sessionId: string, cols: number, rows: number) {
+    const record = store.get(sessionId)
+    if (!record) return
+    record.snapshot = { ...record.snapshot, cols, rows, updatedAt: nowIso() }
+    record.process?.resize(cols, rows)
   }
 
-  record.snapshot = { ...record.snapshot, cols, rows, updatedAt: nowIso() }
-  record.process?.resize(cols, rows)
-}
-
-export async function listTerminals(): Promise<TerminalSessionSnapshot[]> {
-  return listTerminalSessions().map((record) => record.snapshot)
-}
-
-export async function getTerminalStatus(sessionId: string) {
-  const record = getTerminalSession(sessionId)
-  return record ? { sessionId, status: record.snapshot.status } : null
-}
-
-export async function statSessionFile(sessionId: string) {
-  const record = getTerminalSession(sessionId)
-  const persistedSessionPath = getPersistedSessionPath(record?.snapshot.sessionPath ?? null)
-  if (!persistedSessionPath) {
-    return null
+  async function listTerminals(): Promise<TerminalSessionSnapshot[]> {
+    return store.list().map((record) => record.snapshot)
   }
 
-  try {
-    const fileStat = await stat(persistedSessionPath)
-    if (!fileStat.isFile()) {
+  async function getTerminalStatus(sessionId: string) {
+    const record = store.get(sessionId)
+    return record ? { sessionId, status: record.snapshot.status } : null
+  }
+
+  async function statSessionFile(sessionId: string) {
+    const record = store.get(sessionId)
+    const persistedSessionPath = getPersistedSessionPath(record?.snapshot.sessionPath ?? null)
+    if (!persistedSessionPath) return null
+
+    try {
+      const fileStat = await stat(persistedSessionPath)
+      return fileStat.isFile() ? { mtimeMs: fileStat.mtimeMs, size: fileStat.size } : null
+    } catch {
       return null
     }
-
-    return {
-      mtimeMs: fileStat.mtimeMs,
-      size: fileStat.size,
-    }
-  } catch {
-    return null
-  }
-}
-
-export async function closeTerminal(request: TerminalCloseRequest) {
-  const record = getTerminalSession(request.sessionId)
-  if (!record) {
-    return
   }
 
-  const restartPromise = record.restartPromise
-  stopTuiSessionDetection(record)
-  clearSessionBindings(record)
-  record.process?.kill()
-  record.process = null
-  record.restartPromise = null
-  flushSession(record)
-  deleteTerminalSession(request.sessionId)
-  await restartPromise?.catch(() => {
-    // Ignore startup races while closing; startProcess kills late PTYs once the session is gone.
-  })
-
-  if (request.deleteHistory) {
-    rmSync(record.transcriptPath, { force: true })
+  async function closeTerminal(request: TerminalCloseRequest) {
+    const record = store.get(request.sessionId)
+    if (!record) return
+    record.deleteHistoryOnClose = request.deleteHistory === true
+    await Effect.runPromise(Scope.close(record.scope, Exit.void))
   }
 
-  emitTerminalEvent({
-    type: 'exited',
-    sessionId: request.sessionId,
-    exitCode: null,
-    exitSignal: null,
-    createdAt: nowIso(),
-  })
-}
+  async function closeAllTerminals() {
+    const sessionIds = store.list().map((record) => record.snapshot.sessionId)
+    await Promise.all(sessionIds.map((sessionId) => closeTerminal({ sessionId })))
+  }
 
-export async function closeAllTerminals() {
-  const sessionIds = listTerminalSessions().map((record) => record.snapshot.sessionId)
-  await Promise.all(sessionIds.map((sessionId) => closeTerminal({ sessionId })))
+  return {
+    closeAllTerminals,
+    closeTerminal,
+    getTerminalStatus,
+    listTerminals,
+    openTerminal,
+    resizeTerminal,
+    statSessionFile,
+    writeTerminal,
+  }
 }
-
-export { subscribeTerminalEvents }
