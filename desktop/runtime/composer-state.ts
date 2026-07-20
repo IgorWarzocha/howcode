@@ -17,6 +17,7 @@ import {
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import { getPiModule } from '../pi-module.ts'
 import { isHeadlessExtensionCommandRunning } from './agent-session-extensions.ts'
+import { getBundledSkillPaths } from './bundled-skills.ts'
 import { getRuntimeSystemPrompt } from './chat-system-prompt.ts'
 import { buildQueuedPrompts } from './composer-queue'
 import {
@@ -265,6 +266,7 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
     : SessionManager.inMemory()
   const resourceLoader = await createIsolatedRuntimeResourceLoader({
     DefaultResourceLoader,
+    additionalSkillPaths: getBundledSkillPaths(),
     cwd,
     agentDir,
     settingsCwd: request.composerSessionDir,

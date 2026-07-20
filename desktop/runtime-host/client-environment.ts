@@ -122,6 +122,8 @@ export function getElectronResourcesPath() {
 }
 
 export function getBundledSkillsPath() {
+  const configuredPath = getProcessEnvironmentVariable('HOWCODE_BUNDLED_SKILLS_PATH')?.trim()
+  if (configuredPath) return configuredPath
   const resourcesPath = getElectronResourcesPath()
   return resourcesPath
     ? path.join(resourcesPath, 'resources', 'skills')

@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { app } from 'electron'
 import type {
   DesktopServiceRuntime,
   PiSkillsService,
@@ -7,7 +8,7 @@ import type {
 import { getDesktopWorkingDirectory } from '../../../../shared/desktop-working-directory'
 import { DesktopServiceClient } from '../../../desktop-host/desktop-service-client'
 import { getSystemNodeExecutable } from '../../../desktop-host/node-discovery'
-import { getDesktopBuildDirectory } from './app-paths'
+import { getAppRootPath, getDesktopBuildDirectory } from './app-paths'
 
 function getServiceHostPath() {
   return path.join(getDesktopBuildDirectory(), 'service-host.mjs')
@@ -23,6 +24,12 @@ function getElectronResourcesPath() {
     processWithResourcesPath.resourcesPath ||
     ''
   )
+}
+
+function getBundledSkillsPath() {
+  return app.isPackaged
+    ? path.join(getElectronResourcesPath(), 'resources', 'skills')
+    : path.join(getAppRootPath(), 'desktop', 'resources', 'skills')
 }
 
 function proxyModule<T extends Record<string, unknown>>(
@@ -49,6 +56,7 @@ export function createDesktopServiceRuntime(): DesktopServiceRuntime {
     cwd: getDesktopWorkingDirectory(),
     env: {
       HOWCODE_ELECTRON_RESOURCES_PATH: getElectronResourcesPath(),
+      HOWCODE_BUNDLED_SKILLS_PATH: getBundledSkillsPath(),
     },
   })
   return {

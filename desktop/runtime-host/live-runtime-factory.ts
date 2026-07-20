@@ -6,6 +6,7 @@ import {
 } from '../runtime/agent-session-extensions.ts'
 import { createArtifactTools } from '../runtime/artifact-tools.ts'
 import { createAttachmentFileTools } from '../runtime/attachment-file-tools.ts'
+import { getBundledSkillPaths } from '../runtime/bundled-skills.ts'
 import { getRuntimeSystemPrompt } from '../runtime/chat-system-prompt.ts'
 import {
   createIsolatedRuntimeResourceLoader,
@@ -76,10 +77,7 @@ export async function createLiveRuntime(
   const sessionDir = options.sessionDir ?? settingsManager.getSessionDir() ?? undefined
   const resourceLoader = await createIsolatedRuntimeResourceLoader({
     DefaultResourceLoader,
-    // biome-ignore lint/complexity/useLiteralKeys: process.env is typed with an index signature.
-    additionalSkillPaths: [process.env['HOWCODE_BUNDLED_SKILLS_PATH']?.trim()].filter(
-      (skillPath): skillPath is string => Boolean(skillPath),
-    ),
+    additionalSkillPaths: getBundledSkillPaths(),
     cwd: options.cwd,
     agentDir,
     settingsCwd: options.settingsCwd,
