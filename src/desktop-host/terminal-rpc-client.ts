@@ -32,6 +32,7 @@ type Connection = {
   child: ChildProcess
   client: Client
   inbound: Queue.Queue<TerminalRpcResponse>
+  ready: Deferred.Deferred<void, unknown>
   scope: Scope.Closeable
 }
 
@@ -129,6 +130,7 @@ export class TerminalRpcServiceClient {
 
     const scope = Scope.makeUnsafe()
     attempt.scope = scope
+    const ready = Deferred.makeUnsafe<void, unknown>()
     const sendMessage = (message: TerminalRpcRequest) => this.send(child, message)
     try {
       const connection = await Effect.runPromise(
@@ -161,7 +163,7 @@ export class TerminalRpcServiceClient {
           const client = yield* RpcClientRuntime.make(TerminalRpcGroup).pipe(
             Effect.provideService(RpcClientRuntime.Protocol, protocol),
           )
-          return { child, client, inbound, scope }
+          return { child, client, inbound, ready, scope }
         }).pipe(Effect.provideService(Scope.Scope, scope)),
       )
 
@@ -171,7 +173,6 @@ export class TerminalRpcServiceClient {
 
       this.connectionAttempt = null
       this.connection = connection
-      const ready = Deferred.makeUnsafe<void, unknown>()
       const reportStoppedStream = (error: unknown) => {
         if (this.connection?.scope !== scope) return
         this.options.onDiagnostic(
@@ -221,6 +222,14 @@ export class TerminalRpcServiceClient {
 
     if (disposeAttempt && this.connectionAttempt === disposeAttempt) this.connectionAttempt = null
     if (disposeConnection && this.connection === disposeConnection) this.connection = null
+    if (disposeConnection) {
+      await Effect.runPromise(
+        Deferred.fail(
+          disposeConnection.ready,
+          new Error('Desktop service exited while terminal RPC was starting.'),
+        ),
+      )
+    }
     const scopes = new Set(
       [disposeAttempt?.scope, disposeConnection?.scope].filter(
         (scope): scope is Scope.Closeable => scope !== null && scope !== undefined,

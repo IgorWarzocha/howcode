@@ -117,7 +117,7 @@ function spawnServiceProcess(
 
 function terminateProcess(child: ChildProcess) {
   return Effect.callback<void>((resume) => {
-    if (child.killed || child.exitCode !== null) {
+    if (child.exitCode !== null || child.signalCode !== null) {
       resume(Effect.void)
       return
     }
@@ -130,7 +130,16 @@ function terminateProcess(child: ChildProcess) {
       child.off('exit', finish)
       resume(Effect.void)
     }
-    const timer = setTimeout(finish, TERMINATION_WAIT_MS)
+    const timer = setTimeout(() => {
+      if (child.exitCode === null && child.signalCode === null) {
+        try {
+          child.kill('SIGKILL')
+        } catch {
+          // The process may have exited between the running check and kill.
+        }
+      }
+      finish()
+    }, TERMINATION_WAIT_MS)
     timer.unref?.()
     child.once('exit', finish)
     try {
