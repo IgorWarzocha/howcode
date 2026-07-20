@@ -56,7 +56,7 @@ export function makeTerminalManager(
       })
     }
 
-    return await createTerminalRecord({ store, rootScope, adapter, request, sessionId })
+    return createTerminalRecord({ store, rootScope, adapter, request, sessionId })
   }
 
   async function writeTerminal(sessionId: string, data: string) {

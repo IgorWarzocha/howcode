@@ -118,4 +118,46 @@ describe('Terminal service', () => {
     expect(process.killCount).toBe(1)
     rmSync(getTranscriptPath(snapshot.sessionId), { force: true })
   })
+
+  it('reserves a session before concurrent opens can spawn duplicate PTYs', async () => {
+    const process = new FakePtyProcess()
+    let spawnCount = 0
+    const adapter: PtyAdapter = {
+      name: 'counting-fake',
+      spawn: async () => {
+        spawnCount += 1
+        return process
+      },
+    }
+    const testLayer = layer.pipe(Layer.provide(Layer.succeed(Pty.Service, adapter)))
+    const opened = await Effect.runPromise(
+      Effect.gen(function* () {
+        const terminal = yield* Service
+        return yield* Effect.all(
+          [
+            terminal.open({
+              projectId: '/tmp/howcode-effect-terminal-concurrent-open-test',
+              cwd: '/tmp',
+              launchMode: 'shell',
+              cols: 80,
+              rows: 24,
+            }),
+            terminal.open({
+              projectId: '/tmp/howcode-effect-terminal-concurrent-open-test',
+              cwd: '/tmp',
+              launchMode: 'shell',
+              cols: 80,
+              rows: 24,
+            }),
+          ],
+          { concurrency: 'unbounded' },
+        )
+      }).pipe(Effect.provide(testLayer)),
+    )
+
+    expect(opened[0].sessionId).toBe(opened[1].sessionId)
+    expect(spawnCount).toBe(1)
+    expect(process.killCount).toBe(1)
+    rmSync(getTranscriptPath(opened[0].sessionId), { force: true })
+  })
 })

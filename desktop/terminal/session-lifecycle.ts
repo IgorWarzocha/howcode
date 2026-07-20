@@ -130,7 +130,7 @@ export function rebindWorkspaceTerminal(input: {
   return input.record.snapshot
 }
 
-export async function createTerminalRecord(input: {
+export function createTerminalRecord(input: {
   store: TerminalSessionStore
   rootScope: Scope.Scope
   adapter: PtyAdapter
@@ -155,7 +155,7 @@ export async function createTerminalRecord(input: {
     exitSignal: null,
     updatedAt: nowIso(),
   }
-  const sessionScope = await Effect.runPromise(Scope.fork(input.rootScope))
+  const sessionScope = Scope.forkUnsafe(input.rootScope)
   const record: TerminalSessionRecord = {
     scope: sessionScope,
     snapshot,
@@ -170,7 +170,7 @@ export async function createTerminalRecord(input: {
     deleteHistoryOnClose: false,
   }
 
-  await Effect.runPromise(
+  Effect.runSync(
     Scope.addFinalizer(
       sessionScope,
       Effect.promise(() => finalizeTerminalRecord(input.store, record)),

@@ -100,6 +100,7 @@ async function bindDetectedSession(store: TerminalSessionStore, record: Terminal
 
   try {
     const detected = await findStartedSession(record)
+    if (detection.stopped || store.get(record.snapshot.sessionId) !== record) return
     if (!detected) {
       if (shouldKeepDetecting(detection)) scheduleTuiSessionDetection(store, record, 'retry')
       return
