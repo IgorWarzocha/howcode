@@ -311,7 +311,9 @@ export function makeHostLifecycle<Process>(options: {
       ensureHost,
       runningHostIds: Effect.map(Ref.get(state), (current) =>
         [...current.hosts.values()]
-          .filter((host) => host.lifecycle.status !== 'Stopped')
+          .filter(
+            (host) => host.lifecycle.status === 'Starting' || host.lifecycle.status === 'Running',
+          )
           .map((host) => host.id),
       ),
       scheduleIdle: idle.schedule,

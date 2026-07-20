@@ -51,8 +51,21 @@ export function subscribeRuntimeHostEvents(listener: (event: DesktopEvent) => vo
   const fiber = runtime.runFork(
     Effect.gen(function* () {
       const service = yield* Service
-      yield* service.ensureServiceHost
-      yield* service.events.pipe(Stream.runForEach((event) => Effect.sync(() => listener(event))))
+      const consumeEvents = service.events.pipe(
+        Stream.runForEach((event) => Effect.sync(() => listener(event))),
+      )
+      const keepStartingServiceHost = service.ensureServiceHost.pipe(
+        Effect.catch((error) =>
+          Effect.sync(() =>
+            console.error('Failed to start Pi runtime service host for desktop events.', error),
+          ),
+        ),
+        Effect.andThen(Effect.never),
+      )
+      yield* Effect.all([consumeEvents, keepStartingServiceHost], {
+        concurrency: 'unbounded',
+        discard: true,
+      })
     }),
   )
   return () => {
