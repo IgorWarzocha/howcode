@@ -5,16 +5,13 @@ import type * as Scope from 'effect/Scope'
 import type * as Stream from 'effect/Stream'
 import type { DesktopEvent } from '../../../shared/desktop-contracts'
 import type { DesktopServiceRuntime } from '../../../shared/desktop-service-contracts'
+import type { DesktopServiceMessage } from '../../../shared/desktop-service-ipc'
 import type { TerminalRpcResponse } from '../../../shared/terminal-rpc'
 
 export type DesktopServiceApi = DesktopServiceRuntime
 export type DesktopServiceModuleName = keyof DesktopServiceApi
 
-export type DesktopServiceMessage =
-  | { type: 'ready'; diagnostics?: Record<string, unknown> }
-  | { type: 'response'; id: string; ok: boolean; result?: unknown; error?: string; stack?: string }
-  | { type: 'desktop-event'; event: DesktopEvent }
-  | { type: 'terminal-rpc-response'; message: TerminalRpcResponse }
+export type { DesktopServiceMessage } from '../../../shared/desktop-service-ipc'
 
 export type DesktopServiceRequestMessage = {
   readonly type: 'request'

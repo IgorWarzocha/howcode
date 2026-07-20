@@ -7,7 +7,6 @@ import type { DesktopEvent } from '../../../shared/desktop-contracts.ts'
 import type {
   RuntimeHostRequestMap,
   RuntimeHostRequestName,
-  RuntimeHostResponseMap,
   RuntimeHostToMainMessage,
 } from '../protocol.ts'
 import { getRuntimeHostRequestSessionPath, shouldUseThreadRuntimeHost } from '../request-routing.ts'
@@ -243,7 +242,7 @@ export function makeHostMessages<Process>(options: {
         Effect.andThen(Deferred.await(response)),
         Effect.onInterrupt(() => removePending(hostId, requestId, pending)),
       )
-    return result as RuntimeHostResponseMap[TName]
+    return result
   })
 
   const invoke = Effect.fn('RuntimeHostBroker.invoke')(function* <

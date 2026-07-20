@@ -1,6 +1,8 @@
 import { type ChildProcess, spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import * as Effect from 'effect/Effect'
+import * as Result from 'effect/Result'
+import * as Schema from 'effect/Schema'
 import { getDesktopWorkingDirectory } from '../../../shared/desktop-working-directory.ts'
 import {
   getBundledSkillsPath,
@@ -8,37 +10,14 @@ import {
   getNodeExecutable,
   getRuntimeHostPath,
 } from '../client-environment.ts'
-import type { RuntimeHostToMainMessage } from '../protocol.ts'
+import { RuntimeHostToMainMessageSchema } from '../protocol.ts'
 import {
   brokerError,
   type RuntimeHostProcessAdapter,
   type RuntimeHostProcessHandlers,
 } from './types.ts'
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
-function isRuntimeHostToMainMessage(value: unknown): value is RuntimeHostToMainMessage {
-  if (!isRecord(value)) return false
-  const { error, event, id, name, ok, type } = value
-  if (typeof type !== 'string') return false
-  switch (type) {
-    case 'desktop-event': {
-      if (!isRecord(event)) return false
-      const { type: eventType } = event
-      return typeof eventType === 'string'
-    }
-    case 'host-error':
-      return typeof error === 'string'
-    case 'main-request':
-      return typeof id === 'string' && typeof name === 'string'
-    case 'response':
-      return typeof id === 'string' && typeof ok === 'boolean'
-    default:
-      return false
-  }
-}
+const decodeRuntimeHostMessage = Schema.decodeUnknownResult(RuntimeHostToMainMessageSchema)
 
 function terminateChildProcess(child: ChildProcess | null | undefined) {
   if (!child || child.killed || child.exitCode !== null) return
@@ -83,7 +62,12 @@ function spawnRuntimeHost(
       })
       child.once('exit', (code, signal) => handlers.onExit(child, code, signal))
       child.on('message', (message: unknown) => {
-        if (isRuntimeHostToMainMessage(message)) handlers.onMessage(child, message)
+        const decoded = decodeRuntimeHostMessage(message)
+        if (Result.isFailure(decoded)) {
+          process.stderr.write(`Ignored invalid runtime-host IPC message: ${decoded.failure}\n`)
+          return
+        }
+        handlers.onMessage(child, decoded.success)
       })
       child.stdout?.on('data', (chunk: Buffer | string) =>
         process.stdout.write(`[pi-host:${label}] ${chunk}`),

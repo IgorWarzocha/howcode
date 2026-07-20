@@ -87,12 +87,23 @@ const TerminalEventBase = {
   createdAt: Schema.String,
 }
 
-export const TerminalStartedEvent = Schema.Struct({
+const TerminalStartedEventVariant = Schema.Struct({
   ...TerminalEventBase,
-  type: Schema.Literals(['started', 'restarted']),
+  type: Schema.Literal('started'),
   snapshot: TerminalSessionSnapshot,
 })
-export interface TerminalStartedEvent extends Schema.Schema.Type<typeof TerminalStartedEvent> {}
+
+const TerminalRestartedEventVariant = Schema.Struct({
+  ...TerminalEventBase,
+  type: Schema.Literal('restarted'),
+  snapshot: TerminalSessionSnapshot,
+})
+
+export const TerminalStartedEvent = Schema.Union([
+  TerminalStartedEventVariant,
+  TerminalRestartedEventVariant,
+])
+export type TerminalStartedEvent = typeof TerminalStartedEvent.Type
 
 export const TerminalOutputEvent = Schema.Struct({
   ...TerminalEventBase,
@@ -137,7 +148,7 @@ export const TerminalEvent = Schema.Union([
   TerminalExitedEvent,
   TerminalErrorEvent,
   TerminalClearedEvent,
-])
+]).pipe(Schema.toTaggedUnion('type'))
 export type TerminalEvent = typeof TerminalEvent.Type
 
 export const TerminalOperation = Schema.Literals([

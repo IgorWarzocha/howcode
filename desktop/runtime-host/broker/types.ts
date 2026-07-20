@@ -6,7 +6,6 @@ import type { DesktopEvent } from '../../../shared/desktop-contracts.ts'
 import type {
   RuntimeHostRequestMap,
   RuntimeHostRequestName,
-  RuntimeHostResponseMap,
   RuntimeHostToMainMessage,
   RuntimeMainToHostMessage,
 } from '../protocol.ts'
@@ -102,7 +101,7 @@ export interface RuntimeHostBroker {
   readonly invoke: <TName extends RuntimeHostRequestName>(
     name: TName,
     payload: RuntimeHostRequestMap[TName],
-  ) => Effect.Effect<RuntimeHostResponseMap[TName], RuntimeHostBrokerError>
+  ) => Effect.Effect<unknown, RuntimeHostBrokerError>
   readonly invalidateSettings: (request: {
     readonly sessionPath?: string | null | undefined
     readonly projectPath?: string | null | undefined

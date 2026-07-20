@@ -1,39 +1,19 @@
 import { type ChildProcess, spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import * as Effect from 'effect/Effect'
+import * as Result from 'effect/Result'
+import * as Schema from 'effect/Schema'
+import { DesktopServiceMessageSchema } from '../../../shared/desktop-service-ipc'
 import { prepareServiceNativeRuntime } from '../service-native-runtime'
 import {
   type DesktopServiceClientOptions,
-  type DesktopServiceMessage,
   type DesktopServiceProcessAdapter,
   serviceError,
 } from './types'
 
 const TERMINATION_WAIT_MS = 1_500
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
-function isDesktopServiceMessage(value: unknown): value is DesktopServiceMessage {
-  if (!isRecord(value)) return false
-  const { event, id, message, ok, type } = value
-  switch (type) {
-    case 'ready':
-      return true
-    case 'response':
-      return typeof id === 'string' && typeof ok === 'boolean'
-    case 'desktop-event': {
-      if (!isRecord(event)) return false
-      const { type: eventType } = event
-      return typeof eventType === 'string'
-    }
-    case 'terminal-rpc-response':
-      return isRecord(message)
-    default:
-      return false
-  }
-}
+const decodeDesktopServiceMessage = Schema.decodeUnknownResult(DesktopServiceMessageSchema)
 
 function resolveNodeExecutable(options: DesktopServiceClientOptions) {
   return Effect.tryPromise({
@@ -91,11 +71,17 @@ function spawnServiceProcess(
           reject(new Error('Desktop service exited before startup.'))
         })
         child.on('message', (message: unknown) => {
-          if (!isDesktopServiceMessage(message)) return
-          handlers.onMessage(child, message)
-          if (message.type !== 'ready' || settled) return
+          const decoded = decodeDesktopServiceMessage(message)
+          if (Result.isFailure(decoded)) {
+            process.stderr.write(
+              `Ignored invalid desktop service IPC message: ${decoded.failure}\n`,
+            )
+            return
+          }
+          handlers.onMessage(child, decoded.success)
+          if (decoded.success.type !== 'ready' || settled) return
           settled = true
-          resolve(message.diagnostics ?? {})
+          resolve(decoded.success.diagnostics ?? {})
         })
       })
 

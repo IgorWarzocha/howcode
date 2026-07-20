@@ -1,3 +1,4 @@
+import * as Schema from 'effect/Schema'
 import type {
   Artifact,
   ArtifactKind,
@@ -8,7 +9,6 @@ import type {
   ComposerStateRequest,
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
-  DesktopEvent,
   PiConfiguredPackage,
   PiConfiguredSkill,
   PiPackageMutationResult,
@@ -18,6 +18,7 @@ import type {
   ThreadData,
   ThreadSearchResult,
 } from '../../shared/desktop-contracts.ts'
+import { DesktopEventSchema } from '../../shared/desktop-event-contracts.ts'
 import type { SessionTreeList } from '../../shared/session-tree.ts'
 import type { CommitMessageContext } from '../project-git.ts'
 
@@ -249,26 +250,6 @@ export type RuntimeHostRequestMessage<
   payload: RuntimeHostRequestMap[TName]
 }
 
-export type RuntimeHostResponseMessage =
-  | {
-      type: 'response'
-      id: string
-      ok: true
-      result: RuntimeHostResponseMap[RuntimeHostRequestName]
-    }
-  | { type: 'response'; id: string; ok: false; error: string; stack?: string | undefined }
-
-export type RuntimeHostEventMessage = {
-  type: 'desktop-event'
-  event: DesktopEvent
-}
-
-export type RuntimeHostCrashMessage = {
-  type: 'host-error'
-  error: string
-  stack?: string | undefined
-}
-
 export type RuntimeHostMainRequestMessage<
   TName extends RuntimeHostMainRequestName = RuntimeHostMainRequestName,
 > = {
@@ -293,10 +274,46 @@ export type RuntimeHostMainResponseMessage =
       stack?: string | undefined
     }
 
-export type RuntimeHostToMainMessage =
-  | RuntimeHostResponseMessage
-  | RuntimeHostEventMessage
-  | RuntimeHostCrashMessage
-  | RuntimeHostMainRequestMessage
+const RuntimeHostResponseMessageSchema = Schema.Union([
+  Schema.Struct({
+    type: Schema.Literal('response'),
+    id: Schema.String,
+    ok: Schema.Literal(true),
+    result: Schema.Unknown,
+  }),
+  Schema.Struct({
+    type: Schema.Literal('response'),
+    id: Schema.String,
+    ok: Schema.Literal(false),
+    error: Schema.String,
+    stack: Schema.optionalKey(Schema.String),
+  }),
+])
+
+const RuntimeHostMainRequestMessageSchema = Schema.Struct({
+  type: Schema.Literal('main-request'),
+  id: Schema.String,
+  name: Schema.Literals([
+    'createArtifact',
+    'updateArtifact',
+    'editArtifact',
+    'getArtifact',
+    'listArtifacts',
+  ]),
+  payload: Schema.Unknown,
+})
+
+export const RuntimeHostToMainMessageSchema = Schema.Union([
+  RuntimeHostResponseMessageSchema,
+  Schema.Struct({ type: Schema.Literal('desktop-event'), event: DesktopEventSchema }),
+  Schema.Struct({
+    type: Schema.Literal('host-error'),
+    error: Schema.String,
+    stack: Schema.optionalKey(Schema.String),
+  }),
+  RuntimeHostMainRequestMessageSchema,
+])
+
+export type RuntimeHostToMainMessage = typeof RuntimeHostToMainMessageSchema.Type
 
 export type RuntimeMainToHostMessage = RuntimeHostRequestMessage | RuntimeHostMainResponseMessage

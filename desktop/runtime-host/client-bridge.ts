@@ -24,7 +24,9 @@ export function invokeRuntimeHost<TName extends RuntimeHostRequestName>(
   name: TName,
   payload: RuntimeHostRequestMap[TName],
 ): Promise<RuntimeHostResponseMap[TName]> {
-  return run((service) => service.invoke(name, payload))
+  return run((service) => service.invoke(name, payload)).then(
+    (result) => result as RuntimeHostResponseMap[TName],
+  )
 }
 
 export function invalidateRuntimeHostSettings(

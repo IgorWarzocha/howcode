@@ -24,12 +24,14 @@ The useful migration is mostly done. The major process and runtime lifecycles no
 ### Runtime-host process broker
 
 - Effect-owned child processes, requests, aliases, events, and idle shutdown in `desktop/runtime-host/broker/*`.
+- Schema-decoded IPC envelopes and desktop events at the child-process ingress.
 - `desktop/runtime-host/client-bridge.ts` remains the Promise/event compatibility edge.
 - Startup, exit, restart, and late-message paths are generation-safe.
 
 ### Desktop service process
 
 - Effect-owned stock-Node service lifecycle in `src/desktop-host/desktop-service/*`.
+- Shared Schema-decoded service messages in `shared/desktop-service-ipc.ts`.
 - Startup deduplication, request/startup timeouts, process generations, and scoped shutdown.
 - Child-specific terminal RPC connection ownership.
 - Disposal during startup cannot resurrect a child; stale process callbacks cannot affect its replacement.
@@ -86,6 +88,7 @@ Do not migrate code merely to increase Effect coverage. Leave these alone unless
 ## Guardrails
 
 - Keep Effect behind stable Promise/class facades at Electron, renderer, and dev-bridge boundaries.
+- Keep dynamic broad-domain result typing at those facades; validate the envelopes and fields consumed by Effect-owned lifecycle code before dispatch.
 - Put cross-runtime wire contracts in `shared/*`; do not create parallel transport shims.
 - A process, runtime, timer, stream, or pending request must belong to one scope or one explicitly identified record.
 - Detach by record/process identity before finalising a scope. Late callbacks must be harmless.

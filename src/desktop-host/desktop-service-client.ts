@@ -4,11 +4,7 @@ import * as ManagedRuntime from 'effect/ManagedRuntime'
 import * as Stream from 'effect/Stream'
 import type { DesktopEvent } from '../../shared/desktop-contracts'
 import { makeLayer, Service } from './desktop-service/service'
-import type {
-  DesktopServiceApi,
-  DesktopServiceClientOptions,
-  DesktopServiceModuleName,
-} from './desktop-service/types'
+import type { DesktopServiceClientOptions, DesktopServiceModuleName } from './desktop-service/types'
 import { TerminalRpcServiceClient } from './terminal-rpc-client'
 
 export type {
@@ -17,17 +13,6 @@ export type {
   DesktopServiceMessage,
   DesktopServiceModuleName,
 } from './desktop-service/types'
-
-type ServiceMethod<M extends DesktopServiceModuleName> = {
-  [K in keyof DesktopServiceApi[M]]: DesktopServiceApi[M][K] extends (...args: never[]) => unknown
-    ? K
-    : never
-}[keyof DesktopServiceApi[M]]
-
-type ServiceFunction<M extends DesktopServiceModuleName, K extends ServiceMethod<M>> = Extract<
-  DesktopServiceApi[M][K],
-  (...args: never[]) => unknown
->
 
 function createDesktopServiceDiagnosticEvent(input: {
   severity: 'warning' | 'error'
@@ -98,16 +83,6 @@ export class DesktopServiceClient {
         console.error('Desktop service event listener failed.', error)
       }
     }
-  }
-
-  async invoke<M extends DesktopServiceModuleName, K extends ServiceMethod<M> & string>(
-    moduleName: M,
-    method: K,
-    args: Parameters<ServiceFunction<M, K>> = [] as unknown as Parameters<ServiceFunction<M, K>>,
-  ): Promise<Awaited<ReturnType<ServiceFunction<M, K>>>> {
-    return (await this.invokeDynamic(moduleName, method, args)) as Awaited<
-      ReturnType<ServiceFunction<M, K>>
-    >
   }
 
   invokeDynamic(moduleName: DesktopServiceModuleName, method: string, args: unknown[] = []) {
