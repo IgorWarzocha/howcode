@@ -1,5 +1,7 @@
 - Keep `live-runtime-registry.ts` as the Promise/callback compatibility edge; lifecycle state belongs in the Effect registry service.
+- Keep `client-bridge.ts` as the Promise/event compatibility edge; `broker/*` owns child processes, Deferred replies, and idle fibers.
 - Runtime records own child scopes. Dispose by detaching the matching record and closing its scope; never dispose a key without checking record identity.
+- Broker restart/exit paths must detach by process/scope identity before closing scopes; late events must not touch replacement hosts.
 - Lifecycle locks and composer mutation locks are distinct and non-reentrant. Do not collapse them.
 - Idle disposal is a scoped `FiberMap` schedule; test timing with `TestClock`, not real sleeps.
 - Preserve `HOWCODE_BUNDLED_SKILLS_PATH` in every live runtime's additional skill paths; bundled skills replace bespoke app workflows.

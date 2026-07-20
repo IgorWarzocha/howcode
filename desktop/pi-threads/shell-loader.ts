@@ -100,5 +100,5 @@ export const subscribeDesktopEvents = subscribeRuntimeEvents
 
 export async function disposeDesktopRuntime() {
   disposeSessionWatcher()
-  shutdownRuntimeHosts()
+  await shutdownRuntimeHosts()
 }

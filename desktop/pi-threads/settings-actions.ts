@@ -169,7 +169,7 @@ const settingsUpdateHandlers = {
   },
   preferredProjectLocation: (payload) =>
     setPreferredProjectLocation(getSettingsPreferredProjectLocation(payload)),
-  customPiDirectory: (payload) => {
+  customPiDirectory: async (payload) => {
     const currentCustomPiDirectory = normalizeOptionalSettingsPath(
       loadAppSettings().customPiDirectory,
     )
@@ -179,7 +179,7 @@ const settingsUpdateHandlers = {
     if (currentCustomPiDirectory === nextCustomPiDirectory) return { didMutate: false }
 
     setCustomPiDirectory(nextCustomPiDirectory)
-    restartRuntimeHostsForEnvironmentChange()
+    await restartRuntimeHostsForEnvironmentChange()
     return { didMutate: true }
   },
   initializeGitOnProjectCreate: (payload) =>
