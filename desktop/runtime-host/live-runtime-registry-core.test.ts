@@ -87,7 +87,7 @@ describe('Live runtime registry core', () => {
     )
   })
 
-  it('rechecks working runtimes on the idle schedule before releasing them', async () => {
+  it('rechecks busy and dialog-pinned runtimes before releasing them', async () => {
     await Effect.runPromise(
       Effect.gen(function* () {
         const releaseCount = yield* Ref.make(0)
@@ -125,6 +125,10 @@ describe('Live runtime registry core', () => {
         yield* TestClock.adjust('15 minutes')
         expect(yield* Ref.get(releaseCount)).toBe(0)
         expectedRuntime.working = false
+        expectedRuntime.pendingDialog = true
+        yield* TestClock.adjust('15 minutes')
+        expect(yield* Ref.get(releaseCount)).toBe(0)
+        expectedRuntime.pendingDialog = false
         yield* TestClock.adjust('15 minutes')
         expect(yield* Ref.get(releaseCount)).toBe(1)
         expect(yield* registry.getCached(expectedRuntime.key)).toBeNull()

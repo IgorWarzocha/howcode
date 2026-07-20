@@ -17,8 +17,8 @@ export interface RuntimeIdleScheduler {
 function idleDisposition<Runtime>(
   adapters: RuntimeRegistryAdapters<Runtime>,
   runtime: Runtime,
-): 'dispose' | 'retry' | 'stop' {
-  if (adapters.hasPendingDialog(runtime)) return 'stop'
+): 'dispose' | 'retry' {
+  if (adapters.hasPendingDialog(runtime)) return 'retry'
   return adapters.isWorking(runtime) ? 'retry' : 'dispose'
 }
 
