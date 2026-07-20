@@ -2,8 +2,9 @@ import { type ChildProcess, spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import type { DesktopEvent } from '../../shared/desktop-contracts'
 import type { DesktopServiceRuntime } from '../../shared/desktop-service-contracts'
-import type { TerminalEvent } from '../../shared/terminal-contracts'
+import type { TerminalRpcResponse } from '../../shared/terminal-rpc'
 import { prepareServiceNativeRuntime } from './service-native-runtime'
+import { TerminalRpcServiceClient } from './terminal-rpc-client'
 
 export type DesktopServiceApi = DesktopServiceRuntime
 export type DesktopServiceModuleName = keyof DesktopServiceApi
@@ -27,7 +28,7 @@ export type DesktopServiceMessage =
   | { type: 'ready'; diagnostics?: Record<string, unknown> }
   | { type: 'response'; id: string; ok: boolean; result?: unknown; error?: string; stack?: string }
   | { type: 'desktop-event'; event: DesktopEvent }
-  | { type: 'terminal-event'; event: TerminalEvent }
+  | { type: 'terminal-rpc-response'; message: TerminalRpcResponse }
 
 export type DesktopServiceClientOptions = {
   nodeExecutable: string | (() => Promise<string> | string)
@@ -60,10 +61,18 @@ export class DesktopServiceClient {
   private startPromise: Promise<ChildProcess> | null = null
   private readonly pendingRequests = new Map<string, PendingRequest>()
   private readonly desktopListeners = new Set<(event: DesktopEvent) => void>()
-  private readonly terminalListeners = new Set<(event: TerminalEvent) => void>()
+  private readonly terminalRpc: TerminalRpcServiceClient
+  readonly terminalManager
 
   constructor(options: DesktopServiceClientOptions) {
     this.options = options
+    this.terminalRpc = new TerminalRpcServiceClient({
+      ensureStarted: () => this.ensureStarted(),
+      isCurrentChild: (child) => this.process === child,
+      onDiagnostic: (message, details) =>
+        this.emitDesktopDiagnostic({ severity: 'warning', message, details }),
+    })
+    this.terminalManager = this.terminalRpc.service
   }
 
   async dispose() {
@@ -72,6 +81,7 @@ export class DesktopServiceClient {
       pending.reject(new Error('Desktop service is shutting down.'))
     }
     this.pendingRequests.clear()
+    await this.terminalRpc.dispose()
     this.process?.kill('SIGTERM')
     this.process = null
     this.startPromise = null
@@ -80,11 +90,6 @@ export class DesktopServiceClient {
   subscribeDesktopEvents(listener: (event: DesktopEvent) => void) {
     this.desktopListeners.add(listener)
     return () => this.desktopListeners.delete(listener)
-  }
-
-  subscribeTerminalEvents(listener: (event: TerminalEvent) => void) {
-    this.terminalListeners.add(listener)
-    return () => this.terminalListeners.delete(listener)
   }
 
   private emitDesktopDiagnostic(input: {
@@ -103,6 +108,7 @@ export class DesktopServiceClient {
     signal: NodeJS.Signals | null,
     reject: (error: Error) => void,
   ) {
+    void this.terminalRpc.dispose()
     this.emitDesktopDiagnostic({
       severity: ready ? 'warning' : 'error',
       message: ready
@@ -207,6 +213,7 @@ export class DesktopServiceClient {
         this.process = child
 
         let ready = false
+        let terminalRpcStarting = false
         const startupTimeout = setTimeout(() => {
           this.startPromise = null
           if (this.process === child) this.process = null
@@ -234,14 +241,25 @@ export class DesktopServiceClient {
           this.handleServiceProcessExit(child, ready, code, signal, reject)
         })
         child.on('message', (message: DesktopServiceMessage) => {
-          if (message?.type === 'ready' && !ready) {
-            ready = true
-            this.clearServiceStartupTimeout(startupTimeout)
-            console.info('Desktop service ready.', message.diagnostics ?? {})
-            this.process = child
-            this.startPromise = null
-            resolve(child)
-          }
+          if (message?.type !== 'ready' || ready || terminalRpcStarting) return
+          terminalRpcStarting = true
+          void this.terminalRpc.connect(child).then(
+            () => {
+              ready = true
+              this.clearServiceStartupTimeout(startupTimeout)
+              console.info('Desktop service ready.', message.diagnostics ?? {})
+              this.process = child
+              this.startPromise = null
+              resolve(child)
+            },
+            (error: unknown) => {
+              this.clearServiceStartupTimeout(startupTimeout)
+              this.startPromise = null
+              if (this.process === child) this.process = null
+              child.kill('SIGTERM')
+              reject(error instanceof Error ? error : new Error(String(error)))
+            },
+          )
         })
       })
     })()
@@ -257,15 +275,8 @@ export class DesktopServiceClient {
     this.pendingRequests.clear()
   }
 
-  private handleServiceEvent(
-    message: Extract<DesktopServiceMessage, { type: 'desktop-event' | 'terminal-event' }>,
-  ) {
-    if (message.type === 'desktop-event') {
-      for (const listener of this.desktopListeners) listener(message.event)
-      return
-    }
-
-    for (const listener of this.terminalListeners) listener(message.event)
+  private handleServiceEvent(message: Extract<DesktopServiceMessage, { type: 'desktop-event' }>) {
+    for (const listener of this.desktopListeners) listener(message.event)
   }
 
   private handleServiceResponse(message: Extract<DesktopServiceMessage, { type: 'response' }>) {
@@ -285,8 +296,12 @@ export class DesktopServiceClient {
 
   private handleMessage(message: DesktopServiceMessage) {
     if (!message || message.type === 'ready') return
-    if (message.type === 'desktop-event' || message.type === 'terminal-event') {
+    if (message.type === 'desktop-event') {
       this.handleServiceEvent(message)
+      return
+    }
+    if (message.type === 'terminal-rpc-response') {
+      this.terminalRpc.write(message.message)
       return
     }
 

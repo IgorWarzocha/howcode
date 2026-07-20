@@ -1,9 +1,11 @@
+import type { TerminalRpcRequest } from '../shared/terminal-rpc.ts'
 import { loadAppSettings } from './app-settings/readers.ts'
 import { getPiModule } from './pi-module.ts'
 import * as piSkills from './pi-skills.ts'
 import * as piThreads from './pi-threads.ts'
 import * as skillCreator from './skill-creator-session.ts'
 import * as terminalManager from './terminal/manager.ts'
+import { createTerminalRpcServer } from './terminal/rpc-server.ts'
 import { getDesktopUserDataPath } from './user-data-path.ts'
 
 type ServiceRequest = {
@@ -23,11 +25,15 @@ type ServiceResponse = {
   stack?: string
 }
 
+type TerminalRpcServiceRequest = {
+  type: 'terminal-rpc-request'
+  message: TerminalRpcRequest
+}
+
 const modules = {
   piThreads,
   piSkills,
   skillCreator,
-  terminalManager,
 } satisfies Record<string, Record<string, unknown>>
 
 type ServiceModuleName = keyof typeof modules
@@ -67,9 +73,9 @@ piThreads.subscribeDesktopEvents((event) => {
   process.send?.({ type: 'desktop-event', event })
 })
 
-terminalManager.subscribeTerminalEvents((event) => {
-  process.send?.({ type: 'terminal-event', event })
-})
+const terminalRpcServerPromise = createTerminalRpcServer(terminalManager, (message) =>
+  process.send?.({ type: 'terminal-rpc-response', message }),
+)
 
 async function handleRequest(message: ServiceRequest): Promise<ServiceResponse> {
   try {
@@ -96,13 +102,20 @@ async function handleRequest(message: ServiceRequest): Promise<ServiceResponse> 
   }
 }
 
-process.on('message', (message: ServiceRequest) => {
-  if (message?.type !== 'request') return
-  void handleRequest(message).then((response) => process.send?.(response))
+process.on('message', (message: ServiceRequest | TerminalRpcServiceRequest) => {
+  if (message?.type === 'terminal-rpc-request') {
+    void terminalRpcServerPromise.then((server) => server.write(message.message))
+    return
+  }
+  if (message?.type === 'request') {
+    void handleRequest(message).then((response) => process.send?.(response))
+  }
 })
 
 async function shutdown() {
+  const terminalRpcServer = await terminalRpcServerPromise
   await Promise.allSettled([
+    terminalRpcServer.dispose(),
     piThreads.disposeDesktopRuntime?.(),
     terminalManager.closeAllTerminals?.(),
   ])
@@ -113,6 +126,6 @@ process.once('disconnect', () => void shutdown())
 process.once('SIGTERM', () => void shutdown())
 process.once('SIGINT', () => void shutdown())
 
-void getServiceDiagnostics().then((diagnostics) => {
+void Promise.all([getServiceDiagnostics(), terminalRpcServerPromise]).then(([diagnostics]) => {
   process.send?.({ type: 'ready', diagnostics })
 })

@@ -43,8 +43,10 @@ import type {
 } from './desktop-contracts'
 import type { SessionTreeList } from './session-tree.ts'
 import type {
+  TerminalCloseRequest,
   TerminalEvent,
   TerminalOpenRequest,
+  TerminalSessionFileStat,
   TerminalSessionSnapshot,
   TerminalStatusSnapshot,
 } from './terminal-contracts'
@@ -163,15 +165,12 @@ export type PiThreadsService = {
 
 export type TerminalService = {
   closeAllTerminals?: () => Promise<void>
-  closeTerminal: (request: {
-    sessionId: string
-    deleteHistory?: boolean | undefined
-  }) => Promise<void>
+  closeTerminal: (request: TerminalCloseRequest) => Promise<void>
   getTerminalStatus: (sessionId: string) => Promise<TerminalStatusSnapshot>
   listTerminals: () => Promise<TerminalSessionSnapshot[]>
   openTerminal: (request: TerminalOpenRequest) => Promise<TerminalSessionSnapshot>
   resizeTerminal: (sessionId: string, cols: number, rows: number) => Promise<void>
-  statSessionFile: (sessionId: string) => Promise<{ mtimeMs: number; size: number } | null>
+  statSessionFile: (sessionId: string) => Promise<TerminalSessionFileStat | null>
   subscribeTerminalEvents: (listener: (event: TerminalEvent) => void) => () => void
   writeTerminal: (sessionId: string, data: string) => Promise<void>
 }

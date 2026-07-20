@@ -1,14 +1,15 @@
-import { renameSync, rmSync } from 'node:fs'
+import { rmSync } from 'node:fs'
 import { stat } from 'node:fs/promises'
-import { getPersistedSessionPath, isLocalSessionPath } from '../../shared/session-paths.ts'
+import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import type {
   TerminalCloseRequest,
   TerminalOpenRequest,
   TerminalSessionSnapshot,
 } from '../../shared/terminal-contracts.ts'
-import { publishExternalThreadUpdate } from '../pi-threads/external-thread-publisher.ts'
-import { listAllSessionsStrict } from '../pi-threads/session-index.ts'
-import { loadThreadSnapshot } from '../pi-threads/thread-loader.ts'
+import {
+  bindWorkspaceTerminalToSession,
+  findUnboundWorkspaceShellTerminal,
+} from './session-binding.ts'
 import { flushSession, getTranscriptPath, nowIso, readTranscript } from './session-history.ts'
 import { makeSessionId } from './session-id.ts'
 import type { TerminalSessionRecord } from './session-record.ts'
@@ -22,10 +23,12 @@ import {
 } from './session-store.ts'
 import { clearSessionBindings, startProcess } from './terminal-process.ts'
 import { hasVisibleTerminalContent } from './terminal-visibility.ts'
-
-const TUI_SESSION_DETECT_DEBOUNCE_MS = 180
-const TUI_SESSION_DETECT_RETRY_MS = 700
-const TUI_SESSION_DETECT_MAX_AGE_MS = 30_000
+import {
+  createTuiSessionDetection,
+  rememberSubmittedPrompts,
+  scheduleTuiSessionDetection,
+  stopTuiSessionDetection,
+} from './tui-session-detection.ts'
 
 function applyTerminalInputToBuffer(buffer: string, data: string) {
   let nextBuffer = buffer
@@ -100,149 +103,6 @@ function isRestartableTerminalStatus(status: TerminalSessionSnapshot['status']) 
   return status === 'exited' || status === 'error'
 }
 
-function shouldDetectTuiSession(record: TerminalSessionRecord) {
-  return (
-    record.snapshot.launchMode === 'pi-session' &&
-    !getPersistedSessionPath(record.snapshot.sessionPath) &&
-    record.tuiSessionDetection !== null &&
-    !record.tuiSessionDetection.resolvedSessionPath
-  )
-}
-
-function createTuiSessionDetection(
-  request: TerminalOpenRequest,
-): TerminalSessionRecord['tuiSessionDetection'] {
-  if ((request.launchMode ?? 'shell') !== 'pi-session') return null
-  if (getPersistedSessionPath(request.sessionPath)) return null
-  return {
-    startedAtMs: Date.now(),
-    submittedPrompts: [],
-    resolvedSessionPath: null,
-    refreshTimer: null,
-    inFlight: false,
-  }
-}
-
-function getThreadUserPrompts(snapshot: Awaited<ReturnType<typeof loadThreadSnapshot>>) {
-  return snapshot.thread.messages.flatMap((message) =>
-    message.role === 'user'
-      ? message.content.flatMap((content) => {
-          const trimmed = content.trim()
-          return trimmed ? [trimmed] : []
-        })
-      : [],
-  )
-}
-
-function hasDetectedPrompt(input: {
-  snapshot: Awaited<ReturnType<typeof loadThreadSnapshot>>
-  submittedPrompts: string[]
-}) {
-  if (input.submittedPrompts.length === 0) return false
-  const userPrompts = new Set(getThreadUserPrompts(input.snapshot))
-  return input.submittedPrompts.some((prompt) => userPrompts.has(prompt))
-}
-
-function shouldKeepDetecting(detection: NonNullable<TerminalSessionRecord['tuiSessionDetection']>) {
-  return Date.now() - detection.startedAtMs < TUI_SESSION_DETECT_MAX_AGE_MS
-}
-
-function rememberSubmittedPrompts(record: TerminalSessionRecord, submittedLines: string[]) {
-  const detection = record.tuiSessionDetection
-  if (!detection) return
-  const submittedPromptSet = new Set(detection.submittedPrompts)
-
-  for (const line of submittedLines) {
-    const prompt = line.trim()
-    if (prompt && prompt !== 'clear' && !submittedPromptSet.has(prompt)) {
-      submittedPromptSet.add(prompt)
-      detection.submittedPrompts.push(prompt)
-    }
-  }
-}
-
-async function findStartedTuiSession(record: TerminalSessionRecord) {
-  const detection = record.tuiSessionDetection
-  if (!detection) return null
-  const { sessions } = await listAllSessionsStrict()
-  const candidates = sessions.filter(
-    (session) =>
-      (session.cwd || record.snapshot.projectId) === record.snapshot.projectId &&
-      session.created.getTime() >= detection.startedAtMs - 1_000,
-  )
-
-  for (const session of candidates) {
-    const snapshot = await loadThreadSnapshot(session.path)
-    if (hasDetectedPrompt({ snapshot, submittedPrompts: detection.submittedPrompts })) {
-      return { session, snapshot }
-    }
-  }
-
-  return null
-}
-
-async function bindDetectedTuiSession(record: TerminalSessionRecord) {
-  const detection = record.tuiSessionDetection
-  if (!detection || detection.inFlight || detection.resolvedSessionPath) return
-  detection.inFlight = true
-
-  try {
-    const detected = await findStartedTuiSession(record)
-    if (!detected) {
-      if (shouldKeepDetecting(detection)) {
-        scheduleTuiSessionDetection(record, TUI_SESSION_DETECT_RETRY_MS)
-      }
-      return
-    }
-    const { session, snapshot } = detected
-
-    const replacesSessionPath = isLocalSessionPath(record.snapshot.sessionPath)
-      ? record.snapshot.sessionPath
-      : null
-    detection.resolvedSessionPath = session.path
-    record.snapshot = {
-      ...record.snapshot,
-      sessionPath: session.path,
-      updatedAt: nowIso(),
-    }
-    emitTerminalEvent({
-      type: 'updated',
-      sessionId: record.snapshot.sessionId,
-      snapshot: record.snapshot,
-      createdAt: nowIso(),
-    })
-    await publishExternalThreadUpdate({
-      projectId: snapshot.projectId,
-      threadId: snapshot.threadId,
-      sessionPath: session.path,
-      replacesSessionPath,
-      thread: snapshot.thread,
-      lastModifiedMs: session.modified.getTime(),
-    })
-  } catch (error) {
-    console.warn('Failed to detect Pi TUI session started from takeover.', error)
-    if (shouldKeepDetecting(detection)) {
-      scheduleTuiSessionDetection(record, TUI_SESSION_DETECT_RETRY_MS)
-    }
-  } finally {
-    detection.inFlight = false
-  }
-}
-
-function scheduleTuiSessionDetection(
-  record: TerminalSessionRecord,
-  delayMs = TUI_SESSION_DETECT_DEBOUNCE_MS,
-) {
-  if (!shouldDetectTuiSession(record)) return
-  const detection = record.tuiSessionDetection
-  if (!detection) return
-  if (detection.refreshTimer) clearTimeout(detection.refreshTimer)
-  detection.refreshTimer = setTimeout(() => {
-    detection.refreshTimer = null
-    void bindDetectedTuiSession(record)
-  }, delayMs)
-}
-
 function ensureProcessStarted(record: TerminalSessionRecord, reason: 'started' | 'restarted') {
   if (record.process) {
     return Promise.resolve()
@@ -256,70 +116,6 @@ function ensureProcessStarted(record: TerminalSessionRecord, reason: 'started' |
     record.restartPromise = null
   })
   return record.restartPromise
-}
-
-function findUnboundWorkspaceShellTerminal(request: TerminalOpenRequest) {
-  if (!request.sessionPath) {
-    return null
-  }
-
-  const cwd = request.cwd ?? request.projectId
-  return (
-    listTerminalSessions().find(
-      (record) =>
-        record.snapshot.projectId === request.projectId &&
-        record.snapshot.sessionPath === null &&
-        record.snapshot.cwd === cwd &&
-        record.snapshot.launchMode === (request.launchMode ?? 'shell'),
-    ) ?? null
-  )
-}
-
-function moveTranscript(fromPath: string, toPath: string) {
-  if (fromPath === toPath) {
-    return true
-  }
-
-  try {
-    renameSync(fromPath, toPath)
-    return true
-  } catch {
-    // The transcript may not have been flushed yet, or the target can already exist from a
-    // previous bound terminal. Keeping the live in-memory history is more important than failing
-    // the bind operation for best-effort persistence.
-    return false
-  }
-}
-
-function bindWorkspaceTerminalToSession(input: {
-  record: TerminalSessionRecord
-  request: TerminalOpenRequest
-  sessionId: string
-}) {
-  const previousSessionId = input.record.snapshot.sessionId
-  const nextTranscriptPath = getTranscriptPath(input.sessionId)
-
-  deleteTerminalSession(previousSessionId)
-  if (moveTranscript(input.record.transcriptPath, nextTranscriptPath)) {
-    input.record.transcriptPath = nextTranscriptPath
-  }
-  input.record.snapshot = {
-    ...input.record.snapshot,
-    sessionId: input.sessionId,
-    sessionPath: input.request.sessionPath ?? null,
-    cols: input.request.cols,
-    rows: input.request.rows,
-    updatedAt: nowIso(),
-  }
-  setTerminalSession(input.sessionId, input.record)
-  input.record.process?.resize(input.request.cols, input.request.rows)
-  emitTerminalEvent({
-    type: 'updated',
-    sessionId: input.sessionId,
-    snapshot: input.record.snapshot,
-    createdAt: nowIso(),
-  })
-  return input.record.snapshot
 }
 
 export async function openTerminal(request: TerminalOpenRequest): Promise<TerminalSessionSnapshot> {
@@ -404,7 +200,7 @@ export async function openTerminal(request: TerminalOpenRequest): Promise<Termin
   }
 
   setTerminalSession(sessionId, record)
-  scheduleTuiSessionDetection(record, TUI_SESSION_DETECT_RETRY_MS)
+  scheduleTuiSessionDetection(record, 'retry')
   void ensureProcessStarted(record, 'started')
   return snapshot
 }
@@ -496,10 +292,7 @@ export async function closeTerminal(request: TerminalCloseRequest) {
   }
 
   const restartPromise = record.restartPromise
-  if (record.tuiSessionDetection?.refreshTimer) {
-    clearTimeout(record.tuiSessionDetection.refreshTimer)
-    record.tuiSessionDetection.refreshTimer = null
-  }
+  stopTuiSessionDetection(record)
   clearSessionBindings(record)
   record.process?.kill()
   record.process = null

@@ -4,7 +4,6 @@ import type {
   PiSkillsService,
   PiThreadsService,
   SkillCreatorService,
-  TerminalService,
 } from '../../../../shared/desktop-service-contracts'
 import { getDesktopWorkingDirectory } from '../../../../shared/desktop-working-directory'
 import { DesktopServiceClient } from '../../../desktop-host/desktop-service-client'
@@ -42,8 +41,6 @@ function proxyModule<T extends Record<string, unknown>>(
       get(_target, property) {
         if (property === 'subscribeDesktopEvents')
           return service.subscribeDesktopEvents.bind(service)
-        if (property === 'subscribeTerminalEvents')
-          return service.subscribeTerminalEvents.bind(service)
         if (property === 'disposeDesktopRuntime') return service.dispose.bind(service)
         return (...args: unknown[]) => service.invokeDynamic(moduleName, String(property), args)
       },
@@ -65,6 +62,6 @@ export function createDesktopServiceRuntime(): DesktopServiceRuntime {
     piThreads: proxyModule<PiThreadsService>(service, 'piThreads'),
     piSkills: proxyModule<PiSkillsService>(service, 'piSkills'),
     skillCreator: proxyModule<SkillCreatorService>(service, 'skillCreator'),
-    terminalManager: proxyModule<TerminalService>(service, 'terminalManager'),
+    terminalManager: service.terminalManager,
   }
 }

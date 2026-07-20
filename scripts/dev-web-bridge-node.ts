@@ -69,8 +69,6 @@ function proxyServiceModule<T extends Record<string, unknown>>(
       get(_target, property) {
         if (property === 'subscribeDesktopEvents')
           return desktopService.subscribeDesktopEvents.bind(desktopService)
-        if (property === 'subscribeTerminalEvents')
-          return desktopService.subscribeTerminalEvents.bind(desktopService)
         return (...args: unknown[]) =>
           desktopService.invokeDynamic(moduleName, String(property), args)
       },
@@ -81,7 +79,7 @@ function proxyServiceModule<T extends Record<string, unknown>>(
 const piThreads = proxyServiceModule<PiThreadsService>('piThreads')
 const piSkills = proxyServiceModule<PiSkillsService>('piSkills')
 const skillCreator = proxyServiceModule<SkillCreatorService>('skillCreator')
-const terminalManager = proxyServiceModule<TerminalService>('terminalManager')
+const terminalManager: TerminalService = desktopService.terminalManager
 
 function didDesktopActionMutate(result: DesktopActionResultData | null | undefined) {
   return Boolean(
