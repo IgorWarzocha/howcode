@@ -182,4 +182,64 @@ describe('Live runtime registry core', () => {
       }).pipe(Effect.scoped),
     )
   })
+
+  it('keeps the owned runtime when new-session creation collides on a key', async () => {
+    await Effect.runPromise(
+      Effect.gen(function* () {
+        const createCount = yield* Ref.make(0)
+        const releaseCount = yield* Ref.make(0)
+        const firstRuntime: FakeRuntime = {
+          id: 1,
+          key: '/sessions/collision.jsonl',
+          cwd: '/workspace',
+          working: false,
+          pendingDialog: false,
+          branchName: null,
+        }
+        const duplicateRuntime: FakeRuntime = { ...firstRuntime, id: 2 }
+        const adapters: RuntimeRegistryAdapters<FakeRuntime> = {
+          createExisting: () =>
+            Effect.fail(
+              new RuntimeRegistryError({
+                operation: 'createExisting',
+                message: 'Not used by this test.',
+              }),
+            ),
+          createNew: () =>
+            Ref.getAndUpdate(createCount, (count) => count + 1).pipe(
+              Effect.map((count) => (count === 0 ? firstRuntime : duplicateRuntime)),
+            ),
+          runtimeKey: (runtime) => runtime.key,
+          runtimeCwd: (runtime) => runtime.cwd,
+          setBranchName: (runtime, branchName) => {
+            runtime.branchName = branchName
+          },
+          isWorking: (runtime) => runtime.working,
+          hasPendingDialog: (runtime) => runtime.pendingDialog,
+          reload: () => Effect.void,
+          abort: () => Effect.void,
+          release: () => Ref.update(releaseCount, (count) => count + 1),
+        }
+        const registry = yield* makeRuntimeRegistry(adapters, { idleTimeout: '15 minutes' })
+        const first = yield* registry.createNew({
+          cwd: '/workspace',
+          sessionDir: '/workspace',
+          branchName: 'first',
+          chatGroupId: null,
+        })
+        const second = yield* registry.createNew({
+          cwd: '/workspace',
+          sessionDir: '/workspace',
+          branchName: 'second',
+          chatGroupId: null,
+        })
+
+        expect(first).toBe(firstRuntime)
+        expect(second).toBe(firstRuntime)
+        expect(firstRuntime.branchName).toBe('second')
+        expect(yield* Ref.get(releaseCount)).toBe(1)
+        expect(yield* registry.getCached(firstRuntime.key)).toBe(firstRuntime)
+      }).pipe(Effect.scoped),
+    )
+  })
 })

@@ -109,22 +109,30 @@ export const makeRuntimeRegistry = <Runtime>(
     })
 
     const createNew = Effect.fn('RuntimeRegistry.createNew')(function* (input: NewRuntimeInput) {
-      const runtime = yield* adapters.createNew(input)
-      adapters.setBranchName(runtime, input.branchName)
-      const runtimeKey = adapters.runtimeKey(runtime)
-      if (!runtimeKey) return runtime
+      const createdRuntime = yield* adapters.createNew(input)
+      adapters.setBranchName(createdRuntime, input.branchName)
+      const runtimeKey = adapters.runtimeKey(createdRuntime)
+      if (!runtimeKey) return createdRuntime
 
-      yield* state.withLifecycleLock(
+      return yield* state.withLifecycleLock(
         runtimeKey,
         Effect.gen(function* () {
           const existing = yield* state.get(runtimeKey)
-          if (existing) yield* detachAndClose(runtimeKey, existing)
+          if (existing) {
+            const existingRuntime = yield* Effect.option(Deferred.await(existing.runtime))
+            if (Option.isSome(existingRuntime)) {
+              adapters.setBranchName(existingRuntime.value, input.branchName)
+              yield* adapters.release(createdRuntime)
+              return existingRuntime.value
+            }
+            yield* detachAndClose(runtimeKey, existing)
+          }
           const record = yield* reserveRecord(runtimeKey, input.sessionDir)
-          yield* Scope.addFinalizer(record.scope, adapters.release(runtime))
-          yield* Deferred.succeed(record.runtime, runtime)
+          yield* Scope.addFinalizer(record.scope, adapters.release(createdRuntime))
+          yield* Deferred.succeed(record.runtime, createdRuntime)
+          return createdRuntime
         }),
       )
-      return runtime
     })
 
     const reloadUnlocked = Effect.fn('RuntimeRegistry.reloadUnlocked')(function* (

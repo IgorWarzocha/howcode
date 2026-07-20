@@ -51,17 +51,24 @@ export const makeRuntimeIdleScheduler = <Runtime>(input: {
     })
 
     const schedule = Effect.fn('RuntimeIdleScheduler.schedule')(function* (runtimeKey: string) {
-      const record = yield* input.state.get(runtimeKey)
-      if (!record) return
-      const worker = input.state.withLifecycleLock(runtimeKey, inspect(runtimeKey, record.id)).pipe(
-        Effect.repeat({
-          schedule: Schedule.spaced(input.idleTimeout),
-          while: (retry) => retry,
+      yield* input.state.withLifecycleLock(
+        runtimeKey,
+        Effect.gen(function* () {
+          const record = yield* input.state.get(runtimeKey)
+          if (!record) return
+          const worker = input.state
+            .withLifecycleLock(runtimeKey, inspect(runtimeKey, record.id))
+            .pipe(
+              Effect.repeat({
+                schedule: Schedule.spaced(input.idleTimeout),
+                while: (retry) => retry,
+              }),
+              Effect.delay(input.idleTimeout),
+              Effect.asVoid,
+            )
+          yield* FiberMap.run(fibers, runtimeKey, worker, { startImmediately: true })
         }),
-        Effect.delay(input.idleTimeout),
-        Effect.asVoid,
       )
-      yield* FiberMap.run(fibers, runtimeKey, worker, { startImmediately: true })
     })
 
     const suspend = Effect.fn('RuntimeIdleScheduler.suspend')(function* (runtimeKey: string) {
