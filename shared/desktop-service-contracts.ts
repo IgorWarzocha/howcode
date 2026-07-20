@@ -36,7 +36,6 @@ import type {
   ProjectUsageSummary,
   ReactArtifactCompileResult,
   ShellState,
-  SkillCreatorSessionState,
   Thread,
   ThreadData,
   ThreadSearchResult,
@@ -197,23 +196,8 @@ export type PiSkillsService = {
   }) => Promise<PiSkillMutationResult>
 }
 
-export type SkillCreatorService = {
-  startSkillCreatorSession: (request: {
-    prompt: string
-    local?: boolean | undefined
-    projectPath?: string | null | undefined
-    chat?: boolean | undefined
-  }) => Promise<SkillCreatorSessionState>
-  continueSkillCreatorSession: (request: {
-    sessionId: string
-    prompt: string
-  }) => Promise<SkillCreatorSessionState>
-  closeSkillCreatorSession: (request: { sessionId: string }) => Promise<{ ok: boolean }>
-}
-
 export type DesktopServiceRuntime = {
   piThreads: PiThreadsService
   piSkills: PiSkillsService
-  skillCreator: SkillCreatorService
   terminalManager: TerminalService
 }

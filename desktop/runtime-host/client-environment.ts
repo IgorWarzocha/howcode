@@ -123,5 +123,7 @@ export function getElectronResourcesPath() {
 
 export function getBundledSkillsPath() {
   const resourcesPath = getElectronResourcesPath()
-  return resourcesPath ? path.join(resourcesPath, 'resources', 'skills') : ''
+  return resourcesPath
+    ? path.join(resourcesPath, 'resources', 'skills')
+    : path.join(process.cwd(), 'desktop', 'resources', 'skills')
 }

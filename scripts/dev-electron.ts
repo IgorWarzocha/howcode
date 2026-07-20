@@ -16,7 +16,6 @@ const watchedFiles = [
   path.join(projectRoot, 'build', 'desktop', 'pi-threads.mjs'),
   path.join(projectRoot, 'build', 'desktop', 'pi-skills.mjs'),
   path.join(projectRoot, 'build', 'desktop', 'service-host.mjs'),
-  path.join(projectRoot, 'build', 'desktop', 'skill-creator-session.mjs'),
   path.join(projectRoot, 'build', 'desktop', 'worker.mjs'),
   path.join(projectRoot, 'build', 'desktop', 'terminal-manager.mjs'),
   path.join(projectRoot, 'build', 'dev-server.json'),

@@ -8,7 +8,7 @@ import {
   sectionHeadingClass,
   viewCloseButtonClass,
 } from '../../ui/classes'
-import { skillsActionColumnClass, skillsCreatorControlRowClass } from '../../ui/screen-classes'
+import { skillsActionColumnClass, skillsActionControlRowClass } from '../../ui/screen-classes'
 import { cn } from '../../utils/cn'
 import type { InstallScope, ManualSourceKind } from '../types'
 
@@ -53,7 +53,7 @@ export function InstallExtensionsSection({
       <div className={sectionHeadingClass}>Install</div>
 
       <form
-        className={skillsCreatorControlRowClass}
+        className={skillsActionControlRowClass}
         onSubmit={(event) => {
           event.preventDefault()
           void onSubmit()

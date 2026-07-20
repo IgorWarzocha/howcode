@@ -13,7 +13,7 @@ export function getModelSettingValue(selection: ModelSelection | null) {
 }
 
 export function buildModelSelectionPayload(
-  key: 'chatModel' | 'codeModel' | 'gitCommitMessageModel' | 'skillCreatorModel',
+  key: 'chatModel' | 'codeModel' | 'gitCommitMessageModel',
   id: string,
 ): DesktopSettingsUpdatePayload {
   if (id === 'composer-default') {

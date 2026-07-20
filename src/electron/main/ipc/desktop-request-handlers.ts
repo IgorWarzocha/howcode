@@ -5,7 +5,6 @@ import { createAppUpdateHandlers } from './request-handlers/app-update'
 import { createPiPackagesHandlers } from './request-handlers/pi-packages'
 import { createPiSkillsHandlers } from './request-handlers/pi-skills'
 import { createPiThreadsHandlers } from './request-handlers/pi-threads'
-import { createSkillCreatorHandlers } from './request-handlers/skill-creator'
 import { createSystemHandlers } from './request-handlers/system'
 import { createTerminalHandlers } from './request-handlers/terminal'
 
@@ -19,7 +18,6 @@ export function createDesktopRequestHandlers(
     ...createPiThreadsHandlers(runtime.piThreads, onSettingsChanged),
     ...createPiPackagesHandlers(runtime.piThreads),
     ...createPiSkillsHandlers(runtime.piSkills),
-    ...createSkillCreatorHandlers(runtime.skillCreator),
     ...createTerminalHandlers(runtime.terminalManager),
     ...createSystemHandlers(),
   }

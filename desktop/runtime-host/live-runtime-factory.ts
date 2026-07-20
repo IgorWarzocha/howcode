@@ -76,6 +76,10 @@ export async function createLiveRuntime(
   const sessionDir = options.sessionDir ?? settingsManager.getSessionDir() ?? undefined
   const resourceLoader = await createIsolatedRuntimeResourceLoader({
     DefaultResourceLoader,
+    // biome-ignore lint/complexity/useLiteralKeys: process.env is typed with an index signature.
+    additionalSkillPaths: [process.env['HOWCODE_BUNDLED_SKILLS_PATH']?.trim()].filter(
+      (skillPath): skillPath is string => Boolean(skillPath),
+    ),
     cwd: options.cwd,
     agentDir,
     settingsCwd: options.settingsCwd,

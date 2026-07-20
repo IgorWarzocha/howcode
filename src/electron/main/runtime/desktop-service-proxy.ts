@@ -3,7 +3,6 @@ import type {
   DesktopServiceRuntime,
   PiSkillsService,
   PiThreadsService,
-  SkillCreatorService,
 } from '../../../../shared/desktop-service-contracts'
 import { getDesktopWorkingDirectory } from '../../../../shared/desktop-working-directory'
 import { DesktopServiceClient } from '../../../desktop-host/desktop-service-client'
@@ -24,11 +23,6 @@ function getElectronResourcesPath() {
     processWithResourcesPath.resourcesPath ||
     ''
   )
-}
-
-function getBundledSkillsPath() {
-  const resourcesPath = getElectronResourcesPath()
-  return resourcesPath ? path.join(resourcesPath, 'resources', 'skills') : ''
 }
 
 function proxyModule<T extends Record<string, unknown>>(
@@ -55,13 +49,11 @@ export function createDesktopServiceRuntime(): DesktopServiceRuntime {
     cwd: getDesktopWorkingDirectory(),
     env: {
       HOWCODE_ELECTRON_RESOURCES_PATH: getElectronResourcesPath(),
-      HOWCODE_BUNDLED_SKILLS_PATH: getBundledSkillsPath(),
     },
   })
   return {
     piThreads: proxyModule<PiThreadsService>(service, 'piThreads'),
     piSkills: proxyModule<PiSkillsService>(service, 'piSkills'),
-    skillCreator: proxyModule<SkillCreatorService>(service, 'skillCreator'),
     terminalManager: service.terminalManager,
   }
 }

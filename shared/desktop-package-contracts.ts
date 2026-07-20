@@ -79,16 +79,3 @@ export type PiSkillMutationResult = {
   normalizedSource: string
   configuredSkills: PiConfiguredSkill[]
 }
-
-export type SkillCreatorSessionMessage = {
-  id: string
-  role: 'assistant' | 'user'
-  content: string
-}
-
-export type SkillCreatorSessionState = {
-  sessionId: string
-  messages: SkillCreatorSessionMessage[]
-  latestResponse: string | null
-  createdSkillPath: string | null
-}

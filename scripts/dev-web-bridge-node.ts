@@ -16,7 +16,6 @@ import type {
 import type {
   PiSkillsService,
   PiThreadsService,
-  SkillCreatorService,
   TerminalService,
 } from '../shared/desktop-service-contracts'
 import { getDesktopWorkingDirectory } from '../shared/desktop-working-directory'
@@ -78,7 +77,6 @@ function proxyServiceModule<T extends Record<string, unknown>>(
 
 const piThreads = proxyServiceModule<PiThreadsService>('piThreads')
 const piSkills = proxyServiceModule<PiSkillsService>('piSkills')
-const skillCreator = proxyServiceModule<SkillCreatorService>('skillCreator')
 const terminalManager: TerminalService = desktopService.terminalManager
 
 function didDesktopActionMutate(result: DesktopActionResultData | null | undefined) {
@@ -211,9 +209,6 @@ const handlers: DesktopRequestHandlerMap = {
   getConfiguredPiSkills: (request) => piSkills.listConfiguredPiSkills(request),
   installPiSkill: (request) => piSkills.installPiSkill(request),
   removePiSkill: (request) => piSkills.removePiSkill(request),
-  startSkillCreatorSession: (request) => skillCreator.startSkillCreatorSession(request),
-  continueSkillCreatorSession: (request) => skillCreator.continueSkillCreatorSession(request),
-  closeSkillCreatorSession: (request) => skillCreator.closeSkillCreatorSession(request),
   pickComposerAttachments: () => [],
   listProjectDirectoryEntries,
   readClipboardSnapshot: () => ({ formats: [], valuesByFormat: {} }),

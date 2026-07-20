@@ -36,11 +36,6 @@ export {
   loadPiSettingsInHost as loadPiSettings,
   updatePiSettingInHost as updatePiSetting,
 } from './settings-service.ts'
-export {
-  closeSkillCreatorSession,
-  continueSkillCreatorSession,
-  startSkillCreatorSession,
-} from './skill-creator-service.ts'
 export { loadPiThemeStateInHost as loadPiThemeState } from './theme-service.ts'
 export { loadThreadPreviewAtEntry } from './thread-preview-service.ts'
 export {

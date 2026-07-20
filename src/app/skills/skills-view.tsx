@@ -7,7 +7,6 @@ import { skillsViewShellClass } from '../ui/screen-classes'
 import { cn } from '../utils/cn'
 import { BrowseSkillsSection } from './components/browse-skills-section'
 import { InstalledSkillsSection } from './components/installed-skills-section'
-import { SkillCreatorSection } from './components/skill-creator-section'
 import { useSkillsController } from './hooks/useSkillsController'
 import type { InstallScope, SkillsViewProps } from './types'
 import { openExternalUrl } from './utils'
@@ -145,15 +144,6 @@ export function SkillsView({
           {controller.actionError}
         </div>
       ) : null}
-
-      <SkillCreatorSection
-        installScope={controller.installScope}
-        projectPath={projectPath}
-        skillCreatorDetected={controller.skillCreatorDetected}
-        onRefreshSkillCreatorDetection={() => controller.configuredSkillsQuery.refetch()}
-        onInvalidateConfiguredSkillsCaches={() => controller.invalidateConfiguredSkillsCaches()}
-        onSetActionError={controller.setActionError}
-      />
 
       <DisclosureSection
         title="Installed"

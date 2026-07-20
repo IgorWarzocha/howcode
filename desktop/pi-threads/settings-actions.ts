@@ -52,8 +52,6 @@ import {
   setProjectDeletionMode,
   setProjectImportState,
   setShowDictationButton,
-  setSkillCreatorModelSelection,
-  setSkillCreatorThinkingLevel,
   setUseAgentsSkillsPaths,
 } from '../app-settings/writers.ts'
 import { restartRuntimeHostsForEnvironmentChange } from '../runtime-host/client-bridge.ts'
@@ -212,12 +210,8 @@ const settingsUpdateHandlers = {
   codeModel: (payload) => setResettableModelSelection(payload, setCodeModelSelection),
   chatThinkingLevel: (payload) => setResettableThinkingLevel(payload, setChatThinkingLevel),
   codeThinkingLevel: (payload) => setResettableThinkingLevel(payload, setCodeThinkingLevel),
-  skillCreatorModel: (payload) =>
-    setResettableModelSelection(payload, setSkillCreatorModelSelection),
   gitCommitMessageThinkingLevel: (payload) =>
     setOptionalThinkingLevel(payload, setGitCommitMessageThinkingLevel),
-  skillCreatorThinkingLevel: (payload) =>
-    setOptionalThinkingLevel(payload, setSkillCreatorThinkingLevel),
   gitCommitMessageModel: (payload) =>
     setResettableModelSelection(payload, setGitCommitMessageModelSelection),
 } satisfies Record<string, SettingsUpdateHandler>

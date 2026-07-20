@@ -332,10 +332,6 @@ export async function installDevWebDesktopBridge() {
     getConfiguredPiSkills: (request = {}) => invokeRequest('getConfiguredPiSkills', request),
     installPiSkill: (request) => invokeRequest('installPiSkill', request),
     removePiSkill: (request) => invokeRequest('removePiSkill', request),
-    startSkillCreatorSession: (request) => invokeRequest('startSkillCreatorSession', request),
-    continueSkillCreatorSession: (request) => invokeRequest('continueSkillCreatorSession', request),
-    closeSkillCreatorSession: (sessionId: string) =>
-      invokeRequest('closeSkillCreatorSession', { sessionId }),
     pickComposerAttachments: () => Promise.resolve([] satisfies ComposerAttachment[]),
     listProjectDirectoryEntries: (request = {}) =>
       invokeRequest('listProjectDirectoryEntries', request),

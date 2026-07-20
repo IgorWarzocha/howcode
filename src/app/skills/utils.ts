@@ -8,13 +8,6 @@ const compactNumberFormatter = new Intl.NumberFormat('en', {
   maximumFractionDigits: 1,
 })
 const pathSeparatorPattern = /[\\/]+/
-const nonAlphanumericRunPattern = /[^a-z0-9]+/g
-const whitespaceRunPattern = /\s+/
-const skillCreatorPatterns = [
-  /\bskill(?:s)?\s*(?:creator|create|creation|maker|making|author|authoring|builder|build|craft(?:er)?|smith)\b/i,
-  /\b(?:creator|create|creation|maker|making|author|authoring|builder|build|craft(?:er)?|smith)\s*skill(?:s)?\b/i,
-  /\b(?:create|build|author|make|craft)\s+skills?\b/i,
-]
 
 export { getActionError }
 
@@ -58,53 +51,4 @@ export function getInstalledSkillSlugs(skills: PiConfiguredSkill[]) {
       return slug ? [slug] : []
     }),
   )
-}
-
-function getSkillCreatorDetectionText(skill: PiConfiguredSkill) {
-  return [
-    skill.displayName,
-    skill.description,
-    skill.identityKey,
-    skill.source,
-    skill.installedPath,
-    skill.skillFilePath,
-    skill.sourceRepo,
-    skill.sourceUrl,
-  ]
-    .filter((value): value is string => Boolean(value))
-    .join(' ')
-    .toLowerCase()
-    .replace(nonAlphanumericRunPattern, ' ')
-    .trim()
-}
-
-export function isSkillCreatorCandidate(skill: PiConfiguredSkill) {
-  const normalized = getSkillCreatorDetectionText(skill)
-
-  if (!normalized) {
-    return false
-  }
-
-  if (skillCreatorPatterns.some((pattern) => pattern.test(normalized))) {
-    return true
-  }
-
-  const tokens = new Set(normalized.split(whitespaceRunPattern).filter(Boolean))
-  const hasSkillToken = tokens.has('skill') || tokens.has('skills')
-  const hasCreatorToken = [
-    'create',
-    'creator',
-    'creation',
-    'maker',
-    'making',
-    'author',
-    'authoring',
-    'builder',
-    'build',
-    'craft',
-    'crafter',
-    'smith',
-  ].some((token) => tokens.has(token))
-
-  return hasSkillToken && hasCreatorToken
 }

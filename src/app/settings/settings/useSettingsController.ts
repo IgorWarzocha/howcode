@@ -72,7 +72,6 @@ export function useSettingsController({
   const setCustomPiDirectoryDraft = (value: string) =>
     setCustomPiDirectoryEdit({ source: customPiDirectory, value })
   const [gitCommitMenuOpen, setGitCommitMenuOpen] = useState(false)
-  const [skillCreatorMenuOpen, setSkillCreatorMenuOpen] = useState(false)
   const [favoriteFolderDraft, setFavoriteFolderDraft] = useState('')
   const [importBusy, setImportBusy] = useState(false)
   const [importStatusMessage, setImportStatusMessage] = useState<string | null>(null)
@@ -82,9 +81,6 @@ export function useSettingsController({
   const gitCommitButtonRef = useRef<HTMLButtonElement>(null)
   const gitCommitPanelRef = useRef<HTMLDivElement>(null)
   const gitCommitMenuPresent = useAnimatedPresence(gitCommitMenuOpen)
-  const skillCreatorButtonRef = useRef<HTMLButtonElement>(null)
-  const skillCreatorPanelRef = useRef<HTMLDivElement>(null)
-  const skillCreatorMenuPresent = useAnimatedPresence(skillCreatorMenuOpen)
 
   const dictation = useSettingsDictationController({ appSettings, onAction })
   const desktopBridgeAvailable = useDesktopBridgeAvailable()
@@ -93,20 +89,10 @@ export function useSettingsController({
     setGitCommitMenuOpen(false)
   }
 
-  const closeSkillCreatorMenu = () => {
-    setSkillCreatorMenuOpen(false)
-  }
-
   useDismissibleLayer({
     open: gitCommitMenuOpen,
     onDismiss: closeGitCommitMenu,
     refs: [gitCommitButtonRef, gitCommitPanelRef],
-  })
-
-  useDismissibleLayer({
-    open: skillCreatorMenuOpen,
-    onDismiss: closeSkillCreatorMenu,
-    refs: [skillCreatorButtonRef, skillCreatorPanelRef],
   })
 
   const updateFavoriteFolders = (nextFavoriteFolders: string[]) => {
@@ -150,7 +136,7 @@ export function useSettingsController({
   }
 
   const selectModel = (
-    key: 'chatModel' | 'codeModel' | 'gitCommitMessageModel' | 'skillCreatorModel',
+    key: 'chatModel' | 'codeModel' | 'gitCommitMessageModel',
     id: string,
     closeMenu: () => void,
   ) => {
@@ -275,19 +261,10 @@ export function useSettingsController({
       }),
     selectGitCommitModel: (id: string) =>
       selectModel('gitCommitMessageModel', id, closeGitCommitMenu),
-    selectSkillCreatorModel: (id: string) =>
-      selectModel('skillCreatorModel', id, closeSkillCreatorMenu),
     setFavoriteFolderDraft,
     setCustomPiDirectoryDraft,
     setGitCommitMenuOpen,
     setPreferredProjectLocationDraft,
-    setSkillCreatorMenuOpen,
-    skillCreatorButtonRef,
-    skillCreatorCurrentValue: getModelSettingValue(appSettings.skillCreatorModel),
-    skillCreatorMenuId: 'settings-skill-creator-model-menu',
-    skillCreatorMenuOpen,
-    skillCreatorMenuPresent,
-    skillCreatorPanelRef,
     toggleInitializeGitOnProjectCreate: () =>
       void onAction('settings.update', {
         key: 'initializeGitOnProjectCreate',

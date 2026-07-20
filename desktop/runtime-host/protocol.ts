@@ -15,7 +15,6 @@ import type {
   PiSettings,
   PiSkillMutationResult,
   PiThemeState,
-  SkillCreatorSessionState,
   ThreadData,
   ThreadSearchResult,
 } from '../../shared/desktop-contracts.ts'
@@ -97,14 +96,6 @@ export type RuntimeHostRequestMap = {
   }
   searchThreadSnapshot: { sessionPath: string; query: string }
   renameThreadSession: { sessionPath: string; name: string }
-  startSkillCreatorSession: {
-    prompt: string
-    local?: boolean | undefined
-    projectPath?: string | undefined | null | undefined
-    chat?: boolean | undefined
-  }
-  continueSkillCreatorSession: { sessionId: string; prompt: string }
-  closeSkillCreatorSession: { sessionId: string }
   generateGitCommitMessage: {
     request: ComposerStateRequest
     context: CommitMessageContext
@@ -190,9 +181,6 @@ export type RuntimeHostResponseMap = {
   }
   searchThreadSnapshot: ThreadSearchResult
   renameThreadSession: { projectId: string; threadId: string; title: string }
-  startSkillCreatorSession: SkillCreatorSessionState
-  continueSkillCreatorSession: SkillCreatorSessionState
-  closeSkillCreatorSession: { ok: boolean }
   generateGitCommitMessage: string | null
   setComposerModel: { ok: true }
   setComposerThinkingLevel: { ok: true }

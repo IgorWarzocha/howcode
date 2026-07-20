@@ -265,24 +265,5 @@ export function buildModelSettingsDescriptors({
             }),
         ),
     },
-    {
-      id: 'models.skill-creator',
-      category: 'models',
-      title: 'Skill creator',
-      description: 'Default settings for the built-in skill creator.',
-      keywords: 'skill creator model provider reasoning thinking',
-      render: () =>
-        renderModelWorkflowControls(
-          'skill-creator-models',
-          appSettings.skillCreatorModel,
-          appSettings.skillCreatorThinkingLevel,
-          controller.selectSkillCreatorModel,
-          (value) =>
-            void onAction('settings.update', {
-              key: 'skillCreatorThinkingLevel',
-              value,
-            }),
-        ),
-    },
   ]
 }

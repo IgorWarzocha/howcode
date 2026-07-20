@@ -115,21 +115,6 @@ function createPackageAndSkillApi() {
   }
 }
 
-function createSkillCreatorApi() {
-  return {
-    startSkillCreatorSession: (request: {
-      prompt: string
-      local?: boolean
-      projectPath?: string | null
-      chat?: boolean
-    }) => invokeRequest('startSkillCreatorSession', request),
-    continueSkillCreatorSession: (request: { sessionId: string; prompt: string }) =>
-      invokeRequest('continueSkillCreatorSession', request),
-    closeSkillCreatorSession: (sessionId: string) =>
-      invokeRequest('closeSkillCreatorSession', { sessionId }),
-  }
-}
-
 function createComposerAndClipboardApi() {
   return {
     clearClipboardImages: () => invokeRequest('clearClipboardImages', {}),
@@ -252,7 +237,6 @@ export function createDesktopApi() {
     ...createAppUpdateApi(),
     ...createProjectApi(),
     ...createPackageAndSkillApi(),
-    ...createSkillCreatorApi(),
     ...createComposerAndClipboardApi(),
     ...createDictationApi(),
     ...createArtifactAndThreadApi(),

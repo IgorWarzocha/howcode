@@ -8,12 +8,7 @@ import {
   removePiSkillQuery,
 } from '../../query/desktop-query'
 import type { InstallScope, PendingAction } from '../types'
-import {
-  getActionError,
-  getInstalledSkillSlugs,
-  isDesktopSkillsAvailable,
-  isSkillCreatorCandidate,
-} from '../utils'
+import { getActionError, getInstalledSkillSlugs, isDesktopSkillsAvailable } from '../utils'
 
 const EMPTY_CONFIGURED_SKILLS: [] = []
 
@@ -63,13 +58,6 @@ export function useSkillsController({
   const globalSkillCount = configuredSkills.filter((skill) => skill.scope === 'user').length
   const projectSkillCount = configuredSkills.filter((skill) => skill.scope === 'project').length
   const chatSkillCount = configuredSkills.filter((skill) => skill.scope === 'chat').length
-  const skillCreatorDetected = configuredSkills.some(
-    (skill) =>
-      isSkillCreatorCandidate(skill) &&
-      (skill.scope === 'user' ||
-        (installScope === 'project' && skill.scope === 'project') ||
-        (installScope === 'chat' && skill.scope === 'chat')),
-  )
   const visibleConfiguredSkills = useMemo(
     () => configuredSkills.filter((skill) => skill.scope === activeScope),
     [activeScope, configuredSkills],
@@ -198,7 +186,6 @@ export function useSkillsController({
     setActionError,
     setInstallScope,
     setInstalledOpen,
-    skillCreatorDetected,
     visibleConfiguredSkills,
   }
 }

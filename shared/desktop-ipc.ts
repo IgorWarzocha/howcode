@@ -42,7 +42,6 @@ import type {
   ProjectUsageSummary,
   ReactArtifactCompileResult,
   ShellState,
-  SkillCreatorSessionState,
   Thread,
   ThreadData,
   ThreadSearchResult,
@@ -170,23 +169,6 @@ export type DesktopRequestMap = {
       chat?: boolean | undefined
     }
     response: PiSkillMutationResult
-  }
-  startSkillCreatorSession: {
-    params: {
-      prompt: string
-      local?: boolean | undefined
-      projectPath?: string | undefined | null | undefined
-      chat?: boolean | undefined
-    }
-    response: SkillCreatorSessionState
-  }
-  continueSkillCreatorSession: {
-    params: { sessionId: string; prompt: string }
-    response: SkillCreatorSessionState
-  }
-  closeSkillCreatorSession: {
-    params: { sessionId: string }
-    response: { ok: boolean }
   }
   pickComposerAttachments: {
     params: { projectId?: string | undefined | null | undefined }

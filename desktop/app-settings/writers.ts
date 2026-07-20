@@ -46,8 +46,6 @@ import {
   projectImportStateKey,
   showDictationButtonKey,
   sidebarVisibleProjectIdsKey,
-  skillCreatorModelKey,
-  skillCreatorThinkingLevelKey,
   useAgentsSkillsPathsKey,
 } from './keys.ts'
 
@@ -121,19 +119,6 @@ export function setCodeThinkingLevel(level: ComposerThinkingLevel | null) {
 
 export function setGitCommitMessageThinkingLevel(level: ComposerThinkingLevel) {
   writeAppPreference(gitCommitMessageThinkingLevelKey, JSON.stringify(level))
-}
-
-export function setSkillCreatorModelSelection(selection: ModelSelection | null) {
-  if (!selection) {
-    deleteAppPreference(skillCreatorModelKey)
-    return
-  }
-
-  writeAppPreference(skillCreatorModelKey, JSON.stringify(selection))
-}
-
-export function setSkillCreatorThinkingLevel(level: ComposerThinkingLevel) {
-  writeAppPreference(skillCreatorThinkingLevelKey, JSON.stringify(level))
 }
 
 export function setComposerStreamingBehavior(behavior: ComposerStreamingBehavior) {

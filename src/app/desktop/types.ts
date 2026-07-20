@@ -81,8 +81,6 @@ export type {
   ProjectUsageSummary,
   ReactArtifactCompileResult,
   ShellState,
-  SkillCreatorSessionMessage,
-  SkillCreatorSessionState,
   Thread,
   ThreadCustomMessageRecord,
   ThreadData,

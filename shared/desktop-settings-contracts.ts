@@ -26,8 +26,6 @@ export type AppSettings = {
   codeThinkingLevel: ComposerThinkingLevel | null
   gitCommitMessageModel: ModelSelection | null
   gitCommitMessageThinkingLevel: ComposerThinkingLevel
-  skillCreatorModel: ModelSelection | null
-  skillCreatorThinkingLevel: ComposerThinkingLevel
   composerStreamingBehavior: ComposerStreamingBehavior
   dictationModelId: DictationModelId | null
   dictationMaxDurationSeconds: number

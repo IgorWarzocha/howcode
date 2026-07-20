@@ -65,8 +65,6 @@ export type {
   PiSkillCatalogItem,
   PiSkillCatalogPage,
   PiSkillMutationResult,
-  SkillCreatorSessionMessage,
-  SkillCreatorSessionState,
 } from './desktop-package-contracts'
 export type {
   ProjectCommitEntry,

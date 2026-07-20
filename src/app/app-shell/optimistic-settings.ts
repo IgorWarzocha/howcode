@@ -18,8 +18,6 @@ const optimisticSettingKeys = new Set([
   'codeThinkingLevel',
   'gitCommitMessageModel',
   'gitCommitMessageThinkingLevel',
-  'skillCreatorModel',
-  'skillCreatorThinkingLevel',
   'composerStreamingBehavior',
   'dictationModelId',
   'dictationMaxDurationSeconds',
@@ -107,12 +105,6 @@ function applyOptimisticModelSetting(
       nextSettings.gitCommitMessageModel,
     )
   }
-  if (payload.key === 'skillCreatorModel') {
-    nextSettings.skillCreatorModel = getOptimisticModelSelection(
-      payload,
-      nextSettings.skillCreatorModel,
-    )
-  }
 }
 
 function getResettableThinkingLevel(
@@ -141,9 +133,6 @@ function applyOptimisticThinkingSetting(
   }
   if (payload.key === 'gitCommitMessageThinkingLevel' && isThinkingLevel(payload.value)) {
     nextSettings.gitCommitMessageThinkingLevel = payload.value
-  }
-  if (payload.key === 'skillCreatorThinkingLevel' && isThinkingLevel(payload.value)) {
-    nextSettings.skillCreatorThinkingLevel = payload.value
   }
 }
 

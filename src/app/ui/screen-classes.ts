@@ -15,7 +15,7 @@ export const skillsHeaderActionRailClass = skillsActionRailInsetClass
 
 export const skillsSearchControlRowClass = `grid grid-cols-[minmax(0,1fr)_1.75rem] items-center gap-1 ${skillsActionRailInsetClass}`
 
-export const skillsCreatorControlRowClass =
+export const skillsActionControlRowClass =
   'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 pr-4'
 
 export const skillsBrowsePreferenceButtonClass = `grid min-h-7 grid-cols-[auto_1.75rem] items-center gap-2 rounded-md py-0 pl-1.5 ${appTypeTinyClass} ${appToneSubtleClass} opacity-80 transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--muted)] hover:opacity-100`

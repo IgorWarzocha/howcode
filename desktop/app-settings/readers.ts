@@ -36,8 +36,6 @@ import {
   projectImportStateKey,
   showDictationButtonKey,
   sidebarVisibleProjectIdsKey,
-  skillCreatorModelKey,
-  skillCreatorThinkingLevelKey,
   useAgentsSkillsPathsKey,
 } from './keys.ts'
 import {
@@ -120,9 +118,6 @@ export function loadAppSettings(): AppSettings {
     gitCommitMessageModel: parseModelSelection(value(gitCommitMessageModelKey)),
     gitCommitMessageThinkingLevel:
       parseThinkingLevelPreference(value(gitCommitMessageThinkingLevelKey)) ?? 'off',
-    skillCreatorModel: parseModelSelection(value(skillCreatorModelKey)),
-    skillCreatorThinkingLevel:
-      parseThinkingLevelPreference(value(skillCreatorThinkingLevelKey)) ?? 'off',
     composerStreamingBehavior:
       parseComposerStreamingBehaviorPreference(value(composerStreamingBehaviorKey)) ?? 'followUp',
     dictationModelId: parseDictationModelIdPreference(value(dictationModelIdKey)),

@@ -310,8 +310,6 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === 'codeThinkingLevel' ||
     payload.key === 'gitCommitMessageModel' ||
     payload.key === 'gitCommitMessageThinkingLevel' ||
-    payload.key === 'skillCreatorModel' ||
-    payload.key === 'skillCreatorThinkingLevel' ||
     payload.key === 'composerStreamingBehavior' ||
     payload.key === 'dictationModelId' ||
     payload.key === 'dictationMaxDurationSeconds' ||

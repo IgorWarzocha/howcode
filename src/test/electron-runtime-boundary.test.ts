@@ -15,7 +15,6 @@ const forbiddenElectronMainImports = [
   'desktop/pi-skills',
   'desktop/pi-threads',
   'desktop/runtime-host/main-request-handlers',
-  'desktop/skill-creator-session',
   'desktop/terminal/manager',
   'desktop/terminal/runtime',
   'desktop/thread-state-db',

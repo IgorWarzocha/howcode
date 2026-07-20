@@ -41,8 +41,6 @@ export {
 export {
   canSearchPiPackagesQuery,
   canSearchPiSkillsQuery,
-  closeSkillCreatorSessionQuery,
-  continueSkillCreatorSessionQuery,
   getConfiguredPiPackagesQuery,
   getConfiguredPiSkillsQuery,
   installPiPackageQuery,
@@ -51,7 +49,6 @@ export {
   removePiSkillQuery,
   searchPiPackagesQuery,
   searchPiSkillsQuery,
-  startSkillCreatorSessionQuery,
 } from './desktop-extension-query'
 export { desktopQueryKeys } from './desktop-query-keys'
 export {

@@ -3,7 +3,6 @@ import { loadAppSettings } from './app-settings/readers.ts'
 import { getPiModule } from './pi-module.ts'
 import * as piSkills from './pi-skills.ts'
 import * as piThreads from './pi-threads.ts'
-import * as skillCreator from './skill-creator-session.ts'
 import { createTerminalRpcServer } from './terminal/rpc-server.ts'
 import * as terminalManager from './terminal/runtime.ts'
 import { getDesktopUserDataPath } from './user-data-path.ts'
@@ -33,7 +32,6 @@ type TerminalRpcServiceRequest = {
 const modules = {
   piThreads,
   piSkills,
-  skillCreator,
 } satisfies Record<string, Record<string, unknown>>
 
 type ServiceModuleName = keyof typeof modules

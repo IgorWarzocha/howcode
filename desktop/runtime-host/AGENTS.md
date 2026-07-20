@@ -2,3 +2,4 @@
 - Runtime records own child scopes. Dispose by detaching the matching record and closing its scope; never dispose a key without checking record identity.
 - Lifecycle locks and composer mutation locks are distinct and non-reentrant. Do not collapse them.
 - Idle disposal is a scoped `FiberMap` schedule; test timing with `TestClock`, not real sleeps.
+- Preserve `HOWCODE_BUNDLED_SKILLS_PATH` in every live runtime's additional skill paths; bundled skills replace bespoke app workflows.

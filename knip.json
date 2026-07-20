@@ -6,7 +6,6 @@
     "src/electron/preload/index.ts",
     "desktop/pi-threads.ts",
     "desktop/pi-skills.ts",
-    "desktop/skill-creator-session.ts",
     "desktop/runtime-host/worker.ts",
     "desktop/terminal/runtime.ts",
     "scripts/*.ts",
