@@ -1,7 +1,6 @@
 import { mkdir, mkdtemp, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { PiSkillMutationResult } from '../../shared/desktop-contracts.ts'
-import { markRuntimeSettingsStaleForProject } from '../runtime/runtime-registry.ts'
 import { downloadSkillApi, type SkillDownloadApiFile } from './api.ts'
 import { listConfiguredPiSkills } from './configured-skills.ts'
 import {
@@ -127,9 +126,6 @@ export async function installPiSkill(request: {
 
   await replaceSkillDirectoryWithDownload(targetRootPath, parsedSource.slug, files)
 
-  const staleProjectPath = request.chat ? null : request.local ? request.projectPath : null
-  await markRuntimeSettingsStaleForProject(staleProjectPath)
-
   return {
     source: request.source,
     normalizedSource: parsedSource.normalizedSource,
@@ -169,7 +165,6 @@ export async function removePiSkill(request: {
   }
 
   await rm(installedPath, { recursive: true, force: true })
-  await markRuntimeSettingsStaleForProject(isProjectSkill ? request.projectPath : null)
 
   return {
     source: installedPath,

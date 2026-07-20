@@ -1,8 +1,4 @@
 import type { PiPackageMutationResult } from '../../shared/desktop-contracts.ts'
-import {
-  markRuntimeSettingsStaleForProject,
-  markRuntimeSettingsStaleForSettingsCwd,
-} from '../runtime/runtime-registry.ts'
 import { listConfiguredPiPackages } from './configured.ts'
 import { normalizePiPackageSource } from './helpers.ts'
 import { getPiPackageServices } from './services.ts'
@@ -24,11 +20,6 @@ export async function installPiPackage(request: {
   const configuredProjectPath = request.chat ? request.projectPath : projectPath
   const local = request.local || request.chat
   await packageManager.installAndPersist(normalizedSource, local ? { local: true } : {})
-  if (request.chat) {
-    await markRuntimeSettingsStaleForSettingsCwd(projectPath)
-  } else {
-    await markRuntimeSettingsStaleForProject(local ? projectPath : null)
-  }
 
   return {
     source: request.source,
@@ -56,11 +47,6 @@ export async function removePiPackage(request: {
   const configuredProjectPath = request.chat ? request.projectPath : projectPath
   const local = request.local || request.chat
   await packageManager.removeAndPersist(source, local ? { local: true } : {})
-  if (request.chat) {
-    await markRuntimeSettingsStaleForSettingsCwd(projectPath)
-  } else {
-    await markRuntimeSettingsStaleForProject(local ? projectPath : null)
-  }
 
   return {
     source,

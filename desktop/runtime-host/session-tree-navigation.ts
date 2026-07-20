@@ -1,20 +1,17 @@
 import type { ComposerStateRequest } from '../../shared/desktop-contracts.ts'
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
-import {
-  publishComposerUpdate,
-  publishThreadUpdate,
-} from '../runtime-host/live-thread-publisher.ts'
-import { applyComposerModeSettings } from './composer-mode-settings.ts'
-import { buildComposerState } from './composer-state.ts'
+import { applyComposerModeSettings } from '../runtime/composer-mode-settings.ts'
+import { buildComposerState } from '../runtime/composer-state.ts'
+import type { PiRuntime, RuntimeThreadReason } from '../runtime/types.ts'
 import {
   getCachedRuntimeForSessionPath,
   getOrCreateRuntimeForSessionPath,
   isRuntimeExtensionCommandRunning,
   reloadRuntimeSettingsIfSafe,
-  scheduleRuntimeDisposalForRuntime,
+  scheduleRuntimeDisposal,
   withRuntimeMutationLock,
-} from './runtime-registry.ts'
-import type { PiRuntime, RuntimeThreadReason } from './types.ts'
+} from './live-runtime-registry.ts'
+import { publishComposerUpdate, publishThreadUpdate } from './live-thread-publisher.ts'
 
 export type NavigateSessionTreeOutcome = {
   cancelled: boolean
@@ -38,7 +35,10 @@ const navigateTreeAdapters = {
   },
   isRuntimeExtensionCommandRunning,
   publishThreadUpdate,
-  scheduleRuntimeDisposal: scheduleRuntimeDisposalForRuntime,
+  scheduleRuntimeDisposal: (runtime: PiRuntime) => {
+    const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile)
+    if (runtimeKey) scheduleRuntimeDisposal(runtimeKey)
+  },
 }
 
 function assertNavigateAllowed(runtime: PiRuntime) {
@@ -234,7 +234,7 @@ export async function navigateSessionTree(input: {
         input.label?.trim() || undefined,
       )
     } finally {
-      scheduleRuntimeDisposalForRuntime(runtime)
+      navigateTreeAdapters.scheduleRuntimeDisposal(runtime)
     }
   })
 }
@@ -272,7 +272,7 @@ export async function labelSessionTreeEntry(input: {
       await publishNavigateSettled(runtime, 'update')
       return { ok: true as const }
     } finally {
-      scheduleRuntimeDisposalForRuntime(runtime)
+      navigateTreeAdapters.scheduleRuntimeDisposal(runtime)
     }
   })
 }

@@ -21,10 +21,6 @@ import {
   promptComposerRuntime,
 } from '../runtime/composer-prompt-flow.ts'
 import {
-  labelSessionTreeEntry,
-  navigateSessionTree,
-} from '../runtime/composer-session-tree-navigate.ts'
-import {
   expandRuntimeDollarSkillReferences,
   mapSessionSkills,
 } from '../runtime/composer-skill-references.ts'
@@ -52,6 +48,7 @@ import {
   publishPiExtensionUiUpdate,
   publishThreadUpdate,
 } from './live-thread-publisher.ts'
+import { labelSessionTreeEntry, navigateSessionTree } from './session-tree-navigation.ts'
 import { mapSessionCommands } from './slash-command-service.ts'
 
 async function emitComposerUpdate(request: ComposerStateRequest = {}) {
