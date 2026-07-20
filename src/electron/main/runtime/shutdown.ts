@@ -24,7 +24,7 @@ export function registerDesktopRuntimeShutdown(runtime: DesktopServiceRuntime) {
   async function cleanupRuntime() {
     await withShutdownTimeout(
       Promise.allSettled([
-        runtime.terminalManager.closeAllTerminals?.(),
+        runtime.terminalManager.closeAllTerminals(),
         runtime.piThreads.disposeDesktopRuntime?.(),
       ]),
     )

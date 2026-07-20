@@ -43,6 +43,11 @@ const TerminalCloseRpc = Rpc.make('terminal.close', {
   error: TerminalError,
 })
 
+const TerminalCloseAllRpc = Rpc.make('terminal.closeAll', {
+  payload: Schema.Struct({}),
+  error: TerminalError,
+})
+
 const TerminalStatSessionFileRpc = Rpc.make('terminal.statSessionFile', {
   payload: TerminalSessionFileStatRequest,
   success: Schema.NullOr(TerminalSessionFileStat),
@@ -74,6 +79,7 @@ export const TerminalRpcGroup = RpcGroup.make(
   TerminalWriteRpc,
   TerminalResizeRpc,
   TerminalCloseRpc,
+  TerminalCloseAllRpc,
   TerminalStatSessionFileRpc,
   TerminalStatusRpc,
   TerminalEventsRpc,

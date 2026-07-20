@@ -28,6 +28,7 @@ export function createTerminalRpcHandlers(terminal: TerminalService) {
     'terminal.resize': ({ sessionId, cols, rows }) =>
       terminalPromise('resize', () => terminal.resizeTerminal(sessionId, cols, rows)),
     'terminal.close': (request) => terminalPromise('close', () => terminal.closeTerminal(request)),
+    'terminal.closeAll': () => terminalPromise('closeAll', terminal.closeAllTerminals),
     'terminal.statSessionFile': ({ sessionId }) =>
       terminalPromise('statSessionFile', () => terminal.statSessionFile(sessionId)),
     'terminal.status': ({ sessionId }) =>

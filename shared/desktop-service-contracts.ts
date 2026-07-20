@@ -164,7 +164,7 @@ export type PiThreadsService = {
 }
 
 export type TerminalService = {
-  closeAllTerminals?: () => Promise<void>
+  closeAllTerminals: () => Promise<void>
   closeTerminal: (request: TerminalCloseRequest) => Promise<void>
   getTerminalStatus: (sessionId: string) => Promise<TerminalStatusSnapshot>
   listTerminals: () => Promise<TerminalSessionSnapshot[]>

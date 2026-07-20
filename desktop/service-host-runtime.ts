@@ -117,7 +117,7 @@ async function shutdown() {
   await Promise.allSettled([
     terminalRpcServer.dispose(),
     piThreads.disposeDesktopRuntime?.(),
-    terminalManager.closeAllTerminals?.(),
+    terminalManager.closeAllTerminals(),
   ])
   process.exit(0)
 }

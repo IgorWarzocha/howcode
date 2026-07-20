@@ -49,6 +49,7 @@ export class TerminalRpcServiceClient {
   constructor(options: Options) {
     this.options = options
     this.service = {
+      closeAllTerminals: () => this.run((client) => client['terminal.closeAll']({})),
       closeTerminal: (request) =>
         this.run((client) =>
           Schema.decodeUnknownEffect(TerminalCloseRequest)(request).pipe(

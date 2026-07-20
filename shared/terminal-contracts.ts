@@ -146,6 +146,7 @@ export const TerminalOperation = Schema.Literals([
   'write',
   'resize',
   'close',
+  'closeAll',
   'statSessionFile',
   'status',
   'subscribeEvents',

@@ -62,8 +62,12 @@ describe('terminal Effect RPC', () => {
         Effect.gen(function* () {
           const streamReady = yield* Deferred.make<void>()
           let eventListener: ((event: TerminalEvent) => void) | null = null
+          let closeAllCount = 0
 
           const terminal = {
+            closeAllTerminals: async () => {
+              closeAllCount += 1
+            },
             closeTerminal: async () => undefined,
             getTerminalStatus: async (sessionId) => ({ sessionId, status: 'running' as const }),
             listTerminals: async () => [snapshot],
@@ -113,6 +117,9 @@ describe('terminal Effect RPC', () => {
 
           const listed = yield* client['terminal.list']({})
           expect(listed).toEqual([snapshot])
+
+          yield* client['terminal.closeAll']({})
+          expect(closeAllCount).toBe(1)
 
           const failure = yield* client['terminal.open']({
             projectId: '/workspace/project',
