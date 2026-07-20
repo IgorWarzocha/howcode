@@ -12,9 +12,8 @@ export async function loadSessionTreeList(request: {
 
   // Pi keeps leafId in memory only; reopening the JSONL sets leafId to the last file entry,
   // not the active branch after navigateTree / branch(). Use the live session when open.
-  const cachedRuntimePromise = getCachedRuntimeForSessionPath(request.sessionPath)
-  if (cachedRuntimePromise) {
-    const runtime = await cachedRuntimePromise
+  const runtime = await getCachedRuntimeForSessionPath(request.sessionPath)
+  if (runtime) {
     leafId = runtime.session.sessionManager.getLeafId()
   }
 

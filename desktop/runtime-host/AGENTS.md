@@ -1,0 +1,4 @@
+- Keep `live-runtime-registry.ts` as the Promise/callback compatibility edge; lifecycle state belongs in the Effect registry service.
+- Runtime records own child scopes. Dispose by detaching the matching record and closing its scope; never dispose a key without checking record identity.
+- Lifecycle locks and composer mutation locks are distinct and non-reentrant. Do not collapse them.
+- Idle disposal is a scoped `FiberMap` schedule; test timing with `TestClock`, not real sleeps.

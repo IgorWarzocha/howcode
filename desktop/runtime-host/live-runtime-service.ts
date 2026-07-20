@@ -56,10 +56,9 @@ import { mapSessionCommands } from './slash-command-service.ts'
 
 async function emitComposerUpdate(request: ComposerStateRequest = {}) {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
-  const runtimePromise = persistedSessionPath
-    ? getCachedRuntimeForSessionPath(persistedSessionPath)
+  const runtime = persistedSessionPath
+    ? await getCachedRuntimeForSessionPath(persistedSessionPath)
     : null
-  const runtime = runtimePromise ? await runtimePromise : null
   const composer = runtime
     ? await buildComposerState(runtime)
     : await buildComposerStateSnapshot({ ...request, sessionPath: persistedSessionPath })
@@ -221,9 +220,8 @@ export async function sendComposerPrompt(
     await applyComposerModeSettings(runtime, request)
     return await runSend(runtime)
   }
-  const cachedRuntimePromise = getCachedRuntimeForSessionPath(persistedSessionPath)
-  if (cachedRuntimePromise) {
-    const cachedRuntime = await cachedRuntimePromise
+  const cachedRuntime = await getCachedRuntimeForSessionPath(persistedSessionPath)
+  if (cachedRuntime) {
     if (cachedRuntime.session.isStreaming || isRuntimeExtensionCommandRunning(cachedRuntime)) {
       cachedRuntime.branchName = request.branchName ?? cachedRuntime.branchName ?? null
       return await runSend(cachedRuntime)
@@ -273,9 +271,8 @@ export async function labelSessionTreeEntryInHost(
 export async function stopComposerRun(request: ComposerStateRequest) {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
   if (!persistedSessionPath) return { ok: true as const }
-  const cachedRuntimePromise = getCachedRuntimeForSessionPath(persistedSessionPath)
-  if (cachedRuntimePromise) {
-    const cachedRuntime = await cachedRuntimePromise
+  const cachedRuntime = await getCachedRuntimeForSessionPath(persistedSessionPath)
+  if (cachedRuntime) {
     const stopped = await stopComposerRuntime({
       abortWhenIdle: false,
       adapters: composerStopAdapters,
