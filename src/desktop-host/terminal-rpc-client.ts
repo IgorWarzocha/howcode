@@ -37,12 +37,17 @@ type Connection = {
 
 type Options = {
   ensureStarted: () => Promise<ChildProcess>
-  isCurrentChild: (child: ChildProcess) => boolean
   onDiagnostic: (message: string, details: unknown) => void
+}
+
+type ConnectionAttempt = {
+  readonly child: ChildProcess
+  scope: Scope.Closeable | null
 }
 
 export class TerminalRpcServiceClient {
   private connection: Connection | null = null
+  private connectionAttempt: ConnectionAttempt | null = null
   private readonly options: Options
   readonly service: TerminalService
 
@@ -116,86 +121,112 @@ export class TerminalRpcServiceClient {
   }
 
   async connect(child: ChildProcess) {
-    await this.dispose()
+    const attempt: ConnectionAttempt = { child, scope: null }
+    this.connectionAttempt = attempt
+    const previous = this.connection
+    this.connection = null
+    if (previous) await Effect.runPromise(Scope.close(previous.scope, Exit.void))
+
     const scope = Scope.makeUnsafe()
+    attempt.scope = scope
     const sendMessage = (message: TerminalRpcRequest) => this.send(child, message)
-    const connection = await Effect.runPromise(
-      Effect.gen(function* () {
-        const inbound = yield* Queue.unbounded<TerminalRpcResponse>()
-        const protocol = yield* RpcClientRuntime.Protocol.make((writeResponse) =>
-          Effect.gen(function* () {
-            yield* Stream.fromQueue(inbound).pipe(
-              Stream.runForEach((message) => writeResponse(0, message)),
-              Effect.forkScoped,
-            )
-            return {
-              send: (_clientId: number, message: TerminalRpcRequest) =>
-                sendMessage(message).pipe(
-                  Effect.mapError(
-                    (cause) =>
-                      new RpcClientError({
-                        reason: new RpcClientDefect({
-                          message: 'Unable to send terminal RPC message',
-                          cause,
-                        }),
-                      }),
-                  ),
-                ),
-              supportsAck: false,
-              supportsTransferables: false,
-            }
-          }),
-        )
-        const client = yield* RpcClientRuntime.make(TerminalRpcGroup).pipe(
-          Effect.provideService(RpcClientRuntime.Protocol, protocol),
-        )
-        return { child, client, inbound, scope }
-      }).pipe(Effect.provideService(Scope.Scope, scope)),
-    )
-
-    if (!(this.options.isCurrentChild(child) && child.connected)) {
-      await Effect.runPromise(Scope.close(scope, Exit.void))
-      throw new Error('Desktop service exited while terminal RPC was starting.')
-    }
-
-    this.connection = connection
-    const ready = Deferred.makeUnsafe<void, unknown>()
-    const reportStoppedStream = (error: unknown) => {
-      if (this.connection?.scope !== scope) return
-      this.options.onDiagnostic(
-        'Terminal event stream stopped.',
-        error instanceof Error ? error.message : String(error),
-      )
-    }
-    const consumeEvents = connection.client['terminal.events']({}).pipe(
-      Stream.runForEach((message) =>
-        message._tag === 'Ready'
-          ? Deferred.succeed(ready, undefined)
-          : Effect.sync(() => {
-              for (const listener of this.listeners) listener(message.event)
-            }),
-      ),
-      Effect.catchCause((cause) =>
+    try {
+      const connection = await Effect.runPromise(
         Effect.gen(function* () {
-          const error = Cause.squash(cause)
-          yield* Deferred.fail(ready, error)
-          yield* Effect.sync(() => reportStoppedStream(error))
-        }),
-      ),
-      Effect.andThen(
-        Deferred.fail(ready, new Error('Terminal event stream ended before becoming ready.')),
-      ),
-    )
-    await Effect.runPromise(Effect.forkIn(consumeEvents, scope))
-    await Effect.runPromise(Deferred.await(ready))
+          const inbound = yield* Queue.unbounded<TerminalRpcResponse>()
+          const protocol = yield* RpcClientRuntime.Protocol.make((writeResponse) =>
+            Effect.gen(function* () {
+              yield* Stream.fromQueue(inbound).pipe(
+                Stream.runForEach((message) => writeResponse(0, message)),
+                Effect.forkScoped,
+              )
+              return {
+                send: (_clientId: number, message: TerminalRpcRequest) =>
+                  sendMessage(message).pipe(
+                    Effect.mapError(
+                      (cause) =>
+                        new RpcClientError({
+                          reason: new RpcClientDefect({
+                            message: 'Unable to send terminal RPC message',
+                            cause,
+                          }),
+                        }),
+                    ),
+                  ),
+                supportsAck: false,
+                supportsTransferables: false,
+              }
+            }),
+          )
+          const client = yield* RpcClientRuntime.make(TerminalRpcGroup).pipe(
+            Effect.provideService(RpcClientRuntime.Protocol, protocol),
+          )
+          return { child, client, inbound, scope }
+        }).pipe(Effect.provideService(Scope.Scope, scope)),
+      )
+
+      if (this.connectionAttempt !== attempt || !child.connected) {
+        throw new Error('Desktop service exited while terminal RPC was starting.')
+      }
+
+      this.connectionAttempt = null
+      this.connection = connection
+      const ready = Deferred.makeUnsafe<void, unknown>()
+      const reportStoppedStream = (error: unknown) => {
+        if (this.connection?.scope !== scope) return
+        this.options.onDiagnostic(
+          'Terminal event stream stopped.',
+          error instanceof Error ? error.message : String(error),
+        )
+      }
+      const consumeEvents = connection.client['terminal.events']({}).pipe(
+        Stream.runForEach((message) =>
+          message._tag === 'Ready'
+            ? Deferred.succeed(ready, undefined)
+            : Effect.sync(() => {
+                for (const listener of this.listeners) listener(message.event)
+              }),
+        ),
+        Effect.catchCause((cause) =>
+          Effect.gen(function* () {
+            const error = Cause.squash(cause)
+            yield* Deferred.fail(ready, error)
+            yield* Effect.sync(() => reportStoppedStream(error))
+          }),
+        ),
+        Effect.andThen(
+          Deferred.fail(ready, new Error('Terminal event stream ended before becoming ready.')),
+        ),
+      )
+      await Effect.runPromise(Effect.forkIn(consumeEvents, scope))
+      await Effect.runPromise(Deferred.await(ready))
+      if (this.connection?.scope !== scope) {
+        throw new Error('Desktop service exited while terminal RPC was starting.')
+      }
+    } catch (error) {
+      if (this.connectionAttempt === attempt) this.connectionAttempt = null
+      if (this.connection?.scope === scope) this.connection = null
+      await Effect.runPromise(Scope.close(scope, Exit.void))
+      throw error
+    }
   }
 
-  async dispose() {
+  async dispose(child?: ChildProcess | undefined) {
+    const attempt = this.connectionAttempt
     const connection = this.connection
-    this.connection = null
-    if (connection) {
-      await Effect.runPromise(Scope.close(connection.scope, Exit.void))
-    }
+    const disposeAttempt = attempt && (!child || attempt.child === child) ? attempt : null
+    const disposeConnection =
+      connection && (!child || connection.child === child) ? connection : null
+    if (!(disposeAttempt || disposeConnection)) return
+
+    if (disposeAttempt && this.connectionAttempt === disposeAttempt) this.connectionAttempt = null
+    if (disposeConnection && this.connection === disposeConnection) this.connection = null
+    const scopes = new Set(
+      [disposeAttempt?.scope, disposeConnection?.scope].filter(
+        (scope): scope is Scope.Closeable => scope !== null && scope !== undefined,
+      ),
+    )
+    await Promise.all([...scopes].map((scope) => Effect.runPromise(Scope.close(scope, Exit.void))))
   }
 
   write(message: TerminalRpcResponse) {
