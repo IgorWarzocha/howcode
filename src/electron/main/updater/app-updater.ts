@@ -1,22 +1,22 @@
-import { existsSync, readFileSync } from 'node:fs'
-import { chmod, mkdir, readFile, rename, rm } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { app } from 'electron'
-import { x as extractTar } from 'tar'
-import packageJson from '../../../../package.json'
 import type { AppUpdateState } from '../../../../shared/desktop-app-update-contracts'
-import { getAppRootPath } from '../runtime/app-paths'
 import { spawnDetached } from './spawn-detached'
-import { isUpdateCandidate, normalizeReleaseMetadata, type UpdateChannel } from './update-protocol'
+import { installUpdateBundle } from './update-installer'
+import { isUpdateCandidate, type UpdateChannel } from './update-protocol'
 import {
-  APP_NAME,
-  getAppResourcesPath,
+  assertUpdateEnabled,
+  getCurrentAppVersion,
+  isUpdateEnabled,
+  resolveLatestRelease,
+} from './update-runtime'
+import {
   getCacheRoot,
   getInstallPaths,
   getLegacyInstallPaths,
   getRunningReleaseFingerprint,
   getTarget,
-  hasPackagedAppBundle,
   type InstalledUpdate,
   isValidInstall,
   parseInstalledUpdateRecord,
@@ -24,26 +24,7 @@ import {
   type ReleaseInfo,
   type UpdateTarget,
 } from './update-storage'
-import {
-  downloadFile,
-  fetchJson,
-  isExecutableFile,
-  sha256File,
-  withUpdateLock,
-  writeAtomicJson,
-} from './update-transport'
-
-function getProcessEnvironmentVariable(name: string) {
-  return process.env[name]
-}
-
-const DEFAULT_RELEASE_BASE_URL = 'https://github.com/IgorWarzocha/howcode/releases/download'
-const RELEASE_BASE_URL = getProcessEnvironmentVariable('HOWCODE_BASE_URL')
-const updateAllowedInDev = getProcessEnvironmentVariable('HOWCODE_ENABLE_DEV_APP_UPDATE') === '1'
-const trailingSlashesPattern = /\/+$/
-const trailingChannelPattern = /\/(?:main|dev|channel-main|channel-dev)$/i
-const channelPlaceholderPattern = /\{channel\}/g
-const releaseTagPlaceholderPattern = /\{releaseTag\}/g
+import { writeAtomicJson } from './update-transport'
 
 type AppUpdaterListener = (state: AppUpdateState) => void
 
@@ -53,80 +34,6 @@ function getErrorMessage(error: unknown) {
 
 function logUpdateFailure(operation: string, error: unknown) {
   console.error(`[howcode updater] ${operation} failed`, error)
-}
-
-function getChannelReleaseTag(channel: UpdateChannel) {
-  return `channel-${channel}`
-}
-
-function getReleaseBaseUrl(channel: UpdateChannel) {
-  const releaseTag = getChannelReleaseTag(channel)
-  if (!RELEASE_BASE_URL) return `${DEFAULT_RELEASE_BASE_URL}/${releaseTag}`
-
-  const baseUrl = RELEASE_BASE_URL.replace(trailingSlashesPattern, '')
-  if (baseUrl.includes('{releaseTag}'))
-    return baseUrl.replace(releaseTagPlaceholderPattern, releaseTag)
-  if (baseUrl.includes('{channel}')) return baseUrl.replace(channelPlaceholderPattern, releaseTag)
-
-  return baseUrl.replace(trailingChannelPattern, `/${releaseTag}`)
-}
-
-function getMissingPackagedBundleMessage(installDir: string, target: UpdateTarget) {
-  const resourcesPath = getAppResourcesPath(installDir, target)
-  const appAsarPath = path.join(resourcesPath, 'app.asar')
-  const unpackedAppPath = path.join(resourcesPath, 'app', 'package.json')
-  return [
-    'Downloaded archive did not contain the packaged app bundle.',
-    `Checked ${appAsarPath} and ${unpackedAppPath}.`,
-  ].join(' ')
-}
-
-function isUpdateEnabled() {
-  return app.isPackaged || updateAllowedInDev
-}
-
-function getCurrentAppVersion() {
-  if (app.isPackaged) return app.getVersion()
-
-  try {
-    const packageJsonPath = path.join(getAppRootPath(), 'package.json')
-    const currentPackageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as {
-      version?: unknown
-    }
-    if (typeof currentPackageJson.version === 'string') return currentPackageJson.version
-  } catch {
-    // Fall back to the bundled package metadata below.
-  }
-
-  return packageJson.version
-}
-
-function assertUpdateEnabled() {
-  if (!isUpdateEnabled()) {
-    throw new Error('App updates are disabled in development builds.')
-  }
-}
-
-async function resolveLatestRelease(
-  target: UpdateTarget,
-  channel: UpdateChannel,
-): Promise<ReleaseInfo> {
-  const releaseBaseUrl = getReleaseBaseUrl(channel)
-  const updateUrl = `${releaseBaseUrl}/stable-${target.os}-${target.arch}-update.json`
-  const fallbackAssetUrl = `${releaseBaseUrl}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`
-  const { version, hash, assetUrl } = normalizeReleaseMetadata(
-    await fetchJson(updateUrl),
-    updateUrl,
-    releaseBaseUrl,
-    channel,
-    fallbackAssetUrl,
-  )
-  return {
-    channel,
-    version,
-    hash,
-    assetUrl,
-  }
 }
 
 function isSameRelease(
@@ -326,100 +233,32 @@ export class AppUpdater {
     return this.state
   }
 
-  private installRelease(
+  private async installRelease(
     release: ReleaseInfo,
     target: UpdateTarget,
     paths: ReturnType<typeof getInstallPaths>,
   ) {
-    return withUpdateLock(paths.cacheRoot, () =>
-      this.installReleaseUnderLock(release, target, paths),
-    )
-  }
-
-  private async installReleaseUnderLock(
-    release: ReleaseInfo,
-    target: UpdateTarget,
-    paths: ReturnType<typeof getInstallPaths>,
-  ) {
-    let tempRoot: string | null = null
-    let tempInstallDir: string | null = null
-    try {
-      const currentRecord = await this.readCurrentFile(paths.currentFile)
-      const existingCacheTrusted =
-        currentRecord?.version === release.version &&
-        currentRecord.hash === release.hash &&
-        currentRecord.installDir === paths.installDir &&
-        currentRecord.executablePath === paths.executablePath &&
-        (await isValidInstall(paths, target))
-      if (!existingCacheTrusted) {
-        tempRoot = path.join(paths.cacheRoot, `.tmp-update-${Date.now()}-${process.pid}`)
-        tempInstallDir = `${paths.installDir}.partial`
-        const archivePath = path.join(tempRoot, `${APP_NAME}-${target.os}-${target.arch}.tar.gz`)
-        await rm(tempRoot, { recursive: true, force: true })
-        await rm(tempInstallDir, { recursive: true, force: true })
-        await mkdir(tempRoot, { recursive: true })
-        await downloadFile(release.assetUrl, archivePath)
-        const hash = await sha256File(archivePath)
-        if (hash !== release.hash)
-          throw new Error(
-            `Downloaded archive hash mismatch. Expected ${release.hash}, got ${hash}.`,
-          )
+    const { installedUpdate, keepDirs } = await installUpdateBundle({
+      release,
+      target,
+      paths,
+      getKeepDirs: (installDir) => this.getPruneKeepDirs(installDir),
+      onInstalling: () =>
         this.setState({
           status: 'installing',
           latestVersion: release.version,
           channel: release.channel,
           error: null,
-        })
-        await mkdir(tempInstallDir, { recursive: true })
-        await extractTar({ file: archivePath, cwd: tempInstallDir })
-        const extractedExecutablePath = path.join(tempInstallDir, target.executable)
-        if (!existsSync(extractedExecutablePath)) {
-          throw new Error(`Downloaded archive did not contain ${target.executable}.`)
-        }
-        if (process.platform !== 'win32') {
-          await chmod(extractedExecutablePath, 0o755)
-        }
-        if (!(await isExecutableFile(extractedExecutablePath))) {
-          throw new Error(`Downloaded archive did not contain ${target.executable}.`)
-        }
-        if (!hasPackagedAppBundle(tempInstallDir, target)) {
-          throw new Error(getMissingPackagedBundleMessage(tempInstallDir, target))
-        }
-        await rm(paths.installDir, { recursive: true, force: true })
-        await mkdir(path.dirname(paths.installDir), { recursive: true })
-        await rename(tempInstallDir, paths.installDir)
-        tempInstallDir = null
-        await rm(tempRoot, { recursive: true, force: true })
-        tempRoot = null
-      }
-
-      this.installedUpdate = {
-        ...release,
-        executablePath: paths.executablePath,
-        installDir: paths.installDir,
-      }
-      await writeAtomicJson(paths.currentFile, {
-        version: this.installedUpdate.version,
-        channel: this.installedUpdate.channel,
-        hash: this.installedUpdate.hash,
-        installDir: this.installedUpdate.installDir,
-        executablePath: this.installedUpdate.executablePath,
-      })
-      await pruneOldVersions(paths.cacheRoot, await this.getPruneKeepDirs(paths.installDir))
-      this.setState({
-        status: 'ready',
-        latestVersion: release.version,
-        channel: release.channel,
-        error: null,
-      })
-    } finally {
-      await Promise.all([
-        tempRoot ? rm(tempRoot, { recursive: true, force: true }) : Promise.resolve(),
-        tempInstallDir ? rm(tempInstallDir, { recursive: true, force: true }) : Promise.resolve(),
-      ]).catch(() => {
-        // Ignore cleanup errors while preserving the original install failure.
-      })
-    }
+        }),
+    })
+    this.installedUpdate = installedUpdate
+    await pruneOldVersions(paths.cacheRoot, keepDirs)
+    this.setState({
+      status: 'ready',
+      latestVersion: release.version,
+      channel: release.channel,
+      error: null,
+    })
   }
 
   async restartToUpdate() {

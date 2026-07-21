@@ -1,3 +1,3 @@
-- `app-updater.ts` owns lifecycle/state transitions only; keep filesystem, transport, and release parsing in their focused modules.
-- `update-protocol.ts` is pure validation/version logic. `update-storage.ts` owns cache layout and staged-install records. `update-transport.ts` owns network, hashing, atomic JSON, and locks.
+- `app-updater.ts` owns lifecycle/state transitions only; keep filesystem, transport, release resolution, and installation in their focused modules.
+- `update-protocol.ts` is pure validation/version logic. `update-runtime.ts` owns Electron/runtime release resolution. `update-storage.ts` owns cache layout and staged-install records. `update-transport.ts` owns network, hashing, atomic JSON, and locks. `update-installer.ts` owns verified bundle staging.
 - Preserve the immutable-bundle handoff invariant: never replace the running app; stage a verified bundle and relaunch it.
