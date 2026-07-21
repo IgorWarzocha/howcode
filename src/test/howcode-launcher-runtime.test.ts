@@ -1,4 +1,4 @@
-import { access, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { access, chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -19,6 +19,18 @@ const { launch } = require('../../packages/howcode/lib/process-launcher.js') as 
     args: string[],
     options: { cacheRoot: string; readyTimeoutMs?: number },
   ): Promise<void>
+}
+const { ensureInstalled } = require('../../packages/howcode/lib/installer.js') as {
+  ensureInstalled(
+    target: { os: string; arch: string; executable: string },
+    release: { version: string; channel: string; hash: string; assetUrl: string },
+    paths: {
+      cacheRoot: string
+      currentFile: string
+      installDir: string
+      executablePath: string
+    },
+  ): Promise<{ didInstall: boolean; pruneFailures: unknown[] }>
 }
 const { getActiveVersionDirs } = require('../../packages/howcode/lib/active-versions.js') as {
   getActiveVersionDirs(cacheRoot: string, versionsRoot: string): Promise<Set<string>>
@@ -68,6 +80,32 @@ describe('howcode launcher runtime', () => {
     stopLease()
     expect(await getActiveVersionDirs(cacheRoot, versionsRoot)).toEqual(new Set())
     await expect(access(versionDir)).resolves.toBeUndefined()
+  })
+
+  it('repairs a missing current record for an already valid cached install', async () => {
+    const cacheRoot = await createTemporaryDirectory()
+    const installDir = path.join(cacheRoot, 'versions', `main-1.2.3-${'a'.repeat(64)}`)
+    const executablePath = path.join(installDir, 'howcode', 'howcode')
+    const currentFile = path.join(cacheRoot, 'current-main.json')
+    await mkdir(path.join(installDir, 'howcode', 'resources'), { recursive: true })
+    await writeFile(executablePath, '#!/bin/sh\n')
+    await chmod(executablePath, 0o755)
+    await writeFile(path.join(installDir, 'howcode', 'resources', 'app.asar'), 'asar')
+
+    const result = await ensureInstalled(
+      { os: 'linux', arch: 'x64', executable: 'howcode/howcode' },
+      { version: '1.2.3', channel: 'main', hash: 'a'.repeat(64), assetUrl: '' },
+      { cacheRoot, currentFile, installDir, executablePath },
+    )
+
+    expect(result.didInstall).toBe(false)
+    expect(JSON.parse(await readFile(currentFile, 'utf8'))).toEqual({
+      version: '1.2.3',
+      channel: 'main',
+      hash: 'a'.repeat(64),
+      installDir,
+      executablePath,
+    })
   })
 
   it('waits for the desktop process to report ready', async () => {

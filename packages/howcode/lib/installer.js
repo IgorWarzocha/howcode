@@ -13,6 +13,26 @@ const {
 } = require('./cache')
 const { downloadFile, sha256File } = require('./download')
 
+function getCurrentRecord(releaseInfo, paths) {
+  return {
+    version: releaseInfo.version,
+    channel: releaseInfo.channel,
+    hash: releaseInfo.hash,
+    installDir: paths.installDir,
+    executablePath: paths.executablePath,
+  }
+}
+
+function isCurrentRecord(record, releaseInfo, paths) {
+  return (
+    record?.version === releaseInfo.version &&
+    record.channel === releaseInfo.channel &&
+    record.hash === releaseInfo.hash &&
+    record.installDir === paths.installDir &&
+    record.executablePath === paths.executablePath
+  )
+}
+
 async function installRelease(target, releaseInfo, paths) {
   const tempRoot = path.join(paths.cacheRoot, `.tmp-${Date.now()}-${process.pid}`)
   const tempInstallDir = `${paths.installDir}.partial`
@@ -51,13 +71,6 @@ async function installRelease(target, releaseInfo, paths) {
     }
     await fsp.rm(paths.installDir, { recursive: true, force: true })
     await fsp.rename(tempInstallDir, paths.installDir)
-    await writeCurrentFile(paths.currentFile, {
-      version: releaseInfo.version,
-      channel: releaseInfo.channel,
-      hash: releaseInfo.hash,
-      installDir: paths.installDir,
-      executablePath: paths.executablePath,
-    })
   } finally {
     await Promise.all([
       fsp.rm(tempRoot, { recursive: true, force: true }),
@@ -78,6 +91,9 @@ async function ensureInstalled(target, releaseInfo, paths) {
     }
     didInstall = !isValidInstall(paths, target)
     if (didInstall) await installRelease(target, releaseInfo, paths)
+    if (!isCurrentRecord(readJsonIfPresent(paths.currentFile), releaseInfo, paths)) {
+      await writeCurrentFile(paths.currentFile, getCurrentRecord(releaseInfo, paths))
+    }
     pruneFailures = await pruneOldVersions(paths.cacheRoot, paths.installDir, recentlyReplacedDir)
   })
   return { didInstall, pruneFailures }

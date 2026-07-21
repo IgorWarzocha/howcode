@@ -2,3 +2,4 @@
 - `update-protocol.ts` is pure validation/version logic. `update-runtime.ts` owns Electron/runtime release resolution. `update-storage.ts` owns cache layout. `update-recovery.ts` owns staged-record recovery/migration. `update-transport.ts` owns network, hashing, and atomic JSON. `update-lock.ts` owns the leased cross-process install lock. `update-active-lease.ts` owns running-bundle leases. `update-installer.ts` owns verified bundle staging.
 - Preserve the immutable-bundle handoff invariant: never replace the running app; stage a verified bundle and relaunch it.
 - Running cached bundles lease `active-versions/<release>/`; both updater implementations retain fresh leases during pruning.
+- Preserve packaged launch arguments across GUI handoff. Never detach startup takeover from a foreground headless invocation.

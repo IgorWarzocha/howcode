@@ -10,6 +10,7 @@ import { configureDevtoolsRemoteDebugging, logDevtoolsRemoteDebugging } from './
 import { configureDesktopEnvironment } from './runtime/environment'
 import { signalLauncherReady } from './runtime/launcher-readiness'
 import { loadDesktopServiceRuntime } from './runtime/load-desktop-runtime'
+import { getRelaunchArguments, shouldTakeoverAtStartup } from './runtime/relaunch-arguments'
 import { registerDesktopRuntimeShutdown } from './runtime/shutdown'
 import { AppUpdater } from './updater/app-updater'
 import { startRunningVersionLease } from './updater/update-active-lease'
@@ -55,9 +56,12 @@ async function bootstrap() {
   logDevtoolsRemoteDebugging(devtoolsDebuggingPort)
 
   const runtime = await loadDesktopServiceRuntime()
-  const appUpdater = new AppUpdater(async () => {
-    const appSettings = await runtime.piThreads.loadAppSettings()
-    return appSettings.devUpdateBranch ? 'dev' : 'main'
+  const appUpdater = new AppUpdater({
+    getUpdateChannel: async () => {
+      const appSettings = await runtime.piThreads.loadAppSettings()
+      return appSettings.devUpdateBranch ? 'dev' : 'main'
+    },
+    relaunchArgs: getRelaunchArguments(process.argv, app.isPackaged),
   })
   const installMenu = () =>
     installApplicationMenu({ getMainWindow: () => currentMainWindow, piThreads: runtime.piThreads })
@@ -65,7 +69,10 @@ async function bootstrap() {
 
   // Apply a previously downloaded bundle before creating a window. This is the cross-platform
   // handoff that makes Windows installer launches converge on the staged app too.
-  if (await appUpdater.takeoverIfReady()) return
+  // A detached handoff cannot preserve the foreground lifetime of a headless invocation. Keep the
+  // current server alive; npm launches already select the latest immutable bundle directly.
+  if (shouldTakeoverAtStartup(headlessOptions.enabled) && (await appUpdater.takeoverIfReady()))
+    return
   void appUpdater.checkAndInstall()
 
   if (headlessOptions.enabled) {

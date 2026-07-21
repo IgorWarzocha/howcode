@@ -3,3 +3,4 @@
 - Keep cache validation strict: a usable install requires the platform executable plus `app.asar` or an unpacked app package.
 - GUI launch success requires the Electron readiness marker; spawning a detached wrapper alone is not success.
 - Cached apps heartbeat `active-versions/<release>/`; pruning must retain fresh leases and several bridge generations.
+- A validated online cache must have a matching atomic `current-<channel>.json`; repair the record even when no download was needed.

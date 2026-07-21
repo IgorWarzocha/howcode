@@ -4,3 +4,4 @@
 - Restore root copies of ABI-matrix modules to the builder ABI after matrix builds; packaged services resolve those modules from their ABI bundle. Other unpacked native dependencies are outside the matrix.
 - Keep OS-specific native packaging behavior in `scripts/service-native/platforms/*`. Do not scatter platform branches through the release orchestration scripts.
 - Launcher smoke tests must validate `app.asar` and the unpacked stock-Node runtime dependency tree.
+- Release validation recursively indexes merged artifact trees and rejects duplicate basenames; do not assume launcher archives are top-level.

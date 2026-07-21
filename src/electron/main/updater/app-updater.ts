@@ -20,6 +20,10 @@ import {
 } from './update-storage'
 
 type AppUpdaterListener = (state: AppUpdateState) => void
+type AppUpdaterOptions = {
+  getUpdateChannel?: () => Promise<UpdateChannel>
+  relaunchArgs?: readonly string[]
+}
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error)
@@ -41,6 +45,7 @@ function isSameRelease(
 export class AppUpdater {
   private readonly listeners = new Set<AppUpdaterListener>()
   private readonly getUpdateChannel: () => Promise<UpdateChannel>
+  private readonly relaunchArgs: readonly string[]
   private installedUpdate: InstalledUpdate | null = null
   private checkPromise: Promise<AppUpdateState> | null = null
   private installPromise: Promise<AppUpdateState> | null = null
@@ -54,8 +59,9 @@ export class AppUpdater {
     error: null,
   }
 
-  constructor(getUpdateChannel: () => Promise<UpdateChannel> = async () => 'main') {
-    this.getUpdateChannel = getUpdateChannel
+  constructor(options: AppUpdaterOptions = {}) {
+    this.getUpdateChannel = options.getUpdateChannel ?? (async () => 'main')
+    this.relaunchArgs = options.relaunchArgs ?? []
   }
 
   subscribe(listener: AppUpdaterListener) {
@@ -125,7 +131,7 @@ export class AppUpdater {
         channel: this.installedUpdate.channel,
         error: null,
       })
-      await spawnDetached(this.installedUpdate.executablePath)
+      await spawnDetached(this.installedUpdate.executablePath, this.relaunchArgs)
       app.quit()
       return true
     } catch (error) {
@@ -280,7 +286,7 @@ export class AppUpdater {
         return this.state
       }
       this.setState({ status: 'restarting', channel: this.installedUpdate.channel, error: null })
-      await spawnDetached(this.installedUpdate.executablePath)
+      await spawnDetached(this.installedUpdate.executablePath, this.relaunchArgs)
       app.quit()
     } catch (error) {
       logUpdateFailure('restart', error)
