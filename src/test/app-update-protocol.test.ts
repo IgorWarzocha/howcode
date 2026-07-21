@@ -52,9 +52,9 @@ describe('app update protocol', () => {
     ).toThrow('untrusted asset URL')
   })
 
-  it('detects same-version rebuilds only when the running cached fingerprint differs', () => {
+  it('bridges installer builds once and detects later same-version rebuilds by hash', () => {
     expect(compareVersions('1.10.0', '1.9.9')).toBeGreaterThan(0)
-    expect(isUpdateCandidate('1.2.3', { version: '1.2.3', hash: 'b'.repeat(64) }, null)).toBe(false)
+    expect(isUpdateCandidate('1.2.3', { version: '1.2.3', hash: 'b'.repeat(64) }, null)).toBe(true)
     expect(
       isUpdateCandidate(
         '1.2.3',
@@ -62,5 +62,9 @@ describe('app update protocol', () => {
         { version: '1.2.3', hash },
       ),
     ).toBe(true)
+    expect(isUpdateCandidate('1.2.3', { version: '1.2.3', hash }, { version: '1.2.3', hash })).toBe(
+      false,
+    )
+    expect(isUpdateCandidate('1.2.3', { version: '1.2.2', hash }, null)).toBe(false)
   })
 })

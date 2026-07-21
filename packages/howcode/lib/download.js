@@ -7,6 +7,21 @@ const { Readable, Transform } = require('node:stream')
 
 const DOWNLOAD_IDLE_TIMEOUT_MS = 60_000
 
+async function retry(operation, attempts = 3) {
+  let lastError
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return await operation()
+    } catch (error) {
+      lastError = error
+      if (attempt < attempts - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** attempt))
+      }
+    }
+  }
+  throw lastError
+}
+
 function formatBytes(bytes) {
   if (!Number.isFinite(bytes) || bytes <= 0) return '0 B'
   const units = ['B', 'KB', 'MB', 'GB']
@@ -45,7 +60,7 @@ function createDownloadProgressStream(input) {
   })
 }
 
-async function downloadFile(url, filePath, idleTimeoutMs = DOWNLOAD_IDLE_TIMEOUT_MS) {
+async function downloadFileOnce(url, filePath, idleTimeoutMs) {
   const controller = new AbortController()
   let timedOut = false
   let idleTimeout = setTimeout(() => {
@@ -83,10 +98,17 @@ async function downloadFile(url, filePath, idleTimeoutMs = DOWNLOAD_IDLE_TIMEOUT
   }
 }
 
+async function downloadFile(url, filePath, idleTimeoutMs = DOWNLOAD_IDLE_TIMEOUT_MS) {
+  return retry(async () => {
+    await fsp.rm(filePath, { force: true })
+    return downloadFileOnce(url, filePath, idleTimeoutMs)
+  })
+}
+
 async function sha256File(filePath) {
   const hash = crypto.createHash('sha256')
   await pipeline(fs.createReadStream(filePath), hash)
   return hash.digest('hex')
 }
 
-module.exports = { downloadFile, sha256File }
+module.exports = { downloadFile, retry, sha256File }

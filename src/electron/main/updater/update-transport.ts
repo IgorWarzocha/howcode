@@ -69,34 +69,6 @@ export async function writeAtomicJson(filePath: string, value: unknown) {
   }
 }
 
-export async function withUpdateLock<T>(cacheRoot: string, operation: () => Promise<T>) {
-  const lockPath = path.join(cacheRoot, '.update.lock')
-  await mkdir(cacheRoot, { recursive: true })
-  let acquired = false
-  for (let attempt = 0; attempt < 120; attempt += 1) {
-    try {
-      await mkdir(lockPath)
-      acquired = true
-      break
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
-      try {
-        const ageMs = Date.now() - (await stat(lockPath)).mtimeMs
-        if (ageMs > 15 * 60_000) await rm(lockPath, { recursive: true, force: true })
-      } catch {
-        // The other updater may have released the lock between stat and cleanup.
-      }
-      await new Promise((resolve) => setTimeout(resolve, 500))
-    }
-  }
-  if (!acquired) throw new Error('Another Howcode update is still running. Try again shortly.')
-  try {
-    return await operation()
-  } finally {
-    await rm(lockPath, { recursive: true, force: true }).catch(() => undefined)
-  }
-}
-
 export async function isExecutableFile(filePath: string) {
   try {
     if (!(await stat(filePath)).isFile()) return false

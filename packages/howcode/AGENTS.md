@@ -1,3 +1,4 @@
 - This package is a small CommonJS npm launcher, not the desktop app; do not copy app runtime code or dependencies into it.
 - It follows stable `channel-main` / `channel-dev` release assets, so launcher and root app versions are independent.
 - Keep cache validation strict: a usable install requires the platform executable plus `app.asar` or an unpacked app package.
+- GUI launch success requires the Electron readiness marker; spawning a detached wrapper alone is not success.

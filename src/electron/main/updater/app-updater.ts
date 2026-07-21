@@ -1,10 +1,9 @@
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
 import { app } from 'electron'
 import type { AppUpdateState } from '../../../../shared/desktop-app-update-contracts'
 import { spawnDetached } from './spawn-detached'
 import { installUpdateBundle } from './update-installer'
 import { isUpdateCandidate, type UpdateChannel } from './update-protocol'
+import { findRestorableUpdate, getUpdatePruneKeepDirs } from './update-recovery'
 import {
   assertUpdateEnabled,
   getCurrentAppVersion,
@@ -12,19 +11,14 @@ import {
   resolveLatestRelease,
 } from './update-runtime'
 import {
-  getCacheRoot,
   getInstallPaths,
-  getLegacyInstallPaths,
   getRunningReleaseFingerprint,
   getTarget,
   type InstalledUpdate,
-  isValidInstall,
-  parseInstalledUpdateRecord,
   pruneOldVersions,
   type ReleaseInfo,
   type UpdateTarget,
 } from './update-storage'
-import { writeAtomicJson } from './update-transport'
 
 type AppUpdaterListener = (state: AppUpdateState) => void
 
@@ -98,11 +92,17 @@ export class AppUpdater {
   }
 
   async checkForUpdate() {
-    if (this.checkPromise) return this.checkPromise
-    this.checkPromise = this.checkForUpdateInner().finally(() => {
-      this.checkPromise = null
-    })
-    return this.checkPromise
+    while (true) {
+      const requestedChannel = await this.getUpdateChannel()
+      if (!this.checkPromise) {
+        this.checkPromise = this.checkForUpdateInner(requestedChannel).finally(() => {
+          this.checkPromise = null
+        })
+      }
+      await this.checkPromise
+      const activeChannel = await this.getUpdateChannel()
+      if (this.state.channel === activeChannel) return this.state
+    }
   }
 
   async checkAndInstall() {
@@ -136,9 +136,8 @@ export class AppUpdater {
     }
   }
 
-  private async checkForUpdateInner() {
+  private async checkForUpdateInner(channel: UpdateChannel) {
     try {
-      const channel = await this.getUpdateChannel()
       if (this.state.channel !== channel) {
         this.latestRelease = null
         this.installedUpdate = null
@@ -242,7 +241,7 @@ export class AppUpdater {
       release,
       target,
       paths,
-      getKeepDirs: (installDir) => this.getPruneKeepDirs(installDir),
+      getKeepDirs: getUpdatePruneKeepDirs,
       onInstalling: () =>
         this.setState({
           status: 'installing',
@@ -252,7 +251,12 @@ export class AppUpdater {
         }),
     })
     this.installedUpdate = installedUpdate
-    await pruneOldVersions(paths.cacheRoot, keepDirs)
+    const pruneFailures = await pruneOldVersions(paths.cacheRoot, keepDirs)
+    if (pruneFailures.length > 0) {
+      console.warn(
+        `[howcode updater] could not remove ${pruneFailures.length} old cached version(s)`,
+      )
+    }
     this.setState({
       status: 'ready',
       latestVersion: release.version,
@@ -291,29 +295,14 @@ export class AppUpdater {
     if (!isUpdateEnabled()) return
     this.installedUpdate = null
     const channel = await this.getUpdateChannel()
-    const currentFile = path.join(getCacheRoot(), `current-${channel}.json`)
-    const legacyCurrentFile = path.join(getCacheRoot(), 'current.json')
-    const record =
-      (await this.readCurrentFile(currentFile)) ??
-      (await this.readCurrentFile(legacyCurrentFile, channel))
-    if (!(record && this.isUpdateCandidate(record))) return
-    const target = getTarget()
-    const expectedPaths = getInstallPaths(target, record)
-    const legacyPaths = getLegacyInstallPaths(target, record)
-    const paths =
-      record.installDir === legacyPaths.installDir &&
-      record.executablePath === legacyPaths.executablePath
-        ? legacyPaths
-        : expectedPaths
-    if (record.installDir !== paths.installDir || record.executablePath !== paths.executablePath) {
-      return
-    }
-    if (!(await isValidInstall(paths, target))) return
+    const record = await findRestorableUpdate({
+      channel,
+      currentVersion: this.state.currentVersion,
+      target: getTarget(),
+    })
+    if (!record) return
     this.installedUpdate = record
     this.latestRelease = record
-    if (paths === legacyPaths) {
-      await writeAtomicJson(currentFile, record).catch(() => undefined)
-    }
     this.setState({
       status: 'ready',
       latestVersion: record.version,
@@ -324,30 +313,6 @@ export class AppUpdater {
 
   private isUpdateCandidate(release: Pick<ReleaseInfo, 'channel' | 'version' | 'hash'>) {
     return isUpdateCandidate(this.state.currentVersion, release, getRunningReleaseFingerprint())
-  }
-
-  private async getPruneKeepDirs(installDir: string) {
-    const keepDirs = new Set([installDir])
-    await Promise.all(
-      (['main', 'dev'] as const).map(async (channel) => {
-        const record = await this.readCurrentFile(
-          path.join(getCacheRoot(), `current-${channel}.json`),
-        )
-        if (record?.installDir) keepDirs.add(record.installDir)
-      }),
-    )
-    return keepDirs
-  }
-
-  private async readCurrentFile(currentFile: string, fallbackChannel: UpdateChannel | null = null) {
-    try {
-      return parseInstalledUpdateRecord(
-        JSON.parse(await readFile(currentFile, 'utf8')),
-        fallbackChannel,
-      )
-    } catch {
-      return null
-    }
   }
 
   private async resolveAvailableRelease() {

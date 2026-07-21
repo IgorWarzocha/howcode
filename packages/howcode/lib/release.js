@@ -1,4 +1,5 @@
 const { APP_NAME, CHANNEL_RELEASE_TAGS, RELEASE_BASE_URL, getReleaseChannel } = require('./config')
+const { retry } = require('./download')
 
 const trailingSlashesPattern = /\/+$/
 const trailingChannelPattern = /\/(?:main|dev|channel-main|channel-dev)$/i
@@ -26,18 +27,20 @@ function addCacheBust(url) {
 }
 
 async function fetchJson(url) {
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), FETCH_METADATA_TIMEOUT_MS)
-  try {
-    const response = await fetch(addCacheBust(url), {
-      signal: controller.signal,
-      cache: 'no-store',
-    })
-    if (!response.ok) throw new Error(`HTTP ${response.status} while fetching ${url}`)
-    return await response.json()
-  } finally {
-    clearTimeout(timeout)
-  }
+  return retry(async () => {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), FETCH_METADATA_TIMEOUT_MS)
+    try {
+      const response = await fetch(addCacheBust(url), {
+        signal: controller.signal,
+        cache: 'no-store',
+      })
+      if (!response.ok) throw new Error(`HTTP ${response.status} while fetching ${url}`)
+      return await response.json()
+    } finally {
+      clearTimeout(timeout)
+    }
+  })
 }
 
 function validateReleaseMetadata(metadata, updateUrl, releaseBaseUrl, channel, fallbackAssetUrl) {

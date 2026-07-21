@@ -121,11 +121,10 @@ export function isUpdateCandidate(
   if (versionDiff > 0) return true
   if (versionDiff < 0) return false
 
-  return Boolean(
-    runningRelease &&
-      runningRelease.version === release.version &&
-      runningRelease.hash !== release.hash,
-  )
+  // Installer builds cannot know their enclosing archive hash. Stage the moving channel once at
+  // the same version; cached builds carry their hash in the immutable version directory afterward.
+  if (!runningRelease) return true
+  return runningRelease.version === release.version && runningRelease.hash !== release.hash
 }
 
 export function addCacheBust(url: string) {

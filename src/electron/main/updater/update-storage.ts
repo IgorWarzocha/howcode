@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs'
-import { readdir, rm } from 'node:fs/promises'
+import { readdir, rm, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import path from 'node:path'
 import type { UpdateChannel } from './update-protocol'
@@ -29,6 +29,7 @@ const sha256Pattern = /^[a-f0-9]{64}$/i
 const semverPattern = /^\d+\.\d+\.\d+$/
 const channelReleaseKeyPattern = /^(main|dev)-(\d+\.\d+\.\d+)-([a-f0-9]{64})$/i
 const legacyReleaseKeyPattern = /^(\d+\.\d+\.\d+)-([a-f0-9]{64})$/i
+const RECENT_VERSION_RETENTION = 5
 
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
@@ -153,17 +154,42 @@ export async function pruneOldVersions(cacheRoot: string, keepDirs: ReadonlySet<
   try {
     entries = await readdir(versionsRoot, { withFileTypes: true })
   } catch {
-    return
+    return []
   }
-  await Promise.all(
-    entries.flatMap((entry) => {
-      if (!entry.isDirectory()) return []
-      const dirPath = path.join(versionsRoot, entry.name)
-      return keepDirs.has(dirPath) || dirPath === runningVersionDir
-        ? []
-        : [rm(dirPath, { recursive: true, force: true })]
-    }),
+  const versionDirs = await Promise.all(
+    entries.flatMap((entry) =>
+      entry.isDirectory()
+        ? [
+            (async () => {
+              const dirPath = path.join(versionsRoot, entry.name)
+              try {
+                return { dirPath, modifiedAt: (await stat(dirPath)).mtimeMs }
+              } catch {
+                return null
+              }
+            })(),
+          ]
+        : [],
+    ),
+  ).then((directories) =>
+    directories.filter(
+      (directory): directory is { dirPath: string; modifiedAt: number } => directory !== null,
+    ),
   )
+  const retainedDirs = new Set(keepDirs)
+  if (runningVersionDir) retainedDirs.add(runningVersionDir)
+  versionDirs
+    .sort((left, right) => right.modifiedAt - left.modifiedAt)
+    .slice(0, RECENT_VERSION_RETENTION)
+    .forEach(({ dirPath }) => {
+      retainedDirs.add(dirPath)
+    })
+  const removals = await Promise.allSettled(
+    versionDirs.flatMap(({ dirPath }) =>
+      retainedDirs.has(dirPath) ? [] : [rm(dirPath, { recursive: true, force: true })],
+    ),
+  )
+  return removals.flatMap((result) => (result.status === 'rejected' ? [result.reason] : []))
 }
 
 function getRunningCachedVersionDir(versionsRoot: string) {

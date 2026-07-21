@@ -40,7 +40,7 @@ async function main() {
       }
       if (!isValidInstall(currentPaths, target)) throw error
       await ensureCommandLaunchIntegration(target, currentPaths)
-      await launch(current.executablePath, launchArgs)
+      await launch(current.executablePath, launchArgs, { cacheRoot })
       return
     }
     throw error
@@ -52,8 +52,11 @@ async function main() {
   if (target.os === 'win' && didInstall && launchIntegrationReady) {
     console.log('howcode: installed. You can relaunch it from the Windows Start Menu.')
   }
-  await pruneOldVersions(cacheRoot, paths.installDir, recentlyReplacedDir)
-  await launch(paths.executablePath, launchArgs)
+  const pruneFailures = await pruneOldVersions(cacheRoot, paths.installDir, recentlyReplacedDir)
+  if (pruneFailures.length > 0) {
+    console.warn(`howcode: could not remove ${pruneFailures.length} old cached version(s).`)
+  }
+  await launch(paths.executablePath, launchArgs, { cacheRoot })
 }
 
 module.exports = { main }

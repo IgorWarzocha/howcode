@@ -8,6 +8,7 @@ import { registerDesktopIpc } from './ipc/register-desktop-ipc'
 import { applyDevViewport } from './runtime/dev-viewport'
 import { configureDevtoolsRemoteDebugging, logDevtoolsRemoteDebugging } from './runtime/devtools'
 import { configureDesktopEnvironment } from './runtime/environment'
+import { signalLauncherReady } from './runtime/launcher-readiness'
 import { loadDesktopServiceRuntime } from './runtime/load-desktop-runtime'
 import { registerDesktopRuntimeShutdown } from './runtime/shutdown'
 import { AppUpdater } from './updater/app-updater'
@@ -80,6 +81,7 @@ async function bootstrap() {
   registerDesktopIpc(() => currentMainWindow, runtime, appUpdater, installMenu)
   await installMenu()
   await openMainWindow()
+  await signalLauncherReady()
 
   app.on('activate', async () => {
     if (quitRequested) {

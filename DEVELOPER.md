@@ -28,7 +28,9 @@ bun run publish:howcode:dry-run
 
 ## Release flow
 
-Build release artifacts:
+The `Release artifacts` GitHub workflow is authoritative. Pushes to `main` and `dev` build all six
+OS/architecture targets and atomically refresh `channel-main` or `channel-dev`; version tags publish
+an immutable release. Local preparation builds only the current host and is useful for diagnosis:
 
 ```bash
 bun run release:prepare
@@ -40,20 +42,15 @@ This produces:
 - `artifacts/electron/*.AppImage` — Linux AppImage artifacts on Linux builds
 - `artifacts/npm-launcher/` — launcher archives consumed by the npm package
 
-For a GitHub release, upload both:
+Each target contributes:
 
 - `stable-<os>-<arch>-update.json`
-- Electron unpacked bundle artifacts
-- Linux `.AppImage` artifacts
-- `howcode-<os>-<arch>.tar.gz`
+- `archive-howcode-<os>-<arch>-<sha256>.tar.gz` — immutable updater payload
+- `howcode-<os>-<arch>.tar.gz` — legacy launcher fallback
+- platform installer/AppImage/zip artifacts
 
-Launcher base URL:
-
-- `https://github.com/IgorWarzocha/howcode/releases/latest/download`
-
-GitHub workflow:
-
-- push a tag like `v0.1.0` to build all release artifacts and publish a GitHub release automatically
+The workflow validates all six manifests and hashes before publishing payloads, then swaps manifests
+last. Do not manually replace a channel manifest before its referenced archive exists.
 
 ## NPM launcher package
 
@@ -100,4 +97,3 @@ Hooks:
 - `docs/mock-features.md`
 - `docs/implementation-todo.md`
 - `docs/lane-map.md`
-

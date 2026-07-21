@@ -1,5 +1,8 @@
+import { createHash } from 'node:crypto'
+import { createReadStream } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
+import { pipeline } from 'node:stream/promises'
 
 const releaseDirectory = process.argv[2]
 if (!releaseDirectory) throw new Error('Usage: bun scripts/validate-release-assets.ts <directory>')
@@ -15,6 +18,12 @@ const expectedTargets = [
 const files = new Set(await readdir(releaseDirectory))
 // biome-ignore lint/complexity/useLiteralKeys: ProcessEnv is an index-signature type.
 const expectedChannel = process.env['HOWCODE_RELEASE_CHANNEL']
+
+async function sha256File(filePath: string) {
+  const hash = createHash('sha256')
+  await pipeline(createReadStream(filePath), hash)
+  return hash.digest('hex')
+}
 
 for (const target of expectedTargets) {
   const metadataName = `stable-${target}-update.json`
@@ -45,6 +54,10 @@ for (const target of expectedTargets) {
   }
   const assetName = path.basename(new URL(metadata.assetUrl).pathname)
   if (!files.has(assetName)) throw new Error(`${metadataName} points to missing ${assetName}`)
+  const archiveHash = await sha256File(path.join(releaseDirectory, assetName))
+  if (archiveHash !== metadata.hash.toLowerCase()) {
+    throw new Error(`${metadataName} hash does not match ${assetName}`)
+  }
 }
 
 console.log(`Validated ${expectedTargets.length} release manifests in ${releaseDirectory}`)

@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs'
 import { chmod, mkdir, readFile, rename, rm } from 'node:fs/promises'
 import path from 'node:path'
 import { x as extractTar } from 'tar'
+import { withUpdateLock } from './update-lock'
 import {
   getAppResourcesPath,
   type getInstallPaths,
@@ -12,13 +13,7 @@ import {
   type ReleaseInfo,
   type UpdateTarget,
 } from './update-storage'
-import {
-  downloadFile,
-  isExecutableFile,
-  sha256File,
-  withUpdateLock,
-  writeAtomicJson,
-} from './update-transport'
+import { downloadFile, isExecutableFile, sha256File, writeAtomicJson } from './update-transport'
 
 function getMissingPackagedBundleMessage(installDir: string, target: UpdateTarget) {
   const resourcesPath = getAppResourcesPath(installDir, target)

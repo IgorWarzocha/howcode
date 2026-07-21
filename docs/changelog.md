@@ -3,6 +3,8 @@
 - Rebuilt app updates around one atomic, channel-aware updater for macOS, Linux, and Windows.
 - Updates now download in the background, verify immutable archives, and hand off before the next launch.
 - Hardened `bunx howcode` / `bunx howcode@dev` cache recovery, concurrent launches, and launch failure reporting.
+- Launcher success now waits for the Electron window to report ready instead of trusting a detached process spawn.
+- Moving channels publish payloads before manifests and verify every advertised archive hash.
 - Existing release manifests remain readable for this migration release; future manifests use protocol v2.
 
 Snapshot: 21 July 2026.

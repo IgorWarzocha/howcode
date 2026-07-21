@@ -3,6 +3,9 @@ const fsp = require('node:fs/promises')
 const os = require('node:os')
 const path = require('node:path')
 const { APP_NAME, CHANNEL_RELEASE_TAGS } = require('./config')
+const { withUpdateLock } = require('./lock')
+
+const RECENT_VERSION_RETENTION = 5
 
 function getCacheRoot() {
   if (process.env.HOWCODE_CACHE_DIR) return process.env.HOWCODE_CACHE_DIR
@@ -70,34 +73,6 @@ function isValidInstall(paths, target) {
   return isLaunchableFile(paths.executablePath) && hasPackagedAppBundle(paths.installDir, target)
 }
 
-async function withUpdateLock(cacheRoot, operation) {
-  const lockPath = path.join(cacheRoot, '.update.lock')
-  await fsp.mkdir(cacheRoot, { recursive: true })
-  let acquired = false
-  for (let attempt = 0; attempt < 120; attempt += 1) {
-    try {
-      await fsp.mkdir(lockPath)
-      acquired = true
-      break
-    } catch (error) {
-      if (error?.code !== 'EEXIST') throw error
-      try {
-        const ageMs = Date.now() - (await fsp.stat(lockPath)).mtimeMs
-        if (ageMs > 15 * 60_000) await fsp.rm(lockPath, { recursive: true, force: true })
-      } catch {
-        // Another launcher may have released the lock between stat and cleanup.
-      }
-      await new Promise((resolve) => setTimeout(resolve, 500))
-    }
-  }
-  if (!acquired) throw new Error('Another Howcode update is still running. Try again shortly.')
-  try {
-    return await operation()
-  } finally {
-    await fsp.rm(lockPath, { recursive: true, force: true }).catch(() => undefined)
-  }
-}
-
 async function writeCurrentFile(currentFile, record) {
   const temporaryFile = `${currentFile}.tmp-${process.pid}-${Date.now()}`
   await fsp.mkdir(path.dirname(currentFile), { recursive: true })
@@ -116,6 +91,8 @@ async function getPruneKeepDirs(cacheRoot, keepDir) {
     const record = readJsonIfPresent(path.join(cacheRoot, `current-${channel}.json`))
     if (record?.installDir) keepDirs.add(record.installDir)
   }
+  const legacyRecord = readJsonIfPresent(path.join(cacheRoot, 'current.json'))
+  if (legacyRecord?.installDir) keepDirs.add(legacyRecord.installDir)
   return keepDirs
 }
 
@@ -127,15 +104,37 @@ async function pruneOldVersions(cacheRoot, keepDir, recentlyReplacedDir = null) 
   try {
     entries = await fsp.readdir(versionsRoot, { withFileTypes: true })
   } catch {
-    return
+    return []
   }
-  await Promise.all(
-    entries.flatMap((entry) => {
-      if (!entry.isDirectory()) return []
-      const dirPath = path.join(versionsRoot, entry.name)
-      return keepDirs.has(dirPath) ? [] : [fsp.rm(dirPath, { recursive: true, force: true })]
-    }),
+  const versionDirs = await Promise.all(
+    entries.flatMap((entry) =>
+      entry.isDirectory()
+        ? [
+            (async () => {
+              const dirPath = path.join(versionsRoot, entry.name)
+              try {
+                return { dirPath, modifiedAt: (await fsp.stat(dirPath)).mtimeMs }
+              } catch {
+                return null
+              }
+            })(),
+          ]
+        : [],
+    ),
+  ).then((directories) => directories.filter(Boolean))
+  versionDirs
+    .sort((left, right) => right.modifiedAt - left.modifiedAt)
+    .slice(0, RECENT_VERSION_RETENTION)
+    .forEach(({ dirPath }) => {
+      keepDirs.add(dirPath)
+    })
+
+  const removals = await Promise.allSettled(
+    versionDirs.flatMap(({ dirPath }) =>
+      keepDirs.has(dirPath) ? [] : [fsp.rm(dirPath, { recursive: true, force: true })],
+    ),
   )
+  return removals.flatMap((result) => (result.status === 'rejected' ? [result.reason] : []))
 }
 
 module.exports = {

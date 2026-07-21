@@ -52,14 +52,16 @@ export function useAppUpdateFlow() {
 
   useEffect(() => {
     let cancelled = false
+    let receivedUpdateEvent = false
     const unsubscribe = subscribeDesktopEvents((event) => {
       if (event.type === 'app-update') {
+        receivedUpdateEvent = true
         logUpdateError(event.state)
         setState(event.state)
       }
     })
     void getAppUpdateStateQuery().then((nextState) => {
-      if (!cancelled && nextState) {
+      if (!(cancelled || receivedUpdateEvent) && nextState) {
         logUpdateError(nextState)
         setState(nextState)
       }
