@@ -37,6 +37,8 @@ This npm package is a small launcher.
 
 On first run, it downloads the matching desktop app for your platform from GitHub Releases and caches it locally.
 After the first successful download, it can fall back to the cached app if release metadata is temporarily unavailable.
+The launcher validates release manifests, serialises concurrent installs, and reports launch failures
+instead of silently detaching a broken executable.
 
 On Windows, the first successful run also creates a Start Menu shortcut for `howcode`, so you do
 not need to find the cached executable or add the cache directory to `PATH`.

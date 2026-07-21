@@ -1,6 +1,17 @@
 import { createHash } from 'node:crypto'
 import { createReadStream, createWriteStream, existsSync, readFileSync } from 'node:fs'
-import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
+import {
+  access,
+  chmod,
+  constants,
+  mkdir,
+  readdir,
+  readFile,
+  rename,
+  rm,
+  stat,
+  writeFile,
+} from 'node:fs/promises'
 import { homedir } from 'node:os'
 import path from 'node:path'
 import { Readable } from 'node:stream'
@@ -12,6 +23,12 @@ import packageJson from '../../../../package.json'
 import type { AppUpdateState } from '../../../../shared/desktop-app-update-contracts'
 import { getAppRootPath } from '../runtime/app-paths'
 import { spawnDetached } from './spawn-detached'
+import {
+  addCacheBust,
+  isUpdateCandidate,
+  normalizeReleaseMetadata,
+  type UpdateChannel,
+} from './update-protocol'
 
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
@@ -43,8 +60,6 @@ type ReleaseInfo = {
   hash: string
   assetUrl: string
 }
-
-type UpdateChannel = 'main' | 'dev'
 
 type InstalledUpdate = ReleaseInfo & {
   executablePath: string
@@ -128,6 +143,17 @@ function getInstallPaths(target: UpdateTarget, release: ReleaseInfo) {
   }
 }
 
+function getLegacyInstallPaths(target: UpdateTarget, release: ReleaseInfo) {
+  const cacheRoot = getCacheRoot()
+  const installDir = path.join(cacheRoot, 'versions', `${release.version}-${release.hash}`)
+  return {
+    cacheRoot,
+    currentFile: path.join(cacheRoot, 'current.json'),
+    installDir,
+    executablePath: path.join(installDir, target.executable),
+  }
+}
+
 function getAppResourcesPath(installDir: string, target: UpdateTarget) {
   if (target.os === 'macos') {
     return path.join(installDir, `${APP_NAME}.app`, 'Contents', 'Resources')
@@ -186,45 +212,29 @@ function assertUpdateEnabled() {
   }
 }
 
-function assertInstallSupported(target: UpdateTarget) {
-  if (target.os === 'win') {
-    throw new Error(
-      'In-app updates are disabled on Windows installer builds until Start Menu shortcut handoff is implemented.',
-    )
-  }
-}
-
-function normalizeReleaseMetadata(
-  metadata: unknown,
-  updateUrl: string,
-): Pick<ReleaseInfo, 'version' | 'hash' | 'assetUrl'> {
-  if (!metadata || typeof metadata !== 'object') {
-    throw new Error(`Invalid metadata from ${updateUrl}`)
-  }
-
-  const version = 'version' in metadata ? metadata.version : null
-  const hash = 'hash' in metadata ? metadata.hash : null
-  const assetUrl = 'assetUrl' in metadata ? metadata.assetUrl : null
-
-  if (typeof version !== 'string' || !semverPattern.test(version)) {
-    throw new Error(`Invalid release version from ${updateUrl}`)
-  }
-
-  if (typeof hash !== 'string' || !sha256Pattern.test(hash)) {
-    throw new Error(`Invalid release hash from ${updateUrl}`)
-  }
-
-  return {
-    version,
-    hash: hash.toLowerCase(),
-    assetUrl: typeof assetUrl === 'string' && assetUrl.length > 0 ? assetUrl : '',
-  }
-}
-
 async function fetchJson(url: string, timeoutMs = 15_000) {
-  const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) })
-  if (!response.ok) throw new Error(`HTTP ${response.status} from ${url}`)
-  return response.json() as Promise<unknown>
+  return retry(async () => {
+    const response = await fetch(addCacheBust(url), {
+      signal: AbortSignal.timeout(timeoutMs),
+      cache: 'no-store',
+    })
+    if (!response.ok) throw new Error(`HTTP ${response.status} from ${url}`)
+    return response.json() as Promise<unknown>
+  })
+}
+
+async function retry<T>(operation: () => Promise<T>, attempts = 3) {
+  let lastError: unknown
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return await operation()
+    } catch (error) {
+      lastError = error
+      if (attempt === attempts - 1) break
+      await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** attempt))
+    }
+  }
+  throw lastError
 }
 
 async function resolveLatestRelease(
@@ -233,44 +243,36 @@ async function resolveLatestRelease(
 ): Promise<ReleaseInfo> {
   const releaseBaseUrl = getReleaseBaseUrl(channel)
   const updateUrl = `${releaseBaseUrl}/stable-${target.os}-${target.arch}-update.json`
+  const fallbackAssetUrl = `${releaseBaseUrl}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`
   const { version, hash, assetUrl } = normalizeReleaseMetadata(
     await fetchJson(updateUrl),
     updateUrl,
+    releaseBaseUrl,
+    channel,
+    fallbackAssetUrl,
   )
-  const fallbackAssetUrl = `${releaseBaseUrl}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`
-  const resolvedAssetUrl = new URL(assetUrl || fallbackAssetUrl)
-  const trustedReleaseBase = new URL(`${releaseBaseUrl}/`)
-  if (resolvedAssetUrl.origin !== trustedReleaseBase.origin) {
-    throw new Error(`Update metadata points to an untrusted asset host: ${resolvedAssetUrl.origin}`)
-  }
   return {
     channel,
     version,
     hash,
-    assetUrl: resolvedAssetUrl.toString(),
+    assetUrl,
   }
-}
-
-function compareVersions(left: string, right: string) {
-  const leftParts = left.split('.').map((part) => Number.parseInt(part, 10))
-  const rightParts = right.split('.').map((part) => Number.parseInt(part, 10))
-  const length = Math.max(leftParts.length, rightParts.length)
-  for (let index = 0; index < length; index += 1) {
-    const diff = (leftParts[index] ?? 0) - (rightParts[index] ?? 0)
-    if (diff !== 0) return diff
-  }
-  return 0
 }
 
 async function downloadFile(url: string, filePath: string) {
-  const response = await fetch(url, { signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS) })
-  if (!(response.ok && response.body))
-    throw new Error(`HTTP ${response.status} while downloading ${url}`)
-  await mkdir(path.dirname(filePath), { recursive: true })
-  await pipeline(
-    Readable.fromWeb(response.body as unknown as NodeReadableStream),
-    createWriteStream(filePath),
-  )
+  await retry(async () => {
+    const response = await fetch(addCacheBust(url), {
+      signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
+      cache: 'no-store',
+    })
+    if (!(response.ok && response.body))
+      throw new Error(`HTTP ${response.status} while downloading ${url}`)
+    await mkdir(path.dirname(filePath), { recursive: true })
+    await pipeline(
+      Readable.fromWeb(response.body as unknown as NodeReadableStream),
+      createWriteStream(filePath),
+    )
+  })
 }
 
 async function sha256File(filePath: string) {
@@ -303,26 +305,67 @@ function parseInstalledUpdateRecord(
   return { channel, version, hash: hash.toLowerCase(), installDir, executablePath, assetUrl: '' }
 }
 
-function writeInstalledUpdateRecord(currentFile: string, record: InstalledUpdate) {
-  return writeFile(
-    currentFile,
-    JSON.stringify(
-      {
-        version: record.version,
-        channel: record.channel,
-        hash: record.hash,
-        installDir: record.installDir,
-        executablePath: record.executablePath,
-      },
-      null,
-      2,
-    ),
-  )
+async function writeInstalledUpdateRecord(currentFile: string, record: InstalledUpdate) {
+  const temporaryFile = `${currentFile}.tmp-${process.pid}-${Date.now()}`
+  await mkdir(path.dirname(currentFile), { recursive: true })
+  try {
+    await writeFile(
+      temporaryFile,
+      JSON.stringify(
+        {
+          version: record.version,
+          channel: record.channel,
+          hash: record.hash,
+          installDir: record.installDir,
+          executablePath: record.executablePath,
+        },
+        null,
+        2,
+      ),
+    )
+    await rename(temporaryFile, currentFile)
+  } catch (error) {
+    await rm(temporaryFile, { force: true }).catch(() => undefined)
+    throw error
+  }
+}
+
+async function withUpdateLock<T>(cacheRoot: string, operation: () => Promise<T>) {
+  const lockPath = path.join(cacheRoot, '.update.lock')
+  await mkdir(cacheRoot, { recursive: true })
+  let acquired = false
+
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    try {
+      await mkdir(lockPath)
+      acquired = true
+      break
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
+      try {
+        const ageMs = Date.now() - (await stat(lockPath)).mtimeMs
+        if (ageMs > 15 * 60_000) await rm(lockPath, { recursive: true, force: true })
+      } catch {
+        // The other updater may have released the lock between stat and cleanup.
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500))
+    }
+  }
+
+  if (!acquired) throw new Error('Another Howcode update is still running. Try again shortly.')
+
+  try {
+    return await operation()
+  } finally {
+    await rm(lockPath, { recursive: true, force: true }).catch(() => undefined)
+  }
 }
 
 async function isExecutableFile(filePath: string) {
   try {
-    return (await stat(filePath)).isFile()
+    if (!(await stat(filePath)).isFile()) return false
+    if (process.platform !== 'win32') await access(filePath, constants.X_OK)
+    return true
   } catch {
     return false
   }
@@ -455,6 +498,37 @@ export class AppUpdater {
     return this.checkPromise
   }
 
+  async checkAndInstall() {
+    const state = await this.checkForUpdate()
+    if (state.status === 'available') return this.installUpdate()
+    return state
+  }
+
+  /**
+   * The installed app remains immutable. A staged bundle is the handoff target for every OS,
+   * including Windows where replacing a running executable is not possible. Old bridge builds can
+   * therefore hand off once to this updater, after which all future launches use the same path.
+   */
+  async takeoverIfReady() {
+    try {
+      await this.restoreInstalledUpdate()
+      if (!this.installedUpdate) return false
+      this.setState({
+        status: 'restarting',
+        latestVersion: this.installedUpdate.version,
+        channel: this.installedUpdate.channel,
+        error: null,
+      })
+      await spawnDetached(this.installedUpdate.executablePath)
+      app.quit()
+      return true
+    } catch (error) {
+      logUpdateFailure('takeover', error)
+      this.setState({ status: 'error', error: getErrorMessage(error) })
+      return false
+    }
+  }
+
   private async checkForUpdateInner() {
     try {
       const channel = await this.getUpdateChannel()
@@ -476,15 +550,6 @@ export class AppUpdater {
 
       this.setState({ status: 'checking', error: null })
       const target = getTarget()
-      if (target.os === 'win') {
-        this.setState({
-          status: 'up-to-date',
-          latestVersion: this.state.currentVersion,
-          channel,
-          error: null,
-        })
-        return this.state
-      }
       let release: ReleaseInfo
       try {
         release = await resolveLatestRelease(target, channel)
@@ -537,8 +602,6 @@ export class AppUpdater {
   }
 
   private async installUpdateInner() {
-    let tempRoot: string | null = null
-    let tempInstallDir: string | null = null
     try {
       assertUpdateEnabled()
       const release = this.latestRelease ?? (await this.resolveAvailableRelease())
@@ -554,8 +617,33 @@ export class AppUpdater {
         error: null,
       })
       const target = getTarget()
-      assertInstallSupported(target)
       const paths = getInstallPaths(target, release)
+      await this.installRelease(release, target, paths)
+    } catch (error) {
+      logUpdateFailure('install', error)
+      this.setState({ status: 'error', error: getErrorMessage(error) })
+    }
+    return this.state
+  }
+
+  private installRelease(
+    release: ReleaseInfo,
+    target: UpdateTarget,
+    paths: ReturnType<typeof getInstallPaths>,
+  ) {
+    return withUpdateLock(paths.cacheRoot, () =>
+      this.installReleaseUnderLock(release, target, paths),
+    )
+  }
+
+  private async installReleaseUnderLock(
+    release: ReleaseInfo,
+    target: UpdateTarget,
+    paths: ReturnType<typeof getInstallPaths>,
+  ) {
+    let tempRoot: string | null = null
+    let tempInstallDir: string | null = null
+    try {
       const currentRecord = await this.readCurrentFile(paths.currentFile)
       const existingCacheTrusted =
         currentRecord?.version === release.version &&
@@ -584,7 +672,14 @@ export class AppUpdater {
         })
         await mkdir(tempInstallDir, { recursive: true })
         await extractTar({ file: archivePath, cwd: tempInstallDir })
-        if (!existsSync(path.join(tempInstallDir, target.executable))) {
+        const extractedExecutablePath = path.join(tempInstallDir, target.executable)
+        if (!existsSync(extractedExecutablePath)) {
+          throw new Error(`Downloaded archive did not contain ${target.executable}.`)
+        }
+        if (process.platform !== 'win32') {
+          await chmod(extractedExecutablePath, 0o755)
+        }
+        if (!(await isExecutableFile(extractedExecutablePath))) {
           throw new Error(`Downloaded archive did not contain ${target.executable}.`)
         }
         if (!hasPackagedAppBundle(tempInstallDir, target)) {
@@ -611,9 +706,6 @@ export class AppUpdater {
         channel: release.channel,
         error: null,
       })
-    } catch (error) {
-      logUpdateFailure('install', error)
-      this.setState({ status: 'error', error: getErrorMessage(error) })
     } finally {
       await Promise.all([
         tempRoot ? rm(tempRoot, { recursive: true, force: true }) : Promise.resolve(),
@@ -622,7 +714,6 @@ export class AppUpdater {
         // Ignore cleanup errors while preserving the original install failure.
       })
     }
-    return this.state
   }
 
   async restartToUpdate() {
@@ -656,19 +747,28 @@ export class AppUpdater {
     this.installedUpdate = null
     const channel = await this.getUpdateChannel()
     const currentFile = path.join(getCacheRoot(), `current-${channel}.json`)
-    const record = await this.readCurrentFile(currentFile)
+    const legacyCurrentFile = path.join(getCacheRoot(), 'current.json')
+    const record =
+      (await this.readCurrentFile(currentFile)) ??
+      (await this.readCurrentFile(legacyCurrentFile, channel))
     if (!(record && this.isUpdateCandidate(record))) return
     const target = getTarget()
     const expectedPaths = getInstallPaths(target, record)
-    if (
-      record.installDir !== expectedPaths.installDir ||
-      record.executablePath !== expectedPaths.executablePath
-    ) {
+    const legacyPaths = getLegacyInstallPaths(target, record)
+    const paths =
+      record.installDir === legacyPaths.installDir &&
+      record.executablePath === legacyPaths.executablePath
+        ? legacyPaths
+        : expectedPaths
+    if (record.installDir !== paths.installDir || record.executablePath !== paths.executablePath) {
       return
     }
-    if (!(await isValidInstall(expectedPaths, target))) return
+    if (!(await isValidInstall(paths, target))) return
     this.installedUpdate = record
     this.latestRelease = record
+    if (paths === legacyPaths) {
+      await writeInstalledUpdateRecord(currentFile, record).catch(() => undefined)
+    }
     this.setState({
       status: 'ready',
       latestVersion: record.version,
@@ -678,16 +778,7 @@ export class AppUpdater {
   }
 
   private isUpdateCandidate(release: Pick<ReleaseInfo, 'channel' | 'version' | 'hash'>) {
-    const versionDiff = compareVersions(release.version, this.state.currentVersion)
-    if (versionDiff > 0) return true
-    if (versionDiff < 0) return false
-
-    const runningRelease = getRunningReleaseFingerprint()
-    return Boolean(
-      runningRelease &&
-        runningRelease.version === release.version &&
-        runningRelease.hash !== release.hash,
-    )
+    return isUpdateCandidate(this.state.currentVersion, release, getRunningReleaseFingerprint())
   }
 
   private async getPruneKeepDirs(installDir: string) {

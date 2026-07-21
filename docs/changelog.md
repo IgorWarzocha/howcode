@@ -1,3 +1,12 @@
+### 0.1.68
+
+- Rebuilt app updates around one atomic, channel-aware updater for macOS, Linux, and Windows.
+- Updates now download in the background, verify immutable archives, and hand off before the next launch.
+- Hardened `bunx howcode` / `bunx howcode@dev` cache recovery, concurrent launches, and launch failure reporting.
+- Existing release manifests remain readable for this migration release; future manifests use protocol v2.
+
+Snapshot: 21 July 2026.
+
 ### 0.1.67
 
 

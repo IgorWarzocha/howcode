@@ -1,7 +1,7 @@
 {
   "name": "howcode",
   "productName": "howcode",
-  "version": "0.1.67",
+  "version": "0.1.68",
   "private": true,
   "description": "Desktop coding app for Pi with projects, terminal, git, and diff workflows.",
   "license": "MIT",
@@ -26,6 +26,7 @@
     "build": "vite build && bun run build:runtime && electron-builder --dir --config electron-builder.yml",
     "build:release": "vite build && bun run build:runtime && electron-builder --config electron-builder.yml --publish never",
     "build:launcher-artifacts": "bun ./scripts/package-launcher-artifacts.ts",
+    "validate:release-assets": "bun ./scripts/validate-release-assets.ts",
     "build:service-native-abi-bundles": "node ./scripts/build-release-service-native-abi-bundles.cjs",
     "release:prepare": "bun run build:release && bun run build:launcher-artifacts",
     "pack:howcode": "bun ./scripts/pack-howcode-launcher.ts main pack",

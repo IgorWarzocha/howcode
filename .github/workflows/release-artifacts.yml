@@ -118,6 +118,7 @@ jobs:
 
       - name: Build launcher archives
         env:
+          HOWCODE_RELEASE_CHANNEL: ${{ github.ref_type == 'tag' && 'main' || github.ref_name }}
           HOWCODE_RELEASE_ASSET_BASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_type == 'tag' && github.ref_name || format('channel-{0}', github.ref_name) }}
         run: bun run build:launcher-artifacts
 
@@ -249,6 +250,11 @@ jobs:
       - name: List channel release assets
         run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' -o -name '*.zip' \) -print | sort
 
+      - name: Validate channel update manifests
+        env:
+          HOWCODE_RELEASE_CHANNEL: ${{ github.ref_name }}
+        run: bun run validate:release-assets release-assets
+
       - name: Prepare channel release notes
         env:
           CHANNEL: ${{ github.ref_name }}
@@ -318,6 +324,11 @@ jobs:
 
       - name: List release assets
         run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' -o -name '*.zip' \) -print | sort
+
+      - name: Validate versioned update manifests
+        env:
+          HOWCODE_RELEASE_CHANNEL: main
+        run: bun run validate:release-assets release-assets
 
       - name: Create or update GitHub release
         env:

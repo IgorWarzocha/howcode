@@ -222,11 +222,18 @@ async function createUpdateMetadata(archivePath: string, target: Target, version
   )
   await copyFile(archivePath, immutableArchivePath)
   const { HOWCODE_RELEASE_ASSET_BASE_URL: assetBaseUrl } = process.env
+  // biome-ignore lint/complexity/useLiteralKeys: ProcessEnv is an index-signature type.
+  const releaseChannel = process.env['HOWCODE_RELEASE_CHANNEL'] ?? 'main'
+  if (releaseChannel !== 'main' && releaseChannel !== 'dev') {
+    throw new Error('HOWCODE_RELEASE_CHANNEL must be main or dev when building release metadata.')
+  }
 
   await writeFile(
     metadataPath,
     JSON.stringify(
       {
+        protocolVersion: 2,
+        channel: releaseChannel,
         version,
         hash,
         assetUrl: assetBaseUrl

@@ -21,6 +21,9 @@ const releaseTagPlaceholderPattern = /\{releaseTag\}/g
 const channelPlaceholderPattern = /\{channel\}/g
 const FETCH_METADATA_TIMEOUT_MS = 30_000
 const DOWNLOAD_IDLE_TIMEOUT_MS = 60_000
+const UPDATE_PROTOCOL_VERSION = 2
+const semverPattern = /^\d+\.\d+\.\d+$/
+const sha256Pattern = /^[a-f0-9]{64}$/i
 
 const TARGETS = {
   'darwin:arm64': {
@@ -111,6 +114,52 @@ function getReleaseBaseUrl(channel = getReleaseChannel()) {
   return baseUrl.replace(trailingChannelPattern, `/${releaseTag}`)
 }
 
+function addCacheBust(url) {
+  const parsed = new URL(url)
+  parsed.searchParams.set('cacheBust', `${Date.now()}-${Math.random().toString(36).slice(2)}`)
+  return parsed.toString()
+}
+
+function validateReleaseMetadata(metadata, updateUrl, releaseBaseUrl, channel, fallbackAssetUrl) {
+  if (!metadata || typeof metadata !== 'object') {
+    throw new Error(`Invalid release metadata from ${updateUrl}`)
+  }
+
+  if (
+    metadata.protocolVersion !== undefined &&
+    (!Number.isInteger(metadata.protocolVersion) ||
+      metadata.protocolVersion < 1 ||
+      metadata.protocolVersion > UPDATE_PROTOCOL_VERSION)
+  ) {
+    throw new Error(`Unsupported update protocol from ${updateUrl}`)
+  }
+  if (metadata.channel !== undefined && metadata.channel !== channel) {
+    throw new Error(`Release channel mismatch from ${updateUrl}`)
+  }
+  if (!(semverPattern.test(metadata.version) && sha256Pattern.test(metadata.hash))) {
+    throw new Error(`Invalid release metadata from ${updateUrl}`)
+  }
+
+  const resolvedAssetUrl = new URL(metadata.assetUrl || fallbackAssetUrl, `${releaseBaseUrl}/`)
+  const trustedReleaseBase = new URL(`${releaseBaseUrl}/`)
+  const trustedPath = trustedReleaseBase.pathname.endsWith('/')
+    ? trustedReleaseBase.pathname
+    : `${trustedReleaseBase.pathname}/`
+  if (
+    resolvedAssetUrl.origin !== trustedReleaseBase.origin ||
+    !resolvedAssetUrl.pathname.startsWith(trustedPath)
+  ) {
+    throw new Error(`Update metadata points to an untrusted asset URL: ${resolvedAssetUrl}`)
+  }
+
+  return {
+    channel,
+    version: metadata.version,
+    hash: metadata.hash.toLowerCase(),
+    assetUrl: resolvedAssetUrl.toString(),
+  }
+}
+
 function getPaths(target, releaseInfo) {
   const cacheRoot = getCacheRoot()
   const versionsRoot = path.join(cacheRoot, 'versions')
@@ -143,8 +192,61 @@ function hasPackagedAppBundle(installDir, target) {
   )
 }
 
+function isLaunchableFile(filePath) {
+  try {
+    const executable = fs.statSync(filePath)
+    if (!executable.isFile()) return false
+    if (process.platform !== 'win32') fs.accessSync(filePath, fs.constants.X_OK)
+    return true
+  } catch {
+    return false
+  }
+}
+
 function isValidInstall(paths, target) {
-  return fs.existsSync(paths.executablePath) && hasPackagedAppBundle(paths.installDir, target)
+  return isLaunchableFile(paths.executablePath) && hasPackagedAppBundle(paths.installDir, target)
+}
+
+async function withUpdateLock(cacheRoot, operation) {
+  const lockPath = path.join(cacheRoot, '.update.lock')
+  await fsp.mkdir(cacheRoot, { recursive: true })
+  let acquired = false
+
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    try {
+      await fsp.mkdir(lockPath)
+      acquired = true
+      break
+    } catch (error) {
+      if (error?.code !== 'EEXIST') throw error
+      try {
+        const ageMs = Date.now() - (await fsp.stat(lockPath)).mtimeMs
+        if (ageMs > 15 * 60_000) await fsp.rm(lockPath, { recursive: true, force: true })
+      } catch {
+        // Another launcher may have released the lock between stat and cleanup.
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500))
+    }
+  }
+
+  if (!acquired) throw new Error('Another Howcode update is still running. Try again shortly.')
+  try {
+    return await operation()
+  } finally {
+    await fsp.rm(lockPath, { recursive: true, force: true }).catch(() => undefined)
+  }
+}
+
+async function writeCurrentFile(currentFile, record) {
+  const temporaryFile = `${currentFile}.tmp-${process.pid}-${Date.now()}`
+  await fsp.mkdir(path.dirname(currentFile), { recursive: true })
+  try {
+    await fsp.writeFile(temporaryFile, JSON.stringify(record, null, 2))
+    await fsp.rename(temporaryFile, currentFile)
+  } catch (error) {
+    await fsp.rm(temporaryFile, { force: true }).catch(() => undefined)
+    throw error
+  }
 }
 
 function getLinuxCommandLauncherPath() {
@@ -430,7 +532,10 @@ async function fetchJson(url) {
   const timeout = setTimeout(() => controller.abort(), FETCH_METADATA_TIMEOUT_MS)
 
   try {
-    const response = await fetch(url, { signal: controller.signal })
+    const response = await fetch(addCacheBust(url), {
+      signal: controller.signal,
+      cache: 'no-store',
+    })
     if (!response.ok) {
       throw new Error(`HTTP ${response.status} while fetching ${url}`)
     }
@@ -492,19 +597,13 @@ async function resolveLatestRelease(target) {
   const releaseBaseUrl = getReleaseBaseUrl(channel)
   const updateUrl = `${releaseBaseUrl}/stable-${target.os}-${target.arch}-update.json`
   const metadata = await fetchJson(updateUrl)
-  if (!metadata || typeof metadata.version !== 'string' || typeof metadata.hash !== 'string') {
-    throw new Error(`Invalid release metadata from ${updateUrl}`)
-  }
-
-  return {
+  return validateReleaseMetadata(
+    metadata,
+    updateUrl,
+    releaseBaseUrl,
     channel,
-    version: metadata.version,
-    hash: metadata.hash,
-    assetUrl:
-      typeof metadata.assetUrl === 'string' && metadata.assetUrl.length > 0
-        ? metadata.assetUrl
-        : `${releaseBaseUrl}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`,
-  }
+    `${releaseBaseUrl}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`,
+  )
 }
 
 async function installRelease(target, releaseInfo, paths) {
@@ -532,32 +631,30 @@ async function installRelease(target, releaseInfo, paths) {
 
   await tar.x({ file: archivePath, cwd: tempInstallDir })
 
-  if (!fs.existsSync(path.join(tempInstallDir, target.executable))) {
+  const extractedExecutablePath = path.join(tempInstallDir, target.executable)
+  if (!fs.existsSync(extractedExecutablePath)) {
     throw new Error(`Downloaded archive did not contain ${target.executable}.`)
   }
-
-  if (!hasPackagedAppBundle(tempInstallDir, target)) {
-    throw new Error('Downloaded archive did not contain the packaged app bundle.')
+  if (process.platform !== 'win32') {
+    await fsp.chmod(extractedExecutablePath, 0o755)
+  }
+  if (
+    !isValidInstall({ installDir: tempInstallDir, executablePath: extractedExecutablePath }, target)
+  ) {
+    throw new Error(`Downloaded archive did not contain ${target.executable}.`)
   }
 
   await fsp.rm(paths.installDir, { recursive: true, force: true })
   await fsp.rename(tempInstallDir, paths.installDir)
   await fsp.rm(tempRoot, { recursive: true, force: true })
 
-  await fsp.writeFile(
-    paths.currentFile,
-    JSON.stringify(
-      {
-        version: releaseInfo.version,
-        channel: releaseInfo.channel,
-        hash: releaseInfo.hash,
-        installDir: paths.installDir,
-        executablePath: paths.executablePath,
-      },
-      null,
-      2,
-    ),
-  )
+  await writeCurrentFile(paths.currentFile, {
+    version: releaseInfo.version,
+    channel: releaseInfo.channel,
+    hash: releaseInfo.hash,
+    installDir: paths.installDir,
+    executablePath: paths.executablePath,
+  })
 }
 
 async function getPruneKeepDirs(cacheRoot, keepDir) {
@@ -573,9 +670,10 @@ async function getPruneKeepDirs(cacheRoot, keepDir) {
   return keepDirs
 }
 
-async function pruneOldVersions(cacheRoot, keepDir) {
+async function pruneOldVersions(cacheRoot, keepDir, recentlyReplacedDir = null) {
   const versionsRoot = path.join(cacheRoot, 'versions')
   const keepDirs = await getPruneKeepDirs(cacheRoot, keepDir)
+  if (recentlyReplacedDir) keepDirs.add(recentlyReplacedDir)
   let entries = []
 
   try {
@@ -625,7 +723,25 @@ function spawnLauncherProcess(executablePath, options = {}) {
   })
 }
 
+async function waitForDetachedSpawn(child) {
+  await new Promise((resolve, reject) => {
+    let settled = false
+    const settle = (callback) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      callback()
+    }
+    const timer = setTimeout(() => settle(resolve), 1500)
+    child.once('spawn', () => settle(resolve))
+    child.once('error', (error) => settle(() => reject(error)))
+  })
+}
+
 async function launch(executablePath, args) {
+  if (!isLaunchableFile(executablePath)) {
+    throw new Error(`Installed ${APP_NAME} executable is not launchable: ${executablePath}`)
+  }
   const foreground = isHeadlessLaunchArgs(args)
   const child = spawnLauncherProcess(executablePath, { args: getAppLaunchArgs(args), foreground })
 
@@ -645,6 +761,7 @@ async function launch(executablePath, args) {
     return
   }
 
+  await waitForDetachedSpawn(child)
   child.unref()
 }
 
@@ -688,16 +805,24 @@ async function main() {
   }
 
   const paths = getPaths(target, releaseInfo)
-  const didInstall = !isValidInstall(paths, target)
-  if (didInstall) {
-    await installRelease(target, releaseInfo, paths)
-  }
+  let didInstall = false
+  let recentlyReplacedDir = null
+  await withUpdateLock(paths.cacheRoot, async () => {
+    recentlyReplacedDir =
+      readJsonIfPresent(paths.currentFile)?.installDir ||
+      (releaseInfo.channel === 'main'
+        ? readJsonIfPresent(path.join(paths.cacheRoot, 'current.json'))?.installDir
+        : null) ||
+      null
+    didInstall = !isValidInstall(paths, target)
+    if (didInstall) await installRelease(target, releaseInfo, paths)
+  })
 
   const launchIntegrationReady = await ensureCommandLaunchIntegration(target, paths)
   if (target.os === 'win' && didInstall && launchIntegrationReady) {
     console.log(`${APP_NAME}: installed. You can relaunch it from the Windows Start Menu.`)
   }
-  await pruneOldVersions(cacheRoot, paths.installDir)
+  await pruneOldVersions(cacheRoot, paths.installDir, recentlyReplacedDir)
   await launch(paths.executablePath, launchArgs)
 }
 

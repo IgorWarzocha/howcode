@@ -53,6 +53,11 @@ async function bootstrap() {
     installApplicationMenu({ getMainWindow: () => currentMainWindow, piThreads: runtime.piThreads })
   registerDesktopRuntimeShutdown(runtime)
 
+  // Apply a previously downloaded bundle before creating a window. This is the cross-platform
+  // handoff that makes Windows installer launches converge on the staged app too.
+  if (await appUpdater.takeoverIfReady()) return
+  void appUpdater.checkAndInstall()
+
   if (headlessOptions.enabled) {
     const server = await startHeadlessServer({
       runtime,
@@ -75,7 +80,6 @@ async function bootstrap() {
   registerDesktopIpc(() => currentMainWindow, runtime, appUpdater, installMenu)
   await installMenu()
   await openMainWindow()
-  void appUpdater.checkForUpdate()
 
   app.on('activate', async () => {
     if (quitRequested) {
