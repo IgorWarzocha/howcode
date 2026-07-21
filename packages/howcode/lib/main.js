@@ -1,13 +1,7 @@
 const path = require('node:path')
 const fsp = require('node:fs/promises')
 const { getReleaseChannel, getTarget } = require('./config')
-const {
-  getCacheRoot,
-  getPaths,
-  isValidInstall,
-  pruneOldVersions,
-  readJsonIfPresent,
-} = require('./cache')
+const { getCacheRoot, getPaths, isValidInstall, readJsonIfPresent } = require('./cache')
 const { ensureCommandLaunchIntegration } = require('./integration')
 const { resolveLatestRelease } = require('./release')
 const { ensureInstalled } = require('./installer')
@@ -47,12 +41,11 @@ async function main() {
   }
 
   const paths = getPaths(target, releaseInfo)
-  const { didInstall, recentlyReplacedDir } = await ensureInstalled(target, releaseInfo, paths)
+  const { didInstall, pruneFailures } = await ensureInstalled(target, releaseInfo, paths)
   const launchIntegrationReady = await ensureCommandLaunchIntegration(target, paths)
   if (target.os === 'win' && didInstall && launchIntegrationReady) {
     console.log('howcode: installed. You can relaunch it from the Windows Start Menu.')
   }
-  const pruneFailures = await pruneOldVersions(cacheRoot, paths.installDir, recentlyReplacedDir)
   if (pruneFailures.length > 0) {
     console.warn(`howcode: could not remove ${pruneFailures.length} old cached version(s).`)
   }

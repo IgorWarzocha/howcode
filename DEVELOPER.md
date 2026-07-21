@@ -29,8 +29,8 @@ bun run publish:howcode:dry-run
 ## Release flow
 
 The `Release artifacts` GitHub workflow is authoritative. Pushes to `main` and `dev` build all six
-OS/architecture targets and atomically refresh `channel-main` or `channel-dev`; version tags publish
-an immutable release. Local preparation builds only the current host and is useful for diagnosis:
+OS/architecture targets and safely refresh `channel-main` or `channel-dev`; version tags publish an
+immutable release. Local preparation builds only the current host and is useful for diagnosis:
 
 ```bash
 bun run release:prepare

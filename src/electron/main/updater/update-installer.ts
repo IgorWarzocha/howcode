@@ -10,6 +10,7 @@ import {
   type InstalledUpdate,
   isValidInstall,
   parseInstalledUpdateRecord,
+  pruneOldVersions,
   type ReleaseInfo,
   type UpdateTarget,
 } from './update-storage'
@@ -114,5 +115,7 @@ async function installUpdateBundleUnderLock(
     installDir: paths.installDir,
   }
   await writeAtomicJson(paths.currentFile, installedUpdate)
-  return { installedUpdate, keepDirs: await getKeepDirs(paths.installDir) }
+  const keepDirs = await getKeepDirs(paths.installDir)
+  const pruneFailures = await pruneOldVersions(paths.cacheRoot, keepDirs)
+  return { installedUpdate, pruneFailures }
 }

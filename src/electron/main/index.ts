@@ -12,6 +12,8 @@ import { signalLauncherReady } from './runtime/launcher-readiness'
 import { loadDesktopServiceRuntime } from './runtime/load-desktop-runtime'
 import { registerDesktopRuntimeShutdown } from './runtime/shutdown'
 import { AppUpdater } from './updater/app-updater'
+import { startRunningVersionLease } from './updater/update-active-lease'
+import { getCacheRoot, getRunningCachedVersionDir } from './updater/update-storage'
 
 let currentMainWindow: BrowserWindow | null = null
 let quitRequested = false
@@ -42,6 +44,13 @@ async function openMainWindow() {
 
 async function bootstrap() {
   await app.whenReady()
+  const stopRunningVersionLease = await startRunningVersionLease(
+    getCacheRoot(),
+    getRunningCachedVersionDir(),
+  )
+  app.once('before-quit', () => {
+    stopRunningVersionLease()
+  })
   configureDesktopEnvironment()
   logDevtoolsRemoteDebugging(devtoolsDebuggingPort)
 

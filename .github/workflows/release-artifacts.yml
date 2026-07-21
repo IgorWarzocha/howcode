@@ -324,7 +324,7 @@ jobs:
             mapfile -d '' payload_assets < <(find release-assets -type f ! -name 'stable-*-update.json' \( -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' -o -name '*.zip' \) -print0 | sort -z)
             mapfile -d '' manifest_assets < <(find release-assets -type f -name 'stable-*-update.json' -print0 | sort -z)
             gh release upload "$RELEASE_TAG" "${payload_assets[@]}" --clobber
-            # Manifests are the commit point: every advertised immutable archive now exists.
+            # Per-target manifests commit last: every advertised immutable archive now exists.
             gh release upload "$RELEASE_TAG" "${manifest_assets[@]}" --clobber
             gh release edit "$RELEASE_TAG" --title "$release_title" --notes-file channel-release-notes.md --target "$GITHUB_SHA" "${release_flags[@]}"
 

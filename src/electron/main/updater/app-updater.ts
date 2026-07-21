@@ -15,7 +15,6 @@ import {
   getRunningReleaseFingerprint,
   getTarget,
   type InstalledUpdate,
-  pruneOldVersions,
   type ReleaseInfo,
   type UpdateTarget,
 } from './update-storage'
@@ -237,7 +236,7 @@ export class AppUpdater {
     target: UpdateTarget,
     paths: ReturnType<typeof getInstallPaths>,
   ) {
-    const { installedUpdate, keepDirs } = await installUpdateBundle({
+    const { installedUpdate, pruneFailures } = await installUpdateBundle({
       release,
       target,
       paths,
@@ -251,7 +250,6 @@ export class AppUpdater {
         }),
     })
     this.installedUpdate = installedUpdate
-    const pruneFailures = await pruneOldVersions(paths.cacheRoot, keepDirs)
     if (pruneFailures.length > 0) {
       console.warn(
         `[howcode updater] could not remove ${pruneFailures.length} old cached version(s)`,

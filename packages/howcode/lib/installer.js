@@ -6,6 +6,7 @@ const { APP_NAME } = require('./config')
 const {
   hasPackagedAppBundle,
   isValidInstall,
+  pruneOldVersions,
   readJsonIfPresent,
   withUpdateLock,
   writeCurrentFile,
@@ -68,6 +69,7 @@ async function installRelease(target, releaseInfo, paths) {
 async function ensureInstalled(target, releaseInfo, paths) {
   let didInstall = false
   let recentlyReplacedDir = null
+  let pruneFailures = []
   await withUpdateLock(paths.cacheRoot, async () => {
     recentlyReplacedDir = readJsonIfPresent(paths.currentFile)?.installDir || null
     if (!recentlyReplacedDir && releaseInfo.channel === 'main') {
@@ -76,8 +78,9 @@ async function ensureInstalled(target, releaseInfo, paths) {
     }
     didInstall = !isValidInstall(paths, target)
     if (didInstall) await installRelease(target, releaseInfo, paths)
+    pruneFailures = await pruneOldVersions(paths.cacheRoot, paths.installDir, recentlyReplacedDir)
   })
-  return { didInstall, recentlyReplacedDir }
+  return { didInstall, pruneFailures }
 }
 
 module.exports = { ensureInstalled }

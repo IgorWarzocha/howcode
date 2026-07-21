@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { readdir, rm, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import path from 'node:path'
+import { getActiveVersionDirs } from './update-active-lease'
 import type { UpdateChannel } from './update-protocol'
 import { isExecutableFile } from './update-transport'
 
@@ -149,7 +150,7 @@ export function readJsonIfPresent(filePath: string) {
 
 export async function pruneOldVersions(cacheRoot: string, keepDirs: ReadonlySet<string>) {
   const versionsRoot = path.join(cacheRoot, 'versions')
-  const runningVersionDir = getRunningCachedVersionDir(versionsRoot)
+  const runningVersionDir = findRunningCachedVersionDir(versionsRoot)
   let entries: Array<{ isDirectory(): boolean; name: string }>
   try {
     entries = await readdir(versionsRoot, { withFileTypes: true })
@@ -178,6 +179,9 @@ export async function pruneOldVersions(cacheRoot: string, keepDirs: ReadonlySet<
   )
   const retainedDirs = new Set(keepDirs)
   if (runningVersionDir) retainedDirs.add(runningVersionDir)
+  for (const activeVersionDir of await getActiveVersionDirs(cacheRoot, versionsRoot)) {
+    retainedDirs.add(activeVersionDir)
+  }
   versionDirs
     .sort((left, right) => right.modifiedAt - left.modifiedAt)
     .slice(0, RECENT_VERSION_RETENTION)
@@ -192,7 +196,7 @@ export async function pruneOldVersions(cacheRoot: string, keepDirs: ReadonlySet<
   return removals.flatMap((result) => (result.status === 'rejected' ? [result.reason] : []))
 }
 
-function getRunningCachedVersionDir(versionsRoot: string) {
+function findRunningCachedVersionDir(versionsRoot: string) {
   let currentPath = process.execPath
   while (currentPath !== path.dirname(currentPath)) {
     const parentPath = path.dirname(currentPath)
@@ -202,8 +206,12 @@ function getRunningCachedVersionDir(versionsRoot: string) {
   return null
 }
 
+export function getRunningCachedVersionDir() {
+  return findRunningCachedVersionDir(path.join(getCacheRoot(), 'versions'))
+}
+
 export function getRunningReleaseFingerprint() {
-  const runningVersionDir = getRunningCachedVersionDir(path.join(getCacheRoot(), 'versions'))
+  const runningVersionDir = getRunningCachedVersionDir()
   if (!runningVersionDir) return null
   const runningReleaseKey = path.basename(runningVersionDir)
   const channelMatch = channelReleaseKeyPattern.exec(runningReleaseKey)

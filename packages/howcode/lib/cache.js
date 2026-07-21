@@ -3,6 +3,7 @@ const fsp = require('node:fs/promises')
 const os = require('node:os')
 const path = require('node:path')
 const { APP_NAME, CHANNEL_RELEASE_TAGS } = require('./config')
+const { getActiveVersionDirs } = require('./active-versions')
 const { withUpdateLock } = require('./lock')
 
 const RECENT_VERSION_RETENTION = 5
@@ -128,6 +129,9 @@ async function pruneOldVersions(cacheRoot, keepDir, recentlyReplacedDir = null) 
     .forEach(({ dirPath }) => {
       keepDirs.add(dirPath)
     })
+  for (const activeVersionDir of await getActiveVersionDirs(cacheRoot, versionsRoot)) {
+    keepDirs.add(activeVersionDir)
+  }
 
   const removals = await Promise.allSettled(
     versionDirs.flatMap(({ dirPath }) =>

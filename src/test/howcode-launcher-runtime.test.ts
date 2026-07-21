@@ -1,8 +1,9 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { access, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
+import { startRunningVersionLease } from '../electron/main/updater/update-active-lease'
 
 const require = createRequire(import.meta.url)
 const { withUpdateLock } = require('../../packages/howcode/lib/lock.js') as {
@@ -18,6 +19,9 @@ const { launch } = require('../../packages/howcode/lib/process-launcher.js') as 
     args: string[],
     options: { cacheRoot: string; readyTimeoutMs?: number },
   ): Promise<void>
+}
+const { getActiveVersionDirs } = require('../../packages/howcode/lib/active-versions.js') as {
+  getActiveVersionDirs(cacheRoot: string, versionsRoot: string): Promise<Set<string>>
 }
 
 const temporaryDirectories: string[] = []
@@ -50,6 +54,20 @@ describe('howcode launcher runtime', () => {
     expect(JSON.parse(await readFile(path.join(lockPath, 'owner.json'), 'utf8'))).toEqual({
       token: 'replacement',
     })
+  })
+
+  it('shares running-version leases across the Electron and launcher runtimes', async () => {
+    const cacheRoot = await createTemporaryDirectory()
+    const versionsRoot = path.join(cacheRoot, 'versions')
+    const versionDir = path.join(versionsRoot, 'main-1.2.3-test')
+    await mkdir(versionDir, { recursive: true })
+
+    const stopLease = await startRunningVersionLease(cacheRoot, versionDir)
+    expect(await getActiveVersionDirs(cacheRoot, versionsRoot)).toEqual(new Set([versionDir]))
+
+    stopLease()
+    expect(await getActiveVersionDirs(cacheRoot, versionsRoot)).toEqual(new Set())
+    await expect(access(versionDir)).resolves.toBeUndefined()
   })
 
   it('waits for the desktop process to report ready', async () => {

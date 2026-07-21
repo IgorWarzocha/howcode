@@ -53,6 +53,10 @@ for (const target of expectedTargets) {
     throw new Error(`${metadataName} has invalid metadata fields`)
   }
   const assetName = path.basename(new URL(metadata.assetUrl).pathname)
+  const expectedAssetName = `archive-howcode-${target}-${metadata.hash.toLowerCase()}.tar.gz`
+  if (assetName !== expectedAssetName) {
+    throw new Error(`${metadataName} points to ${assetName}, expected ${expectedAssetName}`)
+  }
   if (!files.has(assetName)) throw new Error(`${metadataName} points to missing ${assetName}`)
   const archiveHash = await sha256File(path.join(releaseDirectory, assetName))
   if (archiveHash !== metadata.hash.toLowerCase()) {
