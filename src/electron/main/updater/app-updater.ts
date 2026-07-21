@@ -1,70 +1,49 @@
-import { createHash } from 'node:crypto'
-import { createReadStream, createWriteStream, existsSync, readFileSync } from 'node:fs'
-import {
-  access,
-  chmod,
-  constants,
-  mkdir,
-  readdir,
-  readFile,
-  rename,
-  rm,
-  stat,
-  writeFile,
-} from 'node:fs/promises'
-import { homedir } from 'node:os'
+import { existsSync, readFileSync } from 'node:fs'
+import { chmod, mkdir, readFile, rename, rm } from 'node:fs/promises'
 import path from 'node:path'
-import { Readable } from 'node:stream'
-import { pipeline } from 'node:stream/promises'
-import type { ReadableStream as NodeReadableStream } from 'node:stream/web'
 import { app } from 'electron'
 import { x as extractTar } from 'tar'
 import packageJson from '../../../../package.json'
 import type { AppUpdateState } from '../../../../shared/desktop-app-update-contracts'
 import { getAppRootPath } from '../runtime/app-paths'
 import { spawnDetached } from './spawn-detached'
+import { isUpdateCandidate, normalizeReleaseMetadata, type UpdateChannel } from './update-protocol'
 import {
-  addCacheBust,
-  isUpdateCandidate,
-  normalizeReleaseMetadata,
-  type UpdateChannel,
-} from './update-protocol'
+  APP_NAME,
+  getAppResourcesPath,
+  getCacheRoot,
+  getInstallPaths,
+  getLegacyInstallPaths,
+  getRunningReleaseFingerprint,
+  getTarget,
+  hasPackagedAppBundle,
+  type InstalledUpdate,
+  isValidInstall,
+  parseInstalledUpdateRecord,
+  pruneOldVersions,
+  type ReleaseInfo,
+  type UpdateTarget,
+} from './update-storage'
+import {
+  downloadFile,
+  fetchJson,
+  isExecutableFile,
+  sha256File,
+  withUpdateLock,
+  writeAtomicJson,
+} from './update-transport'
 
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
 }
 
-const APP_NAME = 'howcode'
 const DEFAULT_RELEASE_BASE_URL = 'https://github.com/IgorWarzocha/howcode/releases/download'
 const RELEASE_BASE_URL = getProcessEnvironmentVariable('HOWCODE_BASE_URL')
-const DOWNLOAD_TIMEOUT_MS = 5 * 60_000
 const updateAllowedInDev = getProcessEnvironmentVariable('HOWCODE_ENABLE_DEV_APP_UPDATE') === '1'
-const semverPattern = /^\d+\.\d+\.\d+$/
-const sha256Pattern = /^[a-f0-9]{64}$/i
-const channelReleaseKeyPattern = /^(main|dev)-(\d+\.\d+\.\d+)-([a-f0-9]{64})$/i
-const legacyReleaseKeyPattern = /^(\d+\.\d+\.\d+)-([a-f0-9]{64})$/i
 const trailingSlashesPattern = /\/+$/
 const trailingChannelPattern = /\/(?:main|dev|channel-main|channel-dev)$/i
 const channelPlaceholderPattern = /\{channel\}/g
 const releaseTagPlaceholderPattern = /\{releaseTag\}/g
-
-type UpdateTarget = {
-  os: 'macos' | 'linux' | 'win'
-  arch: 'arm64' | 'x64'
-  executable: string
-}
-
-type ReleaseInfo = {
-  channel: UpdateChannel
-  version: string
-  hash: string
-  assetUrl: string
-}
-
-type InstalledUpdate = ReleaseInfo & {
-  executablePath: string
-  installDir: string
-}
 
 type AppUpdaterListener = (state: AppUpdateState) => void
 
@@ -74,41 +53,6 @@ function getErrorMessage(error: unknown) {
 
 function logUpdateFailure(operation: string, error: unknown) {
   console.error(`[howcode updater] ${operation} failed`, error)
-}
-
-function getTarget(): UpdateTarget {
-  const arch = process.arch === 'arm64' ? 'arm64' : process.arch === 'x64' ? 'x64' : null
-  if (!arch) throw new Error(`Unsupported architecture: ${process.arch}`)
-
-  if (process.platform === 'darwin') {
-    return { os: 'macos', arch, executable: `${APP_NAME}.app/Contents/MacOS/${APP_NAME}` }
-  }
-
-  if (process.platform === 'linux') {
-    return { os: 'linux', arch, executable: `${APP_NAME}/${APP_NAME}` }
-  }
-
-  if (process.platform === 'win32') {
-    return { os: 'win', arch, executable: `${APP_NAME}/${APP_NAME}.exe` }
-  }
-
-  throw new Error(`Unsupported platform: ${process.platform}`)
-}
-
-function getCacheRoot() {
-  const configuredCacheDirectory = getProcessEnvironmentVariable('HOWCODE_CACHE_DIR')
-  if (configuredCacheDirectory) return configuredCacheDirectory
-  if (process.platform === 'win32') {
-    return path.join(
-      getProcessEnvironmentVariable('LOCALAPPDATA') ?? path.join(homedir(), 'AppData', 'Local'),
-      APP_NAME,
-    )
-  }
-  if (process.platform === 'darwin') return path.join(homedir(), 'Library', 'Caches', APP_NAME)
-  return path.join(
-    getProcessEnvironmentVariable('XDG_CACHE_HOME') ?? path.join(homedir(), '.cache'),
-    APP_NAME,
-  )
 }
 
 function getChannelReleaseTag(channel: UpdateChannel) {
@@ -127,49 +71,6 @@ function getReleaseBaseUrl(channel: UpdateChannel) {
   return baseUrl.replace(trailingChannelPattern, `/${releaseTag}`)
 }
 
-function getReleaseKey(release: Pick<ReleaseInfo, 'channel' | 'version' | 'hash'>) {
-  return `${release.channel}-${release.version}-${release.hash}`
-}
-
-function getInstallPaths(target: UpdateTarget, release: ReleaseInfo) {
-  const cacheRoot = getCacheRoot()
-  const releaseKey = getReleaseKey(release)
-  const installDir = path.join(cacheRoot, 'versions', releaseKey)
-  return {
-    cacheRoot,
-    currentFile: path.join(cacheRoot, `current-${release.channel}.json`),
-    installDir,
-    executablePath: path.join(installDir, target.executable),
-  }
-}
-
-function getLegacyInstallPaths(target: UpdateTarget, release: ReleaseInfo) {
-  const cacheRoot = getCacheRoot()
-  const installDir = path.join(cacheRoot, 'versions', `${release.version}-${release.hash}`)
-  return {
-    cacheRoot,
-    currentFile: path.join(cacheRoot, 'current.json'),
-    installDir,
-    executablePath: path.join(installDir, target.executable),
-  }
-}
-
-function getAppResourcesPath(installDir: string, target: UpdateTarget) {
-  if (target.os === 'macos') {
-    return path.join(installDir, `${APP_NAME}.app`, 'Contents', 'Resources')
-  }
-
-  return path.join(installDir, APP_NAME, 'resources')
-}
-
-function hasPackagedAppBundle(installDir: string, target: UpdateTarget) {
-  const resourcesPath = getAppResourcesPath(installDir, target)
-  return (
-    existsSync(path.join(resourcesPath, 'app.asar')) ||
-    existsSync(path.join(resourcesPath, 'app', 'package.json'))
-  )
-}
-
 function getMissingPackagedBundleMessage(installDir: string, target: UpdateTarget) {
   const resourcesPath = getAppResourcesPath(installDir, target)
   const appAsarPath = path.join(resourcesPath, 'app.asar')
@@ -178,12 +79,6 @@ function getMissingPackagedBundleMessage(installDir: string, target: UpdateTarge
     'Downloaded archive did not contain the packaged app bundle.',
     `Checked ${appAsarPath} and ${unpackedAppPath}.`,
   ].join(' ')
-}
-
-async function isValidInstall(paths: ReturnType<typeof getInstallPaths>, target: UpdateTarget) {
-  return (
-    (await isExecutableFile(paths.executablePath)) && hasPackagedAppBundle(paths.installDir, target)
-  )
 }
 
 function isUpdateEnabled() {
@@ -212,31 +107,6 @@ function assertUpdateEnabled() {
   }
 }
 
-async function fetchJson(url: string, timeoutMs = 15_000) {
-  return retry(async () => {
-    const response = await fetch(addCacheBust(url), {
-      signal: AbortSignal.timeout(timeoutMs),
-      cache: 'no-store',
-    })
-    if (!response.ok) throw new Error(`HTTP ${response.status} from ${url}`)
-    return response.json() as Promise<unknown>
-  })
-}
-
-async function retry<T>(operation: () => Promise<T>, attempts = 3) {
-  let lastError: unknown
-  for (let attempt = 0; attempt < attempts; attempt += 1) {
-    try {
-      return await operation()
-    } catch (error) {
-      lastError = error
-      if (attempt === attempts - 1) break
-      await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** attempt))
-    }
-  }
-  throw lastError
-}
-
 async function resolveLatestRelease(
   target: UpdateTarget,
   channel: UpdateChannel,
@@ -257,176 +127,6 @@ async function resolveLatestRelease(
     hash,
     assetUrl,
   }
-}
-
-async function downloadFile(url: string, filePath: string) {
-  await retry(async () => {
-    const response = await fetch(addCacheBust(url), {
-      signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
-      cache: 'no-store',
-    })
-    if (!(response.ok && response.body))
-      throw new Error(`HTTP ${response.status} while downloading ${url}`)
-    await mkdir(path.dirname(filePath), { recursive: true })
-    await pipeline(
-      Readable.fromWeb(response.body as unknown as NodeReadableStream),
-      createWriteStream(filePath),
-    )
-  })
-}
-
-async function sha256File(filePath: string) {
-  const hash = createHash('sha256')
-  await pipeline(createReadStream(filePath), hash)
-  return hash.digest('hex')
-}
-
-function parseInstalledUpdateRecord(
-  record: unknown,
-  fallbackChannel: UpdateChannel | null = null,
-): InstalledUpdate | null {
-  if (!record || typeof record !== 'object') return null
-  const channel = 'channel' in record ? record.channel : fallbackChannel
-  const version = 'version' in record ? record.version : null
-  const hash = 'hash' in record ? record.hash : null
-  const installDir = 'installDir' in record ? record.installDir : null
-  const executablePath = 'executablePath' in record ? record.executablePath : null
-  if (
-    !(channel === 'main' || channel === 'dev') ||
-    typeof version !== 'string' ||
-    !semverPattern.test(version) ||
-    typeof hash !== 'string' ||
-    !sha256Pattern.test(hash) ||
-    typeof installDir !== 'string' ||
-    typeof executablePath !== 'string'
-  ) {
-    return null
-  }
-  return { channel, version, hash: hash.toLowerCase(), installDir, executablePath, assetUrl: '' }
-}
-
-async function writeInstalledUpdateRecord(currentFile: string, record: InstalledUpdate) {
-  const temporaryFile = `${currentFile}.tmp-${process.pid}-${Date.now()}`
-  await mkdir(path.dirname(currentFile), { recursive: true })
-  try {
-    await writeFile(
-      temporaryFile,
-      JSON.stringify(
-        {
-          version: record.version,
-          channel: record.channel,
-          hash: record.hash,
-          installDir: record.installDir,
-          executablePath: record.executablePath,
-        },
-        null,
-        2,
-      ),
-    )
-    await rename(temporaryFile, currentFile)
-  } catch (error) {
-    await rm(temporaryFile, { force: true }).catch(() => undefined)
-    throw error
-  }
-}
-
-async function withUpdateLock<T>(cacheRoot: string, operation: () => Promise<T>) {
-  const lockPath = path.join(cacheRoot, '.update.lock')
-  await mkdir(cacheRoot, { recursive: true })
-  let acquired = false
-
-  for (let attempt = 0; attempt < 120; attempt += 1) {
-    try {
-      await mkdir(lockPath)
-      acquired = true
-      break
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
-      try {
-        const ageMs = Date.now() - (await stat(lockPath)).mtimeMs
-        if (ageMs > 15 * 60_000) await rm(lockPath, { recursive: true, force: true })
-      } catch {
-        // The other updater may have released the lock between stat and cleanup.
-      }
-      await new Promise((resolve) => setTimeout(resolve, 500))
-    }
-  }
-
-  if (!acquired) throw new Error('Another Howcode update is still running. Try again shortly.')
-
-  try {
-    return await operation()
-  } finally {
-    await rm(lockPath, { recursive: true, force: true }).catch(() => undefined)
-  }
-}
-
-async function isExecutableFile(filePath: string) {
-  try {
-    if (!(await stat(filePath)).isFile()) return false
-    if (process.platform !== 'win32') await access(filePath, constants.X_OK)
-    return true
-  } catch {
-    return false
-  }
-}
-
-async function pruneOldVersions(cacheRoot: string, keepDirs: ReadonlySet<string>) {
-  const versionsRoot = path.join(cacheRoot, 'versions')
-  const runningVersionDir = getRunningCachedVersionDir(versionsRoot)
-  let entries: Array<{ isDirectory(): boolean; name: string }>
-  try {
-    entries = await readdir(versionsRoot, { withFileTypes: true })
-  } catch {
-    return
-  }
-  await Promise.all(
-    entries.flatMap((entry) => {
-      if (!entry.isDirectory()) return []
-      const dirPath = path.join(versionsRoot, entry.name)
-      return keepDirs.has(dirPath) || dirPath === runningVersionDir
-        ? []
-        : [rm(dirPath, { recursive: true, force: true })]
-    }),
-  )
-}
-
-function getRunningReleaseKey() {
-  const runningVersionDir = getRunningCachedVersionDir(path.join(getCacheRoot(), 'versions'))
-  return runningVersionDir ? path.basename(runningVersionDir) : null
-}
-
-function getRunningReleaseFingerprint() {
-  const runningReleaseKey = getRunningReleaseKey()
-  if (!runningReleaseKey) return null
-
-  const channelPrefixedMatch = channelReleaseKeyPattern.exec(runningReleaseKey)
-  if (channelPrefixedMatch?.[2] && channelPrefixedMatch[3]) {
-    return {
-      version: channelPrefixedMatch[2],
-      hash: channelPrefixedMatch[3].toLowerCase(),
-    }
-  }
-
-  const legacyMatch = legacyReleaseKeyPattern.exec(runningReleaseKey)
-  if (legacyMatch?.[1] && legacyMatch[2]) {
-    return {
-      version: legacyMatch[1],
-      hash: legacyMatch[2].toLowerCase(),
-    }
-  }
-
-  return null
-}
-
-function getRunningCachedVersionDir(versionsRoot: string) {
-  let currentPath = process.execPath
-  while (currentPath !== path.dirname(currentPath)) {
-    const parentPath = path.dirname(currentPath)
-    if (parentPath === versionsRoot) return currentPath
-    currentPath = parentPath
-  }
-  return null
 }
 
 function isSameRelease(
@@ -698,7 +398,13 @@ export class AppUpdater {
         executablePath: paths.executablePath,
         installDir: paths.installDir,
       }
-      await writeInstalledUpdateRecord(paths.currentFile, this.installedUpdate)
+      await writeAtomicJson(paths.currentFile, {
+        version: this.installedUpdate.version,
+        channel: this.installedUpdate.channel,
+        hash: this.installedUpdate.hash,
+        installDir: this.installedUpdate.installDir,
+        executablePath: this.installedUpdate.executablePath,
+      })
       await pruneOldVersions(paths.cacheRoot, await this.getPruneKeepDirs(paths.installDir))
       this.setState({
         status: 'ready',
@@ -767,7 +473,7 @@ export class AppUpdater {
     this.installedUpdate = record
     this.latestRelease = record
     if (paths === legacyPaths) {
-      await writeInstalledUpdateRecord(currentFile, record).catch(() => undefined)
+      await writeAtomicJson(currentFile, record).catch(() => undefined)
     }
     this.setState({
       status: 'ready',
