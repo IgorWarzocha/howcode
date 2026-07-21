@@ -52,6 +52,10 @@ Each target contributes:
 The workflow validates all six manifests and hashes before publishing payloads, then swaps manifests
 last. Do not manually replace a channel manifest before its referenced archive exists.
 
+When publishing a launcher with a new startup-readiness protocol, refresh channel desktop artifacts
+first and publish npm second. Existing launchers can start the new app; the reverse order makes the
+new launcher wait on an older app that cannot acknowledge readiness.
+
 ## NPM launcher package
 
 The user-facing npm package lives in:
