@@ -72,6 +72,12 @@ export type RuntimeHostProcessHandlers<Process> = {
   readonly onMessage: (process: Process, message: RuntimeHostToMainMessage) => void
 }
 
+export type HostMessageHandler<Process> = (
+  hostId: string,
+  process: Process,
+  message: RuntimeHostToMainMessage,
+) => Effect.Effect<void, RuntimeHostBrokerError>
+
 export type SpawnedRuntimeHost<Process> = {
   readonly process: Process
   readonly ready: Effect.Effect<void, RuntimeHostBrokerError>

@@ -1,4 +1,3 @@
-import * as Cause from 'effect/Cause'
 import * as Deferred from 'effect/Deferred'
 import type * as Duration from 'effect/Duration'
 import * as Effect from 'effect/Effect'
@@ -6,29 +5,21 @@ import * as Exit from 'effect/Exit'
 import * as FiberSet from 'effect/FiberSet'
 import * as Ref from 'effect/Ref'
 import * as Scope from 'effect/Scope'
-import type { RuntimeHostToMainMessage } from '../protocol.ts'
 import { makeHostIdleController } from './idle.ts'
+import { makeHostStartup } from './lifecycle-startup.ts'
+import { hostProcess } from './lifecycle-state.ts'
 import { forgetHost, resetBrokerHosts, updateHost } from './state.ts'
 import {
   type BrokerState,
   brokerError,
-  type HostRecord,
+  type HostMessageHandler,
   type PendingRequest,
   type RuntimeHostBrokerError,
   type RuntimeHostProcessAdapter,
 } from './types.ts'
 
-type StartDecision<Process> =
-  | { readonly status: 'Ready'; readonly process: Process }
-  | { readonly status: 'Wait'; readonly ready: Deferred.Deferred<Process, RuntimeHostBrokerError> }
-  | { readonly status: 'Start'; readonly staleScope: Scope.Closeable | null }
-  | { readonly status: 'Unavailable'; readonly message: string }
-
-export type HostMessageHandler<Process> = (
-  hostId: string,
-  process: Process,
-  message: RuntimeHostToMainMessage,
-) => Effect.Effect<void, RuntimeHostBrokerError>
+export { hostProcess } from './lifecycle-state.ts'
+export type { HostMessageHandler } from './types.ts'
 
 export interface HostLifecycleService<Process> {
   readonly ensureHost: (
@@ -39,46 +30,6 @@ export interface HostLifecycleService<Process> {
   readonly scheduleIdle: (hostId: string) => Effect.Effect<void>
   readonly stopAll: (shuttingDown: boolean) => Effect.Effect<void>
   readonly suspendIdle: (hostId: string) => Effect.Effect<void>
-}
-
-export function hostProcess<Process>(host: HostRecord<Process>) {
-  return host.lifecycle.status === 'Running' || host.lifecycle.status === 'Stopping'
-    ? host.lifecycle.process
-    : host.lifecycle.status === 'Starting'
-      ? host.lifecycle.process
-      : null
-}
-
-function reserveHostStart<Process>(options: {
-  readonly adapter: RuntimeHostProcessAdapter<Process>
-  readonly current: BrokerState<Process>
-  readonly hostId: string
-  readonly ready: Deferred.Deferred<Process, RuntimeHostBrokerError>
-  readonly scope: Scope.Closeable
-}): readonly [StartDecision<Process>, BrokerState<Process>] {
-  const { adapter, current, hostId, ready, scope } = options
-  const host = current.hosts.get(hostId)
-  if (!host) return [{ status: 'Unavailable', message: 'Pi runtime host was removed.' }, current]
-  if (current.shuttingDown)
-    return [{ status: 'Unavailable', message: 'Pi runtime host is shutting down.' }, current]
-  if (host.lifecycle.status === 'Starting')
-    return [{ status: 'Wait', ready: host.lifecycle.ready }, current]
-  if (host.lifecycle.status === 'Stopping')
-    return [
-      { status: 'Unavailable', message: `Pi runtime host ${host.label} is stopping.` },
-      current,
-    ]
-  if (host.lifecycle.status === 'Running' && adapter.isRunning(host.lifecycle.process))
-    return [{ status: 'Ready', process: host.lifecycle.process }, current]
-
-  const staleScope = host.lifecycle.status === 'Running' ? host.lifecycle.scope : null
-  return [
-    { status: 'Start', staleScope },
-    updateHost(current, hostId, (record) => ({
-      ...record,
-      lifecycle: { status: 'Starting', process: null, ready, scope },
-    })),
-  ]
 }
 
 export function makeHostLifecycle<Process>(options: {
@@ -107,11 +58,10 @@ export function makeHostLifecycle<Process>(options: {
     ) {
       const stopped = yield* Ref.modify(state, (current) => {
         const host = current.hosts.get(hostId)
-        if (!host || host.lifecycle.status === 'Stopped') return [null, current] as const
-        if (host.lifecycle.status === 'Stopping') return [null, current] as const
-        if (requireIdle && (host.role !== 'thread' || host.pendingRequests.size > 0 || host.busy)) {
+        if (!host || host.lifecycle.status === 'Stopped' || host.lifecycle.status === 'Stopping')
           return [null, current] as const
-        }
+        if (requireIdle && (host.role !== 'thread' || host.pendingRequests.size > 0 || host.busy))
+          return [null, current] as const
         const scope = host.lifecycle.scope
         const process = hostProcess(host)
         return [
@@ -142,137 +92,13 @@ export function makeHostLifecycle<Process>(options: {
       stopHostIfIdle: (hostId, error) => stopHost(hostId, error, true),
       idleError: () => brokerError('idle', new Error('Pi runtime host became idle.')),
     })
-
-    const handleExit = Effect.fn('RuntimeHostBroker.handleExit')(function* (
-      hostId: string,
-      process: Process,
-      code: number | null,
-      signal: NodeJS.Signals | null,
-    ) {
-      const exited = yield* Ref.modify(state, (current) => {
-        const host = current.hosts.get(hostId)
-        if (!host || host.lifecycle.status === 'Stopped' || hostProcess(host) !== process)
-          return [null, current] as const
-        return [
-          { host, pending: [...host.pendingRequests.values()], scope: host.lifecycle.scope },
-          forgetHost(current, hostId),
-        ] as const
-      })
-      if (!exited) return
-      yield* idle.remove(hostId)
-      yield* rejectPending(
-        exited.pending,
-        brokerError(
-          'exit',
-          new Error(
-            `Pi runtime host ${exited.host.label} exited${code === null ? '' : ` with code ${code}`}${signal ? ` (${signal})` : ''}.`,
-          ),
-        ),
-      )
-      yield* Scope.close(exited.scope, Exit.void)
-    })
-
-    const startHost = Effect.fn('RuntimeHostBroker.startHost')(function* (
-      hostId: string,
-      scope: Scope.Closeable,
-      ready: Deferred.Deferred<Process, RuntimeHostBrokerError>,
-      handleMessage: HostMessageHandler<Process>,
-    ) {
-      const host = (yield* Ref.get(state)).hosts.get(hostId)
-      if (!host) return yield* Effect.fail(brokerError('start', new Error('Host vanished.')))
-
-      const spawned = yield* Effect.acquireRelease(
-        adapter.spawn(host.label, {
-          onExit: (process, code, signal) => {
-            runCallback(handleExit(hostId, process, code, signal))
-          },
-          onMessage: (process, message) => {
-            runCallback(
-              handleMessage(hostId, process, message).pipe(
-                Effect.catch((error) =>
-                  Effect.sync(() => console.error('Pi runtime host message failed.', error)),
-                ),
-              ),
-            )
-          },
-        }),
-        (handle) => adapter.terminate(handle.process),
-      ).pipe(Scope.provide(scope))
-
-      const attached = yield* Ref.modify(state, (current) => {
-        const currentHost = current.hosts.get(hostId)
-        if (currentHost?.lifecycle.status !== 'Starting' || currentHost.lifecycle.scope !== scope) {
-          return [false, current] as const
-        }
-        return [
-          true,
-          updateHost(current, hostId, (record) => ({
-            ...record,
-            lifecycle: { ...currentHost.lifecycle, process: spawned.process },
-          })),
-        ] as const
-      })
-      if (!attached) {
-        return yield* Effect.fail(brokerError('start', new Error('Host was stopped.')))
-      }
-
-      yield* spawned.ready
-      const running = yield* Ref.modify(state, (current) => {
-        const currentHost = current.hosts.get(hostId)
-        if (currentHost?.lifecycle.status !== 'Starting' || currentHost.lifecycle.scope !== scope) {
-          return [false, current] as const
-        }
-        return [
-          true,
-          updateHost(current, hostId, (record) => ({
-            ...record,
-            lifecycle: { status: 'Running', process: spawned.process, scope },
-          })),
-        ] as const
-      })
-      if (running) yield* Deferred.succeed(ready, spawned.process)
-      else return yield* Effect.fail(brokerError('start', new Error('Host was stopped.')))
-    })
-
-    const ensureHost = Effect.fn('RuntimeHostBroker.ensureHost')(function* (
-      hostId: string,
-      handleMessage: HostMessageHandler<Process>,
-    ) {
-      const ready = yield* Deferred.make<Process, RuntimeHostBrokerError>()
-      const scope = yield* Scope.fork(rootScope)
-      const decision = yield* Ref.modify(state, (current) =>
-        reserveHostStart({ adapter, current, hostId, ready, scope }),
-      )
-
-      if (decision.status !== 'Start') yield* Scope.close(scope, Exit.void)
-      if (decision.status === 'Ready') {
-        yield* idle.remove(hostId)
-        return decision.process
-      }
-      if (decision.status === 'Wait') return yield* Deferred.await(decision.ready)
-      if (decision.status === 'Unavailable')
-        return yield* Effect.fail(brokerError('ensureHost', new Error(decision.message)))
-      if (decision.staleScope) yield* Scope.close(decision.staleScope, Exit.void)
-
-      const startup = startHost(hostId, scope, ready, handleMessage).pipe(
-        Effect.onExit((exit) => {
-          if (Exit.isSuccess(exit)) return Effect.void
-          const error = brokerError('start', Cause.squash(exit.cause))
-          return Effect.gen(function* () {
-            yield* Ref.update(state, (current) => {
-              const host = current.hosts.get(hostId)
-              return host?.lifecycle.status === 'Starting' && host.lifecycle.scope === scope
-                ? forgetHost(current, hostId)
-                : current
-            })
-            yield* Deferred.fail(ready, error)
-            yield* Effect.sync(() => runCallback(Scope.close(scope, Exit.void)))
-          })
-        }),
-        Effect.catch(() => Effect.void),
-      )
-      yield* Effect.forkIn(startup, scope)
-      return yield* Deferred.await(ready)
+    const ensureHost = makeHostStartup({
+      adapter,
+      idle,
+      rejectPending,
+      rootScope,
+      runCallback,
+      state,
     })
 
     const stopAll = Effect.fn('RuntimeHostBroker.stopAll')(function* (shuttingDown: boolean) {
@@ -288,12 +114,10 @@ export function makeHostLifecycle<Process>(options: {
       )
       yield* Effect.forEach(
         snapshot.hosts.values(),
-        (host) => {
-          const lifecycle = host.lifecycle
-          return lifecycle.status === 'Stopped'
+        (host) =>
+          host.lifecycle.status === 'Stopped'
             ? Effect.void
-            : Scope.close(lifecycle.scope, Exit.void)
-        },
+            : Scope.close(host.lifecycle.scope, Exit.void),
         { discard: true, concurrency: 'unbounded' },
       )
     })

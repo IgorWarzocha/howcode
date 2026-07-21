@@ -80,6 +80,11 @@ export type DesktopServiceProcessHandlers<Process> = {
   readonly onMessage: (process: Process, message: DesktopServiceMessage) => void
 }
 
+export type ServiceMessageHandler<Process> = (
+  process: Process,
+  message: DesktopServiceMessage,
+) => Effect.Effect<void, DesktopServiceError>
+
 export interface DesktopServiceProcessAdapter<Process> {
   readonly makeRequestId: () => string
   readonly spawn: (

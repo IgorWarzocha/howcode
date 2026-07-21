@@ -10,7 +10,7 @@ import {
   getNodeExecutable,
   getRuntimeHostPath,
 } from '../client-environment.ts'
-import { RuntimeHostToMainMessageSchema } from '../protocol.ts'
+import { RuntimeHostToMainMessageSchema } from '../runtime-host-ipc-schema.ts'
 import {
   brokerError,
   type RuntimeHostProcessAdapter,

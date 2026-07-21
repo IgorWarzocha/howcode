@@ -1,5 +1,7 @@
 - Keep `live-runtime-registry.ts` as the Promise/callback compatibility edge; lifecycle state belongs in the Effect registry service.
 - Keep `client-bridge.ts` as the Promise/event compatibility edge; `broker/*` owns child processes, Deferred replies, and idle fibers.
+- In `broker/*`, inbound messages, outbound requests, lifecycle reservation, and process startup stay in their named modules; `messages.ts` and `lifecycle.ts` only compose them.
+- User-facing live-runtime operations belong in `live-runtime/*`; `live-runtime-service.ts` is an export surface, not an implementation file.
 - Runtime records own child scopes. Dispose by detaching the matching record and closing its scope; never dispose a key without checking record identity.
 - Broker restart/exit paths must detach by process/scope identity before closing scopes; late events must not touch replacement hosts.
 - Lifecycle locks and composer mutation locks are distinct and non-reentrant. Do not collapse them.

@@ -1,5 +1,5 @@
 import * as Schema from 'effect/Schema'
-import { DesktopEventSchema } from './desktop-event-contracts'
+import { DesktopEventSchema } from './desktop-event-schema'
 import type { TerminalRpcResponse } from './terminal-rpc'
 
 function isRecord(value: unknown): value is Record<string, unknown> {

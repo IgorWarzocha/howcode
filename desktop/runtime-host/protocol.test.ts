@@ -1,7 +1,7 @@
 import * as Result from 'effect/Result'
 import * as Schema from 'effect/Schema'
 import { describe, expect, it } from 'vitest'
-import { RuntimeHostToMainMessageSchema } from './protocol.ts'
+import { RuntimeHostToMainMessageSchema } from './runtime-host-ipc-schema.ts'
 
 const decode = Schema.decodeUnknownResult(RuntimeHostToMainMessageSchema)
 
