@@ -33,6 +33,7 @@ function validateMetadataFields(
   if (
     fields.protocolVersion !== null &&
     (typeof fields.protocolVersion !== 'number' ||
+      !Number.isInteger(fields.protocolVersion) ||
       fields.protocolVersion < 1 ||
       fields.protocolVersion > 2)
   ) {

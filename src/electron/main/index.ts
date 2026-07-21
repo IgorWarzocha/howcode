@@ -48,7 +48,7 @@ async function bootstrap() {
     getCacheRoot(),
     getRunningCachedVersionDir(),
   )
-  app.once('before-quit', () => {
+  process.once('exit', () => {
     stopRunningVersionLease()
   })
   configureDesktopEnvironment()

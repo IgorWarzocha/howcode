@@ -118,8 +118,8 @@ jobs:
 
       - name: Build launcher archives
         env:
-          HOWCODE_RELEASE_CHANNEL: ${{ github.ref_type == 'tag' && 'main' || github.ref_name }}
-          HOWCODE_RELEASE_ASSET_BASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_type == 'tag' && github.ref_name || format('channel-{0}', github.ref_name) }}
+          HOWCODE_RELEASE_CHANNEL: ${{ github.ref_type == 'tag' && 'main' || (github.ref_name == 'dev' && 'dev' || 'main') }}
+          HOWCODE_RELEASE_ASSET_BASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_type == 'tag' && github.ref_name || (github.ref_name == 'dev' && 'channel-dev' || 'channel-main') }}
         run: bun run build:launcher-artifacts
 
       - name: Upload dev artifacts

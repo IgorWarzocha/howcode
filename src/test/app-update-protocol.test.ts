@@ -52,6 +52,18 @@ describe('app update protocol', () => {
     ).toThrow('untrusted asset URL')
   })
 
+  it('rejects fractional protocol versions', () => {
+    expect(() =>
+      normalizeReleaseMetadata(
+        { protocolVersion: 1.5, channel: 'main', version: '1.2.3', hash },
+        'https://example.test/channel-main/stable-linux-x64-update.json',
+        'https://example.test/channel-main',
+        'main',
+        'https://example.test/channel-main/howcode-linux-x64.tar.gz',
+      ),
+    ).toThrow('Unsupported update protocol')
+  })
+
   it('bridges installer builds once and detects later same-version rebuilds by hash', () => {
     expect(compareVersions('1.10.0', '1.9.9')).toBeGreaterThan(0)
     expect(isUpdateCandidate('1.2.3', { version: '1.2.3', hash: 'b'.repeat(64) }, null)).toBe(true)
