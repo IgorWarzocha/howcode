@@ -14,6 +14,8 @@ type ReviewedFile = { source: FileDiffMetadata; value: FileDiffMetadata }
 export type DiffChangeReviewController = {
   annotationsByFile: ReadonlyMap<string, readonly DiffLineAnnotation<GitOpsAnnotationMetadata>[]>
   files: readonly FileDiffMetadata[]
+  reviewedFileKeys: ReadonlySet<string>
+  reset: (fileKey: string) => void
   resolve: (target: ChangeReviewTarget, decision: ChangeReviewDecision) => void
 }
 
@@ -46,6 +48,24 @@ export function useDiffChangeReview(
     return result
   }, [files])
 
+  const reviewedFileKeys = useMemo(() => {
+    const result = new Set<string>()
+    for (const source of renderableFiles) {
+      const { fileKey } = getDiffFileIdentity(source)
+      if (reviewedFiles.get(fileKey)?.source === source) result.add(fileKey)
+    }
+    return result
+  }, [renderableFiles, reviewedFiles])
+
+  const reset = useCallback((fileKey: string) => {
+    setReviewedFiles((current) => {
+      if (!current.has(fileKey)) return current
+      const next = new Map(current)
+      next.delete(fileKey)
+      return next
+    })
+  }, [])
+
   const resolve = useCallback((target: ChangeReviewTarget, decision: ChangeReviewDecision) => {
     const source = renderableFilesRef.current.find(
       (fileDiff) => getDiffFileIdentity(fileDiff).fileKey === target.fileKey,
@@ -63,5 +83,5 @@ export function useDiffChangeReview(
     })
   }, [])
 
-  return { annotationsByFile, files, resolve }
+  return { annotationsByFile, files, reset, resolve, reviewedFileKeys }
 }

@@ -444,12 +444,13 @@ The editor is beta. Ship review selection independently so editing can be delaye
 
 Goal: reproduce Pierre's official accept/reject review interaction without assigning it extra Git semantics.
 
-Status: complete. Each unresolved hunk gets a Pierre annotation with **Undo** and **Keep**. The actions call `diffAcceptRejectHunk` with `reject` or `accept`, respectively, replace only the locally displayed `FileDiffMetadata`, and disappear when Pierre converts the hunk to context. They do not write, stage, or otherwise mutate the repository. A fresh diff source resets the local display, matching the official example's reset behavior.
+Status: complete. Each unresolved hunk gets a Pierre annotation with **Undo** and **Keep**. The actions call `diffAcceptRejectHunk` with `reject` or `accept`, respectively, replace only the locally displayed `FileDiffMetadata`, and disappear when Pierre converts the hunk to context. They do not write, stage, or otherwise mutate the repository. A reviewed file exposes Pierre's Reset behavior in its header, and a fresh diff source also resets the local display.
 
 The implementation lives in focused review modules:
 
 - `review/change-review-model.ts` derives hunk annotations and calls Pierre's transform;
 - `review/change-review-action.tsx` renders the two controls;
+- `review/change-review-reset-button.tsx` restores the source diff for one reviewed file;
 - `review/use-diff-change-review.ts` owns local displayed-diff replacements.
 
 Do not reinterpret these controls as Git operations. Filesystem editing remains the separate explicit edit/save path from Phase 6.

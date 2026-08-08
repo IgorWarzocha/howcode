@@ -25,7 +25,7 @@ export function DiffFileEditButton({
     <Tooltip content={isEligible ? presentation.label : 'This file cannot be edited'}>
       <button
         type="button"
-        className={cn(compactIconButtonClass, 'mr-2 shrink-0')}
+        className={cn(compactIconButtonClass, 'shrink-0')}
         disabled={
           !isEligible ||
           presentation.busyElsewhere ||

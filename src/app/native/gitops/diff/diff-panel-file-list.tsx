@@ -121,6 +121,10 @@ export function DiffPanelFileList({
         >
           <DiffPanelFileHeader
             fileDiff={fileDiff}
+            changeReview={{
+              reset: () => changeReview.reset(fileKey),
+              reviewed: changeReview.reviewedFileKeys.has(fileKey),
+            }}
             editing={editing}
             fileKey={fileKey}
             filePath={filePath}
@@ -133,7 +137,14 @@ export function DiffPanelFileList({
         </div>
       )
     },
-    [baseline, editing, onToggleFileCollapsed, projectId],
+    [
+      baseline,
+      changeReview.reset,
+      changeReview.reviewedFileKeys,
+      editing,
+      onToggleFileCollapsed,
+      projectId,
+    ],
   )
 
   const fileIdentityByKey = useMemo(() => {

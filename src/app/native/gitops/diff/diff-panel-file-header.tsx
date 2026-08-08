@@ -11,10 +11,12 @@ import {
 import { cn } from '../../../utils/cn'
 import { DiffFileEditButton } from '../edit/diff-file-edit-button'
 import type { DiffEditingController } from '../edit/use-diff-editing'
+import { ChangeReviewResetButton } from '../review/change-review-reset-button'
 import { getFileChangeCounts, getFileHeaderContextLabel } from './diff-panel-content.helpers'
 
 export function DiffPanelFileHeader({
   fileDiff,
+  changeReview,
   editing,
   fileKey,
   filePath,
@@ -22,6 +24,7 @@ export function DiffPanelFileHeader({
   onToggleFileCollapsed,
 }: {
   fileDiff: FileDiffMetadata
+  changeReview: { reset: () => void; reviewed: boolean }
   editing: DiffEditingController
   fileKey: string
   filePath: string
@@ -67,14 +70,19 @@ export function DiffPanelFileHeader({
           ) : null}
         </span>
       </button>
-      <DiffFileEditButton
-        editing={editing}
-        fileDiff={fileDiff}
-        fileKey={fileKey}
-        onBeforeStart={() => {
-          if (isCollapsed) onToggleFileCollapsed(fileKey)
-        }}
-      />
+      <div className="mr-2 flex shrink-0 items-center gap-0.5">
+        {changeReview.reviewed && !editOwnsFile ? (
+          <ChangeReviewResetButton onReset={changeReview.reset} />
+        ) : null}
+        <DiffFileEditButton
+          editing={editing}
+          fileDiff={fileDiff}
+          fileKey={fileKey}
+          onBeforeStart={() => {
+            if (isCollapsed) onToggleFileCollapsed(fileKey)
+          }}
+        />
+      </div>
     </div>
   )
 }
