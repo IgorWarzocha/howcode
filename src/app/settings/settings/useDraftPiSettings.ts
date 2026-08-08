@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker, PiSettings } from '../../desktop/types'
+import { appendPiSettingsWrite } from './piSettingsWriteQueue'
 
 const resolvedPromise = Promise.resolve()
 
@@ -11,7 +12,7 @@ export function useDraftPiSettings(input: {
   const piSettingsRef = useRef(input.piSettings)
   const draftPiSettingsRef = useRef(draftPiSettings)
   const dirtyKeysRef = useRef(new Set<keyof PiSettings>())
-  const themeUpdateQueueRef = useRef<Promise<unknown>>(resolvedPromise)
+  const writeQueueRef = useRef<Promise<unknown>>(resolvedPromise)
   const pendingThemeRef = useRef<string | null>(null)
 
   const revertFailedThemeUpdate = useCallback((failedTheme: string) => {
@@ -45,23 +46,19 @@ export function useDraftPiSettings(input: {
         dirtyKeysRef.current.delete(key)
         pendingThemeRef.current = theme
         setDraftPiSettings((current) => ({ ...current, theme }))
-        themeUpdateQueueRef.current = themeUpdateQueueRef.current
-          .catch(() => {
-            // A failed write must not prevent later theme selections from reaching Pi.
-          })
-          .then(async () => {
-            try {
-              const result = await input.onAction('pi-settings.update', {
-                piSettingsKey: key,
-                value: theme,
-              })
-              if (!result || result.ok === false || typeof result.result?.error === 'string') {
-                revertFailedThemeUpdate(theme)
-              }
-            } catch {
+        writeQueueRef.current = appendPiSettingsWrite(writeQueueRef.current, async () => {
+          try {
+            const result = await input.onAction('pi-settings.update', {
+              piSettingsKey: key,
+              value: theme,
+            })
+            if (!result || result.ok === false || typeof result.result?.error === 'string') {
               revertFailedThemeUpdate(theme)
             }
-          })
+          } catch {
+            revertFailedThemeUpdate(theme)
+          }
+        })
         return
       }
 
@@ -73,19 +70,23 @@ export function useDraftPiSettings(input: {
 
   const flushPiSettings = useCallback(async () => {
     const dirtyKeys = [...dirtyKeysRef.current]
-    if (dirtyKeys.length === 0) return
     dirtyKeysRef.current.clear()
     const snapshot = draftPiSettingsRef.current
-    await dirtyKeys.reduce<Promise<void>>(
-      (pending, key) =>
-        pending.then(async () => {
-          await input.onAction('pi-settings.update', {
-            piSettingsKey: key,
-            value: snapshot[key],
-          })
-        }),
-      Promise.resolve(),
-    )
+    if (dirtyKeys.length > 0) {
+      writeQueueRef.current = appendPiSettingsWrite(writeQueueRef.current, () =>
+        dirtyKeys.reduce<Promise<void>>(
+          (pending, key) =>
+            pending.then(async () => {
+              await input.onAction('pi-settings.update', {
+                piSettingsKey: key,
+                value: snapshot[key],
+              })
+            }),
+          Promise.resolve(),
+        ),
+      )
+    }
+    await writeQueueRef.current
   }, [input.onAction])
 
   useEffect(() => () => void flushPiSettings(), [flushPiSettings])
