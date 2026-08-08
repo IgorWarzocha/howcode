@@ -1,0 +1,3 @@
+- `InboxView` routes empty versus selected-thread state; `useInboxReplyController` owns reply and stop lifecycles.
+- `InboxComposer` only composes overlay, input, action, and autocomplete controllers. Keep `InboxComposerSurface` render-only.
+- Shared editor, picker, dictation, mention, and autocomplete behavior remains owned by `composer/`; do not fork it into Inbox.

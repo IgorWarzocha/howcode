@@ -4,7 +4,7 @@ import type { ComposerSkillMentions } from './useComposerSkillMentions'
 import type { ComposerSlashCommands } from './useComposerSlashCommands'
 
 function scrollActiveOptionIntoView(input: {
-  activeDescendantId: string | undefined
+  activeDescendantId: string | null | undefined
   forceTopForFirstOption: boolean
   listSignature: string
   panelRef: RefObject<HTMLDivElement | null>
@@ -35,6 +35,37 @@ function scrollActiveOptionIntoView(input: {
   } else if (optionBottom > visibleBottom) {
     panel.scrollTop = optionBottom - panel.clientHeight + paddingBottom
   }
+}
+
+type ComposerActiveOptionState = {
+  activeDescendantId: string | null | undefined
+  open: boolean
+  selectedIndex: number
+}
+
+export function useComposerActiveOptionScroll(input: {
+  forceTopForFirstOption: boolean
+  listSignature: string
+  panelRef: RefObject<HTMLDivElement | null>
+  state: ComposerActiveOptionState
+}) {
+  useEffect(() => {
+    if (!input.state.open) return
+    scrollActiveOptionIntoView({
+      activeDescendantId: input.state.activeDescendantId,
+      forceTopForFirstOption: input.forceTopForFirstOption,
+      listSignature: input.listSignature,
+      panelRef: input.panelRef,
+      selectedIndex: input.state.selectedIndex,
+    })
+  }, [
+    input.forceTopForFirstOption,
+    input.listSignature,
+    input.panelRef,
+    input.state.activeDescendantId,
+    input.state.open,
+    input.state.selectedIndex,
+  ])
 }
 
 export function useComposerAutocompleteEffects({
@@ -90,56 +121,24 @@ export function useComposerAutocompleteEffects({
     return () => window.removeEventListener('pointerdown', handlePointerDown, true)
   }, [fileMentions.open, skillMentions.open, slashCommands.open])
 
-  useEffect(() => {
-    if (!slashCommands.open) return
-    scrollActiveOptionIntoView({
-      activeDescendantId: slashCommands.activeDescendantId,
-      forceTopForFirstOption: true,
-      listSignature: slashCommandListSignature,
-      panelRef: slashCommandPanelRef,
-      selectedIndex: slashCommands.selectedIndex,
-    })
-  }, [
-    slashCommandListSignature,
-    slashCommandPanelRef,
-    slashCommands.activeDescendantId,
-    slashCommands.open,
-    slashCommands.selectedIndex,
-  ])
-
-  useEffect(() => {
-    if (!fileMentions.open) return
-    scrollActiveOptionIntoView({
-      activeDescendantId: fileMentions.activeDescendantId,
-      forceTopForFirstOption: false,
-      listSignature: fileMentionListSignature,
-      panelRef: fileMentionPanelRef,
-      selectedIndex: fileMentions.selectedIndex,
-    })
-  }, [
-    fileMentionListSignature,
-    fileMentionPanelRef,
-    fileMentions.activeDescendantId,
-    fileMentions.open,
-    fileMentions.selectedIndex,
-  ])
-
-  useEffect(() => {
-    if (!skillMentions.open) return
-    scrollActiveOptionIntoView({
-      activeDescendantId: skillMentions.activeDescendantId,
-      forceTopForFirstOption: false,
-      listSignature: skillMentionListSignature,
-      panelRef: skillMentionPanelRef,
-      selectedIndex: skillMentions.selectedIndex,
-    })
-  }, [
-    skillMentionListSignature,
-    skillMentionPanelRef,
-    skillMentions.activeDescendantId,
-    skillMentions.open,
-    skillMentions.selectedIndex,
-  ])
+  useComposerActiveOptionScroll({
+    forceTopForFirstOption: true,
+    listSignature: slashCommandListSignature,
+    panelRef: slashCommandPanelRef,
+    state: slashCommands,
+  })
+  useComposerActiveOptionScroll({
+    forceTopForFirstOption: false,
+    listSignature: fileMentionListSignature,
+    panelRef: fileMentionPanelRef,
+    state: fileMentions,
+  })
+  useComposerActiveOptionScroll({
+    forceTopForFirstOption: false,
+    listSignature: skillMentionListSignature,
+    panelRef: skillMentionPanelRef,
+    state: skillMentions,
+  })
 }
 
 export function useComposerEscapeEffects({

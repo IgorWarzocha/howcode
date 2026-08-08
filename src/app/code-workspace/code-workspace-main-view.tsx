@@ -221,9 +221,7 @@ export function CodeWorkspaceMainView({
         contextUsage={contextUsage}
         currentModel={currentModel}
         currentThinkingLevel={currentThinkingLevel}
-        favoriteFolders={appSettings.favoriteFolders}
         isCompacting={isCompacting}
-        showDictationButton={appSettings.showDictationButton}
         thread={selectedInboxThread}
         onAction={onAction}
         onDismissThread={onDismissInboxThread}
