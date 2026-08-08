@@ -122,8 +122,6 @@ export function ProjectWorkSection({
   const [projectSwitcherOpen, setProjectSwitcherOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [collapsedBranchIds, setCollapsedBranchIds] = useState<Record<string, boolean>>({})
-  const [pruneConfirmBranchId, setPruneConfirmBranchId] = useState<string | null>(null)
-  const [switchErrorBranchId, setSwitchErrorBranchId] = useState<string | null>(null)
   const [visibleProjectIdsOverride, setStoredVisibleProjectIds] = useState<
     string[] | null | undefined
   >(undefined)
@@ -369,10 +367,6 @@ export function ProjectWorkSection({
           onSearchQueryChange={setSearchQuery}
           onSetCollapsedBranchIds={setCollapsedBranchIds}
           onToggleProjectCollapse={onToggleProjectCollapse}
-          onSetPruneConfirmBranchId={setPruneConfirmBranchId}
-          onSetSwitchErrorBranchId={setSwitchErrorBranchId}
-          pruneConfirmBranchId={pruneConfirmBranchId}
-          switchErrorBranchId={switchErrorBranchId}
           onShowView={onShowView}
           onThreadOpen={onThreadOpen}
         />
@@ -388,19 +382,15 @@ export function ProjectWorkSection({
           normalizedSearchQuery={normalizedSearchQuery}
           olderThreadCount={olderThreads.length}
           project={contentProject}
-          pruneConfirmBranchId={pruneConfirmBranchId}
           searchInputRef={searchInputRef}
           searchQuery={searchQuery}
           selectedGroupId={selectedGroupId}
           selectedThreadId={selectedThreadId}
-          switchErrorBranchId={switchErrorBranchId}
           terminalRunningSessionPaths={terminalRunningSessionPaths}
           onAction={onAction}
           onFocusProject={focusProject}
           onSearchQueryChange={setSearchQuery}
           onSetCollapsedBranchIds={setCollapsedBranchIds}
-          onSetPruneConfirmBranchId={setPruneConfirmBranchId}
-          onSetSwitchErrorBranchId={setSwitchErrorBranchId}
           onShowView={onShowView}
           onThreadOpen={onThreadOpen}
         />

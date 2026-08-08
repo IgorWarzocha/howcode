@@ -252,11 +252,9 @@ export function ProjectWorkSummaryBlock({
   isGitRepo,
   olderThreadCount,
   project,
-  pruneConfirmBranchId,
   searchQuery,
   selectedProjectId,
   selectedThreadId,
-  switchErrorBranchId,
   terminalRunningSessionPaths,
   threads,
   unassignedCollapsed,
@@ -264,8 +262,6 @@ export function ProjectWorkSummaryBlock({
   onFocusProject,
   onPrimeProject,
   onSetCollapsedBranchIds,
-  onSetPruneConfirmBranchId,
-  onSetSwitchErrorBranchId,
   onShowView,
   onThreadOpen,
   onToggleExpanded,
@@ -281,11 +277,9 @@ export function ProjectWorkSummaryBlock({
   isGitRepo: boolean
   olderThreadCount: number
   project: Project
-  pruneConfirmBranchId: string | null
   searchQuery: string
   selectedProjectId: string
   selectedThreadId: string | null
-  switchErrorBranchId: string | null
   terminalRunningSessionPaths: ReadonlySet<string>
   threads: Thread[]
   unassignedCollapsed: boolean
@@ -295,8 +289,6 @@ export function ProjectWorkSummaryBlock({
   onSetCollapsedBranchIds: (
     updater: (current: Record<string, boolean>) => Record<string, boolean>,
   ) => void
-  onSetPruneConfirmBranchId: (branchId: string | null) => void
-  onSetSwitchErrorBranchId: (branchId: string | null) => void
   onShowView: (view: Exclude<View, 'gitops'>) => void
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
   onToggleExpanded: () => void
@@ -374,14 +366,10 @@ export function ProjectWorkSummaryBlock({
             hideSessionCounts={hideSessionCounts}
             normalizedSearchQuery={normalizedSearchQuery}
             project={project}
-            pruneConfirmBranchId={pruneConfirmBranchId}
             selectedThreadId={selectedThreadId}
-            switchErrorBranchId={switchErrorBranchId}
             terminalRunningSessionPaths={terminalRunningSessionPaths}
             onAction={onAction}
             onSetCollapsedBranchIds={onSetCollapsedBranchIds}
-            onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
-            onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
             onThreadOpen={onThreadOpen}
           />
         ) : (
@@ -398,17 +386,13 @@ export function ProjectWorkSummaryBlock({
             hideSessionCounts={hideSessionCounts}
             normalizedSearchQuery={normalizedSearchQuery}
             project={project}
-            pruneConfirmBranchId={pruneConfirmBranchId}
             selectedThreadId={selectedThreadId}
-            switchErrorBranchId={switchErrorBranchId}
             terminalRunningSessionPaths={terminalRunningSessionPaths}
             unassignedExpanded={unassignedExpanded}
             unassignedThreads={unassignedThreads}
             worktreeGroups={compactWorktreeGroups}
             onAction={onAction}
             onSetCollapsedBranchIds={onSetCollapsedBranchIds}
-            onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
-            onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
             onThreadOpen={onThreadOpen}
             onToggleCurrentBranch={() =>
               onSetCollapsedBranchIds((current) => ({

@@ -161,10 +161,6 @@ export function MultiProjectWorkContent({
   onSearchQueryChange,
   onSetCollapsedBranchIds,
   onToggleProjectCollapse,
-  onSetPruneConfirmBranchId,
-  onSetSwitchErrorBranchId,
-  pruneConfirmBranchId,
-  switchErrorBranchId,
   onShowView,
   onThreadOpen,
 }: {
@@ -189,10 +185,6 @@ export function MultiProjectWorkContent({
     updater: (current: Record<string, boolean>) => Record<string, boolean>,
   ) => void
   onToggleProjectCollapse: (projectId: string) => void
-  onSetPruneConfirmBranchId: (branchId: string | null) => void
-  onSetSwitchErrorBranchId: (branchId: string | null) => void
-  pruneConfirmBranchId: string | null
-  switchErrorBranchId: string | null
   onShowView: (view: Exclude<View, 'gitops'>) => void
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
 }) {
@@ -249,11 +241,9 @@ export function MultiProjectWorkContent({
                 isGitRepo={blockIsGitRepo}
                 olderThreadCount={buckets.olderThreads.length}
                 project={project}
-                pruneConfirmBranchId={pruneConfirmBranchId}
                 searchQuery={searchQuery}
                 selectedProjectId={selectedProjectId}
                 selectedThreadId={selectedThreadId}
-                switchErrorBranchId={switchErrorBranchId}
                 terminalRunningSessionPaths={terminalRunningSessionPaths}
                 threads={buckets.activeThreads}
                 unassignedCollapsed={collapsedBranchIds[unassignedGroupId] ?? true}
@@ -261,8 +251,6 @@ export function MultiProjectWorkContent({
                 onFocusProject={onFocusProject}
                 onPrimeProject={onPrimeProject}
                 onSetCollapsedBranchIds={onSetCollapsedBranchIds}
-                onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
-                onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
                 onShowView={onShowView}
                 onThreadOpen={onThreadOpen}
                 onToggleExpanded={() => onToggleProjectCollapse(project.id)}
@@ -292,19 +280,15 @@ export function SingleProjectWorkContent({
   olderThreadCount,
   normalizedSearchQuery,
   project,
-  pruneConfirmBranchId,
   searchInputRef,
   searchQuery,
   selectedGroupId,
   selectedThreadId,
-  switchErrorBranchId,
   terminalRunningSessionPaths,
   onAction,
   onFocusProject,
   onSearchQueryChange,
   onSetCollapsedBranchIds,
-  onSetPruneConfirmBranchId,
-  onSetSwitchErrorBranchId,
   onShowView,
   onThreadOpen,
 }: {
@@ -318,12 +302,10 @@ export function SingleProjectWorkContent({
   olderThreadCount: number
   normalizedSearchQuery: string
   project: Project
-  pruneConfirmBranchId: string | null
   searchInputRef: RefObject<HTMLInputElement | null>
   searchQuery: string
   selectedGroupId: string
   selectedThreadId: string | null
-  switchErrorBranchId: string | null
   terminalRunningSessionPaths: ReadonlySet<string>
   onAction: DesktopActionInvoker
   onFocusProject: (projectId: string) => void
@@ -331,8 +313,6 @@ export function SingleProjectWorkContent({
   onSetCollapsedBranchIds: (
     updater: (current: Record<string, boolean>) => Record<string, boolean>,
   ) => void
-  onSetPruneConfirmBranchId: (branchId: string | null) => void
-  onSetSwitchErrorBranchId: (branchId: string | null) => void
   onShowView: (view: Exclude<View, 'gitops'>) => void
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
 }) {
@@ -433,10 +413,6 @@ export function SingleProjectWorkContent({
                         [groupKey]: !collapsed,
                       }))
                     }
-                    pruneConfirmBranchId={pruneConfirmBranchId}
-                    onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
-                    switchErrorBranchId={switchErrorBranchId}
-                    onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
                   />
                 )
               })}

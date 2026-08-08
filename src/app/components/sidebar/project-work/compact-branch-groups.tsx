@@ -2,6 +2,7 @@ import { Tooltip } from '@howcode/common/tooltip'
 import { CircleOff, GitBranch } from 'lucide-react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project, Thread, View } from '../../../types'
+import { getBranchActionCapabilities } from './branch-action-capabilities'
 import {
   shouldShowBranchGroupDividerAfter,
   shouldShowBranchGroupDividerBefore,
@@ -49,17 +50,13 @@ export function ProjectCompactBranchGroups({
   hideSessionCounts,
   normalizedSearchQuery,
   project,
-  pruneConfirmBranchId,
   selectedThreadId,
-  switchErrorBranchId,
   terminalRunningSessionPaths,
   unassignedExpanded,
   unassignedThreads,
   worktreeGroups,
   onAction,
   onSetCollapsedBranchIds,
-  onSetPruneConfirmBranchId,
-  onSetSwitchErrorBranchId,
   onToggleCurrentBranch,
   onThreadOpen,
   onToggleUnassigned,
@@ -73,9 +70,7 @@ export function ProjectCompactBranchGroups({
   hideSessionCounts: boolean
   normalizedSearchQuery: string
   project: Project
-  pruneConfirmBranchId: string | null
   selectedThreadId: string | null
-  switchErrorBranchId: string | null
   terminalRunningSessionPaths: ReadonlySet<string>
   unassignedExpanded: boolean
   unassignedThreads: Thread[]
@@ -84,15 +79,12 @@ export function ProjectCompactBranchGroups({
   onSetCollapsedBranchIds: (
     updater: (current: Record<string, boolean>) => Record<string, boolean>,
   ) => void
-  onSetPruneConfirmBranchId: (branchId: string | null) => void
-  onSetSwitchErrorBranchId: (branchId: string | null) => void
   onToggleCurrentBranch: () => void
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
   onToggleUnassigned: () => void
 }) {
   const canToggleCurrentBranch = branchThreads.length > 0
   const completedWorktrees = getCompletedWorktreesForCompactCurrentBranch(worktreeGroups)
-  const hasCompletedWorktrees = completedWorktrees.length > 0
   const currentBranchGroup: BranchThreadGroup = {
     id: 'current-branch',
     label: currentBranch ?? 'No branch',
@@ -103,17 +95,7 @@ export function ProjectCompactBranchGroups({
     unassigned: false,
     worktree: false,
   }
-  const currentBranchActionKey = `${project.id}:${currentBranchGroup.id}`
-  const mergeCompletedWorktreesActionKey = `${currentBranchActionKey}:merge-completed-worktrees`
-  const removeCompletedWorktreesActionKey = `${currentBranchActionKey}:remove-completed-worktrees`
-  const confirmingCurrentPrune = pruneConfirmBranchId === currentBranchActionKey
-  const confirmingMergeCompletedWorktrees =
-    pruneConfirmBranchId === mergeCompletedWorktreesActionKey
-  const confirmingRemoveCompletedWorktrees =
-    pruneConfirmBranchId === removeCompletedWorktreesActionKey
   const canPruneCurrentBranch = Boolean(currentBranch)
-  const currentBranchActionCount =
-    (canPruneCurrentBranch ? 1 : 0) + (hasCompletedWorktrees ? 2 : 0) + (currentBranch ? 1 : 0) + 1
   const unassignedGroup: BranchThreadGroup = {
     id: 'compact-unassigned',
     label: 'Unassigned',
@@ -123,6 +105,11 @@ export function ProjectCompactBranchGroups({
     unassigned: true,
     worktree: false,
   }
+  const currentBranchActionCapabilities = getBranchActionCapabilities(currentBranchGroup, {
+    canPrune: canPruneCurrentBranch,
+    canCreateWorktree: Boolean(currentBranch),
+  })
+  const unassignedActionCapabilities = getBranchActionCapabilities(unassignedGroup)
 
   return (
     <>
@@ -155,50 +142,14 @@ export function ProjectCompactBranchGroups({
           <span className="sidebar-project-work-branch-meta">
             <BranchSessionCount count={branchThreads.length} hidden={hideSessionCounts} />
           </span>
-          <span
-            className="sidebar-project-work-branch-actions"
-            data-action-count={currentBranchActionCount}
-            data-confirming={
-              confirmingCurrentPrune ||
-              confirmingMergeCompletedWorktrees ||
-              confirmingRemoveCompletedWorktrees
-                ? 'true'
-                : 'false'
-            }
-          >
-            <BranchInlineActions
-              canPrune={canPruneCurrentBranch}
-              canSwitch={false}
-              canToggleWorktreeComplete={false}
-              canMergeWorktree={false}
-              canMergeCompletedWorktrees={hasCompletedWorktrees}
-              canRemoveCompletedWorktrees={hasCompletedWorktrees}
-              canCreateWorktree={Boolean(currentBranch)}
-              confirmingPrune={confirmingCurrentPrune}
-              confirmingMergeCompletedWorktrees={confirmingMergeCompletedWorktrees}
-              confirmingRemoveCompletedWorktrees={confirmingRemoveCompletedWorktrees}
-              currentBranch={currentBranch}
-              group={currentBranchGroup}
-              project={project}
-              switchBlocked={false}
-              onAction={onAction}
-              onCancelPrune={() => onSetPruneConfirmBranchId(null)}
-              onConfirmPrune={() => onSetPruneConfirmBranchId(null)}
-              onRequestPruneConfirm={() => onSetPruneConfirmBranchId(currentBranchActionKey)}
-              onCancelMergeCompletedWorktrees={() => onSetPruneConfirmBranchId(null)}
-              onConfirmMergeCompletedWorktrees={() => onSetPruneConfirmBranchId(null)}
-              onRequestMergeCompletedWorktreesConfirm={() =>
-                onSetPruneConfirmBranchId(mergeCompletedWorktreesActionKey)
-              }
-              onCancelRemoveCompletedWorktrees={() => onSetPruneConfirmBranchId(null)}
-              onConfirmRemoveCompletedWorktrees={() => onSetPruneConfirmBranchId(null)}
-              onRequestRemoveCompletedWorktreesConfirm={() =>
-                onSetPruneConfirmBranchId(removeCompletedWorktreesActionKey)
-              }
-              onSwitchBlocked={() => undefined}
-              onSwitchFailed={() => undefined}
-            />
-          </span>
+          <BranchInlineActions
+            capabilities={currentBranchActionCapabilities}
+            currentBranch={currentBranch}
+            group={currentBranchGroup}
+            project={project}
+            switchBlocked={false}
+            onAction={onAction}
+          />
         </div>
         {currentBranchExpanded ? (
           <div className="sidebar-project-work-branch-thread-list">
@@ -250,10 +201,6 @@ export function ProjectCompactBranchGroups({
                 [groupKey]: !collapsed,
               }))
             }
-            pruneConfirmBranchId={pruneConfirmBranchId}
-            onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
-            switchErrorBranchId={switchErrorBranchId}
-            onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
           />
         )
       })}
@@ -293,36 +240,14 @@ export function ProjectCompactBranchGroups({
               <span className="sidebar-project-work-branch-meta">
                 <BranchSessionCount count={unassignedThreads.length} hidden={hideSessionCounts} />
               </span>
-              <span className="sidebar-project-work-branch-actions" data-action-count="1">
-                <BranchInlineActions
-                  canPrune={false}
-                  canSwitch={false}
-                  canToggleWorktreeComplete={false}
-                  canMergeWorktree={false}
-                  canMergeCompletedWorktrees={false}
-                  canRemoveCompletedWorktrees={false}
-                  canCreateWorktree={false}
-                  confirmingPrune={false}
-                  confirmingMergeCompletedWorktrees={false}
-                  confirmingRemoveCompletedWorktrees={false}
-                  currentBranch={currentBranch}
-                  group={unassignedGroup}
-                  project={project}
-                  switchBlocked={false}
-                  onAction={onAction}
-                  onCancelPrune={() => undefined}
-                  onConfirmPrune={() => undefined}
-                  onRequestPruneConfirm={() => undefined}
-                  onCancelMergeCompletedWorktrees={() => undefined}
-                  onConfirmMergeCompletedWorktrees={() => undefined}
-                  onRequestMergeCompletedWorktreesConfirm={() => undefined}
-                  onCancelRemoveCompletedWorktrees={() => undefined}
-                  onConfirmRemoveCompletedWorktrees={() => undefined}
-                  onRequestRemoveCompletedWorktreesConfirm={() => undefined}
-                  onSwitchBlocked={() => undefined}
-                  onSwitchFailed={() => undefined}
-                />
-              </span>
+              <BranchInlineActions
+                capabilities={unassignedActionCapabilities}
+                currentBranch={currentBranch}
+                group={unassignedGroup}
+                project={project}
+                switchBlocked={false}
+                onAction={onAction}
+              />
             </div>
           </Tooltip>
           {unassignedExpanded ? (

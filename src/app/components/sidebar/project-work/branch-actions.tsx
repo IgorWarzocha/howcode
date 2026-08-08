@@ -13,15 +13,11 @@ export function BranchSwitchAction({
   group,
   project,
   onAction,
-  onBlocked,
-  onSwitchFailed,
 }: {
   blocked: boolean
   group: BranchThreadGroup
   project: Project
   onAction: DesktopActionInvoker
-  onBlocked: () => void
-  onSwitchFailed: () => void
 }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
@@ -36,16 +32,8 @@ export function BranchSwitchAction({
         value: group.label,
       })
       const error = result?.result?.error
-      if (!error) {
-        onSwitchFailed()
-        return
-      }
+      if (!error) return
       setErrorMessage(error)
-      if (typeof error === 'string' && error.includes('Worktree is dirty')) {
-        onBlocked()
-        return
-      }
-      onSwitchFailed()
     } finally {
       setPending(false)
     }

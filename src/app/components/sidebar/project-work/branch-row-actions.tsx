@@ -7,6 +7,7 @@ import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project } from '../../../types'
 import { WorktreeSmallIcon } from '../../../ui/icons/worktree-small-icon'
 import { SidebarActionTooltip } from '../sidebar-action-tooltip'
+import { type BranchActionCapabilities, getBranchActionCount } from './branch-action-capabilities'
 import {
   BranchPruneAction,
   BranchSwitchAction,
@@ -97,13 +98,11 @@ function BranchWorktreeCreateAction({
   group,
   project,
   onAction,
-  onCreateFailed,
 }: {
   currentBranch: string | null
   group: BranchThreadGroup
   project: Project
   onAction: DesktopActionInvoker
-  onCreateFailed: () => void
 }) {
   const [open, setOpen] = useState(false)
   const [worktreeBranchName, setWorktreeBranchName] = useState('')
@@ -168,7 +167,6 @@ function BranchWorktreeCreateAction({
       })
       if (result.error) {
         setWorktreeError(result.error)
-        onCreateFailed()
         return
       }
       setWorktreeBranchName('')
@@ -228,7 +226,6 @@ function EmptyBranchStartAction({
   group,
   project,
   onAction,
-  onSwitchFailed,
 }: {
   blocked: boolean
   canSwitch: boolean
@@ -236,11 +233,12 @@ function EmptyBranchStartAction({
   group: BranchThreadGroup
   project: Project
   onAction: DesktopActionInvoker
-  onSwitchFailed: () => void
 }) {
   const targetProjectId = group.worktreePath ?? project.id
   const [pending, setPending] = useState(false)
+  const [warningMessage, setWarningMessage] = useState<string | null>(null)
   const startThread = async () => {
+    setWarningMessage(null)
     setPending(true)
     try {
       if (!(group.current || group.worktree || group.unassigned)) {
@@ -250,7 +248,7 @@ function EmptyBranchStartAction({
           onAction,
           projectId: project.id,
         })
-        if (worktreeResult.error) onSwitchFailed()
+        if (worktreeResult.error) setWarningMessage(worktreeResult.error)
         return
       }
 
@@ -272,7 +270,7 @@ function EmptyBranchStartAction({
         ? 'Start unassigned thread'
         : `Start thread in ${group.label} worktree`
   const tooltipContent = canSwitch ? 'Switch branches and start a new session.' : label
-  const warning = blocked ? 'Worktree is dirty. Commit first.' : null
+  const warning = warningMessage ?? (blocked ? 'Worktree is dirty. Commit first.' : null)
 
   return (
     <SidebarActionTooltip description={tooltipContent} warning={warning}>
@@ -293,131 +291,96 @@ function EmptyBranchStartAction({
   )
 }
 
+type BranchConfirmation = 'prune' | 'merge-completed' | 'remove-completed' | null
+
 export function BranchInlineActions({
-  canPrune,
-  canSwitch,
-  canToggleWorktreeComplete,
-  canMergeWorktree,
-  canMergeCompletedWorktrees,
-  canRemoveCompletedWorktrees,
-  canCreateWorktree,
-  confirmingPrune,
-  confirmingMergeCompletedWorktrees,
-  confirmingRemoveCompletedWorktrees,
+  capabilities,
   currentBranch,
   group,
   project,
   switchBlocked,
   onAction,
-  onCancelPrune,
-  onConfirmPrune,
-  onRequestPruneConfirm,
-  onCancelMergeCompletedWorktrees,
-  onConfirmMergeCompletedWorktrees,
-  onRequestMergeCompletedWorktreesConfirm,
-  onCancelRemoveCompletedWorktrees,
-  onConfirmRemoveCompletedWorktrees,
-  onRequestRemoveCompletedWorktreesConfirm,
-  onSwitchBlocked,
-  onSwitchFailed,
 }: {
-  canPrune: boolean
-  canSwitch: boolean
-  canToggleWorktreeComplete: boolean
-  canMergeWorktree: boolean
-  canMergeCompletedWorktrees: boolean
-  canRemoveCompletedWorktrees: boolean
-  canCreateWorktree: boolean
-  confirmingPrune: boolean
-  confirmingMergeCompletedWorktrees: boolean
-  confirmingRemoveCompletedWorktrees: boolean
+  capabilities: BranchActionCapabilities
   currentBranch: string | null
   group: BranchThreadGroup
   project: Project
   switchBlocked: boolean
   onAction: DesktopActionInvoker
-  onCancelPrune: () => void
-  onConfirmPrune: () => void
-  onRequestPruneConfirm: () => void
-  onCancelMergeCompletedWorktrees: () => void
-  onConfirmMergeCompletedWorktrees: () => void
-  onRequestMergeCompletedWorktreesConfirm: () => void
-  onCancelRemoveCompletedWorktrees: () => void
-  onConfirmRemoveCompletedWorktrees: () => void
-  onRequestRemoveCompletedWorktreesConfirm: () => void
-  onSwitchBlocked: () => void
-  onSwitchFailed: () => void
 }) {
+  const [confirmation, setConfirmation] = useState<BranchConfirmation>(null)
+  const actionCount = getBranchActionCount(capabilities)
+
   return (
-    <>
-      {canPrune ? (
+    <span
+      className="sidebar-project-work-branch-actions"
+      data-action-count={actionCount}
+      data-confirming={confirmation === null ? 'false' : 'true'}
+    >
+      {capabilities.canPrune ? (
         <BranchPruneAction
-          confirming={confirmingPrune}
+          confirming={confirmation === 'prune'}
           group={group}
           project={project}
           onAction={onAction}
-          onCancel={onCancelPrune}
-          onConfirm={onConfirmPrune}
-          onRequestConfirm={onRequestPruneConfirm}
+          onCancel={() => setConfirmation(null)}
+          onConfirm={() => setConfirmation(null)}
+          onRequestConfirm={() => setConfirmation('prune')}
         />
       ) : null}
-      {canRemoveCompletedWorktrees ? (
+      {capabilities.canRemoveCompletedWorktrees ? (
         <RemoveCompletedWorktreesAction
-          confirming={confirmingRemoveCompletedWorktrees}
+          confirming={confirmation === 'remove-completed'}
           group={group}
           project={project}
           onAction={onAction}
-          onCancel={onCancelRemoveCompletedWorktrees}
-          onConfirm={onConfirmRemoveCompletedWorktrees}
-          onRequestConfirm={onRequestRemoveCompletedWorktreesConfirm}
+          onCancel={() => setConfirmation(null)}
+          onConfirm={() => setConfirmation(null)}
+          onRequestConfirm={() => setConfirmation('remove-completed')}
         />
       ) : null}
-      {canMergeCompletedWorktrees ? (
+      {capabilities.canMergeCompletedWorktrees ? (
         <MergeCompletedWorktreesAction
-          confirming={confirmingMergeCompletedWorktrees}
+          confirming={confirmation === 'merge-completed'}
           group={group}
           project={project}
           onAction={onAction}
-          onCancel={onCancelMergeCompletedWorktrees}
-          onConfirm={onConfirmMergeCompletedWorktrees}
-          onRequestConfirm={onRequestMergeCompletedWorktreesConfirm}
+          onCancel={() => setConfirmation(null)}
+          onConfirm={() => setConfirmation(null)}
+          onRequestConfirm={() => setConfirmation('merge-completed')}
         />
       ) : null}
-      {canSwitch ? (
+      {capabilities.canSwitch ? (
         <BranchSwitchAction
           blocked={switchBlocked}
           group={group}
           project={project}
           onAction={onAction}
-          onBlocked={onSwitchBlocked}
-          onSwitchFailed={onSwitchFailed}
         />
       ) : null}
-      {canToggleWorktreeComplete ? (
+      {capabilities.canToggleWorktreeComplete ? (
         <WorktreeCompletionAction group={group} project={project} onAction={onAction} />
       ) : null}
-      {canMergeWorktree ? (
+      {capabilities.canMergeWorktree ? (
         <WorktreeMergeAction group={group} project={project} onAction={onAction} />
       ) : null}
-      {canCreateWorktree ? (
+      {capabilities.canCreateWorktree ? (
         <BranchWorktreeCreateAction
           currentBranch={currentBranch}
           group={group}
           project={project}
           onAction={onAction}
-          onCreateFailed={onSwitchFailed}
         />
       ) : null}
       <EmptyBranchStartAction
         blocked={switchBlocked}
-        canSwitch={canSwitch}
+        canSwitch={capabilities.canSwitch}
         currentBranch={currentBranch}
         group={group}
         project={project}
         onAction={onAction}
-        onSwitchFailed={onSwitchFailed}
       />
-    </>
+    </span>
   )
 }
 
