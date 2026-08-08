@@ -1,8 +1,6 @@
-import { IconButton } from '@howcode/common/icon-button'
-import { Archive, ChevronRight, MoreHorizontal } from 'lucide-react'
-import { useLayoutEffect, useRef, useState } from 'react'
+import { Archive, ChevronRight } from 'lucide-react'
+import { useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
-import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import type { Project, Thread, View } from '../../../types'
 import { appToneSubtleClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
@@ -10,7 +8,7 @@ import { ProjectExpandedBranchGroups } from './branch-thread-groups'
 import { ProjectCompactBranchGroups } from './compact-branch-groups'
 import { NewThreadMenu } from './new-thread-menu'
 import { ProjectBrandIcon } from './project-brand-icon'
-import { ProjectWorkActionsMenu } from './project-work-actions-menu'
+import { ProjectWorkActionsMenuButton } from './project-work-actions-menu'
 import { ProjectRenameField } from './project-work-fields'
 import {
   type BranchThreadGroup,
@@ -40,32 +38,8 @@ function ProjectWorkBlockHeader({
   onFocusProject: (projectId: string) => void
   onToggleExpanded: () => void
 }) {
-  const [projectMenuOpen, setProjectMenuOpen] = useState(false)
   const [renameDraft, setRenameDraft] = useState(project.name)
   const [editingName, setEditingName] = useState(false)
-  const [menuWidth, setMenuWidth] = useState(240)
-  const [menuRight, setMenuRight] = useState(0)
-  const menuButtonRef = useRef<HTMLButtonElement | null>(null)
-  const menuRef = useRef<HTMLDivElement | null>(null)
-  useDismissibleLayer({
-    open: projectMenuOpen,
-    onDismiss: () => setProjectMenuOpen(false),
-    refs: [menuButtonRef, menuRef],
-  })
-  useLayoutEffect(() => {
-    if (!(projectMenuOpen && menuButtonRef.current)) return
-    const anchor = menuButtonRef.current
-    const row = anchor.closest('.sidebar-project-work-project-block-heading-row')
-    const rowRect = row?.getBoundingClientRect()
-    const anchorRect = anchor.getBoundingClientRect()
-    if (!rowRect) {
-      setMenuWidth(anchor.offsetLeft + anchor.offsetWidth)
-      setMenuRight(0)
-      return
-    }
-    setMenuWidth(rowRect.width)
-    setMenuRight(anchorRect.right - rowRect.right)
-  }, [projectMenuOpen])
   const submitRename = () => {
     const nextName = renameDraft.trim()
     setEditingName(false)
@@ -113,31 +87,14 @@ function ProjectWorkBlockHeader({
           <span className="truncate">{project.name}</span>
         </button>
       )}
-      <div className="sidebar-project-work-project-menu-anchor">
-        <IconButton
-          ref={menuButtonRef}
-          label="Project actions"
-          icon={<MoreHorizontal size={13} />}
-          tooltipPlacement="right"
-          className="sidebar-project-work-project-menu-button h-7 w-7 rounded-md"
-          onClick={() => setProjectMenuOpen((current) => !current)}
-        />
-        {projectMenuOpen ? (
-          <ProjectWorkActionsMenu
-            ref={menuRef}
-            right={menuRight}
-            width={menuWidth}
-            project={project}
-            onAction={onAction}
-            onClose={() => setProjectMenuOpen(false)}
-            onRename={() => {
-              setProjectMenuOpen(false)
-              setRenameDraft(project.name)
-              setEditingName(true)
-            }}
-          />
-        ) : null}
-      </div>
+      <ProjectWorkActionsMenuButton
+        project={project}
+        onAction={onAction}
+        onRename={() => {
+          setRenameDraft(project.name)
+          setEditingName(true)
+        }}
+      />
       <NewThreadMenu
         currentBranch={currentBranch}
         isGitRepo={isGitRepo}

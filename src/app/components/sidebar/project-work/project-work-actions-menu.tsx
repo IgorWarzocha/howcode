@@ -1,10 +1,81 @@
-import { FolderOpen, Pencil, Star, Trash2 } from 'lucide-react'
-import { forwardRef, useEffect, useRef, useState } from 'react'
+import { IconButton } from '@howcode/common/icon-button'
+import { FolderOpen, MoreHorizontal, Pencil, Star, Trash2 } from 'lucide-react'
+import { forwardRef, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
+import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import type { Project } from '../../../types'
 import { WorktreeSmallIcon } from '../../../ui/icons/worktree-small-icon'
 
-export const ProjectWorkActionsMenu = forwardRef<
+export function ProjectWorkActionsMenuButton({
+  project,
+  onAction,
+  onRename,
+}: {
+  project: Project
+  onAction: DesktopActionInvoker
+  onRename?: (() => void) | undefined
+}) {
+  const [open, setOpen] = useState(false)
+  const [menuWidth, setMenuWidth] = useState(240)
+  const [menuRight, setMenuRight] = useState(0)
+  const buttonRef = useRef<HTMLButtonElement | null>(null)
+  const menuRef = useRef<HTMLDivElement | null>(null)
+
+  useDismissibleLayer({
+    open,
+    onDismiss: () => setOpen(false),
+    refs: [buttonRef, menuRef],
+  })
+  useLayoutEffect(() => {
+    if (!(open && buttonRef.current)) return
+    const anchor = buttonRef.current
+    const row = anchor.closest(
+      '.sidebar-project-work-project-block-heading-row, .sidebar-project-work-toolbar, .sidebar-project-work-section-heading',
+    )
+    const rowRect = row?.getBoundingClientRect()
+    const anchorRect = anchor.getBoundingClientRect()
+    if (!rowRect) {
+      setMenuWidth(anchor.offsetLeft + anchor.offsetWidth)
+      setMenuRight(0)
+      return
+    }
+    setMenuWidth(rowRect.width)
+    setMenuRight(anchorRect.right - rowRect.right)
+  }, [open])
+
+  return (
+    <div className="sidebar-project-work-project-menu-anchor">
+      <IconButton
+        ref={buttonRef}
+        label="Project actions"
+        icon={<MoreHorizontal size={13} />}
+        tooltipPlacement="right"
+        className="sidebar-project-work-project-menu-button h-7 w-7 rounded-md"
+        onClick={() => setOpen((current) => !current)}
+      />
+      {open ? (
+        <ProjectWorkActionsMenu
+          ref={menuRef}
+          right={menuRight}
+          width={menuWidth}
+          project={project}
+          onAction={onAction}
+          onClose={() => setOpen(false)}
+          onRename={
+            onRename
+              ? () => {
+                  setOpen(false)
+                  onRename()
+                }
+              : undefined
+          }
+        />
+      ) : null}
+    </div>
+  )
+}
+
+const ProjectWorkActionsMenu = forwardRef<
   HTMLDivElement,
   {
     project: Project
