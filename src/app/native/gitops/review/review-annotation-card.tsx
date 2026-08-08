@@ -13,26 +13,26 @@ import {
   diffCommentTextareaClass,
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { type DiffCommentMetadata, describeCommentTarget } from './diff-panel-content.helpers'
-import type { DiffCommentDraft } from './diffCommentStore'
+import type { ReviewAnnotationMetadata } from './pierre-review-adapter'
+import { describeReviewTarget, type ReviewDraft } from './review-model'
 
-type DiffCommentAnnotationCardProps = {
-  annotation: DiffLineAnnotation<DiffCommentMetadata>
+type ReviewAnnotationCardProps = {
+  annotation: DiffLineAnnotation<ReviewAnnotationMetadata>
   draftCardRef: RefObject<HTMLDivElement | null>
-  draftComment: DiffCommentDraft | null
-  setDraftComment: Dispatch<SetStateAction<DiffCommentDraft | null>>
+  draftComment: ReviewDraft | null
+  setDraftComment: Dispatch<SetStateAction<ReviewDraft | null>>
   onPersistDraftComment: () => void
   onRemoveComment: (commentId: string) => void
 }
 
-export function DiffCommentAnnotationCard({
+export function ReviewAnnotationCard({
   annotation,
   draftCardRef,
   draftComment,
   setDraftComment,
   onPersistDraftComment,
   onRemoveComment,
-}: DiffCommentAnnotationCardProps) {
+}: ReviewAnnotationCardProps) {
   const metadata = annotation.metadata
 
   if (metadata.kind === 'draft') {
@@ -44,7 +44,8 @@ export function DiffCommentAnnotationCard({
       >
         <div className="flex items-center justify-between gap-2">
           <div className={cn('min-w-0 truncate', appTypeMetaStrongClass, appToneMutedClass)}>
-            Add comment · {draftComment ? describeCommentTarget(draftComment) : 'Line comment'}
+            Add comment ·{' '}
+            {draftComment ? describeReviewTarget(draftComment.target) : 'Line comment'}
           </div>
           <div className="flex shrink-0 items-center gap-1">
             <Tooltip content="Cancel comment">
@@ -81,12 +82,7 @@ export function DiffCommentAnnotationCard({
           value={draftComment?.body ?? ''}
           onChange={(event) => {
             setDraftComment((current) =>
-              current
-                ? {
-                    ...current,
-                    body: event.target.value,
-                  }
-                : current,
+              current ? { ...current, body: event.target.value } : current,
             )
           }}
           aria-label={`Comment for line ${annotation.lineNumber}`}
@@ -108,7 +104,7 @@ export function DiffCommentAnnotationCard({
           appToneMutedClass,
         )}
       >
-        <span>Comment · {describeCommentTarget(metadata)}</span>
+        <span>Comment · {describeReviewTarget(metadata.target)}</span>
         <Tooltip content="Remove comment">
           <button
             type="button"

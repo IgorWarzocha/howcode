@@ -34,13 +34,13 @@ import {
   diffImagePreviewPanelClass,
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
+import type { ReviewAnnotationMetadata } from '../review/pierre-review-adapter'
 import {
   buildFileDiffRenderKey,
   DIFF_FILE_ESTIMATED_FILE_GAP,
   DIFF_FILE_ESTIMATED_HEADER_HEIGHT,
   DIFF_FILE_ESTIMATED_LINE_HEIGHT,
   DIFF_PANEL_UNSAFE_CSS,
-  type DiffCommentMetadata,
   getFileChangeCounts,
   getFileHeaderContextLabel,
   isImageDiffFile,
@@ -70,10 +70,10 @@ type FileInteractionHandlers = {
 
 type DiffPanelFileListProps = {
   baseline: ProjectDiffBaseline | null
-  codeViewRef: React.RefObject<CodeViewHandle<DiffCommentMetadata> | null>
+  codeViewRef: React.RefObject<CodeViewHandle<ReviewAnnotationMetadata> | null>
   scrollContainerRef: React.RefObject<HTMLDivElement | null>
   collapsedFiles: Record<string, boolean>
-  commentAnnotationsByFile: Map<string, DiffLineAnnotation<DiffCommentMetadata>[]>
+  commentAnnotationsByFile: Map<string, DiffLineAnnotation<ReviewAnnotationMetadata>[]>
   diffRenderMode: 'stacked' | 'split'
   focusedImageFileKeys: ReadonlySet<string>
   getFileInteractionHandlers: (fileKey: string, filePath: string) => FileInteractionHandlers
@@ -94,12 +94,14 @@ type DiffPanelFileListProps = {
   ) => void
   onToggleFileCollapsed: (fileKey: string) => void
   projectId: string
-  renderCommentAnnotation: (annotation: DiffLineAnnotation<DiffCommentMetadata>) => React.ReactNode
+  renderCommentAnnotation: (
+    annotation: DiffLineAnnotation<ReviewAnnotationMetadata>,
+  ) => React.ReactNode
   renderableFiles: FileDiffMetadata[]
   draftSelectedLines: SelectedLineRange | null
 }
 
-type DiffItem = CodeViewItem<DiffCommentMetadata> & { type: 'diff' }
+type DiffItem = CodeViewItem<ReviewAnnotationMetadata> & { type: 'diff' }
 
 function DiffImagePreviewPane({
   baseline,
@@ -231,7 +233,7 @@ function DiffPanelFileHeader({
   )
 }
 
-function getItemFileDiff(item: CodeViewItem<DiffCommentMetadata>) {
+function getItemFileDiff(item: CodeViewItem<ReviewAnnotationMetadata>) {
   return item.type === 'diff' ? item.fileDiff : null
 }
 
@@ -250,7 +252,9 @@ function hashString(input: string) {
   return hash >>> 0
 }
 
-function getAnnotationVersionKey(annotations: readonly DiffLineAnnotation<DiffCommentMetadata>[]) {
+function getAnnotationVersionKey(
+  annotations: readonly DiffLineAnnotation<ReviewAnnotationMetadata>[],
+) {
   return annotations
     .map(
       (annotation) =>
@@ -271,7 +275,7 @@ function syncAppendOnlyCodeViewItems({
   items,
   previous,
 }: {
-  handle: CodeViewHandle<DiffCommentMetadata>
+  handle: CodeViewHandle<ReviewAnnotationMetadata>
   items: DiffItem[]
   previous: { ids: string[]; versions: Map<string, number | undefined> }
 }) {
@@ -334,13 +338,13 @@ export function DiffPanelFileList({
     return null
   }, [draftSelectedLines, getSelectedLinesForFile, renderableFiles])
   const [codeViewHandle, setCodeViewHandleState] =
-    useState<CodeViewHandle<DiffCommentMetadata> | null>(null)
+    useState<CodeViewHandle<ReviewAnnotationMetadata> | null>(null)
   const itemSyncStateRef = useRef<{ ids: string[]; versions: Map<string, number | undefined> }>({
     ids: [],
     versions: new Map(),
   })
   const setCodeViewHandle = useCallback(
-    (handle: CodeViewHandle<DiffCommentMetadata> | null) => {
+    (handle: CodeViewHandle<ReviewAnnotationMetadata> | null) => {
       codeViewRef.current = handle
       if (!handle) itemSyncStateRef.current = { ids: [], versions: new Map() }
       setCodeViewHandleState(handle)
@@ -368,7 +372,7 @@ export function DiffPanelFileList({
   }, [codeViewHandle, items])
 
   const handleLineClick = useCallback<
-    NonNullable<CodeViewOptions<DiffCommentMetadata>['onLineClick']>
+    NonNullable<CodeViewOptions<ReviewAnnotationMetadata>['onLineClick']>
   >(
     (lineProps, context) => {
       if (!('annotationSide' in lineProps)) return
@@ -385,7 +389,7 @@ export function DiffPanelFileList({
   )
 
   const handleLineNumberClick = useCallback<
-    NonNullable<CodeViewOptions<DiffCommentMetadata>['onLineNumberClick']>
+    NonNullable<CodeViewOptions<ReviewAnnotationMetadata>['onLineNumberClick']>
   >(
     (lineProps, context) => {
       if (!('annotationSide' in lineProps)) return
@@ -401,7 +405,7 @@ export function DiffPanelFileList({
     [getFileInteractionHandlers],
   )
 
-  const codeViewOptions = useMemo<CodeViewOptions<DiffCommentMetadata>>(
+  const codeViewOptions = useMemo<CodeViewOptions<ReviewAnnotationMetadata>>(
     () => ({
       diffStyle: diffRenderMode === 'split' ? 'split' : 'unified',
       lineDiffType: 'none',
@@ -428,7 +432,7 @@ export function DiffPanelFileList({
   )
 
   const renderCustomHeader = useCallback(
-    (item: CodeViewItem<DiffCommentMetadata>) => {
+    (item: CodeViewItem<ReviewAnnotationMetadata>) => {
       const fileDiff = getItemFileDiff(item)
       if (!fileDiff) return null
       const { fileKey, filePath } = getDiffFileIdentity(fileDiff)
@@ -459,9 +463,9 @@ export function DiffPanelFileList({
   const renderAnnotation = useCallback(
     (
       annotation: Parameters<
-        NonNullable<CodeViewOptions<DiffCommentMetadata>['renderAnnotation']>
+        NonNullable<CodeViewOptions<ReviewAnnotationMetadata>['renderAnnotation']>
       >[0],
-    ) => renderCommentAnnotation(annotation as DiffLineAnnotation<DiffCommentMetadata>),
+    ) => renderCommentAnnotation(annotation as DiffLineAnnotation<ReviewAnnotationMetadata>),
     [renderCommentAnnotation],
   )
 
@@ -490,7 +494,7 @@ export function DiffPanelFileList({
   const renderGutterUtility = useCallback(
     (
       getHoveredLine: () => GetHoveredLineResult<'diff'> | undefined,
-      item: CodeViewItem<DiffCommentMetadata>,
+      item: CodeViewItem<ReviewAnnotationMetadata>,
     ) => {
       const hoveredLine = getHoveredLine()
       const fileDiff = getItemFileDiff(item)
@@ -522,7 +526,7 @@ export function DiffPanelFileList({
 
   return (
     <div className="h-full min-h-0" onPointerDownCapture={handleCodeViewPointerDownCapture}>
-      <CodeView<DiffCommentMetadata>
+      <CodeView<ReviewAnnotationMetadata>
         ref={setCodeViewHandle}
         initialItems={[]}
         selectedLines={selectedLines}

@@ -19,7 +19,7 @@ import {
 } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import { ComposerGitOpsSurface } from './composer-git-ops-surface'
-import type { SavedDiffComment } from './diff/diffCommentStore'
+import type { GitOpsReviewController } from './review/review-controller'
 
 type GitOpsComposerPanelProps = {
   dictationModelId: string | null
@@ -32,19 +32,13 @@ type GitOpsComposerPanelProps = {
   appSettings: AppSettings
   diffBaseline: ProjectDiffBaseline
   diffRenderMode: ProjectDiffRenderMode
-  diffComments: SavedDiffComment[]
-  diffCommentCount: number
-  diffCommentsSending: boolean
-  diffCommentError: string | null
+  review: GitOpsReviewController
   diffLoadError: string | null
   includeUntracked: boolean
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
   onSetDiffRenderMode: (mode: ProjectDiffRenderMode) => void
   onToggleIncludeUntracked: () => void
-  onSendDiffComments: (message?: string | null) => void
-  onSelectDiffComment: (filePath: string, commentId: string) => void
-  hasPendingDiffComments: boolean
-  onDiscardDiffComments: () => void
+  onReviewSent: () => void
   onAction: DesktopActionInvoker
   onLayoutChange: () => void
   onBack: () => void
@@ -143,19 +137,13 @@ export function GitOpsComposerPanel({
   appSettings,
   diffBaseline,
   diffRenderMode,
-  diffComments,
-  diffCommentCount,
-  diffCommentsSending,
-  diffCommentError,
+  review,
   diffLoadError,
   includeUntracked,
   onSetDiffBaseline,
   onSetDiffRenderMode,
   onToggleIncludeUntracked,
-  onSendDiffComments,
-  onSelectDiffComment,
-  hasPendingDiffComments,
-  onDiscardDiffComments,
+  onReviewSent,
   onAction,
   onLayoutChange,
   onBack,
@@ -196,19 +184,13 @@ export function GitOpsComposerPanel({
             appSettings={appSettings}
             diffBaseline={diffBaseline}
             diffRenderMode={diffRenderMode}
-            diffComments={diffComments}
-            diffCommentCount={diffCommentCount}
-            diffCommentsSending={diffCommentsSending}
-            diffCommentError={diffCommentError}
+            review={review}
             diffLoadError={diffLoadError}
             includeUntracked={includeUntracked}
             onSetDiffBaseline={onSetDiffBaseline}
             onSetDiffRenderMode={onSetDiffRenderMode}
             onToggleIncludeUntracked={onToggleIncludeUntracked}
-            onSendDiffComments={onSendDiffComments}
-            onSelectDiffComment={onSelectDiffComment}
-            hasPendingDiffComments={hasPendingDiffComments}
-            onDiscardDiffComments={onDiscardDiffComments}
+            onReviewSent={onReviewSent}
             onAction={onAction}
             onLayoutChange={onLayoutChange}
             onBack={onBack}

@@ -7,16 +7,16 @@ import { getFeatureStatusDataAttributes } from '../../../features/feature-status
 import { useDesktopDiff } from '../../../hooks/useDesktopDiff'
 import { diffPanelMainSurfaceClass, diffPanelSplitSurfaceClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { DiffCommentAnnotationCard } from './diff-comment-annotation-card'
+import type { ReviewAnnotationMetadata } from '../review/pierre-review-adapter'
+import { ReviewAnnotationCard } from '../review/review-annotation-card'
+import { useDiffReviewState } from '../review/use-diff-review-state'
 import {
   buildFileDiffRenderKey,
-  type DiffCommentMetadata,
   isImageDiffFile,
   resolveFileDiffPath,
 } from './diff-panel-content.helpers'
 import { DiffPanelContentBody } from './diff-panel-content-body'
 import { useDiffCommentDrafting } from './useDiffCommentDrafting'
-import { useDiffPanelCommentState } from './useDiffPanelCommentState'
 import { useDiffPanelScrollAlignment } from './useDiffPanelScrollAlignment'
 import { useWorkerRenderablePatch } from './useWorkerRenderablePatch'
 
@@ -53,7 +53,7 @@ export function DiffPanelContent({
   const [focusedFilePaths, setFocusedFilePaths] = useState<readonly string[]>([])
   const [renderFileTree, setRenderFileTree] = useState(showFileTree)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const codeViewRef = useRef<CodeViewHandle<DiffCommentMetadata> | null>(null)
+  const codeViewRef = useRef<CodeViewHandle<ReviewAnnotationMetadata> | null>(null)
   const draftCardRef = useRef<HTMLDivElement | null>(null)
   const { diff, streamedPatch, isLoading, error } = useDesktopDiff(
     projectId,
@@ -137,7 +137,7 @@ export function DiffPanelContent({
     removeComment,
     savedComments,
     setDraftComment,
-  } = useDiffPanelCommentState({ baseline, includeUntracked, projectId })
+  } = useDiffReviewState({ baseline, includeUntracked, projectId })
 
   const {
     clearDragSelection,
@@ -177,8 +177,8 @@ export function DiffPanelContent({
     [imageFileKeys],
   )
 
-  const renderCommentAnnotation = (annotation: DiffLineAnnotation<DiffCommentMetadata>) => (
-    <DiffCommentAnnotationCard
+  const renderCommentAnnotation = (annotation: DiffLineAnnotation<ReviewAnnotationMetadata>) => (
+    <ReviewAnnotationCard
       annotation={annotation}
       draftCardRef={draftCardRef}
       draftComment={draftComment}
@@ -214,7 +214,7 @@ export function DiffPanelContent({
         codeViewRef={codeViewRef}
         collapsedFiles={collapsedFiles}
         commentAnnotationsByFile={
-          commentAnnotationsByFile as Map<string, DiffLineAnnotation<DiffCommentMetadata>[]>
+          commentAnnotationsByFile as Map<string, DiffLineAnnotation<ReviewAnnotationMetadata>[]>
         }
         diff={diff}
         diffRenderMode={diffRenderMode}

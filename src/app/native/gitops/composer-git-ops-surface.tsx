@@ -24,7 +24,7 @@ import { cn } from '../../utils/cn'
 import { ComposerGitOpsFooter } from './composer-git-ops-footer'
 import { ComposerGitOpsMessageField } from './composer-git-ops-message-field'
 import { ComposerGitOpsTopBar } from './composer-git-ops-top-bar'
-import type { SavedDiffComment } from './diff/diffCommentStore'
+import type { GitOpsReviewController } from './review/review-controller'
 import { useComposerGitOpsState } from './useComposerGitOpsState'
 
 type ComposerGitOpsSurfaceProps = {
@@ -40,19 +40,13 @@ type ComposerGitOpsSurfaceProps = {
   appSettings: AppSettings
   diffBaseline: ProjectDiffBaseline
   diffRenderMode: ProjectDiffRenderMode
-  diffComments: SavedDiffComment[]
-  diffCommentCount: number
-  diffCommentsSending: boolean
-  diffCommentError: string | null
+  review: GitOpsReviewController
   diffLoadError: string | null
   includeUntracked: boolean
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
   onSetDiffRenderMode: (mode: ProjectDiffRenderMode) => void
   onToggleIncludeUntracked: () => void
-  onSendDiffComments: (message?: string | null) => void
-  onSelectDiffComment: (filePath: string, commentId: string) => void
-  hasPendingDiffComments: boolean
-  onDiscardDiffComments: () => void
+  onReviewSent: () => void
   onAction: DesktopActionInvoker
   onLayoutChange: () => void
   onBack: () => void
@@ -167,26 +161,18 @@ export function ComposerGitOpsSurface({
   appSettings,
   diffBaseline,
   diffRenderMode,
-  diffComments,
-  diffCommentCount,
-  diffCommentsSending,
-  diffCommentError,
+  review,
   diffLoadError,
   includeUntracked,
   onSetDiffBaseline,
   onSetDiffRenderMode,
   onToggleIncludeUntracked,
-  onSendDiffComments,
-  onSelectDiffComment,
-  hasPendingDiffComments,
-  onDiscardDiffComments,
+  onReviewSent,
   onAction,
   onLayoutChange,
   onBack,
   onActionErrorMessageChange,
 }: ComposerGitOpsSurfaceProps) {
-  void diffCommentCount
-
   const {
     actionErrorMessage,
     actionStatusMessage,
@@ -216,14 +202,16 @@ export function ComposerGitOpsSurface({
     togglePreviewEnabled,
   } = useComposerGitOpsState({
     appSettings,
-    diffComments,
-    diffCommentsSending,
+    diffComments: review.comments,
+    diffCommentsSending: review.sending,
     onAction,
-    onSendDiffComments,
+    onSendDiffComments: async (message) => {
+      if (await review.send(message)) onReviewSent()
+    },
     includeUntracked,
     projectGitState,
   })
-  const inputLocked = runningPrimaryAction || diffCommentsSending
+  const inputLocked = runningPrimaryAction || review.sending
 
   const untrackedFileCount = projectGitState?.untrackedFileCount ?? 0
   const hiddenUntrackedFileCount = includeUntracked ? 0 : untrackedFileCount
@@ -299,9 +287,7 @@ export function ComposerGitOpsSurface({
         void handlePrimaryAction()
       }}
       disabled={
-        hasDiffComments
-          ? diffCommentsSending
-          : runningPrimaryAction || (isGitRepo ? !canCommit : false)
+        hasDiffComments ? review.sending : runningPrimaryAction || (isGitRepo ? !canCommit : false)
       }
       aria-label={primaryActionLabel}
       data-tooltip={primaryActionLabel}
@@ -328,17 +314,14 @@ export function ComposerGitOpsSurface({
       {/* Keep one-line default height here too, then let the field grow upward as content expands. */}
       <div className="relative">
         {hasDiffComments ? (
-          <ComposerGitOpsTopBar
-            commentCards={commentCards}
-            onSelectDiffComment={onSelectDiffComment}
-          />
+          <ComposerGitOpsTopBar commentCards={commentCards} onSelectDiffComment={review.select} />
         ) : null}
         {hasDiffComments ? null : (
           <ComposerGitOpsMessageField
             actionErrorMessage={null}
             actionStatusMessage={actionStatusMessage}
             commitFocused={commitFocused}
-            diffCommentError={diffCommentError ?? diffLoadError}
+            diffCommentError={review.error ?? diffLoadError}
             hasDiffComments={false}
             isGitRepo={isGitRepo}
             hoverToFocus={appSettings.hoverToFocus}
@@ -371,7 +354,7 @@ export function ComposerGitOpsSurface({
           actionErrorMessage={null}
           actionStatusMessage={actionStatusMessage}
           commitFocused={commitFocused}
-          diffCommentError={diffCommentError ?? diffLoadError}
+          diffCommentError={review.error ?? diffLoadError}
           hasDiffComments
           isGitRepo={isGitRepo}
           hoverToFocus={appSettings.hoverToFocus}
@@ -409,8 +392,8 @@ export function ComposerGitOpsSurface({
         isGitRepo={isGitRepo}
         onSaveOrigin={handleSaveOrigin}
         onBack={onBack}
-        hasPendingDiffComments={hasPendingDiffComments}
-        onDiscardDiffComments={onDiscardDiffComments}
+        hasPendingDiffComments={review.hasPendingReview}
+        onDiscardDiffComments={review.discard}
         onSetDiffBaseline={onSetDiffBaseline}
         onSetDiffRenderMode={onSetDiffRenderMode}
         onSetRepoUrl={setRepoUrl}

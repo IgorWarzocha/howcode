@@ -53,19 +53,12 @@ function CodeGitOpsComposer(props: CodeWorkspaceContentProps) {
     terminalSessionPath,
     diffBaseline,
     diffRenderMode,
-    diffComments,
-    diffCommentCount,
-    diffCommentsSending,
-    diffCommentError,
+    gitOpsReview,
     diffLoadError,
-    hasPendingDiffComments,
     includeUntrackedDiffFiles,
     toggleIncludeUntrackedDiffFiles,
     onSetDiffBaseline,
     onSetDiffRenderMode,
-    handleSendDiffComments,
-    handleDiscardDiffComments,
-    handleSelectDiffComment,
     setComposerLayoutVersion,
     handleAction,
     handleCloseGitOpsView,
@@ -87,23 +80,13 @@ function CodeGitOpsComposer(props: CodeWorkspaceContentProps) {
         appSettings={appSettings}
         diffBaseline={diffBaseline}
         diffRenderMode={diffRenderMode}
-        diffComments={diffComments}
-        diffCommentCount={diffCommentCount}
-        diffCommentsSending={diffCommentsSending}
-        diffCommentError={diffCommentError}
+        review={gitOpsReview}
         diffLoadError={diffLoadError}
         includeUntracked={includeUntrackedDiffFiles}
         onSetDiffBaseline={onSetDiffBaseline}
         onSetDiffRenderMode={onSetDiffRenderMode}
         onToggleIncludeUntracked={toggleIncludeUntrackedDiffFiles}
-        onSendDiffComments={(message) => {
-          void handleSendDiffComments(message).then((sent) => {
-            if (sent) handleCloseGitOpsView()
-          })
-        }}
-        onSelectDiffComment={handleSelectDiffComment}
-        hasPendingDiffComments={hasPendingDiffComments}
-        onDiscardDiffComments={handleDiscardDiffComments}
+        onReviewSent={handleCloseGitOpsView}
         onLayoutChange={() => setComposerLayoutVersion((current: number) => current + 1)}
         onAction={handleAction}
         onBack={handleCloseGitOpsView}

@@ -1,5 +1,5 @@
 import type { DesktopActionResult } from '../../desktop/types'
-import type { SavedDiffComment } from './diff/diffCommentStore'
+import { getReviewTargetLinesLabel, type SavedReviewComment } from './review/review-model'
 
 export type GitOpsCommentCard = {
   id: string
@@ -29,30 +29,19 @@ export function getActionResultError(result: DesktopActionResult | null) {
   return typeof result?.result?.error === 'string' ? result.result.error : null
 }
 
-export function getCommentLinesLabel(comment: SavedDiffComment) {
-  const endLineNumber = comment.endLineNumber ?? comment.lineNumber
-  const endSide = comment.endSide ?? comment.side
-
-  if (comment.side === endSide) {
-    const start = Math.min(comment.lineNumber, endLineNumber)
-    const end = Math.max(comment.lineNumber, endLineNumber)
-    return start === end ? `Ln ${start}` : `Ln ${start}:${end}`
-  }
-
-  return `Ln ${comment.lineNumber}:${endLineNumber}`
-}
-
 export function getCommentFileName(filePath: string) {
   const segments = filePath.split('/')
   return segments[segments.length - 1] || filePath
 }
 
-export function buildGitOpsCommentCards(diffComments: SavedDiffComment[]): GitOpsCommentCard[] {
-  return diffComments.map((comment) => ({
+export function buildGitOpsCommentCards(
+  reviewComments: readonly SavedReviewComment[],
+): GitOpsCommentCard[] {
+  return reviewComments.map((comment) => ({
     id: comment.id,
-    filePath: comment.filePath,
-    fileName: getCommentFileName(comment.filePath),
-    linesLabel: getCommentLinesLabel(comment),
+    filePath: comment.target.filePath,
+    fileName: getCommentFileName(comment.target.filePath),
+    linesLabel: getReviewTargetLinesLabel(comment.target),
     body: comment.body,
   }))
 }

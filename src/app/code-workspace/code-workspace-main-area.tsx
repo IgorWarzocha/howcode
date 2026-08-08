@@ -27,8 +27,8 @@ function CodeWorkspaceDiffMain(props: CodeWorkspaceContentProps) {
       isGitRepo={props.projectGitState?.isGitRepo ?? false}
       baseline={props.diffBaseline}
       selectedFilePath={props.state.selectedDiffFilePath}
-      selectedCommentId={props.selectedDiffCommentId}
-      selectedCommentJumpKey={props.selectedDiffCommentJumpKey}
+      selectedCommentId={props.gitOpsReview.selection.commentId}
+      selectedCommentJumpKey={props.gitOpsReview.selection.jumpKey}
       diffRenderMode={props.diffRenderMode}
       layoutMode="main"
       showFileTree={props.gitOpsFileTreeVisible}

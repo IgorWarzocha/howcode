@@ -1,9 +1,4 @@
 export {
-  buildDraftTarget,
-  describeCommentTarget,
-  isSameDraftTarget,
-} from './diff-panel-content.comments'
-export {
   DIFF_FILE_ESTIMATED_FILE_GAP,
   DIFF_FILE_ESTIMATED_HEADER_HEIGHT,
   DIFF_FILE_ESTIMATED_LINE_HEIGHT,
@@ -21,4 +16,4 @@ export {
   orderRenderableFiles,
   resolveFileDiffPath,
 } from './diff-panel-content.rendering'
-export type { DiffCommentMetadata, RenderablePatch } from './diff-panel-content.types'
+export type { RenderablePatch } from './diff-panel-content.types'

@@ -1,12 +1,8 @@
 import type { SelectedLineRange } from '@pierre/diffs'
 import type { AnnotationSide } from '@pierre/diffs/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import {
-  buildDraftTarget,
-  isSameDraftTarget,
-  resolvePointerLineTarget,
-} from './diff-panel-content.helpers'
-import type { DiffCommentDraft } from './diffCommentStore'
+import { createLineRangeTarget, isSameReviewTarget, type ReviewDraft } from '../review/review-model'
+import { resolvePointerLineTarget } from './diff-panel-content.helpers'
 
 type FileInteractionHandlers = {
   onLineClick: ({
@@ -42,8 +38,8 @@ export function useDiffCommentDrafting({
   draftComment,
   setDraftComment,
 }: {
-  draftComment: DiffCommentDraft | null
-  setDraftComment: React.Dispatch<React.SetStateAction<DiffCommentDraft | null>>
+  draftComment: ReviewDraft | null
+  setDraftComment: React.Dispatch<React.SetStateAction<ReviewDraft | null>>
 }) {
   const [dragSelectionRange, setDragSelectionRange] = useState<SelectedLineRange | null>(null)
   const fileInteractionHandlersRef = useRef(new Map<string, FileInteractionHandlers>())
@@ -92,7 +88,7 @@ export function useDiffCommentDrafting({
       endSide?: AnnotationSide | undefined,
       endLineNumber?: number | undefined,
     ) => {
-      const nextTarget = buildDraftTarget({
+      const nextTarget = createLineRangeTarget({
         fileKey,
         filePath,
         side,
@@ -102,12 +98,12 @@ export function useDiffCommentDrafting({
       })
 
       setDraftComment((current) => {
-        if (current && isSameDraftTarget(current, nextTarget)) {
+        if (current && isSameReviewTarget(current.target, nextTarget)) {
           return current
         }
 
         return {
-          ...nextTarget,
+          target: nextTarget,
           body: '',
         }
       })
@@ -271,13 +267,13 @@ export function useDiffCommentDrafting({
         return dragSelectionRange
       }
 
-      if (draftComment?.fileKey === fileKey) {
+      if (draftComment?.target.fileKey === fileKey) {
         return draftSelectedLines
       }
 
       return null
     },
-    [dragSelectionRange, draftComment?.fileKey],
+    [dragSelectionRange, draftComment?.target.fileKey],
   )
 
   const clearDragSelection = useCallback(() => {

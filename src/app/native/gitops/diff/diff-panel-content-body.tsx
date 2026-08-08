@@ -11,8 +11,8 @@ import {
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { getDiffBaselinePrefix, getResolvedDiffBaselineLabel } from '../diff-baseline'
+import type { ReviewAnnotationMetadata } from '../review/pierre-review-adapter'
 import { DiffChangedFilesTree } from './diff-changed-files-tree'
-import type { DiffCommentMetadata } from './diff-panel-content.helpers'
 import type { RenderablePatch } from './diff-panel-content.types'
 import { DiffPanelEmptyState } from './diff-panel-empty-state'
 import { DiffPanelFileList } from './diff-panel-file-list'
@@ -21,12 +21,12 @@ import type { useDiffCommentDrafting } from './useDiffCommentDrafting'
 type DiffPanelContentBodyProps = {
   baseline: ProjectDiffBaseline | null
   collapsedFiles: Record<string, boolean>
-  commentAnnotationsByFile: Map<string, DiffLineAnnotation<DiffCommentMetadata>[]>
+  commentAnnotationsByFile: Map<string, DiffLineAnnotation<ReviewAnnotationMetadata>[]>
   diff: ReturnType<typeof useDesktopDiff>['diff']
   diffRenderMode: 'stacked' | 'split'
   draftSelectedLines: SelectedLineRange | null
   error: string | null
-  codeViewRef: RefObject<CodeViewHandle<DiffCommentMetadata> | null>
+  codeViewRef: RefObject<CodeViewHandle<ReviewAnnotationMetadata> | null>
   focusedImageFileKeys: ReadonlySet<string>
   focusedFilePaths: readonly string[]
   getFileInteractionHandlers: ReturnType<
@@ -44,7 +44,7 @@ type DiffPanelContentBodyProps = {
   loading: boolean
   openDraftComment: ReturnType<typeof useDiffCommentDrafting>['openDraftComment']
   projectId: string
-  renderCommentAnnotation: (annotation: DiffLineAnnotation<DiffCommentMetadata>) => ReactNode
+  renderCommentAnnotation: (annotation: DiffLineAnnotation<ReviewAnnotationMetadata>) => ReactNode
   renderableFiles: FileDiffMetadata[]
   renderablePatch: RenderablePatch | null
   renderFileTree: boolean

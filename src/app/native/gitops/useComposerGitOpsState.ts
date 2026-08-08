@@ -16,7 +16,7 @@ import {
   getActionResultPreviewed,
   getActionResultPushed,
 } from './composer-git-ops.helpers'
-import type { SavedDiffComment } from './diff/diffCommentStore'
+import type { SavedReviewComment } from './review/review-model'
 
 function getPrimaryGitOpsActionLabel(input: {
   canCommit: boolean
@@ -121,10 +121,10 @@ export function useComposerGitOpsState({
   includeUntracked,
   projectGitState,
 }: {
-  diffComments: SavedDiffComment[]
+  diffComments: readonly SavedReviewComment[]
   diffCommentsSending: boolean
   onAction: DesktopActionInvoker
-  onSendDiffComments: (message?: string | null) => void
+  onSendDiffComments: (message?: string | null) => Promise<void>
   appSettings: AppSettings
   includeUntracked: boolean
   projectGitState: ProjectGitState | null
@@ -301,7 +301,7 @@ export function useComposerGitOpsState({
 
   const handlePrimaryAction = useCallback(async () => {
     if (hasDiffComments) {
-      onSendDiffComments(trimmedCommitMessage)
+      await onSendDiffComments(trimmedCommitMessage)
       return
     }
 

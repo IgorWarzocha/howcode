@@ -5,7 +5,7 @@ import type { AppShellController } from '../app-shell/useAppShellController'
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
 import type { Message } from '../types'
 import { CodeWorkspaceViewContent } from './code-workspace-footer'
-import { useDiffCommentController } from './useDiffCommentController'
+import { useGitOpsReviewController } from './useGitOpsReviewController'
 import { useQueuedPromptRestore } from './useQueuedPromptRestore'
 import { useWorkspaceFooterHeight } from './useWorkspaceFooterHeight'
 
@@ -33,8 +33,8 @@ type CodeWorkspaceViewProps = {
 const TERMINAL_DRAWER_OFFSET = 'min(28rem, calc(100% - 2.5rem))'
 const EMPTY_COMPOSER_TOP = '60%'
 export type CodeWorkspaceContentProps = CodeWorkspaceViewProps &
-  ReturnType<typeof useDiffCommentController> &
   ReturnType<typeof useQueuedPromptRestore> & {
+    gitOpsReview: ReturnType<typeof useGitOpsReviewController>
     footerRef: RefObject<HTMLElement | null>
     mainViewRef: RefObject<HTMLElement | null>
     terminalDrawerInsetStyle: { right: string } | undefined
@@ -232,18 +232,7 @@ export function CodeWorkspaceView({
       showThreadFooter,
     })
   const footerInset = showWorkspaceFooter && !floatingWorkspaceFooter ? footerHeight : 0
-  const {
-    diffCommentCount,
-    diffCommentError,
-    diffComments,
-    diffCommentsSending,
-    handleDiscardDiffComments,
-    handleSelectDiffComment,
-    handleSendDiffComments,
-    hasPendingDiffComments,
-    selectedDiffCommentId,
-    selectedDiffCommentJumpKey,
-  } = useDiffCommentController({
+  const gitOpsReview = useGitOpsReviewController({
     baseline: diffBaseline,
     composerProjectId,
     handleAction,
@@ -286,8 +275,7 @@ export function CodeWorkspaceView({
       projectGitState={projectGitState}
       parentBranchName={parentBranchName}
       diffBaseline={diffBaseline}
-      selectedDiffCommentId={selectedDiffCommentId}
-      selectedDiffCommentJumpKey={selectedDiffCommentJumpKey}
+      gitOpsReview={gitOpsReview}
       diffRenderMode={diffRenderMode}
       gitOpsFileTreeVisible={gitOpsFileTreeVisible}
       includeUntrackedDiffFiles={includeUntrackedDiffFiles}
@@ -314,18 +302,10 @@ export function CodeWorkspaceView({
       threadFooterStyle={threadFooterStyle}
       sidebarAutoHidden={sidebarAutoHidden}
       terminalSessionPath={terminalSessionPath}
-      diffComments={diffComments}
-      diffCommentCount={diffCommentCount}
-      diffCommentsSending={diffCommentsSending}
-      diffCommentError={diffCommentError}
       diffLoadError={diffLoadError}
       setDiffLoadError={setDiffLoadError}
-      hasPendingDiffComments={hasPendingDiffComments}
       onSetDiffBaseline={onSetDiffBaseline}
       onSetDiffRenderMode={onSetDiffRenderMode}
-      handleDiscardDiffComments={handleDiscardDiffComments}
-      handleSendDiffComments={handleSendDiffComments}
-      handleSelectDiffComment={handleSelectDiffComment}
       setComposerLayoutVersion={setComposerLayoutVersion}
       handleCloseGitOpsView={handleCloseGitOpsView}
       handleEditQueuedPrompt={handleEditQueuedPrompt}
