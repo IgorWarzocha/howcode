@@ -1,7 +1,7 @@
 import type * as Effect from 'effect/Effect'
 import * as Schema from 'effect/Schema'
 
-export class RuntimeRegistryError extends Schema.TaggedErrorClass<RuntimeRegistryError>()(
+export class RuntimeRegistryError extends Schema.TaggedError<RuntimeRegistryError>()(
   'RuntimeRegistryError',
   {
     operation: Schema.String,

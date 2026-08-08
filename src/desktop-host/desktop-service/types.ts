@@ -30,7 +30,7 @@ export type DesktopServiceClientOptions = {
   startupTimeoutMs?: number | undefined
 }
 
-export class DesktopServiceError extends Schema.TaggedErrorClass<DesktopServiceError>()(
+export class DesktopServiceError extends Schema.TaggedError<DesktopServiceError>()(
   'DesktopServiceError',
   {
     operation: Schema.String,

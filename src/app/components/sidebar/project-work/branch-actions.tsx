@@ -27,6 +27,29 @@ export function BranchSwitchAction({
   const [pending, setPending] = useState(false)
   const warning = errorMessage ?? (blocked ? 'Worktree is dirty. Commit first.' : null)
   const hasWarning = Boolean(warning)
+  const switchBranch = async () => {
+    setErrorMessage(null)
+    setPending(true)
+    try {
+      const result = await onAction('workspace.switch-branch', {
+        projectId: project.id,
+        value: group.label,
+      })
+      const error = result?.result?.error
+      if (!error) {
+        onSwitchFailed()
+        return
+      }
+      setErrorMessage(error)
+      if (typeof error === 'string' && error.includes('Worktree is dirty')) {
+        onBlocked()
+        return
+      }
+      onSwitchFailed()
+    } finally {
+      setPending(false)
+    }
+  }
   return (
     <SidebarActionTooltip description={`Switch to ${group.label}`} warning={warning}>
       <button
@@ -35,26 +58,7 @@ export function BranchSwitchAction({
         data-warning={hasWarning ? 'true' : 'false'}
         onClick={(event) => {
           event.stopPropagation()
-          setErrorMessage(null)
-          setPending(true)
-          void onAction('workspace.switch-branch', {
-            projectId: project.id,
-            value: group.label,
-          })
-            .then((result) => {
-              const error = result?.result?.error
-              if (!error) {
-                onSwitchFailed()
-                return
-              }
-              setErrorMessage(error)
-              if (typeof error === 'string' && error.includes('Worktree is dirty')) {
-                onBlocked()
-                return
-              }
-              onSwitchFailed()
-            })
-            .finally(() => setPending(false))
+          void switchBranch()
         }}
         aria-label={`Switch to ${group.label}`}
         disabled={pending}
@@ -97,25 +101,27 @@ export function BranchPruneAction({
       : `${actionLabel} ${group.label}`
   const runPrune = async () => {
     setPending(true)
-    const result = group.worktreePath
-      ? await onAction('workspace.remove-worktree', {
-          projectId: project.id,
-          worktreePath: group.worktreePath,
-          branchName: group.worktreeBranchName ?? null,
-        })
-      : await onAction('workspace.prune-branch', {
-          projectId: project.id,
-          branchName: group.label,
-          worktrees: worktreesToRemove,
-        })
-    const error = result?.result?.error
-    if (error) {
-      setErrorMessage(error)
+    try {
+      const result = group.worktreePath
+        ? await onAction('workspace.remove-worktree', {
+            projectId: project.id,
+            worktreePath: group.worktreePath,
+            branchName: group.worktreeBranchName ?? null,
+          })
+        : await onAction('workspace.prune-branch', {
+            projectId: project.id,
+            branchName: group.label,
+            worktrees: worktreesToRemove,
+          })
+      const error = result?.result?.error
+      if (error) {
+        setErrorMessage(error)
+        return
+      }
+      onConfirm()
+    } finally {
       setPending(false)
-      return
     }
-    onConfirm()
-    setPending(false)
   }
 
   const actionButton = (
@@ -407,12 +413,15 @@ export function RemoveCompletedWorktreesAction({
 
   const removeCompleted = async () => {
     setPending(true)
-    const result = await onAction('workspace.remove-completed-worktrees', {
-      projectId: project.id,
-      worktrees,
-    })
-    if (!result?.result?.error) onConfirm()
-    setPending(false)
+    try {
+      const result = await onAction('workspace.remove-completed-worktrees', {
+        projectId: project.id,
+        worktrees,
+      })
+      if (!result?.result?.error) onConfirm()
+    } finally {
+      setPending(false)
+    }
   }
 
   const actionButton = (

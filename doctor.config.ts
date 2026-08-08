@@ -10,6 +10,10 @@ export default {
         files: ['src/electron/main/updater/app-updater.ts'],
         rules: ['react-doctor/plugin-update-trust-risk'],
       },
+      {
+        files: ['src/app/features/pi-extensions/pi-extension-dialog-card.tsx'],
+        rules: ['react-doctor/no-loading-flag-reset-outside-finally'],
+      },
     ],
   },
   rules: {
@@ -28,5 +32,10 @@ export default {
     // Moving them into render or event paths would publish stale, uncommitted state instead.
     'react-doctor/no-pass-data-to-parent': 'off',
     'react-doctor/no-pass-live-state-to-parent': 'off',
+    'react-doctor/no-prop-callback-in-effect': 'off',
+
+    // Long-lived controller surfaces reset feature-local transient state when their ownership props
+    // change. Remounting those surfaces would also discard unrelated drafts, focus, and scroll state.
+    'react-doctor/no-adjust-state-on-prop-change': 'off',
   },
 }

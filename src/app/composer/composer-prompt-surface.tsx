@@ -268,13 +268,11 @@ function PiExtensionOverlayContent({
   if (sections.length === 0) return null
 
   const toggleSection = (sectionId: string) => {
-    setFoldedSections((current) => {
-      const next = new Set(current)
-      if (next.has(sectionId)) next.delete(sectionId)
-      else next.add(sectionId)
-      writePiExtensionFoldedPreference(next)
-      return next
-    })
+    const next = new Set(foldedSections)
+    if (next.has(sectionId)) next.delete(sectionId)
+    else next.add(sectionId)
+    setFoldedSections(next)
+    writePiExtensionFoldedPreference(next)
   }
 
   return (

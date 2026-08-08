@@ -1,4 +1,4 @@
-import { normalizeModelRegistryContextWindows } from '../../shared/model-context-window-normalization.ts'
+import { normalizeModelRuntimeContextWindows } from '../../shared/model-context-window-normalization.ts'
 import { getPiModule } from '../pi-module.ts'
 import {
   abortHeadlessExtensionCommand,
@@ -39,8 +39,7 @@ export async function createLiveRuntime(
   handlers: LiveRuntimeFactoryHandlers,
 ): Promise<PiRuntime> {
   const {
-    AuthStorage,
-    ModelRegistry,
+    ModelRuntime,
     SessionManager,
     SettingsManager,
     DefaultResourceLoader,
@@ -63,9 +62,11 @@ export async function createLiveRuntime(
     hasTrustRequiringProjectResources,
     settingsCwd: options.settingsCwd,
   })
-  const authStorage = AuthStorage.create()
-  const modelRegistry = normalizeModelRegistryContextWindows(
-    ModelRegistry.create(authStorage, `${agentDir}/models.json`),
+  const modelRuntime = normalizeModelRuntimeContextWindows(
+    await ModelRuntime.create({
+      authPath: `${agentDir}/auth.json`,
+      modelsPath: `${agentDir}/models.json`,
+    }),
   )
   const settingsManager = createRuntimeSettingsManager({
     SettingsManager,
@@ -94,8 +95,7 @@ export async function createLiveRuntime(
   const { session } = await createAgentSession({
     cwd: options.cwd,
     agentDir,
-    authStorage,
-    modelRegistry,
+    modelRuntime,
     settingsManager,
     resourceLoader,
     sessionManager: options.sessionManager ?? SessionManager.create(options.cwd, sessionDir),

@@ -1,7 +1,8 @@
 - `shared/service-native-abi.json` owns the supported Node/ABI matrix and bundle contract; `service-native/platforms/*` owns OS-specific files and validation. Keep both aligned.
 - Release packaging is universal across that ABI set; AppImage, Windows, macOS, and launcher artifacts must carry the same bundles.
 - `build:release` / `electron-builder` builds the full matrix. Do not hide it behind an optional flag without a clearly named non-universal path.
-- Restore root copies of ABI-matrix modules to the builder ABI after matrix builds; packaged services resolve those modules from their ABI bundle. Other unpacked native dependencies are outside the matrix.
+- Restore root copies of ABI-matrix modules to the builder ABI after matrix builds; packaged services resolve those modules from their ABI bundle. `better-sqlite3` 13 uses its packaged N-API prebuilds rather than ABI-specific rebuilds.
+- `serviceNativePackages` lists stock-Node runtime packages; only `serviceAbiPackages` may be copied into each ABI bundle.
 - Keep OS-specific native packaging behavior in `scripts/service-native/platforms/*`. Do not scatter platform branches through the release orchestration scripts.
 - Launcher smoke tests must validate `app.asar` and the unpacked stock-Node runtime dependency tree.
 - Release validation recursively indexes merged artifact trees and rejects duplicate basenames; do not assume launcher archives are top-level.

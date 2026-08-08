@@ -43,7 +43,7 @@ function isPromiseLike<T>(value: T | Promise<T>): value is Promise<T> {
   return typeof (value as { then?: unknown }).then === 'function'
 }
 
-function normalizeModelsResult<T extends ModelWithTokenLimits[]>(models: T | Promise<T>) {
+function normalizeModelsResult<T extends readonly ModelWithTokenLimits[]>(models: T | Promise<T>) {
   if (isPromiseLike(models)) {
     return models.then((resolvedModels) =>
       resolvedModels.map((model) => normalizeModelContextWindow(model)),
@@ -53,24 +53,26 @@ function normalizeModelsResult<T extends ModelWithTokenLimits[]>(models: T | Pro
   return models.map((model) => normalizeModelContextWindow(model))
 }
 
-export function normalizeModelRegistryContextWindows<T>(modelRegistry: T): T {
-  const registry = modelRegistry as T & {
-    find?: (...args: unknown[]) => ModelWithTokenLimits | null | undefined
-    getAvailable?: (...args: unknown[]) => ModelWithTokenLimits[] | Promise<ModelWithTokenLimits[]>
+export function normalizeModelRuntimeContextWindows<T>(modelRuntime: T): T {
+  const runtime = modelRuntime as T & {
+    getModel?: (...args: unknown[]) => ModelWithTokenLimits | null | undefined
+    getAvailable?: (
+      ...args: unknown[]
+    ) => readonly ModelWithTokenLimits[] | Promise<readonly ModelWithTokenLimits[]>
   }
-  const originalFind = registry.find?.bind(registry)
-  if (originalFind) {
-    registry.find = (...args: unknown[]) => {
-      const model = originalFind(...args)
+  const originalGetModel = runtime.getModel?.bind(runtime)
+  if (originalGetModel) {
+    runtime.getModel = (...args: unknown[]) => {
+      const model = originalGetModel(...args)
       return model ? normalizeModelContextWindow(model) : model
     }
   }
 
-  const originalGetAvailable = registry.getAvailable?.bind(registry)
+  const originalGetAvailable = runtime.getAvailable?.bind(runtime)
   if (originalGetAvailable) {
-    registry.getAvailable = (...args: unknown[]) =>
+    runtime.getAvailable = (...args: unknown[]) =>
       normalizeModelsResult(originalGetAvailable(...args))
   }
 
-  return modelRegistry
+  return modelRuntime
 }

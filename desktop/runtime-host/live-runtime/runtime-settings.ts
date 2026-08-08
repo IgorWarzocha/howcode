@@ -37,7 +37,7 @@ export async function setComposerModel(
       settingsCwd: request.composerSessionDir ?? null,
       chatGroupId: request.chatGroupId ?? null,
     })
-    const model = runtime.session.modelRegistry.find(provider, modelId)
+    const model = runtime.session.modelRuntime.getModel(provider, modelId)
     if (!model) throw new Error(`Unknown Pi model: ${provider}/${modelId}`)
     await runtime.session.setModel(model)
     scheduleRuntimeDisposal(persistedSessionPath)

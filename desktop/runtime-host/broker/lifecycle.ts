@@ -133,13 +133,14 @@ export function makeHostLifecycle<Process>(options: {
 
     return {
       ensureHost,
-      runningHostIds: Effect.map(Ref.get(state), (current) =>
-        [...current.hosts.values()]
-          .filter(
-            (host) => host.lifecycle.status === 'Starting' || host.lifecycle.status === 'Running',
-          )
-          .map((host) => host.id),
-      ),
+      runningHostIds: Effect.map(Ref.get(state), (current) => {
+        const runningHostIds: string[] = []
+        for (const host of current.hosts.values()) {
+          if (host.lifecycle.status === 'Starting' || host.lifecycle.status === 'Running')
+            runningHostIds.push(host.id)
+        }
+        return runningHostIds
+      }),
       scheduleIdle: idle.schedule,
       stopAll,
       suspendIdle: idle.remove,

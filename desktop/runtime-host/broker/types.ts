@@ -10,7 +10,7 @@ import type {
   RuntimeMainToHostMessage,
 } from '../protocol.ts'
 
-export class RuntimeHostBrokerError extends Schema.TaggedErrorClass<RuntimeHostBrokerError>()(
+export class RuntimeHostBrokerError extends Schema.TaggedError<RuntimeHostBrokerError>()(
   'RuntimeHostBrokerError',
   {
     operation: Schema.String,

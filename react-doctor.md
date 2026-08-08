@@ -1,6 +1,6 @@
 # React Doctor
 
-React Doctor 0.7.8 reports **100/100** with no diagnostics.
+React Doctor 0.9.7 reports **100/100** with no diagnostics.
 
 ```text
 Errors:   0
@@ -31,7 +31,9 @@ These paths changed enough to deserve a human pass. The automated suite protects
 
 - Native/runtime packages are retained even without static imports because Electron packaging and runtime `require()` calls need their complete dependency trees outside ASAR.
 - Component line-count, local-component-count, and boolean-prop thresholds are not gates here; Biome's enforced complexity limit is. The rule defaults produced counts, not defects.
+- Long-lived controller surfaces reset feature-local transient state when their ownership props change; remounting them would also discard unrelated drafts, focus, and scroll state.
 - A few committed effects intentionally publish async data or imperative close handlers to their owner after commit. Moving those writes into render would expose work React may discard.
+- A successful Pi extension dialog answer stays busy until its owner removes the request. Resetting it in `finally` would briefly allow duplicate answers before unmount.
 - Attachment roots are chosen by the trusted desktop picker, canonicalized, and descendants are constrained to that root. Updater assets are restricted to the configured release origin and verified by SHA-256 before installation. React Doctor cannot follow either trust check through the full flow.
 
 Do not replace these with inline disables. If an exception stops matching the architecture, remove it from `doctor.config.ts` and fix the newly visible diagnostics.

@@ -70,6 +70,7 @@ export function makeDesktopServiceStartup<Process>(options: {
         },
       }),
       (handle) => adapter.terminate(handle.process),
+      { interruptible: true },
     ).pipe(Scope.provide(record.scope))
 
     const attached = yield* Ref.modify(state, (current) => {

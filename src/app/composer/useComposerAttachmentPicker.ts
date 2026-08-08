@@ -79,7 +79,7 @@ export function useComposerAttachmentPicker({
     [fetchPickerEntries, pickerScopeKey, setErrorMessage],
   )
 
-  const pickAttachments = async () => {
+  const pickAttachments = () => {
     if (openMenu === 'picker') {
       setOpenMenu(null)
       return

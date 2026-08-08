@@ -12,7 +12,7 @@ import type {
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
 import {
   normalizeModelContextWindowValue,
-  normalizeModelRegistryContextWindows,
+  normalizeModelRuntimeContextWindows,
 } from '../../shared/model-context-window-normalization.ts'
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import { getPiModule } from '../pi-module.ts'
@@ -189,7 +189,7 @@ async function resolveComposerStateSnapshot(request: ComposerStateRequest = {}) 
   const { cwd, projectTrustServices, session } = await createComposerSnapshotSession(request)
 
   try {
-    const availableModels = (await session.modelRegistry.getAvailable()) as ComposerSourceModel[]
+    const availableModels = (await session.modelRuntime.getAvailable()) as ComposerSourceModel[]
     const requestedModeModelSelection = getModeModelSelection(request)
     const modeModelSelection = requestedModeModelSelection?.provider
       ? { provider: requestedModeModelSelection.provider, id: requestedModeModelSelection.id }
@@ -227,8 +227,7 @@ async function resolveComposerStateSnapshot(request: ComposerStateRequest = {}) 
 export async function createComposerSnapshotSession(request: ComposerStateRequest = {}) {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
   const {
-    AuthStorage,
-    ModelRegistry,
+    ModelRuntime,
     SessionManager,
     SettingsManager,
     DefaultResourceLoader,
@@ -250,9 +249,11 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
     hasTrustRequiringProjectResources,
     settingsCwd: request.composerSessionDir,
   })
-  const authStorage = AuthStorage.create()
-  const modelRegistry = normalizeModelRegistryContextWindows(
-    ModelRegistry.create(authStorage, `${agentDir}/models.json`),
+  const modelRuntime = normalizeModelRuntimeContextWindows(
+    await ModelRuntime.create({
+      authPath: `${agentDir}/auth.json`,
+      modelsPath: `${agentDir}/models.json`,
+    }),
   )
   const settingsManager = createRuntimeSettingsManager({
     SettingsManager,
@@ -277,8 +278,7 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
   const { session } = await createAgentSession({
     cwd,
     agentDir,
-    authStorage,
-    modelRegistry,
+    modelRuntime,
     settingsManager,
     resourceLoader,
     sessionManager,
@@ -342,7 +342,7 @@ export async function buildComposerState(
     agentDir,
     cwd: runtime.cwd,
   })
-  const availableModels = (await runtime.session.modelRegistry.getAvailable()).map((model) => ({
+  const availableModels = (await runtime.session.modelRuntime.getAvailable()).map((model) => ({
     provider: model.provider,
     id: model.id,
     name: model.name ?? model.id,

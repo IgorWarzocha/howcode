@@ -164,7 +164,7 @@ export const TerminalOperation = Schema.Literals([
 ])
 export type TerminalOperation = typeof TerminalOperation.Type
 
-export class TerminalError extends Schema.TaggedErrorClass<TerminalError>()('TerminalError', {
+export class TerminalError extends Schema.TaggedError<TerminalError>()('TerminalError', {
   operation: TerminalOperation,
   message: Schema.String,
 }) {}

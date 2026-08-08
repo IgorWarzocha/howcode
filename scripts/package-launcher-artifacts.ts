@@ -13,6 +13,11 @@ const appName = 'howcode'
 const nodeMajorVersionPattern = /^v?(\d+)/
 
 const require = createRequire(import.meta.url)
+const {
+  getBetterSqlitePrebuildFile,
+}: {
+  getBetterSqlitePrebuildFile: (platform?: string, arch?: string) => string
+} = require('./service-native/better-sqlite.cjs')
 const { supportedServiceNodeAbis, validateAbiBundle, validateCurrentNativeDependenciesLoad } =
   require('./service-native-abi.cjs') as {
     supportedServiceNodeAbis: string[]
@@ -24,14 +29,17 @@ const electronOutputRoot = path.join(process.cwd(), 'artifacts', 'electron')
 const artifactRoot = path.join(process.cwd(), 'artifacts')
 const launcherOutputRoot = path.join(artifactRoot, 'npm-launcher')
 
-const requiredUnpackedRuntimePaths = [
-  path.join('build', 'desktop', 'service-host.mjs'),
-  path.join('node_modules', 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node'),
-]
-
 type Target = {
   os: 'macos' | 'linux' | 'win'
   arch: 'arm64' | 'x64'
+}
+
+function getRequiredUnpackedRuntimePaths(target: Target) {
+  const platform = target.os === 'macos' ? 'darwin' : target.os === 'win' ? 'win32' : 'linux'
+  return [
+    path.join('build', 'desktop', 'service-host.mjs'),
+    getBetterSqlitePrebuildFile(platform, target.arch),
+  ]
 }
 
 function getCurrentTarget(): Target {
@@ -163,7 +171,7 @@ async function createNormalizedArchive(bundlePath: string, target: Target) {
   }
 
   const unpackedRoot = path.join(resourcesPath, 'app.asar.unpacked')
-  const missingUnpackedRuntimePaths = requiredUnpackedRuntimePaths.filter(
+  const missingUnpackedRuntimePaths = getRequiredUnpackedRuntimePaths(target).filter(
     (relativePath) => !existsSync(path.join(unpackedRoot, relativePath)),
   )
   if (missingUnpackedRuntimePaths.length > 0) {

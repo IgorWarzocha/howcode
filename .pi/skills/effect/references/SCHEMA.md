@@ -109,10 +109,10 @@ Guidance:
 
 ## Errors
 
-`Schema.TaggedErrorClass` is the explicit class exception for typed Effect errors.
+`Schema.TaggedError` is the explicit class exception for typed Effect errors.
 
 ```ts
-export class PersistenceError extends Schema.TaggedErrorClass<PersistenceError>()(
+export class PersistenceError extends Schema.TaggedError<PersistenceError>()(
   "UserRepo.PersistenceError",
   {
     operation: Schema.String,

@@ -165,6 +165,21 @@ function EmptyBranchPrompt({
 }) {
   const tooltip = 'Switch branches and start a new session.'
   const warning = currentBranchDirty ? dirtyBranchSwitchMessage : null
+  const switchAndCreateThread = async () => {
+    const result = await onAction('workspace.switch-branch', {
+      projectId: project.id,
+      value: group.label,
+    })
+    if (result?.result?.error) {
+      onSwitchError()
+      return
+    }
+    await createThreadForBranch({
+      branchName: group.label,
+      onAction,
+      projectId: project.id,
+    })
+  }
   return (
     <div className="sidebar-project-work-empty-branch-row" data-action-count={actionCount}>
       <span className="sidebar-project-work-empty-branch-spacer" aria-hidden="true" />
@@ -177,20 +192,7 @@ function EmptyBranchPrompt({
           onClick={(event) => {
             event.stopPropagation()
             if (currentBranchDirty) return
-            void onAction('workspace.switch-branch', {
-              projectId: project.id,
-              value: group.label,
-            }).then((result) => {
-              if (result?.result?.error) {
-                onSwitchError()
-                return
-              }
-              void createThreadForBranch({
-                branchName: group.label,
-                onAction,
-                projectId: project.id,
-              })
-            })
+            void switchAndCreateThread()
           }}
           aria-label="Switch branches and start a new session"
         >

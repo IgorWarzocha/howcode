@@ -104,6 +104,7 @@ export function BranchSwitchPopover({
       </div>
       <input
         ref={inputRef}
+        aria-label="Search branches"
         value={branchSwitchInput}
         onChange={(event) => onSetBranchSwitchInput(event.target.value)}
         onKeyDown={(event) => {

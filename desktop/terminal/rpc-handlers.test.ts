@@ -36,7 +36,7 @@ const snapshot: TerminalSessionSnapshot = {
 }
 
 function jsonRoundTrip<A>(value: A): A {
-  return JSON.parse(JSON.stringify(value))
+  return structuredClone(value)
 }
 
 function transportError(cause: unknown) {

@@ -84,6 +84,7 @@ export function makeHostStartup<Process>(options: {
         },
       }),
       (handle) => adapter.terminate(handle.process),
+      { interruptible: true },
     ).pipe(Scope.provide(scope))
 
     const attached = yield* Ref.modify(state, (current) => {

@@ -82,6 +82,15 @@ function getUnpackedAppPath(resourcesPath: string) {
   return path.join(resourcesPath, 'app.asar.unpacked')
 }
 
+function getBetterSqlitePrebuildPath() {
+  return path.join(
+    'node_modules',
+    'better-sqlite3',
+    'prebuilds',
+    `${process.platform}-${process.arch}.node`,
+  )
+}
+
 function validateAbiNativeDependencies(resourcesPath: string, abi: string) {
   const unpackedAppPath = getUnpackedAppPath(resourcesPath)
   const abiBundleRoot = path.join(
@@ -104,17 +113,34 @@ function validateAbiNativeDependencies(resourcesPath: string, abi: string) {
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as {
     abi?: unknown
     files?: unknown
+    packages?: unknown
   }
-  if (manifest.abi !== abi || !Array.isArray(manifest.files)) {
+  const manifestPackages = Array.isArray(manifest.packages) ? manifest.packages : null
+  const manifestPackageSet = manifestPackages ? new Set(manifestPackages) : null
+  if (
+    manifest.abi !== abi ||
+    !Array.isArray(manifest.files) ||
+    !manifestPackageSet ||
+    !serviceNativeAbi.serviceAbiPackages.every((packageName) => manifestPackageSet.has(packageName))
+  ) {
     throw new Error(`Invalid packaged native dependency manifest for ABI ${abi}: ${manifestPath}`)
   }
 
-  for (const relativePath of serviceNativeAbi.requiredNativeRuntimeFiles) {
-    const sourcePath = path.join(abiBundleRoot, relativePath)
-    if (!existsSync(sourcePath)) {
-      throw new Error(`Missing packaged native dependency for ABI ${abi}: ${sourcePath}`)
+  for (const packageName of serviceNativeAbi.serviceAbiPackages) {
+    const packageManifestPath = path.join(
+      abiBundleRoot,
+      'node_modules',
+      packageName,
+      'package.json',
+    )
+    if (!existsSync(packageManifestPath)) {
+      throw new Error(`Missing packaged native dependency for ABI ${abi}: ${packageManifestPath}`)
     }
   }
+
+  const betterSqlitePrebuildPath = path.join(unpackedAppPath, getBetterSqlitePrebuildPath())
+  if (!existsSync(betterSqlitePrebuildPath))
+    throw new Error(`Missing packaged stock-Node SQLite prebuild: ${betterSqlitePrebuildPath}`)
 }
 
 function hasPackagedNativeDependencies(resourcesPath: string) {
