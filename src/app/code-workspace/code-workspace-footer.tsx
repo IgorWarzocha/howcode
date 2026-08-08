@@ -70,29 +70,32 @@ function CodeGitOpsComposer(props: CodeWorkspaceContentProps) {
   return (
     <div>
       <GitOpsComposerPanel
-        dictationModelId={appSettings.dictationModelId}
-        dictationMaxDurationSeconds={appSettings.dictationMaxDurationSeconds}
-        projectGitState={projectGitState}
-        parentBranchName={parentBranchName}
-        projectId={composerProjectId}
-        sessionPath={terminalSessionPath}
-        showDictationButton={appSettings.showDictationButton}
         appSettings={appSettings}
-        diffBaseline={diffBaseline}
-        diffRenderMode={diffRenderMode}
+        project={{
+          id: composerProjectId,
+          gitState: projectGitState,
+          parentBranchName,
+          sessionPath: terminalSessionPath,
+        }}
+        diff={{
+          baseline: diffBaseline,
+          renderMode: diffRenderMode,
+          loadError: diffLoadError,
+          includeUntracked: includeUntrackedDiffFiles,
+          setBaseline: onSetDiffBaseline,
+          setRenderMode: onSetDiffRenderMode,
+          toggleIncludeUntracked: toggleIncludeUntrackedDiffFiles,
+        }}
+        fileTree={{
+          visible: gitOpsFileTreeVisible,
+          toggle: toggleGitOpsFileTree,
+        }}
         review={gitOpsReview}
-        diffLoadError={diffLoadError}
-        includeUntracked={includeUntrackedDiffFiles}
-        onSetDiffBaseline={onSetDiffBaseline}
-        onSetDiffRenderMode={onSetDiffRenderMode}
-        onToggleIncludeUntracked={toggleIncludeUntrackedDiffFiles}
         onReviewSent={handleCloseGitOpsView}
         onLayoutChange={() => setComposerLayoutVersion((current: number) => current + 1)}
         onAction={handleAction}
         onBack={handleCloseGitOpsView}
         onOpenSettingsView={(target) => controller.handleShowView('settings', target)}
-        gitOpsFileTreeVisible={gitOpsFileTreeVisible}
-        onToggleGitOpsFileTree={toggleGitOpsFileTree}
       />
     </div>
   )

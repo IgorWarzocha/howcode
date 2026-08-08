@@ -1,7 +1,7 @@
 import { Tooltip } from '../../common/tooltip'
 import { appToneMutedClass, appToneTextClass, appTypeTinyClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
-import type { GitOpsCommentCard } from './composer-git-ops.helpers'
+import type { GitOpsCommentCard } from './review/review-comment-card'
 
 type ComposerGitOpsTopBarProps = {
   commentCards: GitOpsCommentCard[]
