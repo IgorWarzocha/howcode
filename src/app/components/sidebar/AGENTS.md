@@ -1,1 +1,2 @@
 - Use the shared `Tooltip` component for sidebar icon buttons; do not rely on `data-tooltip`, which has incorrect z-index/positioning inside sidebar overlays.
+- Inline confirmations use `useDismissibleLayer`; do not add per-component document listeners or CSS-selector-based outside-click detection.

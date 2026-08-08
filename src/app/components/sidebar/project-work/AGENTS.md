@@ -1,1 +1,3 @@
 - Compact and expanded sidebar paths mirror each other. Fix both.
+- `branch-action-capabilities.ts` owns branch-row action policy; confirmations and failures stay row-local rather than drilling state IDs through project containers.
+- `useProjectWorkRowMenu` owns project-work menu dismissal and row geometry; do not recreate document listeners or measurement effects in menu components.
