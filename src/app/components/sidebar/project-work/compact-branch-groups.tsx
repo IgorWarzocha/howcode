@@ -1,16 +1,11 @@
-import { Tooltip } from '@howcode/common/tooltip'
-import { CircleOff, GitBranch } from 'lucide-react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project, Thread, View } from '../../../types'
-import { getBranchActionCapabilities } from './branch-action-capabilities'
 import {
   shouldShowBranchGroupDividerAfter,
   shouldShowBranchGroupDividerBefore,
 } from './branch-group-layout'
 import type { BranchThreadGroup, WorktreeBranch } from './branch-group-model'
-import { BranchInlineActions, BranchSessionCount } from './branch-row-actions'
 import { BranchThreadGroupSection } from './branch-thread-groups'
-import { ProjectWorkThreadRow } from './project-work-thread-row'
 
 function getCompletedWorktreesForCompactCurrentBranch(
   worktreeGroups: readonly BranchThreadGroup[],
@@ -31,13 +26,6 @@ function getCompletedWorktreesForCompactCurrentBranch(
       },
     ]
   })
-}
-
-function getUnassignedDividerBefore(input: {
-  hasWorktreeGroups: boolean
-  unassignedExpanded: boolean
-}) {
-  return input.hasWorktreeGroups && input.unassignedExpanded ? 'true' : 'false'
 }
 
 export function ProjectCompactBranchGroups({
@@ -83,7 +71,6 @@ export function ProjectCompactBranchGroups({
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
   onToggleUnassigned: () => void
 }) {
-  const canToggleCurrentBranch = branchThreads.length > 0
   const completedWorktrees = getCompletedWorktreesForCompactCurrentBranch(worktreeGroups)
   const currentBranchGroup: BranchThreadGroup = {
     id: 'current-branch',
@@ -95,7 +82,6 @@ export function ProjectCompactBranchGroups({
     unassigned: false,
     worktree: false,
   }
-  const canPruneCurrentBranch = Boolean(currentBranch)
   const unassignedGroup: BranchThreadGroup = {
     id: 'compact-unassigned',
     label: 'Unassigned',
@@ -105,70 +91,27 @@ export function ProjectCompactBranchGroups({
     unassigned: true,
     worktree: false,
   }
-  const currentBranchActionCapabilities = getBranchActionCapabilities(currentBranchGroup, {
-    canPrune: canPruneCurrentBranch,
-    canCreateWorktree: Boolean(currentBranch),
-  })
-  const unassignedActionCapabilities = getBranchActionCapabilities(unassignedGroup)
-
   return (
     <>
-      <section
-        className="sidebar-project-work-branch-group"
-        data-current="true"
-        data-divider-after={worktreeGroups.length > 0 ? 'true' : 'false'}
-        data-divider-before="false"
-      >
-        <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading">
-          <button
-            type="button"
-            className="sidebar-icon-action sidebar-icon-action--xs sidebar-icon-action--no-hover sidebar-project-work-branch-disclosure"
-            onClick={onToggleCurrentBranch}
-            disabled={!canToggleCurrentBranch}
-            aria-expanded={currentBranchExpanded}
-            aria-label={currentBranchExpanded ? 'Collapse current branch' : 'Expand current branch'}
-          >
-            <GitBranch size={13} className="sidebar-project-work-branch-icon" />
-          </button>
-          <button
-            type="button"
-            className="sidebar-project-work-branch-toggle"
-            onClick={onToggleCurrentBranch}
-            disabled={!canToggleCurrentBranch}
-            aria-expanded={currentBranchExpanded}
-          >
-            <span className="truncate">{currentBranch ?? 'No branch'}</span>
-          </button>
-          <span className="sidebar-project-work-branch-meta">
-            <BranchSessionCount count={branchThreads.length} hidden={hideSessionCounts} />
-          </span>
-          <BranchInlineActions
-            capabilities={currentBranchActionCapabilities}
-            currentBranch={currentBranch}
-            group={currentBranchGroup}
-            project={project}
-            switchBlocked={false}
-            onAction={onAction}
-          />
-        </div>
-        {currentBranchExpanded ? (
-          <div className="sidebar-project-work-branch-thread-list">
-            {branchThreads.map((thread) => (
-              <ProjectWorkThreadRow
-                key={thread.id}
-                activeView={activeView}
-                currentBranch={currentBranch}
-                project={project}
-                selectedThreadId={selectedThreadId}
-                terminalRunningSessionPaths={terminalRunningSessionPaths}
-                thread={thread}
-                onAction={onAction}
-                onThreadOpen={onThreadOpen}
-              />
-            ))}
-          </div>
-        ) : null}
-      </section>
+      <BranchThreadGroupSection
+        actionCapabilityOverrides={{
+          canCreateWorktree: Boolean(currentBranch),
+          canPrune: Boolean(currentBranch),
+        }}
+        activeView={activeView}
+        collapsed={!currentBranchExpanded}
+        currentBranch={currentBranch}
+        currentBranchDirty={currentBranchDirty}
+        group={currentBranchGroup}
+        hideSessionCounts={hideSessionCounts}
+        project={project}
+        selectedThreadId={selectedThreadId}
+        terminalRunningSessionPaths={terminalRunningSessionPaths}
+        onAction={onAction}
+        showBottomDivider={worktreeGroups.length > 0}
+        onThreadOpen={onThreadOpen}
+        onToggle={onToggleCurrentBranch}
+      />
 
       {worktreeGroups.map((group, index) => {
         const groupKey = `${project.id}:${group.id}`
@@ -206,68 +149,20 @@ export function ProjectCompactBranchGroups({
       })}
 
       {unassignedThreads.length > 0 ? (
-        <section
-          className="sidebar-project-work-branch-group"
-          data-divider-before={getUnassignedDividerBefore({
-            hasWorktreeGroups: worktreeGroups.length > 0,
-            unassignedExpanded,
-          })}
-        >
-          <Tooltip
-            content="Sessions not assigned to a git branch"
-            className="sidebar-project-work-row-tooltip"
-          >
-            <div className="sidebar-compact-row sidebar-compact-row--branch sidebar-project-work-branch-heading">
-              <button
-                type="button"
-                className="sidebar-icon-action sidebar-icon-action--xs sidebar-icon-action--no-hover sidebar-project-work-branch-disclosure"
-                onClick={onToggleUnassigned}
-                aria-expanded={unassignedExpanded}
-                aria-label={
-                  unassignedExpanded ? 'Collapse unassigned sessions' : 'Expand unassigned sessions'
-                }
-              >
-                <CircleOff size={13} className="sidebar-project-work-unassigned-icon" />
-              </button>
-              <button
-                type="button"
-                className="sidebar-project-work-branch-toggle sidebar-project-work-branch-toggle--plain"
-                onClick={onToggleUnassigned}
-                aria-expanded={unassignedExpanded}
-              >
-                <span className="truncate">Unassigned</span>
-              </button>
-              <span className="sidebar-project-work-branch-meta">
-                <BranchSessionCount count={unassignedThreads.length} hidden={hideSessionCounts} />
-              </span>
-              <BranchInlineActions
-                capabilities={unassignedActionCapabilities}
-                currentBranch={currentBranch}
-                group={unassignedGroup}
-                project={project}
-                switchBlocked={false}
-                onAction={onAction}
-              />
-            </div>
-          </Tooltip>
-          {unassignedExpanded ? (
-            <div className="sidebar-project-work-branch-thread-list">
-              {unassignedThreads.map((thread) => (
-                <ProjectWorkThreadRow
-                  key={thread.id}
-                  activeView={activeView}
-                  currentBranch={currentBranch}
-                  project={project}
-                  selectedThreadId={selectedThreadId}
-                  terminalRunningSessionPaths={terminalRunningSessionPaths}
-                  thread={thread}
-                  onAction={onAction}
-                  onThreadOpen={onThreadOpen}
-                />
-              ))}
-            </div>
-          ) : null}
-        </section>
+        <BranchThreadGroupSection
+          activeView={activeView}
+          collapsed={!unassignedExpanded}
+          currentBranch={currentBranch}
+          group={unassignedGroup}
+          hideSessionCounts={hideSessionCounts}
+          project={project}
+          selectedThreadId={selectedThreadId}
+          terminalRunningSessionPaths={terminalRunningSessionPaths}
+          onAction={onAction}
+          showTopDivider={worktreeGroups.length > 0}
+          onThreadOpen={onThreadOpen}
+          onToggle={onToggleUnassigned}
+        />
       ) : null}
     </>
   )

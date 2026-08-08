@@ -5,7 +5,11 @@ import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project, View } from '../../../types'
 import { WorktreeSmallIcon } from '../../../ui/icons/worktree-small-icon'
 import { SidebarActionTooltip } from '../sidebar-action-tooltip'
-import { getBranchActionCapabilities, getBranchActionCount } from './branch-action-capabilities'
+import {
+  type BranchActionCapabilities,
+  getBranchActionCapabilities,
+  getBranchActionCount,
+} from './branch-action-capabilities'
 import {
   shouldShowBranchGroupDividerAfter,
   shouldShowBranchGroupDividerBefore,
@@ -139,6 +143,7 @@ function EmptyBranchPrompt({
 }
 
 export function BranchThreadGroupSection({
+  actionCapabilityOverrides,
   activeView,
   collapsed,
   currentBranch,
@@ -154,6 +159,7 @@ export function BranchThreadGroupSection({
   onThreadOpen,
   onToggle,
 }: {
+  actionCapabilityOverrides?: Partial<BranchActionCapabilities>
   activeView: View
   collapsed: boolean
   currentBranch: string | null
@@ -169,7 +175,7 @@ export function BranchThreadGroupSection({
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
   onToggle: () => void
 }) {
-  const actionCapabilities = getBranchActionCapabilities(group)
+  const actionCapabilities = getBranchActionCapabilities(group, actionCapabilityOverrides)
   const branchSwitchBlocked = actionCapabilities.canSwitch && currentBranchDirty
   const threadProject = group.worktreePath ? { ...project, id: group.worktreePath } : project
   const threadAssignBranch = getThreadAssignBranchForGroup(group, currentBranch)
