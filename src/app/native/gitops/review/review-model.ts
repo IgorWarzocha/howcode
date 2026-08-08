@@ -85,6 +85,11 @@ export function isSameReviewTarget(left: ReviewTarget, right: ReviewTarget) {
   )
 }
 
+export function getReviewTargetKey(target: ReviewTarget) {
+  if (target.kind === 'file') return `file:${target.fileKey}`
+  return `line-range:${target.fileKey}:${target.start.side}:${target.start.lineNumber}:${target.end.side}:${target.end.lineNumber}`
+}
+
 function getSideLabel(side: DiffSide, casing: 'title' | 'lower') {
   if (side === 'deletions') return casing === 'title' ? 'Old' : 'old'
   return casing === 'title' ? 'New' : 'new'

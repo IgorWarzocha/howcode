@@ -6,9 +6,10 @@ This is the implementation handoff for rebuilding GitOps around the current Pier
 
 - Howcode already pins `@pierre/diffs` **1.3.5** in `package.json` and `bun.lock`.
 - Pierre 1.2 introduced `CodeView`; Howcode already uses it.
-- Pierre 1.3 is the Edit release. Howcode does not use its editor, selection actions, partial hydration, markers, or CodeView composition regions yet.
-- The existing comments feature is renderer-owned, persisted in `localStorage`, rendered through Pierre annotations, and flattened into a normal `composer.send` prompt.
-- There are no direct tests for comment context identity, persistence, range conversion, prompt generation, or send-and-clear behaviour.
+- Phases 1–3 are implemented: the review domain is tested, Pierre owns line/range selection, and selection offers a transient **Add comment** annotation before opening a draft.
+- Pierre's `renderSelectionAction` belongs to its editable `Editor`; read-only `CodeView` does not expose it. Do not enable editing merely to obtain that popover.
+- The changed-files rail already uses `@pierre/trees` **1.0.0-beta.6** with Git status, filtering, virtualisation, and multi-path selection. Phase 5 is complete.
+- Partial hydration, direct editing, markers, keep/revert, and merge-conflict UI remain unimplemented.
 - GitOps remains plugin-shaped inside `src/app/native/gitops/`; do not add runtime plugin machinery.
 
 No dependency upgrade is needed before this work.
@@ -367,7 +368,9 @@ Acceptance cases:
 
 ### Phase 3 — Add selection actions
 
-Goal: use Pierre's anchored text-selection UI for the review workflow.
+Goal: require an explicit action between selecting lines and opening a review draft.
+
+Pierre 1.3.5 only exposes `renderSelectionAction` through the editable `Editor`, not read-only `CodeView`. The implemented read-only path therefore uses Pierre's controlled line selection and a transient Pierre annotation for the action. This keeps Pierre responsible for geometry and placement without hand-positioned DOM or prematurely enabling edit mode. Direct editing can adopt the native editor popover in Phase 6.
 
 1. Add a small Howcode-rendered selection action with **Add comment** and optionally **Add to chat**.
 2. Keep the action UI stateless; draft state remains in the review store by stable ID.
@@ -404,6 +407,8 @@ Test independently:
 ### Phase 5 — Evaluate Pierre Trees for changed files
 
 Goal: replace only the GitOps changed-files tree if the beta package reduces code and preserves the UI.
+
+Status: complete. `src/app/native/gitops/diff/diff-changed-files-tree.tsx` uses the pinned Pierre Trees beta and preserves Howcode's focused-path filtering and changed-file statistics.
 
 Current candidate: `src/app/native/gitops/diff/diff-changed-files-tree.tsx`.
 

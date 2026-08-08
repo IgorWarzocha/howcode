@@ -1,6 +1,6 @@
 const trailingSlashPattern = /\/+$/
 
-import type { CodeViewHandle, DiffLineAnnotation } from '@pierre/diffs/react'
+import type { CodeViewHandle } from '@pierre/diffs/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ProjectDiffBaseline } from '../../../desktop/types'
 import { getFeatureStatusDataAttributes } from '../../../features/feature-status'
@@ -8,9 +8,8 @@ import { useDesktopDiff } from '../../../hooks/useDesktopDiff'
 import { diffPanelMainSurfaceClass, diffPanelSplitSurfaceClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import type { ReviewAnnotationMetadata } from '../review/pierre-review-adapter'
-import { ReviewAnnotationCard } from '../review/review-annotation-card'
-import type { ReviewCodeViewController } from '../review/review-code-view'
 import { useDiffReviewState } from '../review/use-diff-review-state'
+import { useReviewCodeViewController } from '../review/use-review-code-view-controller'
 import {
   buildFileDiffRenderKey,
   isImageDiffFile,
@@ -150,28 +149,12 @@ export function DiffPanelContent({
     [imageFileKeys],
   )
 
-  const renderCommentAnnotation = (annotation: DiffLineAnnotation<ReviewAnnotationMetadata>) => (
-    <ReviewAnnotationCard
-      annotation={annotation}
-      draftCardRef={draftCardRef}
-      draftComment={reviewState.draft.comment}
-      setDraftComment={reviewState.draft.set}
-      onPersistDraftComment={reviewState.draft.persist}
-      onRemoveComment={reviewState.comments.remove}
-    />
-  )
-  const codeViewReview: ReviewCodeViewController = {
-    annotationsByFile: reviewState.annotationsByFile,
-    draftTarget: reviewState.draft.target,
-    cancelDraft: reviewState.draft.cancel,
-    openDraft: reviewState.draft.open,
-    renderAnnotation: renderCommentAnnotation,
-  }
+  const codeViewReview = useReviewCodeViewController({ draftCardRef, review: reviewState })
 
   useDiffPanelScrollAlignment({
     collapsedFiles,
     draftCardRef,
-    draftTarget: reviewState.draft.target,
+    draftTarget: reviewState.draft.comment?.target ?? null,
     codeViewRef,
     renderableFiles: visibleRenderableFiles,
     savedComments: reviewState.comments.items,

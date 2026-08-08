@@ -1,5 +1,6 @@
 - Keep diff UI, review/comment state, branch/baseline controls, and GitOps composer surfaces in this boundary.
 - Keep review identity, persistence, prompts, and Pierre adapters in `review/`; `diff/` owns patch rendering and CodeView item lifecycle. Never recover review targets from Pierre DOM attributes or global pointer listeners.
+- Keep read-only review actions in transient Pierre annotations. `renderSelectionAction` is editor-only; do not enable editing or hand-position overlays to imitate it.
 - Compose GitOps UI through grouped project, diff, review, and file-tree contracts. Message and commit-option lifecycles belong in their owned hooks; popover effects belong with their controls, not in the surface entrypoint.
 - Treat it as plugin-shaped but not dynamically pluggable yet: no disable flags, registries, or runtime loading until the app shell has a deliberate contribution API.
 - Generic composer primitives may be imported from `@howcode/composer`; do not move non-Git composer behavior here.

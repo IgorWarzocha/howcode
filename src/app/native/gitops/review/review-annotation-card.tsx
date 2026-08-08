@@ -1,6 +1,6 @@
 import type { DiffLineAnnotation } from '@pierre/diffs/react'
 import { Check, X } from 'lucide-react'
-import type { Dispatch, RefObject, SetStateAction } from 'react'
+import type { RefObject } from 'react'
 import { Tooltip } from '../../../common/tooltip'
 import {
   appToneMutedClass,
@@ -14,38 +14,56 @@ import {
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import type { ReviewAnnotationMetadata } from './pierre-review-adapter'
-import { describeReviewTarget, type ReviewDraft } from './review-model'
+import { describeReviewTarget, type ReviewDraft, type ReviewTarget } from './review-model'
+import { ReviewSelectionAction } from './review-selection-action'
 
-type ReviewAnnotationCardProps = {
-  annotation: DiffLineAnnotation<ReviewAnnotationMetadata>
-  draftCardRef: RefObject<HTMLDivElement | null>
-  draftComment: ReviewDraft | null
-  setDraftComment: Dispatch<SetStateAction<ReviewDraft | null>>
-  onPersistDraftComment: () => void
-  onRemoveComment: (commentId: string) => void
+export type ReviewAnnotationController = {
+  comments: { remove: (commentId: string) => void }
+  draft: {
+    cancel: () => void
+    cardRef: RefObject<HTMLDivElement | null>
+    comment: ReviewDraft | null
+    persist: () => void
+    setBody: (body: string) => void
+  }
+  selection: {
+    addComment: (target: ReviewTarget) => void
+    cancel: () => void
+  }
 }
 
 export function ReviewAnnotationCard({
   annotation,
-  draftCardRef,
-  draftComment,
-  setDraftComment,
-  onPersistDraftComment,
-  onRemoveComment,
-}: ReviewAnnotationCardProps) {
-  const metadata = annotation.metadata
+  controller,
+}: {
+  annotation: DiffLineAnnotation<ReviewAnnotationMetadata>
+  controller: ReviewAnnotationController
+}) {
+  const metadata = annotation.metadata.review
+
+  if (metadata.kind === 'selection-action') {
+    return (
+      <ReviewSelectionAction
+        target={metadata.target}
+        onAddComment={controller.selection.addComment}
+        onCancel={controller.selection.cancel}
+      />
+    )
+  }
 
   if (metadata.kind === 'draft') {
     return (
       <div
-        ref={draftCardRef}
+        ref={controller.draft.cardRef}
         data-diff-comment-annotation="true"
         className={diffCommentAnnotationClass}
       >
         <div className="flex items-center justify-between gap-2">
           <div className={cn('min-w-0 truncate', appTypeMetaStrongClass, appToneMutedClass)}>
             Add comment ·{' '}
-            {draftComment ? describeReviewTarget(draftComment.target) : 'Line comment'}
+            {controller.draft.comment
+              ? describeReviewTarget(controller.draft.comment.target)
+              : 'Line comment'}
           </div>
           <div className="flex shrink-0 items-center gap-1">
             <Tooltip content="Cancel comment">
@@ -54,7 +72,7 @@ export function ReviewAnnotationCard({
                 className={compactIconButtonClass}
                 onClick={(event) => {
                   event.stopPropagation()
-                  setDraftComment(null)
+                  controller.draft.cancel()
                 }}
                 aria-label="Cancel comment"
               >
@@ -67,9 +85,9 @@ export function ReviewAnnotationCard({
                 className={diffCommentSaveButtonClass}
                 onClick={(event) => {
                   event.stopPropagation()
-                  onPersistDraftComment()
+                  controller.draft.persist()
                 }}
-                disabled={(draftComment?.body.trim().length ?? 0) === 0}
+                disabled={(controller.draft.comment?.body.trim().length ?? 0) === 0}
                 aria-label="Save comment"
               >
                 <Check size={14} />
@@ -79,12 +97,8 @@ export function ReviewAnnotationCard({
         </div>
         <textarea
           className={diffCommentTextareaClass}
-          value={draftComment?.body ?? ''}
-          onChange={(event) => {
-            setDraftComment((current) =>
-              current ? { ...current, body: event.target.value } : current,
-            )
-          }}
+          value={controller.draft.comment?.body ?? ''}
+          onChange={(event) => controller.draft.setBody(event.target.value)}
           aria-label={`Comment for line ${annotation.lineNumber}`}
         />
       </div>
@@ -111,7 +125,7 @@ export function ReviewAnnotationCard({
             className={compactIconButtonClass}
             onClick={(event) => {
               event.stopPropagation()
-              onRemoveComment(metadata.id)
+              controller.comments.remove(metadata.id)
             }}
             aria-label="Remove comment"
           >

@@ -27,10 +27,10 @@ function getAnnotationVersionKey(
   annotations: readonly DiffLineAnnotation<ReviewAnnotationMetadata>[],
 ) {
   return annotations
-    .map(
-      (annotation) =>
-        `${annotation.metadata.id}:${annotation.metadata.kind}:${annotation.side}:${annotation.lineNumber}:${annotation.metadata.body.length}`,
-    )
+    .map((annotation) => {
+      const review = annotation.metadata.review
+      return `${review.id}:${review.kind}:${annotation.side}:${annotation.lineNumber}:${review.kind === 'comment' ? review.body.length : 0}`
+    })
     .join('|')
 }
 

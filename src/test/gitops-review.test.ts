@@ -4,6 +4,11 @@ import {
   reviewTargetToPierreAnnotation,
   reviewTargetToPierreSelection,
 } from '../app/native/gitops/review/pierre-review-adapter'
+import { buildReviewAnnotations } from '../app/native/gitops/review/review-annotations'
+import {
+  idleReviewInteraction,
+  reduceReviewInteraction,
+} from '../app/native/gitops/review/review-interaction'
 import {
   createLineRangeTarget,
   describeReviewTarget,
@@ -16,15 +21,17 @@ import {
   getReviewContextId,
 } from '../app/native/gitops/review/review-store'
 
+const commentTarget = createLineRangeTarget({
+  fileKey: 'src/app.ts',
+  filePath: 'src/app.ts',
+  side: 'additions',
+  lineNumber: 12,
+  endLineNumber: 14,
+})
+
 const comment: SavedReviewComment = {
   id: 'comment-1',
-  target: createLineRangeTarget({
-    fileKey: 'src/app.ts',
-    filePath: 'src/app.ts',
-    side: 'additions',
-    lineNumber: 12,
-    endLineNumber: 14,
-  }),
+  target: commentTarget,
   body: '  Keep this branch explicit.  ',
   createdAt: '2026-03-01T12:00:00.000Z',
 }
@@ -109,7 +116,7 @@ describe('GitOps review model', () => {
     ).toMatchObject({
       side: 'deletions',
       lineNumber: 5,
-      metadata: { id: 'comment-1', kind: 'comment', target },
+      metadata: { review: { id: 'comment-1', kind: 'comment', target } },
     })
     expect(
       reviewTargetFromPierreSelection({
@@ -127,6 +134,62 @@ describe('GitOps review model', () => {
 
 1. src/app.ts:12-14 (new side)
    Keep this branch explicit.`)
+  })
+
+  it('keeps selection actions ephemeral and promotes them into drafts explicitly', () => {
+    const selected = reduceReviewInteraction(idleReviewInteraction, {
+      type: 'select',
+      target: commentTarget,
+    })
+
+    expect(selected).toEqual({ kind: 'selection', target: commentTarget })
+    expect(buildReviewAnnotations({ comments: [], interaction: selected })).toMatchObject(
+      new Map([
+        [
+          'src/app.ts',
+          [
+            {
+              metadata: {
+                review: { kind: 'selection-action', target: commentTarget },
+              },
+            },
+          ],
+        ],
+      ]),
+    )
+
+    const extendedTarget = createLineRangeTarget({
+      fileKey: commentTarget.fileKey,
+      filePath: commentTarget.filePath,
+      side: 'additions',
+      lineNumber: 12,
+      endLineNumber: 16,
+    })
+    const extended = reduceReviewInteraction(selected, {
+      type: 'select',
+      target: extendedTarget,
+    })
+    const selectedAnnotation = buildReviewAnnotations({
+      comments: [],
+      interaction: selected,
+    }).get(commentTarget.fileKey)?.[0]
+    const extendedAnnotation = buildReviewAnnotations({
+      comments: [],
+      interaction: extended,
+    }).get(commentTarget.fileKey)?.[0]
+    expect(extendedAnnotation?.metadata.review.id).not.toBe(selectedAnnotation?.metadata.review.id)
+
+    const drafting = reduceReviewInteraction(selected, {
+      type: 'start-draft',
+      target: commentTarget,
+    })
+    expect(drafting).toEqual({ kind: 'draft', draft: { target: commentTarget, body: '' } })
+
+    const typed = reduceReviewInteraction(drafting, {
+      type: 'set-draft-body',
+      body: 'Keep this thought.',
+    })
+    expect(reduceReviewInteraction(typed, { type: 'select', target: commentTarget })).toBe(typed)
   })
 })
 

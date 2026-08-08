@@ -1,13 +1,15 @@
-import type { DiffLineAnnotation } from '@pierre/diffs/react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import type { ProjectDiffBaseline } from '../../../desktop/types'
+import { buildReviewAnnotations } from './review-annotations'
 import {
-  type ReviewAnnotationMetadata,
-  reviewTargetToPierreAnnotation,
-} from './pierre-review-adapter'
+  getReviewInteractionDraft,
+  getReviewInteractionTarget,
+  idleReviewInteraction,
+  reduceReviewInteraction,
+} from './review-interaction'
 import {
-  isSameReviewTarget,
-  type ReviewDraft,
+  getReviewTargetKey,
+  type LineRangeReviewTarget,
   type ReviewTarget,
   type SavedReviewComment,
 } from './review-model'
@@ -23,9 +25,13 @@ export function useDiffReviewState({
   projectId: string
 }) {
   const [savedComments, setSavedComments] = useState<SavedReviewComment[]>([])
-  const [draftComment, setDraftComment] = useState<ReviewDraft | null>(null)
+  const [interaction, dispatchInteraction] = useReducer(
+    reduceReviewInteraction,
+    idleReviewInteraction,
+  )
   const [hydratedContextId, setHydratedContextId] = useState<string | null>(null)
   const writingStoreRef = useRef(false)
+  const draftComment = getReviewInteractionDraft(interaction)
 
   const reviewContextId = useMemo(
     () => getReviewContextId({ baseline, includeUntracked, projectId }),
@@ -35,7 +41,7 @@ export function useDiffReviewState({
   useEffect(() => {
     if (!reviewContextId) {
       setSavedComments([])
-      setDraftComment(null)
+      dispatchInteraction({ type: 'hydrate', draft: null })
       setHydratedContextId(null)
       return
     }
@@ -44,7 +50,7 @@ export function useDiffReviewState({
       if (writingStoreRef.current) return
       const persistedContext = reviewStore.getContext(reviewContextId)
       setSavedComments(persistedContext?.comments ?? [])
-      setDraftComment(persistedContext?.draft ?? null)
+      dispatchInteraction({ type: 'hydrate', draft: persistedContext?.draft ?? null })
       setHydratedContextId(reviewContextId)
     }
 
@@ -59,89 +65,59 @@ export function useDiffReviewState({
     writingStoreRef.current = false
   }, [draftComment, hydratedContextId, reviewContextId, savedComments])
 
-  const draftTarget = draftComment?.target ?? null
-  const commentAnnotationsByFile = useMemo(() => {
-    const next = new Map<string, DiffLineAnnotation<ReviewAnnotationMetadata>[]>()
-
-    for (const comment of savedComments) {
-      const entries = next.get(comment.target.fileKey) ?? []
-      entries.push(
-        reviewTargetToPierreAnnotation({
-          id: comment.id,
-          body: comment.body,
-          kind: 'comment',
-          target: comment.target,
-        }),
-      )
-      next.set(comment.target.fileKey, entries)
-    }
-
-    if (draftTarget) {
-      const entries = next.get(draftTarget.fileKey) ?? []
-      const anchor =
-        draftTarget.kind === 'line-range'
-          ? `${draftTarget.start.side}:${draftTarget.start.lineNumber}`
-          : 'file'
-      entries.push(
-        reviewTargetToPierreAnnotation({
-          id: `draft:${draftTarget.fileKey}:${anchor}`,
-          body: '',
-          kind: 'draft',
-          target: draftTarget,
-        }),
-      )
-      next.set(draftTarget.fileKey, entries)
-    }
-
-    return next
-  }, [draftTarget, savedComments])
+  const annotationsByFile = useMemo(
+    () => buildReviewAnnotations({ comments: savedComments, interaction }),
+    [interaction, savedComments],
+  )
 
   const persistDraftComment = useCallback(() => {
-    const nextBody = draftComment?.body.trim() ?? ''
-    if (!draftComment || nextBody.length === 0) return
+    if (interaction.kind !== 'draft') return
+    const nextBody = interaction.draft.body.trim()
+    if (nextBody.length === 0) return
 
-    const targetAnchor =
-      draftComment.target.kind === 'line-range'
-        ? `${draftComment.target.start.side}:${draftComment.target.start.lineNumber}`
-        : 'file'
     setSavedComments((current) => [
       ...current,
       {
-        ...draftComment,
-        id: `${draftComment.target.fileKey}:${targetAnchor}:${Date.now()}`,
+        ...interaction.draft,
+        id: `${getReviewTargetKey(interaction.draft.target)}:${Date.now()}`,
         body: nextBody,
         createdAt: new Date().toISOString(),
       },
     ])
-    setDraftComment(null)
-  }, [draftComment])
+    dispatchInteraction({ type: 'cancel' })
+  }, [interaction])
 
   const removeComment = useCallback((commentId: string) => {
     setSavedComments((current) => current.filter((comment) => comment.id !== commentId))
   }, [])
 
-  const openDraftComment = useCallback((target: ReviewTarget) => {
-    setDraftComment((current) => {
-      if (current && isSameReviewTarget(current.target, target)) return current
-      return { target, body: '' }
-    })
+  const selectTarget = useCallback((target: LineRangeReviewTarget | null) => {
+    dispatchInteraction({ type: 'select', target })
   }, [])
-
-  const cancelDraftComment = useCallback(() => setDraftComment(null), [])
+  const openDraft = useCallback((target: ReviewTarget) => {
+    dispatchInteraction({ type: 'start-draft', target })
+  }, [])
+  const setDraftBody = useCallback((body: string) => {
+    dispatchInteraction({ type: 'set-draft-body', body })
+  }, [])
+  const cancelInteraction = useCallback(() => dispatchInteraction({ type: 'cancel' }), [])
 
   return {
-    annotationsByFile: commentAnnotationsByFile,
+    annotationsByFile,
     comments: {
       items: savedComments,
       remove: removeComment,
     },
     draft: {
       comment: draftComment,
-      cancel: cancelDraftComment,
-      target: draftTarget,
-      open: openDraftComment,
+      open: openDraft,
       persist: persistDraftComment,
-      set: setDraftComment,
+      setBody: setDraftBody,
+    },
+    interaction: {
+      cancel: cancelInteraction,
+      select: selectTarget,
+      target: getReviewInteractionTarget(interaction),
     },
   }
 }

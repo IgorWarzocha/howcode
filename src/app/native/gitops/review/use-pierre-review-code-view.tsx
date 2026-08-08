@@ -21,24 +21,25 @@ export function usePierreReviewCodeView({
   fileIdentityByKey: ReadonlyMap<string, ReviewFileIdentity>
   review: ReviewCodeViewController
 }) {
+  const { cancel, select, startDraft, target: interactionTarget } = review.interaction
   const selectedLines = useMemo(() => {
-    if (!review.draftTarget) return null
-    const range = reviewTargetToPierreSelection(review.draftTarget)
-    return range ? { id: review.draftTarget.fileKey, range } : null
-  }, [review.draftTarget])
+    if (!interactionTarget) return null
+    const range = reviewTargetToPierreSelection(interactionTarget)
+    return range ? { id: interactionTarget.fileKey, range } : null
+  }, [interactionTarget])
 
   const onSelectedLinesChange = useCallback(
     (selection: CodeViewLineSelection | null) => {
       if (!selection) {
-        review.cancelDraft()
+        cancel()
         return
       }
       const identity = fileIdentityByKey.get(selection.id)
       if (!identity) return
       const target = reviewTargetFromPierreSelection({ ...identity, range: selection.range })
-      if (target) review.openDraft(target)
+      if (target) select(target)
     },
-    [fileIdentityByKey, review.cancelDraft, review.openDraft],
+    [cancel, fileIdentityByKey, select],
   )
 
   const renderAnnotation = useCallback(
@@ -67,7 +68,7 @@ export function usePierreReviewCodeView({
             onClick={(event) => {
               event.preventDefault()
               event.stopPropagation()
-              review.openDraft(
+              startDraft(
                 createLineRangeTarget({
                   ...identity,
                   side: hoveredLine.side,
@@ -82,7 +83,7 @@ export function usePierreReviewCodeView({
         </Tooltip>
       )
     },
-    [fileIdentityByKey, review.openDraft],
+    [fileIdentityByKey, startDraft],
   )
 
   return { onSelectedLinesChange, renderAnnotation, renderGutterUtility, selectedLines }

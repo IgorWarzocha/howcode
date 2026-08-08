@@ -7,12 +7,14 @@ import {
   type ReviewTarget,
 } from './review-model'
 
-export type ReviewAnnotationMetadata = {
-  id: string
-  body: string
-  kind: 'comment' | 'draft'
-  target: ReviewTarget
-}
+export type ReviewAnnotation =
+  | { id: string; body: string; kind: 'comment'; target: ReviewTarget }
+  | { id: string; kind: 'draft'; target: ReviewTarget }
+  | { id: string; kind: 'selection-action'; target: ReviewTarget }
+
+// Pierre's annotation metadata conditional distributes over unions, so keep the
+// review discriminant nested and expose one stable metadata shape to CodeView.
+export type ReviewAnnotationMetadata = { review: ReviewAnnotation }
 
 function isDiffSide(side: SelectedLineRange['side']): side is DiffSide {
   return side === 'deletions' || side === 'additions'
@@ -48,19 +50,18 @@ export function reviewTargetToPierreSelection(target: ReviewTarget): SelectedLin
   }
 }
 
-export function reviewTargetToPierreAnnotation({
-  body,
-  id,
-  kind,
-  target,
-}: ReviewAnnotationMetadata): DiffLineAnnotation<ReviewAnnotationMetadata> {
+export function reviewTargetToPierreAnnotation(
+  review: ReviewAnnotation,
+): DiffLineAnnotation<ReviewAnnotationMetadata> {
+  const { target } = review
+  const metadata = { review }
   if (target.kind === 'file') {
-    return { side: 'additions', lineNumber: 0, metadata: { id, body, kind, target } }
+    return { side: 'additions', lineNumber: 0, metadata }
   }
 
   return {
     side: target.start.side,
     lineNumber: target.start.lineNumber,
-    metadata: { id, body, kind, target },
+    metadata,
   }
 }
