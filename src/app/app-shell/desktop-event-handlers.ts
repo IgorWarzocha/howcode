@@ -1,501 +1,58 @@
 import { keybindingCommandIsActiveInMode } from '@howcode/shared/keybindings'
-import { isLocalSessionPath } from '@howcode/shared/session-paths'
-import { sessionTreeRefreshWithSessionWatch } from '@howcode/shared/session-tree-watch'
-import type { Dispatch, SetStateAction } from 'react'
-import type {
-  ChatSidebarState,
-  ComposerState,
-  DesktopEvent,
-  PiExtensionUiState,
-  ProjectGitState,
-  ThreadData,
-} from '../desktop/types'
-import { desktopQueryKeys } from '../query/desktop-query'
-import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
+import type { DesktopEvent } from '../desktop/types'
+import { handleComposerUpdateEvent } from './desktop-events/composer-update'
+import { applyPiExtensionUiState } from './desktop-events/pi-extension-ui-state'
+import type { DesktopEventQueryClient, DesktopEventSyncRuntime } from './desktop-events/runtime'
 import {
-  type DesktopEventSelectionState,
-  getVisibleDesktopSessionPath,
-  invalidateProjectWorktreeQueries,
-  refreshVisibleInboxThread,
-  shouldAutoOpenStartedThread,
-  shouldDisplayStartedThreadForLocalDraft,
-} from './desktop-event-sync'
+  handleSessionTreeRefreshEvent,
+  handleThreadUpdateEvent,
+} from './desktop-events/thread-update'
 import { dispatchHowcodeKeybindingCommand } from './keybinding-events'
-import { applyThreadEventToSidebarState } from './sidebar-thread-sync'
 
-export type QueryClientLike = {
-  setQueryData: (queryKey: readonly unknown[], updater: unknown) => void
-  invalidateQueries: (filters: { queryKey: readonly unknown[] }) => Promise<unknown> | unknown
-}
+export type { DesktopEventSyncRuntime }
+export type QueryClientLike = DesktopEventQueryClient
 
-type UseDesktopEventSyncInput = {
-  composerProjectId: string
-  workspaceState: WorkspaceState
-  loadProjectThreads: (
-    projectId: string,
-    options?: {
-      chat?: boolean | undefined
-      replaceLocalDraftSessionPath?: string | null | undefined
-    },
-  ) => Promise<unknown>
-  loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
-  scheduleShellStateRefresh: () => void
-  refreshChatSidebarState: () => Promise<unknown>
-  queryClient: QueryClientLike
-  dispatch: Dispatch<WorkspaceAction>
-  setComposerState: Dispatch<SetStateAction<ComposerState | null>>
-  setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>
-  setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>
-  setPiExtensionUiStateBySession: Dispatch<SetStateAction<Record<string, PiExtensionUiState>>>
-  setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>
-  setThreadHistoryCompactions: Dispatch<SetStateAction<number>>
-}
-
-export type DesktopEventSyncRuntime = Omit<
-  UseDesktopEventSyncInput,
-  'composerProjectId' | 'workspaceState'
-> & {
-  desktopEventStateRef: React.RefObject<{
-    composerProjectId: string
-    workspaceState: DesktopEventSelectionState
-  }>
-  localDraftSessionPathByPersistedSessionPathRef: React.RefObject<Map<string, string>>
-}
-
-function shouldApplyComposerUpdate(input: {
-  event: Extract<DesktopEvent, { type: 'composer-update' }>
-  latestComposerProjectId: string
-  latestWorkspaceState: DesktopEventSelectionState
-  localDraftSessionPathByPersistedSessionPathRef: React.RefObject<Map<string, string>>
-  visibleSessionPath: string | null
-}) {
-  const aliasedLocalDraftSessionPath = input.event.sessionPath
-    ? input.localDraftSessionPathByPersistedSessionPathRef.current.get(input.event.sessionPath)
-    : null
-  if (input.event.sessionPath) {
-    return (
-      input.event.sessionPath === input.visibleSessionPath ||
-      aliasedLocalDraftSessionPath === input.latestWorkspaceState.selectedSessionPath
-    )
-  }
-  return (
-    input.event.projectId === input.latestComposerProjectId &&
-    ((input.latestWorkspaceState.activeView !== 'thread' &&
-      input.latestWorkspaceState.activeView !== 'gitops' &&
-      input.latestWorkspaceState.activeView !== 'chat') ||
-      input.visibleSessionPath === null)
-  )
-}
-
-function extensionWidgetListsEqual(
-  left: PiExtensionUiState['piExtensionWidgets'],
-  right: PiExtensionUiState['piExtensionWidgets'],
-) {
-  return (
-    left.length === right.length &&
-    left.every((widget, index) => {
-      const other = right[index]
-      return (
-        other?.key === widget.key &&
-        other.placement === widget.placement &&
-        other.lines.length === widget.lines.length &&
-        other.lines.every((line, lineIndex) => line === widget.lines[lineIndex])
-      )
-    })
-  )
-}
-
-function extensionStatusListsEqual(
-  left: PiExtensionUiState['piExtensionStatuses'],
-  right: PiExtensionUiState['piExtensionStatuses'],
-) {
-  return (
-    left.length === right.length &&
-    left.every((status, index) => {
-      const other = right[index]
-      return other?.key === status.key && other.text === status.text
-    })
-  )
-}
-
-function extensionDialogsEqual(
-  left: PiExtensionUiState['piExtensionDialogRequest'],
-  right: PiExtensionUiState['piExtensionDialogRequest'],
-) {
-  if (!(left && right)) return left === right
-  const leftOptions = left.options ?? []
-  const rightOptions = right.options ?? []
-  return (
-    left.id === right.id &&
-    left.method === right.method &&
-    left.title === right.title &&
-    left.message === right.message &&
-    left.placeholder === right.placeholder &&
-    left.prefill === right.prefill &&
-    leftOptions.length === rightOptions.length &&
-    leftOptions.every((option, index) => option === rightOptions[index])
-  )
-}
-
-function extensionUiStatesEqual(left: PiExtensionUiState, right: PiExtensionUiState) {
-  return (
-    extensionWidgetListsEqual(left.piExtensionWidgets, right.piExtensionWidgets) &&
-    extensionStatusListsEqual(left.piExtensionStatuses, right.piExtensionStatuses) &&
-    extensionDialogsEqual(left.piExtensionDialogRequest, right.piExtensionDialogRequest)
-  )
-}
-
-function composerExtensionUi(composer: ComposerState): PiExtensionUiState {
-  return {
-    piExtensionWidgets: composer.piExtensionWidgets,
-    piExtensionStatuses: composer.piExtensionStatuses,
-    piExtensionDialogRequest: composer.piExtensionDialogRequest,
-  }
-}
-
-function applyPiExtensionUiState(input: {
-  extensionUi: PiExtensionUiState
-  sessionPath: string | null
-  setPiExtensionUiStateBySession: Dispatch<SetStateAction<Record<string, PiExtensionUiState>>>
-}) {
-  if (!input.sessionPath) return
-  const sessionPath = input.sessionPath
-  input.setPiExtensionUiStateBySession((current) => {
-    const currentUi = current[sessionPath]
-    if (currentUi && extensionUiStatesEqual(currentUi, input.extensionUi)) return current
-    return { ...current, [sessionPath]: input.extensionUi }
-  })
-}
-
-function handleComposerUpdateEvent(
+function handleKeybindingCommandEvent(
   runtime: DesktopEventSyncRuntime,
-  event: Extract<DesktopEvent, { type: 'composer-update' }>,
+  event: Extract<DesktopEvent, { type: 'keybinding-command' }>,
 ) {
-  const { composerProjectId: latestComposerProjectId, workspaceState: latestWorkspaceState } =
-    runtime.desktopEventStateRef.current
-  const visibleSessionPath = getVisibleDesktopSessionPath(latestWorkspaceState)
-  if (
-    shouldApplyComposerUpdate({
-      event,
-      latestComposerProjectId,
-      latestWorkspaceState,
-      localDraftSessionPathByPersistedSessionPathRef:
-        runtime.localDraftSessionPathByPersistedSessionPathRef,
-      visibleSessionPath,
-    })
-  )
-    runtime.setComposerState(event.composer)
-  applyPiExtensionUiState({
-    extensionUi: composerExtensionUi(event.composer),
-    sessionPath: event.sessionPath,
-    setPiExtensionUiStateBySession: runtime.setPiExtensionUiStateBySession,
-  })
-}
-
-function mergeThreadPreferences(input: {
-  event: Extract<DesktopEvent, { type: 'thread-update' }>
-  queryClient: QueryClientLike
-}) {
-  let threadWithPreferences = input.event.thread
-  let hadCachedThread = false
-  input.queryClient.setQueryData(
-    desktopQueryKeys.thread(input.event.sessionPath),
-    (current: unknown) => {
-      const currentThread = current as ThreadData | null | undefined
-      hadCachedThread = Boolean(currentThread)
-      threadWithPreferences = {
-        ...input.event.thread,
-        diffPreferences: input.event.thread.diffPreferences ?? currentThread?.diffPreferences,
-      }
-      return threadWithPreferences
-    },
-  )
-  if (!(input.event.thread.diffPreferences || hadCachedThread)) {
-    void input.queryClient.invalidateQueries({
-      queryKey: desktopQueryKeys.threadPrefix(input.event.sessionPath),
-    })
-  }
-  return threadWithPreferences
-}
-
-function getThreadEventFlags(input: {
-  event: Extract<DesktopEvent, { type: 'thread-update' }>
-  latestWorkspaceState: DesktopEventSelectionState
-  visibleSessionPath: string | null
-}) {
-  const shouldAutoOpenThread = shouldAutoOpenStartedThread({
-    reason: input.event.reason,
-    projectId: input.event.projectId,
-    isChat: input.event.isChat,
-    workspaceState: input.latestWorkspaceState,
-  })
-  const shouldDisplayLocalDraftThread = shouldDisplayStartedThreadForLocalDraft({
-    reason: input.event.reason,
-    projectId: input.event.projectId,
-    isChat: input.event.isChat,
-    replacesSessionPath: input.event.replacesSessionPath,
-    workspaceState: input.latestWorkspaceState,
-  })
-  return {
-    hasVisibleAssistantActivity: input.event.thread.messages.some(
-      (message) => message.role !== 'user',
-    ),
-    isCompactionThreadUpdate:
-      input.event.reason === 'compaction-start' || input.event.reason === 'compaction',
-    isVisibleThreadUpdate: input.event.sessionPath === input.visibleSessionPath,
-    shouldAutoOpenThread,
-    shouldDisplayLocalDraftThread,
-  }
-}
-
-function updateLiveThreadData(input: {
-  aliasedLocalDraftSessionPath: string | null
-  event: Extract<DesktopEvent, { type: 'thread-update' }>
-  flags: ReturnType<typeof getThreadEventFlags>
-  setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>
-  threadWithPreferences: ThreadData
-}) {
-  input.setLiveThreadData((current) => {
-    const shouldApplyLiveThread =
-      input.flags.isVisibleThreadUpdate ||
-      input.flags.shouldAutoOpenThread ||
-      input.aliasedLocalDraftSessionPath === current?.sessionPath ||
-      current?.sessionPath === input.event.sessionPath
-    if (!shouldApplyLiveThread) return current
-    const shouldSuppressFirstTurnTimeline =
-      !input.flags.hasVisibleAssistantActivity &&
-      (input.aliasedLocalDraftSessionPath === current?.sessionPath ||
-        (input.flags.isVisibleThreadUpdate &&
-          current?.isStreaming === true &&
-          current.messages.length === 0))
-    return {
-      ...input.threadWithPreferences,
-      messages: shouldSuppressFirstTurnTimeline ? [] : input.threadWithPreferences.messages,
-      sessionPath:
-        input.aliasedLocalDraftSessionPath && !input.flags.hasVisibleAssistantActivity
-          ? input.aliasedLocalDraftSessionPath
-          : input.threadWithPreferences.sessionPath,
-      diffPreferences: input.threadWithPreferences.diffPreferences ?? current?.diffPreferences,
-    }
-  })
-}
-
-function dispatchThreadOpenIfNeeded(input: {
-  dispatch: Dispatch<WorkspaceAction>
-  event: Extract<DesktopEvent, { type: 'thread-update' }>
-  flags: ReturnType<typeof getThreadEventFlags>
-  latestWorkspaceState: DesktopEventSelectionState
-}) {
-  if (
-    input.flags.shouldDisplayLocalDraftThread &&
-    input.latestWorkspaceState.activeView === 'project'
-  ) {
-    input.dispatch({
-      type: 'start-project-thread',
-      projectId: input.event.projectId,
-      threadId: input.event.threadId,
-      sessionPath: input.event.sessionPath,
-    })
-    return
-  }
-
-  if (
-    input.flags.shouldAutoOpenThread ||
-    (input.flags.shouldDisplayLocalDraftThread && input.flags.hasVisibleAssistantActivity)
-  ) {
-    input.dispatch({
-      type: 'open-thread',
-      projectId: input.event.projectId,
-      threadId: input.event.threadId,
-      sessionPath: input.event.sessionPath,
-      view: input.event.isChat === true ? 'chat' : 'thread',
-    })
-    return
-  }
-  if (
-    input.flags.isVisibleThreadUpdate &&
-    input.latestWorkspaceState.selectedThreadId !== input.event.threadId &&
-    (input.latestWorkspaceState.activeView === 'chat' ||
-      input.latestWorkspaceState.activeView === 'thread')
-  ) {
-    input.dispatch({
-      type: 'open-thread',
-      projectId: input.event.projectId,
-      threadId: input.event.threadId,
-      sessionPath: input.event.sessionPath,
-      view: input.latestWorkspaceState.activeView,
-    })
-  }
-}
-
-function refreshThreadEndState(input: {
-  event: Extract<DesktopEvent, { type: 'thread-update' }>
-  latestComposerProjectId: string
-  latestWorkspaceState: DesktopEventSelectionState
-  runtime: DesktopEventSyncRuntime
-}) {
-  if (!(input.event.reason === 'end' || input.event.reason === 'external')) return
-  if (input.event.isChat === true) {
-    if (input.latestWorkspaceState.activeView === 'chat')
-      void input.runtime.loadProjectThreads(input.event.projectId, { chat: true })
-    void input.runtime.refreshChatSidebarState()
-  } else if (input.latestWorkspaceState.activeView !== 'chat') {
-    void input.runtime.loadProjectThreads(input.event.projectId)
-  }
-  invalidateProjectWorktreeQueries({
-    activeView: input.latestWorkspaceState.activeView,
-    projectId: input.event.projectId,
-    queryClient: input.runtime.queryClient,
-  })
-  void input.runtime.queryClient.invalidateQueries({
-    queryKey: desktopQueryKeys.projectUsageSummary(input.event.projectId),
-  })
-  if (input.event.projectId === input.latestComposerProjectId) {
-    void input.runtime
-      .loadProjectGitState(input.event.projectId)
-      .then(input.runtime.setProjectGitState)
-  }
-}
-
-function rememberLocalDraftSessionAlias(input: {
-  event: Extract<DesktopEvent, { type: 'thread-update' }>
-  flags: ReturnType<typeof getThreadEventFlags>
-  latestWorkspaceState: DesktopEventSelectionState
-  localDraftSessionPathByPersistedSessionPathRef: React.RefObject<Map<string, string>>
-}) {
-  if (input.flags.shouldDisplayLocalDraftThread && input.latestWorkspaceState.selectedSessionPath) {
-    input.localDraftSessionPathByPersistedSessionPathRef.current.set(
-      input.event.sessionPath,
-      input.latestWorkspaceState.selectedSessionPath,
-    )
-  }
-  const replacesSessionPath = input.event.replacesSessionPath
-  if (typeof replacesSessionPath === 'string' && isLocalSessionPath(replacesSessionPath)) {
-    input.localDraftSessionPathByPersistedSessionPathRef.current.set(
-      input.event.sessionPath,
-      replacesSessionPath,
-    )
-  }
-}
-
-function handleThreadUpdateEvent(
-  runtime: DesktopEventSyncRuntime,
-  event: Extract<DesktopEvent, { type: 'thread-update' }>,
-) {
-  const { composerProjectId: latestComposerProjectId, workspaceState: latestWorkspaceState } =
-    runtime.desktopEventStateRef.current
-  const visibleSessionPath = getVisibleDesktopSessionPath(latestWorkspaceState)
-  const threadWithPreferences = mergeThreadPreferences({ event, queryClient: runtime.queryClient })
-  const flags = getThreadEventFlags({ event, latestWorkspaceState, visibleSessionPath })
-  rememberLocalDraftSessionAlias({
-    event,
-    flags,
-    latestWorkspaceState,
-    localDraftSessionPathByPersistedSessionPathRef:
-      runtime.localDraftSessionPathByPersistedSessionPathRef,
-  })
-  const aliasedLocalDraftSessionPath =
-    runtime.localDraftSessionPathByPersistedSessionPathRef.current.get(event.sessionPath) ?? null
-  updateLiveThreadData({
-    aliasedLocalDraftSessionPath,
-    event,
-    flags,
-    setLiveThreadData: runtime.setLiveThreadData,
-    threadWithPreferences,
-  })
-  if (flags.isCompactionThreadUpdate && flags.isVisibleThreadUpdate)
-    runtime.setThreadHistoryCompactions(0)
-  if (
-    event.composer &&
-    (event.sessionPath === visibleSessionPath ||
-      aliasedLocalDraftSessionPath === latestWorkspaceState.selectedSessionPath)
-  )
-    runtime.setComposerState(event.composer)
-  if (event.composer)
-    applyPiExtensionUiState({
-      extensionUi: composerExtensionUi(event.composer),
-      sessionPath: event.sessionPath,
-      setPiExtensionUiStateBySession: runtime.setPiExtensionUiStateBySession,
-    })
-  if (
-    event.reason === 'start' ||
-    event.reason === 'end' ||
-    event.reason === 'external' ||
-    event.reason === 'compaction'
-  ) {
-    applyThreadEventToSidebarState({
-      event,
-      workspaceState: latestWorkspaceState,
-      queryClient: runtime.queryClient,
-      setChatSidebarState: runtime.setChatSidebarState,
-    })
-    void runtime.queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() })
-  }
-  if (
-    (event.reason === 'end' || event.reason === 'external') &&
-    visibleSessionPath === event.sessionPath
-  ) {
-    void refreshVisibleInboxThread({
-      event,
-      loadProjectThreads: runtime.loadProjectThreads,
-      queryClient: runtime.queryClient,
-    }).catch((error) => console.warn('Failed to keep active inbox thread marked read.', error))
-  }
-  dispatchThreadOpenIfNeeded({ dispatch: runtime.dispatch, event, flags, latestWorkspaceState })
-  refreshThreadEndState({ event, latestComposerProjectId, latestWorkspaceState, runtime })
-  if (sessionTreeRefreshWithSessionWatch) {
-    void runtime.queryClient.invalidateQueries({
-      queryKey: desktopQueryKeys.sessionTreeList(event.sessionPath),
-    })
-  }
-}
-
-function handleSessionTreeRefreshEvent(
-  runtime: DesktopEventSyncRuntime,
-  event: Extract<DesktopEvent, { type: 'session-tree-refresh' }>,
-) {
-  if (!sessionTreeRefreshWithSessionWatch) return
-  void runtime.queryClient.invalidateQueries({
-    queryKey: desktopQueryKeys.sessionTreeList(event.sessionPath),
-  })
-}
-
-function handlePiExtensionUiUpdateEvent(
-  runtime: DesktopEventSyncRuntime,
-  event: Extract<DesktopEvent, { type: 'pi-extension-ui-update' }>,
-) {
-  applyPiExtensionUiState({
-    extensionUi: event.extensionUi,
-    sessionPath: event.sessionPath,
-    setPiExtensionUiStateBySession: runtime.setPiExtensionUiStateBySession,
-  })
+  const { activeView, takeoverVisible } = runtime.desktopEventStateRef.current.workspaceState
+  const mode = takeoverVisible ? 'pi-tui' : 'desktop'
+  if (!keybindingCommandIsActiveInMode(event.commandId, mode)) return
+  const allowedOverSettings =
+    event.commandId === 'settings.open' ||
+    event.commandId === 'sidebar.toggle' ||
+    event.commandId === 'app.commandPalette'
+  if (activeView === 'settings' && !allowedOverSettings) return
+  dispatchHowcodeKeybindingCommand(event.commandId)
 }
 
 export function handleDesktopEvent(runtime: DesktopEventSyncRuntime, event: DesktopEvent) {
-  if (event.type === 'shell-state-refresh') {
-    runtime.scheduleShellStateRefresh()
-    return
+  switch (event.type) {
+    case 'shell-state-refresh':
+      runtime.scheduleShellStateRefresh()
+      return
+    case 'keybinding-command':
+      handleKeybindingCommandEvent(runtime, event)
+      return
+    case 'composer-update':
+      handleComposerUpdateEvent(runtime, event)
+      return
+    case 'pi-extension-ui-update':
+      applyPiExtensionUiState({
+        extensionUi: event.extensionUi,
+        sessionPath: event.sessionPath,
+        setPiExtensionUiStateBySession: runtime.setPiExtensionUiStateBySession,
+      })
+      return
+    case 'thread-update':
+      handleThreadUpdateEvent(runtime, event)
+      return
+    case 'session-tree-refresh':
+      handleSessionTreeRefreshEvent(runtime, event)
+      return
+    default:
+      // Update, dictation, diff, and artifact events have feature-owned subscriptions.
+      return
   }
-  if (event.type === 'keybinding-command') {
-    const { activeView, takeoverVisible } = runtime.desktopEventStateRef.current.workspaceState
-    const mode = takeoverVisible ? 'pi-tui' : 'desktop'
-    if (!keybindingCommandIsActiveInMode(event.commandId, mode)) return
-    const allowedOverSettings =
-      event.commandId === 'settings.open' ||
-      event.commandId === 'sidebar.toggle' ||
-      event.commandId === 'app.commandPalette'
-    if (activeView === 'settings' && !allowedOverSettings) return
-    dispatchHowcodeKeybindingCommand(event.commandId)
-    return
-  }
-  if (event.type === 'composer-update') {
-    handleComposerUpdateEvent(runtime, event)
-    return
-  }
-  if (event.type === 'pi-extension-ui-update') {
-    handlePiExtensionUiUpdateEvent(runtime, event)
-    return
-  }
-  if (event.type === 'thread-update') handleThreadUpdateEvent(runtime, event)
-  if (event.type === 'session-tree-refresh') handleSessionTreeRefreshEvent(runtime, event)
 }

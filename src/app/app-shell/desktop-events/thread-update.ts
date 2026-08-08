@@ -1,0 +1,285 @@
+import { isLocalSessionPath } from '@howcode/shared/session-paths'
+import { sessionTreeRefreshWithSessionWatch } from '@howcode/shared/session-tree-watch'
+import type { Dispatch, SetStateAction } from 'react'
+import type { DesktopEvent, ThreadData } from '../../desktop/types'
+import { desktopQueryKeys } from '../../query/desktop-query'
+import type { WorkspaceAction } from '../../state/workspace'
+import {
+  type DesktopEventSelectionState,
+  getVisibleDesktopSessionPath,
+  invalidateProjectWorktreeQueries,
+  refreshVisibleInboxThread,
+  shouldAutoOpenStartedThread,
+  shouldDisplayStartedThreadForLocalDraft,
+} from '../desktop-event-sync'
+import { applyThreadEventToSidebarState } from '../sidebar-thread-sync'
+import { applyPiExtensionUiState, getComposerExtensionUi } from './pi-extension-ui-state'
+import type { DesktopEventQueryClient, DesktopEventSyncRuntime } from './runtime'
+
+function mergeThreadPreferences(input: {
+  event: Extract<DesktopEvent, { type: 'thread-update' }>
+  queryClient: DesktopEventQueryClient
+}) {
+  let threadWithPreferences = input.event.thread
+  let hadCachedThread = false
+  input.queryClient.setQueryData(
+    desktopQueryKeys.thread(input.event.sessionPath),
+    (current: unknown) => {
+      const currentThread = current as ThreadData | null | undefined
+      hadCachedThread = Boolean(currentThread)
+      threadWithPreferences = {
+        ...input.event.thread,
+        diffPreferences: input.event.thread.diffPreferences ?? currentThread?.diffPreferences,
+      }
+      return threadWithPreferences
+    },
+  )
+  if (!(input.event.thread.diffPreferences || hadCachedThread)) {
+    void input.queryClient.invalidateQueries({
+      queryKey: desktopQueryKeys.threadPrefix(input.event.sessionPath),
+    })
+  }
+  return threadWithPreferences
+}
+
+function getThreadEventFlags(input: {
+  event: Extract<DesktopEvent, { type: 'thread-update' }>
+  latestWorkspaceState: DesktopEventSelectionState
+  visibleSessionPath: string | null
+}) {
+  const shouldAutoOpenThread = shouldAutoOpenStartedThread({
+    reason: input.event.reason,
+    projectId: input.event.projectId,
+    isChat: input.event.isChat,
+    workspaceState: input.latestWorkspaceState,
+  })
+  const shouldDisplayLocalDraftThread = shouldDisplayStartedThreadForLocalDraft({
+    reason: input.event.reason,
+    projectId: input.event.projectId,
+    isChat: input.event.isChat,
+    replacesSessionPath: input.event.replacesSessionPath,
+    workspaceState: input.latestWorkspaceState,
+  })
+  return {
+    hasVisibleAssistantActivity: input.event.thread.messages.some(
+      (message) => message.role !== 'user',
+    ),
+    isCompactionThreadUpdate:
+      input.event.reason === 'compaction-start' || input.event.reason === 'compaction',
+    isVisibleThreadUpdate: input.event.sessionPath === input.visibleSessionPath,
+    shouldAutoOpenThread,
+    shouldDisplayLocalDraftThread,
+  }
+}
+
+function updateLiveThreadData(input: {
+  aliasedLocalDraftSessionPath: string | null
+  event: Extract<DesktopEvent, { type: 'thread-update' }>
+  flags: ReturnType<typeof getThreadEventFlags>
+  setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>
+  threadWithPreferences: ThreadData
+}) {
+  input.setLiveThreadData((current) => {
+    const shouldApplyLiveThread =
+      input.flags.isVisibleThreadUpdate ||
+      input.flags.shouldAutoOpenThread ||
+      input.aliasedLocalDraftSessionPath === current?.sessionPath ||
+      current?.sessionPath === input.event.sessionPath
+    if (!shouldApplyLiveThread) return current
+    const shouldSuppressFirstTurnTimeline =
+      !input.flags.hasVisibleAssistantActivity &&
+      (input.aliasedLocalDraftSessionPath === current?.sessionPath ||
+        (input.flags.isVisibleThreadUpdate &&
+          current?.isStreaming === true &&
+          current.messages.length === 0))
+    return {
+      ...input.threadWithPreferences,
+      messages: shouldSuppressFirstTurnTimeline ? [] : input.threadWithPreferences.messages,
+      sessionPath:
+        input.aliasedLocalDraftSessionPath && !input.flags.hasVisibleAssistantActivity
+          ? input.aliasedLocalDraftSessionPath
+          : input.threadWithPreferences.sessionPath,
+      diffPreferences: input.threadWithPreferences.diffPreferences ?? current?.diffPreferences,
+    }
+  })
+}
+
+function dispatchThreadOpenIfNeeded(input: {
+  dispatch: Dispatch<WorkspaceAction>
+  event: Extract<DesktopEvent, { type: 'thread-update' }>
+  flags: ReturnType<typeof getThreadEventFlags>
+  latestWorkspaceState: DesktopEventSelectionState
+}) {
+  if (
+    input.flags.shouldDisplayLocalDraftThread &&
+    input.latestWorkspaceState.activeView === 'project'
+  ) {
+    input.dispatch({
+      type: 'start-project-thread',
+      projectId: input.event.projectId,
+      threadId: input.event.threadId,
+      sessionPath: input.event.sessionPath,
+    })
+    return
+  }
+
+  if (
+    input.flags.shouldAutoOpenThread ||
+    (input.flags.shouldDisplayLocalDraftThread && input.flags.hasVisibleAssistantActivity)
+  ) {
+    input.dispatch({
+      type: 'open-thread',
+      projectId: input.event.projectId,
+      threadId: input.event.threadId,
+      sessionPath: input.event.sessionPath,
+      view: input.event.isChat === true ? 'chat' : 'thread',
+    })
+    return
+  }
+  if (
+    input.flags.isVisibleThreadUpdate &&
+    input.latestWorkspaceState.selectedThreadId !== input.event.threadId &&
+    (input.latestWorkspaceState.activeView === 'chat' ||
+      input.latestWorkspaceState.activeView === 'thread')
+  ) {
+    input.dispatch({
+      type: 'open-thread',
+      projectId: input.event.projectId,
+      threadId: input.event.threadId,
+      sessionPath: input.event.sessionPath,
+      view: input.latestWorkspaceState.activeView,
+    })
+  }
+}
+
+function refreshThreadEndState(input: {
+  event: Extract<DesktopEvent, { type: 'thread-update' }>
+  latestComposerProjectId: string
+  latestWorkspaceState: DesktopEventSelectionState
+  runtime: DesktopEventSyncRuntime
+}) {
+  if (!(input.event.reason === 'end' || input.event.reason === 'external')) return
+  if (input.event.isChat === true) {
+    if (input.latestWorkspaceState.activeView === 'chat')
+      void input.runtime.loadProjectThreads(input.event.projectId, { chat: true })
+    void input.runtime.refreshChatSidebarState()
+  } else if (input.latestWorkspaceState.activeView !== 'chat') {
+    void input.runtime.loadProjectThreads(input.event.projectId)
+  }
+  invalidateProjectWorktreeQueries({
+    activeView: input.latestWorkspaceState.activeView,
+    projectId: input.event.projectId,
+    queryClient: input.runtime.queryClient,
+  })
+  void input.runtime.queryClient.invalidateQueries({
+    queryKey: desktopQueryKeys.projectUsageSummary(input.event.projectId),
+  })
+  if (input.event.projectId === input.latestComposerProjectId) {
+    void input.runtime
+      .loadProjectGitState(input.event.projectId)
+      .then(input.runtime.setProjectGitState)
+  }
+}
+
+function rememberLocalDraftSessionAlias(input: {
+  event: Extract<DesktopEvent, { type: 'thread-update' }>
+  flags: ReturnType<typeof getThreadEventFlags>
+  latestWorkspaceState: DesktopEventSelectionState
+  localDraftSessionPathByPersistedSessionPathRef: React.RefObject<Map<string, string>>
+}) {
+  if (input.flags.shouldDisplayLocalDraftThread && input.latestWorkspaceState.selectedSessionPath) {
+    input.localDraftSessionPathByPersistedSessionPathRef.current.set(
+      input.event.sessionPath,
+      input.latestWorkspaceState.selectedSessionPath,
+    )
+  }
+  const replacesSessionPath = input.event.replacesSessionPath
+  if (typeof replacesSessionPath === 'string' && isLocalSessionPath(replacesSessionPath)) {
+    input.localDraftSessionPathByPersistedSessionPathRef.current.set(
+      input.event.sessionPath,
+      replacesSessionPath,
+    )
+  }
+}
+
+export function handleThreadUpdateEvent(
+  runtime: DesktopEventSyncRuntime,
+  event: Extract<DesktopEvent, { type: 'thread-update' }>,
+) {
+  const { composerProjectId: latestComposerProjectId, workspaceState: latestWorkspaceState } =
+    runtime.desktopEventStateRef.current
+  const visibleSessionPath = getVisibleDesktopSessionPath(latestWorkspaceState)
+  const threadWithPreferences = mergeThreadPreferences({ event, queryClient: runtime.queryClient })
+  const flags = getThreadEventFlags({ event, latestWorkspaceState, visibleSessionPath })
+  rememberLocalDraftSessionAlias({
+    event,
+    flags,
+    latestWorkspaceState,
+    localDraftSessionPathByPersistedSessionPathRef:
+      runtime.localDraftSessionPathByPersistedSessionPathRef,
+  })
+  const aliasedLocalDraftSessionPath =
+    runtime.localDraftSessionPathByPersistedSessionPathRef.current.get(event.sessionPath) ?? null
+  updateLiveThreadData({
+    aliasedLocalDraftSessionPath,
+    event,
+    flags,
+    setLiveThreadData: runtime.setLiveThreadData,
+    threadWithPreferences,
+  })
+  if (flags.isCompactionThreadUpdate && flags.isVisibleThreadUpdate)
+    runtime.setThreadHistoryCompactions(0)
+  if (
+    event.composer &&
+    (event.sessionPath === visibleSessionPath ||
+      aliasedLocalDraftSessionPath === latestWorkspaceState.selectedSessionPath)
+  )
+    runtime.setComposerState(event.composer)
+  if (event.composer)
+    applyPiExtensionUiState({
+      extensionUi: getComposerExtensionUi(event.composer),
+      sessionPath: event.sessionPath,
+      setPiExtensionUiStateBySession: runtime.setPiExtensionUiStateBySession,
+    })
+  if (
+    event.reason === 'start' ||
+    event.reason === 'end' ||
+    event.reason === 'external' ||
+    event.reason === 'compaction'
+  ) {
+    applyThreadEventToSidebarState({
+      event,
+      workspaceState: latestWorkspaceState,
+      queryClient: runtime.queryClient,
+      setChatSidebarState: runtime.setChatSidebarState,
+    })
+    void runtime.queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() })
+  }
+  if (
+    (event.reason === 'end' || event.reason === 'external') &&
+    visibleSessionPath === event.sessionPath
+  ) {
+    void refreshVisibleInboxThread({
+      event,
+      loadProjectThreads: runtime.loadProjectThreads,
+      queryClient: runtime.queryClient,
+    }).catch((error) => console.warn('Failed to keep active inbox thread marked read.', error))
+  }
+  dispatchThreadOpenIfNeeded({ dispatch: runtime.dispatch, event, flags, latestWorkspaceState })
+  refreshThreadEndState({ event, latestComposerProjectId, latestWorkspaceState, runtime })
+  if (sessionTreeRefreshWithSessionWatch) {
+    void runtime.queryClient.invalidateQueries({
+      queryKey: desktopQueryKeys.sessionTreeList(event.sessionPath),
+    })
+  }
+}
+
+export function handleSessionTreeRefreshEvent(
+  runtime: DesktopEventSyncRuntime,
+  event: Extract<DesktopEvent, { type: 'session-tree-refresh' }>,
+) {
+  if (!sessionTreeRefreshWithSessionWatch) return
+  void runtime.queryClient.invalidateQueries({
+    queryKey: desktopQueryKeys.sessionTreeList(event.sessionPath),
+  })
+}

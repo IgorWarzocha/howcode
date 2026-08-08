@@ -1,0 +1,6 @@
+- `useAppShellController.ts` composes shell state, queries, effects, and commands; feature behavior belongs in the narrower modules it calls.
+- Mutable desktop actions flow through `useDesktopActionHandlers.ts`: contextualize and guard, apply optimistic state, invoke once, then reconcile through `post-effects/*`.
+- Register post-action behavior in the owning domain handler list under `post-effects/`; keep `controller-post-action-effects.ts` as composition only.
+- Keep the desktop event subscription stable. `desktop-event-handlers.ts` only routes typed events; event-specific cache and state work belongs in `desktop-events/*`.
+- Responsive sidebar state belongs to `useAppShellResponsiveLayout.ts`. Takeover terminal identity changes belong to the pure layout model and its hook so local-draft promotion does not remount the terminal.
+- The Skills/Extensions project-target callback in `app-shell-sidebar.tsx` is part of the historical target-highlight flow; do not remove it as redundant.

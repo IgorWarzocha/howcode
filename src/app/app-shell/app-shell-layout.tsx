@@ -1,129 +1,34 @@
-import { getPersistedSessionPath, isLocalSessionPath } from '@howcode/shared/session-paths'
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback } from 'react'
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence'
-import { useLatestRef } from '../hooks/useLatestRef'
+import { getLayoutThreadSelection } from './app-shell-layout-model'
 import { AppShellLayoutView } from './app-shell-layout-view'
 import { useAppKeybindings } from './useAppKeybindings'
 import type { AppShellController } from './useAppShellController'
 import { useAppShellDiffPreferences } from './useAppShellDiffPreferences'
 import { useAppShellLayoutState } from './useAppShellLayoutState'
-
-type TakeoverTerminalKeyState = {
-  key: string
-  projectId: string
-  threadId: string | null
-  sessionPath: string | null
-}
-
-function isLocalToPersistedTakeoverTransition(
-  previous: TakeoverTerminalKeyState,
-  nextProjectId: string,
-  nextSessionPath: string | null,
-  nextActiveView: AppShellController['state']['activeView'],
-) {
-  return (
-    nextActiveView === 'project' &&
-    previous.projectId === nextProjectId &&
-    isLocalSessionPath(previous.sessionPath) &&
-    getPersistedSessionPath(nextSessionPath) !== null
-  )
-}
-
-function getThreadSessionPath(state: AppShellController['state']) {
-  if (
-    state.activeView === 'chat' ||
-    state.activeView === 'thread' ||
-    state.activeView === 'gitops' ||
-    state.activeView === 'project'
-  )
-    return state.selectedSessionPath
-  return null
-}
-
-function getThreadId(state: AppShellController['state']) {
-  if (
-    state.activeView === 'chat' ||
-    state.activeView === 'thread' ||
-    state.activeView === 'gitops' ||
-    state.activeView === 'project'
-  )
-    return state.selectedThreadId
-  return null
-}
-
-function updateTakeoverTerminalKey(options: {
-  composerProjectId: string
-  nextTakeoverTerminalKey: string
-  nextTakeoverTerminalKeyState: TakeoverTerminalKeyState
-  state: AppShellController['state']
-  takeoverPresent: boolean
-  takeoverTerminalKeyRef: React.RefObject<TakeoverTerminalKeyState | null>
-  takeoverVisible: boolean
-  terminalSessionPath: string | null
-}) {
-  const current = options.takeoverTerminalKeyRef.current
-  const preservingLocalToPersistedTakeover =
-    options.takeoverVisible &&
-    current !== null &&
-    current.key !== options.nextTakeoverTerminalKey &&
-    isLocalToPersistedTakeoverTransition(
-      current,
-      options.composerProjectId,
-      options.terminalSessionPath,
-      options.state.activeView,
-    )
-  if (options.takeoverVisible && current === null)
-    options.takeoverTerminalKeyRef.current = options.nextTakeoverTerminalKeyState
-  else if (preservingLocalToPersistedTakeover)
-    options.takeoverTerminalKeyRef.current = {
-      ...options.nextTakeoverTerminalKeyState,
-      key: current.key,
-    }
-  else if (
-    options.takeoverVisible &&
-    current !== null &&
-    current.key !== options.nextTakeoverTerminalKey &&
-    !preservingLocalToPersistedTakeover
-  )
-    options.takeoverTerminalKeyRef.current = options.nextTakeoverTerminalKeyState
-  else if (!(options.takeoverVisible || options.takeoverPresent))
-    options.takeoverTerminalKeyRef.current = null
-}
+import { useAppShellResponsiveLayout } from './useAppShellResponsiveLayout'
+import { useTakeoverTerminalIdentity } from './useTakeoverTerminalIdentity'
 
 type AppShellLayoutProps = {
   controller: AppShellController
 }
 
 export function AppShellLayout({ controller }: AppShellLayoutProps) {
-  const controllerRef = useLatestRef(controller)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [sidebarCompactMode, setSidebarCompactMode] = useState(() =>
-    typeof window === 'undefined' ? false : window.innerWidth <= 1236,
-  )
-  const [sidebarOverlayOpen, setSidebarOverlayOpen] = useState(false)
-  const [terminalHiddenByCompactResize, setTerminalHiddenByCompactResize] = useState(false)
+  const { composerProjectId, state } = controller
   const {
-    activeComposerState,
-    activePiExtensionUiState,
-    activeThreadData,
-    collapsedProjectIds,
-    composerProjectId,
-    currentProjectName,
-    handleAction,
-    handleProjectSelect,
-    handleSetSelectedProject,
-    handleShowView,
-    handleThreadOpen,
-    handleToggleProjectCollapse,
-    handleToggleSettings,
-    projects,
-    extensionsProjectScopeActive,
-    skillsProjectScopeActive,
-    state,
-  } = controller
-  const projectScopeLockActive = extensionsProjectScopeActive || skillsProjectScopeActive
-  const terminalSessionPath = getThreadSessionPath(state)
-  const activeThreadId = getThreadId(state)
+    controllerRef,
+    handleFocusComposer,
+    handleFocusTerminal,
+    handleOpenSidebar,
+    handleToggleSidebar,
+    setSidebarOverlayOpen,
+    sidebarCollapsed,
+    sidebarCompactMode,
+    sidebarOverlayOpen,
+    terminalHiddenByCompactResize,
+  } = useAppShellResponsiveLayout(controller)
+  const { sessionPath: terminalSessionPath, threadId: activeThreadId } =
+    getLayoutThreadSelection(state)
   const takeoverVisible = state.takeoverVisible
   const terminalDrawerVisible =
     (state.activeView === 'thread' || state.activeView === 'project') &&
@@ -148,29 +53,14 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const { mainSectionRef, takeoverPresent, workspaceContentClass } = useAppShellLayoutState({
     takeoverVisible,
   })
-  const takeoverTerminalKeyRef = useRef<TakeoverTerminalKeyState | null>(null)
-  const nextTakeoverTerminalKey = `${composerProjectId}:${
-    state.selectedThreadId ?? terminalSessionPath ?? 'none'
-  }`
-  const nextTakeoverTerminalKeyState: TakeoverTerminalKeyState = {
-    key: nextTakeoverTerminalKey,
-    projectId: composerProjectId,
-    threadId: state.selectedThreadId,
-    sessionPath: terminalSessionPath,
-  }
-
-  updateTakeoverTerminalKey({
+  const takeoverTerminalKey = useTakeoverTerminalIdentity({
+    activeView: state.activeView,
     composerProjectId,
-    nextTakeoverTerminalKey,
-    nextTakeoverTerminalKeyState,
-    state,
     takeoverPresent,
-    takeoverTerminalKeyRef,
     takeoverVisible,
     terminalSessionPath,
+    threadId: activeThreadId,
   })
-
-  const takeoverTerminalKey = takeoverTerminalKeyRef.current?.key ?? nextTakeoverTerminalKey
   const handleOpenGitOpsFromTakeover = useCallback(async () => {
     controllerRef.current.handleOpenGitOpsView()
     await controllerRef.current.handleCloseTakeoverTerminal({
@@ -178,73 +68,6 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
       refreshThread: false,
     })
   }, [controllerRef])
-
-  const previousWindowCompactModeRef = useRef(
-    typeof window === 'undefined' ? false : window.innerWidth <= 1236,
-  )
-  useLayoutEffect(() => {
-    const updateSidebarCompactMode = () => {
-      const nextCompactMode = window.innerWidth <= 1236
-      const enteredCompactMode = !previousWindowCompactModeRef.current && nextCompactMode
-      previousWindowCompactModeRef.current = nextCompactMode
-      if (enteredCompactMode && controllerRef.current.state.terminalVisible) {
-        setTerminalHiddenByCompactResize(true)
-        controllerRef.current.handleCloseTerminalDrawer()
-      }
-      setSidebarCompactMode(nextCompactMode)
-    }
-    updateSidebarCompactMode()
-    window.addEventListener('resize', updateSidebarCompactMode)
-    return () => window.removeEventListener('resize', updateSidebarCompactMode)
-  }, [controllerRef])
-
-  useEffect(() => {
-    if (!sidebarCompactMode) setSidebarOverlayOpen(false)
-  }, [sidebarCompactMode])
-
-  useEffect(() => {
-    if (!state.terminalVisible) setTerminalHiddenByCompactResize(false)
-  }, [state.terminalVisible])
-
-  useEffect(() => {
-    if (!sidebarOverlayOpen) return
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      if (controllerRef.current.state.settingsOpen) return
-      event.preventDefault()
-      event.stopImmediatePropagation()
-      setSidebarOverlayOpen(false)
-    }
-    window.addEventListener('keydown', handleKeyDown, { capture: true })
-    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true })
-  }, [controllerRef, sidebarOverlayOpen])
-
-  const handleToggleSidebar = useCallback(() => {
-    if (sidebarCompactMode) {
-      setSidebarCollapsed(false)
-      setSidebarOverlayOpen((open) => !open)
-      return
-    }
-    setSidebarCollapsed((collapsed) => !collapsed)
-  }, [sidebarCompactMode])
-
-  const handleOpenSidebar = useCallback(() => {
-    setSidebarCollapsed(false)
-    if (sidebarCompactMode) setSidebarOverlayOpen(true)
-  }, [sidebarCompactMode])
-
-  const handleFocusComposer = useCallback(() => {
-    if (!sidebarCompactMode) return
-    setSidebarOverlayOpen(false)
-    if (controllerRef.current.state.terminalVisible) {
-      controllerRef.current.handleCloseTerminalDrawer()
-    }
-  }, [controllerRef, sidebarCompactMode])
-
-  const handleFocusTerminal = useCallback(() => {
-    if (!sidebarCompactMode) return
-    setSidebarOverlayOpen(false)
-  }, [sidebarCompactMode])
 
   useAppKeybindings({
     controller,
@@ -258,40 +81,31 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   return (
     <AppShellLayoutView
       controller={controller}
-      projects={projects}
-      state={state}
-      projectScopeLockActive={projectScopeLockActive}
-      collapsedProjectIds={collapsedProjectIds}
-      handleAction={handleAction}
-      handleShowView={handleShowView}
-      handleToggleSettings={handleToggleSettings}
-      handleProjectSelect={handleProjectSelect}
-      handleSetSelectedProject={handleSetSelectedProject}
-      handleThreadOpen={handleThreadOpen}
-      handleToggleProjectCollapse={handleToggleProjectCollapse}
-      sidebarCollapsed={sidebarCollapsed}
-      sidebarCompactMode={sidebarCompactMode}
-      sidebarOverlayOpen={sidebarOverlayOpen}
-      setSidebarOverlayOpen={setSidebarOverlayOpen}
-      handleToggleSidebar={handleToggleSidebar}
       mainSectionRef={mainSectionRef}
-      takeoverVisible={takeoverVisible}
-      activeComposerState={activeComposerState}
-      activePiExtensionUiState={activePiExtensionUiState}
-      activeThreadData={activeThreadData}
-      composerProjectId={composerProjectId}
-      currentProjectName={currentProjectName}
-      diffBaseline={diffBaseline}
-      diffRenderMode={diffRenderMode}
-      terminalDrawerVisible={terminalDrawerVisible}
-      terminalSessionPath={terminalSessionPath}
+      sidebar={{
+        collapsed: sidebarCollapsed,
+        compactMode: sidebarCompactMode,
+        onOverlayOpenChange: setSidebarOverlayOpen,
+        onToggle: handleToggleSidebar,
+        overlayOpen: sidebarOverlayOpen,
+      }}
+      diff={{
+        baseline: diffBaseline,
+        onBaselineChange: handleSetDiffBaseline,
+        onRenderModeChange: handleSetDiffRenderMode,
+        renderMode: diffRenderMode,
+      }}
+      takeover={{
+        onOpenGitOps: handleOpenGitOpsFromTakeover,
+        present: takeoverPresent,
+        terminalKey: takeoverTerminalKey,
+      }}
+      terminal={{
+        drawerPresent: terminalDrawerPresent,
+        drawerVisible: terminalDrawerVisible,
+        sessionPath: terminalSessionPath,
+      }}
       workspaceContentClass={workspaceContentClass}
-      handleSetDiffBaseline={handleSetDiffBaseline}
-      handleSetDiffRenderMode={handleSetDiffRenderMode}
-      takeoverPresent={takeoverPresent}
-      takeoverTerminalKey={takeoverTerminalKey}
-      handleOpenGitOpsFromTakeover={handleOpenGitOpsFromTakeover}
-      terminalDrawerPresent={terminalDrawerPresent}
     />
   )
 }
