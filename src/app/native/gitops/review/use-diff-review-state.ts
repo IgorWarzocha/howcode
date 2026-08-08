@@ -4,9 +4,13 @@ import type { ProjectDiffBaseline } from '../../../desktop/types'
 import {
   type ReviewAnnotationMetadata,
   reviewTargetToPierreAnnotation,
-  reviewTargetToPierreSelection,
 } from './pierre-review-adapter'
-import type { ReviewDraft, SavedReviewComment } from './review-model'
+import {
+  isSameReviewTarget,
+  type ReviewDraft,
+  type ReviewTarget,
+  type SavedReviewComment,
+} from './review-model'
 import { getReviewContextId, reviewStore } from './review-store'
 
 export function useDiffReviewState({
@@ -56,11 +60,6 @@ export function useDiffReviewState({
   }, [draftComment, hydratedContextId, reviewContextId, savedComments])
 
   const draftTarget = draftComment?.target ?? null
-  const draftSelectedLines = useMemo(
-    () => (draftTarget ? reviewTargetToPierreSelection(draftTarget) : null),
-    [draftTarget],
-  )
-
   const commentAnnotationsByFile = useMemo(() => {
     const next = new Map<string, DiffLineAnnotation<ReviewAnnotationMetadata>[]>()
 
@@ -97,17 +96,6 @@ export function useDiffReviewState({
     return next
   }, [draftTarget, savedComments])
 
-  const annotationCountByFile = useMemo(
-    () =>
-      new Map(
-        Array.from(commentAnnotationsByFile, ([fileKey, annotations]) => [
-          fileKey,
-          annotations.length,
-        ]),
-      ),
-    [commentAnnotationsByFile],
-  )
-
   const persistDraftComment = useCallback(() => {
     const nextBody = draftComment?.body.trim() ?? ''
     if (!draftComment || nextBody.length === 0) return
@@ -132,16 +120,28 @@ export function useDiffReviewState({
     setSavedComments((current) => current.filter((comment) => comment.id !== commentId))
   }, [])
 
+  const openDraftComment = useCallback((target: ReviewTarget) => {
+    setDraftComment((current) => {
+      if (current && isSameReviewTarget(current.target, target)) return current
+      return { target, body: '' }
+    })
+  }, [])
+
+  const cancelDraftComment = useCallback(() => setDraftComment(null), [])
+
   return {
-    annotationCountByFile,
-    commentAnnotationsByFile,
-    draftComment,
-    draftSelectedLines,
-    draftTarget,
-    hasCommentContext: reviewContextId !== null,
-    persistDraftComment,
-    removeComment,
-    savedComments,
-    setDraftComment,
+    annotationsByFile: commentAnnotationsByFile,
+    comments: {
+      items: savedComments,
+      remove: removeComment,
+    },
+    draft: {
+      comment: draftComment,
+      cancel: cancelDraftComment,
+      target: draftTarget,
+      open: openDraftComment,
+      persist: persistDraftComment,
+      set: setDraftComment,
+    },
   }
 }

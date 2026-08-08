@@ -9,6 +9,7 @@ import { diffPanelMainSurfaceClass, diffPanelSplitSurfaceClass } from '../../../
 import { cn } from '../../../utils/cn'
 import type { ReviewAnnotationMetadata } from '../review/pierre-review-adapter'
 import { ReviewAnnotationCard } from '../review/review-annotation-card'
+import type { ReviewCodeViewController } from '../review/review-code-view'
 import { useDiffReviewState } from '../review/use-diff-review-state'
 import {
   buildFileDiffRenderKey,
@@ -16,7 +17,6 @@ import {
   resolveFileDiffPath,
 } from './diff-panel-content.helpers'
 import { DiffPanelContentBody } from './diff-panel-content-body'
-import { useDiffCommentDrafting } from './useDiffCommentDrafting'
 import { useDiffPanelScrollAlignment } from './useDiffPanelScrollAlignment'
 import { useWorkerRenderablePatch } from './useWorkerRenderablePatch'
 
@@ -127,28 +127,7 @@ export function DiffPanelContent({
     selectedFilePathSet,
   ])
 
-  const {
-    commentAnnotationsByFile,
-    draftComment,
-    draftSelectedLines,
-    draftTarget,
-    hasCommentContext,
-    persistDraftComment,
-    removeComment,
-    savedComments,
-    setDraftComment,
-  } = useDiffReviewState({ baseline, includeUntracked, projectId })
-
-  const {
-    clearDragSelection,
-    getFileInteractionHandlers,
-    getSelectedLinesForFile,
-    handleFilePointerDownCapture,
-    openDraftComment,
-  } = useDiffCommentDrafting({
-    draftComment,
-    setDraftComment,
-  })
+  const reviewState = useDiffReviewState({ baseline, includeUntracked, projectId })
 
   useEffect(() => {
     if (showFileTree) {
@@ -160,12 +139,6 @@ export function DiffPanelContent({
     const timeout = window.setTimeout(() => setRenderFileTree(false), 200)
     return () => window.clearTimeout(timeout)
   }, [showFileTree])
-
-  useEffect(() => {
-    if (!hasCommentContext) {
-      clearDragSelection()
-    }
-  }, [clearDragSelection, hasCommentContext])
 
   const toggleFileCollapsed = useCallback(
     (fileKey: string) => {
@@ -181,20 +154,27 @@ export function DiffPanelContent({
     <ReviewAnnotationCard
       annotation={annotation}
       draftCardRef={draftCardRef}
-      draftComment={draftComment}
-      setDraftComment={setDraftComment}
-      onPersistDraftComment={persistDraftComment}
-      onRemoveComment={removeComment}
+      draftComment={reviewState.draft.comment}
+      setDraftComment={reviewState.draft.set}
+      onPersistDraftComment={reviewState.draft.persist}
+      onRemoveComment={reviewState.comments.remove}
     />
   )
+  const codeViewReview: ReviewCodeViewController = {
+    annotationsByFile: reviewState.annotationsByFile,
+    draftTarget: reviewState.draft.target,
+    cancelDraft: reviewState.draft.cancel,
+    openDraft: reviewState.draft.open,
+    renderAnnotation: renderCommentAnnotation,
+  }
 
   useDiffPanelScrollAlignment({
     collapsedFiles,
     draftCardRef,
-    draftTarget,
+    draftTarget: reviewState.draft.target,
     codeViewRef,
     renderableFiles: visibleRenderableFiles,
-    savedComments,
+    savedComments: reviewState.comments.items,
     scrollContainerRef,
     selectedCommentId,
     selectedCommentJumpKey,
@@ -210,38 +190,38 @@ export function DiffPanelContent({
       {...getFeatureStatusDataAttributes('feature:diff.panel')}
     >
       <DiffPanelContentBody
-        baseline={baseline}
-        codeViewRef={codeViewRef}
-        collapsedFiles={collapsedFiles}
-        commentAnnotationsByFile={
-          commentAnnotationsByFile as Map<string, DiffLineAnnotation<ReviewAnnotationMetadata>[]>
-        }
-        diff={diff}
-        diffRenderMode={diffRenderMode}
-        draftSelectedLines={draftSelectedLines}
-        error={error}
-        focusedImageFileKeys={focusedImageFileKeys}
-        focusedFilePaths={focusedFilePaths}
-        getFileInteractionHandlers={getFileInteractionHandlers}
-        getSelectedLinesForFile={getSelectedLinesForFile}
-        handleFilePointerDownCapture={handleFilePointerDownCapture}
-        hasFocusedFiles={hasFocusedFiles}
-        hasNoNetChanges={hasNoNetChanges}
-        hasResolvedPatch={hasResolvedPatch}
-        isGitRepo={isGitRepo}
-        isLoading={isLoading}
-        loading={loading}
-        openDraftComment={openDraftComment}
         projectId={projectId}
-        renderCommentAnnotation={renderCommentAnnotation}
-        renderableFiles={renderableFiles}
-        renderablePatch={renderablePatch}
-        renderFileTree={renderFileTree}
-        scrollContainerRef={scrollContainerRef}
-        setFocusedFilePaths={setFocusedFilePaths}
-        showFileTree={showFileTree}
-        toggleFileCollapsed={toggleFileCollapsed}
-        visibleRenderableFiles={visibleRenderableFiles}
+        diff={{
+          baseline,
+          error,
+          hasNoNetChanges,
+          hasResolvedPatch,
+          isGitRepo,
+          isLoading,
+          loading,
+          renderablePatch,
+          result: diff,
+        }}
+        files={{
+          all: renderableFiles,
+          collapsed: collapsedFiles,
+          focusedImageKeys: focusedImageFileKeys,
+          toggleCollapsed: toggleFileCollapsed,
+          visible: visibleRenderableFiles,
+        }}
+        fileTree={{
+          focusedPaths: focusedFilePaths,
+          hasFocusedFiles,
+          render: renderFileTree,
+          setFocusedPaths: setFocusedFilePaths,
+          show: showFileTree,
+        }}
+        codeView={{
+          ref: codeViewRef,
+          renderMode: diffRenderMode,
+          review: codeViewReview,
+          scrollContainerRef,
+        }}
       />
     </aside>
   )

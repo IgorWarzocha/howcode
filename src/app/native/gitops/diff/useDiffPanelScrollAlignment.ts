@@ -1,7 +1,10 @@
 import type { CodeViewHandle, FileDiffMetadata } from '@pierre/diffs/react'
 import { useEffect } from 'react'
-import type { ReviewAnnotationMetadata } from '../review/pierre-review-adapter'
-import type { LineRangeReviewTarget, SavedReviewComment } from '../review/review-model'
+import {
+  type ReviewAnnotationMetadata,
+  reviewTargetToPierreSelection,
+} from '../review/pierre-review-adapter'
+import type { ReviewTarget, SavedReviewComment } from '../review/review-model'
 import { alignElementInScrollViewport, buildFileDiffRenderKey } from './diff-panel-content.helpers'
 
 function getDatasetValue(element: HTMLElement, key: string) {
@@ -23,7 +26,7 @@ export function useDiffPanelScrollAlignment({
 }: {
   collapsedFiles: Record<string, boolean>
   draftCardRef: React.RefObject<HTMLDivElement | null>
-  draftTarget: LineRangeReviewTarget | { kind: 'file'; fileKey: string; filePath: string } | null
+  draftTarget: ReviewTarget | null
   codeViewRef: React.RefObject<CodeViewHandle<ReviewAnnotationMetadata> | null>
   renderableFiles: FileDiffMetadata[]
   savedComments: SavedReviewComment[]
@@ -80,16 +83,27 @@ export function useDiffPanelScrollAlignment({
       return
     }
 
-    const selectedFileIndex = renderableFiles.findIndex(
+    const selectedFileExists = renderableFiles.some(
       (fileDiff) => buildFileDiffRenderKey(fileDiff) === selectedComment.target.fileKey,
     )
-    if (selectedFileIndex >= 0) {
-      codeViewRef.current?.scrollTo({
-        type: 'item',
-        id: selectedComment.target.fileKey,
-        align: 'center',
-        behavior: 'instant',
-      })
+    if (selectedFileExists) {
+      const range = reviewTargetToPierreSelection(selectedComment.target)
+      codeViewRef.current?.scrollTo(
+        range
+          ? {
+              type: 'range',
+              id: selectedComment.target.fileKey,
+              range,
+              align: 'center',
+              behavior: 'instant',
+            }
+          : {
+              type: 'item',
+              id: selectedComment.target.fileKey,
+              align: 'center',
+              behavior: 'instant',
+            },
+      )
     }
 
     let cancelled = false

@@ -5,7 +5,6 @@ export {
   DIFF_PANEL_UNSAFE_CSS,
 } from './diff-panel-content.constants'
 export { alignElementInScrollViewport } from './diff-panel-content.layout'
-export { resolvePointerLineTarget } from './diff-panel-content.pointer'
 export {
   buildFileDiffRenderKey,
   describeCollapsedLines,
