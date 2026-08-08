@@ -1,4 +1,4 @@
-import type { BranchThreadGroup } from './project-work-model'
+import type { BranchThreadGroup } from './branch-group-model'
 
 export function canCreateWorktreeFromBranchGroup(group: BranchThreadGroup) {
   return group.current

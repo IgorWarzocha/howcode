@@ -1,5 +1,5 @@
 import { canCreateWorktreeFromBranchGroup } from './branch-group-layout'
-import type { BranchThreadGroup } from './project-work-model'
+import type { BranchThreadGroup } from './branch-group-model'
 
 export type BranchActionCapabilities = {
   canPrune: boolean

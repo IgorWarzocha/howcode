@@ -3,7 +3,7 @@ import {
   getBranchActionCapabilities,
   getBranchActionCount,
 } from '../app/components/sidebar/project-work/branch-action-capabilities'
-import type { BranchThreadGroup } from '../app/components/sidebar/project-work/project-work-model'
+import type { BranchThreadGroup } from '../app/components/sidebar/project-work/branch-group-model'
 
 function branchGroup(overrides: Partial<BranchThreadGroup> = {}): BranchThreadGroup {
   return {

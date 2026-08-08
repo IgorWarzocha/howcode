@@ -7,9 +7,9 @@ import {
   shouldShowBranchGroupDividerAfter,
   shouldShowBranchGroupDividerBefore,
 } from './branch-group-layout'
+import type { BranchThreadGroup, WorktreeBranch } from './branch-group-model'
 import { BranchInlineActions, BranchSessionCount } from './branch-row-actions'
 import { BranchThreadGroupSection } from './branch-thread-groups'
-import type { BranchThreadGroup, WorktreeBranch } from './project-work-model'
 import { ProjectWorkThreadRow } from './project-work-thread-row'
 
 function getCompletedWorktreesForCompactCurrentBranch(

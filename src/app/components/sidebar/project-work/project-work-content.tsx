@@ -6,21 +6,23 @@ import type { Project, View } from '../../../types'
 import { appToneSubtleClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { shouldSeparateBranchGroups } from './branch-group-layout'
-import { BranchThreadGroupSection } from './branch-thread-groups'
-import { NewThreadMenu } from './new-thread-menu'
-import { ProjectWorkActionsMenuButton } from './project-work-actions-menu'
-import { ProjectWorkSummaryBlock } from './project-work-block'
-import { SearchHistoryField } from './project-work-fields'
 import {
   type BranchThreadGroup,
   buildBranchGroups,
+  UNASSIGNED_BRANCH_GROUP_ID,
+} from './branch-group-model'
+import { BranchThreadGroupSection } from './branch-thread-groups'
+import { NewThreadMenu } from './new-thread-menu'
+import {
   getCurrentBranchForProject,
   getRepositoryBranchesForProject,
-  getThreadBucketsForProjectWork,
   getWorktreeBranchesForProject,
   hasUncommittedProjectChanges,
-  UNASSIGNED_BRANCH_GROUP_ID,
-} from './project-work-model'
+} from './project-git-model'
+import { getThreadBucketsForProjectWork } from './project-thread-model'
+import { ProjectWorkActionsMenuButton } from './project-work-actions-menu'
+import { ProjectWorkSummaryBlock } from './project-work-block'
+import { SearchHistoryField } from './project-work-fields'
 import { ProjectWorkThreadRow } from './project-work-thread-row'
 
 function ProjectDashboardButton({

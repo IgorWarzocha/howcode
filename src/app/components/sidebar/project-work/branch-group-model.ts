@@ -1,84 +1,7 @@
-import type { ProjectGitState } from '../../../desktop/types'
-import type { Project, Thread } from '../../../types'
+import type { Thread } from '../../../types'
+import { type SidebarThread, sortThreads } from './project-thread-model'
 
-const OLD_THREAD_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000
-const pathSeparatorPattern = /[\\/]/
 export const UNASSIGNED_BRANCH_GROUP_ID = '__unassigned__'
-export function getProjectScopeLabel({
-  selectedProject,
-  visibleProjects,
-}: {
-  selectedProject: Project | null
-  visibleProjects: readonly Project[]
-}) {
-  if (visibleProjects.length === 0) return 'No projects selected'
-  const primaryVisibleProject =
-    visibleProjects.find((project) => project.id === selectedProject?.id) ?? visibleProjects[0]
-  const primaryProjectName = primaryVisibleProject?.name ?? selectedProject?.name ?? 'Projects'
-  return visibleProjects.length > 1
-    ? `${primaryProjectName} +${visibleProjects.length - 1}`
-    : primaryProjectName
-}
-
-export function getDisplayableProjects(projects: readonly Project[]) {
-  return projects.filter(
-    (project) =>
-      project.id.trim().length > 0 &&
-      project.name.trim().length > 0 &&
-      project.worktree?.isMain !== false,
-  )
-}
-
-export function getDisplayableWorkspaces(projects: readonly Project[]) {
-  return projects.filter(
-    (project) => project.id.trim().length > 0 && project.name.trim().length > 0,
-  )
-}
-
-export function orderProjectsForScopeSelector(
-  projects: readonly Project[],
-  visibleProjectIds: string[],
-) {
-  const visibleIndexById = new Map(visibleProjectIds.map((projectId, index) => [projectId, index]))
-  return projects.toSorted((left, right) => {
-    const leftIndex = visibleIndexById.get(left.id)
-    const rightIndex = visibleIndexById.get(right.id)
-    if (leftIndex !== undefined && rightIndex !== undefined) return leftIndex - rightIndex
-    if (leftIndex !== undefined) return -1
-    if (rightIndex !== undefined) return 1
-    return 0
-  })
-}
-
-export function projectBlockMatchesSearch(input: {
-  branchGroups: BranchThreadGroup[]
-  normalizedSearchQuery: string
-  projectName: string
-}) {
-  if (input.normalizedSearchQuery.length === 0) return true
-  return (
-    input.projectName.toLowerCase().includes(input.normalizedSearchQuery) ||
-    input.branchGroups.length > 0
-  )
-}
-
-export function getVisibleProjectIds(
-  storedVisibleProjectIds: string[] | null,
-  initialVisibleProjectIds: string[] | null | undefined,
-  selectedProject: Project | null,
-) {
-  if (storedVisibleProjectIds) return storedVisibleProjectIds
-  if (initialVisibleProjectIds) return initialVisibleProjectIds
-  if (storedVisibleProjectIds === null && initialVisibleProjectIds === null) {
-    return selectedProject ? [selectedProject.id] : []
-  }
-  return []
-}
-
-export type ThreadBuckets = {
-  activeThreads: Thread[]
-  olderThreads: Thread[]
-}
 
 export type BranchThreadGroup = {
   id: string
@@ -105,11 +28,6 @@ export type WorktreeBranch = {
 export type WorktreeBranchGroup = WorktreeBranch & {
   id: string
   threads: Thread[]
-}
-
-type SidebarThread = Thread & {
-  sidebarWorktreePath?: string | undefined
-  sidebarWorktreeLabel?: string | undefined
 }
 
 type GroupedSidebarThreads = {
@@ -190,14 +108,6 @@ function createBranchThreadGroup(input: {
   }
 }
 
-function getThreadSortValue(thread: Thread) {
-  return thread.lastModifiedMs ?? 0
-}
-
-export function sortThreads(threads: Thread[]) {
-  return threads.toSorted((a, b) => getThreadSortValue(b) - getThreadSortValue(a))
-}
-
 function groupSidebarThreads(threads: readonly SidebarThread[]): GroupedSidebarThreads {
   const groupedThreads = new Map<string, SidebarThread[]>()
   const groupedWorktreeThreads = new Map<string, Map<string, SidebarThread[]>>()
@@ -238,6 +148,7 @@ function collectBranchNames(input: {
     const normalizedBranch = branch.trim()
     if (normalizedBranch) branchNames.add(normalizedBranch)
   }
+
   for (const branchName of input.groupedThreads.keys()) branchNames.add(branchName)
   if (input.currentBranch) branchNames.add(input.currentBranch)
   for (const branchName of input.worktreesByBranch.keys()) branchNames.add(branchName)
@@ -319,30 +230,6 @@ function addBulkCompletedWorktreesToCurrentBranch(
   return groups.map((group, index) =>
     index === currentGroupIndex ? { ...group, completedWorktrees } : group,
   )
-}
-
-export function bucketThreads(project: Project, selectedThreadId: string | null): ThreadBuckets {
-  const sortedThreads = sortThreads(project.threads)
-  const cutoffMs = Date.now() - OLD_THREAD_THRESHOLD_MS
-  const activeThreads: Thread[] = []
-  const olderThreads: Thread[] = []
-
-  for (const thread of sortedThreads) {
-    const shouldKeepVisible =
-      thread.id === selectedThreadId ||
-      Boolean(thread.pinned) ||
-      Boolean(thread.running) ||
-      Boolean(thread.unread) ||
-      (thread.lastModifiedMs ?? Number.MAX_SAFE_INTEGER) >= cutoffMs
-
-    if (shouldKeepVisible) {
-      activeThreads.push(thread)
-    } else {
-      olderThreads.push(thread)
-    }
-  }
-
-  return { activeThreads, olderThreads }
 }
 
 export function buildBranchGroups(
@@ -430,6 +317,13 @@ export function buildBranchGroups(
   return addBulkCompletedWorktreesToCurrentBranch(groups, currentBranch)
 }
 
+function threadMatchesSearch(thread: Thread, groupLabel: string, searchQuery: string) {
+  return [thread.title, thread.summary ?? '', thread.branchName ?? groupLabel]
+    .join(' ')
+    .toLowerCase()
+    .includes(searchQuery)
+}
+
 export function filterBranchGroups(groups: BranchThreadGroup[], searchQuery: string) {
   const normalizedSearchQuery = searchQuery.trim().toLowerCase()
   if (!normalizedSearchQuery) return groups
@@ -438,18 +332,12 @@ export function filterBranchGroups(groups: BranchThreadGroup[], searchQuery: str
     const filteredGroup = {
       ...group,
       threads: group.threads.filter((thread) =>
-        [thread.title, thread.summary ?? '', thread.branchName ?? group.label]
-          .join(' ')
-          .toLowerCase()
-          .includes(normalizedSearchQuery),
+        threadMatchesSearch(thread, group.label, normalizedSearchQuery),
       ),
       worktrees: group.worktrees.map((worktree) => ({
         ...worktree,
         threads: worktree.threads.filter((thread) =>
-          [thread.title, thread.summary ?? '', thread.branchName ?? group.label]
-            .join(' ')
-            .toLowerCase()
-            .includes(normalizedSearchQuery),
+          threadMatchesSearch(thread, group.label, normalizedSearchQuery),
         ),
       })),
     }
@@ -459,15 +347,24 @@ export function filterBranchGroups(groups: BranchThreadGroup[], searchQuery: str
         (worktree) =>
           worktree.label.toLowerCase().includes(normalizedSearchQuery) ||
           worktree.threads.some((thread) =>
-            [thread.title, thread.summary ?? '', thread.branchName ?? group.label]
-              .join(' ')
-              .toLowerCase()
-              .includes(normalizedSearchQuery),
+            threadMatchesSearch(thread, group.label, normalizedSearchQuery),
           ),
       )
       ? [filteredGroup]
       : []
   })
+}
+
+export function projectBlockMatchesSearch(input: {
+  branchGroups: BranchThreadGroup[]
+  normalizedSearchQuery: string
+  projectName: string
+}) {
+  if (input.normalizedSearchQuery.length === 0) return true
+  return (
+    input.projectName.toLowerCase().includes(input.normalizedSearchQuery) ||
+    input.branchGroups.length > 0
+  )
 }
 
 export function branchGroupBelongsToBranch(group: BranchThreadGroup, branchName: string | null) {
@@ -482,127 +379,5 @@ export function branchGroupBelongsToBranch(group: BranchThreadGroup, branchName:
   }
   return group.worktrees.some(
     (worktree) => (worktree.branchName ?? worktree.label).trim() === normalizedBranchName,
-  )
-}
-
-export function getProjectGitStateForSidebar(
-  projectId: string,
-  projectGitState: ProjectGitState | null,
-  gitStatesByProjectId: ReadonlyMap<string, ProjectGitState | null>,
-) {
-  if (projectGitState?.projectId === projectId) return projectGitState
-  return gitStatesByProjectId.get(projectId) ?? null
-}
-
-export function getCurrentBranchForProject(
-  project: Project,
-  projectGitState: ProjectGitState | null,
-  gitStatesByProjectId: ReadonlyMap<string, ProjectGitState | null>,
-) {
-  const gitState = getProjectGitStateForSidebar(project.id, projectGitState, gitStatesByProjectId)
-  return gitState?.isGitRepo ? gitState.branch : null
-}
-
-export function getRepositoryBranchesForProject(
-  project: Project,
-  projectGitState: ProjectGitState | null,
-  gitStatesByProjectId: ReadonlyMap<string, ProjectGitState | null>,
-) {
-  const gitState = getProjectGitStateForSidebar(project.id, projectGitState, gitStatesByProjectId)
-  return gitState?.isGitRepo ? gitState.branches : []
-}
-
-export function hasUncommittedProjectChanges(projectGitState: ProjectGitState | null) {
-  return Boolean(
-    projectGitState &&
-      (projectGitState.stagedFileCount > 0 ||
-        projectGitState.unstagedFileCount > 0 ||
-        projectGitState.untrackedFileCount > 0),
-  )
-}
-
-export function getWorktreeBranchesForProject(
-  project: Project,
-  projects: readonly Project[],
-  projectGitState: ProjectGitState | null,
-  gitStatesByProjectId: ReadonlyMap<string, ProjectGitState | null>,
-): WorktreeBranch[] {
-  if (project.worktree && !project.worktree.isMain) return []
-
-  const gitState = getProjectGitStateForSidebar(project.id, projectGitState, gitStatesByProjectId)
-  if (!gitState?.isGitRepo) return []
-  const rootProjectId = project.worktree?.rootProjectId ?? project.id
-  const projectById = new Map(projects.map((candidate) => [candidate.id, candidate]))
-
-  return gitState.worktrees.flatMap((worktree) =>
-    worktree.path !== project.id && worktree.path !== rootProjectId
-      ? [
-          {
-            label:
-              worktree.branch ??
-              worktree.path.split(pathSeparatorPattern).filter(Boolean).at(-1) ??
-              worktree.path,
-            path: worktree.path,
-            branchName: worktree.branch ?? null,
-            parentBranchName: projectById.get(worktree.path)?.worktree?.parentBranchName ?? null,
-            complete: projectById.get(worktree.path)?.worktree?.completed ?? false,
-          },
-        ]
-      : [],
-  )
-}
-
-export function getWorktreeProjectsForRoot(project: Project, projects: readonly Project[]) {
-  return projects.filter(
-    (candidate) =>
-      candidate.id !== project.id &&
-      candidate.worktree?.rootProjectId === project.id &&
-      candidate.worktree.isMain === false,
-  )
-}
-
-export function getThreadBucketsForProjectWork(
-  project: Project,
-  projects: readonly Project[],
-  selectedThreadId: string | null,
-) {
-  const rootBuckets = bucketThreads(project, selectedThreadId)
-  const worktreeBuckets = getWorktreeProjectsForRoot(project, projects).reduce(
-    (buckets, worktreeProject) => {
-      const nextBuckets = bucketThreads(worktreeProject, selectedThreadId)
-      const annotateThread = (thread: Thread): SidebarThread => ({
-        ...thread,
-        sidebarWorktreePath: worktreeProject.id,
-        sidebarWorktreeLabel: worktreeProject.worktree?.branchName ?? worktreeProject.name,
-        branchName: worktreeProject.worktree?.branchName ?? thread.branchName ?? undefined,
-      })
-      buckets.activeThreads.push(...nextBuckets.activeThreads.map(annotateThread))
-      buckets.olderThreads.push(...nextBuckets.olderThreads.map(annotateThread))
-      return buckets
-    },
-    { activeThreads: [...rootBuckets.activeThreads], olderThreads: [...rootBuckets.olderThreads] },
-  )
-  return {
-    activeThreads: sortThreads(worktreeBuckets.activeThreads),
-    olderThreads: sortThreads(worktreeBuckets.olderThreads),
-  }
-}
-
-export function filterThreadsForCurrentBranch(
-  threads: readonly Thread[],
-  currentBranch: string | null,
-) {
-  if (!currentBranch) return []
-  return sortThreads(threads.filter((thread) => thread.branchName === currentBranch))
-}
-
-export function filterThreadsBySearch(threads: readonly Thread[], searchQuery: string) {
-  const normalizedSearchQuery = searchQuery.trim().toLowerCase()
-  if (!normalizedSearchQuery) return [...threads]
-  return threads.filter((thread) =>
-    [thread.title, thread.summary ?? '', thread.branchName ?? '']
-      .join(' ')
-      .toLowerCase()
-      .includes(normalizedSearchQuery),
   )
 }

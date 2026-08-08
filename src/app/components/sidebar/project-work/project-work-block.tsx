@@ -4,21 +4,23 @@ import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project, Thread, View } from '../../../types'
 import { appToneSubtleClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { ProjectExpandedBranchGroups } from './branch-thread-groups'
-import { ProjectCompactBranchGroups } from './compact-branch-groups'
-import { NewThreadMenu } from './new-thread-menu'
-import { ProjectBrandIcon } from './project-brand-icon'
-import { ProjectWorkActionsMenuButton } from './project-work-actions-menu'
-import { ProjectRenameField } from './project-work-fields'
 import {
   type BranchThreadGroup,
   branchGroupBelongsToBranch,
   filterBranchGroups,
+  projectBlockMatchesSearch,
+} from './branch-group-model'
+import { ProjectExpandedBranchGroups } from './branch-thread-groups'
+import { ProjectCompactBranchGroups } from './compact-branch-groups'
+import { NewThreadMenu } from './new-thread-menu'
+import { ProjectBrandIcon } from './project-brand-icon'
+import {
   filterThreadsBySearch,
   filterThreadsForCurrentBranch,
-  projectBlockMatchesSearch,
   sortThreads,
-} from './project-work-model'
+} from './project-thread-model'
+import { ProjectWorkActionsMenuButton } from './project-work-actions-menu'
+import { ProjectRenameField } from './project-work-fields'
 import { ProjectWorkThreadRow } from './project-work-thread-row'
 
 function ProjectWorkBlockHeader({

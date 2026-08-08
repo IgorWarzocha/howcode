@@ -6,7 +6,7 @@ import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project } from '../../../types'
 import { SidebarActionTooltip } from '../sidebar-action-tooltip'
 import { SidebarInlineConfirmPopunder } from '../sidebar-inline-confirm-popunder'
-import type { BranchThreadGroup } from './project-work-model'
+import type { BranchThreadGroup } from './branch-group-model'
 
 export function BranchSwitchAction({
   blocked,

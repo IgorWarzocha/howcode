@@ -16,9 +16,9 @@ import {
   WorktreeCompletionAction,
   WorktreeMergeAction,
 } from './branch-actions'
+import type { BranchThreadGroup } from './branch-group-model'
 import { getWorktreeParentBranchName } from './branch-row-helpers'
 import { createThreadForBranch, createThreadInWorktreeForBranch } from './new-thread-actions'
-import type { BranchThreadGroup } from './project-work-model'
 import { useProjectWorkRowMenu } from './useProjectWorkRowMenu'
 
 function getStartThreadBranchName(group: BranchThreadGroup, currentBranch: string | null) {

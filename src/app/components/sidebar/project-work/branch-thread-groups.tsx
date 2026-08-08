@@ -10,9 +10,9 @@ import {
   shouldShowBranchGroupDividerAfter,
   shouldShowBranchGroupDividerBefore,
 } from './branch-group-layout'
+import type { BranchThreadGroup, WorktreeBranchGroup } from './branch-group-model'
 import { BranchInlineActions, BranchSessionCount } from './branch-row-actions'
 import { createThreadForBranch } from './new-thread-actions'
-import type { BranchThreadGroup, WorktreeBranchGroup } from './project-work-model'
 import { ProjectWorkThreadRow } from './project-work-thread-row'
 
 const dirtyBranchSwitchMessage = 'Worktree is dirty. Commit first.'

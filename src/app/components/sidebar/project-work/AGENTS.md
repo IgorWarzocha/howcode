@@ -1,3 +1,4 @@
 - Compact and expanded sidebar paths mirror each other. Fix both.
+- Keep sidebar derivation in its owned model: `project-scope-model.ts`, `project-git-model.ts`, `project-thread-model.ts`, or `branch-group-model.ts`; do not recreate a catch-all project-work model.
 - `branch-action-capabilities.ts` owns branch-row action policy; confirmations and failures stay row-local rather than drilling state IDs through project containers.
 - `useProjectWorkRowMenu` owns project-work menu dismissal and row geometry; do not recreate document listeners or measurement effects in menu components.

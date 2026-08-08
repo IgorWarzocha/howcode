@@ -7,26 +7,29 @@ import type { AppSettings, DesktopActionInvoker, ProjectGitState } from '../../.
 import { desktopQueryKeys, getProjectGitStateQuery } from '../../../query/desktop-query'
 import type { Project, View } from '../../../types'
 import { SidebarProjectsSkeleton } from '../sidebar-skeletons'
-import { ProjectInstallTargetList } from './project-install-target-list'
-import { ProjectScopeSelector } from './project-scope-selector'
-import { MultiProjectWorkContent, SingleProjectWorkContent } from './project-work-content'
 import {
   buildBranchGroups,
   filterBranchGroups,
+  UNASSIGNED_BRANCH_GROUP_ID,
+} from './branch-group-model'
+import {
   getCurrentBranchForProject,
+  getProjectGitStateForSidebar,
+  getRepositoryBranchesForProject,
+  getWorktreeBranchesForProject,
+  hasUncommittedProjectChanges,
+} from './project-git-model'
+import { ProjectInstallTargetList } from './project-install-target-list'
+import {
   getDisplayableProjects,
   getDisplayableWorkspaces,
-  getProjectGitStateForSidebar,
   getProjectScopeLabel,
-  getRepositoryBranchesForProject,
-  getThreadBucketsForProjectWork,
   getVisibleProjectIds,
-  getWorktreeBranchesForProject,
-  getWorktreeProjectsForRoot,
-  hasUncommittedProjectChanges,
   orderProjectsForScopeSelector,
-  UNASSIGNED_BRANCH_GROUP_ID,
-} from './project-work-model'
+} from './project-scope-model'
+import { ProjectScopeSelector } from './project-scope-selector'
+import { getThreadBucketsForProjectWork, getWorktreeProjectsForRoot } from './project-thread-model'
+import { MultiProjectWorkContent, SingleProjectWorkContent } from './project-work-content'
 
 type ProjectWorkSectionProps = {
   activeView: View
