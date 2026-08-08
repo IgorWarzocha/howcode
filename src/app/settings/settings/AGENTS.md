@@ -1,2 +1,5 @@
 - Keep action status/result/error text on the same `SettingRow`, immediately left of its right-aligned control.
 - Stack it below only when the whole setting deliberately uses a multi-line layout.
+- `settingsDescriptors` is the registry; domain builders own descriptor copy and controls. Do not add domain branches to `SettingsView`.
+- Keep controller state nested under `app`, `models`, `projects`, or `dictation`; Pi draft persistence belongs to `useDraftPiSettings`.
+- Reuse `SettingsSegmentedControl` for finite string choices instead of tuple maps and casts.

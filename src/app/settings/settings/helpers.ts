@@ -1,15 +1,7 @@
-import type {
-  DesktopActionResult,
-  DesktopSettingsUpdatePayload,
-  ModelSelection,
-} from '../../desktop/types'
+import type { DesktopActionResult, DesktopSettingsUpdatePayload } from '../../desktop/types'
 
 export function getActionError(result: DesktopActionResult | null) {
   return typeof result?.result?.error === 'string' ? result.result.error : null
-}
-
-export function getModelSettingValue(selection: ModelSelection | null) {
-  return selection ? `${selection.provider}/${selection.id}` : 'Use composer model'
 }
 
 export function buildModelSelectionPayload(

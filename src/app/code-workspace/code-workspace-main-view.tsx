@@ -245,7 +245,6 @@ export function CodeWorkspaceMainView({
         availableModels={availableModels}
         availableThinkingLevels={availableThinkingLevels}
         currentModel={currentModel}
-        projects={projects}
         openTarget={settingsOpenTarget}
         onAction={onAction}
         onClose={onCloseUtilityView}

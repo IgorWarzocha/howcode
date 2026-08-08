@@ -1,7 +1,6 @@
 import type { AppSettings } from '../../desktop/types'
-import { appToneMutedClass, appTypeSmallClass } from '../../ui/classes'
-import { cn } from '../../utils/cn'
 import type { SettingsController } from './settingsDescriptorTypes'
+import { SettingsSegmentedControl } from './settingsSegmentedControl'
 import type { SettingDescriptor } from './settingsTypes'
 import { ToggleBox } from './settingsUi'
 
@@ -21,32 +20,16 @@ export function buildCommonSettingsDescriptors({
       keywords: 'queue steer stop streaming responding send composer',
       render: () => (
         <div className="min-w-0 sm:min-w-[13rem]">
-          <div
-            className={`grid grid-cols-3 rounded-lg bg-[color:var(--surface-hover)] p-[3px] ${appTypeSmallClass} ${appToneMutedClass}`}
-          >
-            {[
-              ['steer', 'Steer'],
-              ['followUp', 'Queue'],
-              ['stop', 'Stop'],
-            ].map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                className={cn(
-                  'rounded-md px-2.5 py-1 transition-colors hover:bg-[color:var(--surface-hover)] active:scale-[0.98]',
-                  appSettings.composerStreamingBehavior === value &&
-                    'bg-[color:var(--folded-row-hover-bg)] text-[color:var(--text)]',
-                )}
-                onClick={() =>
-                  controller.setComposerStreamingBehavior(
-                    value as AppSettings['composerStreamingBehavior'],
-                  )
-                }
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <SettingsSegmentedControl
+            columnsClassName="grid-cols-3"
+            value={appSettings.composerStreamingBehavior}
+            options={[
+              { value: 'steer', label: 'Steer' },
+              { value: 'followUp', label: 'Queue' },
+              { value: 'stop', label: 'Stop' },
+            ]}
+            onChange={controller.app.setComposerStreamingBehavior}
+          />
         </div>
       ),
     },
@@ -60,7 +43,7 @@ export function buildCommonSettingsDescriptors({
         <ToggleBox
           checked={appSettings.piTuiTakeover}
           label="Open in TUI"
-          onClick={controller.togglePiTuiTakeover}
+          onClick={controller.app.togglePiTuiTakeover}
         />
       ),
     },
@@ -74,7 +57,7 @@ export function buildCommonSettingsDescriptors({
         <ToggleBox
           checked={appSettings.hideSidebarSessionCounts}
           label="Hide sidebar counts"
-          onClick={controller.toggleHideSidebarSessionCounts}
+          onClick={controller.app.toggleHideSidebarSessionCounts}
         />
       ),
     },
@@ -88,7 +71,7 @@ export function buildCommonSettingsDescriptors({
         <ToggleBox
           checked={appSettings.hoverToFocus}
           label="Hover to type"
-          onClick={controller.toggleHoverToFocus}
+          onClick={controller.app.toggleHoverToFocus}
         />
       ),
     },
@@ -102,7 +85,7 @@ export function buildCommonSettingsDescriptors({
         <ToggleBox
           checked={appSettings.hoverToBlur}
           label="Stop typing on hover leave"
-          onClick={controller.toggleHoverToBlur}
+          onClick={controller.app.toggleHoverToBlur}
         />
       ),
     },
