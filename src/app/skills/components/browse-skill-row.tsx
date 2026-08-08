@@ -1,7 +1,7 @@
 import { ArrowUpRight, Check, Sparkles } from 'lucide-react'
+import type { Dispatch, SetStateAction } from 'react'
 import { CompactMetaRow } from '../../common/compact-meta-row'
 import { Tooltip } from '../../common/tooltip'
-import type { PiPackageCatalogItem } from '../../desktop/types'
 import { openPiResourceUrl } from '../../pi-resources/open-pi-resource-url'
 import {
   appToneMutedClass,
@@ -10,81 +10,78 @@ import {
   viewCloseButtonClass,
 } from '../../ui/classes'
 import { cn } from '../../utils/cn'
-import { formatDownloads, pickSafeExternalUrl } from '../utils'
+import type { SkillCatalogItem } from '../skill-catalog'
+import { formatInstalls, getCatalogSkillSource } from '../utils'
 
-type CatalogItemRowProps = {
-  item: PiPackageCatalogItem
-  selected: boolean
-  installed: boolean
-  pendingInstall: boolean
-  onToggleSelected: (source: string) => void
-}
-
-export function CatalogItemRow({
+export function BrowseSkillRow({
+  installed,
+  isPendingInstall,
   item,
   selected,
-  installed,
-  pendingInstall,
-  onToggleSelected,
-}: CatalogItemRowProps) {
-  const externalUrl = pickSafeExternalUrl([item.repositoryUrl, item.homepageUrl, item.npmUrl])
+  setSelectedSources,
+}: {
+  installed: boolean
+  isPendingInstall: (source: string) => boolean
+  item: SkillCatalogItem
+  selected: boolean
+  setSelectedSources: Dispatch<SetStateAction<string[]>>
+}) {
+  const pendingInstall = isPendingInstall(getCatalogSkillSource(item))
   const selectionLabel = selected ? `Deselect ${item.name}` : `Select ${item.name} for install`
-
   return (
     <CompactMetaRow
       selected={selected}
       density="dense"
       actions={
-        <CatalogItemRowActions
+        <BrowseSkillRowActions
           installed={installed}
           item={item}
           pendingInstall={pendingInstall}
           selected={selected}
           selectionLabel={selectionLabel}
-          onToggleSelected={onToggleSelected}
+          setSelectedSources={setSelectedSources}
         />
       }
-      contentClassName={`grid grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-baseline gap-1.5 overflow-hidden ${appTypeGroupTextClass}`}
+      contentClassName={`grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-baseline gap-1.5 overflow-hidden ${appTypeGroupTextClass}`}
     >
-      {externalUrl ? (
-        <Tooltip content={externalUrl} contentClassName="max-w-[420px]">
-          <button
-            type="button"
-            className="group inline-flex shrink-0 items-center gap-0.5 p-0"
-            onClick={() => void openPiResourceUrl(externalUrl)}
-            aria-label={`Open ${item.name}`}
+      <Tooltip content={item.url} contentClassName="max-w-[420px]">
+        <button
+          type="button"
+          className="group inline-flex shrink-0 items-center gap-0.5 p-0"
+          onClick={() => void openPiResourceUrl(item.url)}
+          aria-label={`Open ${item.name}`}
+        >
+          <span
+            className={cn(
+              `${appTypeGroupTextClass} ${appToneTextClass}`,
+              'transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]',
+            )}
           >
-            <span
-              className={cn(
-                `${appTypeGroupTextClass} ${appToneTextClass}`,
-                'transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]',
-              )}
-            >
-              {item.name}
-            </span>
-            <ArrowUpRight
-              size={12}
-              className="shrink-0 text-[color:var(--muted)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]"
-            />
-          </button>
-        </Tooltip>
-      ) : (
-        <span className={`${appTypeGroupTextClass} ${appToneTextClass}`}>{item.name}</span>
-      )}
-      <div className={`${appTypeGroupTextClass} ${appToneMutedClass} min-w-0 truncate`}>
+            {item.name}
+          </span>
+          <ArrowUpRight
+            size={12}
+            className="shrink-0 text-[color:var(--muted)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]"
+          />
+        </button>
+      </Tooltip>
+      <div className={cn(`${appTypeGroupTextClass} ${appToneMutedClass}`, 'min-w-0 truncate')}>
         {item.description || item.source}
       </div>
       <span
-        className={`${appTypeGroupTextClass} ${appToneMutedClass} shrink-0 whitespace-nowrap tabular-nums`}
+        className={cn(
+          `${appTypeGroupTextClass} ${appToneMutedClass}`,
+          'shrink-0 whitespace-nowrap tabular-nums',
+        )}
       >
-        {formatDownloads(item.monthlyDownloads)}
-      </span>
-      <span className={`${appTypeGroupTextClass} ${appToneMutedClass} shrink-0 whitespace-nowrap`}>
-        v{item.version}
+        {formatInstalls(item.installs)}
       </span>
       {installed ? (
         <span
-          className={`${appTypeGroupTextClass} ${appToneMutedClass} shrink-0 whitespace-nowrap`}
+          className={cn(
+            `${appTypeGroupTextClass} ${appToneMutedClass}`,
+            'shrink-0 whitespace-nowrap',
+          )}
         >
           Installed
         </span>
@@ -93,20 +90,20 @@ export function CatalogItemRow({
   )
 }
 
-function CatalogItemRowActions({
+function BrowseSkillRowActions({
   installed,
   item,
   pendingInstall,
   selected,
   selectionLabel,
-  onToggleSelected,
+  setSelectedSources,
 }: {
   installed: boolean
-  item: PiPackageCatalogItem
+  item: SkillCatalogItem
   pendingInstall: boolean
   selected: boolean
   selectionLabel: string
-  onToggleSelected: (source: string) => void
+  setSelectedSources: Dispatch<SetStateAction<string[]>>
 }) {
   if (pendingInstall) {
     return (
@@ -134,7 +131,13 @@ function CatalogItemRowActions({
       <button
         type="button"
         className={viewCloseButtonClass}
-        onClick={() => onToggleSelected(item.source)}
+        onClick={() => {
+          setSelectedSources((current) =>
+            current.includes(item.identityKey)
+              ? current.filter((source) => source !== item.identityKey)
+              : [...current, item.identityKey],
+          )
+        }}
         aria-pressed={selected}
         aria-label={selectionLabel}
       >

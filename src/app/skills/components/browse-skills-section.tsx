@@ -1,15 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
-import { ArrowUpRight, Check, CornerDownLeft, PackagePlus, Search, Sparkles } from 'lucide-react'
+import { Check, CornerDownLeft, PackagePlus, Search, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { CompactMetaRow } from '../../common/compact-meta-row'
 import { DisclosureSection } from '../../common/disclosure-section'
 import { Tooltip } from '../../common/tooltip'
 import type { AppSettings, DesktopActionInvoker } from '../../desktop/types'
 import { desktopQueryKeys, searchPiSkillsQuery } from '../../query/desktop-query'
 import {
   appToneDangerClass,
-  appToneMutedClass,
-  appToneTextClass,
   appTypeGroupTextClass,
   iconActionButtonDisabledClass,
   inlineEmptyNoteClass,
@@ -27,168 +24,10 @@ import {
   skillsSearchControlRowClass,
 } from '../../ui/screen-classes'
 import { cn } from '../../utils/cn'
-import {
-  formatInstalls,
-  getActionError,
-  getCatalogSkillSource,
-  normalizeSkillSlug,
-  openExternalUrl,
-} from '../utils'
-
-type CatalogItem = Awaited<ReturnType<typeof searchPiSkillsQuery>>['items'][number]
-
-function getInstallSources(selectedCatalogSources: string[], catalogItems: CatalogItem[]) {
-  const seenSources = new Set<string>()
-  return selectedCatalogSources.flatMap((source) => {
-    const item = catalogItems.find((catalogItem) => catalogItem.identityKey === source)
-    const normalizedSource = item?.identityKey ?? source.trim().toLowerCase()
-    if (!item || seenSources.has(normalizedSource)) return []
-    seenSources.add(normalizedSource)
-    return [getCatalogSkillSource(item)]
-  })
-}
-
-function BrowseSkillRow({
-  installed,
-  isPendingInstall,
-  item,
-  selected,
-  setSelectedCatalogSources,
-}: {
-  installed: boolean
-  isPendingInstall: (source: string) => boolean
-  item: CatalogItem
-  selected: boolean
-  setSelectedCatalogSources: React.Dispatch<React.SetStateAction<string[]>>
-}) {
-  const pendingInstall = isPendingInstall(getCatalogSkillSource(item))
-  const selectionLabel = selected ? `Deselect ${item.name}` : `Select ${item.name} for install`
-  return (
-    <CompactMetaRow
-      key={item.id}
-      selected={selected}
-      density="dense"
-      actions={
-        <BrowseSkillRowActions
-          installed={installed}
-          item={item}
-          pendingInstall={pendingInstall}
-          selected={selected}
-          selectionLabel={selectionLabel}
-          setSelectedCatalogSources={setSelectedCatalogSources}
-        />
-      }
-      contentClassName={`grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-baseline gap-1.5 overflow-hidden ${appTypeGroupTextClass}`}
-    >
-      <Tooltip content={item.url} contentClassName="max-w-[420px]">
-        <button
-          type="button"
-          className="group inline-flex shrink-0 items-center gap-0.5 p-0"
-          onClick={() => void openExternalUrl(item.url)}
-          aria-label={`Open ${item.name}`}
-        >
-          <span
-            className={cn(
-              `${appTypeGroupTextClass} ${appToneTextClass}`,
-              'transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]',
-            )}
-          >
-            {item.name}
-          </span>
-          <ArrowUpRight
-            size={12}
-            className="shrink-0 text-[color:var(--muted)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]"
-          />
-        </button>
-      </Tooltip>
-      <div className={cn(`${appTypeGroupTextClass} ${appToneMutedClass}`, 'min-w-0 truncate')}>
-        {item.description || item.source}
-      </div>
-      <span
-        className={cn(
-          `${appTypeGroupTextClass} ${appToneMutedClass}`,
-          'shrink-0 whitespace-nowrap tabular-nums',
-        )}
-      >
-        {formatInstalls(item.installs)}
-      </span>
-      {installed ? (
-        <span
-          className={cn(
-            `${appTypeGroupTextClass} ${appToneMutedClass}`,
-            'shrink-0 whitespace-nowrap',
-          )}
-        >
-          Installed
-        </span>
-      ) : null}
-    </CompactMetaRow>
-  )
-}
-
-function BrowseSkillRowActions({
-  installed,
-  item,
-  pendingInstall,
-  selected,
-  selectionLabel,
-  setSelectedCatalogSources,
-}: {
-  installed: boolean
-  item: CatalogItem
-  pendingInstall: boolean
-  selected: boolean
-  selectionLabel: string
-  setSelectedCatalogSources: React.Dispatch<React.SetStateAction<string[]>>
-}) {
-  if (pendingInstall) {
-    return (
-      <output
-        className="inline-flex h-7 w-7 items-center justify-center text-[color:var(--muted)]"
-        aria-label={`Installing ${item.name}`}
-      >
-        <Sparkles size={14} />
-      </output>
-    )
-  }
-  if (installed) {
-    return (
-      <span
-        className="inline-flex h-7 w-7 items-center justify-center text-[color:var(--muted)]"
-        role="img"
-        aria-label={`${item.name} installed`}
-      >
-        <Check size={14} strokeWidth={2.4} />
-      </span>
-    )
-  }
-  return (
-    <Tooltip content={selectionLabel}>
-      <button
-        type="button"
-        className={viewCloseButtonClass}
-        onClick={() => {
-          setSelectedCatalogSources((current) =>
-            current.includes(item.identityKey)
-              ? current.filter((source) => source !== item.identityKey)
-              : [...current, item.identityKey],
-          )
-        }}
-        aria-pressed={selected}
-        aria-label={selectionLabel}
-      >
-        <span
-          className={cn(
-            'inline-flex h-3.5 w-3.5 items-center justify-center rounded-[4px] border border-[color:var(--muted-2)] bg-transparent transition-colors',
-            selected && 'border-[color:var(--accent-border)] text-[color:var(--text)]',
-          )}
-        >
-          {selected ? <Check size={9} strokeWidth={2.6} /> : null}
-        </span>
-      </button>
-    </Tooltip>
-  )
-}
+import type { SkillCatalogItem } from '../skill-catalog'
+import { getSelectedSkillInstallSources } from '../skill-catalog'
+import { getActionError, normalizeSkillSlug } from '../utils'
+import { BrowseSkillRow } from './browse-skill-row'
 
 function BrowseSectionContent({
   catalogItems,
@@ -200,7 +39,7 @@ function BrowseSectionContent({
   skillsQuery,
   submittedSearchInput,
 }: {
-  catalogItems: CatalogItem[]
+  catalogItems: SkillCatalogItem[]
   expanded: boolean
   installedSkillSlugs: Set<string>
   isPendingInstall: (source: string) => boolean
@@ -233,7 +72,7 @@ function BrowseSectionContent({
           isPendingInstall={isPendingInstall}
           item={item}
           selected={selectedCatalogSourceSet.has(item.identityKey)}
-          setSelectedCatalogSources={setSelectedCatalogSources}
+          setSelectedSources={setSelectedCatalogSources}
         />
       ))}
     </div>
@@ -291,7 +130,7 @@ export function BrowseSkillsSection({
   }, [catalogItems, installedSkillSlugs])
 
   const handleInstallSelected = async () => {
-    const installSources = getInstallSources(selectedCatalogSources, catalogItems)
+    const installSources = getSelectedSkillInstallSources(selectedCatalogSources, catalogItems)
     if (installSources.length === 0) return
     const installResults = await Promise.all(installSources.map((source) => onInstall(source)))
     if (installResults.some(Boolean)) setSelectedCatalogSources([])

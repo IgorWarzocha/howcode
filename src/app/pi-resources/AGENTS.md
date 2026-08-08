@@ -1,0 +1,3 @@
+- Skills and Extensions share install-scope selection, pending-action bookkeeping, and safe external-link opening here.
+- Keep catalog queries, form state, and package/skill transforms in their owning screen; do not turn this folder into a generic resource controller.
+- Preserve all three project-target signals in `use-pi-resource-install-scope.ts`; sidebar highlighting, scope selection, and reconciled project-path changes are separate parts of the target-picker flow.

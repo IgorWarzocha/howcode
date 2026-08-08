@@ -1,6 +1,5 @@
-import { getSafeExternalUrl } from '@howcode/shared/external-url'
 import type { PiConfiguredSkill, PiSkillCatalogItem } from '../desktop/types'
-import { canSearchPiSkillsQuery, openExternalQuery } from '../query/desktop-query'
+import { canSearchPiSkillsQuery } from '../query/desktop-query'
 import { getActionError } from '../utils/action-error'
 
 const compactNumberFormatter = new Intl.NumberFormat('en', {
@@ -25,18 +24,6 @@ export function getCatalogSkillSource(skill: Pick<PiSkillCatalogItem, 'source' |
 
 export function isDesktopSkillsAvailable() {
   return canSearchPiSkillsQuery()
-}
-
-export async function openExternalUrl(url: string) {
-  const safeUrl = getSafeExternalUrl(url)
-  if (!safeUrl) {
-    return false
-  }
-
-  if (await openExternalQuery(safeUrl)) return true
-
-  window.open(safeUrl, '_blank', 'noopener,noreferrer')
-  return true
 }
 
 function getPathBasename(targetPath: string) {

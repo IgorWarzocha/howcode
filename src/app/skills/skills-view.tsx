@@ -2,53 +2,15 @@ import { ArrowUpRight } from 'lucide-react'
 import { DisclosureSection } from '../common/disclosure-section'
 import { ViewHeader } from '../common/view-header'
 import { ViewShell } from '../common/view-shell'
+import { openPiResourceUrl } from '../pi-resources/open-pi-resource-url'
+import { PiResourceScopeSwitcher } from '../pi-resources/pi-resource-scope-switcher'
 import { appToneDangerClass, appToneMutedClass, appTypeGroupTextClass } from '../ui/classes'
 import { skillsViewShellClass } from '../ui/screen-classes'
 import { cn } from '../utils/cn'
 import { BrowseSkillsSection } from './components/browse-skills-section'
 import { InstalledSkillsSection } from './components/installed-skills-section'
 import { useSkillsController } from './hooks/useSkillsController'
-import type { InstallScope, SkillsViewProps } from './types'
-import { openExternalUrl } from './utils'
-
-type SkillsScopeSwitcherProps = {
-  value: InstallScope
-  projectScopeAvailable: boolean
-  counts: Record<InstallScope, number>
-  onChange: (scope: InstallScope) => void
-}
-
-function SkillsScopeSwitcher({ value, counts, onChange }: SkillsScopeSwitcherProps) {
-  const options: Array<{ value: InstallScope; label: string; disabled?: boolean }> = [
-    { value: 'global', label: `Global ${counts.global}` },
-    { value: 'project', label: `Project ${counts.project}` },
-    { value: 'chat', label: `Chat ${counts.chat}` },
-  ]
-
-  return (
-    <fieldset className="m-0 flex min-w-0 items-center gap-1 border-0 p-0">
-      <legend className="sr-only">Skill install scope</legend>
-      {options.map((option) => {
-        const selected = value === option.value
-        return (
-          <button
-            key={option.value}
-            type="button"
-            className={cn(
-              `rounded-md px-2 py-0.5 ${appTypeGroupTextClass} ${appToneMutedClass} transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[color:var(--muted)]`,
-              selected && 'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
-            )}
-            disabled={option.disabled}
-            aria-pressed={selected}
-            onClick={() => onChange(option.value)}
-          >
-            {option.label}
-          </button>
-        )
-      })}
-    </fieldset>
-  )
-}
+import type { SkillsViewProps } from './types'
 
 function SkillsMetaLink() {
   return (
@@ -62,7 +24,7 @@ function SkillsMetaLink() {
       <button
         type="button"
         className="group inline-flex items-center gap-0.5 p-0 text-inherit"
-        onClick={() => void openExternalUrl('https://skills.sh')}
+        onClick={() => void openPiResourceUrl('https://skills.sh')}
         aria-label="Open skills.sh"
         data-tooltip="Open skills.sh"
       >
@@ -97,12 +59,14 @@ function DesktopRequiredState({ onClose }: { onClose: () => void }) {
 export function SkillsView({
   appSettings,
   projectPath,
+  onProjectTargetSelected,
   onSetProjectScopeActive,
   onAction,
   onClose,
 }: SkillsViewProps) {
   const controller = useSkillsController({
     projectPath,
+    onProjectTargetSelected,
     onSetProjectScopeActive,
   })
 
@@ -118,14 +82,14 @@ export function SkillsView({
         onClose={onClose}
         closeLabel="Close skills"
         actions={
-          <SkillsScopeSwitcher
+          <PiResourceScopeSwitcher
+            label="Skill"
             value={controller.installScope}
             counts={{
               global: controller.globalSkillCount,
               project: controller.projectSkillCount,
               chat: controller.chatSkillCount,
             }}
-            projectScopeAvailable={controller.projectScopeAvailable}
             onChange={controller.setInstallScope}
           />
         }

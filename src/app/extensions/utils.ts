@@ -1,6 +1,6 @@
 import { getSafeExternalUrl, pickSafeExternalUrl } from '@howcode/shared/external-url'
 import type { PiConfiguredPackage } from '../desktop/types'
-import { canSearchPiPackagesQuery, openExternalQuery } from '../query/desktop-query'
+import { canSearchPiPackagesQuery } from '../query/desktop-query'
 import { getActionError } from '../utils/action-error'
 
 const compactNumberFormatter = new Intl.NumberFormat('en', {
@@ -19,18 +19,6 @@ export function formatDownloads(downloads: number) {
 
 export function isDesktopPackagesAvailable() {
   return canSearchPiPackagesQuery()
-}
-
-export async function openExternalUrl(url: string) {
-  const safeUrl = getSafeExternalUrl(url)
-  if (!safeUrl) {
-    return false
-  }
-
-  if (await openExternalQuery(safeUrl)) return true
-
-  window.open(safeUrl, '_blank', 'noopener,noreferrer')
-  return true
 }
 
 export function getInstalledIdentityKeys(packages: PiConfiguredPackage[]) {

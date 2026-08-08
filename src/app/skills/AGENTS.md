@@ -1,0 +1,2 @@
+- The controller owns configured-skill queries and install/remove mutations. Catalog query and selection stay in `browse-skills-section.tsx`; catalog row presentation stays in `browse-skill-row.tsx`.
+- Reuse `pi-resources/*` for install scope, target-selection lifecycle, pending actions, and external links.

@@ -1,0 +1,2 @@
+- `sessions-model.ts` owns old-session eligibility, worktree inclusion, search, and bulk target derivation; keep it pure and deterministic.
+- `sessions-view.tsx` owns search/selection and action orchestration; row confirmations stay in `session-row.tsx`, bulk confirmations in `sessions-toolbar.tsx`.

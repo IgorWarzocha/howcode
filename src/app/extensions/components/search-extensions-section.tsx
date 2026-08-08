@@ -18,72 +18,57 @@ import {
   skillsSearchControlRowClass,
 } from '../../ui/screen-classes'
 import { cn } from '../../utils/cn'
+import { useExtensionCatalog } from '../hooks/useExtensionCatalog'
 import type { InstallScope } from '../types'
 import { CatalogItemRow } from './catalog-item-row'
 
 type SearchExtensionsSectionProps = {
-  open: boolean
-  searchInput: string
-  submittedSearchInput: string
   installScope: InstallScope
   projectScopeAvailable: boolean
-  hasSelectedCatalogSources: boolean
   hasPendingInstall: boolean
-  selectedCatalogSources: string[]
-  catalogItems: PiPackageCatalogItem[]
   installedIdentityKeys: Set<string>
-  catalogLoading: boolean
-  catalogError: string | null
-  hasNextCatalogPage: boolean
-  isFetchingNextCatalogPage: boolean
-  onToggleOpen: () => void
-  onSearchInputChange: (value: string) => void
-  onSubmitSearch: (value: string) => void
-  onInstallSelected: () => void | Promise<void>
-  onToggleSelectedSource: (source: string) => void
-  onLoadMore: () => void
+  onInstall: (source: string, kind: 'npm') => Promise<boolean>
   isInstallPending: (source: string) => boolean
 }
 
 function SearchExtensionsResults({
-  catalogError,
-  catalogItems,
-  catalogLoading,
+  error,
   expanded,
   installedIdentityKeys,
   isInstallPending,
+  items,
+  loading,
   onToggleSelectedSource,
-  selectedCatalogSources,
+  selectedSources,
   submittedSearchInput,
-}: Pick<
-  SearchExtensionsSectionProps,
-  | 'catalogError'
-  | 'catalogItems'
-  | 'catalogLoading'
-  | 'installedIdentityKeys'
-  | 'isInstallPending'
-  | 'onToggleSelectedSource'
-  | 'selectedCatalogSources'
-  | 'submittedSearchInput'
-> & { expanded: boolean }) {
+}: {
+  error: string | null
+  expanded: boolean
+  installedIdentityKeys: Set<string>
+  isInstallPending: (source: string) => boolean
+  items: PiPackageCatalogItem[]
+  loading: boolean
+  onToggleSelectedSource: (source: string) => void
+  selectedSources: string[]
+  submittedSearchInput: string
+}) {
   if (submittedSearchInput.length < 2) {
     return <div className={inlineEmptyNoteClass}>Search with at least 2 characters.</div>
   }
-  if (catalogLoading) return <div className={inlineEmptyNoteClass}>Loading packages…</div>
-  if (catalogError) {
-    return (
-      <div className={cn(inlineEmptyNoteClass, 'text-[color:var(--danger)]')}>{catalogError}</div>
-    )
+  if (loading) return <div className={inlineEmptyNoteClass}>Loading packages…</div>
+  if (error) {
+    return <div className={cn(inlineEmptyNoteClass, 'text-[color:var(--danger)]')}>{error}</div>
   }
-  if (catalogItems.length === 0) return <div className={inlineEmptyNoteClass}>No pi packages.</div>
-  const selectedCatalogSourceSet = new Set(selectedCatalogSources)
+  if (items.length === 0) return <div className={inlineEmptyNoteClass}>No pi packages.</div>
+
+  const selectedSourceSet = new Set(selectedSources)
   return (
     <div className={expanded ? skillsListClass : skillsPreviewListClass}>
-      {catalogItems.map((item) => (
+      {items.map((item) => (
         <CatalogItemRow
           key={item.name}
           item={item}
-          selected={selectedCatalogSourceSet.has(item.source)}
+          selected={selectedSourceSet.has(item.source)}
           installed={installedIdentityKeys.has(item.identityKey)}
           pendingInstall={isInstallPending(item.source)}
           onToggleSelected={onToggleSelectedSource}
@@ -94,60 +79,51 @@ function SearchExtensionsResults({
 }
 
 function SearchExtensionsLoadMore({
-  hasNextCatalogPage,
-  isFetchingNextCatalogPage,
+  hasNextPage,
+  isFetchingNextPage,
   onLoadMore,
-}: Pick<
-  SearchExtensionsSectionProps,
-  'hasNextCatalogPage' | 'isFetchingNextCatalogPage' | 'onLoadMore'
->) {
-  if (!hasNextCatalogPage) return null
+}: {
+  hasNextPage: boolean
+  isFetchingNextPage: boolean
+  onLoadMore: () => void
+}) {
+  if (!hasNextPage) return null
   return (
     <div className="flex justify-center pt-1">
       <TextButton
         className={`rounded-md px-2 py-1 ${appTypeGroupTextClass} ${appToneMutedClass} hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]`}
         onClick={onLoadMore}
-        disabled={isFetchingNextCatalogPage}
+        disabled={isFetchingNextPage}
       >
-        {isFetchingNextCatalogPage ? 'Loading more…' : 'Load more'}
+        {isFetchingNextPage ? 'Loading more…' : 'Load more'}
       </TextButton>
     </div>
   )
 }
 
 export function SearchExtensionsSection({
-  open,
-  searchInput,
-  submittedSearchInput,
   installScope,
   projectScopeAvailable,
-  hasSelectedCatalogSources,
   hasPendingInstall,
-  selectedCatalogSources,
-  catalogItems,
   installedIdentityKeys,
-  catalogLoading,
-  catalogError,
-  hasNextCatalogPage,
-  isFetchingNextCatalogPage,
-  onToggleOpen,
-  onSearchInputChange,
-  onSubmitSearch,
-  onInstallSelected,
-  onToggleSelectedSource,
-  onLoadMore,
+  onInstall,
   isInstallPending,
 }: SearchExtensionsSectionProps) {
+  const catalog = useExtensionCatalog({ installedIdentityKeys, onInstall })
+  const hasSelectedSources = catalog.selectedSources.length > 0
   const installDisabled =
     (!projectScopeAvailable && installScope === 'project') ||
-    !hasSelectedCatalogSources ||
+    !hasSelectedSources ||
     hasPendingInstall
+  const installLabel = hasSelectedSources
+    ? `Install ${catalog.selectedSources.length} selected extensions`
+    : 'Install extensions'
 
   return (
     <DisclosureSection
       title="Search"
-      open={open}
-      onToggle={onToggleOpen}
+      open={catalog.open}
+      onToggle={() => catalog.setOpen((current) => !current)}
       forceMountContent
       chevronPosition="right"
     >
@@ -156,7 +132,7 @@ export function SearchExtensionsSection({
           className="min-w-0"
           onSubmit={(event) => {
             event.preventDefault()
-            onSubmitSearch(searchInput.trim())
+            catalog.setSubmittedSearchInput(catalog.searchInput.trim())
           }}
         >
           <label className="relative block min-w-0">
@@ -165,8 +141,8 @@ export function SearchExtensionsSection({
             </span>
             <input
               type="text"
-              value={searchInput}
-              onChange={(event) => onSearchInputChange(event.target.value)}
+              value={catalog.searchInput}
+              onChange={(event) => catalog.setSearchInput(event.target.value)}
               className={cn(quietSearchInputClass, 'w-full pl-8')}
               placeholder="Search extensions"
               aria-label="Search extensions"
@@ -175,25 +151,15 @@ export function SearchExtensionsSection({
         </form>
 
         <div className={skillsActionColumnClass}>
-          <Tooltip
-            content={
-              hasSelectedCatalogSources
-                ? `Install ${selectedCatalogSources.length} selected extensions`
-                : 'Install extensions'
-            }
-          >
+          <Tooltip content={installLabel}>
             <button
               type="button"
               className={cn(viewCloseButtonClass, iconActionButtonDisabledClass)}
-              onClick={() => void onInstallSelected()}
+              onClick={() => void catalog.installSelected()}
               disabled={installDisabled}
-              aria-label={
-                hasSelectedCatalogSources
-                  ? `Install ${selectedCatalogSources.length} selected extensions`
-                  : 'Install extensions'
-              }
+              aria-label={installLabel}
             >
-              {hasPendingInstall && hasSelectedCatalogSources ? (
+              {hasPendingInstall && hasSelectedSources ? (
                 <Sparkles size={14} />
               ) : (
                 <PackagePlus size={14} />
@@ -204,22 +170,22 @@ export function SearchExtensionsSection({
       </div>
 
       <SearchExtensionsResults
-        expanded={open}
-        catalogError={catalogError}
-        catalogItems={catalogItems}
-        catalogLoading={catalogLoading}
+        error={catalog.error}
+        expanded={catalog.open}
         installedIdentityKeys={installedIdentityKeys}
         isInstallPending={isInstallPending}
-        onToggleSelectedSource={onToggleSelectedSource}
-        selectedCatalogSources={selectedCatalogSources}
-        submittedSearchInput={submittedSearchInput}
+        items={catalog.items}
+        loading={catalog.isLoading}
+        onToggleSelectedSource={catalog.toggleSelectedSource}
+        selectedSources={catalog.selectedSources}
+        submittedSearchInput={catalog.submittedSearchInput}
       />
 
-      {open ? (
+      {catalog.open ? (
         <SearchExtensionsLoadMore
-          hasNextCatalogPage={hasNextCatalogPage}
-          isFetchingNextCatalogPage={isFetchingNextCatalogPage}
-          onLoadMore={onLoadMore}
+          hasNextPage={catalog.hasNextPage}
+          isFetchingNextPage={catalog.isFetchingNextPage}
+          onLoadMore={catalog.loadMore}
         />
       ) : null}
     </DisclosureSection>
