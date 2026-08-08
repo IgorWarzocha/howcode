@@ -2,6 +2,12 @@
 
 This is the implementation handoff for rebuilding GitOps around the current Pierre APIs. It records the repository trace, upstream capabilities, ownership decisions, and rollout order so the next session does not need to rediscover the feature.
 
+## Product boundary
+
+GitOps is Howcode's single-user review loop for agent-authored work: inspect the agent's changes, annotate them, send review feedback into the active agent thread, and optionally make a quick direct edit. It is not a general Git client or a collaborative code-review system.
+
+Use Pierre's primitives rather than recreating diff geometry, annotation placement, trees, or editing. Keep only the Howcode-specific glue Pierre does not provide: comment state and prompt submission, agent-thread routing, project reads, and explicit edit saves. Do not add merge workflows, staging workbenches, collaboration protocols, or speculative diagnostics infrastructure.
+
 ## Current position
 
 - Howcode already pins `@pierre/diffs` **1.3.5** in `package.json` and `bun.lock`.
@@ -11,7 +17,7 @@ This is the implementation handoff for rebuilding GitOps around the current Pier
 - The changed-files rail already uses `@pierre/trees` **1.0.0-beta.6** with Git status, filtering, virtualisation, and multi-path selection. Phase 5 is complete.
 - Full diff context hydrates on demand through a revision-pinned, size-limited desktop read contract.
 - Direct text-file editing is implemented with a lazy Pierre editor, one active file, expected-revision checks, atomic writes, conflict retention, and review-annotation reanchoring.
-- Diagnostic markers and merge-conflict UI remain unimplemented.
+- Diagnostic markers and merge-conflict UI are intentionally out of scope unless the agent-review loop develops a concrete need for them.
 - GitOps remains plugin-shaped inside `src/app/native/gitops/`; do not add runtime plugin machinery.
 
 No dependency upgrade is needed before this work.
@@ -36,7 +42,7 @@ The open-source comments feature is an annotation framework. Pierre supplies ann
 The durable split is:
 
 - Pierre owns pointer geometry, line/range selection, split/stacked translation, annotation placement, virtualisation, and editor history.
-- Howcode owns comment identities and bodies, review context, persistence, detached-comment policy, UI copy, submission, file writes, and conflict handling.
+- Howcode owns comment identities and bodies, review context, persistence, UI copy, agent-thread submission, and explicit edit saves.
 
 Do not persist Pierre objects directly. Convert Pierre callback values into Howcode domain values at one adapter boundary.
 
@@ -84,8 +90,8 @@ Important constraints:
 
 - `loadDiffFiles` hydrates full old/new contents on demand when expanding context from a patch. Pierre mutates the passed `fileDiff`, so its identity must remain stable.
 - `hydratePartialDiff` and `cloneFileDiffMetadata` expose the same operation manually.
-- `diffAcceptRejectHunk` accepts, rejects, or keeps both sides of a hunk, and can target one change block. It returns adjusted diff metadata; Howcode must still persist resulting contents.
-- `UnresolvedFile` and `resolveMergeConflict` provide current/incoming/both conflict resolution. These APIs remain experimental.
+- `diffAcceptRejectHunk` accepts, rejects, or keeps both sides of a hunk, and can target one change block. It returns adjusted diff metadata; Howcode intentionally uses that only for the local review display.
+- `UnresolvedFile` and `resolveMergeConflict` provide current/incoming/both conflict resolution. These APIs remain experimental and are not part of Howcode's agent-review scope.
 - Token hooks expose token text, character offsets, line, side, and element for hover/click actions.
 - Added-only and deleted-only files are supported across more render and SSR surfaces.
 
@@ -203,7 +209,7 @@ Inside GitOps, converge on these owned areas:
 - Draft/save/remove transitions.
 - Comment annotation UI and selection action.
 - Prompt generation.
-- Review-session mismatch/detached policy.
+- Minimal visible invalidation if persisted feedback is proven to outlive its diff.
 
 Do not create a generic helpers file. Pure target/range transforms belong with the review model; persistence belongs with the store; Pierre translation belongs in an adapter.
 
@@ -213,7 +219,6 @@ Do not create a generic helpers file. Pure target/range transforms belong with t
 - Per-file edit state and write scheduling.
 - Backend write conflict presentation.
 - Clipboard adapter.
-- Optional diagnostic marker adapter.
 
 ### `changed-files/`
 
@@ -282,23 +287,9 @@ If Pierre's edit selection callback exposes stable character offsets, add a sepa
 
 ### Review context identity
 
-The persisted context must eventually distinguish the actual reviewed content:
+Review state is local feedback for the active user and agent thread, not a durable collaboration record. Keep enough context to avoid obviously sending comments against unrelated code, but do not build a repository-wide snapshot protocol, detached-comment archive, or migration framework pre-emptively.
 
-- project ID;
-- requested baseline;
-- resolved baseline revision;
-- include-untracked mode;
-- worktree snapshot identity.
-
-The desktop diff result already contains `resolvedBaseline`; extend the diff snapshot contract with a deterministic snapshot identifier rather than hashing a potentially huge patch in the renderer.
-
-Policy:
-
-- Comments remain active while Pierre moves their annotations through edits in the same editor session.
-- A backend/external patch refresh with a different snapshot must not silently attach old comments to the same line numbers.
-- Preserve mismatched comments as detached review feedback or require explicit discard. Never silently delete or silently re-anchor them.
-
-Persisted state needs a version bump and explicit v1 migration or intentional discard. Do not reinterpret old line references under the stronger identity contract.
+The expected-revision check on direct edits exists because the agent may change the same file while the user is editing it. It is a narrow clobber guard, not multiplayer synchronization. If stale persisted comments become a demonstrated problem, invalidate them visibly using the smallest revision signal already available from the diff pipeline.
 
 ## Implementation sequence
 
@@ -310,7 +301,7 @@ Goal: establish independent oracles before replacing interaction code.
 
 1. Move comment domain code into `src/app/native/gitops/review/` without changing behaviour.
 2. Introduce the explicit target model and Pierre adapter.
-3. Keep the current storage key/version initially; migrate only after snapshot identity exists.
+3. Keep the current storage key/version unless a demonstrated format change requires migration.
 4. Group the host review controller and remove redundant count state.
 5. Add pure tests for:
    - same-side and cross-side range normalisation;
@@ -463,9 +454,13 @@ The implementation lives in focused review modules:
 
 Do not reinterpret these controls as Git operations. Filesystem editing remains the separate explicit edit/save path from Phase 6.
 
-### Phase 8 — Merge-conflict UI later
+### Explicit non-goals
 
-Use `UnresolvedFile` only when GitOps has a deliberate merge operation and typed conflict-file contract. Do not widen the first redesign into branch merge orchestration.
+- Merge and conflict-resolution workflows.
+- Staging or partial-index management.
+- Multiplayer review state or cross-device synchronization.
+- Diagnostic marker plumbing without a real agent-facing diagnostics producer.
+- Reimplementing Pierre interactions in Howcode UI code.
 
 ## Behaviour to preserve
 
@@ -499,7 +494,7 @@ Keep permanent tests for:
 
 - review target normalisation and Pierre adapters;
 - persistence decoding and version migration;
-- snapshot/context identity;
+- review context IDs across project, baseline, and untracked scope;
 - prompt generation;
 - send-and-clear concurrency;
 - file-content request path safety;
@@ -521,7 +516,6 @@ Create one disposable Git repository containing:
 - renamed file;
 - binary image;
 - large file with omitted context;
-- optional merge conflict for the later phase.
 
 Exercise:
 
