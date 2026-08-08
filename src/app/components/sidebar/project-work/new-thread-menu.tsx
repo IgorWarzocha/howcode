@@ -2,10 +2,11 @@ import { ActivitySpinner } from '@howcode/common/activity-spinner'
 import { IconButton } from '@howcode/common/icon-button'
 import { Tooltip } from '@howcode/common/tooltip'
 import { GitBranch, Plus, X } from 'lucide-react'
-import { type ReactNode, type RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { type ReactNode, type RefObject, useRef, useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import { WorktreeSmallIcon } from '../../../ui/icons/worktree-small-icon'
 import { createThreadForBranch, createThreadInWorktreeForBranch } from './new-thread-actions'
+import { useProjectWorkRowMenu } from './useProjectWorkRowMenu'
 
 function focusInput(input: HTMLInputElement | null) {
   input?.focus()
@@ -110,7 +111,6 @@ export function NewThreadMenu({
   onAction: DesktopActionInvoker
   projectId: string
 }) {
-  const [open, setOpen] = useState(false)
   const [newBranchName, setNewBranchName] = useState('')
   const [newBranchError, setNewBranchError] = useState<string | null>(null)
   const [newWorktreeBranchName, setNewWorktreeBranchName] = useState('')
@@ -118,50 +118,9 @@ export function NewThreadMenu({
   const [pendingAction, setPendingAction] = useState<
     'current' | 'branch' | 'worktree' | 'unassigned' | null
   >(null)
-  const [menuWidth, setMenuWidth] = useState(240)
-  const [menuRight, setMenuRight] = useState(0)
-  const menuRef = useRef<HTMLDivElement | null>(null)
   const newBranchInputRef = useRef<HTMLInputElement | null>(null)
   const newWorktreeInputRef = useRef<HTMLInputElement | null>(null)
-
-  useEffect(() => {
-    if (!open) return
-
-    const handlePointerDown = (event: PointerEvent) => {
-      if (menuRef.current?.contains(event.target as Node)) return
-      setOpen(false)
-    }
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      event.stopPropagation()
-      event.stopImmediatePropagation()
-      setOpen(false)
-    }
-
-    document.addEventListener('pointerdown', handlePointerDown, true)
-    window.addEventListener('keydown', handleKeyDown, true)
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown, true)
-      window.removeEventListener('keydown', handleKeyDown, true)
-    }
-  }, [open])
-
-  useLayoutEffect(() => {
-    if (!(open && menuRef.current)) return
-    const anchor = menuRef.current
-    const row = anchor.closest(
-      '.sidebar-project-work-project-block-heading-row, .sidebar-project-work-toolbar, .sidebar-project-work-section-heading',
-    )
-    const rowRect = row?.getBoundingClientRect()
-    const anchorRect = anchor.getBoundingClientRect()
-    if (!rowRect) {
-      setMenuWidth(anchor.offsetLeft + anchor.offsetWidth)
-      setMenuRight(0)
-      return
-    }
-    setMenuWidth(rowRect.width)
-    setMenuRight(anchorRect.right - rowRect.right)
-  }, [open])
+  const menu = useProjectWorkRowMenu('project')
 
   const createAssignedThread = async (
     branchName: string | null,
@@ -170,14 +129,14 @@ export function NewThreadMenu({
     setPendingAction(action)
     try {
       await createThreadForBranch({ branchName, onAction, projectId })
-      setOpen(false)
+      menu.setOpen(false)
     } finally {
       setPendingAction(null)
     }
   }
 
   const toggleOpen = () => {
-    setOpen((current) => !current)
+    menu.setOpen((current) => !current)
   }
 
   const createThreadInNewWorktree = async () => {
@@ -198,7 +157,7 @@ export function NewThreadMenu({
       }
       setNewWorktreeBranchName('')
       setNewWorktreeError(null)
-      setOpen(false)
+      menu.setOpen(false)
     } finally {
       setPendingAction(null)
     }
@@ -236,25 +195,27 @@ export function NewThreadMenu({
       }
       setNewBranchName('')
       setNewBranchError(null)
-      setOpen(false)
+      menu.setOpen(false)
     } finally {
       setPendingAction(null)
     }
   }
 
   return (
-    <div ref={menuRef} className="sidebar-new-thread-menu-anchor">
+    <div className="sidebar-new-thread-menu-anchor">
       <IconButton
+        ref={menu.triggerRef}
         label="New thread"
         icon={<Plus size={14} />}
         tooltipPlacement="right"
         className="h-7 w-7 rounded-md"
         onClick={toggleOpen}
       />
-      {open ? (
+      {menu.open ? (
         <div
+          ref={menu.panelRef}
           className="sidebar-menu-surface sidebar-menu-surface--below-normal sidebar-new-thread-menu"
-          style={{ right: `${menuRight}px`, width: `${menuWidth}px` }}
+          style={{ right: `${menu.right}px`, width: `${menu.width}px` }}
           role="menu"
           aria-label="New thread options"
         >
@@ -300,7 +261,7 @@ export function NewThreadMenu({
                   setNewBranchError(null)
                 }}
                 onCreate={() => void createThreadOnNewBranch()}
-                onClose={() => setOpen(false)}
+                onClose={() => menu.setOpen(false)}
                 pending={pendingAction === 'branch'}
                 disabled={pendingAction !== null}
               />
@@ -318,7 +279,7 @@ export function NewThreadMenu({
                   setNewWorktreeError(null)
                 }}
                 onCreate={() => void createThreadInNewWorktree()}
-                onClose={() => setOpen(false)}
+                onClose={() => menu.setOpen(false)}
                 pending={pendingAction === 'worktree'}
                 disabled={pendingAction !== null}
               />

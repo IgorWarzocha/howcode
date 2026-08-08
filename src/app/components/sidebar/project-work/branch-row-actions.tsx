@@ -2,7 +2,7 @@ import { ActivitySpinner } from '@howcode/common/activity-spinner'
 import { Tooltip } from '@howcode/common/tooltip'
 import { Plus } from 'lucide-react'
 import type { RefObject } from 'react'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project } from '../../../types'
 import { WorktreeSmallIcon } from '../../../ui/icons/worktree-small-icon'
@@ -19,6 +19,7 @@ import {
 import { getWorktreeParentBranchName } from './branch-row-helpers'
 import { createThreadForBranch, createThreadInWorktreeForBranch } from './new-thread-actions'
 import type { BranchThreadGroup } from './project-work-model'
+import { useProjectWorkRowMenu } from './useProjectWorkRowMenu'
 
 function getStartThreadBranchName(group: BranchThreadGroup, currentBranch: string | null) {
   if (group.current) return currentBranch
@@ -104,54 +105,18 @@ function BranchWorktreeCreateAction({
   project: Project
   onAction: DesktopActionInvoker
 }) {
-  const [open, setOpen] = useState(false)
   const [worktreeBranchName, setWorktreeBranchName] = useState('')
   const [worktreeError, setWorktreeError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
-  const [menuWidth, setMenuWidth] = useState(240)
-  const [menuRight, setMenuRight] = useState(0)
-  const menuRef = useRef<HTMLDivElement | null>(null)
-  const buttonRef = useRef<HTMLButtonElement | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
+  const menu = useProjectWorkRowMenu('branch')
   const parentBranchName = getWorktreeParentBranchName(group, currentBranch)
 
   useEffect(() => {
-    if (!open) return
+    if (!menu.open) return
     inputRef.current?.focus()
     inputRef.current?.select()
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target as Node
-      if (menuRef.current?.contains(target) || buttonRef.current?.contains(target)) return
-      setOpen(false)
-    }
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      event.stopPropagation()
-      event.stopImmediatePropagation()
-      setOpen(false)
-    }
-    document.addEventListener('pointerdown', handlePointerDown, true)
-    window.addEventListener('keydown', handleKeyDown, true)
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown, true)
-      window.removeEventListener('keydown', handleKeyDown, true)
-    }
-  }, [open])
-
-  useLayoutEffect(() => {
-    if (!(open && buttonRef.current)) return
-    const anchor = buttonRef.current
-    const row = anchor.closest('.sidebar-project-work-branch-heading')
-    const rowRect = row?.getBoundingClientRect()
-    const anchorRect = anchor.getBoundingClientRect()
-    if (!rowRect) {
-      setMenuWidth(240)
-      setMenuRight(0)
-      return
-    }
-    setMenuWidth(rowRect.width)
-    setMenuRight(anchorRect.right - rowRect.right)
-  }, [open])
+  }, [menu.open])
 
   const createChildWorktree = async () => {
     const branchName = worktreeBranchName.trim()
@@ -170,7 +135,7 @@ function BranchWorktreeCreateAction({
         return
       }
       setWorktreeBranchName('')
-      setOpen(false)
+      menu.setOpen(false)
     } finally {
       setPending(false)
     }
@@ -183,30 +148,30 @@ function BranchWorktreeCreateAction({
       className="sidebar-new-thread-menu-anchor"
     >
       <button
-        ref={buttonRef}
+        ref={menu.triggerRef}
         type="button"
         className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--optical-up"
         onClick={(event) => {
           event.stopPropagation()
-          setOpen((current) => !current)
+          menu.setOpen((current) => !current)
         }}
         aria-label={`Create worktree under ${parentBranchName ?? group.label}`}
-        aria-expanded={open}
+        aria-expanded={menu.open}
       >
         <WorktreeSmallIcon size={12} />
       </button>
-      {open ? (
-        <div ref={menuRef}>
+      {menu.open ? (
+        <div ref={menu.panelRef}>
           <BranchStartMenu
             group={group}
             inputRef={inputRef}
             parentBranchName={parentBranchName}
             worktreeBranchName={worktreeBranchName}
             worktreeError={worktreeError}
-            menuRight={menuRight}
-            menuWidth={menuWidth}
+            menuRight={menu.right}
+            menuWidth={menu.width}
             onCreateChildWorktree={() => void createChildWorktree()}
-            onClose={() => setOpen(false)}
+            onClose={() => menu.setOpen(false)}
             pending={pending}
             onWorktreeBranchNameChange={(value) => {
               setWorktreeBranchName(value)
