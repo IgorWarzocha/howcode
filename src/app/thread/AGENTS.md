@@ -1,2 +1,4 @@
 - Thread owns timeline layout, folded rows, message grouping, find-in-thread, and tool-call ledger presentation.
 - Preserve message/tool semantics when changing presentation; reusable non-timeline rendering belongs in `@howcode/common`.
+- Code and chat share `ThreadView`; do not fork transcript loading or empty-state policy.
+- Find and session-tree navigation reveal rows through `useTimelineRowReveal`; do not add parallel DOM scroll implementations.

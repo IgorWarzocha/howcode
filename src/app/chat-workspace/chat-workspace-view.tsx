@@ -1,4 +1,5 @@
 import { getLocalDraftChatGroupId, getPersistedSessionPath } from '@howcode/shared/session-paths'
+import { ThreadView } from '@howcode/thread'
 import { lazy, type RefObject, Suspense, useRef, useState } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
 import { useQueuedPromptRestore } from '../code-workspace/useQueuedPromptRestore'
@@ -6,7 +7,6 @@ import { useWorkspaceFooterHeight } from '../code-workspace/useWorkspaceFooterHe
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
 import { WORKSPACE_EDGE_PADDING_CLASS } from '../ui/layout'
 import { cn } from '../utils/cn'
-import { ChatView } from './chat-view'
 import { ChatComposerDock, type ChatWorkspaceComposerProps } from './chat-workspace-composer'
 import { useChatArtifactDrawerState } from './useChatArtifactDrawerState'
 
@@ -57,7 +57,7 @@ function ChatWorkspaceMain({
 }: ChatWorkspaceContentProps) {
   return (
     <main ref={mainViewRef} className="h-full min-h-0 overflow-hidden">
-      <ChatView
+      <ThreadView
         key={activeThreadData?.sessionPath ?? 'new-chat'}
         messages={shouldShowConversationContent ? (activeThreadData?.messages ?? []) : []}
         previousMessageCount={activeThreadData?.previousMessageCount ?? 0}

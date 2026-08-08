@@ -51,7 +51,11 @@ export function ThreadFindBar({
   const matchCount = matches.length
 
   const close = useCallback(() => {
+    requestIdRef.current += 1
     setOpen(false)
+    setSearching(false)
+    setResult({ matches: [], searchedMessageCount: 0 })
+    setMatchIndex(0)
     onActiveMatchChange(null)
     onQueryChange('')
   }, [onActiveMatchChange, onQueryChange])
@@ -98,17 +102,19 @@ export function ThreadFindBar({
   })
 
   useEffect(() => {
+    const requestId = requestIdRef.current + 1
+    requestIdRef.current = requestId
     notifyQueryChange(open ? query : '')
+    setMatchIndex(0)
+    notifyActiveMatchChange(null)
     if (!(open && sessionPath && query.trim())) {
       setResult({ matches: [], searchedMessageCount: 0 })
       setSearching(false)
-      notifyActiveMatchChange(null)
       return
     }
 
-    const requestId = requestIdRef.current + 1
-    requestIdRef.current = requestId
     setSearching(true)
+    setResult({ matches: [], searchedMessageCount: 0 })
     const timeout = window.setTimeout(() => {
       void searchThreadQuery(sessionPath, query)
         .then((nextResult) => {
@@ -116,7 +122,7 @@ export function ThreadFindBar({
           setResult(nextResult)
           setSearching(false)
           setMatchIndex(0)
-          notifyActiveMatchChange(null)
+          notifyActiveMatchChange(nextResult.matches[0] ?? null)
         })
         .catch(() => {
           if (requestIdRef.current !== requestId) return

@@ -25,7 +25,7 @@ import { getThinkingPreview } from '../utils/thread-previews'
 import { CopyMessageButton } from './copy-message-button'
 import { ExpandablePanel } from './expandable-panel'
 import { MarkdownContent } from './markdown-content'
-import { renderProse, renderThinking } from './thread-message-utils'
+import { getParagraphRenderItems, renderProse, renderThinking } from './thread-message-utils'
 import { useThreadFindHighlight } from './useThreadFindHighlight'
 
 const assistantStatusLabelClass = `mb-2 ${appTypeMetaStrongClass} tracking-[0.08em] uppercase opacity-85`
@@ -163,9 +163,9 @@ function UserMessageBlock({ message }: { message: ProseMessage }) {
       className={`group/message relative w-full min-w-0 border px-3 py-2 pr-11 ${appTypeReadableClass} text-[color:var(--text)] ${threadUserMessageClass}`}
     >
       <div className="grid min-w-0 gap-3 [overflow-wrap:anywhere]">
-        {message.content.map((paragraph) => (
+        {getParagraphRenderItems(message.content).map(({ key, paragraph }) => (
           <MarkdownContent
-            key={paragraph}
+            key={key}
             markdown={paragraph}
             tone="user"
             className={appTypeReadableClass}

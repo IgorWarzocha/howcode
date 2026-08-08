@@ -3,7 +3,7 @@ import { cn } from '../utils/cn'
 import { CopyMessageButton } from './copy-message-button'
 import { MarkdownContent } from './markdown-content'
 
-function getParagraphRenderItems(content: string[]) {
+export function getParagraphRenderItems(content: string[]) {
   const seen = new Map<string, number>()
   return content.map((paragraph) => {
     const occurrence = seen.get(paragraph) ?? 0

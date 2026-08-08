@@ -23,7 +23,7 @@ export type TimelineRow =
   | {
       kind: 'turn'
       id: string
-      userMessage: Extract<Message, { role: 'assistant' | 'user' }> | null
+      userMessage: (Extract<Message, { role: 'assistant' | 'user' }> & { role: 'user' }) | null
       items: TimelineTurnItem[]
     }
   | {

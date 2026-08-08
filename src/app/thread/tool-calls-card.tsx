@@ -15,6 +15,7 @@ import {
 } from '@howcode/ui'
 import { useState } from 'react'
 import { ExpandablePanel } from '../common/expandable-panel'
+import { getParagraphRenderItems } from '../common/thread-message-utils'
 import type { Message } from '../types'
 import { cn } from '../utils/cn'
 import { getToolCallPreview, getToolCallTitle } from '../utils/thread-previews'
@@ -54,11 +55,8 @@ function renderToolCallBody(message: ToolCallMessage) {
           </div>
         ) : null}
         <ToolDiffBlock message={message} />
-        {message.content.map((paragraph) => (
-          <p
-            key={paragraph}
-            className="m-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
-          >
+        {getParagraphRenderItems(message.content).map(({ key, paragraph }) => (
+          <p key={key} className="m-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
             {paragraph}
           </p>
         ))}

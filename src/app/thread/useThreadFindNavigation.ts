@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import type { ThreadSearchMatch } from '../desktop/types'
-import { getTimelineRowMessageIds } from './thread-message-ids'
+import { buildTimelineRowByMessageId } from './thread-message-ids'
 import type { TimelineRow } from './timeline-row'
+import { useTimelineRowReveal } from './useTimelineRowReveal'
 
 type ThreadFindNavigationInput = {
   containerRef: React.RefObject<HTMLDivElement | null>
@@ -26,13 +27,13 @@ export function useThreadFindNavigation({
 }: ThreadFindNavigationInput) {
   const [activeFindMatch, setActiveFindMatch] = useState<ThreadSearchMatch | null>(null)
   const [findQuery, setFindQuery] = useState('')
-  const [pendingFindScrollMessageId, setPendingFindScrollMessageId] = useState<string | null>(null)
   const findLoadAttemptsRef = useRef<Record<string, number>>({})
-  const rowByMessageId = useMemo(
-    () =>
-      new Map(rows.flatMap((row) => getTimelineRowMessageIds(row).map((id) => [id, row] as const))),
-    [rows],
-  )
+  const rowByMessageId = useMemo(() => buildTimelineRowByMessageId(rows), [rows])
+  const revealTimelineMessage = useTimelineRowReveal({
+    containerRef,
+    programmaticScrollFrameRef,
+    rowStructureSignature,
+  })
   const loadAroundMessage = useEffectEvent((historyCompactions: number) =>
     onLoadAroundMessage?.(historyCompactions),
   )
@@ -55,7 +56,7 @@ export function useThreadFindNavigation({
     }
 
     shouldStickToBottomRef.current = false
-    setPendingFindScrollMessageId(activeFindMatch.messageId)
+    revealTimelineMessage(activeFindMatch.messageId)
     setCollapsedRowIds((current) => {
       if (current[activeFindRowId] === false) return current
       return { ...current, [activeFindRowId]: false }
@@ -64,55 +65,17 @@ export function useThreadFindNavigation({
     activeFindMatch,
     activeFindRowId,
     previousMessageCount,
+    revealTimelineMessage,
     setCollapsedRowIds,
     shouldStickToBottomRef,
   ])
-
-  useEffect(() => {
-    void rowStructureSignature
-    if (!pendingFindScrollMessageId) return
-
-    const frame = window.requestAnimationFrame(() => {
-      const container = containerRef.current
-      if (!container) return
-      const exactMessage = [...container.querySelectorAll<HTMLElement>('[data-message-id]')].find(
-        (element) => element.getAttribute('data-message-id') === pendingFindScrollMessageId,
-      )
-      const row =
-        exactMessage ??
-        [...container.querySelectorAll<HTMLElement>('[data-message-ids]')].find((element) =>
-          new Set((element.getAttribute('data-message-ids') ?? '').split(' ')).has(
-            pendingFindScrollMessageId,
-          ),
-        )
-      if (!row) return
-
-      if (programmaticScrollFrameRef.current !== null) {
-        window.cancelAnimationFrame(programmaticScrollFrameRef.current)
-      }
-
-      const containerRect = container.getBoundingClientRect()
-      const rowRect = row.getBoundingClientRect()
-      const topPadding = Math.min(120, Math.max(32, container.clientHeight * 0.18))
-      container.scrollTo({
-        top: container.scrollTop + rowRect.top - containerRect.top - topPadding,
-        behavior: 'smooth',
-      })
-      setPendingFindScrollMessageId(null)
-      programmaticScrollFrameRef.current = window.requestAnimationFrame(() => {
-        programmaticScrollFrameRef.current = null
-      })
-    })
-
-    return () => window.cancelAnimationFrame(frame)
-  }, [containerRef, pendingFindScrollMessageId, programmaticScrollFrameRef, rowStructureSignature])
 
   const revealFindMatch = useCallback(
     (match: ThreadSearchMatch | null) => {
       setActiveFindMatch(match)
       if (!match) return
       findLoadAttemptsRef.current = { [match.messageId]: 0 }
-      setPendingFindScrollMessageId(match.messageId)
+      revealTimelineMessage(match.messageId)
       const matchingRow = rowByMessageId.get(match.messageId)
       if (!matchingRow) return
       shouldStickToBottomRef.current = false
@@ -121,7 +84,7 @@ export function useThreadFindNavigation({
         [matchingRow.id]: false,
       }))
     },
-    [rowByMessageId, setCollapsedRowIds, shouldStickToBottomRef],
+    [revealTimelineMessage, rowByMessageId, setCollapsedRowIds, shouldStickToBottomRef],
   )
 
   return {

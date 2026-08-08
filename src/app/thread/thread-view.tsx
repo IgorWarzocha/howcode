@@ -1,7 +1,8 @@
-import { ThreadTimeline, ThreadTimelineSkeleton } from '@howcode/thread'
 import type { Message } from '../types'
+import { ThreadTimeline } from './thread-timeline'
+import { ThreadTimelineSkeleton } from './thread-timeline-skeleton'
 
-type ThreadViewProps = {
+export type ThreadViewProps = {
   messages: Message[]
   previousMessageCount: number
   isStreaming: boolean

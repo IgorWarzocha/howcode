@@ -17,6 +17,12 @@ function isSummaryMessage(
   return message.role === 'branchSummary' || message.role === 'compactionSummary'
 }
 
+function isUserMessage(
+  message: Message,
+): message is Extract<Message, { role: 'assistant' | 'user' }> & { role: 'user' } {
+  return message.role === 'user'
+}
+
 function isStandaloneStatusMessage(message: Message) {
   if (
     message.role === 'system' &&
@@ -130,7 +136,7 @@ export function buildTimelineRows({
       message,
     }
 
-    if (message.role === 'user') {
+    if (isUserMessage(message)) {
       flushCurrentTurn()
       pendingImplicitTurnId = null
       currentTurn = {
