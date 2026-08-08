@@ -1,5 +1,4 @@
 import type { TerminalEvent } from '@howcode/desktop'
-import { getPersistedSessionPath, isLocalSessionPath } from '@howcode/shared/session-paths'
 import type { MutableRefObject } from 'react'
 import { useEffect } from 'react'
 import {
@@ -8,14 +7,18 @@ import {
   subscribeDesktopTerminal,
 } from '../../hooks/useDesktopTerminal'
 import {
+  bufferPendingTerminalEvent,
+  type PendingTerminalEvents,
+  takePendingTerminalEvents,
+} from './terminal-pending-events'
+import { getTerminalCleanupAction, type TerminalSessionPolicy } from './terminal-session-policy'
+import {
   cancelScheduledTerminalClose,
   scheduleTerminalClose,
   scheduleTerminalCloseAfterSessionFileIdle,
 } from './terminalViewportSessionLifecycle'
 import {
   clearTerminal,
-  hasVisibleTerminalHistory,
-  MAX_PENDING_TERMINAL_EVENTS,
   MIN_INITIAL_TERMINAL_COLS,
   MIN_INITIAL_TERMINAL_ROWS,
   writeSystemMessage,
@@ -29,20 +32,12 @@ type TerminalSessionSnapshot = NonNullable<Awaited<ReturnType<typeof openDesktop
 
 type TerminalSessionLifecycleInput = {
   appendTerminalHistory: (chunk: string) => void
-  attachFailedRef: MutableRefObject<boolean>
-  closeWhenSessionFileIdleMs: number
-  effectiveLaunchMode: TerminalLaunchMode
   focusTerminal: () => void
   getCurrentSize: () => TerminalSize
   handleTerminalResize: (cols: number, rows: number) => void
-  keepAliveMsOnUnmount: number
   lastSentSizeRef: MutableRefObject<{ sessionId: string; cols: number; rows: number } | null>
-  maxKeepAliveMsOnUnmount: number
-  onProcessExit: (() => void) | undefined
-  pendingEventsRef: MutableRefObject<TerminalEvent[]>
-  preserveSessionOnUnmount: boolean
+  policy: TerminalSessionPolicy
   projectId: string
-  replayingBufferedEventsRef: MutableRefObject<boolean>
   resetTerminal: (history?: string) => void
   scheduleTerminalResizeSettlingPasses: () => void
   scheduleXtermBottomAlign: () => void
@@ -54,71 +49,35 @@ type TerminalSessionLifecycleInput = {
   writeToTerminal: (data: string | Uint8Array) => void
 }
 
-export function getTerminalPersistedSessionPath(input: {
-  effectiveLaunchMode: TerminalLaunchMode
-  sessionPath: string | null
-  terminalSessionPath: string | null | undefined
-}) {
-  if (input.effectiveLaunchMode === 'pi-session') {
-    return (
-      getPersistedSessionPath(input.terminalSessionPath ?? null) ??
-      (isLocalSessionPath(input.terminalSessionPath)
-        ? getPersistedSessionPath(input.sessionPath)
-        : null)
-    )
-  }
-
-  return getPersistedSessionPath(input.terminalSessionPath ?? input.sessionPath)
-}
-
 function cleanupTerminalSessionOnUnmount(input: {
-  closeWhenSessionFileIdleMs: number
-  effectiveLaunchMode: TerminalLaunchMode
-  keepAliveMsOnUnmount: number
-  maxKeepAliveMsOnUnmount: number
-  preserveSessionOnUnmount: boolean
+  policy: TerminalSessionPolicy
   sessionId: string | null
   terminalHistory: string
   terminalPersistedSessionPath: string | null
 }) {
   if (!input.sessionId) return
-  const shouldCloseEmptyPreservedSession =
-    input.preserveSessionOnUnmount &&
-    input.effectiveLaunchMode === 'shell' &&
-    !hasVisibleTerminalHistory(input.terminalHistory)
-  if (input.preserveSessionOnUnmount && !shouldCloseEmptyPreservedSession) return
-  if (
-    !shouldCloseEmptyPreservedSession &&
-    input.closeWhenSessionFileIdleMs > 0 &&
-    input.terminalPersistedSessionPath
-  ) {
-    void scheduleTerminalCloseAfterSessionFileIdle(
-      input.sessionId,
-      input.closeWhenSessionFileIdleMs,
-      input.maxKeepAliveMsOnUnmount,
-    )
-    return
-  }
-  if (!shouldCloseEmptyPreservedSession && input.keepAliveMsOnUnmount > 0) {
-    scheduleTerminalClose(input.sessionId, input.keepAliveMsOnUnmount)
-    return
-  }
-  void closeDesktopTerminal({
-    sessionId: input.sessionId,
-    deleteHistory: shouldCloseEmptyPreservedSession,
-  })
-}
-
-function bufferPendingEvent(
-  pendingEventsRef: MutableRefObject<TerminalEvent[]>,
-  event: TerminalEvent,
-) {
-  pendingEventsRef.current.push(event)
-  if (pendingEventsRef.current.length > MAX_PENDING_TERMINAL_EVENTS) {
-    pendingEventsRef.current.splice(
-      0,
-      pendingEventsRef.current.length - MAX_PENDING_TERMINAL_EVENTS,
-    )
+  const action = getTerminalCleanupAction(input)
+  switch (action.kind) {
+    case 'preserve':
+      return
+    case 'close':
+      void closeDesktopTerminal({
+        sessionId: input.sessionId,
+        deleteHistory: action.deleteHistory,
+      })
+      return
+    case 'close-after-delay':
+      scheduleTerminalClose(input.sessionId, action.delayMs)
+      return
+    case 'close-after-session-file-idle':
+      void scheduleTerminalCloseAfterSessionFileIdle(
+        input.sessionId,
+        action.pollMs,
+        action.maxKeepAliveMs,
+      )
+      return
+    default:
+      return
   }
 }
 
@@ -141,13 +100,13 @@ export function useTerminalSessionLifecycle(input: TerminalSessionLifecycleInput
     if (input.terminalReadyRevision === 0) return
 
     let cancelled = false
-    input.attachFailedRef.current = false
+    let acceptPendingEvents = true
+    const pendingEvents: PendingTerminalEvents = new Map()
     input.sessionIdRef.current = null
     input.lastSentSizeRef.current = null
-    input.pendingEventsRef.current = []
-    input.replayingBufferedEventsRef.current = false
     input.terminalHistoryRef.current = ''
     input.resetTerminal()
+    const launchMode: TerminalLaunchMode = input.policy.kind
 
     const applyEvent = (event: TerminalEvent) => {
       switch (event.type) {
@@ -161,7 +120,6 @@ export function useTerminalSessionLifecycle(input: TerminalSessionLifecycleInput
           input.appendTerminalHistory(
             `\r\n[terminal] Process exited${event.exitCode === null ? '' : ` (${event.exitCode})`}.\r\n`,
           )
-          input.onProcessExit?.()
           break
         case 'cleared':
           input.terminalHistoryRef.current = ''
@@ -178,23 +136,13 @@ export function useTerminalSessionLifecycle(input: TerminalSessionLifecycleInput
     }
 
     const replayBufferedEvents = (sessionId: string) => {
-      input.replayingBufferedEventsRef.current = true
-      while (input.pendingEventsRef.current.length > 0) {
-        const pendingEvents = input.pendingEventsRef.current.splice(
-          0,
-          input.pendingEventsRef.current.length,
-        )
-        for (const event of pendingEvents) {
-          if (event.sessionId === sessionId) applyEvent(event)
-        }
-      }
-      input.replayingBufferedEventsRef.current = false
+      for (const event of takePendingTerminalEvents(pendingEvents, sessionId)) applyEvent(event)
     }
 
     const unsubscribe = subscribeDesktopTerminal((event: TerminalEvent) => {
       const sessionId = input.sessionIdRef.current
-      if (!sessionId || input.replayingBufferedEventsRef.current) {
-        if (!input.attachFailedRef.current) bufferPendingEvent(input.pendingEventsRef, event)
+      if (!sessionId) {
+        if (acceptPendingEvents) bufferPendingTerminalEvent(pendingEvents, event)
         return
       }
       if (event.sessionId === sessionId) applyEvent(event)
@@ -209,13 +157,13 @@ export function useTerminalSessionLifecycle(input: TerminalSessionLifecycleInput
       const snapshot = await openDesktopTerminal({
         projectId: input.projectId,
         sessionPath: input.terminalSessionPath,
-        launchMode: input.effectiveLaunchMode,
+        launchMode,
         cols: size.cols,
         rows: size.rows,
       })
       if (cancelled || !snapshot) return
 
-      input.attachFailedRef.current = false
+      acceptPendingEvents = false
       rememberOpenedSession({
         lastSentSizeRef: input.lastSentSizeRef,
         sessionIdRef: input.sessionIdRef,
@@ -239,8 +187,8 @@ export function useTerminalSessionLifecycle(input: TerminalSessionLifecycleInput
     }
 
     void openSession().catch((error) => {
-      input.attachFailedRef.current = true
-      input.pendingEventsRef.current = []
+      acceptPendingEvents = false
+      pendingEvents.clear()
       writeSystemMessage(
         (message) => input.writeToTerminal(message),
         error instanceof Error ? error.message : 'Unable to open terminal.',
@@ -251,16 +199,11 @@ export function useTerminalSessionLifecycle(input: TerminalSessionLifecycleInput
       cancelled = true
       const sessionId = input.sessionIdRef.current
       input.sessionIdRef.current = null
-      input.pendingEventsRef.current = []
-      input.replayingBufferedEventsRef.current = false
+      pendingEvents.clear()
       input.lastSentSizeRef.current = null
       unsubscribe()
       cleanupTerminalSessionOnUnmount({
-        closeWhenSessionFileIdleMs: input.closeWhenSessionFileIdleMs,
-        effectiveLaunchMode: input.effectiveLaunchMode,
-        keepAliveMsOnUnmount: input.keepAliveMsOnUnmount,
-        maxKeepAliveMsOnUnmount: input.maxKeepAliveMsOnUnmount,
-        preserveSessionOnUnmount: input.preserveSessionOnUnmount,
+        policy: input.policy,
         sessionId,
         terminalHistory: input.terminalHistoryRef.current,
         terminalPersistedSessionPath: input.terminalPersistedSessionPath,

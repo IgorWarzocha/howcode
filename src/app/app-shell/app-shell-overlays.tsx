@@ -21,12 +21,9 @@ type AppShellOverlaysProps = {
   sidebarCollapsed: boolean
   sidebarCompactMode: boolean
   sidebarOverlayOpen: boolean
-  workspaceContentClass: string
   onToggleSidebar: () => void
   onOpenGitOps: () => void
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
-  hoverToFocus?: boolean
-  hoverToBlur?: boolean
 }
 
 type TakeoverSidebarButtonProps = {
@@ -84,8 +81,6 @@ export function AppShellOverlays({
   onToggleSidebar,
   onOpenGitOps,
   onSetDiffBaseline,
-  hoverToFocus = true,
-  hoverToBlur = false,
 }: AppShellOverlaysProps) {
   const controllerRef = useLatestRef(controller)
   const { projectGitState } = controller
@@ -134,8 +129,6 @@ export function AppShellOverlays({
               projectGitState={projectGitState}
               diffBaseline={diffBaseline}
               onSetDiffBaseline={onSetDiffBaseline}
-              hoverToFocus={hoverToFocus}
-              hoverToBlur={hoverToBlur}
             />
           </div>
         </div>

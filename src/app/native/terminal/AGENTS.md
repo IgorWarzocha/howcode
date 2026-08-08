@@ -1,2 +1,3 @@
 - Keep built-in terminal UI and session presentation in this boundary; backend PTY ownership remains under `desktop/terminal`.
 - Treat it as plugin-shaped but not dynamically pluggable yet: no disable flags, registries, or runtime loading.
+- Shell and Pi viewport wrappers own mode policy; keep `TerminalViewportBase` internal shared xterm mechanics, not a public boolean flag surface.

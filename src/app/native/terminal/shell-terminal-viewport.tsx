@@ -1,7 +1,21 @@
-import { TerminalViewportBase, type TerminalViewportBaseProps } from './terminal-viewport-base'
+import { type SharedTerminalViewportProps, TerminalViewportBase } from './terminal-viewport-base'
 
-type ShellTerminalViewportProps = Omit<TerminalViewportBaseProps, 'launchMode'>
+type ShellTerminalViewportProps = SharedTerminalViewportProps & {
+  hoverToFocus?: boolean
+  hoverToBlur?: boolean
+}
 
-export function ShellTerminalViewport(props: ShellTerminalViewportProps) {
-  return <TerminalViewportBase {...props} launchMode="shell" />
+export function ShellTerminalViewport({
+  hoverToFocus = true,
+  hoverToBlur = false,
+  ...props
+}: ShellTerminalViewportProps) {
+  return (
+    <TerminalViewportBase
+      {...props}
+      mode="shell"
+      hoverToFocus={hoverToFocus}
+      hoverToBlur={hoverToBlur}
+    />
+  )
 }

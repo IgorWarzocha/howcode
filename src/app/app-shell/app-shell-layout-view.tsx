@@ -259,12 +259,9 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
           sidebarCollapsed={sidebarCollapsed}
           sidebarCompactMode={sidebarCompactMode}
           sidebarOverlayOpen={props.sidebarOverlayOpen}
-          workspaceContentClass={workspaceContentClass}
           onToggleSidebar={handleToggleSidebar}
           onOpenGitOps={handleOpenGitOpsFromTakeover}
           onSetDiffBaseline={handleSetDiffBaseline}
-          hoverToFocus={controller.shellState?.appSettings.hoverToFocus ?? true}
-          hoverToBlur={controller.shellState?.appSettings.hoverToBlur ?? false}
         />
         <TerminalDrawerLayer {...props} />
       </div>
