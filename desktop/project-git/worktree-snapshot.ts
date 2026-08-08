@@ -88,11 +88,14 @@ function runExclusiveStagedWorktree<T>(projectId: string, operation: () => Promi
     () => runWithProcessStagedWorktreeLock(projectId, operation),
     () => runWithProcessStagedWorktreeLock(projectId, operation),
   )
-  const cleanup = next.finally(() => {
+  const clearQueue = () => {
     if (stagedWorktreeQueues.get(projectId) === cleanup) {
       stagedWorktreeQueues.delete(projectId)
     }
-  })
+  }
+  // The queue tail is bookkeeping, not a second observer of the operation result.
+  // Keep it fulfilled so a caller-handled cancellation cannot become an unhandled rejection.
+  const cleanup = next.then(clearQueue, clearQueue)
   stagedWorktreeQueues.set(projectId, cleanup)
   return next
 }
