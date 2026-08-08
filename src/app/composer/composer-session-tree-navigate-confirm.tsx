@@ -1,8 +1,9 @@
 import { Tooltip } from '@howcode/common/tooltip'
 import { ListCollapse, Undo2, X } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useDismissibleLayer } from '../hooks/useDismissibleLayer'
 import { cn } from '../utils/cn'
 
 type ComposerSessionTreeNavigateConfirmProps = {
@@ -37,8 +38,6 @@ export function ComposerSessionTreeNavigateConfirm({
       setPopunderPosition(null)
     }
   }
-  const cancel = useEffectEvent(onCancel)
-
   const showLabelField = () => setLabelFieldVisible(true)
   const submitNavigate = (summarize: boolean) => {
     const trimmedLabel = label.trim()
@@ -46,30 +45,7 @@ export function ComposerSessionTreeNavigateConfirm({
     else onNavigateWithoutSummary(trimmedLabel || undefined)
   }
 
-  useEffect(() => {
-    if (!open) return
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      event.stopPropagation()
-      cancel()
-    }
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target
-      if (target instanceof Node && popunderRef.current?.contains(target)) return
-      if (target instanceof Element && target.closest('.composer-session-tree-inline-anchor')) {
-        return
-      }
-      cancel()
-    }
-
-    document.addEventListener('keydown', handleKeyDown, true)
-    document.addEventListener('pointerdown', handlePointerDown, true)
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown, true)
-      document.removeEventListener('pointerdown', handlePointerDown, true)
-    }
-  }, [open])
+  useDismissibleLayer({ open, onDismiss: onCancel, refs: [anchorRef, popunderRef] })
 
   const labelVisible = labelFieldVisible || Boolean(label.trim())
 
