@@ -40,6 +40,7 @@ describe('sidebar project work model boundaries', () => {
         isMain: false,
         rootProjectId: '/repo',
         branchName: 'feature',
+        parentBranchName: 'main',
         source: 'howcode',
       },
     })
@@ -74,12 +75,14 @@ describe('sidebar project work model boundaries', () => {
           label: 'feature',
           path: worktree.id,
           branchName: 'feature',
+          parentBranchName: 'main',
         },
       ],
     )
 
-    expect(groups[1]).toMatchObject({
-      id: 'feature',
+    expect(groups).toHaveLength(1)
+    expect(groups[0]).toMatchObject({
+      id: 'main',
       worktrees: [
         {
           path: worktree.id,
@@ -87,8 +90,7 @@ describe('sidebar project work model boundaries', () => {
         },
       ],
     })
-    expect(branchGroupBelongsToBranch(groups[1]!, 'feature')).toBe(true)
-    expect(branchGroupBelongsToBranch(groups[1]!, 'main')).toBe(false)
+    expect(branchGroupBelongsToBranch(groups[0]!, 'main')).toBe(true)
   })
 
   it('keeps completed worktrees with their owning branch', () => {

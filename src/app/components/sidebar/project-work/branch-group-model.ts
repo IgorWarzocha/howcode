@@ -32,7 +32,7 @@ export type WorktreeBranchGroup = WorktreeBranch & {
 
 type GroupedSidebarThreads = {
   groupedThreads: Map<string, SidebarThread[]>
-  groupedWorktreeThreads: Map<string, Map<string, SidebarThread[]>>
+  groupedWorktreeThreads: Map<string, SidebarThread[]>
   unassignedThreads: SidebarThread[]
 }
 
@@ -83,17 +83,16 @@ function createBranchThreadGroup(input: {
   branchName: string
   current: boolean
   groupedThreads: ReadonlyMap<string, SidebarThread[]>
-  groupedWorktreeThreads: ReadonlyMap<string, ReadonlyMap<string, SidebarThread[]>>
+  groupedWorktreeThreads: ReadonlyMap<string, SidebarThread[]>
   worktreesByBranch: ReadonlyMap<string, readonly WorktreeBranch[]>
 }): BranchThreadGroup {
   const branchWorktrees = input.worktreesByBranch.get(input.branchName) ?? []
-  const worktreeThreadsByPath = input.groupedWorktreeThreads.get(input.branchName)
   const worktrees = branchWorktrees
     .map((worktree) => ({
       ...worktree,
       id: worktree.path,
       complete: Boolean(worktree.complete),
-      threads: sortThreads([...(worktreeThreadsByPath?.get(worktree.path) ?? [])]),
+      threads: sortThreads([...(input.groupedWorktreeThreads.get(worktree.path) ?? [])]),
     }))
     .sort((a, b) => a.label.localeCompare(b.label))
   const branchThreads = sortThreads(input.groupedThreads.get(input.branchName) ?? [])
@@ -110,7 +109,7 @@ function createBranchThreadGroup(input: {
 
 function groupSidebarThreads(threads: readonly SidebarThread[]): GroupedSidebarThreads {
   const groupedThreads = new Map<string, SidebarThread[]>()
-  const groupedWorktreeThreads = new Map<string, Map<string, SidebarThread[]>>()
+  const groupedWorktreeThreads = new Map<string, SidebarThread[]>()
   const unassignedThreads: SidebarThread[] = []
 
   for (const thread of threads) {
@@ -121,11 +120,9 @@ function groupSidebarThreads(threads: readonly SidebarThread[]): GroupedSidebarT
     }
 
     if (thread.sidebarWorktreePath) {
-      const worktreeThreadsByPath = groupedWorktreeThreads.get(branchName) ?? new Map()
-      const worktreeThreads = worktreeThreadsByPath.get(thread.sidebarWorktreePath) ?? []
+      const worktreeThreads = groupedWorktreeThreads.get(thread.sidebarWorktreePath) ?? []
       worktreeThreads.push(thread)
-      worktreeThreadsByPath.set(thread.sidebarWorktreePath, worktreeThreads)
-      groupedWorktreeThreads.set(branchName, worktreeThreadsByPath)
+      groupedWorktreeThreads.set(thread.sidebarWorktreePath, worktreeThreads)
       continue
     }
 
