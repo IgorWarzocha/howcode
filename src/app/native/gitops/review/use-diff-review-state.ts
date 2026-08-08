@@ -1,5 +1,10 @@
+import type { DiffLineAnnotation } from '@pierre/diffs/react'
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import type { ProjectDiffBaseline } from '../../../desktop/types'
+import {
+  type ReviewAnnotationMetadata,
+  reanchorReviewTargetFromPierreAnnotation,
+} from './pierre-review-adapter'
 import { buildReviewAnnotations } from './review-annotations'
 import {
   getReviewInteractionDraft,
@@ -9,6 +14,7 @@ import {
 } from './review-interaction'
 import {
   getReviewTargetKey,
+  isSameReviewTarget,
   type LineRangeReviewTarget,
   type ReviewTarget,
   type SavedReviewComment,
@@ -101,6 +107,31 @@ export function useDiffReviewState({
     dispatchInteraction({ type: 'set-draft-body', body })
   }, [])
   const cancelInteraction = useCallback(() => dispatchInteraction({ type: 'cancel' }), [])
+  const reanchorAnnotations = useCallback(
+    (annotations: readonly DiffLineAnnotation<ReviewAnnotationMetadata>[]) => {
+      const savedTargets = new Map<string, ReviewTarget>()
+      for (const annotation of annotations) {
+        const review = annotation.metadata.review
+        const nextTarget = reanchorReviewTargetFromPierreAnnotation(annotation)
+        if (review.kind === 'comment') savedTargets.set(review.id, nextTarget)
+        if (review.kind !== 'comment') {
+          dispatchInteraction({ type: 'reanchor', from: review.target, to: nextTarget })
+        }
+      }
+      if (savedTargets.size === 0) return
+      setSavedComments((current) => {
+        let changed = false
+        const next = current.map((comment) => {
+          const target = savedTargets.get(comment.id)
+          if (!target || isSameReviewTarget(comment.target, target)) return comment
+          changed = true
+          return { ...comment, target }
+        })
+        return changed ? next : current
+      })
+    },
+    [],
+  )
 
   return {
     annotationsByFile,
@@ -119,5 +150,6 @@ export function useDiffReviewState({
       select: selectTarget,
       target: getReviewInteractionTarget(interaction),
     },
+    reanchorAnnotations,
   }
 }

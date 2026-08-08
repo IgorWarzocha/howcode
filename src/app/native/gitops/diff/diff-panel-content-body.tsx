@@ -10,6 +10,7 @@ import {
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { getDiffBaselinePrefix, getResolvedDiffBaselineLabel } from '../diff-baseline'
+import type { DiffEditingController } from '../edit/use-diff-editing'
 import type { ReviewAnnotationMetadata } from '../review/pierre-review-adapter'
 import type { ReviewCodeViewController } from '../review/review-code-view'
 import { DiffChangedFilesTree } from './diff-changed-files-tree'
@@ -47,6 +48,7 @@ type DiffPanelContentBodyProps = {
   }
   codeView: {
     ref: RefObject<CodeViewHandle<ReviewAnnotationMetadata> | null>
+    editing: DiffEditingController
     fileContent: DiffFileContentController
     renderMode: 'stacked' | 'split'
     review: ReviewCodeViewController
@@ -113,6 +115,7 @@ function DiffFilesView(input: DiffPanelContentBodyProps) {
           <DiffPanelFileList
             baseline={input.diff.baseline}
             fileContent={input.codeView.fileContent}
+            editing={input.codeView.editing}
             codeViewRef={input.codeView.ref}
             scrollContainerRef={input.codeView.scrollContainerRef}
             collapsedFiles={input.files.collapsed}

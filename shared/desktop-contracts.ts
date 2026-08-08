@@ -83,6 +83,8 @@ export type {
   ProjectDiffStreamEvent,
   ProjectDiffStreamStartResult,
   ProjectDiffTextFile,
+  ProjectFileWriteRequest,
+  ProjectFileWriteResult,
   ProjectGitState,
 } from './desktop-project-git-contracts'
 export type {

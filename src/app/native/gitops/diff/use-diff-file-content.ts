@@ -1,5 +1,11 @@
-import type { FileContents, FileDiffContentsLoader, FileDiffLoadedFiles } from '@pierre/diffs'
-import { useCallback, useState } from 'react'
+import {
+  type FileContents,
+  type FileDiffContentsLoader,
+  type FileDiffLoadedFiles,
+  type FileDiffMetadata,
+  hydratePartialDiff,
+} from '@pierre/diffs'
+import { useCallback, useMemo, useState } from 'react'
 import { getErrorMessage } from '../../../desktop/error-messages'
 import type {
   ProjectDiffFileContentIssue,
@@ -11,6 +17,10 @@ import { resolveDiffFilePath, resolveFileDiffPath } from './diff-panel-content.h
 
 export type DiffFileContentController = {
   loadFiles: FileDiffContentsLoader
+  prepareEdit: (fileDiff: FileDiffMetadata) => Promise<{
+    path: string
+    revision: string
+  }>
 }
 
 function formatBytes(bytes: number) {
@@ -47,6 +57,12 @@ function toPierreFile(projectId: string, file: ProjectDiffTextFile): FileContent
   }
 }
 
+export function hydrateDiffForEditing(fileDiff: FileDiffMetadata, files: FileDiffLoadedFiles) {
+  if (fileDiff.isPartial && fileDiff.type !== 'new') {
+    hydratePartialDiff('merge', fileDiff, files)
+  }
+}
+
 export function useDiffFileContent({
   projectId,
   resolvedBaseline,
@@ -57,8 +73,8 @@ export function useDiffFileContent({
   const scopeKey = `${projectId}:${resolvedBaseline?.rev ?? ''}`
   const [failure, setFailure] = useState<{ scopeKey: string; message: string } | null>(null)
 
-  const loadFiles = useCallback<FileDiffContentsLoader>(
-    async (fileDiff): Promise<FileDiffLoadedFiles> => {
+  const loadContent = useCallback(
+    async (fileDiff: FileDiffMetadata) => {
       if (!resolvedBaseline) {
         const message = 'Could not expand this file before the diff baseline resolved.'
         setFailure({ scopeKey, message })
@@ -68,7 +84,7 @@ export function useDiffFileContent({
       try {
         const newPath = resolveFileDiffPath(fileDiff)
         const oldPath =
-          fileDiff.type === 'rename-pure'
+          fileDiff.type === 'new' || fileDiff.type === 'rename-pure'
             ? null
             : resolveDiffFilePath(fileDiff.prevName ?? fileDiff.name)
         const result = await getProjectDiffFileContentsQuery({
@@ -81,10 +97,7 @@ export function useDiffFileContent({
         if (result.kind === 'unavailable') throw new Error(describeIssue(result.issue))
 
         setFailure(null)
-        return {
-          oldFile: result.oldFile ? toPierreFile(projectId, result.oldFile) : null,
-          newFile: toPierreFile(projectId, result.newFile),
-        }
+        return result
       } catch (error) {
         const message = getErrorMessage(error, 'Could not expand this file.')
         setFailure({ scopeKey, message })
@@ -94,8 +107,38 @@ export function useDiffFileContent({
     [projectId, resolvedBaseline, scopeKey],
   )
 
+  const loadFiles = useCallback<FileDiffContentsLoader>(
+    async (fileDiff): Promise<FileDiffLoadedFiles> => {
+      const result = await loadContent(fileDiff)
+      return {
+        oldFile: result.oldFile ? toPierreFile(projectId, result.oldFile) : null,
+        newFile: toPierreFile(projectId, result.newFile),
+      }
+    },
+    [loadContent, projectId],
+  )
+
+  const prepareEdit = useCallback(
+    async (fileDiff: FileDiffMetadata) => {
+      if (fileDiff.type === 'deleted') throw new Error('Deleted files cannot be edited.')
+      const result = await loadContent(fileDiff)
+      const files = {
+        oldFile: result.oldFile ? toPierreFile(projectId, result.oldFile) : null,
+        newFile: toPierreFile(projectId, result.newFile),
+      }
+      hydrateDiffForEditing(fileDiff, files)
+      return { path: result.newFile.path, revision: result.newFile.revision }
+    },
+    [loadContent, projectId],
+  )
+
+  const controller = useMemo(
+    () => ({ loadFiles, prepareEdit }) satisfies DiffFileContentController,
+    [loadFiles, prepareEdit],
+  )
+
   return {
-    controller: { loadFiles } satisfies DiffFileContentController,
+    controller,
     error: failure?.scopeKey === scopeKey ? failure.message : null,
   }
 }

@@ -7,6 +7,7 @@ import {
   applyRemoveWorktreePostEffect,
   applySwitchBranchPostEffect,
   applyWorkspaceCommitPostEffect,
+  applyWorkspaceFileWritePostEffect,
   applyWorktreeMetadataPostEffect,
 } from './workspace'
 
@@ -96,6 +97,17 @@ export const workspacePostEffectHandlers: PostEffectHandler[] = [
         setLiveThreadData: ctx.setLiveThreadData,
       })
     },
+  },
+  {
+    matches: (ctx) => ctx.action === 'workspace.write-file',
+    run: (ctx) =>
+      applyWorkspaceFileWritePostEffect({
+        contextualPayload: ctx.contextualPayload,
+        written: ctx.actionResult?.result?.fileWrite?.kind === 'written',
+        queryClient: ctx.queryClient,
+        loadProjectGitState: ctx.loadProjectGitState,
+        setProjectGitState: ctx.setProjectGitState,
+      }),
   },
   {
     matches: (ctx) => ctx.action === 'workspace.commit',

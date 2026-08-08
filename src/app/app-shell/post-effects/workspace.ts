@@ -11,15 +11,18 @@ import {
   upsertShellWorktreeProject,
 } from '../project-shell-cache'
 
-export async function applyWorkspaceCommitPostEffect(input: {
+type RefreshProjectGitAfterWorktreeChangeInput = {
   contextualPayload: ActionPayload
-  committed: boolean
   queryClient: QueryClient
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
   setProjectGitState: (state: ProjectGitState | null) => void
-}) {
+}
+
+async function refreshProjectGitAfterWorktreeChange(
+  input: RefreshProjectGitAfterWorktreeChangeInput,
+) {
   const projectId = getPayloadProjectId(input.contextualPayload)
-  if (!(projectId && input.committed)) return
+  if (!projectId) return
 
   notifyProjectDiffInvalidated(projectId)
   await Promise.all([
@@ -34,6 +37,20 @@ export async function applyWorkspaceCommitPostEffect(input: {
     }),
   ])
   input.setProjectGitState(await input.loadProjectGitState(projectId))
+}
+
+export async function applyWorkspaceCommitPostEffect(
+  input: RefreshProjectGitAfterWorktreeChangeInput & { committed: boolean },
+) {
+  if (!input.committed) return
+  return refreshProjectGitAfterWorktreeChange(input)
+}
+
+export async function applyWorkspaceFileWritePostEffect(
+  input: RefreshProjectGitAfterWorktreeChangeInput & { written: boolean },
+) {
+  if (!input.written) return
+  return refreshProjectGitAfterWorktreeChange(input)
 }
 
 export async function applyCommitOptionsPostEffect(input: {

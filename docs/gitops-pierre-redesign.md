@@ -9,7 +9,9 @@ This is the implementation handoff for rebuilding GitOps around the current Pier
 - Phases 1–3 are implemented: the review domain is tested, Pierre owns line/range selection, and selection offers a transient **Add comment** annotation before opening a draft.
 - Pierre's `renderSelectionAction` belongs to its editable `Editor`; read-only `CodeView` does not expose it. Do not enable editing merely to obtain that popover.
 - The changed-files rail already uses `@pierre/trees` **1.0.0-beta.6** with Git status, filtering, virtualisation, and multi-path selection. Phase 5 is complete.
-- Full diff context now hydrates on demand through a revision-pinned, size-limited desktop read contract. Direct editing, markers, keep/revert, and merge-conflict UI remain unimplemented.
+- Full diff context hydrates on demand through a revision-pinned, size-limited desktop read contract.
+- Direct text-file editing is implemented with a lazy Pierre editor, one active file, expected-revision checks, atomic writes, conflict retention, and review-annotation reanchoring.
+- Diagnostic markers, keep/revert, and merge-conflict UI remain unimplemented.
 - GitOps remains plugin-shaped inside `src/app/native/gitops/`; do not add runtime plugin machinery.
 
 No dependency upgrade is needed before this work.
@@ -430,6 +432,8 @@ Proceed only if the production integration is smaller and clearer than the exist
 
 Goal: edit the new-file side without renderer filesystem access or silent clobbering.
 
+Status: complete. `src/app/native/gitops/edit/` owns editor loading, state, and save orchestration; `desktop/project-git/file-write.ts` owns serialized revision-checked atomic writes. The host exposes only the grouped `GitOpsFileActions` contract and routes writes through `workspace.write-file` so normal Git invalidation/post-effects still apply.
+
 1. Lazy-load `Editor` and mount one `EditProvider` inside the GitOps boundary.
 2. Mark only eligible text-file CodeView items editable.
 3. Keep edits local on `onItemEditChange`; schedule backend persistence per file.
@@ -448,6 +452,8 @@ The editor is beta. Ship review selection independently so editing can be delaye
 ### Phase 7 — Keep/revert changes
 
 Goal: selective worktree control after editing is stable.
+
+Status: blocked on product semantics. **Revert change** can truthfully write Pierre's deletion-side transform back to the worktree. **Keep change** cannot: the addition side is already the worktree content, so writing it is a no-op and the hunk reappears after the required Git refresh, especially for arbitrary branch/commit baselines. Do not ship a fake keep action. Decide whether keep means staging, review dismissal, or baseline mutation before implementing this phase.
 
 1. Use `diffAcceptRejectHunk` only as the in-memory transform.
 2. Send the resulting full file content through the same revision-checked backend write path.

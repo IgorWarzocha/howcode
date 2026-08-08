@@ -12,6 +12,7 @@ import type {
   ProjectDiffBaseline,
   ProjectDiffDefaultBaseline,
   ProjectDiffRenderMode,
+  ProjectFileWriteRequest,
 } from './desktop-contracts'
 import { getLocalDraftBranchName, getPersistedSessionPath } from './session-paths'
 
@@ -46,6 +47,29 @@ export function getComposerRequest(payload: DesktopActionPayloadInput): Composer
 
 export function getProjectId(payload: DesktopActionPayloadInput) {
   return typeof payload.projectId === 'string' ? payload.projectId : null
+}
+
+export function getProjectFileWriteRequest(
+  payload: DesktopActionPayloadInput,
+): ProjectFileWriteRequest | null {
+  if (
+    typeof payload.projectId !== 'string' ||
+    typeof payload.filePath !== 'string' ||
+    typeof payload.fileContents !== 'string' ||
+    typeof payload.expectedRevision !== 'string' ||
+    payload.projectId.length === 0 ||
+    payload.filePath.length === 0 ||
+    payload.expectedRevision.length === 0
+  ) {
+    return null
+  }
+
+  return {
+    projectId: payload.projectId,
+    path: payload.filePath,
+    contents: payload.fileContents,
+    expectedRevision: payload.expectedRevision,
+  }
 }
 
 export function getSessionPath(payload: DesktopActionPayloadInput) {

@@ -65,3 +65,25 @@ export function reviewTargetToPierreAnnotation(
     metadata,
   }
 }
+
+export function reanchorReviewTargetFromPierreAnnotation(
+  annotation: DiffLineAnnotation<ReviewAnnotationMetadata>,
+) {
+  const target = annotation.metadata.review.target
+  if (target.kind === 'file' || !isDiffSide(annotation.side) || annotation.lineNumber <= 0) {
+    return target
+  }
+
+  const lineDelta = annotation.lineNumber - target.start.lineNumber
+  return createLineRangeTarget({
+    fileKey: target.fileKey,
+    filePath: target.filePath,
+    side: annotation.side,
+    lineNumber: annotation.lineNumber,
+    endSide: target.end.side === target.start.side ? annotation.side : target.end.side,
+    endLineNumber:
+      target.end.side === target.start.side
+        ? Math.max(1, target.end.lineNumber + lineDelta)
+        : target.end.lineNumber,
+  })
+}

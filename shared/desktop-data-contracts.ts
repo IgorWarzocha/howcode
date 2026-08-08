@@ -65,6 +65,8 @@ export type {
   ProjectDiffResult,
   ProjectDiffStatsResult,
   ProjectDiffTextFile,
+  ProjectFileWriteRequest,
+  ProjectFileWriteResult,
   ProjectGitState,
 } from './desktop-project-git-contracts'
 export type {

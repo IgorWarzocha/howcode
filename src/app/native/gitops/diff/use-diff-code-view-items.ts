@@ -1,6 +1,7 @@
 import type { CodeViewItem } from '@pierre/diffs'
 import type { CodeViewHandle, DiffLineAnnotation, FileDiffMetadata } from '@pierre/diffs/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { DiffEditingController } from '../edit/use-diff-editing'
 import type { ReviewAnnotationMetadata } from '../review/pierre-review-adapter'
 import {
   buildFileDiffRenderKey,
@@ -69,12 +70,14 @@ export function useDiffCodeViewItems({
   collapsedFiles,
   codeViewRef,
   focusedImageFileKeys,
+  editing,
   renderableFiles,
 }: {
   annotationsByFile: Map<string, DiffLineAnnotation<ReviewAnnotationMetadata>[]>
   collapsedFiles: Record<string, boolean>
   codeViewRef: React.RefObject<CodeViewHandle<ReviewAnnotationMetadata> | null>
   focusedImageFileKeys: ReadonlySet<string>
+  editing: DiffEditingController
   renderableFiles: readonly FileDiffMetadata[]
 }) {
   const items = useMemo<DiffCodeViewItem[]>(
@@ -86,18 +89,20 @@ export function useDiffCodeViewItems({
         const collapsed = focusedImageFileKeys.has(fileKey)
           ? false
           : (collapsedFiles[fileKey] ?? isImageFile)
+        const edit = editing.state.kind === 'editing' && editing.state.fileKey === fileKey
         return {
           id: fileKey,
           type: 'diff',
           fileDiff,
           annotations,
           collapsed,
+          edit,
           version: hashString(
-            `${fileKey}:${fileDiff.unifiedLineCount}:${fileDiff.splitLineCount}:${getAnnotationVersionKey(annotations)}:${collapsed ? 1 : 0}`,
+            `${fileKey}:${fileDiff.unifiedLineCount}:${fileDiff.splitLineCount}:${getAnnotationVersionKey(annotations)}:${collapsed ? 1 : 0}:${edit ? 1 : 0}`,
           ),
         }
       }),
-    [annotationsByFile, collapsedFiles, focusedImageFileKeys, renderableFiles],
+    [annotationsByFile, collapsedFiles, editing.state, focusedImageFileKeys, renderableFiles],
   )
   const [handle, setHandleState] = useState<CodeViewHandle<ReviewAnnotationMetadata> | null>(null)
   const syncStateRef = useRef<ItemSyncState>({ ids: [], versions: new Map() })

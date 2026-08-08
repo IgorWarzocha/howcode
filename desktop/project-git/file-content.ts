@@ -26,7 +26,7 @@ function unavailable(
   return { kind: 'unavailable', issue: { kind, side, path, ...details } }
 }
 
-function normalizeProjectPath(path: string) {
+export function normalizeProjectPath(path: string) {
   const normalized = path.replaceAll('\\', '/')
   if (
     normalized.length === 0 ||
@@ -43,7 +43,7 @@ function normalizeProjectPath(path: string) {
     : segments.join('/')
 }
 
-function isContainedPath(root: string, candidate: string) {
+export function isContainedProjectPath(root: string, candidate: string) {
   const relative = nodePath.relative(root, candidate)
   return (
     relative.length > 0 &&
@@ -53,7 +53,7 @@ function isContainedPath(root: string, candidate: string) {
   )
 }
 
-function getRevision(contents: Buffer) {
+export function getProjectTextRevision(contents: Buffer) {
   return `sha256:${createHash('sha256').update(contents).digest('hex')}`
 }
 
@@ -65,7 +65,7 @@ function decodeText(contents: Buffer, side: FileSide, path: string): ReadResult 
       file: {
         path,
         contents: new TextDecoder('utf-8', { fatal: true }).decode(contents),
-        revision: getRevision(contents),
+        revision: getProjectTextRevision(contents),
       },
     }
   } catch {
@@ -86,7 +86,7 @@ async function readWorktreeTextFile(projectRoot: string, path: string): Promise<
   if (!normalizedPath) return unavailable('new', path, 'invalid-path')
 
   const unresolvedPath = nodePath.resolve(projectRoot, normalizedPath)
-  if (!isContainedPath(projectRoot, unresolvedPath)) {
+  if (!isContainedProjectPath(projectRoot, unresolvedPath)) {
     return unavailable('new', normalizedPath, 'invalid-path')
   }
 
@@ -98,7 +98,7 @@ async function readWorktreeTextFile(projectRoot: string, path: string): Promise<
       ? unavailable('new', normalizedPath, 'missing')
       : unavailable('new', normalizedPath, 'invalid-path')
   }
-  if (!isContainedPath(projectRoot, resolvedPath)) {
+  if (!isContainedProjectPath(projectRoot, resolvedPath)) {
     return unavailable('new', normalizedPath, 'invalid-path')
   }
 

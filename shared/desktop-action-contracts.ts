@@ -14,6 +14,7 @@ import type {
   ProjectDiffBaseline,
   ProjectDiffDefaultBaseline,
   ProjectDiffRenderMode,
+  ProjectFileWriteResult,
   ProjectImportCandidate,
 } from './desktop-data-contracts'
 
@@ -52,6 +53,9 @@ export type DesktopActionPayloadFields = {
   editorSelectionEnd?: number | undefined
   editorSelectionStart?: number | undefined
   editorText?: string | undefined
+  fileContents?: string | undefined
+  filePath?: string | undefined
+  expectedRevision?: string | undefined
   provider?: string | undefined
   queueId?: string | undefined
   answers?: string[][] | undefined | null
@@ -213,6 +217,12 @@ export type DesktopActionPayloadMap = {
     sessionPath?: string | undefined | null | undefined
     diffBaseline?: ProjectDiffBaseline | null
     diffRenderMode?: ProjectDiffRenderMode | null
+  }
+  'workspace.write-file': {
+    projectId: string
+    filePath: string
+    fileContents: string
+    expectedRevision: string
   }
   'workspace.sidebar-scope': { projectIds: string[] }
   'workspace.switch-branch': { projectId?: string | undefined | null | undefined; value: string }
@@ -377,6 +387,7 @@ export type DesktopActionResultData = {
   failedWorktreeBranchName?: string | undefined | null | undefined
   failedWorktreePath?: string | undefined
   failedThreadIds?: string[] | undefined
+  fileWrite?: ProjectFileWriteResult | undefined
   importedProjectIds?: string[] | undefined
   importedProjects?: Project[] | undefined
   message?: string | undefined | null | undefined

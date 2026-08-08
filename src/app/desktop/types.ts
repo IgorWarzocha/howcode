@@ -78,6 +78,8 @@ export type {
   ProjectDiffStreamEvent,
   ProjectDiffStreamStartResult,
   ProjectDiffTextFile,
+  ProjectFileWriteRequest,
+  ProjectFileWriteResult,
   ProjectGitState,
   ProjectImportCandidate,
   ProjectTrustRequest,

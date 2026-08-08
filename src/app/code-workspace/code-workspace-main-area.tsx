@@ -7,6 +7,7 @@ import { cn } from '../utils/cn'
 import { FALLBACK_APP_SETTINGS } from './code-workspace-defaults'
 import { CodeWorkspaceMainView } from './code-workspace-main-view'
 import type { CodeWorkspaceContentProps } from './code-workspace-view'
+import { useGitOpsFileActions } from './use-gitops-file-actions'
 
 function getMainPanelClass(
   activeView: AppShellController['state']['activeView'],
@@ -21,8 +22,10 @@ function getMainPanelClass(
 }
 
 function CodeWorkspaceDiffMain(props: CodeWorkspaceContentProps) {
+  const fileActions = useGitOpsFileActions(props.handleAction)
   return (
     <DiffPanel
+      fileActions={fileActions}
       projectId={props.composerProjectId}
       isGitRepo={props.projectGitState?.isGitRepo ?? false}
       baseline={props.diffBaseline}

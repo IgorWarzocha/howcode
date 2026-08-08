@@ -16,6 +16,10 @@ export {
   startProjectDiffStream,
 } from './project-git/commit-context.ts'
 export { loadProjectDiffFileContents } from './project-git/file-content.ts'
+export {
+  getProjectFileWriteError,
+  writeProjectTextFile,
+} from './project-git/file-write.ts'
 export { getProjectCommitEntry, listProjectCommits } from './project-git/project-commits.ts'
 export {
   captureProjectDiffBaseline,

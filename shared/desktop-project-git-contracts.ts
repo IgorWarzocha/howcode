@@ -123,6 +123,29 @@ export type ProjectDiffFileContentsResult =
       issue: ProjectDiffFileContentIssue
     }
 
+export type ProjectFileWriteRequest = {
+  projectId: string
+  path: string
+  contents: string
+  expectedRevision: string
+}
+
+export type ProjectFileWriteResult =
+  | {
+      kind: 'written'
+      file: ProjectDiffTextFile
+    }
+  | {
+      kind: 'conflict'
+      path: string
+      expectedRevision: string
+      currentRevision: string | null
+    }
+  | {
+      kind: 'unavailable'
+      issue: ProjectDiffFileContentIssue
+    }
+
 export type ProjectDiffStatsResult = {
   projectId: string
   fileCount: number

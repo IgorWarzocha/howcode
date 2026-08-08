@@ -1,9 +1,16 @@
 import type { CodeViewItem, CodeViewOptions } from '@pierre/diffs'
-import { CodeView, type CodeViewHandle, type FileDiffMetadata } from '@pierre/diffs/react'
+import {
+  CodeView,
+  type CodeViewHandle,
+  EditProvider,
+  type FileDiffMetadata,
+} from '@pierre/diffs/react'
 import { useCallback, useMemo } from 'react'
 import type { ProjectDiffBaseline } from '../../../desktop/types'
 import { diffFileShellClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
+import { createPierreEditor, pierreEditorOptions } from '../edit/pierre-editor'
+import type { DiffEditingController } from '../edit/use-diff-editing'
 import type { ReviewAnnotationMetadata } from '../review/pierre-review-adapter'
 import type { ReviewCodeViewController } from '../review/review-code-view'
 import { usePierreReviewCodeView } from '../review/use-pierre-review-code-view'
@@ -26,6 +33,7 @@ type DiffPanelFileListProps = {
   scrollContainerRef: React.RefObject<HTMLDivElement | null>
   collapsedFiles: Record<string, boolean>
   diffRenderMode: 'stacked' | 'split'
+  editing: DiffEditingController
   fileContent: DiffFileContentController
   focusedImageFileKeys: ReadonlySet<string>
   onToggleFileCollapsed: (fileKey: string) => void
@@ -44,6 +52,7 @@ export function DiffPanelFileList({
   scrollContainerRef,
   collapsedFiles,
   diffRenderMode,
+  editing,
   fileContent,
   focusedImageFileKeys,
   onToggleFileCollapsed,
@@ -57,6 +66,7 @@ export function DiffPanelFileList({
     codeViewRef,
     focusedImageFileKeys,
     renderableFiles,
+    editing,
   })
 
   const codeViewOptions = useMemo<CodeViewOptions<ReviewAnnotationMetadata>>(
@@ -99,6 +109,7 @@ export function DiffPanelFileList({
         >
           <DiffPanelFileHeader
             fileDiff={fileDiff}
+            editing={editing}
             fileKey={fileKey}
             filePath={filePath}
             isCollapsed={isCollapsed}
@@ -110,7 +121,7 @@ export function DiffPanelFileList({
         </div>
       )
     },
-    [baseline, onToggleFileCollapsed, projectId],
+    [baseline, editing, onToggleFileCollapsed, projectId],
   )
 
   const fileIdentityByKey = useMemo(() => {
@@ -125,22 +136,26 @@ export function DiffPanelFileList({
     usePierreReviewCodeView({ fileIdentityByKey, review })
 
   return (
-    <div className="h-full min-h-0">
-      <CodeView<ReviewAnnotationMetadata>
-        ref={setHandle}
-        initialItems={[]}
-        selectedLines={selectedLines}
-        onSelectedLinesChange={onSelectedLinesChange}
-        containerRef={scrollContainerRef}
-        className={cn(
-          diffFileShellClass,
-          'h-full w-full overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable]',
-        )}
-        options={codeViewOptions}
-        renderCustomHeader={renderCustomHeader}
-        renderAnnotation={renderAnnotation}
-        renderGutterUtility={renderGutterUtility}
-      />
-    </div>
+    <EditProvider<ReviewAnnotationMetadata> createEditor={createPierreEditor}>
+      <div className="h-full min-h-0">
+        <CodeView<ReviewAnnotationMetadata>
+          ref={setHandle}
+          initialItems={[]}
+          selectedLines={selectedLines}
+          onSelectedLinesChange={onSelectedLinesChange}
+          containerRef={scrollContainerRef}
+          className={cn(
+            diffFileShellClass,
+            'h-full w-full overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable]',
+          )}
+          options={codeViewOptions}
+          editorOptions={pierreEditorOptions}
+          onItemEditChange={editing.onItemEditChange}
+          renderCustomHeader={renderCustomHeader}
+          renderAnnotation={renderAnnotation}
+          renderGutterUtility={renderGutterUtility}
+        />
+      </div>
+    </EditProvider>
   )
 }

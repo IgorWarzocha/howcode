@@ -7,6 +7,8 @@ import { getFeatureStatusDataAttributes } from '../../../features/feature-status
 import { useDesktopDiff } from '../../../hooks/useDesktopDiff'
 import { diffPanelMainSurfaceClass, diffPanelSplitSurfaceClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
+import type { GitOpsFileActions } from '../edit/gitops-file-actions'
+import { useDiffEditing } from '../edit/use-diff-editing'
 import type { ReviewAnnotationMetadata } from '../review/pierre-review-adapter'
 import { useDiffReviewState } from '../review/use-diff-review-state'
 import { useReviewCodeViewController } from '../review/use-review-code-view-controller'
@@ -21,6 +23,7 @@ import { useDiffPanelScrollAlignment } from './useDiffPanelScrollAlignment'
 import { useWorkerRenderablePatch } from './useWorkerRenderablePatch'
 
 type DiffPanelContentProps = {
+  fileActions: GitOpsFileActions
   projectId: string
   isGitRepo: boolean
   baseline: ProjectDiffBaseline | null
@@ -36,6 +39,7 @@ type DiffPanelContentProps = {
 }
 
 export function DiffPanelContent({
+  fileActions,
   projectId,
   isGitRepo,
   baseline,
@@ -65,7 +69,16 @@ export function DiffPanelContent({
     projectId,
     resolvedBaseline: diff?.resolvedBaseline ?? null,
   })
-  const loadError = error ?? fileContent.error
+  const reviewState = useDiffReviewState({ baseline, includeUntracked, projectId })
+  const editing = useDiffEditing({
+    fileActions,
+    fileContent: fileContent.controller,
+    onAnnotationsChange: reviewState.reanchorAnnotations,
+    projectId,
+  })
+  const editingError =
+    editing.state.kind === 'idle' || editing.state.kind === 'editing' ? editing.state.error : null
+  const loadError = error ?? fileContent.error ?? editingError
 
   useEffect(() => {
     onLoadErrorChange?.(loadError)
@@ -131,8 +144,6 @@ export function DiffPanelContent({
     selectedFilePath,
     selectedFilePathSet,
   ])
-
-  const reviewState = useDiffReviewState({ baseline, includeUntracked, projectId })
 
   useEffect(() => {
     if (showFileTree) {
@@ -208,6 +219,7 @@ export function DiffPanelContent({
         codeView={{
           ref: codeViewRef,
           fileContent: fileContent.controller,
+          editing,
           renderMode: diffRenderMode,
           review: codeViewReview,
           scrollContainerRef,

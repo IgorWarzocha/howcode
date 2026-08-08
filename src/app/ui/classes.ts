@@ -247,8 +247,11 @@ export const diffRailSearchClass = `flex min-h-8 shrink-0 items-center gap-2 rou
 export const diffRailTreeWrapperClass =
   'flex min-h-0 flex-1 flex-col gap-2 bg-[color:var(--workspace)] px-2.5 pt-1.5 pb-0'
 
+export const diffFileHeaderClass =
+  'flex min-h-9 w-full items-center bg-transparent text-[color:var(--text)] transition-colors hover:bg-[color:var(--surface-hover)]'
+
 export const diffFileHeaderButtonClass =
-  'flex min-h-9 w-full items-center justify-between gap-3 bg-transparent px-3 py-1.5 text-left text-[color:var(--text)] transition-colors hover:bg-[color:var(--surface-hover)]'
+  'flex min-h-9 min-w-0 flex-1 items-center justify-between gap-3 bg-transparent px-3 py-1.5 text-left disabled:cursor-default'
 
 export const diffFileShellClass =
   'overflow-hidden rounded-md border border-[color:var(--border)]/55 bg-[color:var(--workspace)]'

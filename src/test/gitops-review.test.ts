@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  reanchorReviewTargetFromPierreAnnotation,
   reviewTargetFromPierreSelection,
   reviewTargetToPierreAnnotation,
   reviewTargetToPierreSelection,
@@ -190,6 +191,39 @@ describe('GitOps review model', () => {
       body: 'Keep this thought.',
     })
     expect(reduceReviewInteraction(typed, { type: 'select', target: commentTarget })).toBe(typed)
+  })
+
+  it('reanchors review ranges when Pierre moves annotations through edits', () => {
+    const annotation = reviewTargetToPierreAnnotation({
+      id: 'comment-1',
+      body: 'Move me.',
+      kind: 'comment',
+      target: commentTarget,
+    })
+    const movedTarget = reanchorReviewTargetFromPierreAnnotation({
+      ...annotation,
+      lineNumber: 20,
+    })
+
+    expect(movedTarget).toMatchObject({
+      start: { side: 'additions', lineNumber: 20 },
+      end: { side: 'additions', lineNumber: 22 },
+    })
+
+    const drafting = reduceReviewInteraction(
+      reduceReviewInteraction(
+        reduceReviewInteraction(idleReviewInteraction, {
+          type: 'start-draft',
+          target: commentTarget,
+        }),
+        { type: 'set-draft-body', body: 'Keep the draft.' },
+      ),
+      { type: 'reanchor', from: commentTarget, to: movedTarget },
+    )
+    expect(drafting).toMatchObject({
+      kind: 'draft',
+      draft: { body: 'Keep the draft.', target: movedTarget },
+    })
   })
 })
 

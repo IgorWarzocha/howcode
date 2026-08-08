@@ -64,6 +64,7 @@ export {
   diffCommentSaveButtonClass,
   diffCommentTextareaClass,
   diffFileHeaderButtonClass,
+  diffFileHeaderClass,
   diffFileShellClass,
   diffImagePreviewClass,
   diffImagePreviewFrameClass,

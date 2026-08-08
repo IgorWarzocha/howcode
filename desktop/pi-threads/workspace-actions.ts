@@ -54,6 +54,7 @@ import {
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
 import { deletePersistedThreads } from './thread-actions.ts'
+import { handleWriteFileWorkspaceAction } from './workspace-file-actions.ts'
 
 async function closeWorkspaceTerminals(projectId: string) {
   const terminalSnapshots = await listTerminals()
@@ -424,6 +425,8 @@ export async function handleWorkspaceDesktopAction(
       return handleCommitOptionsWorkspaceAction(payload)
     case 'workspace.diff-preferences':
       return handleDiffPreferencesWorkspaceAction(payload)
+    case 'workspace.write-file':
+      return handleWriteFileWorkspaceAction(payload)
     case 'workspace.sidebar-scope':
       setSidebarVisibleProjectIds(getProjectIds(payload))
       return handledAction()
