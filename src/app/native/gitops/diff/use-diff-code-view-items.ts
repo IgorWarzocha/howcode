@@ -2,19 +2,12 @@ import type { CodeViewItem } from '@pierre/diffs'
 import type { CodeViewHandle, DiffLineAnnotation, FileDiffMetadata } from '@pierre/diffs/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { DiffEditingController } from '../edit/use-diff-editing'
-import type { ReviewAnnotationMetadata } from '../review/pierre-review-adapter'
-import {
-  buildFileDiffRenderKey,
-  isImageDiffFile,
-  resolveFileDiffPath,
-} from './diff-panel-content.helpers'
+import type { GitOpsAnnotationMetadata } from '../review/pierre-review-adapter'
+import { getDiffFileIdentity } from './diff-file-identity'
+import { isImageDiffFile } from './diff-panel-content.helpers'
 
-type DiffCodeViewItem = CodeViewItem<ReviewAnnotationMetadata> & { type: 'diff' }
+type DiffCodeViewItem = CodeViewItem<GitOpsAnnotationMetadata> & { type: 'diff' }
 type ItemSyncState = { ids: string[]; versions: Map<string, number | undefined> }
-
-export function getDiffFileIdentity(fileDiff: FileDiffMetadata) {
-  return { fileKey: buildFileDiffRenderKey(fileDiff), filePath: resolveFileDiffPath(fileDiff) }
-}
 
 function hashString(input: string) {
   let hash = 0
@@ -25,11 +18,15 @@ function hashString(input: string) {
 }
 
 function getAnnotationVersionKey(
-  annotations: readonly DiffLineAnnotation<ReviewAnnotationMetadata>[],
+  annotations: readonly DiffLineAnnotation<GitOpsAnnotationMetadata>[],
 ) {
   return annotations
     .map((annotation) => {
-      const review = annotation.metadata.review
+      const metadata = annotation.metadata.gitOps
+      if (metadata.kind === 'change-action') {
+        return `change:${metadata.fileKey}:${metadata.hunkIndex}:${annotation.side}:${annotation.lineNumber}`
+      }
+      const { review } = metadata
       return `${review.id}:${review.kind}:${annotation.side}:${annotation.lineNumber}:${review.kind === 'comment' ? review.body.length : 0}`
     })
     .join('|')
@@ -54,7 +51,7 @@ function syncAppendOnlyItems({
   items,
   previous,
 }: {
-  handle: CodeViewHandle<ReviewAnnotationMetadata>
+  handle: CodeViewHandle<GitOpsAnnotationMetadata>
   items: readonly DiffCodeViewItem[]
   previous: ItemSyncState
 }) {
@@ -73,9 +70,9 @@ export function useDiffCodeViewItems({
   editing,
   renderableFiles,
 }: {
-  annotationsByFile: Map<string, DiffLineAnnotation<ReviewAnnotationMetadata>[]>
+  annotationsByFile: Map<string, DiffLineAnnotation<GitOpsAnnotationMetadata>[]>
   collapsedFiles: Record<string, boolean>
-  codeViewRef: React.RefObject<CodeViewHandle<ReviewAnnotationMetadata> | null>
+  codeViewRef: React.RefObject<CodeViewHandle<GitOpsAnnotationMetadata> | null>
   focusedImageFileKeys: ReadonlySet<string>
   editing: DiffEditingController
   renderableFiles: readonly FileDiffMetadata[]
@@ -104,11 +101,11 @@ export function useDiffCodeViewItems({
       }),
     [annotationsByFile, collapsedFiles, editing.state, focusedImageFileKeys, renderableFiles],
   )
-  const [handle, setHandleState] = useState<CodeViewHandle<ReviewAnnotationMetadata> | null>(null)
+  const [handle, setHandleState] = useState<CodeViewHandle<GitOpsAnnotationMetadata> | null>(null)
   const syncStateRef = useRef<ItemSyncState>({ ids: [], versions: new Map() })
 
   const setHandle = useCallback(
-    (nextHandle: CodeViewHandle<ReviewAnnotationMetadata> | null) => {
+    (nextHandle: CodeViewHandle<GitOpsAnnotationMetadata> | null) => {
       codeViewRef.current = nextHandle
       if (!nextHandle) syncStateRef.current = { ids: [], versions: new Map() }
       setHandleState(nextHandle)

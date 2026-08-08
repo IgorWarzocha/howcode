@@ -1,14 +1,14 @@
 import type { DiffLineAnnotation } from '@pierre/diffs/react'
 import {
+  type GitOpsAnnotationMetadata,
   type ReviewAnnotation,
-  type ReviewAnnotationMetadata,
   reviewTargetToPierreAnnotation,
 } from './pierre-review-adapter'
 import type { ReviewInteraction } from './review-interaction'
 import { getReviewTargetKey, type SavedReviewComment } from './review-model'
 
 function addAnnotation(
-  annotationsByFile: Map<string, DiffLineAnnotation<ReviewAnnotationMetadata>[]>,
+  annotationsByFile: Map<string, DiffLineAnnotation<GitOpsAnnotationMetadata>[]>,
   annotation: ReviewAnnotation,
 ) {
   const entries = annotationsByFile.get(annotation.target.fileKey) ?? []
@@ -23,7 +23,7 @@ export function buildReviewAnnotations({
   comments: readonly SavedReviewComment[]
   interaction: ReviewInteraction
 }) {
-  const annotationsByFile = new Map<string, DiffLineAnnotation<ReviewAnnotationMetadata>[]>()
+  const annotationsByFile = new Map<string, DiffLineAnnotation<GitOpsAnnotationMetadata>[]>()
 
   for (const comment of comments) {
     addAnnotation(annotationsByFile, {

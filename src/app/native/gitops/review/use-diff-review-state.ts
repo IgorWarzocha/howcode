@@ -2,7 +2,7 @@ import type { DiffLineAnnotation } from '@pierre/diffs/react'
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import type { ProjectDiffBaseline } from '../../../desktop/types'
 import {
-  type ReviewAnnotationMetadata,
+  type GitOpsAnnotationMetadata,
   reanchorReviewTargetFromPierreAnnotation,
 } from './pierre-review-adapter'
 import { buildReviewAnnotations } from './review-annotations'
@@ -20,6 +20,13 @@ import {
   type SavedReviewComment,
 } from './review-model'
 import { getReviewContextId, reviewStore } from './review-store'
+
+function getReanchoredReview(annotation: DiffLineAnnotation<GitOpsAnnotationMetadata>) {
+  const metadata = annotation.metadata.gitOps
+  if (metadata.kind !== 'review') return null
+  const target = reanchorReviewTargetFromPierreAnnotation(annotation)
+  return target ? { review: metadata.review, target } : null
+}
 
 export function useDiffReviewState({
   baseline,
@@ -108,11 +115,12 @@ export function useDiffReviewState({
   }, [])
   const cancelInteraction = useCallback(() => dispatchInteraction({ type: 'cancel' }), [])
   const reanchorAnnotations = useCallback(
-    (annotations: readonly DiffLineAnnotation<ReviewAnnotationMetadata>[]) => {
+    (annotations: readonly DiffLineAnnotation<GitOpsAnnotationMetadata>[]) => {
       const savedTargets = new Map<string, ReviewTarget>()
       for (const annotation of annotations) {
-        const review = annotation.metadata.review
-        const nextTarget = reanchorReviewTargetFromPierreAnnotation(annotation)
+        const reanchored = getReanchoredReview(annotation)
+        if (!reanchored) continue
+        const { review, target: nextTarget } = reanchored
         if (review.kind === 'comment') savedTargets.set(review.id, nextTarget)
         if (review.kind !== 'comment') {
           dispatchInteraction({ type: 'reanchor', from: review.target, to: nextTarget })

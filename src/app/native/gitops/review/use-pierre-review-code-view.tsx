@@ -4,20 +4,24 @@ import { MessageSquarePlus } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 import { Tooltip } from '../../../common/tooltip'
 import { diffCommentGutterButtonClass } from '../../../ui/classes'
+import { ChangeReviewAction } from './change-review-action'
 import {
-  type ReviewAnnotationMetadata,
+  type GitOpsAnnotationMetadata,
   reviewTargetFromPierreSelection,
   reviewTargetToPierreSelection,
 } from './pierre-review-adapter'
 import type { ReviewCodeViewController } from './review-code-view'
 import { createLineRangeTarget } from './review-model'
+import type { DiffChangeReviewController } from './use-diff-change-review'
 
 export type ReviewFileIdentity = { fileKey: string; filePath: string }
 
 export function usePierreReviewCodeView({
+  changeReview,
   fileIdentityByKey,
   review,
 }: {
+  changeReview: DiffChangeReviewController
   fileIdentityByKey: ReadonlyMap<string, ReviewFileIdentity>
   review: ReviewCodeViewController
 }) {
@@ -43,15 +47,25 @@ export function usePierreReviewCodeView({
   )
 
   const renderAnnotation = useCallback(
-    (annotation: DiffLineAnnotation<ReviewAnnotationMetadata>) =>
-      review.renderAnnotation(annotation),
-    [review.renderAnnotation],
+    (annotation: DiffLineAnnotation<GitOpsAnnotationMetadata>) => {
+      const metadata = annotation.metadata.gitOps
+      if (metadata.kind === 'change-action') {
+        return (
+          <ChangeReviewAction
+            target={{ fileKey: metadata.fileKey, hunkIndex: metadata.hunkIndex }}
+            onResolve={changeReview.resolve}
+          />
+        )
+      }
+      return review.renderAnnotation(annotation)
+    },
+    [changeReview.resolve, review.renderAnnotation],
   )
 
   const renderGutterUtility = useCallback(
     (
       getHoveredLine: () => GetHoveredLineResult<'diff'> | undefined,
-      item: CodeViewItem<ReviewAnnotationMetadata>,
+      item: CodeViewItem<GitOpsAnnotationMetadata>,
     ) => {
       const hoveredLine = getHoveredLine()
       const identity = fileIdentityByKey.get(item.id)

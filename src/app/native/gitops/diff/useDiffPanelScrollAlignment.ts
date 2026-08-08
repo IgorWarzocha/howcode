@@ -1,7 +1,7 @@
 import type { CodeViewHandle, FileDiffMetadata } from '@pierre/diffs/react'
 import { useEffect } from 'react'
 import {
-  type ReviewAnnotationMetadata,
+  type GitOpsAnnotationMetadata,
   reviewTargetToPierreSelection,
 } from '../review/pierre-review-adapter'
 import type { ReviewTarget, SavedReviewComment } from '../review/review-model'
@@ -27,7 +27,7 @@ export function useDiffPanelScrollAlignment({
   collapsedFiles: Record<string, boolean>
   draftCardRef: React.RefObject<HTMLDivElement | null>
   draftTarget: ReviewTarget | null
-  codeViewRef: React.RefObject<CodeViewHandle<ReviewAnnotationMetadata> | null>
+  codeViewRef: React.RefObject<CodeViewHandle<GitOpsAnnotationMetadata> | null>
   renderableFiles: FileDiffMetadata[]
   savedComments: SavedReviewComment[]
   scrollContainerRef: React.RefObject<HTMLDivElement | null>

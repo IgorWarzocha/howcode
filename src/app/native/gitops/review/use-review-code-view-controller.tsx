@@ -1,6 +1,6 @@
 import type { DiffLineAnnotation } from '@pierre/diffs/react'
 import { type RefObject, useCallback, useMemo } from 'react'
-import type { ReviewAnnotationMetadata } from './pierre-review-adapter'
+import type { GitOpsAnnotationMetadata } from './pierre-review-adapter'
 import { ReviewAnnotationCard, type ReviewAnnotationController } from './review-annotation-card'
 import type { ReviewCodeViewController } from './review-code-view'
 import type { useDiffReviewState } from './use-diff-review-state'
@@ -42,7 +42,7 @@ export function useReviewCodeViewController({
   )
 
   const renderAnnotation = useCallback(
-    (annotation: DiffLineAnnotation<ReviewAnnotationMetadata>) => (
+    (annotation: DiffLineAnnotation<GitOpsAnnotationMetadata>) => (
       <ReviewAnnotationCard annotation={annotation} controller={annotationController} />
     ),
     [annotationController],

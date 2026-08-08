@@ -1,6 +1,7 @@
 - Keep diff UI, review/comment state, branch/baseline controls, and GitOps composer surfaces in this boundary.
 - Keep review identity, persistence, prompts, and Pierre adapters in `review/`; `diff/` owns patch rendering and CodeView item lifecycle. Never recover review targets from Pierre DOM attributes or global pointer listeners.
 - Keep read-only review actions in transient Pierre annotations. `renderSelectionAction` is editor-only; do not enable editing or hand-position overlays to imitate it.
+- Keep hunk Undo/Keep faithful to Pierre's official local `diffAcceptRejectHunk` example; do not turn those review controls into repository writes or staging.
 - Load complete diff files through the typed desktop project-git contract and Pierre's `loadDiffFiles`; keep parsed `fileDiff` identities stable so hydration survives rendering.
 - Keep editor loading/state in `edit/`. Writes cross the grouped `GitOpsFileActions` host adapter, require the read revision, and finish through the atomic `workspace.write-file` action; never write from the renderer.
 - Compose GitOps UI through grouped project, diff, review, and file-tree contracts. Message and commit-option lifecycles belong in their owned hooks; popover effects belong with their controls, not in the surface entrypoint.

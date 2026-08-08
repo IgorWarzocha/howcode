@@ -13,8 +13,17 @@ export type ReviewAnnotation =
   | { id: string; kind: 'selection-action'; target: ReviewTarget }
 
 // Pierre's annotation metadata conditional distributes over unions, so keep the
-// review discriminant nested and expose one stable metadata shape to CodeView.
-export type ReviewAnnotationMetadata = { review: ReviewAnnotation }
+// discriminant nested and expose one stable metadata shape to CodeView.
+export type GitOpsAnnotationMetadata = {
+  gitOps:
+    | { kind: 'review'; review: ReviewAnnotation }
+    | { kind: 'change-action'; fileKey: string; hunkIndex: number }
+}
+
+export function getReviewAnnotation(annotation: DiffLineAnnotation<GitOpsAnnotationMetadata>) {
+  const value = annotation.metadata.gitOps
+  return value.kind === 'review' ? value.review : null
+}
 
 function isDiffSide(side: SelectedLineRange['side']): side is DiffSide {
   return side === 'deletions' || side === 'additions'
@@ -52,9 +61,9 @@ export function reviewTargetToPierreSelection(target: ReviewTarget): SelectedLin
 
 export function reviewTargetToPierreAnnotation(
   review: ReviewAnnotation,
-): DiffLineAnnotation<ReviewAnnotationMetadata> {
+): DiffLineAnnotation<GitOpsAnnotationMetadata> {
   const { target } = review
-  const metadata = { review }
+  const metadata = { gitOps: { kind: 'review' as const, review } }
   if (target.kind === 'file') {
     return { side: 'additions', lineNumber: 0, metadata }
   }
@@ -67,9 +76,11 @@ export function reviewTargetToPierreAnnotation(
 }
 
 export function reanchorReviewTargetFromPierreAnnotation(
-  annotation: DiffLineAnnotation<ReviewAnnotationMetadata>,
+  annotation: DiffLineAnnotation<GitOpsAnnotationMetadata>,
 ) {
-  const target = annotation.metadata.review.target
+  const review = getReviewAnnotation(annotation)
+  if (!review) return null
+  const { target } = review
   if (target.kind === 'file' || !isDiffSide(annotation.side) || annotation.lineNumber <= 0) {
     return target
   }

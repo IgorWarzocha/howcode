@@ -9,7 +9,7 @@ import { diffPanelMainSurfaceClass, diffPanelSplitSurfaceClass } from '../../../
 import { cn } from '../../../utils/cn'
 import type { GitOpsFileActions } from '../edit/gitops-file-actions'
 import { useDiffEditing } from '../edit/use-diff-editing'
-import type { ReviewAnnotationMetadata } from '../review/pierre-review-adapter'
+import type { GitOpsAnnotationMetadata } from '../review/pierre-review-adapter'
 import { useDiffReviewState } from '../review/use-diff-review-state'
 import { useReviewCodeViewController } from '../review/use-review-code-view-controller'
 import {
@@ -57,7 +57,7 @@ export function DiffPanelContent({
   const [focusedFilePaths, setFocusedFilePaths] = useState<readonly string[]>([])
   const [renderFileTree, setRenderFileTree] = useState(showFileTree)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const codeViewRef = useRef<CodeViewHandle<ReviewAnnotationMetadata> | null>(null)
+  const codeViewRef = useRef<CodeViewHandle<GitOpsAnnotationMetadata> | null>(null)
   const draftCardRef = useRef<HTMLDivElement | null>(null)
   const { diff, streamedPatch, isLoading, error } = useDesktopDiff(
     projectId,

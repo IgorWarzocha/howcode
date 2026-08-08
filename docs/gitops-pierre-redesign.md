@@ -11,7 +11,7 @@ This is the implementation handoff for rebuilding GitOps around the current Pier
 - The changed-files rail already uses `@pierre/trees` **1.0.0-beta.6** with Git status, filtering, virtualisation, and multi-path selection. Phase 5 is complete.
 - Full diff context hydrates on demand through a revision-pinned, size-limited desktop read contract.
 - Direct text-file editing is implemented with a lazy Pierre editor, one active file, expected-revision checks, atomic writes, conflict retention, and review-annotation reanchoring.
-- Diagnostic markers, keep/revert, and merge-conflict UI remain unimplemented.
+- Diagnostic markers and merge-conflict UI remain unimplemented.
 - GitOps remains plugin-shaped inside `src/app/native/gitops/`; do not add runtime plugin machinery.
 
 No dependency upgrade is needed before this work.
@@ -449,18 +449,19 @@ Do not write on every keystroke directly through IPC. Use a per-file debounce/se
 
 The editor is beta. Ship review selection independently so editing can be delayed or disabled without retaining the old pointer machinery.
 
-### Phase 7 — Keep/revert changes
+### Phase 7 — Keep/undo review
 
-Goal: selective worktree control after editing is stable.
+Goal: reproduce Pierre's official accept/reject review interaction without assigning it extra Git semantics.
 
-Status: blocked on product semantics. **Revert change** can truthfully write Pierre's deletion-side transform back to the worktree. **Keep change** cannot: the addition side is already the worktree content, so writing it is a no-op and the hunk reappears after the required Git refresh, especially for arbitrary branch/commit baselines. Do not ship a fake keep action. Decide whether keep means staging, review dismissal, or baseline mutation before implementing this phase.
+Status: complete. Each unresolved hunk gets a Pierre annotation with **Undo** and **Keep**. The actions call `diffAcceptRejectHunk` with `reject` or `accept`, respectively, replace only the locally displayed `FileDiffMetadata`, and disappear when Pierre converts the hunk to context. They do not write, stage, or otherwise mutate the repository. A fresh diff source resets the local display, matching the official example's reset behavior.
 
-1. Use `diffAcceptRejectHunk` only as the in-memory transform.
-2. Send the resulting full file content through the same revision-checked backend write path.
-3. Expose actions as **Keep change** and **Revert change**; avoid ambiguous accept/reject wording against a worktree diff.
-4. Re-fetch the diff after success rather than pretending Pierre metadata is canonical Git state.
+The implementation lives in focused review modules:
 
-This needs contract tests for added/deleted files, adjacent hunks, mixed staged/unstaged changes, and concurrent file mutation.
+- `review/change-review-model.ts` derives hunk annotations and calls Pierre's transform;
+- `review/change-review-action.tsx` renders the two controls;
+- `review/use-diff-change-review.ts` owns local displayed-diff replacements.
+
+Do not reinterpret these controls as Git operations. Filesystem editing remains the separate explicit edit/save path from Phase 6.
 
 ### Phase 8 — Merge-conflict UI later
 

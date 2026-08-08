@@ -13,7 +13,7 @@ import {
   diffCommentTextareaClass,
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import type { ReviewAnnotationMetadata } from './pierre-review-adapter'
+import { type GitOpsAnnotationMetadata, getReviewAnnotation } from './pierre-review-adapter'
 import { describeReviewTarget, type ReviewDraft, type ReviewTarget } from './review-model'
 import { ReviewSelectionAction } from './review-selection-action'
 
@@ -36,10 +36,11 @@ export function ReviewAnnotationCard({
   annotation,
   controller,
 }: {
-  annotation: DiffLineAnnotation<ReviewAnnotationMetadata>
+  annotation: DiffLineAnnotation<GitOpsAnnotationMetadata>
   controller: ReviewAnnotationController
 }) {
-  const metadata = annotation.metadata.review
+  const metadata = getReviewAnnotation(annotation)
+  if (!metadata) return null
 
   if (metadata.kind === 'selection-action') {
     return (

@@ -8,7 +8,7 @@ import type {
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getErrorMessage } from '../../../desktop/error-messages'
 import type { DiffFileContentController } from '../diff/use-diff-file-content'
-import type { ReviewAnnotationMetadata } from '../review/pierre-review-adapter'
+import type { GitOpsAnnotationMetadata } from '../review/pierre-review-adapter'
 import { type DiffEditingState, getFileWriteFailure } from './diff-editing-model'
 import { type DiffEditingSession, writeDiffEditingSession } from './diff-editing-save'
 import type { GitOpsFileActions } from './gitops-file-actions'
@@ -19,11 +19,11 @@ export type DiffEditingController = {
   start: (input: { fileDiff: FileDiffMetadata; fileKey: string }) => Promise<void>
   save: (fileKey: string) => Promise<void>
   onItemEditChange: (
-    item: CodeViewItem<ReviewAnnotationMetadata>,
+    item: CodeViewItem<GitOpsAnnotationMetadata>,
     file: FileContents,
     annotations?:
-      | LineAnnotation<ReviewAnnotationMetadata>[]
-      | DiffLineAnnotation<ReviewAnnotationMetadata>[],
+      | LineAnnotation<GitOpsAnnotationMetadata>[]
+      | DiffLineAnnotation<GitOpsAnnotationMetadata>[],
   ) => void
 }
 
@@ -36,7 +36,7 @@ export function useDiffEditing({
   fileActions: GitOpsFileActions
   fileContent: DiffFileContentController
   onAnnotationsChange: (
-    annotations: readonly DiffLineAnnotation<ReviewAnnotationMetadata>[],
+    annotations: readonly DiffLineAnnotation<GitOpsAnnotationMetadata>[],
   ) => void
   projectId: string
 }): DiffEditingController {
@@ -136,11 +136,11 @@ export function useDiffEditing({
       session.dirty = true
       if (annotations) {
         const annotationList: readonly (
-          | LineAnnotation<ReviewAnnotationMetadata>
-          | DiffLineAnnotation<ReviewAnnotationMetadata>
+          | LineAnnotation<GitOpsAnnotationMetadata>
+          | DiffLineAnnotation<GitOpsAnnotationMetadata>
         )[] = annotations
         const diffAnnotations = annotationList.filter(
-          (annotation): annotation is DiffLineAnnotation<ReviewAnnotationMetadata> =>
+          (annotation): annotation is DiffLineAnnotation<GitOpsAnnotationMetadata> =>
             'side' in annotation,
         )
         onAnnotationsChange(diffAnnotations)

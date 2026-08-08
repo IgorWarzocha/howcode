@@ -117,7 +117,9 @@ describe('GitOps review model', () => {
     ).toMatchObject({
       side: 'deletions',
       lineNumber: 5,
-      metadata: { review: { id: 'comment-1', kind: 'comment', target } },
+      metadata: {
+        gitOps: { kind: 'review', review: { id: 'comment-1', kind: 'comment', target } },
+      },
     })
     expect(
       reviewTargetFromPierreSelection({
@@ -151,7 +153,10 @@ describe('GitOps review model', () => {
           [
             {
               metadata: {
-                review: { kind: 'selection-action', target: commentTarget },
+                gitOps: {
+                  kind: 'review',
+                  review: { kind: 'selection-action', target: commentTarget },
+                },
               },
             },
           ],
@@ -178,7 +183,7 @@ describe('GitOps review model', () => {
       comments: [],
       interaction: extended,
     }).get(commentTarget.fileKey)?.[0]
-    expect(extendedAnnotation?.metadata.review.id).not.toBe(selectedAnnotation?.metadata.review.id)
+    expect(extendedAnnotation?.metadata.gitOps).not.toEqual(selectedAnnotation?.metadata.gitOps)
 
     const drafting = reduceReviewInteraction(selected, {
       type: 'start-draft',
@@ -209,6 +214,8 @@ describe('GitOps review model', () => {
       start: { side: 'additions', lineNumber: 20 },
       end: { side: 'additions', lineNumber: 22 },
     })
+    expect(movedTarget).not.toBeNull()
+    if (!movedTarget) throw new Error('Expected a reanchored review target.')
 
     const drafting = reduceReviewInteraction(
       reduceReviewInteraction(

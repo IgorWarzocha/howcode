@@ -11,7 +11,7 @@ import {
 import { cn } from '../../../utils/cn'
 import { getDiffBaselinePrefix, getResolvedDiffBaselineLabel } from '../diff-baseline'
 import type { DiffEditingController } from '../edit/use-diff-editing'
-import type { ReviewAnnotationMetadata } from '../review/pierre-review-adapter'
+import type { GitOpsAnnotationMetadata } from '../review/pierre-review-adapter'
 import type { ReviewCodeViewController } from '../review/review-code-view'
 import { DiffChangedFilesTree } from './diff-changed-files-tree'
 import type { RenderablePatch } from './diff-panel-content.types'
@@ -47,7 +47,7 @@ type DiffPanelContentBodyProps = {
     show: boolean
   }
   codeView: {
-    ref: RefObject<CodeViewHandle<ReviewAnnotationMetadata> | null>
+    ref: RefObject<CodeViewHandle<GitOpsAnnotationMetadata> | null>
     editing: DiffEditingController
     fileContent: DiffFileContentController
     renderMode: 'stacked' | 'split'

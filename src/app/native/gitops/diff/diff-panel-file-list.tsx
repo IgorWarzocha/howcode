@@ -11,9 +11,11 @@ import { diffFileShellClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { createPierreEditor, pierreEditorOptions } from '../edit/pierre-editor'
 import type { DiffEditingController } from '../edit/use-diff-editing'
-import type { ReviewAnnotationMetadata } from '../review/pierre-review-adapter'
+import type { GitOpsAnnotationMetadata } from '../review/pierre-review-adapter'
 import type { ReviewCodeViewController } from '../review/review-code-view'
+import { useDiffChangeReview } from '../review/use-diff-change-review'
 import { usePierreReviewCodeView } from '../review/use-pierre-review-code-view'
+import { getDiffFileIdentity } from './diff-file-identity'
 import { DiffImagePreview } from './diff-image-preview'
 import {
   DIFF_FILE_ESTIMATED_FILE_GAP,
@@ -24,12 +26,12 @@ import {
 } from './diff-panel-content.helpers'
 import { DiffPanelFileHeader } from './diff-panel-file-header'
 import { DIFF_THEMES } from './diff-rendering'
-import { getDiffFileIdentity, useDiffCodeViewItems } from './use-diff-code-view-items'
+import { useDiffCodeViewItems } from './use-diff-code-view-items'
 import type { DiffFileContentController } from './use-diff-file-content'
 
 type DiffPanelFileListProps = {
   baseline: ProjectDiffBaseline | null
-  codeViewRef: React.RefObject<CodeViewHandle<ReviewAnnotationMetadata> | null>
+  codeViewRef: React.RefObject<CodeViewHandle<GitOpsAnnotationMetadata> | null>
   scrollContainerRef: React.RefObject<HTMLDivElement | null>
   collapsedFiles: Record<string, boolean>
   diffRenderMode: 'stacked' | 'split'
@@ -42,7 +44,7 @@ type DiffPanelFileListProps = {
   renderableFiles: FileDiffMetadata[]
 }
 
-function getItemFileDiff(item: CodeViewItem<ReviewAnnotationMetadata>) {
+function getItemFileDiff(item: CodeViewItem<GitOpsAnnotationMetadata>) {
   return item.type === 'diff' ? item.fileDiff : null
 }
 
@@ -60,16 +62,26 @@ export function DiffPanelFileList({
   review,
   renderableFiles,
 }: DiffPanelFileListProps) {
+  const changeReview = useDiffChangeReview(renderableFiles)
+  const annotationsByFile = useMemo(() => {
+    const merged = new Map(review.annotationsByFile)
+    const editingFileKey = editing.state.kind === 'idle' ? null : editing.state.fileKey
+    for (const [fileKey, changeAnnotations] of changeReview.annotationsByFile) {
+      if (fileKey === editingFileKey) continue
+      merged.set(fileKey, [...changeAnnotations, ...(merged.get(fileKey) ?? [])])
+    }
+    return merged
+  }, [changeReview.annotationsByFile, editing.state, review.annotationsByFile])
   const setHandle = useDiffCodeViewItems({
-    annotationsByFile: review.annotationsByFile,
+    annotationsByFile,
     collapsedFiles,
     codeViewRef,
     focusedImageFileKeys,
-    renderableFiles,
+    renderableFiles: changeReview.files,
     editing,
   })
 
-  const codeViewOptions = useMemo<CodeViewOptions<ReviewAnnotationMetadata>>(
+  const codeViewOptions = useMemo<CodeViewOptions<GitOpsAnnotationMetadata>>(
     () => ({
       diffStyle: diffRenderMode === 'split' ? 'split' : 'unified',
       lineDiffType: 'none',
@@ -96,7 +108,7 @@ export function DiffPanelFileList({
   )
 
   const renderCustomHeader = useCallback(
-    (item: CodeViewItem<ReviewAnnotationMetadata>) => {
+    (item: CodeViewItem<GitOpsAnnotationMetadata>) => {
       const fileDiff = getItemFileDiff(item)
       if (!fileDiff) return null
       const { fileKey, filePath } = getDiffFileIdentity(fileDiff)
@@ -126,19 +138,19 @@ export function DiffPanelFileList({
 
   const fileIdentityByKey = useMemo(() => {
     const next = new Map<string, { fileKey: string; filePath: string }>()
-    for (const fileDiff of renderableFiles) {
+    for (const fileDiff of changeReview.files) {
       const identity = getDiffFileIdentity(fileDiff)
       next.set(identity.fileKey, identity)
     }
     return next
-  }, [renderableFiles])
+  }, [changeReview.files])
   const { onSelectedLinesChange, renderAnnotation, renderGutterUtility, selectedLines } =
-    usePierreReviewCodeView({ fileIdentityByKey, review })
+    usePierreReviewCodeView({ changeReview, fileIdentityByKey, review })
 
   return (
-    <EditProvider<ReviewAnnotationMetadata> createEditor={createPierreEditor}>
+    <EditProvider<GitOpsAnnotationMetadata> createEditor={createPierreEditor}>
       <div className="h-full min-h-0">
-        <CodeView<ReviewAnnotationMetadata>
+        <CodeView<GitOpsAnnotationMetadata>
           ref={setHandle}
           initialItems={[]}
           selectedLines={selectedLines}
