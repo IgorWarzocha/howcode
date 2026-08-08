@@ -18,9 +18,11 @@ export function useDraftPiSettings(input: {
   const revertFailedThemeUpdate = useCallback((failedTheme: string) => {
     if (pendingThemeRef.current !== failedTheme) return
     pendingThemeRef.current = null
-    setDraftPiSettings((current) =>
-      current.theme === failedTheme ? piSettingsRef.current : current,
-    )
+    const current = draftPiSettingsRef.current
+    if (current.theme !== failedTheme) return
+    const next = { ...current, theme: piSettingsRef.current.theme }
+    draftPiSettingsRef.current = next
+    setDraftPiSettings(next)
   }, [])
 
   useEffect(() => {
@@ -31,11 +33,11 @@ export function useDraftPiSettings(input: {
     piSettingsRef.current = input.piSettings
     if (pendingThemeRef.current === input.piSettings.theme) pendingThemeRef.current = null
     if (dirtyKeysRef.current.size === 0) {
-      setDraftPiSettings(
-        pendingThemeRef.current
-          ? { ...input.piSettings, theme: pendingThemeRef.current }
-          : input.piSettings,
-      )
+      const next = pendingThemeRef.current
+        ? { ...input.piSettings, theme: pendingThemeRef.current }
+        : input.piSettings
+      draftPiSettingsRef.current = next
+      setDraftPiSettings(next)
     }
   }, [input.piSettings])
 
@@ -45,7 +47,9 @@ export function useDraftPiSettings(input: {
         const theme = value as string
         dirtyKeysRef.current.delete(key)
         pendingThemeRef.current = theme
-        setDraftPiSettings((current) => ({ ...current, theme }))
+        const next = { ...draftPiSettingsRef.current, theme }
+        draftPiSettingsRef.current = next
+        setDraftPiSettings(next)
         writeQueueRef.current = appendPiSettingsWrite(writeQueueRef.current, async () => {
           try {
             const result = await input.onAction('pi-settings.update', {
@@ -63,7 +67,9 @@ export function useDraftPiSettings(input: {
       }
 
       dirtyKeysRef.current.add(key)
-      setDraftPiSettings((current) => ({ ...current, [key]: value }))
+      const next = { ...draftPiSettingsRef.current, [key]: value }
+      draftPiSettingsRef.current = next
+      setDraftPiSettings(next)
     },
     [input.onAction, revertFailedThemeUpdate],
   )
@@ -73,17 +79,15 @@ export function useDraftPiSettings(input: {
     dirtyKeysRef.current.clear()
     const snapshot = draftPiSettingsRef.current
     if (dirtyKeys.length > 0) {
-      writeQueueRef.current = appendPiSettingsWrite(writeQueueRef.current, () =>
-        dirtyKeys.reduce<Promise<void>>(
-          (pending, key) =>
-            pending.then(async () => {
-              await input.onAction('pi-settings.update', {
-                piSettingsKey: key,
-                value: snapshot[key],
-              })
-            }),
-          Promise.resolve(),
-        ),
+      writeQueueRef.current = dirtyKeys.reduce<Promise<unknown>>(
+        (queue, key) =>
+          appendPiSettingsWrite(queue, async () => {
+            await input.onAction('pi-settings.update', {
+              piSettingsKey: key,
+              value: snapshot[key],
+            })
+          }),
+        writeQueueRef.current,
       )
     }
     await writeQueueRef.current
