@@ -23,6 +23,7 @@ const stagedWorktreeLockRoot = join(tmpdir(), 'howcode-git-worktree-locks')
 const stagedWorktreeLockStaleMs = 120_000
 const stagedWorktreeLockPollMs = 50
 const stagedWorktreeLockTimeoutMs = 30_000
+const canonicalPatchPrefixes = ['--src-prefix=a/', '--dst-prefix=b/']
 
 function getStagedWorktreeLockPath(projectId: string) {
   const lockKey = createHash('sha1').update(projectId).digest('hex')
@@ -179,7 +180,13 @@ async function loadTrackedWorktreeSnapshot(
       ]
       const patchPromise = runGitStreamingWithOptions(
         projectId,
-        diffArguments(['--unified=1', '--no-color', '--no-ext-diff', '--find-renames']),
+        diffArguments([
+          '--unified=1',
+          '--no-color',
+          '--no-ext-diff',
+          '--find-renames',
+          ...canonicalPatchPrefixes,
+        ]),
         {
           env,
           timeout: 20_000,
@@ -220,7 +227,13 @@ async function loadStagedWorktreeSnapshot(
 
     const patchPromise = runGitStreamingWithOptions(
       projectId,
-      diffArguments(['--unified=1', '--no-color', '--no-ext-diff', '--find-renames']),
+      diffArguments([
+        '--unified=1',
+        '--no-color',
+        '--no-ext-diff',
+        '--find-renames',
+        ...canonicalPatchPrefixes,
+      ]),
       {
         env,
         timeout: 20_000,
