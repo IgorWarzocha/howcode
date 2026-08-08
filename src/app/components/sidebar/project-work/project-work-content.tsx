@@ -11,7 +11,7 @@ import {
   buildBranchGroups,
   UNASSIGNED_BRANCH_GROUP_ID,
 } from './branch-group-model'
-import { BranchThreadGroupSection } from './branch-thread-groups'
+import { BranchThreadGroupSection } from './branch-thread-group-section'
 import { NewThreadMenu } from './new-thread-menu'
 import {
   getCurrentBranchForProject,

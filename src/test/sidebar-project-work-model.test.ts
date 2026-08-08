@@ -4,9 +4,12 @@ import {
   buildBranchGroups,
 } from '../app/components/sidebar/project-work/branch-group-model'
 import {
+  filterVisibleProjectIds,
   getDisplayableProjects,
   getDisplayableWorkspaces,
+  getSelectedProjectForScope,
   getVisibleProjectIds,
+  toggleVisibleProjectId,
 } from '../app/components/sidebar/project-work/project-scope-model'
 import { getThreadBucketsForProjectWork } from '../app/components/sidebar/project-work/project-thread-model'
 import type { Project, Thread } from '../app/types'
@@ -49,6 +52,24 @@ describe('sidebar project work model boundaries', () => {
     expect(getDisplayableWorkspaces([root, worktree])).toEqual([root, worktree])
     expect(getVisibleProjectIds(null, null, root)).toEqual(['/repo'])
     expect(getVisibleProjectIds(null, undefined, root)).toEqual([])
+    expect(
+      getSelectedProjectForScope({
+        projects: [root],
+        selectedProjectId: worktree.id,
+        workspaces: [root, worktree],
+      }),
+    ).toBe(root)
+    expect(filterVisibleProjectIds(['/missing', root.id], [root])).toEqual([root.id])
+    expect(toggleVisibleProjectId(root.id, [])).toEqual({
+      nextProjectIds: [root.id],
+      shouldFocusProject: true,
+      shouldShowLanding: false,
+    })
+    expect(toggleVisibleProjectId(root.id, [root.id])).toEqual({
+      nextProjectIds: [],
+      shouldFocusProject: false,
+      shouldShowLanding: true,
+    })
   })
 
   it('preserves worktree identity from project threads into branch groups', () => {

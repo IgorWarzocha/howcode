@@ -21,6 +21,7 @@ function branchGroup(overrides: Partial<BranchThreadGroup> = {}): BranchThreadGr
 describe('sidebar branch action capabilities', () => {
   it('derives ordinary, current, worktree, and unassigned action sets', () => {
     expect(getBranchActionCapabilities(branchGroup())).toEqual({
+      canStartThread: true,
       canPrune: true,
       canSwitch: true,
       canToggleWorktreeComplete: false,
@@ -55,6 +56,7 @@ describe('sidebar branch action capabilities', () => {
     })
 
     expect(getBranchActionCapabilities(branchGroup({ unassigned: true }))).toEqual({
+      canStartThread: true,
       canPrune: false,
       canSwitch: false,
       canToggleWorktreeComplete: false,
@@ -65,8 +67,9 @@ describe('sidebar branch action capabilities', () => {
     })
   })
 
-  it('supports display-context overrides and counts the always-present start action', () => {
+  it('supports display-context overrides and counts enabled actions', () => {
     const capabilities = getBranchActionCapabilities(branchGroup({ current: true }), {
+      canStartThread: true,
       canPrune: false,
       canCreateWorktree: false,
     })

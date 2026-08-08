@@ -19,6 +19,7 @@ import {
 import type { BranchThreadGroup } from './branch-group-model'
 import { getWorktreeParentBranchName } from './branch-row-helpers'
 import { createThreadForBranch, createThreadInWorktreeForBranch } from './new-thread-actions'
+import { getDesktopBranchActionFailure, useBranchActionExecution } from './useBranchActionExecution'
 import { useProjectWorkRowMenu } from './useProjectWorkRowMenu'
 
 function getStartThreadBranchName(group: BranchThreadGroup, currentBranch: string | null) {
@@ -106,8 +107,7 @@ function BranchWorktreeCreateAction({
   onAction: DesktopActionInvoker
 }) {
   const [worktreeBranchName, setWorktreeBranchName] = useState('')
-  const [worktreeError, setWorktreeError] = useState<string | null>(null)
-  const [pending, setPending] = useState(false)
+  const execution = useBranchActionExecution()
   const inputRef = useRef<HTMLInputElement | null>(null)
   const menu = useProjectWorkRowMenu('branch')
   const parentBranchName = getWorktreeParentBranchName(group, currentBranch)
@@ -121,24 +121,21 @@ function BranchWorktreeCreateAction({
   const createChildWorktree = async () => {
     const branchName = worktreeBranchName.trim()
     if (!branchName) return
-    setWorktreeError(null)
-    setPending(true)
-    try {
-      const result = await createThreadInWorktreeForBranch({
-        branchName,
-        parentBranchName,
-        onAction,
-        projectId: project.id,
-      })
-      if (result.error) {
-        setWorktreeError(result.error)
-        return
-      }
-      setWorktreeBranchName('')
-      menu.setOpen(false)
-    } finally {
-      setPending(false)
-    }
+    execution.clearWarning()
+    await execution.run({
+      execute: () =>
+        createThreadInWorktreeForBranch({
+          branchName,
+          parentBranchName,
+          onAction,
+          projectId: project.id,
+        }),
+      getFailure: (result) => result.error ?? null,
+      onSuccess: () => {
+        setWorktreeBranchName('')
+        menu.setOpen(false)
+      },
+    })
   }
 
   return (
@@ -167,15 +164,15 @@ function BranchWorktreeCreateAction({
             inputRef={inputRef}
             parentBranchName={parentBranchName}
             worktreeBranchName={worktreeBranchName}
-            worktreeError={worktreeError}
+            worktreeError={execution.warning}
             menuRight={menu.right}
             menuWidth={menu.width}
             onCreateChildWorktree={() => void createChildWorktree()}
             onClose={() => menu.setOpen(false)}
-            pending={pending}
+            pending={execution.pending}
             onWorktreeBranchNameChange={(value) => {
               setWorktreeBranchName(value)
-              setWorktreeError(null)
+              execution.clearWarning()
             }}
           />
         </div>
@@ -184,7 +181,7 @@ function BranchWorktreeCreateAction({
   )
 }
 
-function EmptyBranchStartAction({
+function BranchStartThreadAction({
   blocked,
   canSwitch,
   currentBranch,
@@ -200,31 +197,33 @@ function EmptyBranchStartAction({
   onAction: DesktopActionInvoker
 }) {
   const targetProjectId = group.worktreePath ?? project.id
-  const [pending, setPending] = useState(false)
-  const [warningMessage, setWarningMessage] = useState<string | null>(null)
+  const execution = useBranchActionExecution()
   const startThread = async () => {
-    setWarningMessage(null)
-    setPending(true)
-    try {
-      if (!(group.current || group.worktree || group.unassigned)) {
-        const worktreeResult = await createThreadInWorktreeForBranch({
-          branchName: group.label,
-          parentBranchName: currentBranch,
-          onAction,
-          projectId: project.id,
-        })
-        if (worktreeResult.error) setWarningMessage(worktreeResult.error)
-        return
-      }
-
-      await createThreadForBranch({
-        branchName: getStartThreadBranchName(group, currentBranch),
-        onAction,
-        projectId: targetProjectId,
+    execution.clearWarning()
+    if (!(group.current || group.worktree || group.unassigned)) {
+      await execution.run({
+        execute: () =>
+          createThreadInWorktreeForBranch({
+            branchName: group.label,
+            parentBranchName: currentBranch,
+            onAction,
+            projectId: project.id,
+          }),
+        getFailure: (result) => result.error ?? null,
       })
-    } finally {
-      setPending(false)
+      return
     }
+
+    await execution.run({
+      execute: () =>
+        createThreadForBranch({
+          branchName: getStartThreadBranchName(group, currentBranch),
+          onAction,
+          projectId: targetProjectId,
+        }),
+      getFailure: (result) =>
+        getDesktopBranchActionFailure(result, 'Could not start a new session.'),
+    })
   }
 
   const label = group.worktree
@@ -234,23 +233,28 @@ function EmptyBranchStartAction({
       : group.unassigned
         ? 'Start unassigned thread'
         : `Start thread in ${group.label} worktree`
-  const tooltipContent = canSwitch ? 'Switch branches and start a new session.' : label
-  const warning = warningMessage ?? (blocked ? 'Worktree is dirty. Commit first.' : null)
+  const tooltipContent = canSwitch ? `Start thread in ${group.label} worktree` : label
+  const warning = execution.warning ?? (blocked ? 'Worktree is dirty. Commit first.' : null)
 
   return (
     <SidebarActionTooltip description={tooltipContent} warning={warning}>
       <button
         type="button"
         className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--optical-up sidebar-project-work-empty-start"
-        data-warning={blocked ? 'true' : 'false'}
-        disabled={pending}
+        data-warning={warning ? 'true' : 'false'}
+        disabled={execution.pending}
         onClick={(event) => {
           event.stopPropagation()
+          if (blocked) return
           void startThread()
         }}
         aria-label={label}
       >
-        {pending ? <ActivitySpinner className="h-3 w-3 text-current" /> : <Plus size={12} />}
+        {execution.pending ? (
+          <ActivitySpinner className="h-3 w-3 text-current" />
+        ) : (
+          <Plus size={12} />
+        )}
       </button>
     </SidebarActionTooltip>
   )
@@ -337,14 +341,16 @@ export function BranchInlineActions({
           onAction={onAction}
         />
       ) : null}
-      <EmptyBranchStartAction
-        blocked={switchBlocked}
-        canSwitch={capabilities.canSwitch}
-        currentBranch={currentBranch}
-        group={group}
-        project={project}
-        onAction={onAction}
-      />
+      {capabilities.canStartThread ? (
+        <BranchStartThreadAction
+          blocked={switchBlocked}
+          canSwitch={capabilities.canSwitch}
+          currentBranch={currentBranch}
+          group={group}
+          project={project}
+          onAction={onAction}
+        />
+      ) : null}
     </span>
   )
 }

@@ -5,7 +5,7 @@ import {
   shouldShowBranchGroupDividerBefore,
 } from './branch-group-layout'
 import type { BranchThreadGroup, WorktreeBranch } from './branch-group-model'
-import { BranchThreadGroupSection } from './branch-thread-groups'
+import { BranchThreadGroupSection } from './branch-thread-group-section'
 
 function getCompletedWorktreesForCompactCurrentBranch(
   worktreeGroups: readonly BranchThreadGroup[],

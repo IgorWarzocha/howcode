@@ -31,6 +31,45 @@ export function getDisplayableWorkspaces(projects: readonly Project[]) {
   )
 }
 
+export function getSelectedProjectForScope({
+  projects,
+  selectedProjectId,
+  workspaces,
+}: {
+  projects: readonly Project[]
+  selectedProjectId: string
+  workspaces: readonly Project[]
+}) {
+  const selectedWorkspace = workspaces.find((project) => project.id === selectedProjectId)
+  return (
+    projects.find((project) => project.id === selectedProjectId) ??
+    projects.find((project) => project.id === selectedWorkspace?.worktree?.rootProjectId) ??
+    projects[0] ??
+    null
+  )
+}
+
+export function filterVisibleProjectIds(
+  configuredProjectIds: string[] | null | undefined,
+  projects: readonly Project[],
+) {
+  if (!configuredProjectIds) return configuredProjectIds
+  const validProjectIds = new Set(projects.map((project) => project.id))
+  return configuredProjectIds.filter((projectId) => validProjectIds.has(projectId))
+}
+
+export function toggleVisibleProjectId(projectId: string, visibleProjectIds: readonly string[]) {
+  const wasVisible = visibleProjectIds.includes(projectId)
+  const nextProjectIds = wasVisible
+    ? visibleProjectIds.filter((id) => id !== projectId)
+    : [...visibleProjectIds, projectId]
+  return {
+    nextProjectIds,
+    shouldFocusProject: !wasVisible && visibleProjectIds.length === 0,
+    shouldShowLanding: nextProjectIds.length === 0,
+  }
+}
+
 export function orderProjectsForScopeSelector(
   projects: readonly Project[],
   visibleProjectIds: string[],

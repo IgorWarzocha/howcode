@@ -2,6 +2,7 @@ import { canCreateWorktreeFromBranchGroup } from './branch-group-layout'
 import type { BranchThreadGroup } from './branch-group-model'
 
 export type BranchActionCapabilities = {
+  canStartThread: boolean
   canPrune: boolean
   canSwitch: boolean
   canToggleWorktreeComplete: boolean
@@ -30,6 +31,7 @@ export function getBranchActionCapabilities(
   overrides: Partial<BranchActionCapabilities> = {},
 ): BranchActionCapabilities {
   return {
+    canStartThread: true,
     canPrune: !group.unassigned,
     canSwitch: !(group.current || group.unassigned || group.worktree),
     canToggleWorktreeComplete: group.worktree,
@@ -42,5 +44,5 @@ export function getBranchActionCapabilities(
 }
 
 export function getBranchActionCount(capabilities: BranchActionCapabilities) {
-  return Object.values(capabilities).filter(Boolean).length + 1
+  return Object.values(capabilities).filter(Boolean).length
 }

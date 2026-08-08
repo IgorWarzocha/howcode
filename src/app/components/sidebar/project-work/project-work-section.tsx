@@ -1,10 +1,8 @@
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
-import { useQueries } from '@tanstack/react-query'
 import { FolderCode } from 'lucide-react'
-import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
 import type { AppSettings, DesktopActionInvoker, ProjectGitState } from '../../../desktop/types'
-import { desktopQueryKeys, getProjectGitStateQuery } from '../../../query/desktop-query'
 import type { Project, View } from '../../../types'
 import { SidebarProjectsSkeleton } from '../sidebar-skeletons'
 import {
@@ -20,16 +18,12 @@ import {
   hasUncommittedProjectChanges,
 } from './project-git-model'
 import { ProjectInstallTargetList } from './project-install-target-list'
-import {
-  getDisplayableProjects,
-  getDisplayableWorkspaces,
-  getProjectScopeLabel,
-  getVisibleProjectIds,
-  orderProjectsForScopeSelector,
-} from './project-scope-model'
 import { ProjectScopeSelector } from './project-scope-selector'
-import { getThreadBucketsForProjectWork, getWorktreeProjectsForRoot } from './project-thread-model'
+import { getThreadBucketsForProjectWork } from './project-thread-model'
 import { MultiProjectWorkContent, SingleProjectWorkContent } from './project-work-content'
+import { useProjectGitStates } from './useProjectGitStates'
+import { useProjectScopeController } from './useProjectScopeController'
+import { useProjectThreadLoading } from './useProjectThreadLoading'
 
 type ProjectWorkSectionProps = {
   activeView: View
@@ -56,49 +50,6 @@ type ProjectWorkSectionProps = {
   onToggleProjectCollapse: (projectId: string) => void
 }
 
-function filterVisibleProjectIds(
-  configuredProjectIds: string[] | null | undefined,
-  projects: Project[],
-) {
-  if (!configuredProjectIds) return configuredProjectIds
-  const validProjectIds = new Set(projects.map((project) => project.id))
-  return configuredProjectIds.filter((projectId) => validProjectIds.has(projectId))
-}
-
-function useInitialEmptyProjectScope({
-  initialVisibleProjectIds,
-  onShowView,
-  projectTargetMode,
-}: Pick<ProjectWorkSectionProps, 'initialVisibleProjectIds' | 'onShowView' | 'projectTargetMode'>) {
-  const appliedRef = useRef(false)
-  useEffect(() => {
-    if (appliedRef.current || initialVisibleProjectIds === undefined) return
-    appliedRef.current = true
-    if (projectTargetMode) return
-    if (initialVisibleProjectIds === null || initialVisibleProjectIds.length > 0) return
-    onShowView('landing')
-  }, [initialVisibleProjectIds, onShowView, projectTargetMode])
-}
-
-function applyVisibleProjectToggle(input: {
-  projectId: string
-  visibleProjectIds: string[]
-  setVisibleProjectIds: (projectIds: string[]) => void
-  focusProject: (projectId: string) => void
-  showLanding: () => void
-}) {
-  const wasVisible = input.visibleProjectIds.includes(input.projectId)
-  const nextProjectIds = wasVisible
-    ? input.visibleProjectIds.filter((id) => id !== input.projectId)
-    : [...input.visibleProjectIds, input.projectId]
-  input.setVisibleProjectIds(nextProjectIds)
-  if (!wasVisible && input.visibleProjectIds.length === 0) {
-    input.focusProject(input.projectId)
-  } else if (nextProjectIds.length === 0) {
-    input.showLanding()
-  }
-}
-
 export function ProjectWorkSection({
   activeView,
   appSettings,
@@ -122,42 +73,33 @@ export function ProjectWorkSection({
   onShowView,
   onToggleProjectCollapse,
 }: ProjectWorkSectionProps) {
-  const [projectSwitcherOpen, setProjectSwitcherOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [collapsedBranchIds, setCollapsedBranchIds] = useState<Record<string, boolean>>({})
-  const [visibleProjectIdsOverride, setStoredVisibleProjectIds] = useState<
-    string[] | null | undefined
-  >(undefined)
-  const [scopeSelectorOrderIds, setScopeSelectorOrderIds] = useState<string[] | null>(null)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
-  const displayableWorkspaces = useMemo(() => getDisplayableWorkspaces(projects), [projects])
-  const displayableProjects = useMemo(() => getDisplayableProjects(projects), [projects])
-  const selectedWorkspace = displayableWorkspaces.find(
-    (project) => project.id === selectedProjectId,
-  )
-  const selectedProject =
-    displayableProjects.find((project) => project.id === selectedProjectId) ??
-    displayableProjects.find(
-      (project) => project.id === selectedWorkspace?.worktree?.rootProjectId,
-    ) ??
-    displayableProjects[0] ??
-    null
-  const configuredVisibleProjectIds =
-    visibleProjectIdsOverride === undefined ? initialVisibleProjectIds : visibleProjectIdsOverride
-  const storedVisibleProjectIds = useMemo(() => {
-    return filterVisibleProjectIds(configuredVisibleProjectIds, displayableProjects)
-  }, [configuredVisibleProjectIds, displayableProjects])
-  const visibleProjectIds = getVisibleProjectIds(
-    storedVisibleProjectIds ?? null,
-    null,
+  const scope = useProjectScopeController({
+    initialVisibleProjectIds,
+    projects,
+    projectTargetMode,
+    selectedProjectId,
+    onAction,
+    onProjectPrimeSelection,
+    onProjectSelect,
+    onShowView,
+  })
+  const {
+    displayableProjects,
+    displayableWorkspaces,
+    focusProject,
+    primeProject,
+    projectScopeLabel,
+    projectSwitcherOpen,
+    scopeProject,
+    scopeSelectorProjects,
     selectedProject,
-  )
-  useInitialEmptyProjectScope({ initialVisibleProjectIds, onShowView, projectTargetMode })
-
-  const visibleProjects = useMemo(() => {
-    const visibleIds = new Set(visibleProjectIds)
-    return displayableProjects.filter((project) => visibleIds.has(project.id))
-  }, [displayableProjects, visibleProjectIds])
+    setProjectSwitcherOpen,
+    toggleVisibleProject,
+    visibleProjects,
+  } = scope
 
   useHowcodeKeybindingCommand('sidebar.find', (event) => {
     event.preventDefault()
@@ -172,62 +114,12 @@ export function ProjectWorkSection({
     )
     selectedRow?.scrollIntoView({ block: 'nearest' })
   }, [selectedThreadId])
-  const scopeSelectorProjects = useMemo(
-    () =>
-      orderProjectsForScopeSelector(
-        displayableProjects,
-        projectSwitcherOpen && scopeSelectorOrderIds ? scopeSelectorOrderIds : visibleProjectIds,
-      ),
-    [displayableProjects, projectSwitcherOpen, scopeSelectorOrderIds, visibleProjectIds],
-  )
-
-  const gitStateQueries = useQueries({
-    queries: visibleProjects.map((project) => ({
-      queryKey: desktopQueryKeys.projectGitState(project.id),
-      queryFn: () => getProjectGitStateQuery(project.id),
-      staleTime: 0,
-    })),
+  const gitStatesByProjectId = useProjectGitStates(visibleProjects, projectGitState)
+  useProjectThreadLoading({
+    allWorkspaces: displayableWorkspaces,
+    visibleProjects,
+    onLoadProjectThreads,
   })
-  const gitStatesByProjectId = useMemo(() => {
-    const states = new Map<string, ProjectGitState | null>()
-    for (const [index, project] of visibleProjects.entries()) {
-      states.set(project.id, gitStateQueries[index]?.data ?? null)
-    }
-    if (projectGitState) states.set(projectGitState.projectId, projectGitState)
-    return states
-  }, [gitStateQueries, projectGitState, visibleProjects])
-  const loadProjectThreads = useEffectEvent(onLoadProjectThreads)
-
-  useEffect(() => {
-    const projectsToLoad = new Map(visibleProjects.map((project) => [project.id, project]))
-    for (const project of visibleProjects) {
-      for (const worktreeProject of getWorktreeProjectsForRoot(project, displayableWorkspaces)) {
-        projectsToLoad.set(worktreeProject.id, worktreeProject)
-      }
-    }
-    for (const project of projectsToLoad.values()) {
-      if (project.threadsLoaded) continue
-      void loadProjectThreads(project.id, { chat: false })
-    }
-  }, [displayableWorkspaces, visibleProjects])
-
-  const focusProject = (projectId: string) => {
-    onProjectSelect(projectId)
-    void onAction('project.select', { projectId })
-  }
-  const primeProject = (projectId: string) => {
-    onProjectPrimeSelection(projectId)
-    void onAction('project.select', { projectId })
-  }
-  const toggleVisibleProject = (projectId: string) => {
-    applyVisibleProjectToggle({
-      projectId,
-      visibleProjectIds,
-      setVisibleProjectIds: setStoredVisibleProjectIds,
-      focusProject,
-      showLanding: () => onShowView('landing'),
-    })
-  }
 
   if (displayableProjects.length === 0) {
     if (loading) return <SidebarProjectsSkeleton />
@@ -313,19 +205,6 @@ export function ProjectWorkSection({
   const selectedThread = contentProject.threads.find((thread) => thread.id === selectedThreadId)
   const selectedGroupId = selectedThread?.branchName?.trim() || UNASSIGNED_BRANCH_GROUP_ID
   const multiProjectMode = visibleProjects.length > 1
-  const scopeProject =
-    visibleProjects.find((project) => project.id === selectedProject.id) ??
-    visibleProjects[0] ??
-    null
-  const projectScopeLabel = getProjectScopeLabel({ selectedProject, visibleProjects })
-
-  const setProjectSwitcherOpenState = (open: boolean) => {
-    if (open) setScopeSelectorOrderIds(visibleProjectIds)
-    setProjectSwitcherOpen(open)
-    if (open || storedVisibleProjectIds === null) return
-    setScopeSelectorOrderIds(null)
-    void onAction('workspace.sidebar-scope', { projectIds: storedVisibleProjectIds })
-  }
   return (
     <section className="sidebar-project-work-section" aria-label="Project work">
       <ProjectScopeSelector
@@ -338,7 +217,7 @@ export function ProjectWorkSection({
         terminalRunningWorkspaceIds={terminalRunningWorkspaceIds}
         visibleProjects={visibleProjects}
         onAction={onAction}
-        onOpenChange={setProjectSwitcherOpenState}
+        onOpenChange={setProjectSwitcherOpen}
         onOpenSettingsPanel={onOpenSettingsPanel}
         onToggleVisibleProject={toggleVisibleProject}
       />
