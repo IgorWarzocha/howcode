@@ -1,11 +1,11 @@
-import { QueuedPromptsCard } from '@howcode/composer'
+import { getComposerRuntimeModel, QueuedPromptsCard } from '@howcode/composer'
 import { Composer } from '@howcode/workspace-shell'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
 import { DesktopComposerStatusModelPicker } from '../code-workspace/desktop-composer-status'
 import type { useQueuedPromptRestore } from '../code-workspace/useQueuedPromptRestore'
-import type { AppSettings, ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
+import type { AppSettings, ProjectDiffBaseline } from '../desktop/types'
 import type { Message } from '../types'
 import { cn } from '../utils/cn'
 import { WorkspaceComposerDock } from '../workspace-shell/workspace-composer-dock'
@@ -50,9 +50,7 @@ export type ChatWorkspaceComposerProps = {
   activeThreadData: AppShellController['activeThreadData']
   artifactDrawer: ChatArtifactDrawerState
   composerProjectId: string
-  composerPromptResetKey: number
   diffBaseline: ProjectDiffBaseline
-  diffRenderMode: ProjectDiffRenderMode
   draftChatGroupId: string | null
   footerRef: RefObject<HTMLElement | null>
   handleAction: AppShellController['handleAction']
@@ -67,7 +65,6 @@ export type ChatWorkspaceComposerProps = {
     typeof useQueuedPromptRestore
   >['markRestoredQueuedPromptApplied']
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
-  onSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void
   pendingQueuedPromptIdsForSession: ReturnType<
     typeof useQueuedPromptRestore
   >['pendingQueuedPromptIdsForSession']
@@ -76,7 +73,6 @@ export type ChatWorkspaceComposerProps = {
   scopedRestoredQueuedPrompt: ReturnType<
     typeof useQueuedPromptRestore
   >['scopedRestoredQueuedPrompt']
-  setComposerLayoutVersion: Dispatch<SetStateAction<number>>
   setComposerOverlayHeight: Dispatch<SetStateAction<number>>
   shellState: AppShellController['shellState']
   sidebarAutoHidden: boolean
@@ -155,33 +151,6 @@ function ChatQueuedPrompts({
   )
 }
 
-function getComposerRuntimeProps(
-  activeComposerState: ChatWorkspaceComposerProps['activeComposerState'],
-  activePiExtensionUiState: ChatWorkspaceComposerProps['activePiExtensionUiState'],
-) {
-  return {
-    availableModels: activeComposerState?.availableModels ?? [],
-    availableThinkingLevels: activeComposerState?.availableThinkingLevels ?? ['off'],
-    contextUsage: activeComposerState?.contextUsage ?? null,
-    currentModel: activeComposerState?.currentModel ?? null,
-    currentThinkingLevel: activeComposerState?.currentThinkingLevel ?? 'off',
-    isCompacting: activeComposerState?.isCompacting ?? false,
-    isExtensionCommandRunning: activeComposerState?.isExtensionCommandRunning ?? false,
-    piExtensionDialogRequest:
-      activePiExtensionUiState?.piExtensionDialogRequest ??
-      activeComposerState?.piExtensionDialogRequest ??
-      null,
-    piExtensionShortcuts: activeComposerState?.piExtensionShortcuts ?? [],
-    piExtensionStatuses:
-      activePiExtensionUiState?.piExtensionStatuses ??
-      activeComposerState?.piExtensionStatuses ??
-      [],
-    piExtensionWidgets:
-      activePiExtensionUiState?.piExtensionWidgets ?? activeComposerState?.piExtensionWidgets ?? [],
-    projectTrustRequest: activeComposerState?.projectTrustRequest ?? null,
-  }
-}
-
 function ChatComposer(props: ChatWorkspaceComposerProps) {
   const {
     activeComposerState,
@@ -193,13 +162,8 @@ function ChatComposer(props: ChatWorkspaceComposerProps) {
     composerProjectId,
     diffBaseline,
     terminalSessionPath,
-    diffRenderMode,
     onSetDiffBaseline,
-    onSetDiffRenderMode,
-    composerPromptResetKey,
-    setComposerLayoutVersion,
     setComposerOverlayHeight,
-    mainViewRef,
     footerRef,
     handleShowTakeoverTerminal,
     markRestoredQueuedPromptApplied,
@@ -212,28 +176,16 @@ function ChatComposer(props: ChatWorkspaceComposerProps) {
     controller,
   } = props
   const appSettings = shellState?.appSettings ?? FALLBACK_APP_SETTINGS
-  const composerRuntime = getComposerRuntimeProps(activeComposerState, activePiExtensionUiState)
+  const composerRuntime = getComposerRuntimeModel(activeComposerState, activePiExtensionUiState)
   return (
     <Composer
       activeView={state.activeView}
-      model={composerRuntime.currentModel}
-      contextUsage={composerRuntime.contextUsage}
+      runtime={composerRuntime}
       messages={activeThreadData?.messages}
-      customMessages={activeThreadData?.customMessages}
-      availableModels={composerRuntime.availableModels}
       isStreaming={activeThreadData?.isStreaming ?? false}
       replyActivityKey={getReplyActivityKey(activeThreadData?.messages ?? [])}
-      isCompacting={composerRuntime.isCompacting}
-      isExtensionCommandRunning={composerRuntime.isExtensionCommandRunning}
-      piExtensionWidgets={composerRuntime.piExtensionWidgets}
-      piExtensionStatuses={composerRuntime.piExtensionStatuses}
-      piExtensionShortcuts={composerRuntime.piExtensionShortcuts}
-      piExtensionDialogRequest={composerRuntime.piExtensionDialogRequest}
-      projectTrustRequest={composerRuntime.projectTrustRequest}
-      thinkingLevel={composerRuntime.currentThinkingLevel}
       restoredQueuedPrompt={scopedRestoredQueuedPrompt}
       streamingBehaviorPreference={appSettings.composerStreamingBehavior}
-      availableThinkingLevels={composerRuntime.availableThinkingLevels}
       projectId={composerProjectId}
       chatGroupId={getChatGroupId(props)}
       projectGitState={null}
@@ -248,23 +200,8 @@ function ChatComposer(props: ChatWorkspaceComposerProps) {
       composerSendMode={appSettings.composerSendMode}
       keybindings={appSettings.keybindings}
       piTreeFilterMode={shellState?.piSettings.treeFilterMode ?? 'no-tools'}
-      diffRenderMode={diffRenderMode}
-      diffComments={[]}
-      diffCommentCount={0}
-      diffCommentsSending={false}
-      diffCommentError={null}
       onSetDiffBaseline={onSetDiffBaseline}
-      onSetDiffRenderMode={onSetDiffRenderMode}
-      onSendDiffComments={() => {
-        /* Diff comments are disabled in chat workspace mode. */
-      }}
-      onSelectDiffComment={() => {
-        /* Diff comments are disabled in chat workspace mode. */
-      }}
-      promptResetKey={composerPromptResetKey}
-      onLayoutChange={() => setComposerLayoutVersion((current: number) => current + 1)}
       onOverlayHeightChange={setComposerOverlayHeight}
-      mainViewRef={mainViewRef}
       workspaceFooterRef={footerRef}
       onOpenTakeoverTerminal={handleShowTakeoverTerminal}
       onOpenGitOpsView={() => {
@@ -279,7 +216,6 @@ function ChatComposer(props: ChatWorkspaceComposerProps) {
       artifactsVisible={artifactDrawer.artifactsVisible}
       terminalVisible={state.terminalVisible}
       takeoverVisible={state.takeoverVisible}
-      preferPortalFilePicker={!hasConversationLayout}
       preferPortalModelPopover={!hasConversationLayout}
       onListAttachmentEntries={listComposerAttachmentEntries}
       onAction={handleAction}

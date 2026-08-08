@@ -64,41 +64,31 @@ export function useComposerAutocompleteEffects({
   sessionTreePanelRef?: RefObject<HTMLDivElement | null> | undefined
   stopButtonBoundaryRef: RefObject<HTMLDivElement | null>
 }) {
+  const handlePointerDown = useEffectEvent((event: PointerEvent) => {
+    const target = event.target as Node | null
+    if (
+      !target ||
+      slashCommandPanelRef.current?.contains(target) ||
+      sessionTreePanelRef?.current?.contains(target) ||
+      fileMentionPanelRef.current?.contains(target) ||
+      skillMentionPanelRef.current?.contains(target) ||
+      composerPanelRef.current?.contains(target) ||
+      stopButtonBoundaryRef.current?.contains(target)
+    ) {
+      return
+    }
+
+    if (slashCommands.open) slashCommands.dismiss({ clearDraft: true })
+    if (fileMentions.open) fileMentions.dismiss()
+    if (skillMentions.open) skillMentions.dismiss()
+  })
+
   useEffect(() => {
     if (!(slashCommands.open || fileMentions.open || skillMentions.open)) return
 
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target as Node | null
-      if (
-        !target ||
-        slashCommandPanelRef.current?.contains(target) ||
-        sessionTreePanelRef?.current?.contains(target) ||
-        fileMentionPanelRef.current?.contains(target) ||
-        skillMentionPanelRef.current?.contains(target) ||
-        composerPanelRef.current?.contains(target) ||
-        stopButtonBoundaryRef.current?.contains(target)
-      ) {
-        return
-      }
-
-      if (slashCommands.open) slashCommands.dismiss({ clearDraft: true })
-      if (fileMentions.open) fileMentions.dismiss()
-      if (skillMentions.open) skillMentions.dismiss()
-    }
-
     window.addEventListener('pointerdown', handlePointerDown, true)
     return () => window.removeEventListener('pointerdown', handlePointerDown, true)
-  }, [
-    composerPanelRef,
-    fileMentionPanelRef,
-    fileMentions,
-    skillMentionPanelRef,
-    skillMentions,
-    sessionTreePanelRef,
-    slashCommandPanelRef,
-    slashCommands,
-    stopButtonBoundaryRef,
-  ])
+  }, [fileMentions.open, skillMentions.open, slashCommands.open])
 
   useEffect(() => {
     if (!slashCommands.open) return

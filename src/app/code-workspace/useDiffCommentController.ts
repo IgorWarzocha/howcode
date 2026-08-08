@@ -4,7 +4,7 @@ import {
   getDiffCommentContextId,
   type SavedDiffComment,
 } from '@howcode/native-gitops'
-import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
 import { getDesktopActionErrorMessage } from '../desktop/action-results'
 import type { ProjectDiffBaseline } from '../desktop/types'
@@ -54,14 +54,12 @@ export function useDiffCommentController({
   handleAction,
   handleOpenWorktreeDiffFile,
   includeUntracked,
-  setComposerPromptResetKey,
   shellState,
 }: {
   baseline: ProjectDiffBaseline | null
   composerProjectId: string
   handleAction: AppShellController['handleAction']
   handleOpenWorktreeDiffFile: (filePath: string) => void
-  setComposerPromptResetKey: Dispatch<SetStateAction<number>>
   shellState: AppShellController['shellState']
   includeUntracked: boolean
 }) {
@@ -117,7 +115,6 @@ export function useDiffCommentController({
         shellState,
       })
       setDiffCommentError(result.error)
-      if (result.ok) setComposerPromptResetKey((current) => current + 1)
       return result.ok
     } catch (error) {
       setDiffCommentError(

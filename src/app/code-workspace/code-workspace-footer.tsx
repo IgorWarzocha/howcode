@@ -1,4 +1,4 @@
-import { QueuedPromptsCard } from '@howcode/composer'
+import { getComposerRuntimeModel, QueuedPromptsCard } from '@howcode/composer'
 import { GitOpsComposerPanel } from '@howcode/native-gitops'
 import { Composer } from '@howcode/workspace-shell'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
@@ -136,33 +136,6 @@ function CodeQueuedPrompts(props: CodeWorkspaceContentProps) {
   )
 }
 
-function getComposerRuntimeProps(
-  activeComposerState: CodeWorkspaceContentProps['activeComposerState'],
-  activePiExtensionUiState: CodeWorkspaceContentProps['activePiExtensionUiState'],
-) {
-  return {
-    availableModels: activeComposerState?.availableModels ?? [],
-    availableThinkingLevels: activeComposerState?.availableThinkingLevels ?? ['off'],
-    contextUsage: activeComposerState?.contextUsage ?? null,
-    currentModel: activeComposerState?.currentModel ?? null,
-    currentThinkingLevel: activeComposerState?.currentThinkingLevel ?? 'off',
-    isCompacting: activeComposerState?.isCompacting ?? false,
-    isExtensionCommandRunning: activeComposerState?.isExtensionCommandRunning ?? false,
-    piExtensionDialogRequest:
-      activePiExtensionUiState?.piExtensionDialogRequest ??
-      activeComposerState?.piExtensionDialogRequest ??
-      null,
-    piExtensionShortcuts: activeComposerState?.piExtensionShortcuts ?? [],
-    piExtensionStatuses:
-      activePiExtensionUiState?.piExtensionStatuses ??
-      activeComposerState?.piExtensionStatuses ??
-      [],
-    piExtensionWidgets:
-      activePiExtensionUiState?.piExtensionWidgets ?? activeComposerState?.piExtensionWidgets ?? [],
-    projectTrustRequest: activeComposerState?.projectTrustRequest ?? null,
-  }
-}
-
 function CodeThreadComposer(props: CodeWorkspaceContentProps) {
   const {
     state,
@@ -176,19 +149,8 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
     parentBranchName,
     diffBaseline,
     terminalSessionPath,
-    diffRenderMode,
-    diffComments,
-    diffCommentCount,
-    diffCommentsSending,
-    diffCommentError,
     onSetDiffBaseline,
-    onSetDiffRenderMode,
-    handleSendDiffComments,
-    handleSelectDiffComment,
-    composerPromptResetKey,
-    setComposerLayoutVersion,
     setComposerOverlayHeight,
-    mainViewRef,
     footerRef,
     handleShowTakeoverTerminal,
     handleOpenGitOpsView,
@@ -199,28 +161,16 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
     handleAction,
   } = props
   const appSettings = shellState?.appSettings ?? FALLBACK_APP_SETTINGS
-  const composerRuntime = getComposerRuntimeProps(activeComposerState, activePiExtensionUiState)
+  const composerRuntime = getComposerRuntimeModel(activeComposerState, activePiExtensionUiState)
   return (
     <Composer
       activeView={state.activeView}
-      model={composerRuntime.currentModel}
-      contextUsage={composerRuntime.contextUsage}
+      runtime={composerRuntime}
       messages={activeThreadData?.messages}
-      customMessages={activeThreadData?.customMessages}
-      availableModels={composerRuntime.availableModels}
       isStreaming={activeThreadData?.isStreaming ?? false}
       replyActivityKey={getReplyActivityKey(activeThreadData?.messages ?? [])}
-      isCompacting={composerRuntime.isCompacting}
-      isExtensionCommandRunning={composerRuntime.isExtensionCommandRunning}
-      piExtensionWidgets={composerRuntime.piExtensionWidgets}
-      piExtensionStatuses={composerRuntime.piExtensionStatuses}
-      piExtensionShortcuts={composerRuntime.piExtensionShortcuts}
-      piExtensionDialogRequest={composerRuntime.piExtensionDialogRequest}
-      projectTrustRequest={composerRuntime.projectTrustRequest}
-      thinkingLevel={composerRuntime.currentThinkingLevel}
       restoredQueuedPrompt={scopedRestoredQueuedPrompt}
       streamingBehaviorPreference={appSettings.composerStreamingBehavior}
-      availableThinkingLevels={composerRuntime.availableThinkingLevels}
       projectId={composerProjectId}
       projectGitState={projectGitState}
       parentBranchName={parentBranchName}
@@ -235,21 +185,8 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
       composerSendMode={appSettings.composerSendMode}
       keybindings={appSettings.keybindings}
       piTreeFilterMode={shellState?.piSettings.treeFilterMode ?? 'no-tools'}
-      diffRenderMode={diffRenderMode}
-      diffComments={diffComments}
-      diffCommentCount={diffCommentCount}
-      diffCommentsSending={diffCommentsSending}
-      diffCommentError={diffCommentError}
       onSetDiffBaseline={onSetDiffBaseline}
-      onSetDiffRenderMode={onSetDiffRenderMode}
-      onSendDiffComments={(message) => {
-        void handleSendDiffComments(message)
-      }}
-      onSelectDiffComment={handleSelectDiffComment}
-      promptResetKey={composerPromptResetKey}
-      onLayoutChange={() => setComposerLayoutVersion((current: number) => current + 1)}
       onOverlayHeightChange={setComposerOverlayHeight}
-      mainViewRef={mainViewRef}
       workspaceFooterRef={footerRef}
       onOpenTakeoverTerminal={handleShowTakeoverTerminal}
       onOpenGitOpsView={handleOpenGitOpsView}
@@ -258,7 +195,6 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
       onToggleTerminal={handleToggleTerminal}
       terminalVisible={state.terminalVisible}
       takeoverVisible={state.takeoverVisible}
-      preferPortalFilePicker={state.activeView === 'project'}
       preferPortalModelPopover={state.activeView === 'project'}
       onListAttachmentEntries={listComposerAttachmentEntries}
       onAction={handleAction}

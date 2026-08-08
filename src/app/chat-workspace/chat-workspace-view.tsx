@@ -186,8 +186,6 @@ export function ChatWorkspaceView({
   sidebarCompactMode,
   onToggleSidebar,
 }: ChatWorkspaceViewProps) {
-  const [composerPromptResetKey] = useState(0)
-  const [composerLayoutVersion, setComposerLayoutVersion] = useState(0)
   const [composerOverlayHeight, setComposerOverlayHeight] = useState(0)
   const rootRef = useRef<HTMLDivElement>(null)
   const footerRef = useRef<HTMLElement>(null)
@@ -234,7 +232,7 @@ export function ChatWorkspaceView({
       mainViewRef={mainViewRef}
       activeThreadData={activeThreadData}
       shouldShowConversationContent={shouldShowConversationContent}
-      composerLayoutVersion={composerLayoutVersion}
+      composerLayoutVersion={0}
       composerOverlayHeight={composerOverlayHeight}
       controller={controller}
       hasConversation={hasConversation}
@@ -260,8 +258,6 @@ export function ChatWorkspaceView({
       diffRenderMode={diffRenderMode}
       onSetDiffBaseline={onSetDiffBaseline}
       onSetDiffRenderMode={onSetDiffRenderMode}
-      composerPromptResetKey={composerPromptResetKey}
-      setComposerLayoutVersion={setComposerLayoutVersion}
       setComposerOverlayHeight={setComposerOverlayHeight}
       handleShowTakeoverTerminal={handleShowTakeoverTerminal}
       handleToggleTerminal={handleToggleTerminal}

@@ -2,7 +2,9 @@ import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { type Dispatch, type SetStateAction, useRef, useState } from 'react'
 import { useHowcodeKeybindingCommand } from '../../app-shell/keybinding-events'
 import { getInboxThreadComposerMode } from '../../common/inbox-thread-scope'
+import { ComposerFilePicker } from '../../composer/composer-file-picker'
 import { ComposerPromptInputPanel } from '../../composer/composer-prompt-input-panel'
+import { ComposerPromptPopoverStack } from '../../composer/composer-prompt-popover-stack'
 import { useComposerAttachmentPicker } from '../../composer/useComposerAttachmentPicker'
 import { useComposerClipboardHandlers } from '../../composer/useComposerClipboardHandlers'
 import { useComposerDictation } from '../../composer/useComposerDictation'
@@ -101,6 +103,7 @@ export function InboxComposer({
   const pickerPanelRef = useRef<HTMLDivElement>(null)
   const modelButtonRef = useRef<HTMLButtonElement>(null)
   const modelMenuRef = useRef<HTMLDivElement>(null)
+  const sessionTreePanelRef = useRef<HTMLDivElement>(null)
   const slashCommandPanelRef = useRef<HTMLDivElement>(null)
   const fileMentionPanelRef = useRef<HTMLDivElement>(null)
   const skillMentionPanelRef = useRef<HTMLDivElement>(null)
@@ -337,8 +340,24 @@ export function InboxComposer({
           className={composerPanelClass}
           aria-label="Inbox composer panel"
         >
+          {openMenu === 'picker' ? (
+            <ComposerFilePicker
+              anchorRef={pickerButtonRef}
+              attachments={attachments}
+              errorMessage={errorMessage}
+              favoriteFolders={favoriteFolders}
+              loading={pickerLoading}
+              picker={pickerState}
+              panelRef={pickerPanelRef}
+              projectRootPath={thread.projectId}
+              onAttachAttachments={attachPickerAttachments}
+              onOpenRoot={openPickerRoot}
+              onOpenDirectory={openPickerDirectory}
+              onRemoveAttachment={removeAttachment}
+              onToggleFile={togglePendingPickerAttachment}
+            />
+          ) : null}
           <ComposerPromptInputPanel
-            attachments={attachments}
             clearError={() => onChangeErrorMessage(null)}
             dictationActive={dictationActive}
             dictationMissingModel={dictationMissingModel}
@@ -348,22 +367,20 @@ export function InboxComposer({
             errorMessage={errorMessage}
             extensionRunning={false}
             inputLocked={inputLocked}
-            favoriteFolders={favoriteFolders}
-            pickerLoading={pickerLoading}
-            pickerOpen={openMenu === 'picker'}
-            pickerButtonRef={pickerButtonRef}
-            pickerPanelRef={pickerPanelRef}
-            pickerState={pickerState}
             placeholderText={errorMessage ?? 'Reply to this thread…'}
-            projectId={thread.projectId}
-            slashCommandPanelRef={slashCommandPanelRef}
+            promptPopover={
+              <ComposerPromptPopoverStack
+                sessionTreePanelRef={sessionTreePanelRef}
+                slashCommandPanelRef={slashCommandPanelRef}
+                slashCommands={slashCommands}
+              />
+            }
             slashCommands={slashCommands}
             fileMentionPanelRef={fileMentionPanelRef}
             fileMentions={fileMentions}
             skillMentionPanelRef={skillMentionPanelRef}
             skillMentions={skillMentions}
             showDictationButton={showDictationButton}
-            attachPickerAttachments={attachPickerAttachments}
             cancelDictation={cancelDictation}
             handlePaste={handlePaste}
             hoverToFocus={appSettings.hoverToFocus}
@@ -373,12 +390,8 @@ export function InboxComposer({
             hoverBoundaryRef={composerSurfaceRef}
             onAction={onAction}
             onOpenSettingsView={onOpenSettingsView}
-            openPickerDirectory={openPickerDirectory}
-            openPickerRoot={openPickerRoot}
-            removeAttachment={removeAttachment}
             setDraft={setDraftValue}
             toggleDictation={toggleDictation}
-            togglePendingPickerAttachment={togglePendingPickerAttachment}
           />
 
           {errorMessage ? (

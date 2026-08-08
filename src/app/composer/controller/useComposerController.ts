@@ -1,14 +1,8 @@
-import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { getDesktopActionErrorMessage } from '../../desktop/action-results'
-import type { DesktopAction } from '../../desktop/actions'
-import { getErrorMessage } from '../../desktop/error-messages'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
   ComposerFilePickerState,
-  ComposerModel,
   ComposerStreamingBehavior,
-  ComposerThinkingLevel,
   DesktopActionInvoker,
-  DesktopActionResult,
 } from '../../desktop/types'
 import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
 import type { View } from '../../types'
@@ -16,35 +10,11 @@ import { useComposerAttachmentPicker } from '../useComposerAttachmentPicker'
 import { useComposerClipboardHandlers } from '../useComposerClipboardHandlers'
 import { useComposerDictation } from '../useComposerDictation'
 import { useComposerSubmission } from '../useComposerSubmission'
+import { useComposerActionRunner } from './useComposerActionRunner'
 import { useComposerDraftState } from './useComposerDraftState'
-
-const thinkingLevelLabels: Record<ComposerThinkingLevel, string> = {
-  off: 'Off',
-  minimal: 'Minimal',
-  low: 'Low',
-  medium: 'Medium',
-  high: 'High',
-  xhigh: 'X-High',
-}
-
-function getModelLabel(model: ComposerModel | null) {
-  if (!model) {
-    return 'No model'
-  }
-
-  return model.name
-}
-
-function isCancelledSessionTreeNavigate(action: DesktopAction, result: DesktopActionResult | null) {
-  return action === 'composer.session-tree.navigate' && result?.result?.sessionTreeNavigateCancelled
-}
 
 type UseComposerControllerProps = {
   activeView: View
-  composerPanelRef: RefObject<HTMLDivElement | null>
-  mainViewRef: RefObject<HTMLElement | null>
-  workspaceFooterRef: RefObject<HTMLElement | null>
-  model: ComposerModel | null
   projectId: string
   chatGroupId?: string | null | undefined
   sessionPath: string | null
@@ -67,7 +37,6 @@ type UseComposerControllerProps = {
 
 export function useComposerController({
   activeView,
-  model,
   projectId,
   chatGroupId = null,
   sessionPath,
@@ -166,13 +135,6 @@ export function useComposerController({
 
   const extensionCommandRunning = isExtensionCommandRunning || localExtensionCommandRunning
   const compactionBlocksComposer = isCompacting && !extensionCommandRunning
-  const canSend =
-    (draft.trim().length > 0 || attachments.length > 0) &&
-    !isSending &&
-    !pendingSubmittedDraft &&
-    !extensionCommandRunning &&
-    !compactionBlocksComposer
-
   useEffect(() => {
     if (
       !pendingSubmittedDraft ||
@@ -247,40 +209,12 @@ export function useComposerController({
     onListAttachmentEntries,
   })
 
-  const runComposerAction = async (
-    action: DesktopAction,
-    payload: NonNullable<Parameters<DesktopActionInvoker>[1]>,
-    options?: { closeMenu?: boolean } | undefined,
-  ) => {
-    try {
-      const result = await onAction(action, payload)
-      const actionErrorMessage = getDesktopActionErrorMessage(
-        result,
-        'Could not update the composer.',
-      )
-      if (actionErrorMessage) {
-        setErrorMessage(actionErrorMessage)
-        return false
-      }
-      if (isCancelledSessionTreeNavigate(action, result)) {
-        return false
-      }
-      setErrorMessage(null)
-      if (action === 'composer.session-tree.navigate') {
-        const editorText = result?.result?.sessionTreeNavigateEditorText
-        if (typeof editorText === 'string') {
-          setDraftValue(editorText)
-        }
-      }
-      if (options?.closeMenu ?? true) {
-        setOpenMenu(null)
-      }
-      return true
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error, 'Could not update the composer.'))
-      return false
-    }
-  }
+  const { invokeComposerAction, runComposerAction } = useComposerActionRunner({
+    onAction,
+    setDraft: setDraftValue,
+    setErrorMessage,
+    setOpenMenu,
+  })
 
   const { compact, send, sendExtensionCommand, stop } = useComposerSubmission({
     composerScopeKey,
@@ -312,8 +246,6 @@ export function useComposerController({
     skipNextDraftPersistenceRef,
   })
 
-  const modelLabel = useMemo(() => getModelLabel(model), [model])
-
   const { handleDrop, handlePaste } = useComposerClipboardHandlers({
     setAttachments: setAttachmentValue,
     setDraftValue,
@@ -325,7 +257,6 @@ export function useComposerController({
     handleDrop,
     handlePaste,
     cancelDictation,
-    canSend,
     clearAttachments,
     clearError: () => setErrorMessage(null),
     draft: pendingSubmittedDraft ?? draft,
@@ -348,7 +279,6 @@ export function useComposerController({
     pickerPanelRef,
     pickerState,
     modelButtonRef,
-    modelLabel,
     modelMenuOpen: openMenu === 'model',
     modelMenuRef,
     isStreaming,
@@ -356,6 +286,7 @@ export function useComposerController({
     openPickerDirectory,
     openPickerRoot,
     removeAttachment,
+    invokeComposerAction,
     runComposerAction,
     compact,
     send,
@@ -366,6 +297,5 @@ export function useComposerController({
     toggleDictation,
     attachPickerAttachments,
     togglePendingPickerAttachment,
-    thinkingLevelLabels,
   }
 }

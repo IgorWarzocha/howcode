@@ -57,8 +57,6 @@ export type CodeWorkspaceContentProps = CodeWorkspaceViewProps &
     setComposerLayoutVersion: Dispatch<SetStateAction<number>>
     composerOverlayHeight: number
     setComposerOverlayHeight: Dispatch<SetStateAction<number>>
-    composerPromptResetKey: number
-    setComposerPromptResetKey: Dispatch<SetStateAction<number>>
     handleAction: AppShellController['handleAction']
     handleLoadEarlierMessages: AppShellController['handleLoadEarlierMessages']
     handleCloseGitOpsView: AppShellController['handleCloseGitOpsView']
@@ -156,7 +154,6 @@ export function CodeWorkspaceView({
   sidebarCompactMode,
   onToggleSidebar,
 }: CodeWorkspaceViewProps) {
-  const [composerPromptResetKey, setComposerPromptResetKey] = useState(0)
   const [gitOpsFileTreeVisibilityByThread, setGitOpsFileTreeVisibilityByThread] = useState<
     Record<string, boolean>
   >({})
@@ -251,7 +248,6 @@ export function CodeWorkspaceView({
     composerProjectId,
     handleAction,
     handleOpenWorktreeDiffFile,
-    setComposerPromptResetKey,
     shellState,
     includeUntracked: includeUntrackedDiffFiles,
   })
@@ -345,8 +341,6 @@ export function CodeWorkspaceView({
       toggleIncludeUntrackedDiffFiles={toggleIncludeUntrackedDiffFiles}
       showCodeSidebarFooter={showCodeSidebarFooter}
       scopedRestoredQueuedPrompt={scopedRestoredQueuedPrompt}
-      composerPromptResetKey={composerPromptResetKey}
-      setComposerPromptResetKey={setComposerPromptResetKey}
     />
   )
 }
