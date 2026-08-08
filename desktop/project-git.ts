@@ -15,6 +15,7 @@ export {
   prepareCommitMessageContext,
   startProjectDiffStream,
 } from './project-git/commit-context.ts'
+export { loadProjectDiffFileContents } from './project-git/file-content.ts'
 export { getProjectCommitEntry, listProjectCommits } from './project-git/project-commits.ts'
 export {
   captureProjectDiffBaseline,

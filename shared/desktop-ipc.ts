@@ -33,6 +33,8 @@ import type {
   PiSkillMutationResult,
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffFileContentsRequest,
+  ProjectDiffFileContentsResult,
   ProjectDiffImagePreview,
   ProjectDiffImageSide,
   ProjectDiffResolvedBaseline,
@@ -102,6 +104,10 @@ export type DesktopRequestMap = {
       side: ProjectDiffImageSide
     }
     response: ProjectDiffImagePreview
+  }
+  getProjectDiffFileContents: {
+    params: ProjectDiffFileContentsRequest
+    response: ProjectDiffFileContentsResult
   }
   captureProjectDiffBaseline: {
     params: { projectId: string }

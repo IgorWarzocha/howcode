@@ -70,6 +70,9 @@ export type {
   ProjectCommitEntry,
   ProjectDiffBaseline,
   ProjectDiffDefaultBaseline,
+  ProjectDiffFileContentIssue,
+  ProjectDiffFileContentsRequest,
+  ProjectDiffFileContentsResult,
   ProjectDiffImagePreview,
   ProjectDiffImageSide,
   ProjectDiffPreferences,
@@ -79,6 +82,7 @@ export type {
   ProjectDiffStatsResult,
   ProjectDiffStreamEvent,
   ProjectDiffStreamStartResult,
+  ProjectDiffTextFile,
   ProjectGitState,
 } from './desktop-project-git-contracts'
 export type {

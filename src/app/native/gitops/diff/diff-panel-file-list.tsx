@@ -18,6 +18,7 @@ import {
 import { DiffPanelFileHeader } from './diff-panel-file-header'
 import { DIFF_THEMES } from './diff-rendering'
 import { getDiffFileIdentity, useDiffCodeViewItems } from './use-diff-code-view-items'
+import type { DiffFileContentController } from './use-diff-file-content'
 
 type DiffPanelFileListProps = {
   baseline: ProjectDiffBaseline | null
@@ -25,6 +26,7 @@ type DiffPanelFileListProps = {
   scrollContainerRef: React.RefObject<HTMLDivElement | null>
   collapsedFiles: Record<string, boolean>
   diffRenderMode: 'stacked' | 'split'
+  fileContent: DiffFileContentController
   focusedImageFileKeys: ReadonlySet<string>
   onToggleFileCollapsed: (fileKey: string) => void
   projectId: string
@@ -42,6 +44,7 @@ export function DiffPanelFileList({
   scrollContainerRef,
   collapsedFiles,
   diffRenderMode,
+  fileContent,
   focusedImageFileKeys,
   onToggleFileCollapsed,
   projectId,
@@ -67,6 +70,7 @@ export function DiffPanelFileList({
       enableGutterUtility: true,
       enableLineSelection: true,
       lineHoverHighlight: 'both',
+      loadDiffFiles: fileContent.loadFiles,
       itemMetrics: {
         lineHeight: DIFF_FILE_ESTIMATED_LINE_HEIGHT,
         diffHeaderHeight: DIFF_FILE_ESTIMATED_HEADER_HEIGHT,
@@ -78,7 +82,7 @@ export function DiffPanelFileList({
         paddingBottom: DIFF_FILE_ESTIMATED_FILE_GAP,
       },
     }),
-    [diffRenderMode],
+    [diffRenderMode, fileContent.loadFiles],
   )
 
   const renderCustomHeader = useCallback(

@@ -91,6 +91,38 @@ export type ProjectDiffImagePreview = {
   dataUrl: string
 } | null
 
+export type ProjectDiffFileContentsRequest = {
+  projectId: string
+  baselineRevision: string
+  oldPath: string | null
+  newPath: string
+}
+
+export type ProjectDiffTextFile = {
+  path: string
+  contents: string
+  revision: string
+}
+
+export type ProjectDiffFileContentIssue = {
+  kind: 'invalid-path' | 'missing' | 'not-file' | 'binary' | 'too-large' | 'changed'
+  side: 'old' | 'new'
+  path: string
+  size?: number | undefined
+  maxBytes?: number | undefined
+}
+
+export type ProjectDiffFileContentsResult =
+  | {
+      kind: 'ready'
+      oldFile: ProjectDiffTextFile | null
+      newFile: ProjectDiffTextFile
+    }
+  | {
+      kind: 'unavailable'
+      issue: ProjectDiffFileContentIssue
+    }
+
 export type ProjectDiffStatsResult = {
   projectId: string
   fileCount: number

@@ -20,6 +20,8 @@ import type {
   InboxThread,
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffFileContentsRequest,
+  ProjectDiffFileContentsResult,
   ProjectDiffImagePreview,
   ProjectDiffImageSide,
   ProjectDiffStatsResult,
@@ -207,6 +209,12 @@ export async function getProjectDiffImagePreviewQuery(request: {
   side: ProjectDiffImageSide
 }): Promise<ProjectDiffImagePreview> {
   return (await window.piDesktop?.getProjectDiffImagePreview?.(request)) ?? null
+}
+
+export async function getProjectDiffFileContentsQuery(
+  request: ProjectDiffFileContentsRequest,
+): Promise<ProjectDiffFileContentsResult | null> {
+  return (await window.piDesktop?.getProjectDiffFileContents?.(request)) ?? null
 }
 
 export async function listProjectCommitsQuery(

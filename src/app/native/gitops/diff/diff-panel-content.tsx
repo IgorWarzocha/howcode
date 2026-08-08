@@ -16,6 +16,7 @@ import {
   resolveFileDiffPath,
 } from './diff-panel-content.helpers'
 import { DiffPanelContentBody } from './diff-panel-content-body'
+import { useDiffFileContent } from './use-diff-file-content'
 import { useDiffPanelScrollAlignment } from './useDiffPanelScrollAlignment'
 import { useWorkerRenderablePatch } from './useWorkerRenderablePatch'
 
@@ -60,10 +61,15 @@ export function DiffPanelContent({
     isGitRepo,
     includeUntracked,
   )
+  const fileContent = useDiffFileContent({
+    projectId,
+    resolvedBaseline: diff?.resolvedBaseline ?? null,
+  })
+  const loadError = error ?? fileContent.error
 
   useEffect(() => {
-    onLoadErrorChange?.(error)
-  }, [error, onLoadErrorChange])
+    onLoadErrorChange?.(loadError)
+  }, [loadError, onLoadErrorChange])
 
   useEffect(() => {
     return () => onLoadErrorChange?.(null)
@@ -176,7 +182,7 @@ export function DiffPanelContent({
         projectId={projectId}
         diff={{
           baseline,
-          error,
+          error: loadError,
           hasNoNetChanges,
           hasResolvedPatch,
           isGitRepo,
@@ -201,6 +207,7 @@ export function DiffPanelContent({
         }}
         codeView={{
           ref: codeViewRef,
+          fileContent: fileContent.controller,
           renderMode: diffRenderMode,
           review: codeViewReview,
           scrollContainerRef,

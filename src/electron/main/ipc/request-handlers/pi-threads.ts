@@ -12,6 +12,7 @@ type PiThreadsRequestHandlers = Pick<
   | 'cancelProjectDiffStream'
   | 'getProjectDiffStats'
   | 'getProjectDiffImagePreview'
+  | 'getProjectDiffFileContents'
   | 'captureProjectDiffBaseline'
   | 'listProjectCommits'
   | 'getComposerState'
@@ -64,6 +65,7 @@ export function createPiThreadsHandlers(
     getProjectDiffStats: ({ projectId, baseline, includeUntracked }) =>
       piThreads.loadProjectDiffStats(projectId, baseline ?? null, includeUntracked ?? false),
     getProjectDiffImagePreview: (request) => piThreads.loadProjectDiffImagePreview(request),
+    getProjectDiffFileContents: (request) => piThreads.loadProjectDiffFileContents(request),
     captureProjectDiffBaseline: ({ projectId }) => piThreads.captureProjectDiffBaseline(projectId),
     listProjectCommits: ({ projectId, limit }) =>
       piThreads.listProjectCommits(projectId, limit ?? null),

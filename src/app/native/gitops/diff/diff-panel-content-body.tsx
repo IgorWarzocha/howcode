@@ -16,6 +16,7 @@ import { DiffChangedFilesTree } from './diff-changed-files-tree'
 import type { RenderablePatch } from './diff-panel-content.types'
 import { DiffPanelEmptyState } from './diff-panel-empty-state'
 import { DiffPanelFileList } from './diff-panel-file-list'
+import type { DiffFileContentController } from './use-diff-file-content'
 
 type DiffPanelContentBodyProps = {
   projectId: string
@@ -46,6 +47,7 @@ type DiffPanelContentBodyProps = {
   }
   codeView: {
     ref: RefObject<CodeViewHandle<ReviewAnnotationMetadata> | null>
+    fileContent: DiffFileContentController
     renderMode: 'stacked' | 'split'
     review: ReviewCodeViewController
     scrollContainerRef: RefObject<HTMLDivElement | null>
@@ -110,6 +112,7 @@ function DiffFilesView(input: DiffPanelContentBodyProps) {
         <div className="min-h-0 min-w-0 flex-1 overflow-hidden [overflow-anchor:none]">
           <DiffPanelFileList
             baseline={input.diff.baseline}
+            fileContent={input.codeView.fileContent}
             codeViewRef={input.codeView.ref}
             scrollContainerRef={input.codeView.scrollContainerRef}
             collapsedFiles={input.files.collapsed}

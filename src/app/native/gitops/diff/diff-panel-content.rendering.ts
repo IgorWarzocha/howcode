@@ -37,13 +37,16 @@ export function getRenderablePatch(
   }
 }
 
-export function resolveFileDiffPath(fileDiff: FileDiffMetadata): string {
-  const raw = fileDiff.name ?? fileDiff.prevName ?? ''
+export function resolveDiffFilePath(raw: string) {
   if (raw.startsWith('a/') || raw.startsWith('b/')) {
     return raw.slice(2)
   }
 
   return raw
+}
+
+export function resolveFileDiffPath(fileDiff: FileDiffMetadata): string {
+  return resolveDiffFilePath(fileDiff.name ?? fileDiff.prevName ?? '')
 }
 
 export function buildFileDiffRenderKey(fileDiff: FileDiffMetadata): string {

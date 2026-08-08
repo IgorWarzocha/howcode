@@ -9,7 +9,7 @@ This is the implementation handoff for rebuilding GitOps around the current Pier
 - Phases 1–3 are implemented: the review domain is tested, Pierre owns line/range selection, and selection offers a transient **Add comment** annotation before opening a draft.
 - Pierre's `renderSelectionAction` belongs to its editable `Editor`; read-only `CodeView` does not expose it. Do not enable editing merely to obtain that popover.
 - The changed-files rail already uses `@pierre/trees` **1.0.0-beta.6** with Git status, filtering, virtualisation, and multi-path selection. Phase 5 is complete.
-- Partial hydration, direct editing, markers, keep/revert, and merge-conflict UI remain unimplemented.
+- Full diff context now hydrates on demand through a revision-pinned, size-limited desktop read contract. Direct editing, markers, keep/revert, and merge-conflict UI remain unimplemented.
 - GitOps remains plugin-shaped inside `src/app/native/gitops/`; do not add runtime plugin machinery.
 
 No dependency upgrade is needed before this work.
@@ -382,6 +382,8 @@ This phase may use read-only controlled line selection first. Character-level ta
 ### Phase 4 — Hydrate full diff context on demand
 
 Goal: expand omitted context without eagerly loading every complete file.
+
+Status: complete. `desktop/project-git/file-content.ts` owns contained baseline/worktree reads and content revisions; `src/app/native/gitops/diff/use-diff-file-content.ts` adapts the typed request to Pierre's `loadDiffFiles` callback.
 
 1. Add a typed read request for old/new file contents at a resolved baseline.
 2. Implement it in `desktop/project-git/*` with path containment checks and explicit missing/binary results.

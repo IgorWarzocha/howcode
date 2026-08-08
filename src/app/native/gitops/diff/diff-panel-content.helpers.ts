@@ -13,6 +13,7 @@ export {
   getRenderablePatch,
   isImageDiffFile,
   orderRenderableFiles,
+  resolveDiffFilePath,
   resolveFileDiffPath,
 } from './diff-panel-content.rendering'
 export type { RenderablePatch } from './diff-panel-content.types'

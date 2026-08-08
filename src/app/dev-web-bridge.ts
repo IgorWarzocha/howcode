@@ -320,6 +320,7 @@ export async function installDevWebDesktopBridge() {
     getProjectDiffStats: (projectId: string, baseline = null, includeUntracked = false) =>
       invokeRequest('getProjectDiffStats', { projectId, baseline, includeUntracked }),
     getProjectDiffImagePreview: (request) => invokeRequest('getProjectDiffImagePreview', request),
+    getProjectDiffFileContents: (request) => invokeRequest('getProjectDiffFileContents', request),
     captureProjectDiffBaseline: (projectId: string) =>
       invokeRequest('captureProjectDiffBaseline', { projectId }),
     listProjectCommits: (projectId: string, limit: number | null = null) =>

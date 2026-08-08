@@ -35,6 +35,8 @@ import type {
   PiSkillMutationResult,
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffFileContentsRequest,
+  ProjectDiffFileContentsResult,
   ProjectDiffImagePreview,
   ProjectDiffImageSide,
   ProjectDiffResolvedBaseline,
@@ -93,6 +95,9 @@ declare global {
         path: string
         side: ProjectDiffImageSide
       }) => Promise<ProjectDiffImagePreview>
+      getProjectDiffFileContents?: (
+        request: ProjectDiffFileContentsRequest,
+      ) => Promise<ProjectDiffFileContentsResult>
       captureProjectDiffBaseline?: (
         projectId: string,
       ) => Promise<ProjectDiffResolvedBaseline | null>

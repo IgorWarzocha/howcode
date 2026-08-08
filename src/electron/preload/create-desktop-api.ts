@@ -70,6 +70,9 @@ function createProjectApi() {
     getProjectDiffImagePreview: (
       request: DesktopRequestMap['getProjectDiffImagePreview']['params'],
     ) => invokeRequest('getProjectDiffImagePreview', request),
+    getProjectDiffFileContents: (
+      request: DesktopRequestMap['getProjectDiffFileContents']['params'],
+    ) => invokeRequest('getProjectDiffFileContents', request),
     captureProjectDiffBaseline: (projectId: string) =>
       invokeRequest('captureProjectDiffBaseline', { projectId }),
     listProjectCommits: (projectId: string, limit: number | null = null) =>
