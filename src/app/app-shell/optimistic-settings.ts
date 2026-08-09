@@ -1,3 +1,4 @@
+import { isComposerThinkingLevel } from '@howcode/shared/composer-thinking-level'
 import {
   isKeybindingCommandId,
   isValidAccelerator,
@@ -44,14 +45,6 @@ const optimisticSettingKeys = new Set([
   'keybindings',
   'composerSendMode',
 ])
-
-const isThinkingLevel = (value: unknown): value is ComposerThinkingLevel =>
-  value === 'off' ||
-  value === 'minimal' ||
-  value === 'low' ||
-  value === 'medium' ||
-  value === 'high' ||
-  value === 'xhigh'
 
 function getOptimisticModelSelection(
   payload: ActionPayload,
@@ -112,7 +105,7 @@ function getResettableThinkingLevel(
   fallback: ComposerThinkingLevel | null,
 ) {
   if (payload.reset === true) return null
-  return isThinkingLevel(payload.value) ? payload.value : fallback
+  return isComposerThinkingLevel(payload.value) ? payload.value : fallback
 }
 
 function applyOptimisticThinkingSetting(
@@ -131,7 +124,7 @@ function applyOptimisticThinkingSetting(
       nextSettings.codeThinkingLevel,
     )
   }
-  if (payload.key === 'gitCommitMessageThinkingLevel' && isThinkingLevel(payload.value)) {
+  if (payload.key === 'gitCommitMessageThinkingLevel' && isComposerThinkingLevel(payload.value)) {
     nextSettings.gitCommitMessageThinkingLevel = payload.value
   }
 }

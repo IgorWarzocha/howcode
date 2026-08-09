@@ -6,10 +6,11 @@ import type * as Stream from 'effect/Stream'
 import type { DesktopEvent } from '../../../shared/desktop-contracts'
 import type { DesktopServiceRuntime } from '../../../shared/desktop-service-contracts'
 import type { DesktopServiceMessage } from '../../../shared/desktop-service-ipc'
+import type { DesktopServiceRemoteModuleName } from '../../../shared/desktop-service-rpc'
 import type { TerminalRpcResponse } from '../../../shared/terminal-rpc'
 
 export type DesktopServiceApi = DesktopServiceRuntime
-export type DesktopServiceModuleName = keyof DesktopServiceApi
+export type DesktopServiceModuleName = DesktopServiceRemoteModuleName
 
 export type { DesktopServiceMessage } from '../../../shared/desktop-service-ipc'
 

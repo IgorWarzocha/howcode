@@ -14,6 +14,7 @@ const thinkingLevelLabels = {
   medium: 'Medium',
   high: 'High',
   xhigh: 'X-High',
+  max: 'Max',
 } as const
 
 type RunComposerAction = (

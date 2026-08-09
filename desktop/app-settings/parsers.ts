@@ -1,3 +1,4 @@
+import { isComposerThinkingLevel } from '../../shared/composer-thinking-level.ts'
 import type {
   ComposerSendMode,
   ComposerStreamingBehavior,
@@ -106,14 +107,7 @@ export function parseThinkingLevelPreference(
 
   try {
     const parsed = JSON.parse(valueJson) as unknown
-    return parsed === 'off' ||
-      parsed === 'minimal' ||
-      parsed === 'low' ||
-      parsed === 'medium' ||
-      parsed === 'high' ||
-      parsed === 'xhigh'
-      ? parsed
-      : null
+    return isComposerThinkingLevel(parsed) ? parsed : null
   } catch {
     return null
   }

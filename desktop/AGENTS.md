@@ -4,5 +4,7 @@
 - API or event changes must update their `shared/*` contracts, action routing, host bridge, and transport consumers together.
 - Publish runtime changes through the existing event publishers; persistence belongs in the relevant state DB, not view-model caches.
 - Decode npm and skills API payloads with their local Schema contracts before catalog mapping; malformed external collections fail at ingress.
+- Keep package/skill lookup caches bounded with Effect `Cache`; transient lookup failures are not cache entries.
 - Decode Pi session JSONL through `pi-threads/session-entry-schema.ts`; terminal transcript writes remain asynchronous, ordered, and awaited during scoped cleanup.
+- Validate artifact/chat/thread query rows before mapping. Legacy Git checkpoint cleanup is a background migration and must never block schema initialization.
 - `artifact-compiler.ts` resolves allowed React imports from Howcode's runtime; artifacts otherwise remain self-contained.

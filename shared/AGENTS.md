@@ -4,3 +4,4 @@
 - `effect-shutdown.ts` is the cross-runtime idempotence/deadline primitive; process and Electron adapters supply their cleanup effects.
 - Keep leaf contracts acyclic. When domains need the same primitive model, extract it to the smallest named contract owner rather than making contract files import each other or adding a catch-all types file.
 - Derive composer boundary types from `desktop-composer-schema.ts`; extend that schema rather than adding parallel event-only validators.
+- Package, Pi settings/theme, session-tree, and thread-search wire types likewise derive from their named Schema modules.

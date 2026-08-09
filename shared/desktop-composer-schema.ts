@@ -1,13 +1,7 @@
 import * as Schema from 'effect/Schema'
+import { composerThinkingLevels } from './composer-thinking-level'
 
-export const ComposerThinkingLevelSchema = Schema.Literals([
-  'off',
-  'minimal',
-  'low',
-  'medium',
-  'high',
-  'xhigh',
-])
+export const ComposerThinkingLevelSchema = Schema.Literals(composerThinkingLevels)
 
 export const ComposerStreamingBehaviorSchema = Schema.Literals(['steer', 'followUp', 'stop'])
 
@@ -84,4 +78,18 @@ export const ComposerAttachmentSchema = Schema.Struct({
   path: Schema.String,
   name: Schema.String,
   kind: Schema.Literals(['directory', 'text', 'image']),
+})
+
+export const ComposerSlashCommandSchema = Schema.Struct({
+  name: Schema.String,
+  description: Schema.optionalKey(Schema.String),
+  source: Schema.Literals(['app', 'builtin', 'extension', 'prompt', 'skill']),
+  sourceInfo: Schema.optionalKey(Schema.Unknown),
+})
+
+export const ComposerSkillReferenceSchema = Schema.Struct({
+  name: Schema.String,
+  description: Schema.String,
+  filePath: Schema.String,
+  sourceInfo: Schema.optionalKey(Schema.Unknown),
 })

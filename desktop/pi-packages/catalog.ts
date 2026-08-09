@@ -1,4 +1,7 @@
+import * as Cache from 'effect/Cache'
+import * as Duration from 'effect/Duration'
 import * as Effect from 'effect/Effect'
+import * as Exit from 'effect/Exit'
 import * as Schema from 'effect/Schema'
 import type { PiPackageCatalogItem, PiPackageCatalogPage } from '../../shared/desktop-contracts.ts'
 import { sortPiPackageCatalogItems } from './helpers'
@@ -7,14 +10,8 @@ import { type RegistrySearchObject, RegistrySearchResponse } from './registry-sc
 const npmRegistrySearchUrl = 'https://registry.npmjs.org/-/v1/search'
 const defaultCatalogPageSize = 20
 const catalogCacheTtlMs = 5 * 60_000
-
-type CatalogCacheEntry = {
-  expiresAt: number
-  page?: PiPackageCatalogPage
-  promise?: Promise<PiPackageCatalogPage>
-}
-
-const catalogCache = new Map<string, CatalogCacheEntry>()
+const catalogCacheCapacity = 200
+const cacheKeySeparator = '\0'
 
 function normalizeCatalogQuery(query?: string | undefined | null | undefined) {
   return query?.trim() ?? ''
@@ -147,38 +144,30 @@ async function loadCatalog(
   }
 }
 
-async function getCatalog(query: string, cursor: number, pageSize: number) {
-  const cacheKey = `${query.toLowerCase()}:${cursor}:${pageSize}`
-  const cachedEntry = catalogCache.get(cacheKey)
+function splitCatalogCacheKey(key: string) {
+  const [query, rawCursor, rawPageSize] = key.split(cacheKeySeparator)
+  return { query: query ?? '', cursor: Number(rawCursor), pageSize: Number(rawPageSize) }
+}
 
-  if (cachedEntry?.page && cachedEntry.expiresAt > Date.now()) {
-    return cachedEntry.page
-  }
-
-  if (cachedEntry?.promise) {
-    return cachedEntry.promise
-  }
-
-  const promise = loadCatalog(query, cursor, pageSize)
-    .then((page) => {
-      catalogCache.set(cacheKey, {
-        page,
-        expiresAt: Date.now() + catalogCacheTtlMs,
+const catalogCache = Effect.runSync(
+  Cache.makeWith(
+    (key: string) => {
+      const request = splitCatalogCacheKey(key)
+      return Effect.tryPromise({
+        try: () => loadCatalog(request.query, request.cursor, request.pageSize),
+        catch: (error) => error,
       })
+    },
+    {
+      capacity: catalogCacheCapacity,
+      timeToLive: (exit) => (Exit.isSuccess(exit) ? catalogCacheTtlMs : Duration.zero),
+    },
+  ),
+)
 
-      return page
-    })
-    .catch((error) => {
-      catalogCache.delete(cacheKey)
-      throw error
-    })
-
-  catalogCache.set(cacheKey, {
-    promise,
-    expiresAt: Date.now() + catalogCacheTtlMs,
-  })
-
-  return promise
+function getCatalog(query: string, cursor: number, pageSize: number) {
+  const cacheKey = `${query}${cacheKeySeparator}${cursor}${cacheKeySeparator}${pageSize}`
+  return Effect.runPromise(Cache.get(catalogCache, cacheKey))
 }
 
 export async function searchPiPackages(

@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { RegistrySearchResponse } from '../../desktop/pi-packages/registry-schema'
 import { decodeSessionFileLine } from '../../desktop/pi-threads/session-entry-schema'
 import { SkillDownloadApiResponse } from '../../desktop/skills/api-schema'
+import { decodePersistedRow, ThreadRowSchema } from '../../desktop/thread-state-db/row-schema'
 import { ComposerStateSchema, PiExtensionUiStateSchema } from '../../shared/desktop-composer-schema'
 import {
   DevWebDesktopEventEnvelope,
@@ -74,5 +75,11 @@ describe('external payload schemas', () => {
 
   it('rejects malformed persisted session entries', () => {
     expect(decodeSessionFileLine('{"type":"session_info","name":42}')).toBeNull()
+  })
+
+  it('rejects malformed persisted database rows', () => {
+    expect(() => decodePersistedRow(ThreadRowSchema, { id: 42 }, 'thread')).toThrow(
+      'Invalid persisted thread row',
+    )
   })
 })

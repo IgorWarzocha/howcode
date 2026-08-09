@@ -1,7 +1,9 @@
+import * as Schema from 'effect/Schema'
 import type { Artifact, ArtifactKind, ArtifactVersion } from '../shared/desktop-contracts.ts'
 import { emitDesktopEvent } from './runtime/desktop-events.ts'
 import { emitDesktopEvent as emitRuntimeHostDesktopEvent } from './runtime-host/host-events.ts'
 import { getThreadStateDatabase } from './thread-state-db/db.ts'
+import { decodePersistedRow, decodePersistedRows } from './thread-state-db/row-schema.ts'
 import { runInTransaction } from './thread-state-db/write-transaction.ts'
 
 let artifactSchemaReady = false
@@ -38,24 +40,25 @@ function ensureArtifactSchema() {
   artifactSchemaReady = true
 }
 
-type ArtifactRow = {
-  slug: string
-  conversationId: string
-  kind: string
-  content: string
-  version: number
-  createdAt: string
-  updatedAt: string
-}
+const ArtifactRowSchema = Schema.Struct({
+  slug: Schema.String,
+  conversationId: Schema.String,
+  kind: Schema.String,
+  content: Schema.String,
+  version: Schema.Number,
+  createdAt: Schema.String,
+  updatedAt: Schema.String,
+})
 
-type ArtifactVersionRow = {
-  slug: string
-  version: number
-  content: string
-  createdAt: string
-}
+const ArtifactVersionRowSchema = Schema.Struct({
+  slug: Schema.String,
+  version: Schema.Number,
+  content: Schema.String,
+  createdAt: Schema.String,
+})
 
-function mapArtifactRow(row: ArtifactRow): Artifact {
+function mapArtifactRow(input: unknown): Artifact {
+  const row = decodePersistedRow(ArtifactRowSchema, input, 'artifact')
   return {
     slug: row.slug,
     conversationId: row.conversationId,
@@ -269,49 +272,53 @@ export function getArtifact(
 ): Artifact | null {
   ensureArtifactSchema()
   const row = conversationId
-    ? (getThreadStateDatabase()
+    ? getThreadStateDatabase()
         .prepare(
           `SELECT id AS slug, conversation_id AS conversationId, kind, content, version,
                   created_at AS createdAt, updated_at AS updatedAt
            FROM artifacts WHERE id = ? AND conversation_id = ?`,
         )
-        .get(artifactId, conversationId) as ArtifactRow | undefined)
-    : (getThreadStateDatabase()
+        .get(artifactId, conversationId)
+    : getThreadStateDatabase()
         .prepare(
           `SELECT id AS slug, conversation_id AS conversationId, kind, content, version,
                   created_at AS createdAt, updated_at AS updatedAt
            FROM artifacts WHERE id = ?`,
         )
-        .get(artifactId) as ArtifactRow | undefined)
+        .get(artifactId)
   return row ? mapArtifactRow(row) : null
 }
 
 export function listArtifacts(conversationId?: string | undefined | null | undefined): Artifact[] {
   ensureArtifactSchema()
   const rows = conversationId
-    ? (getThreadStateDatabase()
+    ? getThreadStateDatabase()
         .prepare(
           `SELECT id AS slug, conversation_id AS conversationId, kind, content, version,
                   created_at AS createdAt, updated_at AS updatedAt
            FROM artifacts WHERE conversation_id = ? ORDER BY updated_at DESC`,
         )
-        .all(conversationId) as ArtifactRow[])
-    : (getThreadStateDatabase()
+        .all(conversationId)
+    : getThreadStateDatabase()
         .prepare(
           `SELECT id AS slug, conversation_id AS conversationId, kind, content, version,
                   created_at AS createdAt, updated_at AS updatedAt
            FROM artifacts ORDER BY updated_at DESC`,
         )
-        .all() as ArtifactRow[])
+        .all()
   return rows.map(mapArtifactRow)
 }
 
 export function listArtifactVersions(artifactId: string): ArtifactVersion[] {
   ensureArtifactSchema()
-  return getThreadStateDatabase()
-    .prepare(
-      `SELECT artifact_id AS slug, version, content, created_at AS createdAt
+  return decodePersistedRows(
+    ArtifactVersionRowSchema,
+    getThreadStateDatabase()
+      .prepare(
+        `SELECT artifact_id AS slug, version, content, created_at AS createdAt
        FROM artifact_versions WHERE artifact_id = ? ORDER BY version DESC`,
-    )
-    .all(artifactId) as ArtifactVersionRow[]
+      )
+      .all(artifactId),
+    'artifact version',
+  )
 }

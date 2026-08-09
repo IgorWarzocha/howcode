@@ -16,18 +16,21 @@ import { ensureChatStateSchema, isChatSessionPath } from '../chat-state-db.ts'
 import { getLiveThread } from '../runtime/live-thread-store.ts'
 import { getThreadStateDatabase } from './db.ts'
 import { mapArchivedThreadRow, mapInboxThreadRow, mapProjectRow, mapThreadRow } from './mappers.ts'
+import {
+  ArchivedThreadRowSchema,
+  decodePersistedRows,
+  InboxThreadRowSchema,
+  ProjectRowSchema,
+  ThreadRowSchema,
+} from './row-schema.ts'
 import type {
-  ArchivedThreadRow,
   InboxPathRow,
-  InboxThreadRow,
-  ProjectRow,
   ProjectUsageTotalsRow,
   ThreadAssistantSnapshotRow,
   ThreadCwdRow,
   ThreadDeletionSnapshotRow,
   ThreadDiffPreferencesRow,
   ThreadPathRow,
-  ThreadRow,
 } from './types.ts'
 import { ensureProject } from './writes.ts'
 
@@ -49,9 +52,11 @@ export function listProjects(cwd: string): Project[] {
   const db = getThreadStateDatabase()
   ensureProject(cwd)
 
-  const rows = db
-    .prepare(
-      `
+  const rows = decodePersistedRows(
+    ProjectRowSchema,
+    db
+      .prepare(
+        `
         SELECT
           projects.cwd AS id,
           COALESCE(projects.custom_name, projects.name) AS name,
@@ -118,8 +123,10 @@ export function listProjects(cwd: string): Project[] {
           latestModifiedMs DESC,
           projects.name COLLATE NOCASE ASC
       `,
-    )
-    .all(getChatSessionLikePattern()) as ProjectRow[]
+      )
+      .all(getChatSessionLikePattern()),
+    'project',
+  )
 
   return rows.map(mapProjectRow)
 }
@@ -243,9 +250,11 @@ export function listProjectThreads(
   options: { chat?: boolean | undefined } = {},
 ): Thread[] {
   const db = getThreadStateDatabase()
-  const rows = db
-    .prepare(
-      `
+  const rows = decodePersistedRows(
+    ThreadRowSchema,
+    db
+      .prepare(
+        `
         SELECT
           threads.id AS id,
           threads.title AS title,
@@ -262,8 +271,10 @@ export function listProjectThreads(
         WHERE threads.cwd = ? AND threads.archived = 0
         ORDER BY threads.pinned DESC, threads.last_modified_ms DESC, threads.title COLLATE NOCASE ASC
       `,
-    )
-    .all(projectId) as ThreadRow[]
+      )
+      .all(projectId),
+    'thread',
+  )
 
   return rows.flatMap((row) =>
     matchesThreadScope(row, options)
@@ -284,9 +295,11 @@ export function listArchivedProjectThreads(
   options: { chat?: boolean | undefined } = {},
 ): Thread[] {
   const db = getThreadStateDatabase()
-  const rows = db
-    .prepare(
-      `
+  const rows = decodePersistedRows(
+    ThreadRowSchema,
+    db
+      .prepare(
+        `
         SELECT
           threads.id AS id,
           threads.title AS title,
@@ -303,8 +316,10 @@ export function listArchivedProjectThreads(
         WHERE threads.cwd = ? AND threads.archived = 1
         ORDER BY threads.last_modified_ms DESC, threads.title COLLATE NOCASE ASC
       `,
-    )
-    .all(projectId) as ThreadRow[]
+      )
+      .all(projectId),
+    'archived project thread',
+  )
 
   return rows.flatMap((row) =>
     matchesThreadScope(row, options)
@@ -322,9 +337,11 @@ export function listArchivedProjectThreads(
 
 export function listInboxThreads(): InboxThread[] {
   const db = getThreadStateDatabase()
-  const rows = db
-    .prepare(
-      `
+  const rows = decodePersistedRows(
+    InboxThreadRowSchema,
+    db
+      .prepare(
+        `
         SELECT
           threads.id AS threadId,
           threads.title AS title,
@@ -353,8 +370,10 @@ export function listInboxThreads(): InboxThread[] {
           COALESCE(inbox_items.last_assistant_at_ms, threads.last_modified_ms) DESC,
           threads.title COLLATE NOCASE ASC
       `,
-    )
-    .all() as InboxThreadRow[]
+      )
+      .all(),
+    'inbox thread',
+  )
 
   return sortInboxThreadsByPriority(
     rows.map((row) =>
@@ -370,9 +389,11 @@ export function listInboxThreads(): InboxThread[] {
 
 export function listArchivedThreads(): ArchivedThread[] {
   const db = getThreadStateDatabase()
-  const rows = db
-    .prepare(
-      `
+  const rows = decodePersistedRows(
+    ArchivedThreadRowSchema,
+    db
+      .prepare(
+        `
         SELECT
           threads.id AS id,
           threads.title AS title,
@@ -387,8 +408,10 @@ export function listArchivedThreads(): ArchivedThread[] {
         WHERE threads.archived = 1
         ORDER BY threads.last_modified_ms DESC, threads.title COLLATE NOCASE ASC
       `,
-    )
-    .all() as ArchivedThreadRow[]
+      )
+      .all(),
+    'archived thread',
+  )
 
   return rows.map(mapArchivedThreadRow)
 }

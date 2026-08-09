@@ -6,3 +6,4 @@
 - Detach service generations by record/process identity before closing scopes; terminal RPC disposal must remain child-specific.
 - Packaged native dependencies resolve from the ABI bundle under `app.asar.unpacked`; missing or unsupported ABIs must fail explicitly.
 - `node-runtime/*` owns shared subprocess deadlines/output collection; callers retain executable precedence, fallback, ABI allowlists, and packaged manifest policy.
+- Desktop service reflection is constrained by `shared/desktop-service-rpc.ts`; adding an exported backend helper must not expose it as RPC.

@@ -4,6 +4,7 @@ import * as Effect from 'effect/Effect'
 import * as Ref from 'effect/Ref'
 import type { RuntimeHostRequestMap, RuntimeHostRequestName } from '../protocol.ts'
 import { getRuntimeHostRequestSessionPath, shouldUseThreadRuntimeHost } from '../request-routing.ts'
+import { decodeRuntimeHostResponse } from '../response-schema.ts'
 import type { HostLifecycleService, HostMessageHandler } from './lifecycle.ts'
 import { makeHostRecord, rememberHostAlias, updateHost, updateMap } from './state.ts'
 import {
@@ -117,6 +118,12 @@ export function makeHostRequestInvoker<Process>(options: {
     return yield* adapter.send(process, { type: 'request', id: requestId, name, payload }).pipe(
       Effect.tapError(() => removePending(hostId, requestId, pending)),
       Effect.andThen(Deferred.await(response)),
+      Effect.flatMap((result) =>
+        Effect.try({
+          try: () => decodeRuntimeHostResponse(name, result),
+          catch: (error) => brokerError(`decodeResponse:${name}`, error),
+        }),
+      ),
       Effect.onInterrupt(() => removePending(hostId, requestId, pending)),
     )
   })

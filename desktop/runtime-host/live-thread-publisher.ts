@@ -4,7 +4,7 @@ import {
   setThreadCompactingState,
   setThreadStreamingState,
 } from '../../shared/thread-data.ts'
-import { buildThreadHistorySlice, type SessionPathEntry } from '../../shared/thread-history.ts'
+import { buildThreadHistorySlice } from '../../shared/thread-history.ts'
 import { isChatSessionPath } from '../chat-state-db.ts'
 import { buildComposerState } from '../runtime/composer-state.ts'
 import { getPiExtensionUiState } from '../runtime/pi-extension-ui-state.ts'
@@ -26,10 +26,7 @@ function buildLiveThreadData(runtime: LivePiRuntime) {
   const sessionPath = runtime.session.sessionFile
   if (!sessionPath) return null
   const streamingMessage = runtime.session.state.streamingMessage
-  const historySlice = buildThreadHistorySlice(
-    [...(runtime.session.sessionManager.getBranch() as SessionPathEntry[])],
-    0,
-  )
+  const historySlice = buildThreadHistorySlice(runtime.session.sessionManager.getBranch(), 0)
   const sourceMessages = [
     ...historySlice.sourceMessages,
     ...(streamingMessage ? [streamingMessage] : []),

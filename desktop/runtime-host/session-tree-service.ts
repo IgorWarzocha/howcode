@@ -7,7 +7,7 @@ export async function loadSessionTreeList(request: {
 }): Promise<SessionTreeList> {
   const { SessionManager } = await getPiModule()
   const manager = SessionManager.open(request.sessionPath)
-  const tree = manager.getTree() as Parameters<typeof buildSessionTreeListFromPiTree>[0]
+  const tree = manager.getTree()
   let leafId = manager.getLeafId()
 
   // Pi keeps leafId in memory only; reopening the JSONL sets leafId to the last file entry,

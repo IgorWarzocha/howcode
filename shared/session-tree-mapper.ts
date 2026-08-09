@@ -1,5 +1,9 @@
 import type { SessionTreeList, SessionTreeListRow } from './session-tree-model.ts'
 
+type MutableSessionTreeListRow = {
+  -readonly [K in keyof SessionTreeListRow]: SessionTreeListRow[K]
+}
+
 type PiSessionTreeNode = {
   entry: {
     id: string
@@ -195,20 +199,22 @@ function childIndentFor(parentIndent: number, multipleChildren: boolean, justBra
 }
 
 function appendVisibleTreeRow(
-  rows: SessionTreeListRow[],
+  rows: MutableSessionTreeListRow[],
   node: PiSessionTreeNode,
   indent: number,
   isCurrentLeaf: boolean,
 ) {
   const entry = node.entry
   if (isComposerTreeBookkeepingEntry(entry)) return
+  const customLabel = customEntryLabel(node)
+  const meta = entryMeta(entry)
   rows.push({
     id: entry.id,
     parentId: entry.parentId,
     depth: indent,
     label: entryLabel(node),
-    customLabel: customEntryLabel(node),
-    meta: entryMeta(entry),
+    ...(customLabel === undefined ? {} : { customLabel }),
+    ...(meta === undefined ? {} : { meta }),
     kind: entryKind(entry),
     isLeaf: isCurrentLeaf,
     isOnActivePath: false,
@@ -221,7 +227,7 @@ function flattenPiTree(
   leafId: string | null,
   multipleRoots: boolean,
 ): SessionTreeListRow[] {
-  const rows: SessionTreeListRow[] = []
+  const rows: MutableSessionTreeListRow[] = []
   const containsActive = buildContainsActiveMap(roots, leafId)
 
   type StackItem = [PiSessionTreeNode, number, boolean]

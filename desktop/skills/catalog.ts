@@ -1,38 +1,55 @@
+import * as Cache from 'effect/Cache'
+import * as Duration from 'effect/Duration'
+import * as Effect from 'effect/Effect'
+import * as Exit from 'effect/Exit'
 import type { PiSkillCatalogItem, PiSkillCatalogPage } from '../../shared/desktop-contracts.ts'
 import { downloadSkillApi, getSkillsAppUrl, getSkillsSourceUrl, searchSkillsApi } from './api.ts'
 import { parseSkillFrontmatter } from './frontmatter.ts'
 import { clampResultLimit, getSkillIdentityKey, normalizeSearchQuery } from './source.ts'
 
-type CatalogCacheEntry = {
-  expiresAt: number
-  items?: PiSkillCatalogItem[]
-  promise?: Promise<PiSkillCatalogItem[]>
-}
-
 const catalogCacheTtlMs = 5 * 60_000
-const catalogCache = new Map<string, CatalogCacheEntry>()
-const detailCache = new Map<string, { description: string | null; hash: string | null }>()
+const skillDetailCacheTtlMs = 60 * 60_000
+const catalogCacheCapacity = 100
+const skillDetailCacheCapacity = 500
+const cacheKeySeparator = '\0'
 
-async function fetchSkillDetails(skill: { id: string; source: string; skillId: string }) {
-  const cacheKey = `${skill.source}/${skill.skillId}`.toLowerCase()
-  const cached = detailCache.get(cacheKey)
-  if (cached) {
-    return cached
-  }
-
+async function loadSkillDetails(skill: { source: string; skillId: string }) {
   const download = await downloadSkillApi(skill.source, skill.skillId)
   const skillFile = Array.isArray(download.files)
     ? download.files.find((file) => file.path === 'SKILL.md')
     : null
   const contents = typeof skillFile?.contents === 'string' ? skillFile.contents : ''
   const { description } = parseSkillFrontmatter(contents)
-  const details = {
+  return {
     description,
     hash: typeof download.hash === 'string' ? download.hash : null,
   }
+}
 
-  detailCache.set(cacheKey, details)
-  return details
+function splitCacheKey(key: string) {
+  const separatorIndex = key.lastIndexOf(cacheKeySeparator)
+  return [key.slice(0, separatorIndex), key.slice(separatorIndex + 1)] as const
+}
+
+const detailCache = Effect.runSync(
+  Cache.makeWith(
+    (key: string) => {
+      const [source, skillId] = splitCacheKey(key)
+      return Effect.tryPromise({
+        try: () => loadSkillDetails({ source, skillId }),
+        catch: (error) => error,
+      })
+    },
+    {
+      capacity: skillDetailCacheCapacity,
+      timeToLive: (exit) => (Exit.isSuccess(exit) ? skillDetailCacheTtlMs : Duration.zero),
+    },
+  ),
+)
+
+function fetchSkillDetails(skill: { source: string; skillId: string }) {
+  const cacheKey = `${skill.source}${cacheKeySeparator}${skill.skillId}`
+  return Effect.runPromise(Cache.get(detailCache, cacheKey))
 }
 
 async function loadCatalog(query: string, limit: number) {
@@ -50,7 +67,7 @@ async function loadCatalog(query: string, limit: number) {
         return null
       }
 
-      const details = await fetchSkillDetails({ id, source, skillId }).catch(() => ({
+      const details = await fetchSkillDetails({ source, skillId }).catch(() => ({
         description: null,
         hash: null,
       }))
@@ -75,37 +92,25 @@ async function loadCatalog(query: string, limit: number) {
   return items.filter((item): item is PiSkillCatalogItem => item !== null)
 }
 
-async function getCatalog(query: string, limit: number) {
-  const cacheKey = `${query.toLowerCase()}:${limit}`
-  const cached = catalogCache.get(cacheKey)
-
-  if (cached?.items && cached.expiresAt > Date.now()) {
-    return cached.items
-  }
-
-  if (cached?.promise) {
-    return cached.promise
-  }
-
-  const promise = loadCatalog(query, limit)
-    .then((items) => {
-      catalogCache.set(cacheKey, {
-        items,
-        expiresAt: Date.now() + catalogCacheTtlMs,
+const catalogCache = Effect.runSync(
+  Cache.makeWith(
+    (key: string) => {
+      const [query, rawLimit] = splitCacheKey(key)
+      return Effect.tryPromise({
+        try: () => loadCatalog(query, Number(rawLimit)),
+        catch: (error) => error,
       })
-      return items
-    })
-    .catch((error) => {
-      catalogCache.delete(cacheKey)
-      throw error
-    })
+    },
+    {
+      capacity: catalogCacheCapacity,
+      timeToLive: (exit) => (Exit.isSuccess(exit) ? catalogCacheTtlMs : Duration.zero),
+    },
+  ),
+)
 
-  catalogCache.set(cacheKey, {
-    promise,
-    expiresAt: Date.now() + catalogCacheTtlMs,
-  })
-
-  return promise
+function getCatalog(query: string, limit: number) {
+  const cacheKey = `${query}${cacheKeySeparator}${limit}`
+  return Effect.runPromise(Cache.get(catalogCache, cacheKey))
 }
 
 export async function searchPiSkills(

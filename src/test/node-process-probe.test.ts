@@ -17,6 +17,23 @@ describe('Node process probes', () => {
     expect(result).toEqual({ stdout: 'out', stderr: 'err', exitCode: 7 })
   })
 
+  it('writes stdin to the child process', async () => {
+    const result = await Effect.runPromise(
+      runProcessProbe({
+        executable: process.execPath,
+        args: [
+          '-e',
+          "process.stdin.setEncoding('utf8'); let input = ''; process.stdin.on('data', chunk => input += chunk); process.stdin.on('end', () => process.stdout.write(input.toUpperCase()))",
+        ],
+        stdin: 'migrate',
+        timeout: 1_000,
+        timeoutMessage: 'Test stdin probe timed out.',
+      }),
+    )
+
+    expect(result).toEqual({ stdout: 'MIGRATE', stderr: '', exitCode: 0 })
+  })
+
   it('decodes the stock Node version and ABI probe', async () => {
     const runtime = await probeNodeRuntime(process.execPath)
 

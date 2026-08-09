@@ -1,9 +1,9 @@
+import { isComposerThinkingLevel } from './composer-thinking-level'
 import type {
   AppSettings,
   ComposerAttachment,
   ComposerStateRequest,
   ComposerStreamingBehavior,
-  ComposerThinkingLevel,
   DesktopActionPayloadInput,
   DictationModelId,
   GitOpsMode,
@@ -15,15 +15,6 @@ import type {
   ProjectFileWriteRequest,
 } from './desktop-contracts'
 import { getLocalDraftBranchName, getPersistedSessionPath } from './session-paths'
-
-const composerThinkingLevels = new Set<ComposerThinkingLevel>([
-  'off',
-  'minimal',
-  'low',
-  'medium',
-  'high',
-  'xhigh',
-])
 
 export function getComposerRequest(payload: DesktopActionPayloadInput): ComposerStateRequest {
   return {
@@ -208,9 +199,7 @@ export function getComposerModelSelection(payload: DesktopActionPayloadInput) {
 
 export function getComposerThinkingLevel(payload: DesktopActionPayloadInput) {
   const level = typeof payload.level === 'string' ? payload.level : null
-  return level && composerThinkingLevels.has(level as ComposerThinkingLevel)
-    ? (level as ComposerThinkingLevel)
-    : null
+  return isComposerThinkingLevel(level) ? level : null
 }
 
 export function getGitCommitMessage(payload: DesktopActionPayloadInput) {
@@ -420,9 +409,7 @@ export function getSessionTreeLabel(payload: DesktopActionPayloadInput) {
 
 export function getSettingsThinkingLevel(payload: DesktopActionPayloadInput) {
   const level = typeof payload.value === 'string' ? payload.value : null
-  return level && composerThinkingLevels.has(level as ComposerThinkingLevel)
-    ? (level as ComposerThinkingLevel)
-    : null
+  return isComposerThinkingLevel(level) ? level : null
 }
 
 export function getSettingsNumberValue(payload: DesktopActionPayloadInput) {

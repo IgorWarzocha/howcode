@@ -1,16 +1,10 @@
+import { composerThinkingLevels } from '@howcode/shared/composer-thinking-level'
 import type { AppSettings, ComposerModel, ComposerThinkingLevel } from '../../desktop/types'
 import { InlineSelect } from './settingsUi'
 
 type ModelSettingsSelection = AppSettings['chatModel']
 
-const allThinkingLevels: ComposerThinkingLevel[] = [
-  'off',
-  'minimal',
-  'low',
-  'medium',
-  'high',
-  'xhigh',
-]
+const allThinkingLevels: ComposerThinkingLevel[] = [...composerThinkingLevels]
 
 const thinkingLevelLabels: Record<ComposerThinkingLevel, string> = {
   off: 'Off',
@@ -19,6 +13,7 @@ const thinkingLevelLabels: Record<ComposerThinkingLevel, string> = {
   medium: 'Medium',
   high: 'High',
   xhigh: 'Extra high',
+  max: 'Max',
 }
 
 export function SettingsModelWorkflowControls({

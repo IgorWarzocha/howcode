@@ -2,6 +2,8 @@ import type {
   ComposerAttachmentSchema,
   ComposerModelSchema,
   ComposerQueuedPromptSchema,
+  ComposerSkillReferenceSchema,
+  ComposerSlashCommandSchema,
   ComposerStateSchema,
   ComposerStreamingBehaviorSchema,
   ComposerThinkingLevelSchema,
@@ -58,18 +60,6 @@ export type ComposerStateRequest = {
   branchName?: string | undefined | null | undefined
 }
 
-export type ComposerSlashCommandSource = 'app' | 'builtin' | 'extension' | 'prompt' | 'skill'
-
-export type ComposerSlashCommand = {
-  name: string
-  description?: string | undefined
-  source: ComposerSlashCommandSource
-  sourceInfo?: unknown | undefined
-}
-
-export type ComposerSkillReference = {
-  name: string
-  description: string
-  filePath: string
-  sourceInfo?: unknown | undefined
-}
+export type ComposerSlashCommand = typeof ComposerSlashCommandSchema.Type
+export type ComposerSlashCommandSource = ComposerSlashCommand['source']
+export type ComposerSkillReference = typeof ComposerSkillReferenceSchema.Type

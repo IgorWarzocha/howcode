@@ -9,6 +9,7 @@ import type {
   ProjectDiffDefaultBaseline,
   ProjectDiffRenderMode,
 } from './desktop-project-git-contracts'
+import type { PiSettingsSchema, PiThemeStateSchema } from './desktop-settings-schema'
 import type { Project } from './desktop-thread-contracts'
 import type { ComposerSendMode, KeybindingOverrides } from './keybindings'
 
@@ -59,69 +60,9 @@ export type PiDoubleEscapeAction = 'fork' | 'tree' | 'none'
 export type PiTreeFilterMode = 'default' | 'no-tools' | 'user-only' | 'labeled-only' | 'all'
 export type PiDefaultProjectTrust = 'ask' | 'always' | 'never'
 
-export type PiSettings = {
-  extensions: string[]
-  theme: string
-  autoCompact: boolean
-  enableSkillCommands: boolean
-  hideThinkingBlock: boolean
-  quietStartup: boolean
-  showImages: boolean
-  autoResizeImages: boolean
-  blockImages: boolean
-  collapseChangelog: boolean
-  enableInstallTelemetry: boolean
-  showHardwareCursor: boolean
-  clearOnShrink: boolean
-  transport: PiTransportMode
-  steeringMode: PiQueueMode
-  followUpMode: PiQueueMode
-  doubleEscapeAction: PiDoubleEscapeAction
-  defaultProjectTrust: PiDefaultProjectTrust
-  treeFilterMode: PiTreeFilterMode
-  editorPaddingX: number
-  autocompleteMaxVisible: number
-  imageWidthCells: number
-}
+export type PiSettings = typeof PiSettingsSchema.Type
 
-export type PiThemeState = {
-  selectedTheme: string
-  themes: Array<{
-    name: string
-    label: string
-    source: 'howcode' | 'pi-builtin' | 'pi-json'
-    path?: string | undefined
-  }>
-  colors: Record<string, string> &
-    Partial<
-      Record<
-        | 'toolPendingBg'
-        | 'userMessageBg'
-        | 'text'
-        | 'muted'
-        | 'dim'
-        | 'accent'
-        | 'selectedBg'
-        | 'success'
-        | 'error'
-        | 'warning'
-        | 'customMessageBg'
-        | 'mdCodeBlock'
-        | 'mdHeading'
-        | 'mdLink'
-        | 'mdCode'
-        | 'mdQuote',
-        string
-      >
-    >
-  exportColors: {
-    pageBg?: string | undefined
-    cardBg?: string | undefined
-    infoBg?: string | undefined
-  }
-  isLight: boolean
-  diagnostics: Array<{ type: string; message: string; path?: string | undefined }>
-}
+export type PiThemeState = typeof PiThemeStateSchema.Type
 
 export type ShellState = {
   platform: string

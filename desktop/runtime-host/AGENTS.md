@@ -6,6 +6,7 @@
 - Live thread, composer, and extension UI publications belong to the runtime record scheduler; do not add detached promises or raw timers that can outlive it.
 - Observe Pi Promise state transitions through `runtime/async-observer.ts`; keep the Pi operation authoritative and scope only the polling/race machinery.
 - Broker restart/exit paths must detach by process/scope identity before closing scopes; late events must not touch replacement hosts.
+- Decode successful replies with the request-specific schema before resolving broker calls; the IPC envelope alone is not a response contract.
 - Lifecycle locks and composer mutation locks are distinct and non-reentrant. Do not collapse them.
 - Idle disposal is a scoped `FiberMap` schedule; test timing with `TestClock`, not real sleeps.
 - Preserve `HOWCODE_BUNDLED_SKILLS_PATH` in every live runtime's additional skill paths; bundled skills replace bespoke app workflows.

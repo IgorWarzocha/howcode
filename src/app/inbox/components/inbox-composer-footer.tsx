@@ -24,6 +24,7 @@ const thinkingLevelLabels: Record<ComposerThinkingLevel, string> = {
   medium: 'Medium',
   high: 'High',
   xhigh: 'X-High',
+  max: 'Max',
 }
 
 type InboxComposerFooterProps = {

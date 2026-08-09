@@ -1,19 +1,30 @@
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
+import * as Schema from 'effect/Schema'
 import type { ChatSidebarState, ChatThread } from '../shared/desktop-contracts.ts'
 import { getChatSessionDir } from './chat-session-dir.ts'
 import { getThreadStateDatabase } from './thread-state-db/db.ts'
 import { mapThreadRow } from './thread-state-db/mappers.ts'
-import type { ThreadRow } from './thread-state-db/types.ts'
+import {
+  decodePersistedRow,
+  decodePersistedRows,
+  ThreadRowSchema,
+} from './thread-state-db/row-schema.ts'
 
-type ChatGroupRow = {
-  id: string
-  name: string
-  orderIndex: number | null
-  collapsed: number
-}
+const ChatGroupRowSchema = Schema.Struct({
+  id: Schema.String,
+  name: Schema.String,
+  orderIndex: Schema.NullOr(Schema.Number),
+  collapsed: Schema.Number,
+})
 
-type ChatThreadGroupRow = ThreadRow & { groupId: string | null; projectId: string }
+const ChatThreadGroupRowSchema = Schema.Struct({
+  ...ThreadRowSchema.fields,
+  groupId: Schema.NullOr(Schema.String),
+  projectId: Schema.String,
+})
+
+type ChatThreadGroupRow = typeof ChatThreadGroupRowSchema.Type
 
 let chatSchemaReady = false
 
@@ -127,14 +138,16 @@ export function upsertChatThread(options: {
     .run(options.sessionPath, options.groupId ?? null, options.updateGroup ? 1 : 0)
 }
 
-function mapChatThreadRow(row: ChatThreadGroupRow): ChatThread {
+function mapChatThreadRow(input: unknown): ChatThread {
+  const row: ChatThreadGroupRow = decodePersistedRow(ChatThreadGroupRowSchema, input, 'chat thread')
   return { ...mapThreadRow(row), groupId: row.groupId, projectId: row.projectId }
 }
 
 export function getChatSidebarState(selectedGroupId: string | null = null): ChatSidebarState {
   ensureChatStateSchema()
   const db = getThreadStateDatabase()
-  const groups: ChatSidebarState['groups'] = (
+  const groups: ChatSidebarState['groups'] = decodePersistedRows(
+    ChatGroupRowSchema,
     db
       .prepare(
         `
@@ -143,7 +156,8 @@ export function getChatSidebarState(selectedGroupId: string | null = null): Chat
         ORDER BY order_index ASC, name COLLATE NOCASE ASC
       `,
       )
-      .all() as ChatGroupRow[]
+      .all(),
+    'chat group',
   ).map((group) => ({
     id: group.id,
     name: group.name,
@@ -152,9 +166,11 @@ export function getChatSidebarState(selectedGroupId: string | null = null): Chat
     threads: [],
   }))
 
-  const rows = db
-    .prepare(
-      `
+  const rows = decodePersistedRows(
+    ChatThreadGroupRowSchema,
+    db
+      .prepare(
+        `
         SELECT
           threads.id AS id,
           threads.cwd AS projectId,
@@ -172,8 +188,10 @@ export function getChatSidebarState(selectedGroupId: string | null = null): Chat
         WHERE threads.archived = 0
         ORDER BY threads.pinned DESC, COALESCE(chat_threads.order_index, threads.last_modified_ms) DESC, threads.title COLLATE NOCASE ASC
       `,
-    )
-    .all() as ChatThreadGroupRow[]
+      )
+      .all(),
+    'chat thread',
+  )
 
   const chatRows = rows.filter((row) => isChatSessionPath(row.sessionPath))
 

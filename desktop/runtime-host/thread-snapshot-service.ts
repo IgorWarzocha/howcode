@@ -11,10 +11,7 @@ export async function loadThreadSnapshot(request: {
 }) {
   const { SessionManager } = await getPiModule()
   const manager = SessionManager.open(request.sessionPath)
-  const historySlice = buildThreadHistorySlice(
-    [...(manager.getBranch() as SessionPathEntry[])],
-    request.historyCompactions ?? 0,
-  )
+  const historySlice = buildThreadHistorySlice(manager.getBranch(), request.historyCompactions ?? 0)
 
   return {
     projectId: manager.getCwd(),
@@ -57,7 +54,7 @@ export async function renameThreadSession(request: { sessionPath: string; name: 
 export async function searchThreadSnapshot(request: { sessionPath: string; query: string }) {
   const { SessionManager } = await getPiModule()
   const manager = SessionManager.open(request.sessionPath)
-  const pathEntries = [...(manager.getBranch() as SessionPathEntry[])]
+  const pathEntries: SessionPathEntry[] = manager.getBranch()
   const thread = buildThreadData({
     sessionPath: request.sessionPath,
     sourceMessages: buildThreadHistorySlice(pathEntries, -1).sourceMessages,

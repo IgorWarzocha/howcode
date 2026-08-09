@@ -1,6 +1,7 @@
 import type { ThinkingLevel } from '@earendil-works/pi-agent-core'
 import { getSupportedThinkingLevels } from '@earendil-works/pi-ai'
 import type { AgentSession } from '@earendil-works/pi-coding-agent'
+import { composerThinkingLevels } from '../../shared/composer-thinking-level.ts'
 import type {
   ComposerContextUsage,
   ComposerModel,
@@ -56,12 +57,12 @@ function mapComposerModel(
     id: model.id,
     name: model.name ?? model.id,
     reasoning: Boolean(model.reasoning),
-    input: (model.input ?? ['text']) as Array<'text' | 'image'>,
+    input: model.input ?? ['text'],
   }
 }
 
 function mapThinkingLevels(levels: ThinkingLevel[]) {
-  return levels as ComposerThinkingLevel[]
+  return levels
 }
 
 function buildSessionQueuedPrompts(session: AgentSession): ComposerQueuedPrompt[] {
@@ -124,7 +125,7 @@ export function getAvailableThinkingLevelsForModel(
     return ['off']
   }
 
-  return getSupportedThinkingLevels(model) as ComposerThinkingLevel[]
+  return getSupportedThinkingLevels(model)
 }
 
 export function clampThinkingLevel(
@@ -136,22 +137,14 @@ export function clampThinkingLevel(
     return level
   }
 
-  const orderedLevels: ComposerThinkingLevel[] = [
-    'off',
-    'minimal',
-    'low',
-    'medium',
-    'high',
-    'xhigh',
-  ]
-  const requestedIndex = orderedLevels.indexOf(level)
+  const requestedIndex = composerThinkingLevels.indexOf(level)
 
   if (requestedIndex === -1) {
     return availableLevels[0] ?? 'off'
   }
 
   for (let index = requestedIndex; index >= 0; index -= 1) {
-    const candidate = orderedLevels[index]
+    const candidate = composerThinkingLevels[index]
     if (candidate && availableLevelSet.has(candidate)) {
       return candidate
     }
@@ -314,7 +307,7 @@ export async function buildComposerStateSnapshot(
       id: model.id,
       name: model.name ?? model.id,
       reasoning: Boolean(model.reasoning),
-      input: (model.input ?? ['text']) as Array<'text' | 'image'>,
+      input: model.input ?? ['text'],
     })),
     currentThinkingLevel: snapshot.currentThinkingLevel,
     availableThinkingLevels: snapshot.availableThinkingLevels,
@@ -347,13 +340,13 @@ export async function buildComposerState(
     id: model.id,
     name: model.name ?? model.id,
     reasoning: Boolean(model.reasoning),
-    input: (model.input ?? ['text']) as Array<'text' | 'image'>,
+    input: model.input ?? ['text'],
   }))
 
   return {
     currentModel: mapComposerModel(runtime.session.model),
     availableModels,
-    currentThinkingLevel: runtime.session.thinkingLevel as ComposerThinkingLevel,
+    currentThinkingLevel: runtime.session.thinkingLevel,
     availableThinkingLevels: mapThinkingLevels(runtime.session.getAvailableThinkingLevels()),
     queuedPrompts: buildSessionQueuedPrompts(runtime.session),
     piExtensionWidgets: getPiExtensionWidgets(runtime),

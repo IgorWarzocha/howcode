@@ -5,6 +5,10 @@ import type {
   PiSkillsService,
   PiThreadsService,
 } from '../../../../shared/desktop-service-contracts'
+import {
+  type DesktopServiceRemoteModuleName,
+  desktopServiceRemoteMethods,
+} from '../../../../shared/desktop-service-rpc'
 import { getDesktopWorkingDirectory } from '../../../../shared/desktop-working-directory'
 import { DesktopServiceClient } from '../../../desktop-host/desktop-service-client'
 import { getSystemNodeExecutable } from '../../../desktop-host/node-discovery'
@@ -34,7 +38,7 @@ function getBundledSkillsPath() {
 
 function proxyModule<T extends Record<string, unknown>>(
   service: DesktopServiceClient,
-  moduleName: keyof DesktopServiceRuntime,
+  moduleName: DesktopServiceRemoteModuleName,
 ) {
   return new Proxy(
     {},
@@ -43,6 +47,12 @@ function proxyModule<T extends Record<string, unknown>>(
         if (property === 'subscribeDesktopEvents')
           return service.subscribeDesktopEvents.bind(service)
         if (property === 'disposeDesktopRuntime') return service.dispose.bind(service)
+        if (
+          typeof property !== 'string' ||
+          !Object.hasOwn(desktopServiceRemoteMethods[moduleName], property)
+        ) {
+          return undefined
+        }
         return (...args: unknown[]) => service.invokeDynamic(moduleName, String(property), args)
       },
     },
