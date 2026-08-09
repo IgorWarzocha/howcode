@@ -1,5 +1,7 @@
 import { type IpcRendererEvent, ipcRenderer, webUtils } from 'electron'
+import type { DesktopAction } from '../../../shared/desktop-actions'
 import { electronDesktopBridgeCapabilities } from '../../../shared/desktop-bridge-capabilities'
+import type { AnyDesktopActionPayload, DesktopEvent } from '../../../shared/desktop-contracts'
 import {
   type DesktopEventChannel,
   type DesktopEventMap,
@@ -8,13 +10,7 @@ import {
   getDesktopEventIpcChannel,
   getDesktopRequestIpcChannel,
 } from '../../../shared/desktop-ipc'
-import type { DesktopAction } from '../../app/desktop/actions'
-import type {
-  AnyDesktopActionPayload,
-  DesktopEvent,
-  TerminalEvent,
-  TerminalOpenRequest,
-} from '../../app/desktop/types'
+import type { TerminalEvent, TerminalOpenRequest } from '../../../shared/terminal-contracts'
 
 function invokeRequest<K extends DesktopRequestChannel>(
   channel: K,

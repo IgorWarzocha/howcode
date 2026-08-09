@@ -7,3 +7,4 @@
 - Launcher smoke tests must validate `app.asar` and the unpacked stock-Node runtime dependency tree.
 - Release validation recursively indexes merged artifact trees and rejects duplicate basenames; do not assume launcher archives are top-level.
 - Development web scripts own Vite, authentication, proxying, and child lifecycle only. Desktop operation behaviour must come from the same host-neutral typed handler composition as Electron and packaged headless transports.
+- `check-architecture-boundaries.ts` derives aliases from `tsconfig.json`, rejects cross-runtime implementation imports, and rejects new production dependency cycles. Keep it rule-based; do not add a snapshot or historical allowlist.

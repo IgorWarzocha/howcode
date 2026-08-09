@@ -212,6 +212,9 @@ model needed to make direction acyclic. Do not introduce `types.ts` junk drawers
 
 Severity: medium.
 
+Resolved in Phase 4. Preload now imports actions, desktop contracts, and terminal contracts directly
+from `shared/*`.
+
 `src/electron/preload/create-desktop-api.ts` imports action and API types through
 `src/app/desktop/actions.ts` and `src/app/desktop/types.ts`. Those currently re-export `shared/*`, so
 the emitted runtime is not coupled, but the dependency direction violates the cross-runtime rule.
@@ -220,6 +223,9 @@ Preload should consume `shared/*` directly.
 ### 5. Architecture guidance is not fully enforced
 
 Severity: medium.
+
+Resolved in Phase 4. The umbrella gate now rejects forbidden runtime-layer imports and production
+dependency cycles from rules derived from the source roots and `tsconfig.json` aliases.
 
 Nested `AGENTS.md` files and `@howcode/*` entrypoints document intended ownership. The existing Vite
 resolution check proves aliases resolve, but it does not reject forbidden cross-runtime imports,
@@ -320,13 +326,18 @@ post-effect order.
 
 ### Phase 4 — Enforce durable boundaries
 
-Status: pending.
+Status: complete.
 
 - Forbid Electron/preload imports through renderer implementation paths.
 - Prevent new stock-Node-to-Electron/renderer implementation dependencies.
 - Detect newly introduced local dependency cycles.
 - Clarify public feature entrypoints where current ownership is already stable.
 - Do not attempt a mass alias rewrite without a measurable ownership benefit.
+
+Completion: this phase's commit. `scripts/check-architecture-boundaries.ts` scans 867 production
+files, resolves relative and configured alias imports, rejects runtime layers pointing in the wrong
+direction, and fails on strongly connected dependency groups. It is wired into `ai:check` without a
+snapshot or historical allowlist. Electron preload now consumes `shared/*` directly.
 
 ### Phase 5 — Reassess hotspots and duplication
 
@@ -355,6 +366,7 @@ Status: pending.
 | 1 | This phase's commit | Six strongly connected groups removed; zero local cycles across 857 production files. |
 | 2 | This phase's commit | One typed request implementation across Electron, headless, and development; dev bridge reduced by 228 lines. |
 | 3 | This phase's commit | Flat shell controller replaced by narrowed feature capabilities; state and action stages have named owners. |
+| 4 | This phase's commit | Cross-runtime direction and zero-cycle topology enforced across 867 production files. |
 
 ## Stop conditions
 
