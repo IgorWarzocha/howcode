@@ -15,7 +15,8 @@ import {
   resolveRuntimeProjectTrust,
 } from '../runtime/isolated-settings-manager.ts'
 import type { PiRuntime } from '../runtime/types.ts'
-import { invokeMainRequest } from './main-request-client.ts'
+import { invokeArtifactRequest } from './artifact-request-client.ts'
+import type { LivePiRuntime, RuntimeUpdateScheduler } from './live-runtime-updates.ts'
 import {
   bindRuntimeExtensionHandlers,
   refreshRuntimeExtensionHandlers,
@@ -37,7 +38,8 @@ export async function createLiveRuntime(
     sessionManager?: PiRuntime['session']['sessionManager']
   },
   handlers: LiveRuntimeFactoryHandlers,
-): Promise<PiRuntime> {
+  updates: RuntimeUpdateScheduler,
+): Promise<LivePiRuntime> {
   const {
     ModelRuntime,
     SessionManager,
@@ -105,12 +107,12 @@ export async function createLiveRuntime(
           customTools: [
             ...(attachmentFileTools?.tools ?? []),
             ...createArtifactTools({
-              createArtifact: (input) => invokeMainRequest('createArtifact', input),
-              editArtifact: (input) => invokeMainRequest('editArtifact', input),
+              createArtifact: (input) => invokeArtifactRequest('createArtifact', input),
+              editArtifact: (input) => invokeArtifactRequest('editArtifact', input),
               getArtifact: ({ conversationId, slug }) =>
-                invokeMainRequest('getArtifact', { artifactSlug: slug, conversationId }),
+                invokeArtifactRequest('getArtifact', { artifactSlug: slug, conversationId }),
               listArtifacts: (conversationId) =>
-                invokeMainRequest('listArtifacts', { conversationId }),
+                invokeArtifactRequest('listArtifacts', { conversationId }),
             }),
           ],
         }
@@ -121,22 +123,33 @@ export async function createLiveRuntime(
     session,
     chatGroupId: options.chatGroupId ?? null,
     attachmentFileAccess: attachmentFileTools?.access,
-  } satisfies PiRuntime
+    updates,
+  } satisfies LivePiRuntime
 
-  session.subscribe((event) =>
-    handleRuntimeSessionEvent(runtime, event, {
+  try {
+    session.subscribe((event) =>
+      handleRuntimeSessionEvent(runtime, event, {
+        isRuntimeExtensionCommandRunning,
+        reloadRuntimeSettingsIfSafe: handlers.reloadRuntimeSettingsIfSafe,
+        scheduleRuntimeDisposal: handlers.scheduleRuntimeDisposal,
+        suspendRuntimeDisposal: handlers.suspendRuntimeDisposal,
+      }),
+    )
+
+    await bindRuntimeExtensionHandlers(runtime, {
       isRuntimeExtensionCommandRunning,
       reloadRuntimeSettingsIfSafe: handlers.reloadRuntimeSettingsIfSafe,
-      scheduleRuntimeDisposal: handlers.scheduleRuntimeDisposal,
-      suspendRuntimeDisposal: handlers.suspendRuntimeDisposal,
-    }),
-  )
-
-  await bindRuntimeExtensionHandlers(runtime, {
-    isRuntimeExtensionCommandRunning,
-    reloadRuntimeSettingsIfSafe: handlers.reloadRuntimeSettingsIfSafe,
-  })
-  return runtime
+    })
+    return runtime
+  } catch (error) {
+    updates.close()
+    try {
+      await session.dispose()
+    } catch {
+      // Preserve the activation failure that triggered cleanup.
+    }
+    throw error
+  }
 }
 
 export function abortRuntimeExtensionCommand(runtime: PiRuntime) {
@@ -148,7 +161,7 @@ export function isRuntimeExtensionCommandRunning(runtime: PiRuntime) {
 }
 
 export async function refreshRuntimeExtensionBindings(
-  runtime: PiRuntime,
+  runtime: LivePiRuntime,
   reloadRuntimeSettingsIfSafe: (runtimeKey: string) => Promise<boolean>,
 ) {
   await refreshRuntimeExtensionHandlers(runtime, {

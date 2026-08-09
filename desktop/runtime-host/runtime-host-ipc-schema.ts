@@ -17,19 +17,6 @@ const RuntimeHostResponseMessageSchema = Schema.Union([
   }),
 ])
 
-const RuntimeHostMainRequestMessageSchema = Schema.Struct({
-  type: Schema.Literal('main-request'),
-  id: Schema.String,
-  name: Schema.Literals([
-    'createArtifact',
-    'updateArtifact',
-    'editArtifact',
-    'getArtifact',
-    'listArtifacts',
-  ]),
-  payload: Schema.Unknown,
-})
-
 export const RuntimeHostToMainMessageSchema = Schema.Union([
   RuntimeHostResponseMessageSchema,
   Schema.Struct({ type: Schema.Literal('desktop-event'), event: DesktopEventSchema }),
@@ -38,7 +25,6 @@ export const RuntimeHostToMainMessageSchema = Schema.Union([
     error: Schema.String,
     stack: Schema.optionalKey(Schema.String),
   }),
-  RuntimeHostMainRequestMessageSchema,
 ])
 
 export type RuntimeHostToMainMessage = typeof RuntimeHostToMainMessageSchema.Type

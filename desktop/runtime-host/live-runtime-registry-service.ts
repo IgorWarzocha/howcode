@@ -2,31 +2,34 @@ import path from 'node:path'
 import * as Context from 'effect/Context'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
+import type * as Scope from 'effect/Scope'
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import { normalizeRuntimeSettingsCwd } from '../runtime/runtime-settings-cwd.ts'
-import type { PiRuntime } from '../runtime/types.ts'
 import {
   type ExistingRuntimeInput,
   makeRuntimeRegistry,
   type NewRuntimeInput,
   RuntimeRegistryError,
 } from './live-runtime-registry-core.ts'
+import type { LivePiRuntime } from './live-runtime-updates.ts'
 
 const RUNTIME_IDLE_TIMEOUT = '15 minutes'
 
 export interface FactoryInterface {
   readonly createExisting: (
     input: ExistingRuntimeInput,
-  ) => Effect.Effect<PiRuntime, RuntimeRegistryError>
-  readonly createNew: (input: NewRuntimeInput) => Effect.Effect<PiRuntime, RuntimeRegistryError>
-  readonly runtimeKey: (runtime: PiRuntime) => string | null
-  readonly runtimeCwd: (runtime: PiRuntime) => string
-  readonly setBranchName: (runtime: PiRuntime, branchName: string | null) => void
-  readonly isWorking: (runtime: PiRuntime) => boolean
-  readonly hasPendingDialog: (runtime: PiRuntime) => boolean
-  readonly reload: (runtime: PiRuntime) => Effect.Effect<void, RuntimeRegistryError>
-  readonly abort: (runtime: PiRuntime) => Effect.Effect<void>
-  readonly release: (runtime: PiRuntime) => Effect.Effect<void>
+  ) => Effect.Effect<LivePiRuntime, RuntimeRegistryError, Scope.Scope>
+  readonly createNew: (
+    input: NewRuntimeInput,
+  ) => Effect.Effect<LivePiRuntime, RuntimeRegistryError, Scope.Scope>
+  readonly runtimeKey: (runtime: LivePiRuntime) => string | null
+  readonly runtimeCwd: (runtime: LivePiRuntime) => string
+  readonly setBranchName: (runtime: LivePiRuntime, branchName: string | null) => void
+  readonly isWorking: (runtime: LivePiRuntime) => boolean
+  readonly hasPendingDialog: (runtime: LivePiRuntime) => boolean
+  readonly reload: (runtime: LivePiRuntime) => Effect.Effect<void, RuntimeRegistryError>
+  readonly abort: (runtime: LivePiRuntime) => Effect.Effect<void>
+  readonly release: (runtime: LivePiRuntime) => Effect.Effect<void>
 }
 
 export class Factory extends Context.Service<Factory, FactoryInterface>()(
@@ -34,7 +37,9 @@ export class Factory extends Context.Service<Factory, FactoryInterface>()(
 ) {}
 
 export interface Interface {
-  readonly getCached: (sessionPath: string) => Effect.Effect<PiRuntime | null, RuntimeRegistryError>
+  readonly getCached: (
+    sessionPath: string,
+  ) => Effect.Effect<LivePiRuntime | null, RuntimeRegistryError>
   readonly getOrCreate: (
     sessionPath: string,
     options: {
@@ -42,7 +47,7 @@ export interface Interface {
       readonly settingsCwd?: string | null | undefined
       readonly chatGroupId?: string | null | undefined
     },
-  ) => Effect.Effect<PiRuntime, RuntimeRegistryError>
+  ) => Effect.Effect<LivePiRuntime, RuntimeRegistryError>
   readonly createNew: (
     cwd: string,
     sessionDir: string | null,
@@ -50,7 +55,7 @@ export interface Interface {
       readonly branchName?: string | null | undefined
       readonly chatGroupId?: string | null | undefined
     },
-  ) => Effect.Effect<PiRuntime, RuntimeRegistryError>
+  ) => Effect.Effect<LivePiRuntime, RuntimeRegistryError>
   readonly withMutationLock: <A, E, R>(
     runtimeKey: string,
     effect: Effect.Effect<A, E, R>,
@@ -80,6 +85,7 @@ export function registryError(operation: string, error: unknown) {
   return new RuntimeRegistryError({
     operation,
     message: error instanceof Error ? error.message : String(error),
+    cause: error,
   })
 }
 
@@ -87,7 +93,7 @@ export const layer = Layer.effect(
   Service,
   Effect.gen(function* () {
     const factory = yield* Factory
-    const registry = yield* makeRuntimeRegistry<PiRuntime>(
+    const registry = yield* makeRuntimeRegistry<LivePiRuntime>(
       {
         createExisting: factory.createExisting,
         createNew: factory.createNew,

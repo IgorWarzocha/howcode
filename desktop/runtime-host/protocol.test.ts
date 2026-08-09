@@ -9,11 +9,6 @@ describe('Runtime-host IPC schema', () => {
   it('rejects malformed and unknown messages', () => {
     expect(Result.isFailure(decode({ type: 'response', id: 1, ok: true }))).toBe(true)
     expect(
-      Result.isFailure(
-        decode({ type: 'main-request', id: '1', name: 'unknown-operation', payload: {} }),
-      ),
-    ).toBe(true)
-    expect(
       Result.isFailure(decode({ type: 'desktop-event', event: { type: 'session-tree-refresh' } })),
     ).toBe(true)
   })

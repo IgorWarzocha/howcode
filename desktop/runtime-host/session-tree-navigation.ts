@@ -2,7 +2,7 @@ import type { ComposerStateRequest } from '../../shared/desktop-contracts.ts'
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import { applyComposerModeSettings } from '../runtime/composer-mode-settings.ts'
 import { buildComposerState } from '../runtime/composer-state.ts'
-import type { PiRuntime, RuntimeThreadReason } from '../runtime/types.ts'
+import type { RuntimeThreadReason } from '../runtime/types.ts'
 import {
   getCachedRuntimeForSessionPath,
   getOrCreateRuntimeForSessionPath,
@@ -11,6 +11,7 @@ import {
   scheduleRuntimeDisposal,
   withRuntimeMutationLock,
 } from './live-runtime-registry.ts'
+import type { LivePiRuntime } from './live-runtime-updates.ts'
 import { publishComposerUpdate, publishThreadUpdate } from './live-thread-publisher.ts'
 
 export type NavigateSessionTreeOutcome = {
@@ -35,13 +36,13 @@ const navigateTreeAdapters = {
   },
   isRuntimeExtensionCommandRunning,
   publishThreadUpdate,
-  scheduleRuntimeDisposal: (runtime: PiRuntime) => {
+  scheduleRuntimeDisposal: (runtime: LivePiRuntime) => {
     const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile)
     if (runtimeKey) scheduleRuntimeDisposal(runtimeKey)
   },
 }
 
-function assertNavigateAllowed(runtime: PiRuntime) {
+function assertNavigateAllowed(runtime: LivePiRuntime) {
   if (navigateTreeAdapters.isRuntimeExtensionCommandRunning(runtime)) {
     throw new Error(
       'Wait for the current extension command to finish before changing the session tree.',
@@ -55,7 +56,7 @@ function assertNavigateAllowed(runtime: PiRuntime) {
   }
 }
 
-async function publishNavigateCompactionStarted(runtime: PiRuntime) {
+async function publishNavigateCompactionStarted(runtime: LivePiRuntime) {
   await navigateTreeAdapters.publishThreadUpdate(runtime, 'compaction-start')
   await navigateTreeAdapters.emitComposerUpdate({
     projectId: runtime.cwd,
@@ -64,7 +65,7 @@ async function publishNavigateCompactionStarted(runtime: PiRuntime) {
 }
 
 async function runNavigateOnRuntime(
-  runtime: PiRuntime,
+  runtime: LivePiRuntime,
   targetEntryId: string,
   summarize: boolean,
   label?: string | undefined,
@@ -116,7 +117,7 @@ async function runNavigateOnRuntime(
 }
 
 function ensureNavigateLabelApplied(
-  runtime: PiRuntime,
+  runtime: LivePiRuntime,
   input: {
     result: { cancelled?: boolean; summaryEntry?: { id: string } | undefined }
     label?: string | undefined
@@ -136,7 +137,7 @@ function ensureNavigateLabelApplied(
   runtime.session.sessionManager.appendLabelChange(labelTargetId, input.label)
 }
 
-function collectBranchSummaryIds(runtime: PiRuntime): Set<string> {
+function collectBranchSummaryIds(runtime: LivePiRuntime): Set<string> {
   return new Set(
     runtime.session.sessionManager
       .getEntries()
@@ -145,7 +146,7 @@ function collectBranchSummaryIds(runtime: PiRuntime): Set<string> {
 }
 
 function findNewBranchSummaryId(
-  runtime: PiRuntime,
+  runtime: LivePiRuntime,
   input: {
     branchSummaryIdsBeforeNavigate: ReadonlySet<string>
     navigateStartedAt: number
@@ -163,7 +164,7 @@ function findNewBranchSummaryId(
 }
 
 async function waitForBranchSummaryStartOrSettlement(
-  runtime: PiRuntime,
+  runtime: LivePiRuntime,
   navigatePromise: Promise<{
     cancelled: boolean
     aborted?: boolean
@@ -189,7 +190,7 @@ async function waitForBranchSummaryStartOrSettlement(
 }
 
 async function publishNavigateSettled(
-  runtime: PiRuntime,
+  runtime: LivePiRuntime,
   reason: Extract<RuntimeThreadReason, 'update' | 'compaction'>,
 ) {
   await navigateTreeAdapters.publishThreadUpdate(runtime, reason).catch((error) => {

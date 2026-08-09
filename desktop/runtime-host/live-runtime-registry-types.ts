@@ -1,11 +1,13 @@
 import type * as Effect from 'effect/Effect'
 import * as Schema from 'effect/Schema'
+import type * as Scope from 'effect/Scope'
 
 export class RuntimeRegistryError extends Schema.TaggedError<RuntimeRegistryError>()(
   'RuntimeRegistryError',
   {
     operation: Schema.String,
     message: Schema.String,
+    cause: Schema.Defect(),
   },
 ) {}
 
@@ -23,8 +25,10 @@ export type NewRuntimeInput = {
 }
 
 export type RuntimeRegistryAdapters<Runtime> = {
-  createExisting: (input: ExistingRuntimeInput) => Effect.Effect<Runtime, RuntimeRegistryError>
-  createNew: (input: NewRuntimeInput) => Effect.Effect<Runtime, RuntimeRegistryError>
+  createExisting: (
+    input: ExistingRuntimeInput,
+  ) => Effect.Effect<Runtime, RuntimeRegistryError, Scope.Scope>
+  createNew: (input: NewRuntimeInput) => Effect.Effect<Runtime, RuntimeRegistryError, Scope.Scope>
   runtimeKey: (runtime: Runtime) => string | null
   runtimeCwd: (runtime: Runtime) => string
   setBranchName: (runtime: Runtime, branchName: string | null) => void

@@ -206,17 +206,12 @@ export type RuntimeHostResponseMap = {
   }
 }
 
-export type RuntimeHostMainRequestMap = {
+export type RuntimeHostArtifactRequestMap = {
   createArtifact: {
     conversationId: string
     slug: string
     kind: ArtifactKind
     content: string
-  }
-  updateArtifact: {
-    slug: string
-    content: string
-    conversationId?: string | undefined | null | undefined
   }
   editArtifact: {
     slug: string
@@ -227,15 +222,14 @@ export type RuntimeHostMainRequestMap = {
   listArtifacts: { conversationId: string }
 }
 
-export type RuntimeHostMainResponseMap = {
+export type RuntimeHostArtifactResponseMap = {
   createArtifact: Artifact
-  updateArtifact: Artifact
   editArtifact: Artifact
   getArtifact: Artifact | null
   listArtifacts: Artifact[]
 }
 
-export type RuntimeHostMainRequestName = keyof RuntimeHostMainRequestMap
+export type RuntimeHostArtifactRequestName = keyof RuntimeHostArtifactRequestMap
 
 export type RuntimeHostRequestName = keyof RuntimeHostRequestMap
 
@@ -248,30 +242,13 @@ export type RuntimeHostRequestMessage<
   payload: RuntimeHostRequestMap[TName]
 }
 
-export type RuntimeHostMainRequestMessage<
-  TName extends RuntimeHostMainRequestName = RuntimeHostMainRequestName,
+export type RuntimeHostArtifactRequest<
+  TName extends RuntimeHostArtifactRequestName = RuntimeHostArtifactRequestName,
 > = {
-  type: 'main-request'
-  id: string
   name: TName
-  payload: RuntimeHostMainRequestMap[TName]
+  payload: RuntimeHostArtifactRequestMap[TName]
 }
-
-export type RuntimeHostMainResponseMessage =
-  | {
-      type: 'main-response'
-      id: string
-      ok: true
-      result: RuntimeHostMainResponseMap[RuntimeHostMainRequestName]
-    }
-  | {
-      type: 'main-response'
-      id: string
-      ok: false
-      error: string
-      stack?: string | undefined
-    }
 
 export type { RuntimeHostToMainMessage } from './runtime-host-ipc-schema.ts'
 
-export type RuntimeMainToHostMessage = RuntimeHostRequestMessage | RuntimeHostMainResponseMessage
+export type RuntimeMainToHostMessage = RuntimeHostRequestMessage

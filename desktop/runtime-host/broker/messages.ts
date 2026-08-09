@@ -16,7 +16,7 @@ export function makeHostMessages<Process>(options: {
   readonly state: Ref.Ref<BrokerState<Process>>
 }) {
   const { adapter, events, lifecycle, serviceHostId, state } = options
-  const handleMessage = makeHostMessageHandler({ adapter, events, lifecycle, state })
+  const handleMessage = makeHostMessageHandler({ events, lifecycle, state })
   const { invoke, invokeOnHost } = makeHostRequestInvoker({
     adapter,
     handleMessage,

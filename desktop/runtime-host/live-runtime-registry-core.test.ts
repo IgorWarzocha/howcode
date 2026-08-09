@@ -22,7 +22,11 @@ type FakeRuntime = {
 
 function unusedCreateNew() {
   return Effect.fail(
-    new RuntimeRegistryError({ operation: 'createNew', message: 'Not used by this test.' }),
+    new RuntimeRegistryError({
+      operation: 'createNew',
+      message: 'Not used by this test.',
+      cause: new Error('Not used by this test.'),
+    }),
   )
 }
 
@@ -83,6 +87,61 @@ describe('Live runtime registry core', () => {
         yield* registry.disposeAll
         expect(yield* Ref.get(releaseCount)).toBe(1)
         expect(yield* registry.getCached(expectedRuntime.key)).toBeNull()
+      }).pipe(Effect.scoped),
+    )
+  })
+
+  it('keeps an interrupted late acquisition owned until registry disposal', async () => {
+    await Effect.runPromise(
+      Effect.gen(function* () {
+        const creationStarted = yield* Deferred.make<void>()
+        const allowCreation = yield* Deferred.make<void>()
+        const releaseCount = yield* Ref.make(0)
+        const runtime: FakeRuntime = {
+          id: 1,
+          key: '/sessions/interrupted.jsonl',
+          cwd: '/workspace',
+          working: false,
+          pendingDialog: false,
+          branchName: null,
+        }
+        const adapters: RuntimeRegistryAdapters<FakeRuntime> = {
+          createExisting: Effect.fn('FakeRuntime.createInterrupted')(function* () {
+            yield* Deferred.succeed(creationStarted, undefined)
+            yield* Deferred.await(allowCreation)
+            return runtime
+          }),
+          createNew: unusedCreateNew,
+          runtimeKey: (candidate) => candidate.key,
+          runtimeCwd: (candidate) => candidate.cwd,
+          setBranchName: (candidate, branchName) => {
+            candidate.branchName = branchName
+          },
+          isWorking: (candidate) => candidate.working,
+          hasPendingDialog: (candidate) => candidate.pendingDialog,
+          reload: () => Effect.void,
+          abort: () => Effect.void,
+          release: () => Ref.update(releaseCount, (count) => count + 1),
+        }
+        const registry = yield* makeRuntimeRegistry(adapters, { idleTimeout: '15 minutes' })
+        const opening = yield* registry
+          .getOrCreate({
+            runtimeKey: runtime.key,
+            settingsCwd: runtime.cwd,
+            chatGroupId: null,
+            suspendDisposal: true,
+          })
+          .pipe(Effect.forkScoped)
+
+        yield* Deferred.await(creationStarted)
+        const interruption = yield* Fiber.interrupt(opening).pipe(Effect.forkScoped)
+        yield* Deferred.succeed(allowCreation, undefined)
+        yield* Fiber.join(interruption)
+
+        expect(yield* registry.getCached(runtime.key)).toBe(runtime)
+        expect(yield* Ref.get(releaseCount)).toBe(0)
+        yield* registry.disposeAll
+        expect(yield* Ref.get(releaseCount)).toBe(1)
       }).pipe(Effect.scoped),
     )
   })
@@ -153,7 +212,11 @@ describe('Live runtime registry core', () => {
             const attempt = yield* Ref.updateAndGet(attempts, (count) => count + 1)
             if (attempt === 1) {
               return yield* Effect.fail(
-                new RuntimeRegistryError({ operation: 'createExisting', message: 'Failed once.' }),
+                new RuntimeRegistryError({
+                  operation: 'createExisting',
+                  message: 'Failed once.',
+                  cause: new Error('Failed once.'),
+                }),
               )
             }
             return expectedRuntime
@@ -207,6 +270,7 @@ describe('Live runtime registry core', () => {
               new RuntimeRegistryError({
                 operation: 'createExisting',
                 message: 'Not used by this test.',
+                cause: new Error('Not used by this test.'),
               }),
             ),
           createNew: () =>

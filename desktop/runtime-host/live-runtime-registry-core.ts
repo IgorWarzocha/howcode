@@ -55,11 +55,12 @@ export const makeRuntimeRegistry = <Runtime>(
     const reserveRecord = Effect.fn('RuntimeRegistry.reserveRecord')(function* (
       runtimeKey: string,
       settingsCwd: string | null,
+      scope = Scope.forkUnsafe(parentScope),
     ) {
       const runtime = yield* Deferred.make<Runtime, RuntimeRegistryError>()
       return yield* state.reserve(runtimeKey, {
         runtime,
-        scope: Scope.forkUnsafe(parentScope),
+        scope,
         settingsCwd,
         staleGeneration: null,
       })
@@ -68,10 +69,10 @@ export const makeRuntimeRegistry = <Runtime>(
     const completeReservation = Effect.fn('RuntimeRegistry.completeReservation')(function* (
       runtimeKey: string,
       record: RuntimeRecord<Runtime>,
-      acquire: Effect.Effect<Runtime, RuntimeRegistryError>,
+      acquire: Effect.Effect<Runtime, RuntimeRegistryError, Scope.Scope>,
     ) {
-      return yield* acquire.pipe(
-        Effect.tap((runtime) => Scope.addFinalizer(record.scope, adapters.release(runtime))),
+      return yield* Effect.acquireRelease(acquire, adapters.release).pipe(
+        Scope.provide(record.scope),
         Effect.onExit((exit) =>
           Deferred.done(record.runtime, exit).pipe(
             Effect.andThen(Exit.isFailure(exit) ? detachAndClose(runtimeKey, record) : Effect.void),
@@ -109,29 +110,36 @@ export const makeRuntimeRegistry = <Runtime>(
     })
 
     const createNew = Effect.fn('RuntimeRegistry.createNew')(function* (input: NewRuntimeInput) {
-      const createdRuntime = yield* adapters.createNew(input)
-      adapters.setBranchName(createdRuntime, input.branchName)
-      const runtimeKey = adapters.runtimeKey(createdRuntime)
-      if (!runtimeKey) return createdRuntime
+      const scope = yield* Scope.fork(parentScope)
+      return yield* Effect.gen(function* () {
+        const createdRuntime = yield* Effect.acquireRelease(
+          adapters.createNew(input),
+          adapters.release,
+        ).pipe(Scope.provide(scope))
+        adapters.setBranchName(createdRuntime, input.branchName)
+        const runtimeKey = adapters.runtimeKey(createdRuntime)
+        if (!runtimeKey) return createdRuntime
 
-      return yield* state.withLifecycleLock(
-        runtimeKey,
-        Effect.gen(function* () {
-          const existing = yield* state.get(runtimeKey)
-          if (existing) {
-            const existingRuntime = yield* Effect.option(Deferred.await(existing.runtime))
-            if (Option.isSome(existingRuntime)) {
-              adapters.setBranchName(existingRuntime.value, input.branchName)
-              yield* adapters.release(createdRuntime)
-              return existingRuntime.value
+        return yield* state.withLifecycleLock(
+          runtimeKey,
+          Effect.gen(function* () {
+            const existing = yield* state.get(runtimeKey)
+            if (existing) {
+              const existingRuntime = yield* Effect.option(Deferred.await(existing.runtime))
+              if (Option.isSome(existingRuntime)) {
+                adapters.setBranchName(existingRuntime.value, input.branchName)
+                yield* Scope.close(scope, Exit.void)
+                return existingRuntime.value
+              }
+              yield* detachAndClose(runtimeKey, existing)
             }
-            yield* detachAndClose(runtimeKey, existing)
-          }
-          const record = yield* reserveRecord(runtimeKey, input.sessionDir)
-          yield* Scope.addFinalizer(record.scope, adapters.release(createdRuntime))
-          yield* Deferred.succeed(record.runtime, createdRuntime)
-          return createdRuntime
-        }),
+            const record = yield* reserveRecord(runtimeKey, input.sessionDir, scope)
+            yield* Deferred.succeed(record.runtime, createdRuntime)
+            return createdRuntime
+          }),
+        )
+      }).pipe(
+        Effect.onExit((exit) => (Exit.isFailure(exit) ? Scope.close(scope, exit) : Effect.void)),
       )
     })
 

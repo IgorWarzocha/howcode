@@ -7,12 +7,7 @@ import type { DesktopEvent } from '../../../shared/desktop-contracts.ts'
 import type { RuntimeHostToMainMessage } from '../protocol.ts'
 import { type HostLifecycleService, hostProcess } from './lifecycle.ts'
 import { rememberHostAlias, updateHost, updateMap } from './state.ts'
-import {
-  type BrokerState,
-  brokerError,
-  type HostRecord,
-  type RuntimeHostProcessAdapter,
-} from './types.ts'
+import { type BrokerState, brokerError, type HostRecord } from './types.ts'
 
 const SERVICE_HOST_SEND_ALIAS_WINDOW_MS = 30_000
 
@@ -26,12 +21,11 @@ function responseError<Process>(
 }
 
 export function makeHostMessageHandler<Process>(options: {
-  readonly adapter: RuntimeHostProcessAdapter<Process>
   readonly events: PubSub.PubSub<DesktopEvent>
   readonly lifecycle: HostLifecycleService<Process>
   readonly state: Ref.Ref<BrokerState<Process>>
 }) {
-  const { adapter, events, lifecycle, state } = options
+  const { events, lifecycle, state } = options
 
   const hostOwnsRecentSend = Effect.fn('RuntimeHostBroker.hostOwnsRecentSend')(function* (
     host: HostRecord<Process>,
@@ -118,14 +112,6 @@ export function makeHostMessageHandler<Process>(options: {
         yield* Effect.sync(() =>
           console.error(`Pi runtime host error (${host.label})`, message.error, message.stack),
         )
-        return
-      case 'main-request':
-        yield* adapter.send(process, {
-          type: 'main-response',
-          id: message.id,
-          ok: false,
-          error: `Runtime host-local service request ${message.name} must be handled inside the runtime host.`,
-        })
         return
       case 'response':
         yield* handleResponse(hostId, message)

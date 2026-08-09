@@ -47,7 +47,6 @@ function spawnRuntimeHost(
         cwd: getDesktopWorkingDirectory(),
         env: {
           ...process.env,
-          HOWCODE_HANDLE_LOCAL_HOST_REQUESTS: '1',
           HOWCODE_REPO_ROOT: getDesktopWorkingDirectory(),
           HOWCODE_ELECTRON_RESOURCES_PATH: getElectronResourcesPath(),
           HOWCODE_BUNDLED_SKILLS_PATH: getBundledSkillsPath(),

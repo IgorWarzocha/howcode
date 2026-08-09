@@ -22,14 +22,14 @@ export type ComposerSendOutcome = {
   threadId: string | null
 }
 
-export type ComposerPromptFlowAdapters = {
+export type ComposerPromptFlowAdapters<Runtime extends PiRuntime = PiRuntime> = {
   emitComposerUpdate: (request?: ComposerStateRequest) => Promise<unknown>
-  isRuntimeExtensionCommandRunning: (runtime: PiRuntime) => boolean
+  isRuntimeExtensionCommandRunning: (runtime: Runtime) => boolean
   publishThreadUpdate: (
-    runtime: PiRuntime,
+    runtime: Runtime,
     reason: Extract<RuntimeThreadReason, 'update' | 'compaction'>,
   ) => Promise<unknown>
-  scheduleRuntimeDisposal: (runtime: PiRuntime) => void
+  scheduleRuntimeDisposal: (runtime: Runtime) => void
 }
 
 export function isExtensionCommandPrompt(runtime: PiRuntime, text: string) {
@@ -46,12 +46,12 @@ export function buildComposerPromptMessage(input: {
   return `${attachmentPrompt ? `${attachmentPrompt}\n\n` : ''}${input.text}`
 }
 
-export async function compactComposerRuntime(input: {
-  adapters: ComposerPromptFlowAdapters
+export async function compactComposerRuntime<Runtime extends PiRuntime>(input: {
+  adapters: ComposerPromptFlowAdapters<Runtime>
   compactInstructions: string
   persistedSessionPath: string | null
   request: ComposerStateRequest
-  runtime: PiRuntime
+  runtime: Runtime
 }): Promise<ComposerSendOutcome> {
   const { adapters, compactInstructions, persistedSessionPath, request, runtime } = input
   if (adapters.isRuntimeExtensionCommandRunning(runtime))
@@ -103,11 +103,11 @@ async function waitForCompactionStartOrSettlement(
   }
 }
 
-async function publishCompactionSettledState(input: {
-  adapters: ComposerPromptFlowAdapters
+async function publishCompactionSettledState<Runtime extends PiRuntime>(input: {
+  adapters: ComposerPromptFlowAdapters<Runtime>
   persistedSessionPath: string | null
   request: ComposerStateRequest
-  runtime: PiRuntime
+  runtime: Runtime
 }) {
   await input.adapters.publishThreadUpdate(input.runtime, 'compaction').catch((error) => {
     console.error('Composer compaction settled but thread update publish failed', error)
@@ -118,12 +118,12 @@ async function publishCompactionSettledState(input: {
   })
 }
 
-export async function promptComposerRuntime(input: {
-  adapters: ComposerPromptFlowAdapters
+export async function promptComposerRuntime<Runtime extends PiRuntime>(input: {
+  adapters: ComposerPromptFlowAdapters<Runtime>
   message: string
   persistedSessionPath: string | null
   request: ComposerPromptRequest
-  runtime: PiRuntime
+  runtime: Runtime
   streamingBehavior: ComposerStreamingBehavior
 }): Promise<ComposerSendOutcome> {
   const { adapters, message, persistedSessionPath, request, runtime, streamingBehavior } = input

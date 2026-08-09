@@ -20,11 +20,13 @@ The useful migration is mostly done. The major process and runtime lifecycles no
 - Separate lifecycle and mutation locks.
 - Scoped runtime records and identity-safe disposal.
 - Fibre-owned idle scheduling tested with TestClock.
+- Interruption-safe runtime acquisition and scope-owned live update scheduling.
 
 ### Runtime-host process broker
 
 - Effect-owned child processes, requests, aliases, events, and idle shutdown in `desktop/runtime-host/broker/*`.
 - Schema-decoded IPC envelopes and desktop events at the child-process ingress.
+- Runtime-host artifact requests execute locally without a second parent/child request protocol.
 - `desktop/runtime-host/client-bridge.ts` remains the Promise/event compatibility edge.
 - Startup, exit, restart, and late-message paths are generation-safe.
 
@@ -39,25 +41,7 @@ The useful migration is mostly done. The major process and runtime lifecycles no
 
 ## Remaining candidates
 
-### 1. Trace and cut the runtime-host main-request client
-
-`desktop/runtime-host/main-request-client.ts` still has a callback map and raw timeout. Runtime hosts now receive `HOWCODE_HANDLE_LOCAL_HOST_REQUESTS=1`, so the remote IPC branch may be obsolete.
-
-Prove reachability first. Prefer deletion or simplification over migrating dead machinery.
-
-### 2. Move live update scheduling into runtime scopes
-
-Relevant files:
-
-- `desktop/runtime-host/live-thread-publisher.ts`
-- `desktop/runtime-host/runtime-extension-bindings.ts`
-- `desktop/runtime-host/runtime-session-events.ts`
-
-These retain WeakMap timers and fire-and-forget publication. They could use the existing live-runtime scopes, FiberMap, and Schedule so stale updates are interrupted with their owning runtime.
-
-This is the strongest remaining migration candidate.
-
-### 3. Move Node discovery and native probing into Effect
+### Move Node discovery and native probing into Effect
 
 Relevant files:
 
@@ -97,6 +81,7 @@ Do not migrate code merely to increase Effect coverage. Leave these alone unless
 
 ## Finish line
 
-The migration is finished when the main-request branch has been traced, live update timers are either scoped or deliberately retained, and Node probing has been assessed on its actual failure rate.
+The lifecycle migration is complete. Node probing remains a candidate only if its actual failure rate
+justifies disturbing the native-runtime compatibility boundary.
 
 After that, further Effect work needs a concrete lifecycle, concurrency, retry, stream, or typed-boundary benefit. “More Effect” is not enough.

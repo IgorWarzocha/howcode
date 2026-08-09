@@ -9,7 +9,6 @@ import {
   clearPiExtensionUi,
   hasPendingPiExtensionDialog,
 } from '../runtime/pi-extension-ui-state.ts'
-import type { PiRuntime } from '../runtime/types.ts'
 import {
   abortRuntimeExtensionCommand,
   createLiveRuntime,
@@ -18,6 +17,7 @@ import {
 } from './live-runtime-factory.ts'
 import type { ExistingRuntimeInput, NewRuntimeInput } from './live-runtime-registry-core.ts'
 import { Factory, layer, registryError, Service } from './live-runtime-registry-service.ts'
+import { type LivePiRuntime, makeRuntimeUpdateScheduler } from './live-runtime-updates.ts'
 import { publishComposerUpdate, publishPiExtensionUiUpdate } from './live-thread-publisher.ts'
 
 export { abortRuntimeExtensionCommand, isRuntimeExtensionCommandRunning }
@@ -46,31 +46,39 @@ const factoryLayer = Layer.succeed(
   Factory,
   Factory.of({
     createExisting: (input: ExistingRuntimeInput) =>
-      fromPromise('createExisting', async () => {
-        const { SessionManager } = await getPiModule()
-        const sessionManager = SessionManager.open(input.runtimeKey)
-        return await createLiveRuntime(
-          {
-            cwd: sessionManager.getCwd(),
-            settingsCwd: input.settingsCwd,
-            chatGroupId: input.chatGroupId,
-            sessionManager,
-          },
-          liveRuntimeFactoryHandlers,
-        )
+      Effect.gen(function* () {
+        const updates = yield* makeRuntimeUpdateScheduler
+        return yield* fromPromise('createExisting', async () => {
+          const { SessionManager } = await getPiModule()
+          const sessionManager = SessionManager.open(input.runtimeKey)
+          return await createLiveRuntime(
+            {
+              cwd: sessionManager.getCwd(),
+              settingsCwd: input.settingsCwd,
+              chatGroupId: input.chatGroupId,
+              sessionManager,
+            },
+            liveRuntimeFactoryHandlers,
+            updates,
+          )
+        })
       }),
     createNew: (input: NewRuntimeInput) =>
-      fromPromise('createNew', () =>
-        createLiveRuntime(
-          {
-            cwd: input.cwd,
-            sessionDir: input.sessionDir,
-            settingsCwd: input.sessionDir,
-            chatGroupId: input.chatGroupId,
-          },
-          liveRuntimeFactoryHandlers,
-        ),
-      ),
+      Effect.gen(function* () {
+        const updates = yield* makeRuntimeUpdateScheduler
+        return yield* fromPromise('createNew', () =>
+          createLiveRuntime(
+            {
+              cwd: input.cwd,
+              sessionDir: input.sessionDir,
+              settingsCwd: input.sessionDir,
+              chatGroupId: input.chatGroupId,
+            },
+            liveRuntimeFactoryHandlers,
+            updates,
+          ),
+        )
+      }),
     runtimeKey: (runtime) => getPersistedSessionPath(runtime.session.sessionFile),
     runtimeCwd: (runtime) => path.resolve(runtime.cwd),
     setBranchName: (runtime, branchName) => {
@@ -86,6 +94,7 @@ const factoryLayer = Layer.succeed(
         await runtime.session.reload()
         await refreshRuntimeExtensionBindings(runtime)
         const composer = await buildComposerState(runtime)
+        if (!runtime.updates.isActive()) return
         publishComposerUpdate(composer, {
           projectId: runtime.cwd,
           sessionPath: runtime.session.sessionFile ?? null,
@@ -104,6 +113,7 @@ const factoryLayer = Layer.succeed(
           clearPiExtensionUi(runtime)
           publishPiExtensionUiUpdate(runtime)
         })
+        runtime.updates.close()
         yield* bestEffort(() => runtime.session.dispose())
       }),
   }),
@@ -119,7 +129,7 @@ function fork(evaluate: (service: Service['Service']) => Effect.Effect<unknown>)
   registryRuntime.runFork(Effect.flatMap(Service, evaluate))
 }
 
-export function refreshRuntimeExtensionBindings(runtime: PiRuntime) {
+export function refreshRuntimeExtensionBindings(runtime: LivePiRuntime) {
   return refreshRuntimeExtensionBindingsWithReload(runtime, reloadRuntimeSettingsIfSafe)
 }
 

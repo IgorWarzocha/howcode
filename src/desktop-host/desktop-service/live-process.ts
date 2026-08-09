@@ -50,7 +50,6 @@ function spawnServiceProcess(
         env: {
           ...process.env,
           ...options.env,
-          HOWCODE_HANDLE_LOCAL_HOST_REQUESTS: '1',
           HOWCODE_REPO_ROOT: options.cwd,
           HOWCODE_SERVICE_NODE_ABI: nodeRuntime.abi,
           HOWCODE_SERVICE_NODE_VERSION: nodeRuntime.version,

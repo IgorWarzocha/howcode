@@ -16,7 +16,6 @@ import {
 } from '../../runtime/composer-prompt-flow.ts'
 import { expandRuntimeDollarSkillReferences } from '../../runtime/composer-skill-references.ts'
 import { stopComposerRuntime } from '../../runtime/composer-stop.ts'
-import type { PiRuntime } from '../../runtime/types.ts'
 import {
   abortRuntimeExtensionCommand,
   createRuntimeForNewSession,
@@ -27,6 +26,7 @@ import {
   scheduleRuntimeDisposal,
   withRuntimeMutationLock,
 } from '../live-runtime-registry.ts'
+import type { LivePiRuntime } from '../live-runtime-updates.ts'
 import { publishThreadUpdate } from '../live-thread-publisher.ts'
 import { emitComposerUpdate, scheduleRuntimeDisposalForRuntime } from './composer-updates.ts'
 
@@ -50,7 +50,7 @@ type SendComposerPromptRequest = ComposerStateRequest & {
 }
 
 async function sendToRuntime(
-  runtime: PiRuntime,
+  runtime: LivePiRuntime,
   persistedSessionPath: string | null,
   request: SendComposerPromptRequest,
 ) {
