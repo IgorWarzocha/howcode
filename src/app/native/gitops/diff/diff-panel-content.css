@@ -185,11 +185,6 @@ slot[name="header-prefix"]::slotted(*) {
   font-size: 13px;
 }
 
-[data-load-remaining-context] {
-  font-family: var(--diffs-font-family);
-  font-size: 13px;
-}
-
 [data-separator-last] [data-expand-button] {
   display: none;
 }

@@ -8,6 +8,11 @@ function containPointerDown(event: React.PointerEvent) {
   event.stopPropagation()
 }
 
+const trailingContextActionStyle = {
+  color: 'var(--muted)',
+  fontFamily: 'var(--diffs-header-font-family)',
+} satisfies React.CSSProperties
+
 export function ChangeReviewAction({
   onLoadRemainingContext,
   onResolve,
@@ -37,8 +42,8 @@ export function ChangeReviewAction({
       {onLoadRemainingContext ? (
         <button
           type="button"
-          className={toolbarButtonClass}
-          data-load-remaining-context="true"
+          className="cursor-pointer border-0 bg-transparent p-0 text-left hover:underline"
+          style={trailingContextActionStyle}
           onPointerDown={containPointerDown}
           onClick={(event) => {
             event.stopPropagation()
