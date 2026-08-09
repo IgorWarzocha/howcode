@@ -88,33 +88,6 @@ export function DiffPanelFileList({
     editing,
   })
 
-  const codeViewOptions = useMemo<CodeViewOptions<GitOpsAnnotationMetadata>>(
-    () => ({
-      diffStyle: diffRenderMode === 'split' ? 'split' : 'unified',
-      lineDiffType: 'none',
-      overflow: 'wrap',
-      theme: DIFF_THEMES,
-      themeType: 'system',
-      unsafeCSS: DIFF_PANEL_UNSAFE_CSS,
-      enableGutterUtility: true,
-      enableLineSelection: true,
-      lineHoverHighlight: 'both',
-      loadDiffFiles: contextExpansion.loadFiles,
-      expansionLineCount: DIFF_FULL_CONTEXT_EXPANSION_LINE_COUNT,
-      itemMetrics: {
-        lineHeight: DIFF_FILE_ESTIMATED_LINE_HEIGHT,
-        diffHeaderHeight: DIFF_FILE_ESTIMATED_HEADER_HEIGHT,
-        spacing: DIFF_FILE_ESTIMATED_FILE_GAP,
-      },
-      layout: {
-        gap: DIFF_FILE_ESTIMATED_FILE_GAP,
-        paddingTop: 0,
-        paddingBottom: DIFF_FILE_ESTIMATED_FILE_GAP,
-      },
-    }),
-    [contextExpansion.loadFiles, diffRenderMode],
-  )
-
   const renderCustomHeader = useCallback(
     (item: CodeViewItem<GitOpsAnnotationMetadata>) => {
       const fileDiff = getItemFileDiff(item)
@@ -163,8 +136,35 @@ export function DiffPanelFileList({
     }
     return next
   }, [changeReview.files])
-  const { onSelectedLinesChange, renderAnnotation, renderGutterUtility, selectedLines } =
+  const { onGutterUtilityClick, onSelectedLinesChange, renderAnnotation, selectedLines } =
     usePierreReviewCodeView({ changeReview, contextExpansion, fileIdentityByKey, review })
+  const codeViewOptions = useMemo<CodeViewOptions<GitOpsAnnotationMetadata>>(
+    () => ({
+      diffStyle: diffRenderMode === 'split' ? 'split' : 'unified',
+      lineDiffType: 'none',
+      overflow: 'wrap',
+      theme: DIFF_THEMES,
+      themeType: 'system',
+      unsafeCSS: DIFF_PANEL_UNSAFE_CSS,
+      enableGutterUtility: true,
+      enableLineSelection: true,
+      lineHoverHighlight: 'both',
+      loadDiffFiles: contextExpansion.loadFiles,
+      onGutterUtilityClick,
+      expansionLineCount: DIFF_FULL_CONTEXT_EXPANSION_LINE_COUNT,
+      itemMetrics: {
+        lineHeight: DIFF_FILE_ESTIMATED_LINE_HEIGHT,
+        diffHeaderHeight: DIFF_FILE_ESTIMATED_HEADER_HEIGHT,
+        spacing: DIFF_FILE_ESTIMATED_FILE_GAP,
+      },
+      layout: {
+        gap: DIFF_FILE_ESTIMATED_FILE_GAP,
+        paddingTop: 0,
+        paddingBottom: DIFF_FILE_ESTIMATED_FILE_GAP,
+      },
+    }),
+    [contextExpansion.loadFiles, diffRenderMode, onGutterUtilityClick],
+  )
 
   return (
     <EditProvider<GitOpsAnnotationMetadata> createEditor={createPierreEditor}>
@@ -184,7 +184,6 @@ export function DiffPanelFileList({
           onItemEditChange={editing.onItemEditChange}
           renderCustomHeader={renderCustomHeader}
           renderAnnotation={renderAnnotation}
-          renderGutterUtility={renderGutterUtility}
         />
       </div>
     </EditProvider>

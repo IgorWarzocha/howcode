@@ -60,7 +60,6 @@ export {
   composerTextActionButtonClass,
   confirmPopoverClass,
   diffCommentAnnotationClass,
-  diffCommentGutterButtonClass,
   diffCommentSaveButtonClass,
   diffCommentTextareaClass,
   diffFileHeaderButtonClass,

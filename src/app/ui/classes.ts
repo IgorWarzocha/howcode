@@ -256,9 +256,6 @@ export const diffFileHeaderButtonClass =
 export const diffFileShellClass =
   'overflow-hidden rounded-md border border-[color:var(--border)]/55 bg-[color:var(--workspace)]'
 
-export const diffCommentGutterButtonClass =
-  'inline-flex h-5 w-5 items-center justify-center rounded-md bg-[color:var(--accent-bg)] text-[color:var(--text)] transition hover:bg-[color:var(--accent-bg-strong)]'
-
 export const diffCommentAnnotationClass = 'ml-3 mr-0 mb-1.5 grid gap-1.5 py-1 pl-2.5 pr-0'
 
 export const diffCommentTextareaClass = `min-h-12 w-full resize-y rounded-md border border-[color:var(--border)]/70 bg-transparent px-2 py-1.5 outline-none placeholder:text-[color:var(--muted)] focus:border-[color:var(--border-strong)] focus:bg-[color:var(--surface-hover)] ${appTypeSmallClass} ${appToneTextClass}`
