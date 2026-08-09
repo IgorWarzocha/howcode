@@ -672,6 +672,10 @@ type PollResults = {
   options: Array<{ optionId: string; label: string; votes: number }>
 }
 
+function isPollResults(value: PollResults | { error?: string }): value is PollResults {
+  return 'pollId' in value
+}
+
 function getVoteCount(results: PollResults | null, optionId: string) {
   return results?.options.find((option) => option.optionId === optionId)?.votes ?? 0
 }
@@ -712,7 +716,7 @@ function WorktreesBlogPage() {
         body: JSON.stringify({ pollId: worktreePollId, optionId }),
       })
       const results = (await response.json()) as PollResults | { error?: string }
-      if (!response.ok || 'error' in results) {
+      if (!(response.ok && isPollResults(results))) {
         throw new Error('error' in results ? results.error : 'Vote failed.')
       }
       setPollResults(results)

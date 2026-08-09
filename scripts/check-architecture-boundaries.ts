@@ -9,12 +9,23 @@ const sourceRoots = [
   'shared',
   'scripts',
   'packages/howcode',
+  'pages/src',
+  'workers/polls/src',
 ] as const
 const sourceExtensions = ['.ts', '.tsx', '.js', '.cjs', '.mjs'] as const
 const testFilePattern = /\.(?:spec|test)\.[cm]?[jt]sx?$/u
 const ignoredDirectoryPattern = /(?:^|\/)(?:artifacts|build|dist|node_modules)(?:\/|$)/u
 
-type Layer = 'renderer' | 'electron' | 'host' | 'service' | 'shared' | 'scripts' | 'launcher'
+type Layer =
+  | 'renderer'
+  | 'electron'
+  | 'host'
+  | 'service'
+  | 'shared'
+  | 'scripts'
+  | 'launcher'
+  | 'pages'
+  | 'worker'
 
 type AliasEntry = {
   prefix: string
@@ -120,6 +131,8 @@ function getLayer(filePath: string): Layer {
   if (repoPath.startsWith('desktop/')) return 'service'
   if (repoPath.startsWith('shared/')) return 'shared'
   if (repoPath.startsWith('scripts/')) return 'scripts'
+  if (repoPath.startsWith('pages/src/')) return 'pages'
+  if (repoPath.startsWith('workers/polls/src/')) return 'worker'
   return 'launcher'
 }
 
@@ -139,6 +152,10 @@ function isForbiddenBoundary(from: Layer, to: Layer) {
       return to !== 'launcher'
     case 'scripts':
       return false
+    case 'pages':
+      return to !== 'pages' && to !== 'shared'
+    case 'worker':
+      return to !== 'worker' && to !== 'shared'
     default:
       return true
   }

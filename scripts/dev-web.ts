@@ -245,6 +245,7 @@ try {
 
   server = await createServer({
     configFile: path.join(projectRoot, 'vite.config.ts'),
+    configLoader: 'runner',
     server: {
       host: devServerListenHost,
       port: DEV_SERVER_START_PORT,

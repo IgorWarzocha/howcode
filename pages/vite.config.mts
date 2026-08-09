@@ -10,10 +10,10 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        blog: resolve(__dirname, 'blog/index.html'),
-        blogWorktrees: resolve(__dirname, 'blog/worktrees/index.html'),
-        dependencies: resolve(__dirname, 'dependencies/index.html'),
-        index: resolve(__dirname, 'index.html'),
+        blog: resolve(import.meta.dirname, 'blog/index.html'),
+        blogWorktrees: resolve(import.meta.dirname, 'blog/worktrees/index.html'),
+        dependencies: resolve(import.meta.dirname, 'dependencies/index.html'),
+        index: resolve(import.meta.dirname, 'index.html'),
       },
     },
   },

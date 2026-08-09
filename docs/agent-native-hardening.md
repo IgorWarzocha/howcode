@@ -238,9 +238,8 @@ or turn historical debt into an enormous allowlist.
 
 Severity: low.
 
-`pages/tsconfig.json` and `workers/polls` are not typechecked by `ai:check`; their build/deploy paths
-are separate. Bring them under an explicit fast check without making every app commit perform a
-deployment or release build.
+Resolved in Phase 6. Pages and the polls worker now have strict type/build checks in `ai:check`, and
+the architecture checker includes both isolated source roots.
 
 ## Baseline scorecard
 
@@ -267,7 +266,7 @@ Status: complete.
 - Tighten relevant local `AGENTS.md` files so the shortest future path follows the target design.
 - No source behaviour changes.
 
-Completion: this document's commit.
+Completion: commit `81ccfe5e`.
 
 ### Phase 1 — Remove dependency cycles
 
@@ -280,7 +279,7 @@ Status: complete.
 
 Validation: all four TypeScript lanes, local dependency-cycle scan, the commit gate, and Doctor.
 
-Completion: this phase's commit. Shared leaf models/contracts now own Composer props, artifact view
+Completion: commit `6262bec9`. Shared leaf models/contracts now own Composer props, artifact view
 state, workspace state/actions, code-workspace props, GitOps mode, and session-tree rows. A static
 scan of 857 production files reports zero local dependency cycles; all four TypeScript lanes pass.
 
@@ -298,7 +297,7 @@ Status: complete.
 Validation must cover Electron, development web, headless, uploads, events, updater stubs, terminal
 RPC, shutdown, and authentication boundaries without changing external behaviour.
 
-Completion: this phase's commit. `src/desktop-host/desktop-requests/*` now owns the complete typed
+Completion: commit `c662f47f`. `src/desktop-host/desktop-requests/*` now owns the complete typed
 request map. Electron and development provide updater/system capabilities; packaged headless keeps
 using the Electron composition. Runtime operation mapping exists once. The development bridge fell
 from 514 to 286 lines and the Electron system adapter from roughly 300 to 134 lines. All four
@@ -317,7 +316,7 @@ Status: complete.
 
 Prefer several small vertical moves over replacing the whole controller at once.
 
-Completion: this phase's commit. The flat controller became 13 named capability groups; sidebar,
+Completion: commit `601c0f4f`. The flat controller became 14 named capability groups; sidebar,
 chat, CodeWorkspace, and overlays declare narrowed group contracts. Thread, Composer, project, and
 resource-scope state moved from the 29-field state bag into four owned hooks, leaving the bundle as
 a 27-line composer. Desktop action preparation, optimistic routing, and error policy moved out of
@@ -334,7 +333,7 @@ Status: complete.
 - Clarify public feature entrypoints where current ownership is already stable.
 - Do not attempt a mass alias rewrite without a measurable ownership benefit.
 
-Completion: this phase's commit. `scripts/check-architecture-boundaries.ts` scans 867 production
+Completion: commit `d1dabeab`. `scripts/check-architecture-boundaries.ts` scans 867 production
 files, resolves relative and configured alias imports, rejects runtime layers pointing in the wrong
 direction, and fails on strongly connected dependency groups. It is wired into `ai:check` without a
 snapshot or historical allowlist. Electron preload now consumes `shared/*` directly.
@@ -349,7 +348,7 @@ Status: complete.
   routing, shared contracts, and persistence repositories.
 - Extract only when the resulting owner and validation boundary are clearer.
 
-Completion: this phase's commit. The mixed headless server was split into an 87-line lifecycle
+Completion: commit `5e975a88`. The mixed headless server was split into an 87-line lifecycle
 entrypoint plus owned auth, bounded-response, and request-router modules; the former 577-line file
 is gone. Development web host trust/authentication moved into `dev-web-access.ts`, reducing
 `dev-web.ts` from 497 to 343 lines. Both transports retain the same tokens, cookies, status codes,
@@ -364,23 +363,57 @@ casts, and zero forbidden boundaries/cycles across 871 production files.
 
 ### Phase 6 — Complete feedback loops and final stabilisation
 
-Status: pending.
+Status: complete.
 
 - Add explicit type/build checks for Pages and the polls worker.
 - Run the complete app gate and packaged runtime/build smoke.
 - Perform disposable browser/Electron smoke checks for the unchanged core workflows.
 - Update the scorecard with before/after evidence and list only genuine remaining risks.
 
+Completion: this phase's commit. `check:auxiliary` now strictly typechecks and production-builds the
+Pages site and Cloudflare polls worker using official Worker/D1 types. Both roots are included in
+the architecture boundary and cycle scan. Vite config loading is explicit and warning-free for the
+root app and Pages build. A complete unpacked Electron build succeeded, including renderer/runtime
+bundles, ASAR packaging, node-pty helper patching, and stock-Node service native bundles for ABIs
+137, 141, and 147. The restarted development host passed HTTP authentication/root checks and a
+server-browser smoke: the GitOps route rendered against the live desktop API. The desktop browser
+host was unavailable over SSH, so no desktop-machine browser claim is made.
+
+## Final scorecard
+
+| Category | Before | After | Evidence |
+| --- | ---: | ---: | --- |
+| `agent_native` | 5/10 | 8/10 | Feature-owned controller capabilities, one desktop request pipeline, and enforced runtime direction replace central duplication; `src/app/app-shell/*` and `src/desktop-host/desktop-requests/*`. |
+| `fully_typed` | 8/10 | 9/10 | Strict checks now cover every deployable, including `pages/tsconfig.json` and `workers/polls/tsconfig.json`; no explicit `any` or TypeScript suppressions remain. |
+| `traversable` | 5/10 | 8/10 | Six cycles are gone, transport entrypoints are small, and local `AGENTS.md` files identify owners; some large cohesive domain modules remain. |
+| `test_coverage` | 7/10 | 8/10 | 210 deterministic tests cover contracts, domains, transports, and trust failures; browser smoke covers the live development path, but there is no cross-platform Electron interaction matrix. |
+| `feedback_loops` | 8/10 | 9/10 | The enforced commit gate now covers formatting, all TypeScript lanes, auxiliary builds, architecture, Vite resolution, tests, and React Doctor. |
+| `self_documenting` | 7/10 | 8/10 | This map, boundary-local guidance, typed contracts, and named owners describe the actual topology without a parallel architecture-doc set. |
+
+### Remaining risks
+
+- The 18 compatibility casts are concentrated at runtime/third-party boundaries. They are visible
+  debt, but replacing them without stronger upstream types would only move the assertions.
+- Several long files remain intentionally cohesive: `desktop/thread-state-db/queries.ts`,
+  `shared/pi-message-mapper.ts`, `shared/pi-thread-action-payloads.ts`, and
+  `desktop/project-git/project-diff-baselines.ts`. Reassess if they start absorbing unrelated edits;
+  length alone does not justify splitting their single-purpose maps and algorithms.
+- Browser coverage is a deterministic smoke rather than a broad cross-platform E2E suite. Keep
+  product contracts in unit/integration tests and use disposable UI smoke for high-risk workflows.
+- The production renderer still emits a large-chunk warning. Treat code splitting as a measured
+  startup/performance task, not an architecture refactor by assertion.
+
 ## Completion log
 
 | Phase | Commit | Evidence |
 | --- | --- | --- |
-| 0 | This document's commit | Durable topology and hardening plan; no source changes. |
-| 1 | This phase's commit | Six strongly connected groups removed; zero local cycles across 857 production files. |
-| 2 | This phase's commit | One typed request implementation across Electron, headless, and development; dev bridge reduced by 228 lines. |
-| 3 | This phase's commit | Flat shell controller replaced by narrowed feature capabilities; state and action stages have named owners. |
-| 4 | This phase's commit | Cross-runtime direction and zero-cycle topology enforced across 867 production files. |
-| 5 | This phase's commit | Headless and development hosts split by lifecycle, auth, response, and routing ownership. |
+| 0 | `81ccfe5e` | Durable topology and hardening plan; no source changes. |
+| 1 | `6262bec9` | Six strongly connected groups removed; zero local cycles across 857 production files. |
+| 2 | `c662f47f` | One typed request implementation across Electron, headless, and development; dev bridge reduced by 228 lines. |
+| 3 | `601c0f4f` | Flat shell controller replaced by 14 narrowed feature capabilities; state and action stages have named owners. |
+| 4 | `d1dabeab` | Cross-runtime direction and zero-cycle topology enforced across 867 production files. |
+| 5 | `5e975a88` | Headless and development hosts split by lifecycle, auth, response, and routing ownership. |
+| 6 | This phase's commit | Auxiliary deployables joined the gate; full package build and live development browser smoke passed. |
 
 ## Stop conditions
 

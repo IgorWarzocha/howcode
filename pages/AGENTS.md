@@ -1,0 +1,2 @@
+- Pages is a standalone static Vite surface. Do not import desktop application, Electron, or stock-Node service implementations.
+- Keep both its strict TypeScript pass and production Vite build in `check:auxiliary`.
