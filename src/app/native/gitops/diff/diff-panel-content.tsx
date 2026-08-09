@@ -10,6 +10,7 @@ import { cn } from '../../../utils/cn'
 import type { GitOpsFileActions } from '../edit/gitops-file-actions'
 import { useDiffEditing } from '../edit/use-diff-editing'
 import type { GitOpsAnnotationMetadata } from '../review/pierre-review-adapter'
+import { useDiffChangeReview } from '../review/use-diff-change-review'
 import { useDiffReviewState } from '../review/use-diff-review-state'
 import { useReviewCodeViewController } from '../review/use-review-code-view-controller'
 import {
@@ -76,18 +77,6 @@ export function DiffPanelContent({
     onAnnotationsChange: reviewState.reanchorAnnotations,
     projectId,
   })
-  const editingError =
-    editing.state.kind === 'idle' || editing.state.kind === 'editing' ? editing.state.error : null
-  const loadError = error ?? fileContent.error ?? editingError
-
-  useEffect(() => {
-    onLoadErrorChange?.(loadError)
-  }, [loadError, onLoadErrorChange])
-
-  useEffect(() => {
-    return () => onLoadErrorChange?.(null)
-  }, [onLoadErrorChange])
-
   const selectedPatch = streamedPatch ?? diff?.diff ?? undefined
   const hasResolvedPatch = typeof selectedPatch === 'string'
   const hasNoNetChanges = !isLoading && hasResolvedPatch && selectedPatch.trim().length === 0
@@ -96,6 +85,23 @@ export function DiffPanelContent({
     () => (renderablePatch && renderablePatch.kind === 'files' ? renderablePatch.files : []),
     [renderablePatch],
   )
+  const changeReview = useDiffChangeReview({
+    fileActions,
+    fileContent: fileContent.controller,
+    projectId,
+    renderableFiles,
+  })
+  const editingError =
+    editing.state.kind === 'idle' || editing.state.kind === 'editing' ? editing.state.error : null
+  const loadError = error ?? fileContent.error ?? editingError ?? changeReview.error
+
+  useEffect(() => {
+    onLoadErrorChange?.(loadError)
+  }, [loadError, onLoadErrorChange])
+
+  useEffect(() => {
+    return () => onLoadErrorChange?.(null)
+  }, [onLoadErrorChange])
 
   const normalizedFocusedFilePaths = useMemo(
     () => focusedFilePaths.map((filePath) => filePath.replace(trailingSlashPattern, '')),
@@ -125,7 +131,7 @@ export function DiffPanelContent({
   }, [normalizedFocusedFilePaths, renderableFiles])
   const visibleRenderableFiles = useMemo(() => {
     if (!hasFocusedFiles) {
-      return renderableFiles
+      return changeReview.files
     }
 
     const isVisiblePath = (filePath: string) =>
@@ -133,14 +139,14 @@ export function DiffPanelContent({
       normalizedFocusedFilePaths.some((selectedPath) => filePath.startsWith(`${selectedPath}/`))
     const selectedFileStillVisible = selectedFilePath ? isVisiblePath(selectedFilePath) : true
 
-    return renderableFiles.filter((fileDiff) => {
+    return changeReview.files.filter((fileDiff) => {
       const filePath = resolveFileDiffPath(fileDiff)
       return isVisiblePath(filePath) || (!selectedFileStillVisible && filePath === selectedFilePath)
     })
   }, [
     hasFocusedFiles,
     normalizedFocusedFilePaths,
-    renderableFiles,
+    changeReview.files,
     selectedFilePath,
     selectedFilePathSet,
   ])
@@ -218,6 +224,7 @@ export function DiffPanelContent({
         }}
         codeView={{
           ref: codeViewRef,
+          changeReview,
           fileContent: fileContent.controller,
           editing,
           renderMode: diffRenderMode,

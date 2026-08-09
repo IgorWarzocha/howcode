@@ -1,6 +1,9 @@
 import type { DiffLineAnnotation, FileDiffMetadata } from '@pierre/diffs'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { getErrorMessage } from '../../../desktop/error-messages'
 import { getDiffFileIdentity } from '../diff/diff-file-identity'
+import type { DiffFileContentController } from '../diff/use-diff-file-content'
+import type { GitOpsFileActions } from '../edit/gitops-file-actions'
 import {
   buildChangeReviewAnnotations,
   type ChangeReviewDecision,
@@ -8,22 +11,40 @@ import {
   resolveReviewedChange,
 } from './change-review-model'
 import type { GitOpsAnnotationMetadata } from './pierre-review-adapter'
+import { undoReviewedChange } from './undo-reviewed-change'
 
 type ReviewedFile = { source: FileDiffMetadata; value: FileDiffMetadata }
+type ChangeReviewMutationState =
+  | { kind: 'idle' }
+  | { kind: 'undoing'; target: ChangeReviewTarget }
+  | { kind: 'error'; message: string }
 
 export type DiffChangeReviewController = {
   annotationsByFile: ReadonlyMap<string, readonly DiffLineAnnotation<GitOpsAnnotationMetadata>[]>
+  busy: boolean
+  error: string | null
   files: readonly FileDiffMetadata[]
   reviewedFileKeys: ReadonlySet<string>
+  undoingTarget: ChangeReviewTarget | null
   reset: (fileKey: string) => void
-  resolve: (target: ChangeReviewTarget, decision: ChangeReviewDecision) => void
+  resolve: (target: ChangeReviewTarget, decision: ChangeReviewDecision) => Promise<void>
 }
 
-export function useDiffChangeReview(
-  renderableFiles: readonly FileDiffMetadata[],
-): DiffChangeReviewController {
+export function useDiffChangeReview({
+  fileActions,
+  fileContent,
+  projectId,
+  renderableFiles,
+}: {
+  fileActions: GitOpsFileActions
+  fileContent: DiffFileContentController
+  projectId: string
+  renderableFiles: readonly FileDiffMetadata[]
+}): DiffChangeReviewController {
   const [reviewedFiles, setReviewedFiles] = useState<ReadonlyMap<string, ReviewedFile>>(new Map())
+  const [mutationState, setMutationState] = useState<ChangeReviewMutationState>({ kind: 'idle' })
   const renderableFilesRef = useRef(renderableFiles)
+  const undoInFlightRef = useRef(false)
   useEffect(() => {
     renderableFilesRef.current = renderableFiles
   }, [renderableFiles])
@@ -58,6 +79,7 @@ export function useDiffChangeReview(
   }, [renderableFiles, reviewedFiles])
 
   const reset = useCallback((fileKey: string) => {
+    setMutationState({ kind: 'idle' })
     setReviewedFiles((current) => {
       if (!current.has(fileKey)) return current
       const next = new Map(current)
@@ -66,22 +88,69 @@ export function useDiffChangeReview(
     })
   }, [])
 
-  const resolve = useCallback((target: ChangeReviewTarget, decision: ChangeReviewDecision) => {
-    const source = renderableFilesRef.current.find(
-      (fileDiff) => getDiffFileIdentity(fileDiff).fileKey === target.fileKey,
-    )
-    if (!source) return
-    setReviewedFiles((current) => {
-      const reviewed = current.get(target.fileKey)
-      const fileDiff = reviewed?.source === source ? reviewed.value : source
-      const next = new Map(current)
-      next.set(target.fileKey, {
-        source,
-        value: resolveReviewedChange(fileDiff, target.hunkIndex, decision),
-      })
-      return next
-    })
-  }, [])
+  const resolve = useCallback(
+    async (target: ChangeReviewTarget, decision: ChangeReviewDecision) => {
+      if (undoInFlightRef.current) return
+      const source = renderableFilesRef.current.find(
+        (candidate) => getDiffFileIdentity(candidate).fileKey === target.fileKey,
+      )
+      if (!source) return
 
-  return { annotationsByFile, files, reset, resolve, reviewedFileKeys }
+      const reviewed = reviewedFiles.get(target.fileKey)
+      const fileDiff = reviewed?.source === source ? reviewed.value : source
+      if (decision === 'keep') {
+        setMutationState({ kind: 'idle' })
+        setReviewedFiles((current) => {
+          const next = new Map(current)
+          next.set(target.fileKey, {
+            source,
+            value: resolveReviewedChange(fileDiff, target.hunkIndex, decision),
+          })
+          return next
+        })
+        return
+      }
+
+      undoInFlightRef.current = true
+      setMutationState({ kind: 'undoing', target })
+      try {
+        const result = await undoReviewedChange({
+          fileActions,
+          fileContent,
+          fileDiff,
+          hunkIndex: target.hunkIndex,
+          projectId,
+        })
+        if (result.kind === 'failed') {
+          setMutationState({ kind: 'error', message: result.message })
+          return
+        }
+        setReviewedFiles((current) => {
+          const next = new Map(current)
+          next.set(target.fileKey, { source, value: result.fileDiff })
+          return next
+        })
+        setMutationState({ kind: 'idle' })
+      } catch (error) {
+        setMutationState({
+          kind: 'error',
+          message: getErrorMessage(error, 'Could not undo this change.'),
+        })
+      } finally {
+        undoInFlightRef.current = false
+      }
+    },
+    [fileActions, fileContent, projectId, reviewedFiles],
+  )
+
+  return {
+    annotationsByFile,
+    busy: mutationState.kind === 'undoing',
+    error: mutationState.kind === 'error' ? mutationState.message : null,
+    files,
+    reset,
+    resolve,
+    reviewedFileKeys,
+    undoingTarget: mutationState.kind === 'undoing' ? mutationState.target : null,
+  }
 }

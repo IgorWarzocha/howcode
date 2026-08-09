@@ -14,13 +14,19 @@ const trailingContextActionStyle = {
 } satisfies React.CSSProperties
 
 export function ChangeReviewAction({
+  busy,
+  canUndo,
   onLoadRemainingContext,
   onResolve,
   target,
+  undoing,
 }: {
+  busy: boolean
+  canUndo: boolean
   onLoadRemainingContext?: (() => void) | undefined
-  onResolve: (target: ChangeReviewTarget, decision: ChangeReviewDecision) => void
+  onResolve: (target: ChangeReviewTarget, decision: ChangeReviewDecision) => Promise<void>
   target: ChangeReviewTarget
+  undoing: boolean
 }) {
   const actionRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -54,24 +60,28 @@ export function ChangeReviewAction({
         </button>
       ) : null}
       <div className="flex items-center gap-1">
-        <button
-          type="button"
-          className={toolbarButtonClass}
-          onPointerDown={containPointerDown}
-          onClick={(event) => {
-            event.stopPropagation()
-            onResolve(target, 'undo')
-          }}
-        >
-          Undo
-        </button>
+        {canUndo ? (
+          <button
+            type="button"
+            className={toolbarButtonClass}
+            disabled={busy}
+            onPointerDown={containPointerDown}
+            onClick={(event) => {
+              event.stopPropagation()
+              void onResolve(target, 'undo')
+            }}
+          >
+            {undoing ? 'Undoing…' : 'Undo'}
+          </button>
+        ) : null}
         <button
           type="button"
           className={cn(toolbarButtonClass, 'text-[color:var(--green)]')}
+          disabled={busy}
           onPointerDown={containPointerDown}
           onClick={(event) => {
             event.stopPropagation()
-            onResolve(target, 'keep')
+            void onResolve(target, 'keep')
           }}
         >
           Keep

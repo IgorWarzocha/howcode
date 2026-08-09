@@ -9,6 +9,7 @@ import {
   reviewTargetToPierreSelection,
 } from './pierre-review-adapter'
 import type { ReviewCodeViewController } from './review-code-view'
+import { canUndoReviewedChange } from './undo-reviewed-change'
 import type { DiffChangeReviewController } from './use-diff-change-review'
 
 export type ReviewFileIdentity = { fileKey: string; filePath: string }
@@ -56,15 +57,21 @@ export function usePierreReviewCodeView({
     ) => {
       const metadata = annotation.metadata.gitOps
       if (metadata.kind === 'change-action') {
+        if (item.type !== 'diff') return null
         const target = { fileKey: metadata.fileKey, hunkIndex: metadata.hunkIndex }
         const canLoadRemainingContext =
-          item.type === 'diff' &&
           item.fileDiff.isPartial &&
           metadata.hunkIndex === item.fileDiff.hunks.length - 1 &&
           !contextExpansion.expandedFileKeys.has(metadata.fileKey)
         return (
           <ChangeReviewAction
+            busy={changeReview.busy}
+            canUndo={canUndoReviewedChange(item.fileDiff)}
             target={target}
+            undoing={
+              changeReview.undoingTarget?.fileKey === target.fileKey &&
+              changeReview.undoingTarget.hunkIndex === target.hunkIndex
+            }
             onResolve={changeReview.resolve}
             onLoadRemainingContext={
               canLoadRemainingContext ? () => contextExpansion.expand(target) : undefined
@@ -74,7 +81,13 @@ export function usePierreReviewCodeView({
       }
       return review.renderAnnotation(annotation)
     },
-    [changeReview.resolve, contextExpansion, review.renderAnnotation],
+    [
+      changeReview.busy,
+      changeReview.resolve,
+      changeReview.undoingTarget,
+      contextExpansion,
+      review.renderAnnotation,
+    ],
   )
 
   const onGutterUtilityClick = useCallback(

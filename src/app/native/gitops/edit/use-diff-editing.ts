@@ -50,7 +50,7 @@ export function useDiffEditing({
       try {
         const [, prepared] = await Promise.all([
           loadPierreEditor(),
-          fileContent.prepareEdit(fileDiff),
+          fileContent.prepareWrite(fileDiff),
         ])
         sessionRef.current = {
           fileKey,

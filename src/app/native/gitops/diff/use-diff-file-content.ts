@@ -17,7 +17,7 @@ import { resolveDiffFilePath, resolveFileDiffPath } from './diff-panel-content.h
 
 export type DiffFileContentController = {
   loadFiles: FileDiffContentsLoader
-  prepareEdit: (fileDiff: FileDiffMetadata) => Promise<{
+  prepareWrite: (fileDiff: FileDiffMetadata) => Promise<{
     path: string
     revision: string
   }>
@@ -118,7 +118,7 @@ export function useDiffFileContent({
     [loadContent, projectId],
   )
 
-  const prepareEdit = useCallback(
+  const prepareWrite = useCallback(
     async (fileDiff: FileDiffMetadata) => {
       if (fileDiff.type === 'deleted') throw new Error('Deleted files cannot be edited.')
       const result = await loadContent(fileDiff)
@@ -133,8 +133,8 @@ export function useDiffFileContent({
   )
 
   const controller = useMemo(
-    () => ({ loadFiles, prepareEdit }) satisfies DiffFileContentController,
-    [loadFiles, prepareEdit],
+    () => ({ loadFiles, prepareWrite }) satisfies DiffFileContentController,
+    [loadFiles, prepareWrite],
   )
 
   return {
