@@ -4,6 +4,7 @@
 - User-facing live-runtime operations belong in `live-runtime/*`; `live-runtime-service.ts` is an export surface, not an implementation file.
 - Runtime records own child scopes. Dispose by detaching the matching record and closing its scope; never dispose a key without checking record identity.
 - Live thread, composer, and extension UI publications belong to the runtime record scheduler; do not add detached promises or raw timers that can outlive it.
+- Observe Pi Promise state transitions through `runtime/async-observer.ts`; keep the Pi operation authoritative and scope only the polling/race machinery.
 - Broker restart/exit paths must detach by process/scope identity before closing scopes; late events must not touch replacement hosts.
 - Lifecycle locks and composer mutation locks are distinct and non-reentrant. Do not collapse them.
 - Idle disposal is a scoped `FiberMap` schedule; test timing with `TestClock`, not real sleeps.

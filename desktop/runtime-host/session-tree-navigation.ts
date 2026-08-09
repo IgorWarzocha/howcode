@@ -1,5 +1,7 @@
+import * as Effect from 'effect/Effect'
 import type { ComposerStateRequest } from '../../shared/desktop-contracts.ts'
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
+import { waitForConditionOrSettlement } from '../runtime/async-observer.ts'
 import { applyComposerModeSettings } from '../runtime/composer-mode-settings.ts'
 import { buildComposerState } from '../runtime/composer-state.ts'
 import type { RuntimeThreadReason } from '../runtime/types.ts'
@@ -173,20 +175,10 @@ async function waitForBranchSummaryStartOrSettlement(
   }>,
 ) {
   if (runtime.session.isCompacting) return 'started' as const
-  let pollId: ReturnType<typeof setInterval> | undefined
-  try {
-    return await Promise.race([
-      navigatePromise.then(() => 'settled' as const),
-      new Promise<'started'>((resolve) => {
-        pollId = setInterval(() => {
-          if (!runtime.session.isCompacting) return
-          resolve('started')
-        }, 50)
-      }),
-    ])
-  } finally {
-    if (pollId) clearInterval(pollId)
-  }
+  const outcome = await Effect.runPromise(
+    waitForConditionOrSettlement(() => runtime.session.isCompacting, navigatePromise, 50),
+  )
+  return outcome === 'condition' ? ('started' as const) : ('settled' as const)
 }
 
 async function publishNavigateSettled(

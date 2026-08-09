@@ -73,6 +73,28 @@ describe('composer prompt flow', () => {
     ).resolves.toBeUndefined()
   })
 
+  it('propagates prompt rejection before a preflight result', async () => {
+    const failure = new Error('Prompt failed before dispatch.')
+    const runtime = {
+      session: {
+        sessionFile: '/tmp/session.jsonl',
+        prompt: async () => {
+          throw failure
+        },
+      },
+    } as unknown as PiRuntime
+
+    await expect(
+      promptAndReturnAfterPreflight({
+        emitComposerUpdate: async () => undefined,
+        message: 'hello',
+        request: { sessionPath: '/tmp/session.jsonl' },
+        runtime,
+        scheduleRuntimeDisposal: () => undefined,
+      }),
+    ).rejects.toBe(failure)
+  })
+
   it('returns from compact once the runtime reports compaction started', async () => {
     vi.useFakeTimers()
     const publishThreadUpdate = vi.fn(async () => undefined)

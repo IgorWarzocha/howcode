@@ -21,6 +21,7 @@ The useful migration is mostly done. The major process and runtime lifecycles no
 - Scoped runtime records and identity-safe disposal.
 - Fibre-owned idle scheduling tested with TestClock.
 - Interruption-safe runtime acquisition and scope-owned live update scheduling.
+- Scoped composer preflight and session-tree observers replace manual Promise/interval races.
 
 ### Runtime-host process broker
 
@@ -53,7 +54,6 @@ These contain manual child-process output collection and timeouts. Effect could 
 
 ## Plausible later work
 
-- Replace session-tree compaction polling in `desktop/runtime-host/session-tree-navigation.ts` with a bounded Effect schedule.
 - Consolidate shutdown deadlines in `desktop/service-host-runtime.ts` and `src/electron/main/runtime/shutdown.ts` if ordering causes further problems.
 - Turn the remaining `TerminalRpcServiceClient` compatibility class into a service only if its current focused boundary starts accumulating responsibilities again.
 

@@ -1,10 +1,12 @@
 const whitespaceRunPattern = /\s+/
 
+import * as Effect from 'effect/Effect'
 import type {
   ComposerAttachment,
   ComposerStateRequest,
   ComposerStreamingBehavior,
 } from '../../shared/desktop-contracts.ts'
+import { waitForConditionOrSettlement } from './async-observer.ts'
 import { buildComposerAttachmentPrompt } from './attachments.ts'
 import { promptAndReturnAfterPreflight } from './composer-preflight.ts'
 import { buildComposerSendResult } from './composer-send-result.ts'
@@ -87,20 +89,10 @@ async function waitForCompactionStartOrSettlement(
   compactPromise: Promise<unknown>,
 ) {
   if (runtime.session.isCompacting) return 'started' as const
-  let pollId: ReturnType<typeof setInterval> | undefined
-  try {
-    return await Promise.race([
-      compactPromise.then(() => 'settled' as const),
-      new Promise<'started'>((resolve) => {
-        pollId = setInterval(() => {
-          if (!runtime.session.isCompacting) return
-          resolve('started')
-        }, 50)
-      }),
-    ])
-  } finally {
-    if (pollId) clearInterval(pollId)
-  }
+  const outcome = await Effect.runPromise(
+    waitForConditionOrSettlement(() => runtime.session.isCompacting, compactPromise, 50),
+  )
+  return outcome === 'condition' ? ('started' as const) : ('settled' as const)
 }
 
 async function publishCompactionSettledState<Runtime extends PiRuntime>(input: {
