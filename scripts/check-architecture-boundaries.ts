@@ -7,6 +7,7 @@ const sourceRoots = [
   'src/desktop-host',
   'desktop',
   'shared',
+  'node-runtime',
   'scripts',
   'packages/howcode',
   'pages/src',
@@ -22,6 +23,7 @@ type Layer =
   | 'host'
   | 'service'
   | 'shared'
+  | 'node-runtime'
   | 'scripts'
   | 'launcher'
   | 'pages'
@@ -130,6 +132,7 @@ function getLayer(filePath: string): Layer {
   if (repoPath.startsWith('src/desktop-host/')) return 'host'
   if (repoPath.startsWith('desktop/')) return 'service'
   if (repoPath.startsWith('shared/')) return 'shared'
+  if (repoPath.startsWith('node-runtime/')) return 'node-runtime'
   if (repoPath.startsWith('scripts/')) return 'scripts'
   if (repoPath.startsWith('pages/src/')) return 'pages'
   if (repoPath.startsWith('workers/polls/src/')) return 'worker'
@@ -140,6 +143,8 @@ function isForbiddenBoundary(from: Layer, to: Layer) {
   switch (from) {
     case 'shared':
       return to !== 'shared'
+    case 'node-runtime':
+      return to !== 'node-runtime' && to !== 'shared'
     case 'service':
       return to === 'renderer' || to === 'electron' || to === 'host'
     case 'host':
@@ -147,7 +152,7 @@ function isForbiddenBoundary(from: Layer, to: Layer) {
     case 'electron':
       return to === 'renderer' || to === 'service'
     case 'renderer':
-      return to === 'electron' || to === 'host' || to === 'service'
+      return to === 'electron' || to === 'host' || to === 'service' || to === 'node-runtime'
     case 'launcher':
       return to !== 'launcher'
     case 'scripts':

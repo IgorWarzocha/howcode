@@ -40,18 +40,7 @@ The useful migration is mostly done. The major process and runtime lifecycles no
 - Disposal during startup cannot resurrect a child; stale process callbacks cannot affect its replacement.
 - `src/desktop-host/desktop-service-client.ts` remains the stable class/Promise compatibility edge.
 - Stock-Node, Electron, and headless HTTP cleanup share idempotent Effect shutdown gates with explicit deadlines.
-
-## Remaining candidates
-
-### Move Node discovery and native probing into Effect
-
-Relevant files:
-
-- `src/desktop-host/service-native-runtime.ts`
-- `src/desktop-host/node-discovery.ts`
-- `desktop/runtime-host/client-environment.ts`
-
-These contain manual child-process output collection and timeouts. Effect could provide scoped probes, typed failures, and deterministic timeout tests. The value is real, but smaller than the completed lifecycle work.
+- Shared `node-runtime/*` probes own subprocess deadlines, interruption, output collection, and Schema decoding while callers retain executable and ABI policy.
 
 ## Plausible later work
 
@@ -81,7 +70,6 @@ Do not migrate code merely to increase Effect coverage. Leave these alone unless
 
 ## Finish line
 
-The lifecycle migration is complete. Node probing remains a candidate only if its actual failure rate
-justifies disturbing the native-runtime compatibility boundary.
+The lifecycle migration is complete.
 
 After that, further Effect work needs a concrete lifecycle, concurrency, retry, stream, or typed-boundary benefit. “More Effect” is not enough.

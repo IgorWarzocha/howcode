@@ -1,25 +1,20 @@
-import { spawn } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
+import * as Effect from 'effect/Effect'
+import * as Schema from 'effect/Schema'
+import { runProcessProbe } from '../../node-runtime/process-probe'
 import serviceNativeAbi from '../../shared/service-native-abi.json'
 
 const supportedServiceNodeAbis = new Set(serviceNativeAbi.supportedServiceNodeAbis)
 
-type NodeRuntimeProbe = {
-  version: string
-  abi: string
-}
+const NodeRuntimeProbe = Schema.Struct({
+  version: Schema.String,
+  abi: Schema.String,
+})
+export interface NodeRuntimeProbe extends Schema.Schema.Type<typeof NodeRuntimeProbe> {}
 
 export function getSupportedServiceNodeAbiLabel() {
   return [...supportedServiceNodeAbis].join(', ')
-}
-
-function parseNodeRuntimeProbe(stdout: string): NodeRuntimeProbe {
-  const parsed = JSON.parse(stdout.trim()) as Partial<NodeRuntimeProbe>
-  if (typeof parsed.version !== 'string' || typeof parsed.abi !== 'string') {
-    throw new Error('probe did not return version/abi')
-  }
-  return { version: parsed.version, abi: parsed.abi }
 }
 
 function rejectNodeProbeExit(nodeExecutable: string, stderr: string, code: number | null) {
@@ -29,53 +24,25 @@ function rejectNodeProbeExit(nodeExecutable: string, stderr: string, code: numbe
 }
 
 export async function probeNodeRuntime(nodeExecutable: string): Promise<NodeRuntimeProbe> {
-  return await new Promise((resolve, reject) => {
-    const child = spawn(
-      nodeExecutable,
-      ['-p', 'JSON.stringify({version: process.version, abi: process.versions.modules})'],
-      { stdio: ['ignore', 'pipe', 'pipe'] },
-    )
-    let stdout = ''
-    let stderr = ''
-    let settled = false
-
-    const finish = (callback: () => void) => {
-      if (settled) return
-      settled = true
-      clearTimeout(timeout)
-      callback()
-    }
-
-    const timeout = setTimeout(() => {
-      child.kill('SIGTERM')
-      finish(() => reject(new Error(`Timed out probing Node runtime: ${nodeExecutable}`)))
-    }, 3_000)
-
-    child.stdout?.setEncoding('utf8')
-    child.stderr?.setEncoding('utf8')
-    child.stdout?.on('data', (chunk) => {
-      stdout += chunk
-    })
-    child.stderr?.on('data', (chunk) => {
-      stderr += chunk
-    })
-    child.once('error', (error) => {
-      finish(() => reject(error))
-    })
-    child.once('close', (code) => {
-      finish(() => {
-        if (code !== 0) {
-          reject(rejectNodeProbeExit(nodeExecutable, stderr, code))
-          return
-        }
-        try {
-          resolve(parseNodeRuntimeProbe(stdout))
-        } catch (error) {
-          reject(error instanceof Error ? error : new Error(String(error)))
-        }
+  return await Effect.runPromise(
+    Effect.gen(function* () {
+      const result = yield* runProcessProbe({
+        executable: nodeExecutable,
+        args: ['-p', 'JSON.stringify({version: process.version, abi: process.versions.modules})'],
+        timeout: 3_000,
+        timeoutMessage: `Timed out probing Node runtime: ${nodeExecutable}`,
       })
-    })
-  })
+      if (result.exitCode !== 0)
+        return yield* Effect.fail(
+          rejectNodeProbeExit(nodeExecutable, result.stderr, result.exitCode),
+        )
+      const parsed = yield* Effect.try({
+        try: () => JSON.parse(result.stdout.trim()),
+        catch: (error) => (error instanceof Error ? error : new Error(String(error))),
+      })
+      return yield* Schema.decodeUnknownEffect(NodeRuntimeProbe)(parsed)
+    }),
+  )
 }
 
 function getUnpackedAppPath(resourcesPath: string) {

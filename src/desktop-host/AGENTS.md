@@ -5,3 +5,4 @@
 - Desktop-service lifecycle reservation, startup, and finalization stay in their named modules; `lifecycle.ts` only composes the state machine.
 - Detach service generations by record/process identity before closing scopes; terminal RPC disposal must remain child-specific.
 - Packaged native dependencies resolve from the ABI bundle under `app.asar.unpacked`; missing or unsupported ABIs must fail explicitly.
+- `node-runtime/*` owns shared subprocess deadlines/output collection; callers retain executable precedence, fallback, ABI allowlists, and packaged manifest policy.

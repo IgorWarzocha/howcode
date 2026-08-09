@@ -27,5 +27,5 @@
     "stableTypeOrdering": true,
     "libReplacement": false
   },
-  "include": ["scripts/**/*.ts", "shared/**/*.ts"]
+  "include": ["scripts/**/*.ts", "shared/**/*.ts", "node-runtime/**/*.ts"]
 }
