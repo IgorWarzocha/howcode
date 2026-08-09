@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { toolbarButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import type { ChangeReviewDecision, ChangeReviewTarget } from './change-review-model'
@@ -8,14 +9,44 @@ function containPointerDown(event: React.PointerEvent) {
 }
 
 export function ChangeReviewAction({
+  onLoadRemainingContext,
   onResolve,
   target,
 }: {
+  onLoadRemainingContext?: (() => void) | undefined
   onResolve: (target: ChangeReviewTarget, decision: ChangeReviewDecision) => void
   target: ChangeReviewTarget
 }) {
+  const actionRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!onLoadRemainingContext) return
+    const diffContainer = actionRef.current?.closest('diffs-container')
+    diffContainer?.setAttribute('data-gitops-trailing-context-action', '')
+    return () => diffContainer?.removeAttribute('data-gitops-trailing-context-action')
+  }, [onLoadRemainingContext])
+
   return (
-    <div className="mr-3 mb-1.5 flex justify-end py-1" data-diff-change-action="true">
+    <div
+      ref={actionRef}
+      className={cn(
+        'mr-3 mb-1.5 flex items-center py-1',
+        onLoadRemainingContext ? 'justify-between' : 'justify-end',
+      )}
+      data-diff-change-action="true"
+    >
+      {onLoadRemainingContext ? (
+        <button
+          type="button"
+          className={toolbarButtonClass}
+          onPointerDown={containPointerDown}
+          onClick={(event) => {
+            event.stopPropagation()
+            onLoadRemainingContext()
+          }}
+        >
+          Load remaining context
+        </button>
+      ) : null}
       <div className="flex items-center gap-1">
         <button
           type="button"

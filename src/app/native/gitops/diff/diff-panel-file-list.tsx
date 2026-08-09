@@ -29,6 +29,7 @@ import { DiffPanelFileHeader } from './diff-panel-file-header'
 import { DIFF_THEMES } from './diff-rendering'
 import { useDiffCodeViewItems } from './use-diff-code-view-items'
 import type { DiffFileContentController } from './use-diff-file-content'
+import { useTrailingContextExpansion } from './use-trailing-context-expansion'
 
 type DiffPanelFileListProps = {
   baseline: ProjectDiffBaseline | null
@@ -64,12 +65,17 @@ export function DiffPanelFileList({
   renderableFiles,
 }: DiffPanelFileListProps) {
   const changeReview = useDiffChangeReview(renderableFiles)
+  const contextExpansion = useTrailingContextExpansion({
+    codeViewRef,
+    fileContent,
+    files: changeReview.files,
+  })
   const annotationsByFile = useMemo(() => {
     const merged = new Map(review.annotationsByFile)
     const editingFileKey = editing.state.kind === 'idle' ? null : editing.state.fileKey
     for (const [fileKey, changeAnnotations] of changeReview.annotationsByFile) {
       if (fileKey === editingFileKey) continue
-      merged.set(fileKey, [...changeAnnotations, ...(merged.get(fileKey) ?? [])])
+      merged.set(fileKey, [...(merged.get(fileKey) ?? []), ...changeAnnotations])
     }
     return merged
   }, [changeReview.annotationsByFile, editing.state, review.annotationsByFile])
@@ -93,7 +99,7 @@ export function DiffPanelFileList({
       enableGutterUtility: true,
       enableLineSelection: true,
       lineHoverHighlight: 'both',
-      loadDiffFiles: fileContent.loadFiles,
+      loadDiffFiles: contextExpansion.loadFiles,
       expansionLineCount: DIFF_FULL_CONTEXT_EXPANSION_LINE_COUNT,
       itemMetrics: {
         lineHeight: DIFF_FILE_ESTIMATED_LINE_HEIGHT,
@@ -106,7 +112,7 @@ export function DiffPanelFileList({
         paddingBottom: DIFF_FILE_ESTIMATED_FILE_GAP,
       },
     }),
-    [diffRenderMode, fileContent.loadFiles],
+    [contextExpansion.loadFiles, diffRenderMode],
   )
 
   const renderCustomHeader = useCallback(
@@ -158,7 +164,7 @@ export function DiffPanelFileList({
     return next
   }, [changeReview.files])
   const { onSelectedLinesChange, renderAnnotation, renderGutterUtility, selectedLines } =
-    usePierreReviewCodeView({ changeReview, fileIdentityByKey, review })
+    usePierreReviewCodeView({ changeReview, contextExpansion, fileIdentityByKey, review })
 
   return (
     <EditProvider<GitOpsAnnotationMetadata> createEditor={createPierreEditor}>

@@ -5,6 +5,7 @@ import { useCallback, useMemo } from 'react'
 import { Tooltip } from '../../../common/tooltip'
 import { diffCommentGutterButtonClass } from '../../../ui/classes'
 import { ChangeReviewAction } from './change-review-action'
+import type { ChangeReviewTarget } from './change-review-model'
 import {
   type GitOpsAnnotationMetadata,
   reviewTargetFromPierreSelection,
@@ -15,13 +16,19 @@ import { createLineRangeTarget } from './review-model'
 import type { DiffChangeReviewController } from './use-diff-change-review'
 
 export type ReviewFileIdentity = { fileKey: string; filePath: string }
+type ReviewContextExpansionController = {
+  expand: (target: ChangeReviewTarget) => void
+  expandedFileKeys: ReadonlySet<string>
+}
 
 export function usePierreReviewCodeView({
   changeReview,
+  contextExpansion,
   fileIdentityByKey,
   review,
 }: {
   changeReview: DiffChangeReviewController
+  contextExpansion: ReviewContextExpansionController
   fileIdentityByKey: ReadonlyMap<string, ReviewFileIdentity>
   review: ReviewCodeViewController
 }) {
@@ -47,19 +54,31 @@ export function usePierreReviewCodeView({
   )
 
   const renderAnnotation = useCallback(
-    (annotation: DiffLineAnnotation<GitOpsAnnotationMetadata>) => {
+    (
+      annotation: DiffLineAnnotation<GitOpsAnnotationMetadata>,
+      item: CodeViewItem<GitOpsAnnotationMetadata>,
+    ) => {
       const metadata = annotation.metadata.gitOps
       if (metadata.kind === 'change-action') {
+        const target = { fileKey: metadata.fileKey, hunkIndex: metadata.hunkIndex }
+        const canLoadRemainingContext =
+          item.type === 'diff' &&
+          item.fileDiff.isPartial &&
+          metadata.hunkIndex === item.fileDiff.hunks.length - 1 &&
+          !contextExpansion.expandedFileKeys.has(metadata.fileKey)
         return (
           <ChangeReviewAction
-            target={{ fileKey: metadata.fileKey, hunkIndex: metadata.hunkIndex }}
+            target={target}
             onResolve={changeReview.resolve}
+            onLoadRemainingContext={
+              canLoadRemainingContext ? () => contextExpansion.expand(target) : undefined
+            }
           />
         )
       }
       return review.renderAnnotation(annotation)
     },
-    [changeReview.resolve, review.renderAnnotation],
+    [changeReview.resolve, contextExpansion, review.renderAnnotation],
   )
 
   const renderGutterUtility = useCallback(

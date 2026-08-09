@@ -181,8 +181,20 @@ slot[name="header-prefix"]::slotted(*) {
 }
 
 [data-separator-last]:not(:has([data-expand-all-button])) [data-unmodified-lines]::after {
-  content: "Load remaining unchanged context";
+  content: "Load remaining context";
   font-size: 13px;
+}
+
+[data-separator-last] [data-expand-button] {
+  display: none;
+}
+
+[data-separator-last][data-expand-index] [data-separator-wrapper] {
+  grid-template-columns: 1fr;
+}
+
+:host([data-gitops-trailing-context-action]) [data-separator-last] {
+  display: none;
 }
 
 [data-diff-type="split"][data-overflow="scroll"] [data-additions] {
