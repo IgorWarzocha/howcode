@@ -1,5 +1,11 @@
 import type { TerminalOpenRequest } from '../../shared/terminal-contracts.ts'
-import { clampHistory, flushSession, nowIso, persistSession } from './session-history.ts'
+import {
+  clampHistory,
+  flushSession,
+  nowIso,
+  persistSession,
+  reportTranscriptWriteFailure,
+} from './session-history.ts'
 import type { TerminalSessionRecord } from './session-record.ts'
 import type { TerminalSessionStore } from './session-store.ts'
 import { resolveTerminalCommand, resolveTerminalEnv } from './terminal-command.helpers.ts'
@@ -92,7 +98,7 @@ export async function startProcess(
           exitSignal: event.signal,
           updatedAt: nowIso(),
         }
-        flushSession(record)
+        void flushSession(record).catch(reportTranscriptWriteFailure)
         store.emit({
           type: 'exited',
           sessionId: record.snapshot.sessionId,
@@ -103,7 +109,7 @@ export async function startProcess(
       }),
     )
 
-    flushSession(record)
+    void flushSession(record).catch(reportTranscriptWriteFailure)
     store.emit({
       type: reason,
       sessionId: record.snapshot.sessionId,
@@ -122,7 +128,7 @@ export async function startProcess(
       pid: null,
       updatedAt: nowIso(),
     }
-    flushSession(record)
+    void flushSession(record).catch(reportTranscriptWriteFailure)
     store.emit({
       type: 'error',
       sessionId: record.snapshot.sessionId,

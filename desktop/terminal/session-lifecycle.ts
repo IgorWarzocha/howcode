@@ -1,4 +1,4 @@
-import { rmSync } from 'node:fs'
+import { rm } from 'node:fs/promises'
 import * as Effect from 'effect/Effect'
 import * as Scope from 'effect/Scope'
 import type {
@@ -55,7 +55,7 @@ async function finalizeTerminalRecord(store: TerminalSessionStore, record: Termi
   record.process = null
   record.restartPromise = null
   try {
-    flushSession(record)
+    await flushSession(record)
   } catch (error) {
     captureError(error)
   }
@@ -65,7 +65,7 @@ async function finalizeTerminalRecord(store: TerminalSessionStore, record: Termi
 
   if (record.deleteHistoryOnClose) {
     try {
-      rmSync(record.transcriptPath, { force: true })
+      await rm(record.transcriptPath, { force: true })
     } catch (error) {
       captureError(error)
     }
@@ -109,14 +109,14 @@ export function reopenExistingTerminal(input: {
   return input.record.snapshot
 }
 
-export function rebindWorkspaceTerminal(input: {
+export async function rebindWorkspaceTerminal(input: {
   store: TerminalSessionStore
   adapter: PtyAdapter
   record: TerminalSessionRecord
   request: TerminalOpenRequest
   sessionId: string
 }) {
-  const snapshot = bindWorkspaceTerminalToSession(input)
+  const snapshot = await bindWorkspaceTerminalToSession(input)
   if (!isRestartableTerminalStatus(input.record.snapshot.status)) return snapshot
 
   input.record.snapshot = {
@@ -130,14 +130,14 @@ export function rebindWorkspaceTerminal(input: {
   return input.record.snapshot
 }
 
-export function createTerminalRecord(input: {
+export async function createTerminalRecord(input: {
   store: TerminalSessionStore
   rootScope: Scope.Scope
   adapter: PtyAdapter
   request: TerminalOpenRequest
   sessionId: string
 }) {
-  const history = readTranscript(getTranscriptPath(input.sessionId))
+  const history = await readTranscript(getTranscriptPath(input.sessionId))
   const snapshot: TerminalSessionSnapshot = {
     sessionId: input.sessionId,
     projectId: input.request.projectId,
@@ -165,6 +165,7 @@ export function createTerminalRecord(input: {
     inputBuffer: '',
     suppressOutputVisibilityUntilInput: false,
     persistTimer: null,
+    persistPromise: Promise.resolve(),
     tuiSessionDetection: createTuiSessionDetection(input.request),
     cleanup: [],
     deleteHistoryOnClose: false,

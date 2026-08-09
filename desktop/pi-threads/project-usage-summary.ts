@@ -11,21 +11,7 @@ import {
   listProjectThreads,
 } from '../thread-state-db.ts'
 import { mapWithConcurrency } from './map-with-concurrency.ts'
-
-type UsageEntry = {
-  type?: string | undefined
-  message?: {
-    role?: string | undefined
-    usage?: {
-      input?: number | undefined
-      output?: number | undefined
-      cacheRead?: number | undefined
-      cacheWrite?: number | undefined
-      totalTokens?: number | undefined
-      cost?: { total?: number | undefined } | undefined
-    }
-  }
-}
+import { decodeSessionFileLine } from './session-entry-schema.ts'
 
 const PROJECT_USAGE_SCAN_CONCURRENCY = 6
 const TOP_USAGE_SESSION_LIMIT = 10
@@ -101,15 +87,6 @@ function emptySessionSummary(input: {
   }
 }
 
-function parseUsageEntry(line: string) {
-  if (!line.trim()) return null
-  try {
-    return JSON.parse(line) as UsageEntry
-  } catch {
-    return null
-  }
-}
-
 function isMissingFileError(error: unknown) {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT'
 }
@@ -140,7 +117,7 @@ async function summarizeSession(input: {
   })
 
   for await (const line of lines) {
-    const entry = parseUsageEntry(line)
+    const entry = decodeSessionFileLine(line)
     const usage =
       entry?.type === 'message' && entry.message?.role === 'assistant'
         ? entry.message.usage

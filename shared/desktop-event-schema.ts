@@ -1,15 +1,11 @@
 import * as Schema from 'effect/Schema'
-import type { ComposerState, PiExtensionUiState } from './desktop-composer-contracts'
+import { ComposerStateSchema, PiExtensionUiStateSchema } from './desktop-composer-schema'
 import type { ProjectDiffStreamEvent } from './desktop-project-git-contracts'
 import type { ThreadData } from './desktop-thread-contracts'
 import { isKeybindingCommandId, type KeybindingCommandId } from './keybindings'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function existingRecord<T extends object>(identifier: string) {
-  return Schema.declare<T>((value): value is T => isRecord(value), { identifier })
 }
 
 function isProjectDiffStreamEvent(value: unknown): value is ProjectDiffStreamEvent {
@@ -73,8 +69,6 @@ const ArtifactSchema = Schema.Struct({
   updatedAt: Schema.String,
 })
 
-const ComposerStateSchema = existingRecord<ComposerState>('ComposerState')
-const ExtensionUiStateSchema = existingRecord<PiExtensionUiState>('PiExtensionUiState')
 const ProjectDiffStreamEventSchema = Schema.declare<ProjectDiffStreamEvent>(
   isProjectDiffStreamEvent,
   { identifier: 'ProjectDiffStreamEvent' },
@@ -149,6 +143,6 @@ export const DesktopEventSchema = Schema.Union([
     type: Schema.Literal('pi-extension-ui-update'),
     projectId: Schema.NullOr(Schema.String),
     sessionPath: Schema.String,
-    extensionUi: ExtensionUiStateSchema,
+    extensionUi: PiExtensionUiStateSchema,
   }),
 ]).pipe(Schema.toTaggedUnion('type'))

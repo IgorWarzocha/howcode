@@ -44,16 +44,10 @@ function patchProjects(
 }
 
 function sameProjectReferenceOrPatch(project: Project, patch: ProjectPatch) {
-  let changed = false
-  const nextProject: Project = { ...project }
-  for (const [key, value] of Object.entries(patch) as [keyof Project, unknown][]) {
-    if (key === 'id') continue
-    if (nextProject[key] !== value) {
-      ;(nextProject as Record<string, unknown>)[key] = value
-      changed = true
-    }
-  }
-  return changed ? nextProject : project
+  const changed = Object.entries(patch).some(
+    ([key, value]) => key !== 'id' && Reflect.get(project, key) !== value,
+  )
+  return changed ? { ...project, ...patch } : project
 }
 
 export function upsertShellProject(

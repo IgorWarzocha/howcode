@@ -1,88 +1,31 @@
-export type ComposerThinkingLevel = 'off' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh'
+import type {
+  ComposerAttachmentSchema,
+  ComposerModelSchema,
+  ComposerQueuedPromptSchema,
+  ComposerStateSchema,
+  ComposerStreamingBehaviorSchema,
+  ComposerThinkingLevelSchema,
+  PiExtensionDialogRequestSchema,
+  PiExtensionShortcutSchema,
+  PiExtensionStatusSchema,
+  PiExtensionUiStateSchema,
+  PiExtensionWidgetSchema,
+} from './desktop-composer-schema'
 
-export type ComposerStreamingBehavior = 'steer' | 'followUp' | 'stop'
+export type ComposerThinkingLevel = typeof ComposerThinkingLevelSchema.Type
+export type ComposerStreamingBehavior = typeof ComposerStreamingBehaviorSchema.Type
+export type ComposerQueuedPrompt = typeof ComposerQueuedPromptSchema.Type
+export type PiExtensionWidget = typeof PiExtensionWidgetSchema.Type
+export type PiExtensionStatus = typeof PiExtensionStatusSchema.Type
+export type PiExtensionShortcut = typeof PiExtensionShortcutSchema.Type
+export type PiExtensionDialogRequest = typeof PiExtensionDialogRequestSchema.Type
+export type PiExtensionUiState = typeof PiExtensionUiStateSchema.Type
+export type ComposerModel = typeof ComposerModelSchema.Type
+export type ComposerState = typeof ComposerStateSchema.Type
+export type ComposerAttachment = typeof ComposerAttachmentSchema.Type
 
-export type ComposerQueuedPrompt = {
-  id: string
-  mode: Exclude<ComposerStreamingBehavior, 'stop'>
-  queueIndex: number
-  queueSnapshotKey: string
-  text: string
-}
-
-export type PiExtensionWidget = {
-  key: string
-  lines: string[]
-  placement?: 'aboveEditor' | 'belowEditor' | 'status' | undefined
-}
-
-export type PiExtensionStatus = {
-  key: string
-  text: string
-}
-
-export type PiExtensionShortcut = {
-  shortcut: string
-  description?: string | undefined
-  extensionPath: string
-}
-
-export type PiExtensionDialogRequest = {
-  id: string
-  method: 'select' | 'confirm' | 'input' | 'editor'
-  title: string
-  message?: string | undefined
-  options?: string[] | undefined
-  placeholder?: string | undefined
-  prefill?: string | undefined
-}
-
-export type PiExtensionUiState = {
-  piExtensionWidgets: PiExtensionWidget[]
-  piExtensionStatuses: PiExtensionStatus[]
-  piExtensionDialogRequest: PiExtensionDialogRequest | null
-}
-
-export type ProjectTrustRequest = {
-  cwd: string
-}
-
-export type ComposerModel = {
-  provider: string
-  id: string
-  name: string
-  reasoning: boolean
-  input: Array<'text' | 'image'>
-}
-
-export type ComposerContextUsage = {
-  tokens: number | null
-  contextWindow: number
-  percent: number | null
-  latestCacheHitRate: number | null
-}
-
-export type ComposerState = {
-  currentModel: ComposerModel | null
-  availableModels: ComposerModel[]
-  currentThinkingLevel: ComposerThinkingLevel
-  availableThinkingLevels: ComposerThinkingLevel[]
-  queuedPrompts: ComposerQueuedPrompt[]
-  piExtensionWidgets: PiExtensionWidget[]
-  piExtensionStatuses: PiExtensionStatus[]
-  piExtensionShortcuts: PiExtensionShortcut[]
-  piExtensionDialogRequest: PiExtensionDialogRequest | null
-  projectTrustRequest: ProjectTrustRequest | null
-  contextUsage: ComposerContextUsage | null
-  isCompacting: boolean
-  isExtensionCommandRunning: boolean
-}
-
-export type ComposerAttachment = {
-  path: string
-  name: string
-  kind: 'directory' | 'text' | 'image'
-}
+export type ProjectTrustRequest = NonNullable<ComposerState['projectTrustRequest']>
+export type ComposerContextUsage = NonNullable<ComposerState['contextUsage']>
 
 export type ComposerFilePickerEntry = {
   path: string

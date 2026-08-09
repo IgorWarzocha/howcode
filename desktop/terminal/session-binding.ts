@@ -1,6 +1,10 @@
-import { renameSync } from 'node:fs'
 import type { TerminalOpenRequest } from '../../shared/terminal-contracts.ts'
-import { getTranscriptPath, nowIso } from './session-history.ts'
+import {
+  getTranscriptPath,
+  moveSessionTranscript,
+  nowIso,
+  reportTranscriptWriteFailure,
+} from './session-history.ts'
 import type { TerminalSessionRecord } from './session-record.ts'
 import type { TerminalSessionStore } from './session-store.ts'
 
@@ -23,19 +27,7 @@ export function findUnboundWorkspaceShellTerminal(
   )
 }
 
-function moveTranscript(fromPath: string, toPath: string) {
-  if (fromPath === toPath) return true
-
-  try {
-    renameSync(fromPath, toPath)
-    return true
-  } catch {
-    // Persistence is best-effort; preserving live in-memory history takes priority.
-    return false
-  }
-}
-
-export function bindWorkspaceTerminalToSession(input: {
+export async function bindWorkspaceTerminalToSession(input: {
   store: TerminalSessionStore
   record: TerminalSessionRecord
   request: TerminalOpenRequest
@@ -44,10 +36,8 @@ export function bindWorkspaceTerminalToSession(input: {
   const previousSessionId = input.record.snapshot.sessionId
   const nextTranscriptPath = getTranscriptPath(input.sessionId)
 
+  await moveSessionTranscript(input.record, nextTranscriptPath).catch(reportTranscriptWriteFailure)
   input.store.delete(previousSessionId)
-  if (moveTranscript(input.record.transcriptPath, nextTranscriptPath)) {
-    input.record.transcriptPath = nextTranscriptPath
-  }
   input.record.snapshot = {
     ...input.record.snapshot,
     sessionId: input.sessionId,

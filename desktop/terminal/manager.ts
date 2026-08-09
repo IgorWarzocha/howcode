@@ -40,8 +40,12 @@ export function makeTerminalManager(
   rootScope: Scope.Scope,
   adapter: PtyAdapter,
 ): TerminalManager {
-  async function openTerminal(request: TerminalOpenRequest): Promise<TerminalSessionSnapshot> {
-    const sessionId = makeSessionId(request)
+  const openingSessions = new Map<string, Promise<TerminalSessionSnapshot>>()
+
+  async function openUnreservedTerminal(
+    request: TerminalOpenRequest,
+    sessionId: string,
+  ): Promise<TerminalSessionSnapshot> {
     const existing = store.get(sessionId)
     if (existing) return reopenExistingTerminal({ store, adapter, record: existing, request })
 
@@ -57,6 +61,20 @@ export function makeTerminalManager(
     }
 
     return createTerminalRecord({ store, rootScope, adapter, request, sessionId })
+  }
+
+  async function openTerminal(request: TerminalOpenRequest): Promise<TerminalSessionSnapshot> {
+    const sessionId = makeSessionId(request)
+    const pending = openingSessions.get(sessionId)
+    if (pending) return pending
+
+    const opening = openUnreservedTerminal(request, sessionId)
+    openingSessions.set(sessionId, opening)
+    try {
+      return await opening
+    } finally {
+      if (openingSessions.get(sessionId) === opening) openingSessions.delete(sessionId)
+    }
   }
 
   async function writeTerminal(sessionId: string, data: string) {

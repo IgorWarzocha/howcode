@@ -11,6 +11,7 @@ export type TerminalSessionRecord = {
   inputBuffer: string
   suppressOutputVisibilityUntilInput: boolean
   persistTimer: ReturnType<typeof setTimeout> | null
+  persistPromise: Promise<void>
   tuiSessionDetection: {
     startedAtMs: number
     submittedPrompts: string[]

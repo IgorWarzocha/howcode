@@ -2,11 +2,17 @@ import * as Result from 'effect/Result'
 import * as Schema from 'effect/Schema'
 import { describe, expect, it } from 'vitest'
 import { RegistrySearchResponse } from '../../desktop/pi-packages/registry-schema'
+import { decodeSessionFileLine } from '../../desktop/pi-threads/session-entry-schema'
 import { SkillDownloadApiResponse } from '../../desktop/skills/api-schema'
+import { ComposerStateSchema, PiExtensionUiStateSchema } from '../../shared/desktop-composer-schema'
 import {
   DevWebDesktopEventEnvelope,
   DevWebTerminalEventEnvelope,
 } from '../app/dev-web-event-schema'
+import {
+  ComposerAttachmentUploadResponseSchema,
+  HeadlessAuthStateSchema,
+} from '../app/dev-web-response-schema'
 
 describe('external payload schemas', () => {
   it('rejects malformed catalog collections', () => {
@@ -39,5 +45,34 @@ describe('external payload schemas', () => {
         }),
       ),
     ).toBe(true)
+  })
+
+  it('rejects malformed composer and headless response payloads', () => {
+    expect(
+      Result.isFailure(
+        Schema.decodeUnknownResult(PiExtensionUiStateSchema)({
+          piExtensionWidgets: {},
+          piExtensionStatuses: [],
+          piExtensionDialogRequest: null,
+        }),
+      ),
+    ).toBe(true)
+    expect(
+      Result.isFailure(Schema.decodeUnknownResult(ComposerStateSchema)({ isCompacting: false })),
+    ).toBe(true)
+    expect(
+      Result.isFailure(Schema.decodeUnknownResult(HeadlessAuthStateSchema)({ required: 'yes' })),
+    ).toBe(true)
+    expect(
+      Result.isFailure(
+        Schema.decodeUnknownResult(ComposerAttachmentUploadResponseSchema)({
+          attachments: [{ path: '/tmp/x', name: 'x', kind: 'unknown' }],
+        }),
+      ),
+    ).toBe(true)
+  })
+
+  it('rejects malformed persisted session entries', () => {
+    expect(decodeSessionFileLine('{"type":"session_info","name":42}')).toBeNull()
   })
 })
