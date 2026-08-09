@@ -21,6 +21,10 @@ type HeadlessServerInput = {
   onSettingsChanged?: (() => Promise<void> | void) | undefined
 }
 
+export interface HeadlessServer {
+  readonly close: () => Promise<void>
+}
+
 function closeHeadlessClients(context: HeadlessRequestContext) {
   for (const client of context.allSseClients) {
     client.end()
@@ -77,11 +81,27 @@ export async function startHeadlessServer(input: HeadlessServerInput) {
     })
   })
 
-  server.once('close', () => {
+  let finalized = false
+  const finalize = () => {
+    if (finalized) return
+    finalized = true
     unsubscribeDesktopEvents()
     unsubscribeTerminalEvents()
     unsubscribeAppUpdateEvents()
     closeHeadlessClients(requestContext)
-  })
-  return server
+  }
+  server.once('close', finalize)
+
+  return {
+    close: async () => {
+      finalize()
+      if (!server.listening) return
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => {
+          if (error) reject(error)
+          else resolve()
+        })
+      })
+    },
+  } satisfies HeadlessServer
 }

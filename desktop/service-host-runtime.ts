@@ -1,3 +1,6 @@
+import * as Effect from 'effect/Effect'
+import * as Option from 'effect/Option'
+import { makeShutdownCoordinator } from '../shared/effect-shutdown.ts'
 import type { TerminalRpcRequest } from '../shared/terminal-rpc.ts'
 import { loadAppSettings } from './app-settings/readers.ts'
 import { getPiModule } from './pi-module.ts'
@@ -114,20 +117,44 @@ process.on('message', (message: ServiceRequest | TerminalRpcServiceRequest) => {
   }
 })
 
-async function shutdown() {
-  const terminalRpcServer = await terminalRpcServerPromise
-  await Promise.allSettled([
-    terminalRpcServer.dispose(),
-    piThreads.disposeDesktopRuntime?.(),
-    terminalManager.closeAllTerminals(),
-  ])
-  await Promise.allSettled([terminalManager.disposeTerminalRuntime()])
-  process.exit(0)
+function settledTask<A>(evaluate: () => A) {
+  return Effect.exit(Effect.promise(async () => await evaluate())).pipe(Effect.asVoid)
 }
 
-process.once('disconnect', () => void shutdown())
-process.once('SIGTERM', () => void shutdown())
-process.once('SIGINT', () => void shutdown())
+const shutdownCoordinatorPromise = Effect.runPromise(
+  makeShutdownCoordinator(
+    Effect.gen(function* () {
+      const terminalRpcServer = yield* Effect.option(
+        Effect.tryPromise({
+          try: () => terminalRpcServerPromise,
+          catch: (error) => error,
+        }),
+      )
+      yield* Effect.all(
+        [
+          Option.isSome(terminalRpcServer)
+            ? settledTask(() => terminalRpcServer.value.dispose())
+            : Effect.void,
+          settledTask(() => piThreads.disposeDesktopRuntime?.()),
+          settledTask(() => terminalManager.closeAllTerminals()),
+        ],
+        { concurrency: 'unbounded', discard: true },
+      )
+      yield* settledTask(() => terminalManager.disposeTerminalRuntime())
+    }),
+    { label: 'Desktop service', timeout: '2 seconds' },
+  ),
+)
+
+function requestShutdown() {
+  void shutdownCoordinatorPromise
+    .then((coordinator) => Effect.runPromise(coordinator.shutdown))
+    .finally(() => process.exit(0))
+}
+
+process.once('disconnect', requestShutdown)
+process.once('SIGTERM', requestShutdown)
+process.once('SIGINT', requestShutdown)
 
 void Promise.all([getServiceDiagnostics(), terminalRpcServerPromise]).then(([diagnostics]) => {
   process.send?.({ type: 'ready', diagnostics })

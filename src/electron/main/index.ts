@@ -3,7 +3,7 @@ import { installApplicationMenu } from './app/application-menu'
 import { createMainWindow } from './app/create-main-window'
 import { loadMainWindow } from './app/load-main-window'
 import { getHeadlessAccessUrl, parseHeadlessServerOptions } from './headless/options'
-import { startHeadlessServer } from './headless/server'
+import { type HeadlessServer, startHeadlessServer } from './headless/server'
 import { registerDesktopIpc } from './ipc/register-desktop-ipc'
 import { applyDevViewport } from './runtime/dev-viewport'
 import { configureDevtoolsRemoteDebugging, logDevtoolsRemoteDebugging } from './runtime/devtools'
@@ -17,6 +17,7 @@ import { startRunningVersionLease } from './updater/update-active-lease'
 import { getCacheRoot, getRunningCachedVersionDir } from './updater/update-storage'
 
 let currentMainWindow: BrowserWindow | null = null
+let headlessServer: HeadlessServer | null = null
 let quitRequested = false
 const headlessOptions = parseHeadlessServerOptions()
 const devtoolsDebuggingPort = configureDevtoolsRemoteDebugging()
@@ -65,7 +66,7 @@ async function bootstrap() {
   })
   const installMenu = () =>
     installApplicationMenu({ getMainWindow: () => currentMainWindow, piThreads: runtime.piThreads })
-  registerDesktopRuntimeShutdown(runtime)
+  await registerDesktopRuntimeShutdown(runtime, () => headlessServer?.close())
 
   // Apply a previously downloaded bundle before creating a window. This is the cross-platform
   // handoff that makes Windows installer launches converge on the staged app too.
@@ -76,12 +77,11 @@ async function bootstrap() {
   void appUpdater.checkAndInstall()
 
   if (headlessOptions.enabled) {
-    const server = await startHeadlessServer({
+    headlessServer = await startHeadlessServer({
       runtime,
       appUpdater,
       options: headlessOptions,
     })
-    app.once('before-quit', () => server.close())
     console.log(`Howcode headless listening on ${getHeadlessAccessUrl(headlessOptions)}`)
     if (headlessOptions.host === '0.0.0.0' || headlessOptions.host === '::') {
       console.warn(

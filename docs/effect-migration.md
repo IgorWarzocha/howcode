@@ -39,6 +39,7 @@ The useful migration is mostly done. The major process and runtime lifecycles no
 - Child-specific terminal RPC connection ownership.
 - Disposal during startup cannot resurrect a child; stale process callbacks cannot affect its replacement.
 - `src/desktop-host/desktop-service-client.ts` remains the stable class/Promise compatibility edge.
+- Stock-Node, Electron, and headless HTTP cleanup share idempotent Effect shutdown gates with explicit deadlines.
 
 ## Remaining candidates
 
@@ -54,7 +55,6 @@ These contain manual child-process output collection and timeouts. Effect could 
 
 ## Plausible later work
 
-- Consolidate shutdown deadlines in `desktop/service-host-runtime.ts` and `src/electron/main/runtime/shutdown.ts` if ordering causes further problems.
 - Turn the remaining `TerminalRpcServiceClient` compatibility class into a service only if its current focused boundary starts accumulating responsibilities again.
 
 ## Deliberately out of scope

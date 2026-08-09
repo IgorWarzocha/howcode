@@ -1,4 +1,5 @@
 - `server.ts` owns startup, subscriptions, listener lifecycle, and shutdown only.
+- Its public close operation must end SSE clients, unsubscribe listeners, and await the HTTP server close callback.
 - `auth.ts` owns host/origin trust and session authentication; `request-router.ts` owns HTTP/SSE/upload/static routing; `http-response.ts` owns bounded JSON and responses.
 - Preserve status codes, cookie attributes, bridge-token checks, host/origin checks, SPA fallback, upload limits, and SSE cleanup across refactors.
 - Headless operation handlers come from the canonical desktop request composition; do not add product behaviour to this transport.
