@@ -176,6 +176,15 @@ slot[name="header-prefix"]::slotted(*) {
   color: var(--text);
 }
 
+[data-separator-last]:not(:has([data-expand-all-button])) [data-unmodified-lines] {
+  font-size: 0;
+}
+
+[data-separator-last]:not(:has([data-expand-all-button])) [data-unmodified-lines]::after {
+  content: "Load remaining unchanged context";
+  font-size: 13px;
+}
+
 [data-diff-type="split"][data-overflow="scroll"] [data-additions] {
   border-left: 1px solid color-mix(in srgb, var(--border) 64%, transparent);
 }

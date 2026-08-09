@@ -2,6 +2,7 @@ export {
   DIFF_FILE_ESTIMATED_FILE_GAP,
   DIFF_FILE_ESTIMATED_HEADER_HEIGHT,
   DIFF_FILE_ESTIMATED_LINE_HEIGHT,
+  DIFF_FULL_CONTEXT_EXPANSION_LINE_COUNT,
   DIFF_PANEL_UNSAFE_CSS,
 } from './diff-panel-content.constants'
 export { alignElementInScrollViewport } from './diff-panel-content.layout'

@@ -21,6 +21,7 @@ import {
   DIFF_FILE_ESTIMATED_FILE_GAP,
   DIFF_FILE_ESTIMATED_HEADER_HEIGHT,
   DIFF_FILE_ESTIMATED_LINE_HEIGHT,
+  DIFF_FULL_CONTEXT_EXPANSION_LINE_COUNT,
   DIFF_PANEL_UNSAFE_CSS,
   isImageDiffFile,
 } from './diff-panel-content.helpers'
@@ -93,6 +94,7 @@ export function DiffPanelFileList({
       enableLineSelection: true,
       lineHoverHighlight: 'both',
       loadDiffFiles: fileContent.loadFiles,
+      expansionLineCount: DIFF_FULL_CONTEXT_EXPANSION_LINE_COUNT,
       itemMetrics: {
         lineHeight: DIFF_FILE_ESTIMATED_LINE_HEIGHT,
         diffHeaderHeight: DIFF_FILE_ESTIMATED_HEADER_HEIGHT,
