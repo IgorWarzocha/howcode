@@ -1,5 +1,5 @@
-import type { DesktopRequestHandlerMap } from '../../../../../shared/desktop-ipc'
-import type { TerminalService } from '../../../../../shared/desktop-service-contracts'
+import type { DesktopRequestHandlerMap } from '../../../shared/desktop-ipc'
+import type { TerminalService } from '../../../shared/desktop-service-contracts'
 
 type TerminalRequestHandlers = Pick<
   DesktopRequestHandlerMap,

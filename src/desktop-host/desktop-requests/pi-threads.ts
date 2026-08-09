@@ -1,6 +1,6 @@
-import type { DesktopRequestHandlerMap } from '../../../../../shared/desktop-ipc'
-import type { PiThreadsService } from '../../../../../shared/desktop-service-contracts'
-import { getDesktopWorkingDirectory } from '../../../../../shared/desktop-working-directory'
+import type { DesktopRequestHandlerMap } from '../../../shared/desktop-ipc'
+import type { PiThreadsService } from '../../../shared/desktop-service-contracts'
+import { getDesktopWorkingDirectory } from '../../../shared/desktop-working-directory'
 
 type PiThreadsRequestHandlers = Pick<
   DesktopRequestHandlerMap,

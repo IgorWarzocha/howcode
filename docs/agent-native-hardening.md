@@ -48,10 +48,9 @@ flowchart TD
     DevServer["Vite development server"] --> Renderer
     Renderer --> BrowserBridge["Browser desktop bridge"]
     BrowserBridge --> DevBridge["Development Node bridge"]
-    DevBridge --> DevHandlers["Duplicated development handlers"]
+    DevBridge --> ProdHandlers
 
     ProdHandlers --> ServiceClient["DesktopServiceClient"]
-    DevHandlers --> ServiceClient
     ServiceClient --> ServiceHost["Stock Node service host"]
     ServiceHost --> Backend["Desktop domain services"]
     Backend --> Native["SQLite / terminal / Pi runtime"]
@@ -91,8 +90,8 @@ Development web:
 1. `scripts/dev-web.ts` builds and starts Vite plus the development bridge child.
 2. `src/app/dev-web-bridge.ts` exposes the browser-side desktop API.
 3. HTTP/SSE requests reach `scripts/dev-web-bridge-node.ts`.
-4. That script currently reimplements the desktop request handler table before using the same
-   `DesktopServiceClient` and stock-Node service as the packaged app.
+4. That script supplies browser capabilities to the same host-neutral request composition used by
+   Electron and packaged headless before reaching `DesktopServiceClient`.
 
 ## Baseline evidence
 
@@ -122,6 +121,9 @@ feature branching are the deciding evidence.
 ### 1. Development transport duplicates production behaviour
 
 Severity: high.
+
+Resolved in Phase 2. The development bridge now composes the canonical host-neutral request
+handlers and supplies only browser/platform capabilities.
 
 Relevant files:
 
@@ -275,7 +277,7 @@ scan of 857 production files reports zero local dependency cycles; all four Type
 
 ### Phase 2 — Canonicalise desktop request behaviour
 
-Status: pending.
+Status: complete.
 
 - Trace every request capability across preload, packaged headless, and development web.
 - Move operation behaviour into one host-neutral, typed handler composition boundary.
@@ -286,6 +288,12 @@ Status: pending.
 
 Validation must cover Electron, development web, headless, uploads, events, updater stubs, terminal
 RPC, shutdown, and authentication boundaries without changing external behaviour.
+
+Completion: this phase's commit. `src/desktop-host/desktop-requests/*` now owns the complete typed
+request map. Electron and development provide updater/system capabilities; packaged headless keeps
+using the Electron composition. Runtime operation mapping exists once. The development bridge fell
+from 514 to 286 lines and the Electron system adapter from roughly 300 to 134 lines. All four
+TypeScript lanes and a standalone development-bridge bundle pass.
 
 ### Phase 3 — Narrow AppShell ownership
 
@@ -335,6 +343,7 @@ Status: pending.
 | --- | --- | --- |
 | 0 | This document's commit | Durable topology and hardening plan; no source changes. |
 | 1 | This phase's commit | Six strongly connected groups removed; zero local cycles across 857 production files. |
+| 2 | This phase's commit | One typed request implementation across Electron, headless, and development; dev bridge reduced by 228 lines. |
 
 ## Stop conditions
 
