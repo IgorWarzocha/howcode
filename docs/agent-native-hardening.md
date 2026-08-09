@@ -1,0 +1,342 @@
+# Agent-native hardening
+
+This is the durable ledger for making Howcode easier to change safely. Reread it before starting
+each phase, after context compaction, and whenever the observed topology no longer matches the plan.
+Update the evidence and phase log instead of relying on conversation history.
+
+The work is optimisation only. Preserve application behaviour, product semantics, UI, UX, copy,
+layout, and interaction. A behaviour change needs its own explicit scope; it must not sneak into a
+structural pass.
+
+## Product and runtime invariants
+
+- Howcode is a single-user coding-agent GUI, not a generic editor or multiplayer review system.
+- The renderer owns presentation and local interaction state. It does not own filesystem, process,
+  persistence, updater, or Pi runtime behaviour.
+- Electron owns window/headless transports and process lifecycle, not backend product logic.
+- `src/desktop-host/*` owns the Electron/dev-to-stock-Node process boundary.
+- `desktop/*` runs under discovered stock Node and owns backend domains, persistence, Pi runtimes,
+  terminals, and native service dependencies.
+- Cross-runtime contracts live in `shared/*`. Runtime layers import those contracts directly rather
+  than through renderer compatibility files.
+- Electron IPC, packaged headless HTTP, and development web transport expose equivalent typed
+  operations through one canonical request implementation. Transport-specific authentication,
+  framing, and platform capabilities remain adapters.
+- ASAR stays enabled. Stock-Node code and native dependency trees remain outside it.
+- React Doctor stays at 100. Hardening may not weaken Biome, TypeScript, tests, packaging, or native
+  runtime validation.
+
+## Current topology
+
+```mermaid
+flowchart TD
+    Release["Release channels"] --> Launcher["bunx howcode launcher"]
+    Release --> Updater["In-app updater"]
+    Launcher --> Cache["Immutable version cache"]
+    Updater --> Cache
+    Cache --> Electron["Electron main"]
+
+    Electron --> Preload["Electron preload"]
+    Preload <--> Renderer["React renderer"]
+
+    Renderer --> AppShell["AppShell control plane"]
+    AppShell --> Features["Composer / Sidebar / Thread / GitOps / Settings"]
+
+    Electron --> ProdHandlers["Canonical request handlers"]
+    Headless["Packaged headless server"] --> ProdHandlers
+
+    DevServer["Vite development server"] --> Renderer
+    Renderer --> BrowserBridge["Browser desktop bridge"]
+    BrowserBridge --> DevBridge["Development Node bridge"]
+    DevBridge --> DevHandlers["Duplicated development handlers"]
+
+    ProdHandlers --> ServiceClient["DesktopServiceClient"]
+    DevHandlers --> ServiceClient
+    ServiceClient --> ServiceHost["Stock Node service host"]
+    ServiceHost --> Backend["Desktop domain services"]
+    Backend --> Native["SQLite / terminal / Pi runtime"]
+
+    Contracts["Shared typed contracts"] -.-> Renderer
+    Contracts -.-> Preload
+    Contracts -.-> ProdHandlers
+    Contracts -.-> DevBridge
+    Contracts -.-> ServiceHost
+```
+
+### Main call flows
+
+Renderer:
+
+1. `src/main.tsx` installs the development bridge when needed and renders `src/app.tsx`.
+2. `src/app/router-instance.ts` selects `AppShell` for all routes.
+3. `src/app/app-shell.tsx` composes `useAppShellController` and `AppShellLayout`.
+4. `src/app/app-shell/useAppShellController.ts` combines shell queries, workspace state, effects,
+   desktop actions, commands, and feature view models.
+5. Feature views receive the resulting controller or narrower values derived from it.
+
+Packaged desktop:
+
+1. `src/electron/main/index.ts` owns Electron startup, updater takeover, window/headless selection,
+   desktop-service startup, and shutdown.
+2. Windowed requests pass through preload and `src/electron/main/ipc/register-desktop-ipc.ts`.
+3. Headless requests pass through `src/electron/main/headless/server.ts`.
+4. Both use `src/electron/main/ipc/desktop-request-handlers.ts`.
+5. `src/desktop-host/desktop-service-client.ts` is the Promise/class compatibility edge around the
+   Effect-owned process lifecycle in `src/desktop-host/desktop-service/*`.
+6. The stock-Node child enters through `desktop/service-host.ts` and delegates to `desktop/*`
+   feature owners.
+
+Development web:
+
+1. `scripts/dev-web.ts` builds and starts Vite plus the development bridge child.
+2. `src/app/dev-web-bridge.ts` exposes the browser-side desktop API.
+3. HTTP/SSE requests reach `scripts/dev-web-bridge-node.ts`.
+4. That script currently reimplements the desktop request handler table before using the same
+   `DesktopServiceClient` and stock-Node service as the packaged app.
+
+## Baseline evidence
+
+Captured on `effect-v4` after commit `f6a04251`.
+
+- Working tree clean.
+- React Doctor: 100/100.
+- Last full gate: 64 test files, 208 tests.
+- Strict TypeScript covers renderer, desktop service, Electron/desktop host, and scripts.
+- Source scan: roughly 74,000 TypeScript/TSX lines across the principal runtime and tooling roots.
+- Renderer: 547 files. Largest areas are Composer at roughly 11,200 lines, AppShell at 8,000,
+  sidebar/components at 7,300, and GitOps at 6,800.
+- No explicit `any`, no TypeScript ignore directives, and 18 `as unknown as` compatibility casts.
+- Static local-import scan found no cross-process implementation dependency from the stock-Node
+  service into Electron or renderer code.
+- The scan found six strongly connected component groups, listed below.
+- The renderer has substantial cross-area traffic. A baseline static scan found 1,027 cross-area
+  edges, including 935 relative imports. Many are legitimate composition or common-UI edges; the
+  important problem is that intended direction is not mechanically distinguished from drift.
+
+These are navigation signals, not automatic refactor instructions. File length alone does not make
+a godfile. A large pure schema, mapper, or repository may be cohesive; mixed ownership and central
+feature branching are the deciding evidence.
+
+## Findings
+
+### 1. Development transport duplicates production behaviour
+
+Severity: high.
+
+Relevant files:
+
+- `scripts/dev-web.ts`
+- `scripts/dev-web-bridge-node.ts`
+- `src/app/dev-web-bridge.ts`
+- `src/electron/main/ipc/desktop-request-handlers.ts`
+- `src/electron/main/headless/server.ts`
+- `src/test/dev-web-bridge-api.test.ts`
+
+Electron IPC and packaged headless already share a handler factory. Development has a separate,
+hand-written `DesktopRequestHandlerMap`. The parity test compares browser API method names, not the
+behaviour or complete request registry. This creates two places to implement or subtly alter every
+desktop operation.
+
+The transport scripts are godfile-class hotspots because they combine process lifecycle, HTTP/SSE,
+authentication, uploads, static/proxy serving, request routing, and desktop operation behaviour.
+
+Target shape:
+
+- one host-neutral request implementation composed from domain-owned handler groups;
+- small environment adapters for updater, dialogs, clipboard, system opening, and other real
+  capability differences;
+- Electron IPC, packaged headless, and development HTTP only authenticate/frame/forward;
+- compile-time or deterministic registry parity, not source-text method-name comparison.
+
+### 2. AppShell still owns too much feature state and effect coordination
+
+Severity: high.
+
+Relevant files:
+
+- `src/app/app-shell/useAppShellController.ts`
+- `src/app/app-shell/useAppShellStateBundle.ts`
+- `src/app/app-shell/useDesktopActionHandlers.ts`
+- `src/app/app-shell/useAppShellEffects.ts`
+- `src/app/app-shell/controller-post-action-effects.ts`
+- `src/app/state/workspace.ts`
+- `src/app/state/workspace-action-handlers.ts`
+
+The old root godfile has been decomposed into named modules, which is good. The ownership topology is
+still broad: AppShell stores feature-local state, coordinates many independent effects, and returns
+a large controller consumed deeply by unrelated feature views. The universal desktop action path
+also knows optimistic update rules and post-effects for many domains.
+
+Target shape:
+
+- AppShell routes and composes truly global lifecycle only;
+- grouped, feature-owned capabilities replace a flat controller prop surface;
+- thread, project, composer, GitOps, settings, and extension state/effects live with those features;
+- central action code performs typed routing and one invocation, while domain-owned pipelines own
+  preparation, optimistic state, reconciliation, and error policy;
+- workspace state represents navigation modes explicitly rather than relying on combinations of
+  booleans and nullable fields where practical.
+
+Preserve the historical project-selector target-highlight flow documented in the local AppShell and
+sidebar guidance.
+
+### 3. Six dependency cycles obscure ownership
+
+Severity: medium.
+
+The current strongly connected groups are:
+
+1. Composer: `composer.tsx`, `composer-prompt-surface.tsx`,
+   `composer-prompt-surface-helpers.ts`, and `composer-prompt-footer.tsx`.
+2. Artifact shell: `useArtifactPanelState.ts`, `useArtifactSelection.ts`, `useArtifactSave.ts`, and
+   `useArtifactDerivedState.ts`.
+3. Workspace state: `workspace.ts`, `workspace-action-handlers.ts`, and
+   `workspace-terminal-state.ts`.
+4. Code workspace: `code-workspace-view.tsx`, `code-workspace-main-area.tsx`, and
+   `code-workspace-footer.tsx`.
+5. Shared contracts: `desktop-thread-contracts.ts`, `desktop-settings-contracts.ts`, and
+   `desktop-project-git-contracts.ts`.
+6. Session tree: `session-tree.ts` and `session-tree-mapper.ts`.
+
+Most are type-ownership cycles rather than runtime recursion. Extract the smallest owned contract or
+model needed to make direction acyclic. Do not introduce `types.ts` junk drawers.
+
+### 4. Preload reaches through renderer compatibility files
+
+Severity: medium.
+
+`src/electron/preload/create-desktop-api.ts` imports action and API types through
+`src/app/desktop/actions.ts` and `src/app/desktop/types.ts`. Those currently re-export `shared/*`, so
+the emitted runtime is not coupled, but the dependency direction violates the cross-runtime rule.
+Preload should consume `shared/*` directly.
+
+### 5. Architecture guidance is not fully enforced
+
+Severity: medium.
+
+Nested `AGENTS.md` files and `@howcode/*` entrypoints document intended ownership. The existing Vite
+resolution check proves aliases resolve, but it does not reject forbidden cross-runtime imports,
+new cycles, or feature code bypassing a public entrypoint.
+
+Add only narrow rules with clear independent oracles. Do not freeze the current whole import graph
+or turn historical debt into an enormous allowlist.
+
+### 6. Auxiliary deployables sit outside the umbrella gate
+
+Severity: low.
+
+`pages/tsconfig.json` and `workers/polls` are not typechecked by `ai:check`; their build/deploy paths
+are separate. Bring them under an explicit fast check without making every app commit perform a
+deployment or release build.
+
+## Baseline scorecard
+
+| Category | Score | Evidence |
+| --- | ---: | --- |
+| `agent_native` | 5/10 | Strong feature folders and contracts; capped by duplicated transport ownership and central shell pressure. |
+| `fully_typed` | 8/10 | Strict configs and typed cross-runtime maps; weakened by compatibility casts and flag-heavy root state. |
+| `traversable` | 5/10 | Good names and local guidance; transport godfiles, broad root ownership, and six cycles raise reread cost. |
+| `test_coverage` | 7/10 | Broad deterministic contract/domain coverage; limited full transport parity and UI integration coverage. |
+| `feedback_loops` | 8/10 | Strong local gate and commit hooks; auxiliary deployables remain outside it. |
+| `self_documenting` | 7/10 | High-signal local guidance and contracts; dependency direction remains clearer in prose than in structure. |
+
+## Phases
+
+Each phase is behaviour-preserving, separately committed, and followed by the smallest focused
+checks during iteration. The commit hook runs the umbrella gate once. Update this section with the
+commit and any changed evidence after every phase.
+
+### Phase 0 — Baseline and durable map
+
+Status: complete.
+
+- Record topology, evidence, invariants, scorecard, and phases here.
+- Tighten relevant local `AGENTS.md` files so the shortest future path follows the target design.
+- No source behaviour changes.
+
+Completion: this document's commit.
+
+### Phase 1 — Remove dependency cycles
+
+Status: pending.
+
+- Extract feature-owned props/models/contracts for the six cycle groups.
+- Keep public exports stable where existing consumers need them.
+- Add no generic helpers and change no rendering or state transitions.
+- Verify the local import graph is acyclic afterwards.
+
+Likely focused checks: TypeScript, Vite import resolution, affected deterministic tests, Doctor.
+
+### Phase 2 — Canonicalise desktop request behaviour
+
+Status: pending.
+
+- Trace every request capability across preload, packaged headless, and development web.
+- Move operation behaviour into one host-neutral, typed handler composition boundary.
+- Keep updater and platform-only capabilities behind explicit adapters.
+- Reduce `scripts/dev-web.ts`, `scripts/dev-web-bridge-node.ts`, and
+  `src/electron/main/headless/server.ts` to lifecycle and transport responsibilities.
+- Replace source-text API parity with typed registry/capability parity.
+
+Validation must cover Electron, development web, headless, uploads, events, updater stubs, terminal
+RPC, shutdown, and authentication boundaries without changing external behaviour.
+
+### Phase 3 — Narrow AppShell ownership
+
+Status: pending.
+
+- Inventory the flat `AppShellController` surface by consuming feature.
+- Introduce grouped capability objects only where they express real feature ownership.
+- Move feature-local state and effects out of `useAppShellStateBundle` and universal action code.
+- Keep AppShell as a small composition/router boundary.
+- Preserve all current project selection, URL sync, terminal, takeover, optimistic update, and
+  refresh behaviour.
+
+Prefer several small vertical moves over replacing the whole controller at once.
+
+### Phase 4 — Enforce durable boundaries
+
+Status: pending.
+
+- Forbid Electron/preload imports through renderer implementation paths.
+- Prevent new stock-Node-to-Electron/renderer implementation dependencies.
+- Detect newly introduced local dependency cycles.
+- Clarify public feature entrypoints where current ownership is already stable.
+- Do not attempt a mass alias rewrite without a measurable ownership benefit.
+
+### Phase 5 — Reassess hotspots and duplication
+
+Status: pending.
+
+- Rerun file size, fan-in/fan-out, cycle, cast, and cross-boundary scans.
+- Inspect mixed-concern hotspots rather than mechanically splitting long cohesive files.
+- Check Composer, AppShell, sidebar, GitOps, headless transport, dev transport, desktop action
+  routing, shared contracts, and persistence repositories.
+- Extract only when the resulting owner and validation boundary are clearer.
+
+### Phase 6 — Complete feedback loops and final stabilisation
+
+Status: pending.
+
+- Add explicit type/build checks for Pages and the polls worker.
+- Run the complete app gate and packaged runtime/build smoke.
+- Perform disposable browser/Electron smoke checks for the unchanged core workflows.
+- Update the scorecard with before/after evidence and list only genuine remaining risks.
+
+## Completion log
+
+| Phase | Commit | Evidence |
+| --- | --- | --- |
+| 0 | This document's commit | Durable topology and hardening plan; no source changes. |
+
+## Stop conditions
+
+Stop and reassess instead of pushing through when:
+
+- a refactor requires changed copy, layout, interaction, persisted data, action semantics, or
+  transport responses;
+- a supposedly shared abstraction needs environment conditionals for unrelated capabilities;
+- a new central registry starts accumulating feature logic rather than registration;
+- a test protects current implementation shape rather than an independent contract;
+- runtime parity cannot be proved from direct control-flow comparison;
+- a phase grows beyond one coherent ownership change.

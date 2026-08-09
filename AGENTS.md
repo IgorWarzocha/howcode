@@ -9,3 +9,5 @@
 - Assume the dev app is already running; do not start it. Inspect Electron through CDP at `127.0.0.1:39217`.
 - Commits run `bun run ai:check`, including blocking React Doctor; keep its score at 100. Run the gate manually only when asked, when not committing, or while diagnosing a failed hook.
 - Do not relax Biome or TypeScript rules merely to make checks pass; fix the code or use a narrow, justified override.
+- Before architecture or agent-hardening work, read `docs/agent-native-hardening.md`; update its evidence and phase log when a phase completes or assumptions change.
+- Hardening is behaviour-preserving unless separately scoped: do not change product semantics, UI, UX, copy, layout, or interaction during structural passes.

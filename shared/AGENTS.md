@@ -1,3 +1,4 @@
 - `shared/` is a cross-runtime contract boundary; treat edits here as API changes.
 - Keep action definitions, payload contracts, coverage maps, IPC channels, and bridge capabilities synchronized.
 - Shared helpers stay pure and runtime-agnostic; verify Electron, desktop-service, headless, and renderer consumers after contract changes.
+- Keep leaf contracts acyclic. When domains need the same primitive model, extract it to the smallest named contract owner rather than making contract files import each other or adding a catch-all types file.

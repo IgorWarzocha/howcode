@@ -1,4 +1,5 @@
 - This boundary is shared by Electron and the dev/headless web host; keep it free of renderer assumptions.
+- Host-neutral desktop request behaviour has one typed composition boundary; Electron IPC, headless HTTP, and development web supply only capability and transport adapters.
 - The desktop service runs under a discovered stock Node, not Electron's Node. Preserve startup/restart/timeouts and typed request/event routing.
 - Keep `desktop-service-client.ts` as the class/Promise compatibility edge; `desktop-service/*` owns process generations, requests, and timeouts.
 - Desktop-service lifecycle reservation, startup, and finalization stay in their named modules; `lifecycle.ts` only composes the state machine.

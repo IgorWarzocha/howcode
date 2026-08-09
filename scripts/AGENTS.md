@@ -6,3 +6,4 @@
 - Keep OS-specific native packaging behavior in `scripts/service-native/platforms/*`. Do not scatter platform branches through the release orchestration scripts.
 - Launcher smoke tests must validate `app.asar` and the unpacked stock-Node runtime dependency tree.
 - Release validation recursively indexes merged artifact trees and rejects duplicate basenames; do not assume launcher archives are top-level.
+- Development web scripts own Vite, authentication, proxying, and child lifecycle only. Desktop operation behaviour must come from the same host-neutral typed handler composition as Electron and packaged headless transports.

@@ -1,4 +1,5 @@
 - `useAppShellController.ts` composes shell state, queries, effects, and commands; feature behavior belongs in the narrower modules it calls.
+- Keep its public surface grouped by feature capability as ownership is hardened; do not add feature-local state or another flat prop cluster to the root controller.
 - Mutable desktop actions flow through `useDesktopActionHandlers.ts`: contextualize and guard, apply optimistic state, invoke once, then reconcile through `post-effects/*`.
 - Register post-action behavior in the owning domain handler list under `post-effects/`; keep `controller-post-action-effects.ts` as composition only.
 - Keep the desktop event subscription stable. `desktop-event-handlers.ts` only routes typed events; event-specific cache and state work belongs in `desktop-events/*`.

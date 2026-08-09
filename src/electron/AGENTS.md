@@ -1,5 +1,6 @@
 - Electron owns the window/headless transports and process lifecycle, not backend product logic.
 - Keep preload narrow and typed through `shared/desktop-ipc.ts`; never expose raw Electron, filesystem, or process access to the renderer.
+- Preload imports cross-runtime types directly from `shared/*`, never through renderer compatibility exports.
 - Both windowed IPC and headless HTTP must delegate to the same desktop-service contracts and preserve equivalent behavior.
 - The backend runs through `src/desktop-host` under stock Node; do not pull `desktop/*` implementation into Electron bundles.
 - Signal npm-launcher readiness only after the main window has loaded; takeover children inherit the marker until one app reaches that point.
