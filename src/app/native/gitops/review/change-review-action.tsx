@@ -38,6 +38,7 @@ export function ChangeReviewAction({
         <button
           type="button"
           className={toolbarButtonClass}
+          data-load-remaining-context="true"
           onPointerDown={containPointerDown}
           onClick={(event) => {
             event.stopPropagation()
