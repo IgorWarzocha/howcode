@@ -12,7 +12,7 @@ const TERMINAL_DRAWER_OFFSET = 'min(28rem, calc(100% - 2.5rem))'
 const EMPTY_COMPOSER_TOP = '60%'
 
 function shouldShowDesktopTerminalDrawer(
-  activeView: AppShellController['state']['activeView'],
+  activeView: AppShellController['workspace']['state']['activeView'],
   terminalDrawerVisible: boolean,
   terminalDrawerOverlay: boolean,
 ) {
@@ -43,7 +43,7 @@ function getFloatingFooterStyle(input: {
 }
 
 function getFloatingFooterLayoutState(input: {
-  activeView: AppShellController['state']['activeView']
+  activeView: AppShellController['workspace']['state']['activeView']
   activeThreadData: Message[] | undefined
   activeThreadLoading: boolean
   showThreadFooter: boolean
@@ -60,7 +60,7 @@ function getFloatingFooterLayoutState(input: {
 }
 
 function getCodeWorkspaceFlags(input: {
-  activeView: AppShellController['state']['activeView']
+  activeView: AppShellController['workspace']['state']['activeView']
   hasSelectedProject: boolean
   selectedProjectId: string
 }) {
@@ -102,19 +102,17 @@ export function CodeWorkspaceView({
   const [composerOverlayHeight, setComposerOverlayHeight] = useState(0)
   const footerRef = useRef<HTMLElement>(null)
   const mainViewRef = useRef<HTMLElement>(null)
-  const {
-    handleAction,
-    handleLoadEarlierMessages,
-    handleCloseGitOpsView,
-    handleOpenGitOpsView,
-    handleOpenWorktreeDiffFile,
-    handleShowTakeoverTerminal,
-    handleToggleTerminal,
-    listComposerAttachmentEntries,
-    projectGitState,
-    shellState,
-    state,
-  } = controller
+  const handleAction = controller.desktop.handleAction
+  const handleLoadEarlierMessages = controller.thread.loadEarlierMessages
+  const handleCloseGitOpsView = controller.gitOps.close
+  const handleOpenGitOpsView = controller.gitOps.open
+  const handleOpenWorktreeDiffFile = controller.gitOps.openWorktreeFile
+  const handleShowTakeoverTerminal = controller.takeover.show
+  const handleToggleTerminal = controller.terminal.toggle
+  const listComposerAttachmentEntries = controller.composer.listAttachmentEntries
+  const projectGitState = controller.projects.gitState
+  const { shellState } = controller.desktop
+  const { state } = controller.workspace
   const { showWorkspaceFooter, showThreadFooter, showCodeSidebarFooter, showDiffInMainView } =
     getCodeWorkspaceFlags({
       activeView: state.activeView,
@@ -168,7 +166,7 @@ export function CodeWorkspaceView({
   const { centerDashboardFooter, centerThreadFooter, floatingWorkspaceFooter } =
     getFloatingFooterLayoutState({
       activeThreadData: activeThreadData?.messages,
-      activeThreadLoading: controller.activeThreadLoading,
+      activeThreadLoading: controller.thread.activeLoading,
       activeView: state.activeView,
       showThreadFooter,
     })
@@ -202,7 +200,7 @@ export function CodeWorkspaceView({
     showThreadFooter,
     terminalDrawerInsetStyle,
   })
-  const threadTimelineLoading = state.activeView === 'thread' && controller.activeThreadLoading
+  const threadTimelineLoading = state.activeView === 'thread' && controller.thread.activeLoading
 
   return (
     <CodeWorkspaceViewContent

@@ -4,11 +4,27 @@ import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/type
 import type { useGitOpsReviewController } from './useGitOpsReviewController'
 import type { useQueuedPromptRestore } from './useQueuedPromptRestore'
 
+export type CodeWorkspaceController = Pick<
+  AppShellController,
+  | 'composer'
+  | 'desktop'
+  | 'gitOps'
+  | 'inbox'
+  | 'navigation'
+  | 'projects'
+  | 'resourceScope'
+  | 'settings'
+  | 'takeover'
+  | 'terminal'
+  | 'thread'
+  | 'workspace'
+>
+
 export type CodeWorkspaceViewProps = {
-  controller: AppShellController
-  activeComposerState: AppShellController['activeComposerState']
-  activePiExtensionUiState: AppShellController['activePiExtensionUiState']
-  activeThreadData: AppShellController['activeThreadData']
+  controller: CodeWorkspaceController
+  activeComposerState: AppShellController['composer']['state']
+  activePiExtensionUiState: AppShellController['composer']['extensionUiState']
+  activeThreadData: AppShellController['thread']['activeData']
   composerProjectId: string
   currentProjectName: string
   diffBaseline: ProjectDiffBaseline
@@ -50,15 +66,15 @@ export type CodeWorkspaceContentProps = CodeWorkspaceViewProps &
     setComposerLayoutVersion: Dispatch<SetStateAction<number>>
     composerOverlayHeight: number
     setComposerOverlayHeight: Dispatch<SetStateAction<number>>
-    handleAction: AppShellController['handleAction']
-    handleLoadEarlierMessages: AppShellController['handleLoadEarlierMessages']
-    handleCloseGitOpsView: AppShellController['handleCloseGitOpsView']
-    handleOpenGitOpsView: AppShellController['handleOpenGitOpsView']
-    handleShowTakeoverTerminal: AppShellController['handleShowTakeoverTerminal']
-    handleToggleTerminal: AppShellController['handleToggleTerminal']
-    listComposerAttachmentEntries: AppShellController['listComposerAttachmentEntries']
-    shellState: AppShellController['shellState']
-    state: AppShellController['state']
-    projectGitState: AppShellController['projectGitState']
+    handleAction: AppShellController['desktop']['handleAction']
+    handleLoadEarlierMessages: AppShellController['thread']['loadEarlierMessages']
+    handleCloseGitOpsView: AppShellController['gitOps']['close']
+    handleOpenGitOpsView: AppShellController['gitOps']['open']
+    handleShowTakeoverTerminal: AppShellController['takeover']['show']
+    handleToggleTerminal: AppShellController['terminal']['toggle']
+    listComposerAttachmentEntries: AppShellController['composer']['listAttachmentEntries']
+    shellState: AppShellController['desktop']['shellState']
+    state: AppShellController['workspace']['state']
+    projectGitState: AppShellController['projects']['gitState']
     parentBranchName: string | null
   }

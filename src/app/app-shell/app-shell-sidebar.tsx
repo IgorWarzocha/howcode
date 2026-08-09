@@ -2,6 +2,20 @@ import { Sidebar } from '@howcode/sidebar'
 import type { AppSettings } from '../desktop/types'
 import type { AppShellController } from './useAppShellController'
 
+type AppShellSidebarController = Pick<
+  AppShellController,
+  | 'app'
+  | 'chat'
+  | 'desktop'
+  | 'inbox'
+  | 'navigation'
+  | 'projects'
+  | 'resourceScope'
+  | 'terminal'
+  | 'thread'
+  | 'workspace'
+>
+
 const FALLBACK_APP_SETTINGS = {
   chatModel: null,
   chatThinkingLevel: null,
@@ -41,63 +55,64 @@ export function AppShellSidebar({
   onToggle,
 }: {
   compactMode: boolean
-  controller: AppShellController
+  controller: AppShellSidebarController
   onToggle: () => void
 }) {
-  const { state } = controller
+  const { state } = controller.workspace
   const projectScopeLockActive =
-    controller.extensionsProjectScopeActive || controller.skillsProjectScopeActive
+    controller.resourceScope.extensionsActive || controller.resourceScope.skillsActive
   return (
     <Sidebar
-      projects={controller.projects}
-      inboxThreads={controller.inboxThreads}
-      inboxLoading={controller.inboxLoading}
-      chatSidebarLoading={controller.chatSidebarLoading}
-      projectsLoading={controller.shellLoading}
-      appLaunchedAtMs={controller.appLaunchedAtMs}
-      appSettings={controller.shellState?.appSettings ?? FALLBACK_APP_SETTINGS}
-      projectGitState={controller.projectGitState}
-      sidebarVisibleProjectIds={controller.shellState?.sidebarVisibleProjectIds}
-      chatSidebarState={controller.chatSidebarState}
+      projects={controller.projects.items}
+      inboxThreads={controller.inbox.threads}
+      inboxLoading={controller.inbox.loading}
+      chatSidebarLoading={controller.chat.loading}
+      projectsLoading={controller.desktop.shellLoading}
+      appLaunchedAtMs={controller.app.launchedAtMs}
+      appSettings={controller.desktop.shellState?.appSettings ?? FALLBACK_APP_SETTINGS}
+      projectGitState={controller.projects.gitState}
+      sidebarVisibleProjectIds={controller.desktop.shellState?.sidebarVisibleProjectIds}
+      chatSidebarState={controller.chat.state}
       activeView={state.activeView}
-      protectedProjectId={controller.shellState?.resolvedCwd ?? controller.shellState?.cwd ?? null}
+      protectedProjectId={
+        controller.desktop.shellState?.resolvedCwd ?? controller.desktop.shellState?.cwd ?? null
+      }
       selectedInboxSessionPath={state.selectedInboxSessionPath}
       selectedProjectId={state.selectedProjectId}
       selectedThreadId={state.selectedThreadId}
-      selectedChatGroupId={controller.selectedChatGroupId}
+      selectedChatGroupId={controller.chat.selectedGroupId}
       settingsOpen={state.settingsOpen}
       projectScopeLockActive={projectScopeLockActive}
-      terminalRunningWorkspaceIds={controller.terminalRunningWorkspaceIds}
-      terminalRunningSessionPaths={controller.terminalRunningSessionPaths}
-      collapsedProjectIds={controller.collapsedProjectIds}
-      onAction={controller.handleAction}
-      onShowView={controller.handleShowView}
-      onToggleSettings={controller.handleToggleSettings}
+      terminalRunningWorkspaceIds={controller.terminal.runningWorkspaceIds}
+      terminalRunningSessionPaths={controller.terminal.runningSessionPaths}
+      collapsedProjectIds={controller.projects.collapsedIds}
+      onAction={controller.desktop.handleAction}
+      onShowView={controller.navigation.showView}
+      onToggleSettings={controller.navigation.toggleSettings}
       onToggleSidebar={onToggle}
-      onOpenExtensionsView={() => controller.handleShowView('extensions')}
-      onOpenAbout={controller.handleShowLanding}
-      onOpenSkillsView={() => controller.handleShowView('skills')}
-      onOpenSettingsPanel={(target) => controller.handleShowView('settings', target)}
-      onOpenArchivedThreads={() => controller.handleShowView('archived')}
-      onDismissInboxThread={controller.handleDismissInboxThread}
-      onCreateChatGroup={controller.handleCreateChatGroup}
-      onSelectChatGroup={controller.handleSelectChatGroup}
+      onOpenExtensionsView={() => controller.navigation.showView('extensions')}
+      onOpenAbout={controller.navigation.showLanding}
+      onOpenSkillsView={() => controller.navigation.showView('skills')}
+      onOpenSettingsPanel={(target) => controller.navigation.showView('settings', target)}
+      onOpenArchivedThreads={() => controller.navigation.showView('archived')}
+      onDismissInboxThread={controller.inbox.dismiss}
+      onCreateChatGroup={controller.chat.createGroup}
+      onSelectChatGroup={controller.chat.selectGroup}
       onNewChat={(groupId) => {
-        controller.handleSelectChatGroup(groupId)
-        void controller.handleAction('thread.new', { chatGroupId: groupId })
+        controller.chat.selectGroup(groupId)
+        void controller.desktop.handleAction('thread.new', { chatGroupId: groupId })
       }}
-      onRefreshChatSidebar={controller.refreshChatSidebarState}
-      onProjectSelect={controller.handleProjectSelect}
-      onProjectPrimeSelection={controller.handleSetSelectedProject}
+      onRefreshChatSidebar={controller.chat.refresh}
+      onProjectSelect={controller.projects.select}
+      onProjectPrimeSelection={controller.projects.primeSelection}
       onProjectTargetSelected={() => {
-        if (state.activeView === 'extensions')
-          controller.handleSetExtensionsProjectScopeActive(true)
-        if (state.activeView === 'skills') controller.handleSetSkillsProjectScopeActive(true)
+        if (state.activeView === 'extensions') controller.resourceScope.setExtensionsActive(true)
+        if (state.activeView === 'skills') controller.resourceScope.setSkillsActive(true)
       }}
-      onLoadProjectThreads={controller.handleLoadProjectThreads}
-      onSelectInboxThread={controller.handleSelectInboxThread}
-      onThreadOpen={controller.handleThreadOpen}
-      onToggleProjectCollapse={controller.handleToggleProjectCollapse}
+      onLoadProjectThreads={controller.projects.loadThreads}
+      onSelectInboxThread={controller.inbox.select}
+      onThreadOpen={controller.thread.open}
+      onToggleProjectCollapse={controller.projects.toggleCollapse}
       compactMode={compactMode}
     />
   )

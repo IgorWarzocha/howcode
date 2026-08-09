@@ -32,8 +32,8 @@ function eventTargetIsComposer(target: EventTarget | null) {
 function dictationShortcutIsAllowed(event: KeyboardEvent, runtime: KeybindingRuntime) {
   return (
     eventTargetIsComposer(event.target) ||
-    runtime.appController.state.activeView === 'gitops' ||
-    runtime.appController.state.activeView === 'inbox'
+    runtime.appController.workspace.state.activeView === 'gitops' ||
+    runtime.appController.workspace.state.activeView === 'inbox'
   )
 }
 
@@ -46,7 +46,7 @@ export function appShortcutCanRunFromTextInput(
   // only registered accelerators reach this point. Changed-files stays GitOps-panel scoped.
   if (commandId === 'gitops.toggleChangedFiles') return false
   if (commandId === 'dictation.toggle') return dictationShortcutIsAllowed(event, runtime)
-  if (commandId === 'terminal.clear') return runtime.appController.state.terminalVisible
+  if (commandId === 'terminal.clear') return runtime.appController.workspace.state.terminalVisible
   return true
 }
 
@@ -66,7 +66,7 @@ export function appLevelShortcutsAreBlocked(
   commandId: KeybindingCommandId,
   runtime: KeybindingRuntime,
 ) {
-  const { state } = runtime.appController
+  const { state } = runtime.appController.workspace
   const mode = state.takeoverVisible ? 'pi-tui' : 'desktop'
   if (!keybindingCommandIsActiveInMode(commandId, mode)) return true
   if (commandId === 'sidebar.toggle' || commandId === 'app.commandPalette') {

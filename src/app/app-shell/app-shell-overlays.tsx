@@ -9,7 +9,7 @@ import type { AppShellController } from './useAppShellController'
 const TERMINAL_DRAWER_OFFSET = 'min(28rem, calc(100% - 2.5rem))'
 
 type AppShellOverlaysProps = {
-  controller: AppShellController
+  controller: Pick<AppShellController, 'gitOps' | 'projects' | 'takeover' | 'terminal'>
   composerProjectId: string
   diffBaseline: ProjectDiffBaseline
   takeoverPresent: boolean
@@ -83,14 +83,14 @@ export function AppShellOverlays({
   onSetDiffBaseline,
 }: AppShellOverlaysProps) {
   const controllerRef = useLatestRef(controller)
-  const { projectGitState } = controller
+  const projectGitState = controller.projects.gitState
 
   const handleReturnToDesktopFromTakeover = useCallback(() => {
-    controllerRef.current.handleReturnToDesktopFromTakeover()
+    controllerRef.current.takeover.returnToDesktop()
   }, [controllerRef])
 
   const handleToggleTerminal = useCallback(() => {
-    controllerRef.current.handleToggleTerminal()
+    controllerRef.current.terminal.toggle()
   }, [controllerRef])
   const sidebarButtonProps = {
     sidebarCollapsed,

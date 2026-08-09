@@ -7,9 +7,9 @@ import type { AppShellController } from './useAppShellController'
 
 type AppShellWorkspaceProps = {
   controller: AppShellController
-  activeComposerState: AppShellController['activeComposerState']
-  activePiExtensionUiState: AppShellController['activePiExtensionUiState']
-  activeThreadData: AppShellController['activeThreadData']
+  activeComposerState: AppShellController['composer']['state']
+  activePiExtensionUiState: AppShellController['composer']['extensionUiState']
+  activeThreadData: AppShellController['thread']['activeData']
   composerProjectId: string
   currentProjectName: string
   diffBaseline: ProjectDiffBaseline
@@ -46,7 +46,7 @@ export function AppShellWorkspace({
   sidebarCompactMode,
   onToggleSidebar,
 }: AppShellWorkspaceProps) {
-  const { state } = controller
+  const { state } = controller.workspace
 
   if (state.activeView === 'chat') {
     return (

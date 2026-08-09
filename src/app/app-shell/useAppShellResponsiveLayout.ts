@@ -21,9 +21,9 @@ export function useAppShellResponsiveLayout(controller: AppShellController) {
       const nextCompactMode = windowUsesCompactSidebar()
       const enteredCompactMode = !previousWindowCompactModeRef.current && nextCompactMode
       previousWindowCompactModeRef.current = nextCompactMode
-      if (enteredCompactMode && controllerRef.current.state.terminalVisible) {
+      if (enteredCompactMode && controllerRef.current.workspace.state.terminalVisible) {
         setTerminalHiddenByCompactResize(true)
-        controllerRef.current.handleCloseTerminalDrawer()
+        controllerRef.current.terminal.closeDrawer()
       }
       setSidebarCompactMode(nextCompactMode)
     }
@@ -37,13 +37,13 @@ export function useAppShellResponsiveLayout(controller: AppShellController) {
   }, [sidebarCompactMode])
 
   useEffect(() => {
-    if (!controller.state.terminalVisible) setTerminalHiddenByCompactResize(false)
-  }, [controller.state.terminalVisible])
+    if (!controller.workspace.state.terminalVisible) setTerminalHiddenByCompactResize(false)
+  }, [controller.workspace.state.terminalVisible])
 
   useEffect(() => {
     if (!sidebarOverlayOpen) return
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || controllerRef.current.state.settingsOpen) return
+      if (event.key !== 'Escape' || controllerRef.current.workspace.state.settingsOpen) return
       event.preventDefault()
       event.stopImmediatePropagation()
       setSidebarOverlayOpen(false)
@@ -69,8 +69,8 @@ export function useAppShellResponsiveLayout(controller: AppShellController) {
   const handleFocusComposer = useCallback(() => {
     if (!sidebarCompactMode) return
     setSidebarOverlayOpen(false)
-    if (controllerRef.current.state.terminalVisible) {
-      controllerRef.current.handleCloseTerminalDrawer()
+    if (controllerRef.current.workspace.state.terminalVisible) {
+      controllerRef.current.terminal.closeDrawer()
     }
   }, [controllerRef, sidebarCompactMode])
 

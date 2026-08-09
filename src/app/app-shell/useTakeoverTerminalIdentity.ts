@@ -6,7 +6,7 @@ import {
 import type { AppShellController } from './useAppShellController'
 
 export function useTakeoverTerminalIdentity(input: {
-  activeView: AppShellController['state']['activeView']
+  activeView: AppShellController['workspace']['state']['activeView']
   composerProjectId: string
   takeoverPresent: boolean
   takeoverVisible: boolean

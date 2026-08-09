@@ -14,7 +14,8 @@ type AppShellLayoutProps = {
 }
 
 export function AppShellLayout({ controller }: AppShellLayoutProps) {
-  const { composerProjectId, state } = controller
+  const composerProjectId = controller.composer.projectId
+  const { state } = controller.workspace
   const {
     controllerRef,
     handleFocusComposer,
@@ -40,8 +41,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
       ? terminalDrawerVisible
       : animatedTerminalDrawerPresent
   const parentBranchName =
-    controller.shellState?.projects.find((project) => project.id === composerProjectId)?.worktree
-      ?.parentBranchName ?? null
+    controller.desktop.shellState?.projects.find((project) => project.id === composerProjectId)
+      ?.worktree?.parentBranchName ?? null
   const { diffBaseline, diffRenderMode, handleSetDiffBaseline, handleSetDiffRenderMode } =
     useAppShellDiffPreferences({
       activeThreadId,
@@ -62,8 +63,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     threadId: activeThreadId,
   })
   const handleOpenGitOpsFromTakeover = useCallback(async () => {
-    controllerRef.current.handleOpenGitOpsView()
-    await controllerRef.current.handleCloseTakeoverTerminal({
+    controllerRef.current.gitOps.open()
+    await controllerRef.current.takeover.close({
       preserveSessionOverride: true,
       refreshThread: false,
     })
@@ -71,7 +72,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
 
   useAppKeybindings({
     controller,
-    keybindings: controller.shellState?.appSettings.keybindings ?? {},
+    keybindings: controller.desktop.shellState?.appSettings.keybindings ?? {},
     onFocusComposer: handleFocusComposer,
     onFocusTerminal: handleFocusTerminal,
     onOpenSidebar: handleOpenSidebar,

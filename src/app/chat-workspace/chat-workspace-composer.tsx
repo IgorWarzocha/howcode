@@ -9,6 +9,7 @@ import type { AppSettings, ProjectDiffBaseline } from '../desktop/types'
 import type { Message } from '../types'
 import { cn } from '../utils/cn'
 import { WorkspaceComposerDock } from '../workspace-shell/workspace-composer-dock'
+import type { ChatWorkspaceController } from './chat-workspace-contract'
 import type { ChatArtifactDrawerState } from './useChatArtifactDrawerState'
 
 const FALLBACK_APP_SETTINGS = {
@@ -45,21 +46,21 @@ const FALLBACK_APP_SETTINGS = {
 } satisfies AppSettings
 
 export type ChatWorkspaceComposerProps = {
-  activeComposerState: AppShellController['activeComposerState']
-  activePiExtensionUiState: AppShellController['activePiExtensionUiState']
-  activeThreadData: AppShellController['activeThreadData']
+  activeComposerState: AppShellController['composer']['state']
+  activePiExtensionUiState: AppShellController['composer']['extensionUiState']
+  activeThreadData: AppShellController['thread']['activeData']
   artifactDrawer: ChatArtifactDrawerState
   composerProjectId: string
   diffBaseline: ProjectDiffBaseline
   draftChatGroupId: string | null
   footerRef: RefObject<HTMLElement | null>
-  handleAction: AppShellController['handleAction']
-  handleShowTakeoverTerminal: AppShellController['handleShowTakeoverTerminal']
-  handleToggleTerminal: AppShellController['handleToggleTerminal']
+  handleAction: AppShellController['desktop']['handleAction']
+  handleShowTakeoverTerminal: AppShellController['takeover']['show']
+  handleToggleTerminal: AppShellController['terminal']['toggle']
   hasConversation: boolean
   hasConversationLayout: boolean
   hasPersistedChatSession: boolean
-  listComposerAttachmentEntries: AppShellController['listComposerAttachmentEntries']
+  listComposerAttachmentEntries: AppShellController['composer']['listAttachmentEntries']
   mainViewRef: RefObject<HTMLElement | null>
   markRestoredQueuedPromptApplied: ReturnType<
     typeof useQueuedPromptRestore
@@ -74,13 +75,13 @@ export type ChatWorkspaceComposerProps = {
     typeof useQueuedPromptRestore
   >['scopedRestoredQueuedPrompt']
   setComposerOverlayHeight: Dispatch<SetStateAction<number>>
-  shellState: AppShellController['shellState']
+  shellState: AppShellController['desktop']['shellState']
   sidebarAutoHidden: boolean
   sidebarCollapsed: boolean
   sidebarCompactMode: boolean
-  state: AppShellController['state']
+  state: AppShellController['workspace']['state']
   terminalSessionPath: string | null
-  controller: AppShellController
+  controller: ChatWorkspaceController
   onToggleSidebar: () => void
 }
 
@@ -123,7 +124,7 @@ function getChatGroupId({
   controller,
 }: ChatWorkspaceComposerProps) {
   if (hasPersistedChatSession) return null
-  return draftChatGroupId ?? controller.selectedChatGroupId
+  return draftChatGroupId ?? controller.chat.selectedGroupId
 }
 
 function getToggleArtifacts({ hasConversationLayout, artifactDrawer }: ChatWorkspaceComposerProps) {
@@ -207,7 +208,7 @@ function ChatComposer(props: ChatWorkspaceComposerProps) {
       onOpenGitOpsView={() => {
         /* Already in chat workspace. */
       }}
-      onOpenSettingsView={(target) => controller.handleShowView('settings', target)}
+      onOpenSettingsView={(target) => controller.navigation.showView('settings', target)}
       onRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
       onToggleTerminal={handleToggleTerminal}
       onToggleArtifacts={getToggleArtifacts(props)}

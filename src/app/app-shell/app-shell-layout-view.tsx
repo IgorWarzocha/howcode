@@ -88,7 +88,7 @@ function CompactSidebarPanel(props: AppShellLayoutViewProps) {
 
 function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
   const { mainSectionRef, controller, workspaceContentClass } = props
-  const takeoverVisible = controller.state.takeoverVisible
+  const takeoverVisible = controller.workspace.state.takeoverVisible
   return (
     <section
       ref={mainSectionRef}
@@ -101,11 +101,11 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
         >
           <AppShellWorkspace
             controller={controller}
-            activeComposerState={controller.activeComposerState}
-            activePiExtensionUiState={controller.activePiExtensionUiState}
-            activeThreadData={controller.activeThreadData}
-            composerProjectId={controller.composerProjectId}
-            currentProjectName={controller.currentProjectName}
+            activeComposerState={controller.composer.state}
+            activePiExtensionUiState={controller.composer.extensionUiState}
+            activeThreadData={controller.thread.activeData}
+            composerProjectId={controller.composer.projectId}
+            currentProjectName={controller.projects.currentName}
             diffBaseline={props.diff.baseline}
             diffRenderMode={props.diff.renderMode}
             terminalDrawerVisible={props.terminal.drawerVisible}
@@ -121,7 +121,7 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
         </div>
         <AppShellOverlays
           controller={controller}
-          composerProjectId={controller.composerProjectId}
+          composerProjectId={controller.composer.projectId}
           diffBaseline={props.diff.baseline}
           takeoverPresent={props.takeover.present}
           takeoverVisible={takeoverVisible}
@@ -157,11 +157,11 @@ function TerminalDrawerLayer(props: AppShellLayoutViewProps) {
         className={`motion-terminal-drawer absolute inset-0 min-h-0 min-w-0 ${props.terminal.drawerVisible ? 'pointer-events-auto' : 'pointer-events-none'}`}
       >
         <TerminalPanel
-          projectId={controller.composerProjectId}
+          projectId={controller.composer.projectId}
           sessionPath={props.terminal.sessionPath}
-          onClose={controller.handleCloseTerminalDrawer}
-          hoverToFocus={controller.shellState?.appSettings.hoverToFocus ?? true}
-          hoverToBlur={controller.shellState?.appSettings.hoverToBlur ?? false}
+          onClose={controller.terminal.closeDrawer}
+          hoverToFocus={controller.desktop.shellState?.appSettings.hoverToFocus ?? true}
+          hoverToBlur={controller.desktop.shellState?.appSettings.hoverToBlur ?? false}
         />
       </div>
     </div>
@@ -170,7 +170,7 @@ function TerminalDrawerLayer(props: AppShellLayoutViewProps) {
 
 function AppShellToast(props: AppShellLayoutViewProps) {
   const { controller } = props
-  if (!controller.toast) return null
+  if (!controller.app.toast) return null
   return (
     <div
       className={cn(
@@ -179,7 +179,7 @@ function AppShellToast(props: AppShellLayoutViewProps) {
         appToneTextClass,
       )}
     >
-      {controller.toast}
+      {controller.app.toast}
     </div>
   )
 }

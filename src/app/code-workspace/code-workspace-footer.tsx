@@ -95,7 +95,7 @@ function CodeGitOpsComposer(props: CodeWorkspaceContentProps) {
         onLayoutChange={() => setComposerLayoutVersion((current: number) => current + 1)}
         onAction={handleAction}
         onBack={handleCloseGitOpsView}
-        onOpenSettingsView={(target) => controller.handleShowView('settings', target)}
+        onOpenSettingsView={(target) => controller.navigation.showView('settings', target)}
       />
     </div>
   )
@@ -176,7 +176,7 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
       workspaceFooterRef={footerRef}
       onOpenTakeoverTerminal={handleShowTakeoverTerminal}
       onOpenGitOpsView={handleOpenGitOpsView}
-      onOpenSettingsView={(target) => controller.handleShowView('settings', target)}
+      onOpenSettingsView={(target) => controller.navigation.showView('settings', target)}
       onRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
       onToggleTerminal={handleToggleTerminal}
       terminalVisible={state.terminalVisible}

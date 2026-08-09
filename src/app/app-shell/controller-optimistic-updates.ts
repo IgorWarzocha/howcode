@@ -52,3 +52,25 @@ export function applyOptimisticPinUpdate(
     getOptimisticallyPinnedShellState(currentState ?? null, action, payload),
   )
 }
+
+export function applyOptimisticDesktopAction(
+  queryClient: QueryClient,
+  action: DesktopAction,
+  payload: ActionPayload,
+) {
+  switch (action) {
+    case 'settings.update':
+      return applyOptimisticSettingsUpdate(queryClient, payload)
+    case 'pi-settings.update':
+      return applyOptimisticPiSettingsUpdate(queryClient, payload)
+    case 'project.edit-name':
+      return applyOptimisticProjectRename(queryClient, payload)
+    case 'thread.rename':
+      return applyOptimisticThreadRename(queryClient, payload)
+    case 'thread.pin':
+    case 'project.pin':
+      return applyOptimisticPinUpdate(queryClient, action, payload)
+    default:
+      return undefined
+  }
+}

@@ -4,7 +4,7 @@ import type { AppShellController } from '../app-shell/useAppShellController'
 import type { ProjectFileWriteRequest } from '../desktop/types'
 
 export function useGitOpsFileActions(
-  handleAction: AppShellController['handleAction'],
+  handleAction: AppShellController['desktop']['handleAction'],
 ): GitOpsFileActions {
   const write = useCallback(
     async (request: ProjectFileWriteRequest) => {

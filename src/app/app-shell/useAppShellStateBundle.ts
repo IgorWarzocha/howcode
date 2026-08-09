@@ -1,59 +1,27 @@
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { useReducer, useState } from 'react'
-import type {
-  ArchivedThread,
-  ComposerState,
-  PiExtensionUiState,
-  ProjectGitState,
-  ThreadData,
-} from '../desktop/types'
 import { createInitialWorkspaceState, workspaceReducer } from '../state/workspace'
+import { useAppShellComposerState } from './useAppShellComposerState'
+import { useAppShellProjectState } from './useAppShellProjectState'
+import { useAppShellResourceScopeState } from './useAppShellResourceScopeState'
+import { useAppShellThreadState } from './useAppShellThreadState'
 
 export function useAppShellStateBundle() {
   const [appLaunchedAtMs] = useState(() => Date.now())
   const [state, dispatch] = useReducer(workspaceReducer, [], createInitialWorkspaceState)
-  const [archivedThreads, setArchivedThreads] = useState<ArchivedThread[]>([])
-  const [composerState, setComposerState] = useState<ComposerState | null>(null)
-  const [piExtensionUiStateBySession, setPiExtensionUiStateBySession] = useState<
-    Record<string, PiExtensionUiState>
-  >({})
-  const [liveThreadData, setLiveThreadData] = useState<ThreadData | null>(null)
-  const [projectGitState, setProjectGitState] = useState<ProjectGitState | null>(null)
-  const [projectGitLoading, setProjectGitLoading] = useState(false)
-  const [extensionsProjectScopeActive, setExtensionsProjectScopeActive] = useState(false)
-  const [skillsProjectScopeActive, setSkillsProjectScopeActive] = useState(false)
   const [settingsOpenTarget, setSettingsOpenTarget] = useState<SettingsOpenTarget | null>(null)
-  const [threadRefreshKey, setThreadRefreshKey] = useState(0)
-  const [threadHistoryCompactions, setThreadHistoryCompactions] = useState(0)
-  const [threadQueryDeferred, setThreadQueryDeferred] = useState(false)
+  const composer = useAppShellComposerState()
+  const projects = useAppShellProjectState()
+  const resourceScope = useAppShellResourceScopeState()
+  const thread = useAppShellThreadState()
 
   return {
     appLaunchedAtMs,
-    archivedThreads,
-    composerState,
-    dispatch,
-    extensionsProjectScopeActive,
-    liveThreadData,
-    piExtensionUiStateBySession,
-    projectGitLoading,
-    projectGitState,
-    setArchivedThreads,
-    setComposerState,
-    setExtensionsProjectScopeActive,
-    setLiveThreadData,
-    setPiExtensionUiStateBySession,
-    setProjectGitLoading,
-    setProjectGitState,
-    setSettingsOpenTarget,
-    setSkillsProjectScopeActive,
-    setThreadHistoryCompactions,
-    setThreadQueryDeferred,
-    setThreadRefreshKey,
-    settingsOpenTarget,
-    skillsProjectScopeActive,
-    state,
-    threadHistoryCompactions,
-    threadQueryDeferred,
-    threadRefreshKey,
+    composer,
+    projects,
+    resourceScope,
+    settings: { openTarget: settingsOpenTarget, setOpenTarget: setSettingsOpenTarget },
+    thread,
+    workspace: { dispatch, state },
   }
 }

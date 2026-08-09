@@ -24,9 +24,9 @@ export function useGitOpsReviewController({
 }: {
   baseline: ProjectDiffBaseline | null
   composerProjectId: string
-  handleAction: AppShellController['handleAction']
+  handleAction: AppShellController['desktop']['handleAction']
   handleOpenWorktreeDiffFile: (filePath: string) => void
-  shellState: AppShellController['shellState']
+  shellState: AppShellController['desktop']['shellState']
   includeUntracked: boolean
 }): GitOpsReviewController {
   const [comments, setComments] = useState<SavedReviewComment[]>([])

@@ -8,6 +8,7 @@ import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/type
 import { WORKSPACE_EDGE_PADDING_CLASS } from '../ui/layout'
 import { cn } from '../utils/cn'
 import { ChatComposerDock, type ChatWorkspaceComposerProps } from './chat-workspace-composer'
+import type { ChatWorkspaceController } from './chat-workspace-contract'
 import { useChatArtifactDrawerState } from './useChatArtifactDrawerState'
 
 const ArtifactPanel = lazy(() =>
@@ -17,10 +18,10 @@ const ArtifactPanel = lazy(() =>
 )
 
 type ChatWorkspaceViewProps = {
-  controller: AppShellController
-  activeComposerState: AppShellController['activeComposerState']
-  activePiExtensionUiState: AppShellController['activePiExtensionUiState']
-  activeThreadData: AppShellController['activeThreadData']
+  controller: ChatWorkspaceController
+  activeComposerState: AppShellController['composer']['state']
+  activePiExtensionUiState: AppShellController['composer']['extensionUiState']
+  activeThreadData: AppShellController['thread']['activeData']
   composerProjectId: string
   diffBaseline: ProjectDiffBaseline
   diffRenderMode: ProjectDiffRenderMode
@@ -41,7 +42,7 @@ type ChatWorkspaceContentProps = ChatWorkspaceViewProps &
     shouldShowConversationContent: boolean
     composerLayoutVersion: number
     composerOverlayHeight: number
-    handleLoadEarlierMessages: AppShellController['handleLoadEarlierMessages']
+    handleLoadEarlierMessages: AppShellController['thread']['loadEarlierMessages']
     conversationId: string | null | undefined
   }
 
@@ -67,7 +68,7 @@ function ChatWorkspaceMain({
         composerOverlayHeight={composerOverlayHeight}
         sessionPath={activeThreadData?.sessionPath ?? null}
         loading={
-          controller.activeThreadLoading || (hasConversation && !shouldShowConversationContent)
+          controller.thread.activeLoading || (hasConversation && !shouldShowConversationContent)
         }
         onLoadEarlierMessages={handleLoadEarlierMessages}
         onLoadAroundMessage={handleLoadEarlierMessages}
@@ -190,15 +191,13 @@ export function ChatWorkspaceView({
   const rootRef = useRef<HTMLDivElement>(null)
   const footerRef = useRef<HTMLElement>(null)
   const mainViewRef = useRef<HTMLElement>(null)
-  const {
-    handleAction,
-    handleLoadEarlierMessages,
-    handleShowTakeoverTerminal,
-    handleToggleTerminal,
-    listComposerAttachmentEntries,
-    shellState,
-    state,
-  } = controller
+  const handleAction = controller.desktop.handleAction
+  const handleLoadEarlierMessages = controller.thread.loadEarlierMessages
+  const handleShowTakeoverTerminal = controller.takeover.show
+  const handleToggleTerminal = controller.terminal.toggle
+  const listComposerAttachmentEntries = controller.composer.listAttachmentEntries
+  const { shellState } = controller.desktop
+  const { state } = controller.workspace
   const footerHeight = useWorkspaceFooterHeight({ footerRef, visible: true })
   const conversationId = activeThreadData?.sessionPath ?? terminalSessionPath
   const hasConversation = (activeThreadData?.messages.length ?? 0) > 0

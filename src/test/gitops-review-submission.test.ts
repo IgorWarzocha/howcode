@@ -48,8 +48,8 @@ function createHarness() {
 
 function asHandleAction(
   implementation: () => Promise<DesktopActionResult | null>,
-): AppShellController['handleAction'] {
-  return vi.fn(implementation) as unknown as AppShellController['handleAction']
+): AppShellController['desktop']['handleAction'] {
+  return vi.fn(implementation) as unknown as AppShellController['desktop']['handleAction']
 }
 
 describe('GitOps review submission', () => {

@@ -154,6 +154,9 @@ Target shape:
 
 Severity: high.
 
+Resolved in Phase 3. AppShell now exposes named capability groups, feature views declare the groups
+they consume, and feature-local state/action stages have narrow owners.
+
 Relevant files:
 
 - `src/app/app-shell/useAppShellController.ts`
@@ -297,7 +300,7 @@ TypeScript lanes and a standalone development-bridge bundle pass.
 
 ### Phase 3 — Narrow AppShell ownership
 
-Status: pending.
+Status: complete.
 
 - Inventory the flat `AppShellController` surface by consuming feature.
 - Introduce grouped capability objects only where they express real feature ownership.
@@ -307,6 +310,13 @@ Status: pending.
   refresh behaviour.
 
 Prefer several small vertical moves over replacing the whole controller at once.
+
+Completion: this phase's commit. The flat controller became 13 named capability groups; sidebar,
+chat, CodeWorkspace, and overlays declare narrowed group contracts. Thread, Composer, project, and
+resource-scope state moved from the 29-field state bag into four owned hooks, leaving the bundle as
+a 27-line composer. Desktop action preparation, optimistic routing, and error policy moved out of
+the universal hook, reducing it from 310 to 190 lines while retaining one invocation and the same
+post-effect order.
 
 ### Phase 4 — Enforce durable boundaries
 
@@ -344,6 +354,7 @@ Status: pending.
 | 0 | This document's commit | Durable topology and hardening plan; no source changes. |
 | 1 | This phase's commit | Six strongly connected groups removed; zero local cycles across 857 production files. |
 | 2 | This phase's commit | One typed request implementation across Electron, headless, and development; dev bridge reduced by 228 lines. |
+| 3 | This phase's commit | Flat shell controller replaced by narrowed feature capabilities; state and action stages have named owners. |
 
 ## Stop conditions
 
