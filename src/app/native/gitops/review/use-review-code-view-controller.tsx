@@ -3,6 +3,7 @@ import { type RefObject, useCallback, useMemo } from 'react'
 import type { GitOpsAnnotationMetadata } from './pierre-review-adapter'
 import { ReviewAnnotationCard, type ReviewAnnotationController } from './review-annotation-card'
 import type { ReviewCodeViewController } from './review-code-view'
+import type { ReviewTarget } from './review-model'
 import type { useDiffReviewState } from './use-diff-review-state'
 
 type DiffReviewState = ReturnType<typeof useDiffReviewState>
@@ -47,10 +48,19 @@ export function useReviewCodeViewController({
     ),
     [annotationController],
   )
+  const rejectedTargets = useMemo(() => {
+    const targets: ReviewTarget[] = []
+    for (const comment of comments.items) {
+      if (comment.purpose === 'rejection') targets.push(comment.target)
+    }
+    if (draft.comment?.purpose === 'rejection') targets.push(draft.comment.target)
+    return targets
+  }, [comments.items, draft.comment])
 
   return useMemo(
     () => ({
       annotationsByFile,
+      rejectedTargets,
       interaction: {
         cancel: interaction.cancel,
         select: interaction.select,
@@ -62,6 +72,7 @@ export function useReviewCodeViewController({
     [
       annotationsByFile,
       draft.open,
+      rejectedTargets,
       interaction.cancel,
       interaction.select,
       interaction.target,

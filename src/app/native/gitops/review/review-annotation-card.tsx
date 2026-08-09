@@ -53,6 +53,7 @@ export function ReviewAnnotationCard({
   }
 
   if (metadata.kind === 'draft') {
+    const rejection = metadata.purpose === 'rejection'
     return (
       <div
         ref={controller.draft.cardRef}
@@ -61,7 +62,7 @@ export function ReviewAnnotationCard({
       >
         <div className="flex items-center justify-between gap-2">
           <div className={cn('min-w-0 truncate', appTypeMetaStrongClass, appToneMutedClass)}>
-            Add comment ·{' '}
+            {rejection ? 'Explain rejection' : 'Add comment'} ·{' '}
             {controller.draft.comment
               ? describeReviewTarget(controller.draft.comment.target)
               : 'Line comment'}
@@ -80,7 +81,7 @@ export function ReviewAnnotationCard({
                 <X size={14} />
               </button>
             </Tooltip>
-            <Tooltip content="Save comment">
+            <Tooltip content={rejection ? 'Save rejection comment' : 'Save comment'}>
               <button
                 type="button"
                 className={diffCommentSaveButtonClass}
@@ -89,7 +90,7 @@ export function ReviewAnnotationCard({
                   controller.draft.persist()
                 }}
                 disabled={(controller.draft.comment?.body.trim().length ?? 0) === 0}
-                aria-label="Save comment"
+                aria-label={rejection ? 'Save rejection comment' : 'Save comment'}
               >
                 <Check size={14} />
               </button>
@@ -119,7 +120,10 @@ export function ReviewAnnotationCard({
           appToneMutedClass,
         )}
       >
-        <span>Comment · {describeReviewTarget(metadata.target)}</span>
+        <span>
+          {metadata.purpose === 'rejection' ? 'Rejected' : 'Comment'} ·{' '}
+          {describeReviewTarget(metadata.target)}
+        </span>
         <Tooltip content="Remove comment">
           <button
             type="button"

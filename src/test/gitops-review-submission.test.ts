@@ -21,6 +21,7 @@ function savedComment(id: string): SavedReviewComment {
       lineNumber: 4,
     }),
     body: `Comment ${id}`,
+    purpose: 'comment',
     createdAt: '2026-03-01T12:00:00.000Z',
   }
 }

@@ -34,6 +34,7 @@ const comment: SavedReviewComment = {
   id: 'comment-1',
   target: commentTarget,
   body: '  Keep this branch explicit.  ',
+  purpose: 'comment',
   createdAt: '2026-03-01T12:00:00.000Z',
 }
 
@@ -112,6 +113,7 @@ describe('GitOps review model', () => {
         id: 'comment-1',
         body: 'Review this.',
         kind: 'comment',
+        purpose: 'comment',
         target: target!,
       }),
     ).toMatchObject({
@@ -136,6 +138,23 @@ describe('GitOps review model', () => {
     ).toBe(`Please address these.
 
 1. src/app.ts:12-14 (new side)
+   Keep this branch explicit.`)
+  })
+
+  it('carries rejection intent from required draft to the agent prompt', () => {
+    const drafting = reduceReviewInteraction(idleReviewInteraction, {
+      type: 'start-draft',
+      purpose: 'rejection',
+      target: commentTarget,
+    })
+    expect(drafting).toEqual({
+      kind: 'draft',
+      draft: { target: commentTarget, body: '', purpose: 'rejection' },
+    })
+
+    expect(
+      buildReviewPrompt({ comments: [{ ...comment, purpose: 'rejection' }] }),
+    ).toContain(`1. [Rejected] src/app.ts:12-14 (new side)
    Keep this branch explicit.`)
   })
 
@@ -187,9 +206,13 @@ describe('GitOps review model', () => {
 
     const drafting = reduceReviewInteraction(selected, {
       type: 'start-draft',
+      purpose: 'comment',
       target: commentTarget,
     })
-    expect(drafting).toEqual({ kind: 'draft', draft: { target: commentTarget, body: '' } })
+    expect(drafting).toEqual({
+      kind: 'draft',
+      draft: { target: commentTarget, body: '', purpose: 'comment' },
+    })
 
     const typed = reduceReviewInteraction(drafting, {
       type: 'set-draft-body',
@@ -203,6 +226,7 @@ describe('GitOps review model', () => {
       id: 'comment-1',
       body: 'Move me.',
       kind: 'comment',
+      purpose: 'comment',
       target: commentTarget,
     })
     const movedTarget = reanchorReviewTargetFromPierreAnnotation({
@@ -221,6 +245,7 @@ describe('GitOps review model', () => {
       reduceReviewInteraction(
         reduceReviewInteraction(idleReviewInteraction, {
           type: 'start-draft',
+          purpose: 'comment',
           target: commentTarget,
         }),
         { type: 'set-draft-body', body: 'Keep the draft.' },
@@ -279,6 +304,7 @@ describe('GitOps review persistence contract', () => {
             end: { side: 'additions', lineNumber: 11 },
           },
           body: 'Keep me.',
+          purpose: 'comment',
           createdAt: '2026-03-01T12:00:00.000Z',
         },
       ],
@@ -291,6 +317,7 @@ describe('GitOps review persistence contract', () => {
           end: { side: 'deletions', lineNumber: 2 },
         },
         body: 'Draft.',
+        purpose: 'comment',
       },
     })
   })

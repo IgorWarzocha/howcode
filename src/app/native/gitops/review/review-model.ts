@@ -20,10 +20,12 @@ export type FileReviewTarget = {
 }
 
 export type ReviewTarget = LineRangeReviewTarget | FileReviewTarget
+export type ReviewPurpose = 'comment' | 'rejection'
 
 export type ReviewDraft = {
   target: ReviewTarget
   body: string
+  purpose: ReviewPurpose
 }
 
 export type SavedReviewComment = ReviewDraft & {

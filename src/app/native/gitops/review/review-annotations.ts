@@ -30,6 +30,7 @@ export function buildReviewAnnotations({
       id: comment.id,
       body: comment.body,
       kind: 'comment',
+      purpose: comment.purpose,
       target: comment.target,
     })
   }
@@ -46,6 +47,7 @@ export function buildReviewAnnotations({
     addAnnotation(annotationsByFile, {
       id: `draft:${getReviewTargetKey(interaction.draft.target)}`,
       kind: 'draft',
+      purpose: interaction.draft.purpose,
       target: interaction.draft.target,
     })
   }

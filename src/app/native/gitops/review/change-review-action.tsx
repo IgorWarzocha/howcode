@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { toolbarButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import type { ChangeReviewDecision, ChangeReviewTarget } from './change-review-model'
 
 function containPointerDown(event: React.PointerEvent) {
   event.preventDefault()
@@ -14,19 +13,15 @@ const trailingContextActionStyle = {
 } satisfies React.CSSProperties
 
 export function ChangeReviewAction({
-  busy,
-  canUndo,
   onLoadRemainingContext,
-  onResolve,
-  target,
-  undoing,
+  onKeep,
+  onReject,
+  showReviewActions,
 }: {
-  busy: boolean
-  canUndo: boolean
   onLoadRemainingContext?: (() => void) | undefined
-  onResolve: (target: ChangeReviewTarget, decision: ChangeReviewDecision) => Promise<void>
-  target: ChangeReviewTarget
-  undoing: boolean
+  onKeep: () => void
+  onReject: () => void
+  showReviewActions: boolean
 }) {
   const actionRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -35,6 +30,8 @@ export function ChangeReviewAction({
     diffContainer?.setAttribute('data-gitops-trailing-context-action', '')
     return () => diffContainer?.removeAttribute('data-gitops-trailing-context-action')
   }, [onLoadRemainingContext])
+
+  if (!(onLoadRemainingContext || showReviewActions)) return null
 
   return (
     <div
@@ -59,34 +56,32 @@ export function ChangeReviewAction({
           Load remaining context
         </button>
       ) : null}
-      <div className="flex items-center gap-1">
-        {canUndo ? (
+      {showReviewActions ? (
+        <div className="flex items-center gap-1">
           <button
             type="button"
             className={toolbarButtonClass}
-            disabled={busy}
             onPointerDown={containPointerDown}
             onClick={(event) => {
               event.stopPropagation()
-              void onResolve(target, 'undo')
+              onReject()
             }}
           >
-            {undoing ? 'Undoing…' : 'Undo'}
+            Reject
           </button>
-        ) : null}
-        <button
-          type="button"
-          className={cn(toolbarButtonClass, 'text-[color:var(--green)]')}
-          disabled={busy}
-          onPointerDown={containPointerDown}
-          onClick={(event) => {
-            event.stopPropagation()
-            void onResolve(target, 'keep')
-          }}
-        >
-          Keep
-        </button>
-      </div>
+          <button
+            type="button"
+            className={cn(toolbarButtonClass, 'text-[color:var(--green)]')}
+            onPointerDown={containPointerDown}
+            onClick={(event) => {
+              event.stopPropagation()
+              onKeep()
+            }}
+          >
+            Keep
+          </button>
+        </div>
+      ) : null}
     </div>
   )
 }

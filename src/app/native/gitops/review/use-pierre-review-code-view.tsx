@@ -2,14 +2,14 @@ import type { CodeViewItem, CodeViewLineSelection, SelectedLineRange } from '@pi
 import type { DiffLineAnnotation } from '@pierre/diffs/react'
 import { useCallback, useMemo } from 'react'
 import { ChangeReviewAction } from './change-review-action'
-import type { ChangeReviewTarget } from './change-review-model'
+import { type ChangeReviewTarget, getChangeRejectionTarget } from './change-review-model'
 import {
   type GitOpsAnnotationMetadata,
   reviewTargetFromPierreSelection,
   reviewTargetToPierreSelection,
 } from './pierre-review-adapter'
 import type { ReviewCodeViewController } from './review-code-view'
-import { canUndoReviewedChange } from './undo-reviewed-change'
+import { isSameReviewTarget } from './review-model'
 import type { DiffChangeReviewController } from './use-diff-change-review'
 
 export type ReviewFileIdentity = { fileKey: string; filePath: string }
@@ -59,20 +59,29 @@ export function usePierreReviewCodeView({
       if (metadata.kind === 'change-action') {
         if (item.type !== 'diff') return null
         const target = { fileKey: metadata.fileKey, hunkIndex: metadata.hunkIndex }
+        const identity = fileIdentityByKey.get(item.id)
+        if (!identity) return null
+        const rejectionTarget = getChangeRejectionTarget({
+          fileDiff: item.fileDiff,
+          ...identity,
+          hunkIndex: target.hunkIndex,
+        })
+        const rejected = rejectionTarget
+          ? review.rejectedTargets.some((candidate) =>
+              isSameReviewTarget(candidate, rejectionTarget),
+            )
+          : false
         const canLoadRemainingContext =
           item.fileDiff.isPartial &&
           metadata.hunkIndex === item.fileDiff.hunks.length - 1 &&
           !contextExpansion.expandedFileKeys.has(metadata.fileKey)
         return (
           <ChangeReviewAction
-            busy={changeReview.busy}
-            canUndo={canUndoReviewedChange(item.fileDiff)}
-            target={target}
-            undoing={
-              changeReview.undoingTarget?.fileKey === target.fileKey &&
-              changeReview.undoingTarget.hunkIndex === target.hunkIndex
-            }
-            onResolve={changeReview.resolve}
+            onKeep={() => changeReview.keep(target)}
+            onReject={() => {
+              if (rejectionTarget) startDraft(rejectionTarget, 'rejection')
+            }}
+            showReviewActions={!rejected}
             onLoadRemainingContext={
               canLoadRemainingContext ? () => contextExpansion.expand(target) : undefined
             }
@@ -82,11 +91,12 @@ export function usePierreReviewCodeView({
       return review.renderAnnotation(annotation)
     },
     [
-      changeReview.busy,
-      changeReview.resolve,
-      changeReview.undoingTarget,
+      changeReview.keep,
       contextExpansion,
+      fileIdentityByKey,
+      review.rejectedTargets,
       review.renderAnnotation,
+      startDraft,
     ],
   )
 

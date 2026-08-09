@@ -28,7 +28,7 @@ export function useDiffPanelScrollAlignment({
   draftCardRef: React.RefObject<HTMLDivElement | null>
   draftTarget: ReviewTarget | null
   codeViewRef: React.RefObject<CodeViewHandle<GitOpsAnnotationMetadata> | null>
-  renderableFiles: readonly FileDiffMetadata[]
+  renderableFiles: FileDiffMetadata[]
   savedComments: SavedReviewComment[]
   scrollContainerRef: React.RefObject<HTMLDivElement | null>
   selectedCommentId: string | null

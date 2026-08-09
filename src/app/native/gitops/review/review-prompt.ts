@@ -15,7 +15,7 @@ export function buildReviewPrompt({
   const bullets = comments
     .map(
       (comment, index) =>
-        `${index + 1}. ${formatReviewTargetLocation(comment.target)}\n   ${comment.body.trim()}`,
+        `${index + 1}. ${comment.purpose === 'rejection' ? '[Rejected] ' : ''}${formatReviewTargetLocation(comment.target)}\n   ${comment.body.trim()}`,
     )
     .join('\n\n')
 

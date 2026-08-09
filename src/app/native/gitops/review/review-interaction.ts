@@ -2,6 +2,7 @@ import {
   isSameReviewTarget,
   type LineRangeReviewTarget,
   type ReviewDraft,
+  type ReviewPurpose,
   type ReviewTarget,
 } from './review-model'
 
@@ -13,7 +14,7 @@ export type ReviewInteraction =
 export type ReviewInteractionAction =
   | { type: 'hydrate'; draft: ReviewDraft | null }
   | { type: 'select'; target: LineRangeReviewTarget | null }
-  | { type: 'start-draft'; target: ReviewTarget }
+  | { type: 'start-draft'; purpose: ReviewPurpose; target: ReviewTarget }
   | { type: 'set-draft-body'; body: string }
   | { type: 'reanchor'; from: ReviewTarget; to: ReviewTarget }
   | { type: 'cancel' }
@@ -29,9 +30,19 @@ function selectReviewTarget(
   return { kind: 'selection', target }
 }
 
-function startReviewDraft(current: ReviewInteraction, target: ReviewTarget): ReviewInteraction {
-  if (current.kind === 'draft' && isSameReviewTarget(current.draft.target, target)) return current
-  return { kind: 'draft', draft: { target, body: '' } }
+function startReviewDraft(
+  current: ReviewInteraction,
+  target: ReviewTarget,
+  purpose: ReviewPurpose,
+): ReviewInteraction {
+  if (
+    current.kind === 'draft' &&
+    current.draft.purpose === purpose &&
+    isSameReviewTarget(current.draft.target, target)
+  ) {
+    return current
+  }
+  return { kind: 'draft', draft: { target, body: '', purpose } }
 }
 
 function reanchorReviewInteraction(
@@ -58,7 +69,7 @@ export function reduceReviewInteraction(
     case 'select':
       return selectReviewTarget(current, action.target)
     case 'start-draft':
-      return startReviewDraft(current, action.target)
+      return startReviewDraft(current, action.target, action.purpose)
     case 'set-draft-body':
       return current.kind === 'draft'
         ? { kind: 'draft', draft: { ...current.draft, body: action.body } }

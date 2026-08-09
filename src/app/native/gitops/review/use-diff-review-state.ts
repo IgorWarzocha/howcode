@@ -16,6 +16,7 @@ import {
   getReviewTargetKey,
   isSameReviewTarget,
   type LineRangeReviewTarget,
+  type ReviewPurpose,
   type ReviewTarget,
   type SavedReviewComment,
 } from './review-model'
@@ -107,8 +108,8 @@ export function useDiffReviewState({
   const selectTarget = useCallback((target: LineRangeReviewTarget | null) => {
     dispatchInteraction({ type: 'select', target })
   }, [])
-  const openDraft = useCallback((target: ReviewTarget) => {
-    dispatchInteraction({ type: 'start-draft', target })
+  const openDraft = useCallback((target: ReviewTarget, purpose: ReviewPurpose = 'comment') => {
+    dispatchInteraction({ type: 'start-draft', purpose, target })
   }, [])
   const setDraftBody = useCallback((body: string) => {
     dispatchInteraction({ type: 'set-draft-body', body })

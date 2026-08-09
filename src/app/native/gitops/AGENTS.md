@@ -2,7 +2,7 @@
 - Keep diff UI, review/comment state, branch/baseline controls, and GitOps composer surfaces in this boundary.
 - Keep review identity, persistence, prompts, and Pierre adapters in `review/`; `diff/` owns patch rendering and CodeView item lifecycle. Never recover review targets from Pierre DOM attributes or global pointer listeners.
 - Keep read-only review actions in transient Pierre annotations. `renderSelectionAction` is editor-only; do not enable editing or hand-position overlays to imitate it.
-- Keep uses Pierre's local `diffAcceptRejectHunk` review transform. Undo hydrates the complete existing text file, applies Pierre's rejected-hunk result through the revision-checked `workspace.write-file` action, and never stages changes. Do not offer Undo for new/deleted file lifecycle changes until typed create/delete actions exist.
+- Keep accepted hunks as a local Pierre `diffAcceptRejectHunk` review transform. Reject opens a required hunk-scoped comment draft; only saved comments sent through the active agent thread carry rejection feedback. Review controls never write or stage files.
 - Load complete diff files through the typed desktop project-git contract and Pierre's `loadDiffFiles`; keep parsed `fileDiff` identities stable so hydration survives rendering.
 - Keep editor loading/state in `edit/`. Writes cross the grouped `GitOpsFileActions` host adapter, require the read revision, and finish through the atomic `workspace.write-file` action; never write from the renderer.
 - The edit revision check only prevents clobbering concurrent agent changes. Do not grow it into synchronization machinery; merge UI, staging workbenches, and multiplayer review are out of scope.

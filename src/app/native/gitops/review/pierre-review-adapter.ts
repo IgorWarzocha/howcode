@@ -4,12 +4,13 @@ import {
   createLineRangeTarget,
   type DiffSide,
   type LineRangeReviewTarget,
+  type ReviewPurpose,
   type ReviewTarget,
 } from './review-model'
 
 export type ReviewAnnotation =
-  | { id: string; body: string; kind: 'comment'; target: ReviewTarget }
-  | { id: string; kind: 'draft'; target: ReviewTarget }
+  | { id: string; body: string; kind: 'comment'; purpose: ReviewPurpose; target: ReviewTarget }
+  | { id: string; kind: 'draft'; purpose: ReviewPurpose; target: ReviewTarget }
   | { id: string; kind: 'selection-action'; target: ReviewTarget }
 
 // Pierre's annotation metadata conditional distributes over unions, so keep the

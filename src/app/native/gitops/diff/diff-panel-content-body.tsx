@@ -13,7 +13,6 @@ import { getDiffBaselinePrefix, getResolvedDiffBaselineLabel } from '../diff-bas
 import type { DiffEditingController } from '../edit/use-diff-editing'
 import type { GitOpsAnnotationMetadata } from '../review/pierre-review-adapter'
 import type { ReviewCodeViewController } from '../review/review-code-view'
-import type { DiffChangeReviewController } from '../review/use-diff-change-review'
 import { DiffChangedFilesTree } from './diff-changed-files-tree'
 import type { RenderablePatch } from './diff-panel-content.types'
 import { DiffPanelEmptyState } from './diff-panel-empty-state'
@@ -38,7 +37,7 @@ type DiffPanelContentBodyProps = {
     collapsed: Record<string, boolean>
     focusedImageKeys: ReadonlySet<string>
     toggleCollapsed: (fileKey: string) => void
-    visible: readonly FileDiffMetadata[]
+    visible: FileDiffMetadata[]
   }
   fileTree: {
     focusedPaths: readonly string[]
@@ -49,7 +48,6 @@ type DiffPanelContentBodyProps = {
   }
   codeView: {
     ref: RefObject<CodeViewHandle<GitOpsAnnotationMetadata> | null>
-    changeReview: DiffChangeReviewController
     editing: DiffEditingController
     fileContent: DiffFileContentController
     renderMode: 'stacked' | 'split'
@@ -116,7 +114,6 @@ function DiffFilesView(input: DiffPanelContentBodyProps) {
         <div className="min-h-0 min-w-0 flex-1 overflow-hidden [overflow-anchor:none]">
           <DiffPanelFileList
             baseline={input.diff.baseline}
-            changeReview={input.codeView.changeReview}
             fileContent={input.codeView.fileContent}
             editing={input.codeView.editing}
             codeViewRef={input.codeView.ref}

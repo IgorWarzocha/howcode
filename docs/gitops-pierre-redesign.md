@@ -440,19 +440,18 @@ Do not write on every keystroke directly through IPC. Use a per-file debounce/se
 
 The editor is beta. Ship review selection independently so editing can be delayed or disabled without retaining the old pointer machinery.
 
-### Phase 7 — Keep/undo review
+### Phase 7 — Keep/reject review
 
-Goal: reproduce Pierre's official accept/reject review interaction without assigning it extra Git semantics.
+Goal: adapt Pierre's accept/reject interaction to Howcode's human-to-agent review loop.
 
-Status: complete. Each unresolved hunk gets a Pierre annotation with **Undo** and **Keep**. Keep calls `diffAcceptRejectHunk` with `accept` and changes only the local review display. For an existing text file, Undo hydrates complete file contents, calls `diffAcceptRejectHunk` with `reject`, and persists the resulting new side through the revision-checked `workspace.write-file` action. The normal write post-effect refreshes Git state and the diff. Undo is not offered for new/deleted file lifecycle changes because the write contract deliberately cannot create or delete files. Neither action stages changes. A reviewed file exposes Pierre's Reset behavior in its header, and a fresh diff source resets local Keep decisions.
+Status: complete. Each unresolved hunk gets a Pierre annotation with **Reject** and **Keep**. Keep calls `diffAcceptRejectHunk` with `accept` and removes the accepted hunk from the local review display. Reject does not mutate the diff or worktree: it opens a non-empty hunk-scoped comment draft. Saving that draft makes **Send comments** the GitOps primary action, routing the rejection through the active agent thread. Cancelling the draft cancels the rejection. Neither action writes or stages files. A reviewed file exposes Pierre's Reset behavior in its header, and a fresh diff source resets local Keep decisions.
 
 The implementation lives in focused review modules:
 
-- `review/change-review-model.ts` derives hunk annotations and calls Pierre's transform;
+- `review/change-review-model.ts` derives hunk annotations, rejection comment targets, and Pierre's Keep transform;
 - `review/change-review-action.tsx` renders the two controls;
 - `review/change-review-reset-button.tsx` restores the source diff for one reviewed file;
-- `review/use-diff-change-review.ts` owns local Keep decisions and durable Undo orchestration;
-- `review/undo-reviewed-change.ts` adapts a hydrated Pierre result to the typed file-write boundary.
+- `review/use-diff-change-review.ts` owns local displayed-diff replacements.
 
 Do not reinterpret these controls as Git operations. Filesystem editing remains the separate explicit edit/save path from Phase 6.
 

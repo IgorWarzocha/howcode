@@ -10,6 +10,7 @@ import {
   createLineRangeTarget,
   type DiffSide,
   type ReviewDraft,
+  type ReviewPurpose,
   type ReviewTarget,
   type SavedReviewComment,
 } from './review-model'
@@ -31,6 +32,7 @@ type PersistedLineTarget = {
 type PersistedReviewDraft = PersistedLineTarget & {
   target?: unknown
   body?: unknown
+  purpose?: unknown
 }
 
 type PersistedReviewContext = {
@@ -68,6 +70,11 @@ function isDiffSide(value: unknown): value is DiffSide {
 
 function isLineNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value > 0
+}
+
+function decodeReviewPurpose(value: unknown): ReviewPurpose | null {
+  if (value === undefined || value === 'comment') return 'comment'
+  return value === 'rejection' ? 'rejection' : null
 }
 
 function decodeReviewTarget(value: unknown): ReviewTarget | null {
@@ -132,8 +139,10 @@ function decodeReviewDraft(value: unknown): ReviewDraft | null {
   if (!value || typeof value !== 'object') return null
   const candidate = value as PersistedReviewDraft
   if (typeof candidate.body !== 'string') return null
+  const purpose = decodeReviewPurpose(candidate.purpose)
+  if (!purpose) return null
   const target = decodeReviewTarget(candidate.target) ?? decodeLegacyLineTarget(candidate)
-  return target ? { target, body: candidate.body } : null
+  return target ? { target, body: candidate.body, purpose } : null
 }
 
 function decodeSavedReviewComment(value: unknown): SavedReviewComment | null {
@@ -180,7 +189,7 @@ function isContextEmpty(context: ReviewContext) {
 
 function serializeDraft(draft: ReviewDraft) {
   if (draft.target.kind === 'file') {
-    return { target: cloneTarget(draft.target), body: draft.body }
+    return { target: cloneTarget(draft.target), body: draft.body, purpose: draft.purpose }
   }
   const { start, end } = draft.target
   return {
@@ -191,6 +200,7 @@ function serializeDraft(draft: ReviewDraft) {
     ...(end.side === start.side ? {} : { endSide: end.side }),
     ...(end.lineNumber === start.lineNumber ? {} : { endLineNumber: end.lineNumber }),
     body: draft.body,
+    purpose: draft.purpose,
   }
 }
 

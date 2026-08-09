@@ -13,7 +13,7 @@ import { createPierreEditor, pierreEditorOptions } from '../edit/pierre-editor'
 import type { DiffEditingController } from '../edit/use-diff-editing'
 import type { GitOpsAnnotationMetadata } from '../review/pierre-review-adapter'
 import type { ReviewCodeViewController } from '../review/review-code-view'
-import type { DiffChangeReviewController } from '../review/use-diff-change-review'
+import { useDiffChangeReview } from '../review/use-diff-change-review'
 import { usePierreReviewCodeView } from '../review/use-pierre-review-code-view'
 import { getDiffFileIdentity } from './diff-file-identity'
 import { DiffImagePreview } from './diff-image-preview'
@@ -36,7 +36,6 @@ type DiffPanelFileListProps = {
   codeViewRef: React.RefObject<CodeViewHandle<GitOpsAnnotationMetadata> | null>
   scrollContainerRef: React.RefObject<HTMLDivElement | null>
   collapsedFiles: Record<string, boolean>
-  changeReview: DiffChangeReviewController
   diffRenderMode: 'stacked' | 'split'
   editing: DiffEditingController
   fileContent: DiffFileContentController
@@ -44,7 +43,7 @@ type DiffPanelFileListProps = {
   onToggleFileCollapsed: (fileKey: string) => void
   projectId: string
   review: ReviewCodeViewController
-  renderableFiles: readonly FileDiffMetadata[]
+  renderableFiles: FileDiffMetadata[]
 }
 
 function getItemFileDiff(item: CodeViewItem<GitOpsAnnotationMetadata>) {
@@ -56,7 +55,6 @@ export function DiffPanelFileList({
   codeViewRef,
   scrollContainerRef,
   collapsedFiles,
-  changeReview,
   diffRenderMode,
   editing,
   fileContent,
@@ -66,10 +64,11 @@ export function DiffPanelFileList({
   review,
   renderableFiles,
 }: DiffPanelFileListProps) {
+  const changeReview = useDiffChangeReview(renderableFiles)
   const contextExpansion = useTrailingContextExpansion({
     codeViewRef,
     fileContent,
-    files: renderableFiles,
+    files: changeReview.files,
   })
   const annotationsByFile = useMemo(() => {
     const merged = new Map(review.annotationsByFile)
@@ -85,7 +84,7 @@ export function DiffPanelFileList({
     collapsedFiles,
     codeViewRef,
     focusedImageFileKeys,
-    renderableFiles,
+    renderableFiles: changeReview.files,
     editing,
   })
 
