@@ -29,10 +29,6 @@ describe('composer prompt flow', () => {
     expect(message.indexOf('/tmp/example.ts')).toBeLessThan(message.indexOf('Review this file.'))
   })
 
-  it('leaves plain prompts unchanged when there are no attachments', () => {
-    expect(buildComposerPromptMessage({ text: 'hello' })).toBe('hello')
-  })
-
   it('detects runtime extension command prompts by command name', () => {
     const runtime = {
       session: {

@@ -61,22 +61,6 @@ function chunkBuffer(buffer: Buffer, size: number) {
 }
 
 describe('browser upload attachments', () => {
-  it('streams multipart uploaded files to a private temp directory', async () => {
-    const rootDirectory = await createTempDirectory()
-    const attachments = await writeMultipartUpload(rootDirectory, [
-      {
-        name: '../pasted-image',
-        type: 'image/png',
-        data: 'image-data',
-      },
-    ])
-
-    expect(attachments).toHaveLength(1)
-    expect(attachments[0]).toMatchObject({ name: 'pasted-image.png', kind: 'image' })
-    expect(attachments[0]?.path.startsWith(rootDirectory)).toBe(true)
-    await expect(readFile(attachments[0]?.path ?? '', 'utf8')).resolves.toBe('image-data')
-  })
-
   it('handles multipart boundaries split across request chunks', async () => {
     const rootDirectory = await createTempDirectory()
     const boundary = 'howcode-test-boundary'

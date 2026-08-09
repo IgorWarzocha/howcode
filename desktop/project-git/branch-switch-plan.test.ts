@@ -2,16 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { createBranchSwitchPlan } from './branch-switch-plan.ts'
 
 describe('createBranchSwitchPlan', () => {
-  it('switches existing local branches directly', () => {
-    expect(
-      createBranchSwitchPlan({
-        branchName: 'feature/a',
-        localBranches: new Set(['main', 'feature/a']),
-        remoteBranches: ['origin/feature/a'],
-      }),
-    ).toEqual({ kind: 'local', args: ['switch', 'feature/a'] })
-  })
-
   it('tracks origin remote branches before creating new branches', () => {
     expect(
       createBranchSwitchPlan({

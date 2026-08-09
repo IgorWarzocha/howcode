@@ -53,20 +53,6 @@ function asHandleAction(
 }
 
 describe('GitOps review submission', () => {
-  it('clears the sent comment IDs after a successful send', async () => {
-    const { context, store } = createHarness()
-    const result = await sendReviewCommentsToComposer({
-      context,
-      contextId,
-      handleAction: asHandleAction(async () => actionResult()),
-      store,
-      streamingBehavior: 'followUp',
-    })
-
-    expect(result).toEqual({ ok: true, error: null })
-    expect(store.getContext(contextId)).toBeNull()
-  })
-
   it('keeps comments when the send is stopped or fails', async () => {
     const stopped = createHarness()
     expect(

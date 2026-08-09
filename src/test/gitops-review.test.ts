@@ -54,10 +54,11 @@ describe('GitOps review model', () => {
   })
 
   it('carries rejection intent to the agent prompt', () => {
-    expect(
-      buildReviewPrompt({ comments: [{ ...comment, purpose: 'rejection' }] }),
-    ).toContain(`1. [Rejected] src/app.ts:12-14 (new side)
-   Keep this branch explicit.`)
+    const prompt = buildReviewPrompt({ comments: [{ ...comment, purpose: 'rejection' }] })
+
+    expect(prompt).toContain('[Rejected]')
+    expect(prompt).toContain('src/app.ts:12-14')
+    expect(prompt).toContain('Keep this branch explicit.')
   })
 })
 

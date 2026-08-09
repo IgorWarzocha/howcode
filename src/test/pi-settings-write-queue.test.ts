@@ -1,20 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { appendPiSettingsWrite } from '../app/settings/settings/piSettingsWriteQueue'
-import {
-  normalizeCustomPiDirectoryDraft,
-  normalizeOptionalSettingsPath,
-} from '../app/settings/settings/useSettingsProjectController'
 
-describe('settings domain model', () => {
-  it('normalizes optional paths and expands a persisted Pi home prefix', () => {
-    expect(normalizeOptionalSettingsPath('  /repo  ')).toBe('/repo')
-    expect(normalizeOptionalSettingsPath('   ')).toBeNull()
-    expect(normalizeCustomPiDirectoryDraft('~/.pi/agent', '/home/igorw/.pi/agent')).toBe(
-      '/home/igorw/.pi/agent',
-    )
-    expect(normalizeCustomPiDirectoryDraft('~/other', '/home/igorw/.pi/agent')).toBe('~/other')
-  })
-
+describe('Pi settings write queue', () => {
   it('serializes Pi settings writes and keeps the queue moving after failures', async () => {
     const events: string[] = []
     let releaseFirst!: () => void

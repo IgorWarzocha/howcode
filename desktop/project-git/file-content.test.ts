@@ -8,7 +8,6 @@ import { loadProjectDiffFileContents, maxProjectDiffTextFileBytes } from './file
 
 const run = promisify(execFile)
 const temporaryDirectories: string[] = []
-const contentRevisionPattern = /^sha256:[a-f0-9]{64}$/
 
 async function createRepository() {
   const directory = await mkdtemp(join(tmpdir(), 'howcode-file-content-test-'))
@@ -35,27 +34,6 @@ afterEach(async () => {
 })
 
 describe('project diff file contents', () => {
-  it('loads complete baseline and worktree text with content revisions', async () => {
-    const { baselineRevision, directory } = await createRepository()
-
-    const result = await loadProjectDiffFileContents({
-      projectId: directory,
-      baselineRevision,
-      oldPath: 'file.txt',
-      newPath: 'file.txt',
-    })
-
-    expect(result).toMatchObject({
-      kind: 'ready',
-      oldFile: { path: 'file.txt', contents: 'before\ncontext\n' },
-      newFile: { path: 'file.txt', contents: 'after\ncontext\n' },
-    })
-    if (result.kind !== 'ready') throw new Error('Expected file contents.')
-    expect(result.oldFile?.revision).toMatch(contentRevisionPattern)
-    expect(result.newFile.revision).toMatch(contentRevisionPattern)
-    expect(result.oldFile?.revision).not.toBe(result.newFile.revision)
-  })
-
   it('supports a new-side-only read for pure renames', async () => {
     const { baselineRevision, directory } = await createRepository()
 

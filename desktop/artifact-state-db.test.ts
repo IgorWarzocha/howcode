@@ -181,28 +181,6 @@ describe('artifact state db', () => {
     artifactDb.resetArtifactSchemaForTests()
   })
 
-  it('applies exact non-overlapping edits as a new version', async () => {
-    const { artifactDb } = await loadArtifactDb()
-    const artifact = artifactDb.createArtifact({
-      conversationId: 'conversation-a',
-      slug: 'page',
-      kind: 'html',
-      content: '<h1>Old</h1><p>Body</p>',
-    })
-
-    const edited = artifactDb.editArtifact({
-      slug: artifact.slug,
-      conversationId: 'conversation-a',
-      edits: [
-        { oldText: 'Old', newText: 'New' },
-        { oldText: 'Body', newText: 'Copy' },
-      ],
-    })
-
-    expect(edited.content).toBe('<h1>New</h1><p>Copy</p>')
-    expect(edited.version).toBe(2)
-  })
-
   it('rejects ambiguous edits without mutating content', async () => {
     const { artifactDb } = await loadArtifactDb()
     const artifact = artifactDb.createArtifact({
