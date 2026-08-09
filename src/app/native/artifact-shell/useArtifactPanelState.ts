@@ -2,6 +2,7 @@ import { useArtifactPreview } from '@howcode/native-interactive-artifacts'
 import { useRef, useState } from 'react'
 import type { Artifact, ArtifactVersion } from '../../desktop/types'
 import { useLatestRef } from '../../hooks/useLatestRef'
+import type { ArtifactView } from './artifact-panel-model'
 import { useArtifactCollection } from './useArtifactCollection'
 import { useArtifactDerivedState } from './useArtifactDerivedState'
 import { useArtifactDownload } from './useArtifactDownload'
@@ -10,7 +11,7 @@ import { useArtifactSave } from './useArtifactSave'
 import { useArtifactSelection, useArtifactUpdateEvents } from './useArtifactSelection'
 import { useArtifactVersions } from './useArtifactVersions'
 
-export type ArtifactView = 'list' | 'code' | 'preview'
+export type { ArtifactView } from './artifact-panel-model'
 
 export function useArtifactPanelState(conversationId: string | null) {
   const [artifacts, setArtifacts] = useState<Artifact[]>([])

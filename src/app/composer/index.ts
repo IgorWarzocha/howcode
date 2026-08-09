@@ -1,5 +1,5 @@
-export type { ComposerProps } from './composer'
 export { Composer } from './composer'
+export type { ComposerProps } from './composer-contract'
 export { ComposerFooter } from './composer-footer'
 export { ComposerModelPopover } from './composer-model-popover'
 export { ComposerPromptSurface } from './composer-prompt-surface'

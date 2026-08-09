@@ -4,9 +4,9 @@ import type { AppShellController } from '../app-shell/useAppShellController'
 import { mainPanelClass } from '../ui/classes'
 import { WORKSPACE_EDGE_PADDING_CLASS } from '../ui/layout'
 import { cn } from '../utils/cn'
+import type { CodeWorkspaceContentProps } from './code-workspace-contract'
 import { FALLBACK_APP_SETTINGS } from './code-workspace-defaults'
 import { CodeWorkspaceMainView } from './code-workspace-main-view'
-import type { CodeWorkspaceContentProps } from './code-workspace-view'
 import { useGitOpsFileActions } from './use-gitops-file-actions'
 
 function getMainPanelClass(

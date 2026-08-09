@@ -3,7 +3,7 @@ import { type RefObject, useCallback, useRef, useState } from 'react'
 import { composerPanelClass } from '../ui/classes'
 import { WORKSPACE_RAIL_GRID_CLASS } from '../ui/layout'
 import { cn } from '../utils/cn'
-import type { ComposerProps } from './composer'
+import type { ComposerProps } from './composer-contract'
 import {
   PiExtensionStatusLine,
   useComposerExtensionStatusFooterOffset,

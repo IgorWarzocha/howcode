@@ -1,6 +1,6 @@
 import { isLocalSessionPath } from '@howcode/shared/session-paths'
 import type { View } from '../types'
-import type { NonGitOpsView, WorkspaceAction, WorkspaceState } from './workspace'
+import type { NonGitOpsView, WorkspaceAction, WorkspaceState } from './workspace-model'
 
 export function migrateTakeoverOverride(
   takeoverOverrides: Record<string, boolean>,

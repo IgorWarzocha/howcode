@@ -1,4 +1,4 @@
-import type { SessionTreeList, SessionTreeListRow } from './session-tree.ts'
+import type { SessionTreeList, SessionTreeListRow } from './session-tree-model.ts'
 
 type PiSessionTreeNode = {
   entry: {

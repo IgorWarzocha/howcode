@@ -5,7 +5,7 @@ import type {
   UtilityViewReturnState,
   WorkspaceAction,
   WorkspaceState,
-} from './workspace'
+} from './workspace-model'
 import {
   getGitOpsReturnView,
   getTerminalStateForNextView,

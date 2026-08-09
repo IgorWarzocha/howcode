@@ -1,74 +1,15 @@
-import type { Dispatch, RefObject, SetStateAction } from 'react'
 import { useCallback, useRef, useState } from 'react'
 import { useHowcodeKeybindingCommand } from '../app-shell/keybinding-events'
 import type { AppShellController } from '../app-shell/useAppShellController'
-import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
 import type { Message } from '../types'
+import type { CodeWorkspaceViewProps } from './code-workspace-contract'
 import { CodeWorkspaceViewContent } from './code-workspace-footer'
 import { useGitOpsReviewController } from './useGitOpsReviewController'
 import { useQueuedPromptRestore } from './useQueuedPromptRestore'
 import { useWorkspaceFooterHeight } from './useWorkspaceFooterHeight'
 
-type CodeWorkspaceViewProps = {
-  controller: AppShellController
-  activeComposerState: AppShellController['activeComposerState']
-  activePiExtensionUiState: AppShellController['activePiExtensionUiState']
-  activeThreadData: AppShellController['activeThreadData']
-  composerProjectId: string
-  currentProjectName: string
-  diffBaseline: ProjectDiffBaseline
-  diffRenderMode: ProjectDiffRenderMode
-  terminalDrawerVisible: boolean
-  terminalDrawerOverlay?: boolean
-  terminalSessionPath: string | null
-  workspaceContentClass: string
-  onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
-  onSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void
-  sidebarCollapsed: boolean
-  sidebarAutoHidden: boolean
-  sidebarCompactMode: boolean
-  onToggleSidebar: () => void
-}
-
 const TERMINAL_DRAWER_OFFSET = 'min(28rem, calc(100% - 2.5rem))'
 const EMPTY_COMPOSER_TOP = '60%'
-export type CodeWorkspaceContentProps = CodeWorkspaceViewProps &
-  ReturnType<typeof useQueuedPromptRestore> & {
-    gitOpsReview: ReturnType<typeof useGitOpsReviewController>
-    footerRef: RefObject<HTMLElement | null>
-    mainViewRef: RefObject<HTMLElement | null>
-    terminalDrawerInsetStyle: { right: string } | undefined
-    footerInset: number
-    threadFooterStyle: { right?: string; top?: string } | undefined
-    showWorkspaceFooter: boolean
-    showThreadFooter: boolean
-    showCodeSidebarFooter: boolean
-    showDiffInMainView: boolean
-    showDesktopTerminalDrawer: boolean
-    centerThreadFooter: boolean
-    gitOpsFileTreeVisible: boolean
-    includeUntrackedDiffFiles: boolean
-    toggleGitOpsFileTree: () => void
-    toggleIncludeUntrackedDiffFiles: () => void
-    diffLoadError: string | null
-    setDiffLoadError: Dispatch<SetStateAction<string | null>>
-    threadTimelineLoading: boolean
-    composerLayoutVersion: number
-    setComposerLayoutVersion: Dispatch<SetStateAction<number>>
-    composerOverlayHeight: number
-    setComposerOverlayHeight: Dispatch<SetStateAction<number>>
-    handleAction: AppShellController['handleAction']
-    handleLoadEarlierMessages: AppShellController['handleLoadEarlierMessages']
-    handleCloseGitOpsView: AppShellController['handleCloseGitOpsView']
-    handleOpenGitOpsView: AppShellController['handleOpenGitOpsView']
-    handleShowTakeoverTerminal: AppShellController['handleShowTakeoverTerminal']
-    handleToggleTerminal: AppShellController['handleToggleTerminal']
-    listComposerAttachmentEntries: AppShellController['listComposerAttachmentEntries']
-    shellState: AppShellController['shellState']
-    state: AppShellController['state']
-    projectGitState: AppShellController['projectGitState']
-    parentBranchName: string | null
-  }
 
 function shouldShowDesktopTerminalDrawer(
   activeView: AppShellController['state']['activeView'],

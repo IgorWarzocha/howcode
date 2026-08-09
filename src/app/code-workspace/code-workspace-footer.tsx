@@ -6,9 +6,9 @@ import type { Message } from '../types'
 import { WORKSPACE_EDGE_PADDING_CLASS } from '../ui/layout'
 import { cn } from '../utils/cn'
 import { WorkspaceComposerDock } from '../workspace-shell/workspace-composer-dock'
+import type { CodeWorkspaceContentProps } from './code-workspace-contract'
 import { FALLBACK_APP_SETTINGS } from './code-workspace-defaults'
 import { CodeWorkspaceMainArea } from './code-workspace-main-area'
-import type { CodeWorkspaceContentProps } from './code-workspace-view'
 import { DesktopComposerStatusModelPicker } from './desktop-composer-status'
 
 function getReplyActivityKey(messages: readonly Message[]) {

@@ -5,6 +5,7 @@ import type {
 } from './desktop-composer-contracts'
 import type { DictationModelId } from './desktop-dictation-contracts'
 import type {
+  GitOpsMode,
   ProjectDiffDefaultBaseline,
   ProjectDiffRenderMode,
 } from './desktop-project-git-contracts'
@@ -17,7 +18,7 @@ export type ModelSelection = {
 }
 
 export type ProjectDeletionMode = 'pi-only' | 'full-clean'
-export type GitOpsMode = 'commit' | 'commit-push'
+export type { GitOpsMode } from './desktop-project-git-contracts'
 
 export type AppSettings = {
   chatModel: ModelSelection | null

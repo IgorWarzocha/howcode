@@ -184,6 +184,8 @@ sidebar guidance.
 
 Severity: medium.
 
+Resolved in Phase 1. The baseline groups below are retained as evidence of what was removed.
+
 The current strongly connected groups are:
 
 1. Composer: `composer.tsx`, `composer-prompt-surface.tsx`,
@@ -258,14 +260,18 @@ Completion: this document's commit.
 
 ### Phase 1 — Remove dependency cycles
 
-Status: pending.
+Status: complete.
 
 - Extract feature-owned props/models/contracts for the six cycle groups.
 - Keep public exports stable where existing consumers need them.
 - Add no generic helpers and change no rendering or state transitions.
 - Verify the local import graph is acyclic afterwards.
 
-Likely focused checks: TypeScript, Vite import resolution, affected deterministic tests, Doctor.
+Validation: all four TypeScript lanes, local dependency-cycle scan, the commit gate, and Doctor.
+
+Completion: this phase's commit. Shared leaf models/contracts now own Composer props, artifact view
+state, workspace state/actions, code-workspace props, GitOps mode, and session-tree rows. A static
+scan of 857 production files reports zero local dependency cycles; all four TypeScript lanes pass.
 
 ### Phase 2 — Canonicalise desktop request behaviour
 
@@ -328,6 +334,7 @@ Status: pending.
 | Phase | Commit | Evidence |
 | --- | --- | --- |
 | 0 | This document's commit | Durable topology and hardening plan; no source changes. |
+| 1 | This phase's commit | Six strongly connected groups removed; zero local cycles across 857 production files. |
 
 ## Stop conditions
 

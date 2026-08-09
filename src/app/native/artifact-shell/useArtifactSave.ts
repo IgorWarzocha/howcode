@@ -2,7 +2,7 @@ import type { Dispatch, SetStateAction } from 'react'
 import { useState } from 'react'
 import type { Artifact } from '../../desktop/types'
 import { updateArtifactQuery } from '../../query/desktop-query'
-import type { ArtifactView } from './useArtifactPanelState'
+import type { ArtifactView } from './artifact-panel-model'
 
 export function useArtifactSave(input: {
   conversationId: string | null

@@ -1,4 +1,5 @@
 - Composer owns prompt input, prompt surface, composer popovers, queued prompts, attachment picking, and submission glue.
+- `composer-contract.ts` owns the public component props; composer render modules may depend on it, never on each other merely to recover those types.
 - Keep Git-specific controls in `@howcode/native-gitops`; expose props/extension points rather than importing GitOps internals.
 - Shared footer row/chip/text primitives live in `@howcode/workspace-shell/footer/workspace-footer-primitives`.
 - `ComposerPromptInputPanel` owns the editor, mentions, paste, and dictation controls; hosts compose picker/session-tree/slash overlays around it.

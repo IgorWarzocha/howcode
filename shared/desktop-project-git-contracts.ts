@@ -1,5 +1,4 @@
-import type { GitOpsMode } from './desktop-settings-contracts'
-
+export type GitOpsMode = 'commit' | 'commit-push'
 export type ProjectDiffRenderMode = 'stacked' | 'split'
 export type ProjectDiffDefaultBaseline =
   | { kind: 'head' }
