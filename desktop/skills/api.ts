@@ -1,3 +1,6 @@
+import * as Schema from 'effect/Schema'
+import { SkillDownloadApiResponse, SkillSearchApiResponse } from './api-schema.ts'
+
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
 }
@@ -5,31 +8,10 @@ const skillsApiBaseUrl =
   getProcessEnvironmentVariable('HOWCODE_SKILLS_API_URL') || 'https://skills.sh'
 const fetchTimeoutMs = 15_000
 
-type SkillSearchApiItem = {
-  id?: unknown
-  skillId?: unknown
-  name?: unknown
-  installs?: unknown
-  source?: unknown
-}
-
-type SkillSearchApiResponse = {
-  query?: unknown
-  count?: unknown
-  skills?: SkillSearchApiItem[]
-}
-
-export type SkillDownloadApiFile = {
-  path?: unknown
-  contents?: unknown
-}
-
-type SkillDownloadApiResponse = {
-  files?: SkillDownloadApiFile[]
-  hash?: unknown
-}
-
-async function fetchJson<T>(requestUrl: string): Promise<T> {
+async function fetchJson<S extends Schema.ConstraintDecoder<unknown>>(
+  requestUrl: string,
+  schema: S,
+): Promise<S['Type']> {
   const response = await fetch(requestUrl, {
     headers: {
       accept: 'application/json',
@@ -41,7 +23,7 @@ async function fetchJson<T>(requestUrl: string): Promise<T> {
     throw new Error(`Request failed (${response.status})`)
   }
 
-  return (await response.json()) as T
+  return await Schema.decodeUnknownPromise(schema)(await response.json())
 }
 
 function encodeRepoSegments(repo: string) {
@@ -52,14 +34,16 @@ function encodeRepoSegments(repo: string) {
 }
 
 export async function searchSkillsApi(query: string, limit: number) {
-  return await fetchJson<SkillSearchApiResponse>(
+  return await fetchJson(
     `${skillsApiBaseUrl}/api/search?q=${encodeURIComponent(query)}&limit=${limit}`,
+    SkillSearchApiResponse,
   )
 }
 
 export async function downloadSkillApi(repo: string, slug: string) {
-  return await fetchJson<SkillDownloadApiResponse>(
+  return await fetchJson(
     `${skillsApiBaseUrl}/api/download/${encodeRepoSegments(repo)}/${encodeURIComponent(slug)}`,
+    SkillDownloadApiResponse,
   )
 }
 

@@ -42,6 +42,11 @@ The useful migration is mostly done. The major process and runtime lifecycles no
 - Stock-Node, Electron, and headless HTTP cleanup share idempotent Effect shutdown gates with explicit deadlines.
 - Shared `node-runtime/*` probes own subprocess deadlines, interruption, output collection, and Schema decoding while callers retain executable and ABI policy.
 
+### External payloads
+
+- npm package and skills API collections are Schema-decoded before catalog mapping.
+- Dev-web desktop and terminal SSE envelopes are Schema-decoded in a browser-only dynamic chunk before entering renderer state.
+
 ## Plausible later work
 
 - Turn the remaining `TerminalRpcServiceClient` compatibility class into a service only if its current focused boundary starts accumulating responsibilities again.

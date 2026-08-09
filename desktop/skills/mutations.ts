@@ -1,7 +1,8 @@
 import { mkdir, mkdtemp, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { PiSkillMutationResult } from '../../shared/desktop-contracts.ts'
-import { downloadSkillApi, type SkillDownloadApiFile } from './api.ts'
+import { downloadSkillApi } from './api.ts'
+import type { SkillDownloadApiFile } from './api-schema.ts'
 import { listConfiguredPiSkills } from './configured-skills.ts'
 import {
   getActiveChatSkillsRoot,

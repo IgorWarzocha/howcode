@@ -3,4 +3,5 @@
 - Service-host signal handlers delegate to the shared shutdown coordinator; preserve concurrent terminal RPC/runtime-host/session cleanup before terminal-runtime disposal.
 - API or event changes must update their `shared/*` contracts, action routing, host bridge, and transport consumers together.
 - Publish runtime changes through the existing event publishers; persistence belongs in the relevant state DB, not view-model caches.
+- Decode npm and skills API payloads with their local Schema contracts before catalog mapping; malformed external collections fail at ingress.
 - `artifact-compiler.ts` resolves allowed React imports from Howcode's runtime; artifacts otherwise remain self-contained.

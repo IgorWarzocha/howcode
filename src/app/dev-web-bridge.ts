@@ -13,6 +13,9 @@ import type {
 } from '@howcode/shared/desktop-ipc'
 import { getSafeExternalUrl } from '@howcode/shared/external-url'
 import type { TerminalEvent, TerminalOpenRequest } from '@howcode/shared/terminal-contracts'
+import * as Result from 'effect/Result'
+import * as Schema from 'effect/Schema'
+import { DevWebDesktopEventEnvelope, DevWebTerminalEventEnvelope } from './dev-web-event-schema'
 
 let bridgeTokenPromise: Promise<string> | null = null
 let authPromise: Promise<void> | null = null
@@ -265,15 +268,26 @@ function getEventSubscription(channel: DesktopEventChannel) {
 
 function subscribeToEvent<K extends DesktopEventChannel>(
   channel: K,
+  decode: (
+    input: unknown,
+  ) => Result.Result<{ readonly channel: K; readonly event: DesktopEventMap[K] }, unknown>,
   listener: (event: DesktopEventMap[K]) => void,
 ) {
   const subscription = getEventSubscription(channel)
   const wrappedListener = (event: MessageEvent<string>) => {
-    const payload = JSON.parse(event.data) as {
-      channel: K
-      event: DesktopEventMap[K]
+    let input: unknown
+    try {
+      input = JSON.parse(event.data)
+    } catch (error) {
+      console.warn(`Ignored malformed ${channel} event JSON.`, error)
+      return
     }
-    listener(payload.event)
+    const decoded = decode(input)
+    if (Result.isFailure(decoded)) {
+      console.warn(`Ignored invalid ${channel} event.`, decoded.failure)
+      return
+    }
+    listener(decoded.success.event)
   }
 
   subscription.listeners.add(wrappedListener)
@@ -416,9 +430,17 @@ export async function installDevWebDesktopBridge() {
     saveTextToDownloads: (fileName: string, content: string) =>
       invokeRequest('saveTextToDownloads', { fileName, content }),
     subscribe: (listener: (event: DesktopEvent) => void) =>
-      subscribeToEvent('desktopEvent', listener),
+      subscribeToEvent(
+        'desktopEvent',
+        Schema.decodeUnknownResult(DevWebDesktopEventEnvelope),
+        listener,
+      ),
     subscribeTerminal: (listener: (event: TerminalEvent) => void) =>
-      subscribeToEvent('terminalEvent', listener),
+      subscribeToEvent(
+        'terminalEvent',
+        Schema.decodeUnknownResult(DevWebTerminalEventEnvelope),
+        listener,
+      ),
   }
 
   await ensureAuthenticated()

@@ -1,39 +1,12 @@
+import * as Effect from 'effect/Effect'
+import * as Schema from 'effect/Schema'
 import type { PiPackageCatalogItem, PiPackageCatalogPage } from '../../shared/desktop-contracts.ts'
 import { sortPiPackageCatalogItems } from './helpers'
+import { type RegistrySearchObject, RegistrySearchResponse } from './registry-schema.ts'
 
 const npmRegistrySearchUrl = 'https://registry.npmjs.org/-/v1/search'
 const defaultCatalogPageSize = 20
 const catalogCacheTtlMs = 5 * 60_000
-
-type RegistryPackageLinks = {
-  homepage?: unknown
-  npm?: unknown
-  repository?: unknown
-}
-
-type RegistryPackage = {
-  name?: unknown
-  version?: unknown
-  description?: unknown
-  keywords?: unknown
-  date?: unknown
-  links?: RegistryPackageLinks
-}
-
-type RegistrySearchObject = {
-  downloads?: {
-    monthly?: unknown
-    weekly?: unknown
-  }
-  searchScore?: unknown
-  updated?: unknown
-  package?: RegistryPackage
-}
-
-type RegistrySearchResponse = {
-  total?: unknown
-  objects?: RegistrySearchObject[]
-}
 
 type CatalogCacheEntry = {
   expiresAt: number
@@ -79,7 +52,10 @@ function getRegistryPackageNumber(value: unknown) {
   return typeof value === 'number' && Number.isFinite(value) ? value : 0
 }
 
-function getRegistryPackageDate(packageRecord: RegistryPackage | undefined, fallback?: unknown) {
+function getRegistryPackageDate(
+  packageRecord: RegistrySearchObject['package'] | undefined,
+  fallback?: unknown,
+) {
   return (
     getRegistryPackageString(fallback) ??
     getRegistryPackageString(packageRecord?.date) ??
@@ -143,7 +119,9 @@ async function fetchRegistryPage(query: string, from: number, size: number) {
     throw new Error(`npm search failed (${response.status})`)
   }
 
-  return (await response.json()) as RegistrySearchResponse
+  return await Effect.runPromise(
+    Schema.decodeUnknownEffect(RegistrySearchResponse)(await response.json()),
+  )
 }
 
 async function loadCatalog(
