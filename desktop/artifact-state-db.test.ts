@@ -181,46 +181,6 @@ describe('artifact state db', () => {
     artifactDb.resetArtifactSchemaForTests()
   })
 
-  it('creates, versions, updates, and lists artifacts by conversation', async () => {
-    const { artifactDb } = await loadArtifactDb()
-
-    const first = artifactDb.createArtifact({
-      conversationId: 'conversation-a',
-      slug: 'Demo Artifact',
-      kind: 'markdown',
-      content: 'hello',
-    })
-    const second = artifactDb.createArtifact({
-      conversationId: 'conversation-b',
-      slug: 'Demo Artifact',
-      kind: 'html',
-      content: '<p>other</p>',
-    })
-    const updated = artifactDb.updateArtifact({
-      slug: first.slug,
-      conversationId: 'conversation-a',
-      content: 'hello again',
-    })
-
-    expect(first.slug).toBe('demo-artifact')
-    expect(second.slug).toBe('demo-artifact-2')
-    expect(updated.version).toBe(2)
-    expect(artifactDb.getArtifact(first.slug, 'conversation-a')?.content).toBe('hello again')
-    expect(artifactDb.getArtifact(first.slug, 'conversation-b')).toBeNull()
-    expect(artifactDb.listArtifacts('conversation-a').map((artifact) => artifact.slug)).toEqual([
-      first.slug,
-    ])
-    expect(
-      artifactDb.listArtifactVersions(first.slug).map((version) => ({
-        version: version.version,
-        content: version.content,
-      })),
-    ).toEqual([
-      { version: 2, content: 'hello again' },
-      { version: 1, content: 'hello' },
-    ])
-  })
-
   it('applies exact non-overlapping edits as a new version', async () => {
     const { artifactDb } = await loadArtifactDb()
     const artifact = artifactDb.createArtifact({

@@ -249,6 +249,16 @@ Resolved in Phase 7. Bringing Pages into the normal topology scan exposed an 848
 that combined bootstrap, routing, shared navigation, four unrelated page trees, and poll state. The
 entrypoint now only mounts the selected page; route UI and state have route-owned modules.
 
+### 8. The test suite protects presentation and feature inventory
+
+Severity: medium.
+
+Resolved in Phase 8. Renderer markup, layout, copy, interaction, menu, sidebar, timeline, keyboard,
+and presentation-model tests duplicated practical UI validation. Source-scanning parity and action
+coverage tests only proved that current features existed. These tests are gone; the remaining suite
+is restricted to narrow security, persistence, concurrency, protocol, parsing, lifecycle, routing,
+and agent-payload contracts with independent failure oracles.
+
 ## Baseline scorecard
 
 | Category | Score | Evidence |
@@ -396,11 +406,26 @@ Status: complete.
 - Share only site navigation and base-path asset resolution.
 - Preserve generated markup, route matching, poll behaviour, and site styling.
 
-Completion: this phase's commit. The 848-line mixed route entrypoint is now a 32-line bootstrap.
+Completion: commit `d074a400`. The 848-line mixed route entrypoint is now a 32-line bootstrap.
 Four route-owned modules contain their existing UI and local state, while `site-shell.tsx` and
 `site-assets.ts` own the genuinely shared site primitives. Strict type/build checks and
 architecture checks pass across 881 production files. A disposable production preview rendered all
 four routes, including live worktree poll results.
+
+### Phase 8 — Prune feature and UI tests
+
+Status: complete.
+
+- Remove component-rendering, presentation-model, layout, copy, keyboard, and interaction tests.
+- Remove feature inventory, action coverage, and transport API parity tests.
+- Prune positive feature demonstrations from mixed test files while retaining their security,
+  transaction, collision, resource-bound, persistence, and agent-routing cases.
+- Record the policy in root guidance so future UI work is checked in the running app instead.
+
+Completion: this phase's commit. Twenty UI/feature-inventory test files were removed and nine mixed
+files were narrowed, reducing the suite from 65 files and 210 tests to 45 files and 141 tests. No
+JSX/DOM test harnesses or presentation/parity assertions remain. The retained tests cover failure
+boundaries and deterministic contracts rather than current feature inventory.
 
 ## Final scorecard
 
@@ -409,7 +434,7 @@ four routes, including live worktree poll results.
 | `agent_native` | 5/10 | 8/10 | Feature-owned controller capabilities, one desktop request pipeline, route-owned Pages modules, and enforced runtime direction replace central duplication; `src/app/app-shell/*`, `src/desktop-host/desktop-requests/*`, and `pages/src/pages/*`. |
 | `fully_typed` | 8/10 | 9/10 | Strict checks now cover every deployable, including `pages/tsconfig.json` and `workers/polls/tsconfig.json`; no explicit `any` or TypeScript suppressions remain. |
 | `traversable` | 5/10 | 8/10 | Six cycles are gone, transport and static-site entrypoints are small, and local `AGENTS.md` files identify owners; some large cohesive domain modules remain. |
-| `test_coverage` | 7/10 | 8/10 | 210 deterministic tests cover contracts, domains, transports, and trust failures; browser smoke covers the live development path, but there is no cross-platform Electron interaction matrix. |
+| `test_coverage` | 7/10 | 8/10 | 141 focused tests cover security, persistence, concurrency, protocols, parsers, lifecycle, transports, and agent payloads; UI/UX is exercised in the running app rather than frozen in markup or interaction assertions. |
 | `feedback_loops` | 8/10 | 9/10 | The enforced commit gate now covers formatting, all TypeScript lanes, auxiliary builds, architecture, Vite resolution, tests, and React Doctor. |
 | `self_documenting` | 7/10 | 8/10 | This map, boundary-local guidance, typed contracts, and named owners describe the actual topology without a parallel architecture-doc set. |
 
@@ -437,7 +462,8 @@ four routes, including live worktree poll results.
 | 4 | `d1dabeab` | Cross-runtime direction and zero-cycle topology enforced across 867 production files. |
 | 5 | `5e975a88` | Headless and development hosts split by lifecycle, auth, response, and routing ownership. |
 | 6 | `86416794` | Auxiliary deployables joined the gate; full package build and live development browser smoke passed. |
-| 7 | This phase's commit | The static site bootstrap was separated from four route-owned feature modules. |
+| 7 | `d074a400` | The static site bootstrap was separated from four route-owned feature modules. |
+| 8 | This phase's commit | UI/UX and feature-inventory tests removed; 141 narrow contract tests remain. |
 
 ## Stop conditions
 

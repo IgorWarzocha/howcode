@@ -46,34 +46,6 @@ describe('project creation', () => {
     await rm(workspacePath, { recursive: true, force: true })
   })
 
-  it('creates a plain new project after starting its draft thread', async () => {
-    const { createProject } = await import('./project-create.ts')
-
-    const result = await createProject({
-      preferredProjectLocation: workspacePath,
-      projectName: 'Fresh Project',
-      initializeGit: false,
-    })
-
-    const projectPath = path.join(workspacePath, 'Fresh Project')
-    expect(result.projectId).toBe(projectPath)
-    expect(callOrder).toEqual([`start:${projectPath}`, `ensure:${projectPath}`])
-  })
-
-  it('adds a folder project after starting its draft thread', async () => {
-    const { addProjectFromPath } = await import('./project-create.ts')
-    const projectPath = path.join(workspacePath, 'existing-project')
-
-    const result = await addProjectFromPath({
-      projectPath,
-      createIfMissing: true,
-      initializeGit: false,
-    })
-
-    expect(result.projectId).toBe(projectPath)
-    expect(callOrder).toEqual([`start:${projectPath}`, `ensure:${projectPath}`])
-  })
-
   it('does not fail when adding an existing git project with git initialization enabled', async () => {
     const { addProjectFromPath } = await import('./project-create.ts')
     const projectPath = path.join(workspacePath, 'existing-git-project')

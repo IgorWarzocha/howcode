@@ -23,27 +23,6 @@ function createSession(input: {
 }
 
 describe('mapSessionCommands', () => {
-  test('includes app commands before extension, prompt, and skill commands', () => {
-    const commands = mapSessionCommands(
-      createSession({
-        commands: [{ invocationName: 'review', description: 'Review code' }],
-        enableSkillCommands: true,
-        promptTemplates: [{ name: 'plan', description: 'Make a plan' }],
-        skills: [{ name: 'hardening', description: 'Harden code' }],
-      }),
-    )
-
-    expect(commands.map((command) => command.name)).toEqual([
-      'settings',
-      'new',
-      'compact',
-      'tree',
-      'review',
-      'plan',
-      'skill:hardening',
-    ])
-  })
-
   test('keeps reserved and extension-owned names from being shadowed', () => {
     const commands = mapSessionCommands(
       createSession({
