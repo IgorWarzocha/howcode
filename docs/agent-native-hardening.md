@@ -341,13 +341,26 @@ snapshot or historical allowlist. Electron preload now consumes `shared/*` direc
 
 ### Phase 5 — Reassess hotspots and duplication
 
-Status: pending.
+Status: complete.
 
 - Rerun file size, fan-in/fan-out, cycle, cast, and cross-boundary scans.
 - Inspect mixed-concern hotspots rather than mechanically splitting long cohesive files.
 - Check Composer, AppShell, sidebar, GitOps, headless transport, dev transport, desktop action
   routing, shared contracts, and persistence repositories.
 - Extract only when the resulting owner and validation boundary are clearer.
+
+Completion: this phase's commit. The mixed headless server was split into an 87-line lifecycle
+entrypoint plus owned auth, bounded-response, and request-router modules; the former 577-line file
+is gone. Development web host trust/authentication moved into `dev-web-access.ts`, reducing
+`dev-web.ts` from 497 to 343 lines. Both transports retain the same tokens, cookies, status codes,
+host/origin checks, proxying, uploads, SSE cleanup, and SPA fallback.
+
+The reassessment deliberately retained several long cohesive files: SQLite query repositories,
+pure Pi message/payload mappers, typed contract maps, project diff algorithms, and the workspace
+transition registry. Their length is visible, but they do not currently mix runtime layers or hide
+unowned side effects. Composer, sidebar, and GitOps already have feature-owned submodules and no
+dependency cycles. Current scan: zero explicit `any`, zero TypeScript suppressions, 18 compatibility
+casts, and zero forbidden boundaries/cycles across 871 production files.
 
 ### Phase 6 — Complete feedback loops and final stabilisation
 
@@ -367,6 +380,7 @@ Status: pending.
 | 2 | This phase's commit | One typed request implementation across Electron, headless, and development; dev bridge reduced by 228 lines. |
 | 3 | This phase's commit | Flat shell controller replaced by narrowed feature capabilities; state and action stages have named owners. |
 | 4 | This phase's commit | Cross-runtime direction and zero-cycle topology enforced across 867 production files. |
+| 5 | This phase's commit | Headless and development hosts split by lifecycle, auth, response, and routing ownership. |
 
 ## Stop conditions
 
