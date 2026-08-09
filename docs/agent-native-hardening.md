@@ -241,6 +241,14 @@ Severity: low.
 Resolved in Phase 6. Pages and the polls worker now have strict type/build checks in `ai:check`, and
 the architecture checker includes both isolated source roots.
 
+### 7. The static site entrypoint owns every route
+
+Severity: low.
+
+Resolved in Phase 7. Bringing Pages into the normal topology scan exposed an 848-line entrypoint
+that combined bootstrap, routing, shared navigation, four unrelated page trees, and poll state. The
+entrypoint now only mounts the selected page; route UI and state have route-owned modules.
+
 ## Baseline scorecard
 
 | Category | Score | Evidence |
@@ -370,7 +378,7 @@ Status: complete.
 - Perform disposable browser/Electron smoke checks for the unchanged core workflows.
 - Update the scorecard with before/after evidence and list only genuine remaining risks.
 
-Completion: this phase's commit. `check:auxiliary` now strictly typechecks and production-builds the
+Completion: commit `86416794`. `check:auxiliary` now strictly typechecks and production-builds the
 Pages site and Cloudflare polls worker using official Worker/D1 types. Both roots are included in
 the architecture boundary and cycle scan. Vite config loading is explicit and warning-free for the
 root app and Pages build. A complete unpacked Electron build succeeded, including renderer/runtime
@@ -379,13 +387,28 @@ bundles, ASAR packaging, node-pty helper patching, and stock-Node service native
 server-browser smoke: the GitOps route rendered against the live desktop API. The desktop browser
 host was unavailable over SSH, so no desktop-machine browser claim is made.
 
+### Phase 7 — Split the static site by route
+
+Status: complete.
+
+- Keep `pages/src/main.tsx` as bootstrap and route composition only.
+- Give home, dependencies, blog index, and worktrees poll pages independent owners.
+- Share only site navigation and base-path asset resolution.
+- Preserve generated markup, route matching, poll behaviour, and site styling.
+
+Completion: this phase's commit. The 848-line mixed route entrypoint is now a 32-line bootstrap.
+Four route-owned modules contain their existing UI and local state, while `site-shell.tsx` and
+`site-assets.ts` own the genuinely shared site primitives. Strict type/build checks and
+architecture checks pass across 881 production files. A disposable production preview rendered all
+four routes, including live worktree poll results.
+
 ## Final scorecard
 
 | Category | Before | After | Evidence |
 | --- | ---: | ---: | --- |
-| `agent_native` | 5/10 | 8/10 | Feature-owned controller capabilities, one desktop request pipeline, and enforced runtime direction replace central duplication; `src/app/app-shell/*` and `src/desktop-host/desktop-requests/*`. |
+| `agent_native` | 5/10 | 8/10 | Feature-owned controller capabilities, one desktop request pipeline, route-owned Pages modules, and enforced runtime direction replace central duplication; `src/app/app-shell/*`, `src/desktop-host/desktop-requests/*`, and `pages/src/pages/*`. |
 | `fully_typed` | 8/10 | 9/10 | Strict checks now cover every deployable, including `pages/tsconfig.json` and `workers/polls/tsconfig.json`; no explicit `any` or TypeScript suppressions remain. |
-| `traversable` | 5/10 | 8/10 | Six cycles are gone, transport entrypoints are small, and local `AGENTS.md` files identify owners; some large cohesive domain modules remain. |
+| `traversable` | 5/10 | 8/10 | Six cycles are gone, transport and static-site entrypoints are small, and local `AGENTS.md` files identify owners; some large cohesive domain modules remain. |
 | `test_coverage` | 7/10 | 8/10 | 210 deterministic tests cover contracts, domains, transports, and trust failures; browser smoke covers the live development path, but there is no cross-platform Electron interaction matrix. |
 | `feedback_loops` | 8/10 | 9/10 | The enforced commit gate now covers formatting, all TypeScript lanes, auxiliary builds, architecture, Vite resolution, tests, and React Doctor. |
 | `self_documenting` | 7/10 | 8/10 | This map, boundary-local guidance, typed contracts, and named owners describe the actual topology without a parallel architecture-doc set. |
@@ -413,7 +436,8 @@ host was unavailable over SSH, so no desktop-machine browser claim is made.
 | 3 | `601c0f4f` | Flat shell controller replaced by 14 narrowed feature capabilities; state and action stages have named owners. |
 | 4 | `d1dabeab` | Cross-runtime direction and zero-cycle topology enforced across 867 production files. |
 | 5 | `5e975a88` | Headless and development hosts split by lifecycle, auth, response, and routing ownership. |
-| 6 | This phase's commit | Auxiliary deployables joined the gate; full package build and live development browser smoke passed. |
+| 6 | `86416794` | Auxiliary deployables joined the gate; full package build and live development browser smoke passed. |
+| 7 | This phase's commit | The static site bootstrap was separated from four route-owned feature modules. |
 
 ## Stop conditions
 
