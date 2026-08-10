@@ -1,11 +1,19 @@
 ### 0.1.68
 
+- Rebuilt GitOps review around current Pierre Diffs: select one or several lines, add comments, and send the review straight back to the active agent thread.
+- Added **Keep** and **Reject** hunk review. Rejections require a comment for the agent; local review decisions can be reset without touching the worktree.
+- GitOps can now load all remaining unchanged context instead of leaving partial diffs stuck, including renamed, added, and deleted files.
+- Added optional direct editing for changed text files, with revision checks and atomic saves so agent changes are never silently overwritten.
+- Moved the GitOps changed-files browser to Pierre Trees.
 - Rebuilt app updates around one atomic, channel-aware updater for macOS, Linux, and Windows.
 - Updates now download in the background, verify immutable archives, and hand off before the next launch.
 - Hardened `bunx howcode` / `bunx howcode@dev` cache recovery, concurrent launches, and launch failure reporting.
-- Launcher success now waits for the Electron window to report ready instead of trusting a detached process spawn.
+- Launcher success now waits for the Electron window to report ready instead of trusting a detached process spawn, while staged updates preserve headless mode and launch options.
 - Moving channels publish payloads before manifests and verify every advertised archive hash.
 - Existing release manifests remain readable for this migration release; future manifests use protocol v2.
+- Hardened runtime startup and shutdown, terminal transcript persistence, process recovery, and desktop payload validation.
+- Added Pi's `max` thinking level throughout the composer and settings.
+- Updated Pi to 0.84.1, Electron to 43.3.0, better-sqlite3 to 13.0.3, Pierre Diffs to 1.3.5, React to 19.2.8, and the rest of the app/build stack.
 
 Snapshot: 21 July 2026.
 
