@@ -93,11 +93,3 @@ Hooks:
 
 - `.husky/pre-commit` — lint-staged, then `bun run ai:check`
 - `.husky/pre-push` — clean build outputs, then `bun run ai:check`
-
-## Useful docs
-
-- `docs/roadmap.md`
-- `docs/todolist.md`
-- `docs/mock-features.md`
-- `docs/implementation-todo.md`
-- `docs/lane-map.md`
