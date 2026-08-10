@@ -18,3 +18,4 @@
 - Do not programmatically test UI/UX, rendered markup, layout, styling, copy, or interaction flows; exercise those in the running app with disposable projects.
 - If a regression is immediately obvious by launching the app or trying the workflow, use that practical check instead of a happy-path unit or integration test.
 - Keep deterministic tests for security, persistence, concurrency, protocol, parsing, lifecycle, and other narrow contracts with independent failure oracles.
+- Do not test Pi SDK API shape or upstream behaviour; TypeScript is the Pi compatibility check. Test only Howcode-owned policy around Pi when it has an independent oracle.

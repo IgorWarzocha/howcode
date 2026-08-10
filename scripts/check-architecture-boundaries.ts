@@ -16,6 +16,17 @@ const sourceRoots = [
 const sourceExtensions = ['.ts', '.tsx', '.js', '.cjs', '.mjs'] as const
 const testFilePattern = /\.(?:spec|test)\.[cm]?[jt]sx?$/u
 const ignoredDirectoryPattern = /(?:^|\/)(?:artifacts|build|dist|node_modules)(?:\/|$)/u
+const allowedPiRuntimeImportPrefixes = [
+  'desktop/runtime-host/',
+  'desktop/runtime/',
+  'desktop/service-host.ts',
+  'desktop/service-host-runtime.ts',
+  'desktop/pi-module.ts',
+  'desktop/pi-packages/services.ts',
+  'desktop/pi-packages/configured.ts',
+  'desktop/pi-packages/mutations.ts',
+  'desktop/skills/mutations.ts',
+] as const
 
 type Layer =
   | 'renderer'
@@ -166,6 +177,38 @@ function isForbiddenBoundary(from: Layer, to: Layer) {
   }
 }
 
+function isAllowedPiRuntimeFile(filePath: string) {
+  const repoPath = toRepoPath(filePath)
+  return allowedPiRuntimeImportPrefixes.some(
+    (prefix) => repoPath === prefix || repoPath.startsWith(prefix),
+  )
+}
+
+function getSpecialBoundaryViolation(
+  importer: string,
+  specifier: string,
+  dependency: string | undefined,
+) {
+  const importerLayer = getLayer(importer)
+  const importerPath = toRepoPath(importer)
+  if (importerLayer === 'electron' && specifier === 'better-sqlite3') {
+    return `${importerPath} imports better-sqlite3 (Electron must not load stock-Node native modules)`
+  }
+  if (importerLayer !== 'service' || isAllowedPiRuntimeFile(importer)) return undefined
+
+  const dependencyPath = dependency ? toRepoPath(dependency) : null
+  const importsPiRuntime =
+    specifier.startsWith('@earendil-works/pi-') ||
+    dependencyPath === 'desktop/pi-module.ts' ||
+    dependencyPath === 'desktop/runtime/composer-service.ts' ||
+    dependencyPath === 'desktop/runtime/composer-state.ts' ||
+    dependencyPath === 'desktop/runtime/runtime-registry.ts' ||
+    dependencyPath === 'desktop/runtime/thread-publisher.ts'
+  return importsPiRuntime
+    ? `${importerPath} imports ${dependencyPath ?? specifier} outside the Pi runtime boundary`
+    : undefined
+}
+
 function findCycles(graph: ReadonlyMap<string, ReadonlySet<string>>) {
   let nextIndex = 0
   const indexes = new Map<string, number>()
@@ -229,6 +272,8 @@ function buildArchitectureGraph(files: string[], aliases: readonly AliasEntry[])
   for (const importer of files) {
     for (const specifier of getImportSpecifiers(importer)) {
       const dependency = resolveImport(importer, specifier, aliases, sourceFiles)
+      const specialViolation = getSpecialBoundaryViolation(importer, specifier, dependency)
+      if (specialViolation) boundaryViolations.push(specialViolation)
       if (!dependency || dependency === importer) continue
       graph.get(importer)?.add(dependency)
       const fromLayer = getLayer(importer)

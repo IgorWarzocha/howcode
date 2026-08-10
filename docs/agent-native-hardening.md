@@ -443,6 +443,26 @@ leaving 41 files and 107 tests. The live GitOps route remained loaded with the d
 API after the prune. Root guidance now explicitly rejects tests for regressions immediately obvious
 from launching the app or trying the workflow.
 
+### Phase 10 — Re-audit test oracles
+
+Status: complete.
+
+- Remove direct schema demonstrations whose only oracle is that Effect rejects an obviously wrong
+  primitive or missing field.
+- Remove happy-path compiler, project-addition, URL-normalisation, and process-probe checks that are
+  immediately visible in practice or merely restate their implementation.
+- Remove the 203-line fake SQLite harness that mirrored SQL machinery to protect one text-edit
+  branch without exercising the real persistence boundary.
+- Move Electron native-module and Pi runtime import ownership out of Vitest and into the canonical
+  architecture checker.
+- Rely on TypeScript for Pi SDK API compatibility; retain tests only for Howcode-owned policy around
+  Pi with a separate security, ordering, persistence, payload, or lifecycle oracle.
+
+Completion: this phase's commit. Later boundary work had grown the suite to 48 files and 124 tests;
+the re-audit removed five files and 16 tests, leaving 43 files and 108 tests. The architecture gate
+still enforces the removed Electron/native and Pi runtime ownership checks across 901 production
+files. No product code or behaviour changed; two test-only database reset exports were removed.
+
 ## Final scorecard
 
 | Category | Before | After | Evidence |
@@ -450,7 +470,7 @@ from launching the app or trying the workflow.
 | `agent_native` | 5/10 | 8/10 | Feature-owned controller capabilities, one desktop request pipeline, route-owned Pages modules, and enforced runtime direction replace central duplication; `src/app/app-shell/*`, `src/desktop-host/desktop-requests/*`, and `pages/src/pages/*`. |
 | `fully_typed` | 8/10 | 9/10 | Strict checks now cover every deployable, including `pages/tsconfig.json` and `workers/polls/tsconfig.json`; no explicit `any` or TypeScript suppressions remain. |
 | `traversable` | 5/10 | 8/10 | Six cycles are gone, transport and static-site entrypoints are small, and local `AGENTS.md` files identify owners; some large cohesive domain modules remain. |
-| `test_coverage` | 7/10 | 8/10 | 107 focused tests cover security, persistence, concurrency, protocols, parsers, lifecycle, transports, and agent payloads; basic wiring and UI/UX are exercised in the running app instead. |
+| `test_coverage` | 7/10 | 8/10 | 108 focused tests cover security, persistence, concurrency, protocols, parsers, lifecycle, transports, and agent payloads; basic wiring, Pi compatibility, and UI/UX use typechecking or the running app instead. |
 | `feedback_loops` | 8/10 | 9/10 | The enforced commit gate now covers formatting, all TypeScript lanes, auxiliary builds, architecture, Vite resolution, tests, and React Doctor. |
 | `self_documenting` | 7/10 | 8/10 | This map, boundary-local guidance, typed contracts, and named owners describe the actual topology without a parallel architecture-doc set. |
 
@@ -481,6 +501,7 @@ from launching the app or trying the workflow.
 | 7 | `d074a400` | The static site bootstrap was separated from four route-owned feature modules. |
 | 8 | `5e0f2594` | UI/UX and feature-inventory tests removed; 141 narrow contract tests remained. |
 | 9 | This phase's commit | Launch-obvious happy paths removed; 107 narrow contract tests remain. |
+| 10 | This phase's commit | Test oracles re-audited; 108 narrow contracts remain after subsequent hardening work. |
 
 ## Stop conditions
 

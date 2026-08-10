@@ -8,10 +8,6 @@ import { runInTransaction } from './thread-state-db/write-transaction.ts'
 
 let artifactSchemaReady = false
 
-export function resetArtifactSchemaForTests() {
-  artifactSchemaReady = false
-}
-
 function ensureArtifactSchema() {
   if (artifactSchemaReady) return
   const db = getThreadStateDatabase()
