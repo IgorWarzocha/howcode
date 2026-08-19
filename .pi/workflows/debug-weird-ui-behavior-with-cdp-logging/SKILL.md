@@ -24,7 +24,7 @@ Use this when the app does something weird and the behavior must be observed liv
 List targets:
 
 ```bash
-CDP_PORT=39217 /home/igorw/.pi/agent/skills/chrome-cdp/scripts/cdp.mjs list
+CDP_PORT=39217 node /home/igorw/.pi/agent/codex-conversion-custom-tools/browser/cdp.mjs list
 ```
 
 Use the target id prefix from `list` in later commands.
@@ -34,7 +34,7 @@ Use the target id prefix from `list` in later commands.
 Adapt selectors to the surface being debugged. For sidebar branch/worktree flicker, this logger captures row labels, expanded state, and scroll position:
 
 ```bash
-CDP_PORT=39217 /home/igorw/.pi/agent/skills/chrome-cdp/scripts/cdp.mjs eval <target> '(() => {
+CDP_PORT=39217 node /home/igorw/.pi/agent/codex-conversion-custom-tools/browser/cdp.mjs eval <target> '(() => {
   window.__uiDebug?.observer?.disconnect?.()
   const root = document.querySelector(".sidebar-project-work-section")
   window.__uiDebug = { events: [], startedAt: Date.now() }
@@ -78,7 +78,7 @@ Example pattern:
 3. Add a manual marker before the suspect action:
 
 ```bash
-CDP_PORT=39217 /home/igorw/.pi/agent/skills/chrome-cdp/scripts/cdp.mjs eval <target> '(() => {
+CDP_PORT=39217 node /home/igorw/.pi/agent/codex-conversion-custom-tools/browser/cdp.mjs eval <target> '(() => {
   window.__uiDebug.events.push({ reason: "before-action", t: Date.now(), dt: Date.now() - window.__uiDebug.startedAt })
   return true
 })()'
@@ -88,7 +88,7 @@ CDP_PORT=39217 /home/igorw/.pi/agent/skills/chrome-cdp/scripts/cdp.mjs eval <tar
 5. Dump recent events:
 
 ```bash
-CDP_PORT=39217 /home/igorw/.pi/agent/skills/chrome-cdp/scripts/cdp.mjs eval <target> '(() => window.__uiDebug?.events?.slice(-80))()'
+CDP_PORT=39217 node /home/igorw/.pi/agent/codex-conversion-custom-tools/browser/cdp.mjs eval <target> '(() => window.__uiDebug?.events?.slice(-80))()'
 ```
 
 ## What to look for
