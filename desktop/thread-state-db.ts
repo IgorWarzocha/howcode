@@ -48,7 +48,7 @@ export {
   getProjectWorktree,
   getProjectWorktreeDirectory,
   hideProject,
-  listProjectBranchWorktreePaths,
+  listProjectWorktreePaths,
   markInboxThreadRead,
   renameProject,
   renameThreadTitle,

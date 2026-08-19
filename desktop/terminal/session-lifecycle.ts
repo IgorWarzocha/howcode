@@ -37,29 +37,49 @@ export function ensureProcessStarted(
   return record.restartPromise
 }
 
-function stopTerminalProcess(
+const TERMINAL_STOP_TIMEOUT_MS = 1_000
+
+function signalTerminalProcess(
   processHandle: NonNullable<TerminalSessionRecord['process']>,
-  force: boolean,
+  signal?: string,
 ) {
-  if (!force) {
-    processHandle.kill()
-    return Promise.resolve()
-  }
-
-  return new Promise<void>((resolve, reject) => {
+  return new Promise<boolean>((resolve, reject) => {
+    let settled = false
     let unsubscribe: () => void = () => undefined
-    unsubscribe = processHandle.onExit(() => {
+    const timeout = setTimeout(() => settle(false), TERMINAL_STOP_TIMEOUT_MS)
+    const settle = (exited: boolean) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timeout)
       unsubscribe()
-      resolve()
-    })
+      resolve(exited)
+    }
 
+    unsubscribe = processHandle.onExit(() => settle(true))
     try {
-      processHandle.kill('SIGKILL')
+      processHandle.kill(signal)
     } catch (error) {
+      if (settled) return
+      settled = true
+      clearTimeout(timeout)
       unsubscribe()
       reject(error)
     }
   })
+}
+
+async function stopTerminalProcess(
+  processHandle: NonNullable<TerminalSessionRecord['process']>,
+  force: boolean,
+) {
+  if (!force) {
+    try {
+      if (await signalTerminalProcess(processHandle)) return
+    } catch {
+      // Escalate once before releasing ownership.
+    }
+  }
+  await signalTerminalProcess(processHandle, 'SIGKILL')
 }
 
 async function finalizeTerminalRecord(store: TerminalSessionStore, record: TerminalSessionRecord) {

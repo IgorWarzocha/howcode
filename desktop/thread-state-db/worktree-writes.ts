@@ -148,7 +148,7 @@ export function setProjectWorktreeCompleted(cwd: string, completed: boolean) {
   return result.changes > 0
 }
 
-export function listProjectBranchWorktreePaths(rootCwd: string, branchName: string) {
+export function listProjectWorktreePaths(rootCwd: string) {
   const rows = getThreadStateDatabase()
     .prepare(
       `
@@ -156,13 +156,9 @@ export function listProjectBranchWorktreePaths(rootCwd: string, branchName: stri
         FROM project_worktrees
         WHERE root_cwd = ?
           AND is_main = 0
-          AND COALESCE(
-            NULLIF(TRIM(parent_branch_name), ''),
-            NULLIF(TRIM(branch_name), '')
-          ) = ?
       `,
     )
-    .all(rootCwd, branchName) as Array<{ cwd?: unknown }>
+    .all(rootCwd) as Array<{ cwd?: unknown }>
 
   return rows.map((row) => {
     if (typeof row.cwd !== 'string') {

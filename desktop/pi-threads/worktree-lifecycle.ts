@@ -1,4 +1,5 @@
 import { disposeWorkspaceComposerRuns } from '../pi-desktop-runtime.ts'
+import { getBranch } from '../project-git/project-state.ts'
 import { mergeProjectBranch, pruneProjectBranch, removeProjectWorktree } from '../project-git.ts'
 import type { RegisteredWorktree } from '../project-worktrees/registered-worktree.ts'
 import { getWorktreeMergeTargetError } from '../project-worktrees/registered-worktree.ts'
@@ -65,14 +66,19 @@ function resultFor(
 
 async function mergeRegisteredWorktree(worktree: RegisteredWorktree, merge: boolean) {
   if (!merge) return { didMutate: false, worktreeCompleted: false }
-  if (!worktree.branchName) {
+  const targetError = getWorktreeMergeTargetError({
+    ...worktree,
+    currentRootBranchName: await getBranch(worktree.rootProjectId),
+  })
+  if (targetError) {
     return {
       didMutate: false,
       worktreeCompleted: false,
-      error: 'Detached worktrees cannot be merged automatically.',
+      error: targetError,
     }
   }
 
+  if (!worktree.branchName) throw new Error('Validated merge target has no branch.')
   const mergeResult = await mergeProjectBranch(worktree.rootProjectId, worktree.branchName)
   if ('error' in mergeResult) {
     return {
@@ -130,7 +136,7 @@ export async function removeRegisteredWorktree(input: {
       ? await pruneProjectBranch(worktree.rootProjectId, worktree.branchName)
       : null
   const threadCleanup = await deleteWorkspaceThreads(threadIds)
-  deleteProject(worktree.worktreePath)
+  if (!threadCleanup) deleteProject(worktree.worktreePath)
 
   const errors = [
     branchResult && 'error' in branchResult ? branchResult.error : null,

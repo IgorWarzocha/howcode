@@ -27,5 +27,12 @@ describe('worktree merge target guard', () => {
     expect(getWorktreeMergeTargetError({ ...baseWorktree, branchName: null })).toBe(
       'Detached worktrees cannot be merged automatically.',
     )
+    expect(
+      getWorktreeMergeTargetError({
+        ...baseWorktree,
+        parentBranchName: null,
+        metadata: { ...baseWorktree.metadata!, parentBranchName: null },
+      }),
+    ).toBe('Managed worktrees require a recorded parent branch before merging.')
   })
 })

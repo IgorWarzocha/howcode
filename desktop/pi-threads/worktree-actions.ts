@@ -13,13 +13,14 @@ import { createProjectWorktree, getMainWorktreePath, pruneProjectBranch } from '
 import {
   type RegisteredWorktree,
   resolveRegisteredWorktree,
+  resolveRegisteredWorktrees,
 } from '../project-worktrees/registered-worktree.ts'
 import {
   ensureProject,
   getProjectWorktreeDirectory,
   hasRunningProjectThread,
-  listProjectBranchWorktreePaths,
   listProjectFamilyBranchThreadIds,
+  listProjectWorktreePaths,
   setProjectWorktreeCompleted,
   setProjectWorktreeDirectory,
   upsertProjectWorktree,
@@ -54,10 +55,11 @@ async function handleCreateWorktree(payload: AnyDesktopActionPayload) {
   const rootProjectId = await getMainWorktreePath(projectId)
   const worktreeDirectory =
     getWorktreeDirectory(payload) ?? getProjectWorktreeDirectory(rootProjectId)
-  const [parentBranchName, result] = await Promise.all([
-    getBranch(rootProjectId),
-    createProjectWorktree({ projectId, branchName, worktreeDirectory }),
-  ])
+  const parentBranchName = await getBranch(rootProjectId)
+  if (!parentBranchName) {
+    return handledAction({ error: 'Switch the parent worktree to a branch before creating one.' })
+  }
+  const result = await createProjectWorktree({ projectId, branchName, worktreeDirectory })
   if ('error' in result) return handledAction(result)
 
   ensureProject(result.rootProjectId)
@@ -141,7 +143,6 @@ async function handleSingleWorktreeRemoval(
 
 type CleanupRequirements = {
   completedOnly?: boolean
-  associatedBranchName?: string
 }
 
 async function resolveCleanupTargets(
@@ -163,17 +164,6 @@ async function resolveCleanupTargets(
       return {
         error: 'Only worktrees currently marked complete can be handled in bulk.',
         failedWorktreePath: worktree.worktreePath,
-      }
-    }
-
-    if (requirements.associatedBranchName) {
-      const associatedBranchName =
-        worktree.metadata?.parentBranchName?.trim() || worktree.metadata?.branchName?.trim() || null
-      if (associatedBranchName !== requirements.associatedBranchName) {
-        return {
-          error: `Worktree is not associated with ${requirements.associatedBranchName}.`,
-          failedWorktreePath: worktree.worktreePath,
-        }
       }
     }
 
@@ -238,16 +228,17 @@ async function handlePruneBranch(payload: AnyDesktopActionPayload) {
     return handledAction({ error: 'Stop running sessions before pruning this branch.' })
   }
 
-  const targets = listProjectBranchWorktreePaths(rootProjectId, branchName).map((worktreePath) => ({
-    worktreePath,
-  }))
-  const resolved = await resolveCleanupTargets(rootProjectId, targets, {
-    associatedBranchName: branchName,
+  const resolved = await resolveRegisteredWorktrees(
+    rootProjectId,
+    listProjectWorktreePaths(rootProjectId),
+  )
+  if ('error' in resolved) return handledAction({ ...resolved, rootProjectId })
+  const worktrees = resolved.filter((worktree) => {
+    const associatedBranchName =
+      worktree.metadata?.parentBranchName?.trim() || worktree.branchName?.trim() || null
+    return associatedBranchName === branchName
   })
-  if ('error' in resolved) {
-    return handledAction({ ...resolved, rootProjectId })
-  }
-  const worktreeCleanup = await cleanupWorktrees(resolved.worktrees, {
+  const worktreeCleanup = await cleanupWorktrees(worktrees, {
     merge: false,
     pruneBranch: false,
   })

@@ -10,8 +10,14 @@ import type { PtyAdapter, PtyExitEvent, PtyProcess } from './types.ts'
 class FakePtyProcess implements PtyProcess {
   readonly pid = 42
   killCount = 0
+  killSignals: Array<string | undefined> = []
   disposeCount = 0
   private readonly exitCallbacks = new Set<(event: PtyExitEvent) => void>()
+  private readonly exitOnlyWhenForced: boolean
+
+  constructor(exitOnlyWhenForced = false) {
+    this.exitOnlyWhenForced = exitOnlyWhenForced
+  }
 
   write(data: string) {
     void data
@@ -22,8 +28,10 @@ class FakePtyProcess implements PtyProcess {
     void rows
   }
 
-  kill() {
+  kill(signal?: string) {
     this.killCount += 1
+    this.killSignals.push(signal)
+    if (this.exitOnlyWhenForced && signal !== 'SIGKILL') return
     for (const callback of this.exitCallbacks) callback({ exitCode: 0, signal: null })
   }
 
@@ -43,6 +51,32 @@ class FakePtyProcess implements PtyProcess {
 }
 
 describe('Terminal service', () => {
+  it('escalates an ordinary close when the PTY does not exit', async () => {
+    const process = new FakePtyProcess(true)
+    const adapter: PtyAdapter = {
+      name: 'stubborn-fake',
+      spawn: async () => process,
+    }
+    const testLayer = layer.pipe(Layer.provide(Layer.succeed(Pty.Service, adapter)))
+    const snapshot = await Effect.runPromise(
+      Effect.gen(function* () {
+        const terminal = yield* Service
+        const opened = yield* terminal.open({
+          projectId: '/tmp/howcode-effect-terminal-close-test',
+          cwd: '/tmp',
+          launchMode: 'shell',
+          cols: 80,
+          rows: 24,
+        })
+        yield* terminal.close({ sessionId: opened.sessionId })
+        return opened
+      }).pipe(Effect.provide(testLayer)),
+    )
+
+    expect(process.killSignals).toEqual([undefined, 'SIGKILL'])
+    rmSync(getTranscriptPath(snapshot.sessionId), { force: true })
+  })
+
   it('waits for an in-flight spawn and kills a late PTY during scope shutdown', async () => {
     const process = new FakePtyProcess()
     const spawnControl: { resolve: ((process: PtyProcess) => void) | null } = { resolve: null }
