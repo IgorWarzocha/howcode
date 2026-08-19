@@ -15,7 +15,11 @@ export async function closePiTuiSession(input: { projectId: string; sessionPath:
 
   await Promise.all(
     matchingTerminals.map((terminal) =>
-      closeDesktopTerminal({ sessionId: terminal.sessionId, deleteHistory: false }),
+      closeDesktopTerminal({
+        sessionId: terminal.sessionId,
+        deleteHistory: false,
+        force: true,
+      }),
     ),
   )
 }

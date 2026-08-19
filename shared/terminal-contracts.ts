@@ -34,6 +34,7 @@ export interface TerminalResizeRequest extends Schema.Schema.Type<typeof Termina
 export const TerminalCloseRequest = Schema.Struct({
   sessionId: TerminalIdentifier,
   deleteHistory: Schema.optionalKey(Schema.Boolean),
+  force: Schema.optionalKey(Schema.Boolean),
 })
 export interface TerminalCloseRequest extends Schema.Schema.Type<typeof TerminalCloseRequest> {}
 

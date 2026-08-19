@@ -37,7 +37,15 @@ export function ensureProcessStarted(
   return record.restartPromise
 }
 
-function stopTerminalProcess(processHandle: NonNullable<TerminalSessionRecord['process']>) {
+function stopTerminalProcess(
+  processHandle: NonNullable<TerminalSessionRecord['process']>,
+  force: boolean,
+) {
+  if (!force) {
+    processHandle.kill()
+    return Promise.resolve()
+  }
+
   return new Promise<void>((resolve, reject) => {
     let unsubscribe: () => void = () => undefined
     unsubscribe = processHandle.onExit(() => {
@@ -46,7 +54,7 @@ function stopTerminalProcess(processHandle: NonNullable<TerminalSessionRecord['p
     })
 
     try {
-      processHandle.kill()
+      processHandle.kill('SIGKILL')
     } catch (error) {
       unsubscribe()
       reject(error)
@@ -66,7 +74,10 @@ async function finalizeTerminalRecord(store: TerminalSessionStore, record: Termi
   await stopTuiSessionDetection(record).catch(captureError)
   clearSessionBindings(record)
   record.process = null
-  await (processHandle ? stopTerminalProcess(processHandle) : Promise.resolve()).catch(captureError)
+  await (processHandle
+    ? stopTerminalProcess(processHandle, record.forceKillOnClose)
+    : Promise.resolve()
+  ).catch(captureError)
   record.restartPromise = null
   try {
     await flushSession(record)
@@ -183,6 +194,7 @@ export async function createTerminalRecord(input: {
     tuiSessionDetection: createTuiSessionDetection(input.request),
     cleanup: [],
     deleteHistoryOnClose: false,
+    forceKillOnClose: false,
   }
 
   Effect.runSync(

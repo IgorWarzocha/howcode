@@ -133,6 +133,7 @@ export function makeTerminalManager(
     const record = store.get(request.sessionId)
     if (!record) return
     record.deleteHistoryOnClose = request.deleteHistory === true
+    record.forceKillOnClose = request.force === true
     await Effect.runPromise(Scope.close(record.scope, Exit.void))
   }
 

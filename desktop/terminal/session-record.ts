@@ -22,4 +22,5 @@ export type TerminalSessionRecord = {
   } | null
   cleanup: Array<() => void>
   deleteHistoryOnClose: boolean
+  forceKillOnClose: boolean
 }
