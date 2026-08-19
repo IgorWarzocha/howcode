@@ -15,9 +15,6 @@ import {
   workspaceFooterTrailingGroupClass,
 } from './footer/workspace-footer-primitives'
 
-const PI_TUI_KEEP_ALIVE_MS = 300_000
-const PI_TUI_SESSION_FILE_IDLE_POLL_MS = 5 * 60_000
-
 export type PiTuiTakeoverPanelProps = {
   projectId: string
   sessionPath: string | null
@@ -57,8 +54,6 @@ export function PiTuiTakeoverPanel({
       <PiTuiViewport
         projectId={projectId}
         sessionPath={sessionPath}
-        keepAliveMsOnUnmount={PI_TUI_KEEP_ALIVE_MS}
-        closeWhenSessionFileIdleMs={PI_TUI_SESSION_FILE_IDLE_POLL_MS}
         backgroundCssVar="--workspace"
         className="terminal-viewport--flush relative z-0 min-h-0 rounded-none bg-[color:var(--workspace)]"
       />
