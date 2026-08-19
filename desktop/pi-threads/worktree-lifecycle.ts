@@ -6,8 +6,9 @@ import {
   getWorktreeMergeTargetError,
   resolveRegisteredWorktree,
 } from '../project-worktrees/registered-worktree.ts'
+import { withRootGitMutation } from '../project-worktrees/root-git-mutation-gate.ts'
 import { withWorkspaceTeardown } from '../project-worktrees/workspace-teardown-gate.ts'
-import { closeTerminal, listTerminals } from '../terminal/runtime.ts'
+import { closeWorkspaceTerminals } from '../terminal/workspace-terminals.ts'
 import {
   deleteProject,
   listProjectSessionPaths,
@@ -25,18 +26,8 @@ export type WorktreeLifecycleResult = {
   worktreeCompleted?: boolean | undefined
   worktreeRemoved: boolean
   error?: string | undefined
+  message?: string | undefined
   failedThreadIds?: string[] | undefined
-}
-
-async function closeWorkspaceTerminals(projectId: string) {
-  const terminalSnapshots = await listTerminals()
-  await Promise.all(
-    terminalSnapshots.flatMap((snapshot) =>
-      snapshot.projectId === projectId
-        ? [closeTerminal({ sessionId: snapshot.sessionId, deleteHistory: true })]
-        : [],
-    ),
-  )
 }
 
 async function disposeWorkspaceSessions(projectId: string) {
@@ -58,7 +49,9 @@ export async function deleteWorkspaceThreads(threadIds: string[]) {
 function resultFor(
   worktree: RegisteredWorktree,
   details: Pick<WorktreeLifecycleResult, 'didMutate' | 'worktreeRemoved'> &
-    Partial<Pick<WorktreeLifecycleResult, 'error' | 'failedThreadIds' | 'worktreeCompleted'>>,
+    Partial<
+      Pick<WorktreeLifecycleResult, 'error' | 'failedThreadIds' | 'message' | 'worktreeCompleted'>
+    >,
 ): WorktreeLifecycleResult {
   return {
     rootProjectId: worktree.rootProjectId,
@@ -135,7 +128,7 @@ async function finishWorktreeRemoval(input: {
   const threadCleanup = await deleteWorkspaceThreads(threadIds)
   if (!threadCleanup) deleteProject(worktree.worktreePath)
 
-  const errors = [
+  const warnings = [
     removeResult.warning,
     branchResult && 'error' in branchResult ? branchResult.error : null,
     threadCleanup?.error,
@@ -147,7 +140,7 @@ async function finishWorktreeRemoval(input: {
     didMutate: true,
     worktreeRemoved: true,
     ...(mergeResult.worktreeCompleted ? { worktreeCompleted: true } : {}),
-    ...(errors ? { error: errors } : {}),
+    ...(warnings ? { message: warnings } : {}),
     ...(threadCleanup?.failedThreadIds ? { failedThreadIds: threadCleanup.failedThreadIds } : {}),
   })
 }
@@ -169,30 +162,31 @@ export async function removeRegisteredWorktree(input: {
 
   return withWorkspaceTeardown(worktree.worktreePath, async () => {
     await disposeWorkspaceSessions(worktree.worktreePath)
+    return withRootGitMutation(worktree.rootProjectId, async () => {
+      const refreshed = await refreshWorktreeAfterSessionStop(worktree)
+      if ('error' in refreshed) {
+        return resultFor(worktree, {
+          didMutate: false,
+          worktreeRemoved: false,
+          error: refreshed.error,
+        })
+      }
+      const refreshedWorktree = refreshed.worktree
 
-    const refreshed = await refreshWorktreeAfterSessionStop(worktree)
-    if ('error' in refreshed) {
-      return resultFor(worktree, {
-        didMutate: false,
-        worktreeRemoved: false,
-        error: refreshed.error,
+      const mergeResult = await mergeRegisteredWorktree(refreshedWorktree, input.merge)
+      if (mergeResult.error) {
+        return resultFor(refreshedWorktree, {
+          didMutate: mergeResult.didMutate,
+          worktreeRemoved: false,
+          error: mergeResult.error,
+        })
+      }
+
+      return finishWorktreeRemoval({
+        worktree: refreshedWorktree,
+        mergeResult,
+        pruneBranch: input.pruneBranch,
       })
-    }
-    const refreshedWorktree = refreshed.worktree
-
-    const mergeResult = await mergeRegisteredWorktree(refreshedWorktree, input.merge)
-    if (mergeResult.error) {
-      return resultFor(refreshedWorktree, {
-        didMutate: mergeResult.didMutate,
-        worktreeRemoved: false,
-        error: mergeResult.error,
-      })
-    }
-
-    return finishWorktreeRemoval({
-      worktree: refreshedWorktree,
-      mergeResult,
-      pruneBranch: input.pruneBranch,
     })
   })
 }

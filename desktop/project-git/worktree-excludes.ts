@@ -35,7 +35,12 @@ async function getExcludePath(rootProjectId: string) {
 
 export function getInRepositoryWorktreePath(rootProjectId: string, worktreePath: string) {
   const relativePath = path.relative(path.resolve(rootProjectId), path.resolve(worktreePath))
-  if (!relativePath || relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+  if (
+    !relativePath ||
+    relativePath === '..' ||
+    relativePath.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relativePath)
+  ) {
     return null
   }
   if (relativePath.includes('\n') || relativePath.includes('\r')) {

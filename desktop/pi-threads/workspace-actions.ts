@@ -19,10 +19,12 @@ import { setSidebarVisibleProjectIds } from '../app-settings/writers.ts'
 import { generateGitCommitMessage } from '../git-commit-message.ts'
 import {
   commitProjectChanges,
+  getMainWorktreePath,
   initializeProjectGit,
   setProjectOrigin,
   switchProjectBranch,
 } from '../project-git.ts'
+import { withRootGitMutation } from '../project-worktrees/root-git-mutation-gate.ts'
 import {
   setProjectGitOpsMode,
   setProjectRepoOrigin,
@@ -117,7 +119,12 @@ export async function handleWorkspaceDesktopAction(
     case 'workspace.switch-branch': {
       const projectId = getProjectId(payload)
       if (!projectId) return handledAction()
-      return handledAction(await switchProjectBranch(projectId, String(payload.value ?? '')))
+      const rootProjectId = await getMainWorktreePath(projectId)
+      return handledAction(
+        await withRootGitMutation(rootProjectId, () =>
+          switchProjectBranch(projectId, String(payload.value ?? '')),
+        ),
+      )
     }
     default:
       return unhandledAction()

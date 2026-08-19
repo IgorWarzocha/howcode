@@ -25,7 +25,14 @@ export function getActionNoticeMessage(
   action: DesktopAction,
   actionResult: DesktopActionResult | null,
 ) {
-  if (action !== 'workspace.create-worktree' || !actionResult?.ok || actionResult.result?.error) {
+  const supportsWorktreeNotice =
+    action === 'workspace.create-worktree' ||
+    action === 'workspace.remove-worktree' ||
+    action === 'workspace.merge-worktree' ||
+    action === 'workspace.merge-completed-worktrees' ||
+    action === 'workspace.remove-completed-worktrees' ||
+    action === 'workspace.prune-branch'
+  if (!(supportsWorktreeNotice && actionResult?.ok) || actionResult.result?.error) {
     return null
   }
   const message = actionResult.result?.message

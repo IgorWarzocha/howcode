@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { promisify } from 'node:util'
 import { describe, expect, it } from 'vitest'
+import { getInRepositoryWorktreePath } from './worktree-excludes.ts'
 import {
   createProjectWorktree,
   parseGitWorktreePorcelain,
@@ -60,6 +61,12 @@ prunable gitdir file points to non-existent location
 })
 
 describe('createProjectWorktree', () => {
+  it('recognizes child folders whose names begin with two dots', () => {
+    expect(getInRepositoryWorktreePath('/repo', '/repo/..worktrees/feature')).toBe(
+      path.join('..worktrees', 'feature'),
+    )
+  })
+
   it('owns a literal in-repository exclusion only for the worktree lifetime', async () => {
     const projectId = await mkdtemp(path.join(tmpdir(), 'howcode-worktree-'))
     const git = (...args: string[]) => execFileAsync('git', args, { cwd: projectId })

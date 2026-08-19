@@ -95,6 +95,20 @@ function removePrunableWorktreeMetadata(worktreePath: string) {
   if (listProjectThreadIds(worktreePath).length === 0) deleteProject(worktreePath)
 }
 
+function getWorktreeImportMetadata(rootProjectId: string, worktree: GitWorktreeEntry) {
+  const isMain = worktree.path === rootProjectId
+  const existingMetadata = getProjectWorktree(worktree.path)
+  const retainsIdentity =
+    existingMetadata !== null &&
+    path.resolve(existingMetadata.rootCwd) === path.resolve(rootProjectId)
+
+  return {
+    isMain,
+    parentBranchName: retainsIdentity ? existingMetadata.parentBranchName : null,
+    source: isMain ? ('howcode' as const) : retainsIdentity ? existingMetadata.source : 'imported',
+  }
+}
+
 export async function importProjectWorktrees(projectId: string) {
   let worktrees: GitWorktreeEntry[]
   try {
@@ -128,20 +142,14 @@ export async function importProjectWorktrees(projectId: string) {
       continue
     }
     ensureProject(worktree.path)
-    const isMain = worktree.path === rootProjectId
-    const existingMetadata = getProjectWorktree(worktree.path)
-    const source =
-      isMain || (existingMetadata?.source === 'howcode' && existingMetadata.parentBranchName)
-        ? 'howcode'
-        : 'imported'
+    const metadata = getWorktreeImportMetadata(rootProjectId, worktree)
     upsertProjectWorktree({
       cwd: worktree.path,
       rootCwd: rootProjectId,
       branchName: worktree.branch,
-      isMain,
-      source,
+      ...metadata,
     })
-    if (!isMain) childWorktreeCount += 1
+    if (!metadata.isMain) childWorktreeCount += 1
   }
 
   return childWorktreeCount

@@ -1,4 +1,4 @@
-import path from 'node:path'
+import { resolveWorkspaceIdentity } from '../workspace-identity.ts'
 
 type WorkspaceActivity = {
   activeSessionStarts: number
@@ -7,9 +7,27 @@ type WorkspaceActivity = {
 }
 
 const workspaceActivity = new Map<string, WorkspaceActivity>()
+let workspaceAdmissionTail = Promise.resolve()
 
-function getWorkspaceActivity(projectId: string) {
-  const key = path.resolve(projectId)
+function withWorkspaceAdmission<T>(admit: () => Promise<T>) {
+  const precedingAdmission = workspaceAdmissionTail
+  let releaseAdmission: (() => void) | undefined
+  workspaceAdmissionTail = new Promise<void>((resolve) => {
+    releaseAdmission = resolve
+  })
+
+  return (async () => {
+    await precedingAdmission
+    try {
+      return await admit()
+    } finally {
+      releaseAdmission?.()
+    }
+  })()
+}
+
+async function getWorkspaceActivity(projectId: string) {
+  const key = await resolveWorkspaceIdentity(projectId)
   const current = workspaceActivity.get(key)
   if (current) return { key, state: current }
 
@@ -29,12 +47,14 @@ function releaseIfIdle(key: string, state: WorkspaceActivity) {
 }
 
 export async function withWorkspaceSessionStart<T>(projectId: string, start: () => Promise<T>) {
-  const { key, state } = getWorkspaceActivity(projectId)
-  if (state.teardownInProgress) {
-    throw new Error('Workspace is being removed. Wait for removal to finish.')
-  }
-
-  state.activeSessionStarts += 1
+  const { key, state } = await withWorkspaceAdmission(async () => {
+    const activity = await getWorkspaceActivity(projectId)
+    if (activity.state.teardownInProgress) {
+      throw new Error('Workspace is being removed. Wait for removal to finish.')
+    }
+    activity.state.activeSessionStarts += 1
+    return activity
+  })
   try {
     return await start()
   } finally {
@@ -48,12 +68,14 @@ export async function withWorkspaceSessionStart<T>(projectId: string, start: () 
 }
 
 export async function withWorkspaceTeardown<T>(projectId: string, teardown: () => Promise<T>) {
-  const { key, state } = getWorkspaceActivity(projectId)
-  if (state.teardownInProgress) {
-    throw new Error('Workspace removal is already in progress.')
-  }
-
-  state.teardownInProgress = true
+  const { key, state } = await withWorkspaceAdmission(async () => {
+    const activity = await getWorkspaceActivity(projectId)
+    if (activity.state.teardownInProgress) {
+      throw new Error('Workspace removal is already in progress.')
+    }
+    activity.state.teardownInProgress = true
+    return activity
+  })
   try {
     if (state.activeSessionStarts > 0) {
       await new Promise<void>((resolve) => {
