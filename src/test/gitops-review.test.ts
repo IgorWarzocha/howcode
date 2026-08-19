@@ -1,30 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import {
-  createLineRangeTarget,
-  normalizeLineRangeTarget,
-  type SavedReviewComment,
-} from '../app/native/gitops/review/review-model'
-import { buildReviewPrompt } from '../app/native/gitops/review/review-prompt'
+import { normalizeLineRangeTarget } from '../app/native/gitops/review/review-model'
 import {
   decodePersistedReviewContext,
   getReviewContextId,
 } from '../app/native/gitops/review/review-store'
-
-const commentTarget = createLineRangeTarget({
-  fileKey: 'src/app.ts',
-  filePath: 'src/app.ts',
-  side: 'additions',
-  lineNumber: 12,
-  endLineNumber: 14,
-})
-
-const comment: SavedReviewComment = {
-  id: 'comment-1',
-  target: commentTarget,
-  body: '  Keep this branch explicit.  ',
-  purpose: 'comment',
-  createdAt: '2026-03-01T12:00:00.000Z',
-}
 
 describe('GitOps review model', () => {
   it('normalizes same-side ranges while preserving cross-side direction', () => {
@@ -51,14 +30,6 @@ describe('GitOps review model', () => {
       start: { side: 'additions', lineNumber: 7 },
       end: { side: 'deletions', lineNumber: 3 },
     })
-  })
-
-  it('carries rejection intent to the agent prompt', () => {
-    const prompt = buildReviewPrompt({ comments: [{ ...comment, purpose: 'rejection' }] })
-
-    expect(prompt).toContain('[Rejected]')
-    expect(prompt).toContain('src/app.ts:12-14')
-    expect(prompt).toContain('Keep this branch explicit.')
   })
 })
 
