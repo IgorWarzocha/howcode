@@ -10,11 +10,15 @@ import {
 } from '../../shared/pi-thread-action-payloads.ts'
 import { getBranch } from '../project-git/project-state.ts'
 import { createProjectWorktree, getMainWorktreePath, pruneProjectBranch } from '../project-git.ts'
-import { resolveRegisteredWorktree } from '../project-worktrees/registered-worktree.ts'
+import {
+  type RegisteredWorktree,
+  resolveRegisteredWorktree,
+} from '../project-worktrees/registered-worktree.ts'
 import {
   ensureProject,
   getProjectWorktreeDirectory,
   hasRunningProjectThread,
+  listProjectBranchWorktreePaths,
   listProjectFamilyBranchThreadIds,
   setProjectWorktreeCompleted,
   setProjectWorktreeDirectory,
@@ -80,6 +84,7 @@ async function handleCreateWorktree(payload: AnyDesktopActionPayload) {
     parentBranchName,
     projectId: result.projectId,
     rootProjectId: result.rootProjectId,
+    ...(result.warning ? { message: result.warning } : {}),
   })
 }
 
@@ -104,7 +109,12 @@ async function handleMarkWorktree(payload: AnyDesktopActionPayload, completed: b
 
   const worktree = await resolveWorktree(projectId, worktreePath)
   if ('error' in worktree) return handledAction(worktree)
-  setProjectWorktreeCompleted(worktree.worktreePath, completed)
+  if (!worktree.metadata) {
+    return handledAction({ error: 'Worktree metadata is not registered with Howcode.' })
+  }
+  if (!setProjectWorktreeCompleted(worktree.worktreePath, completed)) {
+    return handledAction({ error: 'Worktree metadata could not be updated.' })
+  }
   return handledAction({
     didMutate: true,
     rootProjectId: worktree.rootProjectId,
@@ -129,24 +139,57 @@ async function handleSingleWorktreeRemoval(
   )
 }
 
-async function cleanupWorktreeTargets(
+type CleanupRequirements = {
+  completedOnly?: boolean
+  associatedBranchName?: string
+}
+
+async function resolveCleanupTargets(
   projectId: string,
   targets: WorktreeActionTarget[],
-  options: { merge: boolean; pruneBranch: boolean },
+  requirements: CleanupRequirements = {},
 ) {
-  let didMutate = false
-  const removedWorktreeIds: string[] = []
+  const worktrees: RegisteredWorktree[] = []
   for (const target of targets) {
     const worktree = await resolveWorktree(projectId, target.worktreePath)
     if ('error' in worktree) {
       return {
-        didMutate,
         error: worktree.error,
         failedWorktreePath: target.worktreePath,
-        removedWorktreeIds,
       }
     }
 
+    if (requirements.completedOnly && worktree.metadata?.completed !== true) {
+      return {
+        error: 'Only worktrees currently marked complete can be handled in bulk.',
+        failedWorktreePath: worktree.worktreePath,
+      }
+    }
+
+    if (requirements.associatedBranchName) {
+      const associatedBranchName =
+        worktree.metadata?.parentBranchName?.trim() || worktree.metadata?.branchName?.trim() || null
+      if (associatedBranchName !== requirements.associatedBranchName) {
+        return {
+          error: `Worktree is not associated with ${requirements.associatedBranchName}.`,
+          failedWorktreePath: worktree.worktreePath,
+        }
+      }
+    }
+
+    worktrees.push(worktree)
+  }
+
+  return { worktrees }
+}
+
+async function cleanupWorktrees(
+  worktrees: RegisteredWorktree[],
+  options: { merge: boolean; pruneBranch: boolean },
+) {
+  let didMutate = false
+  const removedWorktreeIds: string[] = []
+  for (const worktree of worktrees) {
     const result = await removeRegisteredWorktree({ worktree, ...options })
     didMutate = didMutate || result.didMutate
     if (result.worktreeRemoved) removedWorktreeIds.push(result.projectId)
@@ -173,12 +216,16 @@ async function handleCompletedWorktrees(
   if (!projectId) return handledAction({ error: 'Project is required.' })
   if (targets.length === 0) return handledAction({ error: 'No completed worktrees selected.' })
 
+  const rootProjectId = await getMainWorktreePath(projectId)
+  const resolved = await resolveCleanupTargets(rootProjectId, targets, { completedOnly: true })
+  if ('error' in resolved) return handledAction({ ...resolved, rootProjectId })
+
   return handledAction({
-    ...(await cleanupWorktreeTargets(projectId, targets, {
+    ...(await cleanupWorktrees(resolved.worktrees, {
       merge: options.merge,
       pruneBranch: true,
     })),
-    rootProjectId: projectId,
+    rootProjectId,
   })
 }
 
@@ -186,21 +233,30 @@ async function handlePruneBranch(payload: AnyDesktopActionPayload) {
   const projectId = getRootProjectId(payload)
   const branchName = getBranchName(payload)
   if (!(projectId && branchName)) return handledAction()
-  if (hasRunningProjectThread(projectId)) {
+  const rootProjectId = await getMainWorktreePath(projectId)
+  if (hasRunningProjectThread(rootProjectId)) {
     return handledAction({ error: 'Stop running sessions before pruning this branch.' })
   }
 
-  const worktreeCleanup = await cleanupWorktreeTargets(
-    projectId,
-    getWorktreeActionTargets(payload),
-    { merge: false, pruneBranch: false },
-  )
-  if (worktreeCleanup.error) {
-    return handledAction({ ...worktreeCleanup, rootProjectId: projectId })
+  const targets = listProjectBranchWorktreePaths(rootProjectId, branchName).map((worktreePath) => ({
+    worktreePath,
+  }))
+  const resolved = await resolveCleanupTargets(rootProjectId, targets, {
+    associatedBranchName: branchName,
+  })
+  if ('error' in resolved) {
+    return handledAction({ ...resolved, rootProjectId })
+  }
+  const worktreeCleanup = await cleanupWorktrees(resolved.worktrees, {
+    merge: false,
+    pruneBranch: false,
+  })
+  if ('error' in worktreeCleanup && worktreeCleanup.error) {
+    return handledAction({ ...worktreeCleanup, rootProjectId })
   }
 
-  const threadIds = listProjectFamilyBranchThreadIds(projectId, branchName)
-  const result = await pruneProjectBranch(projectId, branchName)
+  const threadIds = listProjectFamilyBranchThreadIds(rootProjectId, branchName)
+  const result = await pruneProjectBranch(rootProjectId, branchName)
   const didMutate = worktreeCleanup.didMutate || result.didMutate === true
   if (!('error' in result) || isMissingBranchPruneError(result)) {
     const cleanupError = await deleteWorkspaceThreads(threadIds)
@@ -209,7 +265,7 @@ async function handlePruneBranch(payload: AnyDesktopActionPayload) {
         ...cleanupError,
         didMutate: true,
         removedWorktreeIds: worktreeCleanup.removedWorktreeIds,
-        rootProjectId: projectId,
+        rootProjectId,
       })
     }
   }
@@ -217,7 +273,7 @@ async function handlePruneBranch(payload: AnyDesktopActionPayload) {
     return handledAction({
       didMutate: true,
       removedWorktreeIds: worktreeCleanup.removedWorktreeIds,
-      rootProjectId: projectId,
+      rootProjectId,
     })
   }
   return handledAction(
@@ -226,12 +282,12 @@ async function handlePruneBranch(payload: AnyDesktopActionPayload) {
           ...result,
           didMutate,
           removedWorktreeIds: worktreeCleanup.removedWorktreeIds,
-          rootProjectId: projectId,
+          rootProjectId,
         }
       : {
           ...result,
           removedWorktreeIds: worktreeCleanup.removedWorktreeIds,
-          rootProjectId: projectId,
+          rootProjectId,
         },
   )
 }

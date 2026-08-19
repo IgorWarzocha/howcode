@@ -178,6 +178,9 @@ export async function applyRemoveWorktreePostEffect(input: {
       ? [input.actionResult.result.projectId]
       : [])
   if (!rootProjectId) return
+  if (input.actionResult?.result?.worktreeCompleted && input.actionResult.result.projectId) {
+    setShellWorktreeCompleted(input.queryClient, input.actionResult.result.projectId, true)
+  }
   for (const removedWorktreeId of removedWorktreeIds) {
     removeShellWorktreeProject(input.queryClient, removedWorktreeId)
   }

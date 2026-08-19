@@ -30,7 +30,8 @@ export function getBranchActionCapabilities(
     canSwitch: group.kind === 'branch' && !group.current,
     canToggleWorktreeComplete: group.kind === 'worktree',
     canMergeWorktree: group.kind === 'worktree' && Boolean(group.worktreeBranchName),
-    canMergeCompletedWorktrees: group.kind !== 'worktree' && hasMergeableCompletedWorktrees(group),
+    canMergeCompletedWorktrees:
+      group.kind === 'branch' && group.current && hasMergeableCompletedWorktrees(group),
     canRemoveCompletedWorktrees: group.kind !== 'worktree' && hasCompletedWorktrees(group),
     canCreateWorktree: canCreateWorktreeFromBranchGroup(group),
     ...overrides,

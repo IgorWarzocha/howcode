@@ -2,7 +2,7 @@ import path from 'node:path'
 import { formatGitCommandError } from '../project-git/git-runner.ts'
 import { getBranch } from '../project-git/project-state.ts'
 import { loadGitWorktrees } from '../project-git/worktrees.ts'
-import { getProjectWorktree } from '../thread-state-db.ts'
+import { getProjectWorktree, type StoredProjectWorktree } from '../thread-state-db.ts'
 
 export type RegisteredWorktree = {
   rootProjectId: string
@@ -10,6 +10,7 @@ export type RegisteredWorktree = {
   branchName: string | null
   parentBranchName: string | null
   currentRootBranchName: string | null
+  metadata: StoredProjectWorktree | null
 }
 
 export async function resolveRegisteredWorktree(
@@ -38,6 +39,7 @@ export async function resolveRegisteredWorktree(
     branchName: worktree.branch,
     parentBranchName: metadata?.parentBranchName?.trim() || null,
     currentRootBranchName: await getBranch(rootProjectId),
+    metadata,
   }
 }
 

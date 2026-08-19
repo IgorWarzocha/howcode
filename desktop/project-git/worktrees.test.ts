@@ -77,7 +77,7 @@ describe('createProjectWorktree', () => {
       expect(result).not.toHaveProperty('error')
       await expect(git('status', '--porcelain')).resolves.toMatchObject({ stdout: '' })
       await expect(readFile(path.join(projectId, '.git/info/exclude'), 'utf8')).resolves.toContain(
-        '/.worktrees/',
+        '/.worktrees/feature-test/',
       )
     } finally {
       await rm(projectId, { recursive: true, force: true })

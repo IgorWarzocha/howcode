@@ -17,6 +17,7 @@ export type WorktreeLifecycleResult = {
   rootProjectId: string
   projectId: string
   branchName: string | null
+  worktreeCompleted?: boolean | undefined
   worktreeRemoved: boolean
   error?: string | undefined
   failedThreadIds?: string[] | undefined
@@ -52,7 +53,7 @@ export async function deleteWorkspaceThreads(threadIds: string[]) {
 function resultFor(
   worktree: RegisteredWorktree,
   details: Pick<WorktreeLifecycleResult, 'didMutate' | 'worktreeRemoved'> &
-    Partial<Pick<WorktreeLifecycleResult, 'error' | 'failedThreadIds'>>,
+    Partial<Pick<WorktreeLifecycleResult, 'error' | 'failedThreadIds' | 'worktreeCompleted'>>,
 ): WorktreeLifecycleResult {
   return {
     rootProjectId: worktree.rootProjectId,
@@ -62,43 +63,64 @@ function resultFor(
   }
 }
 
+async function mergeRegisteredWorktree(worktree: RegisteredWorktree, merge: boolean) {
+  if (!merge) return { didMutate: false, worktreeCompleted: false }
+  if (!worktree.branchName) {
+    return {
+      didMutate: false,
+      worktreeCompleted: false,
+      error: 'Detached worktrees cannot be merged automatically.',
+    }
+  }
+
+  const mergeResult = await mergeProjectBranch(worktree.rootProjectId, worktree.branchName)
+  if ('error' in mergeResult) {
+    return {
+      didMutate: mergeResult.didMutate === true,
+      worktreeCompleted: false,
+      error: mergeResult.error,
+    }
+  }
+
+  return {
+    didMutate: true,
+    worktreeCompleted: setProjectWorktreeCompleted(worktree.worktreePath, true),
+  }
+}
+
 export async function removeRegisteredWorktree(input: {
   worktree: RegisteredWorktree
   merge: boolean
   pruneBranch: boolean
 }): Promise<WorktreeLifecycleResult> {
   const { worktree } = input
-  if (input.merge) {
-    const targetError = getWorktreeMergeTargetError(worktree)
-    if (targetError) {
-      return resultFor(worktree, {
-        didMutate: false,
-        worktreeRemoved: false,
-        error: targetError,
-      })
-    }
+  const targetError = input.merge ? getWorktreeMergeTargetError(worktree) : null
+  if (targetError) {
+    return resultFor(worktree, {
+      didMutate: false,
+      worktreeRemoved: false,
+      error: targetError,
+    })
   }
 
   await disposeWorkspaceSessions(worktree.worktreePath)
 
-  if (input.merge && worktree.branchName) {
-    const mergeResult = await mergeProjectBranch(worktree.rootProjectId, worktree.branchName)
-    if ('error' in mergeResult) {
-      return resultFor(worktree, {
-        didMutate: mergeResult.didMutate === true,
-        worktreeRemoved: false,
-        error: mergeResult.error,
-      })
-    }
-    setProjectWorktreeCompleted(worktree.worktreePath, true)
+  const mergeResult = await mergeRegisteredWorktree(worktree, input.merge)
+  if (mergeResult.error) {
+    return resultFor(worktree, {
+      didMutate: mergeResult.didMutate,
+      worktreeRemoved: false,
+      error: mergeResult.error,
+    })
   }
 
   const threadIds = listProjectThreadIds(worktree.worktreePath)
   const removeResult = await removeProjectWorktree(worktree.rootProjectId, worktree.worktreePath)
   if ('error' in removeResult) {
     return resultFor(worktree, {
-      didMutate: input.merge,
+      didMutate: mergeResult.didMutate,
       worktreeRemoved: false,
+      ...(mergeResult.worktreeCompleted ? { worktreeCompleted: true } : {}),
       error: removeResult.error,
     })
   }
@@ -108,7 +130,7 @@ export async function removeRegisteredWorktree(input: {
       ? await pruneProjectBranch(worktree.rootProjectId, worktree.branchName)
       : null
   const threadCleanup = await deleteWorkspaceThreads(threadIds)
-  if (!threadCleanup) deleteProject(worktree.worktreePath)
+  deleteProject(worktree.worktreePath)
 
   const errors = [
     branchResult && 'error' in branchResult ? branchResult.error : null,
@@ -120,6 +142,7 @@ export async function removeRegisteredWorktree(input: {
   return resultFor(worktree, {
     didMutate: true,
     worktreeRemoved: true,
+    ...(mergeResult.worktreeCompleted ? { worktreeCompleted: true } : {}),
     ...(errors ? { error: errors } : {}),
     ...(threadCleanup?.failedThreadIds ? { failedThreadIds: threadCleanup.failedThreadIds } : {}),
   })

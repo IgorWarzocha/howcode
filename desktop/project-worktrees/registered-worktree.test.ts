@@ -7,6 +7,15 @@ const baseWorktree: RegisteredWorktree = {
   branchName: 'feature',
   parentBranchName: 'dev',
   currentRootBranchName: 'dev',
+  metadata: {
+    cwd: '/repo-worktrees/feature',
+    rootCwd: '/repo',
+    branchName: 'feature',
+    parentBranchName: 'dev',
+    isMain: false,
+    source: 'howcode',
+    completed: false,
+  },
 }
 
 describe('worktree merge target guard', () => {

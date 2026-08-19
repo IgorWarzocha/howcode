@@ -229,7 +229,6 @@ export type DesktopActionPayloadMap = {
   'workspace.prune-branch': {
     rootProjectId: string
     branchName: string
-    worktrees?: { worktreePath: string }[] | undefined
   }
   'workspace.create-worktree': {
     rootProjectId: string
@@ -406,6 +405,7 @@ export type DesktopActionResultData = {
   title?: string | undefined
   threadId?: string | undefined
   worktreeRemoved?: boolean | undefined
+  worktreeCompleted?: boolean | undefined
 }
 
 export type DesktopActionInvoker = (

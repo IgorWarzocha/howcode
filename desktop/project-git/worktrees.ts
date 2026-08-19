@@ -12,7 +12,13 @@ export type GitWorktreeEntry = {
 }
 
 export type GitWorktreeCreateResult =
-  | { didMutate: true; projectId: string; rootProjectId: string; branchName: string }
+  | {
+      didMutate: true
+      projectId: string
+      rootProjectId: string
+      branchName: string
+      warning?: string
+    }
   | { error: string }
 
 function normalizeBranchRef(ref: string) {
@@ -157,9 +163,22 @@ function resolveWorktreeParent(rootProjectId: string, worktreeDirectory: string)
     : path.resolve(rootProjectId, worktreeDirectory)
 }
 
-async function ensureWorktreeParentIgnored(rootProjectId: string, worktreeParent: string) {
-  const relativeParent = path.relative(path.resolve(rootProjectId), path.resolve(worktreeParent))
-  if (!relativeParent || relativeParent.startsWith('..') || path.isAbsolute(relativeParent)) {
+function getInRepositoryWorktreePath(rootProjectId: string, worktreePath: string) {
+  const relativePath = path.relative(path.resolve(rootProjectId), path.resolve(worktreePath))
+  if (!relativePath || relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+    return null
+  }
+  if (relativePath.includes('\n') || relativePath.includes('\r')) {
+    throw new Error('In-repository worktree paths cannot contain line breaks.')
+  }
+  return relativePath
+}
+
+async function ensureWorktreePathIgnored(
+  rootProjectId: string,
+  relativeWorktreePath: string | null,
+) {
+  if (!relativeWorktreePath) {
     return
   }
 
@@ -173,7 +192,7 @@ async function ensureWorktreeParentIgnored(rootProjectId: string, worktreeParent
   const excludePath = path.isAbsolute(rawExcludePath)
     ? rawExcludePath
     : path.resolve(rootProjectId, rawExcludePath)
-  const ignorePattern = `/${relativeParent.split(path.sep).join('/')}/`
+  const ignorePattern = `/${relativeWorktreePath.split(path.sep).join('/')}/`
   const existing = await readFile(excludePath, 'utf8').catch(() => '')
   if (existing.split('\n').some((line) => line.trim() === ignorePattern)) return
 
@@ -200,13 +219,12 @@ export async function createProjectWorktree(input: {
     const rootProjectId = mainWorktree?.path ?? input.projectId
     const worktreeParent = resolveWorktreeParent(rootProjectId, input.worktreeDirectory)
     const worktreePath = await resolveAvailableWorktreePath(worktreeParent, folderName)
+    const relativeWorktreePath = getInRepositoryWorktreePath(rootProjectId, worktreePath)
 
     await runGitWithOptions(input.projectId, ['check-ref-format', '--branch', branchName], {
       timeout: 10_000,
       maxBuffer: 1024 * 1024,
     })
-    await ensureWorktreeParentIgnored(rootProjectId, worktreeParent)
-
     const localBranchExists = await hasLocalBranch(input.projectId, branchName)
     const remoteBranchBase = localBranchExists
       ? null
@@ -223,7 +241,21 @@ export async function createProjectWorktree(input: {
       maxBuffer: 1024 * 1024 * 4,
     })
 
-    return { didMutate: true, projectId: worktreePath, rootProjectId, branchName }
+    let warning: string | undefined
+    try {
+      await ensureWorktreePathIgnored(rootProjectId, relativeWorktreePath)
+    } catch (error) {
+      warning = `Worktree created, but its folder could not be excluded from parent Git status: ${formatGitCommandError(error)}`
+      console.warn(warning)
+    }
+
+    return {
+      didMutate: true,
+      projectId: worktreePath,
+      rootProjectId,
+      branchName,
+      ...(warning ? { warning } : {}),
+    }
   } catch (error) {
     return { error: formatGitCommandError(error) }
   }

@@ -48,6 +48,7 @@ export {
   deleteProjectWorktreeMetadata,
   getProjectWorktree,
   getProjectWorktreeDirectory,
+  listProjectBranchWorktreePaths,
   setProjectWorktreeCompleted,
   setProjectWorktreeDirectory,
   upsertProjectWorktree,

@@ -133,13 +133,43 @@ export function upsertProjectWorktree(metadata: ProjectWorktreeMetadata) {
 
 export function setProjectWorktreeCompleted(cwd: string, completed: boolean) {
   const db = getThreadStateDatabase()
-  db.prepare(
-    `
+  const result = db
+    .prepare(
+      `
       UPDATE project_worktrees
       SET completed = ?, updated_at = CURRENT_TIMESTAMP
       WHERE cwd = ? AND is_main = 0
     `,
-  ).run(completed ? 1 : 0, cwd)
+    )
+    .run(completed ? 1 : 0, cwd) as { changes?: unknown }
+  if (typeof result.changes !== 'number') {
+    throw new Error(`Invalid worktree completion update result for ${cwd}.`)
+  }
+  return result.changes > 0
+}
+
+export function listProjectBranchWorktreePaths(rootCwd: string, branchName: string) {
+  const rows = getThreadStateDatabase()
+    .prepare(
+      `
+        SELECT cwd
+        FROM project_worktrees
+        WHERE root_cwd = ?
+          AND is_main = 0
+          AND COALESCE(
+            NULLIF(TRIM(parent_branch_name), ''),
+            NULLIF(TRIM(branch_name), '')
+          ) = ?
+      `,
+    )
+    .all(rootCwd, branchName) as Array<{ cwd?: unknown }>
+
+  return rows.map((row) => {
+    if (typeof row.cwd !== 'string') {
+      throw new Error(`Invalid persisted worktree path under ${rootCwd}.`)
+    }
+    return row.cwd
+  })
 }
 
 export function deleteProjectWorktreeMetadata(cwd: string) {
