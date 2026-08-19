@@ -1,3 +1,3 @@
 - Keep shared bottom chrome here, not composer-specific state or actions.
 - Use these primitives for footer rows in the prompt composer, git-ops composer, and Pi-TUI takeover terminal instead of copying class strings.
-- If changing branch chips, diff stats, toolbar footer text, or footer spacing, check all hosts that import `WorkspaceFooterPrimitives.tsx`.
+- If changing branch chips, diff stats, toolbar footer text, or footer spacing, check all hosts that import `workspace-footer-primitives.tsx`.
