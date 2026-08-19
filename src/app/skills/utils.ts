@@ -1,6 +1,5 @@
-import { getSafeExternalUrl } from '@howcode/shared/external-url'
 import type { PiConfiguredSkill, PiSkillCatalogItem } from '../desktop/types'
-import { canSearchPiSkillsQuery, openExternalQuery } from '../query/desktop-query'
+import { canSearchPiSkillsQuery } from '../query/desktop-query'
 import { getActionError } from '../utils/action-error'
 
 const compactNumberFormatter = new Intl.NumberFormat('en', {
@@ -8,13 +7,6 @@ const compactNumberFormatter = new Intl.NumberFormat('en', {
   maximumFractionDigits: 1,
 })
 const pathSeparatorPattern = /[\\/]+/
-const nonAlphanumericRunPattern = /[^a-z0-9]+/g
-const whitespaceRunPattern = /\s+/
-const skillCreatorPatterns = [
-  /\bskill(?:s)?\s*(?:creator|create|creation|maker|making|author|authoring|builder|build|craft(?:er)?|smith)\b/i,
-  /\b(?:creator|create|creation|maker|making|author|authoring|builder|build|craft(?:er)?|smith)\s*skill(?:s)?\b/i,
-  /\b(?:create|build|author|make|craft)\s+skills?\b/i,
-]
 
 export { getActionError }
 
@@ -34,18 +26,6 @@ export function isDesktopSkillsAvailable() {
   return canSearchPiSkillsQuery()
 }
 
-export async function openExternalUrl(url: string) {
-  const safeUrl = getSafeExternalUrl(url)
-  if (!safeUrl) {
-    return false
-  }
-
-  if (await openExternalQuery(safeUrl)) return true
-
-  window.open(safeUrl, '_blank', 'noopener,noreferrer')
-  return true
-}
-
 function getPathBasename(targetPath: string) {
   const segments = targetPath.split(pathSeparatorPattern).filter(Boolean)
   return segments[segments.length - 1] ?? ''
@@ -53,55 +33,9 @@ function getPathBasename(targetPath: string) {
 
 export function getInstalledSkillSlugs(skills: PiConfiguredSkill[]) {
   return new Set(
-    skills.map((skill) => normalizeSkillSlug(getPathBasename(skill.installedPath))).filter(Boolean),
+    skills.flatMap((skill) => {
+      const slug = normalizeSkillSlug(getPathBasename(skill.installedPath))
+      return slug ? [slug] : []
+    }),
   )
-}
-
-function getSkillCreatorDetectionText(skill: PiConfiguredSkill) {
-  return [
-    skill.displayName,
-    skill.description,
-    skill.identityKey,
-    skill.source,
-    skill.installedPath,
-    skill.skillFilePath,
-    skill.sourceRepo,
-    skill.sourceUrl,
-  ]
-    .filter((value): value is string => Boolean(value))
-    .join(' ')
-    .toLowerCase()
-    .replace(nonAlphanumericRunPattern, ' ')
-    .trim()
-}
-
-export function isSkillCreatorCandidate(skill: PiConfiguredSkill) {
-  const normalized = getSkillCreatorDetectionText(skill)
-
-  if (!normalized) {
-    return false
-  }
-
-  if (skillCreatorPatterns.some((pattern) => pattern.test(normalized))) {
-    return true
-  }
-
-  const tokens = new Set(normalized.split(whitespaceRunPattern).filter(Boolean))
-  const hasSkillToken = tokens.has('skill') || tokens.has('skills')
-  const hasCreatorToken = [
-    'create',
-    'creator',
-    'creation',
-    'maker',
-    'making',
-    'author',
-    'authoring',
-    'builder',
-    'build',
-    'craft',
-    'crafter',
-    'smith',
-  ].some((token) => tokens.has(token))
-
-  return hasSkillToken && hasCreatorToken
 }

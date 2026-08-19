@@ -69,7 +69,7 @@ function asDiagnostic(diagnostic: unknown): PiThemeState['diagnostics'][number] 
   return {
     type: typeof record.type === 'string' ? record.type : 'warning',
     message: typeof record.message === 'string' ? record.message : 'Theme issue',
-    path: typeof record.path === 'string' ? record.path : undefined,
+    ...(typeof record.path === 'string' ? { path: record.path } : {}),
   }
 }
 
@@ -118,7 +118,7 @@ function getThemeEntries(
       name: theme.name ?? 'unnamed',
       label: theme.name ?? 'Unnamed Pi theme',
       source: 'pi-json' as const,
-      path: theme.sourcePath,
+      ...(theme.sourcePath === undefined ? {} : { path: theme.sourcePath }),
     })),
   ].filter((theme, index, themes) => themes.findIndex((item) => item.name === theme.name) === index)
 }
@@ -184,8 +184,10 @@ export async function loadPiThemeStateInHost(
       exportColors,
       isLight: isResolvedLightTheme(selectedTheme, colors, exportColors, isLightTheme),
       diagnostics: themesResult.diagnostics
-        .map(asDiagnostic)
-        .filter(Boolean)
+        .flatMap((input) => {
+          const diagnostic = asDiagnostic(input)
+          return diagnostic ? [diagnostic] : []
+        })
         .concat(bundled.diagnostics) as PiThemeState['diagnostics'],
     }
   } catch (error) {
@@ -199,7 +201,10 @@ export async function loadPiThemeStateInHost(
       exportColors: getThemeExportColors(fallbackTheme),
       isLight: fallbackTheme === 'light',
       diagnostics: [
-        ...themesResult.diagnostics.map(asDiagnostic).filter(Boolean),
+        ...themesResult.diagnostics.flatMap((input) => {
+          const diagnostic = asDiagnostic(input)
+          return diagnostic ? [diagnostic] : []
+        }),
         ...bundled.diagnostics,
         {
           type: 'warning',

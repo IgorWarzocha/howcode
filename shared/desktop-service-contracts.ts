@@ -27,6 +27,8 @@ import type {
   PiSkillMutationResult,
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffFileContentsRequest,
+  ProjectDiffFileContentsResult,
   ProjectDiffImagePreview,
   ProjectDiffImageSide,
   ProjectDiffResolvedBaseline,
@@ -36,15 +38,16 @@ import type {
   ProjectUsageSummary,
   ReactArtifactCompileResult,
   ShellState,
-  SkillCreatorSessionState,
   Thread,
   ThreadData,
   ThreadSearchResult,
 } from './desktop-contracts'
 import type { SessionTreeList } from './session-tree.ts'
 import type {
+  TerminalCloseRequest,
   TerminalEvent,
   TerminalOpenRequest,
+  TerminalSessionFileStat,
   TerminalSessionSnapshot,
   TerminalStatusSnapshot,
 } from './terminal-contracts'
@@ -114,6 +117,9 @@ export type PiThreadsService = {
     path: string
     side: ProjectDiffImageSide
   }) => Promise<ProjectDiffImagePreview>
+  loadProjectDiffFileContents: (
+    request: ProjectDiffFileContentsRequest,
+  ) => Promise<ProjectDiffFileContentsResult>
   captureProjectDiffBaseline: (projectId: string) => Promise<ProjectDiffResolvedBaseline | null>
   listProjectCommits: (
     projectId: string,
@@ -162,16 +168,13 @@ export type PiThreadsService = {
 }
 
 export type TerminalService = {
-  closeAllTerminals?: () => Promise<void>
-  closeTerminal: (request: {
-    sessionId: string
-    deleteHistory?: boolean | undefined
-  }) => Promise<void>
+  closeAllTerminals: () => Promise<void>
+  closeTerminal: (request: TerminalCloseRequest) => Promise<void>
   getTerminalStatus: (sessionId: string) => Promise<TerminalStatusSnapshot>
   listTerminals: () => Promise<TerminalSessionSnapshot[]>
   openTerminal: (request: TerminalOpenRequest) => Promise<TerminalSessionSnapshot>
   resizeTerminal: (sessionId: string, cols: number, rows: number) => Promise<void>
-  statSessionFile: (sessionId: string) => Promise<{ mtimeMs: number; size: number } | null>
+  statSessionFile: (sessionId: string) => Promise<TerminalSessionFileStat | null>
   subscribeTerminalEvents: (listener: (event: TerminalEvent) => void) => () => void
   writeTerminal: (sessionId: string, data: string) => Promise<void>
 }
@@ -198,23 +201,8 @@ export type PiSkillsService = {
   }) => Promise<PiSkillMutationResult>
 }
 
-export type SkillCreatorService = {
-  startSkillCreatorSession: (request: {
-    prompt: string
-    local?: boolean | undefined
-    projectPath?: string | null | undefined
-    chat?: boolean | undefined
-  }) => Promise<SkillCreatorSessionState>
-  continueSkillCreatorSession: (request: {
-    sessionId: string
-    prompt: string
-  }) => Promise<SkillCreatorSessionState>
-  closeSkillCreatorSession: (request: { sessionId: string }) => Promise<{ ok: boolean }>
-}
-
 export type DesktopServiceRuntime = {
   piThreads: PiThreadsService
   piSkills: PiSkillsService
-  skillCreator: SkillCreatorService
   terminalManager: TerminalService
 }

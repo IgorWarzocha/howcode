@@ -29,6 +29,7 @@ export const desktopActions = [
   'workspace.commit',
   'workspace.commit-options',
   'workspace.diff-preferences',
+  'workspace.write-file',
   'workspace.sidebar-scope',
   'workspace.switch-branch',
   'workspace.prune-branch',

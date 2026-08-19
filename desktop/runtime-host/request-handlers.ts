@@ -1,7 +1,5 @@
 import {
   answerPiExtensionDialog,
-  closeSkillCreatorSession,
-  continueSkillCreatorSession,
   dequeueComposerPrompt,
   disposeRuntimeHosts,
   generateGitCommitMessage,
@@ -33,7 +31,6 @@ import {
   setComposerThinkingLevel,
   setProjectTrust,
   startNewThread,
-  startSkillCreatorSession,
   stopComposerRun,
   updatePiSetting,
 } from './host-service.ts'
@@ -52,8 +49,6 @@ type RuntimeHostRequestHandlerMap = {
 
 const runtimeHostRequestHandlers = {
   answerPiExtensionDialog: (payload) => answerPiExtensionDialog(payload),
-  closeSkillCreatorSession: (payload) => closeSkillCreatorSession(payload),
-  continueSkillCreatorSession: (payload) => continueSkillCreatorSession(payload),
   dequeueComposerPrompt: (payload) => dequeueComposerPrompt(payload),
   disposeRuntimeHosts: (payload) => disposeRuntimeHosts(payload),
   generateGitCommitMessage: (payload) => generateGitCommitMessage(payload.request, payload.context),
@@ -85,7 +80,6 @@ const runtimeHostRequestHandlers = {
   setProjectTrust: (payload) => setProjectTrust(payload),
   setComposerThinkingLevel: (payload) => setComposerThinkingLevel(payload.request, payload.level),
   startNewThread: (payload) => startNewThread(payload.request),
-  startSkillCreatorSession: (payload) => startSkillCreatorSession(payload),
   stopComposerRun: (payload) => stopComposerRun(payload.request),
   navigateSessionTree: (payload) => navigateSessionTreeInHost(payload),
   updatePiSetting: (payload) => updatePiSetting(payload.key, payload.value, payload.projectPath),

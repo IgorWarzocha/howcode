@@ -14,6 +14,10 @@ const reservedCommandNames = new Set([
   sessionTreeSlashCommand.name,
 ])
 
+function optionalDescription(description: string | undefined) {
+  return description === undefined ? {} : { description }
+}
+
 export function mapSessionCommands(session: PiRuntime['session']): ComposerSlashCommand[] {
   const commands: ComposerSlashCommand[] = [
     appSettingsSlashCommand,
@@ -31,7 +35,7 @@ export function mapSessionCommands(session: PiRuntime['session']): ComposerSlash
     extensionCommandNames.add(command.invocationName)
     commands.push({
       name: command.invocationName,
-      description: command.description,
+      ...optionalDescription(command.description),
       source: 'extension',
       sourceInfo: command.sourceInfo,
     })
@@ -44,7 +48,7 @@ export function mapSessionCommands(session: PiRuntime['session']): ComposerSlash
 
     commands.push({
       name: template.name,
-      description: template.description,
+      ...optionalDescription(template.description),
       source: 'prompt',
       sourceInfo: template.sourceInfo,
     })

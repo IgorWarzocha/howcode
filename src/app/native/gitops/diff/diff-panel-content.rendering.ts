@@ -1,5 +1,3 @@
-const trailingSlashPattern = /\/$/
-const leadingCurrentDirectoryPattern = /^\.\//
 const imageDiffFilePattern = /\.(?:apng|avif|bmp|gif|jpe?g|png|svg|webp)$/i
 
 import { parsePatchFiles } from '@pierre/diffs'
@@ -39,8 +37,7 @@ export function getRenderablePatch(
   }
 }
 
-export function resolveFileDiffPath(fileDiff: FileDiffMetadata): string {
-  const raw = fileDiff.name ?? fileDiff.prevName ?? ''
+export function resolveDiffFilePath(raw: string) {
   if (raw.startsWith('a/') || raw.startsWith('b/')) {
     return raw.slice(2)
   }
@@ -48,14 +45,12 @@ export function resolveFileDiffPath(fileDiff: FileDiffMetadata): string {
   return raw
 }
 
-export function buildFileDiffRenderKey(fileDiff: FileDiffMetadata): string {
-  return JSON.stringify([fileDiff.prevName ?? null, fileDiff.name])
+export function resolveFileDiffPath(fileDiff: FileDiffMetadata): string {
+  return resolveDiffFilePath(fileDiff.name ?? fileDiff.prevName ?? '')
 }
 
-export function joinProjectFilePath(projectId: string, filePath: string) {
-  const normalizedProjectId = projectId.replace(trailingSlashPattern, '')
-  const normalizedFilePath = filePath.replace(leadingCurrentDirectoryPattern, '')
-  return `${normalizedProjectId}/${normalizedFilePath}`
+export function buildFileDiffRenderKey(fileDiff: FileDiffMetadata): string {
+  return JSON.stringify([fileDiff.prevName ?? null, fileDiff.name])
 }
 
 export function describeCollapsedLines(count: number) {
@@ -84,7 +79,7 @@ export function isImageDiffFile(fileDiff: FileDiffMetadata) {
 }
 
 export function orderRenderableFiles(fileDiffs: readonly FileDiffMetadata[]) {
-  return [...fileDiffs].sort((left, right) =>
+  return fileDiffs.toSorted((left, right) =>
     resolveFileDiffPath(left).localeCompare(resolveFileDiffPath(right), undefined, {
       numeric: true,
       sensitivity: 'base',

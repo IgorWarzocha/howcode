@@ -23,6 +23,10 @@ howcode
 
 The npm package is a launcher. It downloads the right desktop build from GitHub Releases, caches it, and relaunches the app.
 
+The 0.1.68 release is the updater handoff release. Launching `bunx howcode` (or `bunx howcode@dev`)
+once moves an older cached install onto the new updater. Older Windows installer installs may need
+one manual reinstall; updates after that are staged and handed off automatically.
+
 You can also download builds from the Releases page. Windows has an installer. Linux has an AppImage. macOS exists, but I build and test primarily on Linux, so please yell if it does something cursed.
 
 Works on my machine™

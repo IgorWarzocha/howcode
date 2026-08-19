@@ -3,7 +3,7 @@
 - Automations per project.
 - Multiple terminals per session.
 - External terminal control for agents, probably via a small tool.
-- Some usability improvements for phone browsers.
+- Finish the phone-browser polish.
 
 ## Coming Soon™
 - Claw: a version of Openclaw. Your sidekick for managing everything in the app.

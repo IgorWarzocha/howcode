@@ -1,6 +1,6 @@
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { AudioLines, Check, FileAudio, Mic, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { AnchoredPopoverPanel } from '../common/popover'
 import { TextButton } from '../common/text-button'
 import type { DesktopActionInvoker } from '../desktop/types'
@@ -27,6 +27,16 @@ type ComposerDictationControlsProps = {
   onOpenSettingsView: (target?: SettingsOpenTarget) => void
   showDictationButton: boolean
   toggleDictation: () => Promise<'started' | 'stopped' | 'setup-required' | 'unavailable'>
+}
+
+function useEligiblePromptState(eligible: boolean) {
+  const [open, setOpen] = useState(false)
+  const [previousEligible, setPreviousEligible] = useState(eligible)
+  if (previousEligible !== eligible) {
+    setPreviousEligible(eligible)
+    if (!eligible) setOpen(false)
+  }
+  return [open, setOpen] as const
 }
 
 function getDictationButtonAriaLabel(input: {
@@ -149,22 +159,18 @@ export function ComposerDictationControls({
   showDictationButton,
   toggleDictation,
 }: ComposerDictationControlsProps) {
-  const [dictationPromptOpen, setDictationPromptOpen] = useState(false)
+  const promptEligible = showDictationButton && dictationMissingModel
+  const [dictationPromptOpen, setDictationPromptOpen] = useEligiblePromptState(promptEligible)
   const dictationButtonRef = useRef<HTMLButtonElement>(null)
   const dictationPromptRef = useRef<HTMLDivElement>(null)
-  const dictationPromptPresent = useAnimatedPresence(dictationPromptOpen)
+  const effectiveDictationPromptOpen = dictationPromptOpen && promptEligible
+  const dictationPromptPresent = useAnimatedPresence(effectiveDictationPromptOpen)
 
   useDismissibleLayer({
-    open: dictationPromptOpen,
+    open: effectiveDictationPromptOpen,
     onDismiss: () => setDictationPromptOpen(false),
     refs: [dictationButtonRef, dictationPromptRef],
   })
-
-  useEffect(() => {
-    if (!(showDictationButton && dictationMissingModel)) {
-      setDictationPromptOpen(false)
-    }
-  }, [dictationMissingModel, showDictationButton])
 
   return showDictationButton ? (
     <div className={cn('relative', placement === 'trailing' && 'h-6 w-6 shrink-0')}>
@@ -174,7 +180,7 @@ export function ComposerDictationControls({
           onAction={onAction}
           onDismiss={() => setDictationPromptOpen(false)}
           onOpenSettingsView={onOpenSettingsView}
-          open={dictationPromptOpen}
+          open={effectiveDictationPromptOpen}
           promptRef={dictationPromptRef}
         />
       ) : null}

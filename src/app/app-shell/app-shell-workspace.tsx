@@ -7,9 +7,9 @@ import type { AppShellController } from './useAppShellController'
 
 type AppShellWorkspaceProps = {
   controller: AppShellController
-  activeComposerState: AppShellController['activeComposerState']
-  activePiExtensionUiState: AppShellController['activePiExtensionUiState']
-  activeThreadData: AppShellController['activeThreadData']
+  activeComposerState: AppShellController['composer']['state']
+  activePiExtensionUiState: AppShellController['composer']['extensionUiState']
+  activeThreadData: AppShellController['thread']['activeData']
   composerProjectId: string
   currentProjectName: string
   diffBaseline: ProjectDiffBaseline
@@ -24,9 +24,6 @@ type AppShellWorkspaceProps = {
   sidebarAutoHidden: boolean
   sidebarCompactMode: boolean
   onToggleSidebar: () => void
-  onArtifactDrawerOverlayChange?:
-    | ((visible: boolean, onClose?: (() => void) | undefined) => void)
-    | undefined
 }
 
 export function AppShellWorkspace({
@@ -48,9 +45,8 @@ export function AppShellWorkspace({
   sidebarAutoHidden,
   sidebarCompactMode,
   onToggleSidebar,
-  onArtifactDrawerOverlayChange,
 }: AppShellWorkspaceProps) {
-  const { state } = controller
+  const { state } = controller.workspace
 
   if (state.activeView === 'chat') {
     return (
@@ -69,7 +65,6 @@ export function AppShellWorkspace({
         sidebarAutoHidden={sidebarAutoHidden}
         sidebarCompactMode={sidebarCompactMode}
         onToggleSidebar={onToggleSidebar}
-        onArtifactDrawerOverlayChange={onArtifactDrawerOverlayChange}
       />
     )
   }

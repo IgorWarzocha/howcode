@@ -166,14 +166,25 @@ export async function deletePersistedThreads(threadIds: string[]) {
   const deletedThreadIds: string[] = []
   const failedThreadIds: string[] = []
 
-  for (const threadId of threadIds) {
-    try {
-      await deletePersistedThread(threadId)
-      deletedThreadIds.push(threadId)
-    } catch (error) {
-      console.warn(`Failed to delete persisted thread: ${threadId}`, error)
-      failedThreadIds.push(threadId)
-    }
+  const results = await [...new Set(threadIds)].reduce<
+    Promise<Array<{ threadId: string; deleted: boolean }>>
+  >(
+    (pending, threadId) =>
+      pending.then(async (completed) => {
+        try {
+          await deletePersistedThread(threadId)
+          completed.push({ threadId, deleted: true })
+        } catch (error) {
+          console.warn(`Failed to delete persisted thread: ${threadId}`, error)
+          completed.push({ threadId, deleted: false })
+        }
+        return completed
+      }),
+    Promise.resolve([]),
+  )
+  for (const { threadId, deleted } of results) {
+    if (deleted) deletedThreadIds.push(threadId)
+    else failedThreadIds.push(threadId)
   }
 
   return {

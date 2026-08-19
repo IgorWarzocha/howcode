@@ -124,6 +124,7 @@ export function SidebarChatSection({
         >
           <input
             className="sidebar-project-input w-full"
+            aria-label="Group name"
             value={draft}
             placeholder="Group name"
             onChange={(event) => setDraft(event.target.value)}

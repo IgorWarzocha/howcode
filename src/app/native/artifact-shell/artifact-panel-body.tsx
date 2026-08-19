@@ -178,6 +178,7 @@ export function ArtifactPanelBody({
   if (view === 'code') {
     return (
       <textarea
+        aria-label="Artifact source"
         className={artifactCodeEditorClass}
         value={draft}
         spellCheck={false}

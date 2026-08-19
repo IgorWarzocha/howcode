@@ -24,13 +24,3 @@ export function useDesktopThreadQuery(
     staleTime: Number.POSITIVE_INFINITY,
   })
 }
-
-export function useDesktopThread(
-  sessionPath: string | null | undefined,
-  refreshKey = 0,
-  historyCompactions = 0,
-) {
-  const query = useDesktopThreadQuery(sessionPath, refreshKey, historyCompactions)
-
-  return query.data ?? null
-}

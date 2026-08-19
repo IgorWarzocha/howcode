@@ -97,21 +97,23 @@ async function assertGrantedDirectoryPath(filePath: string, grants: AttachmentGr
 function createAttachmentFileAccess(grants: AttachmentGrant): AttachmentFileAccess {
   return {
     async grantAttachments(attachments) {
-      for (const attachment of attachments) {
-        const attachmentPath = attachment.path.trim()
-        if (!attachmentPath || isExternalReference(attachmentPath)) continue
-        try {
-          const resolved = await realpath(attachmentPath)
-          const metadata = await stat(resolved)
-          if (metadata.isDirectory()) {
-            grants.directories.add(resolved)
-          } else if (metadata.isFile()) {
-            grants.files.add(resolved)
+      await Promise.all(
+        attachments.map(async (attachment) => {
+          const attachmentPath = attachment.path.trim()
+          if (!attachmentPath || isExternalReference(attachmentPath)) return
+          try {
+            const resolved = await realpath(attachmentPath)
+            const metadata = await stat(resolved)
+            if (metadata.isDirectory()) {
+              grants.directories.add(resolved)
+            } else if (metadata.isFile()) {
+              grants.files.add(resolved)
+            }
+          } catch {
+            // Invalid attachments are already rejected in the composer path; ignore stale paths here.
           }
-        } catch {
-          // Invalid attachments are already rejected in the composer path; ignore stale paths here.
-        }
-      }
+        }),
+      )
     },
   }
 }

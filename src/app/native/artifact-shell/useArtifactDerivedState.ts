@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import type { Artifact, ArtifactVersion } from '../../desktop/types'
-import type { ArtifactView } from './useArtifactPanelState'
+import type { ArtifactView } from './artifact-panel-model'
 
 export function useArtifactDerivedState(input: {
   artifacts: Artifact[]

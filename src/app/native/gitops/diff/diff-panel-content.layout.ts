@@ -1,12 +1,3 @@
-import type { FileDiffMetadata } from '@pierre/diffs/react'
-import {
-  DIFF_FILE_ESTIMATED_COMMENT_HEIGHT,
-  DIFF_FILE_ESTIMATED_FILE_GAP,
-  DIFF_FILE_ESTIMATED_HEADER_HEIGHT,
-  DIFF_FILE_ESTIMATED_LINE_HEIGHT,
-  DIFF_FILE_ESTIMATED_SEPARATOR_HEIGHT,
-} from './diff-panel-content.constants'
-
 export function alignElementInScrollViewport({
   scrollContainer,
   targetElement,
@@ -60,50 +51,4 @@ export function alignElementInScrollViewport({
   if (Math.abs(offset) > 4) {
     scrollContainer.scrollTop += offset
   }
-}
-
-export function estimateFileDiffHeight({
-  fileDiff,
-  collapsed,
-  diffRenderMode,
-  annotationCount,
-  imagePreview = false,
-}: {
-  fileDiff: FileDiffMetadata
-  collapsed: boolean
-  diffRenderMode: 'stacked' | 'split'
-  annotationCount: number
-  imagePreview?: boolean | undefined
-}) {
-  let height = DIFF_FILE_ESTIMATED_HEADER_HEIGHT
-
-  if (!collapsed) {
-    let lineCount = 0
-    let separatorCount = 0
-
-    for (const hunk of fileDiff.hunks) {
-      lineCount += diffRenderMode === 'split' ? hunk.splitLineCount : hunk.unifiedLineCount
-
-      if (hunk.collapsedBefore > 0) {
-        separatorCount += 1
-      }
-    }
-
-    height += lineCount * DIFF_FILE_ESTIMATED_LINE_HEIGHT
-    height += separatorCount * (DIFF_FILE_ESTIMATED_SEPARATOR_HEIGHT + DIFF_FILE_ESTIMATED_FILE_GAP)
-
-    if (fileDiff.hunks.length > 0) {
-      height += DIFF_FILE_ESTIMATED_FILE_GAP
-    }
-
-    if (imagePreview) {
-      height += 280
-    }
-  }
-
-  if (annotationCount > 0) {
-    height += annotationCount * DIFF_FILE_ESTIMATED_COMMENT_HEIGHT
-  }
-
-  return Math.max(height, DIFF_FILE_ESTIMATED_HEADER_HEIGHT + DIFF_FILE_ESTIMATED_FILE_GAP)
 }

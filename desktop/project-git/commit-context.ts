@@ -186,7 +186,7 @@ export async function startProjectDiffStream(
   projectId: string,
   baseline?: ProjectDiffBaseline | null,
   requestedStreamId?: string | null,
-  includeUntracked = false,
+  includeUntracked: boolean | null = false,
 ): Promise<ProjectDiffStreamStartResult> {
   const streamId = requestedStreamId?.trim() || randomUUID()
   activeProjectDiffStreams.get(streamId)?.abort()
@@ -206,7 +206,7 @@ export async function startProjectDiffStream(
       const resolvedBaseline = await resolveProjectDiffBaseline(projectId, baseline)
       const snapshot = await loadWorktreeSnapshot(projectId, {
         baselineRev: resolvedBaseline.rev,
-        includeUntracked,
+        includeUntracked: includeUntracked === true,
         signal: abortController.signal,
         onPatchChunk: (chunk) => {
           if (abortController.signal.aborted) return
@@ -268,7 +268,7 @@ export async function cancelProjectDiffStream(streamId: string): Promise<void> {
 export async function loadProjectDiffStats(
   projectId: string,
   baseline?: ProjectDiffBaseline | null,
-  includeUntracked = false,
+  includeUntracked: boolean | null = false,
 ): Promise<ProjectDiffStatsResult | null> {
   if (!(await isGitRepository(projectId))) {
     return null
@@ -278,7 +278,7 @@ export async function loadProjectDiffStats(
     const resolvedBaseline = await resolveProjectDiffBaseline(projectId, baseline)
     const stats = await loadWorktreeStats(projectId, {
       baselineRev: resolvedBaseline.rev,
-      includeUntracked,
+      includeUntracked: includeUntracked === true,
     })
 
     return {

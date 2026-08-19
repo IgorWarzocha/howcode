@@ -1,22 +1,13 @@
-const leadingDotsPattern = /^\.+/
-
-import { mkdir, open, readdir, realpath, stat } from 'node:fs/promises'
+import { mkdir } from 'node:fs/promises'
 import http from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
 import { openPathWithSystem } from '../desktop/system-open-path.ts'
 import packageJson from '../package.json'
-import { getAttachmentKind } from '../shared/composer-attachments'
-import type { DesktopActionResultData } from '../shared/desktop-contracts'
-import type {
-  DesktopEventMap,
-  DesktopRequestChannel,
-  DesktopRequestHandlerMap,
-} from '../shared/desktop-ipc'
+import type { DesktopEventMap, DesktopRequestChannel } from '../shared/desktop-ipc'
 import type {
   PiSkillsService,
   PiThreadsService,
-  SkillCreatorService,
   TerminalService,
 } from '../shared/desktop-service-contracts'
 import { getDesktopWorkingDirectory } from '../shared/desktop-working-directory'
@@ -25,10 +16,11 @@ import {
   scheduleBrowserUploadComposerAttachmentsCleanup,
   writeBrowserUploadComposerAttachmentsFromMultipart,
 } from '../src/desktop-host/browser-upload-attachments'
+import { createDesktopRequestHandlers } from '../src/desktop-host/desktop-requests/handlers'
 import {
-  listComposerAttachmentEntries,
-  searchComposerAttachmentEntries,
-} from '../src/desktop-host/composer-attachments'
+  createSystemRequestHandlers,
+  type DesktopSystemRequestCapabilities,
+} from '../src/desktop-host/desktop-requests/system'
 import {
   DesktopServiceClient,
   type DesktopServiceModuleName,
@@ -69,8 +61,7 @@ function proxyServiceModule<T extends Record<string, unknown>>(
       get(_target, property) {
         if (property === 'subscribeDesktopEvents')
           return desktopService.subscribeDesktopEvents.bind(desktopService)
-        if (property === 'subscribeTerminalEvents')
-          return desktopService.subscribeTerminalEvents.bind(desktopService)
+        if (property === 'disposeDesktopRuntime') return desktopService.dispose.bind(desktopService)
         return (...args: unknown[]) =>
           desktopService.invokeDynamic(moduleName, String(property), args)
       },
@@ -80,14 +71,7 @@ function proxyServiceModule<T extends Record<string, unknown>>(
 
 const piThreads = proxyServiceModule<PiThreadsService>('piThreads')
 const piSkills = proxyServiceModule<PiSkillsService>('piSkills')
-const skillCreator = proxyServiceModule<SkillCreatorService>('skillCreator')
-const terminalManager = proxyServiceModule<TerminalService>('terminalManager')
-
-function didDesktopActionMutate(result: DesktopActionResultData | null | undefined) {
-  return Boolean(
-    result && typeof result === 'object' && 'didMutate' in result && result.didMutate === true,
-  )
-}
+const terminalManager: TerminalService = desktopService.terminalManager
 
 function sendSseEvent<TChannel extends keyof DesktopEventMap>(
   clients: Set<http.ServerResponse>,
@@ -101,75 +85,22 @@ function sendSseEvent<TChannel extends keyof DesktopEventMap>(
   }
 }
 
-async function writeUniqueTextFile(directoryPath: string, fileName: string, content: string) {
-  const parsed = path.parse(fileName)
-  for (let index = 0; index < 100; index += 1) {
-    const candidateName = index === 0 ? fileName : `${parsed.name}-${index + 1}${parsed.ext}`
-    const candidatePath = path.join(directoryPath, candidateName)
-    try {
-      const file = await open(candidatePath, 'wx', 0o600)
-      try {
-        await file.writeFile(content, 'utf8')
-      } finally {
-        await file.close()
-      }
-      return candidatePath
-    } catch (error) {
-      if (
-        typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        error.code === 'EEXIST'
-      ) {
-        continue
-      }
-      throw error
-    }
-  }
-  throw new Error('Could not find an unused file name in Downloads.')
-}
-
-async function listProjectDirectoryEntries(request: { path?: string | null | undefined }) {
-  const homePath = os.homedir()
-  const trimmedRequestPath = request.path?.trim() ?? ''
-  const requestedPath = trimmedRequestPath || homePath
-  const currentPath = await realpath(path.resolve(requestedPath)).catch(() =>
-    path.resolve(requestedPath),
-  )
-  const directoryEntries = await readdir(currentPath, { withFileTypes: true })
-  const entries = await Promise.all(
-    directoryEntries
-      .filter(
-        (entry) => !entry.name.startsWith('.') && (entry.isDirectory() || entry.isSymbolicLink()),
-      )
-      .map(async (entry) => {
-        const entryPath = path.join(currentPath, entry.name)
-        if (entry.isDirectory()) {
-          return { path: entryPath, name: entry.name, kind: 'directory' as const }
-        }
-
-        try {
-          const stats = await stat(entryPath)
-          return stats.isDirectory()
-            ? { path: entryPath, name: entry.name, kind: 'directory' as const }
-            : null
-        } catch {
-          return null
-        }
-      }),
-  )
-
-  return {
-    homePath,
-    currentPath,
-    parentPath: path.dirname(currentPath) === currentPath ? null : path.dirname(currentPath),
-    entries: entries
-      .filter((entry): entry is { path: string; name: string; kind: 'directory' } => Boolean(entry))
-      .sort((left, right) =>
-        left.name.localeCompare(right.name, undefined, { sensitivity: 'base' }),
-      ),
-  }
-}
+const devSystemCapabilities = {
+  clearClipboardImages: () => ({ clearedCount: 0, clearFailedCount: 0 }),
+  pickComposerAttachments: () => [],
+  readClipboardSnapshot: () => ({ formats: [], valuesByFormat: {} }),
+  readClipboardFilePaths: () => ({ filePaths: [], text: null }),
+  readClipboardImage: () => null,
+  openExternal: async ({ url }) => {
+    const safeUrl = getSafeExternalUrl(url)
+    return { ok: Boolean(safeUrl && (await openPathWithSystem(safeUrl))) }
+  },
+  openPath: async ({ path: targetPath }) => ({ ok: await openPathWithSystem(targetPath) }),
+  getDownloadsPath: () => path.join(os.homedir(), 'Downloads'),
+  prepareDownloadsDirectory: async (directoryPath) => {
+    await mkdir(directoryPath, { recursive: true })
+  },
+} satisfies DesktopSystemRequestCapabilities
 
 piThreads.subscribeDesktopEvents((event) => {
   sendSseEvent(desktopEventClients, 'desktopEvent', event)
@@ -178,181 +109,16 @@ terminalManager.subscribeTerminalEvents((event) => {
   sendSseEvent(terminalEventClients, 'terminalEvent', event)
 })
 
-const handlers: DesktopRequestHandlerMap = {
-  getAppUpdateState: () => devAppUpdateState,
-  checkAppUpdate: () => devAppUpdateState,
-  installAppUpdate: () => devAppUpdateState,
-  restartAppUpdate: () => devAppUpdateState,
-  clearClipboardImages: () => ({ clearedCount: 0, clearFailedCount: 0 }),
-  getShellState: () => piThreads.loadShellState(getDesktopWorkingDirectory()),
-  getProjectGitState: ({ projectId }) => piThreads.loadProjectGitState(projectId),
-  getProjectUsageSummary: ({ projectId }) => piThreads.loadProjectUsageSummary(projectId),
-  getProjectFavicon: ({ projectId }) => piThreads.loadProjectFavicon(projectId),
-  startProjectDiffStream: ({ projectId, baseline, streamId, includeUntracked }) =>
-    piThreads.startProjectDiffStream(
-      projectId,
-      baseline ?? null,
-      streamId ?? null,
-      includeUntracked ?? false,
-    ),
-  cancelProjectDiffStream: async ({ streamId }) => {
-    await piThreads.cancelProjectDiffStream(streamId)
-    return undefined
+const handlers = createDesktopRequestHandlers({
+  runtime: { piThreads, piSkills, terminalManager },
+  platform: {
+    getAppUpdateState: () => devAppUpdateState,
+    checkAppUpdate: () => devAppUpdateState,
+    installAppUpdate: () => devAppUpdateState,
+    restartAppUpdate: () => devAppUpdateState,
+    ...createSystemRequestHandlers(devSystemCapabilities),
   },
-  getProjectDiffStats: ({ projectId, baseline, includeUntracked }) =>
-    piThreads.loadProjectDiffStats(projectId, baseline ?? null, includeUntracked ?? false),
-  getProjectDiffImagePreview: (request) => piThreads.loadProjectDiffImagePreview(request),
-  captureProjectDiffBaseline: ({ projectId }) => piThreads.captureProjectDiffBaseline(projectId),
-  listProjectCommits: ({ projectId, limit }) =>
-    piThreads.listProjectCommits(projectId, limit ?? null),
-  searchPiPackages: (request) => piThreads.searchPiPackages(request),
-  getConfiguredPiPackages: (request) => piThreads.listConfiguredPiPackages(request),
-  installPiPackage: (request) => piThreads.installPiPackage(request),
-  removePiPackage: (request) => piThreads.removePiPackage(request),
-  searchPiSkills: (request) => piSkills.searchPiSkills(request),
-  getConfiguredPiSkills: (request) => piSkills.listConfiguredPiSkills(request),
-  installPiSkill: (request) => piSkills.installPiSkill(request),
-  removePiSkill: (request) => piSkills.removePiSkill(request),
-  startSkillCreatorSession: (request) => skillCreator.startSkillCreatorSession(request),
-  continueSkillCreatorSession: (request) => skillCreator.continueSkillCreatorSession(request),
-  closeSkillCreatorSession: (request) => skillCreator.closeSkillCreatorSession(request),
-  pickComposerAttachments: () => [],
-  listProjectDirectoryEntries,
-  readClipboardSnapshot: () => ({ formats: [], valuesByFormat: {} }),
-  readClipboardFilePaths: () => ({ filePaths: [], text: null }),
-  readClipboardImage: () => null,
-  getAttachmentKindsForPaths: async ({ paths }) => {
-    const uniquePaths = [...new Set(Array.isArray(paths) ? paths : [])].filter(
-      (candidate): candidate is string => typeof candidate === 'string' && candidate.length > 0,
-    )
-    const entries = await Promise.all(
-      uniquePaths.map(async (candidate) => {
-        try {
-          const stats = await stat(candidate)
-          return [
-            candidate,
-            stats.isDirectory() ? 'directory' : getAttachmentKind(candidate),
-          ] as const
-        } catch {
-          return [candidate, null] as const
-        }
-      }),
-    )
-    return Object.fromEntries(entries)
-  },
-  listComposerAttachmentEntries: (request) => listComposerAttachmentEntries(request),
-  searchComposerAttachmentEntries: (request) => searchComposerAttachmentEntries(request),
-  getComposerState: (request) => piThreads.loadComposerState(request),
-  getComposerSlashCommands: (request) => piThreads.loadComposerSlashCommands(request),
-  getComposerSkills: (request) => piThreads.loadComposerSkills(request),
-  getDictationState: () => piThreads.getDictationState(),
-  listDictationModels: () => piThreads.listDictationModels(),
-  installDictationModel: (request) => piThreads.installDictationModel(request),
-  removeDictationModel: (request) => piThreads.removeDictationModel(request),
-  transcribeDictation: (request) => piThreads.transcribeDictation(request),
-  getProjectThreads: (request) =>
-    piThreads.loadProjectThreads(
-      request?.projectId ?? '',
-      request?.chat === undefined ? {} : { chat: request.chat },
-    ),
-  getChatSidebarState: (request) =>
-    piThreads.loadChatSidebarState(request?.selectedGroupId ?? null),
-  createChatGroup: ({ name }) => piThreads.createChatGroup(name),
-  listArtifacts: (request) => piThreads.listArtifacts(request?.conversationId ?? null),
-  getArtifact: ({ artifactSlug, conversationId }) =>
-    piThreads.getArtifact(artifactSlug, conversationId ?? null),
-  updateArtifact: ({ artifactSlug, content, conversationId }) =>
-    piThreads.updateArtifact({
-      slug: artifactSlug,
-      content,
-      conversationId: conversationId ?? null,
-    }),
-  editArtifact: ({ artifactSlug, edits, conversationId }) =>
-    piThreads.editArtifact({ slug: artifactSlug, edits, conversationId: conversationId ?? null }),
-  listArtifactVersions: ({ artifactSlug }) => piThreads.listArtifactVersions(artifactSlug),
-  compileReactArtifact: ({ source }) => piThreads.compileReactArtifact(source),
-  getInboxThreads: () => piThreads.loadInboxThreadList(),
-  getArchivedThreads: () => piThreads.loadArchivedThreadList(),
-  getThread: ({ sessionPath, historyCompactions = 0 }) =>
-    piThreads.loadThread(sessionPath, { historyCompactions }),
-  getSessionTreeList: ({ sessionPath }) => piThreads.loadSessionTreeList(sessionPath),
-  getThreadPreviewAtEntry: ({ sessionPath, targetEntryId, historyCompactions = 0 }) =>
-    piThreads
-      .loadThreadPreviewAtEntry(sessionPath, targetEntryId, { historyCompactions })
-      .catch(() => null),
-  searchThread: ({ sessionPath, query }) => piThreads.searchThread(sessionPath, query),
-  watchSession: async ({ sessionPath }) => {
-    await piThreads.setWatchedSessionPath(sessionPath)
-    return { ok: true }
-  },
-  invokeAction: async ({ action, payload = {} }) => {
-    try {
-      const result = await piThreads.handleDesktopAction(action, payload)
-      if (
-        action === 'settings.update' &&
-        payload &&
-        typeof payload === 'object' &&
-        'key' in payload &&
-        payload.key === 'customPiDirectory' &&
-        didDesktopActionMutate(result)
-      ) {
-        await desktopService.dispose()
-      }
-      return {
-        ok: true,
-        at: new Date().toISOString(),
-        payload: { action, payload },
-        result: result ?? null,
-      }
-    } catch (error) {
-      console.error('dev:web invokeAction failed', { action, payload, error })
-      return {
-        ok: false,
-        at: new Date().toISOString(),
-        payload: { action, payload },
-        result: {
-          error: error instanceof Error ? error.message : 'Desktop action failed unexpectedly.',
-        },
-      }
-    }
-  },
-  listTerminals: () => terminalManager.listTerminals(),
-  terminalOpen: (request) => terminalManager.openTerminal(request),
-  terminalWrite: async ({ sessionId, data }) => {
-    await terminalManager.writeTerminal(sessionId, data)
-    return { ok: true }
-  },
-  terminalResize: async ({ sessionId, cols, rows }) => {
-    await terminalManager.resizeTerminal(sessionId, cols, rows)
-    return { ok: true }
-  },
-  terminalClose: async (request) => {
-    await terminalManager.closeTerminal(request)
-    return { ok: true }
-  },
-  terminalSessionFileStat: ({ sessionId }) => terminalManager.statSessionFile(sessionId),
-  terminalStatus: ({ sessionId }) => terminalManager.getTerminalStatus(sessionId),
-  openExternal: async ({ url }) => {
-    const safeUrl = getSafeExternalUrl(url)
-    return { ok: Boolean(safeUrl && (await openPathWithSystem(safeUrl))) }
-  },
-  openPath: async ({ path: targetPath }) => ({ ok: await openPathWithSystem(targetPath) }),
-  saveTextToDownloads: async ({ fileName, content }) => {
-    const safeFileName = fileName
-      .replace(/[\\/:*?"<>|]/g, '-')
-      .replace(leadingDotsPattern, '')
-      .trim()
-    if (!safeFileName) return { ok: false, error: 'Invalid file name.' }
-    const downloadsPath = path.join(os.homedir(), 'Downloads')
-    try {
-      await mkdir(downloadsPath, { recursive: true })
-      const filePath = await writeUniqueTextFile(downloadsPath, safeFileName, content)
-      return { ok: true, path: filePath }
-    } catch (error) {
-      return { ok: false, error: error instanceof Error ? error.message : String(error) }
-    }
-  },
-}
+})
 
 const maxBridgeJsonBodyBytes = 2 * 1024 * 1024
 

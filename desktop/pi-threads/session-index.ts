@@ -5,6 +5,7 @@ import { createInterface } from 'node:readline'
 import { normalizeThreadTitle } from '../../shared/pi-message-mapper.ts'
 import { invokeRuntimeHost } from '../runtime-host/client-bridge.ts'
 import { mapWithConcurrency } from './map-with-concurrency.ts'
+import { decodeSessionFileLine, type SessionFileEntry } from './session-entry-schema.ts'
 
 export type SessionSummary = {
   id: string
@@ -14,19 +15,6 @@ export type SessionSummary = {
   modified: Date
   path: string
   cwd?: string | undefined
-}
-
-type SessionFileEntry = {
-  type?: string | undefined
-  id?: string | undefined
-  timestamp?: string | undefined
-  cwd?: string | undefined
-  message?: {
-    role?: string | undefined
-    timestamp?: number | undefined
-    content?: string | undefined | Array<{ type?: string | undefined; text?: string | undefined }>
-  }
-  name?: string | undefined
 }
 
 type SessionSummaryReadResult = {
@@ -113,15 +101,6 @@ type ParsedSessionSummaryFile = {
   lastActivityTimeMs: number | null
 }
 
-function parseSessionFileEntry(line: string) {
-  if (!line.trim()) return null
-  try {
-    return JSON.parse(line) as SessionFileEntry
-  } catch {
-    return null
-  }
-}
-
 function applySessionFileEntry(
   current: ParsedSessionSummaryFile,
   entry: SessionFileEntry,
@@ -157,7 +136,7 @@ async function readSessionSummaryFile(filePath: string) {
   })
 
   for await (const line of lines) {
-    const entry = parseSessionFileEntry(line)
+    const entry = decodeSessionFileLine(line)
     if (entry) result = applySessionFileEntry(result, entry)
   }
 
@@ -249,9 +228,11 @@ export async function listAllSessionsStrict(): Promise<SessionIndexReadResult> {
       }
 
       return {
-        filePaths: sessionFiles
-          .filter((entry) => entry.isFile() && entry.name.endsWith('.jsonl'))
-          .map((entry) => path.join(sessionDirectoryPath, entry.name)),
+        filePaths: sessionFiles.flatMap((entry) =>
+          entry.isFile() && entry.name.endsWith('.jsonl')
+            ? [path.join(sessionDirectoryPath, entry.name)]
+            : [],
+        ),
         failed: false,
       }
     }),

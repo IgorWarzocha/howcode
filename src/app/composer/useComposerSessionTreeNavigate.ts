@@ -3,6 +3,7 @@ import { getPersistedSessionPath } from '@howcode/shared/session-paths'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useState } from 'react'
 import { desktopQueryKeys } from '../query/desktop-query-keys'
+import { dispatchSessionTreeReveal } from '../thread/session-tree-reveal'
 import type { View } from '../types'
 
 export function useComposerSessionTreeNavigate(input: {
@@ -12,6 +13,7 @@ export function useComposerSessionTreeNavigate(input: {
   extensionRunning: boolean
   isCompacting: boolean
   isSending: boolean
+  onClose: () => void
   projectId: string
   runComposerAction: (
     action: 'composer.session-tree.navigate' | 'composer.session-tree.label',
@@ -28,6 +30,7 @@ export function useComposerSessionTreeNavigate(input: {
     extensionRunning,
     isCompacting,
     isSending,
+    onClose,
     projectId,
     runComposerAction,
     sessionPath,
@@ -111,13 +114,31 @@ export function useComposerSessionTreeNavigate(input: {
     ],
   )
 
+  const handleSessionTreeNavigateAndClose = useCallback(
+    async (entryId: string, summarize: boolean, label?: string) => {
+      const ok = await handleSessionTreeNavigate(entryId, summarize, label)
+      if (ok) onClose()
+      return ok
+    },
+    [handleSessionTreeNavigate, onClose],
+  )
+
+  const revealSessionTreeEntryInThread = useCallback(
+    (entryId: string) => {
+      if (!persistedSessionPath) return
+      dispatchSessionTreeReveal({ sessionPath: persistedSessionPath, entryId })
+    },
+    [persistedSessionPath],
+  )
+
   useEffect(() => {
     if (!isCompacting) setSessionTreeHidden(false)
   }, [isCompacting])
 
   return {
-    handleSessionTreeNavigate,
     handleSessionTreeLabel,
+    handleSessionTreeNavigateAndClose,
+    revealSessionTreeEntryInThread,
     sessionTreeForceHidden: sessionTreeHidden,
     sessionTreeNavigateDisabled,
   }

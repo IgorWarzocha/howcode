@@ -1,7 +1,12 @@
-import { access } from 'node:fs/promises'
+import { access, realpath } from 'node:fs/promises'
 import path from 'node:path'
 import { normalizeGitBranchName } from './branch-name.ts'
 import { formatGitCommandError, getNonInteractiveGitEnv, runGitWithOptions } from './git-runner.ts'
+import {
+  ensureWorktreePathIgnored,
+  getInRepositoryWorktreePath,
+  removeOwnedWorktreePathIgnore,
+} from './worktree-excludes.ts'
 
 export type GitWorktreeEntry = {
   path: string
@@ -12,7 +17,13 @@ export type GitWorktreeEntry = {
 }
 
 export type GitWorktreeCreateResult =
-  | { didMutate: true; projectId: string; rootProjectId: string; branchName: string }
+  | {
+      didMutate: true
+      projectId: string
+      rootProjectId: string
+      branchName: string
+      warning?: string
+    }
   | { error: string }
 
 function normalizeBranchRef(ref: string) {
@@ -171,16 +182,14 @@ export async function createProjectWorktree(input: {
   try {
     const mainWorktree = await resolveMainWorktree(input.projectId)
     const rootProjectId = mainWorktree?.path ?? input.projectId
-    const worktreePath = await resolveAvailableWorktreePath(
-      resolveWorktreeParent(rootProjectId, input.worktreeDirectory),
-      folderName,
-    )
+    const worktreeParent = resolveWorktreeParent(rootProjectId, input.worktreeDirectory)
+    const worktreePath = await resolveAvailableWorktreePath(worktreeParent, folderName)
+    getInRepositoryWorktreePath(rootProjectId, worktreePath)
 
     await runGitWithOptions(input.projectId, ['check-ref-format', '--branch', branchName], {
       timeout: 10_000,
       maxBuffer: 1024 * 1024,
     })
-
     const localBranchExists = await hasLocalBranch(input.projectId, branchName)
     const remoteBranchBase = localBranchExists
       ? null
@@ -196,14 +205,34 @@ export async function createProjectWorktree(input: {
       timeout: 30_000,
       maxBuffer: 1024 * 1024 * 4,
     })
+    const canonicalWorktreePath = await realpath(worktreePath)
+    const relativeWorktreePath = getInRepositoryWorktreePath(rootProjectId, canonicalWorktreePath)
 
-    return { didMutate: true, projectId: worktreePath, rootProjectId, branchName }
+    let warning: string | undefined
+    try {
+      await ensureWorktreePathIgnored(rootProjectId, relativeWorktreePath)
+    } catch (error) {
+      warning = `Worktree created, but its folder could not be excluded from parent Git status: ${formatGitCommandError(error)}`
+      console.warn(warning)
+    }
+
+    return {
+      didMutate: true,
+      projectId: canonicalWorktreePath,
+      rootProjectId,
+      branchName,
+      ...(warning ? { warning } : {}),
+    }
   } catch (error) {
     return { error: formatGitCommandError(error) }
   }
 }
 
-export async function removeProjectWorktree(projectId: string, worktreePath: string) {
+export async function removeProjectWorktree(
+  projectId: string,
+  worktreePath: string,
+  expectedBranchName: string | null,
+) {
   const normalizedPath = worktreePath.trim()
   if (!normalizedPath) return { error: 'Worktree path is required.' }
 
@@ -216,16 +245,31 @@ export async function removeProjectWorktree(projectId: string, worktreePath: str
     if (worktree.path === (worktrees[0]?.path ?? null)) {
       return { error: 'Cannot remove the main worktree.' }
     }
+    if (worktree.branch !== expectedBranchName) {
+      return { error: 'Worktree branch changed before it could be removed.' }
+    }
+
+    const rootProjectId = worktrees[0]?.path ?? projectId
+    const relativeWorktreePath = getInRepositoryWorktreePath(rootProjectId, worktree.path)
 
     await runGitWithOptions(projectId, ['worktree', 'remove', worktree.path], {
       env: getNonInteractiveGitEnv(),
       timeout: 30_000,
       maxBuffer: 1024 * 1024 * 4,
     })
+
+    let warning: string | undefined
+    try {
+      await removeOwnedWorktreePathIgnore(rootProjectId, relativeWorktreePath)
+    } catch (error) {
+      warning = `Worktree removed, but its Git exclusion could not be cleaned up: ${formatGitCommandError(error)}`
+      console.warn(warning)
+    }
     return {
       didMutate: true,
       projectId: worktree.path,
-      rootProjectId: worktrees[0]?.path ?? projectId,
+      rootProjectId,
+      ...(warning ? { warning } : {}),
     }
   } catch (error) {
     return { error: formatGitCommandError(error) }

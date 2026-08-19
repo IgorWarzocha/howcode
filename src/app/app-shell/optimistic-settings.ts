@@ -1,3 +1,4 @@
+import { isComposerThinkingLevel } from '@howcode/shared/composer-thinking-level'
 import {
   isKeybindingCommandId,
   isValidAccelerator,
@@ -18,8 +19,6 @@ const optimisticSettingKeys = new Set([
   'codeThinkingLevel',
   'gitCommitMessageModel',
   'gitCommitMessageThinkingLevel',
-  'skillCreatorModel',
-  'skillCreatorThinkingLevel',
   'composerStreamingBehavior',
   'dictationModelId',
   'dictationMaxDurationSeconds',
@@ -47,14 +46,6 @@ const optimisticSettingKeys = new Set([
   'composerSendMode',
 ])
 
-const isThinkingLevel = (value: unknown): value is ComposerThinkingLevel =>
-  value === 'off' ||
-  value === 'minimal' ||
-  value === 'low' ||
-  value === 'medium' ||
-  value === 'high' ||
-  value === 'xhigh'
-
 function getOptimisticModelSelection(
   payload: ActionPayload,
   fallback: ModelSelection | null,
@@ -69,10 +60,11 @@ function getOptimisticFavoriteFolders(payload: ActionPayload, fallback: string[]
   return Array.isArray(payload.folders)
     ? [
         ...new Set(
-          payload.folders
-            .filter((folder): folder is string => typeof folder === 'string')
-            .map((folder) => folder.trim())
-            .filter(Boolean),
+          payload.folders.flatMap((folder) => {
+            if (typeof folder !== 'string') return []
+            const trimmed = folder.trim()
+            return trimmed ? [trimmed] : []
+          }),
         ),
       ]
     : fallback
@@ -106,12 +98,6 @@ function applyOptimisticModelSetting(
       nextSettings.gitCommitMessageModel,
     )
   }
-  if (payload.key === 'skillCreatorModel') {
-    nextSettings.skillCreatorModel = getOptimisticModelSelection(
-      payload,
-      nextSettings.skillCreatorModel,
-    )
-  }
 }
 
 function getResettableThinkingLevel(
@@ -119,7 +105,7 @@ function getResettableThinkingLevel(
   fallback: ComposerThinkingLevel | null,
 ) {
   if (payload.reset === true) return null
-  return isThinkingLevel(payload.value) ? payload.value : fallback
+  return isComposerThinkingLevel(payload.value) ? payload.value : fallback
 }
 
 function applyOptimisticThinkingSetting(
@@ -138,11 +124,8 @@ function applyOptimisticThinkingSetting(
       nextSettings.codeThinkingLevel,
     )
   }
-  if (payload.key === 'gitCommitMessageThinkingLevel' && isThinkingLevel(payload.value)) {
+  if (payload.key === 'gitCommitMessageThinkingLevel' && isComposerThinkingLevel(payload.value)) {
     nextSettings.gitCommitMessageThinkingLevel = payload.value
-  }
-  if (payload.key === 'skillCreatorThinkingLevel' && isThinkingLevel(payload.value)) {
-    nextSettings.skillCreatorThinkingLevel = payload.value
   }
 }
 

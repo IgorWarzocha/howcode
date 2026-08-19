@@ -1,4 +1,4 @@
-import { QueuedPromptsCard } from '@howcode/composer'
+import { getComposerRuntimeModel, QueuedPromptsCard } from '@howcode/composer'
 import { GitOpsComposerPanel } from '@howcode/native-gitops'
 import { Composer } from '@howcode/workspace-shell'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
@@ -6,9 +6,9 @@ import type { Message } from '../types'
 import { WORKSPACE_EDGE_PADDING_CLASS } from '../ui/layout'
 import { cn } from '../utils/cn'
 import { WorkspaceComposerDock } from '../workspace-shell/workspace-composer-dock'
+import type { CodeWorkspaceContentProps } from './code-workspace-contract'
 import { FALLBACK_APP_SETTINGS } from './code-workspace-defaults'
 import { CodeWorkspaceMainArea } from './code-workspace-main-area'
-import type { CodeWorkspaceContentProps } from './code-workspace-view'
 import { DesktopComposerStatusModelPicker } from './desktop-composer-status'
 
 function getReplyActivityKey(messages: readonly Message[]) {
@@ -53,19 +53,12 @@ function CodeGitOpsComposer(props: CodeWorkspaceContentProps) {
     terminalSessionPath,
     diffBaseline,
     diffRenderMode,
-    diffComments,
-    diffCommentCount,
-    diffCommentsSending,
-    diffCommentError,
+    gitOpsReview,
     diffLoadError,
-    hasPendingDiffComments,
     includeUntrackedDiffFiles,
     toggleIncludeUntrackedDiffFiles,
     onSetDiffBaseline,
     onSetDiffRenderMode,
-    handleSendDiffComments,
-    handleDiscardDiffComments,
-    handleSelectDiffComment,
     setComposerLayoutVersion,
     handleAction,
     handleCloseGitOpsView,
@@ -77,39 +70,32 @@ function CodeGitOpsComposer(props: CodeWorkspaceContentProps) {
   return (
     <div>
       <GitOpsComposerPanel
-        dictationModelId={appSettings.dictationModelId}
-        dictationMaxDurationSeconds={appSettings.dictationMaxDurationSeconds}
-        projectGitState={projectGitState}
-        parentBranchName={parentBranchName}
-        projectId={composerProjectId}
-        sessionPath={terminalSessionPath}
-        showDictationButton={appSettings.showDictationButton}
         appSettings={appSettings}
-        diffBaseline={diffBaseline}
-        diffRenderMode={diffRenderMode}
-        diffComments={diffComments}
-        diffCommentCount={diffCommentCount}
-        diffCommentsSending={diffCommentsSending}
-        diffCommentError={diffCommentError}
-        diffLoadError={diffLoadError}
-        includeUntracked={includeUntrackedDiffFiles}
-        onSetDiffBaseline={onSetDiffBaseline}
-        onSetDiffRenderMode={onSetDiffRenderMode}
-        onToggleIncludeUntracked={toggleIncludeUntrackedDiffFiles}
-        onSendDiffComments={(message) => {
-          void handleSendDiffComments(message).then((sent) => {
-            if (sent) handleCloseGitOpsView()
-          })
+        project={{
+          id: composerProjectId,
+          gitState: projectGitState,
+          parentBranchName,
+          sessionPath: terminalSessionPath,
         }}
-        onSelectDiffComment={handleSelectDiffComment}
-        hasPendingDiffComments={hasPendingDiffComments}
-        onDiscardDiffComments={handleDiscardDiffComments}
+        diff={{
+          baseline: diffBaseline,
+          renderMode: diffRenderMode,
+          loadError: diffLoadError,
+          includeUntracked: includeUntrackedDiffFiles,
+          setBaseline: onSetDiffBaseline,
+          setRenderMode: onSetDiffRenderMode,
+          toggleIncludeUntracked: toggleIncludeUntrackedDiffFiles,
+        }}
+        fileTree={{
+          visible: gitOpsFileTreeVisible,
+          toggle: toggleGitOpsFileTree,
+        }}
+        review={gitOpsReview}
+        onReviewSent={handleCloseGitOpsView}
         onLayoutChange={() => setComposerLayoutVersion((current: number) => current + 1)}
         onAction={handleAction}
         onBack={handleCloseGitOpsView}
-        onOpenSettingsView={(target) => controller.handleShowView('settings', target)}
-        gitOpsFileTreeVisible={gitOpsFileTreeVisible}
-        onToggleGitOpsFileTree={toggleGitOpsFileTree}
+        onOpenSettingsView={(target) => controller.navigation.showView('settings', target)}
       />
     </div>
   )
@@ -136,33 +122,6 @@ function CodeQueuedPrompts(props: CodeWorkspaceContentProps) {
   )
 }
 
-function getComposerRuntimeProps(
-  activeComposerState: CodeWorkspaceContentProps['activeComposerState'],
-  activePiExtensionUiState: CodeWorkspaceContentProps['activePiExtensionUiState'],
-) {
-  return {
-    availableModels: activeComposerState?.availableModels ?? [],
-    availableThinkingLevels: activeComposerState?.availableThinkingLevels ?? ['off'],
-    contextUsage: activeComposerState?.contextUsage ?? null,
-    currentModel: activeComposerState?.currentModel ?? null,
-    currentThinkingLevel: activeComposerState?.currentThinkingLevel ?? 'off',
-    isCompacting: activeComposerState?.isCompacting ?? false,
-    isExtensionCommandRunning: activeComposerState?.isExtensionCommandRunning ?? false,
-    piExtensionDialogRequest:
-      activePiExtensionUiState?.piExtensionDialogRequest ??
-      activeComposerState?.piExtensionDialogRequest ??
-      null,
-    piExtensionShortcuts: activeComposerState?.piExtensionShortcuts ?? [],
-    piExtensionStatuses:
-      activePiExtensionUiState?.piExtensionStatuses ??
-      activeComposerState?.piExtensionStatuses ??
-      [],
-    piExtensionWidgets:
-      activePiExtensionUiState?.piExtensionWidgets ?? activeComposerState?.piExtensionWidgets ?? [],
-    projectTrustRequest: activeComposerState?.projectTrustRequest ?? null,
-  }
-}
-
 function CodeThreadComposer(props: CodeWorkspaceContentProps) {
   const {
     state,
@@ -176,19 +135,8 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
     parentBranchName,
     diffBaseline,
     terminalSessionPath,
-    diffRenderMode,
-    diffComments,
-    diffCommentCount,
-    diffCommentsSending,
-    diffCommentError,
     onSetDiffBaseline,
-    onSetDiffRenderMode,
-    handleSendDiffComments,
-    handleSelectDiffComment,
-    composerPromptResetKey,
-    setComposerLayoutVersion,
     setComposerOverlayHeight,
-    mainViewRef,
     footerRef,
     handleShowTakeoverTerminal,
     handleOpenGitOpsView,
@@ -199,28 +147,16 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
     handleAction,
   } = props
   const appSettings = shellState?.appSettings ?? FALLBACK_APP_SETTINGS
-  const composerRuntime = getComposerRuntimeProps(activeComposerState, activePiExtensionUiState)
+  const composerRuntime = getComposerRuntimeModel(activeComposerState, activePiExtensionUiState)
   return (
     <Composer
       activeView={state.activeView}
-      model={composerRuntime.currentModel}
-      contextUsage={composerRuntime.contextUsage}
+      runtime={composerRuntime}
       messages={activeThreadData?.messages}
-      customMessages={activeThreadData?.customMessages}
-      availableModels={composerRuntime.availableModels}
       isStreaming={activeThreadData?.isStreaming ?? false}
       replyActivityKey={getReplyActivityKey(activeThreadData?.messages ?? [])}
-      isCompacting={composerRuntime.isCompacting}
-      isExtensionCommandRunning={composerRuntime.isExtensionCommandRunning}
-      piExtensionWidgets={composerRuntime.piExtensionWidgets}
-      piExtensionStatuses={composerRuntime.piExtensionStatuses}
-      piExtensionShortcuts={composerRuntime.piExtensionShortcuts}
-      piExtensionDialogRequest={composerRuntime.piExtensionDialogRequest}
-      projectTrustRequest={composerRuntime.projectTrustRequest}
-      thinkingLevel={composerRuntime.currentThinkingLevel}
       restoredQueuedPrompt={scopedRestoredQueuedPrompt}
       streamingBehaviorPreference={appSettings.composerStreamingBehavior}
-      availableThinkingLevels={composerRuntime.availableThinkingLevels}
       projectId={composerProjectId}
       projectGitState={projectGitState}
       parentBranchName={parentBranchName}
@@ -235,30 +171,16 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
       composerSendMode={appSettings.composerSendMode}
       keybindings={appSettings.keybindings}
       piTreeFilterMode={shellState?.piSettings.treeFilterMode ?? 'no-tools'}
-      diffRenderMode={diffRenderMode}
-      diffComments={diffComments}
-      diffCommentCount={diffCommentCount}
-      diffCommentsSending={diffCommentsSending}
-      diffCommentError={diffCommentError}
       onSetDiffBaseline={onSetDiffBaseline}
-      onSetDiffRenderMode={onSetDiffRenderMode}
-      onSendDiffComments={(message) => {
-        void handleSendDiffComments(message)
-      }}
-      onSelectDiffComment={handleSelectDiffComment}
-      promptResetKey={composerPromptResetKey}
-      onLayoutChange={() => setComposerLayoutVersion((current: number) => current + 1)}
       onOverlayHeightChange={setComposerOverlayHeight}
-      mainViewRef={mainViewRef}
       workspaceFooterRef={footerRef}
       onOpenTakeoverTerminal={handleShowTakeoverTerminal}
       onOpenGitOpsView={handleOpenGitOpsView}
-      onOpenSettingsView={(target) => controller.handleShowView('settings', target)}
+      onOpenSettingsView={(target) => controller.navigation.showView('settings', target)}
       onRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
       onToggleTerminal={handleToggleTerminal}
       terminalVisible={state.terminalVisible}
       takeoverVisible={state.takeoverVisible}
-      preferPortalFilePicker={state.activeView === 'project'}
       preferPortalModelPopover={state.activeView === 'project'}
       onListAttachmentEntries={listComposerAttachmentEntries}
       onAction={handleAction}

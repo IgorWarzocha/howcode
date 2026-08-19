@@ -4,16 +4,14 @@ import {
   setThreadCompactingState,
   setThreadStreamingState,
 } from '../../shared/thread-data.ts'
-import { buildThreadHistorySlice, type SessionPathEntry } from '../../shared/thread-history.ts'
+import { buildThreadHistorySlice } from '../../shared/thread-history.ts'
 import { isChatSessionPath } from '../chat-state-db.ts'
 import { buildComposerState } from '../runtime/composer-state.ts'
 import { getPiExtensionUiState } from '../runtime/pi-extension-ui-state.ts'
-import type { PiRuntime, RuntimeThreadReason } from '../runtime/types.ts'
+import type { RuntimeThreadReason } from '../runtime/types.ts'
 import { emitDesktopEvent } from './host-events.ts'
+import type { LivePiRuntime } from './live-runtime-updates.ts'
 import { getLiveToolProgressMessages } from './live-tool-progress.ts'
-
-const LIVE_THREAD_UPDATE_THROTTLE_MS = 50
-const liveThreadUpdateTimers = new WeakMap<PiRuntime, ReturnType<typeof setTimeout>>()
 
 function normalizeThreadDataForReason(
   thread: ReturnType<typeof buildThreadData>,
@@ -24,14 +22,11 @@ function normalizeThreadDataForReason(
   return setThreadCompactingState(setThreadStreamingState(thread, false), false)
 }
 
-function buildLiveThreadData(runtime: PiRuntime) {
+function buildLiveThreadData(runtime: LivePiRuntime) {
   const sessionPath = runtime.session.sessionFile
   if (!sessionPath) return null
   const streamingMessage = runtime.session.state.streamingMessage
-  const historySlice = buildThreadHistorySlice(
-    [...(runtime.session.sessionManager.getBranch() as SessionPathEntry[])],
-    0,
-  )
+  const historySlice = buildThreadHistorySlice(runtime.session.sessionManager.getBranch(), 0)
   const sourceMessages = [
     ...historySlice.sourceMessages,
     ...(streamingMessage ? [streamingMessage] : []),
@@ -47,12 +42,15 @@ function buildLiveThreadData(runtime: PiRuntime) {
   })
 }
 
-export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThreadReason) {
+export async function publishThreadUpdate(runtime: LivePiRuntime, reason: RuntimeThreadReason) {
+  if (!runtime.updates.isActive()) return
   const sessionPath = runtime.session.sessionFile
   if (!sessionPath) return
   const liveThread = buildLiveThreadData(runtime)
   if (!liveThread) return
   emitDesktopEvent({ type: 'internal-thread-update', sessionPath })
+  const composer = await buildComposerState(runtime, { includeContextUsage: reason !== 'update' })
+  if (!runtime.updates.isActive()) return
   emitDesktopEvent({
     type: 'thread-update',
     reason,
@@ -63,7 +61,7 @@ export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThr
     chatGroupId: runtime.chatGroupId ?? null,
     isChat: isChatSessionPath(sessionPath),
     thread: normalizeThreadDataForReason(liveThread, reason),
-    composer: await buildComposerState(runtime, { includeContextUsage: reason !== 'update' }),
+    composer,
   })
 }
 
@@ -82,7 +80,8 @@ export function publishComposerUpdate(
   })
 }
 
-export function publishPiExtensionUiUpdate(runtime: PiRuntime) {
+export function publishPiExtensionUiUpdate(runtime: LivePiRuntime) {
+  if (!runtime.updates.isActive()) return
   const sessionPath = runtime.session.sessionFile
   if (!sessionPath) return
   emitDesktopEvent({
@@ -93,32 +92,23 @@ export function publishPiExtensionUiUpdate(runtime: PiRuntime) {
   })
 }
 
-export function cancelLiveThreadUpdate(runtime: PiRuntime) {
-  const timer = liveThreadUpdateTimers.get(runtime)
-  if (!timer) return
-  clearTimeout(timer)
-  liveThreadUpdateTimers.delete(runtime)
+export function cancelLiveThreadUpdate(runtime: LivePiRuntime) {
+  runtime.updates.cancelThread()
 }
 
 export function deferLiveThreadUpdate(
-  runtime: PiRuntime,
+  runtime: LivePiRuntime,
   options: { requireStreaming?: boolean | undefined } = {},
 ) {
-  cancelLiveThreadUpdate(runtime)
-  const timer = setTimeout(() => {
-    liveThreadUpdateTimers.delete(runtime)
+  runtime.updates.deferThread(() => {
     if (options.requireStreaming !== false && !runtime.session.isStreaming) return
-    void publishThreadUpdate(runtime, 'update')
-  }, 0)
-  liveThreadUpdateTimers.set(runtime, timer)
+    return publishThreadUpdate(runtime, 'update')
+  })
 }
 
-export function scheduleLiveThreadUpdate(runtime: PiRuntime) {
-  if (liveThreadUpdateTimers.has(runtime)) return
-  const timer = setTimeout(() => {
-    liveThreadUpdateTimers.delete(runtime)
+export function scheduleLiveThreadUpdate(runtime: LivePiRuntime) {
+  runtime.updates.scheduleThread(() => {
     if (!runtime.session.isStreaming) return
-    void publishThreadUpdate(runtime, 'update')
-  }, LIVE_THREAD_UPDATE_THROTTLE_MS)
-  liveThreadUpdateTimers.set(runtime, timer)
+    return publishThreadUpdate(runtime, 'update')
+  })
 }

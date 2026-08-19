@@ -1,4 +1,5 @@
 import type { AppSettings, DesktopActionInvoker } from '../desktop/types'
+import type { PiResourceInstallScope } from '../pi-resources/types'
 
 export type SkillsViewProps = {
   appSettings: AppSettings
@@ -9,9 +10,4 @@ export type SkillsViewProps = {
   onClose: () => void
 }
 
-export type InstallScope = 'global' | 'project' | 'chat'
-
-export type PendingAction = {
-  kind: 'install' | 'remove'
-  source: string
-}
+export type InstallScope = PiResourceInstallScope

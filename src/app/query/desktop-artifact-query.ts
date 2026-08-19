@@ -2,10 +2,6 @@ export async function listArtifactsQuery(conversationId?: string | null) {
   return (await window.piDesktop?.listArtifacts?.(conversationId ?? null)) ?? []
 }
 
-export async function getArtifactQuery(artifactSlug: string, conversationId?: string | null) {
-  return (await window.piDesktop?.getArtifact?.(artifactSlug, conversationId ?? null)) ?? null
-}
-
 export async function updateArtifactQuery(
   artifactSlug: string,
   content: string,
@@ -14,16 +10,6 @@ export async function updateArtifactQuery(
   return (
     (await window.piDesktop?.updateArtifact?.(artifactSlug, content, conversationId ?? null)) ??
     null
-  )
-}
-
-export async function editArtifactQuery(
-  artifactSlug: string,
-  edits: Array<{ oldText: string; newText: string }>,
-  conversationId?: string | null | undefined,
-) {
-  return (
-    (await window.piDesktop?.editArtifact?.(artifactSlug, edits, conversationId ?? null)) ?? null
   )
 }
 

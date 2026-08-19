@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Artifact } from '../../desktop/types'
+import { useLatestRef } from '../../hooks/useLatestRef'
 import { saveTextToDownloadsQuery } from '../../query/desktop-query'
 import { getArtifactExtension } from './artifactFormat'
 
@@ -19,8 +20,7 @@ export function useArtifactDownload(input: {
 }) {
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null)
   const { selectedArtifactSlug } = input
-  const selectedArtifactSlugRef = useRef<string | null>(null)
-  selectedArtifactSlugRef.current = selectedArtifactSlug
+  const selectedArtifactSlugRef = useLatestRef(selectedArtifactSlug)
 
   useEffect(() => {
     void selectedArtifactSlug

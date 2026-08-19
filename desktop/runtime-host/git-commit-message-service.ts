@@ -197,7 +197,9 @@ async function createCommitMessageServices() {
           'No quotes, no markdown, no explanations.',
           'Prefer the dominant change when the diff spans multiple concerns.',
         ].join('\n'),
+      getSystemPromptSource: () => undefined,
       getAppendSystemPrompt: () => [],
+      getAppendSystemPromptSources: () => [],
       extendResources: () => {
         // Commit-message generation does not need extension resources.
       },
@@ -226,7 +228,7 @@ async function resolveCommitMessageModel(
 
   try {
     if (selectedModel) {
-      const availableModels = await snapshot.session.modelRegistry.getAvailable()
+      const availableModels = await snapshot.session.modelRuntime.getAvailable()
       const configuredModel = availableModels.find(
         (model) => model.provider === selectedModel.provider && model.id === selectedModel.id,
       )
@@ -234,7 +236,7 @@ async function resolveCommitMessageModel(
       if (configuredModel) {
         return {
           model: configuredModel,
-          modelRegistry: snapshot.session.modelRegistry,
+          modelRuntime: snapshot.session.modelRuntime,
           dispose: () => snapshot.session.dispose(),
         }
       }
@@ -242,7 +244,7 @@ async function resolveCommitMessageModel(
 
     return {
       model: snapshot.session.model,
-      modelRegistry: snapshot.session.modelRegistry,
+      modelRuntime: snapshot.session.modelRuntime,
       dispose: () => snapshot.session.dispose(),
     }
   } catch (error) {
@@ -275,7 +277,7 @@ export async function generateGitCommitMessage(
         appSettings.gitCommitMessageThinkingLevel,
         getAvailableThinkingLevelsForModel(model),
       ),
-      modelRegistry: resolvedModel.modelRegistry,
+      modelRuntime: resolvedModel.modelRuntime,
       resourceLoader: services.resourceLoader,
       tools: [],
       sessionManager: services.SessionManager.inMemory(),

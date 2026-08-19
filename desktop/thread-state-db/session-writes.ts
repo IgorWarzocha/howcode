@@ -25,7 +25,7 @@ function escapeLikePattern(value: string) {
 }
 
 function getDisambiguatedThreadId(session: SessionSummaryRecord) {
-  const suffix = createHash('sha1').update(session.sessionPath).digest('hex').slice(0, 8)
+  const suffix = createHash('sha256').update(session.sessionPath).digest('hex').slice(0, 8)
   return `${session.id}:${suffix}`
 }
 
@@ -86,9 +86,9 @@ function getDuplicateSessionIds(sessions: SessionSummaryRecord[]) {
   }
 
   return new Set(
-    [...sessionPathsById.entries()]
-      .filter(([, sessionPaths]) => sessionPaths.size > 1)
-      .map(([sessionId]) => sessionId),
+    [...sessionPathsById.entries()].flatMap(([sessionId, sessionPaths]) =>
+      sessionPaths.size > 1 ? [sessionId] : [],
+    ),
   )
 }
 

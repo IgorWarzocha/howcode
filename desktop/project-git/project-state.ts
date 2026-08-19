@@ -120,16 +120,18 @@ function getProjectGitOpsModeOverride(projectId: string) {
   return row?.gitOpsMode === 'commit' || row?.gitOpsMode === 'commit-push' ? row.gitOpsMode : null
 }
 
-export async function getBranch(projectId: string) {
+export async function getActiveBranch(projectId: string) {
   try {
     const { stdout } = await runGit(projectId, ['branch', '--show-current'])
-    const branch = stdout.trim()
-    if (branch) {
-      return branch
-    }
+    return stdout.trim() || null
   } catch {
-    // Fallback below.
+    return null
   }
+}
+
+export async function getBranch(projectId: string) {
+  const activeBranch = await getActiveBranch(projectId)
+  if (activeBranch) return activeBranch
 
   try {
     if (await hasHeadCommit(projectId)) {

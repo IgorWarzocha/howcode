@@ -5,7 +5,6 @@ import type {
   PiPackageMutationResult,
   PiSkillCatalogPage,
   PiSkillMutationResult,
-  SkillCreatorSessionState,
 } from '../desktop/types'
 
 export function canSearchPiPackagesQuery() {
@@ -92,24 +91,4 @@ export async function removePiSkillQuery(request: {
   chat?: boolean | undefined
 }): Promise<PiSkillMutationResult | null> {
   return (await window.piDesktop?.removePiSkill?.(request)) ?? null
-}
-
-export async function startSkillCreatorSessionQuery(request: {
-  prompt: string
-  local?: boolean | undefined
-  projectPath?: string | null
-  chat?: boolean | undefined
-}): Promise<SkillCreatorSessionState | null> {
-  return (await window.piDesktop?.startSkillCreatorSession?.(request)) ?? null
-}
-
-export async function continueSkillCreatorSessionQuery(request: {
-  sessionId: string
-  prompt: string
-}): Promise<SkillCreatorSessionState | null> {
-  return (await window.piDesktop?.continueSkillCreatorSession?.(request)) ?? null
-}
-
-export async function closeSkillCreatorSessionQuery(sessionId: string): Promise<void> {
-  await window.piDesktop?.closeSkillCreatorSession?.(sessionId)
 }

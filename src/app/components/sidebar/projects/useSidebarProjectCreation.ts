@@ -2,7 +2,7 @@ import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { parseGitHubRepositoryUrl } from '@howcode/shared/github-repository-url'
 import { useState } from 'react'
 import type { AppSettings, DesktopActionInvoker } from '../../../desktop/types'
-import { getSidebarFolderProjectName } from './sidebar-projects-folder-browser'
+import { getSidebarFolderProjectName } from './sidebar-project-name'
 
 export type PendingProject = {
   key: string

@@ -62,7 +62,7 @@ function sortConfiguredSkills(skills: PiConfiguredSkill[]) {
     chat: 2,
   }
 
-  return [...skills].sort((left, right) => {
+  return skills.toSorted((left, right) => {
     if (left.scope !== right.scope) {
       return scopeRank[left.scope] - scopeRank[right.scope]
     }

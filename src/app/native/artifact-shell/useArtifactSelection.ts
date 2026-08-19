@@ -2,7 +2,7 @@ import type { Dispatch, RefObject, SetStateAction } from 'react'
 import { useEffect } from 'react'
 import type { Artifact } from '../../desktop/types'
 import { subscribeDesktopEvents } from '../../query/desktop-query'
-import type { ArtifactView } from './useArtifactPanelState'
+import type { ArtifactView } from './artifact-panel-model'
 
 export function useArtifactSelection(input: {
   displayedContentRef: RefObject<string>

@@ -1,6 +1,5 @@
-import type { SelectedLineRange } from '@pierre/diffs'
-import type { CodeViewHandle, DiffLineAnnotation, FileDiffMetadata } from '@pierre/diffs/react'
-import type { ReactNode, RefObject } from 'react'
+import type { CodeViewHandle, FileDiffMetadata } from '@pierre/diffs/react'
+import type { RefObject } from 'react'
 import type { ProjectDiffBaseline } from '../../../desktop/types'
 import type { useDesktopDiff } from '../../../hooks/useDesktopDiff'
 import {
@@ -11,48 +10,50 @@ import {
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { getDiffBaselinePrefix, getResolvedDiffBaselineLabel } from '../diff-baseline'
+import type { DiffEditingController } from '../edit/use-diff-editing'
+import type { GitOpsAnnotationMetadata } from '../review/pierre-review-adapter'
+import type { ReviewCodeViewController } from '../review/review-code-view'
 import { DiffChangedFilesTree } from './diff-changed-files-tree'
-import type { DiffCommentMetadata } from './diff-panel-content.helpers'
 import type { RenderablePatch } from './diff-panel-content.types'
 import { DiffPanelEmptyState } from './diff-panel-empty-state'
 import { DiffPanelFileList } from './diff-panel-file-list'
-import type { useDiffCommentDrafting } from './useDiffCommentDrafting'
+import type { DiffFileContentController } from './use-diff-file-content'
 
 type DiffPanelContentBodyProps = {
-  baseline: ProjectDiffBaseline | null
-  collapsedFiles: Record<string, boolean>
-  commentAnnotationsByFile: Map<string, DiffLineAnnotation<DiffCommentMetadata>[]>
-  diff: ReturnType<typeof useDesktopDiff>['diff']
-  diffRenderMode: 'stacked' | 'split'
-  draftSelectedLines: SelectedLineRange | null
-  error: string | null
-  codeViewRef: RefObject<CodeViewHandle<DiffCommentMetadata> | null>
-  focusedImageFileKeys: ReadonlySet<string>
-  focusedFilePaths: readonly string[]
-  getFileInteractionHandlers: ReturnType<
-    typeof useDiffCommentDrafting
-  >['getFileInteractionHandlers']
-  getSelectedLinesForFile: ReturnType<typeof useDiffCommentDrafting>['getSelectedLinesForFile']
-  handleFilePointerDownCapture: ReturnType<
-    typeof useDiffCommentDrafting
-  >['handleFilePointerDownCapture']
-  hasFocusedFiles: boolean
-  hasNoNetChanges: boolean
-  hasResolvedPatch: boolean
-  isGitRepo: boolean
-  isLoading: boolean
-  loading: boolean
-  openDraftComment: ReturnType<typeof useDiffCommentDrafting>['openDraftComment']
   projectId: string
-  renderCommentAnnotation: (annotation: DiffLineAnnotation<DiffCommentMetadata>) => ReactNode
-  renderableFiles: FileDiffMetadata[]
-  renderablePatch: RenderablePatch | null
-  renderFileTree: boolean
-  scrollContainerRef: RefObject<HTMLDivElement | null>
-  setFocusedFilePaths: (paths: readonly string[]) => void
-  showFileTree: boolean
-  toggleFileCollapsed: (fileKey: string) => void
-  visibleRenderableFiles: FileDiffMetadata[]
+  diff: {
+    baseline: ProjectDiffBaseline | null
+    error: string | null
+    hasNoNetChanges: boolean
+    hasResolvedPatch: boolean
+    isGitRepo: boolean
+    isLoading: boolean
+    loading: boolean
+    renderablePatch: RenderablePatch | null
+    result: ReturnType<typeof useDesktopDiff>['diff']
+  }
+  files: {
+    all: FileDiffMetadata[]
+    collapsed: Record<string, boolean>
+    focusedImageKeys: ReadonlySet<string>
+    toggleCollapsed: (fileKey: string) => void
+    visible: FileDiffMetadata[]
+  }
+  fileTree: {
+    focusedPaths: readonly string[]
+    hasFocusedFiles: boolean
+    render: boolean
+    setFocusedPaths: (paths: readonly string[]) => void
+    show: boolean
+  }
+  codeView: {
+    ref: RefObject<CodeViewHandle<GitOpsAnnotationMetadata> | null>
+    editing: DiffEditingController
+    fileContent: DiffFileContentController
+    renderMode: 'stacked' | 'split'
+    review: ReviewCodeViewController
+    scrollContainerRef: RefObject<HTMLDivElement | null>
+  }
 }
 
 function DiffPanelUnavailable({
@@ -108,42 +109,38 @@ function RawPatchView({ reason, text }: { reason: string; text: string }) {
 
 function DiffFilesView(input: DiffPanelContentBodyProps) {
   return (
-    <div className="relative h-full min-h-0" aria-busy={input.loading || input.isLoading}>
+    <div className="relative h-full min-h-0" aria-busy={input.diff.loading || input.diff.isLoading}>
       <div className="flex h-full min-h-0">
         <div className="min-h-0 min-w-0 flex-1 overflow-hidden [overflow-anchor:none]">
           <DiffPanelFileList
-            baseline={input.baseline}
-            codeViewRef={input.codeViewRef}
-            scrollContainerRef={input.scrollContainerRef}
-            collapsedFiles={input.collapsedFiles}
-            commentAnnotationsByFile={input.commentAnnotationsByFile}
-            diffRenderMode={input.diffRenderMode}
-            draftSelectedLines={input.draftSelectedLines}
-            focusedImageFileKeys={input.focusedImageFileKeys}
-            getFileInteractionHandlers={input.getFileInteractionHandlers}
-            getSelectedLinesForFile={input.getSelectedLinesForFile}
-            onFilePointerDownCapture={input.handleFilePointerDownCapture}
-            onOpenDraftComment={input.openDraftComment}
-            onToggleFileCollapsed={input.toggleFileCollapsed}
+            baseline={input.diff.baseline}
+            fileContent={input.codeView.fileContent}
+            editing={input.codeView.editing}
+            codeViewRef={input.codeView.ref}
+            scrollContainerRef={input.codeView.scrollContainerRef}
+            collapsedFiles={input.files.collapsed}
+            diffRenderMode={input.codeView.renderMode}
+            focusedImageFileKeys={input.files.focusedImageKeys}
+            onToggleFileCollapsed={input.files.toggleCollapsed}
             projectId={input.projectId}
-            renderCommentAnnotation={input.renderCommentAnnotation}
-            renderableFiles={input.visibleRenderableFiles}
+            review={input.codeView.review}
+            renderableFiles={input.files.visible}
           />
         </div>
         <div
           className="min-h-0 shrink-0 overflow-hidden transition-[width,opacity] duration-200 ease-out"
           style={{
-            width: input.showFileTree ? 'min(24rem, calc(100% - 2.5rem))' : 0,
-            opacity: input.showFileTree ? 1 : 0,
+            width: input.fileTree.show ? 'min(24rem, calc(100% - 2.5rem))' : 0,
+            opacity: input.fileTree.show ? 1 : 0,
           }}
-          aria-hidden={!input.showFileTree}
+          aria-hidden={!input.fileTree.show}
         >
-          {input.renderFileTree ? (
+          {input.fileTree.render ? (
             <DiffChangedFilesTree
-              files={input.renderableFiles}
-              selectedPaths={input.focusedFilePaths}
-              focusedFileCount={input.hasFocusedFiles ? input.visibleRenderableFiles.length : 0}
-              onSelectedPathsChange={input.setFocusedFilePaths}
+              files={input.files.all}
+              selectedPaths={input.fileTree.focusedPaths}
+              focusedFileCount={input.fileTree.hasFocusedFiles ? input.files.visible.length : 0}
+              onSelectedPathsChange={input.fileTree.setFocusedPaths}
             />
           ) : null}
         </div>
@@ -153,26 +150,30 @@ function DiffFilesView(input: DiffPanelContentBodyProps) {
 }
 
 export function DiffPanelContentBody(input: DiffPanelContentBodyProps) {
-  if (!input.isGitRepo) {
+  if (!input.diff.isGitRepo) {
     return (
       <DiffPanelEmptyState message="Diffs are unavailable because this project is not a git repository." />
     )
   }
   return (
     <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
-      {input.renderablePatch?.kind === 'files' ||
-      input.loading ||
-      (input.isLoading && !input.hasNoNetChanges) ||
-      (input.hasResolvedPatch && !(input.hasNoNetChanges || input.renderablePatch)) ? (
+      {input.diff.renderablePatch?.kind === 'files' ||
+      input.diff.loading ||
+      (input.diff.isLoading && !input.diff.hasNoNetChanges) ||
+      (input.diff.hasResolvedPatch &&
+        !(input.diff.hasNoNetChanges || input.diff.renderablePatch)) ? (
         <DiffFilesView {...input} />
-      ) : input.renderablePatch ? (
-        <RawPatchView reason={input.renderablePatch.reason} text={input.renderablePatch.text} />
+      ) : input.diff.renderablePatch ? (
+        <RawPatchView
+          reason={input.diff.renderablePatch.reason}
+          text={input.diff.renderablePatch.text}
+        />
       ) : (
         <DiffPanelUnavailable
-          baseline={input.baseline}
-          diff={input.diff}
-          error={input.error}
-          hasNoNetChanges={input.hasNoNetChanges}
+          baseline={input.diff.baseline}
+          diff={input.diff.result}
+          error={input.diff.error}
+          hasNoNetChanges={input.diff.hasNoNetChanges}
         />
       )}
     </div>

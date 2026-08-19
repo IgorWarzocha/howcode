@@ -53,12 +53,24 @@ export function useDesktopBridgeAvailable() {
   return available
 }
 
-export function useDesktopBridge() {
-  const invokeDesktopAction: DesktopActionInvoker = async (
-    action: DesktopAction,
-    payload = {},
-  ): Promise<DesktopActionResult | null> => {
-    if (!hasDesktopBridge()) {
+const invokeDesktopAction: DesktopActionInvoker = async (
+  action: DesktopAction,
+  payload = {},
+): Promise<DesktopActionResult | null> => {
+  if (!hasDesktopBridge()) {
+    return {
+      ok: false,
+      at: new Date().toISOString(),
+      payload: { action, payload },
+      result: {
+        error: desktopBridgeUnavailableMessage,
+      },
+    }
+  }
+
+  try {
+    const result = await invokeDesktopActionQuery(action, payload)
+    if (!result) {
       return {
         ok: false,
         at: new Date().toISOString(),
@@ -69,31 +81,19 @@ export function useDesktopBridge() {
       }
     }
 
-    try {
-      const result = await invokeDesktopActionQuery(action, payload)
-      if (!result) {
-        return {
-          ok: false,
-          at: new Date().toISOString(),
-          payload: { action, payload },
-          result: {
-            error: desktopBridgeUnavailableMessage,
-          },
-        }
-      }
-
-      return result
-    } catch (error) {
-      return {
-        ok: false,
-        at: new Date().toISOString(),
-        payload: { action, payload },
-        result: {
-          error: getErrorMessage(error, 'Desktop action request failed.'),
-        },
-      }
+    return result
+  } catch (error) {
+    return {
+      ok: false,
+      at: new Date().toISOString(),
+      payload: { action, payload },
+      result: {
+        error: getErrorMessage(error, 'Desktop action request failed.'),
+      },
     }
   }
+}
 
+export function useDesktopBridge() {
   return invokeDesktopAction
 }

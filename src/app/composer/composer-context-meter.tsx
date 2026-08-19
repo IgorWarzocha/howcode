@@ -286,12 +286,6 @@ export function ComposerContextMeter({
     setPinned(false)
   }, [clearHoverTriangle, dismissSignal])
 
-  useEffect(() => {
-    if (open) {
-      loadUsageTotals()
-    }
-  }, [loadUsageTotals, open])
-
   return (
     <div
       role="application"

@@ -64,19 +64,6 @@ describe('terminal command helpers', () => {
 })
 
 describe('resolveTerminalEnv', () => {
-  it('advertises a portable xterm truecolor baseline for shell sessions', () => {
-    const env = resolveTerminalEnv(
-      { launchMode: 'shell', projectId: 'p', cols: 80, rows: 24 },
-      { TERM: 'xterm' },
-    )
-    const readEnv = (name: string) => env[name]
-
-    expect(readEnv('TERM')).toBe('xterm-256color')
-    expect(readEnv('COLORTERM')).toBe('truecolor')
-    expect(readEnv('TERM_PROGRAM')).toBeUndefined()
-    expect(readEnv('HOWCODE_EMBEDDED_TERMINAL')).toBeUndefined()
-  })
-
   it('scrubs native terminal identity and marks Pi sessions as embedded Howcode terminals', () => {
     const env = resolveTerminalEnv(
       {

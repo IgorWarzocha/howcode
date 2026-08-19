@@ -1,8 +1,11 @@
 import type { CodeViewHandle, FileDiffMetadata } from '@pierre/diffs/react'
 import { useEffect } from 'react'
-import type { DiffCommentMetadata } from './diff-panel-content.helpers'
+import {
+  type GitOpsAnnotationMetadata,
+  reviewTargetToPierreSelection,
+} from '../review/pierre-review-adapter'
+import type { ReviewTarget, SavedReviewComment } from '../review/review-model'
 import { alignElementInScrollViewport, buildFileDiffRenderKey } from './diff-panel-content.helpers'
-import type { SavedDiffComment } from './diffCommentStore'
 
 function getDatasetValue(element: HTMLElement, key: string) {
   return element.dataset[key]
@@ -23,17 +26,10 @@ export function useDiffPanelScrollAlignment({
 }: {
   collapsedFiles: Record<string, boolean>
   draftCardRef: React.RefObject<HTMLDivElement | null>
-  draftTarget: {
-    fileKey: string
-    filePath: string
-    side: 'deletions' | 'additions'
-    lineNumber: number
-    endSide?: 'deletions' | 'additions' | undefined
-    endLineNumber?: number | undefined
-  } | null
-  codeViewRef: React.RefObject<CodeViewHandle<DiffCommentMetadata> | null>
+  draftTarget: ReviewTarget | null
+  codeViewRef: React.RefObject<CodeViewHandle<GitOpsAnnotationMetadata> | null>
   renderableFiles: FileDiffMetadata[]
-  savedComments: SavedDiffComment[]
+  savedComments: SavedReviewComment[]
   scrollContainerRef: React.RefObject<HTMLDivElement | null>
   selectedCommentId: string | null
   selectedCommentJumpKey: number
@@ -79,24 +75,35 @@ export function useDiffPanelScrollAlignment({
       return
     }
 
-    if (collapsedFiles[selectedComment.fileKey] === true) {
+    if (collapsedFiles[selectedComment.target.fileKey] === true) {
       setCollapsedFiles((current) => ({
         ...current,
-        [selectedComment.fileKey]: false,
+        [selectedComment.target.fileKey]: false,
       }))
       return
     }
 
-    const selectedFileIndex = renderableFiles.findIndex(
-      (fileDiff) => buildFileDiffRenderKey(fileDiff) === selectedComment.fileKey,
+    const selectedFileExists = renderableFiles.some(
+      (fileDiff) => buildFileDiffRenderKey(fileDiff) === selectedComment.target.fileKey,
     )
-    if (selectedFileIndex >= 0) {
-      codeViewRef.current?.scrollTo({
-        type: 'item',
-        id: selectedComment.fileKey,
-        align: 'center',
-        behavior: 'instant',
-      })
+    if (selectedFileExists) {
+      const range = reviewTargetToPierreSelection(selectedComment.target)
+      codeViewRef.current?.scrollTo(
+        range
+          ? {
+              type: 'range',
+              id: selectedComment.target.fileKey,
+              range,
+              align: 'center',
+              behavior: 'instant',
+            }
+          : {
+              type: 'item',
+              id: selectedComment.target.fileKey,
+              align: 'center',
+              behavior: 'instant',
+            },
+      )
     }
 
     let cancelled = false

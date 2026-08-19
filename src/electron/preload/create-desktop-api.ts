@@ -1,5 +1,7 @@
 import { type IpcRendererEvent, ipcRenderer, webUtils } from 'electron'
+import type { DesktopAction } from '../../../shared/desktop-actions'
 import { electronDesktopBridgeCapabilities } from '../../../shared/desktop-bridge-capabilities'
+import type { AnyDesktopActionPayload, DesktopEvent } from '../../../shared/desktop-contracts'
 import {
   type DesktopEventChannel,
   type DesktopEventMap,
@@ -8,13 +10,7 @@ import {
   getDesktopEventIpcChannel,
   getDesktopRequestIpcChannel,
 } from '../../../shared/desktop-ipc'
-import type { DesktopAction } from '../../app/desktop/actions'
-import type {
-  AnyDesktopActionPayload,
-  DesktopEvent,
-  TerminalEvent,
-  TerminalOpenRequest,
-} from '../../app/desktop/types'
+import type { TerminalEvent, TerminalOpenRequest } from '../../../shared/terminal-contracts'
 
 function invokeRequest<K extends DesktopRequestChannel>(
   channel: K,
@@ -70,6 +66,9 @@ function createProjectApi() {
     getProjectDiffImagePreview: (
       request: DesktopRequestMap['getProjectDiffImagePreview']['params'],
     ) => invokeRequest('getProjectDiffImagePreview', request),
+    getProjectDiffFileContents: (
+      request: DesktopRequestMap['getProjectDiffFileContents']['params'],
+    ) => invokeRequest('getProjectDiffFileContents', request),
     captureProjectDiffBaseline: (projectId: string) =>
       invokeRequest('captureProjectDiffBaseline', { projectId }),
     listProjectCommits: (projectId: string, limit: number | null = null) =>
@@ -112,21 +111,6 @@ function createPackageAndSkillApi() {
       projectPath?: string | null
       chat?: boolean
     }) => invokeRequest('removePiSkill', request),
-  }
-}
-
-function createSkillCreatorApi() {
-  return {
-    startSkillCreatorSession: (request: {
-      prompt: string
-      local?: boolean
-      projectPath?: string | null
-      chat?: boolean
-    }) => invokeRequest('startSkillCreatorSession', request),
-    continueSkillCreatorSession: (request: { sessionId: string; prompt: string }) =>
-      invokeRequest('continueSkillCreatorSession', request),
-    closeSkillCreatorSession: (sessionId: string) =>
-      invokeRequest('closeSkillCreatorSession', { sessionId }),
   }
 }
 
@@ -252,7 +236,6 @@ export function createDesktopApi() {
     ...createAppUpdateApi(),
     ...createProjectApi(),
     ...createPackageAndSkillApi(),
-    ...createSkillCreatorApi(),
     ...createComposerAndClipboardApi(),
     ...createDictationApi(),
     ...createArtifactAndThreadApi(),

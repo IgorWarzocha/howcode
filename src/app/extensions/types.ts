@@ -1,3 +1,5 @@
+import type { PiResourceInstallScope } from '../pi-resources/types'
+
 export type ExtensionsViewProps = {
   projectPath: string | null
   onSetProjectScopeActive: (active: boolean) => void
@@ -5,11 +7,6 @@ export type ExtensionsViewProps = {
   onClose: () => void
 }
 
-export type InstallScope = 'global' | 'project' | 'chat'
+export type InstallScope = PiResourceInstallScope
 
 export type ManualSourceKind = 'npm' | 'git'
-
-export type PendingAction = {
-  kind: 'install' | 'remove'
-  source: string
-}

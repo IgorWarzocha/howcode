@@ -95,11 +95,12 @@ export async function replayComposerQueue(
   session: ComposerQueueSession,
   queue: ComposerQueueSnapshot,
 ) {
-  for (const queuedText of queue.steering) {
-    await session.steer(queuedText)
-  }
-
-  for (const queuedText of queue.followUp) {
-    await session.followUp(queuedText)
-  }
+  await queue.steering.reduce<Promise<void>>(
+    (pending, queuedText) => pending.then(() => session.steer(queuedText)),
+    Promise.resolve(),
+  )
+  await queue.followUp.reduce<Promise<void>>(
+    (pending, queuedText) => pending.then(() => session.followUp(queuedText)),
+    Promise.resolve(),
+  )
 }

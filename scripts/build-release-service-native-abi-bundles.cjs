@@ -31,7 +31,9 @@ function envNodePathForMajor(major) {
 }
 
 function resolveMiseNode(major) {
-  const output = capture('mise', ['which', `node@${major}`])
+  const output =
+    capture('mise', ['exec', `node@${major}`, '--', 'node', '-p', 'process.execPath']) ||
+    capture('mise', ['which', `node@${major}`])
   return output && existsSync(output) ? output : null
 }
 

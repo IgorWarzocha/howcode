@@ -8,14 +8,12 @@ import type {
   ComposerStateRequest,
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
-  DesktopEvent,
   PiConfiguredPackage,
   PiConfiguredSkill,
   PiPackageMutationResult,
   PiSettings,
   PiSkillMutationResult,
   PiThemeState,
-  SkillCreatorSessionState,
   ThreadData,
   ThreadSearchResult,
 } from '../../shared/desktop-contracts.ts'
@@ -97,14 +95,6 @@ export type RuntimeHostRequestMap = {
   }
   searchThreadSnapshot: { sessionPath: string; query: string }
   renameThreadSession: { sessionPath: string; name: string }
-  startSkillCreatorSession: {
-    prompt: string
-    local?: boolean | undefined
-    projectPath?: string | undefined | null | undefined
-    chat?: boolean | undefined
-  }
-  continueSkillCreatorSession: { sessionId: string; prompt: string }
-  closeSkillCreatorSession: { sessionId: string }
   generateGitCommitMessage: {
     request: ComposerStateRequest
     context: CommitMessageContext
@@ -190,9 +180,6 @@ export type RuntimeHostResponseMap = {
   }
   searchThreadSnapshot: ThreadSearchResult
   renameThreadSession: { projectId: string; threadId: string; title: string }
-  startSkillCreatorSession: SkillCreatorSessionState
-  continueSkillCreatorSession: SkillCreatorSessionState
-  closeSkillCreatorSession: { ok: boolean }
   generateGitCommitMessage: string | null
   setComposerModel: { ok: true }
   setComposerThinkingLevel: { ok: true }
@@ -219,17 +206,12 @@ export type RuntimeHostResponseMap = {
   }
 }
 
-export type RuntimeHostMainRequestMap = {
+export type RuntimeHostArtifactRequestMap = {
   createArtifact: {
     conversationId: string
     slug: string
     kind: ArtifactKind
     content: string
-  }
-  updateArtifact: {
-    slug: string
-    content: string
-    conversationId?: string | undefined | null | undefined
   }
   editArtifact: {
     slug: string
@@ -240,15 +222,14 @@ export type RuntimeHostMainRequestMap = {
   listArtifacts: { conversationId: string }
 }
 
-export type RuntimeHostMainResponseMap = {
+export type RuntimeHostArtifactResponseMap = {
   createArtifact: Artifact
-  updateArtifact: Artifact
   editArtifact: Artifact
   getArtifact: Artifact | null
   listArtifacts: Artifact[]
 }
 
-export type RuntimeHostMainRequestName = keyof RuntimeHostMainRequestMap
+export type RuntimeHostArtifactRequestName = keyof RuntimeHostArtifactRequestMap
 
 export type RuntimeHostRequestName = keyof RuntimeHostRequestMap
 
@@ -261,54 +242,13 @@ export type RuntimeHostRequestMessage<
   payload: RuntimeHostRequestMap[TName]
 }
 
-export type RuntimeHostResponseMessage =
-  | {
-      type: 'response'
-      id: string
-      ok: true
-      result: RuntimeHostResponseMap[RuntimeHostRequestName]
-    }
-  | { type: 'response'; id: string; ok: false; error: string; stack?: string | undefined }
-
-export type RuntimeHostEventMessage = {
-  type: 'desktop-event'
-  event: DesktopEvent
-}
-
-export type RuntimeHostCrashMessage = {
-  type: 'host-error'
-  error: string
-  stack?: string | undefined
-}
-
-export type RuntimeHostMainRequestMessage<
-  TName extends RuntimeHostMainRequestName = RuntimeHostMainRequestName,
+export type RuntimeHostArtifactRequest<
+  TName extends RuntimeHostArtifactRequestName = RuntimeHostArtifactRequestName,
 > = {
-  type: 'main-request'
-  id: string
   name: TName
-  payload: RuntimeHostMainRequestMap[TName]
+  payload: RuntimeHostArtifactRequestMap[TName]
 }
 
-export type RuntimeHostMainResponseMessage =
-  | {
-      type: 'main-response'
-      id: string
-      ok: true
-      result: RuntimeHostMainResponseMap[RuntimeHostMainRequestName]
-    }
-  | {
-      type: 'main-response'
-      id: string
-      ok: false
-      error: string
-      stack?: string | undefined
-    }
+export type { RuntimeHostToMainMessage } from './runtime-host-ipc-schema.ts'
 
-export type RuntimeHostToMainMessage =
-  | RuntimeHostResponseMessage
-  | RuntimeHostEventMessage
-  | RuntimeHostCrashMessage
-  | RuntimeHostMainRequestMessage
-
-export type RuntimeMainToHostMessage = RuntimeHostRequestMessage | RuntimeHostMainResponseMessage
+export type RuntimeMainToHostMessage = RuntimeHostRequestMessage

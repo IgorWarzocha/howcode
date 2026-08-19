@@ -7,17 +7,9 @@ import type { ThreadData } from './desktop-thread-contracts'
 import type { KeybindingCommandId } from './keybindings'
 
 export type DesktopEvent =
-  | {
-      type: 'app-update'
-      state: AppUpdateState
-    }
-  | {
-      type: 'shell-state-refresh'
-    }
-  | {
-      type: 'keybinding-command'
-      commandId: KeybindingCommandId
-    }
+  | { type: 'app-update'; state: AppUpdateState }
+  | { type: 'shell-state-refresh' }
+  | { type: 'keybinding-command'; commandId: KeybindingCommandId }
   | {
       type: 'dictation-download-log'
       modelId: DictationModelId
@@ -26,26 +18,17 @@ export type DesktopEvent =
       done: boolean
       isError: boolean
     }
-  | {
-      type: 'project-diff-stream'
-      event: ProjectDiffStreamEvent
-    }
+  | { type: 'project-diff-stream'; event: ProjectDiffStreamEvent }
   | {
       type: 'runtime-diagnostic'
       severity: 'info' | 'warning' | 'error'
       message: string
       details?: unknown
-      sessionPath?: string | undefined | null | undefined
-      projectId?: string | undefined | null | undefined
+      sessionPath?: string | null | undefined
+      projectId?: string | null | undefined
     }
-  | {
-      type: 'internal-thread-update'
-      sessionPath: string
-    }
-  | {
-      type: 'session-tree-refresh'
-      sessionPath: string
-    }
+  | { type: 'internal-thread-update'; sessionPath: string }
+  | { type: 'session-tree-refresh'; sessionPath: string }
   | {
       type: 'artifact-update'
       conversationId: string
@@ -57,9 +40,9 @@ export type DesktopEvent =
       projectId: string
       threadId: string
       sessionPath: string
-      branchName?: string | undefined | null | undefined
-      replacesSessionPath?: string | undefined | null | undefined
-      chatGroupId?: string | undefined | null | undefined
+      branchName?: string | null | undefined
+      replacesSessionPath?: string | null | undefined
+      chatGroupId?: string | null | undefined
       isChat?: boolean | undefined
       thread: ThreadData
       composer: ComposerState | null

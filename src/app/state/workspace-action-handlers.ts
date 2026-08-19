@@ -5,7 +5,7 @@ import type {
   UtilityViewReturnState,
   WorkspaceAction,
   WorkspaceState,
-} from './workspace'
+} from './workspace-model'
 import {
   getGitOpsReturnView,
   getTerminalStateForNextView,
@@ -36,35 +36,6 @@ function createUtilityViewReturnState(state: WorkspaceState): UtilityViewReturnS
     takeoverVisible: state.takeoverVisible,
     gitOpsReturnView: state.gitOpsReturnView,
     selectedDiffFilePath: state.selectedDiffFilePath,
-  }
-}
-
-// The collapsed map is derived once from project metadata so the tree interaction
-// stays deterministic even before we add persisted desktop state.
-export function createInitialWorkspaceState(projects: Project[]): WorkspaceState {
-  return {
-    activeView: 'landing',
-    selectedProjectId: '',
-    hasSelectedProject: false,
-    landingVisible: true,
-    selectedInboxSessionPath: null,
-    selectedThreadId: null,
-    selectedSessionPath: null,
-    terminalVisible: false,
-    workspaceTerminalVisibleByWorkspace: {},
-    terminalVisibleBySession: {},
-    restoreTerminalVisibleOnGitOpsClose: false,
-    takeoverVisible: false,
-    takeoverOverrides: {},
-    gitOpsReturnView: 'code',
-    selectedDiffFilePath: null,
-    utilityViewReturnState: null,
-    settingsOpen: false,
-    settingsPanelOpen: false,
-    lastCodeThreadSelection: null,
-    collapsedProjectIds: Object.fromEntries(
-      projects.map((project) => [project.id, project.collapsed ?? true]),
-    ),
   }
 }
 

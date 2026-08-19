@@ -41,6 +41,7 @@ export function ModelPopoverTriggerButton({
         'grid min-h-8 w-full grid-cols-[4.75rem_minmax(0,1fr)] items-center gap-2 rounded-lg px-2.5 py-1.5 text-left hover:bg-[color:var(--surface-hover)]',
         active && 'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
       )}
+      style={{ alignItems: 'baseline' }}
       onClick={onClick}
     >
       <span className={cn(appTypeKickerClass, appToneSubtleClass)}>{label}</span>

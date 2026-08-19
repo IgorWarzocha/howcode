@@ -8,10 +8,12 @@ import type { KeybindingRuntime } from './keybinding-runtime'
 import { handleThreadCycleCommand } from './keybinding-thread-cycle'
 
 export function stopActiveRun(runtime: KeybindingRuntime) {
-  const { activeThreadData, composerProjectId, state } = runtime.appController
+  const activeThreadData = runtime.appController.thread.activeData
+  const composerProjectId = runtime.appController.composer.projectId
+  const { state } = runtime.appController.workspace
   if (!(activeThreadData?.isStreaming && state.selectedSessionPath)) return false
   if (appLevelShortcutsAreBlocked('agent.interrupt', runtime)) return false
-  void runtime.appController.handleAction('composer.stop', {
+  void runtime.appController.desktop.handleAction('composer.stop', {
     projectId: composerProjectId,
     sessionPath: state.selectedSessionPath,
   })
@@ -25,36 +27,37 @@ function handleRendererCommand(commandId: KeybindingCommandId) {
 
 function handleSettingsCommand(runtime: KeybindingRuntime) {
   const controller = runtime.appController
-  if (controller.state.activeView === 'settings') controller.handleCloseUtilityView()
-  else controller.handleShowView('settings')
+  if (controller.workspace.state.activeView === 'settings') controller.navigation.closeUtilityView()
+  else controller.navigation.showView('settings')
   return true
 }
 
 function handleGitOpsCommand(runtime: KeybindingRuntime) {
   const controller = runtime.appController
-  const { activeView, selectedSessionPath } = controller.state
+  const { activeView, selectedSessionPath } = controller.workspace.state
   if (activeView === 'gitops') {
-    controller.handleCloseGitOpsView()
+    controller.gitOps.close()
     return true
   }
   if (activeView !== 'thread' || !selectedSessionPath) return false
-  controller.handleOpenGitOpsView()
+  controller.gitOps.open()
   return true
 }
 
 function handleTerminalToggleCommand(runtime: KeybindingRuntime) {
-  const { selectedProjectId, selectedSessionPath } = runtime.appController.state
+  const { selectedProjectId, selectedSessionPath } = runtime.appController.workspace.state
   if (!(selectedProjectId || selectedSessionPath)) return false
-  runtime.appController.handleToggleTerminal()
+  runtime.appController.terminal.toggle()
   return true
 }
 
 function handleTerminalFocusCommand(runtime: KeybindingRuntime) {
-  const { selectedProjectId, selectedSessionPath, terminalVisible } = runtime.appController.state
+  const { selectedProjectId, selectedSessionPath, terminalVisible } =
+    runtime.appController.workspace.state
   if (!(selectedProjectId || selectedSessionPath)) return false
   dispatchHowcodeDismissTransientUi()
   runtime.onFocusTerminal()
-  if (!terminalVisible) runtime.appController.handleToggleTerminal()
+  if (!terminalVisible) runtime.appController.terminal.toggle()
   window.requestAnimationFrame(() => {
     window.requestAnimationFrame(() => dispatchHowcodeKeybindingCommand('terminal.focus'))
   })
@@ -70,21 +73,22 @@ function handleComposerFocusCommand(runtime: KeybindingRuntime) {
 
 function handleNewThreadCommand(runtime: KeybindingRuntime) {
   const controller = runtime.appController
-  if (controller.state.activeView === 'chat') {
-    if (!controller.composerProjectId) return false
-    void controller.handleAction('thread.new', {
-      projectId: controller.composerProjectId,
+  if (controller.workspace.state.activeView === 'chat') {
+    if (!controller.composer.projectId) return false
+    void controller.desktop.handleAction('thread.new', {
+      projectId: controller.composer.projectId,
       composerMode: 'chat',
-      chatGroupId: controller.selectedChatGroupId,
+      chatGroupId: controller.chat.selectedGroupId,
     })
     return true
   }
-  const projectId = controller.state.selectedProjectId
-  if (!(projectId && controller.projects.some((project) => project.id === projectId))) return false
-  void controller.handleAction('thread.new', {
+  const projectId = controller.workspace.state.selectedProjectId
+  if (!(projectId && controller.projects.items.some((project) => project.id === projectId)))
+    return false
+  void controller.desktop.handleAction('thread.new', {
     projectId,
     composerMode: 'code',
-    chatGroupId: controller.selectedChatGroupId,
+    chatGroupId: controller.chat.selectedGroupId,
   })
   return true
 }

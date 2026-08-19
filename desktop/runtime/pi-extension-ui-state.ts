@@ -140,7 +140,7 @@ export function getPiExtensionShortcuts(runtime: PiRuntime): PiExtensionShortcut
   return [...runtime.session.extensionRunner.getShortcuts({} as never).values()].map(
     (shortcut) => ({
       shortcut: String(shortcut.shortcut),
-      description: shortcut.description,
+      ...(shortcut.description === undefined ? {} : { description: shortcut.description }),
       extensionPath: shortcut.extensionPath,
     }),
   )
@@ -285,7 +285,7 @@ export function createPiExtensionUiContext(
     input: async (title, placeholder, dialogOptions) => {
       const answer = await createDialogRequest(
         runtime,
-        { method: 'input', title, placeholder },
+        { method: 'input', title, ...(placeholder === undefined ? {} : { placeholder }) },
         onUiStateChange,
         dialogOptions,
       )
@@ -325,7 +325,11 @@ export function createPiExtensionUiContext(
       const widgets = getSessionWidgets(sessionPath)
       const lines = normalizeWidgetContent(content)
       if (lines) {
-        const nextWidget = { key, lines, placement: options?.placement }
+        const nextWidget: PiExtensionWidget = {
+          key,
+          lines,
+          ...(options?.placement === undefined ? {} : { placement: options.placement }),
+        }
         if (widgetEqual(widgets.get(key), nextWidget)) return
         widgets.set(key, nextWidget)
       } else {
@@ -354,7 +358,7 @@ export function createPiExtensionUiContext(
     editor: async (title, prefill) => {
       const answer = await createDialogRequest(
         runtime,
-        { method: 'editor', title, prefill },
+        { method: 'editor', title, ...(prefill === undefined ? {} : { prefill }) },
         onUiStateChange,
       )
       return answer.cancelled ? undefined : answer.value

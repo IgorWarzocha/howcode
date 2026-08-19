@@ -1,8 +1,11 @@
-## Packaged runtime artifacts
-
-- Packaged desktop artifacts are meant to be universal for the supported service Node range, not just the Node used by the builder.
-- Keep AppImage, Windows installers, macOS zip, and launcher archives carrying the same service-native ABI bundle set.
-- `build:release` / `electron-builder` should build all supported service-native ABI bundles during packaging. Do not gate this behind an optional env var unless there is also a clearly named non-universal build path.
-- Service-native ABI bundles must cover every native module loaded by the stock-Node desktop service, currently `better-sqlite3` and `node-pty`.
-- The root unpacked `node_modules` native files should be restored to the builder/current Node ABI after building the matrix; runtime service loading should use the ABI-specific bundle.
+- `shared/service-native-abi.json` owns the supported Node/ABI matrix and bundle contract; `service-native/platforms/*` owns OS-specific files and validation. Keep both aligned.
+- Release packaging is universal across that ABI set; AppImage, Windows, macOS, and launcher artifacts must carry the same bundles.
+- `build:release` / `electron-builder` builds the full matrix. Do not hide it behind an optional flag without a clearly named non-universal path.
+- Restore root copies of ABI-matrix modules to the builder ABI after matrix builds; packaged services resolve those modules from their ABI bundle. `better-sqlite3` 13 uses its packaged N-API prebuilds rather than ABI-specific rebuilds.
+- `serviceNativePackages` lists stock-Node runtime packages; only `serviceAbiPackages` may be copied into each ABI bundle.
 - Keep OS-specific native packaging behavior in `scripts/service-native/platforms/*`. Do not scatter platform branches through the release orchestration scripts.
+- Launcher smoke tests must validate `app.asar` and the unpacked stock-Node runtime dependency tree.
+- Release validation recursively indexes merged artifact trees and rejects duplicate basenames; do not assume launcher archives are top-level.
+- Development web scripts own Vite, authentication, proxying, and child lifecycle only. Desktop operation behaviour must come from the same host-neutral typed handler composition as Electron and packaged headless transports.
+- `dev-web.ts` owns Vite/bridge process lifecycle and proxy installation; `dev-web-access.ts` owns renderer host trust, access-token sessions, and auth responses.
+- `check-architecture-boundaries.ts` derives aliases from `tsconfig.json`, rejects cross-runtime implementation imports, and rejects new production dependency cycles. Keep it rule-based; do not add a snapshot or historical allowlist.

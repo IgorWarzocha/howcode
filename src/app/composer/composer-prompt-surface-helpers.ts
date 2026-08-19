@@ -1,5 +1,5 @@
 import type { ComposerSendMode } from '@howcode/shared/keybindings'
-import type { ComposerProps } from './composer'
+import type { ComposerProps } from './composer-contract'
 
 function getComposerSubmitHint(composerSendMode: ComposerSendMode) {
   return composerSendMode === 'cmd-enter' ? 'Cmd/Ctrl+Enter sends' : 'Enter sends'

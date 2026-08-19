@@ -46,8 +46,6 @@ import {
   projectImportStateKey,
   showDictationButtonKey,
   sidebarVisibleProjectIdsKey,
-  skillCreatorModelKey,
-  skillCreatorThinkingLevelKey,
   useAgentsSkillsPathsKey,
 } from './keys.ts'
 
@@ -123,19 +121,6 @@ export function setGitCommitMessageThinkingLevel(level: ComposerThinkingLevel) {
   writeAppPreference(gitCommitMessageThinkingLevelKey, JSON.stringify(level))
 }
 
-export function setSkillCreatorModelSelection(selection: ModelSelection | null) {
-  if (!selection) {
-    deleteAppPreference(skillCreatorModelKey)
-    return
-  }
-
-  writeAppPreference(skillCreatorModelKey, JSON.stringify(selection))
-}
-
-export function setSkillCreatorThinkingLevel(level: ComposerThinkingLevel) {
-  writeAppPreference(skillCreatorThinkingLevelKey, JSON.stringify(level))
-}
-
 export function setComposerStreamingBehavior(behavior: ComposerStreamingBehavior) {
   writeAppPreference(composerStreamingBehaviorKey, JSON.stringify(behavior))
 }
@@ -189,7 +174,12 @@ export function setFavoriteFolders(favoriteFolders: string[]) {
 
 export function setSidebarVisibleProjectIds(projectIds: string[]) {
   const normalizedProjectIds = [
-    ...new Set(projectIds.map((projectId) => projectId.trim()).filter(Boolean)),
+    ...new Set(
+      projectIds.flatMap((projectId) => {
+        const trimmed = projectId.trim()
+        return trimmed ? [trimmed] : []
+      }),
+    ),
   ]
   writeAppPreference(sidebarVisibleProjectIdsKey, JSON.stringify(normalizedProjectIds))
 }

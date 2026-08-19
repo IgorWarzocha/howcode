@@ -3,11 +3,9 @@ import {
   appToneMutedClass,
   appToneSubtleClass,
   appToneTextClass,
-  appTypeBodyClass,
   appTypeCodeClass,
   appTypeControlClass,
   appTypeGroupTextClass,
-  appTypeGroupTitleClass,
   appTypeMetaClass,
   appTypeReadableClass,
   appTypeSectionTitleClass,
@@ -35,7 +33,6 @@ export {
   appTypeDashboardTitleClass,
   appTypeGroupTextClass,
   appTypeGroupTitleClass,
-  appTypeHeroTitleClass,
   appTypeKickerClass,
   appTypeLogoMarkClass,
   appTypeMetaClass,
@@ -50,15 +47,8 @@ export {
   appTypeViewTitleClass,
 } from './typography-scale'
 
-export const transitionClass = 'transition-colors duration-150 ease-out'
-
-export const hoverSurfaceClass = 'hover:bg-[var(--surface-hover)] hover:text-[color:var(--text)]'
-
 export const panelChromeClass =
   'rounded-[20px] border border-[color:var(--border)] bg-[color:var(--panel)] shadow-[var(--shadow)] backdrop-blur-[18px]'
-
-export const modalPanelClass =
-  'border-[color:var(--border-strong)] bg-[color:var(--panel)] shadow-[var(--shadow)]'
 
 export const popoverPanelClass =
   'border-[color:var(--border-strong)] bg-[color:var(--panel)] shadow-[var(--shadow)]'
@@ -74,12 +64,6 @@ export const viewShellClass = 'mx-auto grid h-full w-full content-start gap-4 px
 export const viewTitleClass = `m-0 ${appTypeViewTitleClass} ${appToneTextClass}`
 
 export const viewSubtitleClass = `m-0 ${appTypeGroupTextClass} ${appToneMutedClass}`
-
-export const sectionIntroClass = 'grid gap-1'
-
-export const sectionTitleClass = `m-0 ${appTypeSectionTitleClass} ${appToneTextClass}`
-
-export const sectionDescriptionClass = `m-0 ${appTypeGroupTextClass} ${appToneMutedClass}`
 
 export const sectionHeadingClass = `inline-flex items-center gap-1.5 text-left ${appTypeSectionTitleClass} ${appToneTextClass}`
 
@@ -102,8 +86,6 @@ export const processLedgerDetailBlockClass = `grid min-w-0 max-w-full gap-1 over
 
 export const threadSessionSurfaceClass = 'thread-session-surface'
 
-export const threadSessionControlClass = 'thread-session-control'
-
 export const threadUserMessageClass = `thread-user-message ${threadSessionSurfaceClass}`
 
 export const threadSessionStripClass = `grid min-w-0 gap-2 bg-[color:var(--folded-row-bg)] px-3 py-2.5 ${appTypeGroupTextClass} ${threadSessionSurfaceClass}`
@@ -116,8 +98,6 @@ export const thinkingDisclosureTriggerClass = `px-2.5 py-2 hover:bg-[color:var(-
 
 export const thinkingDisclosureBodyClass =
   '!border-0 border-l border-[color:var(--border)]/70 px-3 py-2.5'
-
-export const artifactStripClass = 'rounded-lg bg-[color:var(--folded-row-bg)] px-3 py-2 text-left'
 
 export const artifactHeaderClass =
   'flex min-h-10 items-center justify-between gap-2 bg-[color:var(--workspace)] px-2 py-1.5 shadow-[inset_0_-1px_color-mix(in_srgb,var(--border)_58%,transparent)] min-[420px]:gap-3 min-[420px]:px-3'
@@ -151,15 +131,10 @@ export const artifactErrorStripClass = `absolute right-2 bottom-2 left-2 z-10 ma
 
 export const artifactMarkdownPreviewClass = `h-full min-h-0 overflow-auto bg-[color:var(--workspace)] px-7 py-6 ${appTypeReadableClass} ${appToneTextClass} [text-wrap:pretty] [&_h1]:[text-wrap:balance] [&_h2]:[text-wrap:balance] [&_h3]:[text-wrap:balance] [&_pre]:[text-wrap:initial]`
 
-export const changedFilesStripClass = `flex min-w-0 items-center gap-2 rounded-lg bg-[color:var(--folded-row-bg)] px-3 py-2 ${appTypeSmallClass} ${appToneMutedClass}`
-
 export const quietListFrameClass = 'grid min-w-0 divide-y divide-[color:var(--border)]/70'
 
 export const quietListRowClass =
   'grid min-w-0 gap-1 px-2 py-2 text-left transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)]'
-
-export const quietListScrollClass =
-  'grid min-h-0 gap-1 overflow-y-auto overflow-x-hidden pr-1 [scrollbar-gutter:stable]'
 
 export const quietCheckboxClass =
   'inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[4px] border border-[color:var(--border)] bg-transparent text-[color:var(--muted)] transition-colors'
@@ -183,11 +158,6 @@ export const inlineEmptyNoteClass = `px-2 py-1.5 ${appTypeSmallClass} ${appToneS
 
 export const quietEmptyStateClass = `rounded-lg bg-[color:var(--folded-row-bg)] px-3 py-2.5 ${appTypeSmallClass} ${appToneMutedClass}`
 
-export const segmentedControlClass =
-  'inline-flex rounded-lg bg-[color:var(--surface-hover)] p-[3px]'
-
-export const segmentedControlOptionClass = `rounded-md px-2.5 py-1 ${appTypeSmallClass} capitalize transition-colors`
-
 export const iconActionButtonDisabledClass =
   'disabled:cursor-not-allowed disabled:bg-transparent disabled:text-[color:var(--muted)] disabled:opacity-40'
 
@@ -209,14 +179,10 @@ export const toolbarButtonClass = `inline-flex min-h-7 items-center gap-1.5 roun
 
 export const ghostButtonClass = `rounded-[10px] border border-transparent px-2 py-1 ${appTypeControlClass} ${appToneMutedClass} transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]`
 
-export const primaryButtonClass = `min-h-8 rounded-full border border-[color:var(--accent-border)] bg-[color:var(--accent-bg)] px-4 ${appTypeGroupTitleClass} ${appToneTextClass} transition-colors duration-150 ease-out hover:border-[color:var(--accent)] hover:bg-[color:var(--accent-bg-strong)] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[color:var(--panel)] disabled:text-[color:var(--muted-2)]`
-
 export const composerTextActionButtonClass = `settings-control-text inline-flex h-7 items-center justify-center gap-1.5 rounded-md border border-[color:var(--border)] bg-[color:var(--panel-2)] px-3 font-medium ${appToneTextClass} transition-colors duration-150 ease-out hover:border-[color:var(--accent-border)] hover:bg-[color:var(--accent-bg-subtle)] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[color:var(--panel)] disabled:text-[color:var(--muted-2)]`
 
 export const composerPanelClass =
   'grid gap-0 overflow-visible rounded-[20px] border border-[color:color-mix(in_srgb,var(--accent-border)_52%,transparent)] bg-[color:var(--panel)] shadow-none'
-
-export const composerDividerClass = 'h-px bg-[color:var(--border)]'
 
 export const composerInlineStatusPillClass = `inline-flex h-6 max-w-[min(10.75rem,45cqw)] shrink-0 items-center gap-1.5 rounded-full bg-[color:var(--surface-hover)] px-2.5 ${appTypeSmallClass} ${appToneMutedClass}`
 
@@ -255,14 +221,7 @@ export const composerAttachmentPickerTextClass = appTypeMetaClass
 
 export const composerOverlayPanelInsetClass = 'px-4'
 
-export const sectionShellClass = 'grid w-full max-w-[980px] content-start gap-[18px]'
-
-export const menuItemClass = `flex items-center gap-2.5 rounded-xl border border-transparent px-2.5 py-2 text-left ${appTypeBodyClass}`
-
 export const menuOptionClass = `grid grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-xl px-2.5 py-2 text-left ${appTypeGroupTextClass} hover:bg-[color:var(--surface-hover)]`
-
-export const terminalOutputClass =
-  'grid min-h-[92px] gap-2 rounded-[14px] border border-[rgba(137,146,183,0.08)] bg-[rgba(18,20,28,0.88)] p-2.5 font-mono text-xs'
 
 export const terminalTakeoverFooterClass =
   'relative z-[80] overflow-visible rounded-b-[20px] bg-[color:var(--panel)] shadow-none'
@@ -288,14 +247,14 @@ export const diffRailSearchClass = `flex min-h-8 shrink-0 items-center gap-2 rou
 export const diffRailTreeWrapperClass =
   'flex min-h-0 flex-1 flex-col gap-2 bg-[color:var(--workspace)] px-2.5 pt-1.5 pb-0'
 
+export const diffFileHeaderClass =
+  'flex min-h-9 w-full items-center bg-transparent text-[color:var(--text)] transition-colors hover:bg-[color:var(--surface-hover)]'
+
 export const diffFileHeaderButtonClass =
-  'flex min-h-9 w-full items-center justify-between gap-3 bg-transparent px-3 py-1.5 text-left text-[color:var(--text)] transition-colors hover:bg-[color:var(--surface-hover)]'
+  'flex min-h-9 min-w-0 flex-1 items-center justify-between gap-3 bg-transparent px-3 py-1.5 text-left disabled:cursor-default'
 
 export const diffFileShellClass =
   'overflow-hidden rounded-md border border-[color:var(--border)]/55 bg-[color:var(--workspace)]'
-
-export const diffCommentGutterButtonClass =
-  'inline-flex h-5 w-5 items-center justify-center rounded-md bg-[color:var(--accent-bg)] text-[color:var(--text)] transition hover:bg-[color:var(--accent-bg-strong)]'
 
 export const diffCommentAnnotationClass = 'ml-3 mr-0 mb-1.5 grid gap-1.5 py-1 pl-2.5 pr-0'
 
@@ -313,31 +272,7 @@ export const diffImagePreviewPanelClass =
 export const diffImagePreviewFrameClass =
   'flex min-h-40 items-center justify-center overflow-hidden rounded-md bg-[color:var(--workspace)]'
 
-export const diffPanelTurnChipBaseClass =
-  'shrink-0 rounded-lg border px-2 py-1 text-left transition-colors'
-
-export const diffPanelTurnChipSelectedClass =
-  'border-[color:var(--border-strong)] bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]'
-
-export const diffPanelTurnChipUnselectedClass =
-  'border-[color:var(--border)] bg-transparent text-[color:var(--muted)] hover:text-[color:var(--text)]'
-
-export const diffPanelIconButtonClass =
-  'inline-flex h-7 w-7 items-center justify-center rounded-lg border text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]'
-
 export const inlineCodeClass = `rounded-md bg-[rgba(114,120,152,0.18)] px-1.5 py-0.5 ${appTypeCodeClass} break-all ${appToneTextClass}`
-
-export const settingsSectionClass =
-  'grid gap-3 rounded-[18px] border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-3'
-
-export const settingsSelectButtonClass =
-  'grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border-0 bg-[color:var(--surface-hover)] px-3 py-2 text-left transition-colors hover:bg-[color:var(--folded-row-hover-bg)]'
 
 export const settingsInputClass =
   'settings-control-text min-w-0 flex-1 rounded-lg border-0 bg-[color:var(--surface-hover)] px-3 py-2 text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)] focus:bg-[color:var(--folded-row-hover-bg)]'
-
-export const settingsListRowClass =
-  'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md bg-transparent px-2 py-1.5 transition-colors hover:bg-[color:var(--surface-hover)]'
-
-export const settingsCompactListRowClass =
-  'grid h-8 grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 rounded-md bg-transparent px-2 transition-colors hover:bg-[color:var(--surface-hover)]'

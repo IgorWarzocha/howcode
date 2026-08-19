@@ -218,14 +218,8 @@ export function ComposerModelPopover({
           }
           active={openMenu === 'model'}
           onClick={() => {
-            setOpenMenu((current) => {
-              if (current === 'model') {
-                setModelSearch('')
-                return null
-              }
-
-              return 'model'
-            })
+            setModelSearch('')
+            setOpenMenu((current) => (current === 'model' ? null : 'model'))
           }}
         />
       </div>

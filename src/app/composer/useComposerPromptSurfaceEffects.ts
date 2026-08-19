@@ -1,10 +1,10 @@
-import { type RefObject, useEffect } from 'react'
+import { type RefObject, useEffect, useEffectEvent } from 'react'
 import type { ComposerFileMentions } from './useComposerFileMentions'
 import type { ComposerSkillMentions } from './useComposerSkillMentions'
 import type { ComposerSlashCommands } from './useComposerSlashCommands'
 
 function scrollActiveOptionIntoView(input: {
-  activeDescendantId: string | undefined
+  activeDescendantId: string | null | undefined
   forceTopForFirstOption: boolean
   listSignature: string
   panelRef: RefObject<HTMLDivElement | null>
@@ -37,6 +37,37 @@ function scrollActiveOptionIntoView(input: {
   }
 }
 
+type ComposerActiveOptionState = {
+  activeDescendantId: string | null | undefined
+  open: boolean
+  selectedIndex: number
+}
+
+export function useComposerActiveOptionScroll(input: {
+  forceTopForFirstOption: boolean
+  listSignature: string
+  panelRef: RefObject<HTMLDivElement | null>
+  state: ComposerActiveOptionState
+}) {
+  useEffect(() => {
+    if (!input.state.open) return
+    scrollActiveOptionIntoView({
+      activeDescendantId: input.state.activeDescendantId,
+      forceTopForFirstOption: input.forceTopForFirstOption,
+      listSignature: input.listSignature,
+      panelRef: input.panelRef,
+      selectedIndex: input.state.selectedIndex,
+    })
+  }, [
+    input.forceTopForFirstOption,
+    input.listSignature,
+    input.panelRef,
+    input.state.activeDescendantId,
+    input.state.open,
+    input.state.selectedIndex,
+  ])
+}
+
 export function useComposerAutocompleteEffects({
   composerPanelRef,
   fileMentionPanelRef,
@@ -64,92 +95,50 @@ export function useComposerAutocompleteEffects({
   sessionTreePanelRef?: RefObject<HTMLDivElement | null> | undefined
   stopButtonBoundaryRef: RefObject<HTMLDivElement | null>
 }) {
+  const handlePointerDown = useEffectEvent((event: PointerEvent) => {
+    const target = event.target as Node | null
+    if (
+      !target ||
+      slashCommandPanelRef.current?.contains(target) ||
+      sessionTreePanelRef?.current?.contains(target) ||
+      fileMentionPanelRef.current?.contains(target) ||
+      skillMentionPanelRef.current?.contains(target) ||
+      composerPanelRef.current?.contains(target) ||
+      stopButtonBoundaryRef.current?.contains(target)
+    ) {
+      return
+    }
+
+    if (slashCommands.open) slashCommands.dismiss({ clearDraft: true })
+    if (fileMentions.open) fileMentions.dismiss()
+    if (skillMentions.open) skillMentions.dismiss()
+  })
+
   useEffect(() => {
     if (!(slashCommands.open || fileMentions.open || skillMentions.open)) return
 
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target as Node | null
-      if (
-        !target ||
-        slashCommandPanelRef.current?.contains(target) ||
-        sessionTreePanelRef?.current?.contains(target) ||
-        fileMentionPanelRef.current?.contains(target) ||
-        skillMentionPanelRef.current?.contains(target) ||
-        composerPanelRef.current?.contains(target) ||
-        stopButtonBoundaryRef.current?.contains(target)
-      ) {
-        return
-      }
-
-      if (slashCommands.open) slashCommands.dismiss({ clearDraft: true })
-      if (fileMentions.open) fileMentions.dismiss()
-      if (skillMentions.open) skillMentions.dismiss()
-    }
-
     window.addEventListener('pointerdown', handlePointerDown, true)
     return () => window.removeEventListener('pointerdown', handlePointerDown, true)
-  }, [
-    composerPanelRef,
-    fileMentionPanelRef,
-    fileMentions,
-    skillMentionPanelRef,
-    skillMentions,
-    sessionTreePanelRef,
-    slashCommandPanelRef,
-    slashCommands,
-    stopButtonBoundaryRef,
-  ])
+  }, [fileMentions.open, skillMentions.open, slashCommands.open])
 
-  useEffect(() => {
-    if (!slashCommands.open) return
-    scrollActiveOptionIntoView({
-      activeDescendantId: slashCommands.activeDescendantId,
-      forceTopForFirstOption: true,
-      listSignature: slashCommandListSignature,
-      panelRef: slashCommandPanelRef,
-      selectedIndex: slashCommands.selectedIndex,
-    })
-  }, [
-    slashCommandListSignature,
-    slashCommandPanelRef,
-    slashCommands.activeDescendantId,
-    slashCommands.open,
-    slashCommands.selectedIndex,
-  ])
-
-  useEffect(() => {
-    if (!fileMentions.open) return
-    scrollActiveOptionIntoView({
-      activeDescendantId: fileMentions.activeDescendantId,
-      forceTopForFirstOption: false,
-      listSignature: fileMentionListSignature,
-      panelRef: fileMentionPanelRef,
-      selectedIndex: fileMentions.selectedIndex,
-    })
-  }, [
-    fileMentionListSignature,
-    fileMentionPanelRef,
-    fileMentions.activeDescendantId,
-    fileMentions.open,
-    fileMentions.selectedIndex,
-  ])
-
-  useEffect(() => {
-    if (!skillMentions.open) return
-    scrollActiveOptionIntoView({
-      activeDescendantId: skillMentions.activeDescendantId,
-      forceTopForFirstOption: false,
-      listSignature: skillMentionListSignature,
-      panelRef: skillMentionPanelRef,
-      selectedIndex: skillMentions.selectedIndex,
-    })
-  }, [
-    skillMentionListSignature,
-    skillMentionPanelRef,
-    skillMentions.activeDescendantId,
-    skillMentions.open,
-    skillMentions.selectedIndex,
-  ])
+  useComposerActiveOptionScroll({
+    forceTopForFirstOption: true,
+    listSignature: slashCommandListSignature,
+    panelRef: slashCommandPanelRef,
+    state: slashCommands,
+  })
+  useComposerActiveOptionScroll({
+    forceTopForFirstOption: false,
+    listSignature: fileMentionListSignature,
+    panelRef: fileMentionPanelRef,
+    state: fileMentions,
+  })
+  useComposerActiveOptionScroll({
+    forceTopForFirstOption: false,
+    listSignature: skillMentionListSignature,
+    panelRef: skillMentionPanelRef,
+    state: skillMentions,
+  })
 }
 
 export function useComposerEscapeEffects({
@@ -177,58 +166,38 @@ export function useComposerEscapeEffects({
   onCancelSessionTreeLabelPopover?: (() => void) | undefined
   setOpenMenu: (menu: null) => void
 }) {
+  const handleKeyDown = useEffectEvent((event: KeyboardEvent) => {
+    if (event.key !== 'Escape') return
+    if (sessionTreeOpen === true) {
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      if (sessionTreeLabelPopoverOpen) {
+        onCancelSessionTreeLabelPopover?.()
+      } else if (sessionTreeNavigateConfirmOpen) {
+        onCancelSessionTreeNavigateConfirm?.()
+      } else {
+        onCloseSessionTree?.()
+      }
+      return
+    }
+    if (pickerOpen) {
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      setOpenMenu(null)
+      return
+    }
+
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    ;(document.activeElement as HTMLElement | null)?.blur?.()
+    void cancelDictation()
+  })
+
   useEffect(() => {
     const sessionTreeActive = sessionTreeOpen === true
     if (!(pickerOpen || dictationActive || dictationTranscribing || sessionTreeActive)) return
 
-    const consumeEscape = (event: KeyboardEvent) => {
-      event.preventDefault()
-      event.stopImmediatePropagation()
-    }
-
-    const handleSessionTreeEscape = (event: KeyboardEvent) => {
-      consumeEscape(event)
-      if (sessionTreeLabelPopoverOpen) {
-        onCancelSessionTreeLabelPopover?.()
-        return
-      }
-      if (sessionTreeNavigateConfirmOpen) {
-        onCancelSessionTreeNavigateConfirm?.()
-        return
-      }
-      onCloseSessionTree?.()
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      if (sessionTreeActive) {
-        handleSessionTreeEscape(event)
-        return
-      }
-      if (pickerOpen) {
-        consumeEscape(event)
-        setOpenMenu(null)
-        return
-      }
-
-      consumeEscape(event)
-      ;(document.activeElement as HTMLElement | null)?.blur?.()
-      void cancelDictation()
-    }
-
     window.addEventListener('keydown', handleKeyDown, true)
     return () => window.removeEventListener('keydown', handleKeyDown, true)
-  }, [
-    cancelDictation,
-    dictationActive,
-    dictationTranscribing,
-    onCancelSessionTreeNavigateConfirm,
-    onCancelSessionTreeLabelPopover,
-    onCloseSessionTree,
-    pickerOpen,
-    sessionTreeLabelPopoverOpen,
-    sessionTreeNavigateConfirmOpen,
-    sessionTreeOpen,
-    setOpenMenu,
-  ])
+  }, [dictationActive, dictationTranscribing, pickerOpen, sessionTreeOpen])
 }

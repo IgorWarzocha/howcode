@@ -168,9 +168,11 @@ async function handleVote(request: Request, env: Env) {
     optionId?: unknown
   } | null
   const pollId = assertPollId(payload?.pollId)
-  const optionId = await assertOption(env, pollId, payload?.optionId)
-  const voterHash = await getVoterHash(request, env, pollId)
-  const userAgentHash = await getUserAgentHash(request, env)
+  const [optionId, voterHash, userAgentHash] = await Promise.all([
+    assertOption(env, pollId, payload?.optionId),
+    getVoterHash(request, env, pollId),
+    getUserAgentHash(request, env),
+  ])
   const recentCutoff = new Date(Date.now() - 30_000).toISOString()
 
   const recentEvents = await env.DB.prepare(

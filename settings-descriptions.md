@@ -144,14 +144,6 @@ Default settings for the Code view.
 
 Default settings for the GitOps view.
 
-### Skill creator
-
-- ID: `models.skill-creator`
-- Category: `models`
-- Description:
-
-Default settings for the built-in skill creator.
-
 ## src/app/views/settings/settingsDescriptorPiRuntime.tsx
 
 ### Theme

@@ -14,19 +14,6 @@ export function dispatchSessionTreePreview(detail: SessionTreePreviewDetail) {
   )
 }
 
-export function shouldUseSessionTreePreviewThread(
-  preview: SessionTreePreviewDetail | null,
-  selectedSessionPath: string | null,
-  anchorEntryId: string | null,
-  previewEntryId: string | null,
-) {
-  const path = selectedSessionPath?.trim()
-  if (!(path && previewEntryId && anchorEntryId)) return false
-  if (previewEntryId === anchorEntryId) return false
-  if (!preview || preview.sessionPath.trim() !== path) return false
-  return preview.previewEntryId === previewEntryId
-}
-
 export function mergePreviewThreadWithLive(
   previewThread: ThreadData,
   liveThread: ThreadData | null,

@@ -1,7 +1,8 @@
 import { defaultDiffBaseline } from '@howcode/native-gitops'
 import { getPersistedSessionPath, isLocalSessionPath } from '@howcode/shared/session-paths'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
+import { useLatestRef } from '../hooks/useLatestRef'
 import type { AppShellController } from './useAppShellController'
 
 type DiffPreferenceSource = 'init' | 'override' | 'default'
@@ -57,8 +58,8 @@ function isSameDraftPromotion({
 
 function getNextDiffBaseline(controller: AppShellController) {
   return (
-    controller.activeThreadData?.diffPreferences?.baseline ??
-    controller.shellState?.appSettings.gitDiffBaselineDefault ??
+    controller.thread.activeData?.diffPreferences?.baseline ??
+    controller.desktop.shellState?.appSettings.gitDiffBaselineDefault ??
     defaultDiffBaseline
   )
 }
@@ -74,8 +75,8 @@ function getEffectiveDiffBaseline(input: {
 
 function getNextDiffRenderMode(controller: AppShellController) {
   return (
-    controller.activeThreadData?.diffPreferences?.renderMode ??
-    controller.shellState?.appSettings.gitDiffRenderModeDefault ??
+    controller.thread.activeData?.diffPreferences?.renderMode ??
+    controller.desktop.shellState?.appSettings.gitDiffRenderModeDefault ??
     'stacked'
   )
 }
@@ -95,7 +96,8 @@ function promoteDiffBaselineDraft(options: {
   parentBranchName: string | null
   terminalSessionPath: string | null
 }) {
-  const appDefault = options.controllerRef.current.shellState?.appSettings.gitDiffBaselineDefault
+  const appDefault =
+    options.controllerRef.current.desktop.shellState?.appSettings.gitDiffBaselineDefault
   const effectiveDefault = getEffectiveDiffBaseline({
     baseline: appDefault ?? defaultDiffBaseline,
     parentBranchName: options.parentBranchName,
@@ -104,7 +106,7 @@ function promoteDiffBaselineDraft(options: {
     effectiveDefault && areDiffBaselinesEqual(options.current.baseline, effectiveDefault)
       ? null
       : options.current.baseline
-  void options.controllerRef.current.handleAction('workspace.diff-preferences', {
+  void options.controllerRef.current.desktop.handleAction('workspace.diff-preferences', {
     diffBaseline: promotedBaseline,
   })
   return {
@@ -132,7 +134,7 @@ function nextDiffBaselineState(options: {
     options.current.source === 'override' &&
     isSameDraftPromotion({
       activeThreadId: options.activeThreadId,
-      messageCount: options.controller.activeThreadData?.messages.length ?? null,
+      messageCount: options.controller.thread.activeData?.messages.length ?? null,
       previousSessionPath: options.current.sessionPath,
       previousThreadId: options.current.threadId,
       nextSessionPath: options.terminalSessionPath,
@@ -163,10 +165,11 @@ function promoteDiffRenderModeDraft(options: {
   current: DiffRenderModeState
   terminalSessionPath: string | null
 }) {
-  const appDefault = options.controllerRef.current.shellState?.appSettings.gitDiffRenderModeDefault
+  const appDefault =
+    options.controllerRef.current.desktop.shellState?.appSettings.gitDiffRenderModeDefault
   const promotedRenderMode =
     appDefault === options.current.renderMode ? null : options.current.renderMode
-  void options.controllerRef.current.handleAction('workspace.diff-preferences', {
+  void options.controllerRef.current.desktop.handleAction('workspace.diff-preferences', {
     diffRenderMode: promotedRenderMode,
   })
   return {
@@ -190,7 +193,7 @@ function nextDiffRenderModeState(options: {
     options.current.source === 'override' &&
     isSameDraftPromotion({
       activeThreadId: options.activeThreadId,
-      messageCount: options.controller.activeThreadData?.messages.length ?? null,
+      messageCount: options.controller.thread.activeData?.messages.length ?? null,
       previousSessionPath: options.current.sessionPath,
       previousThreadId: options.current.threadId,
       nextSessionPath: options.terminalSessionPath,
@@ -227,8 +230,7 @@ export function useAppShellDiffPreferences({
   parentBranchName: string | null
   terminalSessionPath: string | null
 }) {
-  const controllerRef = useRef(controller)
-  controllerRef.current = controller
+  const controllerRef = useLatestRef(controller)
   const scope = useMemo(
     () => ({
       projectId: composerProjectId,
@@ -264,7 +266,14 @@ export function useAppShellDiffPreferences({
         terminalSessionPath,
       }),
     )
-  }, [activeThreadId, composerProjectId, controller, parentBranchName, terminalSessionPath])
+  }, [
+    activeThreadId,
+    composerProjectId,
+    controller,
+    controllerRef,
+    parentBranchName,
+    terminalSessionPath,
+  ])
 
   useEffect(() => {
     setDiffRenderModeState((current) =>
@@ -277,7 +286,7 @@ export function useAppShellDiffPreferences({
         terminalSessionPath,
       }),
     )
-  }, [activeThreadId, composerProjectId, controller, terminalSessionPath])
+  }, [activeThreadId, composerProjectId, controller, controllerRef, terminalSessionPath])
 
   const diffBaseline = scopeMatches(diffBaselineState, scope)
     ? diffBaselineState.baseline
@@ -288,7 +297,8 @@ export function useAppShellDiffPreferences({
 
   const handleSetDiffBaseline = useCallback(
     (baseline: ProjectDiffBaseline) => {
-      const appDefault = controllerRef.current.shellState?.appSettings.gitDiffBaselineDefault
+      const appDefault =
+        controllerRef.current.desktop.shellState?.appSettings.gitDiffBaselineDefault
       const effectiveDefault = getEffectiveDiffBaseline({
         baseline: appDefault ?? defaultDiffBaseline,
         parentBranchName,
@@ -296,27 +306,28 @@ export function useAppShellDiffPreferences({
       const nextBaseline =
         effectiveDefault && areDiffBaselinesEqual(baseline, effectiveDefault) ? null : baseline
       setDiffBaselineState({ ...scope, baseline, source: nextBaseline ? 'override' : 'default' })
-      void controllerRef.current.handleAction('workspace.diff-preferences', {
+      void controllerRef.current.desktop.handleAction('workspace.diff-preferences', {
         diffBaseline: nextBaseline,
       })
     },
-    [parentBranchName, scope],
+    [controllerRef, parentBranchName, scope],
   )
 
   const handleSetDiffRenderMode = useCallback(
     (renderMode: ProjectDiffRenderMode) => {
-      const appDefault = controllerRef.current.shellState?.appSettings.gitDiffRenderModeDefault
+      const appDefault =
+        controllerRef.current.desktop.shellState?.appSettings.gitDiffRenderModeDefault
       const nextRenderMode = appDefault === renderMode ? null : renderMode
       setDiffRenderModeState({
         ...scope,
         renderMode,
         source: nextRenderMode ? 'override' : 'default',
       })
-      void controllerRef.current.handleAction('workspace.diff-preferences', {
+      void controllerRef.current.desktop.handleAction('workspace.diff-preferences', {
         diffRenderMode: nextRenderMode,
       })
     },
-    [scope],
+    [controllerRef, scope],
   )
 
   return { diffBaseline, diffRenderMode, handleSetDiffBaseline, handleSetDiffRenderMode }

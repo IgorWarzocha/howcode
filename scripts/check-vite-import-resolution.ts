@@ -19,6 +19,7 @@ async function collectSourceFiles(root: string): Promise<string[]> {
 async function main() {
   const server = await createServer({
     configFile: path.resolve('vite.config.ts'),
+    configLoader: 'runner',
     logLevel: 'silent',
     server: { middlewareMode: true, hmr: false },
   })

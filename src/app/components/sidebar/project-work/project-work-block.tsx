@@ -1,26 +1,25 @@
-import { IconButton } from '@howcode/common/icon-button'
-import { Archive, ChevronRight, MoreHorizontal } from 'lucide-react'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Archive, ChevronRight } from 'lucide-react'
+import { useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
-import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import type { Project, Thread, View } from '../../../types'
 import { appToneSubtleClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
+import {
+  type BranchThreadGroup,
+  filterBranchGroups,
+  projectBlockMatchesSearch,
+} from './branch-group-model'
 import { ProjectExpandedBranchGroups } from './branch-thread-groups'
 import { ProjectCompactBranchGroups } from './compact-branch-groups'
 import { NewThreadMenu } from './new-thread-menu'
 import { ProjectBrandIcon } from './project-brand-icon'
-import { ProjectWorkActionsMenu } from './project-work-actions-menu'
-import { ProjectRenameField } from './project-work-fields'
 import {
-  type BranchThreadGroup,
-  branchGroupBelongsToBranch,
-  filterBranchGroups,
   filterThreadsBySearch,
   filterThreadsForCurrentBranch,
-  projectBlockMatchesSearch,
   sortThreads,
-} from './project-work-model'
+} from './project-thread-model'
+import { ProjectWorkActionsMenuButton } from './project-work-actions-menu'
+import { ProjectRenameField } from './project-work-fields'
 import { ProjectWorkThreadRow } from './project-work-thread-row'
 
 function ProjectWorkBlockHeader({
@@ -40,35 +39,8 @@ function ProjectWorkBlockHeader({
   onFocusProject: (projectId: string) => void
   onToggleExpanded: () => void
 }) {
-  const [projectMenuOpen, setProjectMenuOpen] = useState(false)
   const [renameDraft, setRenameDraft] = useState(project.name)
   const [editingName, setEditingName] = useState(false)
-  const [menuWidth, setMenuWidth] = useState(240)
-  const [menuRight, setMenuRight] = useState(0)
-  const menuButtonRef = useRef<HTMLButtonElement | null>(null)
-  const menuRef = useRef<HTMLDivElement | null>(null)
-  useDismissibleLayer({
-    open: projectMenuOpen,
-    onDismiss: () => setProjectMenuOpen(false),
-    refs: [menuButtonRef, menuRef],
-  })
-  useEffect(() => {
-    if (!editingName) setRenameDraft(project.name)
-  }, [editingName, project.name])
-  useLayoutEffect(() => {
-    if (!(projectMenuOpen && menuButtonRef.current)) return
-    const anchor = menuButtonRef.current
-    const row = anchor.closest('.sidebar-project-work-project-block-heading-row')
-    const rowRect = row?.getBoundingClientRect()
-    const anchorRect = anchor.getBoundingClientRect()
-    if (!rowRect) {
-      setMenuWidth(anchor.offsetLeft + anchor.offsetWidth)
-      setMenuRight(0)
-      return
-    }
-    setMenuWidth(rowRect.width)
-    setMenuRight(anchorRect.right - rowRect.right)
-  }, [projectMenuOpen])
   const submitRename = () => {
     const nextName = renameDraft.trim()
     setEditingName(false)
@@ -116,30 +88,14 @@ function ProjectWorkBlockHeader({
           <span className="truncate">{project.name}</span>
         </button>
       )}
-      <div className="sidebar-project-work-project-menu-anchor">
-        <IconButton
-          ref={menuButtonRef}
-          label="Project actions"
-          icon={<MoreHorizontal size={13} />}
-          tooltipPlacement="right"
-          className="sidebar-project-work-project-menu-button h-7 w-7 rounded-md"
-          onClick={() => setProjectMenuOpen((current) => !current)}
-        />
-        {projectMenuOpen ? (
-          <ProjectWorkActionsMenu
-            ref={menuRef}
-            right={menuRight}
-            width={menuWidth}
-            project={project}
-            onAction={onAction}
-            onClose={() => setProjectMenuOpen(false)}
-            onRename={() => {
-              setProjectMenuOpen(false)
-              setEditingName(true)
-            }}
-          />
-        ) : null}
-      </div>
+      <ProjectWorkActionsMenuButton
+        project={project}
+        onAction={onAction}
+        onRename={() => {
+          setRenameDraft(project.name)
+          setEditingName(true)
+        }}
+      />
       <NewThreadMenu
         currentBranch={currentBranch}
         isGitRepo={isGitRepo}
@@ -254,11 +210,9 @@ export function ProjectWorkSummaryBlock({
   isGitRepo,
   olderThreadCount,
   project,
-  pruneConfirmBranchId,
   searchQuery,
   selectedProjectId,
   selectedThreadId,
-  switchErrorBranchId,
   terminalRunningSessionPaths,
   threads,
   unassignedCollapsed,
@@ -266,8 +220,6 @@ export function ProjectWorkSummaryBlock({
   onFocusProject,
   onPrimeProject,
   onSetCollapsedBranchIds,
-  onSetPruneConfirmBranchId,
-  onSetSwitchErrorBranchId,
   onShowView,
   onThreadOpen,
   onToggleExpanded,
@@ -283,11 +235,9 @@ export function ProjectWorkSummaryBlock({
   isGitRepo: boolean
   olderThreadCount: number
   project: Project
-  pruneConfirmBranchId: string | null
   searchQuery: string
   selectedProjectId: string
   selectedThreadId: string | null
-  switchErrorBranchId: string | null
   terminalRunningSessionPaths: ReadonlySet<string>
   threads: Thread[]
   unassignedCollapsed: boolean
@@ -297,8 +247,6 @@ export function ProjectWorkSummaryBlock({
   onSetCollapsedBranchIds: (
     updater: (current: Record<string, boolean>) => Record<string, boolean>,
   ) => void
-  onSetPruneConfirmBranchId: (branchId: string | null) => void
-  onSetSwitchErrorBranchId: (branchId: string | null) => void
   onShowView: (view: Exclude<View, 'gitops'>) => void
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
   onToggleExpanded: () => void
@@ -324,12 +272,8 @@ export function ProjectWorkSummaryBlock({
     searchQuery,
   )
   const filteredBranchGroups = filterBranchGroups(branchGroups, searchQuery)
-  const compactWorktreeGroups = filteredBranchGroups.filter(
-    (group) =>
-      (group.worktree || group.worktrees.length > 0) &&
-      !group.current &&
-      branchGroupBelongsToBranch(group, currentBranch),
-  )
+  const currentBranchWorktrees =
+    filteredBranchGroups.find((group) => group.kind === 'branch' && group.current)?.worktrees ?? []
   const searchExpanded = normalizedSearchQuery.length > 0
   const unassignedExpanded = searchExpanded || !unassignedCollapsed
 
@@ -376,21 +320,16 @@ export function ProjectWorkSummaryBlock({
             hideSessionCounts={hideSessionCounts}
             normalizedSearchQuery={normalizedSearchQuery}
             project={project}
-            pruneConfirmBranchId={pruneConfirmBranchId}
             selectedThreadId={selectedThreadId}
-            switchErrorBranchId={switchErrorBranchId}
             terminalRunningSessionPaths={terminalRunningSessionPaths}
             onAction={onAction}
             onSetCollapsedBranchIds={onSetCollapsedBranchIds}
-            onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
-            onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
             onThreadOpen={onThreadOpen}
           />
         ) : (
           <ProjectCompactBranchGroups
             activeView={activeView}
             branchThreads={branchThreads}
-            collapsedBranchIds={collapsedBranchIds}
             currentBranch={currentBranch}
             currentBranchDirty={currentBranchDirty}
             currentBranchExpanded={
@@ -398,19 +337,13 @@ export function ProjectWorkSummaryBlock({
               !(collapsedBranchIds[`${project.id}:current-branch`] ?? false)
             }
             hideSessionCounts={hideSessionCounts}
-            normalizedSearchQuery={normalizedSearchQuery}
             project={project}
-            pruneConfirmBranchId={pruneConfirmBranchId}
             selectedThreadId={selectedThreadId}
-            switchErrorBranchId={switchErrorBranchId}
             terminalRunningSessionPaths={terminalRunningSessionPaths}
             unassignedExpanded={unassignedExpanded}
             unassignedThreads={unassignedThreads}
-            worktreeGroups={compactWorktreeGroups}
+            worktrees={currentBranchWorktrees}
             onAction={onAction}
-            onSetCollapsedBranchIds={onSetCollapsedBranchIds}
-            onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
-            onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
             onThreadOpen={onThreadOpen}
             onToggleCurrentBranch={() =>
               onSetCollapsedBranchIds((current) => ({

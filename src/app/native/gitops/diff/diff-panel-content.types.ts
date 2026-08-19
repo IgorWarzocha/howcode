@@ -1,4 +1,4 @@
-import type { AnnotationSide, FileDiffMetadata } from '@pierre/diffs/react'
+import type { FileDiffMetadata } from '@pierre/diffs/react'
 
 export type RenderablePatch =
   | {
@@ -10,13 +10,3 @@ export type RenderablePatch =
       text: string
       reason: string
     }
-
-export type DiffCommentMetadata = {
-  id: string
-  body: string
-  kind: 'comment' | 'draft'
-  side: AnnotationSide
-  lineNumber: number
-  endSide?: AnnotationSide | undefined
-  endLineNumber?: number | undefined
-}

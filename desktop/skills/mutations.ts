@@ -1,8 +1,8 @@
 import { mkdir, mkdtemp, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { PiSkillMutationResult } from '../../shared/desktop-contracts.ts'
-import { markRuntimeSettingsStaleForProject } from '../runtime/runtime-registry.ts'
-import { downloadSkillApi, type SkillDownloadApiFile } from './api.ts'
+import { downloadSkillApi } from './api.ts'
+import type { SkillDownloadApiFile } from './api-schema.ts'
 import { listConfiguredPiSkills } from './configured-skills.ts'
 import {
   getActiveChatSkillsRoot,
@@ -127,9 +127,6 @@ export async function installPiSkill(request: {
 
   await replaceSkillDirectoryWithDownload(targetRootPath, parsedSource.slug, files)
 
-  const staleProjectPath = request.chat ? null : request.local ? request.projectPath : null
-  await markRuntimeSettingsStaleForProject(staleProjectPath)
-
   return {
     source: request.source,
     normalizedSource: parsedSource.normalizedSource,
@@ -145,10 +142,14 @@ export async function removePiSkill(request: {
   projectPath?: string | undefined | null | undefined
   chat?: boolean | undefined
 }): Promise<PiSkillMutationResult> {
-  const installedPath = path.resolve(request.installedPath)
   const globalRootPaths = getGlobalSkillsDirs()
   const projectRootPaths = getProjectSkillsDirs(request.projectPath)
   const chatRootPaths = getChatSkillsDirs()
+  const installedPath = resolveRemovableSkillPath(request.installedPath, [
+    ...globalRootPaths,
+    ...projectRootPaths,
+    ...chatRootPaths,
+  ])
 
   const isGlobalSkill = globalRootPaths.some((rootPath) =>
     isPathWithinRootDescendant(installedPath, rootPath),
@@ -165,7 +166,6 @@ export async function removePiSkill(request: {
   }
 
   await rm(installedPath, { recursive: true, force: true })
-  await markRuntimeSettingsStaleForProject(isProjectSkill ? request.projectPath : null)
 
   return {
     source: installedPath,
@@ -175,4 +175,12 @@ export async function removePiSkill(request: {
       chat: request.chat,
     }),
   }
+}
+
+function resolveRemovableSkillPath(installedPath: string, allowedRoots: string[]) {
+  const resolvedPath = path.resolve(installedPath)
+  if (!allowedRoots.some((rootPath) => isPathWithinRootDescendant(resolvedPath, rootPath))) {
+    throw new Error('That skill cannot be removed from here.')
+  }
+  return resolvedPath
 }

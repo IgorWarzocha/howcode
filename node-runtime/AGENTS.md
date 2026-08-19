@@ -1,0 +1,3 @@
+- This folder owns backend-only Node process primitives shared by Electron/desktop host, stock-Node service, and scripts.
+- Keep product policy in callers. Process helpers own spawn, output collection, interruption, deadlines, and typed failures only.
+- Renderer, Pages, Worker, and launcher code must not import this layer.

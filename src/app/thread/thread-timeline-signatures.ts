@@ -130,9 +130,3 @@ export function getFoldableRows(rows: TimelineRow[]) {
       row.kind === 'summary' || (row.kind === 'turn' && isTurnRowCollapsible(row)),
   )
 }
-
-export function getCollapsibleRowKey(row: TimelineRow, collapsedRowIds: Record<string, boolean>) {
-  return row.kind === 'turn' || row.kind === 'summary'
-    ? `${row.id}:${collapsedRowIds[row.id] ? 'collapsed' : 'expanded'}`
-    : row.id
-}

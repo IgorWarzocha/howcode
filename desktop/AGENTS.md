@@ -1,4 +1,12 @@
-- `desktop/` is backend runtime code for threads, skills, and terminal lanes.
-- Keep entrypoints stable: `pi-threads.ts`, `pi-skills.ts`, `skill-creator-session.ts`, and `terminal/manager.ts`.
-- Update `shared/*` contracts and the matching action router/handlers together.
-- Keep event/state flow on the existing publisher and `thread-state-db.ts` paths.
+- This backend is bundled separately and loaded under stock Node; do not introduce Electron or DOM dependencies.
+- Keep public entrypoints such as `pi-threads.ts`, `pi-skills.ts`, and `service-host.ts` thin and compatibility-stable.
+- Service-host signal handlers delegate to the shared shutdown coordinator; preserve concurrent terminal RPC/runtime-host/session cleanup before terminal-runtime disposal.
+- API or event changes must update their `shared/*` contracts, action routing, host bridge, and transport consumers together.
+- Publish runtime changes through the existing event publishers; persistence belongs in the relevant state DB, not view-model caches.
+- Decode npm and skills API payloads with their local Schema contracts before catalog mapping; malformed external collections fail at ingress.
+- Keep package/skill lookup caches bounded with Effect `Cache`; transient lookup failures are not cache entries.
+- Decode Pi session JSONL through `pi-threads/session-entry-schema.ts`; terminal transcript writes remain asynchronous, ordered, and awaited during scoped cleanup.
+- Validate artifact/chat/thread query rows before mapping. Legacy Git checkpoint cleanup is a background migration and must never block schema initialization.
+- Resolve destructive worktree identity from Git plus persisted metadata. Keep Git's canonical `worktreePath` separate from the persisted/UI `projectId` when legacy aliases differ. Derive branch-prune worktrees in the backend; bulk paths are selections, not authorization. Worktree provenance comes from creation metadata, never directory location. Managed worktrees require an active recorded parent branch; only imported/legacy worktrees may merge without one.
+- Worktree teardown gates every runtime-creating operation and terminal open by canonical project identity, then revalidates Git identity after session shutdown and at removal. Branch switching, worktree creation, import reconciliation, merge, removal, and branch pruning serialize only their root-repository Git mutations. Managed creation persists atomically and compensates a failed registration by removing the new Git worktree.
+- `artifact-compiler.ts` resolves allowed React imports from Howcode's runtime; artifacts otherwise remain self-contained.

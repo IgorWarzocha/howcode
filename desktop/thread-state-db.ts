@@ -1,3 +1,4 @@
+export { runThreadStateTransaction } from './thread-state-db/db.ts'
 export {
   getProjectStoredUsageTotals,
   getThreadAssistantSnapshot,
@@ -25,6 +26,7 @@ export type { SessionSummaryRecord } from './thread-state-db/types.ts'
 export type {
   ProjectWorktreeMetadata,
   ProjectWorktreeSource,
+  StoredProjectWorktree,
 } from './thread-state-db/writes.ts'
 export {
   addProjectUsageTotals,
@@ -44,8 +46,10 @@ export {
   dismissInboxThread,
   dismissInboxThreadAfterReply,
   ensureProject,
+  getProjectWorktree,
   getProjectWorktreeDirectory,
   hideProject,
+  listProjectWorktreePaths,
   markInboxThreadRead,
   renameProject,
   renameThreadTitle,

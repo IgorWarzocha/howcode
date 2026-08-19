@@ -1,19 +1,17 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { PiConfiguredSkill } from '../../desktop/types'
+import { usePiResourceInstallScope } from '../../pi-resources/use-pi-resource-install-scope'
+import { usePiResourcePendingActions } from '../../pi-resources/use-pi-resource-pending-actions'
 import {
   desktopQueryKeys,
   getConfiguredPiSkillsQuery,
   installPiSkillQuery,
   removePiSkillQuery,
 } from '../../query/desktop-query'
-import type { InstallScope, PendingAction } from '../types'
-import {
-  getActionError,
-  getInstalledSkillSlugs,
-  isDesktopSkillsAvailable,
-  isSkillCreatorCandidate,
-} from '../utils'
+import { getActionError, getInstalledSkillSlugs, isDesktopSkillsAvailable } from '../utils'
+
+const EMPTY_CONFIGURED_SKILLS: [] = []
 
 export function useSkillsController({
   projectPath,
@@ -25,28 +23,16 @@ export function useSkillsController({
   onSetProjectScopeActive: (active: boolean) => void
 }) {
   const queryClient = useQueryClient()
-  const normalizedProjectPath = projectPath?.trim() ? projectPath : null
-  const [installScope, setInstallScope] = useState<InstallScope>('global')
   const [installedOpen, setInstalledOpen] = useState(false)
-  const [pendingActions, setPendingActions] = useState<PendingAction[]>([])
   const [actionError, setActionError] = useState<string | null>(null)
-  const previousProjectPathRef = useRef<string | null>(normalizedProjectPath)
   const desktopSkillsAvailable = isDesktopSkillsAvailable()
-  const projectScopeAvailable = normalizedProjectPath !== null
-
-  useEffect(() => {
-    if (previousProjectPathRef.current === normalizedProjectPath) return
-    previousProjectPathRef.current = normalizedProjectPath
-    onProjectTargetSelected?.()
-  }, [normalizedProjectPath, onProjectTargetSelected])
-
-  useEffect(() => {
-    const handleProjectTargetSelected = () => setInstallScope('project')
-    window.addEventListener('howcode:project-target-selected', handleProjectTargetSelected)
-    return () => {
-      window.removeEventListener('howcode:project-target-selected', handleProjectTargetSelected)
-    }
-  }, [])
+  const { installScope, normalizedProjectPath, setInstallScope } = usePiResourceInstallScope({
+    projectPath,
+    onProjectTargetSelected,
+    onSetProjectScopeActive,
+  })
+  const { finishPendingAction, hasPendingInstall, isPendingAction, startPendingAction } =
+    usePiResourcePendingActions()
 
   const configuredSkillsQuery = useQuery({
     queryKey: desktopQueryKeys.configuredPiSkills(projectPath, true),
@@ -55,19 +41,12 @@ export function useSkillsController({
     enabled: desktopSkillsAvailable,
   })
 
-  const configuredSkills = configuredSkillsQuery.data ?? []
+  const configuredSkills = configuredSkillsQuery.data ?? EMPTY_CONFIGURED_SKILLS
   const activeScope =
     installScope === 'chat' ? 'chat' : installScope === 'project' ? 'project' : 'user'
   const globalSkillCount = configuredSkills.filter((skill) => skill.scope === 'user').length
   const projectSkillCount = configuredSkills.filter((skill) => skill.scope === 'project').length
   const chatSkillCount = configuredSkills.filter((skill) => skill.scope === 'chat').length
-  const skillCreatorDetected = configuredSkills.some(
-    (skill) =>
-      isSkillCreatorCandidate(skill) &&
-      (skill.scope === 'user' ||
-        (installScope === 'project' && skill.scope === 'project') ||
-        (installScope === 'chat' && skill.scope === 'chat')),
-  )
   const visibleConfiguredSkills = useMemo(
     () => configuredSkills.filter((skill) => skill.scope === activeScope),
     [activeScope, configuredSkills],
@@ -76,15 +55,6 @@ export function useSkillsController({
     () => getInstalledSkillSlugs(visibleConfiguredSkills),
     [visibleConfiguredSkills],
   )
-
-  useEffect(() => {
-    onSetProjectScopeActive(installScope === 'project' || installScope === 'chat')
-
-    return () => {
-      onSetProjectScopeActive(false)
-    }
-  }, [installScope, onSetProjectScopeActive])
-
   const invalidateConfiguredSkillsCaches = (skills?: PiConfiguredSkill[]) => {
     if (skills) {
       queryClient.setQueryData(desktopQueryKeys.configuredPiSkills(projectPath, true), skills)
@@ -93,26 +63,6 @@ export function useSkillsController({
     void queryClient.invalidateQueries({
       queryKey: ['desktop', 'piSkills', 'configured'],
     })
-  }
-
-  const addPendingAction = (action: PendingAction) => {
-    setPendingActions((current) => [...current, action])
-  }
-
-  const removePendingAction = (action: PendingAction) => {
-    setPendingActions((current) =>
-      current.filter(
-        (currentAction) =>
-          currentAction.kind !== action.kind || currentAction.source !== action.source,
-      ),
-    )
-  }
-
-  const isPending = (kind: PendingAction['kind'], source: string) => {
-    const normalizedSource = source.trim().toLowerCase()
-    return pendingActions.some(
-      (action) => action.kind === kind && action.source.trim().toLowerCase() === normalizedSource,
-    )
   }
 
   const handleInstall = async (source: string) => {
@@ -124,7 +74,7 @@ export function useSkillsController({
     const normalizedSource = source.trim()
     const pendingAction = { kind: 'install' as const, source: normalizedSource }
 
-    addPendingAction(pendingAction)
+    startPendingAction(pendingAction)
     setActionError(null)
 
     try {
@@ -146,14 +96,14 @@ export function useSkillsController({
       setActionError(getActionError(error))
       return false
     } finally {
-      removePendingAction(pendingAction)
+      finishPendingAction(pendingAction)
     }
   }
 
   const handleRemove = async (configuredSkill: PiConfiguredSkill) => {
     const pendingAction = { kind: 'remove' as const, source: configuredSkill.installedPath }
 
-    addPendingAction(pendingAction)
+    startPendingAction(pendingAction)
     setActionError(null)
 
     try {
@@ -171,31 +121,26 @@ export function useSkillsController({
     } catch (error) {
       setActionError(getActionError(error))
     } finally {
-      removePendingAction(pendingAction)
+      finishPendingAction(pendingAction)
     }
   }
 
   return {
     actionError,
-    configuredSkillsQuery,
     desktopSkillsAvailable,
     globalSkillCount,
     chatSkillCount,
     handleInstall,
     handleRemove,
-    hasPendingInstall: pendingActions.some((action) => action.kind === 'install'),
+    hasPendingInstall,
     installScope,
     installedOpen,
     installedSkillSlugs,
-    invalidateConfiguredSkillsCaches,
-    isPendingInstall: (source: string) => isPending('install', source),
-    isPendingRemove: (installedPath: string) => isPending('remove', installedPath),
-    projectScopeAvailable,
+    isPendingInstall: (source: string) => isPendingAction('install', source),
+    isPendingRemove: (installedPath: string) => isPendingAction('remove', installedPath),
     projectSkillCount,
-    setActionError,
     setInstallScope,
     setInstalledOpen,
-    skillCreatorDetected,
     visibleConfiguredSkills,
   }
 }

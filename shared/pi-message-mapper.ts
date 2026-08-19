@@ -101,7 +101,10 @@ function splitParagraphs(text: string) {
 }
 
 function trimTextDocuments(parts: string[]) {
-  return parts.map((part) => part.trim()).filter(Boolean)
+  return parts.flatMap((part) => {
+    const trimmed = part.trim()
+    return trimmed ? [trimmed] : []
+  })
 }
 
 function normalizeThinkingHeader(value: string) {
@@ -269,11 +272,11 @@ function extractAssistantThinking(message: RuntimeMessage) {
 
   for (const part of thinkingParts) {
     for (const paragraph of splitParagraphs(part.thinking ?? '')) {
-      thinkingContent.push(paragraph)
-
       const heading = normalizeThinkingHeader(paragraph)
       if (heading) {
         thinkingHeaders.push(heading)
+      } else {
+        thinkingContent.push(paragraph)
       }
     }
   }
@@ -306,7 +309,14 @@ function mapAssistantMessage(id: string, runtimeMessage: RuntimeMessage): Messag
   const { thinkingContent, thinkingHeaders, thinkingRedacted } =
     extractAssistantThinking(runtimeMessage)
 
-  if (content.length === 0 && thinkingContent.length === 0) return null
+  if (
+    content.length === 0 &&
+    thinkingContent.length === 0 &&
+    thinkingHeaders.length === 0 &&
+    !thinkingRedacted
+  ) {
+    return null
+  }
 
   return {
     id,

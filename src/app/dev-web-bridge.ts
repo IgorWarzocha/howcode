@@ -13,14 +13,36 @@ import type {
 } from '@howcode/shared/desktop-ipc'
 import { getSafeExternalUrl } from '@howcode/shared/external-url'
 import type { TerminalEvent, TerminalOpenRequest } from '@howcode/shared/terminal-contracts'
+import * as Result from 'effect/Result'
+import * as Schema from 'effect/Schema'
+import { DevWebDesktopEventEnvelope, DevWebTerminalEventEnvelope } from './dev-web-event-schema'
+import {
+  ComposerAttachmentUploadResponseSchema,
+  HeadlessAuthStateSchema,
+  HeadlessBridgeConfigSchema,
+  HeadlessErrorResponseSchema,
+} from './dev-web-response-schema'
 
 let bridgeTokenPromise: Promise<string> | null = null
 let authPromise: Promise<void> | null = null
 const leadingHashPattern = /^#/
 
-type HeadlessAuthState = {
-  authenticated?: boolean
-  required?: boolean
+async function decodeJsonResponse<A>(
+  response: Response,
+  schema: Schema.ConstraintDecoder<A>,
+  label: string,
+) {
+  const decoded = Schema.decodeUnknownResult(schema)(await response.json())
+  if (Result.isFailure(decoded)) {
+    throw new Error(`Invalid ${label} response.`)
+  }
+  return decoded.success
+}
+
+async function readErrorMessage(response: Response) {
+  const payload = await response.json().catch(() => null)
+  const decoded = Schema.decodeUnknownResult(HeadlessErrorResponseSchema)(payload)
+  return Result.isSuccess(decoded) ? decoded.success.error : undefined
 }
 
 function getAccessTokenFromLocation() {
@@ -42,7 +64,7 @@ async function fetchAuthState() {
     throw new Error('Unable to load headless auth state.')
   }
 
-  return (await response.json()) as HeadlessAuthState
+  return decodeJsonResponse(response, HeadlessAuthStateSchema, 'headless auth')
 }
 
 async function submitAccessToken(token: string) {
@@ -52,8 +74,7 @@ async function submitAccessToken(token: string) {
     body: JSON.stringify({ token }),
   })
   if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as { error?: string } | null
-    throw new Error(payload?.error ?? 'Invalid access token.')
+    throw new Error((await readErrorMessage(response)) ?? 'Invalid access token.')
   }
 }
 
@@ -176,7 +197,7 @@ function getBridgeToken() {
       if (!response.ok) {
         throw new Error('Unable to load dev:web bridge config.')
       }
-      return response.json() as Promise<{ bridgeToken?: string }>
+      return decodeJsonResponse(response, HeadlessBridgeConfigSchema, 'dev:web bridge config')
     })
     .then((config) => {
       if (!config.bridgeToken) {
@@ -207,8 +228,9 @@ async function invokeRequest<K extends DesktopRequestChannel>(
   })
 
   if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as { error?: string } | null
-    throw new Error(payload?.error ?? `Desktop bridge request failed: ${channel}`)
+    throw new Error(
+      (await readErrorMessage(response)) ?? `Desktop bridge request failed: ${channel}`,
+    )
   }
 
   return (await response.json()) as DesktopRequestMap[K]['response']
@@ -234,11 +256,14 @@ async function uploadComposerFiles(files: File[]) {
   })
 
   if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as { error?: string } | null
-    throw new Error(payload?.error ?? 'File upload failed.')
+    throw new Error((await readErrorMessage(response)) ?? 'File upload failed.')
   }
 
-  const payload = (await response.json()) as { attachments?: ComposerAttachment[] }
+  const payload = await decodeJsonResponse(
+    response,
+    ComposerAttachmentUploadResponseSchema,
+    'composer attachment upload',
+  )
   return payload.attachments ?? []
 }
 
@@ -265,15 +290,26 @@ function getEventSubscription(channel: DesktopEventChannel) {
 
 function subscribeToEvent<K extends DesktopEventChannel>(
   channel: K,
+  decode: (
+    input: unknown,
+  ) => Result.Result<{ readonly channel: K; readonly event: DesktopEventMap[K] }, unknown>,
   listener: (event: DesktopEventMap[K]) => void,
 ) {
   const subscription = getEventSubscription(channel)
   const wrappedListener = (event: MessageEvent<string>) => {
-    const payload = JSON.parse(event.data) as {
-      channel: K
-      event: DesktopEventMap[K]
+    let input: unknown
+    try {
+      input = JSON.parse(event.data)
+    } catch (error) {
+      console.warn(`Ignored malformed ${channel} event JSON.`, error)
+      return
     }
-    listener(payload.event)
+    const decoded = decode(input)
+    if (Result.isFailure(decoded)) {
+      console.warn(`Ignored invalid ${channel} event.`, decoded.failure)
+      return
+    }
+    listener(decoded.success.event)
   }
 
   subscription.listeners.add(wrappedListener)
@@ -320,6 +356,7 @@ export async function installDevWebDesktopBridge() {
     getProjectDiffStats: (projectId: string, baseline = null, includeUntracked = false) =>
       invokeRequest('getProjectDiffStats', { projectId, baseline, includeUntracked }),
     getProjectDiffImagePreview: (request) => invokeRequest('getProjectDiffImagePreview', request),
+    getProjectDiffFileContents: (request) => invokeRequest('getProjectDiffFileContents', request),
     captureProjectDiffBaseline: (projectId: string) =>
       invokeRequest('captureProjectDiffBaseline', { projectId }),
     listProjectCommits: (projectId: string, limit: number | null = null) =>
@@ -332,10 +369,6 @@ export async function installDevWebDesktopBridge() {
     getConfiguredPiSkills: (request = {}) => invokeRequest('getConfiguredPiSkills', request),
     installPiSkill: (request) => invokeRequest('installPiSkill', request),
     removePiSkill: (request) => invokeRequest('removePiSkill', request),
-    startSkillCreatorSession: (request) => invokeRequest('startSkillCreatorSession', request),
-    continueSkillCreatorSession: (request) => invokeRequest('continueSkillCreatorSession', request),
-    closeSkillCreatorSession: (sessionId: string) =>
-      invokeRequest('closeSkillCreatorSession', { sessionId }),
     pickComposerAttachments: () => Promise.resolve([] satisfies ComposerAttachment[]),
     listProjectDirectoryEntries: (request = {}) =>
       invokeRequest('listProjectDirectoryEntries', request),
@@ -419,9 +452,17 @@ export async function installDevWebDesktopBridge() {
     saveTextToDownloads: (fileName: string, content: string) =>
       invokeRequest('saveTextToDownloads', { fileName, content }),
     subscribe: (listener: (event: DesktopEvent) => void) =>
-      subscribeToEvent('desktopEvent', listener),
+      subscribeToEvent(
+        'desktopEvent',
+        Schema.decodeUnknownResult(DevWebDesktopEventEnvelope),
+        listener,
+      ),
     subscribeTerminal: (listener: (event: TerminalEvent) => void) =>
-      subscribeToEvent('terminalEvent', listener),
+      subscribeToEvent(
+        'terminalEvent',
+        Schema.decodeUnknownResult(DevWebTerminalEventEnvelope),
+        listener,
+      ),
   }
 
   await ensureAuthenticated()

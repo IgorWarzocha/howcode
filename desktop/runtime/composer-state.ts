@@ -1,6 +1,7 @@
 import type { ThinkingLevel } from '@earendil-works/pi-agent-core'
 import { getSupportedThinkingLevels } from '@earendil-works/pi-ai'
 import type { AgentSession } from '@earendil-works/pi-coding-agent'
+import { composerThinkingLevels } from '../../shared/composer-thinking-level.ts'
 import type {
   ComposerContextUsage,
   ComposerModel,
@@ -12,11 +13,12 @@ import type {
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
 import {
   normalizeModelContextWindowValue,
-  normalizeModelRegistryContextWindows,
+  normalizeModelRuntimeContextWindows,
 } from '../../shared/model-context-window-normalization.ts'
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import { getPiModule } from '../pi-module.ts'
 import { isHeadlessExtensionCommandRunning } from './agent-session-extensions.ts'
+import { getBundledSkillPaths } from './bundled-skills.ts'
 import { getRuntimeSystemPrompt } from './chat-system-prompt.ts'
 import { buildQueuedPrompts } from './composer-queue'
 import {
@@ -55,12 +57,12 @@ function mapComposerModel(
     id: model.id,
     name: model.name ?? model.id,
     reasoning: Boolean(model.reasoning),
-    input: (model.input ?? ['text']) as Array<'text' | 'image'>,
+    input: model.input ?? ['text'],
   }
 }
 
 function mapThinkingLevels(levels: ThinkingLevel[]) {
-  return levels as ComposerThinkingLevel[]
+  return levels
 }
 
 function buildSessionQueuedPrompts(session: AgentSession): ComposerQueuedPrompt[] {
@@ -123,34 +125,27 @@ export function getAvailableThinkingLevelsForModel(
     return ['off']
   }
 
-  return getSupportedThinkingLevels(model) as ComposerThinkingLevel[]
+  return getSupportedThinkingLevels(model)
 }
 
 export function clampThinkingLevel(
   level: ComposerThinkingLevel,
   availableLevels: ComposerThinkingLevel[],
 ): ComposerThinkingLevel {
-  if (availableLevels.includes(level)) {
+  const availableLevelSet = new Set(availableLevels)
+  if (availableLevelSet.has(level)) {
     return level
   }
 
-  const orderedLevels: ComposerThinkingLevel[] = [
-    'off',
-    'minimal',
-    'low',
-    'medium',
-    'high',
-    'xhigh',
-  ]
-  const requestedIndex = orderedLevels.indexOf(level)
+  const requestedIndex = composerThinkingLevels.indexOf(level)
 
   if (requestedIndex === -1) {
     return availableLevels[0] ?? 'off'
   }
 
   for (let index = requestedIndex; index >= 0; index -= 1) {
-    const candidate = orderedLevels[index]
-    if (candidate && availableLevels.includes(candidate)) {
+    const candidate = composerThinkingLevels[index]
+    if (candidate && availableLevelSet.has(candidate)) {
       return candidate
     }
   }
@@ -187,7 +182,7 @@ async function resolveComposerStateSnapshot(request: ComposerStateRequest = {}) 
   const { cwd, projectTrustServices, session } = await createComposerSnapshotSession(request)
 
   try {
-    const availableModels = (await session.modelRegistry.getAvailable()) as ComposerSourceModel[]
+    const availableModels = (await session.modelRuntime.getAvailable()) as ComposerSourceModel[]
     const requestedModeModelSelection = getModeModelSelection(request)
     const modeModelSelection = requestedModeModelSelection?.provider
       ? { provider: requestedModeModelSelection.provider, id: requestedModeModelSelection.id }
@@ -225,8 +220,7 @@ async function resolveComposerStateSnapshot(request: ComposerStateRequest = {}) 
 export async function createComposerSnapshotSession(request: ComposerStateRequest = {}) {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
   const {
-    AuthStorage,
-    ModelRegistry,
+    ModelRuntime,
     SessionManager,
     SettingsManager,
     DefaultResourceLoader,
@@ -248,9 +242,11 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
     hasTrustRequiringProjectResources,
     settingsCwd: request.composerSessionDir,
   })
-  const authStorage = AuthStorage.create()
-  const modelRegistry = normalizeModelRegistryContextWindows(
-    ModelRegistry.create(authStorage, `${agentDir}/models.json`),
+  const modelRuntime = normalizeModelRuntimeContextWindows(
+    await ModelRuntime.create({
+      authPath: `${agentDir}/auth.json`,
+      modelsPath: `${agentDir}/models.json`,
+    }),
   )
   const settingsManager = createRuntimeSettingsManager({
     SettingsManager,
@@ -264,6 +260,7 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
     : SessionManager.inMemory()
   const resourceLoader = await createIsolatedRuntimeResourceLoader({
     DefaultResourceLoader,
+    additionalSkillPaths: getBundledSkillPaths(),
     cwd,
     agentDir,
     settingsCwd: request.composerSessionDir,
@@ -274,8 +271,7 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
   const { session } = await createAgentSession({
     cwd,
     agentDir,
-    authStorage,
-    modelRegistry,
+    modelRuntime,
     settingsManager,
     resourceLoader,
     sessionManager,
@@ -311,7 +307,7 @@ export async function buildComposerStateSnapshot(
       id: model.id,
       name: model.name ?? model.id,
       reasoning: Boolean(model.reasoning),
-      input: (model.input ?? ['text']) as Array<'text' | 'image'>,
+      input: model.input ?? ['text'],
     })),
     currentThinkingLevel: snapshot.currentThinkingLevel,
     availableThinkingLevels: snapshot.availableThinkingLevels,
@@ -339,18 +335,18 @@ export async function buildComposerState(
     agentDir,
     cwd: runtime.cwd,
   })
-  const availableModels = (await runtime.session.modelRegistry.getAvailable()).map((model) => ({
+  const availableModels = (await runtime.session.modelRuntime.getAvailable()).map((model) => ({
     provider: model.provider,
     id: model.id,
     name: model.name ?? model.id,
     reasoning: Boolean(model.reasoning),
-    input: (model.input ?? ['text']) as Array<'text' | 'image'>,
+    input: model.input ?? ['text'],
   }))
 
   return {
     currentModel: mapComposerModel(runtime.session.model),
     availableModels,
-    currentThinkingLevel: runtime.session.thinkingLevel as ComposerThinkingLevel,
+    currentThinkingLevel: runtime.session.thinkingLevel,
     availableThinkingLevels: mapThinkingLevels(runtime.session.getAvailableThinkingLevels()),
     queuedPrompts: buildSessionQueuedPrompts(runtime.session),
     piExtensionWidgets: getPiExtensionWidgets(runtime),

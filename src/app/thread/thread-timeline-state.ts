@@ -9,16 +9,6 @@ import {
 } from './thread-timeline-signatures'
 import type { TimelineRow } from './timeline-row'
 
-function getExpandedStateSignature(
-  expandedState: Record<string, boolean>,
-  sortKeys?: (a: string | undefined, b: string) => number,
-) {
-  return Object.keys(expandedState)
-    .sort(sortKeys)
-    .map((key) => `${key}:${expandedState[key] ? '1' : '0'}`)
-    .join('||')
-}
-
 function getLatestTurnRowId(rows: TimelineRow[]) {
   for (let index = rows.length - 1; index >= 0; index -= 1) {
     const row = rows[index]
@@ -61,14 +51,12 @@ export function buildThreadTimelineState({
   messages,
   isStreaming,
   collapsedRowIds,
-  expandedToolGroupIds,
   forcedExpandedRowId,
 }: {
   rows: TimelineRow[]
   messages: Message[]
   isStreaming: boolean
   collapsedRowIds: Record<string, boolean>
-  expandedToolGroupIds: Record<string, boolean>
   forcedExpandedRowId?: string | null | undefined
 }) {
   const bottomAnchorKey = `${getMessageRenderSignature(messages[messages.length - 1])}:${isStreaming ? 'streaming' : 'idle'}`
@@ -87,20 +75,14 @@ export function buildThreadTimelineState({
     forcedExpandedRowId: forcedExpandedRowId ?? streamingTurnRowId,
   })
   const rowStructureSignature = getRowStructureSignature(rows, effectiveCollapsedRowIds)
-  const expandedToolGroupSignature = getExpandedStateSignature(expandedToolGroupIds)
-
   return {
     bottomAnchorKey,
     effectiveCollapsedRowIds,
-    expandedToolGroupSignature,
-    firstUnvirtualizedRowIndex: 0,
     foldableRows,
     latestTurnRowId,
     rowStructureSignature,
     streamingAssistantMessageId,
     streamingToolGroupId,
     streamingTurnRowId,
-    virtualMeasureSignature: [expandedToolGroupSignature, rowStructureSignature, 0].join('@@'),
-    virtualizedRowCount: 0,
   }
 }

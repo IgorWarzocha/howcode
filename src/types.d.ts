@@ -35,6 +35,8 @@ import type {
   PiSkillMutationResult,
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffFileContentsRequest,
+  ProjectDiffFileContentsResult,
   ProjectDiffImagePreview,
   ProjectDiffImageSide,
   ProjectDiffResolvedBaseline,
@@ -44,7 +46,6 @@ import type {
   ProjectUsageSummary,
   ReactArtifactCompileResult,
   ShellState,
-  SkillCreatorSessionState,
   TerminalCloseRequest,
   TerminalEvent,
   TerminalOpenRequest,
@@ -94,6 +95,9 @@ declare global {
         path: string
         side: ProjectDiffImageSide
       }) => Promise<ProjectDiffImagePreview>
+      getProjectDiffFileContents?: (
+        request: ProjectDiffFileContentsRequest,
+      ) => Promise<ProjectDiffFileContentsResult>
       captureProjectDiffBaseline?: (
         projectId: string,
       ) => Promise<ProjectDiffResolvedBaseline | null>
@@ -142,17 +146,6 @@ declare global {
         projectPath?: string | null | undefined
         chat?: boolean | undefined
       }) => Promise<PiSkillMutationResult>
-      startSkillCreatorSession?: (request: {
-        prompt: string
-        local?: boolean | undefined
-        projectPath?: string | null | undefined
-        chat?: boolean | undefined
-      }) => Promise<SkillCreatorSessionState>
-      continueSkillCreatorSession?: (request: {
-        sessionId: string
-        prompt: string
-      }) => Promise<SkillCreatorSessionState>
-      closeSkillCreatorSession?: (sessionId: string) => Promise<{ ok: boolean }>
       pickComposerAttachments?: (
         projectId?: string | null | undefined,
       ) => Promise<ComposerAttachment[]>

@@ -19,6 +19,7 @@ import {
 } from '../shared/dev-server'
 import { getSystemNodeExecutable } from '../src/desktop-host/node-discovery'
 import { getDevUserDataPath } from './dev-user-data-path'
+import { createDevWebAccess } from './dev-web-access'
 
 const projectRoot = process.cwd()
 const devRepoRoot = projectRoot
@@ -33,22 +34,18 @@ const bridgeToken = crypto.randomUUID()
 function getEnvironmentVariable(name: string) {
   return process.env[name]
 }
-const devWebAuthRequired = allowRemoteRendererHosts
-const devWebAccessToken =
-  getEnvironmentVariable('HOWCODE_DEV_WEB_TOKEN')?.trim() ||
-  getEnvironmentVariable('HOWCODE_HEADLESS_TOKEN')?.trim() ||
-  (devWebAuthRequired ? `hc_${crypto.randomBytes(18).toString('base64url')}` : null)
-const devWebSessionToken = crypto.randomUUID()
-function getDevWebSessionCookieName(port: number | null) {
-  return `howcode_dev_web_session_${port ?? 'pending'}`
-}
+const devWebAccess = createDevWebAccess({
+  allowRemoteRendererHosts,
+  configuredAccessToken:
+    getEnvironmentVariable('HOWCODE_DEV_WEB_TOKEN')?.trim() ||
+    getEnvironmentVariable('HOWCODE_HEADLESS_TOKEN')?.trim() ||
+    null,
+})
 const serviceHostWaitTimeoutMs = 30_000
 
 let bridge: { child: ChildProcess; port: number } | null = null
 let server: ViteDevServer | null = null
 let isShuttingDown = false
-let trustedRendererPort: number | null = null
-let trustedRendererHosts = new Set<string>()
 
 async function buildDevWebBridge() {
   await mkdir(path.dirname(bridgeBuildPath), { recursive: true })
@@ -211,139 +208,6 @@ function proxyDevWebBridgeRequest(
   request.pipe(proxyRequest)
 }
 
-function isTrustedBrowserRequest(request: http.IncomingMessage) {
-  if (trustedRendererPort === null) {
-    return false
-  }
-
-  const requestHost = request.headers.host
-  if (typeof requestHost !== 'string' || !isTrustedRendererHost(requestHost)) {
-    return false
-  }
-
-  const origin = request.headers.origin
-  if (typeof origin !== 'string') {
-    return true
-  }
-
-  try {
-    const originUrl = new URL(origin)
-    return isTrustedRendererHost(originUrl.host)
-  } catch {
-    return false
-  }
-}
-
-function sendJson(response: http.ServerResponse, statusCode: number, payload: unknown) {
-  response.statusCode = statusCode
-  response.setHeader('content-type', 'application/json; charset=utf-8')
-  response.end(JSON.stringify(payload))
-}
-
-async function readJsonBody(request: http.IncomingMessage) {
-  const chunks: Buffer[] = []
-  let byteLength = 0
-  for await (const chunk of request) {
-    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
-    byteLength += buffer.length
-    if (byteLength > 16 * 1024) {
-      throw new Error('Request body is too large.')
-    }
-    chunks.push(buffer)
-  }
-
-  if (chunks.length === 0) return {}
-  return JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown
-}
-
-function parseCookieHeader(cookieHeader: string | string[] | undefined) {
-  const header = Array.isArray(cookieHeader) ? cookieHeader.join(';') : cookieHeader
-  const cookies = new Map<string, string>()
-  if (!header) return cookies
-
-  for (const part of header.split(';')) {
-    const [rawName, ...rawValueParts] = part.trim().split('=')
-    if (!rawName) continue
-    try {
-      cookies.set(rawName, decodeURIComponent(rawValueParts.join('=')))
-    } catch {
-      // Ignore malformed cookie values instead of crashing the dev bridge.
-    }
-  }
-
-  return cookies
-}
-
-function hasAuthenticatedDevWebSession(request: http.IncomingMessage) {
-  if (!devWebAuthRequired) {
-    return true
-  }
-
-  return (
-    parseCookieHeader(request.headers.cookie).get(
-      getDevWebSessionCookieName(trustedRendererPort),
-    ) === devWebSessionToken
-  )
-}
-
-async function handleDevWebAuthRequest(
-  request: http.IncomingMessage,
-  response: http.ServerResponse,
-) {
-  if (!isTrustedBrowserRequest(request)) {
-    response.statusCode = 403
-    response.end('Forbidden')
-    return
-  }
-
-  if (request.method === 'GET') {
-    sendJson(response, 200, {
-      required: devWebAuthRequired,
-      authenticated: hasAuthenticatedDevWebSession(request),
-    })
-    return
-  }
-
-  if (request.method !== 'POST') {
-    sendJson(response, 405, { error: 'Auth requests must use GET or POST.' })
-    return
-  }
-
-  if (!devWebAuthRequired) {
-    sendJson(response, 200, { authenticated: true, required: false })
-    return
-  }
-
-  const body = (await readJsonBody(request).catch(() => null)) as { token?: unknown } | null
-  if (typeof body?.token !== 'string' || body.token !== devWebAccessToken) {
-    sendJson(response, 401, { error: 'Invalid access token.' })
-    return
-  }
-
-  response.setHeader(
-    'set-cookie',
-    `${getDevWebSessionCookieName(trustedRendererPort)}=${encodeURIComponent(devWebSessionToken)}; Path=/; HttpOnly; SameSite=Lax`,
-  )
-  sendJson(response, 200, { authenticated: true, required: true })
-}
-
-function getHostPort(host: string) {
-  try {
-    const parsedHost = new URL(`http://${host}`)
-    return parsedHost.port ? Number(parsedHost.port) : null
-  } catch {
-    return null
-  }
-}
-
-function isTrustedRendererHost(host: string) {
-  if (trustedRendererHosts.has(host)) {
-    return true
-  }
-
-  return allowRemoteRendererHosts && getHostPort(host) === trustedRendererPort
-}
-
 async function writeDevServerMetadata(url: string, port: number) {
   await mkdir(path.dirname(devServerMetadataPath), { recursive: true })
   await writeFile(
@@ -381,6 +245,7 @@ try {
 
   server = await createServer({
     configFile: path.join(projectRoot, 'vite.config.ts'),
+    configLoader: 'runner',
     server: {
       host: devServerListenHost,
       port: DEV_SERVER_START_PORT,
@@ -396,24 +261,14 @@ try {
     const requestUrl = new URL(request.url ?? '/', 'http://localhost')
 
     if (requestUrl.pathname === '/__howcode/auth') {
-      void handleDevWebAuthRequest(request, response)
+      void devWebAccess.handleAuthRequest(request, response)
       return
     }
 
     if (requestUrl.pathname === '/__howcode/config') {
-      if (!isTrustedBrowserRequest(request)) {
-        response.statusCode = 403
-        response.end('Forbidden')
-        return
-      }
-
-      if (!hasAuthenticatedDevWebSession(request)) {
-        sendJson(response, 401, { error: 'Headless access token required.' })
-        return
-      }
-
+      if (!devWebAccess.authoriseBridgeRequest(request, response)) return
       response.setHeader('content-type', 'application/json; charset=utf-8')
-      response.end(JSON.stringify({ authRequired: devWebAuthRequired, bridgeToken }))
+      response.end(JSON.stringify({ authRequired: devWebAccess.authRequired, bridgeToken }))
       return
     }
 
@@ -422,17 +277,7 @@ try {
       requestUrl.pathname.startsWith('/__howcode/request/') ||
       requestUrl.pathname === '/__howcode/upload/composer-attachments'
     ) {
-      if (!isTrustedBrowserRequest(request)) {
-        response.statusCode = 403
-        response.end('Forbidden')
-        return
-      }
-
-      if (!hasAuthenticatedDevWebSession(request)) {
-        sendJson(response, 401, { error: 'Headless access token required.' })
-        return
-      }
-
+      if (!devWebAccess.authoriseBridgeRequest(request, response)) return
       proxyDevWebBridgeRequest(bridge?.port ?? 0, request, response)
       return
     }
@@ -470,12 +315,14 @@ try {
   }
 
   const { port } = address as AddressInfo
-  trustedRendererPort = port
-  trustedRendererHosts = new Set([
-    `${DEV_SERVER_HOST}:${port}`,
-    `${devServerPublicHost}:${port}`,
-    ...(isDevServerWildcardHost(devServerListenHost) ? [] : [`${devServerListenHost}:${port}`]),
-  ])
+  devWebAccess.configureRendererTrust({
+    port,
+    hosts: new Set([
+      `${DEV_SERVER_HOST}:${port}`,
+      `${devServerPublicHost}:${port}`,
+      ...(isDevServerWildcardHost(devServerListenHost) ? [] : [`${devServerListenHost}:${port}`]),
+    ]),
+  })
   await writeDevServerMetadata(`http://${devServerPublicHost}:${port}`, port)
   server.printUrls()
   if (allowRemoteRendererHosts) {
@@ -483,7 +330,7 @@ try {
       `[howcode] dev:web is accepting browser hosts on port ${port}. Keep this on a trusted network.`,
     )
     console.warn(
-      `[howcode] dev:web access token URL: http://${devServerPublicHost}:${port}/#token=${encodeURIComponent(devWebAccessToken ?? '')}`,
+      `[howcode] dev:web access token URL: http://${devServerPublicHost}:${port}/#token=${encodeURIComponent(devWebAccess.accessToken ?? '')}`,
     )
   }
   console.warn(

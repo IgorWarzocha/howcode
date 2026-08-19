@@ -20,9 +20,10 @@ import type {
   InboxThread,
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffFileContentsRequest,
+  ProjectDiffFileContentsResult,
   ProjectDiffImagePreview,
   ProjectDiffImageSide,
-  ProjectDiffResolvedBaseline,
   ProjectDiffStatsResult,
   ProjectGitState,
   ProjectUsageSummary,
@@ -34,8 +35,6 @@ import type {
 
 export {
   compileReactArtifactQuery,
-  editArtifactQuery,
-  getArtifactQuery,
   listArtifactsQuery,
   listArtifactVersionsQuery,
   saveTextToDownloadsQuery,
@@ -44,8 +43,6 @@ export {
 export {
   canSearchPiPackagesQuery,
   canSearchPiSkillsQuery,
-  closeSkillCreatorSessionQuery,
-  continueSkillCreatorSessionQuery,
   getConfiguredPiPackagesQuery,
   getConfiguredPiSkillsQuery,
   installPiPackageQuery,
@@ -54,7 +51,6 @@ export {
   removePiSkillQuery,
   searchPiPackagesQuery,
   searchPiSkillsQuery,
-  startSkillCreatorSessionQuery,
 } from './desktop-extension-query'
 export { desktopQueryKeys } from './desktop-query-keys'
 export {
@@ -215,10 +211,10 @@ export async function getProjectDiffImagePreviewQuery(request: {
   return (await window.piDesktop?.getProjectDiffImagePreview?.(request)) ?? null
 }
 
-export async function captureProjectDiffBaselineQuery(
-  projectId: string,
-): Promise<ProjectDiffResolvedBaseline | null> {
-  return (await window.piDesktop?.captureProjectDiffBaseline?.(projectId)) ?? null
+export async function getProjectDiffFileContentsQuery(
+  request: ProjectDiffFileContentsRequest,
+): Promise<ProjectDiffFileContentsResult | null> {
+  return (await window.piDesktop?.getProjectDiffFileContents?.(request)) ?? null
 }
 
 export async function listProjectCommitsQuery(
@@ -238,10 +234,6 @@ export async function listProjectDirectoryEntriesQuery(
   request: DesktopRequestMap['listProjectDirectoryEntries']['params'] = {},
 ): Promise<DesktopRequestMap['listProjectDirectoryEntries']['response'] | null> {
   return (await window.piDesktop?.listProjectDirectoryEntries?.(request)) ?? null
-}
-
-export async function clearClipboardImagesQuery() {
-  return (await window.piDesktop?.clearClipboardImages?.()) ?? { clearedCount: 0 }
 }
 
 export async function listComposerAttachmentEntriesQuery(

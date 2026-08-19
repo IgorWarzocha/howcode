@@ -101,7 +101,7 @@ export function getConfiguredPiPackageDisplayName(source: string) {
 }
 
 export function sortPiPackageCatalogItems(items: PiPackageCatalogItem[]) {
-  return [...items].sort((left, right) => {
+  return items.toSorted((left, right) => {
     if (right.monthlyDownloads !== left.monthlyDownloads) {
       return right.monthlyDownloads - left.monthlyDownloads
     }

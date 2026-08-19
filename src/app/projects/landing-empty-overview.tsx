@@ -11,38 +11,39 @@ import {
 import { cn } from '../utils/cn'
 import type { LandingOverviewContent } from './landing-overview-content'
 
-export function PixelHLogo() {
-  const pixelRows = [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 2, 3, 0, 0, 0, 0, 0, 3, 2, 1],
-    [1, 2, 3, 0, 0, 0, 0, 0, 3, 2, 1],
-    [1, 2, 3, 0, 0, 0, 0, 0, 3, 2, 1],
-    [2, 3, 4, 0, 0, 0, 0, 0, 4, 3, 2],
-    [2, 3, 4, 2, 3, 4, 3, 2, 4, 3, 2],
-    [3, 4, 5, 3, 4, 5, 4, 3, 5, 4, 3],
-    [2, 3, 4, 2, 3, 4, 3, 2, 4, 3, 2],
-    [2, 3, 4, 0, 0, 0, 0, 0, 4, 3, 2],
-    [1, 2, 3, 0, 0, 0, 0, 0, 3, 2, 1],
-    [1, 2, 3, 0, 0, 0, 0, 0, 3, 2, 1],
-    [1, 2, 3, 0, 0, 0, 0, 0, 3, 2, 1],
-    [2, 3, 4, 0, 0, 0, 0, 0, 4, 3, 2],
-    [2, 3, 4, 0, 0, 0, 0, 0, 4, 3, 2],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  ]
-  const fills = {
-    1: '#727894',
-    2: '#969db7',
-    3: '#a9b1ea',
-    4: '#b9bff3',
-    5: '#d5daed',
-  } as const
+const pixelRows = [
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [1, 2, 3, 0, 0, 0, 0, 0, 3, 2, 1],
+  [1, 2, 3, 0, 0, 0, 0, 0, 3, 2, 1],
+  [1, 2, 3, 0, 0, 0, 0, 0, 3, 2, 1],
+  [2, 3, 4, 0, 0, 0, 0, 0, 4, 3, 2],
+  [2, 3, 4, 2, 3, 4, 3, 2, 4, 3, 2],
+  [3, 4, 5, 3, 4, 5, 4, 3, 5, 4, 3],
+  [2, 3, 4, 2, 3, 4, 3, 2, 4, 3, 2],
+  [2, 3, 4, 0, 0, 0, 0, 0, 4, 3, 2],
+  [1, 2, 3, 0, 0, 0, 0, 0, 3, 2, 1],
+  [1, 2, 3, 0, 0, 0, 0, 0, 3, 2, 1],
+  [1, 2, 3, 0, 0, 0, 0, 0, 3, 2, 1],
+  [2, 3, 4, 0, 0, 0, 0, 0, 4, 3, 2],
+  [2, 3, 4, 0, 0, 0, 0, 0, 4, 3, 2],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+]
+const pixelFills = {
+  1: '#727894',
+  2: '#969db7',
+  3: '#a9b1ea',
+  4: '#b9bff3',
+  5: '#d5daed',
+} as const
+
+function PixelHLogo() {
   const cell = 52
   const pixels = pixelRows.flatMap((row, rowIndex) =>
     row.flatMap((value, columnIndex) => {
       if (value === 0) return []
       const x = columnIndex * cell + 114
       const y = rowIndex * cell + 10
-      return [{ key: `${x}:${y}`, x, y, fill: fills[value as keyof typeof fills] }]
+      return [{ key: `${x}:${y}`, x, y, fill: pixelFills[value as keyof typeof pixelFills] }]
     }),
   )
 
@@ -68,7 +69,7 @@ export function PixelHLogo() {
   )
 }
 
-export function LandingUpdateCard() {
+function LandingUpdateCard() {
   const { step, isRunning, advance } = useAppUpdateFlow()
   const Icon =
     step.id === 'idle' ||

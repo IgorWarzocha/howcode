@@ -52,8 +52,6 @@ import {
   setProjectDeletionMode,
   setProjectImportState,
   setShowDictationButton,
-  setSkillCreatorModelSelection,
-  setSkillCreatorThinkingLevel,
   setUseAgentsSkillsPaths,
 } from '../app-settings/writers.ts'
 import { restartRuntimeHostsForEnvironmentChange } from '../runtime-host/client-bridge.ts'
@@ -171,7 +169,7 @@ const settingsUpdateHandlers = {
   },
   preferredProjectLocation: (payload) =>
     setPreferredProjectLocation(getSettingsPreferredProjectLocation(payload)),
-  customPiDirectory: (payload) => {
+  customPiDirectory: async (payload) => {
     const currentCustomPiDirectory = normalizeOptionalSettingsPath(
       loadAppSettings().customPiDirectory,
     )
@@ -181,7 +179,7 @@ const settingsUpdateHandlers = {
     if (currentCustomPiDirectory === nextCustomPiDirectory) return { didMutate: false }
 
     setCustomPiDirectory(nextCustomPiDirectory)
-    restartRuntimeHostsForEnvironmentChange()
+    await restartRuntimeHostsForEnvironmentChange()
     return { didMutate: true }
   },
   initializeGitOnProjectCreate: (payload) =>
@@ -212,12 +210,8 @@ const settingsUpdateHandlers = {
   codeModel: (payload) => setResettableModelSelection(payload, setCodeModelSelection),
   chatThinkingLevel: (payload) => setResettableThinkingLevel(payload, setChatThinkingLevel),
   codeThinkingLevel: (payload) => setResettableThinkingLevel(payload, setCodeThinkingLevel),
-  skillCreatorModel: (payload) =>
-    setResettableModelSelection(payload, setSkillCreatorModelSelection),
   gitCommitMessageThinkingLevel: (payload) =>
     setOptionalThinkingLevel(payload, setGitCommitMessageThinkingLevel),
-  skillCreatorThinkingLevel: (payload) =>
-    setOptionalThinkingLevel(payload, setSkillCreatorThinkingLevel),
   gitCommitMessageModel: (payload) =>
     setResettableModelSelection(payload, setGitCommitMessageModelSelection),
 } satisfies Record<string, SettingsUpdateHandler>

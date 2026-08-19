@@ -1,85 +1,29 @@
 import { IconButton } from '@howcode/common/icon-button'
-import { Archive, ChevronRight, Home, MoreHorizontal } from 'lucide-react'
-import { type RefObject, useLayoutEffect, useRef, useState } from 'react'
+import { Archive, ChevronRight, Home } from 'lucide-react'
+import type { RefObject } from 'react'
 import type { DesktopActionInvoker, ProjectGitState } from '../../../desktop/types'
-import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import type { Project, View } from '../../../types'
 import { appToneSubtleClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { BranchThreadGroupSection, shouldSeparateBranchGroups } from './branch-thread-groups'
-import { NewThreadMenu } from './new-thread-menu'
-import { ProjectWorkActionsMenu } from './project-work-actions-menu'
-import { ProjectWorkSummaryBlock } from './project-work-block'
-import { SearchHistoryField } from './project-work-fields'
+import { shouldSeparateBranchGroups } from './branch-group-layout'
 import {
   type BranchThreadGroup,
   buildBranchGroups,
+  UNASSIGNED_BRANCH_GROUP_ID,
+} from './branch-group-model'
+import { BranchThreadGroupSection } from './branch-thread-group-section'
+import { NewThreadMenu } from './new-thread-menu'
+import {
   getCurrentBranchForProject,
   getRepositoryBranchesForProject,
-  getThreadBucketsForProjectWork,
   getWorktreeBranchesForProject,
   hasUncommittedProjectChanges,
-  UNASSIGNED_BRANCH_GROUP_ID,
-} from './project-work-model'
+} from './project-git-model'
+import { getThreadBucketsForProjectWork } from './project-thread-model'
+import { ProjectWorkActionsMenuButton } from './project-work-actions-menu'
+import { ProjectWorkSummaryBlock } from './project-work-block'
+import { SearchHistoryField } from './project-work-fields'
 import { ProjectWorkThreadRow } from './project-work-thread-row'
-
-function ProjectActionsMenuButton({
-  project,
-  onAction,
-}: {
-  project: Project
-  onAction: DesktopActionInvoker
-}) {
-  const [open, setOpen] = useState(false)
-  const [menuWidth, setMenuWidth] = useState(240)
-  const [menuRight, setMenuRight] = useState(0)
-  const buttonRef = useRef<HTMLButtonElement | null>(null)
-  const menuRef = useRef<HTMLDivElement | null>(null)
-  useDismissibleLayer({
-    open,
-    onDismiss: () => setOpen(false),
-    refs: [buttonRef, menuRef],
-  })
-  useLayoutEffect(() => {
-    if (!(open && buttonRef.current)) return
-    const anchor = buttonRef.current
-    const row = anchor.closest(
-      '.sidebar-project-work-toolbar, .sidebar-project-work-section-heading',
-    )
-    const rowRect = row?.getBoundingClientRect()
-    const anchorRect = anchor.getBoundingClientRect()
-    if (!rowRect) {
-      setMenuWidth(anchor.offsetLeft + anchor.offsetWidth)
-      setMenuRight(0)
-      return
-    }
-    setMenuWidth(rowRect.width)
-    setMenuRight(anchorRect.right - rowRect.right)
-  }, [open])
-
-  return (
-    <div className="sidebar-project-work-project-menu-anchor">
-      <IconButton
-        ref={buttonRef}
-        label="Project actions"
-        icon={<MoreHorizontal size={13} />}
-        tooltipPlacement="right"
-        className="sidebar-project-work-project-menu-button h-7 w-7 rounded-md"
-        onClick={() => setOpen((current) => !current)}
-      />
-      {open ? (
-        <ProjectWorkActionsMenu
-          ref={menuRef}
-          right={menuRight}
-          width={menuWidth}
-          project={project}
-          onAction={onAction}
-          onClose={() => setOpen(false)}
-        />
-      ) : null}
-    </div>
-  )
-}
 
 function ProjectDashboardButton({
   active,
@@ -160,10 +104,6 @@ export function MultiProjectWorkContent({
   onSearchQueryChange,
   onSetCollapsedBranchIds,
   onToggleProjectCollapse,
-  onSetPruneConfirmBranchId,
-  onSetSwitchErrorBranchId,
-  pruneConfirmBranchId,
-  switchErrorBranchId,
   onShowView,
   onThreadOpen,
 }: {
@@ -188,10 +128,6 @@ export function MultiProjectWorkContent({
     updater: (current: Record<string, boolean>) => Record<string, boolean>,
   ) => void
   onToggleProjectCollapse: (projectId: string) => void
-  onSetPruneConfirmBranchId: (branchId: string | null) => void
-  onSetSwitchErrorBranchId: (branchId: string | null) => void
-  pruneConfirmBranchId: string | null
-  switchErrorBranchId: string | null
   onShowView: (view: Exclude<View, 'gitops'>) => void
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
 }) {
@@ -248,11 +184,9 @@ export function MultiProjectWorkContent({
                 isGitRepo={blockIsGitRepo}
                 olderThreadCount={buckets.olderThreads.length}
                 project={project}
-                pruneConfirmBranchId={pruneConfirmBranchId}
                 searchQuery={searchQuery}
                 selectedProjectId={selectedProjectId}
                 selectedThreadId={selectedThreadId}
-                switchErrorBranchId={switchErrorBranchId}
                 terminalRunningSessionPaths={terminalRunningSessionPaths}
                 threads={buckets.activeThreads}
                 unassignedCollapsed={collapsedBranchIds[unassignedGroupId] ?? true}
@@ -260,8 +194,6 @@ export function MultiProjectWorkContent({
                 onFocusProject={onFocusProject}
                 onPrimeProject={onPrimeProject}
                 onSetCollapsedBranchIds={onSetCollapsedBranchIds}
-                onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
-                onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
                 onShowView={onShowView}
                 onThreadOpen={onThreadOpen}
                 onToggleExpanded={() => onToggleProjectCollapse(project.id)}
@@ -291,19 +223,15 @@ export function SingleProjectWorkContent({
   olderThreadCount,
   normalizedSearchQuery,
   project,
-  pruneConfirmBranchId,
   searchInputRef,
   searchQuery,
   selectedGroupId,
   selectedThreadId,
-  switchErrorBranchId,
   terminalRunningSessionPaths,
   onAction,
   onFocusProject,
   onSearchQueryChange,
   onSetCollapsedBranchIds,
-  onSetPruneConfirmBranchId,
-  onSetSwitchErrorBranchId,
   onShowView,
   onThreadOpen,
 }: {
@@ -317,12 +245,10 @@ export function SingleProjectWorkContent({
   olderThreadCount: number
   normalizedSearchQuery: string
   project: Project
-  pruneConfirmBranchId: string | null
   searchInputRef: RefObject<HTMLInputElement | null>
   searchQuery: string
   selectedGroupId: string
   selectedThreadId: string | null
-  switchErrorBranchId: string | null
   terminalRunningSessionPaths: ReadonlySet<string>
   onAction: DesktopActionInvoker
   onFocusProject: (projectId: string) => void
@@ -330,8 +256,6 @@ export function SingleProjectWorkContent({
   onSetCollapsedBranchIds: (
     updater: (current: Record<string, boolean>) => Record<string, boolean>,
   ) => void
-  onSetPruneConfirmBranchId: (branchId: string | null) => void
-  onSetSwitchErrorBranchId: (branchId: string | null) => void
   onShowView: (view: Exclude<View, 'gitops'>) => void
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
 }) {
@@ -350,7 +274,7 @@ export function SingleProjectWorkContent({
           onOpenDashboard={openProjectDashboard}
         />
         <div className="sidebar-project-work-toolbar-actions">
-          <ProjectActionsMenuButton project={project} onAction={onAction} />
+          <ProjectWorkActionsMenuButton project={project} onAction={onAction} />
           <NewThreadMenu
             currentBranch={currentBranch}
             isGitRepo={isGitRepo}
@@ -402,7 +326,7 @@ export function SingleProjectWorkContent({
               {branchGroups.map((group, index) => {
                 const groupKey = `${project.id}:${group.id}`
                 const defaultCollapsed = !(
-                  group.current ||
+                  (group.kind === 'branch' && group.current) ||
                   group.id === selectedGroupId ||
                   group.worktrees.length > 0
                 )
@@ -432,10 +356,6 @@ export function SingleProjectWorkContent({
                         [groupKey]: !collapsed,
                       }))
                     }
-                    pruneConfirmBranchId={pruneConfirmBranchId}
-                    onSetPruneConfirmBranchId={onSetPruneConfirmBranchId}
-                    switchErrorBranchId={switchErrorBranchId}
-                    onSetSwitchErrorBranchId={onSetSwitchErrorBranchId}
                   />
                 )
               })}

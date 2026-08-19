@@ -110,6 +110,7 @@ export function createRuntimeSettingsManager(options: {
 
 export async function createIsolatedRuntimeResourceLoader(options: {
   DefaultResourceLoader: DefaultResourceLoaderFactory
+  additionalSkillPaths?: readonly string[] | undefined
   cwd: string
   agentDir: string
   settingsCwd?: string | null | undefined
@@ -117,20 +118,22 @@ export async function createIsolatedRuntimeResourceLoader(options: {
   projectTrusted?: boolean | undefined
   systemPrompt?: string | undefined
 }) {
+  const additionalSkillPaths = [
+    ...(options.settingsCwd
+      ? [
+          path.join(options.settingsCwd, '.pi', 'skills'),
+          path.join(options.settingsCwd, '.agents', 'skills'),
+        ]
+      : []),
+    ...(options.additionalSkillPaths ?? []),
+  ]
   const resourceLoader = new options.DefaultResourceLoader({
     cwd: options.cwd,
     agentDir: options.agentDir,
     settingsManager: options.settingsManager,
     ...(options.systemPrompt ? { systemPrompt: options.systemPrompt } : {}),
-    ...(options.settingsCwd
-      ? {
-          noSkills: true,
-          additionalSkillPaths: [
-            path.join(options.settingsCwd, '.pi', 'skills'),
-            path.join(options.settingsCwd, '.agents', 'skills'),
-          ],
-        }
-      : {}),
+    ...(options.settingsCwd ? { noSkills: true } : {}),
+    ...(additionalSkillPaths.length > 0 ? { additionalSkillPaths } : {}),
   })
   await resourceLoader.reload({
     resolveProjectTrust: async () => options.projectTrusted ?? false,

@@ -49,13 +49,14 @@ export type {
   PiSkillCatalogItem,
   PiSkillCatalogPage,
   PiSkillMutationResult,
-  SkillCreatorSessionMessage,
-  SkillCreatorSessionState,
 } from './desktop-package-contracts'
 export type {
   ProjectCommitEntry,
   ProjectDiffBaseline,
   ProjectDiffDefaultBaseline,
+  ProjectDiffFileContentIssue,
+  ProjectDiffFileContentsRequest,
+  ProjectDiffFileContentsResult,
   ProjectDiffImagePreview,
   ProjectDiffImageSide,
   ProjectDiffPreferences,
@@ -63,6 +64,9 @@ export type {
   ProjectDiffResolvedBaseline,
   ProjectDiffResult,
   ProjectDiffStatsResult,
+  ProjectDiffTextFile,
+  ProjectFileWriteRequest,
+  ProjectFileWriteResult,
   ProjectGitState,
 } from './desktop-project-git-contracts'
 export type {

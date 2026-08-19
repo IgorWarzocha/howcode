@@ -2,11 +2,12 @@ import { ActivitySpinner } from '@howcode/common/activity-spinner'
 import { Tooltip } from '@howcode/common/tooltip'
 import { Plus } from 'lucide-react'
 import type { RefObject } from 'react'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project } from '../../../types'
 import { WorktreeSmallIcon } from '../../../ui/icons/worktree-small-icon'
 import { SidebarActionTooltip } from '../sidebar-action-tooltip'
+import { type BranchActionCapabilities, getBranchActionCount } from './branch-action-capabilities'
 import {
   BranchPruneAction,
   BranchSwitchAction,
@@ -15,22 +16,16 @@ import {
   WorktreeCompletionAction,
   WorktreeMergeAction,
 } from './branch-actions'
-import { createThreadForBranch, createThreadInWorktreeForBranch } from './new-thread-menu'
-import type { BranchThreadGroup } from './project-work-model'
+import type { BranchThreadGroup } from './branch-group-model'
+import { getWorktreeParentBranchName } from './branch-row-helpers'
+import { createThreadForBranch, createThreadInWorktreeForBranch } from './new-thread-actions'
+import { getDesktopBranchActionFailure, useBranchActionExecution } from './useBranchActionExecution'
+import { useProjectWorkRowMenu } from './useProjectWorkRowMenu'
 
 function getStartThreadBranchName(group: BranchThreadGroup, currentBranch: string | null) {
+  if (group.kind === 'unassigned') return null
+  if (group.kind === 'worktree') return group.worktreeBranchName
   if (group.current) return currentBranch
-  if (group.unassigned) return null
-  if (group.worktree) return group.worktreeBranchName ?? null
-  return group.label
-}
-
-export function getWorktreeParentBranchName(
-  group: BranchThreadGroup,
-  currentBranch: string | null,
-) {
-  if (group.current) return currentBranch?.trim() || group.label
-  if (group.worktree || group.unassigned) return null
   return group.label
 }
 
@@ -105,85 +100,41 @@ function BranchWorktreeCreateAction({
   group,
   project,
   onAction,
-  onCreateFailed,
 }: {
   currentBranch: string | null
   group: BranchThreadGroup
   project: Project
   onAction: DesktopActionInvoker
-  onCreateFailed: () => void
 }) {
-  const [open, setOpen] = useState(false)
   const [worktreeBranchName, setWorktreeBranchName] = useState('')
-  const [worktreeError, setWorktreeError] = useState<string | null>(null)
-  const [pending, setPending] = useState(false)
-  const [menuWidth, setMenuWidth] = useState(240)
-  const [menuRight, setMenuRight] = useState(0)
-  const menuRef = useRef<HTMLDivElement | null>(null)
-  const buttonRef = useRef<HTMLButtonElement | null>(null)
+  const execution = useBranchActionExecution()
   const inputRef = useRef<HTMLInputElement | null>(null)
+  const menu = useProjectWorkRowMenu('branch')
   const parentBranchName = getWorktreeParentBranchName(group, currentBranch)
 
   useEffect(() => {
-    if (!open) return
+    if (!menu.open) return
     inputRef.current?.focus()
     inputRef.current?.select()
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target as Node
-      if (menuRef.current?.contains(target) || buttonRef.current?.contains(target)) return
-      setOpen(false)
-    }
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      event.stopPropagation()
-      event.stopImmediatePropagation()
-      setOpen(false)
-    }
-    document.addEventListener('pointerdown', handlePointerDown, true)
-    window.addEventListener('keydown', handleKeyDown, true)
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown, true)
-      window.removeEventListener('keydown', handleKeyDown, true)
-    }
-  }, [open])
-
-  useLayoutEffect(() => {
-    if (!(open && buttonRef.current)) return
-    const anchor = buttonRef.current
-    const row = anchor.closest('.sidebar-project-work-branch-heading')
-    const rowRect = row?.getBoundingClientRect()
-    const anchorRect = anchor.getBoundingClientRect()
-    if (!rowRect) {
-      setMenuWidth(240)
-      setMenuRight(0)
-      return
-    }
-    setMenuWidth(rowRect.width)
-    setMenuRight(anchorRect.right - rowRect.right)
-  }, [open])
+  }, [menu.open])
 
   const createChildWorktree = async () => {
     const branchName = worktreeBranchName.trim()
     if (!branchName) return
-    setWorktreeError(null)
-    setPending(true)
-    try {
-      const result = await createThreadInWorktreeForBranch({
-        branchName,
-        parentBranchName,
-        onAction,
-        projectId: project.id,
-      })
-      if (result.error) {
-        setWorktreeError(result.error)
-        onCreateFailed()
-        return
-      }
-      setWorktreeBranchName('')
-      setOpen(false)
-    } finally {
-      setPending(false)
-    }
+    execution.clearWarning()
+    await execution.run({
+      execute: () =>
+        createThreadInWorktreeForBranch({
+          branchName,
+          onAction,
+          projectId: project.id,
+        }),
+      getFailure: (result) => result.error ?? null,
+      onSuccess: () => {
+        setWorktreeBranchName('')
+        menu.setOpen(false)
+      },
+    })
   }
 
   return (
@@ -193,34 +144,34 @@ function BranchWorktreeCreateAction({
       className="sidebar-new-thread-menu-anchor"
     >
       <button
-        ref={buttonRef}
+        ref={menu.triggerRef}
         type="button"
         className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--optical-up"
         onClick={(event) => {
           event.stopPropagation()
-          setOpen((current) => !current)
+          menu.setOpen((current) => !current)
         }}
         aria-label={`Create worktree under ${parentBranchName ?? group.label}`}
-        aria-expanded={open}
+        aria-expanded={menu.open}
       >
         <WorktreeSmallIcon size={12} />
       </button>
-      {open ? (
-        <div ref={menuRef}>
+      {menu.open ? (
+        <div ref={menu.panelRef}>
           <BranchStartMenu
             group={group}
             inputRef={inputRef}
             parentBranchName={parentBranchName}
             worktreeBranchName={worktreeBranchName}
-            worktreeError={worktreeError}
-            menuRight={menuRight}
-            menuWidth={menuWidth}
+            worktreeError={execution.warning}
+            menuRight={menu.right}
+            menuWidth={menu.width}
             onCreateChildWorktree={() => void createChildWorktree()}
-            onClose={() => setOpen(false)}
-            pending={pending}
+            onClose={() => menu.setOpen(false)}
+            pending={execution.pending}
             onWorktreeBranchNameChange={(value) => {
               setWorktreeBranchName(value)
-              setWorktreeError(null)
+              execution.clearWarning()
             }}
           />
         </div>
@@ -229,14 +180,13 @@ function BranchWorktreeCreateAction({
   )
 }
 
-function EmptyBranchStartAction({
+function BranchStartThreadAction({
   blocked,
   canSwitch,
   currentBranch,
   group,
   project,
   onAction,
-  onSwitchFailed,
 }: {
   blocked: boolean
   canSwitch: boolean
@@ -244,188 +194,163 @@ function EmptyBranchStartAction({
   group: BranchThreadGroup
   project: Project
   onAction: DesktopActionInvoker
-  onSwitchFailed: () => void
 }) {
-  const targetProjectId = group.worktreePath ?? project.id
-  const [pending, setPending] = useState(false)
+  const targetProjectId = group.kind === 'worktree' ? group.worktreePath : project.id
+  const execution = useBranchActionExecution()
   const startThread = async () => {
-    setPending(true)
-    try {
-      if (!(group.current || group.worktree || group.unassigned)) {
-        const worktreeResult = await createThreadInWorktreeForBranch({
-          branchName: group.label,
-          parentBranchName: currentBranch,
-          onAction,
-          projectId: project.id,
-        })
-        if (worktreeResult.error) onSwitchFailed()
-        return
-      }
-
-      await createThreadForBranch({
-        branchName: getStartThreadBranchName(group, currentBranch),
-        onAction,
-        projectId: targetProjectId,
+    execution.clearWarning()
+    if (group.kind === 'branch' && !group.current) {
+      await execution.run({
+        execute: () =>
+          createThreadInWorktreeForBranch({
+            branchName: group.label,
+            onAction,
+            projectId: project.id,
+          }),
+        getFailure: (result) => result.error ?? null,
       })
-    } finally {
-      setPending(false)
+      return
     }
+
+    await execution.run({
+      execute: () =>
+        createThreadForBranch({
+          branchName: getStartThreadBranchName(group, currentBranch),
+          onAction,
+          projectId: targetProjectId,
+        }),
+      getFailure: (result) =>
+        getDesktopBranchActionFailure(result, 'Could not start a new session.'),
+    })
   }
 
-  const label = group.worktree
-    ? `Start thread in ${group.label}`
-    : group.current
-      ? `Start thread on ${currentBranch ?? group.label}`
-      : group.unassigned
+  const label =
+    group.kind === 'worktree'
+      ? `Start thread in ${group.label}`
+      : group.kind === 'unassigned'
         ? 'Start unassigned thread'
-        : `Start thread in ${group.label} worktree`
-  const tooltipContent = canSwitch ? 'Switch branches and start a new session.' : label
-  const warning = blocked ? 'Worktree is dirty. Commit first.' : null
+        : group.current
+          ? `Start thread on ${currentBranch ?? group.label}`
+          : `Start thread in ${group.label} worktree`
+  const tooltipContent = canSwitch ? `Start thread in ${group.label} worktree` : label
+  const warning = execution.warning ?? (blocked ? 'Worktree is dirty. Commit first.' : null)
 
   return (
     <SidebarActionTooltip description={tooltipContent} warning={warning}>
       <button
         type="button"
         className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--optical-up sidebar-project-work-empty-start"
-        data-warning={blocked ? 'true' : 'false'}
-        disabled={pending}
+        data-warning={warning ? 'true' : 'false'}
+        disabled={execution.pending}
         onClick={(event) => {
           event.stopPropagation()
+          if (blocked) return
           void startThread()
         }}
         aria-label={label}
       >
-        {pending ? <ActivitySpinner className="h-3 w-3 text-current" /> : <Plus size={12} />}
+        {execution.pending ? (
+          <ActivitySpinner className="h-3 w-3 text-current" />
+        ) : (
+          <Plus size={12} />
+        )}
       </button>
     </SidebarActionTooltip>
   )
 }
 
+type BranchConfirmation = 'prune' | 'merge-completed' | 'remove-completed' | null
+
 export function BranchInlineActions({
-  canPrune,
-  canSwitch,
-  canToggleWorktreeComplete,
-  canMergeWorktree,
-  canMergeCompletedWorktrees,
-  canRemoveCompletedWorktrees,
-  canCreateWorktree,
-  confirmingPrune,
-  confirmingMergeCompletedWorktrees,
-  confirmingRemoveCompletedWorktrees,
+  capabilities,
   currentBranch,
   group,
   project,
   switchBlocked,
   onAction,
-  onCancelPrune,
-  onConfirmPrune,
-  onRequestPruneConfirm,
-  onCancelMergeCompletedWorktrees,
-  onConfirmMergeCompletedWorktrees,
-  onRequestMergeCompletedWorktreesConfirm,
-  onCancelRemoveCompletedWorktrees,
-  onConfirmRemoveCompletedWorktrees,
-  onRequestRemoveCompletedWorktreesConfirm,
-  onSwitchBlocked,
-  onSwitchFailed,
 }: {
-  canPrune: boolean
-  canSwitch: boolean
-  canToggleWorktreeComplete: boolean
-  canMergeWorktree: boolean
-  canMergeCompletedWorktrees: boolean
-  canRemoveCompletedWorktrees: boolean
-  canCreateWorktree: boolean
-  confirmingPrune: boolean
-  confirmingMergeCompletedWorktrees: boolean
-  confirmingRemoveCompletedWorktrees: boolean
+  capabilities: BranchActionCapabilities
   currentBranch: string | null
   group: BranchThreadGroup
   project: Project
   switchBlocked: boolean
   onAction: DesktopActionInvoker
-  onCancelPrune: () => void
-  onConfirmPrune: () => void
-  onRequestPruneConfirm: () => void
-  onCancelMergeCompletedWorktrees: () => void
-  onConfirmMergeCompletedWorktrees: () => void
-  onRequestMergeCompletedWorktreesConfirm: () => void
-  onCancelRemoveCompletedWorktrees: () => void
-  onConfirmRemoveCompletedWorktrees: () => void
-  onRequestRemoveCompletedWorktreesConfirm: () => void
-  onSwitchBlocked: () => void
-  onSwitchFailed: () => void
 }) {
+  const [confirmation, setConfirmation] = useState<BranchConfirmation>(null)
+  const actionCount = getBranchActionCount(capabilities)
+
   return (
-    <>
-      {canPrune ? (
+    <span
+      className="sidebar-project-work-branch-actions"
+      data-action-count={actionCount}
+      data-confirming={confirmation === null ? 'false' : 'true'}
+    >
+      {capabilities.canPrune ? (
         <BranchPruneAction
-          confirming={confirmingPrune}
+          confirming={confirmation === 'prune'}
           group={group}
           project={project}
           onAction={onAction}
-          onCancel={onCancelPrune}
-          onConfirm={onConfirmPrune}
-          onRequestConfirm={onRequestPruneConfirm}
+          onCancel={() => setConfirmation(null)}
+          onConfirm={() => setConfirmation(null)}
+          onRequestConfirm={() => setConfirmation('prune')}
         />
       ) : null}
-      {canRemoveCompletedWorktrees ? (
+      {capabilities.canRemoveCompletedWorktrees ? (
         <RemoveCompletedWorktreesAction
-          confirming={confirmingRemoveCompletedWorktrees}
+          confirming={confirmation === 'remove-completed'}
           group={group}
           project={project}
           onAction={onAction}
-          onCancel={onCancelRemoveCompletedWorktrees}
-          onConfirm={onConfirmRemoveCompletedWorktrees}
-          onRequestConfirm={onRequestRemoveCompletedWorktreesConfirm}
+          onCancel={() => setConfirmation(null)}
+          onConfirm={() => setConfirmation(null)}
+          onRequestConfirm={() => setConfirmation('remove-completed')}
         />
       ) : null}
-      {canMergeCompletedWorktrees ? (
+      {capabilities.canMergeCompletedWorktrees ? (
         <MergeCompletedWorktreesAction
-          confirming={confirmingMergeCompletedWorktrees}
+          confirming={confirmation === 'merge-completed'}
           group={group}
           project={project}
           onAction={onAction}
-          onCancel={onCancelMergeCompletedWorktrees}
-          onConfirm={onConfirmMergeCompletedWorktrees}
-          onRequestConfirm={onRequestMergeCompletedWorktreesConfirm}
+          onCancel={() => setConfirmation(null)}
+          onConfirm={() => setConfirmation(null)}
+          onRequestConfirm={() => setConfirmation('merge-completed')}
         />
       ) : null}
-      {canSwitch ? (
+      {capabilities.canSwitch ? (
         <BranchSwitchAction
           blocked={switchBlocked}
           group={group}
           project={project}
           onAction={onAction}
-          onBlocked={onSwitchBlocked}
-          onSwitchFailed={onSwitchFailed}
         />
       ) : null}
-      {canToggleWorktreeComplete ? (
+      {capabilities.canToggleWorktreeComplete ? (
         <WorktreeCompletionAction group={group} project={project} onAction={onAction} />
       ) : null}
-      {canMergeWorktree ? (
+      {capabilities.canMergeWorktree ? (
         <WorktreeMergeAction group={group} project={project} onAction={onAction} />
       ) : null}
-      {canCreateWorktree ? (
+      {capabilities.canCreateWorktree ? (
         <BranchWorktreeCreateAction
           currentBranch={currentBranch}
           group={group}
           project={project}
           onAction={onAction}
-          onCreateFailed={onSwitchFailed}
         />
       ) : null}
-      <EmptyBranchStartAction
-        blocked={switchBlocked}
-        canSwitch={canSwitch}
-        currentBranch={currentBranch}
-        group={group}
-        project={project}
-        onAction={onAction}
-        onSwitchFailed={onSwitchFailed}
-      />
-    </>
+      {capabilities.canStartThread ? (
+        <BranchStartThreadAction
+          blocked={switchBlocked}
+          canSwitch={capabilities.canSwitch}
+          currentBranch={currentBranch}
+          group={group}
+          project={project}
+          onAction={onAction}
+        />
+      ) : null}
+    </span>
   )
 }
 

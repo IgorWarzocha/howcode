@@ -4,12 +4,13 @@ import type { AppShellController } from '../app-shell/useAppShellController'
 import { mainPanelClass } from '../ui/classes'
 import { WORKSPACE_EDGE_PADDING_CLASS } from '../ui/layout'
 import { cn } from '../utils/cn'
+import type { CodeWorkspaceContentProps } from './code-workspace-contract'
 import { FALLBACK_APP_SETTINGS } from './code-workspace-defaults'
 import { CodeWorkspaceMainView } from './code-workspace-main-view'
-import type { CodeWorkspaceContentProps } from './code-workspace-view'
+import { useGitOpsFileActions } from './use-gitops-file-actions'
 
 function getMainPanelClass(
-  activeView: AppShellController['state']['activeView'],
+  activeView: AppShellController['workspace']['state']['activeView'],
   showDiffInMainView: boolean,
 ) {
   return activeView === 'thread' ||
@@ -21,19 +22,21 @@ function getMainPanelClass(
 }
 
 function CodeWorkspaceDiffMain(props: CodeWorkspaceContentProps) {
+  const fileActions = useGitOpsFileActions(props.handleAction)
   return (
     <DiffPanel
+      fileActions={fileActions}
       projectId={props.composerProjectId}
       isGitRepo={props.projectGitState?.isGitRepo ?? false}
       baseline={props.diffBaseline}
       selectedFilePath={props.state.selectedDiffFilePath}
-      selectedCommentId={props.selectedDiffCommentId}
-      selectedCommentJumpKey={props.selectedDiffCommentJumpKey}
+      selectedCommentId={props.gitOpsReview.selection.commentId}
+      selectedCommentJumpKey={props.gitOpsReview.selection.jumpKey}
       diffRenderMode={props.diffRenderMode}
       layoutMode="main"
       showFileTree={props.gitOpsFileTreeVisible}
       includeUntracked={props.includeUntrackedDiffFiles}
-      loading={props.controller.projectGitLoading && !props.projectGitState}
+      loading={props.controller.projects.gitLoading && !props.projectGitState}
       onLoadErrorChange={props.setDiffLoadError}
     />
   )
@@ -42,12 +45,12 @@ function CodeWorkspaceDiffMain(props: CodeWorkspaceContentProps) {
 function CodeWorkspaceDefaultMain(props: CodeWorkspaceContentProps) {
   const appSettings = props.shellState?.appSettings ?? FALLBACK_APP_SETTINGS
   const selectedProjectId =
-    (props.controller.state.activeView === 'project' ||
-      props.controller.state.activeView === 'sessions' ||
-      props.controller.state.activeView === 'extensions' ||
-      props.controller.state.activeView === 'skills') &&
-    props.controller.state.hasSelectedProject
-      ? props.controller.state.selectedProjectId
+    (props.controller.workspace.state.activeView === 'project' ||
+      props.controller.workspace.state.activeView === 'sessions' ||
+      props.controller.workspace.state.activeView === 'extensions' ||
+      props.controller.workspace.state.activeView === 'skills') &&
+    props.controller.workspace.state.hasSelectedProject
+      ? props.controller.workspace.state.selectedProjectId
       : ''
   return (
     <CodeWorkspaceMainView
@@ -56,7 +59,7 @@ function CodeWorkspaceDefaultMain(props: CodeWorkspaceContentProps) {
       piSettings={props.shellState?.piSettings ?? defaultPiSettings}
       piTheme={props.shellState?.piTheme ?? null}
       resolvedPiDirectory={props.shellState?.agentDir ?? null}
-      archivedThreads={props.controller.archivedThreads}
+      archivedThreads={props.controller.thread.archived}
       availableModels={props.activeComposerState?.availableModels ?? []}
       availableThinkingLevels={props.activeComposerState?.availableThinkingLevels ?? ['off']}
       contextUsage={props.activeComposerState?.contextUsage ?? null}
@@ -64,10 +67,10 @@ function CodeWorkspaceDefaultMain(props: CodeWorkspaceContentProps) {
       currentThinkingLevel={props.activeComposerState?.currentThinkingLevel ?? 'off'}
       isCompacting={props.activeComposerState?.isCompacting ?? false}
       currentProjectName={props.currentProjectName}
-      selectedInboxThread={props.controller.selectedInboxThread}
-      projects={props.controller.projects}
+      selectedInboxThread={props.controller.inbox.selectedThread}
+      projects={props.controller.projects.items}
       projectGitState={props.projectGitState}
-      settingsOpenTarget={props.controller.settingsOpenTarget}
+      settingsOpenTarget={props.controller.settings.openTarget}
       selectedProjectId={selectedProjectId}
       workspaceContentClass={props.workspaceContentClass}
       threadData={props.activeThreadData}
@@ -75,18 +78,18 @@ function CodeWorkspaceDefaultMain(props: CodeWorkspaceContentProps) {
       composerLayoutVersion={props.composerLayoutVersion}
       composerOverlayHeight={props.composerOverlayHeight}
       onAction={props.handleAction}
-      onDismissInboxThread={props.controller.handleDismissInboxThread}
+      onDismissInboxThread={props.controller.inbox.dismiss}
       onListAttachmentEntries={props.listComposerAttachmentEntries}
-      onOpenThread={props.controller.handleThreadOpen}
-      onOpenSettingsView={(target) => props.controller.handleShowView('settings', target)}
+      onOpenThread={props.controller.thread.open}
+      onOpenSettingsView={(target) => props.controller.navigation.showView('settings', target)}
       sidebarCollapsed={props.sidebarCollapsed}
       sidebarCompactMode={props.sidebarCompactMode}
       onToggleSidebar={props.onToggleSidebar}
-      onCloseUtilityView={props.controller.handleCloseUtilityView}
+      onCloseUtilityView={props.controller.navigation.closeUtilityView}
       onLoadEarlierMessages={props.handleLoadEarlierMessages}
-      onSetExtensionsProjectScopeActive={props.controller.handleSetExtensionsProjectScopeActive}
-      onSetSkillsProjectScopeActive={props.controller.handleSetSkillsProjectScopeActive}
-      onSelectProject={props.controller.handleProjectSelect}
+      onSetExtensionsProjectScopeActive={props.controller.resourceScope.setExtensionsActive}
+      onSetSkillsProjectScopeActive={props.controller.resourceScope.setSkillsActive}
+      onSelectProject={props.controller.projects.select}
     />
   )
 }

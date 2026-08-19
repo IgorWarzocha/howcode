@@ -1,4 +1,5 @@
 import { CornerDownLeft, PackagePlus, Sparkles } from 'lucide-react'
+import { useState } from 'react'
 import { Tooltip } from '../../common/tooltip'
 import {
   appToneMutedClass,
@@ -8,21 +9,16 @@ import {
   sectionHeadingClass,
   viewCloseButtonClass,
 } from '../../ui/classes'
-import { skillsActionColumnClass, skillsCreatorControlRowClass } from '../../ui/screen-classes'
+import { skillsActionColumnClass, skillsActionControlRowClass } from '../../ui/screen-classes'
 import { cn } from '../../utils/cn'
 import type { InstallScope, ManualSourceKind } from '../types'
 
 type InstallExtensionsSectionProps = {
-  manualSource: string
-  manualSourceKind: ManualSourceKind
   installScope: InstallScope
   projectScopeAvailable: boolean
-  hasManualSource: boolean
   hasPendingInstall: boolean
-  manualInstallPending: boolean
-  onManualSourceChange: (value: string) => void
-  onManualSourceKindChange: (kind: ManualSourceKind) => void
-  onSubmit: () => void | Promise<void>
+  isInstallPending: (source: string) => boolean
+  onInstall: (source: string, kind: ManualSourceKind) => Promise<boolean>
 }
 
 const sourceKindOptions = [
@@ -31,32 +27,37 @@ const sourceKindOptions = [
 ] as const
 
 export function InstallExtensionsSection({
-  manualSource,
-  manualSourceKind,
   installScope,
   projectScopeAvailable,
-  hasManualSource,
   hasPendingInstall,
-  manualInstallPending,
-  onManualSourceChange,
-  onManualSourceKindChange,
-  onSubmit,
+  isInstallPending,
+  onInstall,
 }: InstallExtensionsSectionProps) {
+  const [manualSource, setManualSource] = useState('')
+  const [manualSourceKind, setManualSourceKind] = useState<ManualSourceKind>('npm')
+  const hasManualSource = manualSource.trim().length > 0
+  const manualInstallPending = hasManualSource && isInstallPending(manualSource)
   const disabled =
     (!projectScopeAvailable && installScope === 'project') ||
     !hasManualSource ||
     manualInstallPending ||
     hasPendingInstall
 
+  const installManualSource = async () => {
+    const source = manualSource.trim()
+    if (!source) return
+    if (await onInstall(source, manualSourceKind)) setManualSource('')
+  }
+
   return (
     <section className="grid gap-2">
       <div className={sectionHeadingClass}>Install</div>
 
       <form
-        className={skillsCreatorControlRowClass}
+        className={skillsActionControlRowClass}
         onSubmit={(event) => {
           event.preventDefault()
-          void onSubmit()
+          void installManualSource()
         }}
       >
         <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-1">
@@ -73,7 +74,7 @@ export function InstallExtensionsSection({
                     selected && 'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
                   )}
                   aria-pressed={selected}
-                  onClick={() => onManualSourceKindChange(option.value)}
+                  onClick={() => setManualSourceKind(option.value)}
                 >
                   {option.label}
                 </button>
@@ -85,7 +86,7 @@ export function InstallExtensionsSection({
             <input
               type="text"
               value={manualSource}
-              onChange={(event) => onManualSourceChange(event.target.value)}
+              onChange={(event) => setManualSource(event.target.value)}
               className={cn(quietSearchInputClass, 'w-full pr-7')}
               placeholder={
                 manualSourceKind === 'npm'

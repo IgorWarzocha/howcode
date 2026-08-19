@@ -101,12 +101,6 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
     )
   }, [visibleThreadIds])
 
-  useEffect(() => {
-    if (busyAction !== null) {
-      setConfirmBulkDeleteTarget(null)
-    }
-  }, [busyAction])
-
   const allVisibleSelected =
     visibleThreadIds.length > 0 && selectedThreadIds.length === visibleThreadIds.length
   const selectedCountLabel =
@@ -132,6 +126,7 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
     }
 
     const previousSelectedThreadIds = selectedThreadIds
+    setConfirmBulkDeleteTarget(null)
     setBusyAction(busyState)
     setOptimisticallyHiddenThreadIds((current) => [...new Set([...current, ...threadIds])])
     const mutationThreadIdSet = new Set(threadIds)
@@ -342,7 +337,7 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
                   checked={selectedThreadIdSet.has(thread.id)}
                   onChange={() =>
                     setSelectedThreadIds((current) =>
-                      current.includes(thread.id)
+                      new Set(current).has(thread.id)
                         ? current.filter((threadId) => threadId !== thread.id)
                         : [...current, thread.id],
                     )

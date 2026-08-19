@@ -161,14 +161,18 @@ async function downloadDictationModelFiles(input: {
 }) {
   emitDictationDownloadLog(input.modelId, `Preparing ${input.definition.name} download…`)
   await mkdir(input.stagingDirectory, { recursive: true })
-  for (const fileName of getDictationInstallFiles(input.definition)) {
-    emitDictationDownloadLog(input.modelId, `Downloading ${fileName}…`)
-    await downloadToFile(
-      buildHuggingFaceResolveUrl(input.definition.huggingFaceRepo, fileName),
-      path.join(input.stagingDirectory, fileName),
-    )
-    emitDictationDownloadLog(input.modelId, `Validated ${fileName}.`)
-  }
+  await getDictationInstallFiles(input.definition).reduce<Promise<void>>(
+    (pending, fileName) =>
+      pending.then(async () => {
+        emitDictationDownloadLog(input.modelId, `Downloading ${fileName}…`)
+        await downloadToFile(
+          buildHuggingFaceResolveUrl(input.definition.huggingFaceRepo, fileName),
+          path.join(input.stagingDirectory, fileName),
+        )
+        emitDictationDownloadLog(input.modelId, `Validated ${fileName}.`)
+      }),
+    Promise.resolve(),
+  )
 }
 
 async function restoreDictationInstallBackup(input: {

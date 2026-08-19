@@ -1,103 +1,74 @@
-import type { TerminalEvent } from '@howcode/desktop'
 import { appToneTextClass, appTypeSmallClass } from '@howcode/ui'
 import type { FitAddon } from '@xterm/addon-fit'
 import type { Terminal as XTerm } from '@xterm/xterm'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useHowcodeKeybindingCommand } from '../../app-shell/keybinding-events'
-import { resizeDesktopTerminal, writeDesktopTerminal } from '../../hooks/useDesktopTerminal'
+import { writeDesktopTerminal } from '../../hooks/useDesktopTerminal'
 import { useHoverToFocus } from '../../hooks/useHoverToFocus'
 import { cn } from '../../utils/cn'
 import {
-  clampTerminalHistory,
-  clearTerminal,
-  DEFAULT_MAX_KEEP_ALIVE_MS_ON_UNMOUNT,
-  DEFAULT_TERMINAL_COLS,
-  DEFAULT_TERMINAL_ROWS,
-  isUsableTerminalSize,
-  normalizeTerminalDimension,
+  getTerminalPersistedSessionPath,
+  type TerminalSessionPolicy,
+} from './terminal-session-policy'
+import {
   type TerminalBackgroundCssVar,
   terminalStyleVars,
   terminalWrapperStyle,
   writeSystemMessage,
 } from './terminalViewportUtils'
-import { isXtermNearBottom, useTerminalOutputBehavior } from './useTerminalOutputBehavior'
-import {
-  getTerminalPersistedSessionPath,
-  useTerminalSessionLifecycle,
-} from './useTerminalSessionLifecycle'
+import { useTerminalHistory } from './useTerminalHistory'
+import { useTerminalOutputBehavior } from './useTerminalOutputBehavior'
+import { useTerminalResize } from './useTerminalResize'
+import { useTerminalSessionLifecycle } from './useTerminalSessionLifecycle'
 import { useTerminalXtermInstance } from './useTerminalXtermInstance'
 
-export type TerminalViewportBaseProps = {
+type SharedTerminalViewportProps = {
   projectId: string
   sessionPath: string | null
-  launchMode?: 'shell' | 'pi-session' | undefined
-  onProcessExit?: (() => void) | undefined
-  preserveSessionOnUnmount?: boolean | undefined
-  keepAliveMsOnUnmount?: number | undefined
-  closeWhenSessionFileIdleMs?: number | undefined
-  maxKeepAliveMsOnUnmount?: number | undefined
-  backgroundCssVar?: TerminalBackgroundCssVar | undefined
-  hoverToFocus?: boolean | undefined
-  hoverToBlur?: boolean | undefined
-  stickToBottomOnOutput?: boolean | undefined
-  bottomAlignInitialContent?: boolean | undefined
-  className?: string | undefined
+  backgroundCssVar: TerminalBackgroundCssVar
+  className?: string
 }
 
-export function TerminalViewportBase({
-  projectId,
-  sessionPath,
-  launchMode = 'shell',
-  onProcessExit,
-  preserveSessionOnUnmount = false,
-  keepAliveMsOnUnmount = 0,
-  closeWhenSessionFileIdleMs = 0,
-  maxKeepAliveMsOnUnmount = DEFAULT_MAX_KEEP_ALIVE_MS_ON_UNMOUNT,
-  backgroundCssVar = '--terminal-bg',
-  hoverToFocus = true,
-  hoverToBlur = false,
-  stickToBottomOnOutput = true,
-  bottomAlignInitialContent = false,
-  className,
-}: TerminalViewportBaseProps) {
+type TerminalViewportBaseProps = SharedTerminalViewportProps &
+  (
+    | { mode: 'shell'; hoverToFocus: boolean; hoverToBlur: boolean }
+    | {
+        mode: 'pi-session'
+        keepAliveMsOnUnmount: number
+        closeWhenSessionFileIdleMs: number
+        maxKeepAliveMsOnUnmount: number
+      }
+  )
+
+export function TerminalViewportBase(props: TerminalViewportBaseProps) {
+  const { projectId, sessionPath, backgroundCssVar, className } = props
   const viewportRef = useRef<HTMLDivElement | null>(null)
   const terminalMountRef = useRef<HTMLDivElement | null>(null)
   const terminalInstanceRef = useRef<XTerm | null>(null)
   const fitAddonRef = useRef<FitAddon | null>(null)
-  const terminalResizeFrameRef = useRef<number | null>(null)
-  const terminalResizeTimerRefs = useRef<number[]>([])
   const terminalInitialFitTimerRef = useRef<number | null>(null)
   const sessionIdRef = useRef<string | null>(null)
-  const attachFailedRef = useRef(false)
-  const pendingEventsRef = useRef<TerminalEvent[]>([])
-  const replayingBufferedEventsRef = useRef(false)
-  const terminalHistoryRef = useRef('')
-  const piSessionPathRef = useRef<{ value: string | null } | null>(null)
-  const lastKnownSizeRef = useRef({ cols: DEFAULT_TERMINAL_COLS, rows: DEFAULT_TERMINAL_ROWS })
-  const lastSentSizeRef = useRef<{ sessionId: string; cols: number; rows: number } | null>(null)
+  const initialPiSessionPathRef = useRef(
+    props.mode === 'pi-session' ? { value: sessionPath } : null,
+  )
   const [terminalReadyRevision, setTerminalReadyRevision] = useState(0)
   const [terminalInitError, setTerminalInitError] = useState<string | null>(null)
-  const effectiveLaunchMode = launchMode
-  if (effectiveLaunchMode === 'pi-session' && piSessionPathRef.current === null) {
-    piSessionPathRef.current = { value: sessionPath }
-  }
-  const terminalSessionPath =
-    effectiveLaunchMode === 'pi-session' ? piSessionPathRef.current?.value : sessionPath
+  const isShell = props.mode === 'shell'
+  const closeWhenSessionFileIdleMs = isShell ? 0 : props.closeWhenSessionFileIdleMs
+  const keepAliveMsOnUnmount = isShell ? 0 : props.keepAliveMsOnUnmount
+  const maxKeepAliveMsOnUnmount = isShell ? 0 : props.maxKeepAliveMsOnUnmount
+  const terminalSessionPath = isShell ? sessionPath : initialPiSessionPathRef.current?.value
   const terminalPersistedSessionPath = getTerminalPersistedSessionPath({
-    effectiveLaunchMode,
+    launchMode: props.mode,
     sessionPath,
     terminalSessionPath,
   })
   const viewportStyle = useMemo(() => terminalWrapperStyle(backgroundCssVar), [backgroundCssVar])
   const terminalStyle = useMemo(() => terminalStyleVars(backgroundCssVar), [backgroundCssVar])
-  const focusTerminal = useCallback(() => {
-    terminalInstanceRef.current?.focus()
-  }, [])
+
+  const focusTerminal = useCallback(() => terminalInstanceRef.current?.focus(), [])
   const blurTerminal = useCallback(() => {
-    const activeElement = document.activeElement
-    if (activeElement instanceof HTMLElement) {
-      activeElement.blur()
-    }
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
   }, [])
   const isTerminalFocused = useCallback(() => {
     const terminalElement = terminalInstanceRef.current?.element
@@ -105,128 +76,45 @@ export function TerminalViewportBase({
     return !!terminalElement && !!activeElement && terminalElement.contains(activeElement)
   }, [])
   const handleHoverToFocus = useHoverToFocus({
-    enabled: hoverToFocus,
+    enabled: isShell ? props.hoverToFocus : false,
     boundaryRef: viewportRef,
     focus: focusTerminal,
     blur: blurTerminal,
-    blurOnLeave: hoverToBlur,
+    blurOnLeave: isShell ? props.hoverToBlur : false,
     isFocused: isTerminalFocused,
   })
 
+  const bottomAlignInitialContent = isShell
+  const stickToBottomOnOutput = isShell
   const { scheduleXtermBottomAlign, writeToTerminal } = useTerminalOutputBehavior({
     bottomAlignInitialContent,
     stickToBottomOnOutput,
     terminalInstanceRef,
   })
-
-  useEffect(
-    () => () => {
-      if (terminalResizeFrameRef.current !== null) {
-        window.cancelAnimationFrame(terminalResizeFrameRef.current)
-      }
-      for (const timer of terminalResizeTimerRefs.current) {
-        window.clearTimeout(timer)
-      }
-      terminalResizeTimerRefs.current = []
-      if (terminalInitialFitTimerRef.current !== null) {
-        window.clearTimeout(terminalInitialFitTimerRef.current)
-      }
-    },
-    [],
-  )
-
-  const resetTerminal = useCallback(
-    (history = '') => {
-      const nextHistory = clampTerminalHistory(history)
-      terminalHistoryRef.current = nextHistory
-      if (nextHistory) clearTerminal((data) => writeToTerminal(data))
-      else terminalInstanceRef.current?.clear()
-      if (nextHistory) {
-        writeToTerminal(nextHistory)
-      }
-      scheduleXtermBottomAlign()
-    },
-    [scheduleXtermBottomAlign, writeToTerminal],
-  )
-
-  useHowcodeKeybindingCommand('terminal.clear', (event) => {
-    if (effectiveLaunchMode !== 'shell') return
-    if (!isTerminalFocused()) return
-    event.preventDefault()
-    resetTerminal('')
+  const { appendTerminalHistory, resetTerminal, terminalHistoryRef } = useTerminalHistory({
+    scheduleXtermBottomAlign,
+    terminalInstanceRef,
+    writeToTerminal,
   })
 
+  useHowcodeKeybindingCommand('terminal.clear', (event) => {
+    if (!(isShell && isTerminalFocused())) return
+    event.preventDefault()
+    resetTerminal()
+  })
   useHowcodeKeybindingCommand('terminal.focus', (event) => {
-    if (effectiveLaunchMode !== 'shell') return
+    if (!isShell) return
     event.preventDefault()
     focusTerminal()
   })
 
-  const appendTerminalHistory = useCallback(
-    (chunk: string) => {
-      const nextHistory = clampTerminalHistory(terminalHistoryRef.current + chunk)
-      const trimmed = nextHistory.length !== terminalHistoryRef.current.length + chunk.length
-      terminalHistoryRef.current = nextHistory
-
-      if (trimmed) {
-        clearTerminal((data) => writeToTerminal(data))
-        if (nextHistory) {
-          writeToTerminal(nextHistory)
-        }
-        return
-      }
-
-      writeToTerminal(chunk)
-    },
-    [writeToTerminal],
-  )
-
   const handleTerminalError = useCallback((error: unknown) => {
-    const message = error instanceof Error ? error.message : 'Unable to initialize terminal.'
-    setTerminalInitError(message)
+    setTerminalInitError(error instanceof Error ? error.message : 'Unable to initialize terminal.')
   }, [])
-
-  const handleTerminalResize = useCallback((cols: number, rows: number) => {
-    const nextCols = normalizeTerminalDimension(cols, lastKnownSizeRef.current.cols)
-    const nextRows = normalizeTerminalDimension(rows, lastKnownSizeRef.current.rows)
-
-    if (!isUsableTerminalSize(nextCols, nextRows)) {
-      return
-    }
-
-    lastKnownSizeRef.current = {
-      cols: nextCols,
-      rows: nextRows,
-    }
-
-    const sessionId = sessionIdRef.current
-    if (!sessionId) {
-      return
-    }
-
-    const nextSize = { sessionId, cols: nextCols, rows: nextRows }
-    const lastSentSize = lastSentSizeRef.current
-
-    if (
-      lastSentSize &&
-      lastSentSize.sessionId === nextSize.sessionId &&
-      lastSentSize.cols === nextSize.cols &&
-      lastSentSize.rows === nextSize.rows
-    ) {
-      return
-    }
-
-    lastSentSizeRef.current = nextSize
-    void resizeDesktopTerminal(nextSize)
-  }, [])
-
   const handleTerminalData = useCallback(
     (data: string) => {
       const sessionId = sessionIdRef.current
-      if (!sessionId) {
-        return
-      }
-
+      if (!sessionId) return
       void writeDesktopTerminal(sessionId, data).catch((error) => {
         writeSystemMessage(
           (message) => writeToTerminal(message),
@@ -237,6 +125,21 @@ export function TerminalViewportBase({
     [writeToTerminal],
   )
 
+  const {
+    getCurrentTerminalSize,
+    handleTerminalResize,
+    lastKnownSizeRef,
+    lastSentSizeRef,
+    scheduleTerminalResizeSettlingPasses,
+  } = useTerminalResize({
+    fitAddonRef,
+    scheduleXtermBottomAlign,
+    sessionIdRef,
+    stickToBottomOnOutput,
+    terminalInstanceRef,
+    terminalReadyRevision,
+    viewportRef,
+  })
   useTerminalXtermInstance({
     fitAddonRef,
     handleTerminalData,
@@ -253,120 +156,27 @@ export function TerminalViewportBase({
     writeToTerminal,
   })
 
-  const resizeTerminalToContainer = useCallback(() => {
-    const terminal = terminalInstanceRef.current
-    const terminalElement = terminal?.element
-    if (!(terminal && terminalElement)) {
-      return
-    }
-
-    const shouldStickToBottom = stickToBottomOnOutput && isXtermNearBottom(terminal)
-    fitAddonRef.current?.fit()
-    const cols = normalizeTerminalDimension(terminal.cols, lastKnownSizeRef.current.cols)
-    const rows = normalizeTerminalDimension(terminal.rows, lastKnownSizeRef.current.rows)
-    if (!isUsableTerminalSize(cols, rows)) {
-      return
-    }
-    handleTerminalResize(cols, rows)
-
-    if (shouldStickToBottom) {
-      terminal.scrollToBottom()
-    }
-    scheduleXtermBottomAlign()
-  }, [handleTerminalResize, scheduleXtermBottomAlign, stickToBottomOnOutput])
-
-  const scheduleTerminalResizeToContainer = useCallback(() => {
-    if (terminalResizeFrameRef.current !== null) {
-      window.cancelAnimationFrame(terminalResizeFrameRef.current)
-    }
-
-    terminalResizeFrameRef.current = window.requestAnimationFrame(() => {
-      terminalResizeFrameRef.current = null
-      resizeTerminalToContainer()
-    })
-  }, [resizeTerminalToContainer])
-
-  const scheduleTerminalResizeSettlingPasses = useCallback(() => {
-    scheduleTerminalResizeToContainer()
-
-    for (const timer of terminalResizeTimerRefs.current) {
-      window.clearTimeout(timer)
-    }
-
-    terminalResizeTimerRefs.current = [80, 240, 600].map((delay) =>
-      window.setTimeout(() => {
-        scheduleTerminalResizeToContainer()
-      }, delay),
-    )
-  }, [scheduleTerminalResizeToContainer])
-
-  useEffect(() => {
-    if (terminalReadyRevision === 0) {
-      return
-    }
-
-    const viewportElement = viewportRef.current
-    if (!viewportElement || typeof ResizeObserver === 'undefined') {
-      return
-    }
-
-    const observer = new ResizeObserver(() => {
-      scheduleTerminalResizeToContainer()
-    })
-
-    observer.observe(viewportElement)
-    scheduleTerminalResizeSettlingPasses()
-
-    return () => {
-      observer.disconnect()
-      if (terminalResizeFrameRef.current !== null) {
-        window.cancelAnimationFrame(terminalResizeFrameRef.current)
-        terminalResizeFrameRef.current = null
-      }
-      for (const timer of terminalResizeTimerRefs.current) {
-        window.clearTimeout(timer)
-      }
-      terminalResizeTimerRefs.current = []
-    }
-  }, [
-    scheduleTerminalResizeSettlingPasses,
-    scheduleTerminalResizeToContainer,
-    terminalReadyRevision,
-  ])
-
-  const getCurrentTerminalSize = useCallback(() => {
-    const terminal = terminalInstanceRef.current
-    fitAddonRef.current?.fit()
-
-    return {
-      cols: normalizeTerminalDimension(
-        terminal?.cols ?? lastKnownSizeRef.current.cols,
-        lastKnownSizeRef.current.cols,
-      ),
-      rows: normalizeTerminalDimension(
-        terminal?.rows ?? lastKnownSizeRef.current.rows,
-        lastKnownSizeRef.current.rows,
-      ),
-    }
-  }, [])
-
+  const sessionPolicy = useMemo<TerminalSessionPolicy>(
+    () =>
+      isShell
+        ? { kind: 'shell' }
+        : {
+            kind: 'pi-session',
+            closeWhenSessionFileIdleMs,
+            keepAliveMsOnUnmount,
+            maxKeepAliveMsOnUnmount,
+          },
+    [closeWhenSessionFileIdleMs, isShell, keepAliveMsOnUnmount, maxKeepAliveMsOnUnmount],
+  )
   const terminalSessionLifecycle = useMemo(
     () => ({
       appendTerminalHistory,
-      attachFailedRef,
-      closeWhenSessionFileIdleMs,
-      effectiveLaunchMode,
       focusTerminal,
       getCurrentSize: getCurrentTerminalSize,
       handleTerminalResize,
-      keepAliveMsOnUnmount,
       lastSentSizeRef,
-      maxKeepAliveMsOnUnmount,
-      onProcessExit,
-      pendingEventsRef,
-      preserveSessionOnUnmount,
+      policy: sessionPolicy,
       projectId,
-      replayingBufferedEventsRef,
       resetTerminal,
       scheduleTerminalResizeSettlingPasses,
       scheduleXtermBottomAlign,
@@ -379,19 +189,16 @@ export function TerminalViewportBase({
     }),
     [
       appendTerminalHistory,
-      closeWhenSessionFileIdleMs,
-      effectiveLaunchMode,
       focusTerminal,
       getCurrentTerminalSize,
       handleTerminalResize,
-      keepAliveMsOnUnmount,
-      maxKeepAliveMsOnUnmount,
-      onProcessExit,
-      preserveSessionOnUnmount,
+      lastSentSizeRef,
       projectId,
       resetTerminal,
       scheduleTerminalResizeSettlingPasses,
       scheduleXtermBottomAlign,
+      sessionPolicy,
+      terminalHistoryRef,
       terminalPersistedSessionPath,
       terminalReadyRevision,
       terminalSessionPath,
@@ -425,3 +232,5 @@ export function TerminalViewportBase({
     </div>
   )
 }
+
+export type { SharedTerminalViewportProps }

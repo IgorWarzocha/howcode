@@ -45,10 +45,11 @@ export function groupSettingsByCategory({
   settings: SettingDescriptor[]
   categories?: SettingsCategory[]
 }) {
-  return categories
-    .map((category) => ({
+  return categories.flatMap((category) => {
+    const group = {
       ...category,
       settings: settings.filter((setting) => setting.category === category.id),
-    }))
-    .filter((group) => group.settings.length > 0)
+    }
+    return group.settings.length > 0 ? [group] : []
+  })
 }

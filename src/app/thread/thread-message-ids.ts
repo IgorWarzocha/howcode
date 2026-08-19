@@ -12,3 +12,9 @@ export function getTimelineRowMessageIds(row: TimelineRow) {
     ),
   ].filter((id): id is string => Boolean(id))
 }
+
+export function buildTimelineRowByMessageId(rows: TimelineRow[]) {
+  return new Map(
+    rows.flatMap((row) => getTimelineRowMessageIds(row).map((id) => [id, row] as const)),
+  )
+}

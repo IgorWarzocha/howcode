@@ -5,6 +5,7 @@ const { getPatchableNodePtyRoots } = require('./service-native/platform.cjs')
 const {
   copyCurrentNativeDependenciesToAbiBundle,
   rebuildServiceNativeDependencies,
+  serviceAbiPackages,
   validateCurrentNativeDependenciesLoad,
 } = require('./service-native-abi.cjs')
 
@@ -15,7 +16,7 @@ if (!resourcesPath) {
 }
 
 const resolvedResourcesPath = path.resolve(resourcesPath)
-if (!rebuildServiceNativeDependencies(resolvedResourcesPath)) {
+if (!rebuildServiceNativeDependencies(resolvedResourcesPath, serviceAbiPackages)) {
   console.error(
     `Could not rebuild service native dependencies: ${resolvedResourcesPath} is not a packaged resources path with app.asar.unpacked.`,
   )

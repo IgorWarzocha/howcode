@@ -14,6 +14,7 @@ const path = require('node:path')
 
 const {
   nativeServiceAbiDirectoryName,
+  serviceAbiPackages,
   serviceNativePackages,
   supportedServiceNodeAbis,
   supportedServiceNodeMajors,
@@ -34,7 +35,7 @@ function getAbiBundleRoot(resourcesPath, abi = process.versions.modules) {
   return path.join(getUnpackedAppPath(resourcesPath), nativeServiceAbiDirectoryName, String(abi))
 }
 
-function validateServiceNativeInstallResult(result, npmExecutable) {
+function validateServiceNativeInstallResult(result, npmExecutable, packageNames) {
   if (result.error) {
     throw new Error(
       `Failed to run ${npmExecutable} for service native dependencies: ${result.error.message}`,
@@ -42,7 +43,7 @@ function validateServiceNativeInstallResult(result, npmExecutable) {
   }
   if (result.signal) {
     throw new Error(
-      `Service native dependency install was terminated by ${result.signal}: ${serviceNativePackages.join(', ')}.`,
+      `Service native dependency install was terminated by ${result.signal}: ${packageNames.join(', ')}.`,
     )
   }
   if (result.status !== 0) {
@@ -52,7 +53,7 @@ function validateServiceNativeInstallResult(result, npmExecutable) {
   }
 }
 
-function rebuildServiceNativeDependencies(resourcesPath) {
+function rebuildServiceNativeDependencies(resourcesPath, packageNames = serviceNativePackages) {
   const unpackedAppPath = getUnpackedAppPath(resourcesPath)
   if (!existsSync(unpackedAppPath)) {
     console.warn(`Skipping service native rebuild: ${unpackedAppPath} does not exist.`)
@@ -62,7 +63,7 @@ function rebuildServiceNativeDependencies(resourcesPath) {
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'howcode-service-native-'))
   try {
     const dependencies = Object.fromEntries(
-      serviceNativePackages.map((packageName) => {
+      packageNames.map((packageName) => {
         const packageJson = JSON.parse(
           readFileSync(
             path.join(unpackedAppPath, 'node_modules', packageName, 'package.json'),
@@ -88,9 +89,9 @@ function rebuildServiceNativeDependencies(resourcesPath) {
       stdio: 'inherit',
     })
 
-    validateServiceNativeInstallResult(result, npmExecutable)
+    validateServiceNativeInstallResult(result, npmExecutable, packageNames)
 
-    for (const packageName of serviceNativePackages) {
+    for (const packageName of packageNames) {
       const sourcePackagePath = path.join(tempRoot, 'node_modules', packageName)
       const destinationPackagePath = path.join(unpackedAppPath, 'node_modules', packageName)
       if (!existsSync(sourcePackagePath)) {
@@ -123,8 +124,9 @@ function rebuildServiceNativeDependencies(resourcesPath) {
 function copyCurrentNativeDependenciesToAbiBundle(resourcesPath, abi = process.versions.modules) {
   const unpackedAppPath = getUnpackedAppPath(resourcesPath)
   const abiBundleRoot = getAbiBundleRoot(resourcesPath, abi)
+  rmSync(abiBundleRoot, { recursive: true, force: true })
 
-  for (const packageName of serviceNativePackages) {
+  for (const packageName of serviceAbiPackages) {
     const sourcePackagePath = path.join(unpackedAppPath, 'node_modules', packageName)
     const destinationPackagePath = path.join(abiBundleRoot, 'node_modules', packageName)
     if (!existsSync(sourcePackagePath)) {
@@ -156,7 +158,7 @@ function copyCurrentNativeDependenciesToAbiBundle(resourcesPath, abi = process.v
       {
         abi: String(abi),
         nodeVersion: process.version,
-        packages: serviceNativePackages,
+        packages: serviceAbiPackages,
         files: copiedFiles,
       },
       null,
@@ -291,7 +293,7 @@ function validateAbiBundle(resourcesPath, abi) {
   const manifestFiles = Array.isArray(manifest.files) ? manifest.files : []
   validateAbiManifestFiles(abiBundleRoot, abi, manifestPath, manifestFiles)
 
-  for (const packageName of serviceNativePackages) {
+  for (const packageName of serviceAbiPackages) {
     const packageJsonPath = path.join(abiBundleRoot, 'node_modules', packageName, 'package.json')
     if (!existsSync(packageJsonPath)) {
       throw new Error(
@@ -305,6 +307,7 @@ module.exports = {
   getPlatformNativeRuntimeFiles,
   getRequiredNativeRuntimeFiles,
   nativeServiceAbiDirectoryName,
+  serviceAbiPackages,
   serviceNativePackages,
   supportedServiceNodeMajors,
   supportedServiceNodeAbis,

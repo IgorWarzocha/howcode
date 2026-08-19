@@ -1,4 +1,4 @@
-import { normalizeModelRegistryContextWindows } from '../../shared/model-context-window-normalization.ts'
+import { normalizeModelRuntimeContextWindows } from '../../shared/model-context-window-normalization.ts'
 import { getPiModule } from '../pi-module.ts'
 import {
   abortHeadlessExtensionCommand,
@@ -6,6 +6,7 @@ import {
 } from '../runtime/agent-session-extensions.ts'
 import { createArtifactTools } from '../runtime/artifact-tools.ts'
 import { createAttachmentFileTools } from '../runtime/attachment-file-tools.ts'
+import { getBundledSkillPaths } from '../runtime/bundled-skills.ts'
 import { getRuntimeSystemPrompt } from '../runtime/chat-system-prompt.ts'
 import {
   createIsolatedRuntimeResourceLoader,
@@ -14,7 +15,8 @@ import {
   resolveRuntimeProjectTrust,
 } from '../runtime/isolated-settings-manager.ts'
 import type { PiRuntime } from '../runtime/types.ts'
-import { invokeMainRequest } from './main-request-client.ts'
+import { invokeArtifactRequest } from './artifact-request-client.ts'
+import type { LivePiRuntime, RuntimeUpdateScheduler } from './live-runtime-updates.ts'
 import {
   bindRuntimeExtensionHandlers,
   refreshRuntimeExtensionHandlers,
@@ -36,10 +38,10 @@ export async function createLiveRuntime(
     sessionManager?: PiRuntime['session']['sessionManager']
   },
   handlers: LiveRuntimeFactoryHandlers,
-): Promise<PiRuntime> {
+  updates: RuntimeUpdateScheduler,
+): Promise<LivePiRuntime> {
   const {
-    AuthStorage,
-    ModelRegistry,
+    ModelRuntime,
     SessionManager,
     SettingsManager,
     DefaultResourceLoader,
@@ -62,9 +64,11 @@ export async function createLiveRuntime(
     hasTrustRequiringProjectResources,
     settingsCwd: options.settingsCwd,
   })
-  const authStorage = AuthStorage.create()
-  const modelRegistry = normalizeModelRegistryContextWindows(
-    ModelRegistry.create(authStorage, `${agentDir}/models.json`),
+  const modelRuntime = normalizeModelRuntimeContextWindows(
+    await ModelRuntime.create({
+      authPath: `${agentDir}/auth.json`,
+      modelsPath: `${agentDir}/models.json`,
+    }),
   )
   const settingsManager = createRuntimeSettingsManager({
     SettingsManager,
@@ -76,6 +80,7 @@ export async function createLiveRuntime(
   const sessionDir = options.sessionDir ?? settingsManager.getSessionDir() ?? undefined
   const resourceLoader = await createIsolatedRuntimeResourceLoader({
     DefaultResourceLoader,
+    additionalSkillPaths: getBundledSkillPaths(),
     cwd: options.cwd,
     agentDir,
     settingsCwd: options.settingsCwd,
@@ -92,8 +97,7 @@ export async function createLiveRuntime(
   const { session } = await createAgentSession({
     cwd: options.cwd,
     agentDir,
-    authStorage,
-    modelRegistry,
+    modelRuntime,
     settingsManager,
     resourceLoader,
     sessionManager: options.sessionManager ?? SessionManager.create(options.cwd, sessionDir),
@@ -103,12 +107,12 @@ export async function createLiveRuntime(
           customTools: [
             ...(attachmentFileTools?.tools ?? []),
             ...createArtifactTools({
-              createArtifact: (input) => invokeMainRequest('createArtifact', input),
-              editArtifact: (input) => invokeMainRequest('editArtifact', input),
+              createArtifact: (input) => invokeArtifactRequest('createArtifact', input),
+              editArtifact: (input) => invokeArtifactRequest('editArtifact', input),
               getArtifact: ({ conversationId, slug }) =>
-                invokeMainRequest('getArtifact', { artifactSlug: slug, conversationId }),
+                invokeArtifactRequest('getArtifact', { artifactSlug: slug, conversationId }),
               listArtifacts: (conversationId) =>
-                invokeMainRequest('listArtifacts', { conversationId }),
+                invokeArtifactRequest('listArtifacts', { conversationId }),
             }),
           ],
         }
@@ -119,22 +123,33 @@ export async function createLiveRuntime(
     session,
     chatGroupId: options.chatGroupId ?? null,
     attachmentFileAccess: attachmentFileTools?.access,
-  } satisfies PiRuntime
+    updates,
+  } satisfies LivePiRuntime
 
-  session.subscribe((event) =>
-    handleRuntimeSessionEvent(runtime, event, {
+  try {
+    session.subscribe((event) =>
+      handleRuntimeSessionEvent(runtime, event, {
+        isRuntimeExtensionCommandRunning,
+        reloadRuntimeSettingsIfSafe: handlers.reloadRuntimeSettingsIfSafe,
+        scheduleRuntimeDisposal: handlers.scheduleRuntimeDisposal,
+        suspendRuntimeDisposal: handlers.suspendRuntimeDisposal,
+      }),
+    )
+
+    await bindRuntimeExtensionHandlers(runtime, {
       isRuntimeExtensionCommandRunning,
       reloadRuntimeSettingsIfSafe: handlers.reloadRuntimeSettingsIfSafe,
-      scheduleRuntimeDisposal: handlers.scheduleRuntimeDisposal,
-      suspendRuntimeDisposal: handlers.suspendRuntimeDisposal,
-    }),
-  )
-
-  await bindRuntimeExtensionHandlers(runtime, {
-    isRuntimeExtensionCommandRunning,
-    reloadRuntimeSettingsIfSafe: handlers.reloadRuntimeSettingsIfSafe,
-  })
-  return runtime
+    })
+    return runtime
+  } catch (error) {
+    updates.close()
+    try {
+      await session.dispose()
+    } catch {
+      // Preserve the activation failure that triggered cleanup.
+    }
+    throw error
+  }
 }
 
 export function abortRuntimeExtensionCommand(runtime: PiRuntime) {
@@ -146,7 +161,7 @@ export function isRuntimeExtensionCommandRunning(runtime: PiRuntime) {
 }
 
 export async function refreshRuntimeExtensionBindings(
-  runtime: PiRuntime,
+  runtime: LivePiRuntime,
   reloadRuntimeSettingsIfSafe: (runtimeKey: string) => Promise<boolean>,
 ) {
   await refreshRuntimeExtensionHandlers(runtime, {

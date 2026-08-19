@@ -11,15 +11,18 @@ import {
   upsertShellWorktreeProject,
 } from '../project-shell-cache'
 
-export async function applyWorkspaceCommitPostEffect(input: {
+type RefreshProjectGitAfterWorktreeChangeInput = {
   contextualPayload: ActionPayload
-  committed: boolean
   queryClient: QueryClient
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
   setProjectGitState: (state: ProjectGitState | null) => void
-}) {
+}
+
+async function refreshProjectGitAfterWorktreeChange(
+  input: RefreshProjectGitAfterWorktreeChangeInput,
+) {
   const projectId = getPayloadProjectId(input.contextualPayload)
-  if (!(projectId && input.committed)) return
+  if (!projectId) return
 
   notifyProjectDiffInvalidated(projectId)
   await Promise.all([
@@ -36,6 +39,20 @@ export async function applyWorkspaceCommitPostEffect(input: {
   input.setProjectGitState(await input.loadProjectGitState(projectId))
 }
 
+export async function applyWorkspaceCommitPostEffect(
+  input: RefreshProjectGitAfterWorktreeChangeInput & { committed: boolean },
+) {
+  if (!input.committed) return
+  return refreshProjectGitAfterWorktreeChange(input)
+}
+
+export async function applyWorkspaceFileWritePostEffect(
+  input: RefreshProjectGitAfterWorktreeChangeInput & { written: boolean },
+) {
+  if (!input.written) return
+  return refreshProjectGitAfterWorktreeChange(input)
+}
+
 export async function applyCommitOptionsPostEffect(input: {
   contextualPayload: ActionPayload
   refreshShellState: () => Promise<unknown>
@@ -49,13 +66,19 @@ export async function applyCommitOptionsPostEffect(input: {
 
 export async function applySwitchBranchPostEffect(input: {
   contextualPayload: ActionPayload
+  actionResult?: DesktopActionResult | null | undefined
   queryClient: QueryClient
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
   loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
   setProjectGitState: (state: ProjectGitState | null) => void
 }) {
-  const projectId = getPayloadProjectId(input.contextualPayload)
+  const projectId =
+    input.actionResult?.result?.rootProjectId ?? getPayloadProjectId(input.contextualPayload)
   if (!projectId) return
+
+  for (const removedWorktreeId of input.actionResult?.result?.removedWorktreeIds ?? []) {
+    removeShellWorktreeProject(input.queryClient, removedWorktreeId)
+  }
 
   notifyProjectDiffInvalidated(projectId)
   await Promise.all([
@@ -76,14 +99,12 @@ export async function applySwitchBranchPostEffect(input: {
 }
 
 export async function applyCreateWorktreePostEffect(input: {
-  contextualPayload: ActionPayload
   actionResult: DesktopActionResult | null
   queryClient: QueryClient
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
   setProjectGitState: (state: ProjectGitState | null) => void
 }) {
-  const rootProjectId =
-    input.actionResult?.result?.rootProjectId ?? getPayloadProjectId(input.contextualPayload)
+  const rootProjectId = input.actionResult?.result?.rootProjectId
   const worktreeProjectId = input.actionResult?.result?.projectId
   const branchName = input.actionResult?.result?.branchName ?? null
   if (rootProjectId && worktreeProjectId) {
@@ -91,10 +112,7 @@ export async function applyCreateWorktreePostEffect(input: {
       rootProjectId,
       worktreeProjectId,
       branchName,
-      parentBranchName:
-        typeof input.contextualPayload.parentBranchName === 'string'
-          ? input.contextualPayload.parentBranchName
-          : null,
+      parentBranchName: input.actionResult?.result?.parentBranchName ?? null,
     })
   }
   const projectIds = [...new Set([rootProjectId, worktreeProjectId].filter(Boolean))] as string[]
@@ -118,13 +136,8 @@ export async function applyWorktreeMetadataPostEffect(input: {
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
   setProjectGitState: (state: ProjectGitState | null) => void
 }) {
-  const rootProjectId =
-    input.actionResult?.result?.rootProjectId ?? getPayloadProjectId(input.contextualPayload)
-  const worktreeProjectId =
-    input.actionResult?.result?.projectId ??
-    (typeof input.contextualPayload.worktreePath === 'string'
-      ? input.contextualPayload.worktreePath
-      : null)
+  const rootProjectId = input.actionResult?.result?.rootProjectId
+  const worktreeProjectId = input.actionResult?.result?.projectId
   if (!rootProjectId) return
 
   if (
@@ -153,34 +166,27 @@ export async function applyWorktreeMetadataPostEffect(input: {
 }
 
 export async function applyRemoveWorktreePostEffect(input: {
-  contextualPayload: ActionPayload
   actionResult: DesktopActionResult | null
   queryClient: QueryClient
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
   setProjectGitState: (state: ProjectGitState | null) => void
 }) {
-  const rootProjectId =
-    input.actionResult?.result?.rootProjectId ?? getPayloadProjectId(input.contextualPayload)
-  const worktreeProjectId =
-    input.actionResult?.result?.projectId ??
-    (typeof input.contextualPayload.worktreePath === 'string'
-      ? input.contextualPayload.worktreePath
-      : null)
-  const bulkWorktrees = Array.isArray(input.contextualPayload.worktrees)
-    ? input.contextualPayload.worktrees
-        .map((worktree) => worktree.worktreePath)
-        .filter((worktreePath): worktreePath is string => typeof worktreePath === 'string')
-    : []
-  const removedWorktreeIds = [
-    ...new Set([worktreeProjectId, ...bulkWorktrees].filter(Boolean)),
-  ] as string[]
+  const rootProjectId = input.actionResult?.result?.rootProjectId
+  const removedWorktreeIds =
+    input.actionResult?.result?.removedWorktreeIds ??
+    (input.actionResult?.result?.worktreeRemoved && input.actionResult.result.projectId
+      ? [input.actionResult.result.projectId]
+      : [])
   if (!rootProjectId) return
+  if (input.actionResult?.result?.worktreeCompleted && input.actionResult.result.projectId) {
+    setShellWorktreeCompleted(input.queryClient, input.actionResult.result.projectId, true)
+  }
+  for (const removedWorktreeId of removedWorktreeIds) {
+    removeShellWorktreeProject(input.queryClient, removedWorktreeId)
+  }
   await input.queryClient.invalidateQueries({
     queryKey: desktopQueryKeys.projectGitState(rootProjectId),
   })
   const nextProjectGitState = await input.loadProjectGitState(rootProjectId)
   input.setProjectGitState(nextProjectGitState)
-  for (const removedWorktreeId of removedWorktreeIds) {
-    removeShellWorktreeProject(input.queryClient, removedWorktreeId)
-  }
 }

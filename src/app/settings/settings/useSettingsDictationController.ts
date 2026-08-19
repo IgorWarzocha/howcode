@@ -70,7 +70,6 @@ export function useSettingsDictationController({
   const [dictationPendingAction, setDictationPendingAction] =
     useState<DictationPendingAction | null>(null)
   const [dictationInstallError, setDictationInstallError] = useState<string | null>(null)
-  const [dictationDownloadLogLines, setDictationDownloadLogLines] = useState<string[]>([])
 
   useEffect(() => {
     if (!appSettings.dictationModelId) {
@@ -110,20 +109,11 @@ export function useSettingsDictationController({
         return
       }
 
-      setDictationDownloadLogLines((current) => {
-        const nextLines = [...current, `${event.modelId}: ${event.message}`]
-        return nextLines.slice(-12)
-      })
-
       if (event.done) {
         void refreshDictationState()
       }
     })
   }, [refreshDictationState])
-
-  const appendDictationDownloadLogLine = useCallback((line: string) => {
-    setDictationDownloadLogLines((current) => [...current, line].slice(-12))
-  }, [])
 
   const updateDictationModelSetting = useCallback(
     async (modelId: DictationModelId | null, fallbackMessage: string) => {
@@ -152,15 +142,9 @@ export function useSettingsDictationController({
   const installDictationModel = async (modelId: DictationModelId) => {
     setDictationPendingAction({ modelId, kind: 'download' })
     setDictationInstallError(null)
-    setDictationDownloadLogLines([])
-    appendDictationDownloadLogLine(`ui ${modelId}: install requested`)
 
     try {
-      appendDictationDownloadLogLine(`ui ${modelId}: calling desktop RPC…`)
       const result = await installDictationModelQuery(modelId)
-      appendDictationDownloadLogLine(
-        `ui ${modelId}: RPC resolved (ok=${result?.ok ? 'yes' : 'no'})`,
-      )
 
       if (!result?.ok) {
         setDictationInstallError(result?.error ?? 'Could not download dictation model.')
@@ -182,32 +166,7 @@ export function useSettingsDictationController({
       await refreshDictationState()
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Could not download dictation model.'
-      appendDictationDownloadLogLine(`ui ${modelId}: RPC threw ${message}`)
       setDictationInstallError(message)
-      await refreshDictationState()
-    } finally {
-      setDictationPendingAction(null)
-    }
-  }
-
-  const selectDictationModel = async (modelId: DictationModelId) => {
-    setDictationPendingAction({ modelId, kind: 'switch' })
-    setDictationInstallError(null)
-    setDictationModels((current) =>
-      current.map((model) => ({
-        ...model,
-        selected: model.id === modelId,
-      })),
-    )
-
-    try {
-      await updateDictationModelSetting(modelId, 'Could not switch dictation model.')
-
-      await refreshDictationState()
-    } catch (error) {
-      setDictationInstallError(
-        error instanceof Error ? error.message : 'Could not switch dictation model.',
-      )
       await refreshDictationState()
     } finally {
       setDictationPendingAction(null)
@@ -218,13 +177,9 @@ export function useSettingsDictationController({
     const activeModelId = getActiveDictationModelId()
     setDictationPendingAction({ modelId, kind: 'delete' })
     setDictationInstallError(null)
-    appendDictationDownloadLogLine(`ui ${modelId}: delete requested`)
 
     try {
       const result = await removeDictationModelQuery(modelId)
-      appendDictationDownloadLogLine(
-        `ui ${modelId}: delete resolved (ok=${result?.ok ? 'yes' : 'no'})`,
-      )
       if (!result?.ok) {
         setDictationInstallError(result?.error ?? 'Could not remove dictation model.')
         await refreshDictationState()
@@ -251,13 +206,9 @@ export function useSettingsDictationController({
 
   return {
     deleteDictationModel,
-    dictationDownloadLogLines,
     dictationInstallError,
     dictationModels,
     dictationPendingAction,
-    dictationState,
     installDictationModel,
-    refreshDictationState,
-    selectDictationModel,
   }
 }

@@ -2,6 +2,7 @@ import { ArrowUpRight, Check, Sparkles } from 'lucide-react'
 import { CompactMetaRow } from '../../common/compact-meta-row'
 import { Tooltip } from '../../common/tooltip'
 import type { PiPackageCatalogItem } from '../../desktop/types'
+import { openPiResourceUrl } from '../../pi-resources/open-pi-resource-url'
 import {
   appToneMutedClass,
   appToneTextClass,
@@ -9,7 +10,7 @@ import {
   viewCloseButtonClass,
 } from '../../ui/classes'
 import { cn } from '../../utils/cn'
-import { formatDownloads, openExternalUrl, pickSafeExternalUrl } from '../utils'
+import { formatDownloads, pickSafeExternalUrl } from '../utils'
 
 type CatalogItemRowProps = {
   item: PiPackageCatalogItem
@@ -50,7 +51,7 @@ export function CatalogItemRow({
           <button
             type="button"
             className="group inline-flex shrink-0 items-center gap-0.5 p-0"
-            onClick={() => void openExternalUrl(externalUrl)}
+            onClick={() => void openPiResourceUrl(externalUrl)}
             aria-label={`Open ${item.name}`}
           >
             <span

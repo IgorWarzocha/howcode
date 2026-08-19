@@ -18,6 +18,8 @@ type UseChatSidebarControllerInput = {
   onAction: DesktopActionInvoker
 }
 
+const EMPTY_CHAT_GROUPS: [] = []
+
 export function useChatSidebarController({
   chatState,
   onCreateGroup,
@@ -36,7 +38,7 @@ export function useChatSidebarController({
   )
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
   const normalizedSearchQuery = searchQuery.trim().toLowerCase()
-  const sourceGroups = chatState?.groups ?? []
+  const sourceGroups = chatState?.groups ?? EMPTY_CHAT_GROUPS
   const groups = useMemo(() => {
     if (!normalizedSearchQuery) return sourceGroups
     return sourceGroups.flatMap((group) => {

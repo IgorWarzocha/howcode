@@ -7,7 +7,6 @@ import '@fontsource-variable/geist-mono'
 import './styles.css'
 import App from './app'
 import { applyStoredPiGuiTheme } from './app/app-shell/usePiGuiTheme'
-import { installDevWebDesktopBridge } from './app/dev-web-bridge'
 import { queryClient } from './app/query/query-client'
 
 function applyDesktopPlatformAttribute() {
@@ -25,7 +24,9 @@ if (import.meta.env.DEV) {
 
 const bridgeInstallPromise =
   !window.piDesktop && window.location.protocol.startsWith('http')
-    ? installDevWebDesktopBridge()
+    ? import('./app/dev-web-bridge').then(({ installDevWebDesktopBridge }) =>
+        installDevWebDesktopBridge(),
+      )
     : Promise.resolve()
 
 void bridgeInstallPromise

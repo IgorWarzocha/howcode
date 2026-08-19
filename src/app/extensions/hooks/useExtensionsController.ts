@@ -1,15 +1,18 @@
-import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMemo, useState } from 'react'
 import type { PiConfiguredPackage } from '../../desktop/types'
+import { usePiResourceInstallScope } from '../../pi-resources/use-pi-resource-install-scope'
+import { usePiResourcePendingActions } from '../../pi-resources/use-pi-resource-pending-actions'
 import {
   desktopQueryKeys,
   getConfiguredPiPackagesQuery,
   installPiPackageQuery,
   removePiPackageQuery,
-  searchPiPackagesQuery,
 } from '../../query/desktop-query'
-import type { ExtensionsViewProps, InstallScope, ManualSourceKind, PendingAction } from '../types'
+import type { ExtensionsViewProps, ManualSourceKind } from '../types'
 import { getActionError, getInstalledIdentityKeys, isDesktopPackagesAvailable } from '../utils'
+
+const EMPTY_CONFIGURED_PACKAGES: [] = []
 
 export function useExtensionsController({
   projectPath,
@@ -17,34 +20,17 @@ export function useExtensionsController({
   onSetProjectScopeActive,
 }: ExtensionsViewProps) {
   const queryClient = useQueryClient()
-  const normalizedProjectPath = projectPath?.trim() ? projectPath : null
-  const [searchInput, setSearchInput] = useState('')
-  const [submittedSearchInput, setSubmittedSearchInput] = useState('')
-  const [manualSource, setManualSource] = useState('')
-  const [manualSourceKind, setManualSourceKind] = useState<ManualSourceKind>('npm')
-  const [installScope, setInstallScope] = useState<InstallScope>('global')
   const [installedOpen, setInstalledOpen] = useState(false)
-  const [browseOpen, setBrowseOpen] = useState(false)
-  const [selectedCatalogSources, setSelectedCatalogSources] = useState<string[]>([])
-  const [pendingActions, setPendingActions] = useState<PendingAction[]>([])
   const [actionError, setActionError] = useState<string | null>(null)
-  const previousProjectPathRef = useRef<string | null>(normalizedProjectPath)
   const desktopPackagesAvailable = isDesktopPackagesAvailable()
-  const projectScopeAvailable = normalizedProjectPath !== null
-
-  useEffect(() => {
-    if (previousProjectPathRef.current === normalizedProjectPath) return
-    previousProjectPathRef.current = normalizedProjectPath
-    onProjectTargetSelected?.()
-  }, [normalizedProjectPath, onProjectTargetSelected])
-
-  useEffect(() => {
-    const handleProjectTargetSelected = () => setInstallScope('project')
-    window.addEventListener('howcode:project-target-selected', handleProjectTargetSelected)
-    return () => {
-      window.removeEventListener('howcode:project-target-selected', handleProjectTargetSelected)
-    }
-  }, [])
+  const { installScope, normalizedProjectPath, projectScopeAvailable, setInstallScope } =
+    usePiResourceInstallScope({
+      projectPath,
+      onProjectTargetSelected,
+      onSetProjectScopeActive,
+    })
+  const { finishPendingAction, hasPendingInstall, isPendingAction, startPendingAction } =
+    usePiResourcePendingActions()
 
   const configuredPackagesQuery = useQuery({
     queryKey: desktopQueryKeys.configuredPiPackages(projectPath, true),
@@ -53,21 +39,7 @@ export function useExtensionsController({
     enabled: desktopPackagesAvailable,
   })
 
-  const packagesQuery = useInfiniteQuery({
-    queryKey: desktopQueryKeys.piPackageCatalog(submittedSearchInput),
-    initialPageParam: 0,
-    queryFn: ({ pageParam }) =>
-      searchPiPackagesQuery({
-        query: submittedSearchInput,
-        cursor: typeof pageParam === 'number' ? pageParam : 0,
-        pageSize: 20,
-      }),
-    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
-    staleTime: 5 * 60_000,
-    enabled: desktopPackagesAvailable && submittedSearchInput.length >= 2,
-  })
-
-  const configuredPackages = configuredPackagesQuery.data ?? []
+  const configuredPackages = configuredPackagesQuery.data ?? EMPTY_CONFIGURED_PACKAGES
   const installedEntries = useMemo(
     () =>
       configuredPackages.filter(
@@ -99,28 +71,6 @@ export function useExtensionsController({
     () => getInstalledIdentityKeys(scopedInstalledEntries),
     [scopedInstalledEntries],
   )
-  const catalogItems = useMemo(
-    () => packagesQuery.data?.pages.flatMap((page) => page.items) ?? [],
-    [packagesQuery.data?.pages],
-  )
-
-  useEffect(() => {
-    onSetProjectScopeActive(installScope === 'project' || installScope === 'chat')
-
-    return () => {
-      onSetProjectScopeActive(false)
-    }
-  }, [installScope, onSetProjectScopeActive])
-
-  useEffect(() => {
-    setSelectedCatalogSources((current) =>
-      current.filter((source) => {
-        const item = catalogItems.find((catalogItem) => catalogItem.source === source)
-        return item ? !installedIdentityKeys.has(item.identityKey) : false
-      }),
-    )
-  }, [catalogItems, installedIdentityKeys])
-
   const updateConfiguredPackagesCache = (packages?: PiConfiguredPackage[]) => {
     if (packages) {
       queryClient.setQueryData(desktopQueryKeys.configuredPiPackages(projectPath, true), packages)
@@ -131,31 +81,6 @@ export function useExtensionsController({
     })
   }
 
-  const addPendingAction = (action: PendingAction) => {
-    setPendingActions((current) => [...current, action])
-  }
-
-  const removePendingAction = (action: PendingAction) => {
-    setPendingActions((current) =>
-      current.filter(
-        (currentAction) =>
-          currentAction.kind !== action.kind || currentAction.source !== action.source,
-      ),
-    )
-  }
-
-  const isPending = (kind: PendingAction['kind'], source: string) => {
-    const normalizedSource = source.trim().toLowerCase()
-    return pendingActions.some(
-      (action) => action.kind === kind && action.source.trim().toLowerCase() === normalizedSource,
-    )
-  }
-
-  const hasSelectedCatalogSources = selectedCatalogSources.length > 0
-  const hasManualSource = manualSource.trim().length > 0
-  const hasPendingInstall = pendingActions.some((action) => action.kind === 'install')
-  const manualInstallPending = hasManualSource && isPending('install', manualSource)
-
   const handleInstall = async (source: string, kind: ManualSourceKind) => {
     if (installScope === 'project' && !normalizedProjectPath) {
       setActionError('Select a project first.')
@@ -165,7 +90,7 @@ export function useExtensionsController({
     const normalizedSource = source.trim()
     const pendingAction = { kind: 'install' as const, source: normalizedSource }
 
-    addPendingAction(pendingAction)
+    startPendingAction(pendingAction)
     setActionError(null)
 
     try {
@@ -188,14 +113,14 @@ export function useExtensionsController({
       setActionError(getActionError(error))
       return false
     } finally {
-      removePendingAction(pendingAction)
+      finishPendingAction(pendingAction)
     }
   }
 
   const handleRemove = async (configuredPackage: PiConfiguredPackage) => {
     const pendingAction = { kind: 'remove' as const, source: configuredPackage.source }
 
-    addPendingAction(pendingAction)
+    startPendingAction(pendingAction)
     setActionError(null)
 
     try {
@@ -214,93 +139,27 @@ export function useExtensionsController({
     } catch (error) {
       setActionError(getActionError(error))
     } finally {
-      removePendingAction(pendingAction)
+      finishPendingAction(pendingAction)
     }
-  }
-
-  const handleManualInstall = async () => {
-    const manualSourceValue = manualSource.trim()
-
-    if (!manualSourceValue) {
-      return
-    }
-
-    const installed = await handleInstall(manualSourceValue, manualSourceKind)
-    if (installed) {
-      setManualSource('')
-    }
-  }
-
-  const handleSelectedCatalogInstall = async () => {
-    if (selectedCatalogSources.length === 0) {
-      return
-    }
-
-    const successfulSources = new Set<string>()
-
-    for (const source of selectedCatalogSources) {
-      const installed = await handleInstall(source, 'npm')
-      if (installed) {
-        successfulSources.add(source.trim().toLowerCase())
-      }
-    }
-
-    if (successfulSources.size > 0) {
-      setSelectedCatalogSources((current) =>
-        current.filter((source) => !successfulSources.has(source.trim().toLowerCase())),
-      )
-    }
-  }
-
-  const toggleCatalogSource = (source: string) => {
-    setSelectedCatalogSources((current) => {
-      if (current.includes(source)) {
-        return current.filter((selectedSource) => selectedSource !== source)
-      }
-
-      return [...current, source]
-    })
   }
 
   return {
     actionError,
-    browseOpen,
-    catalogError: packagesQuery.isError ? getActionError(packagesQuery.error) : null,
-    catalogItems,
-    catalogLoading: packagesQuery.isLoading,
     chatInstalledCount,
     desktopPackagesAvailable,
     globalInstalledCount,
-    hasManualSource,
-    hasNextCatalogPage: Boolean(packagesQuery.hasNextPage),
     hasPendingInstall,
-    hasSelectedCatalogSources,
     installScope,
     installedIdentityKeys,
     installedOpen,
-    isFetchingNextCatalogPage: packagesQuery.isFetchingNextPage,
-    isInstallPending: (source: string) => isPending('install', source),
-    isRemovePending: (source: string) => isPending('remove', source),
-    manualInstallPending,
-    manualSource,
-    manualSourceKind,
+    isInstallPending: (source: string) => isPendingAction('install', source),
+    isRemovePending: (source: string) => isPendingAction('remove', source),
     projectScopeAvailable,
     projectInstalledCount,
     scopedInstalledEntries,
-    searchInput,
-    selectedCatalogSources,
-    setBrowseOpen,
     setInstallScope,
     setInstalledOpen,
-    setManualSource,
-    setManualSourceKind,
-    setSearchInput,
-    setSubmittedSearchInput,
-    submittedSearchInput,
-    handleManualInstall,
+    handleInstall,
     handleRemove,
-    handleSelectedCatalogInstall,
-    loadMoreCatalog: () => void packagesQuery.fetchNextPage(),
-    toggleCatalogSource,
   }
 }

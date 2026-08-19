@@ -28,7 +28,9 @@ bun run publish:howcode:dry-run
 
 ## Release flow
 
-Build release artifacts:
+The `Release artifacts` GitHub workflow is authoritative. Pushes to `main` and `dev` build all six
+OS/architecture targets and safely refresh `channel-main` or `channel-dev`; version tags publish an
+immutable release. Local preparation builds only the current host and is useful for diagnosis:
 
 ```bash
 bun run release:prepare
@@ -40,20 +42,19 @@ This produces:
 - `artifacts/electron/*.AppImage` — Linux AppImage artifacts on Linux builds
 - `artifacts/npm-launcher/` — launcher archives consumed by the npm package
 
-For a GitHub release, upload both:
+Each target contributes:
 
 - `stable-<os>-<arch>-update.json`
-- Electron unpacked bundle artifacts
-- Linux `.AppImage` artifacts
-- `howcode-<os>-<arch>.tar.gz`
+- `archive-howcode-<os>-<arch>-<sha256>.tar.gz` — immutable updater payload
+- `howcode-<os>-<arch>.tar.gz` — legacy launcher fallback
+- platform installer/AppImage/zip artifacts
 
-Launcher base URL:
+The workflow validates all six manifests and hashes before publishing payloads, then swaps manifests
+last. Do not manually replace a channel manifest before its referenced archive exists.
 
-- `https://github.com/IgorWarzocha/howcode/releases/latest/download`
-
-GitHub workflow:
-
-- push a tag like `v0.1.0` to build all release artifacts and publish a GitHub release automatically
+When publishing a launcher with a new startup-readiness protocol, refresh channel desktop artifacts
+first and publish npm second. Existing launchers can start the new app; the reverse order makes the
+new launcher wait on an older app that cannot acknowledge readiness.
 
 ## NPM launcher package
 
@@ -92,12 +93,3 @@ Hooks:
 
 - `.husky/pre-commit` — lint-staged, then `bun run ai:check`
 - `.husky/pre-push` — clean build outputs, then `bun run ai:check`
-
-## Useful docs
-
-- `docs/roadmap.md`
-- `docs/todolist.md`
-- `docs/mock-features.md`
-- `docs/implementation-todo.md`
-- `docs/lane-map.md`
-
