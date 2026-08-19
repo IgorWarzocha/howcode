@@ -20,3 +20,7 @@ export function getThreadStateDatabase() {
   ensureThreadStateSchema(database)
   return database
 }
+
+export function runThreadStateTransaction<T>(operation: () => T) {
+  return getThreadStateDatabase().transaction(operation)()
+}

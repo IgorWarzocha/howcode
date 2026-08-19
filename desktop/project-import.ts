@@ -1,9 +1,13 @@
-import path from 'node:path'
 import type { ProjectImportCandidate } from '../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../shared/desktop-working-directory.ts'
 import { setProjectImportState } from './app-settings/writers.ts'
 import { getOriginUrl, isGitRepository } from './project-git/project-state.ts'
-import { type GitWorktreeEntry, loadGitWorktrees } from './project-git/worktrees.ts'
+import {
+  type GitWorktreeEntry,
+  getMainWorktreePath,
+  loadGitWorktrees,
+} from './project-git/worktrees.ts'
+import { withRootGitMutation } from './project-worktrees/root-git-mutation-gate.ts'
 import {
   deleteProject,
   deleteProjectWorktreeMetadata,
@@ -15,6 +19,7 @@ import {
   setProjectRepoOrigin,
   upsertProjectWorktree,
 } from './thread-state-db.ts'
+import { indexByWorkspaceIdentity, resolveWorkspaceIdentity } from './workspace-identity.ts'
 
 function resolveProjectIds(projectIds: string[]) {
   if (projectIds.length > 0) {
@@ -95,21 +100,34 @@ function removePrunableWorktreeMetadata(worktreePath: string) {
   if (listProjectThreadIds(worktreePath).length === 0) deleteProject(worktreePath)
 }
 
-function getWorktreeImportMetadata(rootProjectId: string, worktree: GitWorktreeEntry) {
+async function getWorktreeImportMetadata(
+  rootProjectId: string,
+  rootIdentity: string,
+  worktree: GitWorktreeEntry,
+  existingMetadata: ReturnType<typeof getProjectWorktree>,
+) {
   const isMain = worktree.path === rootProjectId
-  const existingMetadata = getProjectWorktree(worktree.path)
-  const retainsIdentity =
-    existingMetadata !== null &&
-    path.resolve(existingMetadata.rootCwd) === path.resolve(rootProjectId)
+  if (
+    existingMetadata &&
+    (await resolveWorkspaceIdentity(existingMetadata.rootCwd)) === rootIdentity
+  ) {
+    return {
+      cwd: existingMetadata.cwd,
+      isMain,
+      parentBranchName: existingMetadata.parentBranchName,
+      source: isMain ? ('howcode' as const) : existingMetadata.source,
+    }
+  }
 
   return {
+    cwd: worktree.path,
     isMain,
-    parentBranchName: retainsIdentity ? existingMetadata.parentBranchName : null,
-    source: isMain ? ('howcode' as const) : retainsIdentity ? existingMetadata.source : 'imported',
+    parentBranchName: null,
+    source: isMain ? ('howcode' as const) : ('imported' as const),
   }
 }
 
-export async function importProjectWorktrees(projectId: string) {
+async function importProjectWorktreesUnderLock(projectId: string) {
   let worktrees: GitWorktreeEntry[]
   try {
     worktrees = await loadGitWorktrees(projectId)
@@ -119,13 +137,45 @@ export async function importProjectWorktrees(projectId: string) {
   if (worktrees.length === 0) return 0
 
   const rootProjectId = worktrees[0]?.path ?? projectId
-  const registeredWorktreePaths = new Set(worktrees.map((worktree) => path.resolve(worktree.path)))
-  for (const persistedPath of listProjectWorktreePaths(rootProjectId)) {
-    if (!registeredWorktreePaths.has(path.resolve(persistedPath))) {
+  const persistedPaths = listProjectWorktreePaths(rootProjectId)
+  const [rootIdentity, indexedWorktrees, persistedWorktrees] = await Promise.all([
+    resolveWorkspaceIdentity(rootProjectId),
+    indexByWorkspaceIdentity(worktrees, (worktree) => worktree.path),
+    Promise.all(
+      persistedPaths.map(async (persistedPath) => ({
+        identity: await resolveWorkspaceIdentity(persistedPath),
+        metadata: getProjectWorktree(persistedPath),
+        persistedPath,
+      })),
+    ),
+  ])
+  const metadataByWorktreePath = new Map<
+    string,
+    NonNullable<ReturnType<typeof getProjectWorktree>>
+  >()
+  for (const { identity, metadata, persistedPath } of persistedWorktrees) {
+    if (metadata) metadataByWorktreePath.set(identity, metadata)
+    if (!indexedWorktrees.has(identity)) {
       removePrunableWorktreeMetadata(persistedPath)
     }
   }
-  let childWorktreeCount = 0
+
+  const imports = await Promise.all(
+    [...indexedWorktrees].map(async ([identity, worktree]) => {
+      const existingMetadata =
+        getProjectWorktree(worktree.path) ?? metadataByWorktreePath.get(identity) ?? null
+      if (worktree.prunable) {
+        return { prunableProjectId: existingMetadata?.cwd ?? worktree.path }
+      }
+      const { cwd, ...metadata } = await getWorktreeImportMetadata(
+        rootProjectId,
+        rootIdentity,
+        worktree,
+        existingMetadata,
+      )
+      return { cwd, metadata, worktree }
+    }),
+  )
 
   ensureProject(rootProjectId)
   upsertProjectWorktree({
@@ -136,23 +186,33 @@ export async function importProjectWorktrees(projectId: string) {
     source: 'howcode',
   })
 
-  for (const worktree of worktrees) {
-    if (worktree.prunable) {
-      removePrunableWorktreeMetadata(worktree.path)
+  let childWorktreeCount = 0
+  for (const imported of imports) {
+    if ('prunableProjectId' in imported) {
+      removePrunableWorktreeMetadata(imported.prunableProjectId)
       continue
     }
-    ensureProject(worktree.path)
-    const metadata = getWorktreeImportMetadata(rootProjectId, worktree)
+    ensureProject(imported.cwd)
     upsertProjectWorktree({
-      cwd: worktree.path,
+      cwd: imported.cwd,
       rootCwd: rootProjectId,
-      branchName: worktree.branch,
-      ...metadata,
+      branchName: imported.worktree.branch,
+      ...imported.metadata,
     })
-    if (!metadata.isMain) childWorktreeCount += 1
+    if (!imported.metadata.isMain) childWorktreeCount += 1
   }
 
   return childWorktreeCount
+}
+
+export async function importProjectWorktrees(projectId: string) {
+  let rootProjectId: string
+  try {
+    rootProjectId = await getMainWorktreePath(projectId)
+  } catch {
+    return 0
+  }
+  return withRootGitMutation(rootProjectId, () => importProjectWorktreesUnderLock(rootProjectId))
 }
 
 export async function importProjectWorktreesForProjectIds(projectIds: Iterable<string>) {

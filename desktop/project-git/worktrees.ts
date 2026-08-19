@@ -1,4 +1,4 @@
-import { access } from 'node:fs/promises'
+import { access, realpath } from 'node:fs/promises'
 import path from 'node:path'
 import { normalizeGitBranchName } from './branch-name.ts'
 import { formatGitCommandError, getNonInteractiveGitEnv, runGitWithOptions } from './git-runner.ts'
@@ -184,7 +184,7 @@ export async function createProjectWorktree(input: {
     const rootProjectId = mainWorktree?.path ?? input.projectId
     const worktreeParent = resolveWorktreeParent(rootProjectId, input.worktreeDirectory)
     const worktreePath = await resolveAvailableWorktreePath(worktreeParent, folderName)
-    const relativeWorktreePath = getInRepositoryWorktreePath(rootProjectId, worktreePath)
+    getInRepositoryWorktreePath(rootProjectId, worktreePath)
 
     await runGitWithOptions(input.projectId, ['check-ref-format', '--branch', branchName], {
       timeout: 10_000,
@@ -205,6 +205,8 @@ export async function createProjectWorktree(input: {
       timeout: 30_000,
       maxBuffer: 1024 * 1024 * 4,
     })
+    const canonicalWorktreePath = await realpath(worktreePath)
+    const relativeWorktreePath = getInRepositoryWorktreePath(rootProjectId, canonicalWorktreePath)
 
     let warning: string | undefined
     try {
@@ -216,7 +218,7 @@ export async function createProjectWorktree(input: {
 
     return {
       didMutate: true,
-      projectId: worktreePath,
+      projectId: canonicalWorktreePath,
       rootProjectId,
       branchName,
       ...(warning ? { warning } : {}),

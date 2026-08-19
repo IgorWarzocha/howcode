@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { promisify } from 'node:util'
@@ -104,6 +104,36 @@ describe('createProjectWorktree', () => {
       })
     } finally {
       await rm(projectId, { recursive: true, force: true })
+    }
+  })
+
+  it('returns Git canonical paths when the worktree directory is a symlink', async () => {
+    const testDirectory = await mkdtemp(path.join(tmpdir(), 'howcode-worktree-symlink-'))
+    const projectId = path.join(testDirectory, 'repo')
+    const physicalWorktreeDirectory = path.join(testDirectory, 'worktrees')
+    const worktreeDirectoryAlias = path.join(testDirectory, 'worktrees-alias')
+    await Promise.all([mkdir(projectId), mkdir(physicalWorktreeDirectory)])
+    await symlink(physicalWorktreeDirectory, worktreeDirectoryAlias, 'dir')
+    const git = (...args: string[]) => execFileAsync('git', args, { cwd: projectId })
+
+    try {
+      await git('init', '-b', 'main', '--quiet')
+      await git('config', 'user.name', 'Howcode Test')
+      await git('config', 'user.email', 'howcode-test@example.invalid')
+      await writeFile(path.join(projectId, 'vouched.md'), 'base\n')
+      await git('add', 'vouched.md')
+      await git('commit', '--quiet', '-m', 'base')
+
+      const result = await createProjectWorktree({
+        projectId,
+        branchName: 'feature/symlink',
+        worktreeDirectory: worktreeDirectoryAlias,
+      })
+
+      if ('error' in result) throw new Error(result.error)
+      expect(result.projectId).toBe(path.join(physicalWorktreeDirectory, 'feature-symlink'))
+    } finally {
+      await rm(testDirectory, { recursive: true, force: true })
     }
   })
 })

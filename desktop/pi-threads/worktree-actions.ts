@@ -9,7 +9,7 @@ import {
   type WorktreeActionTarget,
 } from '../../shared/pi-thread-action-payloads.ts'
 import { getActiveBranch } from '../project-git/project-state.ts'
-import { createProjectWorktree, getMainWorktreePath, pruneProjectBranch } from '../project-git.ts'
+import { getMainWorktreePath, pruneProjectBranch } from '../project-git.ts'
 import {
   type RegisteredWorktree,
   resolveRegisteredWorktree,
@@ -19,17 +19,16 @@ import { withRootGitMutation } from '../project-worktrees/root-git-mutation-gate
 import { withWorkspaceTeardown } from '../project-worktrees/workspace-teardown-gate.ts'
 import { hasActiveWorkspaceTerminal } from '../terminal/workspace-terminals.ts'
 import {
-  ensureProject,
   getProjectWorktreeDirectory,
   hasRunningProjectThread,
   listProjectFamilyBranchThreadIds,
   listProjectWorktreePaths,
   setProjectWorktreeCompleted,
   setProjectWorktreeDirectory,
-  upsertProjectWorktree,
 } from '../thread-state-db.ts'
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
+import { createRegisteredWorktree } from './worktree-creation.ts'
 import { deleteWorkspaceThreads, removeRegisteredWorktree } from './worktree-lifecycle.ts'
 
 function errorMessage(error: unknown) {
@@ -63,39 +62,14 @@ async function handleCreateWorktree(payload: AnyDesktopActionPayload) {
     if (!parentBranchName) {
       return handledAction({ error: 'Switch the parent worktree to a branch before creating one.' })
     }
-    const result = await createProjectWorktree({
-      projectId: rootProjectId,
-      branchName,
-      worktreeDirectory,
-    })
-    if ('error' in result) return handledAction(result)
-
-    ensureProject(result.rootProjectId)
-    ensureProject(result.projectId)
-    upsertProjectWorktree({
-      cwd: result.rootProjectId,
-      rootCwd: result.rootProjectId,
-      branchName: null,
-      isMain: true,
-      source: 'howcode',
-    })
-    upsertProjectWorktree({
-      cwd: result.projectId,
-      rootCwd: result.rootProjectId,
-      branchName: result.branchName,
-      parentBranchName,
-      isMain: false,
-      source: 'howcode',
-    })
-
-    return handledAction({
-      didMutate: true,
-      branchName: result.branchName,
-      parentBranchName,
-      projectId: result.projectId,
-      rootProjectId: result.rootProjectId,
-      ...(result.warning ? { message: result.warning } : {}),
-    })
+    return handledAction(
+      await createRegisteredWorktree({
+        rootProjectId,
+        branchName,
+        parentBranchName,
+        worktreeDirectory,
+      }),
+    )
   })
 }
 
@@ -123,13 +97,13 @@ async function handleMarkWorktree(payload: AnyDesktopActionPayload, completed: b
   if (!worktree.metadata) {
     return handledAction({ error: 'Worktree metadata is not registered with Howcode.' })
   }
-  if (!setProjectWorktreeCompleted(worktree.worktreePath, completed)) {
+  if (!setProjectWorktreeCompleted(worktree.projectId, completed)) {
     return handledAction({ error: 'Worktree metadata could not be updated.' })
   }
   return handledAction({
     didMutate: true,
     rootProjectId: worktree.rootProjectId,
-    projectId: worktree.worktreePath,
+    projectId: worktree.projectId,
   })
 }
 
@@ -169,7 +143,7 @@ async function resolveCleanupTargets(
     if (requirements.completedOnly && worktree.metadata?.completed !== true) {
       return {
         error: 'Only worktrees currently marked complete can be handled in bulk.',
-        failedWorktreePath: worktree.worktreePath,
+        failedWorktreePath: worktree.projectId,
       }
     }
   }
@@ -231,10 +205,16 @@ async function finishBranchPrune(
   worktreeCleanup: Awaited<ReturnType<typeof cleanupWorktrees>>,
 ) {
   const threadIds = listProjectFamilyBranchThreadIds(rootProjectId, branchName)
-  const result = await withRootGitMutation(rootProjectId, () =>
-    pruneProjectBranch(rootProjectId, branchName),
-  )
-  const didMutate = worktreeCleanup.didMutate || result.didMutate === true
+  const result = await withRootGitMutation(rootProjectId, async () => {
+    const remaining = await resolveBranchPruneWorktrees(rootProjectId, branchName)
+    if ('error' in remaining) return remaining
+    if (remaining.worktrees.length > 0) {
+      return { error: 'Worktrees changed while this branch was being pruned. Try again.' }
+    }
+    return pruneProjectBranch(rootProjectId, branchName)
+  })
+  const didMutate =
+    worktreeCleanup.didMutate || ('didMutate' in result && result.didMutate === true)
   if (!('error' in result) || isMissingBranchPruneError(result)) {
     const cleanupError = await deleteWorkspaceThreads(threadIds)
     if (cleanupError) {

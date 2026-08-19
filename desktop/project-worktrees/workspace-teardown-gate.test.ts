@@ -2,19 +2,19 @@ import { mkdtemp, rm, symlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { withWorkspaceSessionStart, withWorkspaceTeardown } from './workspace-teardown-gate.ts'
+import { withWorkspaceActivity, withWorkspaceTeardown } from './workspace-teardown-gate.ts'
 
 describe('workspace teardown gate', () => {
-  it('waits for an accepted start and rejects starts that race with teardown', async () => {
-    let releaseStart: (() => void) | undefined
-    let startAccepted: (() => void) | undefined
+  it('waits for accepted activity and rejects activity that races with teardown', async () => {
+    let releaseActivity: (() => void) | undefined
+    let activityAccepted: (() => void) | undefined
     const accepted = new Promise<void>((resolve) => {
-      startAccepted = resolve
+      activityAccepted = resolve
     })
-    const start = withWorkspaceSessionStart('/repo/worktree', async () => {
-      startAccepted?.()
+    const activity = withWorkspaceActivity('/repo/worktree', async () => {
+      activityAccepted?.()
       await new Promise<void>((resolve) => {
-        releaseStart = resolve
+        releaseActivity = resolve
       })
     })
     await accepted
@@ -23,13 +23,13 @@ describe('workspace teardown gate', () => {
     const teardown = withWorkspaceTeardown('/repo/worktree', async () => {
       teardownStarted = true
     })
-    await expect(
-      withWorkspaceSessionStart('/repo/worktree', async () => undefined),
-    ).rejects.toThrow('Workspace is being removed.')
+    await expect(withWorkspaceActivity('/repo/worktree', async () => undefined)).rejects.toThrow(
+      'Workspace is being removed.',
+    )
     expect(teardownStarted).toBe(false)
 
-    releaseStart?.()
-    await start
+    releaseActivity?.()
+    await activity
     await teardown
     expect(teardownStarted).toBe(true)
   })
@@ -38,17 +38,17 @@ describe('workspace teardown gate', () => {
     const projectId = await mkdtemp(path.join(tmpdir(), 'howcode-workspace-gate-'))
     const alias = `${projectId}-alias`
     await symlink(projectId, alias, 'dir')
-    let releaseStart: (() => void) | undefined
-    let startAccepted: (() => void) | undefined
+    let releaseActivity: (() => void) | undefined
+    let activityAccepted: (() => void) | undefined
     const accepted = new Promise<void>((resolve) => {
-      startAccepted = resolve
+      activityAccepted = resolve
     })
 
     try {
-      const start = withWorkspaceSessionStart(alias, async () => {
-        startAccepted?.()
+      const activity = withWorkspaceActivity(alias, async () => {
+        activityAccepted?.()
         await new Promise<void>((resolve) => {
-          releaseStart = resolve
+          releaseActivity = resolve
         })
       })
       await accepted
@@ -57,16 +57,16 @@ describe('workspace teardown gate', () => {
       const teardown = withWorkspaceTeardown(projectId, async () => {
         teardownStarted = true
       })
-      await expect(withWorkspaceSessionStart(alias, async () => undefined)).rejects.toThrow(
+      await expect(withWorkspaceActivity(alias, async () => undefined)).rejects.toThrow(
         'Workspace is being removed.',
       )
       expect(teardownStarted).toBe(false)
 
-      releaseStart?.()
-      await Promise.all([start, teardown])
+      releaseActivity?.()
+      await Promise.all([activity, teardown])
       expect(teardownStarted).toBe(true)
     } finally {
-      releaseStart?.()
+      releaseActivity?.()
       await rm(alias, { force: true })
       await rm(projectId, { recursive: true, force: true })
     }

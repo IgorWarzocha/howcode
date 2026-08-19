@@ -3,6 +3,7 @@ import { getWorktreeMergeTargetError, type RegisteredWorktree } from './register
 
 const baseWorktree: RegisteredWorktree = {
   rootProjectId: '/repo',
+  projectId: '/repo-worktrees/feature',
   worktreePath: '/repo-worktrees/feature',
   branchName: 'feature',
   parentBranchName: 'dev',

@@ -1,3 +1,4 @@
+export { runThreadStateTransaction } from './thread-state-db/db.ts'
 export {
   getProjectStoredUsageTotals,
   getThreadAssistantSnapshot,

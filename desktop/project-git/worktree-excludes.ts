@@ -4,6 +4,15 @@ import { runGitWithOptions } from './git-runner.ts'
 
 const howcodeWorktreeMarkerPrefix = '# howcode worktree: '
 
+async function readOptionalFile(filePath: string) {
+  try {
+    return await readFile(filePath, 'utf8')
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return ''
+    throw error
+  }
+}
+
 function escapeGitignoreLiteral(value: string) {
   return value
     .replaceAll('\\', '\\\\')
@@ -58,7 +67,7 @@ export async function ensureWorktreePathIgnored(
   const excludePath = await getExcludePath(rootProjectId)
   if (!excludePath) return
   const entry = getOwnedExcludeEntry(relativeWorktreePath)
-  const existing = await readFile(excludePath, 'utf8').catch(() => '')
+  const existing = await readOptionalFile(excludePath)
   const lines = existing.split('\n')
   if (lines.some((line) => line.trim() === entry.pattern)) return
 
@@ -77,7 +86,7 @@ export async function removeOwnedWorktreePathIgnore(
 
   const excludePath = await getExcludePath(rootProjectId)
   if (!excludePath) return
-  const existing = await readFile(excludePath, 'utf8').catch(() => '')
+  const existing = await readOptionalFile(excludePath)
   if (!existing) return
 
   const entry = getOwnedExcludeEntry(relativeWorktreePath)

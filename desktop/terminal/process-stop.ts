@@ -42,5 +42,7 @@ export async function stopTerminalProcess(
       // Escalate once before releasing ownership.
     }
   }
-  await signalTerminalProcess(processHandle, 'SIGKILL')
+  if (!(await signalTerminalProcess(processHandle, 'SIGKILL'))) {
+    throw new Error('Terminal process did not exit after SIGKILL.')
+  }
 }

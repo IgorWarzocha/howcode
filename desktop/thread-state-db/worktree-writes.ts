@@ -115,6 +115,18 @@ export function upsertProjectWorktree(metadata: ProjectWorktreeMetadata) {
         END,
         is_main = excluded.is_main,
         source = excluded.source,
+        completed = CASE
+          WHEN project_worktrees.root_cwd IS excluded.root_cwd
+            AND project_worktrees.branch_name IS excluded.branch_name
+            AND project_worktrees.is_main IS excluded.is_main
+            AND project_worktrees.source IS excluded.source
+            AND (
+              excluded.parent_branch_name IS NULL
+              OR project_worktrees.parent_branch_name IS excluded.parent_branch_name
+            )
+            THEN project_worktrees.completed
+          ELSE 0
+        END,
         updated_at = CURRENT_TIMESTAMP
     `,
   ).run(

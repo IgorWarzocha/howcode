@@ -13,3 +13,11 @@ export async function resolveWorkspaceIdentity(projectId: string) {
     return normalizePlatformPath(resolvedProjectId)
   }
 }
+
+export async function indexByWorkspaceIdentity<T>(values: T[], getPath: (value: T) => string) {
+  return new Map(
+    await Promise.all(
+      values.map(async (value) => [await resolveWorkspaceIdentity(getPath(value)), value] as const),
+    ),
+  )
+}

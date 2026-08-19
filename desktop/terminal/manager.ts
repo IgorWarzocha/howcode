@@ -10,7 +10,7 @@ import type {
   TerminalSessionSnapshot,
   TerminalStatusSnapshot,
 } from '../../shared/terminal-contracts.ts'
-import { withWorkspaceSessionStart } from '../project-worktrees/workspace-teardown-gate.ts'
+import { withWorkspaceActivity } from '../project-worktrees/workspace-teardown-gate.ts'
 import { releaseGuiRuntimeForPiSession } from './pi-session-runtime-handoff.ts'
 import { findUnboundWorkspaceShellTerminal } from './session-binding.ts'
 import { nowIso } from './session-history.ts'
@@ -66,7 +66,7 @@ export function makeTerminalManager(
   }
 
   async function openTerminal(request: TerminalOpenRequest): Promise<TerminalSessionSnapshot> {
-    return withWorkspaceSessionStart(request.projectId, async () => {
+    return withWorkspaceActivity(request.projectId, async () => {
       await releaseGuiRuntimeForPiSession(request)
       const sessionId = makeSessionId(request)
       const pending = openingSessions.get(sessionId)

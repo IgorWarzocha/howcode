@@ -1,7 +1,7 @@
 import { resolveWorkspaceIdentity } from '../workspace-identity.ts'
 
 type WorkspaceActivity = {
-  activeSessionStarts: number
+  activeOperations: number
   teardownInProgress: boolean
   resolveIdle: (() => void) | null
 }
@@ -32,7 +32,7 @@ async function getWorkspaceActivity(projectId: string) {
   if (current) return { key, state: current }
 
   const state: WorkspaceActivity = {
-    activeSessionStarts: 0,
+    activeOperations: 0,
     teardownInProgress: false,
     resolveIdle: null,
   }
@@ -41,25 +41,25 @@ async function getWorkspaceActivity(projectId: string) {
 }
 
 function releaseIfIdle(key: string, state: WorkspaceActivity) {
-  if (state.activeSessionStarts === 0 && !state.teardownInProgress) {
+  if (state.activeOperations === 0 && !state.teardownInProgress) {
     workspaceActivity.delete(key)
   }
 }
 
-export async function withWorkspaceSessionStart<T>(projectId: string, start: () => Promise<T>) {
+export async function withWorkspaceActivity<T>(projectId: string, operation: () => Promise<T>) {
   const { key, state } = await withWorkspaceAdmission(async () => {
     const activity = await getWorkspaceActivity(projectId)
     if (activity.state.teardownInProgress) {
       throw new Error('Workspace is being removed. Wait for removal to finish.')
     }
-    activity.state.activeSessionStarts += 1
+    activity.state.activeOperations += 1
     return activity
   })
   try {
-    return await start()
+    return await operation()
   } finally {
-    state.activeSessionStarts -= 1
-    if (state.activeSessionStarts === 0) {
+    state.activeOperations -= 1
+    if (state.activeOperations === 0) {
       state.resolveIdle?.()
       state.resolveIdle = null
     }
@@ -77,7 +77,7 @@ export async function withWorkspaceTeardown<T>(projectId: string, teardown: () =
     return activity
   })
   try {
-    if (state.activeSessionStarts > 0) {
+    if (state.activeOperations > 0) {
       await new Promise<void>((resolve) => {
         state.resolveIdle = resolve
       })
