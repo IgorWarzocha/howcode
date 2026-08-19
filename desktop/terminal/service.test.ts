@@ -11,6 +11,7 @@ class FakePtyProcess implements PtyProcess {
   readonly pid = 42
   killCount = 0
   disposeCount = 0
+  private readonly exitCallbacks = new Set<(event: PtyExitEvent) => void>()
 
   write(data: string) {
     void data
@@ -23,6 +24,7 @@ class FakePtyProcess implements PtyProcess {
 
   kill() {
     this.killCount += 1
+    for (const callback of this.exitCallbacks) callback({ exitCode: 0, signal: null })
   }
 
   onData(_callback: (data: string) => void) {
@@ -31,8 +33,10 @@ class FakePtyProcess implements PtyProcess {
     }
   }
 
-  onExit(_callback: (event: PtyExitEvent) => void) {
+  onExit(callback: (event: PtyExitEvent) => void) {
+    this.exitCallbacks.add(callback)
     return () => {
+      this.exitCallbacks.delete(callback)
       this.disposeCount += 1
     }
   }

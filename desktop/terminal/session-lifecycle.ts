@@ -37,9 +37,27 @@ export function ensureProcessStarted(
   return record.restartPromise
 }
 
+function stopTerminalProcess(processHandle: NonNullable<TerminalSessionRecord['process']>) {
+  return new Promise<void>((resolve, reject) => {
+    let unsubscribe: () => void = () => undefined
+    unsubscribe = processHandle.onExit(() => {
+      unsubscribe()
+      resolve()
+    })
+
+    try {
+      processHandle.kill()
+    } catch (error) {
+      unsubscribe()
+      reject(error)
+    }
+  })
+}
+
 async function finalizeTerminalRecord(store: TerminalSessionStore, record: TerminalSessionRecord) {
   store.deleteRecord(record)
   const restartPromise = record.restartPromise
+  const processHandle = record.process
   let cleanupError: unknown
   const captureError = (error: unknown) => {
     cleanupError ??= error
@@ -47,12 +65,8 @@ async function finalizeTerminalRecord(store: TerminalSessionStore, record: Termi
 
   await stopTuiSessionDetection(record).catch(captureError)
   clearSessionBindings(record)
-  try {
-    record.process?.kill()
-  } catch (error) {
-    captureError(error)
-  }
   record.process = null
+  await (processHandle ? stopTerminalProcess(processHandle) : Promise.resolve()).catch(captureError)
   record.restartPromise = null
   try {
     await flushSession(record)
