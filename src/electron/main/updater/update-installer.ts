@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { chmod, mkdir, readFile, rename, rm } from 'node:fs/promises'
 import path from 'node:path'
@@ -77,7 +78,7 @@ async function installUpdateBundleUnderLock(
     (await isValidInstall(paths, target))
   if (!existingCacheTrusted) {
     temporaryPaths.root = path.join(paths.cacheRoot, `.tmp-update-${Date.now()}-${process.pid}`)
-    temporaryPaths.installDir = `${paths.installDir}.partial`
+    temporaryPaths.installDir = `${paths.installDir}.partial-${process.pid}-${randomUUID()}`
     const archivePath = path.join(temporaryPaths.root, `howcode-${target.os}-${target.arch}.tar.gz`)
     await rm(temporaryPaths.root, { recursive: true, force: true })
     await rm(temporaryPaths.installDir, { recursive: true, force: true })
