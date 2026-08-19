@@ -56,8 +56,41 @@ jobs:
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
+          architecture=$(dpkg --print-architecture)
+          codename=$(. /etc/os-release && printf '%s' "$VERSION_CODENAME")
+          sources_file=$(mktemp)
+
+          case "$architecture" in
+            amd64)
+              cat >"$sources_file" <<EOF
+          deb [arch=amd64] https://archive.ubuntu.com/ubuntu $codename main universe
+          deb [arch=amd64] https://archive.ubuntu.com/ubuntu $codename-updates main universe
+          deb [arch=amd64] https://security.ubuntu.com/ubuntu $codename-security main universe
+          EOF
+              ;;
+            arm64)
+              cat >"$sources_file" <<EOF
+          deb [arch=arm64] https://ports.ubuntu.com/ubuntu-ports $codename main universe
+          deb [arch=arm64] https://ports.ubuntu.com/ubuntu-ports $codename-updates main universe
+          deb [arch=arm64] https://ports.ubuntu.com/ubuntu-ports $codename-security main universe
+          EOF
+              ;;
+            *)
+              echo "Unsupported Linux build architecture: $architecture" >&2
+              exit 1
+              ;;
+          esac
+
+          apt_options=(
+            -o "Dir::Etc::sourcelist=$sources_file"
+            -o "Dir::Etc::sourceparts=-"
+            -o "Acquire::ForceIPv4=true"
+            -o "Acquire::Retries=2"
+            -o "Acquire::https::Timeout=20"
+          )
+
+          sudo timeout 180 apt-get "${apt_options[@]}" update
+          sudo timeout 180 apt-get "${apt_options[@]}" install -y --no-install-recommends \
             build-essential \
             cmake \
             pkg-config \
