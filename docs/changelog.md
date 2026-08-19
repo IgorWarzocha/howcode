@@ -11,11 +11,15 @@
 - Launcher success now waits for the Electron window to report ready instead of trusting a detached process spawn, while staged updates preserve headless mode and launch options.
 - Moving channels publish payloads before manifests and verify every advertised archive hash.
 - Existing release manifests remain readable for this migration release; future manifests use protocol v2.
-- Hardened runtime startup and shutdown, terminal transcript persistence, process recovery, and desktop payload validation.
+- Fixed Pi TUI takeover leaving the desktop runtime on the old conversation branch. Returning to the GUI now waits for Pi to exit and immediately shows the latest turn.
+- Fixed rapid Pi settings changes overwriting one another.
+- Kept sessions inside nested worktrees visible in the project sidebar.
+- Reworked runtime, terminal, and desktop-service lifecycle ownership so startup, shutdown, process recovery, and transcript persistence do not race one another.
+- Hardened persisted and cross-process data handling so corrupt state fails visibly instead of leaking into the running app.
 - Added Pi's `max` thinking level throughout the composer and settings.
 - Updated Pi to 0.84.2, Electron to 43.4.1, better-sqlite3 to 13.0.3, Pierre Diffs to 1.3.5, React to 19.2.8, and the rest of the app/build stack.
 
-Snapshot: 21 July 2026.
+Snapshot: 19 August 2026.
 
 ### 0.1.67
 
