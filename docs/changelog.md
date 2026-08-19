@@ -16,6 +16,7 @@
 - Kept sessions inside nested worktrees visible in the project sidebar.
 - Reworked runtime, terminal, and desktop-service lifecycle ownership so startup, shutdown, process recovery, and transcript persistence do not race one another.
 - Hardened persisted and cross-process data handling so corrupt state fails visibly instead of leaking into the running app.
+- One-line reasoning summaries now stay compact instead of repeating inside an empty expandable thinking block.
 - Added Pi's `max` thinking level throughout the composer and settings.
 - Updated Pi to 0.84.2, Electron to 43.4.1, better-sqlite3 to 13.0.3, Pierre Diffs to 1.3.5, React to 19.2.8, and the rest of the app/build stack.
 

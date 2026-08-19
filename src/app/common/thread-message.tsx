@@ -184,7 +184,12 @@ function AssistantMessageBlock({
   message,
   onToggleExpanded,
 }: Omit<ThreadMessageProps, 'message'> & { message: ProseMessage }) {
-  const hasThinking = Boolean(message.thinkingContent && message.thinkingContent.length > 0)
+  const thinkingContent = message.thinkingContent ?? []
+  const hasThinking = Boolean(
+    thinkingContent.length > 0 ||
+      (message.thinkingHeaders?.length ?? 0) > 0 ||
+      message.thinkingRedacted,
+  )
   const showAssistantContent = message.content.length > 0
   const statusLabel = getAssistantStatusLabel(message)
   const statusClassName = getAssistantStatusClassName(message)
@@ -192,11 +197,12 @@ function AssistantMessageBlock({
     <div className="grid min-w-0 gap-2">
       {hasThinking ? (
         <AssistantThinkingBlock
-          thinkingContent={message.thinkingContent ?? []}
+          thinkingContent={thinkingContent}
           thinkingHeaders={message.thinkingHeaders}
           thinkingRedacted={message.thinkingRedacted}
           autoExpandThinking={autoExpandThinking}
           onToggleExpanded={onToggleExpanded}
+          interactive={thinkingContent.length > 0}
         />
       ) : null}
       {showAssistantContent ? (
