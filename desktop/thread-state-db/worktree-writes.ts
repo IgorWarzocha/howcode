@@ -105,7 +105,14 @@ export function upsertProjectWorktree(metadata: ProjectWorktreeMetadata) {
       ON CONFLICT(cwd) DO UPDATE SET
         root_cwd = excluded.root_cwd,
         branch_name = excluded.branch_name,
-        parent_branch_name = COALESCE(excluded.parent_branch_name, project_worktrees.parent_branch_name),
+        parent_branch_name = CASE
+          WHEN excluded.parent_branch_name IS NOT NULL THEN excluded.parent_branch_name
+          WHEN project_worktrees.root_cwd IS excluded.root_cwd
+            AND project_worktrees.branch_name IS excluded.branch_name
+            AND project_worktrees.source IS excluded.source
+            THEN project_worktrees.parent_branch_name
+          ELSE NULL
+        END,
         is_main = excluded.is_main,
         source = excluded.source,
         updated_at = CURRENT_TIMESTAMP

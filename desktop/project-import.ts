@@ -9,9 +9,9 @@ import {
   deleteProjectWorktreeMetadata,
   ensureProject,
   getProjectWorktree,
-  getProjectWorktreeDirectory,
   listProjects,
   listProjectThreadIds,
+  listProjectWorktreePaths,
   setProjectRepoOrigin,
   upsertProjectWorktree,
 } from './thread-state-db.ts'
@@ -90,11 +90,6 @@ export async function importProjects(projectIds: string[]) {
   }
 }
 
-function isPathInside(parentPath: string, childPath: string) {
-  const relativePath = path.relative(path.resolve(parentPath), path.resolve(childPath))
-  return relativePath.length > 0 && !relativePath.startsWith('..') && !path.isAbsolute(relativePath)
-}
-
 function removePrunableWorktreeMetadata(worktreePath: string) {
   deleteProjectWorktreeMetadata(worktreePath)
   if (listProjectThreadIds(worktreePath).length === 0) deleteProject(worktreePath)
@@ -110,10 +105,12 @@ export async function importProjectWorktrees(projectId: string) {
   if (worktrees.length === 0) return 0
 
   const rootProjectId = worktrees[0]?.path ?? projectId
-  const configuredWorktreeDir = getProjectWorktreeDirectory(rootProjectId)
-  const configuredWorktreeRoot = path.isAbsolute(configuredWorktreeDir)
-    ? path.resolve(configuredWorktreeDir)
-    : path.resolve(rootProjectId, configuredWorktreeDir)
+  const registeredWorktreePaths = new Set(worktrees.map((worktree) => path.resolve(worktree.path)))
+  for (const persistedPath of listProjectWorktreePaths(rootProjectId)) {
+    if (!registeredWorktreePaths.has(path.resolve(persistedPath))) {
+      removePrunableWorktreeMetadata(persistedPath)
+    }
+  }
   let childWorktreeCount = 0
 
   ensureProject(rootProjectId)
@@ -132,9 +129,9 @@ export async function importProjectWorktrees(projectId: string) {
     }
     ensureProject(worktree.path)
     const isMain = worktree.path === rootProjectId
-    const source = isMain
-      ? 'howcode'
-      : isPathInside(configuredWorktreeRoot, worktree.path)
+    const existingMetadata = getProjectWorktree(worktree.path)
+    const source =
+      isMain || (existingMetadata?.source === 'howcode' && existingMetadata.parentBranchName)
         ? 'howcode'
         : 'imported'
     upsertProjectWorktree({

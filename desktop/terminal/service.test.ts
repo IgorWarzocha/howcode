@@ -78,7 +78,7 @@ describe('Terminal service', () => {
   })
 
   it('waits for an in-flight spawn and kills a late PTY during scope shutdown', async () => {
-    const process = new FakePtyProcess()
+    const process = new FakePtyProcess(true)
     const spawnControl: { resolve: ((process: PtyProcess) => void) | null } = { resolve: null }
     let markSpawnStarted: (() => void) | null = null
     const spawnStarted = new Promise<void>((resolve) => {
@@ -111,7 +111,7 @@ describe('Terminal service', () => {
     spawnControl.resolve(process)
     const snapshot = await running
 
-    expect(process.killCount).toBe(1)
+    expect(process.killSignals).toEqual([undefined, 'SIGKILL'])
     rmSync(getTranscriptPath(snapshot.sessionId), { force: true })
   })
 

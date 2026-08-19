@@ -83,10 +83,7 @@ export function WorktreeMergeAction({
           rootProjectId: project.id,
           worktreePath: group.worktreePath,
         }),
-      getFailure: (result) =>
-        getDesktopBranchActionFailure(result, 'Could not merge worktree.')
-          ? 'Merge needs attention in parent branch. Start a session on the parent branch to resolve it.'
-          : null,
+      getFailure: (result) => getDesktopBranchActionFailure(result, 'Could not merge worktree.'),
     })
   }
 

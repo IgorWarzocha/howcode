@@ -1,4 +1,5 @@
 import type { TerminalOpenRequest } from '../../shared/terminal-contracts.ts'
+import { stopTerminalProcess } from './process-stop.ts'
 import {
   clampHistory,
   flushSession,
@@ -52,7 +53,7 @@ export async function startProcess(
     })
 
     if (store.get(record.snapshot.sessionId) !== record) {
-      processHandle.kill()
+      await stopTerminalProcess(processHandle, record.forceKillOnClose)
       return
     }
 

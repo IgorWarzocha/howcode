@@ -20,3 +20,14 @@ export function shouldShowGlobalActionError(action: DesktopAction) {
     action === 'workspace.merge-completed-worktrees'
   )
 }
+
+export function getActionNoticeMessage(
+  action: DesktopAction,
+  actionResult: DesktopActionResult | null,
+) {
+  if (action !== 'workspace.create-worktree' || !actionResult?.ok || actionResult.result?.error) {
+    return null
+  }
+  const message = actionResult.result?.message
+  return typeof message === 'string' && message.trim() ? message.trim() : null
+}

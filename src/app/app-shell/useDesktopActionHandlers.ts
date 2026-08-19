@@ -18,11 +18,29 @@ import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
 import type { View } from '../types'
 import { applyOptimisticDesktopAction } from './controller-optimistic-updates'
 import { runPostDesktopActionEffects } from './controller-post-action-effects'
-import { getActionErrorMessage, shouldShowGlobalActionError } from './desktop-action-error-policy'
+import {
+  getActionErrorMessage,
+  getActionNoticeMessage,
+  shouldShowGlobalActionError,
+} from './desktop-action-error-policy'
 import { prepareDesktopAction } from './desktop-action-preparation'
 import { removeFailedOptimisticComposerThread } from './sidebar-thread-sync'
 
 type ActionPayload = AnyDesktopActionPayload
+
+function publishActionFeedback(input: {
+  action: DesktopAction
+  actionResult: DesktopActionResult | null
+  showToast: (message: string) => void
+}) {
+  const errorMessage = getActionErrorMessage(input.actionResult)
+  if (errorMessage && shouldShowGlobalActionError(input.action)) {
+    input.showToast(errorMessage)
+  }
+  const noticeMessage = getActionNoticeMessage(input.action, input.actionResult)
+  if (noticeMessage) input.showToast(noticeMessage)
+  return errorMessage
+}
 
 type UseDesktopActionHandlersArgs = {
   activeView: View
@@ -133,10 +151,7 @@ export function useDesktopActionHandlers({
         queryClient,
       })
 
-      const actionErrorMessage = getActionErrorMessage(actionResult)
-      if (actionErrorMessage && shouldShowGlobalActionError(action)) {
-        showToast(actionErrorMessage)
-      }
+      const actionErrorMessage = publishActionFeedback({ action, actionResult, showToast })
 
       if (
         action === 'settings.update' &&

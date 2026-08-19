@@ -60,15 +60,17 @@ export function MergeCompletedWorktreesAction({
           worktrees,
         }),
       getFailure: (result) => {
-        if (!getDesktopBranchActionFailure(result, 'Could not merge completed worktrees.')) {
-          return null
-        }
+        const failure = getDesktopBranchActionFailure(
+          result,
+          'Could not merge completed worktrees.',
+        )
+        if (!failure) return null
         const failureLabel = getCompletedWorktreeFailureLabel(
           group,
           result?.result?.failedWorktreePath,
           result?.result?.failedWorktreeBranchName,
         )
-        return `${failureLabel} did not merge. Start a session on the parent branch to resolve it.`
+        return `${failureLabel}: ${failure}`
       },
       onSuccess: onConfirm,
     })

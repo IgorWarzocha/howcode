@@ -1,4 +1,4 @@
 - `shared/terminal-contracts.ts` and `shared/terminal-rpc.ts` own the wire API; decode before the stock-Node boundary.
 - `service.ts` owns Effect operations and scoped lifecycle; `manager.ts` is the imperative engine behind it. Session binding, TUI detection, persistence, PTY adaptation, and RPC plumbing stay focused.
-- Every live terminal record has a child scope. Its finalizer owns PTY kill, callback disposal, detection shutdown, and transcript flush.
+- Every live terminal record has a child scope. Its finalizer owns bounded PTY termination, callback disposal, detection shutdown, and transcript flush; PTYs that finish spawning after scope removal use the same termination path.
 - RPC transport carries Effect's schema-encoded messages, not decoded Effect runtime objects.

@@ -150,24 +150,19 @@ async function resolveCleanupTargets(
   targets: WorktreeActionTarget[],
   requirements: CleanupRequirements = {},
 ) {
-  const worktrees: RegisteredWorktree[] = []
-  for (const target of targets) {
-    const worktree = await resolveWorktree(projectId, target.worktreePath)
-    if ('error' in worktree) {
-      return {
-        error: worktree.error,
-        failedWorktreePath: target.worktreePath,
-      }
-    }
+  const worktrees = await resolveRegisteredWorktrees(
+    projectId,
+    targets.map((target) => target.worktreePath),
+  )
+  if ('error' in worktrees) return worktrees
 
+  for (const worktree of worktrees) {
     if (requirements.completedOnly && worktree.metadata?.completed !== true) {
       return {
         error: 'Only worktrees currently marked complete can be handled in bulk.',
         failedWorktreePath: worktree.worktreePath,
       }
     }
-
-    worktrees.push(worktree)
   }
 
   return { worktrees }
@@ -231,6 +226,7 @@ async function handlePruneBranch(payload: AnyDesktopActionPayload) {
   const resolved = await resolveRegisteredWorktrees(
     rootProjectId,
     listProjectWorktreePaths(rootProjectId),
+    { skipMissing: true },
   )
   if ('error' in resolved) return handledAction({ ...resolved, rootProjectId })
   const worktrees = resolved.filter((worktree) => {

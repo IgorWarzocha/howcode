@@ -13,10 +13,15 @@ export type RegisteredWorktree = {
   metadata: StoredProjectWorktree | null
 }
 
+type ResolveRegisteredWorktreesOptions = {
+  skipMissing?: boolean
+}
+
 export async function resolveRegisteredWorktrees(
   projectId: string,
   worktreePaths: string[],
-): Promise<RegisteredWorktree[] | { error: string }> {
+  options: ResolveRegisteredWorktreesOptions = {},
+): Promise<RegisteredWorktree[] | { error: string; failedWorktreePath?: string }> {
   const worktrees = await loadGitWorktrees(projectId).catch((error) => ({ error }))
   if ('error' in worktrees) return { error: formatGitCommandError(worktrees.error) }
 
@@ -24,14 +29,25 @@ export async function resolveRegisteredWorktrees(
   const normalizedRootProjectId = path.resolve(rootProjectId)
   const currentRootBranchName = await getBranch(rootProjectId)
   const resolved: RegisteredWorktree[] = []
+  const worktreeByPath = new Map(
+    worktrees.map((worktree) => [path.resolve(worktree.path), worktree]),
+  )
+  const normalizedWorktreePaths = new Set(
+    worktreePaths.map((worktreePath) => path.resolve(worktreePath)),
+  )
 
-  for (const worktreePath of worktreePaths) {
-    const normalizedWorktreePath = path.resolve(worktreePath)
-    const worktree = worktrees.find((entry) => path.resolve(entry.path) === normalizedWorktreePath)
+  for (const normalizedWorktreePath of normalizedWorktreePaths) {
+    const worktree = worktreeByPath.get(normalizedWorktreePath)
 
-    if (!worktree) return { error: 'Worktree is not registered with Git.' }
+    if (!worktree) {
+      if (options.skipMissing) continue
+      return {
+        error: 'Worktree is not registered with Git.',
+        failedWorktreePath: normalizedWorktreePath,
+      }
+    }
     if (path.resolve(worktree.path) === normalizedRootProjectId) {
-      return { error: 'Cannot operate on the main worktree.' }
+      return { error: 'Cannot operate on the main worktree.', failedWorktreePath: worktree.path }
     }
 
     const metadata = getProjectWorktree(worktree.path)
