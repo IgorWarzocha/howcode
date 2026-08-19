@@ -124,6 +124,7 @@
     "@aws-sdk/client-bedrock-runtime": "3.1088.0",
     "@aws-sdk/core": "^3.975.3",
     "@aws-sdk/xml-builder": "^3.972.36",
+    "lightningcss": "1.33.0",
     "uuid": "^14.0.1"
   }
 }
