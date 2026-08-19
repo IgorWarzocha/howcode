@@ -6,7 +6,6 @@ import { appToneSubtleClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import {
   type BranchThreadGroup,
-  branchGroupBelongsToBranch,
   filterBranchGroups,
   projectBlockMatchesSearch,
 } from './branch-group-model'
@@ -273,12 +272,8 @@ export function ProjectWorkSummaryBlock({
     searchQuery,
   )
   const filteredBranchGroups = filterBranchGroups(branchGroups, searchQuery)
-  const compactWorktreeGroups = filteredBranchGroups.filter(
-    (group) =>
-      (group.worktree || group.worktrees.length > 0) &&
-      !group.current &&
-      branchGroupBelongsToBranch(group, currentBranch),
-  )
+  const currentBranchWorktrees =
+    filteredBranchGroups.find((group) => group.kind === 'branch' && group.current)?.worktrees ?? []
   const searchExpanded = normalizedSearchQuery.length > 0
   const unassignedExpanded = searchExpanded || !unassignedCollapsed
 
@@ -335,7 +330,6 @@ export function ProjectWorkSummaryBlock({
           <ProjectCompactBranchGroups
             activeView={activeView}
             branchThreads={branchThreads}
-            collapsedBranchIds={collapsedBranchIds}
             currentBranch={currentBranch}
             currentBranchDirty={currentBranchDirty}
             currentBranchExpanded={
@@ -343,15 +337,13 @@ export function ProjectWorkSummaryBlock({
               !(collapsedBranchIds[`${project.id}:current-branch`] ?? false)
             }
             hideSessionCounts={hideSessionCounts}
-            normalizedSearchQuery={normalizedSearchQuery}
             project={project}
             selectedThreadId={selectedThreadId}
             terminalRunningSessionPaths={terminalRunningSessionPaths}
             unassignedExpanded={unassignedExpanded}
             unassignedThreads={unassignedThreads}
-            worktreeGroups={compactWorktreeGroups}
+            worktrees={currentBranchWorktrees}
             onAction={onAction}
-            onSetCollapsedBranchIds={onSetCollapsedBranchIds}
             onThreadOpen={onThreadOpen}
             onToggleCurrentBranch={() =>
               onSetCollapsedBranchIds((current) => ({

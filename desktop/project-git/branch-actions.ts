@@ -166,6 +166,9 @@ export async function mergeProjectBranch(projectId: string, branchName: string) 
     })
     return { didMutate: true }
   } catch (error) {
-    return { error: formatGitCommandError(error) }
+    return {
+      ...((await hasMergeInProgress(projectId)) ? { didMutate: true } : {}),
+      error: formatGitCommandError(error),
+    }
   }
 }

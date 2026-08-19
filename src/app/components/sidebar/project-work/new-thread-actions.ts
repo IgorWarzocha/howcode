@@ -14,19 +14,16 @@ export async function createThreadForBranch({
 
 export async function createThreadInWorktreeForBranch({
   branchName,
-  parentBranchName,
   onAction,
   projectId,
 }: {
   branchName: string
-  parentBranchName?: string | null | undefined
   onAction: DesktopActionInvoker
   projectId: string
 }) {
   const worktreeResult = await onAction('workspace.create-worktree', {
-    projectId,
+    rootProjectId: projectId,
     branchName,
-    parentBranchName,
   })
   const worktreeError = worktreeResult?.result?.error
   if (!worktreeResult?.ok || worktreeError || !worktreeResult.result?.projectId) {
@@ -49,8 +46,8 @@ export async function createThreadInWorktreeForBranch({
     return {
       error:
         typeof threadError === 'string' && threadError.trim().length > 0
-          ? threadError
-          : 'Could not start thread.',
+          ? `Worktree created, but could not start a session: ${threadError}`
+          : 'Worktree created, but could not start a session.',
     }
   }
   return { didMutate: true }

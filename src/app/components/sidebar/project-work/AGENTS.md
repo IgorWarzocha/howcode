@@ -1,5 +1,6 @@
 - Compact and expanded layouts both compose `branch-thread-group-section.tsx`; keep branch-row behavior there, nested worktree rows in `worktree-group-section.tsx`, and layout-specific grouping in their composition files.
 - Keep sidebar derivation in its owned model: `project-scope-model.ts`, `project-git-model.ts`, `project-thread-model.ts`, or `branch-group-model.ts`; do not recreate a catch-all project-work model.
+- Keep branch, worktree, and unassigned rows as discriminated `BranchThreadGroup` variants; do not restore boolean kind flags or optional worktree identity.
 - `branch-action-capabilities.ts` owns branch-row action policy; confirmations and failures stay row-local rather than drilling state IDs through project containers.
 - `useBranchActionExecution.ts` owns branch-action pending/failure transitions; action-family modules own only their request and user-facing failure translation.
 - `useProjectScopeController.ts` owns project selector state and persistence; keep Git queries and thread loading in their dedicated hooks.

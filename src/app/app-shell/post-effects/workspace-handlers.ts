@@ -33,6 +33,7 @@ export const workspacePostEffectHandlers: PostEffectHandler[] = [
       if (mutationFailedWithoutChanges(ctx)) return
       return applySwitchBranchPostEffect({
         contextualPayload: ctx.contextualPayload,
+        actionResult: ctx.actionResult,
         queryClient: ctx.queryClient,
         loadProjectGitState: ctx.loadProjectGitState,
         loadProjectThreads: ctx.loadProjectThreads,
@@ -45,7 +46,6 @@ export const workspacePostEffectHandlers: PostEffectHandler[] = [
     run: (ctx) => {
       if (mutationFailedWithoutChanges(ctx)) return
       return applyCreateWorktreePostEffect({
-        contextualPayload: ctx.contextualPayload,
         actionResult: ctx.actionResult,
         queryClient: ctx.queryClient,
         loadProjectGitState: ctx.loadProjectGitState,
@@ -79,7 +79,6 @@ export const workspacePostEffectHandlers: PostEffectHandler[] = [
     run: (ctx) => {
       if (mutationFailedWithoutChanges(ctx)) return
       return applyRemoveWorktreePostEffect({
-        contextualPayload: ctx.contextualPayload,
         actionResult: ctx.actionResult,
         queryClient: ctx.queryClient,
         loadProjectGitState: ctx.loadProjectGitState,

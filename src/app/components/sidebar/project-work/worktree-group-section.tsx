@@ -37,15 +37,16 @@ export function WorktreeGroupSection({
     label: worktree.label,
     threads: worktree.threads,
     worktrees: [],
-    current: false,
-    unassigned: false,
-    worktree: true,
-    worktreeComplete: worktree.complete,
+    kind: 'worktree',
+    worktreeComplete: Boolean(worktree.complete),
     worktreePath: worktree.path,
     worktreeBranchName: worktree.branchName ?? null,
   }
   const actionCapabilities = getBranchActionCapabilities(worktreeGroup, {
     canPrune: worktreeHasBranch,
+    canMergeWorktree:
+      worktreeHasBranch &&
+      (!worktree.parentBranchName || worktree.parentBranchName === currentBranch),
   })
 
   return (

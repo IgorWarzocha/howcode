@@ -7,4 +7,5 @@
 - Keep package/skill lookup caches bounded with Effect `Cache`; transient lookup failures are not cache entries.
 - Decode Pi session JSONL through `pi-threads/session-entry-schema.ts`; terminal transcript writes remain asynchronous, ordered, and awaited during scoped cleanup.
 - Validate artifact/chat/thread query rows before mapping. Legacy Git checkpoint cleanup is a background migration and must never block schema initialization.
+- Resolve destructive worktree identity from Git plus persisted metadata; renderer payloads provide paths and intent, never branch names to merge or prune. A managed worktree merges only while its recorded parent branch is checked out.
 - `artifact-compiler.ts` resolves allowed React imports from Howcode's runtime; artifacts otherwise remain self-contained.

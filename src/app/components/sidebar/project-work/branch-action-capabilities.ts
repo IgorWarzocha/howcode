@@ -13,17 +13,11 @@ export type BranchActionCapabilities = {
 }
 
 function hasCompletedWorktrees(group: BranchThreadGroup) {
-  return (
-    (group.completedWorktrees?.length ?? 0) > 0 ||
-    group.worktrees.some((worktree) => worktree.complete)
-  )
+  return group.worktrees.some((worktree) => worktree.complete)
 }
 
 function hasMergeableCompletedWorktrees(group: BranchThreadGroup) {
-  return (
-    (group.completedWorktrees?.some((worktree) => Boolean(worktree.branchName)) ?? false) ||
-    group.worktrees.some((worktree) => worktree.complete && Boolean(worktree.branchName))
-  )
+  return group.worktrees.some((worktree) => worktree.complete && Boolean(worktree.branchName))
 }
 
 export function getBranchActionCapabilities(
@@ -32,12 +26,12 @@ export function getBranchActionCapabilities(
 ): BranchActionCapabilities {
   return {
     canStartThread: true,
-    canPrune: !group.unassigned,
-    canSwitch: !(group.current || group.unassigned || group.worktree),
-    canToggleWorktreeComplete: group.worktree,
-    canMergeWorktree: group.worktree && Boolean(group.worktreeBranchName),
-    canMergeCompletedWorktrees: !group.worktree && hasMergeableCompletedWorktrees(group),
-    canRemoveCompletedWorktrees: !group.worktree && hasCompletedWorktrees(group),
+    canPrune: group.kind !== 'unassigned',
+    canSwitch: group.kind === 'branch' && !group.current,
+    canToggleWorktreeComplete: group.kind === 'worktree',
+    canMergeWorktree: group.kind === 'worktree' && Boolean(group.worktreeBranchName),
+    canMergeCompletedWorktrees: group.kind !== 'worktree' && hasMergeableCompletedWorktrees(group),
+    canRemoveCompletedWorktrees: group.kind !== 'worktree' && hasCompletedWorktrees(group),
     canCreateWorktree: canCreateWorktreeFromBranchGroup(group),
     ...overrides,
   }

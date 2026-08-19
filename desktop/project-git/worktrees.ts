@@ -1,4 +1,4 @@
-import { access } from 'node:fs/promises'
+import { access, appendFile, mkdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { normalizeGitBranchName } from './branch-name.ts'
 import { formatGitCommandError, getNonInteractiveGitEnv, runGitWithOptions } from './git-runner.ts'
@@ -157,6 +157,33 @@ function resolveWorktreeParent(rootProjectId: string, worktreeDirectory: string)
     : path.resolve(rootProjectId, worktreeDirectory)
 }
 
+async function ensureWorktreeParentIgnored(rootProjectId: string, worktreeParent: string) {
+  const relativeParent = path.relative(path.resolve(rootProjectId), path.resolve(worktreeParent))
+  if (!relativeParent || relativeParent.startsWith('..') || path.isAbsolute(relativeParent)) {
+    return
+  }
+
+  const { stdout } = await runGitWithOptions(
+    rootProjectId,
+    ['rev-parse', '--git-path', 'info/exclude'],
+    { timeout: 10_000, maxBuffer: 1024 * 128 },
+  )
+  const rawExcludePath = stdout.trim()
+  if (!rawExcludePath) return
+  const excludePath = path.isAbsolute(rawExcludePath)
+    ? rawExcludePath
+    : path.resolve(rootProjectId, rawExcludePath)
+  const ignorePattern = `/${relativeParent.split(path.sep).join('/')}/`
+  const existing = await readFile(excludePath, 'utf8').catch(() => '')
+  if (existing.split('\n').some((line) => line.trim() === ignorePattern)) return
+
+  await mkdir(path.dirname(excludePath), { recursive: true })
+  await appendFile(
+    excludePath,
+    `${existing && !existing.endsWith('\n') ? '\n' : ''}${ignorePattern}\n`,
+  )
+}
+
 export async function createProjectWorktree(input: {
   projectId: string
   branchName: string
@@ -171,15 +198,14 @@ export async function createProjectWorktree(input: {
   try {
     const mainWorktree = await resolveMainWorktree(input.projectId)
     const rootProjectId = mainWorktree?.path ?? input.projectId
-    const worktreePath = await resolveAvailableWorktreePath(
-      resolveWorktreeParent(rootProjectId, input.worktreeDirectory),
-      folderName,
-    )
+    const worktreeParent = resolveWorktreeParent(rootProjectId, input.worktreeDirectory)
+    const worktreePath = await resolveAvailableWorktreePath(worktreeParent, folderName)
 
     await runGitWithOptions(input.projectId, ['check-ref-format', '--branch', branchName], {
       timeout: 10_000,
       maxBuffer: 1024 * 1024,
     })
+    await ensureWorktreeParentIgnored(rootProjectId, worktreeParent)
 
     const localBranchExists = await hasLocalBranch(input.projectId, branchName)
     const remoteBranchBase = localBranchExists

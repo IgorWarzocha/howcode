@@ -18,8 +18,8 @@ export function WorktreeCompletionAction({
   onAction: DesktopActionInvoker
 }) {
   const execution = useBranchActionExecution()
-  if (!group.worktreePath) return null
-  const complete = Boolean(group.worktreeComplete)
+  if (group.kind !== 'worktree') return null
+  const complete = group.worktreeComplete
   const action = complete
     ? 'workspace.mark-worktree-incomplete'
     : 'workspace.mark-worktree-complete'
@@ -29,8 +29,8 @@ export function WorktreeCompletionAction({
     await execution.run({
       execute: () =>
         onAction(action, {
-          projectId: project.id,
-          worktreePath: group.worktreePath ?? '',
+          rootProjectId: project.id,
+          worktreePath: group.worktreePath,
         }),
       getFailure: (result) =>
         getDesktopBranchActionFailure(result, 'Could not update worktree completion.'),
@@ -72,7 +72,7 @@ export function WorktreeMergeAction({
 }) {
   const execution = useBranchActionExecution()
   const [confirming, setConfirming] = useState(false)
-  if (!group.worktreePath) return null
+  if (group.kind !== 'worktree') return null
 
   const mergeWorktree = async () => {
     setConfirming(false)
@@ -80,9 +80,8 @@ export function WorktreeMergeAction({
     await execution.run({
       execute: () =>
         onAction('workspace.merge-worktree', {
-          projectId: project.id,
-          branchName: group.worktreeBranchName ?? group.label,
-          worktreePath: group.worktreePath ?? '',
+          rootProjectId: project.id,
+          worktreePath: group.worktreePath,
         }),
       getFailure: (result) =>
         getDesktopBranchActionFailure(result, 'Could not merge worktree.')
@@ -92,8 +91,8 @@ export function WorktreeMergeAction({
   }
 
   const tooltipContent = execution.pending
-    ? 'Merging worktree into parent branch…'
-    : 'Merge worktree into parent branch'
+    ? 'Merging worktree into current branch…'
+    : 'Merge worktree into current branch'
   const actionButton = (
     <button
       type="button"
@@ -105,7 +104,7 @@ export function WorktreeMergeAction({
         execution.clearWarning()
         setConfirming(true)
       }}
-      aria-label={`Merge ${group.label} worktree into parent branch`}
+      aria-label={`Merge ${group.label} worktree into current branch`}
     >
       {execution.pending ? (
         <ActivitySpinner className="h-3 w-3 text-current" />
@@ -120,7 +119,7 @@ export function WorktreeMergeAction({
       <SidebarInlineConfirmPopunder
         open={confirming}
         trigger={actionButton}
-        confirmAriaLabel={`Confirm merge ${group.label} worktree into parent branch`}
+        confirmAriaLabel={`Confirm merge ${group.label} worktree into current branch`}
         confirmIcon={<GitMerge size={12} />}
         onCancel={() => setConfirming(false)}
         onConfirm={() => void mergeWorktree()}

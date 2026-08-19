@@ -147,7 +147,6 @@ export function NewThreadMenu({
     try {
       const result = await createThreadInWorktreeForBranch({
         branchName,
-        parentBranchName: currentBranch,
         onAction,
         projectId,
       })

@@ -40,6 +40,10 @@ export function getProjectId(payload: DesktopActionPayloadInput) {
   return typeof payload.projectId === 'string' ? payload.projectId : null
 }
 
+export function getRootProjectId(payload: DesktopActionPayloadInput) {
+  return typeof payload.rootProjectId === 'string' ? payload.rootProjectId : null
+}
+
 export function getProjectFileWriteRequest(
   payload: DesktopActionPayloadInput,
 ): ProjectFileWriteRequest | null {
@@ -84,12 +88,6 @@ export function getBranchName(payload: DesktopActionPayloadInput) {
   return branchName.length > 0 ? branchName : null
 }
 
-export function getParentBranchName(payload: DesktopActionPayloadInput) {
-  const branchName =
-    typeof payload.parentBranchName === 'string' ? payload.parentBranchName.trim() : ''
-  return branchName.length > 0 ? branchName : null
-}
-
 export function getWorktreeDirectory(payload: DesktopActionPayloadInput) {
   const worktreeDirectory =
     typeof payload.worktreeDirectory === 'string' ? payload.worktreeDirectory.trim() : ''
@@ -103,7 +101,6 @@ export function getWorktreePath(payload: DesktopActionPayloadInput) {
 
 export type WorktreeActionTarget = {
   worktreePath: string
-  branchName: string | null
 }
 
 export function getWorktreeActionTargets(
@@ -113,12 +110,11 @@ export function getWorktreeActionTargets(
 
   return payload.worktrees.flatMap((target): WorktreeActionTarget[] => {
     if (typeof target !== 'object' || target === null) return []
-    const candidate = target as { worktreePath?: unknown; branchName?: unknown }
+    const candidate = target as { worktreePath?: unknown }
     const worktreePath =
       typeof candidate.worktreePath === 'string' ? candidate.worktreePath.trim() : ''
     if (!worktreePath) return []
-    const branchName = typeof candidate.branchName === 'string' ? candidate.branchName.trim() : ''
-    return [{ worktreePath, branchName: branchName || null }]
+    return [{ worktreePath }]
   })
 }
 

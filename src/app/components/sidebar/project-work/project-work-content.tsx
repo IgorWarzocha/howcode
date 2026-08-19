@@ -326,7 +326,7 @@ export function SingleProjectWorkContent({
               {branchGroups.map((group, index) => {
                 const groupKey = `${project.id}:${group.id}`
                 const defaultCollapsed = !(
-                  group.current ||
+                  (group.kind === 'branch' && group.current) ||
                   group.id === selectedGroupId ||
                   group.worktrees.length > 0
                 )

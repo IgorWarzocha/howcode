@@ -11,6 +11,62 @@ export type ProjectWorktreeMetadata = {
   source: ProjectWorktreeSource
 }
 
+export type StoredProjectWorktree = ProjectWorktreeMetadata & {
+  completed: boolean
+}
+
+export function getProjectWorktree(cwd: string): StoredProjectWorktree | null {
+  const row = getThreadStateDatabase()
+    .prepare(
+      `
+        SELECT
+          cwd,
+          root_cwd AS rootCwd,
+          branch_name AS branchName,
+          parent_branch_name AS parentBranchName,
+          is_main AS isMain,
+          source,
+          completed
+        FROM project_worktrees
+        WHERE cwd = ?
+      `,
+    )
+    .get(cwd) as
+    | {
+        cwd?: unknown
+        rootCwd?: unknown
+        branchName?: unknown
+        parentBranchName?: unknown
+        isMain?: unknown
+        source?: unknown
+        completed?: unknown
+      }
+    | undefined
+
+  if (!row) return null
+  if (
+    typeof row.cwd !== 'string' ||
+    typeof row.rootCwd !== 'string' ||
+    !(row.branchName === null || typeof row.branchName === 'string') ||
+    !(row.parentBranchName === null || typeof row.parentBranchName === 'string') ||
+    typeof row.isMain !== 'number' ||
+    (row.source !== 'howcode' && row.source !== 'imported') ||
+    typeof row.completed !== 'number'
+  ) {
+    throw new Error(`Invalid persisted worktree metadata for ${cwd}.`)
+  }
+
+  return {
+    cwd: row.cwd,
+    rootCwd: row.rootCwd,
+    branchName: row.branchName,
+    parentBranchName: row.parentBranchName,
+    isMain: row.isMain !== 0,
+    source: row.source,
+    completed: row.completed !== 0,
+  }
+}
+
 export function getProjectWorktreeDirectory(rootCwd: string) {
   const db = getThreadStateDatabase()
   const row = db

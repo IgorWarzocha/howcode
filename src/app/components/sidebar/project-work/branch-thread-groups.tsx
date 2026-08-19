@@ -43,7 +43,10 @@ export function ProjectExpandedBranchGroups({
       {branchGroups.map((group, index) => {
         const groupKey = `${project.id}:${group.id}`
         const hasNextGroup = index < branchGroups.length - 1
-        const defaultCollapsed = !(group.current || group.worktrees.length > 0)
+        const defaultCollapsed = !(
+          (group.kind === 'branch' && group.current) ||
+          group.worktrees.length > 0
+        )
         const collapsed = normalizedSearchQuery
           ? false
           : (collapsedBranchIds[groupKey] ?? defaultCollapsed)

@@ -8,6 +8,7 @@ import {
   deleteProject,
   deleteProjectWorktreeMetadata,
   ensureProject,
+  getProjectWorktree,
   getProjectWorktreeDirectory,
   listProjects,
   listProjectThreadIds,
@@ -150,6 +151,11 @@ export async function importProjectWorktrees(projectId: string) {
 }
 
 export async function importProjectWorktreesForProjectIds(projectIds: Iterable<string>) {
-  const counts = await Promise.all([...new Set(projectIds)].map(importProjectWorktrees))
+  const rootProjectIds = new Set(
+    [...new Set(projectIds)].map(
+      (projectId) => getProjectWorktree(projectId)?.rootCwd ?? projectId,
+    ),
+  )
+  const counts = await Promise.all([...rootProjectIds].map(importProjectWorktrees))
   return counts.reduce((total, count) => total + count, 0)
 }

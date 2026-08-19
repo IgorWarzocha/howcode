@@ -23,9 +23,9 @@ import { getDesktopBranchActionFailure, useBranchActionExecution } from './useBr
 import { useProjectWorkRowMenu } from './useProjectWorkRowMenu'
 
 function getStartThreadBranchName(group: BranchThreadGroup, currentBranch: string | null) {
+  if (group.kind === 'unassigned') return null
+  if (group.kind === 'worktree') return group.worktreeBranchName
   if (group.current) return currentBranch
-  if (group.unassigned) return null
-  if (group.worktree) return group.worktreeBranchName ?? null
   return group.label
 }
 
@@ -126,7 +126,6 @@ function BranchWorktreeCreateAction({
       execute: () =>
         createThreadInWorktreeForBranch({
           branchName,
-          parentBranchName,
           onAction,
           projectId: project.id,
         }),
@@ -196,16 +195,15 @@ function BranchStartThreadAction({
   project: Project
   onAction: DesktopActionInvoker
 }) {
-  const targetProjectId = group.worktreePath ?? project.id
+  const targetProjectId = group.kind === 'worktree' ? group.worktreePath : project.id
   const execution = useBranchActionExecution()
   const startThread = async () => {
     execution.clearWarning()
-    if (!(group.current || group.worktree || group.unassigned)) {
+    if (group.kind === 'branch' && !group.current) {
       await execution.run({
         execute: () =>
           createThreadInWorktreeForBranch({
             branchName: group.label,
-            parentBranchName: currentBranch,
             onAction,
             projectId: project.id,
           }),
@@ -226,13 +224,14 @@ function BranchStartThreadAction({
     })
   }
 
-  const label = group.worktree
-    ? `Start thread in ${group.label}`
-    : group.current
-      ? `Start thread on ${currentBranch ?? group.label}`
-      : group.unassigned
+  const label =
+    group.kind === 'worktree'
+      ? `Start thread in ${group.label}`
+      : group.kind === 'unassigned'
         ? 'Start unassigned thread'
-        : `Start thread in ${group.label} worktree`
+        : group.current
+          ? `Start thread on ${currentBranch ?? group.label}`
+          : `Start thread in ${group.label} worktree`
   const tooltipContent = canSwitch ? `Start thread in ${group.label} worktree` : label
   const warning = execution.warning ?? (blocked ? 'Worktree is dirty. Commit first.' : null)
 

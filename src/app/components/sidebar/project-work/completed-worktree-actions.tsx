@@ -11,12 +11,9 @@ function getCompletedWorktreeTargets(
   group: BranchThreadGroup,
   options: { requireBranch?: boolean } = {},
 ) {
-  const completedWorktrees =
-    group.completedWorktrees ?? group.worktrees.filter((worktree) => worktree.complete)
+  const completedWorktrees = group.worktrees.filter((worktree) => worktree.complete)
   return completedWorktrees.flatMap((worktree) =>
-    !options.requireBranch || worktree.branchName
-      ? [{ worktreePath: worktree.path, branchName: worktree.branchName ?? null }]
-      : [],
+    !options.requireBranch || worktree.branchName ? [{ worktreePath: worktree.path }] : [],
   )
 }
 
@@ -25,8 +22,7 @@ function getCompletedWorktreeFailureLabel(
   failedWorktreePath: string | undefined,
   failedWorktreeBranchName: string | null | undefined,
 ) {
-  const completedWorktrees =
-    group.completedWorktrees ?? group.worktrees.filter((worktree) => worktree.complete)
+  const completedWorktrees = group.worktrees.filter((worktree) => worktree.complete)
   const failedWorktree = completedWorktrees.find((worktree) => worktree.path === failedWorktreePath)
   return failedWorktree?.label ?? failedWorktreeBranchName ?? failedWorktreePath ?? 'a worktree'
 }
@@ -60,7 +56,7 @@ export function MergeCompletedWorktreesAction({
     await execution.run({
       execute: () =>
         onAction('workspace.merge-completed-worktrees', {
-          projectId: project.id,
+          rootProjectId: project.id,
           worktrees,
         }),
       getFailure: (result) => {
@@ -141,7 +137,7 @@ export function RemoveCompletedWorktreesAction({
     await execution.run({
       execute: () =>
         onAction('workspace.remove-completed-worktrees', {
-          projectId: project.id,
+          rootProjectId: project.id,
           worktrees,
         }),
       getFailure: (result) =>

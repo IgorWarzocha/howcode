@@ -20,10 +20,10 @@ import { WorktreeGroupSection } from './worktree-group-section'
 const dirtyBranchSwitchMessage = 'Worktree is dirty. Commit first.'
 
 function BranchHeadingIcon({ group }: { group: BranchThreadGroup }) {
-  if (group.unassigned) {
+  if (group.kind === 'unassigned') {
     return <CircleOff size={13} className="sidebar-project-work-unassigned-icon" />
   }
-  if (group.worktree) {
+  if (group.kind === 'worktree') {
     return <WorktreeSmallIcon size={13} className="sidebar-project-work-branch-icon" />
   }
   return <GitBranch size={13} className="sidebar-project-work-branch-icon" />
@@ -47,8 +47,8 @@ function BranchHeadingRow({ children, unassigned }: { children: ReactNode; unass
 }
 
 function getThreadAssignBranchForGroup(group: BranchThreadGroup, currentBranch: string | null) {
-  if (!group.worktree) return currentBranch
-  return group.worktreeBranchName ?? null
+  if (group.kind !== 'worktree') return currentBranch
+  return group.worktreeBranchName
 }
 
 function getBranchGroupDividerState(input: {
@@ -66,7 +66,7 @@ function getBranchGroupDividerState(input: {
 function getBranchGroupVisibilityState(group: BranchThreadGroup) {
   const canToggleThreads = group.threads.length > 0
   const hasWorktrees = group.worktrees.length > 0
-  const emptySwitchableBranch = !(group.current || group.unassigned || group.worktree)
+  const emptySwitchableBranch = group.kind === 'branch' && !group.current
   const showEmptyBranchPrompt = !(canToggleThreads || hasWorktrees) && emptySwitchableBranch
   return {
     canToggleGroup: canToggleThreads || hasWorktrees || emptySwitchableBranch,
@@ -183,7 +183,7 @@ export function BranchThreadGroupSection({
     ...actionCapabilityOverrides,
   })
   const branchSwitchBlocked = actionCapabilities.canSwitch && currentBranchDirty
-  const threadProject = group.worktreePath ? { ...project, id: group.worktreePath } : project
+  const threadProject = group.kind === 'worktree' ? { ...project, id: group.worktreePath } : project
   const threadAssignBranch = getThreadAssignBranchForGroup(group, currentBranch)
   const dividerState = getBranchGroupDividerState({
     collapsed,
@@ -194,12 +194,17 @@ export function BranchThreadGroupSection({
   return (
     <section
       className="sidebar-project-work-branch-group"
-      data-branch-group-kind="branch"
-      data-current={group.current || (group.worktree && !group.worktreeComplete) ? 'true' : 'false'}
+      data-branch-group-kind={group.kind}
+      data-current={
+        (group.kind === 'branch' && group.current) ||
+        (group.kind === 'worktree' && !group.worktreeComplete)
+          ? 'true'
+          : 'false'
+      }
       data-divider-after={dividerState.after}
       data-divider-before={dividerState.before}
     >
-      <BranchHeadingRow unassigned={group.unassigned}>
+      <BranchHeadingRow unassigned={group.kind === 'unassigned'}>
         <button
           type="button"
           className="sidebar-icon-action sidebar-icon-action--xs sidebar-icon-action--no-hover sidebar-project-work-branch-disclosure"
@@ -220,7 +225,7 @@ export function BranchThreadGroupSection({
           <span className="truncate">{group.label}</span>
         </button>
         <span className="sidebar-project-work-branch-meta">
-          {group.current ? (
+          {group.kind === 'branch' && group.current ? (
             <span className="sidebar-project-work-branch-current">Current</span>
           ) : null}
           <BranchSessionCount count={group.threads.length} hidden={hideSessionCounts} />

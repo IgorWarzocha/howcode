@@ -90,7 +90,7 @@ const ProjectWorkActionsMenu = forwardRef<
   const saveWorktreeDirectory = () => {
     const worktreeDirectory = worktreeDirDraft.trim() || './.worktrees'
     void onAction('workspace.set-worktree-directory', {
-      projectId: project.worktree?.rootProjectId ?? project.id,
+      rootProjectId: project.worktree?.rootProjectId ?? project.id,
       worktreeDirectory,
     })
     setEditingWorktreeDir(false)

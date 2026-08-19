@@ -74,12 +74,12 @@ export function BranchPruneAction({
   onRequestConfirm: () => void
 }) {
   const execution = useBranchActionExecution()
-  const worktreesToRemove = group.worktreePath
-    ? []
-    : [...group.worktrees, ...(group.completedWorktrees ?? [])].map((worktree) => ({
-        worktreePath: worktree.path,
-        branchName: worktree.branchName ?? null,
-      }))
+  const worktreesToRemove =
+    group.kind === 'worktree'
+      ? []
+      : group.worktrees.map((worktree) => ({
+          worktreePath: worktree.path,
+        }))
   const actionTooltip =
     worktreesToRemove.length > 0
       ? `Remove ${group.label} and associated worktrees`
@@ -88,14 +88,13 @@ export function BranchPruneAction({
     onCancel()
     await execution.run({
       execute: () =>
-        group.worktreePath
+        group.kind === 'worktree'
           ? onAction('workspace.remove-worktree', {
-              projectId: project.id,
+              rootProjectId: project.id,
               worktreePath: group.worktreePath,
-              branchName: group.worktreeBranchName ?? null,
             })
           : onAction('workspace.prune-branch', {
-              projectId: project.id,
+              rootProjectId: project.id,
               branchName: group.label,
               worktrees: worktreesToRemove,
             }),

@@ -4,7 +4,8 @@ import { hasDesktopBridgeQuery } from '../query/desktop-query'
 export type ActionPayload = AnyDesktopActionPayload
 
 export function getPayloadProjectId(payload: ActionPayload) {
-  return typeof payload.projectId === 'string' ? payload.projectId : null
+  if (typeof payload.projectId === 'string') return payload.projectId
+  return typeof payload.rootProjectId === 'string' ? payload.rootProjectId : null
 }
 
 export function getPayloadThreadId(payload: ActionPayload) {

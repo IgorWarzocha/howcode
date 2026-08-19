@@ -1,5 +1,12 @@
+import { execFile } from 'node:child_process'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import { promisify } from 'node:util'
 import { describe, expect, it } from 'vitest'
-import { parseGitWorktreePorcelain } from './worktrees.ts'
+import { createProjectWorktree, parseGitWorktreePorcelain } from './worktrees.ts'
+
+const execFileAsync = promisify(execFile)
 
 describe('parseGitWorktreePorcelain', () => {
   it('parses main, branch, and detached worktrees', () => {
@@ -45,5 +52,35 @@ prunable gitdir file points to non-existent location
         prunable: true,
       },
     ])
+  })
+})
+
+describe('createProjectWorktree', () => {
+  it('keeps an in-repository worktree directory out of parent status', async () => {
+    const projectId = await mkdtemp(path.join(tmpdir(), 'howcode-worktree-'))
+    const git = (...args: string[]) => execFileAsync('git', args, { cwd: projectId })
+
+    try {
+      await git('init', '-b', 'main', '--quiet')
+      await git('config', 'user.name', 'Howcode Test')
+      await git('config', 'user.email', 'howcode-test@example.invalid')
+      await writeFile(path.join(projectId, 'vouched.md'), 'base\n')
+      await git('add', 'vouched.md')
+      await git('commit', '--quiet', '-m', 'base')
+
+      const result = await createProjectWorktree({
+        projectId,
+        branchName: 'feature/test',
+        worktreeDirectory: './.worktrees',
+      })
+
+      expect(result).not.toHaveProperty('error')
+      await expect(git('status', '--porcelain')).resolves.toMatchObject({ stdout: '' })
+      await expect(readFile(path.join(projectId, '.git/info/exclude'), 'utf8')).resolves.toContain(
+        '/.worktrees/',
+      )
+    } finally {
+      await rm(projectId, { recursive: true, force: true })
+    }
   })
 })
