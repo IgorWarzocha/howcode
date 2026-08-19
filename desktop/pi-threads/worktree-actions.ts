@@ -8,7 +8,7 @@ import {
   getWorktreePath,
   type WorktreeActionTarget,
 } from '../../shared/pi-thread-action-payloads.ts'
-import { getBranch } from '../project-git/project-state.ts'
+import { getActiveBranch } from '../project-git/project-state.ts'
 import { createProjectWorktree, getMainWorktreePath, pruneProjectBranch } from '../project-git.ts'
 import {
   type RegisteredWorktree,
@@ -55,7 +55,7 @@ async function handleCreateWorktree(payload: AnyDesktopActionPayload) {
   const rootProjectId = await getMainWorktreePath(projectId)
   const worktreeDirectory =
     getWorktreeDirectory(payload) ?? getProjectWorktreeDirectory(rootProjectId)
-  const parentBranchName = await getBranch(rootProjectId)
+  const parentBranchName = await getActiveBranch(rootProjectId)
   if (!parentBranchName) {
     return handledAction({ error: 'Switch the parent worktree to a branch before creating one.' })
   }

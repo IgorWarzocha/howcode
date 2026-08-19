@@ -8,11 +8,13 @@ import type {
   ProseMessage,
   ThreadData,
 } from '../shared/desktop-contracts.ts'
+import { getDesktopWorkingDirectory } from '../shared/desktop-working-directory.ts'
 import { getPersistedSessionPath } from '../shared/session-paths.ts'
 import { getLatestInboxAssistantMessage } from '../shared/thread-inbox.ts'
 import { loadAppSettings } from './app-settings/readers.ts'
 import { getChatSessionDir } from './chat-session-dir.ts'
 import { isChatSessionPath, upsertChatThread } from './chat-state-db.ts'
+import { withWorkspaceSessionStart } from './project-worktrees/workspace-teardown-gate.ts'
 import { subscribeDesktopEvents as subscribeLocalDesktopEvents } from './runtime/desktop-events.ts'
 import {
   getLiveThread,
@@ -248,7 +250,10 @@ export function sendComposerPrompt(
     streamingBehavior?: ComposerStreamingBehavior | null
   },
 ) {
-  return invokeRuntimeHost('sendComposerPrompt', withComposerModeSettings(request))
+  const preparedRequest = withComposerModeSettings(request)
+  return withWorkspaceSessionStart(preparedRequest.projectId ?? getDesktopWorkingDirectory(), () =>
+    invokeRuntimeHost('sendComposerPrompt', preparedRequest),
+  )
 }
 
 export function stopComposerRun(request = {}) {
@@ -288,7 +293,10 @@ export function dequeueComposerPrompt(
     queueMode: Exclude<ComposerStreamingBehavior, 'stop'>
   },
 ) {
-  return invokeRuntimeHost('dequeueComposerPrompt', withComposerModeSettings(request))
+  const preparedRequest = withComposerModeSettings(request)
+  return withWorkspaceSessionStart(preparedRequest.projectId ?? getDesktopWorkingDirectory(), () =>
+    invokeRuntimeHost('dequeueComposerPrompt', preparedRequest),
+  )
 }
 
 export function answerPiExtensionDialog(

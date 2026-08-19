@@ -10,6 +10,7 @@ import type {
   TerminalSessionSnapshot,
   TerminalStatusSnapshot,
 } from '../../shared/terminal-contracts.ts'
+import { withWorkspaceSessionStart } from '../project-worktrees/workspace-teardown-gate.ts'
 import { releaseGuiRuntimeForPiSession } from './pi-session-runtime-handoff.ts'
 import { findUnboundWorkspaceShellTerminal } from './session-binding.ts'
 import { nowIso } from './session-history.ts'
@@ -65,18 +66,20 @@ export function makeTerminalManager(
   }
 
   async function openTerminal(request: TerminalOpenRequest): Promise<TerminalSessionSnapshot> {
-    await releaseGuiRuntimeForPiSession(request)
-    const sessionId = makeSessionId(request)
-    const pending = openingSessions.get(sessionId)
-    if (pending) return pending
+    return withWorkspaceSessionStart(request.projectId, async () => {
+      await releaseGuiRuntimeForPiSession(request)
+      const sessionId = makeSessionId(request)
+      const pending = openingSessions.get(sessionId)
+      if (pending) return pending
 
-    const opening = openUnreservedTerminal(request, sessionId)
-    openingSessions.set(sessionId, opening)
-    try {
-      return await opening
-    } finally {
-      if (openingSessions.get(sessionId) === opening) openingSessions.delete(sessionId)
-    }
+      const opening = openUnreservedTerminal(request, sessionId)
+      openingSessions.set(sessionId, opening)
+      try {
+        return await opening
+      } finally {
+        if (openingSessions.get(sessionId) === opening) openingSessions.delete(sessionId)
+      }
+    })
   }
 
   async function writeTerminal(sessionId: string, data: string) {

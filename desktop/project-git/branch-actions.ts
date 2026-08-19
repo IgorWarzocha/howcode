@@ -120,6 +120,7 @@ export async function switchProjectBranch(projectId: string, branchName: string)
 export async function pruneProjectBranch(projectId: string, branchName: string) {
   const normalizedBranchName = branchName.trim()
   if (!normalizedBranchName) return { error: 'Branch name is required.' }
+  let didSwitchBranch = false
 
   try {
     const currentBranchResult = await runGitWithOptions(projectId, ['branch', '--show-current'], {
@@ -136,6 +137,7 @@ export async function pruneProjectBranch(projectId: string, branchName: string) 
         timeout: 10_000,
         maxBuffer: 1024 * 1024,
       })
+      didSwitchBranch = true
     }
 
     await runGitWithOptions(projectId, ['branch', '-D', normalizedBranchName], {
@@ -144,8 +146,9 @@ export async function pruneProjectBranch(projectId: string, branchName: string) 
     })
     return { didMutate: true }
   } catch (error) {
+    const didMutate = didSwitchBranch || (await hasMergeInProgress(projectId))
     return {
-      ...((await hasMergeInProgress(projectId)) ? { didMutate: true } : {}),
+      ...(didMutate ? { didMutate: true } : {}),
       error: formatGitCommandError(error),
     }
   }

@@ -1,8 +1,12 @@
 import { disposeWorkspaceComposerRuns } from '../pi-desktop-runtime.ts'
-import { getBranch } from '../project-git/project-state.ts'
+import { getActiveBranch } from '../project-git/project-state.ts'
 import { mergeProjectBranch, pruneProjectBranch, removeProjectWorktree } from '../project-git.ts'
 import type { RegisteredWorktree } from '../project-worktrees/registered-worktree.ts'
-import { getWorktreeMergeTargetError } from '../project-worktrees/registered-worktree.ts'
+import {
+  getWorktreeMergeTargetError,
+  resolveRegisteredWorktree,
+} from '../project-worktrees/registered-worktree.ts'
+import { withWorkspaceTeardown } from '../project-worktrees/workspace-teardown-gate.ts'
 import { closeTerminal, listTerminals } from '../terminal/runtime.ts'
 import {
   deleteProject,
@@ -68,7 +72,7 @@ async function mergeRegisteredWorktree(worktree: RegisteredWorktree, merge: bool
   if (!merge) return { didMutate: false, worktreeCompleted: false }
   const targetError = getWorktreeMergeTargetError({
     ...worktree,
-    currentRootBranchName: await getBranch(worktree.rootProjectId),
+    currentRootBranchName: await getActiveBranch(worktree.rootProjectId),
   })
   if (targetError) {
     return {
@@ -94,34 +98,27 @@ async function mergeRegisteredWorktree(worktree: RegisteredWorktree, merge: bool
   }
 }
 
-export async function removeRegisteredWorktree(input: {
+async function refreshWorktreeAfterSessionStop(worktree: RegisteredWorktree) {
+  const refreshed = await resolveRegisteredWorktree(worktree.rootProjectId, worktree.worktreePath)
+  if ('error' in refreshed) return refreshed
+  if (refreshed.branchName !== worktree.branchName) {
+    return { error: 'Worktree branch changed while its sessions were stopping.' }
+  }
+  return { worktree: refreshed }
+}
+
+async function finishWorktreeRemoval(input: {
   worktree: RegisteredWorktree
-  merge: boolean
+  mergeResult: Awaited<ReturnType<typeof mergeRegisteredWorktree>>
   pruneBranch: boolean
-}): Promise<WorktreeLifecycleResult> {
-  const { worktree } = input
-  const targetError = input.merge ? getWorktreeMergeTargetError(worktree) : null
-  if (targetError) {
-    return resultFor(worktree, {
-      didMutate: false,
-      worktreeRemoved: false,
-      error: targetError,
-    })
-  }
-
-  await disposeWorkspaceSessions(worktree.worktreePath)
-
-  const mergeResult = await mergeRegisteredWorktree(worktree, input.merge)
-  if (mergeResult.error) {
-    return resultFor(worktree, {
-      didMutate: mergeResult.didMutate,
-      worktreeRemoved: false,
-      error: mergeResult.error,
-    })
-  }
-
+}) {
+  const { worktree, mergeResult } = input
   const threadIds = listProjectThreadIds(worktree.worktreePath)
-  const removeResult = await removeProjectWorktree(worktree.rootProjectId, worktree.worktreePath)
+  const removeResult = await removeProjectWorktree(
+    worktree.rootProjectId,
+    worktree.worktreePath,
+    worktree.branchName,
+  )
   if ('error' in removeResult) {
     return resultFor(worktree, {
       didMutate: mergeResult.didMutate,
@@ -139,6 +136,7 @@ export async function removeRegisteredWorktree(input: {
   if (!threadCleanup) deleteProject(worktree.worktreePath)
 
   const errors = [
+    removeResult.warning,
     branchResult && 'error' in branchResult ? branchResult.error : null,
     threadCleanup?.error,
   ]
@@ -151,5 +149,50 @@ export async function removeRegisteredWorktree(input: {
     ...(mergeResult.worktreeCompleted ? { worktreeCompleted: true } : {}),
     ...(errors ? { error: errors } : {}),
     ...(threadCleanup?.failedThreadIds ? { failedThreadIds: threadCleanup.failedThreadIds } : {}),
+  })
+}
+
+export async function removeRegisteredWorktree(input: {
+  worktree: RegisteredWorktree
+  merge: boolean
+  pruneBranch: boolean
+}): Promise<WorktreeLifecycleResult> {
+  const { worktree } = input
+  const targetError = input.merge ? getWorktreeMergeTargetError(worktree) : null
+  if (targetError) {
+    return resultFor(worktree, {
+      didMutate: false,
+      worktreeRemoved: false,
+      error: targetError,
+    })
+  }
+
+  return withWorkspaceTeardown(worktree.worktreePath, async () => {
+    await disposeWorkspaceSessions(worktree.worktreePath)
+
+    const refreshed = await refreshWorktreeAfterSessionStop(worktree)
+    if ('error' in refreshed) {
+      return resultFor(worktree, {
+        didMutate: false,
+        worktreeRemoved: false,
+        error: refreshed.error,
+      })
+    }
+    const refreshedWorktree = refreshed.worktree
+
+    const mergeResult = await mergeRegisteredWorktree(refreshedWorktree, input.merge)
+    if (mergeResult.error) {
+      return resultFor(refreshedWorktree, {
+        didMutate: mergeResult.didMutate,
+        worktreeRemoved: false,
+        error: mergeResult.error,
+      })
+    }
+
+    return finishWorktreeRemoval({
+      worktree: refreshedWorktree,
+      mergeResult,
+      pruneBranch: input.pruneBranch,
+    })
   })
 }

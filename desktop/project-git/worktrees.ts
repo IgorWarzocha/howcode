@@ -1,7 +1,12 @@
-import { access, appendFile, mkdir, readFile } from 'node:fs/promises'
+import { access } from 'node:fs/promises'
 import path from 'node:path'
 import { normalizeGitBranchName } from './branch-name.ts'
 import { formatGitCommandError, getNonInteractiveGitEnv, runGitWithOptions } from './git-runner.ts'
+import {
+  ensureWorktreePathIgnored,
+  getInRepositoryWorktreePath,
+  removeOwnedWorktreePathIgnore,
+} from './worktree-excludes.ts'
 
 export type GitWorktreeEntry = {
   path: string
@@ -163,46 +168,6 @@ function resolveWorktreeParent(rootProjectId: string, worktreeDirectory: string)
     : path.resolve(rootProjectId, worktreeDirectory)
 }
 
-function getInRepositoryWorktreePath(rootProjectId: string, worktreePath: string) {
-  const relativePath = path.relative(path.resolve(rootProjectId), path.resolve(worktreePath))
-  if (!relativePath || relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
-    return null
-  }
-  if (relativePath.includes('\n') || relativePath.includes('\r')) {
-    throw new Error('In-repository worktree paths cannot contain line breaks.')
-  }
-  return relativePath
-}
-
-async function ensureWorktreePathIgnored(
-  rootProjectId: string,
-  relativeWorktreePath: string | null,
-) {
-  if (!relativeWorktreePath) {
-    return
-  }
-
-  const { stdout } = await runGitWithOptions(
-    rootProjectId,
-    ['rev-parse', '--git-path', 'info/exclude'],
-    { timeout: 10_000, maxBuffer: 1024 * 128 },
-  )
-  const rawExcludePath = stdout.trim()
-  if (!rawExcludePath) return
-  const excludePath = path.isAbsolute(rawExcludePath)
-    ? rawExcludePath
-    : path.resolve(rootProjectId, rawExcludePath)
-  const ignorePattern = `/${relativeWorktreePath.split(path.sep).join('/')}/`
-  const existing = await readFile(excludePath, 'utf8').catch(() => '')
-  if (existing.split('\n').some((line) => line.trim() === ignorePattern)) return
-
-  await mkdir(path.dirname(excludePath), { recursive: true })
-  await appendFile(
-    excludePath,
-    `${existing && !existing.endsWith('\n') ? '\n' : ''}${ignorePattern}\n`,
-  )
-}
-
 export async function createProjectWorktree(input: {
   projectId: string
   branchName: string
@@ -261,7 +226,11 @@ export async function createProjectWorktree(input: {
   }
 }
 
-export async function removeProjectWorktree(projectId: string, worktreePath: string) {
+export async function removeProjectWorktree(
+  projectId: string,
+  worktreePath: string,
+  expectedBranchName: string | null,
+) {
   const normalizedPath = worktreePath.trim()
   if (!normalizedPath) return { error: 'Worktree path is required.' }
 
@@ -274,16 +243,31 @@ export async function removeProjectWorktree(projectId: string, worktreePath: str
     if (worktree.path === (worktrees[0]?.path ?? null)) {
       return { error: 'Cannot remove the main worktree.' }
     }
+    if (worktree.branch !== expectedBranchName) {
+      return { error: 'Worktree branch changed before it could be removed.' }
+    }
+
+    const rootProjectId = worktrees[0]?.path ?? projectId
+    const relativeWorktreePath = getInRepositoryWorktreePath(rootProjectId, worktree.path)
 
     await runGitWithOptions(projectId, ['worktree', 'remove', worktree.path], {
       env: getNonInteractiveGitEnv(),
       timeout: 30_000,
       maxBuffer: 1024 * 1024 * 4,
     })
+
+    let warning: string | undefined
+    try {
+      await removeOwnedWorktreePathIgnore(rootProjectId, relativeWorktreePath)
+    } catch (error) {
+      warning = `Worktree removed, but its Git exclusion could not be cleaned up: ${formatGitCommandError(error)}`
+      console.warn(warning)
+    }
     return {
       didMutate: true,
       projectId: worktree.path,
-      rootProjectId: worktrees[0]?.path ?? projectId,
+      rootProjectId,
+      ...(warning ? { warning } : {}),
     }
   } catch (error) {
     return { error: formatGitCommandError(error) }

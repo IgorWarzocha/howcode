@@ -1,10 +1,14 @@
 import { execFile } from 'node:child_process'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { promisify } from 'node:util'
 import { describe, expect, it } from 'vitest'
-import { createProjectWorktree, parseGitWorktreePorcelain } from './worktrees.ts'
+import {
+  createProjectWorktree,
+  parseGitWorktreePorcelain,
+  removeProjectWorktree,
+} from './worktrees.ts'
 
 const execFileAsync = promisify(execFile)
 
@@ -56,7 +60,7 @@ prunable gitdir file points to non-existent location
 })
 
 describe('createProjectWorktree', () => {
-  it('keeps an in-repository worktree directory out of parent status', async () => {
+  it('owns a literal in-repository exclusion only for the worktree lifetime', async () => {
     const projectId = await mkdtemp(path.join(tmpdir(), 'howcode-worktree-'))
     const git = (...args: string[]) => execFileAsync('git', args, { cwd: projectId })
 
@@ -71,14 +75,26 @@ describe('createProjectWorktree', () => {
       const result = await createProjectWorktree({
         projectId,
         branchName: 'feature/test',
-        worktreeDirectory: './.worktrees',
+        worktreeDirectory: './[worktrees]',
       })
 
-      expect(result).not.toHaveProperty('error')
+      if ('error' in result) throw new Error(result.error)
       await expect(git('status', '--porcelain')).resolves.toMatchObject({ stdout: '' })
       await expect(readFile(path.join(projectId, '.git/info/exclude'), 'utf8')).resolves.toContain(
-        '/.worktrees/feature-test/',
+        '# howcode worktree: /\\[worktrees\\]/feature-test/\n/\\[worktrees\\]/feature-test/',
       )
+
+      const removeResult = await removeProjectWorktree(
+        projectId,
+        result.projectId,
+        result.branchName,
+      )
+      expect(removeResult).not.toHaveProperty('error')
+      await mkdir(result.projectId, { recursive: true })
+      await writeFile(path.join(result.projectId, 'ordinary.txt'), 'visible\n')
+      await expect(git('status', '--porcelain')).resolves.toMatchObject({
+        stdout: '?? [worktrees]/\n',
+      })
     } finally {
       await rm(projectId, { recursive: true, force: true })
     }

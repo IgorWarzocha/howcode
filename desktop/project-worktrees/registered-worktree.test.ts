@@ -24,6 +24,9 @@ describe('worktree merge target guard', () => {
     expect(getWorktreeMergeTargetError({ ...baseWorktree, currentRootBranchName: 'main' })).toBe(
       'Switch the parent worktree to dev before merging.',
     )
+    expect(getWorktreeMergeTargetError({ ...baseWorktree, currentRootBranchName: null })).toBe(
+      'The parent worktree has no active branch.',
+    )
     expect(getWorktreeMergeTargetError({ ...baseWorktree, branchName: null })).toBe(
       'Detached worktrees cannot be merged automatically.',
     )

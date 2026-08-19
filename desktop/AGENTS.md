@@ -8,4 +8,5 @@
 - Decode Pi session JSONL through `pi-threads/session-entry-schema.ts`; terminal transcript writes remain asynchronous, ordered, and awaited during scoped cleanup.
 - Validate artifact/chat/thread query rows before mapping. Legacy Git checkpoint cleanup is a background migration and must never block schema initialization.
 - Resolve destructive worktree identity from Git plus persisted metadata. Derive branch-prune worktrees in the backend; bulk paths are deduplicated selections, not authorization, and stale metadata cannot block unrelated pruning. Worktree provenance comes from creation metadata, never directory location. Managed worktrees require an active recorded parent branch; only imported/legacy worktrees may merge without one.
+- Worktree teardown gates composer sends and terminal opens by canonical project path, then revalidates Git identity after session shutdown and at removal.
 - `artifact-compiler.ts` resolves allowed React imports from Howcode's runtime; artifacts otherwise remain self-contained.

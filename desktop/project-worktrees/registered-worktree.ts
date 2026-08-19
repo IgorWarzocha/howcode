@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { formatGitCommandError } from '../project-git/git-runner.ts'
-import { getBranch } from '../project-git/project-state.ts'
+import { getActiveBranch } from '../project-git/project-state.ts'
 import { loadGitWorktrees } from '../project-git/worktrees.ts'
 import { getProjectWorktree, type StoredProjectWorktree } from '../thread-state-db.ts'
 
@@ -27,7 +27,7 @@ export async function resolveRegisteredWorktrees(
 
   const rootProjectId = worktrees[0]?.path ?? projectId
   const normalizedRootProjectId = path.resolve(rootProjectId)
-  const currentRootBranchName = await getBranch(rootProjectId)
+  const currentRootBranchName = await getActiveBranch(rootProjectId)
   const resolved: RegisteredWorktree[] = []
   const worktreeByPath = new Map(
     worktrees.map((worktree) => [path.resolve(worktree.path), worktree]),
