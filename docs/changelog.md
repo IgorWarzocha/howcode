@@ -1,26 +1,24 @@
 ### 0.1.68
 
-- Rebuilt GitOps review around current Pierre Diffs: select one or several lines, add comments, and send the review straight back to the active agent thread.
+- **An enormous release:** 910 files and roughly 75,000 changed lines. GitOps, worktrees, app updates, the UI architecture, and most of the desktop runtime were rebuilt rather than lightly patched.
+- Migrated to Effect v4 across terminal RPC, process lifecycles, shutdown, recovery, and schema-validated boundaries. Thank you Kit Langton for your [skills](https://github.com/kitlangton/skills/tree/main/skills/effect).
+- Installed React Doctor, took it from 75 to 100, and made that score a blocking check.
+- Overhauled how the existing UI works without changing its visual direction, with clearer ownership, more consistent interactions, and more predictable state.
+- Updated and optimised GitOps review around the latest Pierre Diffs.
 - Added **Keep** and **Reject** hunk review. Rejections require a comment for the agent; local review decisions can be reset without touching the worktree.
-- GitOps can now load all remaining unchanged context instead of leaving partial diffs stuck, including renamed, added, and deleted files.
-- Added optional direct editing for changed text files, with revision checks and atomic saves so agent changes are never silently overwritten.
-- Moved the GitOps changed-files browser to Pierre Trees.
+- Added optional direct editing for changed text files.
+- Improved GitOps reliability across partial, renamed, added, and deleted files.
+- Reworked worktree lifecycle and sidebar state: nested sessions SHOULD™ stay visible, updates appear immediately, and destructive actions resolve their branch from Git instead of stale UI data.
+- Worktrees now merge only into their recorded parent branch.
+- The default `.worktrees` directory no longer makes the parent repository look dirty.
 - Rebuilt app updates around one atomic, channel-aware updater for macOS, Linux, and Windows.
-- Updates now download in the background, verify immutable archives, and hand off before the next launch.
-- Hardened `bunx howcode` / `bunx howcode@dev` cache recovery, concurrent launches, and launch failure reporting.
+- Updates download in the background, verify immutable archives, and apply on next launch.
+- Hardened `bunx howcode` / `bunx howcode@dev` cache recovery and concurrent launches.
 - Launcher success now waits for the Electron window to report ready instead of trusting a detached process spawn, while staged updates preserve headless mode and launch options.
-- Moving channels publish payloads before manifests and verify every advertised archive hash.
-- Existing release manifests remain readable for this migration release; future manifests use protocol v2.
-- Fixed Pi TUI takeover leaving the desktop runtime on the old conversation branch. Returning to the GUI now waits for Pi to exit and immediately shows the latest turn.
-- Fixed rapid Pi settings changes overwriting one another.
-- Reworked worktree lifecycle and sidebar state: nested sessions stay visible, updates appear immediately, and destructive actions resolve their branch from Git instead of stale UI data.
-- Worktrees now merge only into their recorded parent branch, and the default `.worktrees` directory no longer makes the parent repository look dirty.
-- Reworked runtime, terminal, and desktop-service lifecycle ownership so startup, shutdown, process recovery, and transcript persistence do not race one another.
-- Hardened persisted and cross-process data handling so corrupt state fails visibly instead of leaking into the running app.
-- Took React Doctor from 75 to 100 and made that score a blocking check.
-- One-line reasoning summaries now stay compact instead of repeating inside an empty expandable thinking block.
 - Added Pi's `max` thinking level throughout the composer and settings.
-- Updated Pi to 0.84.2, Electron to 43.4.1, better-sqlite3 to 13.0.3, Pierre Diffs to 1.3.5, React to 19.2.8, and the rest of the app/build stack.
+- Fixed one-line reasoning summaries repeating inside empty thinking blocks.
+- Corrupt persisted and cross-process state now fails visibly.
+- Updated Pi to 0.84.2, Electron to 43.4.1, TypeScript to 7, Vite to 8.2.1, better-sqlite3 to 13.0.3, Pierre Diffs to 1.3.5, React to 19.2.8, and the rest of the stack.
 
 Snapshot: 19 August 2026.
 
