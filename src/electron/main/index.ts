@@ -14,6 +14,7 @@ import { getRelaunchArguments, shouldTakeoverAtStartup } from './runtime/relaunc
 import { registerDesktopRuntimeShutdown } from './runtime/shutdown'
 import { AppUpdater } from './updater/app-updater'
 import { startRunningVersionLease } from './updater/update-active-lease'
+import { removeLegacyLinuxCommandLauncher } from './updater/update-legacy-integration'
 import { getCacheRoot, getRunningCachedVersionDir } from './updater/update-storage'
 
 let currentMainWindow: BrowserWindow | null = null
@@ -46,6 +47,7 @@ async function openMainWindow() {
 
 async function bootstrap() {
   await app.whenReady()
+  if (app.isPackaged) await removeLegacyLinuxCommandLauncher()
   const stopRunningVersionLease = await startRunningVersionLease(
     getCacheRoot(),
     getRunningCachedVersionDir(),
