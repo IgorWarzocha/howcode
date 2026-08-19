@@ -13,7 +13,7 @@
 - Existing release manifests remain readable for this migration release; future manifests use protocol v2.
 - Hardened runtime startup and shutdown, terminal transcript persistence, process recovery, and desktop payload validation.
 - Added Pi's `max` thinking level throughout the composer and settings.
-- Updated Pi to 0.84.1, Electron to 43.3.0, better-sqlite3 to 13.0.3, Pierre Diffs to 1.3.5, React to 19.2.8, and the rest of the app/build stack.
+- Updated Pi to 0.84.2, Electron to 43.4.1, better-sqlite3 to 13.0.3, Pierre Diffs to 1.3.5, React to 19.2.8, and the rest of the app/build stack.
 
 Snapshot: 21 July 2026.
 
