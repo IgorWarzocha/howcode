@@ -46,10 +46,10 @@
     "deadcode": "bun run doctor",
     "react-doctor": "bun run doctor",
     "typography:audit": "bun ./scripts/audit-typography.ts",
-    "pack:howcode:dev": "bun ./scripts/pack-howcode-launcher.ts dev pack 0.1.71-dev.0",
-    "publish:howcode:dev:dry-run": "bun ./scripts/pack-howcode-launcher.ts dev publish-dry-run 0.1.71-dev.0",
+    "pack:howcode:dev": "bun ./scripts/pack-howcode-launcher.ts dev pack 0.1.72-dev.0",
+    "publish:howcode:dev:dry-run": "bun ./scripts/pack-howcode-launcher.ts dev publish-dry-run 0.1.72-dev.0",
     "publish:howcode": "bun ./scripts/pack-howcode-launcher.ts main publish",
-    "publish:howcode:dev": "bun ./scripts/pack-howcode-launcher.ts dev publish 0.1.71-dev.0",
+    "publish:howcode:dev": "bun ./scripts/pack-howcode-launcher.ts dev publish 0.1.72-dev.0",
     "typography:generate": "bun ./scripts/generate-typography-css.ts",
     "polls:deploy": "cd workers/polls && bunx wrangler deploy",
     "polls:migrate": "cd workers/polls && bunx wrangler d1 migrations apply howcode_polls --remote"

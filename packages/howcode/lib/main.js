@@ -2,7 +2,10 @@ const path = require('node:path')
 const fsp = require('node:fs/promises')
 const { getReleaseChannel, getTarget } = require('./config')
 const { getCacheRoot, getPaths, isValidInstall, readJsonIfPresent } = require('./cache')
-const { ensureCommandLaunchIntegration } = require('./integration')
+const {
+  ensureCommandLaunchIntegration,
+  removeObsoleteCommandLaunchIntegration,
+} = require('./integration')
 const { resolveLatestRelease } = require('./release')
 const { ensureInstalled } = require('./installer')
 const { launch } = require('./process-launcher')
@@ -13,6 +16,7 @@ async function main() {
   const cacheRoot = getCacheRoot()
   const channel = getReleaseChannel()
   await fsp.mkdir(cacheRoot, { recursive: true })
+  await removeObsoleteCommandLaunchIntegration(target)
 
   const currentFile = path.join(cacheRoot, `current-${channel}.json`)
   const current =
