@@ -22,6 +22,28 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.mac-window-drag-zones {
+  display: none;
+}
+
+:root[data-desktop-platform="darwin"][data-desktop-shell="electron"] .mac-window-drag-zones {
+  display: block;
+}
+
+.mac-window-drag-zone {
+  position: fixed;
+  z-index: 45;
+  background: transparent;
+  -webkit-app-region: drag;
+}
+
+.mac-window-drag-zone--titlebar {
+  top: 0;
+  left: 5.5rem;
+  right: 0;
+  height: 2rem;
+}
+
 button,
 input,
 textarea {
@@ -37,7 +59,13 @@ button {
 }
 
 code {
-  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-family: "Geist Mono Variable", "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+}
+
+.pi-extension-mono {
+  font-family: "Geist Mono Variable", "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 11.5px;
+  line-height: 1rem;
 }
 
 ::-webkit-scrollbar {

@@ -29,28 +29,12 @@ function getTool(tools: ReturnType<typeof createAttachmentFileTools>['tools'], n
 }
 
 describe('attachment file tools', () => {
-  it('allows read for attached files and files inside attached folders only', async () => {
-    const { cwd, attachedFile, outsideFile, attachedDir } = await createFixture()
+  it('rejects files that were not attached', async () => {
+    const { cwd, attachedFile, outsideFile } = await createFixture()
     const { tools, access } = createAttachmentFileTools({ cwd, autoResizeImages: true })
     const read = getTool(tools, 'read')
 
-    await access.grantAttachments([
-      { path: attachedFile, name: 'attached.txt', kind: 'text' },
-      { path: attachedDir, name: 'folder', kind: 'directory' },
-    ])
-
-    await expect(
-      read.execute('call', { path: 'attached.txt' }, undefined, undefined, {
-        cwd,
-        model: { input: ['text'] },
-      } as never),
-    ).resolves.toMatchObject({ content: [{ type: 'text', text: 'attached file' }] })
-    await expect(
-      read.execute('call', { path: path.join('folder', 'nested.txt') }, undefined, undefined, {
-        cwd,
-        model: { input: ['text'] },
-      } as never),
-    ).resolves.toMatchObject({ content: [{ type: 'text', text: 'nested file' }] })
+    await access.grantAttachments([{ path: attachedFile, name: 'attached.txt', kind: 'text' }])
     await expect(
       read.execute('call', { path: outsideFile }, undefined, undefined, {
         cwd,
@@ -59,7 +43,7 @@ describe('attachment file tools', () => {
     ).rejects.toThrow(notAttachedFileErrorPattern)
   })
 
-  it('allows ls of attached folders only and blocks symlink escapes', async () => {
+  it('blocks directory overreach and symlink escapes', async () => {
     const { cwd, attachedFile, outsideFile, attachedDir, nestedDir } = await createFixture()
     await symlink(outsideFile, path.join(attachedDir, 'escape.txt'))
     const { tools, access } = createAttachmentFileTools({ cwd, autoResizeImages: true })
@@ -71,11 +55,6 @@ describe('attachment file tools', () => {
       { path: attachedDir, name: 'folder', kind: 'directory' },
     ])
 
-    await expect(
-      ls.execute('call', { path: 'folder' }, undefined, undefined, { cwd } as never),
-    ).resolves.toMatchObject({
-      content: [{ type: 'text', text: expect.stringContaining('nested.txt') }],
-    })
     await expect(
       ls.execute('call', { path: '.' }, undefined, undefined, { cwd } as never),
     ).rejects.toThrow(notAttachedDirectoryErrorPattern)

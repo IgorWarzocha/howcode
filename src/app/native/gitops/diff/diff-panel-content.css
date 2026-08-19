@@ -8,7 +8,8 @@
     system-ui,
     sans-serif
   );
-  --diffs-font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  --diffs-font-family:
+    "Geist Mono Variable", "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
   --diffs-light-bg: var(--workspace);
   --diffs-dark-bg: var(--workspace);
   --diffs-bg: var(--workspace);
@@ -173,6 +174,27 @@ slot[name="header-prefix"]::slotted(*) {
 [data-merge-conflict-action]:hover {
   background-color: var(--surface-hover);
   color: var(--text);
+}
+
+[data-separator-last]:not(:has([data-expand-all-button])) [data-unmodified-lines] {
+  font-size: 0;
+}
+
+[data-separator-last]:not(:has([data-expand-all-button])) [data-unmodified-lines]::after {
+  content: "Load remaining context";
+  font-size: 13px;
+}
+
+[data-separator-last] [data-expand-button] {
+  display: none;
+}
+
+[data-separator-last][data-expand-index] [data-separator-wrapper] {
+  grid-template-columns: 1fr;
+}
+
+:host([data-gitops-trailing-context-action]) [data-separator-last] {
+  display: none;
 }
 
 [data-diff-type="split"][data-overflow="scroll"] [data-additions] {

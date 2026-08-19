@@ -2,6 +2,7 @@ import {
   appNewSessionSlashCommand,
   appSettingsSlashCommand,
   compactSlashCommand,
+  sessionTreeSlashCommand,
 } from '../../shared/composer-slash-commands.ts'
 import type { ComposerSlashCommand } from '../../shared/desktop-contracts.ts'
 import type { PiRuntime } from './types.ts'
@@ -10,13 +11,19 @@ const reservedCommandNames = new Set([
   appSettingsSlashCommand.name,
   appNewSessionSlashCommand.name,
   compactSlashCommand.name,
+  sessionTreeSlashCommand.name,
 ])
+
+function optionalDescription(description: string | undefined) {
+  return description === undefined ? {} : { description }
+}
 
 export function mapSessionCommands(session: PiRuntime['session']): ComposerSlashCommand[] {
   const commands: ComposerSlashCommand[] = [
     appSettingsSlashCommand,
     appNewSessionSlashCommand,
     compactSlashCommand,
+    sessionTreeSlashCommand,
   ]
   const extensionCommandNames = new Set<string>()
 
@@ -28,7 +35,7 @@ export function mapSessionCommands(session: PiRuntime['session']): ComposerSlash
     extensionCommandNames.add(command.invocationName)
     commands.push({
       name: command.invocationName,
-      description: command.description,
+      ...optionalDescription(command.description),
       source: 'extension',
       sourceInfo: command.sourceInfo,
     })
@@ -41,7 +48,7 @@ export function mapSessionCommands(session: PiRuntime['session']): ComposerSlash
 
     commands.push({
       name: template.name,
-      description: template.description,
+      ...optionalDescription(template.description),
       source: 'prompt',
       sourceInfo: template.sourceInfo,
     })

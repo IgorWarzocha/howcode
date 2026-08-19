@@ -8,7 +8,6 @@ import { ChevronDown, ChevronRight } from 'lucide-react'
 import type { PointerEvent, ReactNode } from 'react'
 import { useRef } from 'react'
 import { cn } from '../utils/cn'
-import { chatRowShellClass } from './thread-layout'
 
 const clampOneLineClass =
   'overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:1]'
@@ -164,11 +163,14 @@ export function TimelineRowShell({
   children: ReactNode
 }) {
   return (
-    <div className={chatRowShellClass} data-row-toggle-anchor={onToggle ? 'true' : undefined}>
+    <div
+      className="grid w-full min-w-0 grid-cols-[0_minmax(0,1fr)] overflow-visible"
+      data-row-toggle-anchor={onToggle ? 'true' : undefined}
+    >
       {onToggle ? (
         <button
           type="button"
-          className={`${toggleClassName ?? 'mt-1'} inline-flex h-5 w-5 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]`}
+          className={`${toggleClassName ?? 'mt-1'} z-10 col-start-1 row-start-1 inline-flex h-5 w-5 -translate-x-[calc(100%+0.25rem)] items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]`}
           onClick={onToggle}
           aria-expanded={expanded}
           aria-label={ariaLabel}
@@ -177,11 +179,8 @@ export function TimelineRowShell({
         >
           {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </button>
-      ) : (
-        <div />
-      )}
-      <div className="min-w-0">{children}</div>
-      <div />
+      ) : null}
+      <div className="col-start-2 row-start-1 min-w-0">{children}</div>
     </div>
   )
 }

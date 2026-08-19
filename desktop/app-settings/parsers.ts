@@ -1,3 +1,4 @@
+import { isComposerThinkingLevel } from '../../shared/composer-thinking-level.ts'
 import type {
   ComposerSendMode,
   ComposerStreamingBehavior,
@@ -45,10 +46,11 @@ export function parseFavoriteFolders(valueJson: string | null | undefined): stri
     return Array.isArray(parsed)
       ? [
           ...new Set(
-            parsed
-              .filter((value): value is string => typeof value === 'string')
-              .map((value) => value.trim())
-              .filter(Boolean),
+            parsed.flatMap((value) => {
+              if (typeof value !== 'string') return []
+              const trimmed = value.trim()
+              return trimmed ? [trimmed] : []
+            }),
           ),
         ]
       : []
@@ -105,14 +107,7 @@ export function parseThinkingLevelPreference(
 
   try {
     const parsed = JSON.parse(valueJson) as unknown
-    return parsed === 'off' ||
-      parsed === 'minimal' ||
-      parsed === 'low' ||
-      parsed === 'medium' ||
-      parsed === 'high' ||
-      parsed === 'xhigh'
-      ? parsed
-      : null
+    return isComposerThinkingLevel(parsed) ? parsed : null
   } catch {
     return null
   }

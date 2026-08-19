@@ -1,0 +1,11 @@
+- `useAppShellController.ts` composes shell state, queries, effects, and commands; feature behavior belongs in the narrower modules it calls.
+- Its public surface is grouped into named feature capabilities; consumers take only the capability groups they need. Do not restore flat aliases or pass a broader controller type for convenience.
+- `useAppShellStateBundle.ts` composes workspace state with the named Composer, thread, project, and resource-scope state hooks; add feature-local state to its owner, not the bundle.
+- Mutable desktop actions flow through `useDesktopActionHandlers.ts`: contextualize and guard, apply optimistic state, invoke once, then reconcile through `post-effects/*`.
+- Worktree post-effects patch the shell cache immediately from canonical action results, then reconcile Git state; preserve the immediate patch without reconstructing worktree identity from request payloads.
+- Keep action preparation, optimistic routing, error policy, and post-effects in their named modules; the hook only orchestrates one action invocation.
+- Register post-action behavior in the owning domain handler list under `post-effects/`; keep `controller-post-action-effects.ts` as composition only.
+- Keep the desktop event subscription stable. `desktop-event-handlers.ts` only routes typed events; event-specific cache and state work belongs in `desktop-events/*`.
+- Responsive sidebar state belongs to `useAppShellResponsiveLayout.ts`. Takeover terminal identity changes belong to the pure layout model and its hook so local-draft promotion does not remount the terminal.
+- A persisted Pi session has one writer: opening takeover disposes its GUI runtime, and leaving/unmounting takeover closes its Pi terminal before the GUI runtime reloads.
+- The Skills/Extensions project-target callback in `app-shell-sidebar.tsx` is part of the historical target-highlight flow; do not remove it as redundant.

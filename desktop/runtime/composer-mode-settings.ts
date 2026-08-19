@@ -11,9 +11,9 @@ import type { PiRuntime } from './types.ts'
 async function selectRequestedComposerModel(runtime: PiRuntime, request: ComposerStateRequest) {
   const selection = request.composerModelSelection ?? null
   if (selection?.provider) {
-    const model = runtime.session.modelRegistry.find(selection.provider, selection.id)
+    const model = runtime.session.modelRuntime.getModel(selection.provider, selection.id)
     if (model) return model
-    const [fallbackModel] = await runtime.session.modelRegistry.getAvailable()
+    const [fallbackModel] = await runtime.session.modelRuntime.getAvailable()
     return fallbackModel ?? runtime.session.model
   }
   if (!request.composerUseDefaultModel) return runtime.session.model
@@ -23,7 +23,7 @@ async function selectRequestedComposerModel(runtime: PiRuntime, request: Compose
   })
   if (!defaultComposer.currentModel) return runtime.session.model
   return (
-    runtime.session.modelRegistry.find(
+    runtime.session.modelRuntime.getModel(
       defaultComposer.currentModel.provider,
       defaultComposer.currentModel.id,
     ) ?? runtime.session.model
@@ -70,7 +70,7 @@ export async function setDraftComposerModel(input: {
   })
 
   try {
-    const model = snapshot.session.modelRegistry.find(input.provider, input.modelId)
+    const model = snapshot.session.modelRuntime.getModel(input.provider, input.modelId)
     if (!model) throw new Error(`Unknown Pi model: ${input.provider}/${input.modelId}`)
 
     const currentComposer = await buildComposerStateSnapshot({
@@ -95,11 +95,10 @@ export async function setDraftComposerThinkingLevel(input: {
   cwd: string
   level: ComposerThinkingLevel
 }) {
-  const { SettingsManager, getAgentDir } = await getPiModule()
-  const currentComposer = await buildComposerStateSnapshot({
-    projectId: input.cwd,
-    sessionPath: null,
-  })
+  const [{ SettingsManager, getAgentDir }, currentComposer] = await Promise.all([
+    getPiModule(),
+    buildComposerStateSnapshot({ projectId: input.cwd, sessionPath: null }),
+  ])
   SettingsManager.create(input.cwd, getAgentDir()).setDefaultThinkingLevel(
     clampThinkingLevel(input.level, currentComposer.availableThinkingLevels),
   )

@@ -1,5 +1,4 @@
-import type { GitOpsMode } from './desktop-settings-contracts'
-
+export type GitOpsMode = 'commit' | 'commit-push'
 export type ProjectDiffRenderMode = 'stacked' | 'split'
 export type ProjectDiffDefaultBaseline =
   | { kind: 'head' }
@@ -90,6 +89,61 @@ export type ProjectDiffImagePreview = {
   mimeType: string
   dataUrl: string
 } | null
+
+export type ProjectDiffFileContentsRequest = {
+  projectId: string
+  baselineRevision: string
+  oldPath: string | null
+  newPath: string
+}
+
+export type ProjectDiffTextFile = {
+  path: string
+  contents: string
+  revision: string
+}
+
+export type ProjectDiffFileContentIssue = {
+  kind: 'invalid-path' | 'missing' | 'not-file' | 'binary' | 'too-large' | 'changed'
+  side: 'old' | 'new'
+  path: string
+  size?: number | undefined
+  maxBytes?: number | undefined
+}
+
+export type ProjectDiffFileContentsResult =
+  | {
+      kind: 'ready'
+      oldFile: ProjectDiffTextFile | null
+      newFile: ProjectDiffTextFile
+    }
+  | {
+      kind: 'unavailable'
+      issue: ProjectDiffFileContentIssue
+    }
+
+export type ProjectFileWriteRequest = {
+  projectId: string
+  path: string
+  contents: string
+  expectedRevision: string
+}
+
+export type ProjectFileWriteResult =
+  | {
+      kind: 'written'
+      file: ProjectDiffTextFile
+    }
+  | {
+      kind: 'conflict'
+      path: string
+      expectedRevision: string
+      currentRevision: string | null
+    }
+  | {
+      kind: 'unavailable'
+      issue: ProjectDiffFileContentIssue
+    }
 
 export type ProjectDiffStatsResult = {
   projectId: string

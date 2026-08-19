@@ -29,7 +29,7 @@ function DictationModelSettingControl({
   setDictationModelDraft,
   setOpenSelectId,
 }: {
-  controller: SettingsController
+  controller: SettingsController['dictation']
   dictationModelSelectValue: string
   dictationPendingForSelectedModel: 'download' | 'switch' | 'delete' | null
   openSelectId: string | null
@@ -129,9 +129,13 @@ export function buildDictationSettingsDescriptors({
   configuredDictationModelId: DictationModelId | null
 }): SettingDescriptor[] {
   const dictationModelSelectValue =
-    dictationModelDraft ?? configuredDictationModelId ?? controller.dictationModels[0]?.id ?? ''
+    dictationModelDraft ??
+    configuredDictationModelId ??
+    controller.dictation.dictationModels[0]?.id ??
+    ''
   const selectedDictationOptionModel =
-    controller.dictationModels.find((model) => model.id === dictationModelSelectValue) ?? null
+    controller.dictation.dictationModels.find((model) => model.id === dictationModelSelectValue) ??
+    null
   const selectedDictationOptionIsInstalled = Boolean(selectedDictationOptionModel?.installed)
   const removableDictationModel =
     selectedDictationOptionModel?.installed && selectedDictationOptionModel.managed
@@ -139,8 +143,8 @@ export function buildDictationSettingsDescriptors({
       : null
   const dictationPendingForSelectedModel =
     selectedDictationOptionModel &&
-    controller.dictationPendingAction?.modelId === selectedDictationOptionModel.id
-      ? controller.dictationPendingAction.kind
+    controller.dictation.dictationPendingAction?.modelId === selectedDictationOptionModel.id
+      ? controller.dictation.dictationPendingAction.kind
       : null
 
   return [
@@ -152,7 +156,7 @@ export function buildDictationSettingsDescriptors({
       keywords: 'dictation model whisper download tiny base small speech transcription',
       render: () => (
         <DictationModelSettingControl
-          controller={controller}
+          controller={controller.dictation}
           dictationModelSelectValue={dictationModelSelectValue}
           dictationPendingForSelectedModel={dictationPendingForSelectedModel}
           openSelectId={openSelectId}
@@ -175,7 +179,9 @@ export function buildDictationSettingsDescriptors({
           className={cn(settingsInputClass, 'w-36')}
           value={String(appSettings.dictationMaxDurationSeconds)}
           onChange={(event) =>
-            controller.setDictationMaxDurationSeconds(Number.parseInt(event.target.value, 10))
+            controller.dictation.setDictationMaxDurationSeconds(
+              Number.parseInt(event.target.value, 10),
+            )
           }
           aria-label="Max dictation length"
         >
@@ -197,7 +203,9 @@ export function buildDictationSettingsDescriptors({
         <ToggleBox
           checked={appSettings.showDictationButton}
           label="Toggle dictation"
-          onClick={() => controller.setShowDictationButton(!appSettings.showDictationButton)}
+          onClick={() =>
+            controller.dictation.setShowDictationButton(!appSettings.showDictationButton)
+          }
         />
       ),
     },

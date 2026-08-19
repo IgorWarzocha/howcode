@@ -589,6 +589,15 @@ li {
   gap: var(--space-xl);
 }
 
+.bullet-markdown code {
+  border-radius: 0.35em;
+  background: oklch(22% 0.026 272 / 7%);
+  padding: 0.05em 0.3em;
+  color: var(--ink);
+  font-size: 0.9em;
+  line-height: inherit;
+}
+
 .install-links {
   display: flex;
   flex-wrap: wrap;
@@ -684,9 +693,14 @@ footer a {
   border-bottom: 1px solid var(--line);
 }
 
+.bullet-markdown {
+  min-width: 0;
+}
+
 .roadmap li::before {
   content: counter(roadmap, decimal-leading-zero);
   font-variant-numeric: tabular-nums;
+  transform: translateY(0.06em);
 }
 
 footer {

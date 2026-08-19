@@ -1,19 +1,9 @@
 import type { Message, ThreadData } from './desktop-thread-contracts'
+import type { ThreadSearchMatchSchema, ThreadSearchResultSchema } from './thread-search-schema'
 
-export type ThreadSearchMatch = {
-  messageId: string
-  messageIndex: number
-  revealHistoryCompactions?: number | undefined
-  role: Message['role']
-  snippet: string
-  matchStart: number
-  matchEnd: number
-}
+export type ThreadSearchMatch = typeof ThreadSearchMatchSchema.Type
 
-export type ThreadSearchResult = {
-  matches: ThreadSearchMatch[]
-  searchedMessageCount: number
-}
+export type ThreadSearchResult = typeof ThreadSearchResultSchema.Type
 
 const snippetRadius = 72
 

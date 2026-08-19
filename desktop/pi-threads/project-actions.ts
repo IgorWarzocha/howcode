@@ -16,7 +16,7 @@ import { addProjectFromPath, createProject, createProjectFromGitHubUrl } from '.
 import { getOriginUrl } from '../project-git/project-state.ts'
 import { importProjects, scanKnownProjects } from '../project-import.ts'
 import { openPathWithSystem } from '../system-open-path.ts'
-import { listTerminals } from '../terminal/manager.ts'
+import { listTerminals } from '../terminal/runtime.ts'
 import {
   archiveProjectThreads,
   collapseAllProjects,
@@ -80,15 +80,24 @@ async function deleteProjectPiFiles(projectId: string, sessionPaths: string[]) {
   const deletedSessionPaths: string[] = []
   const failedSessionPaths: string[] = []
 
-  for (const sessionPath of sessionPaths) {
-    try {
-      await unlinkIfPresent(sessionPath)
-      deletedSessionPaths.push(sessionPath)
-    } catch (error) {
-      console.warn(`Failed to remove Pi session file for ${projectId}: ${sessionPath}`, error)
+  const deletionResults = await Promise.all(
+    sessionPaths.map(async (sessionPath) => {
+      try {
+        await unlinkIfPresent(sessionPath)
+        return { sessionPath, deleted: true as const }
+      } catch (error) {
+        console.warn(`Failed to remove Pi session file for ${projectId}: ${sessionPath}`, error)
+        return { sessionPath, deleted: false as const }
+      }
+    }),
+  )
+
+  for (const { sessionPath, deleted } of deletionResults) {
+    if (!deleted) {
       failedSessionPaths.push(sessionPath)
       continue
     }
+    deletedSessionPaths.push(sessionPath)
 
     let currentDirectory = path.dirname(path.resolve(sessionPath))
     while (currentDirectory.startsWith(`${resolvedProjectId}${path.sep}`)) {
@@ -101,18 +110,22 @@ async function deleteProjectPiFiles(projectId: string, sessionPaths: string[]) {
     }
   }
 
-  for (const directoryPath of [...removableDirectories].sort(
-    (left, right) => right.length - left.length,
-  )) {
-    try {
-      await removeDirectoryIfEmpty(directoryPath)
-    } catch (error) {
-      console.warn(
-        `Failed to remove empty Pi session directory for ${projectId}: ${directoryPath}`,
-        error,
-      )
-    }
-  }
+  await [...removableDirectories]
+    .sort((left, right) => right.length - left.length)
+    .reduce<Promise<void>>(
+      (pending, directoryPath) =>
+        pending.then(async () => {
+          try {
+            await removeDirectoryIfEmpty(directoryPath)
+          } catch (error) {
+            console.warn(
+              `Failed to remove empty Pi session directory for ${projectId}: ${directoryPath}`,
+              error,
+            )
+          }
+        }),
+      Promise.resolve(),
+    )
 
   return {
     deletedSessionPaths,

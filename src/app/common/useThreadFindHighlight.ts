@@ -42,17 +42,14 @@ export function useThreadFindHighlight(input: {
     if (!('Highlight' in window && 'highlights' in CSS)) return
     const root = input.rootRef.current
     const query = input.query?.trim()
-    if (!(input.active && root && query)) {
-      CSS.highlights.delete(threadFindHighlightName)
-      return
-    }
+    if (!(input.active && root && query)) return
 
-    CSS.highlights.set(
-      threadFindHighlightName,
-      new Highlight(...collectFindHighlightRanges(root, query)),
-    )
+    const highlight = new Highlight(...collectFindHighlightRanges(root, query))
+    CSS.highlights.set(threadFindHighlightName, highlight)
     return () => {
-      CSS.highlights.delete(threadFindHighlightName)
+      if (CSS.highlights.get(threadFindHighlightName) === highlight) {
+        CSS.highlights.delete(threadFindHighlightName)
+      }
     }
   }, [input.active, input.query, input.rootRef])
 }

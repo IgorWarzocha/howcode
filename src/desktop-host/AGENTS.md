@@ -1,0 +1,9 @@
+- This boundary is shared by Electron and the dev/headless web host; keep it free of renderer assumptions.
+- Host-neutral desktop request behaviour has one typed composition boundary; Electron IPC, headless HTTP, and development web supply only capability and transport adapters.
+- The desktop service runs under a discovered stock Node, not Electron's Node. Preserve startup/restart/timeouts and typed request/event routing.
+- Keep `desktop-service-client.ts` as the class/Promise compatibility edge; `desktop-service/*` owns process generations, requests, and timeouts.
+- Desktop-service lifecycle reservation, startup, and finalization stay in their named modules; `lifecycle.ts` only composes the state machine.
+- Detach service generations by record/process identity before closing scopes; terminal RPC disposal must remain child-specific.
+- Packaged native dependencies resolve from the ABI bundle under `app.asar.unpacked`; missing or unsupported ABIs must fail explicitly.
+- `node-runtime/*` owns shared subprocess deadlines/output collection; callers retain executable precedence, fallback, ABI allowlists, and packaged manifest policy.
+- Desktop service reflection is constrained by `shared/desktop-service-rpc.ts`; adding an exported backend helper must not expose it as RPC.

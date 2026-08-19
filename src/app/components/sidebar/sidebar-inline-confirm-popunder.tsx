@@ -1,6 +1,7 @@
 import { X } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
+import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
 import { cn } from '../../utils/cn'
 
 type SidebarInlineConfirmPopunderProps = {
@@ -24,33 +25,15 @@ export function SidebarInlineConfirmPopunder({
   className,
   confirmButtonClassName,
 }: SidebarInlineConfirmPopunderProps) {
+  const anchorRef = useRef<HTMLSpanElement>(null)
   const popunderRef = useRef<HTMLSpanElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      event.stopPropagation()
-      onCancel()
-    }
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target
-      if (target instanceof Node && popunderRef.current?.contains(target)) return
-      if (target instanceof Element && target.closest('.sidebar-inline-popunder-anchor')) return
-      onCancel()
-    }
-
-    document.addEventListener('keydown', handleKeyDown, true)
-    document.addEventListener('pointerdown', handlePointerDown, true)
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown, true)
-      document.removeEventListener('pointerdown', handlePointerDown, true)
-    }
-  }, [onCancel, open])
+  useDismissibleLayer({ open, onDismiss: onCancel, refs: [anchorRef, popunderRef] })
 
   return (
-    <span className={cn('tooltip-anchor sidebar-inline-popunder-anchor', className)}>
+    <span
+      ref={anchorRef}
+      className={cn('tooltip-anchor sidebar-inline-popunder-anchor', className)}
+    >
       {trigger}
       {open ? (
         <span

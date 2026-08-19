@@ -1,5 +1,3 @@
-const betterSqliteFile = 'node_modules/better-sqlite3/build/Release/better_sqlite3.node'
-
 function unique(values) {
   return [...new Set(values)]
 }
@@ -7,7 +5,6 @@ function unique(values) {
 function nativeRuntimeFiles(arch = process.arch) {
   const arches = unique([arch, 'x64', 'arm64'])
   return [
-    betterSqliteFile,
     'node_modules/node-pty/build/Release/pty.node',
     'node_modules/node-pty/build/Release/conpty.node',
     'node_modules/node-pty/build/Release/conpty_console_list.node',
@@ -26,7 +23,7 @@ function nativeRuntimeFiles(arch = process.arch) {
 }
 
 function requiredNativeRuntimeFiles() {
-  return [betterSqliteFile]
+  return []
 }
 
 function ptyValidationScript() {

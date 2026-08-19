@@ -38,12 +38,6 @@ export function getFeatureStatusAccentClass(statusId: FeatureStatusId) {
     : 'border-[rgba(255,214,102,0.4)] bg-[rgba(255,204,102,0.14)] text-[color:var(--warning)]'
 }
 
-export function getFeatureStatusButtonClass(statusId: FeatureStatusId) {
-  return getFeatureStatusMeta(statusId).status === 'mock'
-    ? 'border-[color:var(--danger-border)] text-[color:var(--danger)] hover:border-[color:var(--danger-border)] hover:bg-[color:var(--danger-bg)] hover:text-[color:var(--danger)]'
-    : 'border-[color:var(--border)] text-[color:var(--muted)] hover:border-[color:var(--border-strong)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[color:var(--text)]'
-}
-
 export function getFeatureStatusBadgeClass(statusId: FeatureStatusId) {
   return cn(featureStatusBadgeBaseClass, getFeatureStatusAccentClass(statusId))
 }

@@ -44,7 +44,6 @@ import {
   setHideSidebarSessionCounts,
   setHoverToBlur,
   setHoverToFocus,
-  setHowcodeNativeAskQuestions,
   setInitializeGitOnProjectCreate,
   setKeybindings,
   setPiTuiTakeover,
@@ -53,8 +52,6 @@ import {
   setProjectDeletionMode,
   setProjectImportState,
   setShowDictationButton,
-  setSkillCreatorModelSelection,
-  setSkillCreatorThinkingLevel,
   setUseAgentsSkillsPaths,
 } from '../app-settings/writers.ts'
 import { restartRuntimeHostsForEnvironmentChange } from '../runtime-host/client-bridge.ts'
@@ -88,7 +85,7 @@ async function clearClipboardImageTempFiles() {
   }
 }
 
-type SettingsUpdateHandler = (payload: AnyDesktopActionPayload) => unknown
+type SettingsUpdateHandler = (payload: AnyDesktopActionPayload) => unknown | Promise<unknown>
 
 function isSettingsUpdateResult(value: unknown) {
   return typeof value === 'object' && value !== null
@@ -152,8 +149,7 @@ const settingsUpdateHandlers = {
   projectImportState: (payload) => setProjectImportState(getSettingsProjectImportState(payload)),
   useAgentsSkillsPaths: (payload) =>
     setUseAgentsSkillsPaths(getSettingsBooleanValue(payload) ?? false),
-  howcodeNativeAskQuestions: (payload) =>
-    setHowcodeNativeAskQuestions(getSettingsBooleanValue(payload) ?? false),
+
   devUpdateBranch: (payload) => setDevUpdateBranch(getSettingsBooleanValue(payload) ?? false),
   betaUpdateBranch: (payload) => setDevUpdateBranch(getSettingsBooleanValue(payload) ?? false),
   piTuiTakeover: (payload) => setPiTuiTakeover(getSettingsBooleanValue(payload) ?? false),
@@ -173,7 +169,7 @@ const settingsUpdateHandlers = {
   },
   preferredProjectLocation: (payload) =>
     setPreferredProjectLocation(getSettingsPreferredProjectLocation(payload)),
-  customPiDirectory: (payload) => {
+  customPiDirectory: async (payload) => {
     const currentCustomPiDirectory = normalizeOptionalSettingsPath(
       loadAppSettings().customPiDirectory,
     )
@@ -183,7 +179,7 @@ const settingsUpdateHandlers = {
     if (currentCustomPiDirectory === nextCustomPiDirectory) return { didMutate: false }
 
     setCustomPiDirectory(nextCustomPiDirectory)
-    restartRuntimeHostsForEnvironmentChange()
+    await restartRuntimeHostsForEnvironmentChange()
     return { didMutate: true }
   },
   initializeGitOnProjectCreate: (payload) =>
@@ -214,12 +210,8 @@ const settingsUpdateHandlers = {
   codeModel: (payload) => setResettableModelSelection(payload, setCodeModelSelection),
   chatThinkingLevel: (payload) => setResettableThinkingLevel(payload, setChatThinkingLevel),
   codeThinkingLevel: (payload) => setResettableThinkingLevel(payload, setCodeThinkingLevel),
-  skillCreatorModel: (payload) =>
-    setResettableModelSelection(payload, setSkillCreatorModelSelection),
   gitCommitMessageThinkingLevel: (payload) =>
     setOptionalThinkingLevel(payload, setGitCommitMessageThinkingLevel),
-  skillCreatorThinkingLevel: (payload) =>
-    setOptionalThinkingLevel(payload, setSkillCreatorThinkingLevel),
   gitCommitMessageModel: (payload) =>
     setResettableModelSelection(payload, setGitCommitMessageModelSelection),
 } satisfies Record<string, SettingsUpdateHandler>
@@ -235,6 +227,6 @@ export async function handleSettingsDesktopAction(
   if (action !== 'settings.update') return unhandledAction()
 
   const key = getSettingsKey(payload)
-  const result = key ? settingsUpdateHandlers[key]?.(payload) : undefined
+  const result = key ? await settingsUpdateHandlers[key]?.(payload) : undefined
   return handledAction(isSettingsUpdateResult(result) ? result : undefined)
 }

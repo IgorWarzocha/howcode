@@ -1,6 +1,6 @@
+export { runThreadStateTransaction } from './thread-state-db/db.ts'
 export {
   getProjectStoredUsageTotals,
-  getSessionNativeExtensions,
   getThreadAssistantSnapshot,
   getThreadCwd,
   getThreadDeletionSnapshot,
@@ -26,6 +26,7 @@ export type { SessionSummaryRecord } from './thread-state-db/types.ts'
 export type {
   ProjectWorktreeMetadata,
   ProjectWorktreeSource,
+  StoredProjectWorktree,
 } from './thread-state-db/writes.ts'
 export {
   addProjectUsageTotals,
@@ -45,10 +46,13 @@ export {
   dismissInboxThread,
   dismissInboxThreadAfterReply,
   ensureProject,
+  getProjectWorktree,
   getProjectWorktreeDirectory,
   hideProject,
+  listProjectWorktreePaths,
   markInboxThreadRead,
   renameProject,
+  renameThreadTitle,
   restoreThread,
   restoreThreads,
   setProjectCollapsed,
@@ -56,7 +60,6 @@ export {
   setProjectRepoOrigin,
   setProjectWorktreeCompleted,
   setProjectWorktreeDirectory,
-  setSessionNativeExtensions,
   setThreadDiffPreferences,
   setThreadRunningState,
   syncSessionSummaries,

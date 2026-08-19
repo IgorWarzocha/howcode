@@ -22,9 +22,10 @@ import {
 import { memo, useEffect, useId, useRef, useState } from 'react'
 import type { Message } from '../types'
 import { getThinkingPreview } from '../utils/thread-previews'
+import { CopyMessageButton } from './copy-message-button'
 import { ExpandablePanel } from './expandable-panel'
 import { MarkdownContent } from './markdown-content'
-import { CopyMessageButton, renderProse, renderThinking } from './thread-message-utils'
+import { getParagraphRenderItems, renderProse, renderThinking } from './thread-message-utils'
 import { useThreadFindHighlight } from './useThreadFindHighlight'
 
 const assistantStatusLabelClass = `mb-2 ${appTypeMetaStrongClass} tracking-[0.08em] uppercase opacity-85`
@@ -45,6 +46,20 @@ type ThreadMessageProps = {
   findQuery?: string | undefined
   findActive?: boolean | undefined
   onToggleExpanded?: (() => void) | undefined
+}
+
+function getExtensionNotificationSeverity(message: CustomThreadMessage) {
+  const details = message.details
+  if (typeof details !== 'object' || details === null || !('severity' in details)) return 'info'
+  const severity = details.severity
+  return severity === 'warning' || severity === 'error' ? severity : 'info'
+}
+
+function getExtensionNotificationClass(message: CustomThreadMessage) {
+  const severity = getExtensionNotificationSeverity(message)
+  if (severity === 'error') return 'text-[color:var(--danger)]'
+  if (severity === 'warning') return 'text-[color:var(--warning)]'
+  return ''
 }
 
 function AssistantThinkingBlock({
@@ -148,9 +163,9 @@ function UserMessageBlock({ message }: { message: ProseMessage }) {
       className={`group/message relative w-full min-w-0 border px-3 py-2 pr-11 ${appTypeReadableClass} text-[color:var(--text)] ${threadUserMessageClass}`}
     >
       <div className="grid min-w-0 gap-3 [overflow-wrap:anywhere]">
-        {message.content.map((paragraph) => (
+        {getParagraphRenderItems(message.content).map(({ key, paragraph }) => (
           <MarkdownContent
-            key={paragraph}
+            key={key}
             markdown={paragraph}
             tone="user"
             className={appTypeReadableClass}
@@ -169,7 +184,12 @@ function AssistantMessageBlock({
   message,
   onToggleExpanded,
 }: Omit<ThreadMessageProps, 'message'> & { message: ProseMessage }) {
-  const hasThinking = Boolean(message.thinkingContent && message.thinkingContent.length > 0)
+  const thinkingContent = message.thinkingContent ?? []
+  const hasThinking = Boolean(
+    thinkingContent.length > 0 ||
+      (message.thinkingHeaders?.length ?? 0) > 0 ||
+      message.thinkingRedacted,
+  )
   const showAssistantContent = message.content.length > 0
   const statusLabel = getAssistantStatusLabel(message)
   const statusClassName = getAssistantStatusClassName(message)
@@ -177,11 +197,12 @@ function AssistantMessageBlock({
     <div className="grid min-w-0 gap-2">
       {hasThinking ? (
         <AssistantThinkingBlock
-          thinkingContent={message.thinkingContent ?? []}
+          thinkingContent={thinkingContent}
           thinkingHeaders={message.thinkingHeaders}
           thinkingRedacted={message.thinkingRedacted}
           autoExpandThinking={autoExpandThinking}
           onToggleExpanded={onToggleExpanded}
+          interactive={thinkingContent.length > 0}
         />
       ) : null}
       {showAssistantContent ? (
@@ -227,6 +248,15 @@ function getAssistantStatusClassName(message: ProseMessage) {
 }
 
 function CustomMessageBlock({ message }: { message: CustomThreadMessage }) {
+  if (message.customType === 'Extension:') {
+    return (
+      <div className={`${systemStatusClass} ${getExtensionNotificationClass(message)}`}>
+        <span className={systemStatusLabelClass}>{message.customType}</span>
+        <span className={`${systemStatusValueClass} text-current`}>{message.content.join('')}</span>
+      </div>
+    )
+  }
+
   return (
     <div className={message.isError ? threadSessionErrorStripClass : threadSessionStripClass}>
       <div className={customMessageTypeClass}>

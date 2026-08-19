@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { GitCompareArrows } from 'lucide-react'
-import { type RefObject, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { type RefObject, useId, useMemo, useRef, useState } from 'react'
 import {
   notifyComposerPopoverOpened,
   useComposerPopoverDismissSignal,
@@ -22,10 +22,12 @@ import {
   listProjectCommitsQuery,
 } from '../../query/desktop-query'
 import { cn } from '../../utils/cn'
-import { getBaselineCounts, matchesCommitSearch } from './composer-diff-baseline-options'
+import { getBaselineCounts, matchesCommitSearch } from './composer-diff-baseline-data'
 import { getDiffBaselineLabel, getDiffBaselinePrefix } from './diff-baseline'
 import { BaselineSelectorPortal } from './diff-baseline-selector/baseline-selector-popover'
 import { formatGitCount } from './git-ops'
+
+const EMPTY_COMMITS: [] = []
 
 type ComposerDiffBaselineSelectorProps = {
   composerPanelRef: RefObject<HTMLDivElement | null>
@@ -40,14 +42,15 @@ type ComposerDiffBaselineSelectorProps = {
 
 function useComposerBaselinePopoverControls({
   activeAnchorRef,
+  closePopover,
   open,
   setOpen,
 }: {
   activeAnchorRef: RefObject<BaselineAnchorKind>
+  closePopover: () => void
   open: boolean
-  setOpen: (open: boolean | ((current: boolean) => boolean)) => void
+  setOpen: (open: boolean) => void
 }) {
-  const closePopover = () => setOpen(false)
   const openBaselinePopover = (anchor: 'summary' | 'branch' | 'compact') => {
     notifyComposerPopoverOpened('diff-baseline')
     activeAnchorRef.current = anchor
@@ -55,11 +58,12 @@ function useComposerBaselinePopoverControls({
   }
   const toggleBaselinePopover = (anchor: 'summary' | 'branch' | 'compact') => {
     activeAnchorRef.current = anchor
-    setOpen((current) => {
-      if (current) return false
-      notifyComposerPopoverOpened('diff-baseline')
-      return true
-    })
+    if (open) {
+      closePopover()
+      return
+    }
+    notifyComposerPopoverOpened('diff-baseline')
+    setOpen(true)
   }
   const previewBaselinePopover = (anchor: 'summary' | 'branch') => {
     open && openBaselinePopover(anchor)
@@ -114,7 +118,7 @@ function useComposerBaselineData({
     staleTime: Number.POSITIVE_INFINITY,
   })
 
-  const commits = commitsQuery.data ?? []
+  const commits = commitsQuery.data ?? EMPTY_COMMITS
   const selectedCommitSha = selectedBaseline.kind === 'commit' ? selectedBaseline.sha : null
   const baselineLabel = useMemo(
     () => getDiffBaselineLabel(selectedBaseline, commits),
@@ -279,12 +283,14 @@ export function ComposerDiffBaselineSelector({
   const compactAnchorRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const activeAnchorRef = useRef<BaselineAnchorKind>('summary')
+  const closePopover = () => {
+    setOpen(false)
+    setSearchQuery('')
+  }
 
   useComposerPopoverDismissSignal({
     ignoreSource: 'diff-baseline',
-    onDismiss: () => {
-      setOpen(false)
-    },
+    onDismiss: closePopover,
   })
 
   const { baselineLabel, commitsQuery, counts, selectedCommitSha, visibleCommits } =
@@ -298,26 +304,18 @@ export function ComposerDiffBaselineSelector({
     })
   const baselinePrefix = getDiffBaselinePrefix(selectedBaseline)
 
-  const { closePopover, previewBaselinePopover, toggleBaselinePopover } =
-    useComposerBaselinePopoverControls({
-      activeAnchorRef,
-      open,
-      setOpen,
-    })
+  const { previewBaselinePopover, toggleBaselinePopover } = useComposerBaselinePopoverControls({
+    activeAnchorRef,
+    closePopover,
+    open,
+    setOpen,
+  })
 
   useDismissibleLayer({
     open,
-    onDismiss: () => {
-      closePopover()
-    },
+    onDismiss: closePopover,
     refs: [anchorRef, branchAnchorRef, compactAnchorRef, panelRef],
   })
-
-  useEffect(() => {
-    if (!open) {
-      setSearchQuery('')
-    }
-  }, [open])
 
   const { panelPosition, positionReady } = useDiffBaselinePopoverPosition({
     activeAnchorRef,
@@ -388,7 +386,10 @@ export function ComposerDiffBaselineSelector({
           defaultBranchName={projectGitState?.defaultBranchName}
           devBranchName={projectGitState?.devBranchName}
           mainBranchName={projectGitState?.mainBranchName}
-          setOpen={setOpen}
+          setOpen={(nextOpen) => {
+            if (nextOpen) setOpen(true)
+            else closePopover()
+          }}
           setSearchQuery={setSearchQuery}
           visibleCommits={visibleCommits}
           onSelectBaseline={onSelectBaseline}

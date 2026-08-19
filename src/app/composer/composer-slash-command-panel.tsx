@@ -1,9 +1,8 @@
 import {
   appToneMutedClass,
   appToneTextClass,
-  appTypeCodeClass,
   appTypeSmallClass,
-  composerPopoverInputLayerClass,
+  composerOverlayPanelInsetClass,
   composerPopoverOptionClass,
   composerPopoverOptionSelectedClass,
   composerPopoverPanelClass,
@@ -39,7 +38,7 @@ function SlashCommandOption({
   return (
     <div key={`${command.source}:${command.name}`}>
       {previousGroupLabel === groupLabel ? null : (
-        <div className={cn(composerPopoverSectionLabelClass, 'pt-1.5 pb-1')}>{groupLabel}</div>
+        <div className={cn(composerPopoverSectionLabelClass, 'pt-1 pb-0.5')}>{groupLabel}</div>
       )}
       <button
         id={getComposerSlashCommandOptionId(index)}
@@ -48,7 +47,7 @@ function SlashCommandOption({
         aria-selected={selected}
         className={cn(
           composerPopoverOptionClass,
-          'grid min-h-8 grid-cols-[max-content_minmax(0,1fr)] py-1.5',
+          'grid min-h-6 grid-cols-[max-content_minmax(0,1fr)] px-2 py-0.5',
           selected
             ? composerPopoverOptionSelectedClass
             : 'text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
@@ -57,7 +56,7 @@ function SlashCommandOption({
         onMouseDown={(event) => event.preventDefault()}
         onClick={() => slashCommands.selectCommand(command)}
       >
-        <span className={cn('shrink-0 whitespace-nowrap', appTypeCodeClass, appToneTextClass)}>
+        <span className={cn('shrink-0 whitespace-nowrap', appTypeSmallClass, appToneTextClass)}>
           /{command.name}
         </span>
         {command.description ? (
@@ -73,41 +72,45 @@ function SlashCommandOption({
 export function SlashCommandPanel({
   panelRef,
   slashCommands,
+  topRounded = true,
 }: {
   panelRef: RefObject<HTMLDivElement | null>
   slashCommands: ComposerSlashCommands
+  topRounded?: boolean | undefined
 }) {
   if (!slashCommands.open) return null
   return (
-    <PopoverPanel
-      surface={false}
-      ref={panelRef}
-      id={slashCommands.listboxId}
-      role="listbox"
-      tabIndex={-1}
-      aria-label="Composer slash commands"
-      className={cn(
-        composerPopoverPanelClass,
-        composerPopoverInputLayerClass,
-        'absolute right-0 bottom-full left-0 max-h-64 overflow-y-auto overflow-x-hidden',
-      )}
-    >
-      {slashCommands.commands.length > 0 ? (
-        slashCommands.commands.map((command, index) => (
-          <SlashCommandOption
-            key={`${command.source}:${command.name}`}
-            command={command}
-            index={index}
-            previousCommand={slashCommands.commands[index - 1]}
-            selected={index === slashCommands.selectedIndex}
-            slashCommands={slashCommands}
-          />
-        ))
-      ) : (
-        <div className={inlineEmptyNoteClass}>
-          {slashCommands.loading ? 'Loading commands…' : 'No matching commands'}
-        </div>
-      )}
-    </PopoverPanel>
+    <div className={composerOverlayPanelInsetClass}>
+      <PopoverPanel
+        surface={false}
+        ref={panelRef}
+        id={slashCommands.listboxId}
+        role="listbox"
+        tabIndex={-1}
+        aria-label="Composer slash commands"
+        className={cn(
+          composerPopoverPanelClass,
+          topRounded ? 'rounded-t-lg' : 'rounded-t-none',
+          'max-h-64 overflow-y-auto overflow-x-hidden rounded-b-none p-1 shadow-none outline outline-1 -outline-offset-1 outline-[color:var(--border)]',
+        )}
+      >
+        {slashCommands.commands.length > 0 ? (
+          slashCommands.commands.map((command, index) => (
+            <SlashCommandOption
+              key={`${command.source}:${command.name}`}
+              command={command}
+              index={index}
+              previousCommand={slashCommands.commands[index - 1]}
+              selected={index === slashCommands.selectedIndex}
+              slashCommands={slashCommands}
+            />
+          ))
+        ) : (
+          <div className={inlineEmptyNoteClass}>
+            {slashCommands.loading ? 'Loading commands…' : 'No matching commands'}
+          </div>
+        )}
+      </PopoverPanel>
+    </div>
   )
 }

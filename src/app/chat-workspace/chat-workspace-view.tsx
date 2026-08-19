@@ -1,12 +1,14 @@
 import { getLocalDraftChatGroupId, getPersistedSessionPath } from '@howcode/shared/session-paths'
+import { ThreadView } from '@howcode/thread'
 import { lazy, type RefObject, Suspense, useRef, useState } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
 import { useQueuedPromptRestore } from '../code-workspace/useQueuedPromptRestore'
 import { useWorkspaceFooterHeight } from '../code-workspace/useWorkspaceFooterHeight'
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
+import { WORKSPACE_EDGE_PADDING_CLASS } from '../ui/layout'
 import { cn } from '../utils/cn'
-import { ChatView } from './chat-view'
 import { ChatComposerDock, type ChatWorkspaceComposerProps } from './chat-workspace-composer'
+import type { ChatWorkspaceController } from './chat-workspace-contract'
 import { useChatArtifactDrawerState } from './useChatArtifactDrawerState'
 
 const ArtifactPanel = lazy(() =>
@@ -16,9 +18,10 @@ const ArtifactPanel = lazy(() =>
 )
 
 type ChatWorkspaceViewProps = {
-  controller: AppShellController
-  activeComposerState: AppShellController['activeComposerState']
-  activeThreadData: AppShellController['activeThreadData']
+  controller: ChatWorkspaceController
+  activeComposerState: AppShellController['composer']['state']
+  activePiExtensionUiState: AppShellController['composer']['extensionUiState']
+  activeThreadData: AppShellController['thread']['activeData']
   composerProjectId: string
   diffBaseline: ProjectDiffBaseline
   diffRenderMode: ProjectDiffRenderMode
@@ -29,9 +32,6 @@ type ChatWorkspaceViewProps = {
   sidebarAutoHidden: boolean
   sidebarCompactMode: boolean
   onToggleSidebar: () => void
-  onArtifactDrawerOverlayChange?:
-    | ((visible: boolean, onClose?: (() => void) | undefined) => void)
-    | undefined
 }
 
 const NEW_CHAT_COMPOSER_TOP = '60%'
@@ -42,7 +42,7 @@ type ChatWorkspaceContentProps = ChatWorkspaceViewProps &
     shouldShowConversationContent: boolean
     composerLayoutVersion: number
     composerOverlayHeight: number
-    handleLoadEarlierMessages: AppShellController['handleLoadEarlierMessages']
+    handleLoadEarlierMessages: AppShellController['thread']['loadEarlierMessages']
     conversationId: string | null | undefined
   }
 
@@ -58,7 +58,7 @@ function ChatWorkspaceMain({
 }: ChatWorkspaceContentProps) {
   return (
     <main ref={mainViewRef} className="h-full min-h-0 overflow-hidden">
-      <ChatView
+      <ThreadView
         key={activeThreadData?.sessionPath ?? 'new-chat'}
         messages={shouldShowConversationContent ? (activeThreadData?.messages ?? []) : []}
         previousMessageCount={activeThreadData?.previousMessageCount ?? 0}
@@ -68,7 +68,7 @@ function ChatWorkspaceMain({
         composerOverlayHeight={composerOverlayHeight}
         sessionPath={activeThreadData?.sessionPath ?? null}
         loading={
-          controller.activeThreadLoading || (hasConversation && !shouldShowConversationContent)
+          controller.thread.activeLoading || (hasConversation && !shouldShowConversationContent)
         }
         onLoadEarlierMessages={handleLoadEarlierMessages}
         onLoadAroundMessage={handleLoadEarlierMessages}
@@ -91,7 +91,7 @@ function ChatDesktopContent(props: ChatWorkspaceContentProps) {
       }
     >
       <div
-        className="absolute inset-x-0 top-0 overflow-hidden px-5"
+        className={cn('absolute inset-x-0 top-0 overflow-hidden', WORKSPACE_EDGE_PADDING_CLASS)}
         style={{ bottom: hasConversationLayout ? `${footerHeight}px` : '0px' }}
       >
         <ChatWorkspaceMain {...props} />
@@ -99,7 +99,8 @@ function ChatDesktopContent(props: ChatWorkspaceContentProps) {
       <footer
         ref={footerRef}
         className={cn(
-          'motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-10 px-5 pb-4',
+          'motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-10 pb-4',
+          WORKSPACE_EDGE_PADDING_CLASS,
           hasConversationLayout
             ? 'bottom-0 translate-y-0'
             : '-translate-y-1/2 transition-[top,transform] duration-300 ease-out',
@@ -173,6 +174,7 @@ function ChatWorkspaceViewContent(props: ChatWorkspaceContentProps) {
 export function ChatWorkspaceView({
   controller,
   activeComposerState,
+  activePiExtensionUiState,
   activeThreadData,
   composerProjectId,
   diffBaseline,
@@ -184,23 +186,18 @@ export function ChatWorkspaceView({
   sidebarAutoHidden,
   sidebarCompactMode,
   onToggleSidebar,
-  onArtifactDrawerOverlayChange,
 }: ChatWorkspaceViewProps) {
-  const [composerPromptResetKey] = useState(0)
-  const [composerLayoutVersion, setComposerLayoutVersion] = useState(0)
   const [composerOverlayHeight, setComposerOverlayHeight] = useState(0)
   const rootRef = useRef<HTMLDivElement>(null)
   const footerRef = useRef<HTMLElement>(null)
   const mainViewRef = useRef<HTMLElement>(null)
-  const {
-    handleAction,
-    handleLoadEarlierMessages,
-    handleShowTakeoverTerminal,
-    handleToggleTerminal,
-    listComposerAttachmentEntries,
-    shellState,
-    state,
-  } = controller
+  const handleAction = controller.desktop.handleAction
+  const handleLoadEarlierMessages = controller.thread.loadEarlierMessages
+  const handleShowTakeoverTerminal = controller.takeover.show
+  const handleToggleTerminal = controller.terminal.toggle
+  const listComposerAttachmentEntries = controller.composer.listAttachmentEntries
+  const { shellState } = controller.desktop
+  const { state } = controller.workspace
   const footerHeight = useWorkspaceFooterHeight({ footerRef, visible: true })
   const conversationId = activeThreadData?.sessionPath ?? terminalSessionPath
   const hasConversation = (activeThreadData?.messages.length ?? 0) > 0
@@ -212,7 +209,6 @@ export function ChatWorkspaceView({
     conversationId,
     sidebarCompactMode,
     settingsOpen: state.settingsOpen,
-    onArtifactDrawerOverlayChange,
   })
   const {
     handleEditQueuedPrompt,
@@ -235,7 +231,7 @@ export function ChatWorkspaceView({
       mainViewRef={mainViewRef}
       activeThreadData={activeThreadData}
       shouldShowConversationContent={shouldShowConversationContent}
-      composerLayoutVersion={composerLayoutVersion}
+      composerLayoutVersion={0}
       composerOverlayHeight={composerOverlayHeight}
       controller={controller}
       hasConversation={hasConversation}
@@ -246,6 +242,7 @@ export function ChatWorkspaceView({
       onToggleSidebar={onToggleSidebar}
       sidebarCollapsed={sidebarCollapsed}
       activeComposerState={activeComposerState}
+      activePiExtensionUiState={activePiExtensionUiState}
       pendingQueuedPromptIdsForSession={pendingQueuedPromptIdsForSession}
       handleEditQueuedPrompt={handleEditQueuedPrompt}
       handleRemoveQueuedPrompt={handleRemoveQueuedPrompt}
@@ -260,8 +257,6 @@ export function ChatWorkspaceView({
       diffRenderMode={diffRenderMode}
       onSetDiffBaseline={onSetDiffBaseline}
       onSetDiffRenderMode={onSetDiffRenderMode}
-      composerPromptResetKey={composerPromptResetKey}
-      setComposerLayoutVersion={setComposerLayoutVersion}
       setComposerOverlayHeight={setComposerOverlayHeight}
       handleShowTakeoverTerminal={handleShowTakeoverTerminal}
       handleToggleTerminal={handleToggleTerminal}

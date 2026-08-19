@@ -1,5 +1,6 @@
 import type { KeybindingCommandId } from '@howcode/shared/keybindings'
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
+import { useLatestRef } from '../hooks/useLatestRef'
 
 export const howcodeKeybindingCommandEvent = 'howcode:keybinding-command'
 export const howcodeDismissTransientUiEvent = 'howcode:dismiss-transient-ui'
@@ -25,8 +26,7 @@ export function useHowcodeKeybindingCommand(
   commandId: KeybindingCommandId,
   handler: (event: CustomEvent<HowcodeKeybindingCommandDetail>) => void,
 ) {
-  const handlerRef = useRef(handler)
-  handlerRef.current = handler
+  const handlerRef = useLatestRef(handler)
 
   useEffect(() => {
     const handleCommand = (event: Event) => {
@@ -37,5 +37,5 @@ export function useHowcodeKeybindingCommand(
 
     window.addEventListener(howcodeKeybindingCommandEvent, handleCommand)
     return () => window.removeEventListener(howcodeKeybindingCommandEvent, handleCommand)
-  }, [commandId])
+  }, [commandId, handlerRef])
 }

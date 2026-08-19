@@ -6,14 +6,13 @@
     "src/electron/preload/index.ts",
     "desktop/pi-threads.ts",
     "desktop/pi-skills.ts",
-    "desktop/skill-creator-session.ts",
     "desktop/runtime-host/worker.ts",
-    "desktop/terminal/manager.ts",
+    "desktop/terminal/runtime.ts",
     "scripts/*.ts",
     "pages/src/main.tsx",
+    "workers/polls/src/index.ts",
     "packages/howcode/bin/howcode.js",
-    "packages/howcode/lib/howcode.js",
-    "desktop/native-extensions/howcode-native-ask-questions.mjs"
+    "packages/howcode/lib/howcode.js"
   ],
   "project": [
     "src/**/*.{ts,tsx}",
@@ -21,6 +20,7 @@
     "shared/**/*.{ts,d.ts}",
     "scripts/**/*.ts",
     "pages/**/*.{ts,tsx}",
+    "workers/polls/src/**/*.ts",
     "packages/howcode/**/*.{js,cjs,mjs}"
   ],
   "ignore": ["build/**", "dist/**", "dist-pages/**", "artifacts/**", "node_modules/**"],

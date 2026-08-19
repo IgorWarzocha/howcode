@@ -79,17 +79,24 @@ async function extractZip(zipPath, distPath) {
   // the first entry under Node 26. The Electron archives are ordinary zip files,
   // so use OS-provided archive tools and verify the executable afterward.
   if (process.platform === 'win32') {
+    const archivePathEnv = 'HOWCODE_ELECTRON_ARCHIVE_PATH'
+    const destinationPathEnv = 'HOWCODE_ELECTRON_DESTINATION_PATH'
     childProcess.execFileSync(
       'powershell.exe',
       [
         '-NoProfile',
         '-NonInteractive',
         '-Command',
-        'Expand-Archive -LiteralPath $args[0] -DestinationPath $args[1] -Force',
-        zipPath,
-        distPath,
+        `$ErrorActionPreference = 'Stop'; Expand-Archive -LiteralPath $env:${archivePathEnv} -DestinationPath $env:${destinationPathEnv} -Force`,
       ],
-      { stdio: 'inherit' },
+      {
+        stdio: 'inherit',
+        env: {
+          ...process.env,
+          [archivePathEnv]: zipPath,
+          [destinationPathEnv]: distPath,
+        },
+      },
     )
     return
   }

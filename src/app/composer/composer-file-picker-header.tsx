@@ -1,7 +1,11 @@
 import { ChevronLeft, Home, Search } from 'lucide-react'
 import type { RefObject } from 'react'
 import type { ComposerFilePickerState } from '../desktop/types'
-import { appToneMutedClass, appToneTextClass, appTypeMetaClass } from '../ui/classes'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  composerAttachmentPickerTextClass,
+} from '../ui/classes'
 import { cn } from '../utils/cn'
 import type { ComposerFilePickerRootOption } from './composer-file-picker-utils'
 
@@ -52,7 +56,7 @@ export function ComposerFilePickerHeader({
             className={cn(
               rootOption.iconOnly
                 ? 'inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors'
-                : `inline-flex h-6 shrink-0 items-center gap-1 rounded-md px-2 transition-colors ${appTypeMetaClass} ${appToneMutedClass}`,
+                : `inline-flex h-6 shrink-0 items-center gap-1 rounded-md px-2 transition-colors ${composerAttachmentPickerTextClass} ${appToneMutedClass}`,
               picker?.rootPath === rootOption.path
                 ? 'bg-[color:var(--surface-hover)] text-[color:var(--text)]'
                 : 'hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
@@ -86,7 +90,7 @@ export function ComposerFilePickerHeader({
               placeholder="Search files"
               className={cn(
                 'h-6 w-40 rounded-md border-0 bg-[color:var(--surface-hover)] pr-2 pl-7 outline-none placeholder:text-[color:var(--muted)]',
-                appTypeMetaClass,
+                composerAttachmentPickerTextClass,
                 appToneTextClass,
               )}
               aria-label="Search files"

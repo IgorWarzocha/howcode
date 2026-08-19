@@ -21,14 +21,15 @@ Trigger phrases include:
 - Reuse one pid/log pair:
   - `/home/igorw/Work/howcode-temp/howcode-fixed.pid`
   - `/home/igorw/Work/howcode-temp/howcode-fixed.log`
+- Keep Electron and desktop-service state isolated in `/home/igorw/Work/howcode-temp/howcode-fixed-data`; pass both `HOWCODE_USER_DATA_PATH` and Electron's early `--user-data-dir` argument.
 - Before overwriting, stop the previous temp app process if the pid file exists.
 - Do not delete unrelated files in `/home/igorw/Work/howcode-temp`.
 - Build from the repo root with Bun: `bun run build`.
 - Build and launch must run from a detached background shell. Do **not** run the long build in the agent tool session, tmux, or Igor's terminal. Start it with `setsid ... &`, write a runner pid/log, then poll the log/pid from the agent.
 - Always export explicit service Node paths before building, because package builds need all supported stock Node ABIs and non-login shells may not resolve `mise which node@24`:
-  - `HOWCODE_NODE_24_PATH=/home/igorw/.local/share/mise/installs/node/24.15.0/bin/node`
+  - `HOWCODE_NODE_24_PATH=/home/igorw/.local/share/mise/installs/node/24.18.0/bin/node`
   - `HOWCODE_NODE_25_PATH=/home/igorw/.local/share/mise/installs/node/25.9.0/bin/node`
-  - `HOWCODE_NODE_26_PATH=/home/igorw/.local/share/mise/installs/node/26.1.0/bin/node`
+  - `HOWCODE_NODE_26_PATH=/home/igorw/.local/share/mise/installs/node/26.2.0/bin/node`
 - For code changes, run/verify `bun run ai:check` before this workflow or rely on commit hooks if the change was just committed.
 
 ## Procedure
@@ -57,10 +58,11 @@ src="$repo/artifacts/electron/linux-unpacked"
 dest="$temp_root/$app_name"
 pid_file="$temp_root/$app_name.pid"
 log_file="$temp_root/$app_name.log"
+user_data_path="$temp_root/$app_name-data"
 
-export HOWCODE_NODE_24_PATH=/home/igorw/.local/share/mise/installs/node/24.15.0/bin/node
+export HOWCODE_NODE_24_PATH=/home/igorw/.local/share/mise/installs/node/24.18.0/bin/node
 export HOWCODE_NODE_25_PATH=/home/igorw/.local/share/mise/installs/node/25.9.0/bin/node
-export HOWCODE_NODE_26_PATH=/home/igorw/.local/share/mise/installs/node/26.1.0/bin/node
+export HOWCODE_NODE_26_PATH=/home/igorw/.local/share/mise/installs/node/26.2.0/bin/node
 
 cd "$repo"
 
@@ -82,9 +84,11 @@ cp -a "$src" "$dest"
 
 # Replace the launch log for this run.
 : > "$log_file"
+mkdir -p "$user_data_path"
 
 # Launch fully detached from the agent shell/session and record pid.
-setsid -f "$dest/howcode" >"$log_file" 2>&1
+setsid -f env HOWCODE_USER_DATA_PATH="$user_data_path" \
+  "$dest/howcode" "--user-data-dir=$user_data_path" >"$log_file" 2>&1
 sleep 1
 
 pid=$(pgrep -f "^$dest/howcode" | head -n1 || true)

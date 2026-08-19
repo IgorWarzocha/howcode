@@ -1,2 +1,2 @@
-export { nativeTerminalModule } from './module'
-export { TerminalViewport } from './terminal-viewport'
+export { PiTuiViewport } from './pi-tui-viewport'
+export { ShellTerminalViewport } from './shell-terminal-viewport'

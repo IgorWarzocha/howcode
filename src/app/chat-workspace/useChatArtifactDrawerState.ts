@@ -8,9 +8,6 @@ type UseChatArtifactDrawerStateInput = {
   conversationId: string | null | undefined
   sidebarCompactMode: boolean
   settingsOpen: boolean
-  onArtifactDrawerOverlayChange?:
-    | ((visible: boolean, onClose?: (() => void) | undefined) => void)
-    | undefined
 }
 
 export type ChatArtifactDrawerState = ReturnType<typeof useChatArtifactDrawerState>
@@ -19,7 +16,6 @@ export function useChatArtifactDrawerState({
   conversationId,
   sidebarCompactMode,
   settingsOpen,
-  onArtifactDrawerOverlayChange,
 }: UseChatArtifactDrawerStateInput) {
   const [artifactsVisibleByConversation, setArtifactsVisibleByConversation] = useState<
     Record<string, boolean>
@@ -67,11 +63,13 @@ export function useChatArtifactDrawerState({
 
   const toggleArtifacts = useCallback(() => {
     if (!conversationId) return
+    const nextVisible = !artifactsVisible
     setArtifactsVisibleByConversation((current) => ({
       ...current,
-      [conversationId]: !(current[conversationId] ?? false),
+      [conversationId]: nextVisible,
     }))
-  }, [conversationId])
+    if (!nextVisible) setArtifactFullscreenConversationId(null)
+  }, [artifactsVisible, conversationId])
 
   useEffect(() => {
     const desktopContentElement = desktopContentRef.current
@@ -129,24 +127,6 @@ export function useChatArtifactDrawerState({
       }))
     })
   }, [conversationId])
-
-  useEffect(() => {
-    if (!artifactsVisible) setArtifactsFullscreen(false)
-  }, [artifactsVisible, setArtifactsFullscreen])
-
-  useEffect(() => {
-    const overlayVisible = artifactDrawerVisible && artifactDrawerOverlay
-    onArtifactDrawerOverlayChange?.(
-      overlayVisible,
-      overlayVisible ? handleCloseArtifacts : undefined,
-    )
-    return () => onArtifactDrawerOverlayChange?.(false)
-  }, [
-    artifactDrawerOverlay,
-    artifactDrawerVisible,
-    handleCloseArtifacts,
-    onArtifactDrawerOverlayChange,
-  ])
 
   useEffect(() => {
     if (!(artifactsVisible && (artifactDrawerOverlay || artifactsFullscreen))) return

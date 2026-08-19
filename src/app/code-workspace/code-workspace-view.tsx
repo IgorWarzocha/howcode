@@ -1,78 +1,18 @@
-import type { Dispatch, RefObject, SetStateAction } from 'react'
 import { useCallback, useRef, useState } from 'react'
 import { useHowcodeKeybindingCommand } from '../app-shell/keybinding-events'
 import type { AppShellController } from '../app-shell/useAppShellController'
-import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
 import type { Message } from '../types'
+import type { CodeWorkspaceViewProps } from './code-workspace-contract'
 import { CodeWorkspaceViewContent } from './code-workspace-footer'
-import { useDiffCommentController } from './useDiffCommentController'
+import { useGitOpsReviewController } from './useGitOpsReviewController'
 import { useQueuedPromptRestore } from './useQueuedPromptRestore'
 import { useWorkspaceFooterHeight } from './useWorkspaceFooterHeight'
 
-type CodeWorkspaceViewProps = {
-  controller: AppShellController
-  activeComposerState: AppShellController['activeComposerState']
-  activeThreadData: AppShellController['activeThreadData']
-  composerProjectId: string
-  currentProjectName: string
-  diffBaseline: ProjectDiffBaseline
-  diffRenderMode: ProjectDiffRenderMode
-  terminalDrawerVisible: boolean
-  terminalDrawerOverlay?: boolean
-  terminalSessionPath: string | null
-  workspaceContentClass: string
-  onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
-  onSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void
-  sidebarCollapsed: boolean
-  sidebarAutoHidden: boolean
-  sidebarCompactMode: boolean
-  onToggleSidebar: () => void
-}
-
 const TERMINAL_DRAWER_OFFSET = 'min(28rem, calc(100% - 2.5rem))'
 const EMPTY_COMPOSER_TOP = '60%'
-export type CodeWorkspaceContentProps = CodeWorkspaceViewProps &
-  ReturnType<typeof useDiffCommentController> &
-  ReturnType<typeof useQueuedPromptRestore> & {
-    footerRef: RefObject<HTMLElement | null>
-    mainViewRef: RefObject<HTMLElement | null>
-    terminalDrawerInsetStyle: { right: string } | undefined
-    footerInset: number
-    threadFooterStyle: { right?: string; top?: string } | undefined
-    showWorkspaceFooter: boolean
-    showThreadFooter: boolean
-    showCodeSidebarFooter: boolean
-    showDiffInMainView: boolean
-    showDesktopTerminalDrawer: boolean
-    centerThreadFooter: boolean
-    gitOpsFileTreeVisible: boolean
-    includeUntrackedDiffFiles: boolean
-    toggleGitOpsFileTree: () => void
-    toggleIncludeUntrackedDiffFiles: () => void
-    diffLoadError: string | null
-    setDiffLoadError: Dispatch<SetStateAction<string | null>>
-    threadTimelineLoading: boolean
-    composerLayoutVersion: number
-    setComposerLayoutVersion: Dispatch<SetStateAction<number>>
-    composerOverlayHeight: number
-    setComposerOverlayHeight: Dispatch<SetStateAction<number>>
-    composerPromptResetKey: number
-    setComposerPromptResetKey: Dispatch<SetStateAction<number>>
-    handleAction: AppShellController['handleAction']
-    handleLoadEarlierMessages: AppShellController['handleLoadEarlierMessages']
-    handleCloseGitOpsView: AppShellController['handleCloseGitOpsView']
-    handleOpenGitOpsView: AppShellController['handleOpenGitOpsView']
-    handleShowTakeoverTerminal: AppShellController['handleShowTakeoverTerminal']
-    handleToggleTerminal: AppShellController['handleToggleTerminal']
-    listComposerAttachmentEntries: AppShellController['listComposerAttachmentEntries']
-    shellState: AppShellController['shellState']
-    state: AppShellController['state']
-    projectGitState: AppShellController['projectGitState']
-    parentBranchName: string | null
-  }
 
 function shouldShowDesktopTerminalDrawer(
-  activeView: AppShellController['state']['activeView'],
+  activeView: AppShellController['workspace']['state']['activeView'],
   terminalDrawerVisible: boolean,
   terminalDrawerOverlay: boolean,
 ) {
@@ -103,7 +43,7 @@ function getFloatingFooterStyle(input: {
 }
 
 function getFloatingFooterLayoutState(input: {
-  activeView: AppShellController['state']['activeView']
+  activeView: AppShellController['workspace']['state']['activeView']
   activeThreadData: Message[] | undefined
   activeThreadLoading: boolean
   showThreadFooter: boolean
@@ -120,7 +60,7 @@ function getFloatingFooterLayoutState(input: {
 }
 
 function getCodeWorkspaceFlags(input: {
-  activeView: AppShellController['state']['activeView']
+  activeView: AppShellController['workspace']['state']['activeView']
   hasSelectedProject: boolean
   selectedProjectId: string
 }) {
@@ -138,6 +78,7 @@ function getCodeWorkspaceFlags(input: {
 export function CodeWorkspaceView({
   controller,
   activeComposerState,
+  activePiExtensionUiState,
   activeThreadData,
   composerProjectId,
   currentProjectName,
@@ -154,7 +95,6 @@ export function CodeWorkspaceView({
   sidebarCompactMode,
   onToggleSidebar,
 }: CodeWorkspaceViewProps) {
-  const [composerPromptResetKey, setComposerPromptResetKey] = useState(0)
   const [gitOpsFileTreeVisibilityByThread, setGitOpsFileTreeVisibilityByThread] = useState<
     Record<string, boolean>
   >({})
@@ -162,19 +102,17 @@ export function CodeWorkspaceView({
   const [composerOverlayHeight, setComposerOverlayHeight] = useState(0)
   const footerRef = useRef<HTMLElement>(null)
   const mainViewRef = useRef<HTMLElement>(null)
-  const {
-    handleAction,
-    handleLoadEarlierMessages,
-    handleCloseGitOpsView,
-    handleOpenGitOpsView,
-    handleOpenWorktreeDiffFile,
-    handleShowTakeoverTerminal,
-    handleToggleTerminal,
-    listComposerAttachmentEntries,
-    projectGitState,
-    shellState,
-    state,
-  } = controller
+  const handleAction = controller.desktop.handleAction
+  const handleLoadEarlierMessages = controller.thread.loadEarlierMessages
+  const handleCloseGitOpsView = controller.gitOps.close
+  const handleOpenGitOpsView = controller.gitOps.open
+  const handleOpenWorktreeDiffFile = controller.gitOps.openWorktreeFile
+  const handleShowTakeoverTerminal = controller.takeover.show
+  const handleToggleTerminal = controller.terminal.toggle
+  const listComposerAttachmentEntries = controller.composer.listAttachmentEntries
+  const projectGitState = controller.projects.gitState
+  const { shellState } = controller.desktop
+  const { state } = controller.workspace
   const { showWorkspaceFooter, showThreadFooter, showCodeSidebarFooter, showDiffInMainView } =
     getCodeWorkspaceFlags({
       activeView: state.activeView,
@@ -228,28 +166,16 @@ export function CodeWorkspaceView({
   const { centerDashboardFooter, centerThreadFooter, floatingWorkspaceFooter } =
     getFloatingFooterLayoutState({
       activeThreadData: activeThreadData?.messages,
-      activeThreadLoading: controller.activeThreadLoading,
+      activeThreadLoading: controller.thread.activeLoading,
       activeView: state.activeView,
       showThreadFooter,
     })
   const footerInset = showWorkspaceFooter && !floatingWorkspaceFooter ? footerHeight : 0
-  const {
-    diffCommentCount,
-    diffCommentError,
-    diffComments,
-    diffCommentsSending,
-    handleDiscardDiffComments,
-    handleSelectDiffComment,
-    handleSendDiffComments,
-    hasPendingDiffComments,
-    selectedDiffCommentId,
-    selectedDiffCommentJumpKey,
-  } = useDiffCommentController({
+  const gitOpsReview = useGitOpsReviewController({
     baseline: diffBaseline,
     composerProjectId,
     handleAction,
     handleOpenWorktreeDiffFile,
-    setComposerPromptResetKey,
     shellState,
     includeUntracked: includeUntrackedDiffFiles,
   })
@@ -274,7 +200,7 @@ export function CodeWorkspaceView({
     showThreadFooter,
     terminalDrawerInsetStyle,
   })
-  const threadTimelineLoading = state.activeView === 'thread' && controller.activeThreadLoading
+  const threadTimelineLoading = state.activeView === 'thread' && controller.thread.activeLoading
 
   return (
     <CodeWorkspaceViewContent
@@ -288,14 +214,14 @@ export function CodeWorkspaceView({
       projectGitState={projectGitState}
       parentBranchName={parentBranchName}
       diffBaseline={diffBaseline}
-      selectedDiffCommentId={selectedDiffCommentId}
-      selectedDiffCommentJumpKey={selectedDiffCommentJumpKey}
+      gitOpsReview={gitOpsReview}
       diffRenderMode={diffRenderMode}
       gitOpsFileTreeVisible={gitOpsFileTreeVisible}
       includeUntrackedDiffFiles={includeUntrackedDiffFiles}
       controller={controller}
       shellState={shellState}
       activeComposerState={activeComposerState}
+      activePiExtensionUiState={activePiExtensionUiState}
       currentProjectName={currentProjectName}
       workspaceContentClass={workspaceContentClass}
       activeThreadData={activeThreadData}
@@ -315,18 +241,10 @@ export function CodeWorkspaceView({
       threadFooterStyle={threadFooterStyle}
       sidebarAutoHidden={sidebarAutoHidden}
       terminalSessionPath={terminalSessionPath}
-      diffComments={diffComments}
-      diffCommentCount={diffCommentCount}
-      diffCommentsSending={diffCommentsSending}
-      diffCommentError={diffCommentError}
       diffLoadError={diffLoadError}
       setDiffLoadError={setDiffLoadError}
-      hasPendingDiffComments={hasPendingDiffComments}
       onSetDiffBaseline={onSetDiffBaseline}
       onSetDiffRenderMode={onSetDiffRenderMode}
-      handleDiscardDiffComments={handleDiscardDiffComments}
-      handleSendDiffComments={handleSendDiffComments}
-      handleSelectDiffComment={handleSelectDiffComment}
       setComposerLayoutVersion={setComposerLayoutVersion}
       handleCloseGitOpsView={handleCloseGitOpsView}
       handleEditQueuedPrompt={handleEditQueuedPrompt}
@@ -342,8 +260,6 @@ export function CodeWorkspaceView({
       toggleIncludeUntrackedDiffFiles={toggleIncludeUntrackedDiffFiles}
       showCodeSidebarFooter={showCodeSidebarFooter}
       scopedRestoredQueuedPrompt={scopedRestoredQueuedPrompt}
-      composerPromptResetKey={composerPromptResetKey}
-      setComposerPromptResetKey={setComposerPromptResetKey}
     />
   )
 }

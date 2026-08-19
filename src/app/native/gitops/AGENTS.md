@@ -1,7 +1,11 @@
-# Native GitOps module
-
-- This folder owns Howcode's built-in GitOps boundary: diff UI, review/comment state, branch/baseline controls, and GitOps composer surfaces.
+- GitOps is a single-user loop for reviewing agent-authored changes, sending comments to the active agent thread, and making occasional direct edits—not a general Git client or collaborative review system.
+- Keep diff UI, review/comment state, branch/baseline controls, and GitOps composer surfaces in this boundary.
+- Keep review identity, persistence, prompts, and Pierre adapters in `review/`; `diff/` owns patch rendering and CodeView item lifecycle. Never recover review targets from Pierre DOM attributes or global pointer listeners.
+- Keep read-only review actions in transient Pierre annotations. `renderSelectionAction` is editor-only; do not enable editing or hand-position overlays to imitate it.
+- Keep accepted hunks as a local Pierre `diffAcceptRejectHunk` review transform. Reject opens a required hunk-scoped comment draft; only saved comments sent through the active agent thread carry rejection feedback. Review controls never write or stage files.
+- Load complete diff files through the typed desktop project-git contract and Pierre's `loadDiffFiles`; keep parsed `fileDiff` identities stable so hydration survives rendering.
+- Keep editor loading/state in `edit/`. Writes cross the grouped `GitOpsFileActions` host adapter, require the read revision, and finish through the atomic `workspace.write-file` action; never write from the renderer.
+- The edit revision check only prevents clobbering concurrent agent changes. Do not grow it into synchronization machinery; merge UI, staging workbenches, and multiplayer review are out of scope.
+- Compose GitOps UI through grouped project, diff, review, and file-tree contracts. Message and commit-option lifecycles belong in their owned hooks; popover effects belong with their controls, not in the surface entrypoint.
 - Treat it as plugin-shaped but not dynamically pluggable yet: no disable flags, registries, or runtime loading until the app shell has a deliberate contribution API.
-- Public cross-module imports should go through `@howcode/native-gitops`.
-- Keep internal GitOps implementation imports relative inside this folder.
 - Generic composer primitives may be imported from `@howcode/composer`; do not move non-Git composer behavior here.

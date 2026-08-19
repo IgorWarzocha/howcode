@@ -3,6 +3,7 @@ import { InboxView } from '@howcode/inbox'
 import { LandingView, ProjectOverviewView } from '@howcode/projects'
 import { SessionsView } from '@howcode/sessions'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
+import { ThreadView } from '@howcode/thread'
 import { lazy, Suspense } from 'react'
 import type {
   AppSettings,
@@ -19,7 +20,6 @@ import type {
   ThreadData,
 } from '../desktop/types'
 import { SettingsView } from '../settings/settings-view'
-import { ThreadView } from '../thread/thread-view'
 import type { Project, View } from '../types'
 import { viewSubtitleClass, viewTitleClass } from '../ui/classes'
 
@@ -221,9 +221,7 @@ export function CodeWorkspaceMainView({
         contextUsage={contextUsage}
         currentModel={currentModel}
         currentThinkingLevel={currentThinkingLevel}
-        favoriteFolders={appSettings.favoriteFolders}
         isCompacting={isCompacting}
-        showDictationButton={appSettings.showDictationButton}
         thread={selectedInboxThread}
         onAction={onAction}
         onDismissThread={onDismissInboxThread}
@@ -247,7 +245,6 @@ export function CodeWorkspaceMainView({
         availableModels={availableModels}
         availableThinkingLevels={availableThinkingLevels}
         currentModel={currentModel}
-        projects={projects}
         openTarget={settingsOpenTarget}
         onAction={onAction}
         onClose={onCloseUtilityView}

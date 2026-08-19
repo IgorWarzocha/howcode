@@ -47,6 +47,7 @@ const thinkingLevelLabels: Record<ComposerThinkingLevel, string> = {
   medium: 'Medium',
   high: 'High',
   xhigh: 'X-High',
+  max: 'Max',
 }
 
 function formatContextPercent(contextUsage: ComposerContextUsage | null) {
@@ -57,7 +58,7 @@ function formatContextPercent(contextUsage: ComposerContextUsage | null) {
   return `${contextUsage.percent.toFixed(0)}%`
 }
 
-export function DesktopComposerStatus({
+function DesktopComposerStatus({
   className,
   contextUsage,
   interactive = false,

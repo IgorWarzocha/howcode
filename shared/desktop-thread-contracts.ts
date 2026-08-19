@@ -35,6 +35,7 @@ export type InboxThread = {
   preview: string | null
   running: boolean
   unread: boolean
+  branchName?: string | null | undefined
   isChat?: boolean | undefined
 }
 
@@ -161,6 +162,15 @@ export type CustomThreadMessage = {
   customType: string
   content: string[]
   isError?: boolean | undefined
+  details?: unknown | undefined
+}
+
+export type ThreadCustomMessageRecord = {
+  id: string
+  customType: string
+  content: unknown
+  display?: boolean | undefined
+  details?: unknown | undefined
 }
 
 export type SystemThreadMessage = {
@@ -188,6 +198,7 @@ export type ThreadData = {
   sessionPath: string
   title: string
   messages: Message[]
+  customMessages?: ThreadCustomMessageRecord[] | undefined
   previousMessageCount: number
   isStreaming: boolean
   isCompacting: boolean

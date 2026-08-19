@@ -1,33 +1,7 @@
 {
   "nativeServiceAbiDirectoryName": "native-node-abi",
   "serviceNativePackages": ["better-sqlite3", "node-pty"],
+  "serviceAbiPackages": ["node-pty"],
   "supportedServiceNodeMajors": ["24", "25", "26"],
-  "supportedServiceNodeAbis": ["137", "141", "147"],
-  "nativeRuntimeFiles": [
-    "node_modules/better-sqlite3/build/Release/better_sqlite3.node",
-    "node_modules/node-pty/build/Release/pty.node",
-    "node_modules/node-pty/build/Release/conpty.node",
-    "node_modules/node-pty/build/Release/conpty_console_list.node",
-    "node_modules/node-pty/build/Release/winpty.dll",
-    "node_modules/node-pty/build/Release/winpty-agent.exe",
-    "node_modules/node-pty/prebuilds/win32-x64/pty.node",
-    "node_modules/node-pty/prebuilds/win32-x64/conpty.node",
-    "node_modules/node-pty/prebuilds/win32-x64/conpty_console_list.node",
-    "node_modules/node-pty/prebuilds/win32-x64/winpty.dll",
-    "node_modules/node-pty/prebuilds/win32-x64/winpty-agent.exe",
-    "node_modules/node-pty/prebuilds/win32-arm64/pty.node",
-    "node_modules/node-pty/prebuilds/win32-arm64/conpty.node",
-    "node_modules/node-pty/prebuilds/win32-arm64/conpty_console_list.node",
-    "node_modules/node-pty/prebuilds/win32-arm64/winpty.dll",
-    "node_modules/node-pty/prebuilds/win32-arm64/winpty-agent.exe",
-    "node_modules/node-pty/prebuilds/darwin-arm64/pty.node",
-    "node_modules/node-pty/prebuilds/darwin-arm64/spawn-helper",
-    "node_modules/node-pty/prebuilds/darwin-x64/pty.node",
-    "node_modules/node-pty/prebuilds/darwin-x64/spawn-helper",
-    "node_modules/node-pty/prebuilds/win32-x64/conpty/conpty.dll",
-    "node_modules/node-pty/prebuilds/win32-x64/conpty/OpenConsole.exe",
-    "node_modules/node-pty/prebuilds/win32-arm64/conpty/conpty.dll",
-    "node_modules/node-pty/prebuilds/win32-arm64/conpty/OpenConsole.exe"
-  ],
-  "requiredNativeRuntimeFiles": ["node_modules/better-sqlite3/build/Release/better_sqlite3.node"]
+  "supportedServiceNodeAbis": ["137", "141", "147"]
 }

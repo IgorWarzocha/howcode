@@ -21,7 +21,6 @@ export {
   toggleProjectPinned,
 } from './project-writes.ts'
 export {
-  setSessionNativeExtensions,
   syncSessionSummaries,
   upsertThreadSummary,
 } from './session-writes.ts'
@@ -33,16 +32,23 @@ export {
   assignThreadToProjectBranch,
   deleteThreadRecord,
   deleteThreadRecordsBySessionPaths,
+  renameThreadTitle,
   restoreThread,
   restoreThreads,
   setThreadDiffPreferences,
   setThreadRunningState,
   toggleThreadPinned,
 } from './thread-writes.ts'
-export type { ProjectWorktreeMetadata, ProjectWorktreeSource } from './worktree-writes.ts'
+export type {
+  ProjectWorktreeMetadata,
+  ProjectWorktreeSource,
+  StoredProjectWorktree,
+} from './worktree-writes.ts'
 export {
   deleteProjectWorktreeMetadata,
+  getProjectWorktree,
   getProjectWorktreeDirectory,
+  listProjectWorktreePaths,
   setProjectWorktreeCompleted,
   setProjectWorktreeDirectory,
   upsertProjectWorktree,

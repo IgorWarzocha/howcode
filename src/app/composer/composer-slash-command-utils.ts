@@ -42,7 +42,7 @@ export function shouldWaitForSlashCommands(draft: string) {
 }
 
 export function sortComposerSlashCommands(commands: ComposerSlashCommand[]) {
-  return [...commands].sort((left, right) => {
+  return commands.toSorted((left, right) => {
     const sourceOrder = slashCommandSourceOrder[left.source] - slashCommandSourceOrder[right.source]
     if (sourceOrder !== 0) return sourceOrder
     return left.name.localeCompare(right.name)

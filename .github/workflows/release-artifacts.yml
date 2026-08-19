@@ -46,7 +46,7 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.3.10
+          bun-version: 1.3.14
           no-cache: true
 
       - uses: actions/setup-node@v6
@@ -118,7 +118,8 @@ jobs:
 
       - name: Build launcher archives
         env:
-          HOWCODE_RELEASE_ASSET_BASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_type == 'tag' && github.ref_name || format('channel-{0}', github.ref_name) }}
+          HOWCODE_RELEASE_CHANNEL: ${{ github.ref_type == 'tag' && 'main' || (github.ref_name == 'dev' && 'dev' || 'main') }}
+          HOWCODE_RELEASE_ASSET_BASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_type == 'tag' && github.ref_name || (github.ref_name == 'dev' && 'channel-dev' || 'channel-main') }}
         run: bun run build:launcher-artifacts
 
       - name: Upload dev artifacts
@@ -239,6 +240,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+          no-cache: true
+
       - name: Download built artifacts
         uses: actions/download-artifact@v8
         with:
@@ -248,6 +254,11 @@ jobs:
 
       - name: List channel release assets
         run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' -o -name '*.zip' \) -print | sort
+
+      - name: Validate channel update manifests
+        env:
+          HOWCODE_RELEASE_CHANNEL: ${{ github.ref_name }}
+        run: bun run validate:release-assets release-assets
 
       - name: Prepare channel release notes
         env:
@@ -290,12 +301,44 @@ jobs:
           release_title=$(cat channel-release-title.txt)
 
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            mkdir -p previous-manifests
+            gh release download "$RELEASE_TAG" --pattern 'stable-*-update.json' --dir previous-manifests || true
+
+            declare -A keep_assets=()
+            for asset in "${assets[@]}"; do
+              keep_assets["$(basename "$asset")"]=1
+            done
+            while IFS= read -r previous_archive; do
+              if [ -n "$previous_archive" ]; then
+                keep_assets["$previous_archive"]=1
+              fi
+            done < <(node - <<'NODE'
+          const fs = require('node:fs')
+          const path = require('node:path')
+          for (const name of fs.readdirSync('previous-manifests')) {
+            try {
+              const metadata = JSON.parse(fs.readFileSync(path.join('previous-manifests', name), 'utf8'))
+              if (typeof metadata.assetUrl === 'string') {
+                console.log(path.basename(new URL(metadata.assetUrl).pathname))
+              }
+            } catch {}
+          }
+          NODE
+            )
+
+            mapfile -d '' payload_assets < <(find release-assets -type f ! -name 'stable-*-update.json' \( -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' -o -name '*.zip' \) -print0 | sort -z)
+            mapfile -d '' manifest_assets < <(find release-assets -type f -name 'stable-*-update.json' -print0 | sort -z)
+            gh release upload "$RELEASE_TAG" "${payload_assets[@]}" --clobber
+            # Per-target manifests commit last: every advertised immutable archive now exists.
+            gh release upload "$RELEASE_TAG" "${manifest_assets[@]}" --clobber
+            gh release edit "$RELEASE_TAG" --title "$release_title" --notes-file channel-release-notes.md --target "$GITHUB_SHA" "${release_flags[@]}"
+
             mapfile -t old_assets < <(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name | select(test("^(stable-.*-update\\.json|howcode-[^-]+-[^-]+\\.tar\\.gz|archive-howcode-[^-]+-[^-]+-[a-f0-9]{64}\\.tar\\.gz|.*\\.AppImage|.*\\.exe|.*\\.zip)$"))')
             for old_asset in "${old_assets[@]}"; do
-              gh release delete-asset "$RELEASE_TAG" "$old_asset" --yes
+              if [ -z "${keep_assets[$old_asset]+x}" ]; then
+                gh release delete-asset "$RELEASE_TAG" "$old_asset" --yes
+              fi
             done
-            gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
-            gh release edit "$RELEASE_TAG" --title "$release_title" --notes-file channel-release-notes.md --target "$GITHUB_SHA" "${release_flags[@]}"
           else
             gh release create "$RELEASE_TAG" "${assets[@]}" --title "$release_title" --target "$GITHUB_SHA" --notes-file channel-release-notes.md "${release_flags[@]}"
           fi
@@ -309,6 +352,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+          no-cache: true
+
       - name: Download built artifacts
         uses: actions/download-artifact@v8
         with:
@@ -318,6 +366,11 @@ jobs:
 
       - name: List release assets
         run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' -o -name '*.zip' \) -print | sort
+
+      - name: Validate versioned update manifests
+        env:
+          HOWCODE_RELEASE_CHANNEL: main
+        run: bun run validate:release-assets release-assets
 
       - name: Create or update GitHub release
         env:

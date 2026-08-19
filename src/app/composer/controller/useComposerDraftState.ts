@@ -1,5 +1,14 @@
-import { type SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  type SetStateAction,
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import type { ComposerAttachment } from '../../desktop/types'
+import { useLatestRef } from '../../hooks/useLatestRef'
 import { mergeDraftWithRestoredQueuedPrompt } from '../composer-queue.helpers'
 import { composerDraftStore, getComposerDraftThreadId } from '../composerDraftStore'
 
@@ -32,15 +41,15 @@ export function useComposerDraftState({
     () => `${composerMode}::${projectId}::${sessionPath ?? ''}::${draftThreadId ?? ''}`,
     [composerMode, draftThreadId, projectId, sessionPath],
   )
-  const activeComposerScopeKeyRef = useRef(composerScopeKey)
-  const activeDraftThreadIdRef = useRef<string | null>(draftThreadId)
+  const activeComposerScopeKeyRef = useLatestRef(composerScopeKey)
+  const activeDraftThreadIdRef = useLatestRef(draftThreadId)
   const skipNextDraftPersistenceRef = useRef<string | null>(null)
   const attachmentsRef = useRef<ComposerAttachment[]>([])
   const draftValueRef = useRef('')
-
-  activeDraftThreadIdRef.current = draftThreadId
-  activeComposerScopeKeyRef.current = composerScopeKey
-  attachmentsRef.current = attachments
+  const resetParentComposerState = useEffectEvent((pickerOpen: boolean) => {
+    setOpenMenu(pickerOpen ? 'picker' : null)
+    setErrorMessage(null)
+  })
 
   const setDraftValue = useCallback((value: SetStateAction<string>) => {
     const nextValue =
@@ -66,9 +75,8 @@ export function useComposerDraftState({
     const persistedDraft = draftThreadId ? composerDraftStore.getDraft(draftThreadId) : null
     setDraftValue(persistedDraft?.prompt ?? '')
     setAttachmentValue(persistedDraft?.attachments ?? [])
-    setOpenMenu(persistedDraft?.pickerOpen ? 'picker' : null)
-    setErrorMessage(null)
-  }, [draftThreadId, setAttachmentValue, setDraftValue, setErrorMessage, setOpenMenu])
+    resetParentComposerState(persistedDraft?.pickerOpen === true)
+  }, [draftThreadId, setAttachmentValue, setDraftValue])
 
   useEffect(() => {
     if (!draftThreadId) {

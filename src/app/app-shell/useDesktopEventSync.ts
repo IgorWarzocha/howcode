@@ -4,6 +4,7 @@ import type {
   ChatSidebarState,
   ComposerState,
   DesktopEvent,
+  PiExtensionUiState,
   ProjectGitState,
   ThreadData,
 } from '../desktop/types'
@@ -34,6 +35,7 @@ type UseDesktopEventSyncInput = {
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>
   setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>
   setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>
+  setPiExtensionUiStateBySession: Dispatch<SetStateAction<Record<string, PiExtensionUiState>>>
   setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>
   setThreadHistoryCompactions: Dispatch<SetStateAction<number>>
 }
@@ -50,6 +52,7 @@ export function useDesktopEventSync({
   setComposerState,
   setChatSidebarState,
   setLiveThreadData,
+  setPiExtensionUiStateBySession,
   setProjectGitState,
   setThreadHistoryCompactions,
 }: UseDesktopEventSyncInput) {
@@ -61,6 +64,7 @@ export function useDesktopEventSync({
       selectedThreadId: workspaceState.selectedThreadId,
       selectedSessionPath: workspaceState.selectedSessionPath,
       selectedInboxSessionPath: workspaceState.selectedInboxSessionPath,
+      takeoverVisible: workspaceState.takeoverVisible,
     } satisfies DesktopEventSelectionState,
   })
   const localDraftSessionPathByPersistedSessionPathRef = useRef(new Map<string, string>())
@@ -74,6 +78,7 @@ export function useDesktopEventSync({
         selectedThreadId: workspaceState.selectedThreadId,
         selectedSessionPath: workspaceState.selectedSessionPath,
         selectedInboxSessionPath: workspaceState.selectedInboxSessionPath,
+        takeoverVisible: workspaceState.takeoverVisible,
       },
     }
   }, [
@@ -83,6 +88,7 @@ export function useDesktopEventSync({
     workspaceState.selectedThreadId,
     workspaceState.selectedInboxSessionPath,
     workspaceState.selectedSessionPath,
+    workspaceState.takeoverVisible,
   ])
 
   useEffect(() => {
@@ -98,6 +104,7 @@ export function useDesktopEventSync({
       setChatSidebarState,
       setComposerState,
       setLiveThreadData,
+      setPiExtensionUiStateBySession,
       setProjectGitState,
       setThreadHistoryCompactions,
       desktopEventStateRef,
@@ -114,6 +121,7 @@ export function useDesktopEventSync({
     setChatSidebarState,
     setComposerState,
     setLiveThreadData,
+    setPiExtensionUiStateBySession,
     setProjectGitState,
     setThreadHistoryCompactions,
   ])

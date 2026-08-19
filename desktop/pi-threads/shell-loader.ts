@@ -26,6 +26,7 @@ import {
   cancelProjectDiffStream,
   captureProjectDiffBaseline,
   listProjectCommits,
+  loadProjectDiffFileContents,
   loadProjectDiffImagePreview,
   loadProjectDiffStats,
   loadProjectGitState,
@@ -89,6 +90,7 @@ export {
   cancelProjectDiffStream,
   captureProjectDiffBaseline,
   listProjectCommits,
+  loadProjectDiffFileContents,
   loadProjectDiffImagePreview,
   loadProjectDiffStats,
   loadProjectGitState,
@@ -100,5 +102,5 @@ export const subscribeDesktopEvents = subscribeRuntimeEvents
 
 export async function disposeDesktopRuntime() {
   disposeSessionWatcher()
-  shutdownRuntimeHosts()
+  await shutdownRuntimeHosts()
 }

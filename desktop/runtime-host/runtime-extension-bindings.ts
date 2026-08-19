@@ -7,12 +7,17 @@ import {
   refreshHeadlessAgentSessionExtensionBindings,
 } from '../runtime/agent-session-extensions.ts'
 import { buildComposerState } from '../runtime/composer-state.ts'
-import type { PiRuntime } from '../runtime/types.ts'
+import { createPiExtensionUiContext } from '../runtime/pi-extension-ui-state.ts'
 import { emitDesktopEvent } from './host-events.ts'
-import { publishComposerUpdate, publishThreadUpdate } from './live-thread-publisher.ts'
+import type { LivePiRuntime } from './live-runtime-updates.ts'
+import {
+  publishComposerUpdate,
+  publishPiExtensionUiUpdate,
+  publishThreadUpdate,
+} from './live-thread-publisher.ts'
 
 type RuntimeExtensionBindingHandlers = {
-  isRuntimeExtensionCommandRunning: (runtime: PiRuntime) => boolean
+  isRuntimeExtensionCommandRunning: (runtime: LivePiRuntime) => boolean
   reloadRuntimeSettingsIfSafe: (runtimeKey: string) => Promise<boolean>
 }
 
@@ -23,36 +28,48 @@ function getRuntimeDiagnosticExtensionLabel(extensionPath: string) {
 }
 
 function publishRuntimeExtensionCommandState(
-  runtime: PiRuntime,
+  runtime: LivePiRuntime,
   handlers: RuntimeExtensionBindingHandlers,
 ) {
-  void buildComposerState(runtime)
-    .then((composer) =>
-      publishComposerUpdate(composer, {
-        projectId: runtime.cwd,
-        sessionPath: runtime.session.sessionFile,
-      }),
-    )
-    .catch((error) => console.warn('Failed to publish extension command state', error))
+  runtime.updates.run('extension command composer state', async () => {
+    const composer = await buildComposerState(runtime)
+    if (!runtime.updates.isActive()) return
+    publishComposerUpdate(composer, {
+      projectId: runtime.cwd,
+      sessionPath: runtime.session.sessionFile,
+    })
+  })
 
   if (handlers.isRuntimeExtensionCommandRunning(runtime)) return
-  void publishThreadUpdate(runtime, 'compaction').catch(() => {
-    // Branch summaries can reuse Pi's compaction state without emitting compaction_end.
-    // Clear the live thread state when the extension command itself has finished.
-  })
-  const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile)
-  if (runtimeKey) {
-    void handlers.reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
-      // Keep stale settings marked; the next safe point retries silently.
+  runtime.updates.run('extension command completion', async () => {
+    await publishThreadUpdate(runtime, 'compaction').catch(() => {
+      // Branch summaries can reuse Pi's compaction state without emitting compaction_end.
+      // Clear the live thread state when the extension command itself has finished.
     })
-  }
+    if (!runtime.updates.isActive()) return
+    const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile)
+    if (runtimeKey) {
+      await handlers.reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
+        // Keep stale settings marked; the next safe point retries silently.
+      })
+    }
+  })
+}
+
+function scheduleRuntimeExtensionUiUpdate(runtime: LivePiRuntime) {
+  runtime.updates.scheduleExtensionUi(() => publishPiExtensionUiUpdate(runtime))
 }
 
 export async function bindRuntimeExtensionHandlers(
-  runtime: PiRuntime,
+  runtime: LivePiRuntime,
   handlers: RuntimeExtensionBindingHandlers,
 ) {
   await bindHeadlessAgentSessionExtensions(runtime.session, {
+    uiContext: createPiExtensionUiContext(
+      runtime,
+      () => scheduleRuntimeExtensionUiUpdate(runtime),
+      () => publishRuntimeExtensionCommandState(runtime, handlers),
+    ),
     onExtensionCommandStateChange: () => publishRuntimeExtensionCommandState(runtime, handlers),
     onExtensionError: (error) => {
       const extensionLabel = getRuntimeDiagnosticExtensionLabel(error.extensionPath)
@@ -69,7 +86,7 @@ export async function bindRuntimeExtensionHandlers(
 }
 
 export async function refreshRuntimeExtensionHandlers(
-  runtime: PiRuntime,
+  runtime: LivePiRuntime,
   handlers: RuntimeExtensionBindingHandlers,
 ) {
   await refreshHeadlessAgentSessionExtensionBindings(runtime.session, {

@@ -1,11 +1,9 @@
-const betterSqliteFile = 'node_modules/better-sqlite3/build/Release/better_sqlite3.node'
-
 function nativeRuntimeFiles() {
-  return [betterSqliteFile, 'node_modules/node-pty/build/Release/pty.node']
+  return ['node_modules/node-pty/build/Release/pty.node']
 }
 
 function requiredNativeRuntimeFiles() {
-  return [betterSqliteFile]
+  return []
 }
 
 function ptyValidationScript() {

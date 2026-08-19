@@ -1,9 +1,11 @@
 import type { ProjectDiffBaseline } from '../../desktop/types'
 import { DiffPanelContent } from './diff/diff-panel-content'
 import { DiffWorkerPoolProvider } from './diff/diff-worker-pool-provider'
+import type { GitOpsFileActions } from './edit/gitops-file-actions'
 
 type DiffPanelProps = {
   projectId: string
+  fileActions: GitOpsFileActions
   isGitRepo: boolean
   baseline: ProjectDiffBaseline | null
   selectedFilePath: string | null
@@ -18,6 +20,7 @@ type DiffPanelProps = {
 }
 
 export function DiffPanel({
+  fileActions,
   projectId,
   isGitRepo,
   baseline,
@@ -34,6 +37,7 @@ export function DiffPanel({
   return (
     <DiffWorkerPoolProvider>
       <DiffPanelContent
+        fileActions={fileActions}
         projectId={projectId}
         isGitRepo={isGitRepo}
         baseline={baseline}

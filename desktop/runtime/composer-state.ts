@@ -1,6 +1,7 @@
 import type { ThinkingLevel } from '@earendil-works/pi-agent-core'
 import { getSupportedThinkingLevels } from '@earendil-works/pi-ai'
 import type { AgentSession } from '@earendil-works/pi-coding-agent'
+import { composerThinkingLevels } from '../../shared/composer-thinking-level.ts'
 import type {
   ComposerContextUsage,
   ComposerModel,
@@ -12,18 +13,27 @@ import type {
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
 import {
   normalizeModelContextWindowValue,
-  normalizeModelRegistryContextWindows,
+  normalizeModelRuntimeContextWindows,
 } from '../../shared/model-context-window-normalization.ts'
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import { getPiModule } from '../pi-module.ts'
 import { isHeadlessExtensionCommandRunning } from './agent-session-extensions.ts'
+import { getBundledSkillPaths } from './bundled-skills.ts'
 import { getRuntimeSystemPrompt } from './chat-system-prompt.ts'
 import { buildQueuedPrompts } from './composer-queue'
 import {
   createIsolatedRuntimeResourceLoader,
   createRuntimeSettingsManager,
+  getRuntimeDefaultProjectTrust,
+  getRuntimeProjectTrustRequest,
+  resolveRuntimeProjectTrust,
 } from './isolated-settings-manager.ts'
-import { getNativeAskQuestionsRequest } from './native-ask-questions-state.ts'
+import {
+  getPiExtensionDialog,
+  getPiExtensionShortcuts,
+  getPiExtensionStatuses,
+  getPiExtensionWidgets,
+} from './pi-extension-ui-state.ts'
 import type { PiRuntime } from './types.ts'
 
 export const DEFAULT_COMPOSER_THINKING_LEVEL: ComposerThinkingLevel = 'medium'
@@ -47,12 +57,12 @@ function mapComposerModel(
     id: model.id,
     name: model.name ?? model.id,
     reasoning: Boolean(model.reasoning),
-    input: (model.input ?? ['text']) as Array<'text' | 'image'>,
+    input: model.input ?? ['text'],
   }
 }
 
 function mapThinkingLevels(levels: ThinkingLevel[]) {
-  return levels as ComposerThinkingLevel[]
+  return levels
 }
 
 function buildSessionQueuedPrompts(session: AgentSession): ComposerQueuedPrompt[] {
@@ -74,9 +84,26 @@ function mapContextUsage(session: AgentSession): ComposerContextUsage | null {
     tokens: usage.tokens,
     contextWindow,
     percent: usage.tokens === null ? usage.percent : (usage.tokens / contextWindow) * 100,
+    latestCacheHitRate: getLatestCacheHitRate(session),
   }
   contextUsageCache.set(session, contextUsage)
   return contextUsage
+}
+
+function getLatestCacheHitRate(session: AgentSession) {
+  let latestCacheHitRate: number | null = null
+
+  for (const entry of session.sessionManager.getBranch()) {
+    if (entry.type !== 'message' || entry.message.role !== 'assistant') continue
+
+    const usage = entry.message.usage
+    if (!usage) continue
+    const latestPromptTokens = usage.input + usage.cacheRead + usage.cacheWrite
+    latestCacheHitRate =
+      latestPromptTokens > 0 ? (usage.cacheRead / latestPromptTokens) * 100 : null
+  }
+
+  return latestCacheHitRate
 }
 
 function getContextUsageForComposerState(
@@ -98,34 +125,27 @@ export function getAvailableThinkingLevelsForModel(
     return ['off']
   }
 
-  return getSupportedThinkingLevels(model) as ComposerThinkingLevel[]
+  return getSupportedThinkingLevels(model)
 }
 
 export function clampThinkingLevel(
   level: ComposerThinkingLevel,
   availableLevels: ComposerThinkingLevel[],
 ): ComposerThinkingLevel {
-  if (availableLevels.includes(level)) {
+  const availableLevelSet = new Set(availableLevels)
+  if (availableLevelSet.has(level)) {
     return level
   }
 
-  const orderedLevels: ComposerThinkingLevel[] = [
-    'off',
-    'minimal',
-    'low',
-    'medium',
-    'high',
-    'xhigh',
-  ]
-  const requestedIndex = orderedLevels.indexOf(level)
+  const requestedIndex = composerThinkingLevels.indexOf(level)
 
   if (requestedIndex === -1) {
     return availableLevels[0] ?? 'off'
   }
 
   for (let index = requestedIndex; index >= 0; index -= 1) {
-    const candidate = orderedLevels[index]
-    if (candidate && availableLevels.includes(candidate)) {
+    const candidate = composerThinkingLevels[index]
+    if (candidate && availableLevelSet.has(candidate)) {
       return candidate
     }
   }
@@ -159,10 +179,10 @@ function getModeThinkingLevel(request: ComposerStateRequest) {
 }
 
 async function resolveComposerStateSnapshot(request: ComposerStateRequest = {}) {
-  const { cwd, session } = await createComposerSnapshotSession(request)
+  const { cwd, projectTrustServices, session } = await createComposerSnapshotSession(request)
 
   try {
-    const availableModels = (await session.modelRegistry.getAvailable()) as ComposerSourceModel[]
+    const availableModels = (await session.modelRuntime.getAvailable()) as ComposerSourceModel[]
     const requestedModeModelSelection = getModeModelSelection(request)
     const modeModelSelection = requestedModeModelSelection?.provider
       ? { provider: requestedModeModelSelection.provider, id: requestedModeModelSelection.id }
@@ -187,6 +207,10 @@ async function resolveComposerStateSnapshot(request: ComposerStateRequest = {}) 
       ),
       availableThinkingLevels,
       contextUsage: mapContextUsage(session),
+      projectTrustRequest: getRuntimeProjectTrustRequest({
+        ...projectTrustServices,
+        cwd,
+      }),
     }
   } finally {
     session.dispose()
@@ -196,52 +220,67 @@ async function resolveComposerStateSnapshot(request: ComposerStateRequest = {}) 
 export async function createComposerSnapshotSession(request: ComposerStateRequest = {}) {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
   const {
-    AuthStorage,
-    ModelRegistry,
+    ModelRuntime,
     SessionManager,
     SettingsManager,
     DefaultResourceLoader,
+    ProjectTrustStore,
     createAgentSession,
     getAgentDir,
+    hasTrustRequiringProjectResources,
   } = await getPiModule()
   const cwd = persistedSessionPath
     ? SessionManager.open(persistedSessionPath).getCwd()
     : (request.projectId ?? getDesktopWorkingDirectory())
   const agentDir = getAgentDir()
-  const authStorage = AuthStorage.create()
-  const modelRegistry = normalizeModelRegistryContextWindows(
-    ModelRegistry.create(authStorage, `${agentDir}/models.json`),
+  const defaultProjectTrust = getRuntimeDefaultProjectTrust({ SettingsManager, agentDir, cwd })
+  const projectTrusted = resolveRuntimeProjectTrust({
+    ProjectTrustStore,
+    agentDir,
+    cwd,
+    defaultProjectTrust,
+    hasTrustRequiringProjectResources,
+    settingsCwd: request.composerSessionDir,
+  })
+  const modelRuntime = normalizeModelRuntimeContextWindows(
+    await ModelRuntime.create({
+      authPath: `${agentDir}/auth.json`,
+      modelsPath: `${agentDir}/models.json`,
+    }),
   )
   const settingsManager = createRuntimeSettingsManager({
     SettingsManager,
     cwd,
     agentDir,
     settingsCwd: request.composerSessionDir,
+    projectTrusted,
   })
   const sessionManager = persistedSessionPath
     ? SessionManager.open(persistedSessionPath)
     : SessionManager.inMemory()
   const resourceLoader = await createIsolatedRuntimeResourceLoader({
     DefaultResourceLoader,
+    additionalSkillPaths: getBundledSkillPaths(),
     cwd,
     agentDir,
     settingsCwd: request.composerSessionDir,
     settingsManager,
+    projectTrusted,
     systemPrompt: getRuntimeSystemPrompt({ settingsCwd: request.composerSessionDir }),
   })
   const { session } = await createAgentSession({
     cwd,
     agentDir,
-    authStorage,
-    modelRegistry,
+    modelRuntime,
     settingsManager,
-    ...(resourceLoader ? { resourceLoader } : {}),
+    resourceLoader,
     sessionManager,
     tools: [],
   })
 
   return {
     cwd,
+    projectTrustServices: { ProjectTrustStore, agentDir, hasTrustRequiringProjectResources },
     session,
   }
 }
@@ -268,12 +307,16 @@ export async function buildComposerStateSnapshot(
       id: model.id,
       name: model.name ?? model.id,
       reasoning: Boolean(model.reasoning),
-      input: (model.input ?? ['text']) as Array<'text' | 'image'>,
+      input: model.input ?? ['text'],
     })),
     currentThinkingLevel: snapshot.currentThinkingLevel,
     availableThinkingLevels: snapshot.availableThinkingLevels,
     queuedPrompts: [],
-    nativeAskQuestionsRequest: null,
+    piExtensionWidgets: [],
+    piExtensionStatuses: [],
+    piExtensionShortcuts: [],
+    piExtensionDialogRequest: null,
+    projectTrustRequest: snapshot.projectTrustRequest,
     contextUsage: snapshot.contextUsage,
     isCompacting: false,
     isExtensionCommandRunning: false,
@@ -284,21 +327,39 @@ export async function buildComposerState(
   runtime: PiRuntime,
   options: BuildComposerStateOptions = {},
 ): Promise<ComposerState> {
-  const availableModels = (await runtime.session.modelRegistry.getAvailable()).map((model) => ({
+  const { ProjectTrustStore, SettingsManager, getAgentDir, hasTrustRequiringProjectResources } =
+    await getPiModule()
+  const agentDir = getAgentDir()
+  const defaultProjectTrust = getRuntimeDefaultProjectTrust({
+    SettingsManager,
+    agentDir,
+    cwd: runtime.cwd,
+  })
+  const availableModels = (await runtime.session.modelRuntime.getAvailable()).map((model) => ({
     provider: model.provider,
     id: model.id,
     name: model.name ?? model.id,
     reasoning: Boolean(model.reasoning),
-    input: (model.input ?? ['text']) as Array<'text' | 'image'>,
+    input: model.input ?? ['text'],
   }))
 
   return {
     currentModel: mapComposerModel(runtime.session.model),
     availableModels,
-    currentThinkingLevel: runtime.session.thinkingLevel as ComposerThinkingLevel,
+    currentThinkingLevel: runtime.session.thinkingLevel,
     availableThinkingLevels: mapThinkingLevels(runtime.session.getAvailableThinkingLevels()),
     queuedPrompts: buildSessionQueuedPrompts(runtime.session),
-    nativeAskQuestionsRequest: getNativeAskQuestionsRequest(runtime),
+    piExtensionWidgets: getPiExtensionWidgets(runtime),
+    piExtensionStatuses: getPiExtensionStatuses(runtime),
+    piExtensionShortcuts: getPiExtensionShortcuts(runtime),
+    piExtensionDialogRequest: getPiExtensionDialog(runtime),
+    projectTrustRequest: getRuntimeProjectTrustRequest({
+      ProjectTrustStore,
+      agentDir,
+      cwd: runtime.cwd,
+      defaultProjectTrust,
+      hasTrustRequiringProjectResources,
+    }),
     contextUsage: getContextUsageForComposerState(runtime.session, options),
     isCompacting: runtime.session.isCompacting,
     isExtensionCommandRunning: isHeadlessExtensionCommandRunning(runtime.session),

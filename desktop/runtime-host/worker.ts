@@ -1,5 +1,4 @@
 import { disposeAllRuntimeHosts, setRuntimeHostEventSink } from './host-service.ts'
-import { handleMainResponse } from './main-request-client.ts'
 import type { RuntimeMainToHostMessage } from './protocol.ts'
 import { handleRuntimeHostRequest } from './request-handlers.ts'
 
@@ -8,11 +7,7 @@ setRuntimeHostEventSink((event) => {
 })
 
 process.on('message', (message: RuntimeMainToHostMessage) => {
-  if (message && message.type === 'main-response') {
-    handleMainResponse(message)
-    return
-  }
-  if (!message || message.type !== 'request') {
+  if (message?.type !== 'request') {
     return
   }
 

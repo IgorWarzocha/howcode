@@ -12,6 +12,11 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.375rem;
+  padding-right: 0.625rem;
+}
+
+.sidebar-toolbar--chat {
+  padding-right: 0.375rem;
 }
 
 .sidebar-action-group {

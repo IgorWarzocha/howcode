@@ -1,4 +1,4 @@
-import { type PointerEvent, type RefObject, useCallback, useEffect } from 'react'
+import { type PointerEvent, type RefObject, useEffect, useEffectEvent } from 'react'
 
 const DEFAULT_HOVER_TOLERANCE_PX = 20
 const EMPTY_BOUNDARY_REFS: readonly RefObject<HTMLElement | null>[] = []
@@ -22,6 +22,11 @@ function isPointInsideRectWithTolerance({
   )
 }
 
+function elementContainsPointTarget(element: HTMLElement, event: globalThis.PointerEvent) {
+  const target = document.elementFromPoint(event.clientX, event.clientY)
+  return target === null || element.contains(target)
+}
+
 export function useHoverToFocus<T extends HTMLElement>({
   enabled,
   boundaryRef,
@@ -43,72 +48,59 @@ export function useHoverToFocus<T extends HTMLElement>({
   isFocused?: () => boolean
   extraBoundaryRefs?: readonly RefObject<HTMLElement | null>[]
 }) {
-  const ownsFocus = useCallback(() => {
+  const ownsFocus = () => {
     if (isFocused) {
       return isFocused()
     }
 
     return !!targetRef?.current && document.activeElement === targetRef.current
-  }, [isFocused, targetRef])
+  }
 
-  const focusIfNeeded = useCallback(() => {
+  const focusIfNeeded = () => {
     if (!ownsFocus()) {
       focus()
     }
-  }, [focus, ownsFocus])
+  }
 
-  const blurIfNeeded = useCallback(() => {
+  const blurIfNeeded = () => {
     if (blurOnLeave && ownsFocus()) {
       blur?.()
     }
-  }, [blur, blurOnLeave, ownsFocus])
+  }
 
-  useEffect(() => {
-    if (!enabled) {
+  const handlePointerMove = useEffectEvent((event: globalThis.PointerEvent) => {
+    if (!enabled || event.pointerType !== 'mouse') return
+
+    const boundary = boundaryRef?.current ?? targetRef?.current
+    if (!boundary) return
+
+    const inside = [boundary, ...extraBoundaryRefs.map((ref) => ref.current)].some(
+      (element) =>
+        element &&
+        elementContainsPointTarget(element, event) &&
+        isPointInsideRectWithTolerance({
+          clientX: event.clientX,
+          clientY: event.clientY,
+          rect: element.getBoundingClientRect(),
+          tolerancePx,
+        }),
+    )
+
+    if (inside) {
+      focusIfNeeded()
       return
     }
 
-    const handlePointerMove = (event: globalThis.PointerEvent) => {
-      if (event.pointerType !== 'mouse') {
-        return
-      }
+    blurIfNeeded()
+  })
 
-      const boundary = boundaryRef?.current ?? targetRef?.current
-      if (!boundary) {
-        return
-      }
-
-      const inside = [boundary, ...extraBoundaryRefs.map((ref) => ref.current)].some((element) =>
-        element
-          ? isPointInsideRectWithTolerance({
-              clientX: event.clientX,
-              clientY: event.clientY,
-              rect: element.getBoundingClientRect(),
-              tolerancePx,
-            })
-          : false,
-      )
-
-      if (inside) {
-        focusIfNeeded()
-        return
-      }
-
-      blurIfNeeded()
-    }
-
+  useEffect(() => {
     window.addEventListener('pointermove', handlePointerMove, { passive: true })
     return () => window.removeEventListener('pointermove', handlePointerMove)
-  }, [blurIfNeeded, boundaryRef, enabled, extraBoundaryRefs, focusIfNeeded, targetRef, tolerancePx])
+  }, [])
 
-  return useCallback(
-    (event: PointerEvent<HTMLElement>) => {
-      if (!enabled || event.pointerType !== 'mouse') {
-        return
-      }
-
-      focusIfNeeded()
-    },
-    [enabled, focusIfNeeded],
-  )
+  return (event: PointerEvent<HTMLElement>) => {
+    if (!enabled || event.pointerType !== 'mouse') return
+    focusIfNeeded()
+  }
 }

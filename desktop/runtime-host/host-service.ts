@@ -13,28 +13,33 @@ export {
   invalidateRuntimeSettings,
 } from './live-runtime-registry.ts'
 export {
-  answerNativeAskQuestions,
+  answerPiExtensionDialog,
   dequeueComposerPrompt,
   getComposerSkills,
   getComposerSlashCommands,
   getComposerState,
+  invokePiExtensionShortcut,
+  labelSessionTreeEntryInHost,
+  navigateSessionTreeInHost,
   openThreadRuntime,
   selectProjectRuntime,
   sendComposerPrompt,
   setComposerModel,
   setComposerThinkingLevel,
+  setProjectTrust,
   startNewThread,
   stopComposerRun,
 } from './live-runtime-service.ts'
+export { loadSessionTreeList } from './session-tree-service.ts'
 export {
   getPiSessionStorage,
   loadPiSettingsInHost as loadPiSettings,
   updatePiSettingInHost as updatePiSetting,
 } from './settings-service.ts'
-export {
-  closeSkillCreatorSession,
-  continueSkillCreatorSession,
-  startSkillCreatorSession,
-} from './skill-creator-service.ts'
 export { loadPiThemeStateInHost as loadPiThemeState } from './theme-service.ts'
-export { loadThreadSnapshot, searchThreadSnapshot } from './thread-snapshot-service.ts'
+export { loadThreadPreviewAtEntry } from './thread-preview-service.ts'
+export {
+  loadThreadSnapshot,
+  renameThreadSession,
+  searchThreadSnapshot,
+} from './thread-snapshot-service.ts'

@@ -1,3 +1,4 @@
+import type { DesktopBridgeCapabilities } from '@howcode/shared/desktop-bridge-capabilities'
 import type { DesktopRequestMap } from '../shared/desktop-ipc'
 import type { DesktopAction } from './app/desktop/actions'
 import type {
@@ -34,6 +35,8 @@ import type {
   PiSkillMutationResult,
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffFileContentsRequest,
+  ProjectDiffFileContentsResult,
   ProjectDiffImagePreview,
   ProjectDiffImageSide,
   ProjectDiffResolvedBaseline,
@@ -43,7 +46,6 @@ import type {
   ProjectUsageSummary,
   ReactArtifactCompileResult,
   ShellState,
-  SkillCreatorSessionState,
   TerminalCloseRequest,
   TerminalEvent,
   TerminalOpenRequest,
@@ -65,6 +67,7 @@ declare global {
     howcodeDevWebBridge?: boolean
     piDesktop?: {
       platform?: string
+      capabilities?: DesktopBridgeCapabilities
       getAppUpdateState?: () => Promise<AppUpdateState>
       checkAppUpdate?: () => Promise<AppUpdateState>
       installAppUpdate?: () => Promise<AppUpdateState>
@@ -92,6 +95,9 @@ declare global {
         path: string
         side: ProjectDiffImageSide
       }) => Promise<ProjectDiffImagePreview>
+      getProjectDiffFileContents?: (
+        request: ProjectDiffFileContentsRequest,
+      ) => Promise<ProjectDiffFileContentsResult>
       captureProjectDiffBaseline?: (
         projectId: string,
       ) => Promise<ProjectDiffResolvedBaseline | null>
@@ -140,17 +146,6 @@ declare global {
         projectPath?: string | null | undefined
         chat?: boolean | undefined
       }) => Promise<PiSkillMutationResult>
-      startSkillCreatorSession?: (request: {
-        prompt: string
-        local?: boolean | undefined
-        projectPath?: string | null | undefined
-        chat?: boolean | undefined
-      }) => Promise<SkillCreatorSessionState>
-      continueSkillCreatorSession?: (request: {
-        sessionId: string
-        prompt: string
-      }) => Promise<SkillCreatorSessionState>
-      closeSkillCreatorSession?: (sessionId: string) => Promise<{ ok: boolean }>
       pickComposerAttachments?: (
         projectId?: string | null | undefined,
       ) => Promise<ComposerAttachment[]>
@@ -164,6 +159,7 @@ declare global {
         paths: string[],
       ) => Promise<Record<string, ComposerAttachment['kind'] | null>>
       getPathForFile?: (file: File) => string | null
+      uploadComposerFiles?: (files: File[]) => Promise<ComposerAttachment[]>
       listComposerAttachmentEntries?: (request?: {
         projectId?: string | null | undefined
         path?: string | null | undefined
@@ -214,6 +210,14 @@ declare global {
       getInboxThreads?: () => Promise<InboxThread[]>
       getArchivedThreads?: () => Promise<ArchivedThread[]>
       getThread?: (sessionPath: string, historyCompactions?: number) => Promise<ThreadData | null>
+      getSessionTreeList?: (
+        sessionPath: string,
+      ) => Promise<import('@howcode/shared/session-tree').SessionTreeList | null>
+      getThreadPreviewAtEntry?: (
+        sessionPath: string,
+        targetEntryId: string,
+        historyCompactions?: number,
+      ) => Promise<ThreadData | null>
       searchThread?: (sessionPath: string, query: string) => Promise<ThreadSearchResult>
       watchSession?: (sessionPath: string | null) => Promise<void>
       listTerminals?: () => Promise<TerminalSessionSnapshot[]>

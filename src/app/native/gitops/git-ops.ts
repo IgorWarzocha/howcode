@@ -1,7 +1,9 @@
 export type GitOpsVisualMode = 'dirty' | 'clean' | 'not-git'
 
+const gitCountFormatter = new Intl.NumberFormat()
+
 export function formatGitCount(value: number) {
-  return new Intl.NumberFormat().format(value)
+  return gitCountFormatter.format(value)
 }
 
 export function getGitOpsEntryButtonClass(mode: GitOpsVisualMode) {

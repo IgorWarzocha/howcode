@@ -14,6 +14,7 @@ import type {
   ProjectDiffBaseline,
   ProjectDiffDefaultBaseline,
   ProjectDiffRenderMode,
+  ProjectFileWriteResult,
   ProjectImportCandidate,
 } from './desktop-data-contracts'
 
@@ -42,16 +43,25 @@ export type DesktopActionPayloadFields = {
   projectIds?: string[] | undefined
   projectName?: string | undefined
   projectPath?: string | undefined
+  rootProjectId?: string | undefined
   parentPath?: string | undefined
   worktreeDirectory?: string | undefined | null | undefined
-  parentBranchName?: string | undefined | null | undefined
   worktreePath?: string | undefined | null | undefined
-  worktrees?: { worktreePath: string; branchName?: string | undefined | null }[] | undefined
+  worktrees?: { worktreePath: string }[] | undefined
   createIfMissing?: boolean | undefined
+  cwd?: string | undefined
+  editorSelectionEnd?: number | undefined
+  editorSelectionStart?: number | undefined
+  editorText?: string | undefined
+  fileContents?: string | undefined
+  filePath?: string | undefined
+  expectedRevision?: string | undefined
   provider?: string | undefined
   queueId?: string | undefined
   answers?: string[][] | undefined | null
   requestId?: string | undefined
+  confirmed?: boolean | undefined
+  cancelled?: boolean | undefined
   queueSnapshotKey?: string | undefined
   push?: boolean | undefined
   queueIndex?: number | undefined
@@ -59,12 +69,17 @@ export type DesktopActionPayloadFields = {
   repoUrl?: string | undefined | null | undefined
   reset?: boolean | undefined
   sessionPath?: string | undefined | null | undefined
+  shortcut?: string | undefined
+  summarize?: boolean | undefined
   streamingBehavior?: ComposerStreamingBehavior
   suppressInbox?: boolean | undefined | null | undefined
+  targetEntryId?: string | undefined
   text?: string | undefined
+  trusted?: boolean | undefined
   threadId?: string | undefined
   threadIds?: string[] | undefined
   branchName?: string | undefined | null | undefined
+  label?: string | undefined | null | undefined
   value?:
     | string
     | undefined
@@ -72,6 +87,7 @@ export type DesktopActionPayloadFields = {
     | boolean
     | ProjectDiffDefaultBaseline
     | AppSettings['keybindings']
+    | string[]
     | null
 }
 
@@ -91,9 +107,6 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'gitCommitMessageModel'; provider: string; modelId: string; reset?: false }
   | { key: 'gitCommitMessageModel'; reset: true }
   | { key: 'gitCommitMessageThinkingLevel'; value: ComposerThinkingLevel }
-  | { key: 'skillCreatorModel'; provider: string; modelId: string; reset?: false }
-  | { key: 'skillCreatorModel'; reset: true }
-  | { key: 'skillCreatorThinkingLevel'; value: ComposerThinkingLevel }
   | { key: 'composerStreamingBehavior'; value: ComposerStreamingBehavior }
   | { key: 'dictationModelId'; value: DictationModelId | null }
   | { key: 'dictationMaxDurationSeconds'; value: number }
@@ -111,7 +124,6 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'gitDiffIncludeUntrackedDefault'; value: boolean }
   | { key: 'projectDeletionMode'; value: ProjectDeletionMode }
   | { key: 'useAgentsSkillsPaths'; value: boolean }
-  | { key: 'howcodeNativeAskQuestions'; value: boolean }
   | { key: 'devUpdateBranch'; value: boolean }
   | { key: 'betaUpdateBranch'; value: boolean }
   | { key: 'piTuiTakeover'; value: boolean }
@@ -164,6 +176,8 @@ export type DesktopActionPayloadMap = {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined
     threadId?: string | undefined
+    composerMode?: 'chat' | 'code' | null
+    branchName?: string | undefined | null | undefined
   }
   'thread.archive': { threadId: string }
   'thread.archive-many': { projectId?: string | undefined | null | undefined; threadIds: string[] }
@@ -177,6 +191,12 @@ export type DesktopActionPayloadMap = {
   'thread.delete': { threadId: string }
   'thread.delete-many': { threadIds: string[]; projectIds?: string[] | undefined }
   'thread.pin': { threadId: string; projectId?: string | undefined | null | undefined }
+  'thread.rename': {
+    threadId: string
+    projectId?: string | undefined | null | undefined
+    sessionPath?: string | undefined | null | undefined
+    value: string
+  }
   'workspace.commit': {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined
@@ -198,47 +218,49 @@ export type DesktopActionPayloadMap = {
     diffBaseline?: ProjectDiffBaseline | null
     diffRenderMode?: ProjectDiffRenderMode | null
   }
+  'workspace.write-file': {
+    projectId: string
+    filePath: string
+    fileContents: string
+    expectedRevision: string
+  }
   'workspace.sidebar-scope': { projectIds: string[] }
   'workspace.switch-branch': { projectId?: string | undefined | null | undefined; value: string }
   'workspace.prune-branch': {
-    projectId?: string | undefined | null | undefined
+    rootProjectId: string
     branchName: string
-    worktrees?: { worktreePath: string; branchName?: string | undefined | null }[] | undefined
   }
   'workspace.create-worktree': {
-    projectId?: string | undefined | null | undefined
+    rootProjectId: string
     branchName: string
     worktreeDirectory?: string | undefined | null | undefined
-    parentBranchName?: string | undefined | null | undefined
   }
   'workspace.remove-worktree': {
-    projectId?: string | undefined | null | undefined
-    branchName?: string | undefined | null | undefined
+    rootProjectId: string
     worktreePath: string
   }
   'workspace.mark-worktree-complete': {
-    projectId?: string | undefined | null | undefined
+    rootProjectId: string
     worktreePath: string
   }
   'workspace.mark-worktree-incomplete': {
-    projectId?: string | undefined | null | undefined
+    rootProjectId: string
     worktreePath: string
   }
   'workspace.merge-worktree': {
-    projectId?: string | undefined | null | undefined
-    branchName?: string | undefined | null | undefined
+    rootProjectId: string
     worktreePath: string
   }
   'workspace.merge-completed-worktrees': {
-    projectId?: string | undefined | null | undefined
-    worktrees: { worktreePath: string; branchName?: string | undefined | null }[]
+    rootProjectId: string
+    worktrees: { worktreePath: string }[]
   }
   'workspace.remove-completed-worktrees': {
-    projectId?: string | undefined | null | undefined
-    worktrees: { worktreePath: string; branchName?: string | undefined | null }[]
+    rootProjectId: string
+    worktrees: { worktreePath: string }[]
   }
   'workspace.set-worktree-directory': {
-    projectId?: string | undefined | null | undefined
+    rootProjectId: string
     worktreeDirectory: string
   }
   'composer.model': {
@@ -276,20 +298,60 @@ export type DesktopActionPayloadMap = {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined
   }
-  'composer.answer-native-questions': {
+  'composer.answer-pi-extension-dialog': {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined
     composerMode?: 'chat' | 'code' | null
     chatGroupId?: string | undefined | null | undefined
     requestId: string
-    answers: string[][] | null
+    value?: string | undefined | null
+    confirmed?: boolean | undefined
+    cancelled?: boolean | undefined
+  }
+  'composer.pi-extension-shortcut': {
+    projectId?: string | undefined | null | undefined
+    sessionPath?: string | undefined | null | undefined
+    composerMode?: 'chat' | 'code' | null
+    chatGroupId?: string | undefined | null | undefined
+    editorSelectionEnd?: number | undefined
+    editorSelectionStart?: number | undefined
+    editorText?: string | undefined
+    shortcut: string
+  }
+  'composer.set-project-trust': {
+    projectId?: string | undefined | null | undefined
+    sessionPath?: string | undefined | null | undefined
+    composerMode?: 'chat' | 'code' | null
+    chatGroupId?: string | undefined | null | undefined
+    cwd: string
+    trusted: boolean
+  }
+  'composer.session-tree.label': {
+    projectId?: string | undefined | null | undefined
+    sessionPath?: string | undefined | null | undefined
+    composerMode?: 'chat' | 'code' | null
+    chatGroupId?: string | undefined | null | undefined
+    targetEntryId: string
+    label?: string | undefined | null | undefined
+  }
+  'composer.session-tree.navigate': {
+    projectId?: string | undefined | null | undefined
+    sessionPath?: string | undefined | null | undefined
+    composerMode?: 'chat' | 'code' | null
+    chatGroupId?: string | undefined | null | undefined
+    targetEntryId: string
+    summarize?: boolean | undefined
+    label?: string | undefined | null | undefined
   }
   'inbox.mark-read': { sessionPath: string; projectId?: string | undefined | null | undefined }
   'inbox.dismiss': { sessionPath: string; projectId?: string | undefined | null | undefined }
   'inbox.clear-read': { olderThanDays?: number | undefined | null | undefined }
   'settings.update': DesktopSettingsUpdatePayload
   'settings.clear-clipboard-images': EmptyActionPayload
-  'pi-settings.update': { piSettingsKey: keyof PiSettings; value: string | number | boolean }
+  'pi-settings.update': {
+    piSettingsKey: keyof PiSettings
+    value: string | number | boolean | string[]
+  }
   'projects.import.scan': { projectIds: string[] }
   'projects.import.apply': { projectIds: string[] }
 }
@@ -301,6 +363,7 @@ export type DesktopActionPayload<A extends DesktopAction = DesktopAction> =
 
 export type DesktopActionResultData = {
   branchName?: string | undefined | null | undefined
+  parentBranchName?: string | undefined | null | undefined
   checkedProjectCount?: number | undefined
   clearedCount?: number | undefined
   clearFailedCount?: number | undefined
@@ -309,13 +372,19 @@ export type DesktopActionResultData = {
   composerSendOutcome?: 'sent' | 'stopped'
   composerSendSessionPath?: string | undefined | null | undefined
   composerSendThreadId?: string | undefined | null | undefined
+  sessionTreeNavigateCancelled?: boolean | undefined
+  sessionTreeNavigateEditorText?: string | undefined | null | undefined
   dequeuedText?: string | undefined | null | undefined
   deletedThreadIds?: string[] | undefined
   didMutate?: boolean | undefined
   error?: string | undefined
+  editorSelectionEnd?: number | undefined
+  editorSelectionStart?: number | undefined
+  editorText?: string | undefined
   failedWorktreeBranchName?: string | undefined | null | undefined
   failedWorktreePath?: string | undefined
   failedThreadIds?: string[] | undefined
+  fileWrite?: ProjectFileWriteResult | undefined
   importedProjectIds?: string[] | undefined
   importedProjects?: Project[] | undefined
   message?: string | undefined | null | undefined
@@ -326,13 +395,17 @@ export type DesktopActionResultData = {
   previewed?: boolean | undefined
   affectedProjectIds?: string[] | undefined
   projectId?: string | undefined
+  removedWorktreeIds?: string[] | undefined
   rootProjectId?: string | undefined
   projects?: ProjectImportCandidate[]
   pushed?: boolean | undefined
   pushFailed?: boolean | undefined
   repoProjectCount?: number | undefined
   sessionPath?: string | undefined | null | undefined
+  title?: string | undefined
   threadId?: string | undefined
+  worktreeRemoved?: boolean | undefined
+  worktreeCompleted?: boolean | undefined
 }
 
 export type DesktopActionInvoker = (

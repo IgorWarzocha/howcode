@@ -1,13 +1,14 @@
-import { QueuedPromptsCard } from '@howcode/composer'
+import { getComposerRuntimeModel, QueuedPromptsCard } from '@howcode/composer'
 import { GitOpsComposerPanel } from '@howcode/native-gitops'
 import { Composer } from '@howcode/workspace-shell'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import type { Message } from '../types'
+import { WORKSPACE_EDGE_PADDING_CLASS } from '../ui/layout'
 import { cn } from '../utils/cn'
 import { WorkspaceComposerDock } from '../workspace-shell/workspace-composer-dock'
+import type { CodeWorkspaceContentProps } from './code-workspace-contract'
 import { FALLBACK_APP_SETTINGS } from './code-workspace-defaults'
 import { CodeWorkspaceMainArea } from './code-workspace-main-area'
-import type { CodeWorkspaceContentProps } from './code-workspace-view'
 import { DesktopComposerStatusModelPicker } from './desktop-composer-status'
 
 function getReplyActivityKey(messages: readonly Message[]) {
@@ -52,19 +53,12 @@ function CodeGitOpsComposer(props: CodeWorkspaceContentProps) {
     terminalSessionPath,
     diffBaseline,
     diffRenderMode,
-    diffComments,
-    diffCommentCount,
-    diffCommentsSending,
-    diffCommentError,
+    gitOpsReview,
     diffLoadError,
-    hasPendingDiffComments,
     includeUntrackedDiffFiles,
     toggleIncludeUntrackedDiffFiles,
     onSetDiffBaseline,
     onSetDiffRenderMode,
-    handleSendDiffComments,
-    handleDiscardDiffComments,
-    handleSelectDiffComment,
     setComposerLayoutVersion,
     handleAction,
     handleCloseGitOpsView,
@@ -76,39 +70,32 @@ function CodeGitOpsComposer(props: CodeWorkspaceContentProps) {
   return (
     <div>
       <GitOpsComposerPanel
-        dictationModelId={appSettings.dictationModelId}
-        dictationMaxDurationSeconds={appSettings.dictationMaxDurationSeconds}
-        projectGitState={projectGitState}
-        parentBranchName={parentBranchName}
-        projectId={composerProjectId}
-        sessionPath={terminalSessionPath}
-        showDictationButton={appSettings.showDictationButton}
         appSettings={appSettings}
-        diffBaseline={diffBaseline}
-        diffRenderMode={diffRenderMode}
-        diffComments={diffComments}
-        diffCommentCount={diffCommentCount}
-        diffCommentsSending={diffCommentsSending}
-        diffCommentError={diffCommentError}
-        diffLoadError={diffLoadError}
-        includeUntracked={includeUntrackedDiffFiles}
-        onSetDiffBaseline={onSetDiffBaseline}
-        onSetDiffRenderMode={onSetDiffRenderMode}
-        onToggleIncludeUntracked={toggleIncludeUntrackedDiffFiles}
-        onSendDiffComments={(message) => {
-          void handleSendDiffComments(message).then((sent) => {
-            if (sent) handleCloseGitOpsView()
-          })
+        project={{
+          id: composerProjectId,
+          gitState: projectGitState,
+          parentBranchName,
+          sessionPath: terminalSessionPath,
         }}
-        onSelectDiffComment={handleSelectDiffComment}
-        hasPendingDiffComments={hasPendingDiffComments}
-        onDiscardDiffComments={handleDiscardDiffComments}
+        diff={{
+          baseline: diffBaseline,
+          renderMode: diffRenderMode,
+          loadError: diffLoadError,
+          includeUntracked: includeUntrackedDiffFiles,
+          setBaseline: onSetDiffBaseline,
+          setRenderMode: onSetDiffRenderMode,
+          toggleIncludeUntracked: toggleIncludeUntrackedDiffFiles,
+        }}
+        fileTree={{
+          visible: gitOpsFileTreeVisible,
+          toggle: toggleGitOpsFileTree,
+        }}
+        review={gitOpsReview}
+        onReviewSent={handleCloseGitOpsView}
         onLayoutChange={() => setComposerLayoutVersion((current: number) => current + 1)}
         onAction={handleAction}
         onBack={handleCloseGitOpsView}
-        onOpenSettingsView={(target) => controller.handleShowView('settings', target)}
-        gitOpsFileTreeVisible={gitOpsFileTreeVisible}
-        onToggleGitOpsFileTree={toggleGitOpsFileTree}
+        onOpenSettingsView={(target) => controller.navigation.showView('settings', target)}
       />
     </div>
   )
@@ -139,6 +126,7 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
   const {
     state,
     activeComposerState,
+    activePiExtensionUiState,
     activeThreadData,
     scopedRestoredQueuedPrompt,
     shellState,
@@ -147,19 +135,8 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
     parentBranchName,
     diffBaseline,
     terminalSessionPath,
-    diffRenderMode,
-    diffComments,
-    diffCommentCount,
-    diffCommentsSending,
-    diffCommentError,
     onSetDiffBaseline,
-    onSetDiffRenderMode,
-    handleSendDiffComments,
-    handleSelectDiffComment,
-    composerPromptResetKey,
-    setComposerLayoutVersion,
     setComposerOverlayHeight,
-    mainViewRef,
     footerRef,
     handleShowTakeoverTerminal,
     handleOpenGitOpsView,
@@ -170,22 +147,16 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
     handleAction,
   } = props
   const appSettings = shellState?.appSettings ?? FALLBACK_APP_SETTINGS
+  const composerRuntime = getComposerRuntimeModel(activeComposerState, activePiExtensionUiState)
   return (
     <Composer
       activeView={state.activeView}
-      model={activeComposerState?.currentModel ?? null}
-      contextUsage={activeComposerState?.contextUsage ?? null}
+      runtime={composerRuntime}
       messages={activeThreadData?.messages}
-      availableModels={activeComposerState?.availableModels ?? []}
       isStreaming={activeThreadData?.isStreaming ?? false}
       replyActivityKey={getReplyActivityKey(activeThreadData?.messages ?? [])}
-      isCompacting={activeComposerState?.isCompacting ?? false}
-      isExtensionCommandRunning={activeComposerState?.isExtensionCommandRunning ?? false}
-      nativeAskQuestionsRequest={activeComposerState?.nativeAskQuestionsRequest ?? null}
-      thinkingLevel={activeComposerState?.currentThinkingLevel ?? 'off'}
       restoredQueuedPrompt={scopedRestoredQueuedPrompt}
       streamingBehaviorPreference={appSettings.composerStreamingBehavior}
-      availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ['off']}
       projectId={composerProjectId}
       projectGitState={projectGitState}
       parentBranchName={parentBranchName}
@@ -199,29 +170,17 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
       hoverToBlur={appSettings.hoverToBlur}
       composerSendMode={appSettings.composerSendMode}
       keybindings={appSettings.keybindings}
-      diffRenderMode={diffRenderMode}
-      diffComments={diffComments}
-      diffCommentCount={diffCommentCount}
-      diffCommentsSending={diffCommentsSending}
-      diffCommentError={diffCommentError}
+      piTreeFilterMode={shellState?.piSettings.treeFilterMode ?? 'no-tools'}
       onSetDiffBaseline={onSetDiffBaseline}
-      onSetDiffRenderMode={onSetDiffRenderMode}
-      onSendDiffComments={(message) => {
-        void handleSendDiffComments(message)
-      }}
-      onSelectDiffComment={handleSelectDiffComment}
-      promptResetKey={composerPromptResetKey}
-      onLayoutChange={() => setComposerLayoutVersion((current: number) => current + 1)}
       onOverlayHeightChange={setComposerOverlayHeight}
-      mainViewRef={mainViewRef}
       workspaceFooterRef={footerRef}
       onOpenTakeoverTerminal={handleShowTakeoverTerminal}
       onOpenGitOpsView={handleOpenGitOpsView}
-      onOpenSettingsView={(target) => controller.handleShowView('settings', target)}
+      onOpenSettingsView={(target) => controller.navigation.showView('settings', target)}
       onRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
       onToggleTerminal={handleToggleTerminal}
       terminalVisible={state.terminalVisible}
-      preferPortalFilePicker={state.activeView === 'project'}
+      takeoverVisible={state.takeoverVisible}
       preferPortalModelPopover={state.activeView === 'project'}
       onListAttachmentEntries={listComposerAttachmentEntries}
       onAction={handleAction}
@@ -282,7 +241,8 @@ function CodeWorkspaceThreadFooter(props: CodeWorkspaceContentProps) {
     <footer
       ref={footerRef}
       className={cn(
-        'motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-10 px-5 pb-4',
+        'motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-10 pb-4',
+        WORKSPACE_EDGE_PADDING_CLASS,
         centerThreadFooter || state.activeView === 'project'
           ? 'transition-[top,transform] duration-300 ease-out'
           : 'bottom-0',

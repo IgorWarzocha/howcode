@@ -1,0 +1,3 @@
+- This folder owns user-facing operations over scoped live Pi runtimes; lifecycle ownership stays in `../live-runtime-registry-*`.
+- `composer-updates.ts` is the shared publication/disposal seam. Keep state, prompt, extension, settings, and session-tree actions feature-local.
+- Never acquire a second mutation lock from inside a locked operation; pass `{ useMutationLock: false }` to guarded settings reloads.

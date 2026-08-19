@@ -1,4 +1,4 @@
-import { copyFile, cp, mkdir, rm, watch } from 'node:fs/promises'
+import { cp, mkdir, rm, watch } from 'node:fs/promises'
 import path from 'node:path'
 
 const isWatchMode = process.argv.includes('--watch')
@@ -26,7 +26,6 @@ const buildTargets = [
       path.join(projectRoot, 'desktop', 'pi-skills.ts'),
       path.join(projectRoot, 'desktop', 'service-host.ts'),
       path.join(projectRoot, 'desktop', 'service-host-runtime.ts'),
-      path.join(projectRoot, 'desktop', 'skill-creator-session.ts'),
       path.join(projectRoot, 'desktop', 'runtime-host', 'worker.ts'),
     ],
     outdir: path.join(buildRoot, 'desktop'),
@@ -38,7 +37,7 @@ const buildTargets = [
   },
   {
     label: 'terminal-manager',
-    entrypoints: [path.join(projectRoot, 'desktop', 'terminal', 'manager.ts')],
+    entrypoints: [path.join(projectRoot, 'desktop', 'terminal', 'runtime.ts')],
     outdir: path.join(buildRoot, 'desktop'),
     root: path.join(projectRoot, 'desktop', 'terminal'),
     naming: {
@@ -53,24 +52,6 @@ async function prepareBuildDirectories() {
   await rm(path.join(buildRoot, 'desktop'), { recursive: true, force: true })
   await mkdir(path.join(buildRoot, 'electron'), { recursive: true })
   await mkdir(path.join(buildRoot, 'desktop'), { recursive: true })
-}
-
-const nativeAskQuestionsSource = path.join(
-  projectRoot,
-  'desktop',
-  'native-extensions',
-  'howcode-native-ask-questions.mjs',
-)
-const nativeAskQuestionsOutput = path.join(
-  buildRoot,
-  'desktop',
-  'native-extensions',
-  'howcode-native-ask-questions.mjs',
-)
-
-async function copyNativeExtensionAssets() {
-  await mkdir(path.dirname(nativeAskQuestionsOutput), { recursive: true })
-  await copyFile(nativeAskQuestionsSource, nativeAskQuestionsOutput)
 }
 
 async function copyDesktopResources() {
@@ -107,19 +88,11 @@ async function runBuild() {
     )
   }
 
-  await copyNativeExtensionAssets()
   await copyDesktopResources()
 
   if (isWatchMode) {
     console.log('Watching Electron runtime bundles...')
-    void (async () => {
-      for await (const event of watch(path.dirname(nativeAskQuestionsSource))) {
-        if (!event.filename || event.filename === path.basename(nativeAskQuestionsSource)) {
-          await copyNativeExtensionAssets()
-          console.log('Copied native extension assets.')
-        }
-      }
-    })()
+
     void (async () => {
       for await (const _event of watch(path.join(projectRoot, 'desktop', 'resources'), {
         recursive: true,

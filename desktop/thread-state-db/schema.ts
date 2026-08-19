@@ -1,9 +1,11 @@
-import { execFileSync } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { stat } from 'node:fs/promises'
 import type Database from 'better-sqlite3'
+import * as Effect from 'effect/Effect'
+import { runProcessProbe } from '../../node-runtime/process-probe.ts'
 import { formatGitCommandError, getNonInteractiveGitEnv } from '../project-git/git-runner.ts'
 
-let schemaReady = false
+const readyDatabases = new WeakSet<Database>()
+const legacyCheckpointCleanupDatabases = new WeakSet<Database>()
 
 const legacyCheckpointRefPrefix = 'refs/howcode/checkpoints'
 
@@ -33,27 +35,41 @@ function hasTable(database: Database, tableName: string) {
   return row?.name === tableName
 }
 
-function runGitSync(projectId: string, args: string[], input?: string | undefined) {
-  return execFileSync('git', args, {
-    cwd: projectId,
-    env: getNonInteractiveGitEnv(),
-    encoding: 'utf8',
-    timeout: 10_000,
-    maxBuffer: 1024 * 1024 * 4,
-    ...(input ? { input } : {}),
-  })
+function runMigrationGitProbe(projectId: string, args: string[], stdin?: string | undefined) {
+  return Effect.runPromise(
+    runProcessProbe({
+      executable: 'git',
+      args,
+      cwd: projectId,
+      env: getNonInteractiveGitEnv(),
+      ...(stdin === undefined ? {} : { stdin }),
+      timeout: 10_000,
+      timeoutMessage: `Timed out migrating legacy Git state for ${projectId}`,
+      maxOutputBytes: 1024 * 1024 * 4,
+    }),
+  )
 }
 
-function isGitRepositorySync(projectId: string) {
-  if (!existsSync(projectId)) {
-    return false
+async function runMigrationGit(projectId: string, args: string[], stdin?: string | undefined) {
+  const result = await runMigrationGitProbe(projectId, args, stdin)
+  if (result.exitCode !== 0) {
+    throw Object.assign(new Error(`Git exited with code ${result.exitCode ?? 'unknown'}.`), result)
+  }
+  return result.stdout
+}
+
+async function isGitRepository(projectId: string) {
+  try {
+    if (!(await stat(projectId)).isDirectory()) return false
+  } catch (error) {
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT') {
+      return false
+    }
+    throw error
   }
 
-  try {
-    return runGitSync(projectId, ['rev-parse', '--is-inside-work-tree']).trim() === 'true'
-  } catch {
-    return false
-  }
+  const result = await runMigrationGitProbe(projectId, ['rev-parse', '--is-inside-work-tree'])
+  return result.exitCode === 0 && result.stdout.trim() === 'true'
 }
 
 function listLegacyCheckpointRefs(database: Database) {
@@ -66,16 +82,23 @@ function listLegacyCheckpointRefs(database: Database) {
     )
     .all() as ProjectPathRow[]
 
-  return [...new Set(rows.map((row) => row.cwd.trim()).filter(Boolean))]
+  return [
+    ...new Set(
+      rows.flatMap((row) => {
+        const cwd = row.cwd.trim()
+        return cwd ? [cwd] : []
+      }),
+    ),
+  ]
 }
 
-function purgeLegacyCheckpointRefsForProject(projectId: string) {
-  if (!isGitRepositorySync(projectId)) {
+async function purgeLegacyCheckpointRefsForProject(projectId: string) {
+  if (!(await isGitRepository(projectId))) {
     return true
   }
 
   try {
-    const stdout = runGitSync(projectId, [
+    const stdout = await runMigrationGit(projectId, [
       'for-each-ref',
       '--format=%(refname)',
       legacyCheckpointRefPrefix,
@@ -89,7 +112,7 @@ function purgeLegacyCheckpointRefsForProject(projectId: string) {
       return true
     }
 
-    runGitSync(
+    await runMigrationGit(
       projectId,
       ['update-ref', '--stdin'],
       `start\n${refs.map((ref) => `delete ${ref}`).join('\n')}\ncommit\n`,
@@ -103,14 +126,19 @@ function purgeLegacyCheckpointRefsForProject(projectId: string) {
   }
 }
 
-function purgeLegacyCheckpointRefsMigration(database: Database) {
+async function purgeLegacyCheckpointRefsMigration(database: Database) {
   if (!hasTable(database, 'thread_turn_diffs')) {
     return
   }
 
-  const didPurgeEveryProject = listLegacyCheckpointRefs(database).every((projectId) =>
-    purgeLegacyCheckpointRefsForProject(projectId),
+  const purgeResults = await Effect.runPromise(
+    Effect.forEach(
+      listLegacyCheckpointRefs(database),
+      (projectId) => Effect.promise(() => purgeLegacyCheckpointRefsForProject(projectId)),
+      { concurrency: 2 },
+    ),
   )
+  const didPurgeEveryProject = purgeResults.every(Boolean)
 
   if (!didPurgeEveryProject) {
     return
@@ -223,13 +251,6 @@ const threadStateSchemaSql = `
     CREATE INDEX IF NOT EXISTS chat_groups_order_idx ON chat_groups(order_index, name COLLATE NOCASE);
     CREATE INDEX IF NOT EXISTS chat_threads_group_idx ON chat_threads(group_id, order_index);
 
-    CREATE TABLE IF NOT EXISTS session_native_extensions (
-      session_path TEXT PRIMARY KEY,
-      enabled_json TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
-
     CREATE TABLE IF NOT EXISTS project_worktree_settings (
       root_cwd TEXT PRIMARY KEY,
       worktree_dir TEXT NOT NULL DEFAULT './.worktrees',
@@ -322,7 +343,6 @@ function resetRunningThreads(database: Database) {
 }
 
 function runThreadStateMigrations(database: Database) {
-  purgeLegacyCheckpointRefsMigration(database)
   ensureProjectColumns(database)
   ensureThreadColumns(database)
   ensureInboxColumns(database)
@@ -333,8 +353,14 @@ function runThreadStateMigrations(database: Database) {
 }
 
 export function ensureThreadStateSchema(database: Database) {
-  if (schemaReady) return
+  if (readyDatabases.has(database)) return
   ensureThreadStateTables(database)
   runThreadStateMigrations(database)
-  schemaReady = true
+  readyDatabases.add(database)
+  if (!legacyCheckpointCleanupDatabases.has(database)) {
+    legacyCheckpointCleanupDatabases.add(database)
+    void purgeLegacyCheckpointRefsMigration(database).catch((error) => {
+      console.warn('Failed to complete legacy Git checkpoint cleanup.', error)
+    })
+  }
 }

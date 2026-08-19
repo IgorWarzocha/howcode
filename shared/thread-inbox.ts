@@ -22,7 +22,10 @@ function findLatestAssistantMessageInTurn(messages: Message[], turnStartIndex: n
 }
 
 function getNonEmptyMessageParts(message: AssistantMessage) {
-  return message.content.map((part) => part.trim()).filter(Boolean)
+  return message.content.flatMap((part) => {
+    const trimmed = part.trim()
+    return trimmed ? [trimmed] : []
+  })
 }
 
 function hasLaterTurnWork(messages: Message[], latestAssistantIndex: number) {

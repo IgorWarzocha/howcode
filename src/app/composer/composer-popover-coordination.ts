@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useEffectEvent, useState } from 'react'
 
 export type ComposerPopoverSource = 'context' | 'dashboard-branch' | 'diff-baseline' | 'model'
 
@@ -17,17 +17,17 @@ export function useComposerPopoverDismissSignal(input?: {
 }) {
   const [dismissSignal, setDismissSignal] = useState(0)
 
-  useEffect(() => {
-    const handlePopoverOpen = (event: Event) => {
-      const source = (event as ComposerPopoverOpenEvent).detail?.source
-      if (!source || source === input?.ignoreSource) return
-      input?.onDismiss?.(source)
-      setDismissSignal((value) => value + 1)
-    }
+  const handlePopoverOpen = useEffectEvent((event: Event) => {
+    const source = (event as ComposerPopoverOpenEvent).detail?.source
+    if (!source || source === input?.ignoreSource) return
+    input?.onDismiss?.(source)
+    setDismissSignal((value) => value + 1)
+  })
 
+  useEffect(() => {
     window.addEventListener(COMPOSER_POPOVER_OPEN_EVENT, handlePopoverOpen)
     return () => window.removeEventListener(COMPOSER_POPOVER_OPEN_EVENT, handlePopoverOpen)
-  }, [input])
+  }, [])
 
   return dismissSignal
 }

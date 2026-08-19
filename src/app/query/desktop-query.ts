@@ -1,6 +1,10 @@
 const pathSeparatorPattern = /[\\/]/
 
 import { fallbackAppSlashCommands } from '@howcode/shared/composer-slash-commands'
+import {
+  browserDesktopBridgeCapabilities,
+  electronDesktopBridgeCapabilities,
+} from '@howcode/shared/desktop-bridge-capabilities'
 import type { DesktopRequestMap } from '@howcode/shared/desktop-ipc'
 import type {
   AppUpdateState,
@@ -16,9 +20,10 @@ import type {
   InboxThread,
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffFileContentsRequest,
+  ProjectDiffFileContentsResult,
   ProjectDiffImagePreview,
   ProjectDiffImageSide,
-  ProjectDiffResolvedBaseline,
   ProjectDiffStatsResult,
   ProjectGitState,
   ProjectUsageSummary,
@@ -30,8 +35,6 @@ import type {
 
 export {
   compileReactArtifactQuery,
-  editArtifactQuery,
-  getArtifactQuery,
   listArtifactsQuery,
   listArtifactVersionsQuery,
   saveTextToDownloadsQuery,
@@ -40,8 +43,6 @@ export {
 export {
   canSearchPiPackagesQuery,
   canSearchPiSkillsQuery,
-  closeSkillCreatorSessionQuery,
-  continueSkillCreatorSessionQuery,
   getConfiguredPiPackagesQuery,
   getConfiguredPiSkillsQuery,
   installPiPackageQuery,
@@ -50,7 +51,6 @@ export {
   removePiSkillQuery,
   searchPiPackagesQuery,
   searchPiSkillsQuery,
-  startSkillCreatorSessionQuery,
 } from './desktop-extension-query'
 export { desktopQueryKeys } from './desktop-query-keys'
 export {
@@ -66,6 +66,25 @@ export {
 
 export function hasDesktopBridgeQuery() {
   return typeof window !== 'undefined' && typeof window.piDesktop?.invokeAction === 'function'
+}
+
+export function getDesktopBridgeCapabilitiesQuery() {
+  if (typeof window === 'undefined') {
+    return browserDesktopBridgeCapabilities
+  }
+
+  return (
+    window.piDesktop?.capabilities ??
+    (window.piDesktop ? electronDesktopBridgeCapabilities : browserDesktopBridgeCapabilities)
+  )
+}
+
+export function canUploadComposerFilesQuery() {
+  return Boolean(
+    getDesktopBridgeCapabilitiesQuery().browserUploads &&
+      typeof window !== 'undefined' &&
+      window.piDesktop?.uploadComposerFiles,
+  )
 }
 
 export async function invokeDesktopActionQuery(
@@ -192,10 +211,10 @@ export async function getProjectDiffImagePreviewQuery(request: {
   return (await window.piDesktop?.getProjectDiffImagePreview?.(request)) ?? null
 }
 
-export async function captureProjectDiffBaselineQuery(
-  projectId: string,
-): Promise<ProjectDiffResolvedBaseline | null> {
-  return (await window.piDesktop?.captureProjectDiffBaseline?.(projectId)) ?? null
+export async function getProjectDiffFileContentsQuery(
+  request: ProjectDiffFileContentsRequest,
+): Promise<ProjectDiffFileContentsResult | null> {
+  return (await window.piDesktop?.getProjectDiffFileContents?.(request)) ?? null
 }
 
 export async function listProjectCommitsQuery(
@@ -215,10 +234,6 @@ export async function listProjectDirectoryEntriesQuery(
   request: DesktopRequestMap['listProjectDirectoryEntries']['params'] = {},
 ): Promise<DesktopRequestMap['listProjectDirectoryEntries']['response'] | null> {
   return (await window.piDesktop?.listProjectDirectoryEntries?.(request)) ?? null
-}
-
-export async function clearClipboardImagesQuery() {
-  return (await window.piDesktop?.clearClipboardImages?.()) ?? { clearedCount: 0 }
 }
 
 export async function listComposerAttachmentEntriesQuery(
@@ -272,6 +287,14 @@ export function getPathForFileQuery(file: File) {
   return window.piDesktop?.getPathForFile?.(file) ?? null
 }
 
+export async function uploadComposerFilesQuery(files: File[]): Promise<ComposerAttachment[]> {
+  if (!canUploadComposerFilesQuery()) {
+    return []
+  }
+
+  return (await window.piDesktop?.uploadComposerFiles?.(files)) ?? []
+}
+
 export async function openExternalQuery(url: string) {
   return (await window.piDesktop?.openExternal?.(url)) ?? false
 }
@@ -285,6 +308,24 @@ export async function getThreadQuery(
   historyCompactions = 0,
 ): Promise<ThreadData | null> {
   return (await window.piDesktop?.getThread?.(sessionPath, historyCompactions)) ?? null
+}
+
+export async function getSessionTreeListQuery(sessionPath: string) {
+  return (await window.piDesktop?.getSessionTreeList?.(sessionPath)) ?? null
+}
+
+export async function getThreadPreviewAtEntryQuery(
+  sessionPath: string,
+  targetEntryId: string,
+  historyCompactions = 0,
+): Promise<ThreadData | null> {
+  return (
+    (await window.piDesktop?.getThreadPreviewAtEntry?.(
+      sessionPath,
+      targetEntryId,
+      historyCompactions,
+    )) ?? null
+  )
 }
 
 export async function searchThreadQuery(

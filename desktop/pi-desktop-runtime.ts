@@ -8,11 +8,13 @@ import type {
   ProseMessage,
   ThreadData,
 } from '../shared/desktop-contracts.ts'
+import { getDesktopWorkingDirectory } from '../shared/desktop-working-directory.ts'
 import { getPersistedSessionPath } from '../shared/session-paths.ts'
 import { getLatestInboxAssistantMessage } from '../shared/thread-inbox.ts'
 import { loadAppSettings } from './app-settings/readers.ts'
 import { getChatSessionDir } from './chat-session-dir.ts'
 import { isChatSessionPath, upsertChatThread } from './chat-state-db.ts'
+import { withWorkspaceActivity } from './project-worktrees/workspace-teardown-gate.ts'
 import { subscribeDesktopEvents as subscribeLocalDesktopEvents } from './runtime/desktop-events.ts'
 import {
   getLiveThread,
@@ -73,6 +75,18 @@ function withComposerModeSettings<TRequest extends ComposerStateRequest>(
   }
 }
 
+function withWorkspaceRequest<T>(request: ComposerStateRequest, operation: () => Promise<T>) {
+  return withWorkspaceActivity(request.projectId ?? getDesktopWorkingDirectory(), operation)
+}
+
+function withPreparedWorkspaceRequest<TRequest extends ComposerStateRequest, TResult>(
+  request: TRequest,
+  operation: (preparedRequest: TRequest) => Promise<TResult>,
+) {
+  const preparedRequest = withComposerModeSettings(request)
+  return withWorkspaceRequest(preparedRequest, () => operation(preparedRequest))
+}
+
 function getLatestUserPrompt(thread: ThreadData) {
   let latestUserMessage: ProseMessage | undefined
   for (let index = thread.messages.length - 1; index >= 0; index -= 1) {
@@ -113,7 +127,8 @@ async function persistHostThreadUpdate(event: Extract<DesktopEvent, { type: 'thr
   }
   setThreadRunningState(
     event.sessionPath,
-    event.reason === 'update' ||
+    event.thread.isStreaming ||
+      event.thread.isCompacting ||
       event.reason === 'compaction-start' ||
       (event.reason === 'start' && event.thread.messages.length > 0),
   )
@@ -195,49 +210,54 @@ export function subscribeDesktopEvents(listener: (event: DesktopEvent) => void) 
 }
 
 export function startNewThread(request: ComposerStateRequest = {}) {
-  return invokeRuntimeHost('startNewThread', { request: withComposerModeSettings(request) })
+  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
+    invokeRuntimeHost('startNewThread', { request: preparedRequest }),
+  )
 }
 
 export function selectProjectRuntime(request: ComposerStateRequest = {}) {
-  return invokeRuntimeHost('selectProjectRuntime', { request: withComposerModeSettings(request) })
+  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
+    invokeRuntimeHost('selectProjectRuntime', { request: preparedRequest }),
+  )
 }
 
 export function openThreadRuntime(request: ComposerStateRequest) {
-  return invokeRuntimeHost('openThreadRuntime', { request: withComposerModeSettings(request) })
+  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
+    invokeRuntimeHost('openThreadRuntime', { request: preparedRequest }),
+  )
 }
 
 export function getComposerSlashCommands(request: ComposerStateRequest = {}) {
-  return invokeRuntimeHost('getComposerSlashCommands', {
-    request: withComposerModeSettings(request),
-  })
+  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
+    invokeRuntimeHost('getComposerSlashCommands', { request: preparedRequest }),
+  )
 }
 
 export function getComposerSkills(request: ComposerStateRequest = {}) {
-  return invokeRuntimeHost('getComposerSkills', {
-    request: withComposerModeSettings(request),
-  })
+  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
+    invokeRuntimeHost('getComposerSkills', { request: preparedRequest }),
+  )
 }
 
-export function getComposerState(request = {}) {
-  return invokeRuntimeHost('getComposerState', { request: withComposerModeSettings(request) })
+export function getComposerState(request: ComposerStateRequest = {}) {
+  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
+    invokeRuntimeHost('getComposerState', { request: preparedRequest }),
+  )
 }
 
 export function setComposerModel(request: ComposerStateRequest, provider: string, modelId: string) {
-  return invokeRuntimeHost('setComposerModel', {
-    request: withComposerModeSettings(request),
-    provider,
-    modelId,
-  })
+  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
+    invokeRuntimeHost('setComposerModel', { request: preparedRequest, provider, modelId }),
+  )
 }
 
 export function setComposerThinkingLevel(
   request: ComposerStateRequest,
   level: ComposerThinkingLevel,
 ) {
-  return invokeRuntimeHost('setComposerThinkingLevel', {
-    request: withComposerModeSettings(request),
-    level,
-  })
+  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
+    invokeRuntimeHost('setComposerThinkingLevel', { request: preparedRequest, level }),
+  )
 }
 
 export function sendComposerPrompt(
@@ -247,11 +267,36 @@ export function sendComposerPrompt(
     streamingBehavior?: ComposerStreamingBehavior | null
   },
 ) {
-  return invokeRuntimeHost('sendComposerPrompt', withComposerModeSettings(request))
+  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
+    invokeRuntimeHost('sendComposerPrompt', preparedRequest),
+  )
 }
 
-export function stopComposerRun(request = {}) {
-  return invokeRuntimeHost('stopComposerRun', { request })
+export function stopComposerRun(request: ComposerStateRequest = {}) {
+  return withWorkspaceRequest(request, () => invokeRuntimeHost('stopComposerRun', { request }))
+}
+
+export function navigateSessionTree(
+  request: ComposerStateRequest & {
+    targetEntryId: string
+    summarize: boolean
+    label?: string | undefined | null
+  },
+) {
+  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
+    invokeRuntimeHost('navigateSessionTree', preparedRequest),
+  )
+}
+
+export function labelSessionTreeEntry(
+  request: ComposerStateRequest & {
+    targetEntryId: string
+    label?: string | undefined | null
+  },
+) {
+  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
+    invokeRuntimeHost('labelSessionTreeEntry', preparedRequest),
+  )
 }
 
 export function disposeWorkspaceComposerRuns(request: {
@@ -268,11 +313,43 @@ export function dequeueComposerPrompt(
     queueMode: Exclude<ComposerStreamingBehavior, 'stop'>
   },
 ) {
-  return invokeRuntimeHost('dequeueComposerPrompt', withComposerModeSettings(request))
+  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
+    invokeRuntimeHost('dequeueComposerPrompt', preparedRequest),
+  )
 }
 
-export function answerNativeAskQuestions(
-  request: ComposerStateRequest & { requestId: string; answers: string[][] | null },
+export function answerPiExtensionDialog(
+  request: ComposerStateRequest & {
+    requestId: string
+    cancelled?: boolean | undefined
+    confirmed?: boolean | undefined
+    value?: string | undefined
+  },
 ) {
-  return invokeRuntimeHost('answerNativeAskQuestions', withComposerModeSettings(request))
+  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
+    invokeRuntimeHost('answerPiExtensionDialog', preparedRequest),
+  )
+}
+
+export function invokePiExtensionShortcut(
+  request: ComposerStateRequest & {
+    editorSelectionEnd?: number | undefined
+    editorSelectionStart?: number | undefined
+    editorText?: string | undefined
+    shortcut: string
+  },
+) {
+  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
+    invokeRuntimeHost('invokePiExtensionShortcut', preparedRequest),
+  )
+}
+
+export function refreshComposerAfterProjectTrust(request: ComposerStateRequest) {
+  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
+    invokeRuntimeHost('getComposerState', { request: preparedRequest }),
+  )
+}
+
+export function setProjectTrust(request: ComposerStateRequest & { cwd: string; trusted: boolean }) {
+  return invokeRuntimeHost('setProjectTrust', withComposerModeSettings(request))
 }

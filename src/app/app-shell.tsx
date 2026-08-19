@@ -4,6 +4,6 @@ import { usePiGuiTheme } from './app-shell/usePiGuiTheme'
 
 export function AppShell() {
   const controller = useAppShellController()
-  usePiGuiTheme(controller.shellState?.piTheme)
+  usePiGuiTheme(controller.desktop.shellState?.piTheme)
   return <AppShellLayout controller={controller} />
 }

@@ -27,9 +27,12 @@ export function useComposerAttachmentPicker({
   onListAttachmentEntries,
 }: UseComposerAttachmentPickerProps) {
   const pickerScopeKey = `${pickerSessionKey ?? ''}::${pickerRootPath}`
-  const [pickerState, setPickerState] = useState<ComposerFilePickerState | null>(null)
-  const [pickerStateScopeKey, setPickerStateScopeKey] = useState<string | null>(null)
-  const [pickerLoading, setPickerLoading] = useState(false)
+  const [pickerLoad, setPickerLoad] = useState<{
+    state: ComposerFilePickerState | null
+    scopeKey: string | null
+    loading: boolean
+  }>({ state: null, scopeKey: null, loading: false })
+  const { loading: pickerLoading, scopeKey: pickerStateScopeKey, state: pickerState } = pickerLoad
   const pickerRequestIdRef = useRef(0)
   const previousOpenMenuRef = useRef<'model' | 'picker' | null>(openMenu)
   const previousPickerScopeKeyRef = useRef<string | null>(null)
@@ -49,7 +52,7 @@ export function useComposerAttachmentPicker({
     async (path?: string | null | undefined, rootPath?: string | null) => {
       const requestId = pickerRequestIdRef.current + 1
       pickerRequestIdRef.current = requestId
-      setPickerLoading(true)
+      setPickerLoad((current) => ({ ...current, loading: true }))
 
       try {
         const nextPickerState = await fetchPickerEntries(path, rootPath)
@@ -57,8 +60,7 @@ export function useComposerAttachmentPicker({
           return nextPickerState
         }
 
-        setPickerState(nextPickerState)
-        setPickerStateScopeKey(pickerScopeKey)
+        setPickerLoad({ state: nextPickerState, scopeKey: pickerScopeKey, loading: false })
         setErrorMessage(null)
         return nextPickerState
       } catch (error) {
@@ -70,22 +72,20 @@ export function useComposerAttachmentPicker({
         return null
       } finally {
         if (requestId === pickerRequestIdRef.current) {
-          setPickerLoading(false)
+          setPickerLoad((current) => ({ ...current, loading: false }))
         }
       }
     },
     [fetchPickerEntries, pickerScopeKey, setErrorMessage],
   )
 
-  const pickAttachments = async () => {
+  const pickAttachments = () => {
     if (openMenu === 'picker') {
       setOpenMenu(null)
       return
     }
 
-    setPickerState(null)
-    setPickerStateScopeKey(null)
-    setPickerLoading(true)
+    setPickerLoad({ state: null, scopeKey: null, loading: true })
     setOpenMenu('picker')
   }
 
@@ -101,9 +101,7 @@ export function useComposerAttachmentPicker({
       return
     }
 
-    setPickerState(null)
-    setPickerStateScopeKey(null)
-    setPickerLoading(true)
+    setPickerLoad({ state: null, scopeKey: null, loading: true })
     void loadPickerEntries(pickerRootPath, pickerRootPath)
   }, [loadPickerEntries, openMenu, pickerRootPath, pickerScopeKey])
 

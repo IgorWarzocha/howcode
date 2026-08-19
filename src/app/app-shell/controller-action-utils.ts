@@ -1,11 +1,11 @@
-import type { DesktopAction } from '../desktop/actions'
 import type { AnyDesktopActionPayload, DesktopActionResult, Thread } from '../desktop/types'
 import { hasDesktopBridgeQuery } from '../query/desktop-query'
 
 export type ActionPayload = AnyDesktopActionPayload
 
 export function getPayloadProjectId(payload: ActionPayload) {
-  return typeof payload.projectId === 'string' ? payload.projectId : null
+  if (typeof payload.projectId === 'string') return payload.projectId
+  return typeof payload.rootProjectId === 'string' ? payload.rootProjectId : null
 }
 
 export function getPayloadThreadId(payload: ActionPayload) {
@@ -41,7 +41,7 @@ export function hasActionError(actionResult: DesktopActionResult | null | undefi
 export function sortPinnedThreads<T extends { id: string; pinned?: boolean | undefined }>(
   threads: T[],
 ) {
-  return [...threads].sort((left, right) => {
+  return threads.toSorted((left, right) => {
     const leftPinned = Boolean(left.pinned)
     const rightPinned = Boolean(right.pinned)
 
@@ -56,7 +56,7 @@ export function sortPinnedThreads<T extends { id: string; pinned?: boolean | und
 export function sortPinnedProjects<T extends { id: string; pinned?: boolean | undefined }>(
   projects: T[],
 ) {
-  return [...projects].sort((left, right) => {
+  return projects.toSorted((left, right) => {
     const leftPinned = Boolean(left.pinned)
     const rightPinned = Boolean(right.pinned)
 
@@ -70,8 +70,4 @@ export function sortPinnedProjects<T extends { id: string; pinned?: boolean | un
 
 export function hasDesktopBridge() {
   return hasDesktopBridgeQuery()
-}
-
-export function isThreadPinAction(action: DesktopAction) {
-  return action === 'thread.pin'
 }

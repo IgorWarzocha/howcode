@@ -38,19 +38,13 @@ function parseCommitEntry(fields: string[]): ProjectCommitEntry | null {
 }
 
 function parseCommitEntries(output: string) {
-  return output
-    .replace(trailingLineBreakPattern, '')
-    .split(FIELD_SEPARATOR)
-    .reduce<string[][]>((records, field, index) => {
-      const recordIndex = Math.floor(index / COMMIT_FIELD_COUNT)
-      const currentRecord = records[recordIndex] ?? []
-      currentRecord.push(field)
-      records[recordIndex] = currentRecord
-      return records
-    }, [])
-    .filter((fields) => fields.length >= COMMIT_FIELD_COUNT)
-    .map((fields) => parseCommitEntry(fields.slice(0, COMMIT_FIELD_COUNT)))
-    .filter((record): record is ProjectCommitEntry => record !== null)
+  const fields = output.replace(trailingLineBreakPattern, '').split(FIELD_SEPARATOR)
+  const commits: ProjectCommitEntry[] = []
+  for (let index = 0; index + COMMIT_FIELD_COUNT <= fields.length; index += COMMIT_FIELD_COUNT) {
+    const commit = parseCommitEntry(fields.slice(index, index + COMMIT_FIELD_COUNT))
+    if (commit) commits.push(commit)
+  }
+  return commits
 }
 
 export async function resolveCommitRevision(

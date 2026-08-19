@@ -1,4 +1,3 @@
-import type { Dispatch, SetStateAction } from 'react'
 import type {
   AppSettings,
   ComposerModel,
@@ -6,10 +5,8 @@ import type {
   DesktopActionInvoker,
 } from '../../desktop/types'
 import type { SettingsController } from './settingsDescriptorTypes'
+import { SettingsModelWorkflowControls } from './settingsModelWorkflowControls'
 import type { SettingDescriptor } from './settingsTypes'
-import { InlineSelect } from './settingsUi'
-
-type ModelSettingsSelection = AppSettings['chatModel']
 
 export function buildModelSettingsDescriptors({
   appSettings,
@@ -27,180 +24,16 @@ export function buildModelSettingsDescriptors({
   currentModel: ComposerModel | null
   controller: SettingsController
   openSelectId: string | null
-  setOpenSelectId: Dispatch<SetStateAction<string | null>>
+  setOpenSelectId: (value: string | null) => void
   onAction: DesktopActionInvoker
 }): SettingDescriptor[] {
-  const modelProviders = [...new Set(availableModels.map((model) => model.provider))].toSorted()
-  const allThinkingLevels: ComposerThinkingLevel[] = [
-    'off',
-    'minimal',
-    'low',
-    'medium',
-    'high',
-    'xhigh',
-  ]
-  const getSelectedWorkflowModel = (selection: ModelSettingsSelection) =>
-    selection
-      ? (availableModels.find(
-          (model) => model.provider === selection.provider && model.id === selection.id,
-        ) ?? null)
-      : currentModel
-  const getWorkflowThinkingLevels = (selection: ModelSettingsSelection) => {
-    const selectedModel = getSelectedWorkflowModel(selection)
-    if (!selection) {
-      return availableThinkingLevels
-    }
-
-    return selectedModel?.reasoning ? allThinkingLevels : (['off'] as ComposerThinkingLevel[])
+  const sharedProps = {
+    availableModels,
+    availableThinkingLevels,
+    currentModel,
+    openSelectId,
+    setOpenSelectId,
   }
-  const selectFirstProviderModel = (
-    provider: string | null,
-    selection: ModelSettingsSelection,
-    selectModel: (id: string) => void,
-  ) => {
-    if (!provider) {
-      selectModel('composer-default')
-      return
-    }
-
-    if (selection?.provider === provider) {
-      return
-    }
-
-    const firstModel = availableModels.find((model) => model.provider === provider)
-    if (firstModel) {
-      selectModel(`${firstModel.provider}/${firstModel.id}`)
-    }
-  }
-  const buildProviderOptions = (
-    id: string,
-    selection: ModelSettingsSelection,
-    selectModel: (id: string) => void,
-  ) => (
-    <InlineSelect
-      id={id}
-      value={selection?.provider ?? 'composer-default'}
-      open={openSelectId === id}
-      options={[
-        { value: 'composer-default', label: 'Composer default' },
-        ...modelProviders.map((provider) => ({
-          value: provider,
-          label: provider,
-        })),
-      ]}
-      onOpenChange={(open) => setOpenSelectId(open ? id : null)}
-      onChange={(value) =>
-        selectFirstProviderModel(
-          value === 'composer-default' ? null : value,
-          selection,
-          selectModel,
-        )
-      }
-    />
-  )
-  const buildModelOptions = (
-    id: string,
-    selection: ModelSettingsSelection,
-    selectModel: (id: string) => void,
-  ) => {
-    const providerModels = selection
-      ? availableModels.filter((model) => model.provider === selection.provider)
-      : availableModels
-
-    return (
-      <InlineSelect
-        id={id}
-        value={selection ? `${selection.provider}/${selection.id}` : 'composer-default'}
-        open={openSelectId === id}
-        options={[
-          {
-            value: 'composer-default',
-            label: 'Composer default',
-            description: currentModel ? currentModel.name : undefined,
-          },
-          ...providerModels.map((model) => ({
-            value: `${model.provider}/${model.id}`,
-            label: model.name,
-            description: `${model.provider}/${model.id}`,
-          })),
-        ]}
-        onOpenChange={(open) => setOpenSelectId(open ? id : null)}
-        onChange={selectModel}
-        menuAlign="right"
-      />
-    )
-  }
-  const thinkingLevelLabels: Record<ComposerThinkingLevel, string> = {
-    off: 'Off',
-    minimal: 'Minimal',
-    low: 'Low',
-    medium: 'Medium',
-    high: 'High',
-    xhigh: 'Extra high',
-  }
-  const renderThinkingSelector = (
-    id: string,
-    value: ComposerThinkingLevel | null,
-    levels: ComposerThinkingLevel[],
-    onChange: (value: ComposerThinkingLevel | null) => void,
-    allowDefault = false,
-  ) => (
-    <InlineSelect
-      id={id}
-      value={
-        value && levels.includes(value)
-          ? value
-          : allowDefault
-            ? 'composer-default'
-            : (levels[0] ?? 'off')
-      }
-      open={openSelectId === id}
-      options={[
-        ...(allowDefault ? [{ value: 'composer-default', label: 'Composer default' }] : []),
-        ...levels.map((level) => ({
-          value: level,
-          label: thinkingLevelLabels[level],
-        })),
-      ]}
-      onOpenChange={(open) => setOpenSelectId(open ? id : null)}
-      onChange={(nextValue) =>
-        onChange(nextValue === 'composer-default' ? null : (nextValue as ComposerThinkingLevel))
-      }
-    />
-  )
-  const renderModelWorkflowControls = (
-    idPrefix: string,
-    selection: ModelSettingsSelection,
-    thinkingLevel: ComposerThinkingLevel | null,
-    selectModel: (id: string) => void,
-    selectThinkingLevel: (value: ComposerThinkingLevel | null) => void,
-    allowDefaultThinking = false,
-  ) => (
-    <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_7.75rem] gap-1.5 sm:w-auto sm:[--settings-model-select-width:10.4rem]">
-      <div className="min-w-0">
-        <div className="[&_[data-inline-select-root]]:w-full sm:[&_[data-inline-select-root]]:w-[var(--settings-model-select-width)]">
-          {buildProviderOptions(`${idPrefix}-provider`, selection, selectModel)}
-        </div>
-      </div>
-      <div className="min-w-0">
-        <div className="[&_[data-inline-select-root]]:w-full sm:[&_[data-inline-select-root]]:w-[var(--settings-model-select-width)]">
-          {buildModelOptions(`${idPrefix}-model`, selection, selectModel)}
-        </div>
-      </div>
-      <div className="min-w-0">
-        <div className="[&_[data-inline-select-root]]:w-full sm:[&_[data-inline-select-root]]:w-[7.75rem]">
-          {renderThinkingSelector(
-            `${idPrefix}-thinking`,
-            thinkingLevel,
-            getWorkflowThinkingLevels(selection),
-            selectThinkingLevel,
-            allowDefaultThinking,
-          )}
-        </div>
-      </div>
-    </div>
-  )
-
   return [
     {
       id: 'models.chat',
@@ -208,21 +41,24 @@ export function buildModelSettingsDescriptors({
       title: 'Chat',
       description: 'Default settings for the Chat view.',
       keywords: 'chat model provider reasoning thinking',
-      render: () =>
-        renderModelWorkflowControls(
-          'chat-models',
-          appSettings.chatModel,
-          appSettings.chatThinkingLevel,
-          controller.selectChatModel,
-          (value) =>
+      render: () => (
+        <SettingsModelWorkflowControls
+          {...sharedProps}
+          idPrefix="chat-models"
+          selection={appSettings.chatModel}
+          thinkingLevel={appSettings.chatThinkingLevel}
+          allowDefaultThinking
+          onSelectModel={controller.models.selectChatModel}
+          onSelectThinkingLevel={(value) =>
             void onAction(
               'settings.update',
               value === null
                 ? { key: 'chatThinkingLevel', reset: true }
                 : { key: 'chatThinkingLevel', value },
-            ),
-          true,
-        ),
+            )
+          }
+        />
+      ),
     },
     {
       id: 'models.code',
@@ -230,21 +66,24 @@ export function buildModelSettingsDescriptors({
       title: 'Code',
       description: 'Default settings for the Code view.',
       keywords: 'code model provider reasoning thinking composer',
-      render: () =>
-        renderModelWorkflowControls(
-          'code-models',
-          appSettings.codeModel,
-          appSettings.codeThinkingLevel,
-          controller.selectCodeModel,
-          (value) =>
+      render: () => (
+        <SettingsModelWorkflowControls
+          {...sharedProps}
+          idPrefix="code-models"
+          selection={appSettings.codeModel}
+          thinkingLevel={appSettings.codeThinkingLevel}
+          allowDefaultThinking
+          onSelectModel={controller.models.selectCodeModel}
+          onSelectThinkingLevel={(value) =>
             void onAction(
               'settings.update',
               value === null
                 ? { key: 'codeThinkingLevel', reset: true }
                 : { key: 'codeThinkingLevel', value },
-            ),
-          true,
-        ),
+            )
+          }
+        />
+      ),
     },
     {
       id: 'models.git-commit',
@@ -252,37 +91,21 @@ export function buildModelSettingsDescriptors({
       title: 'Git commit messages',
       description: 'Default settings for the GitOps view.',
       keywords: 'git commit message model provider reasoning thinking',
-      render: () =>
-        renderModelWorkflowControls(
-          'git-commit-models',
-          appSettings.gitCommitMessageModel,
-          appSettings.gitCommitMessageThinkingLevel,
-          controller.selectGitCommitModel,
-          (value) =>
+      render: () => (
+        <SettingsModelWorkflowControls
+          {...sharedProps}
+          idPrefix="git-commit-models"
+          selection={appSettings.gitCommitMessageModel}
+          thinkingLevel={appSettings.gitCommitMessageThinkingLevel}
+          onSelectModel={controller.models.selectGitCommitModel}
+          onSelectThinkingLevel={(value) =>
             void onAction('settings.update', {
               key: 'gitCommitMessageThinkingLevel',
               value,
-            }),
-        ),
-    },
-    {
-      id: 'models.skill-creator',
-      category: 'models',
-      title: 'Skill creator',
-      description: 'Default settings for the built-in skill creator.',
-      keywords: 'skill creator model provider reasoning thinking',
-      render: () =>
-        renderModelWorkflowControls(
-          'skill-creator-models',
-          appSettings.skillCreatorModel,
-          appSettings.skillCreatorThinkingLevel,
-          controller.selectSkillCreatorModel,
-          (value) =>
-            void onAction('settings.update', {
-              key: 'skillCreatorThinkingLevel',
-              value,
-            }),
-        ),
+            })
+          }
+        />
+      ),
     },
   ]
 }

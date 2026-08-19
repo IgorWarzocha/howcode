@@ -2,7 +2,6 @@ import { defaultPiSettings } from '../../shared/default-pi-settings.ts'
 import type { PiSettings } from '../../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
 import { getPiModule } from '../pi-module.ts'
-import { markRuntimeSettingsStaleForProject } from '../runtime/runtime-registry.ts'
 import { loadPiThemeStateInHost } from './theme-service.ts'
 
 export type PiSettingsKey = keyof PiSettings
@@ -32,6 +31,7 @@ export async function loadPiSettingsInHost(
 ): Promise<PiSettings> {
   const settingsManager = await getPiSettingsManager(projectPath)
   return {
+    extensions: settingsManager.getExtensionPaths(),
     theme: settingsManager.getTheme() ?? defaultPiSettings.theme,
     autoCompact: settingsManager.getCompactionEnabled(),
     enableSkillCommands: settingsManager.getEnableSkillCommands(),
@@ -52,6 +52,9 @@ export async function loadPiSettingsInHost(
     doubleEscapeAction:
       asPiDoubleEscapeAction(settingsManager.getDoubleEscapeAction()) ??
       defaultPiSettings.doubleEscapeAction,
+    defaultProjectTrust:
+      asPiDefaultProjectTrust(settingsManager.getDefaultProjectTrust()) ??
+      defaultPiSettings.defaultProjectTrust,
     treeFilterMode:
       asPiTreeFilterMode(settingsManager.getTreeFilterMode()) ?? defaultPiSettings.treeFilterMode,
     editorPaddingX: settingsManager.getEditorPaddingX(),
@@ -70,6 +73,10 @@ function asPiQueueMode(value: unknown): PiSettings['steeringMode'] | null {
 
 function asPiDoubleEscapeAction(value: unknown): PiSettings['doubleEscapeAction'] | null {
   return value === 'fork' || value === 'tree' || value === 'none' ? value : null
+}
+
+function asPiDefaultProjectTrust(value: unknown): PiSettings['defaultProjectTrust'] | null {
+  return value === 'ask' || value === 'always' || value === 'never' ? value : null
 }
 
 function asPiTreeFilterMode(value: unknown): PiSettings['treeFilterMode'] | null {
@@ -173,6 +180,13 @@ function updateQueueModeSetting(
   return true
 }
 
+function updateProjectTrustDefaultSetting(settingsManager: PiSettingsManager, value: unknown) {
+  const defaultProjectTrust = asPiDefaultProjectTrust(value)
+  if (!defaultProjectTrust) return false
+  settingsManager.setDefaultProjectTrust(defaultProjectTrust)
+  return true
+}
+
 function updateBoundedIntegerSetting(
   settingsManager: PiSettingsManager,
   key: PiSettingsKey,
@@ -203,6 +217,11 @@ async function updateNonBooleanSetting(
   value: unknown,
   projectPath?: string | null | undefined,
 ) {
+  if (key === 'extensions') {
+    if (!(Array.isArray(value) && value.every((item) => typeof item === 'string'))) return false
+    settingsManager.setExtensionPaths(value)
+    return true
+  }
   if (key === 'theme') return await updateThemeSetting(settingsManager, value, projectPath)
   if (key === 'transport') return updateTransportSetting(settingsManager, value)
   if (updateQueueModeSetting(settingsManager, key, value)) return true
@@ -211,6 +230,9 @@ async function updateNonBooleanSetting(
     if (!action) return false
     settingsManager.setDoubleEscapeAction(action)
     return true
+  }
+  if (key === 'defaultProjectTrust') {
+    return updateProjectTrustDefaultSetting(settingsManager, value)
   }
   if (key === 'treeFilterMode') {
     const mode = asPiTreeFilterMode(value)
@@ -233,7 +255,6 @@ export async function updatePiSettingInHost(
 
   if (updated) {
     await settingsManager.flush()
-    await markRuntimeSettingsStaleForProject(null)
   }
 
   return loadPiSettingsInHost(projectPath)

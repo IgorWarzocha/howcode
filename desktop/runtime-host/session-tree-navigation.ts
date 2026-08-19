@@ -1,0 +1,271 @@
+import * as Effect from 'effect/Effect'
+import type { ComposerStateRequest } from '../../shared/desktop-contracts.ts'
+import { getPersistedSessionPath } from '../../shared/session-paths.ts'
+import { waitForConditionOrSettlement } from '../runtime/async-observer.ts'
+import { applyComposerModeSettings } from '../runtime/composer-mode-settings.ts'
+import { buildComposerState } from '../runtime/composer-state.ts'
+import type { RuntimeThreadReason } from '../runtime/types.ts'
+import {
+  getCachedRuntimeForSessionPath,
+  getOrCreateRuntimeForSessionPath,
+  isRuntimeExtensionCommandRunning,
+  reloadRuntimeSettingsIfSafe,
+  scheduleRuntimeDisposal,
+  withRuntimeMutationLock,
+} from './live-runtime-registry.ts'
+import type { LivePiRuntime } from './live-runtime-updates.ts'
+import { publishComposerUpdate, publishThreadUpdate } from './live-thread-publisher.ts'
+
+export type NavigateSessionTreeOutcome = {
+  cancelled: boolean
+  aborted?: boolean
+  editorText?: string
+}
+
+const navigateTreeAdapters = {
+  emitComposerUpdate: async (request?: ComposerStateRequest) => {
+    const persistedSessionPath = getPersistedSessionPath(request?.sessionPath ?? null)
+    const runtimePromise = persistedSessionPath
+      ? getCachedRuntimeForSessionPath(persistedSessionPath)
+      : null
+    const runtime = runtimePromise ? await runtimePromise : null
+    if (!runtime) return
+    const composer = await buildComposerState(runtime)
+    publishComposerUpdate(composer, {
+      projectId: request?.projectId ?? runtime.cwd,
+      sessionPath: persistedSessionPath,
+    })
+  },
+  isRuntimeExtensionCommandRunning,
+  publishThreadUpdate,
+  scheduleRuntimeDisposal: (runtime: LivePiRuntime) => {
+    const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile)
+    if (runtimeKey) scheduleRuntimeDisposal(runtimeKey)
+  },
+}
+
+function assertNavigateAllowed(runtime: LivePiRuntime) {
+  if (navigateTreeAdapters.isRuntimeExtensionCommandRunning(runtime)) {
+    throw new Error(
+      'Wait for the current extension command to finish before changing the session tree.',
+    )
+  }
+  if (runtime.session.isStreaming) {
+    throw new Error('Wait for the current response to finish before changing the session tree.')
+  }
+  if (runtime.session.isCompacting) {
+    throw new Error('Wait for the current compaction or branch summary to finish.')
+  }
+}
+
+async function publishNavigateCompactionStarted(runtime: LivePiRuntime) {
+  await navigateTreeAdapters.publishThreadUpdate(runtime, 'compaction-start')
+  await navigateTreeAdapters.emitComposerUpdate({
+    projectId: runtime.cwd,
+    sessionPath: runtime.session.sessionFile ?? null,
+  })
+}
+
+async function runNavigateOnRuntime(
+  runtime: LivePiRuntime,
+  targetEntryId: string,
+  summarize: boolean,
+  label?: string | undefined,
+): Promise<NavigateSessionTreeOutcome> {
+  assertNavigateAllowed(runtime)
+  const leafId = runtime.session.sessionManager.getLeafId()
+  if (targetEntryId === leafId) {
+    return { cancelled: false }
+  }
+
+  const trimmedLabel = label?.trim() || undefined
+  const branchSummaryIdsBeforeNavigate = collectBranchSummaryIds(runtime)
+  const navigateStartedAt = Date.now()
+  const navigatePromise = runtime.session.navigateTree(targetEntryId, {
+    summarize,
+    ...(trimmedLabel ? { label: trimmedLabel } : {}),
+  })
+
+  if (summarize) {
+    let compactionUiPublished = false
+    const ensureCompactionUi = async () => {
+      if (compactionUiPublished) return
+      compactionUiPublished = true
+      await publishNavigateCompactionStarted(runtime)
+    }
+
+    if (runtime.session.isCompacting) await ensureCompactionUi()
+    const started = await waitForBranchSummaryStartOrSettlement(runtime, navigatePromise)
+    if (started === 'started') await ensureCompactionUi()
+  }
+
+  const result = await navigatePromise
+  await ensureNavigateLabelApplied(runtime, {
+    result,
+    label: trimmedLabel,
+    summarize,
+    targetEntryId,
+    branchSummaryIdsBeforeNavigate,
+    navigateStartedAt,
+  })
+  await publishNavigateSettled(runtime, summarize ? 'compaction' : 'update')
+  if (result.cancelled) {
+    return { cancelled: true, ...(result.aborted ? { aborted: true } : {}) }
+  }
+  return {
+    cancelled: false,
+    ...(result.editorText === undefined ? {} : { editorText: result.editorText }),
+  }
+}
+
+function ensureNavigateLabelApplied(
+  runtime: LivePiRuntime,
+  input: {
+    result: { cancelled?: boolean; summaryEntry?: { id: string } | undefined }
+    label?: string | undefined
+    summarize: boolean
+    targetEntryId: string
+    branchSummaryIdsBeforeNavigate: ReadonlySet<string>
+    navigateStartedAt: number
+  },
+) {
+  if (input.result.cancelled || !input.label) return
+  const labelTargetId = input.summarize
+    ? (input.result.summaryEntry?.id ?? findNewBranchSummaryId(runtime, input))
+    : input.targetEntryId
+  if (!labelTargetId) return
+  const existingLabel = runtime.session.sessionManager.getLabel?.(labelTargetId)?.trim()
+  if (existingLabel === input.label) return
+  runtime.session.sessionManager.appendLabelChange(labelTargetId, input.label)
+}
+
+function collectBranchSummaryIds(runtime: LivePiRuntime): Set<string> {
+  return new Set(
+    runtime.session.sessionManager
+      .getEntries()
+      .flatMap((entry) => (entry.type === 'branch_summary' ? [entry.id] : [])),
+  )
+}
+
+function findNewBranchSummaryId(
+  runtime: LivePiRuntime,
+  input: {
+    branchSummaryIdsBeforeNavigate: ReadonlySet<string>
+    navigateStartedAt: number
+  },
+): string | undefined {
+  const newSummaries = runtime.session.sessionManager
+    .getEntries()
+    .filter((entry) => {
+      if (entry.type !== 'branch_summary') return false
+      if (input.branchSummaryIdsBeforeNavigate.has(entry.id)) return false
+      return new Date(entry.timestamp).getTime() >= input.navigateStartedAt - 1_000
+    })
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+  return newSummaries[0]?.id
+}
+
+async function waitForBranchSummaryStartOrSettlement(
+  runtime: LivePiRuntime,
+  navigatePromise: Promise<{
+    cancelled: boolean
+    aborted?: boolean
+    editorText?: string
+    summaryEntry?: { id: string }
+  }>,
+) {
+  if (runtime.session.isCompacting) return 'started' as const
+  const outcome = await Effect.runPromise(
+    waitForConditionOrSettlement(() => runtime.session.isCompacting, navigatePromise, 50),
+  )
+  return outcome === 'condition' ? ('started' as const) : ('settled' as const)
+}
+
+async function publishNavigateSettled(
+  runtime: LivePiRuntime,
+  reason: Extract<RuntimeThreadReason, 'update' | 'compaction'>,
+) {
+  await navigateTreeAdapters.publishThreadUpdate(runtime, reason).catch((error) => {
+    console.error('Session tree navigation settled but thread update publish failed', error)
+  })
+  await navigateTreeAdapters.emitComposerUpdate({
+    projectId: runtime.cwd,
+    sessionPath: runtime.session.sessionFile ?? null,
+  })
+}
+
+export async function navigateSessionTree(input: {
+  request: ComposerStateRequest
+  targetEntryId: string
+  summarize: boolean
+  label?: string | undefined | null
+}): Promise<NavigateSessionTreeOutcome> {
+  const persistedSessionPath = getPersistedSessionPath(input.request.sessionPath)
+  if (!persistedSessionPath) {
+    throw new Error('Open a saved session before navigating the session tree.')
+  }
+
+  const targetEntryId = input.targetEntryId.trim()
+  if (!targetEntryId) {
+    throw new Error('Session tree entry is required.')
+  }
+
+  return await withRuntimeMutationLock(persistedSessionPath, async () => {
+    await reloadRuntimeSettingsIfSafe(persistedSessionPath, { useMutationLock: false })
+    const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+      suspendDisposal: true,
+      settingsCwd: input.request.composerSessionDir ?? null,
+      chatGroupId: input.request.chatGroupId ?? null,
+    })
+    runtime.branchName = input.request.branchName ?? runtime.branchName ?? null
+    await applyComposerModeSettings(runtime, input.request)
+    try {
+      return await runNavigateOnRuntime(
+        runtime,
+        targetEntryId,
+        input.summarize,
+        input.label?.trim() || undefined,
+      )
+    } finally {
+      navigateTreeAdapters.scheduleRuntimeDisposal(runtime)
+    }
+  })
+}
+
+export async function labelSessionTreeEntry(input: {
+  request: ComposerStateRequest
+  targetEntryId: string
+  label?: string | undefined | null
+}): Promise<{ ok: true }> {
+  const persistedSessionPath = getPersistedSessionPath(input.request.sessionPath)
+  if (!persistedSessionPath) {
+    throw new Error('Open a saved session before labelling the session tree.')
+  }
+
+  const targetEntryId = input.targetEntryId.trim()
+  if (!targetEntryId) {
+    throw new Error('Session tree entry is required.')
+  }
+
+  return await withRuntimeMutationLock(persistedSessionPath, async () => {
+    await reloadRuntimeSettingsIfSafe(persistedSessionPath, { useMutationLock: false })
+    const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+      suspendDisposal: true,
+      settingsCwd: input.request.composerSessionDir ?? null,
+      chatGroupId: input.request.chatGroupId ?? null,
+    })
+    runtime.branchName = input.request.branchName ?? runtime.branchName ?? null
+    await applyComposerModeSettings(runtime, input.request)
+    try {
+      const label = input.label?.trim() || ''
+      const existingLabel = runtime.session.sessionManager.getLabel?.(targetEntryId)?.trim() || ''
+      if (existingLabel !== label) {
+        runtime.session.sessionManager.appendLabelChange(targetEntryId, label)
+      }
+      await publishNavigateSettled(runtime, 'update')
+      return { ok: true as const }
+    } finally {
+      navigateTreeAdapters.scheduleRuntimeDisposal(runtime)
+    }
+  })
+}

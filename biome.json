@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.9/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -44,19 +44,19 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "a11y": {
-        "recommended": true
+        "preset": "recommended"
       },
       "complexity": {
-        "recommended": true,
+        "preset": "recommended",
         "noExcessiveCognitiveComplexity": "warn",
         "noUselessStringConcat": "error",
         "noUselessUndefinedInitialization": "error",
         "useSimplifiedLogicExpression": "warn"
       },
       "correctness": {
-        "recommended": true,
+        "preset": "recommended",
         "noConstantMathMinMaxClamp": "error",
         "noUndeclaredDependencies": "off",
         "noUnusedFunctionParameters": "error",
@@ -66,21 +66,20 @@
         "useHookAtTopLevel": "error"
       },
       "nursery": {
-        "recommended": true,
-        "noFloatingPromises": "error",
-        "noShadow": "warn"
+        "preset": "recommended",
+        "noFloatingPromises": "error"
       },
       "performance": {
-        "recommended": true,
+        "preset": "recommended",
         "noAccumulatingSpread": "error",
         "noReExportAll": "warn",
         "useTopLevelRegex": "warn"
       },
       "security": {
-        "recommended": true
+        "preset": "recommended"
       },
       "style": {
-        "recommended": true,
+        "preset": "recommended",
         "noDefaultExport": "off",
         "noNamespace": "error",
         "noNegationElse": "error",
@@ -155,13 +154,14 @@
         "useThrowOnlyError": "error"
       },
       "suspicious": {
-        "recommended": true,
+        "preset": "recommended",
         "noConsole": "off",
         "noEmptyBlockStatements": "error",
         "noEvolvingTypes": "error",
         "noMisplacedAssertion": "error",
         "noSkippedTests": "warn",
-        "useErrorMessage": "error"
+        "useErrorMessage": "error",
+        "noShadow": "warn"
       }
     }
   },

@@ -1,18 +1,19 @@
 import { ArrowDownToLine, ListCollapse } from 'lucide-react'
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Message } from '../types'
 import { appTypeSmallClass, compactIconButtonClass } from '../ui/classes'
-import { CHAT_TEXT_MAX_WIDTH_CLASS } from '../ui/layout'
+import { WORKSPACE_RAIL_GRID_CLASS, WORKSPACE_RAIL_ROOT_CLASS } from '../ui/layout'
 import { cn } from '../utils/cn'
 import { buildTimelineRows } from './buildTimelineRows'
-import { CHAT_AUTO_SCROLL_BOTTOM_THRESHOLD_PX, isScrollContainerNearBottom } from './chat-scroll'
 import { ThreadFindBar } from './thread-find-bar'
-import { chatScrollableAreaClass, chatViewportClass } from './thread-layout'
+import { chatScrollableAreaClass } from './thread-layout'
 import { getTimelineRowMessageIds } from './thread-message-ids'
 import { ThreadTimelineRow } from './thread-timeline-row'
 import { buildThreadTimelineState } from './thread-timeline-state'
 import type { TimelineRow } from './timeline-row'
+import { useSessionTreeReveal } from './useSessionTreeReveal'
 import { useThreadFindNavigation } from './useThreadFindNavigation'
+import { useThreadTimelineScroll } from './useThreadTimelineScroll'
 
 type ThreadTimelineProps = {
   messages: Message[]
@@ -42,13 +43,10 @@ export function ThreadTimeline({
 }: ThreadTimelineProps) {
   const [collapsedRowIds, setCollapsedRowIds] = useState<Record<string, boolean>>({})
   const [expandedToolGroupIds, setExpandedToolGroupIds] = useState<Record<string, boolean>>({})
-  const [nearBottom, setNearBottom] = useState(true)
   const containerRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
-  const bottomSentinelRef = useRef<HTMLDivElement>(null)
   const programmaticScrollFrameRef = useRef<number | null>(null)
   const shouldStickToBottomRef = useRef(true)
-  const pendingHistoryPrependRef = useRef<{ scrollTop: number; scrollHeight: number } | null>(null)
   const rows = useMemo<TimelineRow[]>(
     () => buildTimelineRows({ messages, previousMessageCount }),
     [messages, previousMessageCount],
@@ -71,6 +69,16 @@ export function ThreadTimeline({
       shouldStickToBottomRef,
     })
 
+  useSessionTreeReveal({
+    containerRef,
+    programmaticScrollFrameRef,
+    rowStructureSignature: findRowStructureSignature,
+    rows,
+    sessionPath,
+    setCollapsedRowIds,
+    shouldStickToBottomRef,
+  })
+
   const {
     bottomAnchorKey,
     effectiveCollapsedRowIds,
@@ -87,11 +95,28 @@ export function ThreadTimeline({
         messages,
         isStreaming,
         collapsedRowIds,
-        expandedToolGroupIds,
         forcedExpandedRowId: activeFindRowId,
       }),
-    [activeFindRowId, collapsedRowIds, expandedToolGroupIds, isStreaming, messages, rows],
+    [activeFindRowId, collapsedRowIds, isStreaming, messages, rows],
   )
+
+  const {
+    handleScroll,
+    nearBottom,
+    prepareForHistoryPrepend,
+    scrollToBottom,
+    stopFollowingBottom,
+  } = useThreadTimelineScroll({
+    bottomAnchorKey,
+    composerLayoutVersion,
+    composerOverlayHeight,
+    containerRef,
+    contentRef,
+    programmaticScrollFrameRef,
+    rowCount: rows.length,
+    rowStructureSignature,
+    shouldStickToBottomRef,
+  })
 
   useEffect(() => {
     setCollapsedRowIds((current) => {
@@ -123,111 +148,6 @@ export function ThreadTimeline({
     })
   }, [foldableRows, latestTurnRowId, streamingTurnRowId])
 
-  const scrollToBottom = useCallback(() => {
-    const container = containerRef.current
-    if (!container) {
-      return
-    }
-
-    if (programmaticScrollFrameRef.current !== null) {
-      window.cancelAnimationFrame(programmaticScrollFrameRef.current)
-    }
-
-    container.scrollTop = container.scrollHeight
-    shouldStickToBottomRef.current = true
-    setNearBottom(true)
-    programmaticScrollFrameRef.current = window.requestAnimationFrame(() => {
-      programmaticScrollFrameRef.current = null
-    })
-  }, [])
-
-  useEffect(
-    () => () => {
-      if (programmaticScrollFrameRef.current !== null) {
-        window.cancelAnimationFrame(programmaticScrollFrameRef.current)
-      }
-    },
-    [],
-  )
-
-  useLayoutEffect(() => {
-    const container = containerRef.current
-    const content = contentRef.current
-    if (!(container && content) || typeof ResizeObserver === 'undefined') {
-      return
-    }
-
-    const observer = new ResizeObserver(() => {
-      if (shouldStickToBottomRef.current) {
-        scrollToBottom()
-      }
-    })
-
-    observer.observe(container)
-    observer.observe(content)
-
-    return () => {
-      observer.disconnect()
-    }
-  }, [scrollToBottom])
-
-  useLayoutEffect(() => {
-    void bottomAnchorKey
-    void composerLayoutVersion
-    void composerOverlayHeight
-    void rowStructureSignature
-
-    const container = containerRef.current
-    if (!container) {
-      return
-    }
-
-    const pendingHistoryPrepend = pendingHistoryPrependRef.current
-    if (pendingHistoryPrepend) {
-      const delta = container.scrollHeight - pendingHistoryPrepend.scrollHeight
-      container.scrollTop = pendingHistoryPrepend.scrollTop + Math.max(0, delta)
-      pendingHistoryPrependRef.current = null
-      return
-    }
-
-    if (rows.length === 0) {
-      return
-    }
-
-    if (shouldStickToBottomRef.current) {
-      scrollToBottom()
-    }
-  }, [
-    bottomAnchorKey,
-    composerLayoutVersion,
-    composerOverlayHeight,
-    rowStructureSignature,
-    rows.length,
-    scrollToBottom,
-  ])
-
-  const handleScroll = useCallback(() => {
-    const container = containerRef.current
-    if (!container) {
-      return
-    }
-
-    if (programmaticScrollFrameRef.current !== null) {
-      return
-    }
-
-    const nextNearBottom = isScrollContainerNearBottom(
-      {
-        scrollTop: container.scrollTop,
-        clientHeight: container.clientHeight,
-        scrollHeight: container.scrollHeight,
-      },
-      CHAT_AUTO_SCROLL_BOTTOM_THRESHOLD_PX,
-    )
-    shouldStickToBottomRef.current = nextNearBottom
-    setNearBottom(nextNearBottom)
-  }, [])
-
   const handleFoldEverything = useCallback(() => {
     shouldStickToBottomRef.current = true
     setExpandedToolGroupIds({})
@@ -246,18 +166,16 @@ export function ThreadTimeline({
         return
       }
 
-      shouldStickToBottomRef.current = false
+      stopFollowingBottom()
       setCollapsedRowIds((current) => ({
         ...current,
         [rowId]: !current[rowId],
       }))
     },
-    [streamingTurnRowId],
+    [stopFollowingBottom, streamingTurnRowId],
   )
 
-  const handleToggleToolCallExpansion = useCallback(() => {
-    shouldStickToBottomRef.current = false
-  }, [])
+  const handleToggleToolCallExpansion = stopFollowingBottom
 
   const handleToggleToolGroupExpansion = useCallback(
     (groupId: string) => {
@@ -265,27 +183,19 @@ export function ThreadTimeline({
         return
       }
 
-      shouldStickToBottomRef.current = false
+      stopFollowingBottom()
       setExpandedToolGroupIds((current) => ({
         ...current,
         [groupId]: !current[groupId],
       }))
     },
-    [streamingToolGroupId],
+    [stopFollowingBottom, streamingToolGroupId],
   )
 
   const handleJumpToEarlierMessages = useCallback(() => {
-    const container = containerRef.current
-    if (container) {
-      pendingHistoryPrependRef.current = {
-        scrollTop: container.scrollTop,
-        scrollHeight: container.scrollHeight,
-      }
-    }
-
-    shouldStickToBottomRef.current = false
+    prepareForHistoryPrepend()
     onLoadEarlierMessages()
-  }, [onLoadEarlierMessages])
+  }, [onLoadEarlierMessages, prepareForHistoryPrepend])
 
   const renderRow = useCallback(
     (row: TimelineRow) => (
@@ -325,35 +235,71 @@ export function ThreadTimeline({
   )
 
   return (
-    <div className={`${chatViewportClass} thread-timeline-viewport relative`}>
+    <div className={cn('relative h-full', WORKSPACE_RAIL_ROOT_CLASS)}>
       <ThreadFindBar
         sessionPath={sessionPath}
         onActiveMatchChange={revealFindMatch}
         onQueryChange={setFindQuery}
       />
       <div
-        ref={containerRef}
         className={cn(
-          chatScrollableAreaClass,
-          'thread-timeline-scroll-shell ml-[2.95rem] mr-[3.375rem] -translate-x-[1.325rem]',
+          'thread-timeline-viewport relative col-span-3 col-start-1 row-start-1 grid h-full min-w-0 overflow-visible',
+          WORKSPACE_RAIL_GRID_CLASS,
         )}
-        onScroll={handleScroll}
       >
         <div
-          ref={contentRef}
-          className={`mx-auto flex min-h-full w-full translate-x-[1.9875rem] flex-col justify-end ${CHAT_TEXT_MAX_WIDTH_CLASS} overflow-x-hidden px-4 pt-0 pb-4`}
-          style={
-            composerOverlayHeight > 0
-              ? { paddingBottom: `calc(1rem + ${composerOverlayHeight}px)` }
-              : undefined
-          }
+          ref={containerRef}
+          className={cn(
+            chatScrollableAreaClass,
+            'thread-timeline-scroll-shell col-start-2 row-start-1 -ml-4 w-[calc(100%+1rem)] min-w-0',
+          )}
+          onScroll={handleScroll}
         >
-          <div className="grid min-w-0 gap-3">{rows.map(renderRow)}</div>
-          <div ref={bottomSentinelRef} aria-hidden="true" className="h-px w-full" />
+          <div
+            ref={contentRef}
+            className="flex min-h-full w-full flex-col justify-end overflow-x-visible pt-0 pr-2 pb-4 pl-8"
+            style={
+              composerOverlayHeight > 0
+                ? { paddingBottom: `calc(1rem + ${composerOverlayHeight}px)` }
+                : undefined
+            }
+          >
+            <div className="grid min-w-0 gap-3">{rows.map(renderRow)}</div>
+            <div aria-hidden="true" className="h-px w-full" />
+          </div>
+        </div>
+        <div className="pointer-events-none z-10 col-start-3 row-start-1 mb-4 flex w-7 flex-col items-center gap-1.5 self-end justify-self-center">
+          <button
+            type="button"
+            className={cn(compactIconButtonClass, timelineQuickActionButtonClass)}
+            onClick={handleFoldEverything}
+            disabled={foldableRows.length === 0}
+            aria-label="Fold all"
+            data-tooltip="Fold all"
+          >
+            <ListCollapse size={13} strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            className={cn(compactIconButtonClass, timelineQuickActionButtonClass)}
+            onClick={scrollToBottom}
+            disabled={nearBottom}
+            aria-label="Scroll to bottom"
+            data-tooltip="Scroll to bottom"
+          >
+            <ArrowDownToLine size={13} strokeWidth={2} />
+          </button>
         </div>
       </div>
       {isCompacting ? (
-        <div className="pointer-events-none absolute right-4 bottom-4 left-4 z-[5] flex justify-center">
+        <div
+          className="pointer-events-none absolute right-4 bottom-4 left-4 z-[5] flex justify-center"
+          style={
+            composerOverlayHeight > 0
+              ? { bottom: `calc(1rem + ${composerOverlayHeight}px)` }
+              : undefined
+          }
+        >
           <div
             className={cn(
               'thread-compaction-pill inline-flex h-7 max-w-none shrink-0 items-center gap-1.5 rounded-full px-3 text-[color:var(--accent)]',
@@ -365,28 +311,6 @@ export function ThreadTimeline({
           </div>
         </div>
       ) : null}
-      <div className="pointer-events-none absolute right-10 bottom-4 z-10 flex w-7 flex-col items-center gap-1.5">
-        <button
-          type="button"
-          className={cn(compactIconButtonClass, timelineQuickActionButtonClass)}
-          onClick={handleFoldEverything}
-          disabled={foldableRows.length === 0}
-          aria-label="Fold all"
-          data-tooltip="Fold all"
-        >
-          <ListCollapse size={13} strokeWidth={2} />
-        </button>
-        <button
-          type="button"
-          className={cn(compactIconButtonClass, timelineQuickActionButtonClass)}
-          onClick={scrollToBottom}
-          disabled={nearBottom}
-          aria-label="Scroll to bottom"
-          data-tooltip="Scroll to bottom"
-        >
-          <ArrowDownToLine size={13} strokeWidth={2} />
-        </button>
-      </div>
     </div>
   )
 }

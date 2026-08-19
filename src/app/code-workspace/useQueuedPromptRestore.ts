@@ -14,7 +14,7 @@ export function useQueuedPromptRestore({
   terminalSessionPath,
 }: {
   composerProjectId: string
-  handleAction: AppShellController['handleAction']
+  handleAction: AppShellController['desktop']['handleAction']
   terminalSessionPath: string | null
 }) {
   const [restoredQueuedPrompt, setRestoredQueuedPrompt] =

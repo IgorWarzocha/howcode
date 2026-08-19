@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react'
 import { useEffect } from 'react'
+import { getInboxThreadComposerMode } from '../common/inbox-thread-scope'
 import type { AppSettings, ComposerState, InboxThread, ProjectGitState } from '../desktop/types'
 import type { WorkspaceState } from '../state/workspace'
 
@@ -20,6 +21,34 @@ type UseComposerGitStateSyncInput = {
   setProjectGitLoading: Dispatch<SetStateAction<boolean>>
 }
 
+function getComposerStateSyncTarget(input: {
+  activeView: WorkspaceState['activeView']
+  composerProjectId: string
+  inboxComposerMode: 'chat' | 'code'
+  inboxProjectId: string | null
+  inboxSessionPath: string | null
+  selectedSessionPath: string | null
+}) {
+  if (input.activeView === 'inbox') {
+    return {
+      composerMode: input.inboxComposerMode,
+      projectId: input.inboxProjectId,
+      sessionPath: input.inboxSessionPath,
+    }
+  }
+
+  const sessionPath =
+    input.activeView === 'chat' || input.activeView === 'thread' || input.activeView === 'gitops'
+      ? input.selectedSessionPath
+      : null
+
+  return {
+    composerMode: input.activeView === 'chat' ? ('chat' as const) : ('code' as const),
+    projectId: input.composerProjectId,
+    sessionPath,
+  }
+}
+
 export function useComposerGitStateSync({
   workspaceState,
   selectedInboxThread,
@@ -32,6 +61,10 @@ export function useComposerGitStateSync({
   setProjectGitState,
   setProjectGitLoading,
 }: UseComposerGitStateSyncInput) {
+  const inboxComposerMode = getInboxThreadComposerMode(selectedInboxThread)
+  const inboxProjectId = selectedInboxThread?.projectId ?? null
+  const inboxSessionPath = selectedInboxThread?.sessionPath ?? null
+
   useEffect(() => {
     if (!shellComposerState) {
       return
@@ -46,20 +79,16 @@ export function useComposerGitStateSync({
     void shellAppSettings?.codeModel
     void shellAppSettings?.codeThinkingLevel
 
-    const inboxProjectId = selectedInboxThread?.projectId ?? null
-    const inboxSessionPath = selectedInboxThread?.sessionPath ?? null
-    const composerStateProjectId =
-      workspaceState.activeView === 'inbox' ? inboxProjectId : composerProjectId
-    const composerStateSessionPath =
-      workspaceState.activeView === 'chat' ||
-      workspaceState.activeView === 'thread' ||
-      workspaceState.activeView === 'gitops'
-        ? workspaceState.selectedSessionPath
-        : workspaceState.activeView === 'inbox'
-          ? inboxSessionPath
-          : null
+    const target = getComposerStateSyncTarget({
+      activeView: workspaceState.activeView,
+      composerProjectId,
+      inboxComposerMode,
+      inboxProjectId,
+      inboxSessionPath,
+      selectedSessionPath: workspaceState.selectedSessionPath,
+    })
 
-    if (!composerStateProjectId) {
+    if (!target.projectId) {
       return
     }
 
@@ -67,9 +96,9 @@ export function useComposerGitStateSync({
 
     const syncComposerState = async () => {
       const nextComposerState = await loadComposerState({
-        projectId: composerStateProjectId,
-        sessionPath: composerStateSessionPath,
-        composerMode: workspaceState.activeView === 'chat' ? 'chat' : 'code',
+        projectId: target.projectId,
+        sessionPath: target.sessionPath,
+        composerMode: target.composerMode,
       })
 
       if (!cancelled && nextComposerState) {
@@ -85,8 +114,9 @@ export function useComposerGitStateSync({
   }, [
     loadComposerState,
     composerProjectId,
-    selectedInboxThread?.projectId,
-    selectedInboxThread?.sessionPath,
+    inboxComposerMode,
+    inboxProjectId,
+    inboxSessionPath,
     setComposerState,
     shellAppSettings?.chatModel,
     shellAppSettings?.chatThinkingLevel,

@@ -1,3 +1,56 @@
+### 0.1.68
+
+- **An enormous release:** 910 files and roughly 75,000 changed lines. GitOps, worktrees, app updates, the UI architecture, and most of the desktop runtime were rebuilt rather than lightly patched.
+- Migrated to Effect v4 across terminal RPC, process lifecycles, shutdown, recovery, and schema-validated boundaries. Thank you Kit Langton for your [skills](https://github.com/kitlangton/skills/tree/main/skills/effect).
+- Installed React Doctor, took it from 75 to 100, and made that score a blocking check.
+- Overhauled how the existing UI works without changing its visual direction, with clearer ownership, more consistent interactions, and more predictable state.
+- Updated and optimised GitOps review around the latest Pierre Diffs.
+- Added **Keep** and **Reject** hunk review. Rejections require a comment for the agent; local review decisions can be reset without touching the worktree.
+- Added optional direct editing for changed text files.
+- Improved GitOps reliability across partial, renamed, added, and deleted files.
+- Reworked worktree lifecycle and sidebar state: nested sessions SHOULD™ stay visible, updates appear immediately, and destructive actions resolve their branch from Git instead of stale UI data.
+- Worktrees now merge only into their recorded parent branch.
+- The default `.worktrees` directory no longer makes the parent repository look dirty.
+- Rebuilt app updates around one atomic, channel-aware updater for macOS, Linux, and Windows.
+- Updates download in the background, verify immutable archives, and apply on next launch.
+- Hardened `bunx howcode` / `bunx howcode@dev` cache recovery and concurrent launches.
+- Launcher success now waits for the Electron window to report ready instead of trusting a detached process spawn, while staged updates preserve headless mode and launch options.
+- Added Pi's `max` thinking level throughout the composer and settings.
+- Fixed one-line reasoning summaries repeating inside empty thinking blocks.
+- Corrupt persisted and cross-process state now fails visibly.
+- Updated Pi to 0.84.2, Electron to 43.4.1, TypeScript to 7, Vite to 8.2.1, better-sqlite3 to 13.0.3, Pierre Diffs to 1.3.5, React to 19.2.8, and the rest of the stack.
+
+Snapshot: 19 August 2026.
+
+### 0.1.67
+
+
+- Added **server** headless/browser mode. Use `howcode --server --host 0.0.0.0 --token xyz`. The app is usable in a mobile browser if you wish to do so.
+- Added native Smart BTW extension, and subsequently removed it, because...
+- Howcode now uses new Pi SDK to render dialogs, widgets, statuslines and notifications.
+- Extensions pass through shortcuts.
+- Right Alt no longer triggers app or extension shortcuts.
+- Fancy react-rendered extensions not supported yet. Only normal-ish widgets.
+- Implemented /tree functionality with labelling and summarisation.
+- Split Pi TUI takeover and the terminal drawer properly.
+- Shortcut handling improved when Pi TUI is on.
+- Resolved an annoying bug that didn't allow typing into Pi TUI.
+- Added Pi project trust prompts in desktop, backed by Pi's trust store.
+- Reworked widgets, dialogs, attachments, `/commands` to feel like a coherent stack.
+- Extension widgets no longer shake the thread view.
+- Inbox keeps branch-assigned threads in Code context.
+- Thread URLs no longer stick to local draft ids.
+- Sidebar sessions can be renamed inline now.
+- Rebuilt the workspace rails around the composer/thread. Better responsiveness.
+- Fixed the empty composer being taller than a composer with text in it.
+- Compaction status now stays above composer widgets.
+- Fixed Past sessions count alignment in the sidebar.
+- Fixed macOS window dragging and native Cmd+A select-all.
+- Updated Pi SDK/runtime packages to 0.79.6.
+- Bumped app/build dependencies.
+
+Snapshot: 12 June 2026.
+
 #### 0.1.66 Hotfixes (because .67 has to be more special)
 
 - Branch/worktree creation now normalizes messy names with spaces into Git-safe names.
@@ -15,7 +68,7 @@
 - Git diffs add parent-branch baseline and drop Yesterday.
 - Updated bundled Pi SDK/runtime packages to 0.76.0.
 
-Snapshot: May 28, 2026.
+Snapshot: 28 May 2026.
 
 ### 0.1.66
 
@@ -50,7 +103,7 @@ Snapshot: May 28, 2026.
 - Quieted missing-session noise and checkbox jumps.
 - Fixed extension summaries locking the composer.
 
-Snapshot: May 27, 2026.
+Snapshot: 27 May 2026.
 
 ### 0.1.65
 
@@ -66,7 +119,7 @@ Snapshot: May 27, 2026.
 - Fixed updater rechecks, self-update detection, and launcher download timeouts.
 - Fixed a bunch of small sidebar, composer, GitOps, and artifact rough edges.
 
-Snapshot: May 15, 2026.
+Snapshot: 15 May 2026.
 
 ### 0.1.64
 
@@ -90,7 +143,7 @@ Snapshot: May 15, 2026.
 - Fixed compact terminal/sidebar behavior, including Pi TUI takeover fold-button alignment.
 - Improved macOS window chrome and quit behavior.
 
-Snapshot: May 10, 2026.
+Snapshot: 10 May 2026.
 
 ### 0.1.61-6x hotfixes
 
@@ -101,7 +154,7 @@ Snapshot: May 10, 2026.
 - Isolated markdown editor dependencies from HTML and React artifacts.
 - Fixed React artifact hooks and import handling.
 
-Snapshot: May 7, 2026.
+Snapshot: 7 May 2026.
 
 ### 0.1.6
 
@@ -119,7 +172,7 @@ Snapshot: May 7, 2026.
 - Now on `@earendil-works` packages. RIP.
 - https://igorwarzocha.github.io/howcode/ is now live.
 
-Snapshot: May 7, 2026.
+Snapshot: 7 May 2026.
 
 ### 0.1.5
 
@@ -128,7 +181,7 @@ Snapshot: May 7, 2026.
 - Fixed composer follow-ups opening in the wrong session.
 - Fixed tooltips clipping near window edges.
 
-Snapshot: May 4, 2026.
+Snapshot: 4 May 2026.
 
 ### 0.1.4
 
@@ -142,7 +195,7 @@ Snapshot: May 4, 2026.
 - Fixed clean desktop shutdown.
 - Updated Pi packages to 0.72.1.
 
-Snapshot: May 3, 2026.
+Snapshot: 3 May 2026.
 
 ### 0.1.3
 
@@ -159,4 +212,4 @@ Snapshot: May 3, 2026.
 - Kept composer content visible during send handoff.
 - Fixed pasted image paths and screenshot clipboard attachments.
 
-Snapshot: April 29, 2026.
+Snapshot: 29 April 2026.

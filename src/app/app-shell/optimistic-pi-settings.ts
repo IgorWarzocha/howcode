@@ -21,6 +21,7 @@ function isPiSettingsKey(value: unknown): value is keyof PiSettings {
       'steeringMode',
       'followUpMode',
       'doubleEscapeAction',
+      'defaultProjectTrust',
       'treeFilterMode',
       'editorPaddingX',
       'autocompleteMaxVisible',
@@ -42,6 +43,8 @@ function isValidPiSettingsStringValue(key: keyof PiSettings, value: unknown) {
   if (key === 'steeringMode' || key === 'followUpMode')
     return value === 'all' || value === 'one-at-a-time'
   if (key === 'doubleEscapeAction') return value === 'fork' || value === 'tree' || value === 'none'
+  if (key === 'defaultProjectTrust')
+    return value === 'ask' || value === 'always' || value === 'never'
   if (key === 'treeFilterMode')
     return ['default', 'no-tools', 'user-only', 'labeled-only', 'all'].includes(String(value))
   return true

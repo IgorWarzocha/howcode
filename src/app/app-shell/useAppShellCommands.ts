@@ -9,6 +9,7 @@ import { forgetLocalDraftThread } from '../hooks/useDesktopProjectThreads'
 import { desktopQueryKeys } from '../query/desktop-query'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
 import type { View } from '../types'
+import { closePiTuiSession } from './pi-tui-handoff'
 import { removeProjectThreadFromShellState } from './project-thread-cache'
 import { getProjectSelectionAction } from './scoped-project-view'
 import { THREAD_CYCLE_OPEN_ACTION_DELAY_MS, useScheduledThreadOpen } from './useScheduledThreadOpen'
@@ -124,11 +125,12 @@ export function useAppShellCommands({
     threadId: string,
     sessionPath: string,
     view?: 'chat' | 'thread' | undefined,
+    branchName?: string | null | undefined,
   ) => {
     clearSelectedUnstartedDraft()
     setThreadHistoryCompactions(0)
     dispatch({ type: 'open-thread', projectId, threadId, sessionPath, view })
-    scheduleThreadOpenAction({ projectId, threadId, sessionPath, view })
+    scheduleThreadOpenAction({ projectId, threadId, sessionPath, view, branchName })
   }
 
   const handleThreadCycle = (
@@ -228,6 +230,10 @@ export function useAppShellCommands({
     preserveSessionOverride?: boolean
     refreshThread?: boolean
   } = {}) => {
+    await closePiTuiSession({
+      projectId: composerProjectId,
+      sessionPath: workspaceState.selectedSessionPath,
+    })
     dispatch({ type: 'set-takeover-visible', visible: false })
 
     if (!preserveSessionOverride) {

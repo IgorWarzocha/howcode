@@ -1,0 +1,85 @@
+.headless-auth-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--workspace) 90%, transparent);
+  padding: 1rem;
+}
+
+.headless-auth-panel {
+  display: grid;
+  width: min(22rem, 100%);
+  gap: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--panel);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+  padding: 1.25rem;
+}
+
+.headless-auth-eyebrow {
+  color: var(--muted);
+  font-size: var(--app-type-tiny-size);
+  font-weight: var(--app-type-tiny-weight);
+  letter-spacing: 0.08em;
+  line-height: var(--app-type-tiny-line-height);
+  text-transform: uppercase;
+}
+
+.headless-auth-title {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--app-type-section-title-size);
+  font-weight: var(--app-type-section-title-weight);
+  line-height: var(--app-type-section-title-line-height);
+}
+
+.headless-auth-description,
+.headless-auth-error {
+  margin: 0;
+  font-size: var(--app-type-small-size);
+  line-height: var(--app-type-small-line-height);
+}
+
+.headless-auth-description {
+  color: var(--muted);
+}
+
+.headless-auth-error {
+  color: var(--danger);
+}
+
+.headless-auth-input {
+  min-height: 2.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.625rem;
+  background: var(--surface-hover);
+  color: var(--text);
+  font-size: var(--app-type-control-size);
+  line-height: var(--app-type-control-line-height);
+  outline: none;
+  padding: 0 0.75rem;
+}
+
+.headless-auth-input:focus {
+  border-color: var(--border-strong);
+}
+
+.headless-auth-button {
+  min-height: 2.25rem;
+  border: 1px solid var(--accent-border);
+  border-radius: 999px;
+  background: var(--accent-bg);
+  color: var(--text);
+  font-size: var(--app-type-control-size);
+  font-weight: var(--app-type-control-weight);
+  line-height: var(--app-type-control-line-height);
+  padding: 0 1rem;
+}
+
+.headless-auth-button:hover {
+  border-color: var(--accent);
+  background: var(--accent-bg-strong);
+}

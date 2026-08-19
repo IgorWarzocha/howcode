@@ -15,7 +15,6 @@ function getAbiBundleRoot(resourcesPath, abi = process.versions.modules) {
 
 module.exports = {
   ...contract,
-  requiredNativeRuntimeFiles: contract.requiredNativeRuntimeFiles || contract.nativeRuntimeFiles,
   getUnpackedAppPath,
   getAbiBundleRoot,
 }

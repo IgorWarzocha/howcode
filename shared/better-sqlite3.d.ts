@@ -9,5 +9,8 @@ declare module 'better-sqlite3' {
     constructor(filename: string)
     exec(sql: string): this
     prepare<TResult = unknown>(sql: string): Statement<TResult>
+    transaction<TArgs extends unknown[], TResult>(
+      operation: (...args: TArgs) => TResult,
+    ): (...args: TArgs) => TResult
   }
 }

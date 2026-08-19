@@ -1,4 +1,4 @@
-import { getPopoverRootProps } from '@howcode/common/popover'
+import { getPopoverRootProps } from '@howcode/common/popover-state'
 import { FolderPlus, Search } from 'lucide-react'
 import { type RefObject, useEffect, useRef, useState } from 'react'
 import { SidebarProjectsFolderBrowser } from './sidebar-projects-folder-browser'

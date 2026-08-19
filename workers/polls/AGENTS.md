@@ -1,0 +1,3 @@
+- This is an isolated Cloudflare Worker. Keep its D1 and HTTP contracts local; do not import desktop, Electron, renderer, or Node implementations.
+- `tsconfig.json` supplies official Workers/D1 globals. Keep its typecheck and bundle smoke in `check:auxiliary`.
+- Preserve origin checks, secret-derived voter hashes, rate limits, and D1 transaction ordering.

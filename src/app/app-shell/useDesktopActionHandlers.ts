@@ -2,7 +2,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import type { Dispatch, SetStateAction } from 'react'
 import { useCallback } from 'react'
 import type { DesktopAction } from '../desktop/actions'
-import { cleanUserErrorMessage } from '../desktop/error-messages'
 import type {
   AnyDesktopActionPayload,
   ArchivedThread,
@@ -17,22 +16,31 @@ import type {
 import { checkAppUpdateQuery } from '../query/desktop-query'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
 import type { View } from '../types'
-import { guardBranchResume } from './branch-resume-guard'
-import { buildContextualActionPayload } from './controller-action-helpers'
+import { applyOptimisticDesktopAction } from './controller-optimistic-updates'
+import { runPostDesktopActionEffects } from './controller-post-action-effects'
 import {
-  applyOptimisticPinUpdate,
-  applyOptimisticPiSettingsUpdate,
-  applyOptimisticProjectRename,
-  applyOptimisticSettingsUpdate,
-  runPostDesktopActionEffects,
-} from './controller-post-action-effects'
-import { applySwitchBranchPostEffect } from './post-effects/workspace'
-import {
-  applyOptimisticComposerThread,
-  removeFailedOptimisticComposerThread,
-} from './sidebar-thread-sync'
+  getActionErrorMessage,
+  getActionNoticeMessage,
+  shouldShowGlobalActionError,
+} from './desktop-action-error-policy'
+import { prepareDesktopAction } from './desktop-action-preparation'
+import { removeFailedOptimisticComposerThread } from './sidebar-thread-sync'
 
 type ActionPayload = AnyDesktopActionPayload
+
+function publishActionFeedback(input: {
+  action: DesktopAction
+  actionResult: DesktopActionResult | null
+  showToast: (message: string) => void
+}) {
+  const errorMessage = getActionErrorMessage(input.actionResult)
+  if (errorMessage && shouldShowGlobalActionError(input.action)) {
+    input.showToast(errorMessage)
+  }
+  const noticeMessage = getActionNoticeMessage(input.action, input.actionResult)
+  if (noticeMessage) input.showToast(noticeMessage)
+  return errorMessage
+}
 
 type UseDesktopActionHandlersArgs = {
   activeView: View
@@ -62,94 +70,6 @@ type UseDesktopActionHandlersArgs = {
   workspaceState: WorkspaceState
 }
 
-function getActionErrorMessage(actionResult: DesktopActionResult | null) {
-  if (!actionResult) {
-    return null
-  }
-
-  if (actionResult.ok === false && typeof actionResult.result?.error === 'string') {
-    return cleanUserErrorMessage(actionResult.result.error)
-  }
-
-  return typeof actionResult.result?.error === 'string'
-    ? cleanUserErrorMessage(actionResult.result.error)
-    : null
-}
-
-function shouldShowGlobalActionError(action: DesktopAction) {
-  return !(
-    action === 'composer.send' ||
-    action === 'composer.stop' ||
-    action === 'workspace.commit' ||
-    action === 'workspace.commit-options' ||
-    action === 'workspace.diff-preferences' ||
-    action === 'workspace.switch-branch' ||
-    action === 'workspace.merge-worktree' ||
-    action === 'workspace.merge-completed-worktrees'
-  )
-}
-
-async function prepareDesktopActionPayload(input: {
-  action: DesktopAction
-  activeView: View
-  composerProjectId: string
-  dispatch: Dispatch<WorkspaceAction>
-  invokeDesktopAction: DesktopActionInvoker
-  loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
-  loadProjectThreads: (
-    projectId: string,
-    options?: { chat?: boolean; replaceLocalDraftSessionPath?: string | null },
-  ) => Promise<unknown>
-  payload: ActionPayload
-  queryClient: ReturnType<typeof useQueryClient>
-  selectedSessionPath: string | null
-  setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>
-  setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>
-  setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>
-  shellState: ShellState | null
-}): Promise<
-  | { blockedResult: DesktopActionResult; contextualPayload?: never }
-  | { blockedResult?: never; contextualPayload: ActionPayload }
-> {
-  const initialContextualPayload = buildContextualActionPayload({
-    action: input.action,
-    payload: input.payload,
-    composerProjectId: input.composerProjectId,
-    activeView: input.activeView,
-    selectedSessionPath: input.selectedSessionPath,
-  })
-
-  if (input.action === 'composer.send' || input.action === 'thread.open') {
-    const blockedResult = await guardBranchResume({
-      action: input.action,
-      invokeDesktopAction: input.invokeDesktopAction,
-      loadProjectGitState: input.loadProjectGitState,
-      payload: initialContextualPayload,
-      shellState: input.shellState,
-      onSwitchBranchSuccess: (switchPayload) =>
-        applySwitchBranchPostEffect({
-          contextualPayload: switchPayload,
-          queryClient: input.queryClient,
-          loadProjectGitState: input.loadProjectGitState,
-          loadProjectThreads: input.loadProjectThreads,
-          setProjectGitState: input.setProjectGitState,
-        }),
-    })
-    if (blockedResult) return { blockedResult }
-  }
-
-  if (input.action !== 'composer.send') return { contextualPayload: initialContextualPayload }
-
-  return applyOptimisticComposerThread({
-    activeView: input.activeView,
-    contextualPayload: initialContextualPayload,
-    queryClient: input.queryClient,
-    dispatch: input.dispatch,
-    setChatSidebarState: input.setChatSidebarState,
-    setLiveThreadData: input.setLiveThreadData,
-  })
-}
-
 export function useDesktopActionHandlers({
   activeView,
   composerProjectId,
@@ -177,7 +97,7 @@ export function useDesktopActionHandlers({
       action: DesktopAction,
       payload: ActionPayload = {},
     ): Promise<DesktopActionResult | null> => {
-      const preparedPayload = await prepareDesktopActionPayload({
+      const preparedPayload = await prepareDesktopAction({
         action,
         activeView,
         composerProjectId,
@@ -231,10 +151,7 @@ export function useDesktopActionHandlers({
         queryClient,
       })
 
-      const actionErrorMessage = getActionErrorMessage(actionResult)
-      if (actionErrorMessage && shouldShowGlobalActionError(action)) {
-        showToast(actionErrorMessage)
-      }
+      const actionErrorMessage = publishActionFeedback({ action, actionResult, showToast })
 
       if (
         action === 'settings.update' &&
@@ -275,24 +192,7 @@ export function useDesktopActionHandlers({
       action: DesktopAction,
       payload: ActionPayload = {},
     ): Promise<DesktopActionResult | null> => {
-      // Optimistic updates happen before the desktop call so the renderer stays stable
-      // while the background write and refresh pipeline converges.
-      if (action === 'settings.update') {
-        applyOptimisticSettingsUpdate(queryClient, payload)
-      }
-
-      if (action === 'pi-settings.update') {
-        applyOptimisticPiSettingsUpdate(queryClient, payload)
-      }
-
-      if (action === 'project.edit-name') {
-        applyOptimisticProjectRename(queryClient, payload)
-      }
-
-      if (action === 'thread.pin' || action === 'project.pin') {
-        applyOptimisticPinUpdate(queryClient, action, payload)
-      }
-
+      applyOptimisticDesktopAction(queryClient, action, payload)
       return await runDesktopAction(action, payload)
     },
     [queryClient, runDesktopAction],

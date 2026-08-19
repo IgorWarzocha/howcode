@@ -33,6 +33,8 @@ import type {
   PiSkillMutationResult,
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffFileContentsRequest,
+  ProjectDiffFileContentsResult,
   ProjectDiffImagePreview,
   ProjectDiffImageSide,
   ProjectDiffResolvedBaseline,
@@ -42,11 +44,11 @@ import type {
   ProjectUsageSummary,
   ReactArtifactCompileResult,
   ShellState,
-  SkillCreatorSessionState,
   Thread,
   ThreadData,
   ThreadSearchResult,
 } from './desktop-contracts'
+import type { SessionTreeList } from './session-tree.ts'
 import type {
   TerminalCloseRequest,
   TerminalEvent,
@@ -102,6 +104,10 @@ export type DesktopRequestMap = {
       side: ProjectDiffImageSide
     }
     response: ProjectDiffImagePreview
+  }
+  getProjectDiffFileContents: {
+    params: ProjectDiffFileContentsRequest
+    response: ProjectDiffFileContentsResult
   }
   captureProjectDiffBaseline: {
     params: { projectId: string }
@@ -169,23 +175,6 @@ export type DesktopRequestMap = {
       chat?: boolean | undefined
     }
     response: PiSkillMutationResult
-  }
-  startSkillCreatorSession: {
-    params: {
-      prompt: string
-      local?: boolean | undefined
-      projectPath?: string | undefined | null | undefined
-      chat?: boolean | undefined
-    }
-    response: SkillCreatorSessionState
-  }
-  continueSkillCreatorSession: {
-    params: { sessionId: string; prompt: string }
-    response: SkillCreatorSessionState
-  }
-  closeSkillCreatorSession: {
-    params: { sessionId: string }
-    response: { ok: boolean }
   }
   pickComposerAttachments: {
     params: { projectId?: string | undefined | null | undefined }
@@ -288,6 +277,18 @@ export type DesktopRequestMap = {
   getArchivedThreads: { params: Record<string, never>; response: ArchivedThread[] }
   getThread: {
     params: { sessionPath: string; historyCompactions?: number | undefined }
+    response: ThreadData | null
+  }
+  getSessionTreeList: {
+    params: { sessionPath: string }
+    response: SessionTreeList | null
+  }
+  getThreadPreviewAtEntry: {
+    params: {
+      sessionPath: string
+      targetEntryId: string
+      historyCompactions?: number | undefined
+    }
     response: ThreadData | null
   }
   searchThread: {

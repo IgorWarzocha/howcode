@@ -16,6 +16,7 @@ export type {
   ArtifactVersion,
   ReactArtifactCompileResult,
 } from './desktop-artifact-contracts'
+export type { DesktopBridgeCapabilities } from './desktop-bridge-capabilities'
 export type { ChatGroup, ChatSidebarState, ChatThread } from './desktop-chat-contracts'
 export type {
   DesktopClipboardFilePaths,
@@ -37,9 +38,12 @@ export type {
   ComposerStateRequest,
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
-  NativeAskQuestion,
-  NativeAskQuestionOption,
-  NativeAskQuestionsRequest,
+  PiExtensionDialogRequest,
+  PiExtensionShortcut,
+  PiExtensionStatus,
+  PiExtensionUiState,
+  PiExtensionWidget,
+  ProjectTrustRequest,
 } from './desktop-composer-contracts'
 export type {
   DictationModelId,
@@ -61,13 +65,14 @@ export type {
   PiSkillCatalogItem,
   PiSkillCatalogPage,
   PiSkillMutationResult,
-  SkillCreatorSessionMessage,
-  SkillCreatorSessionState,
 } from './desktop-package-contracts'
 export type {
   ProjectCommitEntry,
   ProjectDiffBaseline,
   ProjectDiffDefaultBaseline,
+  ProjectDiffFileContentIssue,
+  ProjectDiffFileContentsRequest,
+  ProjectDiffFileContentsResult,
   ProjectDiffImagePreview,
   ProjectDiffImageSide,
   ProjectDiffPreferences,
@@ -77,6 +82,9 @@ export type {
   ProjectDiffStatsResult,
   ProjectDiffStreamEvent,
   ProjectDiffStreamStartResult,
+  ProjectDiffTextFile,
+  ProjectFileWriteRequest,
+  ProjectFileWriteResult,
   ProjectGitState,
 } from './desktop-project-git-contracts'
 export type {
@@ -107,6 +115,7 @@ export type {
   SummaryThreadMessage,
   SystemThreadMessage,
   Thread,
+  ThreadCustomMessageRecord,
   ThreadData,
   ToolResultImage,
   ToolResultMessage,

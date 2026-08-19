@@ -12,15 +12,27 @@ import {
   getComposerStreamingBehavior,
   getComposerText,
   getComposerThinkingLevel,
-  getNativeAskQuestionsAnswers,
-  getNativeAskQuestionsRequestId,
+  getPiExtensionDialogAnswer,
+  getPiExtensionEditorState,
+  getPiExtensionRequestId,
+  getPiExtensionShortcut,
+  getProjectTrustCwd,
+  getProjectTrustDecision,
+  getSessionTreeLabel,
+  getSessionTreeNavigate,
 } from '../../shared/pi-thread-action-payloads.ts'
 import {
-  answerNativeAskQuestions,
+  answerPiExtensionDialog,
   dequeueComposerPrompt,
+  disposeWorkspaceComposerRuns,
+  invokePiExtensionShortcut,
+  labelSessionTreeEntry,
+  navigateSessionTree,
+  refreshComposerAfterProjectTrust,
   sendComposerPrompt,
   setComposerModel,
   setComposerThinkingLevel,
+  setProjectTrust,
   stopComposerRun,
 } from '../pi-desktop-runtime.ts'
 import { invalidateRuntimeHostSettings } from '../runtime-host/client-bridge.ts'
@@ -96,17 +108,87 @@ async function dequeueComposerPromptFromPayload(payload: AnyDesktopActionPayload
   return handledAction({ dequeuedText })
 }
 
-async function answerNativeQuestionsFromPayload(payload: AnyDesktopActionPayload) {
-  const requestId = getNativeAskQuestionsRequestId(payload)
+async function invokePiExtensionShortcutFromPayload(payload: AnyDesktopActionPayload) {
+  const shortcut = getPiExtensionShortcut(payload)
+  if (!shortcut) return handledAction()
+  const result = await invokePiExtensionShortcut({
+    ...getComposerRequest(payload),
+    ...getPiExtensionEditorState(payload),
+    shortcut,
+  })
+  return result.ok
+    ? handledAction({
+        editorSelectionEnd: result.editorSelectionEnd,
+        editorSelectionStart: result.editorSelectionStart,
+        editorText: result.editorText,
+      })
+    : handledAction({ error: 'Could not run Pi extension shortcut.' })
+}
+
+async function answerPiExtensionDialogFromPayload(payload: AnyDesktopActionPayload) {
+  const requestId = getPiExtensionRequestId(payload)
   if (!requestId) return handledAction()
-  const result = await answerNativeAskQuestions({
+  const result = await answerPiExtensionDialog({
     ...getComposerRequest(payload),
     requestId,
-    answers: getNativeAskQuestionsAnswers(payload),
+    ...getPiExtensionDialogAnswer(payload),
   })
   return result?.ok
     ? handledAction()
-    : handledAction({ error: 'Could not answer pending questions.' })
+    : handledAction({ error: 'Could not answer extension UI request.' })
+}
+
+async function setProjectTrustFromPayload(payload: AnyDesktopActionPayload) {
+  const trusted = getProjectTrustDecision(payload)
+  const cwd = getProjectTrustCwd(payload)
+  const composerRequest = getComposerRequest(payload)
+  if (trusted === null || !cwd) return handledAction()
+
+  await setProjectTrust({ ...composerRequest, cwd, trusted })
+  await disposeWorkspaceComposerRuns({
+    projectPath: cwd,
+    sessionPaths: composerRequest.sessionPath ? [composerRequest.sessionPath] : [],
+  })
+  const composer = await refreshComposerAfterProjectTrust(composerRequest)
+  return handledAction({ composer })
+}
+
+async function navigateSessionTreeFromPayload(payload: AnyDesktopActionPayload) {
+  const navigate = getSessionTreeNavigate(payload)
+  if (!navigate) return handledAction({ error: 'Session tree entry is required.' })
+  try {
+    const result = await navigateSessionTree({
+      ...getComposerRequest(payload),
+      targetEntryId: navigate.targetEntryId,
+      summarize: navigate.summarize,
+      label: navigate.label,
+    })
+    if (result.cancelled) return handledAction({ sessionTreeNavigateCancelled: true })
+    return handledAction({
+      ...(result.editorText === undefined
+        ? {}
+        : { sessionTreeNavigateEditorText: result.editorText }),
+    })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return handledAction({ error: message })
+  }
+}
+
+async function labelSessionTreeEntryFromPayload(payload: AnyDesktopActionPayload) {
+  const labelRequest = getSessionTreeLabel(payload)
+  if (!labelRequest) return handledAction({ error: 'Session tree entry is required.' })
+  try {
+    await labelSessionTreeEntry({
+      ...getComposerRequest(payload),
+      targetEntryId: labelRequest.targetEntryId,
+      label: labelRequest.label,
+    })
+    return handledAction()
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return handledAction({ error: message })
+  }
 }
 
 const composerActionHandlers = {
@@ -131,7 +213,11 @@ const composerActionHandlers = {
     await invalidateRuntimeHostSettings({ sessionPath: getComposerRequest(payload).sessionPath })
     return handledAction()
   },
-  'composer.answer-native-questions': answerNativeQuestionsFromPayload,
+  'composer.answer-pi-extension-dialog': answerPiExtensionDialogFromPayload,
+  'composer.pi-extension-shortcut': invokePiExtensionShortcutFromPayload,
+  'composer.set-project-trust': setProjectTrustFromPayload,
+  'composer.session-tree.label': labelSessionTreeEntryFromPayload,
+  'composer.session-tree.navigate': navigateSessionTreeFromPayload,
 } satisfies Partial<Record<DesktopAction, ComposerActionHandler>>
 
 export async function handleComposerDesktopAction(

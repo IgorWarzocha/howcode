@@ -1,18 +1,31 @@
+import * as Effect from 'effect/Effect'
+import * as Option from 'effect/Option'
+import * as Result from 'effect/Result'
+import * as Schema from 'effect/Schema'
+import {
+  type DesktopServiceRemoteModuleName,
+  type DesktopServiceRemoteRuntime,
+  desktopServiceRemoteMethods,
+} from '../shared/desktop-service-rpc.ts'
+import { makeShutdownCoordinator } from '../shared/effect-shutdown.ts'
+import type { TerminalRpcRequest } from '../shared/terminal-rpc.ts'
 import { loadAppSettings } from './app-settings/readers.ts'
 import { getPiModule } from './pi-module.ts'
 import * as piSkills from './pi-skills.ts'
 import * as piThreads from './pi-threads.ts'
-import * as skillCreator from './skill-creator-session.ts'
-import * as terminalManager from './terminal/manager.ts'
+import { createTerminalRpcServer } from './terminal/rpc-server.ts'
+import * as terminalManager from './terminal/runtime.ts'
 import { getDesktopUserDataPath } from './user-data-path.ts'
 
-type ServiceRequest = {
-  type: 'request'
-  id: string
-  module: string
-  method: string
-  args: unknown[]
-}
+const ServiceRequestSchema = Schema.Struct({
+  type: Schema.Literal('request'),
+  id: Schema.String,
+  module: Schema.Literals(['piThreads', 'piSkills']),
+  method: Schema.String,
+  args: Schema.mutable(Schema.Array(Schema.Unknown)),
+})
+
+type ServiceRequest = typeof ServiceRequestSchema.Type
 
 type ServiceResponse = {
   type: 'response'
@@ -23,22 +36,25 @@ type ServiceResponse = {
   stack?: string
 }
 
+const ServiceInboundMessageSchema = Schema.Union([
+  ServiceRequestSchema,
+  Schema.Struct({ type: Schema.Literal('terminal-rpc-request'), message: Schema.Unknown }),
+])
+
+const decodeServiceInboundMessage = Schema.decodeUnknownResult(ServiceInboundMessageSchema)
+
 const modules = {
   piThreads,
   piSkills,
-  skillCreator,
-  terminalManager,
-} satisfies Record<string, Record<string, unknown>>
+} satisfies DesktopServiceRemoteRuntime
 
-type ServiceModuleName = keyof typeof modules
-
-function isServiceModuleName(value: string): value is ServiceModuleName {
+function isServiceModuleName(value: string): value is DesktopServiceRemoteModuleName {
   return Object.hasOwn(modules, value)
 }
 
-function getServiceMethod(moduleName: ServiceModuleName, methodName: string) {
+function getServiceMethod(moduleName: DesktopServiceRemoteModuleName, methodName: string) {
+  if (!Object.hasOwn(desktopServiceRemoteMethods[moduleName], methodName)) return null
   const targetModule: Record<string, unknown> = modules[moduleName]
-  if (!Object.hasOwn(targetModule, methodName)) return null
   const target = targetModule[methodName]
   return typeof target === 'function' ? target : null
 }
@@ -67,9 +83,13 @@ piThreads.subscribeDesktopEvents((event) => {
   process.send?.({ type: 'desktop-event', event })
 })
 
-terminalManager.subscribeTerminalEvents((event) => {
-  process.send?.({ type: 'terminal-event', event })
-})
+const terminalRpcServerPromise = terminalManager
+  .getTerminalEffectService()
+  .then((service) =>
+    createTerminalRpcServer(service, (message) =>
+      process.send?.({ type: 'terminal-rpc-response', message }),
+    ),
+  )
 
 async function handleRequest(message: ServiceRequest): Promise<ServiceResponse> {
   try {
@@ -96,23 +116,61 @@ async function handleRequest(message: ServiceRequest): Promise<ServiceResponse> 
   }
 }
 
-process.on('message', (message: ServiceRequest) => {
-  if (!message || message.type !== 'request') return
-  void handleRequest(message).then((response) => process.send?.(response))
+process.on('message', (message: unknown) => {
+  const decoded = decodeServiceInboundMessage(message)
+  if (Result.isFailure(decoded)) {
+    console.warn('Ignored invalid desktop service request.', decoded.failure)
+    return
+  }
+  const inbound = decoded.success
+  if (inbound.type === 'terminal-rpc-request') {
+    void terminalRpcServerPromise.then((server) =>
+      server.write(inbound.message as TerminalRpcRequest),
+    )
+    return
+  }
+  void handleRequest(inbound).then((response) => process.send?.(response))
 })
 
-async function shutdown() {
-  await Promise.allSettled([
-    piThreads.disposeDesktopRuntime?.(),
-    terminalManager.closeAllTerminals?.(),
-  ])
-  process.exit(0)
+function settledTask<A>(evaluate: () => A) {
+  return Effect.exit(Effect.promise(async () => await evaluate())).pipe(Effect.asVoid)
 }
 
-process.once('disconnect', () => void shutdown())
-process.once('SIGTERM', () => void shutdown())
-process.once('SIGINT', () => void shutdown())
+const shutdownCoordinatorPromise = Effect.runPromise(
+  makeShutdownCoordinator(
+    Effect.gen(function* () {
+      const terminalRpcServer = yield* Effect.option(
+        Effect.tryPromise({
+          try: () => terminalRpcServerPromise,
+          catch: (error) => error,
+        }),
+      )
+      yield* Effect.all(
+        [
+          Option.isSome(terminalRpcServer)
+            ? settledTask(() => terminalRpcServer.value.dispose())
+            : Effect.void,
+          settledTask(() => piThreads.disposeDesktopRuntime?.()),
+          settledTask(() => terminalManager.closeAllTerminals()),
+        ],
+        { concurrency: 'unbounded', discard: true },
+      )
+      yield* settledTask(() => terminalManager.disposeTerminalRuntime())
+    }),
+    { label: 'Desktop service', timeout: '2 seconds' },
+  ),
+)
 
-void getServiceDiagnostics().then((diagnostics) => {
+function requestShutdown() {
+  void shutdownCoordinatorPromise
+    .then((coordinator) => Effect.runPromise(coordinator.shutdown))
+    .finally(() => process.exit(0))
+}
+
+process.once('disconnect', requestShutdown)
+process.once('SIGTERM', requestShutdown)
+process.once('SIGINT', requestShutdown)
+
+void Promise.all([getServiceDiagnostics(), terminalRpcServerPromise]).then(([diagnostics]) => {
   process.send?.({ type: 'ready', diagnostics })
 })

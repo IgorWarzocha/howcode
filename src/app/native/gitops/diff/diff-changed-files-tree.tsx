@@ -2,7 +2,8 @@ import type { FileDiffMetadata } from '@pierre/diffs/react'
 import type { GitStatusEntry } from '@pierre/trees'
 import { FileTree, useFileTree, useFileTreeSearch } from '@pierre/trees/react'
 import { FilterX, Search } from 'lucide-react'
-import { type CSSProperties, useEffect, useMemo, useRef } from 'react'
+import { type CSSProperties, useEffect, useMemo } from 'react'
+import { useLatestRef } from '../../../hooks/useLatestRef'
 import {
   appToneMutedClass,
   appToneTextClass,
@@ -114,8 +115,7 @@ export function DiffChangedFilesTree({
     return stats
   }, [filesWithPaths])
 
-  const fileStatsByPathRef = useRef(fileStatsByPath)
-  fileStatsByPathRef.current = fileStatsByPath
+  const fileStatsByPathRef = useLatestRef(fileStatsByPath)
 
   const { model } = useFileTree({
     density: 'compact',
@@ -135,8 +135,7 @@ export function DiffChangedFilesTree({
   })
 
   const search = useFileTreeSearch(model)
-  const searchValueRef = useRef(search.value)
-  searchValueRef.current = search.value
+  const searchValueRef = useLatestRef(search.value)
 
   useEffect(() => {
     model.resetPaths(paths, { initialExpandedPaths: paths })
@@ -144,7 +143,7 @@ export function DiffChangedFilesTree({
     if (searchValueRef.current.trim().length > 0) {
       model.setSearch(searchValueRef.current)
     }
-  }, [gitStatus, model, paths])
+  }, [gitStatus, model, paths, searchValueRef])
 
   useEffect(() => {
     model.setSearch(search.value)

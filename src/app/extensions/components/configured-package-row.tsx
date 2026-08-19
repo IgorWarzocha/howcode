@@ -4,6 +4,7 @@ import { CompactMetaRow } from '../../common/compact-meta-row'
 import { ConfirmPopover } from '../../common/confirm-popover'
 import { Tooltip } from '../../common/tooltip'
 import type { PiConfiguredPackage } from '../../desktop/types'
+import { openPiResourceUrl } from '../../pi-resources/open-pi-resource-url'
 import {
   appToneMutedClass,
   appToneTextClass,
@@ -15,7 +16,6 @@ import {
   getConfiguredPackageExternalUrl,
   getConfiguredSourceLabel,
   isConfiguredSourcePath,
-  openExternalUrl,
 } from '../utils'
 
 type ConfiguredPackageRowProps = {
@@ -72,7 +72,7 @@ export function ConfiguredPackageRow({
           <button
             type="button"
             className="group inline-flex shrink-0 items-center gap-0.5 p-0"
-            onClick={() => void openExternalUrl(externalUrl)}
+            onClick={() => void openPiResourceUrl(externalUrl)}
             aria-label={`Open ${configuredPackage.displayName}`}
           >
             <span

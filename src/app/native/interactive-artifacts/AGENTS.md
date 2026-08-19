@@ -1,5 +1,3 @@
-# Native interactive artifacts guidance
-
-- Owns iframe-backed artifact previews for HTML and React artifacts.
-- HTML and React share one interactive runtime path; do not split React-only behavior unless it gets a separate product surface.
+- Keep iframe-backed HTML and React previews on one runtime path; split only when React gets a separate product surface.
+- This path must remain independent of MDXEditor and the artifact shell's Prism bootstrap.
 - Keep markdown editing/preview in `@howcode/native-markdown-artifacts`.

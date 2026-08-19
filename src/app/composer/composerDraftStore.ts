@@ -66,7 +66,9 @@ function toDraft(value: unknown): ComposerDraft | null {
 
   const prompt = typeof candidate.prompt === 'string' ? candidate.prompt : ''
   const attachments = Array.isArray(candidate.attachments)
-    ? candidate.attachments.filter(isComposerAttachment).map((attachment) => ({ ...attachment }))
+    ? candidate.attachments.flatMap((attachment) =>
+        isComposerAttachment(attachment) ? [{ ...attachment }] : [],
+      )
     : []
   const pickerOpen = candidate.pickerOpen === true
 
@@ -273,8 +275,6 @@ export function createComposerDraftStore({
     },
   }
 }
-
-export const composerDraftStorageKey = DEFAULT_STORAGE_KEY
 
 export const composerDraftStore = createComposerDraftStore()
 

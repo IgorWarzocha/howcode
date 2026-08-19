@@ -3,12 +3,12 @@ import path from 'node:path'
 
 const SPAWN_HEALTH_GRACE_MS = 1_500
 
-export function spawnDetached(executablePath: string) {
+export function spawnDetached(executablePath: string, args: readonly string[] = []) {
   const env = { ...process.env }
   Reflect.deleteProperty(env, 'NODE_TLS_REJECT_UNAUTHORIZED')
 
   return new Promise<void>((resolve, reject) => {
-    const child = spawn(executablePath, [], {
+    const child = spawn(executablePath, args, {
       detached: true,
       stdio: 'ignore',
       windowsHide: true,

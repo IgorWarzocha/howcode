@@ -7,8 +7,9 @@ import type { AppShellController } from './useAppShellController'
 
 type AppShellWorkspaceProps = {
   controller: AppShellController
-  activeComposerState: AppShellController['activeComposerState']
-  activeThreadData: AppShellController['activeThreadData']
+  activeComposerState: AppShellController['composer']['state']
+  activePiExtensionUiState: AppShellController['composer']['extensionUiState']
+  activeThreadData: AppShellController['thread']['activeData']
   composerProjectId: string
   currentProjectName: string
   diffBaseline: ProjectDiffBaseline
@@ -23,14 +24,12 @@ type AppShellWorkspaceProps = {
   sidebarAutoHidden: boolean
   sidebarCompactMode: boolean
   onToggleSidebar: () => void
-  onArtifactDrawerOverlayChange?:
-    | ((visible: boolean, onClose?: (() => void) | undefined) => void)
-    | undefined
 }
 
 export function AppShellWorkspace({
   controller,
   activeComposerState,
+  activePiExtensionUiState,
   activeThreadData,
   composerProjectId,
   currentProjectName,
@@ -46,15 +45,15 @@ export function AppShellWorkspace({
   sidebarAutoHidden,
   sidebarCompactMode,
   onToggleSidebar,
-  onArtifactDrawerOverlayChange,
 }: AppShellWorkspaceProps) {
-  const { state } = controller
+  const { state } = controller.workspace
 
   if (state.activeView === 'chat') {
     return (
       <ChatWorkspaceView
         controller={controller}
         activeComposerState={activeComposerState}
+        activePiExtensionUiState={activePiExtensionUiState}
         activeThreadData={activeThreadData}
         composerProjectId={composerProjectId}
         diffBaseline={diffBaseline}
@@ -66,7 +65,6 @@ export function AppShellWorkspace({
         sidebarAutoHidden={sidebarAutoHidden}
         sidebarCompactMode={sidebarCompactMode}
         onToggleSidebar={onToggleSidebar}
-        onArtifactDrawerOverlayChange={onArtifactDrawerOverlayChange}
       />
     )
   }
@@ -89,6 +87,7 @@ export function AppShellWorkspace({
     <CodeWorkspaceView
       controller={controller}
       activeComposerState={activeComposerState}
+      activePiExtensionUiState={activePiExtensionUiState}
       activeThreadData={activeThreadData}
       composerProjectId={composerProjectId}
       currentProjectName={currentProjectName}

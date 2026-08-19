@@ -90,7 +90,7 @@ export function SidebarChatSection({
 
   return (
     <div ref={containerRef} className="sidebar-project-tree">
-      <div className="sidebar-toolbar mb-2">
+      <div className="sidebar-toolbar sidebar-toolbar--chat mb-2">
         <label
           className="sidebar-search-field"
           data-active={searchQuery.trim().length > 0 ? 'true' : 'false'}
@@ -124,6 +124,7 @@ export function SidebarChatSection({
         >
           <input
             className="sidebar-project-input w-full"
+            aria-label="Group name"
             value={draft}
             placeholder="Group name"
             onChange={(event) => setDraft(event.target.value)}

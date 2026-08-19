@@ -94,14 +94,6 @@ Delete temp clipboard images.
 
 Composer follow-up messages behavior.
 
-### Ask questions tool
-
-- ID: `common.howcode-native-ask-questions`
-- Category: `pi-runtime`
-- Description:
-
-Native ask questions tool (GUI+TUI).
-
 ### Open in TUI
 
 - ID: `common.pi-tui-takeover`
@@ -151,14 +143,6 @@ Default settings for the Code view.
 - Description:
 
 Default settings for the GitOps view.
-
-### Skill creator
-
-- ID: `models.skill-creator`
-- Category: `models`
-- Description:
-
-Default settings for the built-in skill creator.
 
 ## src/app/views/settings/settingsDescriptorPiRuntime.tsx
 

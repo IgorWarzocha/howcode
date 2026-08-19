@@ -12,22 +12,40 @@ import {
   DEV_SERVER_HOST,
   DEV_SERVER_METADATA_RELATIVE_PATH,
   DEV_SERVER_START_PORT,
+  isDevServerLoopbackHost,
+  isDevServerWildcardHost,
+  resolveDevServerListenHost,
+  resolveDevServerPublicHost,
 } from '../shared/dev-server'
 import { getSystemNodeExecutable } from '../src/desktop-host/node-discovery'
 import { getDevUserDataPath } from './dev-user-data-path'
+import { createDevWebAccess } from './dev-web-access'
 
 const projectRoot = process.cwd()
 const devRepoRoot = projectRoot
 const devServerMetadataPath = path.join(projectRoot, DEV_SERVER_METADATA_RELATIVE_PATH)
 const bridgeBuildPath = path.join(projectRoot, 'build', 'dev-web-bridge.mjs')
 const serviceHostBuildPath = path.join(projectRoot, 'build', 'desktop', 'service-host.mjs')
+const devServerListenHost = resolveDevServerListenHost()
+const devServerPublicHost = resolveDevServerPublicHost(devServerListenHost)
+const allowRemoteRendererHosts =
+  isDevServerWildcardHost(devServerListenHost) || !isDevServerLoopbackHost(devServerListenHost)
 const bridgeToken = crypto.randomUUID()
+function getEnvironmentVariable(name: string) {
+  return process.env[name]
+}
+const devWebAccess = createDevWebAccess({
+  allowRemoteRendererHosts,
+  configuredAccessToken:
+    getEnvironmentVariable('HOWCODE_DEV_WEB_TOKEN')?.trim() ||
+    getEnvironmentVariable('HOWCODE_HEADLESS_TOKEN')?.trim() ||
+    null,
+})
 const serviceHostWaitTimeoutMs = 30_000
 
 let bridge: { child: ChildProcess; port: number } | null = null
 let server: ViteDevServer | null = null
 let isShuttingDown = false
-let trustedRendererHost: string | null = null
 
 async function buildDevWebBridge() {
   await mkdir(path.dirname(bridgeBuildPath), { recursive: true })
@@ -190,31 +208,14 @@ function proxyDevWebBridgeRequest(
   request.pipe(proxyRequest)
 }
 
-function isTrustedBrowserRequest(request: http.IncomingMessage) {
-  if (!trustedRendererHost || request.headers.host !== trustedRendererHost) {
-    return false
-  }
-
-  const origin = request.headers.origin
-  if (typeof origin !== 'string') {
-    return true
-  }
-
-  try {
-    const originUrl = new URL(origin)
-    return originUrl.host === trustedRendererHost
-  } catch {
-    return false
-  }
-}
-
 async function writeDevServerMetadata(url: string, port: number) {
   await mkdir(path.dirname(devServerMetadataPath), { recursive: true })
   await writeFile(
     devServerMetadataPath,
     JSON.stringify(
       {
-        host: DEV_SERVER_HOST,
+        host: devServerListenHost,
+        accessHost: devServerPublicHost,
         port,
         url,
       },
@@ -244,8 +245,9 @@ try {
 
   server = await createServer({
     configFile: path.join(projectRoot, 'vite.config.ts'),
+    configLoader: 'runner',
     server: {
-      host: DEV_SERVER_HOST,
+      host: devServerListenHost,
       port: DEV_SERVER_START_PORT,
       strictPort: false,
     },
@@ -258,28 +260,24 @@ try {
   ) => {
     const requestUrl = new URL(request.url ?? '/', 'http://localhost')
 
-    if (requestUrl.pathname === '/__howcode/config') {
-      if (!isTrustedBrowserRequest(request)) {
-        response.statusCode = 403
-        response.end('Forbidden')
-        return
-      }
+    if (requestUrl.pathname === '/__howcode/auth') {
+      void devWebAccess.handleAuthRequest(request, response)
+      return
+    }
 
+    if (requestUrl.pathname === '/__howcode/config') {
+      if (!devWebAccess.authoriseBridgeRequest(request, response)) return
       response.setHeader('content-type', 'application/json; charset=utf-8')
-      response.end(JSON.stringify({ bridgeToken }))
+      response.end(JSON.stringify({ authRequired: devWebAccess.authRequired, bridgeToken }))
       return
     }
 
     if (
       requestUrl.pathname.startsWith('/__howcode/events') ||
-      requestUrl.pathname.startsWith('/__howcode/request/')
+      requestUrl.pathname.startsWith('/__howcode/request/') ||
+      requestUrl.pathname === '/__howcode/upload/composer-attachments'
     ) {
-      if (!isTrustedBrowserRequest(request)) {
-        response.statusCode = 403
-        response.end('Forbidden')
-        return
-      }
-
+      if (!devWebAccess.authoriseBridgeRequest(request, response)) return
       proxyDevWebBridgeRequest(bridge?.port ?? 0, request, response)
       return
     }
@@ -317,9 +315,24 @@ try {
   }
 
   const { port } = address as AddressInfo
-  trustedRendererHost = `${DEV_SERVER_HOST}:${port}`
-  await writeDevServerMetadata(`http://${DEV_SERVER_HOST}:${port}`, port)
+  devWebAccess.configureRendererTrust({
+    port,
+    hosts: new Set([
+      `${DEV_SERVER_HOST}:${port}`,
+      `${devServerPublicHost}:${port}`,
+      ...(isDevServerWildcardHost(devServerListenHost) ? [] : [`${devServerListenHost}:${port}`]),
+    ]),
+  })
+  await writeDevServerMetadata(`http://${devServerPublicHost}:${port}`, port)
   server.printUrls()
+  if (allowRemoteRendererHosts) {
+    console.warn(
+      `[howcode] dev:web is accepting browser hosts on port ${port}. Keep this on a trusted network.`,
+    )
+    console.warn(
+      `[howcode] dev:web access token URL: http://${devServerPublicHost}:${port}/#token=${encodeURIComponent(devWebAccess.accessToken ?? '')}`,
+    )
+  }
   console.warn(
     '\n[howcode] dev:web local desktop bridge is enabled for project sync/import. `bun run dev` remains the preferred full desktop dev loop.\n',
   )

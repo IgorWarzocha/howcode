@@ -26,7 +26,6 @@ import {
   hideSidebarSessionCountsKey,
   hoverToBlurKey,
   hoverToFocusKey,
-  howcodeNativeAskQuestionsKey,
   initializeGitOnProjectCreateKey,
   keybindingsKey,
   legacyDevUpdateBranchKey,
@@ -37,8 +36,6 @@ import {
   projectImportStateKey,
   showDictationButtonKey,
   sidebarVisibleProjectIdsKey,
-  skillCreatorModelKey,
-  skillCreatorThinkingLevelKey,
   useAgentsSkillsPathsKey,
 } from './keys.ts'
 import {
@@ -121,9 +118,6 @@ export function loadAppSettings(): AppSettings {
     gitCommitMessageModel: parseModelSelection(value(gitCommitMessageModelKey)),
     gitCommitMessageThinkingLevel:
       parseThinkingLevelPreference(value(gitCommitMessageThinkingLevelKey)) ?? 'off',
-    skillCreatorModel: parseModelSelection(value(skillCreatorModelKey)),
-    skillCreatorThinkingLevel:
-      parseThinkingLevelPreference(value(skillCreatorThinkingLevelKey)) ?? 'off',
     composerStreamingBehavior:
       parseComposerStreamingBehaviorPreference(value(composerStreamingBehaviorKey)) ?? 'followUp',
     dictationModelId: parseDictationModelIdPreference(value(dictationModelIdKey)),
@@ -149,7 +143,6 @@ export function loadAppSettings(): AppSettings {
     projectDeletionMode:
       parseProjectDeletionModePreference(value(projectDeletionModeKey)) ?? 'pi-only',
     useAgentsSkillsPaths: parseBooleanPreference(value(useAgentsSkillsPathsKey)) ?? false,
-    howcodeNativeAskQuestions: parseBooleanPreference(value(howcodeNativeAskQuestionsKey)) ?? false,
     devUpdateBranch: getDevUpdateBranch(getDevUpdateBranchValue(value)),
     piTuiTakeover: parseBooleanPreference(value(piTuiTakeoverKey)) ?? false,
     hoverToFocus: parseBooleanPreference(value(hoverToFocusKey)) ?? true,

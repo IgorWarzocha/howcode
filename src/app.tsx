@@ -1,5 +1,5 @@
-import { AppShell } from './app/app-shell'
+import { AppRouter } from './app/router'
 
 export default function App() {
-  return <AppShell />
+  return <AppRouter />
 }

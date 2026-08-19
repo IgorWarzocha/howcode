@@ -1,0 +1,3 @@
+- Pages is a standalone static Vite surface. Do not import desktop application, Electron, or stock-Node service implementations.
+- Keep both its strict TypeScript pass and production Vite build in `check:auxiliary`.
+- `main.tsx` only selects and mounts a route. Keep route content and state in `src/pages/*`; shared navigation belongs in `site-shell.tsx` and base-path resolution in `site-assets.ts`.

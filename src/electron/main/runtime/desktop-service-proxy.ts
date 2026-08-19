@@ -1,15 +1,18 @@
 import path from 'node:path'
+import { app } from 'electron'
 import type {
   DesktopServiceRuntime,
   PiSkillsService,
   PiThreadsService,
-  SkillCreatorService,
-  TerminalService,
 } from '../../../../shared/desktop-service-contracts'
+import {
+  type DesktopServiceRemoteModuleName,
+  desktopServiceRemoteMethods,
+} from '../../../../shared/desktop-service-rpc'
 import { getDesktopWorkingDirectory } from '../../../../shared/desktop-working-directory'
 import { DesktopServiceClient } from '../../../desktop-host/desktop-service-client'
 import { getSystemNodeExecutable } from '../../../desktop-host/node-discovery'
-import { getDesktopBuildDirectory } from './app-paths'
+import { getAppRootPath, getDesktopBuildDirectory } from './app-paths'
 
 function getServiceHostPath() {
   return path.join(getDesktopBuildDirectory(), 'service-host.mjs')
@@ -28,13 +31,14 @@ function getElectronResourcesPath() {
 }
 
 function getBundledSkillsPath() {
-  const resourcesPath = getElectronResourcesPath()
-  return resourcesPath ? path.join(resourcesPath, 'resources', 'skills') : ''
+  return app.isPackaged
+    ? path.join(getElectronResourcesPath(), 'resources', 'skills')
+    : path.join(getAppRootPath(), 'desktop', 'resources', 'skills')
 }
 
 function proxyModule<T extends Record<string, unknown>>(
   service: DesktopServiceClient,
-  moduleName: keyof DesktopServiceRuntime,
+  moduleName: DesktopServiceRemoteModuleName,
 ) {
   return new Proxy(
     {},
@@ -42,9 +46,13 @@ function proxyModule<T extends Record<string, unknown>>(
       get(_target, property) {
         if (property === 'subscribeDesktopEvents')
           return service.subscribeDesktopEvents.bind(service)
-        if (property === 'subscribeTerminalEvents')
-          return service.subscribeTerminalEvents.bind(service)
         if (property === 'disposeDesktopRuntime') return service.dispose.bind(service)
+        if (
+          typeof property !== 'string' ||
+          !Object.hasOwn(desktopServiceRemoteMethods[moduleName], property)
+        ) {
+          return undefined
+        }
         return (...args: unknown[]) => service.invokeDynamic(moduleName, String(property), args)
       },
     },
@@ -64,7 +72,6 @@ export function createDesktopServiceRuntime(): DesktopServiceRuntime {
   return {
     piThreads: proxyModule<PiThreadsService>(service, 'piThreads'),
     piSkills: proxyModule<PiSkillsService>(service, 'piSkills'),
-    skillCreator: proxyModule<SkillCreatorService>(service, 'skillCreator'),
-    terminalManager: proxyModule<TerminalService>(service, 'terminalManager'),
+    terminalManager: service.terminalManager,
   }
 }

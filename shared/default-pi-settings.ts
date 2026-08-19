@@ -1,6 +1,7 @@
 import type { PiSettings } from './desktop-settings-contracts'
 
 export const defaultPiSettings: PiSettings = {
+  extensions: [],
   theme: 'howcode-default',
   autoCompact: true,
   enableSkillCommands: true,
@@ -17,7 +18,8 @@ export const defaultPiSettings: PiSettings = {
   steeringMode: 'one-at-a-time',
   followUpMode: 'one-at-a-time',
   doubleEscapeAction: 'tree',
-  treeFilterMode: 'default',
+  defaultProjectTrust: 'ask',
+  treeFilterMode: 'no-tools',
   editorPaddingX: 0,
   autocompleteMaxVisible: 5,
   imageWidthCells: 60,

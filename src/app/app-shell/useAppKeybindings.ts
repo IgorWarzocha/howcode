@@ -1,10 +1,12 @@
 import {
   eventToAcceleratorCandidates,
   getEffectiveAccelerators,
+  isRightAltKeyEvent,
+  isRightAltShortcutEvent,
   type KeybindingCommandId,
   type KeybindingOverrides,
 } from '@howcode/shared/keybindings'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { runAppCommand, stopActiveRun } from './keybinding-command-handlers'
 import {
   appLevelShortcutsAreBlocked,
@@ -13,13 +15,18 @@ import {
   rendererCommandIds,
 } from './keybinding-context'
 import type { HowcodeKeybindingCommandDetail } from './keybinding-events'
-import { howcodeKeybindingCommandEvent } from './keybinding-events'
+import {
+  dispatchHowcodeKeybindingCommand,
+  howcodeKeybindingCommandEvent,
+} from './keybinding-events'
 import type { KeybindingRuntime } from './keybinding-runtime'
 import type { AppShellController } from './useAppShellController'
 
 function useLatest<T>(value: T) {
   const ref = useRef(value)
-  ref.current = value
+  useLayoutEffect(() => {
+    ref.current = value
+  })
   return ref
 }
 
@@ -33,7 +40,10 @@ function handleEscape(
   lastEscapeAtRef.current = now
   const commandId = runtime.acceleratorToCommand.get('Escape Escape')
   if (!(isDoubleEscape && commandId === 'agent.interrupt')) return
-  if (!stopActiveRun(runtime)) return
+  if (!stopActiveRun(runtime)) {
+    if (appLevelShortcutsAreBlocked('agent.interrupt', runtime)) return
+    if (!dispatchHowcodeKeybindingCommand('agent.interrupt')) return
+  }
   event.preventDefault()
   event.stopImmediatePropagation()
 }
@@ -54,6 +64,18 @@ function handleShortcut(event: KeyboardEvent, runtime: KeybindingRuntime) {
   if (!handled) return
   event.preventDefault()
   event.stopImmediatePropagation()
+}
+
+function shouldSkipShortcutForRightAlt(
+  event: KeyboardEvent,
+  rightAltPressedRef: React.MutableRefObject<boolean>,
+) {
+  if (isRightAltKeyEvent(event)) {
+    rightAltPressedRef.current = true
+    return true
+  }
+  if (!event.altKey) rightAltPressedRef.current = false
+  return isRightAltShortcutEvent(event, rightAltPressedRef.current)
 }
 
 export function useAppKeybindings(input: {
@@ -82,6 +104,7 @@ export function useAppKeybindings(input: {
     return map
   }, [keybindings])
   const lastEscapeAtRef = useRef(0)
+  const rightAltPressedRef = useRef(false)
   const cycleSelectionRef = useRef<KeybindingRuntime['cycleSelectionRef']['current']>(null)
   const latest = useLatest({
     acceleratorToCommand,
@@ -97,23 +120,30 @@ export function useAppKeybindings(input: {
     const current = cycleSelectionRef.current
     if (!current) return
     if (
-      current.view !== (controller.state.activeView === 'chat' ? 'chat' : 'thread') ||
-      current.projectId !== controller.state.selectedProjectId ||
-      current.threadId !== controller.state.selectedThreadId
+      current.view !== (controller.workspace.state.activeView === 'chat' ? 'chat' : 'thread') ||
+      current.projectId !== controller.workspace.state.selectedProjectId ||
+      current.threadId !== controller.workspace.state.selectedThreadId
     ) {
       cycleSelectionRef.current = null
     }
   }, [
-    controller.state.activeView,
-    controller.state.selectedProjectId,
-    controller.state.selectedThreadId,
+    controller.workspace.state.activeView,
+    controller.workspace.state.selectedProjectId,
+    controller.workspace.state.selectedThreadId,
   ])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return
+      if (shouldSkipShortcutForRightAlt(event, rightAltPressedRef)) return
       if (event.key === 'Escape') handleEscape(event, latest.current, lastEscapeAtRef)
       else handleShortcut(event, latest.current)
+    }
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (isRightAltKeyEvent(event)) rightAltPressedRef.current = false
+    }
+    const resetRightAltPressed = () => {
+      rightAltPressedRef.current = false
     }
     const handleCommand = (event: Event) => {
       const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
@@ -123,9 +153,13 @@ export function useAppKeybindings(input: {
     }
 
     window.addEventListener('keydown', handleKeyDown, { capture: true })
+    window.addEventListener('keyup', handleKeyUp, { capture: true })
+    window.addEventListener('blur', resetRightAltPressed)
     window.addEventListener(howcodeKeybindingCommandEvent, handleCommand)
     return () => {
       window.removeEventListener('keydown', handleKeyDown, { capture: true })
+      window.removeEventListener('keyup', handleKeyUp, { capture: true })
+      window.removeEventListener('blur', resetRightAltPressed)
       window.removeEventListener(howcodeKeybindingCommandEvent, handleCommand)
     }
   }, [latest])

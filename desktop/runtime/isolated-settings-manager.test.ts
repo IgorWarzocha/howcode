@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { createRuntimeSettingsManager } from './isolated-settings-manager.ts'
+import {
+  createRuntimeSettingsManager,
+  resolveRuntimeProjectTrust,
+} from './isolated-settings-manager.ts'
 
 type Settings = Record<string, unknown>
 
@@ -14,7 +17,7 @@ function createSettingsManagerFactory(globalSettings: Settings, projectSettings:
 }
 
 describe('createRuntimeSettingsManager', () => {
-  it('isolates configured resources from global settings when using an internal settings cwd', () => {
+  it('keeps global resources and adds internal project resources when using an internal settings cwd', () => {
     const settingsManager = createRuntimeSettingsManager({
       SettingsManager: createSettingsManagerFactory(
         {
@@ -40,11 +43,109 @@ describe('createRuntimeSettingsManager', () => {
 
     expect(settingsManager).toMatchObject({
       model: 'global-model',
-      packages: ['chat-package'],
-      extensions: ['chat-extension'],
-      skills: ['chat-skill'],
-      prompts: ['chat-prompt'],
-      themes: ['chat-theme'],
+      packages: ['global-package', 'chat-package'],
+      extensions: ['global-extension', 'chat-extension'],
+      skills: ['global-skill', 'chat-skill'],
+      prompts: ['global-prompt', 'chat-prompt'],
+      themes: ['global-theme', 'chat-theme'],
     })
+  })
+})
+
+describe('resolveRuntimeProjectTrust', () => {
+  function createTrustStoreFactory(decision: boolean | null | Record<string, boolean | null>) {
+    return class ProjectTrustStore {
+      agentDir: string
+
+      constructor(agentDir: string) {
+        this.agentDir = agentDir
+      }
+
+      get(cwd: string) {
+        return typeof decision === 'object' && decision !== null
+          ? (decision[cwd] ?? null)
+          : decision
+      }
+
+      set() {
+        // Not needed for resolver tests.
+      }
+    }
+  }
+
+  it('trusts projects with no trust inputs', () => {
+    expect(
+      resolveRuntimeProjectTrust({
+        ProjectTrustStore: createTrustStoreFactory(false),
+        agentDir: '/agent',
+        cwd: '/repo',
+        hasTrustRequiringProjectResources: () => false,
+      }),
+    ).toBe(true)
+  })
+
+  it('uses stored project trust decisions', () => {
+    expect(
+      resolveRuntimeProjectTrust({
+        ProjectTrustStore: createTrustStoreFactory(true),
+        agentDir: '/agent',
+        cwd: '/repo',
+        hasTrustRequiringProjectResources: () => true,
+      }),
+    ).toBe(true)
+
+    expect(
+      resolveRuntimeProjectTrust({
+        ProjectTrustStore: createTrustStoreFactory(false),
+        agentDir: '/agent',
+        cwd: '/repo',
+        hasTrustRequiringProjectResources: () => true,
+      }),
+    ).toBe(false)
+  })
+
+  it('keeps unknown projects untrusted while default trust asks', () => {
+    expect(
+      resolveRuntimeProjectTrust({
+        ProjectTrustStore: createTrustStoreFactory(null),
+        agentDir: '/agent',
+        cwd: '/repo',
+        defaultProjectTrust: 'ask',
+        hasTrustRequiringProjectResources: () => true,
+      }),
+    ).toBe(false)
+  })
+
+  it('uses default project trust when no stored decision exists', () => {
+    expect(
+      resolveRuntimeProjectTrust({
+        ProjectTrustStore: createTrustStoreFactory(null),
+        agentDir: '/agent',
+        cwd: '/repo',
+        defaultProjectTrust: 'always',
+        hasTrustRequiringProjectResources: () => true,
+      }),
+    ).toBe(true)
+
+    expect(
+      resolveRuntimeProjectTrust({
+        ProjectTrustStore: createTrustStoreFactory(null),
+        agentDir: '/agent',
+        cwd: '/repo',
+        defaultProjectTrust: 'never',
+        hasTrustRequiringProjectResources: () => true,
+      }),
+    ).toBe(false)
+  })
+
+  it('uses trusted ancestor decisions', () => {
+    expect(
+      resolveRuntimeProjectTrust({
+        ProjectTrustStore: createTrustStoreFactory({ '/home/igorw': true }),
+        agentDir: '/agent',
+        cwd: '/home/igorw/Work/howcode',
+        hasTrustRequiringProjectResources: () => true,
+      }),
+    ).toBe(true)
   })
 })

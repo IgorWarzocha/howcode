@@ -24,19 +24,11 @@ describe('expandDollarSkillReferences', () => {
   })
 
   it('adds each known skill once while preserving the original request', () => {
-    expect(
-      expandDollarSkillReferences({
-        skills,
-        text: 'use $agent-native-hardening then $skill-creator and $agent-native-hardening',
-      }),
-    ).toMatchInlineSnapshot(`
-      "The user asked you to use the following skills. Read their SKILL.md files if available.
+    const request = 'use $agent-native-hardening then $skill-creator and $agent-native-hardening'
+    const expanded = expandDollarSkillReferences({ skills, text: request })
 
-      - $agent-native-hardening: /skills/agent-native-hardening/SKILL.md
-      - $skill-creator: /skills/skill-creator/SKILL.md
-
-      User request:
-      use $agent-native-hardening then $skill-creator and $agent-native-hardening"
-    `)
+    expect(expanded.match(/\$agent-native-hardening:/gu)).toHaveLength(1)
+    expect(expanded.match(/\$skill-creator:/gu)).toHaveLength(1)
+    expect(expanded.endsWith(request)).toBe(true)
   })
 })

@@ -7,51 +7,9 @@ export type SessionSummaryRecord = {
   branchName?: string | undefined | null | undefined
 }
 
-export type ProjectRow = {
-  id: string
-  name: string
-  pinned: number
-  collapsed: number
-  threadCount: number
-  latestModifiedMs: number
-  repoOriginUrl: string | null
-  repoOriginChecked: number
-  gitOpsMode: string | null
-  worktreeRootProjectId: string | null
-  worktreeBranchName: string | null
-  worktreeParentBranchName: string | null
-  worktreeIsMain: number | null
-  worktreeSource: string | null
-  worktreeCompleted: number | null
-  worktreeDirectory: string | null
-}
-
-export type ThreadRow = {
-  id: string
-  title: string
-  sessionPath: string
-  summary: string | null
-  running: number
-  unread: number
-  pinned: number
-  branchName: string | null
-  lastModifiedMs: number
-}
-
-export type InboxThreadRow = {
-  threadId: string
-  title: string
-  projectId: string
-  projectName: string
-  sessionPath: string
-  lastUserPrompt: string | null
-  lastAssistantMessageJson: string | null
-  lastAssistantPreview: string | null
-  running: number
-  unread: number
-  lastActivityMs: number
-  isChat: number
-}
+export type ProjectRow = typeof ProjectRowSchema.Type
+export type ThreadRow = typeof ThreadRowSchema.Type
+export type InboxThreadRow = typeof InboxThreadRowSchema.Type
 
 export type ThreadInboxMessageRecord = {
   sessionPath: string
@@ -70,15 +28,7 @@ export type ThreadAssistantSnapshotRow = {
   preview: string | null
 }
 
-export type ArchivedThreadRow = {
-  id: string
-  title: string
-  sessionPath: string
-  projectId: string
-  projectName: string
-  lastModifiedMs: number
-  isChat: number
-}
+export type ArchivedThreadRow = typeof ArchivedThreadRowSchema.Type
 
 export type ThreadPathRow = {
   id?: string | undefined
@@ -112,3 +62,10 @@ export type ThreadDeletionSnapshotRow = {
   sessionPath: string
   lastModifiedMs: number
 }
+
+import type {
+  ArchivedThreadRowSchema,
+  InboxThreadRowSchema,
+  ProjectRowSchema,
+  ThreadRowSchema,
+} from './row-schema.ts'

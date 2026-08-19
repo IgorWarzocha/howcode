@@ -1,6 +1,7 @@
-# Composer module guidance
-
 - Composer owns prompt input, prompt surface, composer popovers, queued prompts, attachment picking, and submission glue.
-- Keep Git-specific controls in `@howcode/native-gitops`; composer should expose extension points/props rather than importing GitOps internals when possible.
+- `composer-contract.ts` owns the public component props; composer render modules may depend on it, never on each other merely to recover those types.
+- Keep Git-specific controls in `@howcode/native-gitops`; expose props/extension points rather than importing GitOps internals.
 - Shared footer row/chip/text primitives live in `@howcode/workspace-shell/footer/workspace-footer-primitives`.
-- Do not replace shared tooltip styling with native `title`; use `Tooltip`.
+- `ComposerPromptInputPanel` owns the editor, mentions, paste, and dictation controls; hosts compose picker/session-tree/slash overlays around it.
+- Keep Pi-extension overlay chrome, widget protocol rendering, and shortcut execution in their dedicated composer modules.
+- Route fallible composer actions through `useComposerActionRunner` so backend and thrown failures reach the visible composer error state.

@@ -1,11 +1,11 @@
 import { Tooltip } from '../../common/tooltip'
 import { appToneMutedClass, appToneTextClass, appTypeTinyClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
-import type { GitOpsCommentCard } from './composer-git-ops.helpers'
+import type { GitOpsCommentCard } from './review/review-comment-card'
 
 type ComposerGitOpsTopBarProps = {
   commentCards: GitOpsCommentCard[]
-  onSelectDiffComment: (filePath: string, commentId: string) => void
+  onSelectDiffComment: (commentId: string) => void
 }
 
 export function ComposerGitOpsTopBar({
@@ -24,7 +24,7 @@ export function ComposerGitOpsTopBar({
                 appTypeTinyClass,
                 appToneMutedClass,
               )}
-              onClick={() => onSelectDiffComment(comment.filePath, comment.id)}
+              onClick={() => onSelectDiffComment(comment.id)}
               aria-label={`Open comment on ${comment.filePath} ${comment.linesLabel}`}
             >
               <span className={cn('max-w-40 truncate', appTypeTinyClass, appToneTextClass)}>

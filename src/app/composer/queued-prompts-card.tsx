@@ -18,6 +18,7 @@ export function QueuedPromptsCard({
   onEditPrompt,
   onRemovePrompt,
 }: QueuedPromptsCardProps) {
+  const pendingPromptIdSet = new Set(pendingPromptIds)
   if (prompts.length === 0) {
     return null
   }
@@ -31,7 +32,7 @@ export function QueuedPromptsCard({
 
         <div className="grid gap-1">
           {prompts.map((prompt) => {
-            const isPending = pendingPromptIds.includes(prompt.id)
+            const isPending = pendingPromptIdSet.has(prompt.id)
 
             return (
               <div

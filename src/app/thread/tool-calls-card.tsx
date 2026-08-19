@@ -15,10 +15,11 @@ import {
 } from '@howcode/ui'
 import { useState } from 'react'
 import { ExpandablePanel } from '../common/expandable-panel'
+import { getParagraphRenderItems } from '../common/thread-message-utils'
 import type { Message } from '../types'
 import { cn } from '../utils/cn'
 import { getToolCallPreview, getToolCallTitle } from '../utils/thread-previews'
-import { getToolDiffSummary, ToolDiffBlock } from './tool-diff-block'
+import { ToolDiffBlock, ToolDiffSummary } from './tool-diff-block'
 
 type ToolCallMessage = Extract<Message, { role: 'toolResult' | 'bashExecution' }>
 
@@ -54,11 +55,8 @@ function renderToolCallBody(message: ToolCallMessage) {
           </div>
         ) : null}
         <ToolDiffBlock message={message} />
-        {message.content.map((paragraph) => (
-          <p
-            key={paragraph}
-            className="m-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
-          >
+        {getParagraphRenderItems(message.content).map(({ key, paragraph }) => (
+          <p key={key} className="m-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
             {paragraph}
           </p>
         ))}
@@ -104,11 +102,11 @@ function renderToolCallBody(message: ToolCallMessage) {
 }
 
 function ToolCallBadges({
-  diffSummary,
+  message,
   isError,
   isRunning,
 }: {
-  diffSummary: { added: number; removed: number } | null
+  message: Extract<Message, { role: 'toolResult' }> | null
   isError: boolean
   isRunning: boolean
 }) {
@@ -117,13 +115,7 @@ function ToolCallBadges({
       {isError ? (
         <span className={`shrink-0 ${appTypeTinyStrongClass} ${appToneDangerClass}`}>Error</span>
       ) : null}
-      {diffSummary ? (
-        <span className={`shrink-0 ${appTypeTinyStrongClass}`}>
-          <span className="text-[color:var(--green)]">+{diffSummary.added}</span>
-          <span className="px-1 text-[color:var(--muted-2)]/70">/</span>
-          <span className="text-[color:var(--danger)]">-{diffSummary.removed}</span>
-        </span>
-      ) : null}
+      {message ? <ToolDiffSummary message={message} /> : null}
       {isRunning ? (
         <span className={`shrink-0 ${appTypeTinyStrongClass} text-[color:var(--accent)]`}>
           Running
@@ -167,14 +159,13 @@ export function ToolCallsCard({
       }
     >
       <div className={processLedgerClass}>
-        {messages.map((message, index) => {
-          const messageKey = `${message.id}:${index}`
+        {messages.map((message) => {
+          const messageKey = message.id
           const toolCallExpanded = expandedToolCallIds[messageKey] ?? false
           const title = getToolCallTitle(message)
           const preview = getToolCallPreview(message)
           const isError = message.role === 'toolResult' && message.isError
           const isRunning = message.role === 'toolResult' && Boolean(message.running)
-          const diffSummary = message.role === 'toolResult' ? getToolDiffSummary(message) : null
 
           return (
             <ExpandablePanel
@@ -215,7 +206,7 @@ export function ToolCallsCard({
                     </span>
                   </span>
                   <ToolCallBadges
-                    diffSummary={diffSummary}
+                    message={message.role === 'toolResult' ? message : null}
                     isError={isError}
                     isRunning={isRunning}
                   />

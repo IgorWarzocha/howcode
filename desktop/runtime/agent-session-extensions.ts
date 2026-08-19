@@ -3,7 +3,7 @@ const extensionSourceSuffixPattern = /\.(ts|js)$/
 import fs from 'node:fs'
 import path from 'node:path'
 import type { AgentMessage } from '@earendil-works/pi-agent-core'
-import type { AgentSession } from '@earendil-works/pi-coding-agent'
+import type { AgentSession, ExtensionUIContext } from '@earendil-works/pi-coding-agent'
 import { applyHeadlessPiTheme } from './headless-pi-theme.ts'
 
 const howcodeExtensionErrorMessageType = 'howcode.extension.error'
@@ -91,6 +91,7 @@ function buildExtensionResourcePaths(entries: ExtensionResourceEntry[]) {
 type HeadlessAgentSessionExtensionOptions = {
   onExtensionError?: (error: Parameters<NonNullable<ExtensionBindings['onError']>>[0]) => void
   onExtensionCommandStateChange?: () => void
+  uiContext?: ExtensionUIContext | undefined
 }
 
 export function isHeadlessExtensionCommandRunning(session: AgentSession) {
@@ -257,6 +258,7 @@ export async function bindHeadlessAgentSessionExtensions(
 ) {
   await refreshHeadlessAgentSessionExtensionBindings(session, options)
   await session.bindExtensions({
+    ...(options.uiContext ? { uiContext: options.uiContext } : {}),
     commandContextActions: createHeadlessCommandContextActions(session, options),
     shutdownHandler: () => undefined,
     onError: (error) => {

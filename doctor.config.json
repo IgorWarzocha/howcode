@@ -1,0 +1,5 @@
+{
+  "ignore": {
+    "files": ["Frameworks/effect-smol/**", "Frameworks/t3-code/**"]
+  }
+}

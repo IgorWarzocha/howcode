@@ -11,6 +11,7 @@ import { handleProjectDesktopAction } from './project-actions.ts'
 import { handleSettingsDesktopAction } from './settings-actions.ts'
 import { handleThreadDesktopAction } from './thread-actions.ts'
 import { handleWorkspaceDesktopAction } from './workspace-actions.ts'
+import { handleWorktreeDesktopAction } from './worktree-actions.ts'
 
 export async function handleDesktopAction(
   action: DesktopAction,
@@ -24,6 +25,7 @@ export async function handleDesktopAction(
     await handleThreadDesktopAction(action, payload),
     await handleComposerDesktopAction(action, payload),
     await handleWorkspaceDesktopAction(action, payload),
+    await handleWorktreeDesktopAction(action, payload),
     await handleSettingsDesktopAction(action, payload),
     await handlePiSettingsDesktopAction(action, payload),
   ]

@@ -1,56 +1,46 @@
-import { getPersistedSessionPath } from '@howcode/shared/session-paths'
-import { type RefObject, useEffect, useRef } from 'react'
-import {
-  howcodeDismissTransientUiEvent,
-  useHowcodeKeybindingCommand,
-} from '../app-shell/keybinding-events'
-import { AskQuestionsCard, useComposerAskQuestionsActions } from '../features/native-extensions'
-import { composerPanelClass, composerPopoverExtensionLayerClass } from '../ui/classes'
+import { type RefObject, useCallback, useRef, useState } from 'react'
+
+import { composerPanelClass } from '../ui/classes'
+import { WORKSPACE_RAIL_GRID_CLASS } from '../ui/layout'
 import { cn } from '../utils/cn'
-import type { ComposerProps } from './composer'
-import { ComposerFooter } from './composer-footer'
-import { ComposerPromptInputPanel } from './composer-prompt-input-panel'
+import type { ComposerProps } from './composer-contract'
 import {
-  getComposerPlaceholderText,
-  isConversationComposerView,
-} from './composer-prompt-surface-helpers'
+  PiExtensionStatusLine,
+  useComposerExtensionStatusFooterOffset,
+} from './composer-pi-extension-overlay'
+import { ComposerPromptFooter } from './composer-prompt-footer'
+import { ComposerPromptInputPanel } from './composer-prompt-input-panel'
+import { ComposerPromptOverlays } from './composer-prompt-overlays'
+import { getComposerPlaceholderText } from './composer-prompt-surface-helpers'
 import { ComposerAttachmentRail, ComposerStopRail } from './composer-side-controls'
 import { useComposerController } from './controller/useComposerController'
-import { useAskQuestionsOverlayHeight } from './useAskQuestionsOverlayHeight'
-import { useComposerFileMentions } from './useComposerFileMentions'
-import {
-  useComposerAutocompleteEffects,
-  useComposerEscapeEffects,
-} from './useComposerPromptSurfaceEffects'
-import { useComposerSkillMentions } from './useComposerSkillMentions'
-import { useComposerSlashCommands } from './useComposerSlashCommands'
+import { useComposerGlobalCommands } from './useComposerGlobalCommands'
+import { useComposerPiExtensionShortcuts } from './useComposerPiExtensionShortcuts'
+import { useComposerPromptAutocomplete } from './useComposerPromptAutocomplete'
+import { useComposerEscapeEffects } from './useComposerPromptSurfaceEffects'
+import { useComposerSessionTreeNavigate } from './useComposerSessionTreeNavigate'
+import { useComposerThreadOverlayHeight } from './useComposerThreadOverlayHeight'
 import { useGlobalComposerFileDrop } from './useGlobalComposerFileDrop'
 
 type ComposerPromptSurfaceProps = ComposerProps & {
   composerPanelRef: RefObject<HTMLDivElement | null>
-  mainViewRef: RefObject<HTMLElement | null>
-  workspaceFooterRef: RefObject<HTMLElement | null>
   onOpenGitOps: () => void
+}
+
+function hasComposerOverlayAbove(...visibleFlags: boolean[]) {
+  return visibleFlags.some(Boolean)
 }
 
 export function ComposerPromptSurface({
   activeView,
   composerPanelRef,
-  mainViewRef,
   workspaceFooterRef,
-  model,
-  contextUsage,
+  runtime,
   messages,
-  availableModels,
   isStreaming,
   replyActivityKey,
-  isCompacting,
-  isExtensionCommandRunning,
-  nativeAskQuestionsRequest,
-  thinkingLevel,
   restoredQueuedPrompt,
   streamingBehaviorPreference,
-  availableThinkingLevels,
   projectId,
   chatGroupId,
   projectGitState,
@@ -65,6 +55,7 @@ export function ComposerPromptSurface({
   hoverToBlur,
   composerSendMode,
   keybindings,
+  piTreeFilterMode = 'no-tools',
   onOpenTakeoverTerminal,
   onToggleTerminal,
   onToggleArtifacts,
@@ -73,7 +64,7 @@ export function ComposerPromptSurface({
   onListAttachmentEntries,
   onAction,
   terminalVisible,
-  preferPortalFilePicker = false,
+  takeoverVisible,
   preferPortalModelPopover = false,
   artifactsVisible,
   artifactsAvailable,
@@ -82,6 +73,15 @@ export function ComposerPromptSurface({
   onOverlayHeightChange,
   showTerminalControls = true,
 }: ComposerPromptSurfaceProps) {
+  const {
+    isCompacting,
+    isExtensionCommandRunning,
+    piExtensionDialogRequest,
+    piExtensionShortcuts,
+    piExtensionStatuses,
+    piExtensionWidgets,
+    projectTrustRequest,
+  } = runtime
   const {
     attachments,
     cancelDictation,
@@ -109,6 +109,7 @@ export function ComposerPromptSurface({
     openPickerDirectory,
     openPickerRoot,
     removeAttachment,
+    invokeComposerAction,
     runComposerAction,
     compact,
     send,
@@ -121,13 +122,8 @@ export function ComposerPromptSurface({
     handleDrop,
     togglePendingPickerAttachment,
     handlePaste,
-    thinkingLevelLabels,
   } = useComposerController({
     activeView,
-    composerPanelRef,
-    mainViewRef,
-    workspaceFooterRef,
-    model,
     projectId,
     chatGroupId,
     sessionPath,
@@ -144,138 +140,160 @@ export function ComposerPromptSurface({
     onListAttachmentEntries,
   })
   const dictationTranscribing = dictationInterimText.length > 0
+  const composerHoverToFocus = hoverToFocus && !takeoverVisible
+  const composerHoverToBlur = hoverToBlur && !takeoverVisible
   const composerMode = activeView === 'chat' ? 'chat' : 'code'
-  const slashCommandPanelRef = useRef<HTMLDivElement>(null)
-  const fileMentionPanelRef = useRef<HTMLDivElement>(null)
-  const skillMentionPanelRef = useRef<HTMLDivElement>(null)
+  const sessionTreeCloseRef = useRef<(() => void) | null>(null)
+  const sessionTreeCancelNavigateConfirmRef = useRef<(() => void) | null>(null)
+  const sessionTreeCancelLabelPopoverRef = useRef<(() => void) | null>(null)
+  const [sessionTreeNavigateConfirmOpen, setSessionTreeNavigateConfirmOpen] = useState(false)
+  const [sessionTreeLabelPopoverOpen, setSessionTreeLabelPopoverOpen] = useState(false)
   const stopButtonBoundaryRef = useRef<HTMLDivElement>(null)
-  const askQuestionsOverlayRef = useRef<HTMLDivElement>(null)
-  const showAskQuestions = nativeAskQuestionsRequest !== null
-  const { answerNativeQuestions } = useComposerAskQuestionsActions({
-    chatGroupId,
-    composerMode,
-    nativeAskQuestionsRequest,
-    projectId,
-    runComposerAction,
-    sessionPath,
-  })
+  const composerOverlayStackRef = useRef<HTMLDivElement>(null)
+  const piExtensionStatusLineRef = useRef<HTMLDivElement>(null)
+  const showNativeDialog = piExtensionDialogRequest !== null
+  const showProjectTrust = projectTrustRequest !== null
+  const visiblePiExtensionWidgets = piExtensionWidgets.filter(
+    (widget) => widget.placement === undefined || widget.placement === 'aboveEditor',
+  )
+  const showPiExtensionOverlay =
+    showNativeDialog || showProjectTrust || visiblePiExtensionWidgets.length > 0
+  const attachmentsTopRounded = !hasComposerOverlayAbove(showPiExtensionOverlay)
+  const inputPopoversTopRounded = !hasComposerOverlayAbove(showPiExtensionOverlay, pickerOpen)
   const startNewSession = () => {
     void runComposerAction('thread.new', { projectId, chatGroupId, composerMode })
   }
-  const slashCommands = useComposerSlashCommands({
-    draft,
-    projectId,
-    sessionPath,
-    composerMode,
-    setDraft,
-    send,
-    sendExtensionCommand,
-    onOpenSettingsView,
-    onStartNewSession: startNewSession,
-  })
-  const slashCommandListSignature = slashCommands.commands
-    .map((command) => `${command.source}:${command.name}`)
-    .join('|')
-  const skillMentions = useComposerSkillMentions({
-    draft,
-    projectId,
-    sessionPath,
-    composerMode,
-    setDraft,
-  })
-  const skillMentionListSignature = skillMentions.skills
-    .map((skill) => `${skill.name}:${skill.filePath}`)
-    .join('|')
-  const fileMentions = useComposerFileMentions({
-    draft,
-    projectId,
-    setDraft,
-    attachAttachments: attachPickerAttachments,
-  })
-  const fileMentionListSignature = fileMentions.files
-    .map((file) => `${file.kind}:${file.path}`)
-    .join('|')
-
-  useComposerAutocompleteEffects({
-    composerPanelRef,
+  const {
+    composerPopoverStackRef,
+    dismissSessionTree,
     fileMentionPanelRef,
-    fileMentionListSignature,
     fileMentions,
+    openSessionTree,
+    sessionTreeOpen,
+    sessionTreePanelRef,
     skillMentionPanelRef,
-    skillMentionListSignature,
     skillMentions,
     slashCommandPanelRef,
-    slashCommandListSignature,
     slashCommands,
+  } = useComposerPromptAutocomplete({
+    attachAttachments: attachPickerAttachments,
+    composerMode,
+    composerPanelRef,
+    draft,
+    onOpenSettingsView,
+    onStartNewSession: startNewSession,
+    projectId,
+    send,
+    sendExtensionCommand,
+    sessionPath,
+    setDraft,
     stopButtonBoundaryRef,
   })
+
+  const closeSessionTree = useCallback(() => {
+    sessionTreeCloseRef.current?.()
+    dismissSessionTree()
+  }, [dismissSessionTree])
 
   useComposerEscapeEffects({
     cancelDictation,
     dictationActive,
     dictationTranscribing,
     pickerOpen,
+    sessionTreeOpen,
+    sessionTreeNavigateConfirmOpen,
+    sessionTreeLabelPopoverOpen,
+    onCloseSessionTree: closeSessionTree,
+    onCancelSessionTreeNavigateConfirm: () => {
+      sessionTreeCancelNavigateConfirmRef.current?.()
+      setSessionTreeNavigateConfirmOpen(false)
+    },
+    onCancelSessionTreeLabelPopover: () => {
+      sessionTreeCancelLabelPopoverRef.current?.()
+      setSessionTreeLabelPopoverOpen(false)
+    },
     setOpenMenu,
   })
 
   useGlobalComposerFileDrop(handleDrop)
 
-  useAskQuestionsOverlayHeight({
-    overlayRef: askQuestionsOverlayRef,
-    visible: showAskQuestions,
-    onOverlayHeightChange,
-  })
-
   const extensionRunning = extensionCommandRunning
-  const askQuestionsArrowNavigationRef = useRef<
-    ((direction: 'previous' | 'next') => boolean) | null
-  >(null)
-  const askQuestionsSubmitRef = useRef<(() => boolean) | null>(null)
   const placeholderText = getComposerPlaceholderText({
     activeView,
     composerSendMode,
     errorMessage,
-    showAskQuestions,
+    showAskQuestions: false,
   })
   const attachmentButtonLabel = attachments.length > 0 ? 'Manage attachments' : 'Add attachment'
-  const persistedSessionPath = getPersistedSessionPath(sessionPath)
+  const {
+    handleSessionTreeLabel,
+    handleSessionTreeNavigateAndClose,
+    revealSessionTreeEntryInThread,
+    sessionTreeForceHidden,
+    sessionTreeNavigateDisabled,
+  } = useComposerSessionTreeNavigate({
+    activeView,
+    chatGroupId,
+    composerIsStreaming,
+    extensionRunning,
+    isCompacting,
+    isSending,
+    onClose: closeSessionTree,
+    projectId,
+    runComposerAction,
+    sessionPath,
+  })
+  useComposerThreadOverlayHeight({
+    extensionOverlayRef: composerOverlayStackRef,
+    extensionOverlayVisible:
+      showPiExtensionOverlay ||
+      pickerOpen ||
+      (sessionTreeOpen && !sessionTreeForceHidden) ||
+      slashCommands.open,
+    popoverStackRef: composerPopoverStackRef,
+    popoverStackVisible: false,
+    onOverlayHeightChange,
+  })
+
+  useComposerExtensionStatusFooterOffset({
+    statusLineRef: piExtensionStatusLineRef,
+    visible: piExtensionStatuses.length > 0,
+    workspaceFooterRef,
+  })
+
   const canStopComposer = (composerIsStreaming || extensionRunning) && !isSending && !!sessionPath
   const composerWorking = composerIsStreaming || extensionRunning
-  const dismissComposerTransientUi = () => {
-    setOpenMenu(null)
-    slashCommands.dismiss()
-    fileMentions.dismiss()
-    skillMentions.dismiss()
-  }
-
-  useHowcodeKeybindingCommand('composer.submit', (event) => {
-    event.preventDefault()
-    void send()
-  })
-  useHowcodeKeybindingCommand('composer.focus', (event) => {
-    event.preventDefault()
-    dismissComposerTransientUi()
-    const textarea = composerPanelRef.current?.querySelector('textarea')
-    if (!(textarea instanceof HTMLTextAreaElement)) return
-    textarea.focus()
-    const cursorPosition = textarea.value.length
-    textarea.setSelectionRange(cursorPosition, cursorPosition)
-  })
-  useHowcodeKeybindingCommand('dictation.toggle', (event) => {
-    if (!(showDictationButton && !inputLocked)) return
-    event.preventDefault()
-    void toggleDictation()
+  useComposerGlobalCommands({
+    closeSessionTree,
+    composerPanelRef,
+    composerWorking,
+    fileMentions,
+    inputLocked,
+    openSessionTree,
+    send,
+    setOpenMenu,
+    showDictationButton,
+    skillMentions,
+    slashCommands,
+    toggleDictation,
   })
 
-  useEffect(() => {
-    window.addEventListener(howcodeDismissTransientUiEvent, dismissComposerTransientUi)
-    return () =>
-      window.removeEventListener(howcodeDismissTransientUiEvent, dismissComposerTransientUi)
+  useComposerPiExtensionShortcuts({
+    chatGroupId,
+    composerMode,
+    composerPanelRef,
+    draft,
+    invokeAction: invokeComposerAction,
+    overlayRef: composerOverlayStackRef,
+    projectId,
+    sessionPath,
+    setDraft,
+    shortcuts: piExtensionShortcuts,
   })
 
   return (
     <div
-      className="relative grid w-full grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible"
+      className={cn('relative grid w-full items-end overflow-visible', WORKSPACE_RAIL_GRID_CLASS)}
       data-composer-root="true"
     >
       <ComposerAttachmentRail
@@ -291,40 +309,61 @@ export function ComposerPromptSurface({
         }}
       />
 
-      <div className="relative grid gap-0 overflow-visible">
-        {showAskQuestions ? (
-          <div
-            ref={askQuestionsOverlayRef}
-            className={cn(
-              'pointer-events-auto absolute right-0 bottom-full left-0',
-              composerPopoverExtensionLayerClass,
-            )}
-          >
-            <AskQuestionsCard
-              composerDraft={draft}
-              questions={nativeAskQuestionsRequest.questions}
-              onUseComposerDraft={() => {
-                const value = draft
-                setDraft('')
-                return value
-              }}
-              onAnswered={async (answers) => {
-                const ok = await answerNativeQuestions(answers)
-                if (ok) setDraft('')
-                return ok
-              }}
-              onDismiss={() => {
-                return answerNativeQuestions(null)
-              }}
-              registerArrowNavigation={(handler) => {
-                askQuestionsArrowNavigationRef.current = handler
-              }}
-              registerComposerSubmit={(handler) => {
-                askQuestionsSubmitRef.current = handler
-              }}
-            />
-          </div>
-        ) : null}
+      <div className="relative grid gap-0 overflow-visible [container-type:inline-size]">
+        <ComposerPromptOverlays
+          stackRef={composerOverlayStackRef}
+          extension={{
+            visible: showPiExtensionOverlay,
+            chatGroupId,
+            composerMode,
+            dialogRequest: piExtensionDialogRequest,
+            projectId,
+            projectTrustRequest,
+            runComposerAction,
+            sessionPath,
+            widgets: visiblePiExtensionWidgets,
+          }}
+          attachments={{
+            visible: pickerOpen,
+            topRounded: attachmentsTopRounded,
+            anchorRef: pickerButtonRef,
+            attachments,
+            errorMessage,
+            favoriteFolders,
+            loading: pickerLoading,
+            picker: pickerState,
+            panelRef: pickerPanelRef,
+            projectRootPath: projectId,
+            onAttachAttachments: attachPickerAttachments,
+            onOpenRoot: openPickerRoot,
+            onOpenDirectory: openPickerDirectory,
+            onRemoveAttachment: removeAttachment,
+            onToggleFile: togglePendingPickerAttachment,
+          }}
+          prompts={{
+            visible: (sessionTreeOpen && !sessionTreeForceHidden) || slashCommands.open,
+            sessionPath,
+            sessionTreeOpen,
+            treeFilterMode: piTreeFilterMode,
+            sessionTreePanelRef,
+            popoverStackRef: composerPopoverStackRef,
+            sessionTreeForceHidden,
+            sessionTreeNavigateDisabled,
+            onSessionTreeNavigate: handleSessionTreeNavigateAndClose,
+            onSessionTreeLabel: handleSessionTreeLabel,
+            onRevealSessionTreeEntryInThread: revealSessionTreeEntryInThread,
+            onBindSessionTreeClose: (close) => {
+              sessionTreeCloseRef.current = close
+            },
+            onSessionTreeNavigateConfirmOpenChange: setSessionTreeNavigateConfirmOpen,
+            onSessionTreeLabelPopoverOpenChange: setSessionTreeLabelPopoverOpen,
+            sessionTreeCancelNavigateConfirmRef,
+            sessionTreeCancelLabelPopoverRef,
+            slashCommandPanelRef,
+            slashCommands,
+            topRounded: inputPopoversTopRounded,
+          }}
+        />
         <section
           ref={composerPanelRef}
           className={cn(
@@ -340,7 +379,6 @@ export function ComposerPromptSurface({
             {/* The prompt surface keeps prompt text and trailing controls in one shared block so it
                 still mirrors the git-ops composer shell while attachments live beside it. */}
             <ComposerPromptInputPanel
-              attachments={attachments}
               clearError={clearError}
               dictationActive={dictationActive}
               dictationMissingModel={dictationMissingModel}
@@ -350,54 +388,27 @@ export function ComposerPromptSurface({
               errorMessage={errorMessage}
               extensionRunning={extensionRunning}
               inputLocked={inputLocked}
-              favoriteFolders={favoriteFolders}
-              pickerLoading={pickerLoading}
-              pickerOpen={pickerOpen}
-              pickerButtonRef={pickerButtonRef}
-              pickerPanelRef={pickerPanelRef}
-              preferPortalFilePicker={preferPortalFilePicker}
-              pickerState={pickerState}
               placeholderText={placeholderText}
-              projectId={projectId}
-              slashCommandPanelRef={slashCommandPanelRef}
               slashCommands={slashCommands}
               fileMentionPanelRef={fileMentionPanelRef}
               fileMentions={fileMentions}
               skillMentionPanelRef={skillMentionPanelRef}
               skillMentions={skillMentions}
               showDictationButton={showDictationButton}
-              attachPickerAttachments={attachPickerAttachments}
               cancelDictation={cancelDictation}
               handlePaste={handlePaste}
-              hoverToFocus={hoverToFocus}
-              hoverToBlur={hoverToBlur}
+              hoverToFocus={composerHoverToFocus}
+              hoverToBlur={composerHoverToBlur}
               composerSendMode={composerSendMode}
               keybindings={keybindings}
               hoverBoundaryRef={composerPanelRef}
               onAction={onAction}
               onOpenSettingsView={onOpenSettingsView}
-              openPickerDirectory={openPickerDirectory}
-              openPickerRoot={openPickerRoot}
-              removeAttachment={removeAttachment}
-              setDraft={setDraft}
+              setDraft={(next) => {
+                if (sessionTreeOpen) closeSessionTree()
+                setDraft(next)
+              }}
               toggleDictation={toggleDictation}
-              togglePendingPickerAttachment={togglePendingPickerAttachment}
-              onSubmitOverride={
-                showAskQuestions ? () => askQuestionsSubmitRef.current?.() ?? true : undefined
-              }
-              onEscapeOverride={
-                showAskQuestions
-                  ? () => {
-                      void answerNativeQuestions(null)
-                      return true
-                    }
-                  : undefined
-              }
-              onArrowNavigationOverride={
-                showAskQuestions
-                  ? (direction) => askQuestionsArrowNavigationRef.current?.(direction) ?? true
-                  : undefined
-              }
             />
           </div>
           {errorMessage ? (
@@ -405,76 +416,38 @@ export function ComposerPromptSurface({
               {errorMessage}
             </output>
           ) : null}
-          <ComposerFooter
-            availableModels={availableModels}
-            availableThinkingLevels={availableThinkingLevels}
+          <ComposerPromptFooter
+            activeView={activeView}
+            artifactsAvailable={artifactsAvailable}
+            artifactsVisible={artifactsVisible}
+            compact={compact}
             composerPanelRef={composerPanelRef}
             diffBaseline={diffBaseline}
-            model={model}
-            contextUsage={contextUsage}
+            isStreaming={isStreaming}
             messages={messages}
-            compactDisabled={isStreaming || isCompacting || !sessionPath}
-            isCompacting={isCompacting}
             modelButtonRef={modelButtonRef}
             modelMenuOpen={modelMenuOpen}
             modelMenuRef={modelMenuRef}
-            preferPortalModelPopover={preferPortalModelPopover}
             onOpenGitOps={onOpenGitOps}
             onOpenTakeoverTerminal={onOpenTakeoverTerminal}
-            onSelectBaseline={onSetDiffBaseline}
-            onSelectModel={(availableModel) => {
-              if (isConversationComposerView(activeView) && !persistedSessionPath) {
-                return runComposerAction(
-                  'settings.update',
-                  {
-                    key: composerMode === 'chat' ? 'chatModel' : 'codeModel',
-                    provider: availableModel.provider,
-                    modelId: availableModel.id,
-                  },
-                  { closeMenu: false },
-                )
-              }
-
-              return runComposerAction(
-                'composer.model',
-                {
-                  provider: availableModel.provider,
-                  modelId: availableModel.id,
-                  projectId,
-                  sessionPath,
-                },
-                { closeMenu: false },
-              )
-            }}
-            onSelectThinkingLevel={(level) => {
-              if (isConversationComposerView(activeView) && !persistedSessionPath) {
-                return runComposerAction('settings.update', {
-                  key: composerMode === 'chat' ? 'chatThinkingLevel' : 'codeThinkingLevel',
-                  value: level,
-                })
-              }
-
-              return runComposerAction('composer.thinking', {
-                level,
-                projectId,
-                sessionPath,
-              })
-            }}
-            onCompact={() => void compact()}
-            onSetOpenMenu={setOpenMenu}
-            onToggleTerminal={onToggleTerminal}
+            onSetDiffBaseline={onSetDiffBaseline}
             onToggleArtifacts={onToggleArtifacts}
-            projectGitState={projectGitState}
+            onToggleTerminal={onToggleTerminal}
             parentBranchName={parentBranchName}
+            preferPortalModelPopover={preferPortalModelPopover}
+            projectGitState={projectGitState}
             projectId={projectId}
+            runComposerAction={runComposerAction}
+            runtime={runtime}
+            sessionPath={sessionPath}
+            setOpenMenu={setOpenMenu}
             showTerminalControls={showTerminalControls}
             terminalVisible={terminalVisible}
-            artifactsVisible={artifactsVisible}
-            artifactsAvailable={artifactsAvailable}
-            thinkingLevel={thinkingLevel}
-            thinkingLevelLabels={thinkingLevelLabels}
           />
         </section>
+        <div ref={piExtensionStatusLineRef}>
+          <PiExtensionStatusLine statuses={piExtensionStatuses} />
+        </div>
       </div>
 
       <ComposerStopRail

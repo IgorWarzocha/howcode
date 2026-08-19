@@ -1,9 +1,32 @@
 import path from 'node:path'
-import type { ResourceLoader, SettingsManager } from '@earendil-works/pi-coding-agent'
+import type { SettingsManager } from '@earendil-works/pi-coding-agent'
+import type { PiDefaultProjectTrust } from '../../shared/desktop-settings-contracts.ts'
 
 type SettingsManagerFactory = {
-  create: (cwd: string, agentDir?: string | undefined) => SettingsManager
+  create: (
+    cwd: string,
+    agentDir?: string | undefined,
+    options?: { projectTrusted: boolean } | undefined,
+  ) => SettingsManager
   inMemory: (settings?: Record<string, unknown>) => SettingsManager
+}
+
+type DefaultResourceLoaderFactory =
+  typeof import('@earendil-works/pi-coding-agent').DefaultResourceLoader
+
+export function getRuntimeDefaultProjectTrust(options: {
+  SettingsManager: SettingsManagerFactory
+  agentDir: string
+  cwd: string
+}): PiDefaultProjectTrust {
+  return options.SettingsManager.create(options.cwd, options.agentDir).getDefaultProjectTrust()
+}
+
+type ProjectTrustStoreFactory = new (
+  agentDir: string,
+) => {
+  get: (cwd: string) => boolean | null
+  set: (cwd: string, decision: boolean | null) => void
 }
 
 const isolatedResourceSettingsKeys = ['packages', 'extensions', 'skills', 'prompts', 'themes']
@@ -15,13 +38,32 @@ function getSettingsArray(value: unknown) {
 function createIsolatedSettings(
   globalSettings: Record<string, unknown>,
   projectSettings: Record<string, unknown>,
-) {
+): Record<string, unknown> & { extensions?: unknown[] } {
   return {
     ...globalSettings,
     ...projectSettings,
     ...Object.fromEntries(
-      isolatedResourceSettingsKeys.map((key) => [key, getSettingsArray(projectSettings[key])]),
+      isolatedResourceSettingsKeys.map((key) => [
+        key,
+        [...getSettingsArray(globalSettings[key]), ...getSettingsArray(projectSettings[key])],
+      ]),
     ),
+  }
+}
+
+function getStoredProjectTrustDecision(options: {
+  ProjectTrustStore: ProjectTrustStoreFactory
+  agentDir: string
+  cwd: string
+}) {
+  const trustStore = new options.ProjectTrustStore(options.agentDir)
+  let currentDir = path.resolve(options.cwd)
+  while (true) {
+    const decision = trustStore.get(currentDir)
+    if (decision !== null) return decision
+    const parentDir = path.dirname(currentDir)
+    if (parentDir === currentDir) return null
+    currentDir = parentDir
   }
 }
 
@@ -30,13 +72,18 @@ export function createRuntimeSettingsManager(options: {
   cwd: string
   agentDir: string
   settingsCwd?: string | null | undefined
+  additionalExtensions?: string[] | undefined
+  projectTrusted?: boolean | undefined
 }) {
   const diskSettingsManager = options.SettingsManager.create(
     options.settingsCwd ?? options.cwd,
     options.agentDir,
+    options.projectTrusted === undefined || options.settingsCwd
+      ? undefined
+      : { projectTrusted: options.projectTrusted },
   )
 
-  if (!options.settingsCwd) {
+  if (!options.settingsCwd && (options.additionalExtensions?.length ?? 0) === 0) {
     return diskSettingsManager
   }
 
@@ -49,39 +96,86 @@ export function createRuntimeSettingsManager(options: {
     unknown
   >
 
-  return options.SettingsManager.inMemory(createIsolatedSettings(globalSettings, projectSettings))
+  const isolatedSettings = createIsolatedSettings(globalSettings, projectSettings)
+  const additionalExtensions = options.additionalExtensions ?? []
+  if (additionalExtensions.length > 0) {
+    isolatedSettings.extensions = [
+      ...getSettingsArray(isolatedSettings.extensions),
+      ...additionalExtensions,
+    ]
+  }
+
+  return options.SettingsManager.inMemory(isolatedSettings)
 }
 
 export async function createIsolatedRuntimeResourceLoader(options: {
-  DefaultResourceLoader: new (loaderOptions: {
-    cwd: string
-    agentDir: string
-    settingsManager: SettingsManager
-    noSkills?: boolean
-    additionalSkillPaths?: string[]
-    systemPrompt?: string
-  }) => ResourceLoader
+  DefaultResourceLoader: DefaultResourceLoaderFactory
+  additionalSkillPaths?: readonly string[] | undefined
   cwd: string
   agentDir: string
   settingsCwd?: string | null | undefined
   settingsManager: SettingsManager
+  projectTrusted?: boolean | undefined
   systemPrompt?: string | undefined
 }) {
-  if (!options.settingsCwd) {
-    return undefined
-  }
-
+  const additionalSkillPaths = [
+    ...(options.settingsCwd
+      ? [
+          path.join(options.settingsCwd, '.pi', 'skills'),
+          path.join(options.settingsCwd, '.agents', 'skills'),
+        ]
+      : []),
+    ...(options.additionalSkillPaths ?? []),
+  ]
   const resourceLoader = new options.DefaultResourceLoader({
     cwd: options.cwd,
     agentDir: options.agentDir,
     settingsManager: options.settingsManager,
-    noSkills: true,
     ...(options.systemPrompt ? { systemPrompt: options.systemPrompt } : {}),
-    additionalSkillPaths: [
-      path.join(options.settingsCwd, '.pi', 'skills'),
-      path.join(options.settingsCwd, '.agents', 'skills'),
-    ],
+    ...(options.settingsCwd ? { noSkills: true } : {}),
+    ...(additionalSkillPaths.length > 0 ? { additionalSkillPaths } : {}),
   })
-  await resourceLoader.reload()
+  await resourceLoader.reload({
+    resolveProjectTrust: async () => options.projectTrusted ?? false,
+  })
   return resourceLoader
+}
+
+export function resolveRuntimeProjectTrust(options: {
+  ProjectTrustStore: ProjectTrustStoreFactory
+  agentDir: string
+  cwd: string
+  defaultProjectTrust?: PiDefaultProjectTrust | undefined
+  hasTrustRequiringProjectResources: (cwd: string) => boolean
+  settingsCwd?: string | null | undefined
+}) {
+  const trustCwd = options.cwd
+  if (!options.hasTrustRequiringProjectResources(trustCwd)) return true
+
+  const storedDecision = getStoredProjectTrustDecision(options)
+  if (storedDecision !== null) return storedDecision
+  return options.defaultProjectTrust === 'always'
+}
+
+export function getRuntimeProjectTrustRequest(options: {
+  ProjectTrustStore: ProjectTrustStoreFactory
+  agentDir: string
+  cwd: string
+  defaultProjectTrust?: PiDefaultProjectTrust | undefined
+  hasTrustRequiringProjectResources: (cwd: string) => boolean
+}) {
+  if (!options.hasTrustRequiringProjectResources(options.cwd)) return null
+  const storedDecision = getStoredProjectTrustDecision(options)
+  return storedDecision === null && (options.defaultProjectTrust ?? 'ask') === 'ask'
+    ? { cwd: options.cwd }
+    : null
+}
+
+export function setRuntimeProjectTrust(options: {
+  ProjectTrustStore: ProjectTrustStoreFactory
+  agentDir: string
+  cwd: string
+  trusted: boolean
+}) {
+  new options.ProjectTrustStore(options.agentDir).set(options.cwd, options.trusted)
 }

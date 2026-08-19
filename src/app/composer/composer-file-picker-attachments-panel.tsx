@@ -1,8 +1,13 @@
 import { isSafeExternalUrl } from '@howcode/shared/external-url'
-import { File, Folder, Globe, X } from 'lucide-react'
+import { File, Folder, Globe, Loader2, Upload, X } from 'lucide-react'
 import type { DragEvent } from 'react'
 import type { ComposerAttachment } from '../desktop/types'
-import { appToneMutedClass, appToneTextClass, appTypeTinyClass } from '../ui/classes'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeTinyClass,
+  composerAttachmentPickerTextClass,
+} from '../ui/classes'
 import { cn } from '../utils/cn'
 import {
   getAttachmentDisplayLabel,
@@ -15,8 +20,11 @@ type ComposerFilePickerAttachmentsPanelProps = {
   className?: string
   draggedAttachments: ComposerAttachment[]
   dropActive: boolean
+  browserUploadAvailable: boolean
+  uploadingDeviceFiles: boolean
   onDragActiveChange: (active: boolean) => void
   onDrop: (event: DragEvent<HTMLDivElement>) => void
+  onPickDeviceFiles: () => void
   onRemoveAttachment: (attachmentPath: string) => void
 }
 
@@ -37,15 +45,18 @@ export function ComposerFilePickerAttachmentsPanel({
   className,
   draggedAttachments,
   dropActive,
+  browserUploadAvailable,
+  uploadingDeviceFiles,
   onDragActiveChange,
   onDrop,
+  onPickDeviceFiles,
   onRemoveAttachment,
 }: ComposerFilePickerAttachmentsPanelProps) {
   return (
     <section
       role="application"
       className={cn(
-        'min-h-0 overflow-x-hidden overflow-y-auto border-r border-[color:var(--border)] py-2 pr-2 pl-2',
+        'min-h-0 overflow-x-hidden overflow-y-auto border-r border-[color:var(--border)] p-1.5',
         dropActive && 'bg-[color:var(--surface-hover)]',
         className,
       )}
@@ -62,13 +73,31 @@ export function ComposerFilePickerAttachmentsPanel({
       onDrop={onDrop}
     >
       <div className="grid min-h-full content-start gap-0 max-[520px]:min-h-0 max-[520px]:gap-1">
+        {browserUploadAvailable ? (
+          <button
+            type="button"
+            className={cn(
+              'mb-1 inline-flex h-5 min-w-0 items-center gap-1.5 rounded-md px-1.5 text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:opacity-60',
+              composerAttachmentPickerTextClass,
+            )}
+            onClick={onPickDeviceFiles}
+            disabled={uploadingDeviceFiles}
+          >
+            {uploadingDeviceFiles ? (
+              <Loader2 size={11} className="shrink-0 animate-spin" />
+            ) : (
+              <Upload size={11} className="shrink-0" />
+            )}
+            <span className="truncate">{uploadingDeviceFiles ? 'Uploading…' : 'Device'}</span>
+          </button>
+        ) : null}
         {attachments.length > 0 ? (
           attachments.map((attachment) => (
             <div
               key={attachment.path}
               className={cn(
-                'flex h-5 min-w-0 items-center gap-1 rounded-sm border border-transparent bg-transparent px-1.5 transition-colors hover:bg-[color:var(--surface-hover)]',
-                appTypeTinyClass,
+                'flex min-h-5 min-w-0 items-center gap-1 rounded-sm border border-transparent bg-transparent px-1 py-0.5 transition-colors hover:bg-[color:var(--surface-hover)]',
+                composerAttachmentPickerTextClass,
                 appToneTextClass,
               )}
               title={attachment.path}

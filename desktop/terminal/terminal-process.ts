@@ -1,25 +1,37 @@
 import type { TerminalOpenRequest } from '../../shared/terminal-contracts.ts'
-import { clampHistory, flushSession, nowIso, persistSession } from './session-history.ts'
-import type { TerminalSessionRecord } from './session-record.ts'
-import { emitTerminalEvent, getTerminalSession } from './session-store.ts'
+import { stopTerminalProcess } from './process-stop.ts'
 import {
-  getTerminalAdapter,
-  resolveTerminalCommand,
-  resolveTerminalEnv,
-} from './terminal-command.ts'
+  clampHistory,
+  flushSession,
+  nowIso,
+  persistSession,
+  reportTranscriptWriteFailure,
+} from './session-history.ts'
+import type { TerminalSessionRecord } from './session-record.ts'
+import type { TerminalSessionStore } from './session-store.ts'
+import { resolveTerminalCommand, resolveTerminalEnv } from './terminal-command.helpers.ts'
 import { hasVisibleTerminalContent } from './terminal-visibility.ts'
+import type { PtyAdapter } from './types.ts'
 
 export function clearSessionBindings(record: TerminalSessionRecord) {
   for (const dispose of record.cleanup) {
-    dispose()
+    try {
+      dispose()
+    } catch (error) {
+      console.warn('Failed to dispose a terminal process callback.', error)
+    }
   }
 
   record.cleanup = []
 }
 
-export async function startProcess(record: TerminalSessionRecord, reason: 'started' | 'restarted') {
+export async function startProcess(
+  store: TerminalSessionStore,
+  adapter: PtyAdapter,
+  record: TerminalSessionRecord,
+  reason: 'started' | 'restarted',
+) {
   clearSessionBindings(record)
-  const adapter = getTerminalAdapter()
   const request = {
     projectId: record.snapshot.projectId,
     sessionPath: record.snapshot.sessionPath,
@@ -34,14 +46,14 @@ export async function startProcess(record: TerminalSessionRecord, reason: 'start
     const processHandle = await adapter.spawn({
       shell: command.shell,
       args: command.args,
-      cwd: record.snapshot.cwd,
+      cwd: command.cwd ?? record.snapshot.cwd,
       cols: record.snapshot.cols,
       rows: record.snapshot.rows,
       env: resolveTerminalEnv(request),
     })
 
-    if (getTerminalSession(record.snapshot.sessionId) !== record) {
-      processHandle.kill()
+    if (store.get(record.snapshot.sessionId) !== record) {
+      await stopTerminalProcess(processHandle, record.forceKillOnClose)
       return
     }
 
@@ -66,7 +78,7 @@ export async function startProcess(record: TerminalSessionRecord, reason: 'start
           updatedAt: nowIso(),
         }
         persistSession(record)
-        emitTerminalEvent({
+        store.emit({
           type: 'output',
           sessionId: record.snapshot.sessionId,
           data,
@@ -87,8 +99,8 @@ export async function startProcess(record: TerminalSessionRecord, reason: 'start
           exitSignal: event.signal,
           updatedAt: nowIso(),
         }
-        flushSession(record)
-        emitTerminalEvent({
+        void flushSession(record).catch(reportTranscriptWriteFailure)
+        store.emit({
           type: 'exited',
           sessionId: record.snapshot.sessionId,
           exitCode: event.exitCode,
@@ -98,15 +110,15 @@ export async function startProcess(record: TerminalSessionRecord, reason: 'start
       }),
     )
 
-    flushSession(record)
-    emitTerminalEvent({
+    void flushSession(record).catch(reportTranscriptWriteFailure)
+    store.emit({
       type: reason,
       sessionId: record.snapshot.sessionId,
       snapshot: record.snapshot,
       createdAt: nowIso(),
     })
   } catch (error) {
-    if (getTerminalSession(record.snapshot.sessionId) !== record) {
+    if (store.get(record.snapshot.sessionId) !== record) {
       return
     }
 
@@ -117,8 +129,8 @@ export async function startProcess(record: TerminalSessionRecord, reason: 'start
       pid: null,
       updatedAt: nowIso(),
     }
-    flushSession(record)
-    emitTerminalEvent({
+    void flushSession(record).catch(reportTranscriptWriteFailure)
+    store.emit({
       type: 'error',
       sessionId: record.snapshot.sessionId,
       message: error instanceof Error ? error.message : 'Unable to open terminal.',

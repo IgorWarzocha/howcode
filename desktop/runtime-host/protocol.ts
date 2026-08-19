@@ -8,17 +8,16 @@ import type {
   ComposerStateRequest,
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
-  DesktopEvent,
   PiConfiguredPackage,
   PiConfiguredSkill,
   PiPackageMutationResult,
   PiSettings,
   PiSkillMutationResult,
   PiThemeState,
-  SkillCreatorSessionState,
   ThreadData,
   ThreadSearchResult,
 } from '../../shared/desktop-contracts.ts'
+import type { SessionTreeList } from '../../shared/session-tree.ts'
 import type { CommitMessageContext } from '../project-git.ts'
 
 export type RuntimeHostRequestMap = {
@@ -88,15 +87,14 @@ export type RuntimeHostRequestMap = {
     chat?: boolean | undefined
   }
   loadThreadSnapshot: { sessionPath: string; historyCompactions?: number | undefined }
-  searchThreadSnapshot: { sessionPath: string; query: string }
-  startSkillCreatorSession: {
-    prompt: string
-    local?: boolean | undefined
-    projectPath?: string | undefined | null | undefined
-    chat?: boolean | undefined
+  loadSessionTreeList: { sessionPath: string }
+  loadThreadPreviewAtEntry: {
+    sessionPath: string
+    targetEntryId: string
+    historyCompactions?: number | undefined
   }
-  continueSkillCreatorSession: { sessionId: string; prompt: string }
-  closeSkillCreatorSession: { sessionId: string }
+  searchThreadSnapshot: { sessionPath: string; query: string }
+  renameThreadSession: { sessionPath: string; name: string }
   generateGitCommitMessage: {
     request: ComposerStateRequest
     context: CommitMessageContext
@@ -121,9 +119,27 @@ export type RuntimeHostRequestMap = {
     queueSnapshotKey: string
     queueMode: Exclude<ComposerStreamingBehavior, 'stop'>
   }
-  answerNativeAskQuestions: ComposerStateRequest & {
+  answerPiExtensionDialog: ComposerStateRequest & {
     requestId: string
-    answers: string[][] | null
+    cancelled?: boolean | undefined
+    confirmed?: boolean | undefined
+    value?: string | undefined
+  }
+  invokePiExtensionShortcut: ComposerStateRequest & {
+    editorSelectionEnd?: number | undefined
+    editorSelectionStart?: number | undefined
+    editorText?: string | undefined
+    shortcut: string
+  }
+  setProjectTrust: ComposerStateRequest & { cwd: string; trusted: boolean }
+  labelSessionTreeEntry: ComposerStateRequest & {
+    targetEntryId: string
+    label?: string | undefined | null
+  }
+  navigateSessionTree: ComposerStateRequest & {
+    targetEntryId: string
+    summarize: boolean
+    label?: string | undefined | null
   }
 }
 
@@ -156,10 +172,14 @@ export type RuntimeHostResponseMap = {
     threadId: string
     thread: ThreadData
   }
+  loadSessionTreeList: SessionTreeList
+  loadThreadPreviewAtEntry: {
+    projectId: string
+    threadId: string
+    thread: ThreadData
+  }
   searchThreadSnapshot: ThreadSearchResult
-  startSkillCreatorSession: SkillCreatorSessionState
-  continueSkillCreatorSession: SkillCreatorSessionState
-  closeSkillCreatorSession: { ok: boolean }
+  renameThreadSession: { projectId: string; threadId: string; title: string }
   generateGitCommitMessage: string | null
   setComposerModel: { ok: true }
   setComposerThinkingLevel: { ok: true }
@@ -170,23 +190,28 @@ export type RuntimeHostResponseMap = {
   }
   stopComposerRun: { ok: true }
   dequeueComposerPrompt: string | null
-  answerNativeAskQuestions: { ok: boolean }
+  answerPiExtensionDialog: { ok: boolean }
+  invokePiExtensionShortcut: {
+    editorSelectionEnd?: number | undefined
+    editorSelectionStart?: number | undefined
+    editorText?: string | undefined
+    ok: boolean
+  }
+  setProjectTrust: { ok: true }
+  labelSessionTreeEntry: { ok: true }
+  navigateSessionTree: {
+    cancelled: boolean
+    aborted?: boolean
+    editorText?: string
+  }
 }
 
-export type RuntimeHostMainRequestMap = {
-  getSessionNativeExtensions: { sessionPath: string }
-  setSessionNativeExtensions: { sessionPath: string; enabled: string[] }
-  snapshotDefaultNativeExtensions: Record<string, never>
+export type RuntimeHostArtifactRequestMap = {
   createArtifact: {
     conversationId: string
     slug: string
     kind: ArtifactKind
     content: string
-  }
-  updateArtifact: {
-    slug: string
-    content: string
-    conversationId?: string | undefined | null | undefined
   }
   editArtifact: {
     slug: string
@@ -197,18 +222,14 @@ export type RuntimeHostMainRequestMap = {
   listArtifacts: { conversationId: string }
 }
 
-export type RuntimeHostMainResponseMap = {
-  getSessionNativeExtensions: string[] | null
-  setSessionNativeExtensions: { ok: true }
-  snapshotDefaultNativeExtensions: string[]
+export type RuntimeHostArtifactResponseMap = {
   createArtifact: Artifact
-  updateArtifact: Artifact
   editArtifact: Artifact
   getArtifact: Artifact | null
   listArtifacts: Artifact[]
 }
 
-export type RuntimeHostMainRequestName = keyof RuntimeHostMainRequestMap
+export type RuntimeHostArtifactRequestName = keyof RuntimeHostArtifactRequestMap
 
 export type RuntimeHostRequestName = keyof RuntimeHostRequestMap
 
@@ -221,54 +242,13 @@ export type RuntimeHostRequestMessage<
   payload: RuntimeHostRequestMap[TName]
 }
 
-export type RuntimeHostResponseMessage =
-  | {
-      type: 'response'
-      id: string
-      ok: true
-      result: RuntimeHostResponseMap[RuntimeHostRequestName]
-    }
-  | { type: 'response'; id: string; ok: false; error: string; stack?: string | undefined }
-
-export type RuntimeHostEventMessage = {
-  type: 'desktop-event'
-  event: DesktopEvent
-}
-
-export type RuntimeHostCrashMessage = {
-  type: 'host-error'
-  error: string
-  stack?: string | undefined
-}
-
-export type RuntimeHostMainRequestMessage<
-  TName extends RuntimeHostMainRequestName = RuntimeHostMainRequestName,
+export type RuntimeHostArtifactRequest<
+  TName extends RuntimeHostArtifactRequestName = RuntimeHostArtifactRequestName,
 > = {
-  type: 'main-request'
-  id: string
   name: TName
-  payload: RuntimeHostMainRequestMap[TName]
+  payload: RuntimeHostArtifactRequestMap[TName]
 }
 
-export type RuntimeHostMainResponseMessage =
-  | {
-      type: 'main-response'
-      id: string
-      ok: true
-      result: RuntimeHostMainResponseMap[RuntimeHostMainRequestName]
-    }
-  | {
-      type: 'main-response'
-      id: string
-      ok: false
-      error: string
-      stack?: string | undefined
-    }
+export type { RuntimeHostToMainMessage } from './runtime-host-ipc-schema.ts'
 
-export type RuntimeHostToMainMessage =
-  | RuntimeHostResponseMessage
-  | RuntimeHostEventMessage
-  | RuntimeHostCrashMessage
-  | RuntimeHostMainRequestMessage
-
-export type RuntimeMainToHostMessage = RuntimeHostRequestMessage | RuntimeHostMainResponseMessage
+export type RuntimeMainToHostMessage = RuntimeHostRequestMessage

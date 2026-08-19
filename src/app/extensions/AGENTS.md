@@ -1,2 +1,2 @@
-- Always read `.pi/skills/howcode-dual-native-extension/SKILL.md` if touching Howcode-native extension concepts; this folder is for ordinary Pi package extensions.
-- Composer-adjacent native extension overlays must follow the queued-prompt/composer width grammar; do not add independent centered max-width cards.
+- The controller owns configured-package queries and install/remove mutations. Install form state stays in `install-extensions-section.tsx`; catalog query and selection stay in `useExtensionCatalog.ts`.
+- Reuse `pi-resources/*` for install scope, target-selection lifecycle, pending actions, and external links.

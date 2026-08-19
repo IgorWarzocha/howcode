@@ -50,7 +50,7 @@ function appendFiles(
   current: RenderablePatch | null,
   files: FileRenderablePatch['files'],
 ): RenderablePatch {
-  if (!current || current.kind !== 'files') return { kind: 'files', files }
+  if (current?.kind !== 'files') return { kind: 'files', files }
   const nextFiles = [...current.files]
   const indexByKey = new Map(
     nextFiles.map((fileDiff, index) => [buildFileDiffRenderKey(fileDiff), index] as const),

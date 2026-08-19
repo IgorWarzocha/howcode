@@ -23,25 +23,10 @@ export type PiPackageCatalogPage = {
   items: PiPackageCatalogItem[]
 }
 
-export type PiConfiguredPackageType = 'npm' | 'git' | 'local'
+export type PiConfiguredPackage = typeof PiConfiguredPackageSchema.Type
+export type PiConfiguredPackageType = PiConfiguredPackage['type']
 
-export type PiConfiguredPackage = {
-  resourceKind: 'package' | 'extension'
-  source: string
-  identityKey: string
-  displayName: string
-  type: PiConfiguredPackageType
-  scope: 'user' | 'project' | 'chat'
-  filtered: boolean
-  installedPath: string | null
-  settingsPath: string | null
-}
-
-export type PiPackageMutationResult = {
-  source: string
-  normalizedSource: string
-  configuredPackages: PiConfiguredPackage[]
-}
+export type PiPackageMutationResult = typeof PiPackageMutationResultSchema.Type
 
 export type PiSkillCatalogItem = {
   id: string
@@ -61,34 +46,13 @@ export type PiSkillCatalogPage = {
   items: PiSkillCatalogItem[]
 }
 
-export type PiConfiguredSkill = {
-  source: string
-  identityKey: string
-  displayName: string
-  description: string | null
-  scope: 'user' | 'project' | 'chat'
-  provenance: 'skills.sh' | 'local'
-  installedPath: string
-  skillFilePath: string
-  sourceRepo: string | null
-  sourceUrl: string | null
-}
+export type PiConfiguredSkill = typeof PiConfiguredSkillSchema.Type
 
-export type PiSkillMutationResult = {
-  source: string
-  normalizedSource: string
-  configuredSkills: PiConfiguredSkill[]
-}
+export type PiSkillMutationResult = typeof PiSkillMutationResultSchema.Type
 
-export type SkillCreatorSessionMessage = {
-  id: string
-  role: 'assistant' | 'user'
-  content: string
-}
-
-export type SkillCreatorSessionState = {
-  sessionId: string
-  messages: SkillCreatorSessionMessage[]
-  latestResponse: string | null
-  createdSkillPath: string | null
-}
+import type {
+  PiConfiguredPackageSchema,
+  PiConfiguredSkillSchema,
+  PiPackageMutationResultSchema,
+  PiSkillMutationResultSchema,
+} from './desktop-package-schema'

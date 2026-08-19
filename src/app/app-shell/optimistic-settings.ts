@@ -1,3 +1,4 @@
+import { isComposerThinkingLevel } from '@howcode/shared/composer-thinking-level'
 import {
   isKeybindingCommandId,
   isValidAccelerator,
@@ -18,8 +19,6 @@ const optimisticSettingKeys = new Set([
   'codeThinkingLevel',
   'gitCommitMessageModel',
   'gitCommitMessageThinkingLevel',
-  'skillCreatorModel',
-  'skillCreatorThinkingLevel',
   'composerStreamingBehavior',
   'dictationModelId',
   'dictationMaxDurationSeconds',
@@ -37,7 +36,6 @@ const optimisticSettingKeys = new Set([
   'gitDiffIncludeUntrackedDefault',
   'projectDeletionMode',
   'useAgentsSkillsPaths',
-  'howcodeNativeAskQuestions',
   'devUpdateBranch',
   'betaUpdateBranch',
   'piTuiTakeover',
@@ -47,14 +45,6 @@ const optimisticSettingKeys = new Set([
   'keybindings',
   'composerSendMode',
 ])
-
-const isThinkingLevel = (value: unknown): value is ComposerThinkingLevel =>
-  value === 'off' ||
-  value === 'minimal' ||
-  value === 'low' ||
-  value === 'medium' ||
-  value === 'high' ||
-  value === 'xhigh'
 
 function getOptimisticModelSelection(
   payload: ActionPayload,
@@ -70,10 +60,11 @@ function getOptimisticFavoriteFolders(payload: ActionPayload, fallback: string[]
   return Array.isArray(payload.folders)
     ? [
         ...new Set(
-          payload.folders
-            .filter((folder): folder is string => typeof folder === 'string')
-            .map((folder) => folder.trim())
-            .filter(Boolean),
+          payload.folders.flatMap((folder) => {
+            if (typeof folder !== 'string') return []
+            const trimmed = folder.trim()
+            return trimmed ? [trimmed] : []
+          }),
         ),
       ]
     : fallback
@@ -107,12 +98,6 @@ function applyOptimisticModelSetting(
       nextSettings.gitCommitMessageModel,
     )
   }
-  if (payload.key === 'skillCreatorModel') {
-    nextSettings.skillCreatorModel = getOptimisticModelSelection(
-      payload,
-      nextSettings.skillCreatorModel,
-    )
-  }
 }
 
 function getResettableThinkingLevel(
@@ -120,7 +105,7 @@ function getResettableThinkingLevel(
   fallback: ComposerThinkingLevel | null,
 ) {
   if (payload.reset === true) return null
-  return isThinkingLevel(payload.value) ? payload.value : fallback
+  return isComposerThinkingLevel(payload.value) ? payload.value : fallback
 }
 
 function applyOptimisticThinkingSetting(
@@ -139,11 +124,8 @@ function applyOptimisticThinkingSetting(
       nextSettings.codeThinkingLevel,
     )
   }
-  if (payload.key === 'gitCommitMessageThinkingLevel' && isThinkingLevel(payload.value)) {
+  if (payload.key === 'gitCommitMessageThinkingLevel' && isComposerThinkingLevel(payload.value)) {
     nextSettings.gitCommitMessageThinkingLevel = payload.value
-  }
-  if (payload.key === 'skillCreatorThinkingLevel' && isThinkingLevel(payload.value)) {
-    nextSettings.skillCreatorThinkingLevel = payload.value
   }
 }
 
@@ -152,18 +134,17 @@ function applyOptimisticBooleanSetting(
   payload: ActionPayload,
 ) {
   if (typeof payload.value !== 'boolean') return
-  if (payload.key === 'showDictationButton') nextSettings.showDictationButton = payload.value
-  if (payload.key === 'initializeGitOnProjectCreate')
-    nextSettings.initializeGitOnProjectCreate = payload.value
-  if (payload.key === 'projectDashboardEnabled')
-    nextSettings.projectDashboardEnabled = payload.value
-  if (payload.key === 'gitDiffFileTreeDefaultVisible')
-    nextSettings.gitDiffFileTreeDefaultVisible = payload.value
-  if (payload.key === 'gitDiffIncludeUntrackedDefault')
-    nextSettings.gitDiffIncludeUntrackedDefault = payload.value
-  if (payload.key === 'useAgentsSkillsPaths') nextSettings.useAgentsSkillsPaths = payload.value
-  if (payload.key === 'howcodeNativeAskQuestions')
-    nextSettings.howcodeNativeAskQuestions = payload.value
+  const directBooleanKeys = [
+    'showDictationButton',
+    'initializeGitOnProjectCreate',
+    'projectDashboardEnabled',
+    'gitDiffFileTreeDefaultVisible',
+    'gitDiffIncludeUntrackedDefault',
+    'useAgentsSkillsPaths',
+  ] as const
+  if (directBooleanKeys.includes(payload.key as (typeof directBooleanKeys)[number])) {
+    nextSettings[payload.key as (typeof directBooleanKeys)[number]] = payload.value
+  }
   if (payload.key === 'devUpdateBranch' || payload.key === 'betaUpdateBranch') {
     nextSettings.devUpdateBranch = payload.value
   }

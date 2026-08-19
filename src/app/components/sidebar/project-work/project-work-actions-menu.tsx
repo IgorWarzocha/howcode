@@ -1,10 +1,55 @@
-import { FolderOpen, Pencil, Star, Trash2 } from 'lucide-react'
+import { IconButton } from '@howcode/common/icon-button'
+import { FolderOpen, MoreHorizontal, Pencil, Star, Trash2 } from 'lucide-react'
 import { forwardRef, useEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project } from '../../../types'
 import { WorktreeSmallIcon } from '../../../ui/icons/worktree-small-icon'
+import { useProjectWorkRowMenu } from './useProjectWorkRowMenu'
 
-export const ProjectWorkActionsMenu = forwardRef<
+export function ProjectWorkActionsMenuButton({
+  project,
+  onAction,
+  onRename,
+}: {
+  project: Project
+  onAction: DesktopActionInvoker
+  onRename?: (() => void) | undefined
+}) {
+  const menu = useProjectWorkRowMenu('project')
+
+  return (
+    <div className="sidebar-project-work-project-menu-anchor">
+      <IconButton
+        ref={menu.triggerRef}
+        label="Project actions"
+        icon={<MoreHorizontal size={13} />}
+        tooltipPlacement="right"
+        className="sidebar-project-work-project-menu-button h-7 w-7 rounded-md"
+        onClick={() => menu.setOpen((current) => !current)}
+      />
+      {menu.open ? (
+        <ProjectWorkActionsMenu
+          ref={menu.panelRef}
+          right={menu.right}
+          width={menu.width}
+          project={project}
+          onAction={onAction}
+          onClose={() => menu.setOpen(false)}
+          onRename={
+            onRename
+              ? () => {
+                  menu.setOpen(false)
+                  onRename()
+                }
+              : undefined
+          }
+        />
+      ) : null}
+    </div>
+  )
+}
+
+const ProjectWorkActionsMenu = forwardRef<
   HTMLDivElement,
   {
     project: Project
@@ -29,10 +74,6 @@ export const ProjectWorkActionsMenu = forwardRef<
     worktreeDirInputRef.current?.focus()
     worktreeDirInputRef.current?.select()
   }, [editingWorktreeDir])
-  useEffect(() => {
-    if (editingWorktreeDir) return
-    setWorktreeDirDraft(project.worktreeDirectory ?? './.worktrees')
-  }, [editingWorktreeDir, project.worktreeDirectory])
   const runProjectAction = (
     action: 'project.open-in-file-manager' | 'project.pin' | 'project.remove-project',
   ) => {
@@ -49,7 +90,7 @@ export const ProjectWorkActionsMenu = forwardRef<
   const saveWorktreeDirectory = () => {
     const worktreeDirectory = worktreeDirDraft.trim() || './.worktrees'
     void onAction('workspace.set-worktree-directory', {
-      projectId: project.worktree?.rootProjectId ?? project.id,
+      rootProjectId: project.worktree?.rootProjectId ?? project.id,
       worktreeDirectory,
     })
     setEditingWorktreeDir(false)
@@ -104,7 +145,10 @@ export const ProjectWorkActionsMenu = forwardRef<
         <button
           type="button"
           className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-project-work-project-actions-menu-item"
-          onClick={() => setEditingWorktreeDir(true)}
+          onClick={() => {
+            setWorktreeDirDraft(project.worktreeDirectory ?? './.worktrees')
+            setEditingWorktreeDir(true)
+          }}
           role="menuitem"
         >
           <WorktreeSmallIcon size={12} />

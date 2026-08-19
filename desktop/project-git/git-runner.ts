@@ -184,7 +184,7 @@ export function runGitStreamingWithOptions(
 }
 
 export function getNonInteractiveGitEnv(baseEnv?: NodeJS.ProcessEnv) {
-  return {
+  const env: NodeJS.ProcessEnv = {
     ...process.env,
     ...baseEnv,
     GIT_TERMINAL_PROMPT: '0',
@@ -193,6 +193,10 @@ export function getNonInteractiveGitEnv(baseEnv?: NodeJS.ProcessEnv) {
     SSH_ASKPASS: 'echo',
     GIT_SSH_COMMAND: 'ssh -oBatchMode=yes -oConnectTimeout=5',
   }
+  for (const key of ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_COMMON_DIR', 'GIT_INDEX_FILE']) {
+    if (!Object.hasOwn(baseEnv ?? {}, key)) delete env[key]
+  }
+  return env
 }
 
 export function formatGitCommandError(error: unknown) {

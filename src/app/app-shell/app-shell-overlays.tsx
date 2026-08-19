@@ -1,14 +1,15 @@
 import { TerminalPanel } from '@howcode/workspace-shell'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
-import { useCallback, useRef } from 'react'
+import { useCallback } from 'react'
 import type { ProjectDiffBaseline } from '../desktop/types'
+import { useLatestRef } from '../hooks/useLatestRef'
 import { cn } from '../utils/cn'
 import type { AppShellController } from './useAppShellController'
 
 const TERMINAL_DRAWER_OFFSET = 'min(28rem, calc(100% - 2.5rem))'
 
 type AppShellOverlaysProps = {
-  controller: AppShellController
+  controller: Pick<AppShellController, 'gitOps' | 'projects' | 'takeover' | 'terminal'>
   composerProjectId: string
   diffBaseline: ProjectDiffBaseline
   takeoverPresent: boolean
@@ -20,12 +21,9 @@ type AppShellOverlaysProps = {
   sidebarCollapsed: boolean
   sidebarCompactMode: boolean
   sidebarOverlayOpen: boolean
-  workspaceContentClass: string
   onToggleSidebar: () => void
   onOpenGitOps: () => void
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
-  hoverToFocus?: boolean
-  hoverToBlur?: boolean
 }
 
 type TakeoverSidebarButtonProps = {
@@ -83,20 +81,17 @@ export function AppShellOverlays({
   onToggleSidebar,
   onOpenGitOps,
   onSetDiffBaseline,
-  hoverToFocus = true,
-  hoverToBlur = false,
 }: AppShellOverlaysProps) {
-  const controllerRef = useRef(controller)
-  const { projectGitState } = controller
-  controllerRef.current = controller
+  const controllerRef = useLatestRef(controller)
+  const projectGitState = controller.projects.gitState
 
   const handleReturnToDesktopFromTakeover = useCallback(() => {
-    controllerRef.current.handleReturnToDesktopFromTakeover()
-  }, [])
+    controllerRef.current.takeover.returnToDesktop()
+  }, [controllerRef])
 
   const handleToggleTerminal = useCallback(() => {
-    controllerRef.current.handleToggleTerminal()
-  }, [])
+    controllerRef.current.terminal.toggle()
+  }, [controllerRef])
   const sidebarButtonProps = {
     sidebarCollapsed,
     sidebarCompactMode,
@@ -134,8 +129,6 @@ export function AppShellOverlays({
               projectGitState={projectGitState}
               diffBaseline={diffBaseline}
               onSetDiffBaseline={onSetDiffBaseline}
-              hoverToFocus={hoverToFocus}
-              hoverToBlur={hoverToBlur}
             />
           </div>
         </div>

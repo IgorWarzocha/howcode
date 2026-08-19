@@ -24,7 +24,7 @@ export function shouldSuppressExternalThreadUpdate(sessionPath: string, now = Da
   }
 
   const lastInternalUpdateAt = recentInternalThreadUpdateAt.get(sessionPath)
-  if (!lastInternalUpdateAt) {
+  if (lastInternalUpdateAt === undefined) {
     return false
   }
 

@@ -59,6 +59,11 @@ function formatCost(value: number | null | undefined) {
   return costFormatter.format(value)
 }
 
+function formatPercent(value: number | null | undefined) {
+  if (value === null || value === undefined) return 'Unknown'
+  return `${value.toFixed(1)}%`
+}
+
 function getMessageUsageTotals(messages: Message[] | undefined): UsageTotals | null {
   if (!messages || messages.length === 0) return null
 
@@ -281,12 +286,6 @@ export function ComposerContextMeter({
     setPinned(false)
   }, [clearHoverTriangle, dismissSignal])
 
-  useEffect(() => {
-    if (open) {
-      loadUsageTotals()
-    }
-  }, [loadUsageTotals, open])
-
   return (
     <div
       role="application"
@@ -313,13 +312,13 @@ export function ComposerContextMeter({
       </button>
 
       {open ? (
-        // Passive hover preview: keep above the thread, but below interactive composer popovers.
+        // Passive hover preview: keep above composer-adjacent extension UI.
         <PopoverPanel
           surface={false}
           ref={popoverRef}
           role="dialog"
           className={cn(
-            'absolute bottom-full left-0 grid w-56 gap-2 rounded-xl bg-[color:var(--panel)] p-3',
+            'absolute bottom-full left-0 grid w-56 gap-2 rounded-xl bg-[color:var(--panel)] p-3 shadow-[0_18px_42px_rgba(0,0,0,0.34)]',
             composerPopoverContextLayerClass,
             appTypeSmallClass,
             appToneMutedClass,
@@ -387,7 +386,13 @@ export function ComposerContextMeter({
             <div className="flex justify-between gap-3">
               <span>Usage</span>
               <span className={cn(appTypeCodeClass, appToneTextClass)}>
-                {percent === null || percent === undefined ? 'Unknown' : `${percent.toFixed(1)}%`}
+                {formatPercent(percent)}
+              </span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span>Latest cache hit</span>
+              <span className={cn(appTypeCodeClass, appToneTextClass)}>
+                {formatPercent(contextUsage?.latestCacheHitRate)}
               </span>
             </div>
           </div>
