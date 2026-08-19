@@ -1,7 +1,8 @@
+import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { chmod, mkdir, readFile, rename, rm } from 'node:fs/promises'
 import path from 'node:path'
-import { x as extractTar } from 'tar'
+import { extractUpdateArchive } from './update-archive'
 import { withUpdateLock } from './update-lock'
 import {
   getAppResourcesPath,
@@ -77,7 +78,7 @@ async function installUpdateBundleUnderLock(
     (await isValidInstall(paths, target))
   if (!existingCacheTrusted) {
     temporaryPaths.root = path.join(paths.cacheRoot, `.tmp-update-${Date.now()}-${process.pid}`)
-    temporaryPaths.installDir = `${paths.installDir}.partial`
+    temporaryPaths.installDir = `${paths.installDir}.partial-${process.pid}-${randomUUID()}`
     const archivePath = path.join(temporaryPaths.root, `howcode-${target.os}-${target.arch}.tar.gz`)
     await rm(temporaryPaths.root, { recursive: true, force: true })
     await rm(temporaryPaths.installDir, { recursive: true, force: true })
@@ -89,7 +90,7 @@ async function installUpdateBundleUnderLock(
     }
     onInstalling()
     await mkdir(temporaryPaths.installDir, { recursive: true })
-    await extractTar({ file: archivePath, cwd: temporaryPaths.installDir })
+    await extractUpdateArchive(archivePath, temporaryPaths.installDir)
     const extractedExecutablePath = path.join(temporaryPaths.installDir, target.executable)
     if (!existsSync(extractedExecutablePath)) {
       throw new Error(`Downloaded archive did not contain ${target.executable}.`)

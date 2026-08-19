@@ -3,7 +3,12 @@ import viteConfig from './vite.config'
 
 export default mergeConfig(viteConfig, {
   test: {
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'desktop/**/*.test.ts'],
+    include: [
+      'src/**/*.test.ts',
+      'src/**/*.test.tsx',
+      'desktop/**/*.test.ts',
+      'packages/howcode/test/**/*.test.ts',
+    ],
     exclude: ['node_modules/**', 'dist/**', 'build/**', 'Frameworks/**'],
   },
 })
