@@ -1,6 +1,5 @@
 import { app } from 'electron'
 import type { AppUpdateState } from '../../../../shared/desktop-app-update-contracts'
-import { spawnDetached } from './spawn-detached'
 import { installUpdateBundle } from './update-installer'
 import { isUpdateCandidate, type UpdateChannel } from './update-protocol'
 import { findRestorableUpdate, getUpdatePruneKeepDirs } from './update-recovery'
@@ -131,7 +130,10 @@ export class AppUpdater {
         channel: this.installedUpdate.channel,
         error: null,
       })
-      await spawnDetached(this.installedUpdate.executablePath, this.relaunchArgs)
+      app.relaunch({
+        execPath: this.installedUpdate.executablePath,
+        args: [...this.relaunchArgs],
+      })
       app.quit()
       return true
     } catch (error) {
@@ -286,7 +288,10 @@ export class AppUpdater {
         return this.state
       }
       this.setState({ status: 'restarting', channel: this.installedUpdate.channel, error: null })
-      await spawnDetached(this.installedUpdate.executablePath, this.relaunchArgs)
+      app.relaunch({
+        execPath: this.installedUpdate.executablePath,
+        args: [...this.relaunchArgs],
+      })
       app.quit()
     } catch (error) {
       logUpdateFailure('restart', error)

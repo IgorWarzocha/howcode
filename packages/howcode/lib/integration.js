@@ -41,35 +41,65 @@ function getLinuxCommandLauncherPath() {
   return path.join(process.env.XDG_BIN_HOME || path.join(os.homedir(), '.local', 'bin'), APP_NAME)
 }
 
-async function writeLinuxCommandLauncher(paths) {
-  const launcherPath = getLinuxCommandLauncherPath()
-  const launcherContents = [
+function isLegacyLinuxCommandLauncher(launcherContents) {
+  const lines = launcherContents.trimEnd().split('\n')
+  const executablePrefix = '    exec '
+  const executableSuffix = ' --howcode-headless --ozone-platform=headless "$@"'
+  const headlessCommand = lines[5]
+  if (
+    !(headlessCommand?.startsWith(executablePrefix) && headlessCommand.endsWith(executableSuffix))
+  )
+    return false
+  const executable = headlessCommand.slice(executablePrefix.length, -executableSuffix.length)
+  if (!(executable.includes('/versions/') && executable.endsWith("/howcode/howcode'"))) return false
+
+  const expectedLines = [
     '#!/bin/sh',
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a shell parameter expansion.
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: Matches the generated legacy shell syntax.
     'export HOWCODE_REPO_ROOT=${HOWCODE_REPO_ROOT:-$(pwd)}',
     'if [ "$1" = "--headless" ] || [ "$HOWCODE_HEADLESS" = "1" ]; then',
     '  if [ "$1" = "--headless" ]; then',
     '    shift',
-    `    exec ${shellSingleQuote(paths.executablePath)} --howcode-headless --ozone-platform=headless "$@"`,
+    `${executablePrefix}${executable}${executableSuffix}`,
     '  fi',
-    `  exec ${shellSingleQuote(paths.executablePath)} --ozone-platform=headless "$@"`,
+    `  exec ${executable} --ozone-platform=headless "$@"`,
     'fi',
     'if command -v setsid >/dev/null 2>&1; then',
-    `  setsid -f ${shellSingleQuote(paths.executablePath)} "$@" >/dev/null 2>&1 </dev/null`,
+    `  setsid -f ${executable} "$@" >/dev/null 2>&1 </dev/null`,
     'else',
-    `  nohup ${shellSingleQuote(paths.executablePath)} "$@" >/dev/null 2>&1 </dev/null &`,
+    `  nohup ${executable} "$@" >/dev/null 2>&1 </dev/null &`,
     'fi',
     'exit 0',
-    '',
-  ].join('\n')
-  await fsp.mkdir(path.dirname(launcherPath), { recursive: true })
-  await fsp.writeFile(launcherPath, launcherContents, { encoding: 'utf8', mode: 0o755 })
-  await fsp.chmod(launcherPath, 0o755)
-  const pathEntries = (process.env.PATH || '').split(path.delimiter).filter(Boolean)
-  if (!pathEntries.includes(path.dirname(launcherPath))) {
-    console.warn(
-      `howcode: created ${launcherPath}, but ${path.dirname(launcherPath)} is not in PATH.`,
-    )
+  ]
+  return (
+    lines.length === expectedLines.length &&
+    lines.every((line, index) => line === expectedLines[index])
+  )
+}
+
+async function removeLegacyLinuxCommandLauncher() {
+  const launcherPath = getLinuxCommandLauncherPath()
+  let launcherStats
+  try {
+    launcherStats = await fsp.lstat(launcherPath)
+  } catch (error) {
+    if (error?.code === 'ENOENT') return
+    throw error
+  }
+  if (!launcherStats.isFile()) return
+  const launcherContents = await fsp.readFile(launcherPath, 'utf8')
+  if (!isLegacyLinuxCommandLauncher(launcherContents)) return
+  await fsp.rm(launcherPath, { force: true })
+}
+
+async function removeObsoleteCommandLaunchIntegration(target) {
+  if (target.os !== 'linux') return true
+  try {
+    await removeLegacyLinuxCommandLauncher()
+    return true
+  } catch (error) {
+    console.warn(`howcode: could not remove legacy command launcher: ${error.message || error}`)
+    return false
   }
 }
 
@@ -160,15 +190,7 @@ async function createWindowsStartMenuShortcut(paths) {
 }
 
 async function ensureCommandLaunchIntegration(target, paths) {
-  if (target.os === 'linux') {
-    try {
-      await writeLinuxCommandLauncher(paths)
-      return true
-    } catch (error) {
-      console.warn(`howcode: could not create command launcher: ${error.message || error}`)
-      return false
-    }
-  }
+  if (target.os === 'linux') return true
   if (target.os !== 'win') return true
   try {
     await writeWindowsCommandLauncher(paths)
@@ -180,4 +202,8 @@ async function ensureCommandLaunchIntegration(target, paths) {
   }
 }
 
-module.exports = { ensureCommandLaunchIntegration, spawnLinuxDetachedLauncher }
+module.exports = {
+  ensureCommandLaunchIntegration,
+  removeObsoleteCommandLaunchIntegration,
+  spawnLinuxDetachedLauncher,
+}
