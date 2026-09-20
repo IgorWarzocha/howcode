@@ -57,7 +57,7 @@ export function DiffPanelContent({
   const [focusedFilePaths, setFocusedFilePaths] = useState<readonly string[]>([])
   const [renderFileTree, setRenderFileTree] = useState(showFileTree)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const codeViewRef = useRef<CodeViewHandle<GitOpsAnnotationMetadata> | null>(null)
+  const codeViewRef = useRef<CodeViewHandle<GitOpsAnnotationMetadata, undefined> | null>(null)
   const draftCardRef = useRef<HTMLDivElement | null>(null)
   const { diff, streamedPatch, isLoading, error } = useDesktopDiff(
     projectId,

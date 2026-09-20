@@ -4,6 +4,7 @@ export const PiSettingsSchema = Schema.Struct({
   extensions: Schema.mutable(Schema.Array(Schema.String)),
   theme: Schema.String,
   autoCompact: Schema.Boolean,
+  cacheWarming: Schema.Literals(['off', 'streaming', 'idle']),
   enableSkillCommands: Schema.Boolean,
   hideThinkingBlock: Schema.Boolean,
   quietStartup: Schema.Boolean,

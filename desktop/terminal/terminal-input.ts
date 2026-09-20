@@ -1,5 +1,4 @@
-import { rmSync } from 'node:fs'
-import { nowIso } from './session-history.ts'
+import { clearSessionTranscript, nowIso, reportTranscriptWriteFailure } from './session-history.ts'
 import type { TerminalSessionRecord } from './session-record.ts'
 import type { TerminalSessionStore } from './session-store.ts'
 import { rememberSubmittedPrompts, scheduleTuiSessionDetection } from './tui-session-detection.ts'
@@ -60,10 +59,6 @@ export function didSubmitClear(input: ReturnType<typeof applyToBuffer>) {
 }
 
 export function clearTerminalHistory(store: TerminalSessionStore, record: TerminalSessionRecord) {
-  if (record.persistTimer) {
-    clearTimeout(record.persistTimer)
-    record.persistTimer = null
-  }
   record.snapshot = {
     ...record.snapshot,
     history: '',
@@ -71,7 +66,7 @@ export function clearTerminalHistory(store: TerminalSessionStore, record: Termin
     updatedAt: nowIso(),
   }
   record.suppressOutputVisibilityUntilInput = true
-  rmSync(record.transcriptPath, { force: true })
+  void clearSessionTranscript(record).catch(reportTranscriptWriteFailure)
   store.emit({
     type: 'cleared',
     sessionId: record.snapshot.sessionId,

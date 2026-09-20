@@ -1,24 +1,27 @@
-import type { DiffsEditor } from '@pierre/diffs'
-import type { EditorOptions } from '@pierre/diffs/edit'
+import type { EditorFactory } from '@pierre/diffs/edit'
 import { readClipboardSnapshotQuery } from '../../../query/desktop-query'
+import type { GitOpsAnnotationMetadata } from '../review/pierre-review-adapter'
 
-type EditorFactory = <LAnnotation>(options: EditorOptions<LAnnotation>) => DiffsEditor<LAnnotation>
 const fallbackTextClipboardFormat: string = 'text'
 
-let editorFactory: EditorFactory | null = null
+let editorFactory: EditorFactory<GitOpsAnnotationMetadata, undefined> | null = null
 let editorModulePromise: Promise<void> | null = null
 
 export function loadPierreEditor() {
   editorModulePromise ??= import('@pierre/diffs/edit').then(({ Editor }) => {
-    editorFactory = <LAnnotation>(options: EditorOptions<LAnnotation>) =>
-      new Editor<LAnnotation>(options)
+    editorFactory = (editorType, options, editStateKey) =>
+      new Editor(editorType, options, editStateKey)
   })
   return editorModulePromise
 }
 
-export const createPierreEditor: EditorFactory = (options) => {
+export const createPierreEditor: EditorFactory<GitOpsAnnotationMetadata, undefined> = (
+  editorType,
+  options,
+  editStateKey,
+) => {
   if (!editorFactory) throw new Error('Pierre editor was not loaded before editing started.')
-  return editorFactory(options)
+  return editorFactory(editorType, options, editStateKey)
 }
 
 export const pierreEditorOptions = {

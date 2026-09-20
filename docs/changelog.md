@@ -1,3 +1,13 @@
+### 0.1.69
+
+- Updated Pi to 0.86.1, Effect v4 to rc.116, Electron to 44.4.3, React to 19.3, Pierre Diffs to 1.4.3, and the remaining dependencies.
+- Added Pi's prompt-cache warming control and included background, compaction and tool usage in session costs.
+- Shared concurrent attachment searches and bounded their cached project indexes.
+- Replaced handwritten runtime queues, locks and timers with scoped Effect coordination, keeping terminal history and thread updates ordered through shutdown.
+- Fixed obsolete session watchers, cleared terminal history being restored by an earlier write, and subscription cleanup after a failed headless server start.
+- Moved clipboard attachments to Electron's native file and image APIs, removing a separate native dependency.
+- Removed the custom Electron ZIP installer now that upstream handles extraction correctly.
+
 ### 0.1.68
 
 - **An enormous release:** 910 files and roughly 75,000 changed lines. GitOps, worktrees, app updates, the UI architecture, and most of the desktop runtime were rebuilt rather than lightly patched.

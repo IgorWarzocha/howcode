@@ -19,6 +19,10 @@ type SidebarProjectsCreatePopoverProps = {
   onClose: () => void
 }
 
+function canCreateProject(draft: string, parentPath: string | null, busy: boolean) {
+  return draft.trim().length > 0 && !busy && (isPathLikeProjectDraft(draft) || Boolean(parentPath))
+}
+
 export function SidebarProjectsCreatePopover({
   menuId,
   open,
@@ -38,11 +42,8 @@ export function SidebarProjectsCreatePopover({
   const [browseSearchQuery, setBrowseSearchQuery] = useState('')
   const [currentFolderPath, setCurrentFolderPath] = useState<string | null>(null)
   const [emptyCreateAttempted, setEmptyCreateAttempted] = useState(false)
-  const draftIsPathLike = isPathLikeProjectDraft(draft)
-  const canSubmit =
-    draft.trim().length > 0 &&
-    !busy &&
-    (draftIsPathLike || Boolean(browseOpen ? currentFolderPath : defaultLocation))
+  const parentPath = browseOpen ? currentFolderPath : defaultLocation
+  const canSubmit = canCreateProject(draft, parentPath, busy)
   const missingProjectNameWarning = browseOpen && draft.trim().length === 0 && emptyCreateAttempted
 
   useEffect(() => {
@@ -64,7 +65,7 @@ export function SidebarProjectsCreatePopover({
       open
       aria-label="Create project"
       {...getPopoverRootProps(open)}
-      data-open={open ? 'true' : 'false'}
+      data-open="true"
       data-variant={variant}
       className="sidebar-popover-panel sidebar-project-create-popover motion-popover"
     >

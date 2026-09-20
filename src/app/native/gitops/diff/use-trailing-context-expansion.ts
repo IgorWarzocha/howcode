@@ -19,7 +19,7 @@ export function useTrailingContextExpansion({
   fileContent,
   files,
 }: {
-  codeViewRef: React.RefObject<CodeViewHandle<GitOpsAnnotationMetadata> | null>
+  codeViewRef: React.RefObject<CodeViewHandle<GitOpsAnnotationMetadata, undefined> | null>
   fileContent: DiffFileContentController
   files: readonly FileDiffMetadata[]
 }): TrailingContextExpansionController {

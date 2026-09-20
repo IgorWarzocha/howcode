@@ -243,13 +243,14 @@ export function ComposerPromptSurface({
     runComposerAction,
     sessionPath,
   })
+  const showPromptOverlays = (sessionTreeOpen && !sessionTreeForceHidden) || slashCommands.open
   useComposerThreadOverlayHeight({
     extensionOverlayRef: composerOverlayStackRef,
-    extensionOverlayVisible:
-      showPiExtensionOverlay ||
-      pickerOpen ||
-      (sessionTreeOpen && !sessionTreeForceHidden) ||
-      slashCommands.open,
+    extensionOverlayVisible: hasComposerOverlayAbove(
+      showPiExtensionOverlay,
+      pickerOpen,
+      showPromptOverlays,
+    ),
     popoverStackRef: composerPopoverStackRef,
     popoverStackVisible: false,
     onOverlayHeightChange,
@@ -261,8 +262,8 @@ export function ComposerPromptSurface({
     workspaceFooterRef,
   })
 
-  const canStopComposer = (composerIsStreaming || extensionRunning) && !isSending && !!sessionPath
   const composerWorking = composerIsStreaming || extensionRunning
+  const canStopComposer = composerWorking && !isSending && !!sessionPath
   useComposerGlobalCommands({
     closeSessionTree,
     composerPanelRef,
@@ -341,7 +342,7 @@ export function ComposerPromptSurface({
             onToggleFile: togglePendingPickerAttachment,
           }}
           prompts={{
-            visible: (sessionTreeOpen && !sessionTreeForceHidden) || slashCommands.open,
+            visible: showPromptOverlays,
             sessionPath,
             sessionTreeOpen,
             treeFilterMode: piTreeFilterMode,

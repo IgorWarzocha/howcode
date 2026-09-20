@@ -130,6 +130,25 @@ export function buildPiCoreSettingsDescriptors({
       ),
     },
     {
+      id: 'pi-runtime.cache-warming',
+      category: 'pi',
+      title: 'Prompt cache warming',
+      description: 'Keep provider prompt caches alive. This can make metered requests.',
+      keywords: 'cache prompt provider cost runtime',
+      render: () => (
+        <SettingsSegmentedControl
+          columnsClassName="grid-cols-3"
+          value={draftPiSettings.cacheWarming}
+          options={[
+            { value: 'off', label: 'Off' },
+            { value: 'streaming', label: 'Working' },
+            { value: 'idle', label: 'Idle' },
+          ]}
+          onChange={(value) => setDraftPiSetting('cacheWarming', value)}
+        />
+      ),
+    },
+    {
       id: 'pi-runtime.skill-commands',
       category: 'pi',
       title: 'Enable skill slash commands',

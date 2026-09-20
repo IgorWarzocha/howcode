@@ -1,10 +1,5 @@
-import type {
-  CodeViewItem,
-  DiffLineAnnotation,
-  FileContents,
-  FileDiffMetadata,
-  LineAnnotation,
-} from '@pierre/diffs/react'
+import type { EditorChangeEvent, EditorType } from '@pierre/diffs/edit'
+import type { CodeViewItem, DiffLineAnnotation, FileDiffMetadata } from '@pierre/diffs/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getErrorMessage } from '../../../desktop/error-messages'
 import type { DiffFileContentController } from '../diff/use-diff-file-content'
@@ -19,12 +14,23 @@ export type DiffEditingController = {
   start: (input: { fileDiff: FileDiffMetadata; fileKey: string }) => Promise<void>
   save: (fileKey: string) => Promise<void>
   onItemEditChange: (
+    event: EditorChangeEvent<EditorType, GitOpsAnnotationMetadata, undefined>,
     item: CodeViewItem<GitOpsAnnotationMetadata>,
-    file: FileContents,
-    annotations?:
-      | LineAnnotation<GitOpsAnnotationMetadata>[]
-      | DiffLineAnnotation<GitOpsAnnotationMetadata>[],
   ) => void
+}
+
+function getDiffAnnotations(
+  annotations: EditorChangeEvent<
+    EditorType,
+    GitOpsAnnotationMetadata,
+    undefined
+  >['lineAnnotations'],
+) {
+  if (!annotations) return []
+  return annotations.filter(
+    (annotation): annotation is DiffLineAnnotation<GitOpsAnnotationMetadata> =>
+      'side' in annotation,
+  )
 }
 
 export function useDiffEditing({
@@ -89,7 +95,6 @@ export function useDiffEditing({
         })
         return
       }
-
       session.saving = true
       setState({ kind: 'editing', fileKey, dirty: true, saving: true, error: null })
       try {
@@ -128,23 +133,13 @@ export function useDiffEditing({
   )
 
   const onItemEditChange = useCallback<DiffEditingController['onItemEditChange']>(
-    (item, file, annotations) => {
+    (event, item) => {
       if (item.type !== 'diff') return
       const session = sessionRef.current
       if (!(session && session.fileKey === item.id)) return
-      session.latestFile = file
+      session.latestFile = event.file
+      if (event.lineAnnotations) onAnnotationsChange(getDiffAnnotations(event.lineAnnotations))
       session.dirty = true
-      if (annotations) {
-        const annotationList: readonly (
-          | LineAnnotation<GitOpsAnnotationMetadata>
-          | DiffLineAnnotation<GitOpsAnnotationMetadata>
-        )[] = annotations
-        const diffAnnotations = annotationList.filter(
-          (annotation): annotation is DiffLineAnnotation<GitOpsAnnotationMetadata> =>
-            'side' in annotation,
-        )
-        onAnnotationsChange(diffAnnotations)
-      }
       if (state.kind === 'editing' && state.fileKey === item.id && !state.dirty) {
         setState({ ...state, dirty: true })
       }

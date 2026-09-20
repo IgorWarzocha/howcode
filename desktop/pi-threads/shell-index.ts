@@ -1,10 +1,13 @@
+import * as Effect from 'effect/Effect'
+import * as Exit from 'effect/Exit'
+import * as Fiber from 'effect/Fiber'
+import * as FiberMap from 'effect/FiberMap'
+import * as Option from 'effect/Option'
+import * as Scope from 'effect/Scope'
 import { importProjectWorktreesForProjectIds } from '../project-import.ts'
 import { emitDesktopEvent } from '../runtime/desktop-events.ts'
 import { syncSessionSummaries } from '../thread-state-db.ts'
 import { listAllSessionsStrict, mapSessionSummaryToRecord } from './session-index.ts'
-
-const syncedShellIndexes = new Set<string>()
-const inFlightShellIndexSyncs = new Map<string, Promise<boolean>>()
 
 type ShellIndexSyncResult = {
   complete: boolean
@@ -21,64 +24,85 @@ async function syncShellIndex(cwd: string): Promise<ShellIndexSyncResult> {
   return { complete: !partialFailure, didSync: true }
 }
 
-function startShellIndexSync(
-  cwd: string,
-  options: { emitRefreshEvent?: boolean | undefined; warningLabel: string },
-) {
-  const syncPromise = syncShellIndex(cwd)
-    .then((syncResult) => {
-      if (syncResult.complete) {
-        syncedShellIndexes.add(cwd)
-      }
+type RefreshOptions = { emitRefreshEvent?: boolean | undefined; force?: boolean | undefined }
 
-      if (syncResult.didSync && (options.emitRefreshEvent ?? true)) {
-        emitDesktopEvent({ type: 'shell-state-refresh' })
-      }
+export function makeShellIndexScheduler() {
+  return Effect.gen(function* () {
+    const synced = new Set<string>()
+    const running = yield* FiberMap.make<string, boolean, never>()
+    const run = yield* FiberMap.runtime(running)<never>()
+    let closed = false
+    yield* Effect.addFinalizer(() =>
+      Effect.gen(function* () {
+        closed = true
+        yield* FiberMap.awaitEmpty(running)
+      }),
+    )
 
-      return syncResult.complete
+    const start = (
+      cwd: string,
+      options: { emitRefreshEvent?: boolean | undefined; warningLabel: string },
+    ) =>
+      run(
+        cwd,
+        Effect.tryPromise({ try: () => syncShellIndex(cwd), catch: (error) => error }).pipe(
+          Effect.map((result) => {
+            if (result.complete) synced.add(cwd)
+            if (result.didSync && (options.emitRefreshEvent ?? true))
+              emitDesktopEvent({ type: 'shell-state-refresh' })
+            return result.complete
+          }),
+          Effect.catch((error) =>
+            Effect.sync(() => {
+              console.warn(options.warningLabel, error)
+              return false
+            }),
+          ),
+          // DB/import mutations already started must settle before backend shutdown.
+          Effect.uninterruptible,
+        ),
+      )
+
+    const refresh = Effect.fn('ShellIndex.refresh')(function* (
+      cwd: string,
+      options: RefreshOptions = {},
+    ) {
+      if (closed) return false
+      const pending = FiberMap.getUnsafe(running, cwd)
+      if (Option.isSome(pending) && !options.force) return yield* Fiber.join(pending.value)
+      if (Option.isSome(pending)) yield* Fiber.join(pending.value)
+      // A forced import must see files created after the startup snapshot.
+      // Concurrent forced callers share the one subsequent pass.
+      if (closed) return false
+      return yield* Fiber.join(
+        Option.getOrElse(FiberMap.getUnsafe(running, cwd), () =>
+          start(cwd, {
+            emitRefreshEvent: options.emitRefreshEvent,
+            warningLabel: 'Failed to refresh shell index.',
+          }),
+        ),
+      )
     })
-    .catch((error) => {
-      console.warn(options.warningLabel, error)
-      return false
-    })
-    .finally(() => {
-      inFlightShellIndexSyncs.delete(cwd)
-    })
 
-  inFlightShellIndexSyncs.set(cwd, syncPromise)
-  return syncPromise
-}
-
-export function scheduleShellIndexSync(cwd: string) {
-  if (syncedShellIndexes.has(cwd) || inFlightShellIndexSyncs.has(cwd)) {
-    return
-  }
-
-  void startShellIndexSync(cwd, { warningLabel: 'Failed to sync shell index.' })
-}
-
-export async function refreshShellIndex(
-  cwd: string,
-  options: { emitRefreshEvent?: boolean | undefined; force?: boolean | undefined } = {},
-) {
-  const inFlightSync = inFlightShellIndexSyncs.get(cwd)
-  if (inFlightSync && !options.force) {
-    return await inFlightSync
-  }
-
-  if (inFlightSync) {
-    // User-triggered project import needs a fresh filesystem pass. The background
-    // startup sync may have snapshotted sessions before a Pi CLI project was created.
-    await inFlightSync
-
-    const forcedInFlightSync = inFlightShellIndexSyncs.get(cwd)
-    if (forcedInFlightSync) {
-      return await forcedInFlightSync
+    return {
+      schedule: (cwd: string) => {
+        if (closed || synced.has(cwd) || FiberMap.hasUnsafe(running, cwd)) return
+        start(cwd, { warningLabel: 'Failed to sync shell index.' })
+      },
+      refresh,
     }
-  }
-
-  return await startShellIndexSync(cwd, {
-    emitRefreshEvent: options.emitRefreshEvent,
-    warningLabel: 'Failed to refresh shell index.',
   })
+}
+
+const shellIndexScope = Scope.makeUnsafe()
+const scheduler = Effect.runSync(Scope.provide(makeShellIndexScheduler(), shellIndexScope))
+
+export const scheduleShellIndexSync = scheduler.schedule
+
+export function refreshShellIndex(cwd: string, options: RefreshOptions = {}) {
+  return Effect.runPromise(scheduler.refresh(cwd, options))
+}
+
+export function disposeShellIndexScheduler() {
+  return Effect.runPromise(Scope.close(shellIndexScope, Exit.void))
 }
