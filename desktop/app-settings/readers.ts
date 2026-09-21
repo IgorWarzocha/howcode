@@ -1,9 +1,11 @@
+import * as Effect from 'effect/Effect'
+import * as SqlClient from 'effect/unstable/sql/SqlClient'
 import type { AppSettings } from '../../shared/desktop-contracts.ts'
 import {
   DEFAULT_DICTATION_MAX_DURATION_SECONDS,
   normalizeDictationMaxDurationSeconds,
 } from '../../shared/dictation-settings.ts'
-import { getThreadStateDatabase } from '../thread-state-db/db.ts'
+import { databaseOperation } from '../thread-state-db/db.ts'
 import {
   chatModelKey,
   chatThinkingLevelKey,
@@ -56,18 +58,17 @@ import {
   parseThinkingLevelPreference,
 } from './parsers.ts'
 
-function loadPreferenceRows() {
-  const rows = getThreadStateDatabase()
-    .prepare(
-      `
+const loadPreferenceRows = Effect.fn('AppSettings.loadPreferenceRows')(function* () {
+  const sql = yield* SqlClient.SqlClient
+  const rows = yield* sql.unsafe<PreferenceRow & { key: string }>(
+    `
         SELECT key, value_json AS valueJson
         FROM app_preferences
       `,
-    )
-    .all() as Array<PreferenceRow & { key: string }>
+  )
 
   return new Map(rows.map((row) => [row.key, row] as const))
-}
+})
 
 function getDictationMaxDurationSeconds(valueJson: string | undefined) {
   return (
@@ -91,11 +92,17 @@ function loadKeybindingSettings(value: (key: string) => string | undefined) {
   }
 }
 
-export function loadSidebarVisibleProjectIds(): string[] | null {
-  const rows = loadPreferenceRows()
-  const valueJson = rows.get(sidebarVisibleProjectIdsKey)?.valueJson
-  return valueJson === undefined ? null : parseFavoriteFolders(valueJson)
-}
+const loadSidebarVisibleProjectIdsOperation = Effect.fn('AppSettings.loadSidebarVisibleProjectIds')(
+  function* () {
+    const rows = yield* loadPreferenceRows()
+    const valueJson = rows.get(sidebarVisibleProjectIdsKey)?.valueJson
+    return valueJson === undefined ? null : parseFavoriteFolders(valueJson)
+  },
+)
+
+export const loadSidebarVisibleProjectIds: () => string[] | null = databaseOperation(
+  loadSidebarVisibleProjectIdsOperation,
+)
 
 function loadProjectUiSettings(value: (key: string) => string | undefined) {
   return {
@@ -106,8 +113,8 @@ function loadProjectUiSettings(value: (key: string) => string | undefined) {
   }
 }
 
-export function loadAppSettings(): AppSettings {
-  const rows = loadPreferenceRows()
+const loadAppSettingsOperation = Effect.fn('AppSettings.load')(function* () {
+  const rows = yield* loadPreferenceRows()
   const value = (key: string) => rows.get(key)?.valueJson
 
   return {
@@ -149,4 +156,6 @@ export function loadAppSettings(): AppSettings {
     hoverToBlur: parseBooleanPreference(value(hoverToBlurKey)) ?? false,
     ...loadKeybindingSettings(value),
   }
-}
+})
+
+export const loadAppSettings: () => AppSettings = databaseOperation(loadAppSettingsOperation)

@@ -191,8 +191,12 @@ function getSpecialBoundaryViolation(
 ) {
   const importerLayer = getLayer(importer)
   const importerPath = toRepoPath(importer)
-  if (importerLayer === 'electron' && specifier === 'better-sqlite3') {
-    return `${importerPath} imports better-sqlite3 (Electron must not load stock-Node native modules)`
+  const importsSqlite =
+    specifier === 'node:sqlite' ||
+    specifier === '@effect/sql-sqlite-node' ||
+    specifier.startsWith('@effect/sql-sqlite-node/')
+  if (importerLayer === 'electron' && importsSqlite) {
+    return `${importerPath} imports ${specifier} (Electron must not own stock-Node database access)`
   }
   if (importerLayer !== 'service' || isAllowedPiRuntimeFile(importer)) return undefined
 

@@ -1,3 +1,4 @@
+import { disposeThreadStateDatabase } from '../thread-state-db/db.ts'
 import { disposeAllRuntimeHosts, setRuntimeHostEventSink } from './host-service.ts'
 import type { RuntimeMainToHostMessage } from './protocol.ts'
 import { handleRuntimeHostRequest } from './request-handlers.ts'
@@ -58,6 +59,9 @@ async function shutdownRuntimeHost() {
   try {
     await disposeAllRuntimeHosts()
   } finally {
+    await disposeThreadStateDatabase().catch((error) =>
+      console.warn('Failed to close runtime-host database.', error),
+    )
     process.exit(0)
   }
 }
@@ -66,10 +70,11 @@ process.once('disconnect', () => {
   void shutdownRuntimeHost()
 })
 
-process.once('SIGTERM', () => {
+// Stay registered during async cleanup so signal-exit cannot re-send the signal.
+process.on('SIGTERM', () => {
   void shutdownRuntimeHost()
 })
 
-process.once('SIGINT', () => {
+process.on('SIGINT', () => {
   void shutdownRuntimeHost()
 })

@@ -15,6 +15,7 @@ import * as piSkills from './pi-skills.ts'
 import * as piThreads from './pi-threads.ts'
 import { createTerminalRpcServer } from './terminal/rpc-server.ts'
 import * as terminalManager from './terminal/runtime.ts'
+import { disposeThreadStateDatabase } from './thread-state-db/db.ts'
 import { getDesktopUserDataPath } from './user-data-path.ts'
 
 const ServiceRequestSchema = Schema.Struct({
@@ -156,7 +157,7 @@ const shutdownCoordinatorPromise = Effect.runPromise(
         { concurrency: 'unbounded', discard: true },
       )
       yield* settledTask(() => terminalManager.disposeTerminalRuntime())
-    }),
+    }).pipe(Effect.ensuring(Effect.promise(disposeThreadStateDatabase))),
     { label: 'Desktop service', timeout: '2 seconds' },
   ),
 )
@@ -168,8 +169,10 @@ function requestShutdown() {
 }
 
 process.once('disconnect', requestShutdown)
-process.once('SIGTERM', requestShutdown)
-process.once('SIGINT', requestShutdown)
+// Keep listeners registered until exit. signal-exit can re-send a signal after
+// a once-listener removes itself, cutting asynchronous cleanup short.
+process.on('SIGTERM', requestShutdown)
+process.on('SIGINT', requestShutdown)
 
 void Promise.all([getServiceDiagnostics(), terminalRpcServerPromise]).then(([diagnostics]) => {
   process.send?.({ type: 'ready', diagnostics })

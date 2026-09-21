@@ -1,39 +1,8 @@
 import { createProjectWorktree, removeProjectWorktree } from '../project-git.ts'
-import {
-  ensureProject,
-  runThreadStateTransaction,
-  upsertProjectWorktree,
-} from '../thread-state-db.ts'
+import { registerManagedWorktree } from '../thread-state-db.ts'
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error)
-}
-
-function persistManagedWorktree(input: {
-  branchName: string
-  parentBranchName: string
-  projectId: string
-  rootProjectId: string
-}) {
-  runThreadStateTransaction(() => {
-    ensureProject(input.rootProjectId)
-    ensureProject(input.projectId)
-    upsertProjectWorktree({
-      cwd: input.rootProjectId,
-      rootCwd: input.rootProjectId,
-      branchName: null,
-      isMain: true,
-      source: 'howcode',
-    })
-    upsertProjectWorktree({
-      cwd: input.projectId,
-      rootCwd: input.rootProjectId,
-      branchName: input.branchName,
-      parentBranchName: input.parentBranchName,
-      isMain: false,
-      source: 'howcode',
-    })
-  })
 }
 
 export async function createRegisteredWorktree(input: {
@@ -50,7 +19,7 @@ export async function createRegisteredWorktree(input: {
   if ('error' in created) return created
 
   try {
-    persistManagedWorktree({ ...created, parentBranchName: input.parentBranchName })
+    registerManagedWorktree({ ...created, parentBranchName: input.parentBranchName })
   } catch (error) {
     const cleanup = await removeProjectWorktree(
       created.rootProjectId,

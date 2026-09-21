@@ -6,7 +6,7 @@
 
 Howcode already uses Effect for substantial runtime work, not just schemas around Promise code. Runtime-host creation, recovery, terminal RPC, shutdown, and live-runtime disposal have real Effect ownership. But the previous migration left a second layer of handwritten queues, timers, in-flight maps, and locks around those services.
 
-This branch removes the local coordination identified below. It does **not** make the whole application Effect-native. SQLite, ordinary filesystem and process adapters, the headless HTTP server, and renderer state remain separate integration opportunities. Some custom code is also necessary: workspace admission rules, filesystem leases, optimistic file revisions, and Pi session identity cannot be replaced by choosing a similarly named primitive.
+This branch removes the local coordination identified below. A subsequently approved persistence migration also brings SQLite under Effect SQL. This does **not** make the whole application Effect-native. Ordinary filesystem and process adapters, the headless HTTP server, and renderer state remain separate integration opportunities. Some custom code is also necessary: workspace admission rules, filesystem leases, optimistic file revisions, and Pi session identity cannot be replaced by choosing a similarly named primitive.
 
 There is no useful single “percentage integrated”. An import count treats a schema decoder and a scoped runtime supervisor as equivalent; they are not.
 
@@ -74,17 +74,17 @@ The installed `FiberMap.run(..., { onlyIfMissing: true })` does not join an exis
 
 [`Stream.fromEventListener`](https://effect.website/docs/v4/api/effect/Stream) expects an EventTarget-style interface, not Node's `.on/.off` API. Node watcher callbacks still need an adapter. Debouncing also does not provide a final persistence flush by itself.
 
+### SQLite: Effect ownership with synchronous boundaries
+
+The initial assessment deferred SQLite. The approved follow-up migrates it to [`@effect/sql-sqlite-node`](https://effect.website/docs/v4/api/sql-sqlite-node/SqliteClient), pinned alongside Effect at rc.116. This adapter uses stock `node:sqlite`. `desktop/thread-state-db/db.ts` owns its managed runtime, schema initialization and scoped background migration. Repository queries compose as Effects; public database operations stay synchronous because the underlying driver is synchronous. This retains same-turn ordering without propagating artificial async boundaries through callers.
+
+`desktop/thread-state-db/write-transaction.ts` uses [`SqlClient.makeWithTransaction`](https://effect.website/docs/v4/api/effect/unstable/sql/SqlClient) for connection context, rollback and nested savepoints, while retaining the existing deferred `BEGIN`. The driver's default `BEGIN IMMEDIATE` would acquire the write lock earlier. WAL, foreign keys and the five-second blocking busy timeout remain enabled. The existing database file and schema are retained; initialization executes separate statements rather than mistaking a prepared query for multi-statement `exec`.
+
+Removing `better-sqlite3` also removes its prebuild checks and packaging helper, plus unused `bindings` and `file-uri-to-path` dependencies. It does **not** remove the multi-ABI build matrix: that remains necessary for `node-pty`. SQLite itself now follows the selected Node runtime's bundled version.
+
+Service and worker shutdown now close the managed database after their producers settle. The broker no longer exits early on signals. Entrypoint signal listeners remain registered during asynchronous cleanup so a transitive `signal-exit` handler cannot re-send SIGTERM before persistence finishes.
+
 ## Remaining opportunities and deliberate boundaries
-
-### SQLite: a separate persistence migration
-
-**Decision: document separately; do not migrate SQLite on this branch.**
-
-[`SqlClient`](https://effect.website/docs/v4/api/effect/unstable/sql/SqlClient) provides effectful queries and transaction ownership. [`@effect/sql-sqlite-node`](https://effect.website/docs/v4/api/sql-sqlite-node/SqliteClient) uses stock `node:sqlite`, not `better-sqlite3`. This could remove one native dependency and its ABI packaging burden.
-
-It is not a drop-in import change. `desktop/thread-state-db/db.ts`, `desktop/thread-state-db/write-transaction.ts` and their repository callers currently expose synchronous database work. The adapter also brings connection serialisation, statement caching, WAL configuration, a blocking busy timeout and `BEGIN IMMEDIATE` for write transactions. Those choices must be compared with the current transaction and contention policy.
-
-A useful next pass would migrate one repository boundary first, verify rollback and concurrent-writer behaviour, then validate all supported stock-Node and packaged-platform combinations before removing `better-sqlite3`.
 
 ### Filesystem and child processes
 
@@ -131,10 +131,12 @@ Read the overviews for LanguageModel, Worker, Workflow, Sharding, EventLog, Comm
 - Electron **44.4.3** supplies native clipboard file/image APIs. Removed `clip-filepaths`; URI-list parsing retains malformed-entry isolation and rejects invalid local paths. Removed the custom ZIP installer after verifying the upstream installer and packaged build.
 - Pierre Diffs **1.4.3** requires the new editor factory and edit-event API. Review anchors still update during editing, but their remapped annotations are not echoed back into Pierre's active controlled item. Workspace writes and refreshed project diffs remain authoritative.
 - React/DOM **19.3.0**, Vite **8.3**, Vitest **5.0.1**, Biome **2.5.14** and the remaining direct dependencies were refreshed. Removed unused direct TypeBox/Three types and stale/redundant overrides rather than retaining upgrade debris.
-- No new UI/state framework, telemetry exporter, SQL driver or platform package was added speculatively. ASAR stays enabled; the stock-Node backend and its complete native dependency trees remain outside it.
+- No new UI/state framework, telemetry exporter or platform package was added speculatively. The SQL driver migration was separately approved. ASAR stays enabled; the stock-Node backend and its complete native dependency trees remain outside it.
 
 ## Validation boundary
 
 Focused checks cover cache deduplication/expiry/eviction, lock isolation/interruption, forced-refresh concurrency, watcher replacement, ordered persistence and draining, TUI scan ownership, failed PTY cleanup, malformed RPC input, clipboard-path parsing, session accounting and failed HTTP listener startup.
+
+SQLite policy checks cover legacy data migration, foreign keys, deferred locking, rollback recovery, reply suppression and synchronous grouped writes. The Linux x64 packaged service passed SQLite and PTY loading, IPC persistence, cross-version database reopening and graceful SIGTERM shutdown on Node 24.18, 25.9 and 26.2. Neither the ASAR nor its unpacked dependency tree contains `better-sqlite3`.
 
 The full repository gate and production builds are recorded in the delivery result. These checks are not a substitute for trying the UI: the expected Electron CDP endpoint at `127.0.0.1:39217` was unavailable, and the development app was not started. Clipboard behaviour and Pierre/settings interactions still need a live-app check; macOS and Windows were not exercised here.

@@ -41,8 +41,6 @@ nsis:
 asarUnpack:
   - node_modules/**
   - build/desktop/**
-  - node_modules/bindings/**
-  - node_modules/file-uri-to-path/**
   - node_modules/**/*.node
   - node_modules/node-pty/build/Release/**
   - node_modules/node-pty/prebuilds/**

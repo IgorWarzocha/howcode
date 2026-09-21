@@ -1,23 +1,35 @@
 import { createHash } from 'node:crypto'
 import path from 'node:path'
-import { getThreadStateDatabase } from './db.ts'
+import { Effect } from 'effect'
+import * as SqlClient from 'effect/unstable/sql/SqlClient'
 import { ensureProject } from './project-writes.ts'
 import type { SessionSummaryRecord } from './types.ts'
-import { runInTransaction } from './write-transaction.ts'
+import { withDatabaseTransaction } from './write-transaction.ts'
 
 type ThreadIdPathRow = {
   id?: string | undefined
   sessionPath: string
 }
 
-const worktreeBranchForCwdSql = `
-  SELECT branch_name
-  FROM project_worktrees
-  WHERE cwd = ? AND is_main = 0
-`
-
-function getSessionBranchName(session: SessionSummaryRecord) {
-  return session.branchName?.trim() || null
+function upsertThreadSummaryStatement(
+  sql: SqlClient.SqlClient,
+  threadId: string,
+  session: SessionSummaryRecord,
+) {
+  return sql`
+    INSERT INTO threads (id, cwd, session_path, title, last_modified_ms, branch_name)
+    VALUES (${threadId}, ${session.cwd}, ${session.sessionPath}, ${session.title},
+      ${session.lastModifiedMs}, COALESCE(${session.branchName?.trim() || null}, (
+        SELECT branch_name FROM project_worktrees WHERE cwd = ${session.cwd} AND is_main = 0
+      )))
+    ON CONFLICT(session_path) DO UPDATE SET
+      id = excluded.id,
+      cwd = excluded.cwd,
+      title = excluded.title,
+      last_modified_ms = excluded.last_modified_ms,
+      branch_name = COALESCE(threads.branch_name, excluded.branch_name),
+      updated_at = CURRENT_TIMESTAMP
+  `
 }
 
 function escapeLikePattern(value: string) {
@@ -29,52 +41,49 @@ function getDisambiguatedThreadId(session: SessionSummaryRecord) {
   return `${session.id}:${suffix}`
 }
 
-function getStoredDuplicateThreadRows(
-  db: ReturnType<typeof getThreadStateDatabase>,
-  session: SessionSummaryRecord,
-) {
-  return db
-    .prepare(
+const getStoredDuplicateThreadRows = Effect.fn('threadStateDb.getStoredDuplicateThreadRows')(
+  function* (session: SessionSummaryRecord) {
+    const sql = yield* SqlClient.SqlClient
+    return yield* sql.unsafe<ThreadIdPathRow>(
       `
         SELECT id, session_path AS sessionPath
         FROM threads
         WHERE (id = ? OR id LIKE ? ESCAPE '\\')
           AND session_path != ?
       `,
+      [session.id, `${escapeLikePattern(session.id)}:%`, session.sessionPath],
     )
-    .all(session.id, `${escapeLikePattern(session.id)}:%`, session.sessionPath) as ThreadIdPathRow[]
-}
+  },
+)
 
-function getStoredThreadRowForPath(
-  db: ReturnType<typeof getThreadStateDatabase>,
+const getStoredThreadRowForPath = Effect.fn('threadStateDb.getStoredThreadRowForPath')(function* (
   sessionPath: string,
 ) {
-  return db
-    .prepare(
-      `
+  const sql = yield* SqlClient.SqlClient
+  return (yield* sql.unsafe<ThreadIdPathRow>(
+    `
         SELECT id, session_path AS sessionPath
         FROM threads
         WHERE session_path = ?
       `,
-    )
-    .get(sessionPath) as ThreadIdPathRow | undefined
-}
+    [sessionPath],
+  ))[0]
+})
 
-function getIndexedSessionThreadId(
-  db: ReturnType<typeof getThreadStateDatabase>,
+const getIndexedSessionThreadId = Effect.fn('threadStateDb.getIndexedSessionThreadId')(function* (
   session: SessionSummaryRecord,
   duplicateSessionIds: Set<string>,
 ) {
-  const storedThreadForPath = getStoredThreadRowForPath(db, session.sessionPath)
+  const storedThreadForPath = yield* getStoredThreadRowForPath(session.sessionPath)
   if (storedThreadForPath?.id && storedThreadForPath.id !== session.id) {
     return storedThreadForPath.id
   }
 
   if (duplicateSessionIds.has(session.id)) return getDisambiguatedThreadId(session)
-  return getStoredDuplicateThreadRows(db, session).length > 0
+  return (yield* getStoredDuplicateThreadRows(session)).length > 0
     ? getDisambiguatedThreadId(session)
     : session.id
-}
+})
 
 function getDuplicateSessionIds(sessions: SessionSummaryRecord[]) {
   const sessionPathsById = new Map<string, Set<string>>()
@@ -92,57 +101,43 @@ function getDuplicateSessionIds(sessions: SessionSummaryRecord[]) {
   )
 }
 
-export function syncSessionSummaries(cwd: string, sessions: SessionSummaryRecord[]) {
-  const db = getThreadStateDatabase()
-  const insertProject = db.prepare(
-    `
-      INSERT INTO projects (cwd, name, collapsed, hidden)
-      VALUES (?, ?, 1, 0)
-      ON CONFLICT(cwd) DO UPDATE SET
-        name = excluded.name,
-        updated_at = CURRENT_TIMESTAMP
-    `,
+export const syncSessionSummaries = Effect.fn('threadStateDb.syncSessionSummaries')(function* (
+  cwd: string,
+  sessions: SessionSummaryRecord[],
+) {
+  const sql = yield* SqlClient.SqlClient
+  yield* ensureProject(cwd)
+  yield* withDatabaseTransaction(
+    Effect.gen(function* () {
+      const duplicateSessionIds = getDuplicateSessionIds(sessions)
+
+      for (const session of sessions) {
+        yield* sql.unsafe(
+          `
+            INSERT INTO projects (cwd, name, collapsed, hidden)
+            VALUES (?, ?, 1, 0)
+            ON CONFLICT(cwd) DO UPDATE SET
+              name = excluded.name,
+              updated_at = CURRENT_TIMESTAMP
+          `,
+          [session.cwd, path.basename(session.cwd) || session.cwd],
+        )
+        const threadId = yield* getIndexedSessionThreadId(session, duplicateSessionIds)
+
+        yield* upsertThreadSummaryStatement(sql, threadId, session)
+      }
+    }),
   )
-  const insertThread = db.prepare(
-    `
-      INSERT INTO threads (id, cwd, session_path, title, last_modified_ms, branch_name)
-      VALUES (?, ?, ?, ?, ?, COALESCE(?, (${worktreeBranchForCwdSql})))
-      ON CONFLICT(session_path) DO UPDATE SET
-        id = excluded.id,
-        cwd = excluded.cwd,
-        title = excluded.title,
-        last_modified_ms = excluded.last_modified_ms,
-        branch_name = COALESCE(threads.branch_name, excluded.branch_name),
-        updated_at = CURRENT_TIMESTAMP
-    `,
-  )
-  ensureProject(cwd)
-  runInTransaction(db, () => {
-    const duplicateSessionIds = getDuplicateSessionIds(sessions)
+})
 
-    for (const session of sessions) {
-      insertProject.run(session.cwd, path.basename(session.cwd) || session.cwd)
-      const threadId = getIndexedSessionThreadId(db, session, duplicateSessionIds)
+export const upsertThreadSummary = Effect.fn('threadStateDb.upsertThreadSummary')(function* (
+  session: SessionSummaryRecord,
+) {
+  const sql = yield* SqlClient.SqlClient
+  yield* ensureProject(session.cwd)
 
-      insertThread.run(
-        threadId,
-        session.cwd,
-        session.sessionPath,
-        session.title,
-        session.lastModifiedMs,
-        getSessionBranchName(session),
-        session.cwd,
-      )
-    }
-  })
-}
-
-export function upsertThreadSummary(session: SessionSummaryRecord) {
-  const db = getThreadStateDatabase()
-  ensureProject(session.cwd)
-
-  const storedThreadForPath = getStoredThreadRowForPath(db, session.sessionPath)
-  const storedDuplicateIdRows = getStoredDuplicateThreadRows(db, session)
+  const storedThreadForPath = yield* getStoredThreadRowForPath(session.sessionPath)
+  const storedDuplicateIdRows = yield* getStoredDuplicateThreadRows(session)
 
   const threadId =
     storedThreadForPath?.id && storedThreadForPath.id !== session.id
@@ -151,27 +146,7 @@ export function upsertThreadSummary(session: SessionSummaryRecord) {
         ? getDisambiguatedThreadId(session)
         : session.id
 
-  db.prepare(
-    `
-      INSERT INTO threads (id, cwd, session_path, title, last_modified_ms, branch_name)
-      VALUES (?, ?, ?, ?, ?, COALESCE(?, (${worktreeBranchForCwdSql})))
-      ON CONFLICT(session_path) DO UPDATE SET
-        id = excluded.id,
-        cwd = excluded.cwd,
-        title = excluded.title,
-        last_modified_ms = excluded.last_modified_ms,
-        branch_name = COALESCE(threads.branch_name, excluded.branch_name),
-        updated_at = CURRENT_TIMESTAMP
-    `,
-  ).run(
-    threadId,
-    session.cwd,
-    session.sessionPath,
-    session.title,
-    session.lastModifiedMs,
-    getSessionBranchName(session),
-    session.cwd,
-  )
+  yield* upsertThreadSummaryStatement(sql, threadId, session)
 
   return threadId
-}
+})

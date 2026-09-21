@@ -42,6 +42,7 @@ export {
 export type {
   ProjectWorktreeMetadata,
   ProjectWorktreeSource,
+  RegisterManagedWorktreeInput,
   StoredProjectWorktree,
 } from './worktree-writes.ts'
 export {
@@ -49,6 +50,7 @@ export {
   getProjectWorktree,
   getProjectWorktreeDirectory,
   listProjectWorktreePaths,
+  registerManagedWorktree,
   setProjectWorktreeCompleted,
   setProjectWorktreeDirectory,
   upsertProjectWorktree,

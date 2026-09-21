@@ -7,7 +7,7 @@
 - Electron
 - React + Vite
 - Tailwind CSS v4
-- SQLite via `better-sqlite3`
+- SQLite via Node's built-in `node:sqlite` and Effect SQL
 
 ## Local development
 
