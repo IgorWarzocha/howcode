@@ -30,7 +30,9 @@ export function useAppShellController() {
   const projects = desktopShell.shellState?.projects ?? EMPTY_LIST
   useAppShellUrlSync({
     dispatch: bundle.workspace.dispatch,
+    loadProjectThreads: desktopShell.loadProjectThreads,
     projects,
+    shellLoading: desktopShell.shellLoading,
     state: bundle.workspace.state,
   })
   const selectedThread = useSelectedThreadData({
