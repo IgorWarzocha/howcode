@@ -12,6 +12,7 @@ type PollOption = {
 
 const pollIds = new Set(['worktree-layout'])
 const jsonHeaders = { 'content-type': 'application/json; charset=utf-8' }
+const maxPriorVoteEvents = 8
 
 function getAllowedOrigin(request: Request, env: Env) {
   const origin = request.headers.get('origin')
@@ -175,28 +176,39 @@ async function handleVote(request: Request, env: Env) {
   ])
   const recentCutoff = new Date(Date.now() - 30_000).toISOString()
 
-  const recentEvents = await env.DB.prepare(
-    'SELECT COUNT(*) AS count FROM poll_vote_events WHERE voter_hash = ? AND created_at > ?',
-  )
-    .bind(voterHash, recentCutoff)
-    .first<{ count: number }>()
-  if ((recentEvents?.count ?? 0) > 8) {
-    return json(request, env, { error: 'Too many vote attempts. Try again in a minute.' }, 429)
-  }
-
-  await env.DB.batch([
+  // D1 batches are transactions. Gating both writes inside the batch prevents concurrent
+  // requests from passing the rate limit against the same stale preflight count.
+  const results = await env.DB.batch([
     env.DB.prepare(
       `
         INSERT INTO poll_votes (poll_id, voter_hash, option_id)
-        VALUES (?, ?, ?)
+        SELECT ?, ?, ?
+        WHERE (
+          SELECT COUNT(*)
+          FROM poll_vote_events
+          WHERE voter_hash = ? AND created_at > ?
+        ) <= ?
         ON CONFLICT(poll_id, voter_hash)
         DO UPDATE SET option_id = excluded.option_id, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
       `,
-    ).bind(pollId, voterHash, optionId),
+    ).bind(pollId, voterHash, optionId, voterHash, recentCutoff, maxPriorVoteEvents),
     env.DB.prepare(
-      'INSERT INTO poll_vote_events (poll_id, voter_hash, option_id, user_agent_hash) VALUES (?, ?, ?, ?)',
-    ).bind(pollId, voterHash, optionId, userAgentHash),
+      `
+        INSERT INTO poll_vote_events (poll_id, voter_hash, option_id, user_agent_hash)
+        SELECT ?, ?, ?, ?
+        WHERE (
+          SELECT COUNT(*)
+          FROM poll_vote_events
+          WHERE voter_hash = ? AND created_at > ?
+        ) <= ?
+      `,
+    ).bind(pollId, voterHash, optionId, userAgentHash, voterHash, recentCutoff, maxPriorVoteEvents),
   ])
+  const eventResult = results.at(1)
+  if (!eventResult) throw new Error('D1 did not return the vote event result.')
+  if (eventResult.meta.changes === 0) {
+    return json(request, env, { error: 'Too many vote attempts. Try again in a minute.' }, 429)
+  }
 
   return json(request, env, await loadResults(env, pollId, voterHash))
 }
