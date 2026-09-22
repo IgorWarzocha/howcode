@@ -7,6 +7,7 @@ import {
   type DesktopServiceRemoteRuntime,
   desktopServiceRemoteMethods,
 } from '../shared/desktop-service-rpc.ts'
+import { desktopShutdownTimeouts } from '../shared/desktop-shutdown-deadlines.ts'
 import { makeShutdownCoordinator } from '../shared/effect-shutdown.ts'
 import type { TerminalRpcRequest } from '../shared/terminal-rpc.ts'
 import { loadAppSettings } from './app-settings/readers.ts'
@@ -158,7 +159,7 @@ const shutdownCoordinatorPromise = Effect.runPromise(
       )
       yield* settledTask(() => terminalManager.disposeTerminalRuntime())
     }).pipe(Effect.ensuring(Effect.promise(disposeThreadStateDatabase))),
-    { label: 'Desktop service', timeout: '2 seconds' },
+    { label: 'Desktop service', timeout: desktopShutdownTimeouts.desktopServiceCleanupMs },
   ),
 )
 
