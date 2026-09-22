@@ -4,9 +4,11 @@
 - Added Pi's prompt-cache warming control and included background, compaction and tool usage in session costs.
 - Shared concurrent attachment searches and bounded their cached project indexes.
 - Replaced handwritten runtime queues, locks and timers with scoped Effect coordination, keeping terminal history and thread updates ordered through shutdown.
+- Moved SQLite persistence to stock Node through Effect, preserving existing data and removing native SQLite builds.
 - Fixed obsolete session watchers, cleared terminal history being restored by an earlier write, and subscription cleanup after a failed headless server start.
 - Moved clipboard attachments to Electron's native file and image APIs, removing a separate native dependency.
 - Removed the custom Electron ZIP installer now that upstream handles extraction correctly.
+- Fixed the cache-warming setting's displayed value and Electron development rebuilds, restart sequencing and shutdown errors.
 
 ### 0.1.68
 
