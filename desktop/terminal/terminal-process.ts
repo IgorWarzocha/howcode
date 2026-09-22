@@ -42,6 +42,7 @@ export async function startProcess(
   } as TerminalOpenRequest
   const command = resolveTerminalCommand(request)
 
+  let processStarted = false
   try {
     const processHandle = await adapter.spawn({
       shell: command.shell,
@@ -51,6 +52,7 @@ export async function startProcess(
       rows: record.snapshot.rows,
       env: resolveTerminalEnv(request),
     })
+    processStarted = true
 
     if (store.get(record.snapshot.sessionId) !== record) {
       await stopTerminalProcess(processHandle, record.forceKillOnClose)
@@ -119,6 +121,8 @@ export async function startProcess(
     })
   } catch (error) {
     if (store.get(record.snapshot.sessionId) !== record) {
+      // A late spawn still belongs to scoped cleanup; failed termination is not success.
+      if (processStarted) throw error
       return
     }
 

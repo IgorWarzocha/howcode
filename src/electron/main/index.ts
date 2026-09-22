@@ -76,7 +76,9 @@ async function bootstrap() {
   // current server alive; npm launches already select the latest immutable bundle directly.
   if (shouldTakeoverAtStartup(headlessOptions.enabled) && (await appUpdater.takeoverIfReady()))
     return
-  void appUpdater.checkAndInstall()
+  void appUpdater.checkAndInstall().catch((error) => {
+    if (!quitRequested) console.error('Automatic update check failed.', error)
+  })
 
   if (headlessOptions.enabled) {
     headlessServer = await startHeadlessServer({
@@ -127,6 +129,7 @@ app.on('window-all-closed', () => {
 })
 
 void bootstrap().catch((error) => {
-  console.error('Failed to bootstrap Electron app.', error)
+  // Shutdown rejects pending service requests; that cancellation is not a startup failure.
+  if (!quitRequested) console.error('Failed to bootstrap Electron app.', error)
   app.quit()
 })

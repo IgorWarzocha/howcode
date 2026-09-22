@@ -1,6 +1,9 @@
 import { stat } from 'node:fs/promises'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
+import * as Fiber from 'effect/Fiber'
+import * as FiberMap from 'effect/FiberMap'
+import * as Option from 'effect/Option'
 import * as Scope from 'effect/Scope'
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import type {
@@ -41,118 +44,140 @@ export function makeTerminalManager(
   store: TerminalSessionStore,
   rootScope: Scope.Scope,
   adapter: PtyAdapter,
-): TerminalManager {
-  const openingSessions = new Map<string, Promise<TerminalSessionSnapshot>>()
+) {
+  return Effect.gen(function* () {
+    // Opens drain before the session scope closes, including records still loading history.
+    const sessionsScope = yield* Scope.fork(rootScope)
+    const openingSessions = yield* FiberMap.make<
+      string,
+      Exit.Exit<TerminalSessionSnapshot, unknown>,
+      never
+    >()
+    let closed = false
+    yield* Effect.addFinalizer(() =>
+      Effect.gen(function* () {
+        closed = true
+        yield* FiberMap.awaitEmpty(openingSessions)
+      }),
+    )
 
-  async function openUnreservedTerminal(
-    request: TerminalOpenRequest,
-    sessionId: string,
-  ): Promise<TerminalSessionSnapshot> {
-    const existing = store.get(sessionId)
-    if (existing) return reopenExistingTerminal({ store, adapter, record: existing, request })
+    async function openUnreservedTerminal(
+      request: TerminalOpenRequest,
+      sessionId: string,
+    ): Promise<TerminalSessionSnapshot> {
+      const existing = store.get(sessionId)
+      if (existing) return reopenExistingTerminal({ store, adapter, record: existing, request })
 
-    const unboundWorkspaceTerminal = findUnboundWorkspaceShellTerminal(store, request)
-    if (unboundWorkspaceTerminal) {
-      return rebindWorkspaceTerminal({
-        store,
-        adapter,
-        record: unboundWorkspaceTerminal,
-        request,
-        sessionId,
+      const unboundWorkspaceTerminal = findUnboundWorkspaceShellTerminal(store, request)
+      if (unboundWorkspaceTerminal) {
+        return rebindWorkspaceTerminal({
+          store,
+          adapter,
+          record: unboundWorkspaceTerminal,
+          request,
+          sessionId,
+        })
+      }
+
+      return createTerminalRecord({ store, rootScope: sessionsScope, adapter, request, sessionId })
+    }
+
+    async function openTerminal(request: TerminalOpenRequest): Promise<TerminalSessionSnapshot> {
+      return withWorkspaceActivity(request.projectId, async () => {
+        await releaseGuiRuntimeForPiSession(request)
+        const sessionId = makeSessionId(request)
+        return Effect.runPromise(
+          Effect.gen(function* () {
+            if (closed) return yield* Effect.fail(new Error('Terminal manager is closed.'))
+            const pending = FiberMap.getUnsafe(openingSessions, sessionId)
+            if (Option.isSome(pending)) return yield* Effect.flatten(Fiber.join(pending.value))
+            const opening = yield* FiberMap.run(
+              openingSessions,
+              sessionId,
+              Effect.tryPromise({
+                try: () => openUnreservedTerminal(request, sessionId),
+                catch: (error) => error,
+              }).pipe(Effect.exit, Effect.uninterruptible),
+            )
+            return yield* Effect.flatten(Fiber.join(opening))
+          }),
+        )
       })
     }
 
-    return createTerminalRecord({ store, rootScope, adapter, request, sessionId })
-  }
+    async function writeTerminal(sessionId: string, data: string) {
+      const record = store.get(sessionId)
+      if (!record) return
+      const input = rememberTerminalInput(store, record, data)
+      if (data.length === 0) return
 
-  async function openTerminal(request: TerminalOpenRequest): Promise<TerminalSessionSnapshot> {
-    return withWorkspaceActivity(request.projectId, async () => {
-      await releaseGuiRuntimeForPiSession(request)
-      const sessionId = makeSessionId(request)
-      const pending = openingSessions.get(sessionId)
-      if (pending) return pending
+      if (!record.process && isRestartableTerminalStatus(record.snapshot.status)) {
+        record.snapshot = {
+          ...record.snapshot,
+          status: 'starting',
+          exitCode: null,
+          exitSignal: null,
+          updatedAt: nowIso(),
+        }
+        await ensureProcessStarted(store, adapter, record, 'restarted')
+      }
 
-      const opening = openUnreservedTerminal(request, sessionId)
-      openingSessions.set(sessionId, opening)
+      record.process?.write(data)
+      if (didSubmitClear(input)) clearTerminalHistory(store, record)
+    }
+
+    async function resizeTerminal(sessionId: string, cols: number, rows: number) {
+      const record = store.get(sessionId)
+      if (!record) return
+      record.snapshot = { ...record.snapshot, cols, rows, updatedAt: nowIso() }
+      record.process?.resize(cols, rows)
+    }
+
+    async function listTerminals(): Promise<TerminalSessionSnapshot[]> {
+      return store.list().map((record) => record.snapshot)
+    }
+
+    async function getTerminalStatus(sessionId: string) {
+      const record = store.get(sessionId)
+      return record ? { sessionId, status: record.snapshot.status } : null
+    }
+
+    async function statSessionFile(sessionId: string) {
+      const record = store.get(sessionId)
+      const persistedSessionPath = getPersistedSessionPath(record?.snapshot.sessionPath ?? null)
+      if (!persistedSessionPath) return null
+
       try {
-        return await opening
-      } finally {
-        if (openingSessions.get(sessionId) === opening) openingSessions.delete(sessionId)
+        const fileStat = await stat(persistedSessionPath)
+        return fileStat.isFile() ? { mtimeMs: fileStat.mtimeMs, size: fileStat.size } : null
+      } catch {
+        return null
       }
-    })
-  }
-
-  async function writeTerminal(sessionId: string, data: string) {
-    const record = store.get(sessionId)
-    if (!record) return
-    const input = rememberTerminalInput(store, record, data)
-    if (data.length === 0) return
-
-    if (!record.process && isRestartableTerminalStatus(record.snapshot.status)) {
-      record.snapshot = {
-        ...record.snapshot,
-        status: 'starting',
-        exitCode: null,
-        exitSignal: null,
-        updatedAt: nowIso(),
-      }
-      await ensureProcessStarted(store, adapter, record, 'restarted')
     }
 
-    record.process?.write(data)
-    if (didSubmitClear(input)) clearTerminalHistory(store, record)
-  }
-
-  async function resizeTerminal(sessionId: string, cols: number, rows: number) {
-    const record = store.get(sessionId)
-    if (!record) return
-    record.snapshot = { ...record.snapshot, cols, rows, updatedAt: nowIso() }
-    record.process?.resize(cols, rows)
-  }
-
-  async function listTerminals(): Promise<TerminalSessionSnapshot[]> {
-    return store.list().map((record) => record.snapshot)
-  }
-
-  async function getTerminalStatus(sessionId: string) {
-    const record = store.get(sessionId)
-    return record ? { sessionId, status: record.snapshot.status } : null
-  }
-
-  async function statSessionFile(sessionId: string) {
-    const record = store.get(sessionId)
-    const persistedSessionPath = getPersistedSessionPath(record?.snapshot.sessionPath ?? null)
-    if (!persistedSessionPath) return null
-
-    try {
-      const fileStat = await stat(persistedSessionPath)
-      return fileStat.isFile() ? { mtimeMs: fileStat.mtimeMs, size: fileStat.size } : null
-    } catch {
-      return null
+    async function closeTerminal(request: TerminalCloseRequest) {
+      const record = store.get(request.sessionId)
+      if (!record) return
+      record.deleteHistoryOnClose = request.deleteHistory === true
+      record.forceKillOnClose = request.force === true
+      await Effect.runPromise(Scope.close(record.scope, Exit.void))
     }
-  }
 
-  async function closeTerminal(request: TerminalCloseRequest) {
-    const record = store.get(request.sessionId)
-    if (!record) return
-    record.deleteHistoryOnClose = request.deleteHistory === true
-    record.forceKillOnClose = request.force === true
-    await Effect.runPromise(Scope.close(record.scope, Exit.void))
-  }
+    async function closeAllTerminals() {
+      await Effect.runPromise(FiberMap.awaitEmpty(openingSessions))
+      const sessionIds = store.list().map((record) => record.snapshot.sessionId)
+      await Promise.all(sessionIds.map((sessionId) => closeTerminal({ sessionId })))
+    }
 
-  async function closeAllTerminals() {
-    const sessionIds = store.list().map((record) => record.snapshot.sessionId)
-    await Promise.all(sessionIds.map((sessionId) => closeTerminal({ sessionId })))
-  }
-
-  return {
-    closeAllTerminals,
-    closeTerminal,
-    getTerminalStatus,
-    listTerminals,
-    openTerminal,
-    resizeTerminal,
-    statSessionFile,
-    writeTerminal,
-  }
+    return {
+      closeAllTerminals,
+      closeTerminal,
+      getTerminalStatus,
+      listTerminals,
+      openTerminal,
+      resizeTerminal,
+      statSessionFile,
+      writeTerminal,
+    } satisfies TerminalManager
+  })
 }

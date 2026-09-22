@@ -1,5 +1,8 @@
 import { rm } from 'node:fs/promises'
 import * as Effect from 'effect/Effect'
+import * as Fiber from 'effect/Fiber'
+import * as FiberHandle from 'effect/FiberHandle'
+import * as Option from 'effect/Option'
 import * as Scope from 'effect/Scope'
 import type {
   TerminalOpenRequest,
@@ -7,7 +10,13 @@ import type {
 } from '../../shared/terminal-contracts.ts'
 import { stopTerminalProcess } from './process-stop.ts'
 import { bindWorkspaceTerminalToSession } from './session-binding.ts'
-import { flushSession, getTranscriptPath, nowIso, readTranscript } from './session-history.ts'
+import {
+  flushSession,
+  getTranscriptPath,
+  makeTranscriptWriter,
+  nowIso,
+  readTranscript,
+} from './session-history.ts'
 import type { TerminalSessionRecord } from './session-record.ts'
 import type { TerminalSessionStore } from './session-store.ts'
 import { clearSessionBindings, startProcess } from './terminal-process.ts'
@@ -30,17 +39,34 @@ export function ensureProcessStarted(
   reason: 'started' | 'restarted',
 ) {
   if (record.process) return Promise.resolve()
-  if (record.restartPromise) return record.restartPromise
+  const pending = FiberHandle.getUnsafe(record.restart)
+  const task = Option.getOrElse(pending, () =>
+    Effect.runSync(
+      FiberHandle.run(
+        record.restart,
+        Effect.promise(() => startProcess(store, adapter, record, reason)).pipe(
+          Effect.uninterruptible,
+        ),
+      ),
+    ),
+  )
+  return Effect.runPromise(Fiber.join(task))
+}
 
-  record.restartPromise = startProcess(store, adapter, record, reason).finally(() => {
-    record.restartPromise = null
+function startProcessInBackground(
+  store: TerminalSessionStore,
+  adapter: PtyAdapter,
+  record: TerminalSessionRecord,
+  reason: 'started' | 'restarted',
+) {
+  void ensureProcessStarted(store, adapter, record, reason).catch((error) => {
+    console.warn('Failed to finish terminal process startup.', error)
   })
-  return record.restartPromise
 }
 
 async function finalizeTerminalRecord(store: TerminalSessionStore, record: TerminalSessionRecord) {
   store.deleteRecord(record)
-  const restartPromise = record.restartPromise
+  const restart = FiberHandle.getUnsafe(record.restart)
   const processHandle = record.process
   let cleanupError: unknown
   const captureError = (error: unknown) => {
@@ -54,15 +80,14 @@ async function finalizeTerminalRecord(store: TerminalSessionStore, record: Termi
     ? stopTerminalProcess(processHandle, record.forceKillOnClose)
     : Promise.resolve()
   ).catch(captureError)
-  record.restartPromise = null
   try {
     await flushSession(record)
   } catch (error) {
     captureError(error)
   }
-  await restartPromise?.catch(() => {
-    // startProcess kills late PTYs after the record is removed from the scoped store.
-  })
+  if (Option.isSome(restart)) {
+    await Effect.runPromise(Fiber.join(restart.value)).catch(captureError)
+  }
 
   if (record.deleteHistoryOnClose) {
     try {
@@ -104,7 +129,7 @@ export function reopenExistingTerminal(input: {
       exitSignal: null,
       updatedAt: nowIso(),
     }
-    void ensureProcessStarted(input.store, input.adapter, input.record, 'restarted')
+    startProcessInBackground(input.store, input.adapter, input.record, 'restarted')
   }
 
   return input.record.snapshot
@@ -127,7 +152,7 @@ export async function rebindWorkspaceTerminal(input: {
     exitSignal: null,
     updatedAt: nowIso(),
   }
-  void ensureProcessStarted(input.store, input.adapter, input.record, 'restarted')
+  startProcessInBackground(input.store, input.adapter, input.record, 'restarted')
   return input.record.snapshot
 }
 
@@ -161,13 +186,14 @@ export async function createTerminalRecord(input: {
     scope: sessionScope,
     snapshot,
     process: null,
-    restartPromise: null,
+    restart: Effect.runSync(Scope.provide(FiberHandle.make<void, never>(), sessionScope)),
     transcriptPath: getTranscriptPath(input.sessionId),
     inputBuffer: '',
     suppressOutputVisibilityUntilInput: false,
-    persistTimer: null,
-    persistPromise: Promise.resolve(),
-    tuiSessionDetection: createTuiSessionDetection(input.request),
+    transcriptWriter: Effect.runSync(Scope.provide(makeTranscriptWriter(), sessionScope)),
+    tuiSessionDetection: Effect.runSync(
+      Scope.provide(createTuiSessionDetection(input.request), sessionScope),
+    ),
     cleanup: [],
     deleteHistoryOnClose: false,
     forceKillOnClose: false,
@@ -181,6 +207,6 @@ export async function createTerminalRecord(input: {
   )
   input.store.set(input.sessionId, record)
   scheduleTuiSessionDetection(input.store, record, 'retry')
-  void ensureProcessStarted(input.store, input.adapter, record, 'started')
+  startProcessInBackground(input.store, input.adapter, record, 'started')
   return snapshot
 }

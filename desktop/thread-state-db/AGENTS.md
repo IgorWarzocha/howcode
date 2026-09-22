@@ -1,0 +1,4 @@
+- Repository leaves return Effects. Keep `databaseOperation` at synchronous public boundaries; never reenter that boundary from a transaction.
+- The synchronous boundary deliberately prevents query sequences from interleaving. Keep async work out of repository operations; background Git migrations have a separate scoped lifetime.
+- Use `withDatabaseTransaction` to preserve deferred locking. The Node adapter's default `BEGIN IMMEDIATE` is not equivalent.
+- Schema initialization executes explicit SQL statements. Effect's unprepared query path still prepares one statement; it is not a multi-statement `exec` replacement.

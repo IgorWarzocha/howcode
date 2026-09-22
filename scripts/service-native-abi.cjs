@@ -193,9 +193,8 @@ function probeNodeAbi(nodeExecutable) {
 
 function getNativeValidationScript() {
   return `
-    const betterSqlite3 = require('better-sqlite3')
-    const Database = betterSqlite3.default || betterSqlite3
-    const db = new Database(':memory:')
+    const { DatabaseSync } = require('node:sqlite')
+    const db = new DatabaseSync(':memory:')
     db.prepare('select 1').get()
     db.close()
 

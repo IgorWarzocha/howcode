@@ -4,6 +4,8 @@ import path from 'node:path'
 const isWatchMode = process.argv.includes('--watch')
 const projectRoot = process.cwd()
 const buildRoot = path.join(projectRoot, 'build')
+const buildLifetime = new AbortController()
+let shutdownRequested = false
 
 const buildTargets = [
   {
@@ -62,54 +64,71 @@ async function copyDesktopResources() {
   })
 }
 
-async function runBuild() {
-  await prepareBuildDirectories()
-
-  const builds = await Promise.all(
-    buildTargets.map((target) =>
-      Bun.build({
-        entrypoints: [...target.entrypoints],
-        outdir: target.outdir,
-        root: target.root,
-        naming: target.naming,
-        target: 'node',
-        format: target.format,
-        packages: 'external',
-        sourcemap: 'linked',
-        watch: isWatchMode,
-        throw: true,
-      } as Bun.BuildConfig & { watch?: boolean }),
-    ),
+async function buildTarget(target: (typeof buildTargets)[number]) {
+  // Source watching is supported by Bun's CLI, not the Bun.build API.
+  const child = Bun.spawn(
+    [
+      process.execPath,
+      'build',
+      ...target.entrypoints,
+      '--target=node',
+      `--format=${target.format}`,
+      '--packages=external',
+      '--sourcemap=linked',
+      `--outdir=${target.outdir}`,
+      `--root=${target.root}`,
+      `--entry-naming=${target.naming.entry}`,
+      ...(isWatchMode ? ['--watch', '--no-clear-screen'] : []),
+    ],
+    { cwd: projectRoot, stdio: ['ignore', 'inherit', 'inherit'], signal: buildLifetime.signal },
   )
-
-  for (const [index, build] of builds.entries()) {
-    console.log(
-      `Built ${buildTargets[index]?.label ?? `target-${index}`} (${build.outputs.length} output(s)).`,
-    )
+  const exitCode = await child.exited
+  if (buildLifetime.signal.aborted) return
+  if (exitCode !== 0 || isWatchMode) {
+    throw new Error(`${target.label} ${isWatchMode ? 'watcher' : 'build'} exited with ${exitCode}.`)
   }
+  console.log(`Built ${target.label}.`)
+}
 
-  await copyDesktopResources()
-
-  if (isWatchMode) {
-    console.log('Watching Electron runtime bundles...')
-
-    void (async () => {
-      for await (const _event of watch(path.join(projectRoot, 'desktop', 'resources'), {
-        recursive: true,
-      })) {
-        await copyDesktopResources()
-        console.log('Copied desktop resources.')
-      }
-    })()
-    await new Promise(() => {
-      setInterval(() => {
-        // Keep the watch process alive.
-      }, 1 << 30)
-    })
+async function watchDesktopResources() {
+  for await (const _event of watch(path.join(projectRoot, 'desktop', 'resources'), {
+    recursive: true,
+    signal: buildLifetime.signal,
+  })) {
+    await copyDesktopResources()
+    console.log('Copied desktop resources.')
   }
 }
 
+async function runBuild() {
+  await prepareBuildDirectories()
+  await copyDesktopResources()
+  if (buildLifetime.signal.aborted) return
+
+  const tasks = buildTargets.map(buildTarget)
+  if (isWatchMode) {
+    tasks.push(watchDesktopResources())
+    console.log('Watching Electron runtime bundles...')
+  }
+  try {
+    await Promise.all(tasks)
+  } finally {
+    buildLifetime.abort()
+    await Promise.allSettled(tasks)
+  }
+}
+
+function shutdown() {
+  shutdownRequested = true
+  buildLifetime.abort()
+}
+
+process.on('SIGINT', shutdown)
+process.on('SIGTERM', shutdown)
+
 void runBuild().catch((error) => {
-  console.error(error)
-  process.exit(1)
+  if (!shutdownRequested) {
+    console.error(error)
+    process.exitCode = 1
+  }
 })

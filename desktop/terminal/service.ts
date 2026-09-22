@@ -61,7 +61,7 @@ export const layer = Layer.effect(
     const scope = yield* Scope.Scope
     const pty = yield* Pty.Service
     const store = yield* makeTerminalSessionStore
-    const manager = makeTerminalManager(store, scope, pty)
+    const manager = yield* makeTerminalManager(store, scope, pty)
 
     const closeAll = Effect.fn('Terminal.closeAll')(function* () {
       yield* fromPromise('closeAll', manager.closeAllTerminals)

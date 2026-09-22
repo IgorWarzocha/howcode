@@ -5,6 +5,7 @@ import * as Option from 'effect/Option'
 import * as Queue from 'effect/Queue'
 import * as Scope from 'effect/Scope'
 import * as Stream from 'effect/Stream'
+import * as RpcSerialization from 'effect/unstable/rpc/RpcSerialization'
 import * as RpcServer from 'effect/unstable/rpc/RpcServer'
 import {
   TerminalRpcGroup,
@@ -36,6 +37,7 @@ export async function createTerminalRpcServer(
             Effect.forkScoped,
           )
           return {
+            codecFor: RpcSerialization.json.codecFor,
             clientIds: Effect.succeed(clientIds),
             disconnects,
             end: (clientId: number) => Effect.sync(() => clientIds.delete(clientId)),
@@ -43,6 +45,7 @@ export async function createTerminalRpcServer(
             send: (_clientId: number, message: TerminalRpcResponse) =>
               Effect.sync(() => send(message)),
             supportsAck: false,
+            supportsNotifications: true,
             supportsSpanPropagation: false,
             supportsTransferables: false,
           }

@@ -1,7 +1,8 @@
 import { rmSync } from 'node:fs'
 import * as Effect from 'effect/Effect'
+import * as Fiber from 'effect/Fiber'
 import * as Layer from 'effect/Layer'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import * as Pty from './pty-service.ts'
 import { layer, Service } from './service.ts'
 import { getTranscriptPath } from './session-history.ts'
@@ -51,6 +52,49 @@ class FakePtyProcess implements PtyProcess {
 }
 
 describe('Terminal service', () => {
+  it('reports failed termination of a PTY that arrives after its record was closed', async () => {
+    const process = new FakePtyProcess()
+    vi.spyOn(process, 'kill').mockImplementation(() => {
+      throw new Error('Cannot terminate late PTY.')
+    })
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const spawned = Promise.withResolvers<PtyProcess>()
+    const started = Promise.withResolvers<void>()
+    const adapter: PtyAdapter = {
+      name: 'failed-late-kill',
+      spawn: () => {
+        started.resolve()
+        return spawned.promise
+      },
+    }
+    const testLayer = layer.pipe(Layer.provide(Layer.succeed(Pty.Service, adapter)))
+    let sessionId: string | undefined
+    const running = Effect.runPromise(
+      Effect.gen(function* () {
+        const terminal = yield* Service
+        const snapshot = yield* terminal.open({
+          projectId: '/tmp/howcode-terminal-late-kill-failure',
+          cwd: '/tmp',
+          cols: 80,
+          rows: 24,
+        })
+        sessionId = snapshot.sessionId
+        const closing = terminal.close({ sessionId: snapshot.sessionId, force: true })
+        // close removes the record synchronously before awaiting the in-flight spawn.
+        const fiber = yield* Effect.forkChild(closing, { startImmediately: true })
+        spawned.resolve(process)
+        return yield* Fiber.join(fiber)
+      }).pipe(Effect.provide(testLayer)),
+    )
+    try {
+      await started.promise
+      await expect(running).rejects.toThrow('Cannot terminate late PTY.')
+    } finally {
+      warning.mockRestore()
+      if (sessionId) rmSync(getTranscriptPath(sessionId), { force: true })
+    }
+  })
+
   it('escalates an ordinary close when the PTY does not exit', async () => {
     const process = new FakePtyProcess(true)
     const adapter: PtyAdapter = {

@@ -30,6 +30,7 @@ export const SessionFileEntrySchema = Schema.Struct({
       usage: Schema.optionalKey(UsageSchema),
     }),
   ),
+  usage: Schema.optionalKey(UsageSchema),
   name: Schema.optionalKey(Schema.String),
 })
 

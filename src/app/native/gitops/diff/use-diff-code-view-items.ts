@@ -6,8 +6,11 @@ import type { GitOpsAnnotationMetadata } from '../review/pierre-review-adapter'
 import { getDiffFileIdentity } from './diff-file-identity'
 import { isImageDiffFile } from './diff-panel-content.helpers'
 
-type DiffCodeViewItem = CodeViewItem<GitOpsAnnotationMetadata> & { type: 'diff' }
-type ItemSyncState = { ids: string[]; versions: Map<string, number | undefined> }
+type DiffCodeViewItem = CodeViewItem<GitOpsAnnotationMetadata> & {
+  type: 'diff'
+  annotations: DiffLineAnnotation<GitOpsAnnotationMetadata>[]
+}
+type ItemSyncState = { ids: string[]; items: Map<string, DiffCodeViewItem> }
 
 function hashString(input: string) {
   let hash = 0
@@ -32,10 +35,16 @@ function getAnnotationVersionKey(
     .join('|')
 }
 
+function getItemVersion(item: DiffCodeViewItem) {
+  return hashString(
+    `${item.id}:${item.fileDiff.unifiedLineCount}:${item.fileDiff.splitLineCount}:${getAnnotationVersionKey(item.annotations)}:${item.collapsed ? 1 : 0}:${item.edit ? 1 : 0}`,
+  )
+}
+
 function getItemSyncState(items: readonly DiffCodeViewItem[]): ItemSyncState {
   return {
     ids: items.map((item) => item.id),
-    versions: new Map(items.map((item) => [item.id, item.version])),
+    items: new Map(items.map((item) => [item.id, item])),
   }
 }
 
@@ -51,12 +60,12 @@ function syncAppendOnlyItems({
   items,
   previous,
 }: {
-  handle: CodeViewHandle<GitOpsAnnotationMetadata>
+  handle: CodeViewHandle<GitOpsAnnotationMetadata, undefined>
   items: readonly DiffCodeViewItem[]
   previous: ItemSyncState
 }) {
   for (const item of items.slice(0, previous.ids.length)) {
-    if (previous.versions.get(item.id) !== item.version) handle.updateItem(item)
+    if (previous.items.get(item.id)?.version !== item.version) handle.updateItem(item)
   }
   const appendedItems = items.slice(previous.ids.length)
   if (appendedItems.length > 0) handle.addItems(appendedItems)
@@ -72,7 +81,7 @@ export function useDiffCodeViewItems({
 }: {
   annotationsByFile: Map<string, DiffLineAnnotation<GitOpsAnnotationMetadata>[]>
   collapsedFiles: Record<string, boolean>
-  codeViewRef: React.RefObject<CodeViewHandle<GitOpsAnnotationMetadata> | null>
+  codeViewRef: React.RefObject<CodeViewHandle<GitOpsAnnotationMetadata, undefined> | null>
   focusedImageFileKeys: ReadonlySet<string>
   editing: DiffEditingController
   renderableFiles: readonly FileDiffMetadata[]
@@ -87,27 +96,28 @@ export function useDiffCodeViewItems({
           ? false
           : (collapsedFiles[fileKey] ?? isImageFile)
         const edit = editing.state.kind === 'editing' && editing.state.fileKey === fileKey
-        return {
+        const item: DiffCodeViewItem = {
           id: fileKey,
           type: 'diff',
           fileDiff,
           annotations,
           collapsed,
           edit,
-          version: hashString(
-            `${fileKey}:${fileDiff.unifiedLineCount}:${fileDiff.splitLineCount}:${getAnnotationVersionKey(annotations)}:${collapsed ? 1 : 0}:${edit ? 1 : 0}`,
-          ),
         }
+        return { ...item, version: getItemVersion(item) }
       }),
     [annotationsByFile, collapsedFiles, editing.state, focusedImageFileKeys, renderableFiles],
   )
-  const [handle, setHandleState] = useState<CodeViewHandle<GitOpsAnnotationMetadata> | null>(null)
-  const syncStateRef = useRef<ItemSyncState>({ ids: [], versions: new Map() })
+  const [handle, setHandleState] = useState<CodeViewHandle<
+    GitOpsAnnotationMetadata,
+    undefined
+  > | null>(null)
+  const syncStateRef = useRef<ItemSyncState>({ ids: [], items: new Map() })
 
   const setHandle = useCallback(
-    (nextHandle: CodeViewHandle<GitOpsAnnotationMetadata> | null) => {
+    (nextHandle: CodeViewHandle<GitOpsAnnotationMetadata, undefined> | null) => {
       codeViewRef.current = nextHandle
-      if (!nextHandle) syncStateRef.current = { ids: [], versions: new Map() }
+      if (!nextHandle) syncStateRef.current = { ids: [], items: new Map() }
       setHandleState(nextHandle)
     },
     [codeViewRef],
@@ -118,11 +128,19 @@ export function useDiffCodeViewItems({
     if (!(handle && instance)) return
 
     const previous = syncStateRef.current
-    const next = getItemSyncState(items)
+    // Persist remapped review anchors on every edit, but do not echo them back into
+    // Pierre's active session. It owns its live annotations until editing ends.
+    const nextItems = items.map((item) => {
+      const prior = previous.items.get(item.id)
+      if (!(item.edit && prior?.edit)) return item
+      const stable = { ...item, annotations: prior.annotations }
+      return { ...stable, version: getItemVersion(stable) }
+    })
+    const next = getItemSyncState(nextItems)
     if (isAppendOnly(previous.ids, next.ids)) {
-      syncAppendOnlyItems({ handle, items, previous })
+      syncAppendOnlyItems({ handle, items: nextItems, previous })
     } else {
-      instance.setItems(items)
+      instance.setItems(nextItems)
     }
     syncStateRef.current = next
   }, [handle, items])

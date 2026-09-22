@@ -4,6 +4,7 @@ export const defaultPiSettings: PiSettings = {
   extensions: [],
   theme: 'howcode-default',
   autoCompact: true,
+  cacheWarming: 'streaming',
   enableSkillCommands: true,
   hideThinkingBlock: false,
   quietStartup: false,

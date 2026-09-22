@@ -33,7 +33,7 @@ import { useTrailingContextExpansion } from './use-trailing-context-expansion'
 
 type DiffPanelFileListProps = {
   baseline: ProjectDiffBaseline | null
-  codeViewRef: React.RefObject<CodeViewHandle<GitOpsAnnotationMetadata> | null>
+  codeViewRef: React.RefObject<CodeViewHandle<GitOpsAnnotationMetadata, undefined> | null>
   scrollContainerRef: React.RefObject<HTMLDivElement | null>
   collapsedFiles: Record<string, boolean>
   diffRenderMode: 'stacked' | 'split'
@@ -138,7 +138,7 @@ export function DiffPanelFileList({
   }, [changeReview.files])
   const { onGutterUtilityClick, onSelectedLinesChange, renderAnnotation, selectedLines } =
     usePierreReviewCodeView({ changeReview, contextExpansion, fileIdentityByKey, review })
-  const codeViewOptions = useMemo<CodeViewOptions<GitOpsAnnotationMetadata>>(
+  const codeViewOptions = useMemo<CodeViewOptions<GitOpsAnnotationMetadata, undefined>>(
     () => ({
       diffStyle: diffRenderMode === 'split' ? 'split' : 'unified',
       lineDiffType: 'none',

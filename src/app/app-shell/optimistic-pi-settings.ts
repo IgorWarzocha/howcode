@@ -7,6 +7,7 @@ function isPiSettingsKey(value: unknown): value is keyof PiSettings {
     [
       'theme',
       'autoCompact',
+      'cacheWarming',
       'enableSkillCommands',
       'hideThinkingBlock',
       'quietStartup',
@@ -39,6 +40,7 @@ function getNumericPiSettingsValue<Key extends keyof PiSettings>(key: Key, value
 
 function isValidPiSettingsStringValue(key: keyof PiSettings, value: unknown) {
   if (key === 'theme') return typeof value === 'string' && value.trim().length > 0
+  if (key === 'cacheWarming') return value === 'off' || value === 'streaming' || value === 'idle'
   if (key === 'transport') return value === 'sse' || value === 'websocket' || value === 'auto'
   if (key === 'steeringMode' || key === 'followUpMode')
     return value === 'all' || value === 'one-at-a-time'

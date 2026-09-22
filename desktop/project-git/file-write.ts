@@ -6,14 +6,13 @@ import type {
   ProjectFileWriteRequest,
   ProjectFileWriteResult,
 } from '../../shared/desktop-contracts.ts'
+import { runKeyedWorkspaceOperation } from '../runtime/keyed-workspace-operations.ts'
 import {
   getProjectTextRevision,
   isContainedProjectPath,
   maxProjectDiffTextFileBytes,
   normalizeProjectPath,
 } from './file-content.ts'
-
-const activeFileWrites = new Map<string, Promise<void>>()
 
 function unavailable(
   path: string,
@@ -34,18 +33,6 @@ function conflict(
     expectedRevision: request.expectedRevision,
     currentRevision,
   }
-}
-
-async function runExclusiveFileWrite<T>(key: string, task: () => Promise<T>) {
-  const previous = activeFileWrites.get(key) ?? Promise.resolve()
-  const next = previous.then(task, task)
-  let tail: Promise<void>
-  const clearQueue = () => {
-    if (activeFileWrites.get(key) === tail) activeFileWrites.delete(key)
-  }
-  tail = next.then(clearQueue, clearQueue)
-  activeFileWrites.set(key, tail)
-  return next
 }
 
 async function readCurrentRevision(path: string) {
@@ -158,7 +145,7 @@ export async function writeProjectTextFile(
     return unavailable(path, 'missing')
   }
 
-  return runExclusiveFileWrite(`${projectRoot}\0${path}`, () =>
+  return runKeyedWorkspaceOperation('file-write', `${projectRoot}\0${path}`, () =>
     writeProjectTextFileExclusive(request, projectRoot, path),
   )
 }

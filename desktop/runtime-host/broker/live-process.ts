@@ -107,24 +107,14 @@ export const liveProcessAdapter: RuntimeHostProcessAdapter<ChildProcess> = {
     Effect.acquireRelease(
       Effect.sync(() => {
         const exit = () => terminateAll()
-        const sigterm = () => {
-          terminateAll()
-          process.exit(0)
-        }
-        const sigint = () => {
-          terminateAll()
-          process.exit(0)
-        }
+        // The service entrypoint owns graceful signal shutdown, including DB
+        // closure. This is only the last-resort child cleanup on process exit.
         process.once('exit', exit)
-        process.once('SIGTERM', sigterm)
-        process.once('SIGINT', sigint)
-        return { exit, sigint, sigterm }
+        return exit
       }),
-      ({ exit, sigint, sigterm }) =>
+      (exit) =>
         Effect.sync(() => {
           process.off('exit', exit)
-          process.off('SIGTERM', sigterm)
-          process.off('SIGINT', sigint)
         }),
     ).pipe(Effect.asVoid),
 }

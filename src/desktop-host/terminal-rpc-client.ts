@@ -10,6 +10,7 @@ import * as Stream from 'effect/Stream'
 import type * as RpcClient from 'effect/unstable/rpc/RpcClient'
 import * as RpcClientRuntime from 'effect/unstable/rpc/RpcClient'
 import { RpcClientDefect, RpcClientError } from 'effect/unstable/rpc/RpcClientError'
+import * as RpcSerialization from 'effect/unstable/rpc/RpcSerialization'
 import type { TerminalService } from '../../shared/desktop-service-contracts'
 import {
   TerminalCloseRequest,
@@ -143,6 +144,7 @@ export class TerminalRpcServiceClient {
                 Effect.forkScoped,
               )
               return {
+                codecFor: RpcSerialization.json.codecFor,
                 send: (_clientId: number, message: TerminalRpcRequest) =>
                   sendMessage(message).pipe(
                     Effect.mapError(

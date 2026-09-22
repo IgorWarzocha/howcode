@@ -34,6 +34,8 @@ export async function loadPiSettingsInHost(
     extensions: settingsManager.getExtensionPaths(),
     theme: settingsManager.getTheme() ?? defaultPiSettings.theme,
     autoCompact: settingsManager.getCompactionEnabled(),
+    cacheWarming:
+      asPiCacheWarmingMode(settingsManager.getCacheWarmingMode()) ?? defaultPiSettings.cacheWarming,
     enableSkillCommands: settingsManager.getEnableSkillCommands(),
     hideThinkingBlock: settingsManager.getHideThinkingBlock(),
     quietStartup: settingsManager.getQuietStartup(),
@@ -65,6 +67,10 @@ export async function loadPiSettingsInHost(
 
 function asPiTransport(value: unknown): PiSettings['transport'] | null {
   return value === 'sse' || value === 'websocket' || value === 'auto' ? value : null
+}
+
+function asPiCacheWarmingMode(value: unknown): PiSettings['cacheWarming'] | null {
+  return value === 'off' || value === 'streaming' || value === 'idle' ? value : null
 }
 
 function asPiQueueMode(value: unknown): PiSettings['steeringMode'] | null {
@@ -167,6 +173,13 @@ function updateTransportSetting(settingsManager: PiSettingsManager, value: unkno
   return true
 }
 
+function updateCacheWarmingSetting(settingsManager: PiSettingsManager, value: unknown) {
+  const mode = asPiCacheWarmingMode(value)
+  if (!mode) return false
+  settingsManager.setCacheWarmingMode(mode)
+  return true
+}
+
 function updateQueueModeSetting(
   settingsManager: PiSettingsManager,
   key: PiSettingsKey,
@@ -224,6 +237,7 @@ async function updateNonBooleanSetting(
   }
   if (key === 'theme') return await updateThemeSetting(settingsManager, value, projectPath)
   if (key === 'transport') return updateTransportSetting(settingsManager, value)
+  if (key === 'cacheWarming') return updateCacheWarmingSetting(settingsManager, value)
   if (updateQueueModeSetting(settingsManager, key, value)) return true
   if (key === 'doubleEscapeAction') {
     const action = asPiDoubleEscapeAction(value)

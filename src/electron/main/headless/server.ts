@@ -35,6 +35,27 @@ function closeHeadlessClients(context: HeadlessRequestContext) {
   context.terminalEventClients.clear()
 }
 
+export async function listenHeadlessServer(
+  server: http.Server,
+  options: Pick<HeadlessServerOptions, 'port' | 'host'>,
+  finalize: () => void,
+) {
+  server.once('close', finalize)
+  try {
+    await new Promise<void>((resolve, reject) => {
+      server.once('error', reject)
+      server.listen(options.port, options.host, () => {
+        server.off('error', reject)
+        resolve()
+      })
+    })
+  } catch (error) {
+    server.off('close', finalize)
+    finalize()
+    throw error
+  }
+}
+
 export async function startHeadlessServer(input: HeadlessServerInput) {
   const rendererDistDirectory = getRendererDistDirectory()
   const requestContext: HeadlessRequestContext = {
@@ -70,17 +91,6 @@ export async function startHeadlessServer(input: HeadlessServerInput) {
   const server = http.createServer((request, response) =>
     handleHeadlessHttpRequest(requestContext, request, response),
   )
-  await new Promise<void>((resolve, reject) => {
-    server.once('error', reject)
-    server.listen(input.options.port, input.options.host, () => {
-      server.off('error', reject)
-      scheduleBrowserUploadComposerAttachmentsCleanup({
-        onError: (error) => console.warn('headless browser upload cleanup failed', { error }),
-      })
-      resolve()
-    })
-  })
-
   let finalized = false
   const finalize = () => {
     if (finalized) return
@@ -90,7 +100,10 @@ export async function startHeadlessServer(input: HeadlessServerInput) {
     unsubscribeAppUpdateEvents()
     closeHeadlessClients(requestContext)
   }
-  server.once('close', finalize)
+  await listenHeadlessServer(server, input.options, finalize)
+  scheduleBrowserUploadComposerAttachmentsCleanup({
+    onError: (error) => console.warn('headless browser upload cleanup failed', { error }),
+  })
 
   return {
     close: async () => {

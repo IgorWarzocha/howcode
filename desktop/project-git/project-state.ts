@@ -1,5 +1,7 @@
+import * as Effect from 'effect/Effect'
+import * as SqlClient from 'effect/unstable/sql/SqlClient'
 import type { ProjectGitState } from '../../shared/desktop-contracts.ts'
-import { getThreadStateDatabase } from '../thread-state-db/db.ts'
+import { databaseOperation } from '../thread-state-db/db.ts'
 import { hasHeadCommit, runGit, runGitWithOptions } from './git-runner.ts'
 import { loadGitWorktrees } from './worktrees.ts'
 
@@ -106,19 +108,24 @@ function deriveOriginName(originUrl: string | null) {
   return lastPart.replace(gitSuffixPattern, '') || 'origin'
 }
 
-function getProjectGitOpsModeOverride(projectId: string) {
-  const row = getThreadStateDatabase()
-    .prepare(
+const getProjectGitOpsModeOverrideOperation = Effect.fn('ProjectGitState.getGitOpsModeOverride')(
+  function* (projectId: string) {
+    const sql = yield* SqlClient.SqlClient
+    const rows = yield* sql.unsafe<{ gitOpsMode?: string | null }>(
       `
         SELECT git_ops_mode AS gitOpsMode
         FROM projects
         WHERE cwd = ?
       `,
+      [projectId],
     )
-    .get(projectId) as { gitOpsMode?: string | undefined | null | undefined } | undefined
+    const row = rows[0]
 
-  return row?.gitOpsMode === 'commit' || row?.gitOpsMode === 'commit-push' ? row.gitOpsMode : null
-}
+    return row?.gitOpsMode === 'commit' || row?.gitOpsMode === 'commit-push' ? row.gitOpsMode : null
+  },
+)
+
+const getProjectGitOpsModeOverride = databaseOperation(getProjectGitOpsModeOverrideOperation)
 
 export async function getActiveBranch(projectId: string) {
   try {

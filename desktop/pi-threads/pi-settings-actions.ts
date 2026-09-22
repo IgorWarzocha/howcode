@@ -7,6 +7,7 @@ const piSettingsKeys = new Set<PiSettingsKey>([
   'theme',
   'extensions',
   'autoCompact',
+  'cacheWarming',
   'enableSkillCommands',
   'hideThinkingBlock',
   'quietStartup',

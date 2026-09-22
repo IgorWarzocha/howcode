@@ -1,39 +1,20 @@
-import type { DesktopClipboardFilePaths } from '../../../../../shared/desktop-contracts'
+import { fileURLToPath } from 'node:url'
 
-type ClipFilepathsModule = {
-  readClipboardFilePaths: () => {
-    filePaths?: string[]
-    text?: string
-  }
-}
+const uriListLineSeparator = /\r?\n/u
 
-let cachedModulePromise: Promise<ClipFilepathsModule | null> | null = null
-
-async function loadClipFilepathsModule() {
-  if (!cachedModulePromise) {
-    cachedModulePromise = import('clip-filepaths')
-      .then((module) => module as unknown as ClipFilepathsModule)
-      .catch(() => null)
-  }
-
-  return cachedModulePromise
-}
-
-export async function readNativeClipboardFilePaths(): Promise<DesktopClipboardFilePaths> {
-  const clipFilepaths = await loadClipFilepathsModule()
-  if (!clipFilepaths) {
-    return { filePaths: [], text: null }
-  }
-
-  try {
-    const result = clipFilepaths.readClipboardFilePaths()
-    return {
-      filePaths: Array.isArray(result.filePaths)
-        ? result.filePaths.filter((filePath): filePath is string => typeof filePath === 'string')
-        : [],
-      text: typeof result.text === 'string' && result.text.length > 0 ? result.text : null,
+export function parseClipboardFilePaths(uriList: string): string[] {
+  const paths = new Set<string>()
+  for (const line of uriList.split(uriListLineSeparator)) {
+    const uri = line.trim()
+    if (!uri || uri.startsWith('#')) continue
+    try {
+      const url = new URL(uri)
+      if (url.protocol !== 'file:') continue
+      const filePath = fileURLToPath(url)
+      if (!filePath.includes('\0')) paths.add(filePath)
+    } catch {
+      // A malformed entry must not discard other files in the same URI list.
     }
-  } catch {
-    return { filePaths: [], text: null }
   }
+  return [...paths]
 }
