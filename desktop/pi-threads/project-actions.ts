@@ -15,6 +15,7 @@ import { selectProjectRuntime } from '../pi-desktop-runtime.ts'
 import { addProjectFromPath, createProject, createProjectFromGitHubUrl } from '../project-create.ts'
 import { getOriginUrl } from '../project-git/project-state.ts'
 import { importProjects, scanKnownProjects } from '../project-import.ts'
+import { removeFullCleanProjectDirectories } from '../project-worktrees/full-clean-removal.ts'
 import { openPathWithSystem } from '../system-open-path.ts'
 import { listTerminals } from '../terminal/runtime.ts'
 import {
@@ -22,6 +23,7 @@ import {
   collapseAllProjects,
   deleteProject,
   deleteThreadRecordsBySessionPaths,
+  getProjectWorktree,
   hasProject,
   hasRunningProjectThread,
   listProjectFamilyProjectIds,
@@ -189,26 +191,34 @@ async function getAsyncProjectDeletionBlockedError(projectFamilyIds: string[]) {
   return null
 }
 
-function getFullCleanProjectRemovalPaths(projectFamilyIds: string[]) {
-  const pathsByResolvedPath = new Map<string, string>()
-  for (const projectId of projectFamilyIds) {
-    pathsByResolvedPath.set(path.resolve(projectId), projectId)
-  }
-
-  return [...pathsByResolvedPath.entries()]
-    .sort(([left], [right]) => right.length - left.length)
-    .map(([, projectId]) => projectId)
-}
-
 async function deleteProjectWithFullClean(
   projectId: string,
   projectSessionPaths: string[],
   projectFamilyIds: string[],
 ) {
-  const cleanupResult = await deleteProjectPiFiles(projectId, projectSessionPaths)
-  for (const projectPath of getFullCleanProjectRemovalPaths(projectFamilyIds)) {
-    await rm(projectPath, { recursive: true, force: true })
+  const projectWorktree = getProjectWorktree(projectId)
+  if (projectWorktree && !projectWorktree.isMain) {
+    return handledAction({
+      error: 'Cannot fully delete a non-main worktree as a project.',
+    })
   }
+
+  const persistedWorktrees = projectFamilyIds
+    .filter((familyProjectId) => familyProjectId !== projectId)
+    .map((familyProjectId) => getProjectWorktree(familyProjectId))
+  if (persistedWorktrees.some((worktree) => worktree === null)) {
+    return handledAction({
+      error: 'Cannot fully delete the project because persisted worktree ownership is missing.',
+    })
+  }
+
+  const removal = await removeFullCleanProjectDirectories({
+    rootProjectId: projectId,
+    worktrees: persistedWorktrees.filter((worktree) => worktree !== null),
+  })
+  if ('error' in removal) return handledAction(removal)
+
+  const cleanupResult = await deleteProjectPiFiles(projectId, projectSessionPaths)
   deleteArtifactsForConversations(projectSessionPaths)
   for (const familyProjectId of projectFamilyIds) deleteProject(familyProjectId)
   return cleanupResult.failedSessionPaths.length > 0
