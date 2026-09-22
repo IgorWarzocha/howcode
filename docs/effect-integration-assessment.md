@@ -126,7 +126,7 @@ Read the overviews for LanguageModel, Worker, Workflow, Sharding, EventLog, Comm
 
 ## Dependency changes and useful removals
 
-- Pi is pinned to **0.86.1** across all four direct packages. Added its global prompt-cache warming control, with the upstream `streaming` default and an explicit warning that warming can make metered requests.
+- Pi is pinned to **0.87.0** across all four direct packages. Added its global prompt-cache warming control, with the upstream `streaming` default and an explicit warning that warming can make metered requests.
 - Session usage accounting now includes standalone usage, compaction, branch-summary and tool-result usage. Live summaries and the ledger retained after deletion use the same reader; non-assistant usage does not inflate assistant-turn counts.
 - Electron **44.4.3** supplies native clipboard file/image APIs. Removed `clip-filepaths`; URI-list parsing retains malformed-entry isolation and rejects invalid local paths. Removed the custom ZIP installer after verifying the upstream installer and packaged build.
 - Pierre Diffs **1.4.3** requires the new editor factory and edit-event API. Review anchors still update during editing, but their remapped annotations are not echoed back into Pierre's active controlled item. Workspace writes and refreshed project diffs remain authoritative.

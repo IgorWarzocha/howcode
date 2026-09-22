@@ -1,6 +1,6 @@
 ### 0.1.69
 
-- Updated Pi to 0.86.1, Effect v4 to rc.116, Electron to 44.4.3, React to 19.3, Pierre Diffs to 1.4.3, and the remaining dependencies.
+- Updated Pi to 0.87.0, Effect v4 to rc.116, Electron to 44.4.3, React to 19.3, Pierre Diffs to 1.4.3, and the remaining dependencies.
 - Added Pi's prompt-cache warming control and included background, compaction and tool usage in session costs.
 - Shared concurrent attachment searches and bounded their cached project indexes.
 - Replaced handwritten runtime queues, locks and timers with scoped Effect coordination, keeping terminal history and thread updates ordered through shutdown.
