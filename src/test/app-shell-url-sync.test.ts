@@ -27,7 +27,7 @@ function createProject(options: {
   }
 }
 
-function threadRoute(pathname: '/chat' | '/thread'): AppRouteSnapshot {
+function threadRoute(pathname: '/chat' | '/thread' | '/git'): AppRouteSnapshot {
   return {
     pathname,
     search: { projectId: '/repo/project-a', threadId: 'deleted-thread' },
@@ -46,14 +46,19 @@ function decide(routeSnapshot: AppRouteSnapshot, projects: Project[], shellLoadi
 }
 
 describe('app shell URL sync state', () => {
-  it('defers missing threads while the shell is loading', () => {
-    expect(decide(threadRoute('/thread'), [], true).type).toBe('defer')
-  })
+  it.each(['/thread', '/git'] as const)(
+    'defers %s targets while the shell is loading',
+    (pathname) => {
+      expect(decide(threadRoute(pathname), [], true).type).toBe('defer')
+    },
+  )
 
   it.each([
     ['/thread', false, undefined, 'code'],
     ['/thread', true, 'chat', 'code'],
     ['/chat', true, 'code', 'chat'],
+    ['/git', false, undefined, 'code'],
+    ['/git', true, 'chat', 'code'],
   ] as const)(
     'starts the relevant scope hydration for %s instead of deferring forever',
     (pathname, threadsLoaded, threadsScope, scope) => {
@@ -109,40 +114,43 @@ describe('app shell URL sync state', () => {
     })
   })
 
-  it('abandons initial route hydration when workspace navigation changes the state route', () => {
-    const routeSnapshot = threadRoute('/thread')
-    const hydration = decide(routeSnapshot, [createProject({ threadsLoaded: false })])
-    expect(hydration.type).toBe('hydrate-route-scope')
-    if (hydration.type !== 'hydrate-route-scope') return
+  it.each(['/thread', '/git'] as const)(
+    'abandons initial %s hydration when workspace navigation changes the state route',
+    (pathname) => {
+      const routeSnapshot = threadRoute(pathname)
+      const hydration = decide(routeSnapshot, [createProject({ threadsLoaded: false })])
+      expect(hydration.type).toBe('hydrate-route-scope')
+      if (hydration.type !== 'hydrate-route-scope') return
 
-    const settingsRoute: AppRouteSnapshot = { pathname: '/settings', search: {} }
-    const expected = {
-      type: 'navigate-state',
-      next: {
-        routeKey: JSON.stringify(routeSnapshot),
-        stateKey: JSON.stringify(settingsRoute),
-      },
-    }
-    const pendingProject = createProject({ threadsLoaded: false })
-    const hydratedProject = createProject({
-      threadIds: ['deleted-thread'],
-      threadsLoaded: true,
-      threadsScope: 'code',
-    })
+      const settingsRoute: AppRouteSnapshot = { pathname: '/settings', search: {} }
+      const expected = {
+        type: 'navigate-state',
+        next: {
+          routeKey: JSON.stringify(routeSnapshot),
+          stateKey: JSON.stringify(settingsRoute),
+        },
+      }
+      const pendingProject = createProject({ threadsLoaded: false })
+      const hydratedProject = createProject({
+        threadIds: ['deleted-thread'],
+        threadsLoaded: true,
+        threadsScope: 'code',
+      })
 
-    for (const projects of [[pendingProject], [hydratedProject]]) {
-      expect(
-        getAppShellUrlSyncDecision({
-          previous: initialCursor,
-          projects,
-          routeHydration: hydration.intent,
-          routeSnapshot,
-          shellLoading: false,
-          stateRoute: settingsRoute,
-        }),
-      ).toEqual(expected)
-    }
-  })
+      for (const projects of [[pendingProject], [hydratedProject]]) {
+        expect(
+          getAppShellUrlSyncDecision({
+            previous: initialCursor,
+            projects,
+            routeHydration: hydration.intent,
+            routeSnapshot,
+            shellLoading: false,
+            stateRoute: settingsRoute,
+          }),
+        ).toEqual(expected)
+      }
+    },
+  )
 
   it('dispatches an initial deep link after its route scope hydrates', () => {
     const routeSnapshot = threadRoute('/thread')
@@ -173,6 +181,35 @@ describe('app shell URL sync state', () => {
         threadId: 'deleted-thread',
         view: 'thread',
       },
+    })
+  })
+
+  it('keeps a Git thread target through hydration and falls back only once its absence is known', () => {
+    const routeSnapshot = threadRoute('/git')
+    const hydration = decide(routeSnapshot, [createProject({ threadsLoaded: false })])
+    expect(hydration.type).toBe('hydrate-route-scope')
+    if (hydration.type !== 'hydrate-route-scope') return
+
+    const loadedDecision = (threadIds: string[]) =>
+      getAppShellUrlSyncDecision({
+        previous: initialCursor,
+        projects: [createProject({ threadIds, threadsLoaded: true, threadsScope: 'code' })],
+        routeHydration: hydration.intent,
+        routeSnapshot,
+        shellLoading: false,
+        stateRoute: landingRoute,
+      })
+
+    expect(loadedDecision(['deleted-thread'])).toMatchObject({
+      type: 'dispatch-route',
+      action: [
+        { type: 'open-thread', projectId: '/repo/project-a', threadId: 'deleted-thread' },
+        { type: 'open-gitops' },
+      ],
+    })
+    expect(loadedDecision([])).toMatchObject({
+      type: 'dispatch-route',
+      action: [{ type: 'select-project', projectId: '/repo/project-a' }, { type: 'open-gitops' }],
     })
   })
 })

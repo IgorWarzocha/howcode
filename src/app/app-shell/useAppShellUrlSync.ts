@@ -246,6 +246,13 @@ export function getAppShellUrlSyncDecision(input: {
   }
 
   if (routeChanged && (input.previous.routeKey === null || !stateChanged)) {
+    const routeDataDecision = getRouteDataDecision(
+      input.routeSnapshot,
+      input.projects,
+      input.shellLoading,
+      { routeKey, stateKey },
+    )
+    if (routeDataDecision) return routeDataDecision
     const action = getRouteAction(input.routeSnapshot, input.projects)
     if (action) {
       return {
@@ -254,13 +261,6 @@ export function getAppShellUrlSyncDecision(input: {
         next: { routeKey, stateKey: input.previous.stateKey },
       }
     }
-    const routeDataDecision = getRouteDataDecision(
-      input.routeSnapshot,
-      input.projects,
-      input.shellLoading,
-      { routeKey, stateKey },
-    )
-    if (routeDataDecision) return routeDataDecision
     return { type: 'navigate-state', next: { routeKey, stateKey } }
   }
 

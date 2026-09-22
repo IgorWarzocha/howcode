@@ -9,9 +9,10 @@
 - Moved clipboard attachments to Electron's native file and image APIs, removing a separate native dependency.
 - Removed the custom Electron ZIP installer now that upstream handles extraction correctly.
 - Fixed the cache-warming setting's displayed value and Electron development rebuilds, restart sequencing and shutdown errors.
-- Project cleanup now verifies worktree ownership before deleting folders.
-- Kept dirty diff drafts after failed background saves and fixed persistence of the Last diff baseline.
-- Fixed shutdown deadlines, cleanup of late-opening terminals, and URLs stuck on deleted threads.
+- Project cleanup verifies folder ownership and protects linked worktrees outside Howcode's records.
+- Retained dirty diff drafts after failed saves, with explicit discard and reload after conflicts.
+- Fixed persistence of the Last diff baseline.
+- Fixed shutdown deadlines, cleanup of late-opening terminals, and thread URLs, including Git deep links.
 - Made website poll rate limits atomic under concurrent votes.
 
 ### 0.1.68
