@@ -13,6 +13,7 @@ const baseWorktree: RegisteredWorktree = {
     rootCwd: '/repo',
     branchName: 'feature',
     parentBranchName: 'dev',
+    gitCommonDirectoryIdentity: 'git-common-dir-v1:1:2:3',
     isMain: false,
     source: 'howcode',
     completed: false,

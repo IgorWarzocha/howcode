@@ -199,22 +199,31 @@ async function deleteProjectWithFullClean(
   const projectWorktree = getProjectWorktree(projectId)
   if (projectWorktree && !projectWorktree.isMain) {
     return handledAction({
-      error: 'Cannot fully delete a non-main worktree as a project.',
+      error:
+        `Full clean was refused for ${projectId}: this path is a linked worktree. ` +
+        'Set "Project deletion cleanup" to "Pi only" in Settings to remove Pi data without deleting this folder.',
     })
   }
 
   const persistedWorktrees = projectFamilyIds
     .filter((familyProjectId) => familyProjectId !== projectId)
-    .map((familyProjectId) => getProjectWorktree(familyProjectId))
-  if (persistedWorktrees.some((worktree) => worktree === null)) {
+    .map((familyProjectId) => ({
+      projectId: familyProjectId,
+      worktree: getProjectWorktree(familyProjectId),
+    }))
+  const missingWorktree = persistedWorktrees.find(({ worktree }) => worktree === null)
+  if (missingWorktree) {
     return handledAction({
-      error: 'Cannot fully delete the project because persisted worktree ownership is missing.',
+      error:
+        `Full clean was refused for ${missingWorktree.projectId}: saved worktree ownership is missing. ` +
+        'Set "Project deletion cleanup" to "Pi only" in Settings to remove Pi data without deleting this folder.',
     })
   }
 
   const removal = await removeFullCleanProjectDirectories({
     rootProjectId: projectId,
-    worktrees: persistedWorktrees.filter((worktree) => worktree !== null),
+    rootWorktree: projectWorktree,
+    worktrees: persistedWorktrees.flatMap(({ worktree }) => (worktree ? [worktree] : [])),
   })
   if ('error' in removal) return handledAction(removal)
 

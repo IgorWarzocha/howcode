@@ -2,6 +2,7 @@ import type { ProjectImportCandidate } from '../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../shared/desktop-working-directory.ts'
 import { setProjectImportState } from './app-settings/writers.ts'
 import { getOriginUrl, isGitRepository } from './project-git/project-state.ts'
+import { captureGitCommonDirectoryIdentity } from './project-git/repository-identity.ts'
 import {
   type GitWorktreeEntry,
   getMainWorktreePath,
@@ -137,6 +138,7 @@ async function importProjectWorktreesUnderLock(projectId: string) {
   if (worktrees.length === 0) return 0
 
   const rootProjectId = worktrees[0]?.path ?? projectId
+  const gitCommonDirectoryIdentity = await captureGitCommonDirectoryIdentity(rootProjectId)
   const persistedPaths = listProjectWorktreePaths(rootProjectId)
   const [rootIdentity, indexedWorktrees, persistedWorktrees] = await Promise.all([
     resolveWorkspaceIdentity(rootProjectId),
@@ -182,6 +184,7 @@ async function importProjectWorktreesUnderLock(projectId: string) {
     cwd: rootProjectId,
     rootCwd: rootProjectId,
     branchName: null,
+    gitCommonDirectoryIdentity,
     isMain: true,
     source: 'howcode',
   })
@@ -197,6 +200,7 @@ async function importProjectWorktreesUnderLock(projectId: string) {
       cwd: imported.cwd,
       rootCwd: rootProjectId,
       branchName: imported.worktree.branch,
+      gitCommonDirectoryIdentity,
       ...imported.metadata,
     })
     if (!imported.metadata.isMain) childWorktreeCount += 1

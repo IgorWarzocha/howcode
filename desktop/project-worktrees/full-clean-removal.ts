@@ -1,5 +1,7 @@
-import { rm } from 'node:fs/promises'
+import { lstat, rm } from 'node:fs/promises'
+import path from 'node:path'
 import { formatGitCommandError, runGitWithOptions } from '../project-git/git-runner.ts'
+import { loadGitRepositoryIdentity } from '../project-git/repository-identity.ts'
 import { type GitWorktreeEntry, loadGitWorktrees } from '../project-git/worktrees.ts'
 import type { StoredProjectWorktree } from '../thread-state-db.ts'
 import { resolveWorkspaceIdentity } from '../workspace-identity.ts'
@@ -7,14 +9,16 @@ import { withRootGitMutation } from './root-git-mutation-gate.ts'
 
 type GitWorkspaceProbe = {
   branchName: string | null
-  commonDirectoryIdentity: string
+  commonDirectoryIdentity: string | null
   topLevelIdentity: string
 }
+
+type VerifiedGitWorkspaceProbe = GitWorkspaceProbe & { commonDirectoryIdentity: string }
 
 type RemovalContext = {
   rootEntry: GitWorktreeEntry
   rootIdentity: string
-  rootProbe: GitWorkspaceProbe
+  rootProbe: VerifiedGitWorkspaceProbe
   worktreeByIdentity: Map<string, GitWorktreeEntry>
 }
 
@@ -27,39 +31,23 @@ type RemovalError = { error: string }
 
 function ownershipError(projectId: string, reason: string): RemovalError {
   return {
-    error: `Cannot fully delete the project because worktree ownership could not be verified for ${projectId}: ${reason}`,
+    error:
+      `Full clean was refused for ${projectId}: ${reason} ` +
+      'Set "Project deletion cleanup" to "Pi only" in Settings to remove Pi data without deleting this folder.',
   }
 }
 
 async function probeGitWorkspace(projectId: string): Promise<GitWorkspaceProbe | RemovalError> {
   try {
-    const [{ stdout: pathsOutput }, { stdout: branchOutput }] = await Promise.all([
-      runGitWithOptions(
-        projectId,
-        ['rev-parse', '--path-format=absolute', '--show-toplevel', '--git-common-dir'],
-        { timeout: 10_000, maxBuffer: 1024 * 128 },
-      ),
+    const [repositoryIdentity, { stdout: branchOutput }] = await Promise.all([
+      loadGitRepositoryIdentity(projectId),
       runGitWithOptions(projectId, ['branch', '--show-current'], {
         timeout: 10_000,
         maxBuffer: 1024 * 128,
       }),
     ])
-    const paths = pathsOutput
-      .split('\n')
-      .map((value) => value.trim())
-      .filter(Boolean)
-    const [topLevelPath, commonDirectoryPath] = paths
-    if (!(topLevelPath && commonDirectoryPath && paths.length === 2)) {
-      return ownershipError(projectId, 'Git returned an invalid workspace identity.')
-    }
-
-    const [topLevelIdentity, commonDirectoryIdentity] = await Promise.all([
-      resolveWorkspaceIdentity(topLevelPath),
-      resolveWorkspaceIdentity(commonDirectoryPath),
-    ])
     return {
-      topLevelIdentity,
-      commonDirectoryIdentity,
+      ...repositoryIdentity,
       branchName: branchOutput.trim() || null,
     }
   } catch (error) {
@@ -69,6 +57,7 @@ async function probeGitWorkspace(projectId: string): Promise<GitWorkspaceProbe |
 
 async function resolveRemovalContext(
   rootProjectId: string,
+  expectedCommonDirectoryIdentity: string,
 ): Promise<RemovalContext | RemovalError> {
   let worktrees: GitWorktreeEntry[]
   try {
@@ -84,6 +73,9 @@ async function resolveRemovalContext(
 
   const rootProbe = await probeGitWorkspace(rootEntry.path)
   if ('error' in rootProbe) return rootProbe
+  if (rootProbe.commonDirectoryIdentity !== expectedCommonDirectoryIdentity) {
+    return ownershipError(rootProjectId, 'The saved Git repository identity no longer matches.')
+  }
 
   const [requestedRootIdentity, rootEntryIdentity] = await Promise.all([
     resolveWorkspaceIdentity(rootProjectId),
@@ -108,7 +100,7 @@ async function resolveRemovalContext(
   return {
     rootEntry,
     rootIdentity: rootEntryIdentity,
-    rootProbe,
+    rootProbe: { ...rootProbe, commonDirectoryIdentity: expectedCommonDirectoryIdentity },
     worktreeByIdentity,
   }
 }
@@ -130,6 +122,9 @@ async function validateWorktreeRemoval(
   ])
   if (metadataRootIdentity !== context.rootIdentity) {
     return ownershipError(metadata.cwd, 'The persisted worktree root does not match Git.')
+  }
+  if (metadata.gitCommonDirectoryIdentity !== context.rootProbe.commonDirectoryIdentity) {
+    return ownershipError(metadata.cwd, 'The saved Git repository identity does not match.')
   }
   if (metadataIdentity === context.rootIdentity) {
     return ownershipError(metadata.cwd, 'The path resolves to the main worktree.')
@@ -162,6 +157,17 @@ async function validateWorktreeRemoval(
 }
 
 async function revalidateRoot(context: RemovalContext): Promise<RemovalError | null> {
+  let worktrees: GitWorktreeEntry[]
+  try {
+    worktrees = await loadGitWorktrees(context.rootEntry.path)
+  } catch (error) {
+    return ownershipError(context.rootEntry.path, formatGitCommandError(error))
+  }
+
+  const rootEntry = worktrees[0]
+  if (!rootEntry || rootEntry.prunable) {
+    return ownershipError(context.rootEntry.path, 'Git no longer reports a live main worktree.')
+  }
   const probe = await probeGitWorkspace(context.rootEntry.path)
   if ('error' in probe) return probe
   if (
@@ -169,6 +175,14 @@ async function revalidateRoot(context: RemovalContext): Promise<RemovalError | n
     probe.commonDirectoryIdentity !== context.rootProbe.commonDirectoryIdentity
   ) {
     return ownershipError(context.rootEntry.path, 'The main worktree identity changed.')
+  }
+  for (const worktree of worktrees.slice(1)) {
+    if (!worktree.prunable) {
+      return ownershipError(
+        worktree.path,
+        'Git reports a live linked worktree that was not removed with this project.',
+      )
+    }
   }
   return null
 }
@@ -192,6 +206,15 @@ async function validateRemovalTargets(
     targetIdentities.add(identity)
     validated.push(result)
   }
+  for (const [identity, worktree] of context.worktreeByIdentity) {
+    if (identity === context.rootIdentity || worktree.prunable) continue
+    if (!targetIdentities.has(identity)) {
+      return ownershipError(
+        worktree.path,
+        'Git reports this live linked worktree, but it has no saved deletion target.',
+      )
+    }
+  }
   return validated
 }
 
@@ -208,16 +231,79 @@ async function removeValidatedWorktrees(
   return null
 }
 
+async function hasRootGitMetadata(rootProjectId: string): Promise<boolean | RemovalError> {
+  try {
+    await lstat(path.join(rootProjectId, '.git'))
+    return true
+  } catch (error) {
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT') {
+      return false
+    }
+    return ownershipError(rootProjectId, `The .git entry could not be inspected: ${String(error)}`)
+  }
+}
+
+async function validateRootMetadata(
+  rootProjectId: string,
+  metadata: StoredProjectWorktree,
+): Promise<RemovalError | string> {
+  if (!metadata.isMain) {
+    return ownershipError(rootProjectId, 'Saved metadata identifies this as a linked worktree.')
+  }
+  const [rootIdentity, metadataIdentity, metadataRootIdentity] = await Promise.all([
+    resolveWorkspaceIdentity(rootProjectId),
+    resolveWorkspaceIdentity(metadata.cwd),
+    resolveWorkspaceIdentity(metadata.rootCwd),
+  ])
+  if (metadataIdentity !== rootIdentity || metadataRootIdentity !== rootIdentity) {
+    return ownershipError(rootProjectId, 'The saved main worktree path no longer matches.')
+  }
+  if (!metadata.gitCommonDirectoryIdentity) {
+    return ownershipError(rootProjectId, 'No Git repository identity was saved for this project.')
+  }
+  return metadata.gitCommonDirectoryIdentity
+}
+
 async function removeProjectDirectories(input: {
+  rootWorktree: StoredProjectWorktree | null
   rootProjectId: string
   worktrees: StoredProjectWorktree[]
 }): Promise<RemovalError | Record<string, never>> {
-  if (input.worktrees.length === 0) {
+  const hasGitMetadata = await hasRootGitMetadata(input.rootProjectId)
+  if (typeof hasGitMetadata !== 'boolean') return hasGitMetadata
+
+  if (!input.rootWorktree) {
+    if (input.worktrees.length > 0) {
+      return ownershipError(
+        input.rootProjectId,
+        'Saved linked worktrees exist without saved main worktree metadata.',
+      )
+    }
+    if (hasGitMetadata) {
+      return ownershipError(
+        input.rootProjectId,
+        'Git metadata is present, but Howcode has no saved repository identity.',
+      )
+    }
     await rm(input.rootProjectId, { recursive: true, force: true })
     return {}
   }
 
-  const context = await resolveRemovalContext(input.rootProjectId)
+  const expectedCommonDirectoryIdentity = await validateRootMetadata(
+    input.rootProjectId,
+    input.rootWorktree,
+  )
+  if (typeof expectedCommonDirectoryIdentity !== 'string') {
+    return expectedCommonDirectoryIdentity
+  }
+  if (!hasGitMetadata) {
+    return ownershipError(
+      input.rootProjectId,
+      'This was saved as a Git project, but its .git entry is no longer present.',
+    )
+  }
+
+  const context = await resolveRemovalContext(input.rootProjectId, expectedCommonDirectoryIdentity)
   if ('error' in context) return context
 
   const validated = await validateRemovalTargets(context, input.worktrees)
@@ -233,6 +319,7 @@ async function removeProjectDirectories(input: {
 }
 
 export async function removeFullCleanProjectDirectories(input: {
+  rootWorktree: StoredProjectWorktree | null
   rootProjectId: string
   worktrees: StoredProjectWorktree[]
 }): Promise<RemovalError | Record<string, never>> {

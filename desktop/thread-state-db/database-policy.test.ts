@@ -13,7 +13,11 @@ import {
 } from './inbox-writes.ts'
 import { syncSessionSummaries, upsertThreadSummary } from './session-writes.ts'
 import { archiveThreads, setThreadDiffPreferences } from './thread-writes.ts'
-import { registerManagedWorktree } from './worktree-writes.ts'
+import {
+  registerManagedWorktree,
+  setProjectWorktreeCompleted,
+  upsertProjectWorktree,
+} from './worktree-writes.ts'
 import { withDatabaseTransaction } from './write-transaction.ts'
 
 type TestRuntime = ReturnType<typeof makeThreadStateDatabaseRuntime>
@@ -292,6 +296,7 @@ describe('thread state database policy', () => {
           branchName: string
           completed: number
           cwd: string
+          gitCommonDirectoryIdentity: string | null
           isMain: number
           parentBranchName: string | null
           rootCwd: string
@@ -299,7 +304,9 @@ describe('thread state database policy', () => {
         }>(`
           SELECT
             cwd, root_cwd AS rootCwd, branch_name AS branchName,
-            parent_branch_name AS parentBranchName, is_main AS isMain, source, completed
+            parent_branch_name AS parentBranchName,
+            git_common_dir_identity AS gitCommonDirectoryIdentity,
+            is_main AS isMain, source, completed
           FROM project_worktrees
         `),
       )[0],
@@ -308,6 +315,7 @@ describe('thread state database policy', () => {
       rootCwd: '/legacy-root',
       branchName: 'feature/legacy',
       parentBranchName: null,
+      gitCommonDirectoryIdentity: null,
       isMain: 0,
       source: 'imported',
       completed: 0,
@@ -409,6 +417,7 @@ describe('thread state database policy', () => {
 
     const input = {
       branchName: 'feature/atomic',
+      gitCommonDirectoryIdentity: 'git-common-dir-v1:1:2:3',
       parentBranchName: 'main',
       projectId: '/repo-worktrees/feature-atomic',
       rootProjectId: '/repo',
@@ -435,7 +444,79 @@ describe('thread state database policy', () => {
       `),
     )
     expect(recovered).toEqual({ projects: 2, worktrees: 2 })
+
+    runtime.runSync(
+      registerManagedWorktree({
+        ...input,
+        gitCommonDirectoryIdentity: 'git-common-dir-v1:9:8:7',
+      }),
+    )
+    expect(
+      runtime.runSync(
+        query<{ gitCommonDirectoryIdentity: string | null }>(`
+          SELECT git_common_dir_identity AS gitCommonDirectoryIdentity
+          FROM project_worktrees
+          ORDER BY cwd
+        `),
+      ),
+    ).toEqual([
+      { gitCommonDirectoryIdentity: input.gitCommonDirectoryIdentity },
+      { gitCommonDirectoryIdentity: input.gitCommonDirectoryIdentity },
+    ])
   })
+
+  it.each([
+    { storedIdentity: null, capturedIdentity: 'git-common-dir-v1:1:2:3' },
+    { storedIdentity: 'git-common-dir-v1:1:2:3', capturedIdentity: null },
+  ])(
+    'preserves worktree lifecycle when either identity is unknown: %j',
+    async ({ storedIdentity, capturedIdentity }) => {
+      const { runtime } = await makeFixture()
+      const input = {
+        branchName: 'feature/legacy-provenance',
+        gitCommonDirectoryIdentity: storedIdentity,
+        parentBranchName: 'main',
+        projectId: '/repo-worktrees/legacy-provenance',
+        rootProjectId: '/repo',
+      }
+      runtime.runSync(registerManagedWorktree(input))
+      expect(runtime.runSync(setProjectWorktreeCompleted(input.projectId, true))).toBe(true)
+
+      runtime.runSync(
+        upsertProjectWorktree({
+          cwd: input.projectId,
+          rootCwd: input.rootProjectId,
+          branchName: input.branchName,
+          gitCommonDirectoryIdentity: capturedIdentity,
+          isMain: false,
+          source: 'howcode',
+        }),
+      )
+
+      expect(
+        runtime.runSync(
+          query<{
+            completed: number
+            gitCommonDirectoryIdentity: string | null
+            parentBranchName: string | null
+          }>(`
+          SELECT
+            completed,
+            git_common_dir_identity AS gitCommonDirectoryIdentity,
+            parent_branch_name AS parentBranchName
+          FROM project_worktrees
+          WHERE cwd = '/repo-worktrees/legacy-provenance'
+        `),
+        ),
+      ).toEqual([
+        {
+          completed: 1,
+          gitCommonDirectoryIdentity: 'git-common-dir-v1:1:2:3',
+          parentBranchName: 'main',
+        },
+      ])
+    },
+  )
 
   it('updates both message snapshots synchronously and consumes reply suppression once', async () => {
     const { runtime } = await makeFixture()
@@ -537,6 +618,7 @@ describe('thread state database policy', () => {
         rootProjectId: '/repo',
         projectId: '/worktree',
         branchName: 'feature/worktree',
+        gitCommonDirectoryIdentity: 'git-common-dir-v1:1:2:3',
         parentBranchName: 'main',
       }),
     )

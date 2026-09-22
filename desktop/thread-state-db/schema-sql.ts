@@ -102,6 +102,7 @@ export function threadStateSchemaStatements(sql: SqlClient.SqlClient) {
     root_cwd TEXT NOT NULL,
     branch_name TEXT,
     parent_branch_name TEXT,
+    git_common_dir_identity TEXT,
     is_main INTEGER NOT NULL DEFAULT 0,
     source TEXT NOT NULL DEFAULT 'howcode',
     completed INTEGER NOT NULL DEFAULT 0,
@@ -177,5 +178,10 @@ export const columnMigrations = [
     table: 'project_worktrees',
     column: 'parent_branch_name',
     definition: 'parent_branch_name TEXT',
+  },
+  {
+    table: 'project_worktrees',
+    column: 'git_common_dir_identity',
+    definition: 'git_common_dir_identity TEXT',
   },
 ] as const

@@ -10,6 +10,7 @@ export type ProjectWorktreeMetadata = {
   rootCwd: string
   branchName: string | null
   parentBranchName?: string | null | undefined
+  gitCommonDirectoryIdentity: string | null
   isMain: boolean
   source: ProjectWorktreeSource
 }
@@ -20,6 +21,7 @@ export type StoredProjectWorktree = ProjectWorktreeMetadata & {
 
 export type RegisterManagedWorktreeInput = {
   branchName: string
+  gitCommonDirectoryIdentity: string | null
   parentBranchName: string
   projectId: string
   rootProjectId: string
@@ -34,6 +36,7 @@ export const getProjectWorktree = Effect.fn('threadStateDb.getProjectWorktree')(
     rootCwd?: unknown
     branchName?: unknown
     parentBranchName?: unknown
+    gitCommonDirectoryIdentity?: unknown
     isMain?: unknown
     source?: unknown
     completed?: unknown
@@ -44,6 +47,7 @@ export const getProjectWorktree = Effect.fn('threadStateDb.getProjectWorktree')(
           root_cwd AS rootCwd,
           branch_name AS branchName,
           parent_branch_name AS parentBranchName,
+          git_common_dir_identity AS gitCommonDirectoryIdentity,
           is_main AS isMain,
           source,
           completed
@@ -59,6 +63,9 @@ export const getProjectWorktree = Effect.fn('threadStateDb.getProjectWorktree')(
     typeof row.rootCwd !== 'string' ||
     !(row.branchName === null || typeof row.branchName === 'string') ||
     !(row.parentBranchName === null || typeof row.parentBranchName === 'string') ||
+    !(
+      row.gitCommonDirectoryIdentity === null || typeof row.gitCommonDirectoryIdentity === 'string'
+    ) ||
     typeof row.isMain !== 'number' ||
     (row.source !== 'howcode' && row.source !== 'imported') ||
     typeof row.completed !== 'number'
@@ -71,6 +78,7 @@ export const getProjectWorktree = Effect.fn('threadStateDb.getProjectWorktree')(
     rootCwd: row.rootCwd,
     branchName: row.branchName,
     parentBranchName: row.parentBranchName,
+    gitCommonDirectoryIdentity: row.gitCommonDirectoryIdentity,
     isMain: row.isMain !== 0,
     source: row.source,
     completed: row.completed !== 0,
@@ -117,15 +125,32 @@ export const upsertProjectWorktree = Effect.fn('threadStateDb.upsertProjectWorkt
   const sql = yield* SqlClient.SqlClient
   yield* sql.unsafe(
     `
-      INSERT INTO project_worktrees (cwd, root_cwd, branch_name, parent_branch_name, is_main, source)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO project_worktrees (
+        cwd,
+        root_cwd,
+        branch_name,
+        parent_branch_name,
+        git_common_dir_identity,
+        is_main,
+        source
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(cwd) DO UPDATE SET
         root_cwd = excluded.root_cwd,
         branch_name = excluded.branch_name,
+        git_common_dir_identity = COALESCE(
+          project_worktrees.git_common_dir_identity,
+          excluded.git_common_dir_identity
+        ),
         parent_branch_name = CASE
           WHEN excluded.parent_branch_name IS NOT NULL THEN excluded.parent_branch_name
           WHEN project_worktrees.root_cwd IS excluded.root_cwd
             AND project_worktrees.branch_name IS excluded.branch_name
+            AND (
+              project_worktrees.git_common_dir_identity IS NULL
+              OR excluded.git_common_dir_identity IS NULL
+              OR project_worktrees.git_common_dir_identity IS excluded.git_common_dir_identity
+            )
             AND project_worktrees.source IS excluded.source
             THEN project_worktrees.parent_branch_name
           ELSE NULL
@@ -135,6 +160,11 @@ export const upsertProjectWorktree = Effect.fn('threadStateDb.upsertProjectWorkt
         completed = CASE
           WHEN project_worktrees.root_cwd IS excluded.root_cwd
             AND project_worktrees.branch_name IS excluded.branch_name
+            AND (
+              project_worktrees.git_common_dir_identity IS NULL
+              OR excluded.git_common_dir_identity IS NULL
+              OR project_worktrees.git_common_dir_identity IS excluded.git_common_dir_identity
+            )
             AND project_worktrees.is_main IS excluded.is_main
             AND project_worktrees.source IS excluded.source
             AND (
@@ -151,6 +181,7 @@ export const upsertProjectWorktree = Effect.fn('threadStateDb.upsertProjectWorkt
       metadata.rootCwd,
       metadata.branchName,
       metadata.parentBranchName ?? null,
+      metadata.gitCommonDirectoryIdentity,
       metadata.isMain ? 1 : 0,
       metadata.source,
     ],
@@ -237,6 +268,7 @@ export const registerManagedWorktree = Effect.fn('threadStateDb.registerManagedW
           cwd: input.rootProjectId,
           rootCwd: input.rootProjectId,
           branchName: null,
+          gitCommonDirectoryIdentity: input.gitCommonDirectoryIdentity,
           isMain: true,
           source: 'howcode',
         })
@@ -245,6 +277,7 @@ export const registerManagedWorktree = Effect.fn('threadStateDb.registerManagedW
           rootCwd: input.rootProjectId,
           branchName: input.branchName,
           parentBranchName: input.parentBranchName,
+          gitCommonDirectoryIdentity: input.gitCommonDirectoryIdentity,
           isMain: false,
           source: 'howcode',
         })

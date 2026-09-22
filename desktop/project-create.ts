@@ -11,8 +11,15 @@ import {
 import { startNewThread } from './pi-desktop-runtime.ts'
 import { formatGitCommandError, getNonInteractiveGitEnv } from './project-git/git-runner.ts'
 import { getOriginUrl, isGitRepository } from './project-git/project-state.ts'
-import { initializeProjectGit } from './project-git.ts'
-import { ensureProject, listProjects, setProjectRepoOrigin } from './thread-state-db.ts'
+import { captureGitRepositoryIdentity } from './project-git/repository-identity.ts'
+import { getMainWorktreePath, initializeProjectGit } from './project-git.ts'
+import {
+  ensureProject,
+  listProjects,
+  setProjectRepoOrigin,
+  upsertProjectWorktree,
+} from './thread-state-db.ts'
+import { resolveWorkspaceIdentity } from './workspace-identity.ts'
 
 const execFile = promisify(execFileCallback)
 
@@ -27,7 +34,36 @@ function expandHomePath(projectPath: string) {
 async function startThreadForNewlyVisibleProject(projectId: string) {
   const result = await startNewThread({ projectId })
   ensureProject(projectId)
+  await recordRootGitProvenance(projectId)
   return result
+}
+
+async function recordRootGitProvenance(projectId: string) {
+  const repositoryIdentity = await captureGitRepositoryIdentity(projectId)
+  if (!repositoryIdentity) return
+
+  const [projectIdentity, mainWorktreePath] = await Promise.all([
+    resolveWorkspaceIdentity(projectId),
+    getMainWorktreePath(projectId).catch(() => null),
+  ])
+  if (!mainWorktreePath) return
+
+  const mainWorktreeIdentity = await resolveWorkspaceIdentity(mainWorktreePath)
+  if (
+    projectIdentity !== mainWorktreeIdentity ||
+    repositoryIdentity.topLevelIdentity !== mainWorktreeIdentity
+  ) {
+    return
+  }
+
+  upsertProjectWorktree({
+    cwd: projectId,
+    rootCwd: projectId,
+    branchName: null,
+    gitCommonDirectoryIdentity: repositoryIdentity.commonDirectoryIdentity,
+    isMain: true,
+    source: 'howcode',
+  })
 }
 
 function sanitizeProjectFolderName(projectName: string) {
@@ -130,6 +166,7 @@ async function addExistingRepositoryProject(projectPath: string, repositoryUrl: 
   }
 
   ensureProject(projectPath)
+  await recordRootGitProvenance(projectPath)
   setProjectRepoOrigin(projectPath, originUrl ?? repositoryUrl)
   return { projectId: projectPath }
 }
