@@ -7,7 +7,7 @@ import type { DiffEditingSession } from './diff-editing-save'
 type DiffEditingDraftStatus =
   | { kind: 'ready' }
   | { kind: 'saving' }
-  | { kind: 'failed'; error: string }
+  | { kind: 'failed'; error: string; reason: 'conflict' | 'other' }
 
 export type DiffEditingDraft = {
   session: DiffEditingSession
@@ -28,6 +28,7 @@ function cloneSession(session: DiffEditingSession): DiffEditingSession {
   return {
     ...session,
     baselineFile: session.baselineFile ? cloneFile(session.baselineFile) : null,
+    initialFile: cloneFile(session.initialFile),
   }
 }
 
@@ -54,12 +55,17 @@ export function createDiffEditingDraftStore() {
     for (const listener of listenersByProjectId.get(projectId) ?? []) listener()
   }
 
-  const retainFailure = (projectId: string, sessionId: string, error: string) => {
+  const retainFailure = (
+    projectId: string,
+    sessionId: string,
+    error: string,
+    reason: 'conflict' | 'other',
+  ) => {
     const current = draftsByProjectId.get(projectId)
     if (current?.session.id !== sessionId) return
     draftsByProjectId.set(projectId, {
       ...current,
-      status: { kind: 'failed', error },
+      status: { kind: 'failed', error, reason },
     })
     notify(projectId)
   }
@@ -105,6 +111,21 @@ export function createDiffEditingDraftStore() {
       notify(projectId)
       return cloneDraft(next)
     },
+    discardConflictedDraft(projectId: string, expectedDraft: DiffEditingDraft) {
+      const current = draftsByProjectId.get(projectId)
+      // Snapshot identity invalidates an open confirmation after any edit, save, or replacement.
+      if (
+        current !== expectedDraft ||
+        current.status.kind !== 'failed' ||
+        current.status.reason !== 'conflict' ||
+        savesByProjectId.has(projectId)
+      ) {
+        return false
+      }
+      draftsByProjectId.delete(projectId)
+      notify(projectId)
+      return true
+    },
     saveDraft(projectId: string, sessionId: string, write: DraftWriter): Promise<void> {
       const activeSave = savesByProjectId.get(projectId)
       if (activeSave?.sessionId === sessionId) return activeSave.promise
@@ -123,12 +144,18 @@ export function createDiffEditingDraftStore() {
             applyWrittenResult(projectId, savedDraft, result)
             return
           }
-          retainFailure(projectId, sessionId, getFileWriteFailure(result))
+          retainFailure(
+            projectId,
+            sessionId,
+            getFileWriteFailure(result),
+            result.kind === 'conflict' ? 'conflict' : 'other',
+          )
         } catch (error) {
           retainFailure(
             projectId,
             sessionId,
             getErrorMessage(error, `Could not save ${savedDraft.session.path}.`),
+            'other',
           )
         } finally {
           const active = savesByProjectId.get(projectId)

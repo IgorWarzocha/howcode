@@ -11,6 +11,7 @@ function createSession(id: string, expectedRevision = 'revision-1'): DiffEditing
     path: 'file.txt',
     expectedRevision,
     baselineFile: { name: 'file.txt', contents: 'baseline contents' },
+    initialFile: { name: 'file.txt', contents: 'initial contents' },
   }
 }
 
@@ -23,6 +24,24 @@ function written(revision: string): ProjectFileWriteResult {
     kind: 'written',
     file: { path: 'file.txt', contents: 'saved contents', revision },
   }
+}
+
+function conflict(): ProjectFileWriteResult {
+  return {
+    kind: 'conflict',
+    path: 'file.txt',
+    expectedRevision: 'revision-1',
+    currentRevision: 'external-revision',
+  }
+}
+
+function requireDraft(
+  store: ReturnType<typeof createDiffEditingDraftStore>,
+  projectId = 'project-1',
+) {
+  const draft = store.getSnapshot(projectId)
+  if (!draft) throw new Error(`Expected a retained draft for ${projectId}.`)
+  return draft
 }
 
 describe('GitOps diff editing drafts', () => {
@@ -51,12 +70,7 @@ describe('GitOps diff editing drafts', () => {
   it.each([
     {
       name: 'conflict',
-      write: async (): Promise<ProjectFileWriteResult> => ({
-        kind: 'conflict',
-        path: 'file.txt',
-        expectedRevision: 'revision-1',
-        currentRevision: 'external-revision',
-      }),
+      write: async (): Promise<ProjectFileWriteResult> => conflict(),
       error: 'Could not save file.txt because it changed outside Howcode.',
     },
     {
@@ -100,6 +114,75 @@ describe('GitOps diff editing drafts', () => {
     })
     expect(retriedContents).toBe('newer unsaved contents')
     expect(store.getDraft('project-1')).toBeNull()
+  })
+
+  it('discards an exact retained conflict without changing its expected revision', async () => {
+    const store = createDiffEditingDraftStore()
+    const session = createSession('session-1')
+    store.updateDraft('project-1', session, createDraftFile('unsaved contents'))
+    await store.saveDraft('project-1', session.id, async () => conflict())
+    const conflictedDraft = requireDraft(store)
+
+    expect(conflictedDraft.session.expectedRevision).toBe('revision-1')
+    expect(store.discardConflictedDraft('project-1', conflictedDraft)).toBe(true)
+    expect(store.getDraft('project-1')).toBeNull()
+  })
+
+  it('does not discard a non-conflict failure', async () => {
+    const store = createDiffEditingDraftStore()
+    const session = createSession('session-1')
+    store.updateDraft('project-1', session, createDraftFile('unsaved contents'))
+    await store.saveDraft('project-1', session.id, async () => ({
+      kind: 'unavailable',
+      issue: { kind: 'missing', side: 'new', path: 'file.txt' },
+    }))
+    const failedDraft = requireDraft(store)
+
+    expect(store.discardConflictedDraft('project-1', failedDraft)).toBe(false)
+    expect(store.getDraft('project-1')).toMatchObject({
+      file: { contents: 'unsaved contents' },
+      status: { kind: 'failed', reason: 'other' },
+    })
+  })
+
+  it('does not discard a replacement session through a stale conflict action', async () => {
+    const store = createDiffEditingDraftStore()
+    const firstSession = createSession('session-1')
+    store.updateDraft('project-1', firstSession, createDraftFile('first edit'))
+    await store.saveDraft('project-1', firstSession.id, async () => conflict())
+    const staleConflict = requireDraft(store)
+
+    const replacementSession = createSession('session-2', 'replacement-revision')
+    store.updateDraft('project-1', replacementSession, createDraftFile('replacement edit'))
+
+    expect(store.discardConflictedDraft('project-1', staleConflict)).toBe(false)
+    expect(store.getDraft('project-1')).toMatchObject({
+      file: { contents: 'replacement edit' },
+      session: replacementSession,
+    })
+  })
+
+  it('does not discard through a stale conflict action during or after a newer save', async () => {
+    const store = createDiffEditingDraftStore()
+    const session = createSession('session-1')
+    store.updateDraft('project-1', session, createDraftFile('unsaved contents'))
+    await store.saveDraft('project-1', session.id, async () => conflict())
+    const staleConflict = requireDraft(store)
+    let finishWrite: ((result: ProjectFileWriteResult) => void) | undefined
+    const pendingWrite = new Promise<ProjectFileWriteResult>((resolve) => {
+      finishWrite = resolve
+    })
+
+    const saving = store.saveDraft('project-1', session.id, () => pendingWrite)
+    expect(store.discardConflictedDraft('project-1', staleConflict)).toBe(false)
+
+    finishWrite?.(conflict())
+    await saving
+    expect(store.discardConflictedDraft('project-1', staleConflict)).toBe(false)
+    expect(store.getDraft('project-1')).toMatchObject({
+      file: { contents: 'unsaved contents' },
+      status: { kind: 'failed', reason: 'conflict' },
+    })
   })
 
   it('retains newer edits and advances their revision when an older save finishes', async () => {

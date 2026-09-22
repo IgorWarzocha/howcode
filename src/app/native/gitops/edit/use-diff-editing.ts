@@ -25,6 +25,7 @@ export type DiffEditingController = {
   retainedFile: { fileKey: string; resolveFileDiff: () => FileDiffMetadata } | null
   start: (input: { fileDiff: FileDiffMetadata; fileKey: string }) => Promise<void>
   save: (fileKey: string) => Promise<void>
+  discardAndReload: (input: { fileDiff: FileDiffMetadata; fileKey: string }) => Promise<void>
   getEditStateKey: (item: CodeViewItem<GitOpsAnnotationMetadata>) => string | undefined
   onItemEditChange: (
     event: EditorChangeEvent<EditorType, GitOpsAnnotationMetadata, undefined>,
@@ -41,18 +42,21 @@ function getDraftState(draft: DiffEditingDraft): DiffEditingState {
     dirty: true,
     saving: draft.status.kind === 'saving',
     error: draft.status.kind === 'failed' ? draft.status.error : null,
+    canDiscardAndReload: draft.status.kind === 'failed' && draft.status.reason === 'conflict',
   }
 }
 
 function createEditingSession({
   baselineFile,
   expectedRevision,
+  initialFile,
   fileKey,
   path,
   projectId,
 }: {
   baselineFile: DiffEditingSession['baselineFile']
   expectedRevision: string
+  initialFile: DiffEditingSession['initialFile']
   fileKey: string
   path: string
   projectId: string
@@ -66,6 +70,7 @@ function createEditingSession({
     path,
     expectedRevision,
     baselineFile,
+    initialFile,
   }
 }
 
@@ -97,6 +102,7 @@ export function useDiffEditing({
   projectId: string
 }): DiffEditingController {
   const sessionRef = useRef<DiffEditingSession | null>(null)
+  const preparingRef = useRef<object | null>(null)
   const fileActionsRef = useLatestRef(fileActions)
   const subscribeToDraft = useCallback(
     (listener: () => void) => diffEditingDraftStore.subscribe(projectId, listener),
@@ -110,9 +116,11 @@ export function useDiffEditing({
   const [localState, setLocalState] = useState<DiffEditingState>({ kind: 'idle', error: null })
   const activeSessionRef = useLatestRef(draft?.session ?? sessionRef.current)
   const state = draft ? getDraftState(draft) : localState
-  const retainedBaselineFile = draft?.session.baselineFile
-  const retainedFileKey = draft?.session.fileKey
-  const recoveryFile = draft?.recoveryFile
+  const retainedSession =
+    draft?.session ?? (localState.kind === 'editing' ? sessionRef.current : null)
+  const retainedBaselineFile = retainedSession?.baselineFile
+  const retainedFileKey = retainedSession?.fileKey
+  const recoveryFile = draft?.recoveryFile ?? retainedSession?.initialFile
   const retainedFile = useMemo(
     () =>
       retainedFileKey && recoveryFile
@@ -125,28 +133,56 @@ export function useDiffEditing({
     [recoveryFile, retainedBaselineFile, retainedFileKey],
   )
 
-  const start = useCallback(
+  const prepareEditing = useCallback(
     async ({ fileDiff, fileKey }: Parameters<DiffEditingController['start']>[0]) => {
-      if (diffEditingDraftStore.getSnapshot(projectId) || sessionRef.current) return
+      if (preparingRef.current) return
+      const preparation = {}
+      preparingRef.current = preparation
       setLocalState({ kind: 'loading', fileKey })
       try {
         const [, prepared] = await Promise.all([
           loadPierreEditor(),
           fileContent.prepareEdit(fileDiff),
         ])
+        if (preparingRef.current !== preparation) return
         sessionRef.current = createEditingSession({
           baselineFile: prepared.baselineFile,
           expectedRevision: prepared.revision,
+          initialFile: prepared.file,
           fileKey,
           path: prepared.path,
           projectId,
         })
-        setLocalState({ kind: 'editing', fileKey, dirty: false, saving: false, error: null })
+        setLocalState({
+          kind: 'editing',
+          fileKey,
+          dirty: false,
+          saving: false,
+          error: null,
+          canDiscardAndReload: false,
+        })
       } catch (error) {
+        if (preparingRef.current !== preparation) return
         setLocalState({ kind: 'idle', error: getErrorMessage(error, 'Could not start editing.') })
+      } finally {
+        if (preparingRef.current === preparation) preparingRef.current = null
       }
     },
     [fileContent, projectId],
+  )
+
+  const start = useCallback(
+    async (input: Parameters<DiffEditingController['start']>[0]) => {
+      if (
+        preparingRef.current ||
+        diffEditingDraftStore.getSnapshot(projectId) ||
+        sessionRef.current
+      ) {
+        return
+      }
+      await prepareEditing(input)
+    },
+    [prepareEditing, projectId],
   )
 
   const save = useCallback(
@@ -176,13 +212,37 @@ export function useDiffEditing({
     [fileActions, projectId],
   )
 
+  const discardAndReload = useCallback(
+    async (input: Parameters<DiffEditingController['discardAndReload']>[0]) => {
+      const expectedDraft = draft
+      if (
+        !expectedDraft ||
+        expectedDraft.session.fileKey !== input.fileKey ||
+        expectedDraft.status.kind !== 'failed' ||
+        expectedDraft.status.reason !== 'conflict' ||
+        preparingRef.current
+      ) {
+        return
+      }
+      if (!diffEditingDraftStore.discardConflictedDraft(projectId, expectedDraft)) return
+
+      if (sessionRef.current?.id === expectedDraft.session.id) sessionRef.current = null
+      activeSessionRef.current = null
+      await prepareEditing(input)
+    },
+    [activeSessionRef, draft, prepareEditing, projectId],
+  )
+
   const createEditor = useCallback<DiffEditingController['createEditor']>(
     (editorType, options, editStateKey) => {
       const currentDraft = diffEditingDraftStore.getSnapshot(projectId)
+      const session = currentDraft?.session ?? sessionRef.current
+      const initialFile = currentDraft?.file ?? session?.initialFile
       if (
         editorType !== 'file-diff' ||
         !editStateKey ||
-        currentDraft?.session.editStateKey !== editStateKey
+        session?.editStateKey !== editStateKey ||
+        !initialFile
       ) {
         return createPierreEditor(editorType, options, editStateKey)
       }
@@ -190,10 +250,9 @@ export function useDiffEditing({
         editorType,
         {
           ...options,
-          initialState: createDiffEditingInitialState(
-            currentDraft.session,
-            currentDraft.file,
-          ) as NonNullable<typeof options.initialState>,
+          initialState: createDiffEditingInitialState(session, initialFile) as NonNullable<
+            typeof options.initialState
+          >,
         },
         editStateKey,
       )
@@ -224,6 +283,7 @@ export function useDiffEditing({
   // lifetime owns teardown, and cleanup uses whichever imperative adapter is current then.
   useEffect(
     () => () => {
+      preparingRef.current = null
       const session = activeSessionRef.current
       if (!session) return
       void diffEditingDraftStore.saveDraft(projectId, session.id, (savedDraft) =>
@@ -238,5 +298,14 @@ export function useDiffEditing({
     [activeSessionRef, fileActionsRef, projectId],
   )
 
-  return { state, createEditor, retainedFile, start, save, getEditStateKey, onItemEditChange }
+  return {
+    state,
+    createEditor,
+    retainedFile,
+    start,
+    save,
+    discardAndReload,
+    getEditStateKey,
+    onItemEditChange,
+  }
 }

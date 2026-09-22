@@ -8,6 +8,7 @@ export type DiffEditingSession = {
   path: string
   expectedRevision: string
   baselineFile: FileContents | null
+  initialFile: FileContents
 }
 
 export function writeDiffEditingSession({

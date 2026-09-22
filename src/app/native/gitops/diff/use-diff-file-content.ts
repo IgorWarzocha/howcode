@@ -19,6 +19,7 @@ export type DiffFileContentController = {
   loadFiles: FileDiffContentsLoader
   prepareEdit: (fileDiff: FileDiffMetadata) => Promise<{
     baselineFile: FileContents | null
+    file: FileContents
     path: string
     revision: string
   }>
@@ -139,6 +140,7 @@ export function useDiffFileContent({
       }
       return {
         baselineFile,
+        file: files.newFile,
         path: result.newFile.path,
         revision: result.newFile.revision,
       }
