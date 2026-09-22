@@ -37,6 +37,7 @@ export function DiffPanel({
   return (
     <DiffWorkerPoolProvider>
       <DiffPanelContent
+        key={projectId}
         fileActions={fileActions}
         projectId={projectId}
         isGitRepo={isGitRepo}

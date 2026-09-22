@@ -9,7 +9,7 @@ import { useCallback, useMemo } from 'react'
 import type { ProjectDiffBaseline } from '../../../desktop/types'
 import { diffFileShellClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { createPierreEditor, pierreEditorOptions } from '../edit/pierre-editor'
+import { pierreEditorOptions } from '../edit/pierre-editor'
 import type { DiffEditingController } from '../edit/use-diff-editing'
 import type { GitOpsAnnotationMetadata } from '../review/pierre-review-adapter'
 import type { ReviewCodeViewController } from '../review/review-code-view'
@@ -167,7 +167,7 @@ export function DiffPanelFileList({
   )
 
   return (
-    <EditProvider<GitOpsAnnotationMetadata> createEditor={createPierreEditor}>
+    <EditProvider<GitOpsAnnotationMetadata> createEditor={editing.createEditor}>
       <div className="h-full min-h-0">
         <CodeView<GitOpsAnnotationMetadata>
           ref={setHandle}
@@ -181,6 +181,7 @@ export function DiffPanelFileList({
           )}
           options={codeViewOptions}
           editorOptions={pierreEditorOptions}
+          getEditStateKey={editing.getEditStateKey}
           onItemEditChange={editing.onItemEditChange}
           renderCustomHeader={renderCustomHeader}
           renderAnnotation={renderAnnotation}

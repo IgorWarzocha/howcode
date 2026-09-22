@@ -2,12 +2,12 @@ import type { FileContents } from '@pierre/diffs/react'
 import type { GitOpsFileActions } from './gitops-file-actions'
 
 export type DiffEditingSession = {
+  id: string
+  editStateKey: string
   fileKey: string
   path: string
   expectedRevision: string
-  latestFile: FileContents | null
-  dirty: boolean
-  saving: boolean
+  baselineFile: FileContents | null
 }
 
 export function writeDiffEditingSession({

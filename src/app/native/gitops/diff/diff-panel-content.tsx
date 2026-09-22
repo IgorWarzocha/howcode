@@ -15,6 +15,7 @@ import { useReviewCodeViewController } from '../review/use-review-code-view-cont
 import {
   buildFileDiffRenderKey,
   isImageDiffFile,
+  orderRenderableFiles,
   resolveFileDiffPath,
 } from './diff-panel-content.helpers'
 import { DiffPanelContentBody } from './diff-panel-content-body'
@@ -91,11 +92,26 @@ export function DiffPanelContent({
   const selectedPatch = streamedPatch ?? diff?.diff ?? undefined
   const hasResolvedPatch = typeof selectedPatch === 'string'
   const hasNoNetChanges = !isLoading && hasResolvedPatch && selectedPatch.trim().length === 0
-  const renderablePatch = useWorkerRenderablePatch(selectedPatch, !isLoading)
-  const renderableFiles = useMemo(
-    () => (renderablePatch && renderablePatch.kind === 'files' ? renderablePatch.files : []),
-    [renderablePatch],
+  const workerRenderablePatch = useWorkerRenderablePatch(selectedPatch, !isLoading)
+  const workerRenderableFiles = useMemo(
+    () => (workerRenderablePatch?.kind === 'files' ? workerRenderablePatch.files : []),
+    [workerRenderablePatch],
   )
+  const renderableFiles = useMemo(() => {
+    const retainedFile = editing.retainedFile
+    if (
+      !retainedFile ||
+      workerRenderableFiles.some(
+        (fileDiff) => buildFileDiffRenderKey(fileDiff) === retainedFile.fileKey,
+      )
+    ) {
+      return workerRenderableFiles
+    }
+    return orderRenderableFiles([...workerRenderableFiles, retainedFile.resolveFileDiff()])
+  }, [editing.retainedFile, workerRenderableFiles])
+  const renderablePatch = editing.retainedFile
+    ? ({ kind: 'files', files: renderableFiles } as const)
+    : workerRenderablePatch
 
   const normalizedFocusedFilePaths = useMemo(
     () => focusedFilePaths.map((filePath) => filePath.replace(trailingSlashPattern, '')),
