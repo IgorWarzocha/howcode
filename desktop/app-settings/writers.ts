@@ -246,7 +246,7 @@ export function setGitOpsDefaultMode(mode: GitOpsMode) {
 }
 
 export function setGitDiffBaselineDefault(baseline: ProjectDiffDefaultBaseline) {
-  if (baseline.kind === 'head') {
+  if (baseline.kind === 'main-branch') {
     deleteAppPreferenceSync(gitDiffBaselineDefaultKey)
     return
   }
