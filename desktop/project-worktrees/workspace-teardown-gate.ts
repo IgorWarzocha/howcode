@@ -1,29 +1,23 @@
+import * as Deferred from 'effect/Deferred'
+import * as Effect from 'effect/Effect'
+import * as Semaphore from 'effect/Semaphore'
 import { resolveWorkspaceIdentity } from '../workspace-identity.ts'
 
 type WorkspaceActivity = {
   activeOperations: number
   teardownInProgress: boolean
-  resolveIdle: (() => void) | null
+  idle: Deferred.Deferred<void> | null
 }
 
 const workspaceActivity = new Map<string, WorkspaceActivity>()
-let workspaceAdmissionTail = Promise.resolve()
+const workspaceAdmission = Semaphore.makeUnsafe(1)
 
 function withWorkspaceAdmission<T>(admit: () => Promise<T>) {
-  const precedingAdmission = workspaceAdmissionTail
-  let releaseAdmission: (() => void) | undefined
-  workspaceAdmissionTail = new Promise<void>((resolve) => {
-    releaseAdmission = resolve
-  })
-
-  return (async () => {
-    await precedingAdmission
-    try {
-      return await admit()
-    } finally {
-      releaseAdmission?.()
-    }
-  })()
+  return Effect.runPromise(
+    workspaceAdmission
+      .withPermit(Effect.tryPromise({ try: admit, catch: (error) => error }))
+      .pipe(Effect.uninterruptible),
+  )
 }
 
 async function getWorkspaceActivity(projectId: string) {
@@ -34,7 +28,7 @@ async function getWorkspaceActivity(projectId: string) {
   const state: WorkspaceActivity = {
     activeOperations: 0,
     teardownInProgress: false,
-    resolveIdle: null,
+    idle: null,
   }
   workspaceActivity.set(key, state)
   return { key, state }
@@ -60,8 +54,8 @@ export async function withWorkspaceActivity<T>(projectId: string, operation: () 
   } finally {
     state.activeOperations -= 1
     if (state.activeOperations === 0) {
-      state.resolveIdle?.()
-      state.resolveIdle = null
+      if (state.idle) Deferred.doneUnsafe(state.idle, Effect.void)
+      state.idle = null
     }
     releaseIfIdle(key, state)
   }
@@ -78,9 +72,8 @@ export async function withWorkspaceTeardown<T>(projectId: string, teardown: () =
   })
   try {
     if (state.activeOperations > 0) {
-      await new Promise<void>((resolve) => {
-        state.resolveIdle = resolve
-      })
+      state.idle = Deferred.makeUnsafe<void>()
+      await Effect.runPromise(Deferred.await(state.idle))
     }
     return await teardown()
   } finally {

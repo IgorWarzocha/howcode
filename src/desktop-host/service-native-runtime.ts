@@ -6,6 +6,8 @@ import { runProcessProbe } from '../../node-runtime/process-probe'
 import serviceNativeAbi from '../../shared/service-native-abi.json'
 
 const supportedServiceNodeAbis = new Set(serviceNativeAbi.supportedServiceNodeAbis)
+const nodeVersionPattern = /^v?(\d+)\.(\d+)\.(\d+)/u
+const maximumServiceNodeMajor = serviceNativeAbi.supportedServiceNodeMajors.at(-1)
 
 const NodeRuntimeProbe = Schema.Struct({
   version: Schema.String,
@@ -21,6 +23,19 @@ function rejectNodeProbeExit(nodeExecutable: string, stderr: string, code: numbe
   return new Error(
     `Failed to probe Node runtime ${nodeExecutable} (exit ${code ?? 'unknown'}): ${stderr.trim()}`,
   )
+}
+
+function isAtLeastNodeVersion(version: string, minimumVersion: string) {
+  const versionParts = version.match(nodeVersionPattern)?.slice(1).map(Number)
+  const minimumParts = minimumVersion.match(nodeVersionPattern)?.slice(1).map(Number)
+  if (!(versionParts && minimumParts)) return false
+
+  for (let index = 0; index < minimumParts.length; index += 1) {
+    const part = versionParts[index] ?? 0
+    const minimumPart = minimumParts[index] ?? 0
+    if (part !== minimumPart) return part > minimumPart
+  }
+  return true
 }
 
 export async function probeNodeRuntime(nodeExecutable: string): Promise<NodeRuntimeProbe> {
@@ -47,15 +62,6 @@ export async function probeNodeRuntime(nodeExecutable: string): Promise<NodeRunt
 
 function getUnpackedAppPath(resourcesPath: string) {
   return path.join(resourcesPath, 'app.asar.unpacked')
-}
-
-function getBetterSqlitePrebuildPath() {
-  return path.join(
-    'node_modules',
-    'better-sqlite3',
-    'prebuilds',
-    `${process.platform}-${process.arch}.node`,
-  )
 }
 
 function validateAbiNativeDependencies(resourcesPath: string, abi: string) {
@@ -104,10 +110,6 @@ function validateAbiNativeDependencies(resourcesPath: string, abi: string) {
       throw new Error(`Missing packaged native dependency for ABI ${abi}: ${packageManifestPath}`)
     }
   }
-
-  const betterSqlitePrebuildPath = path.join(unpackedAppPath, getBetterSqlitePrebuildPath())
-  if (!existsSync(betterSqlitePrebuildPath))
-    throw new Error(`Missing packaged stock-Node SQLite prebuild: ${betterSqlitePrebuildPath}`)
 }
 
 function hasPackagedNativeDependencies(resourcesPath: string) {
@@ -119,9 +121,14 @@ export async function prepareServiceNativeRuntime(input: {
   resourcesPath?: string | undefined
 }) {
   const runtime = await probeNodeRuntime(input.nodeExecutable)
-  if (!supportedServiceNodeAbis.has(runtime.abi)) {
+  if (
+    !(
+      supportedServiceNodeAbis.has(runtime.abi) &&
+      isAtLeastNodeVersion(runtime.version, serviceNativeAbi.minimumServiceNodeVersion)
+    )
+  ) {
     throw new Error(
-      `Howcode desktop service requires Node ABI ${getSupportedServiceNodeAbiLabel()} (Node 24-26). ${input.nodeExecutable} is ${runtime.version} ABI ${runtime.abi}.`,
+      `Howcode desktop service requires Node ABI ${getSupportedServiceNodeAbiLabel()} (Node ${serviceNativeAbi.minimumServiceNodeVersion}+ through ${maximumServiceNodeMajor}). ${input.nodeExecutable} is ${runtime.version} ABI ${runtime.abi}.`,
     )
   }
 

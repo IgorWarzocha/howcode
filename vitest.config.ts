@@ -8,6 +8,7 @@ export default mergeConfig(viteConfig, {
       'src/**/*.test.tsx',
       'desktop/**/*.test.ts',
       'packages/howcode/test/**/*.test.ts',
+      'workers/polls/src/**/*.test.ts',
     ],
     exclude: ['node_modules/**', 'dist/**', 'build/**', 'Frameworks/**'],
   },

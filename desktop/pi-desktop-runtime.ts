@@ -1,4 +1,7 @@
 import { stat } from 'node:fs/promises'
+import * as Effect from 'effect/Effect'
+import * as Exit from 'effect/Exit'
+import * as Scope from 'effect/Scope'
 import type {
   ComposerAttachment,
   ComposerStateRequest,
@@ -16,11 +19,8 @@ import { getChatSessionDir } from './chat-session-dir.ts'
 import { isChatSessionPath, upsertChatThread } from './chat-state-db.ts'
 import { withWorkspaceActivity } from './project-worktrees/workspace-teardown-gate.ts'
 import { subscribeDesktopEvents as subscribeLocalDesktopEvents } from './runtime/desktop-events.ts'
-import {
-  getLiveThread,
-  markInternalThreadUpdate,
-  rememberLiveThread,
-} from './runtime/live-thread-store.ts'
+import { getLiveThread, markInternalThreadUpdate } from './runtime/live-thread-store.ts'
+import { makeThreadUpdateForwarder } from './runtime/thread-update-forwarding.ts'
 import {
   disposeRuntimeHostsForWorkspace,
   invokeRuntimeHost,
@@ -153,38 +153,13 @@ async function persistHostThreadUpdate(event: Extract<DesktopEvent, { type: 'thr
   }
 }
 
-const threadUpdateForwardingBySession = new Map<string, Promise<void>>()
+const forwardingScope = Scope.makeUnsafe()
+const enqueueHostThreadUpdate = Effect.runSync(
+  Scope.provide(makeThreadUpdateForwarder(persistHostThreadUpdate), forwardingScope),
+)
 
-function enqueueHostThreadUpdate(
-  event: Extract<DesktopEvent, { type: 'thread-update' }>,
-  listener: (event: DesktopEvent) => void,
-) {
-  const sessionPath = event.sessionPath
-  const previous = threadUpdateForwardingBySession.get(sessionPath) ?? Promise.resolve()
-  const next = previous
-    .catch(() => {
-      // Keep the per-session queue moving after an earlier failed update.
-    })
-    .then(async () => {
-      markInternalThreadUpdate(sessionPath)
-      rememberLiveThread(sessionPath, event.thread)
-      try {
-        await persistHostThreadUpdate(event)
-      } catch (error) {
-        console.warn(`Failed to persist Pi runtime host thread update: ${sessionPath}`, error)
-      }
-      listener({ ...event })
-    })
-    .catch((error) => {
-      console.warn(`Failed to forward Pi runtime host thread update: ${sessionPath}`, error)
-    })
-    .finally(() => {
-      if (threadUpdateForwardingBySession.get(sessionPath) === next) {
-        threadUpdateForwardingBySession.delete(sessionPath)
-      }
-    })
-
-  threadUpdateForwardingBySession.set(sessionPath, next)
+export function disposeThreadUpdateForwarding() {
+  return Effect.runPromise(Scope.close(forwardingScope, Exit.void))
 }
 
 export function subscribeDesktopEvents(listener: (event: DesktopEvent) => void) {

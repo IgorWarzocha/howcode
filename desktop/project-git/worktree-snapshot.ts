@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { mkdir, rm, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { runKeyedWorkspaceOperation } from '../runtime/keyed-workspace-operations.ts'
 import { runGitStreamingWithOptions, runGitWithOptions, withTemporaryIndex } from './git-runner.ts'
 
 export const EMPTY_TREE_OID = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
@@ -18,7 +19,6 @@ export type WorktreeSnapshot = {
 
 export type WorktreeStats = Omit<WorktreeSnapshot, 'patch'>
 
-const stagedWorktreeQueues = new Map<string, Promise<unknown>>()
 const stagedWorktreeLockRoot = join(tmpdir(), 'howcode-git-worktree-locks')
 const stagedWorktreeLockStaleMs = 120_000
 const stagedWorktreeLockPollMs = 50
@@ -83,21 +83,9 @@ async function runWithProcessStagedWorktreeLock<T>(projectId: string, operation:
 }
 
 function runExclusiveStagedWorktree<T>(projectId: string, operation: () => Promise<T>): Promise<T> {
-  const previous = stagedWorktreeQueues.get(projectId) ?? Promise.resolve()
-  const next = previous.then(
-    () => runWithProcessStagedWorktreeLock(projectId, operation),
-    () => runWithProcessStagedWorktreeLock(projectId, operation),
+  return runKeyedWorkspaceOperation('worktree-snapshot', projectId, () =>
+    runWithProcessStagedWorktreeLock(projectId, operation),
   )
-  const clearQueue = () => {
-    if (stagedWorktreeQueues.get(projectId) === cleanup) {
-      stagedWorktreeQueues.delete(projectId)
-    }
-  }
-  // The queue tail is bookkeeping, not a second observer of the operation result.
-  // Keep it fulfilled so a caller-handled cancellation cannot become an unhandled rejection.
-  const cleanup = next.then(clearQueue, clearQueue)
-  stagedWorktreeQueues.set(projectId, cleanup)
-  return next
 }
 
 function parseNumStat(output: string) {

@@ -1,6 +1,5 @@
+import { desktopShutdownTimeouts } from '../../shared/desktop-shutdown-deadlines.ts'
 import type { TerminalSessionRecord } from './session-record.ts'
-
-const TERMINAL_STOP_TIMEOUT_MS = 1_000
 
 function signalTerminalProcess(
   processHandle: NonNullable<TerminalSessionRecord['process']>,
@@ -9,7 +8,10 @@ function signalTerminalProcess(
   return new Promise<boolean>((resolve, reject) => {
     let settled = false
     let unsubscribe: () => void = () => undefined
-    const timeout = setTimeout(() => settle(false), TERMINAL_STOP_TIMEOUT_MS)
+    const timeout = setTimeout(
+      () => settle(false),
+      desktopShutdownTimeouts.terminalExitAfterSignalMs,
+    )
     const settle = (exited: boolean) => {
       if (settled) return
       settled = true

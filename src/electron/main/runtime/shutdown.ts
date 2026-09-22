@@ -1,6 +1,7 @@
 import * as Effect from 'effect/Effect'
 import { app } from 'electron'
 import type { DesktopServiceRuntime } from '../../../../shared/desktop-service-contracts'
+import { desktopShutdownTimeouts } from '../../../../shared/desktop-shutdown-deadlines'
 import { makeShutdownCoordinator } from '../../../../shared/effect-shutdown'
 
 function settledTask<A>(evaluate: () => A) {
@@ -23,7 +24,7 @@ export async function registerDesktopRuntimeShutdown(
         ],
         { concurrency: 'unbounded', discard: true },
       ),
-      { label: 'Desktop runtime', timeout: '2 seconds' },
+      { label: 'Desktop runtime', timeout: desktopShutdownTimeouts.electronCleanupMs },
     ),
   )
 

@@ -1,9 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
+import * as Effect from 'effect/Effect'
 import * as Schema from 'effect/Schema'
+import * as SqlClient from 'effect/unstable/sql/SqlClient'
 import type { ChatSidebarState, ChatThread } from '../shared/desktop-contracts.ts'
 import { getChatSessionDir } from './chat-session-dir.ts'
-import { getThreadStateDatabase } from './thread-state-db/db.ts'
+import { databaseOperation } from './thread-state-db/db.ts'
 import { mapThreadRow } from './thread-state-db/mappers.ts'
 import {
   decodePersistedRow,
@@ -26,137 +28,136 @@ const ChatThreadGroupRowSchema = Schema.Struct({
 
 type ChatThreadGroupRow = typeof ChatThreadGroupRowSchema.Type
 
-let chatSchemaReady = false
-
-export function ensureChatStateSchema() {
-  if (chatSchemaReady) return
-  const db = getThreadStateDatabase()
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS chat_groups (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      order_index INTEGER,
-      collapsed INTEGER NOT NULL DEFAULT 0,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS chat_threads (
-      session_path TEXT PRIMARY KEY,
-      group_id TEXT,
-      order_index INTEGER,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (group_id) REFERENCES chat_groups(id) ON DELETE SET NULL
-    );
-
-    CREATE INDEX IF NOT EXISTS chat_groups_order_idx ON chat_groups(order_index, name COLLATE NOCASE);
-    CREATE INDEX IF NOT EXISTS chat_threads_group_idx ON chat_threads(group_id, order_index);
-  `)
-  chatSchemaReady = true
-}
-
 export function isChatSessionPath(sessionPath: string) {
   const chatSessionDir = getChatSessionDir()
   const relativePath = path.relative(chatSessionDir, sessionPath)
   return relativePath.length > 0 && !relativePath.startsWith('..') && !path.isAbsolute(relativePath)
 }
 
-export function createChatGroup(name: string): ChatSidebarState {
-  ensureChatStateSchema()
+const createChatGroupOperation = Effect.fn('ChatState.createGroup')(function* (name: string) {
   const trimmedName = name.trim()
   if (!trimmedName) throw new Error('Enter a group name.')
-  const db = getThreadStateDatabase()
+  const sql = yield* SqlClient.SqlClient
   const id = randomUUID()
-  const nextOrder = (
-    db.prepare('SELECT COALESCE(MAX(order_index), -1) + 1 AS nextOrder FROM chat_groups').get() as {
-      nextOrder: number
-    }
-  ).nextOrder
-  db.prepare('INSERT INTO chat_groups (id, name, order_index) VALUES (?, ?, ?)').run(
+  const nextOrderRows = yield* sql.unsafe<{ nextOrder: number }>(
+    'SELECT COALESCE(MAX(order_index), -1) + 1 AS nextOrder FROM chat_groups',
+  )
+  const nextOrderRow = nextOrderRows[0]
+  if (!nextOrderRow) throw new Error('Could not determine the next chat group order.')
+  yield* sql.unsafe('INSERT INTO chat_groups (id, name, order_index) VALUES (?, ?, ?)', [
     id,
     trimmedName,
-    nextOrder,
-  )
-  return getChatSidebarState(id)
-}
+    nextOrderRow.nextOrder,
+  ])
+  return yield* getChatSidebarStateOperation(id)
+})
 
-export function renameChatGroup(groupId: string, name: string) {
-  ensureChatStateSchema()
+export const createChatGroup: (name: string) => ChatSidebarState =
+  databaseOperation(createChatGroupOperation)
+
+const renameChatGroupOperation = Effect.fn('ChatState.renameGroup')(function* (
+  groupId: string,
+  name: string,
+) {
   const trimmedName = name.trim()
   if (!(groupId && trimmedName)) return
-  getThreadStateDatabase()
-    .prepare('UPDATE chat_groups SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
-    .run(trimmedName, groupId)
-}
-
-export function setChatGroupCollapsed(groupId: string, collapsed: boolean) {
-  ensureChatStateSchema()
-  getThreadStateDatabase()
-    .prepare('UPDATE chat_groups SET collapsed = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
-    .run(collapsed ? 1 : 0, groupId)
-}
-
-export function reorderChatGroups(groupIds: string[]) {
-  ensureChatStateSchema()
-  const update = getThreadStateDatabase().prepare(
-    'UPDATE chat_groups SET order_index = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+  const sql = yield* SqlClient.SqlClient
+  yield* sql.unsafe(
+    'UPDATE chat_groups SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    [trimmedName, groupId],
   )
-  groupIds.forEach((groupId, index) => {
-    update.run(index, groupId)
-  })
-}
+})
 
-export function moveChatThread(sessionPath: string, groupId: string | null) {
-  upsertChatThread({ sessionPath, groupId, updateGroup: true })
-}
+export const renameChatGroup = databaseOperation(renameChatGroupOperation)
 
-export function deleteChatThread(sessionPath: string) {
-  ensureChatStateSchema()
-  getThreadStateDatabase()
-    .prepare('DELETE FROM chat_threads WHERE session_path = ?')
-    .run(sessionPath)
-}
+const setChatGroupCollapsedOperation = Effect.fn('ChatState.setGroupCollapsed')(function* (
+  groupId: string,
+  collapsed: boolean,
+) {
+  const sql = yield* SqlClient.SqlClient
+  yield* sql.unsafe(
+    'UPDATE chat_groups SET collapsed = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    [collapsed ? 1 : 0, groupId],
+  )
+})
 
-export function upsertChatThread(options: {
+export const setChatGroupCollapsed = databaseOperation(setChatGroupCollapsedOperation)
+
+const reorderChatGroupsOperation = Effect.fn('ChatState.reorderGroups')(function* (
+  groupIds: string[],
+) {
+  const sql = yield* SqlClient.SqlClient
+  for (const [index, groupId] of groupIds.entries()) {
+    yield* sql.unsafe(
+      'UPDATE chat_groups SET order_index = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [index, groupId],
+    )
+  }
+})
+
+export const reorderChatGroups = databaseOperation(reorderChatGroupsOperation)
+
+const moveChatThreadOperation = Effect.fn('ChatState.moveThread')(function* (
+  sessionPath: string,
+  groupId: string | null,
+) {
+  yield* upsertChatThreadOperation({ sessionPath, groupId, updateGroup: true })
+})
+
+export const moveChatThread = databaseOperation(moveChatThreadOperation)
+
+const deleteChatThreadOperation = Effect.fn('ChatState.deleteThread')(function* (
+  sessionPath: string,
+) {
+  const sql = yield* SqlClient.SqlClient
+  yield* sql.unsafe('DELETE FROM chat_threads WHERE session_path = ?', [sessionPath])
+})
+
+export const deleteChatThread = databaseOperation(deleteChatThreadOperation)
+
+type UpsertChatThreadOptions = {
   sessionPath: string
   groupId?: string | undefined | null | undefined
   updateGroup?: boolean | undefined
-}) {
+}
+
+const upsertChatThreadOperation = Effect.fn('ChatState.upsertThread')(function* (
+  options: UpsertChatThreadOptions,
+) {
   if (!isChatSessionPath(options.sessionPath)) return
-  ensureChatStateSchema()
-  getThreadStateDatabase()
-    .prepare(
-      `
+  const sql = yield* SqlClient.SqlClient
+  yield* sql.unsafe(
+    `
         INSERT INTO chat_threads (session_path, group_id)
         VALUES (?, ?)
         ON CONFLICT(session_path) DO UPDATE SET
           group_id = CASE WHEN ? THEN excluded.group_id ELSE chat_threads.group_id END,
           updated_at = CURRENT_TIMESTAMP
       `,
-    )
-    .run(options.sessionPath, options.groupId ?? null, options.updateGroup ? 1 : 0)
-}
+    [options.sessionPath, options.groupId ?? null, options.updateGroup ? 1 : 0],
+  )
+})
+
+export const upsertChatThread = databaseOperation(upsertChatThreadOperation)
 
 function mapChatThreadRow(input: unknown): ChatThread {
   const row: ChatThreadGroupRow = decodePersistedRow(ChatThreadGroupRowSchema, input, 'chat thread')
   return { ...mapThreadRow(row), groupId: row.groupId, projectId: row.projectId }
 }
 
-export function getChatSidebarState(selectedGroupId: string | null = null): ChatSidebarState {
-  ensureChatStateSchema()
-  const db = getThreadStateDatabase()
+const getChatSidebarStateOperation = Effect.fn('ChatState.getSidebarState')(function* (
+  selectedGroupId: string | null = null,
+) {
+  const sql = yield* SqlClient.SqlClient
   const groups: ChatSidebarState['groups'] = decodePersistedRows(
     ChatGroupRowSchema,
-    db
-      .prepare(
-        `
+    yield* sql.unsafe(
+      `
         SELECT id, name, order_index AS orderIndex, collapsed
         FROM chat_groups
         ORDER BY order_index ASC, name COLLATE NOCASE ASC
       `,
-      )
-      .all(),
+    ),
     'chat group',
   ).map((group) => ({
     id: group.id,
@@ -168,9 +169,8 @@ export function getChatSidebarState(selectedGroupId: string | null = null): Chat
 
   const rows = decodePersistedRows(
     ChatThreadGroupRowSchema,
-    db
-      .prepare(
-        `
+    yield* sql.unsafe(
+      `
         SELECT
           threads.id AS id,
           threads.cwd AS projectId,
@@ -188,8 +188,7 @@ export function getChatSidebarState(selectedGroupId: string | null = null): Chat
         WHERE threads.archived = 0
         ORDER BY threads.pinned DESC, COALESCE(chat_threads.order_index, threads.last_modified_ms) DESC, threads.title COLLATE NOCASE ASC
       `,
-      )
-      .all(),
+    ),
     'chat thread',
   )
 
@@ -205,4 +204,7 @@ export function getChatSidebarState(selectedGroupId: string | null = null): Chat
   }
 
   return { groups, ungroupedThreads, selectedGroupId }
-}
+})
+
+export const getChatSidebarState: (selectedGroupId?: string | null) => ChatSidebarState =
+  databaseOperation(getChatSidebarStateOperation)

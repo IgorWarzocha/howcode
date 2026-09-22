@@ -1,3 +1,5 @@
+import * as Effect from 'effect/Effect'
+import * as SqlClient from 'effect/unstable/sql/SqlClient'
 import type {
   ComposerSendMode,
   ComposerStreamingBehavior,
@@ -14,7 +16,7 @@ import {
   DEFAULT_DICTATION_MAX_DURATION_SECONDS,
   normalizeDictationMaxDurationSeconds,
 } from '../../shared/dictation-settings.ts'
-import { getThreadStateDatabase } from '../thread-state-db/db.ts'
+import { databaseOperation } from '../thread-state-db/db.ts'
 import {
   chatModelKey,
   chatThinkingLevelKey,
@@ -49,9 +51,12 @@ import {
   useAgentsSkillsPathsKey,
 } from './keys.ts'
 
-function writeAppPreference(key: string, valueJson: string) {
-  const db = getThreadStateDatabase()
-  db.prepare(
+const writeAppPreference = Effect.fn('AppSettings.writePreference')(function* (
+  key: string,
+  valueJson: string,
+) {
+  const sql = yield* SqlClient.SqlClient
+  yield* sql.unsafe(
     `
       INSERT INTO app_preferences (key, value_json)
       VALUES (?, ?)
@@ -59,99 +64,104 @@ function writeAppPreference(key: string, valueJson: string) {
         value_json = excluded.value_json,
         updated_at = CURRENT_TIMESTAMP
     `,
-  ).run(key, valueJson)
-}
+    [key, valueJson],
+  )
+})
 
-function deleteAppPreference(key: string) {
-  const db = getThreadStateDatabase()
-  db.prepare(
+const deleteAppPreference = Effect.fn('AppSettings.deletePreference')(function* (key: string) {
+  const sql = yield* SqlClient.SqlClient
+  yield* sql.unsafe(
     `
       DELETE FROM app_preferences
       WHERE key = ?
     `,
-  ).run(key)
-}
+    [key],
+  )
+})
+
+const writeAppPreferenceSync = databaseOperation(writeAppPreference)
+const deleteAppPreferenceSync = databaseOperation(deleteAppPreference)
 
 export function setGitCommitMessageModelSelection(selection: ModelSelection | null) {
   if (!selection) {
-    deleteAppPreference(gitCommitMessageModelKey)
+    deleteAppPreferenceSync(gitCommitMessageModelKey)
     return
   }
 
-  writeAppPreference(gitCommitMessageModelKey, JSON.stringify(selection))
+  writeAppPreferenceSync(gitCommitMessageModelKey, JSON.stringify(selection))
 }
 
 export function setChatModelSelection(selection: ModelSelection | null) {
   if (!selection) {
-    deleteAppPreference(chatModelKey)
+    deleteAppPreferenceSync(chatModelKey)
     return
   }
 
-  writeAppPreference(chatModelKey, JSON.stringify(selection))
+  writeAppPreferenceSync(chatModelKey, JSON.stringify(selection))
 }
 
 export function setChatThinkingLevel(level: ComposerThinkingLevel | null) {
   if (!level) {
-    deleteAppPreference(chatThinkingLevelKey)
+    deleteAppPreferenceSync(chatThinkingLevelKey)
     return
   }
 
-  writeAppPreference(chatThinkingLevelKey, JSON.stringify(level))
+  writeAppPreferenceSync(chatThinkingLevelKey, JSON.stringify(level))
 }
 
 export function setCodeModelSelection(selection: ModelSelection | null) {
   if (!selection) {
-    deleteAppPreference(codeModelKey)
+    deleteAppPreferenceSync(codeModelKey)
     return
   }
 
-  writeAppPreference(codeModelKey, JSON.stringify(selection))
+  writeAppPreferenceSync(codeModelKey, JSON.stringify(selection))
 }
 
 export function setCodeThinkingLevel(level: ComposerThinkingLevel | null) {
   if (!level) {
-    deleteAppPreference(codeThinkingLevelKey)
+    deleteAppPreferenceSync(codeThinkingLevelKey)
     return
   }
 
-  writeAppPreference(codeThinkingLevelKey, JSON.stringify(level))
+  writeAppPreferenceSync(codeThinkingLevelKey, JSON.stringify(level))
 }
 
 export function setGitCommitMessageThinkingLevel(level: ComposerThinkingLevel) {
-  writeAppPreference(gitCommitMessageThinkingLevelKey, JSON.stringify(level))
+  writeAppPreferenceSync(gitCommitMessageThinkingLevelKey, JSON.stringify(level))
 }
 
 export function setComposerStreamingBehavior(behavior: ComposerStreamingBehavior) {
-  writeAppPreference(composerStreamingBehaviorKey, JSON.stringify(behavior))
+  writeAppPreferenceSync(composerStreamingBehaviorKey, JSON.stringify(behavior))
 }
 
 export function setDictationModelId(modelId: DictationModelId | null) {
   if (!modelId) {
-    deleteAppPreference(dictationModelIdKey)
+    deleteAppPreferenceSync(dictationModelIdKey)
     return
   }
 
-  writeAppPreference(dictationModelIdKey, JSON.stringify(modelId))
+  writeAppPreferenceSync(dictationModelIdKey, JSON.stringify(modelId))
 }
 
 export function setDictationMaxDurationSeconds(value: number) {
   const normalizedValue = normalizeDictationMaxDurationSeconds(value)
 
   if (!normalizedValue || normalizedValue === DEFAULT_DICTATION_MAX_DURATION_SECONDS) {
-    deleteAppPreference(dictationMaxDurationSecondsKey)
+    deleteAppPreferenceSync(dictationMaxDurationSecondsKey)
     return
   }
 
-  writeAppPreference(dictationMaxDurationSecondsKey, JSON.stringify(normalizedValue))
+  writeAppPreferenceSync(dictationMaxDurationSecondsKey, JSON.stringify(normalizedValue))
 }
 
 export function setShowDictationButton(enabled: boolean) {
   if (enabled) {
-    deleteAppPreference(showDictationButtonKey)
+    deleteAppPreferenceSync(showDictationButtonKey)
     return
   }
 
-  writeAppPreference(showDictationButtonKey, JSON.stringify(false))
+  writeAppPreferenceSync(showDictationButtonKey, JSON.stringify(false))
 }
 
 export function setFavoriteFolders(favoriteFolders: string[]) {
@@ -165,11 +175,11 @@ export function setFavoriteFolders(favoriteFolders: string[]) {
   const normalizedFavoriteFolders = [...normalizedFavoriteFolderSet]
 
   if (normalizedFavoriteFolders.length === 0) {
-    deleteAppPreference(favoriteFoldersKey)
+    deleteAppPreferenceSync(favoriteFoldersKey)
     return
   }
 
-  writeAppPreference(favoriteFoldersKey, JSON.stringify(normalizedFavoriteFolders))
+  writeAppPreferenceSync(favoriteFoldersKey, JSON.stringify(normalizedFavoriteFolders))
 }
 
 export function setSidebarVisibleProjectIds(projectIds: string[]) {
@@ -181,153 +191,153 @@ export function setSidebarVisibleProjectIds(projectIds: string[]) {
       }),
     ),
   ]
-  writeAppPreference(sidebarVisibleProjectIdsKey, JSON.stringify(normalizedProjectIds))
+  writeAppPreferenceSync(sidebarVisibleProjectIdsKey, JSON.stringify(normalizedProjectIds))
 }
 
 export function setProjectImportState(projectImportState: boolean | null) {
   if (projectImportState === null) {
-    deleteAppPreference(projectImportStateKey)
+    deleteAppPreferenceSync(projectImportStateKey)
     return
   }
 
-  writeAppPreference(projectImportStateKey, JSON.stringify(projectImportState))
+  writeAppPreferenceSync(projectImportStateKey, JSON.stringify(projectImportState))
 }
 
 export function setPreferredProjectLocation(preferredProjectLocation: string | null) {
   const normalizedLocation = preferredProjectLocation?.trim() ?? ''
   if (normalizedLocation.length === 0) {
-    deleteAppPreference(preferredProjectLocationKey)
+    deleteAppPreferenceSync(preferredProjectLocationKey)
     return
   }
 
-  writeAppPreference(preferredProjectLocationKey, JSON.stringify(normalizedLocation))
+  writeAppPreferenceSync(preferredProjectLocationKey, JSON.stringify(normalizedLocation))
 }
 
 export function setCustomPiDirectory(customPiDirectory: string | null) {
   const normalizedDirectory = customPiDirectory?.trim() ?? ''
   if (normalizedDirectory.length === 0) {
-    deleteAppPreference(customPiDirectoryKey)
+    deleteAppPreferenceSync(customPiDirectoryKey)
     return
   }
 
-  writeAppPreference(customPiDirectoryKey, JSON.stringify(normalizedDirectory))
+  writeAppPreferenceSync(customPiDirectoryKey, JSON.stringify(normalizedDirectory))
 }
 
 export function setInitializeGitOnProjectCreate(enabled: boolean) {
-  writeAppPreference(initializeGitOnProjectCreateKey, JSON.stringify(enabled))
+  writeAppPreferenceSync(initializeGitOnProjectCreateKey, JSON.stringify(enabled))
 }
 
 export function setProjectDashboardEnabled(enabled: boolean) {
   if (enabled) {
-    deleteAppPreference(projectDashboardEnabledKey)
+    deleteAppPreferenceSync(projectDashboardEnabledKey)
     return
   }
 
-  writeAppPreference(projectDashboardEnabledKey, JSON.stringify(false))
+  writeAppPreferenceSync(projectDashboardEnabledKey, JSON.stringify(false))
 }
 
 export function setGitOpsDefaultMode(mode: GitOpsMode) {
   if (mode === 'commit') {
-    deleteAppPreference(gitOpsDefaultModeKey)
+    deleteAppPreferenceSync(gitOpsDefaultModeKey)
     return
   }
 
-  writeAppPreference(gitOpsDefaultModeKey, JSON.stringify(mode))
+  writeAppPreferenceSync(gitOpsDefaultModeKey, JSON.stringify(mode))
 }
 
 export function setGitDiffBaselineDefault(baseline: ProjectDiffDefaultBaseline) {
-  if (baseline.kind === 'head') {
-    deleteAppPreference(gitDiffBaselineDefaultKey)
+  if (baseline.kind === 'main-branch') {
+    deleteAppPreferenceSync(gitDiffBaselineDefaultKey)
     return
   }
 
-  writeAppPreference(gitDiffBaselineDefaultKey, JSON.stringify(baseline))
+  writeAppPreferenceSync(gitDiffBaselineDefaultKey, JSON.stringify(baseline))
 }
 
 export function setGitDiffRenderModeDefault(mode: ProjectDiffRenderMode) {
   if (mode === 'stacked') {
-    deleteAppPreference(gitDiffRenderModeDefaultKey)
+    deleteAppPreferenceSync(gitDiffRenderModeDefaultKey)
     return
   }
 
-  writeAppPreference(gitDiffRenderModeDefaultKey, JSON.stringify(mode))
+  writeAppPreferenceSync(gitDiffRenderModeDefaultKey, JSON.stringify(mode))
 }
 
 export function setGitDiffFileTreeDefaultVisible(visible: boolean) {
   if (visible) {
-    deleteAppPreference(gitDiffFileTreeDefaultVisibleKey)
+    deleteAppPreferenceSync(gitDiffFileTreeDefaultVisibleKey)
     return
   }
 
-  writeAppPreference(gitDiffFileTreeDefaultVisibleKey, JSON.stringify(false))
+  writeAppPreferenceSync(gitDiffFileTreeDefaultVisibleKey, JSON.stringify(false))
 }
 
 export function setGitDiffIncludeUntrackedDefault(enabled: boolean) {
   if (!enabled) {
-    deleteAppPreference(gitDiffIncludeUntrackedDefaultKey)
+    deleteAppPreferenceSync(gitDiffIncludeUntrackedDefaultKey)
     return
   }
 
-  writeAppPreference(gitDiffIncludeUntrackedDefaultKey, JSON.stringify(true))
+  writeAppPreferenceSync(gitDiffIncludeUntrackedDefaultKey, JSON.stringify(true))
 }
 
 export function setProjectDeletionMode(mode: ProjectDeletionMode) {
-  writeAppPreference(projectDeletionModeKey, JSON.stringify(mode))
+  writeAppPreferenceSync(projectDeletionModeKey, JSON.stringify(mode))
 }
 
 export function setUseAgentsSkillsPaths(enabled: boolean) {
-  writeAppPreference(useAgentsSkillsPathsKey, JSON.stringify(enabled))
+  writeAppPreferenceSync(useAgentsSkillsPathsKey, JSON.stringify(enabled))
 }
 
 export function setDevUpdateBranch(enabled: boolean) {
-  writeAppPreference(devUpdateBranchKey, JSON.stringify(enabled))
+  writeAppPreferenceSync(devUpdateBranchKey, JSON.stringify(enabled))
 }
 
 export function setPiTuiTakeover(enabled: boolean) {
-  writeAppPreference(piTuiTakeoverKey, JSON.stringify(enabled))
+  writeAppPreferenceSync(piTuiTakeoverKey, JSON.stringify(enabled))
 }
 
 export function setHideSidebarSessionCounts(enabled: boolean) {
   if (!enabled) {
-    deleteAppPreference(hideSidebarSessionCountsKey)
+    deleteAppPreferenceSync(hideSidebarSessionCountsKey)
     return
   }
 
-  writeAppPreference(hideSidebarSessionCountsKey, JSON.stringify(true))
+  writeAppPreferenceSync(hideSidebarSessionCountsKey, JSON.stringify(true))
 }
 
 export function setHoverToFocus(enabled: boolean) {
   if (enabled) {
-    deleteAppPreference(hoverToFocusKey)
+    deleteAppPreferenceSync(hoverToFocusKey)
     return
   }
 
-  writeAppPreference(hoverToFocusKey, JSON.stringify(false))
+  writeAppPreferenceSync(hoverToFocusKey, JSON.stringify(false))
 }
 
 export function setHoverToBlur(enabled: boolean) {
   if (!enabled) {
-    deleteAppPreference(hoverToBlurKey)
+    deleteAppPreferenceSync(hoverToBlurKey)
     return
   }
 
-  writeAppPreference(hoverToBlurKey, JSON.stringify(true))
+  writeAppPreferenceSync(hoverToBlurKey, JSON.stringify(true))
 }
 
 export function setKeybindings(keybindings: KeybindingOverrides) {
   if (Object.keys(keybindings).length === 0) {
-    deleteAppPreference(keybindingsKey)
+    deleteAppPreferenceSync(keybindingsKey)
     return
   }
 
-  writeAppPreference(keybindingsKey, JSON.stringify(keybindings))
+  writeAppPreferenceSync(keybindingsKey, JSON.stringify(keybindings))
 }
 
 export function setComposerSendMode(mode: ComposerSendMode) {
   if (mode === 'enter') {
-    deleteAppPreference(composerSendModeKey)
+    deleteAppPreferenceSync(composerSendModeKey)
     return
   }
 
-  writeAppPreference(composerSendModeKey, JSON.stringify(mode))
+  writeAppPreferenceSync(composerSendModeKey, JSON.stringify(mode))
 }

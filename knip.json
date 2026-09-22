@@ -28,12 +28,10 @@
     "@earendil-works/pi-ai",
     "@earendil-works/pi-tui",
     "bindings",
-    "clip-filepaths",
     "file-uri-to-path",
     "node-pty",
     "sherpa-onnx-node",
     "tar",
-    "@types/three",
     "tailwindcss"
   ]
 }

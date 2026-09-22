@@ -3,7 +3,14 @@ import type { ProjectFileWriteResult } from '../../../desktop/types'
 export type DiffEditingState =
   | { kind: 'idle'; error: string | null }
   | { kind: 'loading'; fileKey: string }
-  | { kind: 'editing'; fileKey: string; dirty: boolean; saving: boolean; error: string | null }
+  | {
+      kind: 'editing'
+      fileKey: string
+      dirty: boolean
+      saving: boolean
+      error: string | null
+      canDiscardAndReload: boolean
+    }
 
 export type DiffEditButtonPresentation = {
   active: boolean

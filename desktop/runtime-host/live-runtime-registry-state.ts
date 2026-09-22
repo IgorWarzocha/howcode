@@ -1,5 +1,6 @@
 import type * as Deferred from 'effect/Deferred'
 import * as Effect from 'effect/Effect'
+import * as RcMap from 'effect/RcMap'
 import * as Ref from 'effect/Ref'
 import type * as Scope from 'effect/Scope'
 import * as Semaphore from 'effect/Semaphore'
@@ -13,19 +14,10 @@ export type RuntimeRecord<Runtime> = {
   readonly staleGeneration: number | null
 }
 
-type LockEntry = {
-  readonly semaphore: Semaphore.Semaphore
-  readonly users: number
-}
-
 type RegistryState<Runtime> = {
   readonly records: ReadonlyMap<string, RuntimeRecord<Runtime>>
-  readonly lifecycleLocks: ReadonlyMap<string, LockEntry>
-  readonly mutationLocks: ReadonlyMap<string, LockEntry>
   readonly nextRecordId: number
 }
-
-type LockKind = 'lifecycleLocks' | 'mutationLocks'
 
 export interface RuntimeRegistryState<Runtime> {
   readonly entries: Effect.Effect<readonly (readonly [string, RuntimeRecord<Runtime>])[]>
@@ -60,61 +52,29 @@ function updateMap<K, V>(map: ReadonlyMap<K, V>, update: (copy: Map<K, V>) => vo
   return copy
 }
 
-export const makeRuntimeRegistryState = <Runtime>(): Effect.Effect<RuntimeRegistryState<Runtime>> =>
+export const makeRuntimeRegistryState = <Runtime>(): Effect.Effect<
+  RuntimeRegistryState<Runtime>,
+  never,
+  Scope.Scope
+> =>
   Effect.gen(function* () {
     const state = yield* Ref.make<RegistryState<Runtime>>({
       records: new Map(),
-      lifecycleLocks: new Map(),
-      mutationLocks: new Map(),
       nextRecordId: 1,
     })
 
-    const acquireKeyLock = Effect.fn('RuntimeRegistryState.acquireKeyLock')(function* (
-      kind: LockKind,
-      runtimeKey: string,
-    ) {
-      return yield* Ref.modify(state, (current) => {
-        const existing = current[kind].get(runtimeKey)
-        const entry = existing
-          ? { ...existing, users: existing.users + 1 }
-          : { semaphore: Semaphore.makeUnsafe(1), users: 1 }
-        return [
-          entry.semaphore,
-          {
-            ...current,
-            [kind]: updateMap(current[kind], (locks) => locks.set(runtimeKey, entry)),
-          },
-        ] as const
-      })
-    })
-
-    const releaseKeyLock = Effect.fn('RuntimeRegistryState.releaseKeyLock')(function* (
-      kind: LockKind,
-      runtimeKey: string,
-      semaphore: Semaphore.Semaphore,
-    ) {
-      yield* Ref.update(state, (current) => {
-        const existing = current[kind].get(runtimeKey)
-        if (!existing || existing.semaphore !== semaphore) return current
-        return {
-          ...current,
-          [kind]: updateMap(current[kind], (locks) => {
-            if (existing.users === 1) locks.delete(runtimeKey)
-            else locks.set(runtimeKey, { ...existing, users: existing.users - 1 })
-          }),
-        }
-      })
-    })
+    const lifecycleLocks = yield* RcMap.make({ lookup: (_key: string) => Semaphore.make(1) })
+    const mutationLocks = yield* RcMap.make({ lookup: (_key: string) => Semaphore.make(1) })
 
     const withKeyLock = <A, E, R>(
-      kind: LockKind,
+      locks: RcMap.RcMap<string, Semaphore.Semaphore>,
       runtimeKey: string,
       effect: Effect.Effect<A, E, R>,
     ) =>
-      Effect.acquireUseRelease(
-        acquireKeyLock(kind, runtimeKey),
-        (semaphore) => semaphore.withPermit(effect),
-        (semaphore) => releaseKeyLock(kind, runtimeKey, semaphore),
+      Effect.scoped(
+        RcMap.get(locks, runtimeKey).pipe(
+          Effect.flatMap((semaphore) => semaphore.withPermit(effect)),
+        ),
       )
 
     const get = (runtimeKey: string) =>
@@ -202,7 +162,7 @@ export const makeRuntimeRegistryState = <Runtime>(): Effect.Effect<RuntimeRegist
       remove,
       markStale,
       clearStale,
-      withLifecycleLock: (runtimeKey, effect) => withKeyLock('lifecycleLocks', runtimeKey, effect),
-      withMutationLock: (runtimeKey, effect) => withKeyLock('mutationLocks', runtimeKey, effect),
+      withLifecycleLock: (runtimeKey, effect) => withKeyLock(lifecycleLocks, runtimeKey, effect),
+      withMutationLock: (runtimeKey, effect) => withKeyLock(mutationLocks, runtimeKey, effect),
     }
   })

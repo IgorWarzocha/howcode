@@ -2,6 +2,7 @@ import { access, realpath } from 'node:fs/promises'
 import path from 'node:path'
 import { normalizeGitBranchName } from './branch-name.ts'
 import { formatGitCommandError, getNonInteractiveGitEnv, runGitWithOptions } from './git-runner.ts'
+import { captureGitCommonDirectoryIdentity } from './repository-identity.ts'
 import {
   ensureWorktreePathIgnored,
   getInRepositoryWorktreePath,
@@ -22,6 +23,7 @@ export type GitWorktreeCreateResult =
       projectId: string
       rootProjectId: string
       branchName: string
+      gitCommonDirectoryIdentity: string | null
       warning?: string
     }
   | { error: string }
@@ -182,6 +184,7 @@ export async function createProjectWorktree(input: {
   try {
     const mainWorktree = await resolveMainWorktree(input.projectId)
     const rootProjectId = mainWorktree?.path ?? input.projectId
+    const gitCommonDirectoryIdentity = await captureGitCommonDirectoryIdentity(rootProjectId)
     const worktreeParent = resolveWorktreeParent(rootProjectId, input.worktreeDirectory)
     const worktreePath = await resolveAvailableWorktreePath(worktreeParent, folderName)
     getInRepositoryWorktreePath(rootProjectId, worktreePath)
@@ -221,6 +224,7 @@ export async function createProjectWorktree(input: {
       projectId: canonicalWorktreePath,
       rootProjectId,
       branchName,
+      gitCommonDirectoryIdentity,
       ...(warning ? { warning } : {}),
     }
   } catch (error) {

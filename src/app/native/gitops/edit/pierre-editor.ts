@@ -1,24 +1,69 @@
-import type { DiffsEditor } from '@pierre/diffs'
-import type { EditorOptions } from '@pierre/diffs/edit'
+import type { FileContents } from '@pierre/diffs'
+import type {
+  EditorFactory,
+  EditorInitialState,
+  TextDocument as PierreTextDocument,
+} from '@pierre/diffs/edit'
 import { readClipboardSnapshotQuery } from '../../../query/desktop-query'
+import type { GitOpsAnnotationMetadata } from '../review/pierre-review-adapter'
+import { createDiffEditingFileDiff } from './diff-editing-drafts'
+import type { DiffEditingSession } from './diff-editing-save'
 
-type EditorFactory = <LAnnotation>(options: EditorOptions<LAnnotation>) => DiffsEditor<LAnnotation>
 const fallbackTextClipboardFormat: string = 'text'
 
-let editorFactory: EditorFactory | null = null
+let editorFactory: EditorFactory<GitOpsAnnotationMetadata, undefined> | null = null
 let editorModulePromise: Promise<void> | null = null
+let TextDocumentConstructor: typeof PierreTextDocument | null = null
 
 export function loadPierreEditor() {
-  editorModulePromise ??= import('@pierre/diffs/edit').then(({ Editor }) => {
-    editorFactory = <LAnnotation>(options: EditorOptions<LAnnotation>) =>
-      new Editor<LAnnotation>(options)
+  editorModulePromise ??= import('@pierre/diffs/edit').then(({ Editor, TextDocument }) => {
+    TextDocumentConstructor = TextDocument
+    editorFactory = (editorType, options, editStateKey) =>
+      new Editor(editorType, options, editStateKey)
   })
   return editorModulePromise
 }
 
-export const createPierreEditor: EditorFactory = (options) => {
+export function createDiffEditingInitialState(
+  session: DiffEditingSession,
+  file: FileContents,
+): EditorInitialState<'file-diff', GitOpsAnnotationMetadata> {
+  if (!TextDocumentConstructor) {
+    throw new Error('Pierre editor was not loaded before restoring an edit.')
+  }
+  const fileDiff = createDiffEditingFileDiff(session.baselineFile, file)
+  return {
+    type: 'file-diff',
+    document: new TextDocumentConstructor(
+      `howcode-diff-edit:${session.editStateKey}`,
+      file.contents,
+      file.lang,
+    ),
+    fileInfo: {
+      name: file.name,
+      ...(file.lang ? { lang: file.lang } : {}),
+    },
+    diffSession: {
+      oldFile:
+        fileDiff.type === 'new'
+          ? null
+          : {
+              name: fileDiff.prevName ?? fileDiff.name,
+              lines: fileDiff.deletionLines,
+            },
+      type: fileDiff.type,
+      hunks: fileDiff.hunks,
+    },
+  }
+}
+
+export const createPierreEditor: EditorFactory<GitOpsAnnotationMetadata, undefined> = (
+  editorType,
+  options,
+  editStateKey,
+) => {
   if (!editorFactory) throw new Error('Pierre editor was not loaded before editing started.')
-  return editorFactory(options)
+  return editorFactory(editorType, options, editStateKey)
 }
 
 export const pierreEditorOptions = {

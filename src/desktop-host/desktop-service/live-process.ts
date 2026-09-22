@@ -4,14 +4,13 @@ import * as Effect from 'effect/Effect'
 import * as Result from 'effect/Result'
 import * as Schema from 'effect/Schema'
 import { DesktopServiceMessageSchema } from '../../../shared/desktop-service-ipc'
+import { desktopShutdownTimeouts } from '../../../shared/desktop-shutdown-deadlines'
 import { prepareServiceNativeRuntime } from '../service-native-runtime'
 import {
   type DesktopServiceClientOptions,
   type DesktopServiceProcessAdapter,
   serviceError,
 } from './types'
-
-const TERMINATION_WAIT_MS = 1_500
 
 const decodeDesktopServiceMessage = Schema.decodeUnknownResult(DesktopServiceMessageSchema)
 
@@ -100,7 +99,7 @@ function spawnServiceProcess(
   })
 }
 
-function terminateProcess(child: ChildProcess) {
+export function terminateDesktopServiceProcess(child: ChildProcess) {
   return Effect.callback<void>((resume) => {
     if (child.exitCode !== null || child.signalCode !== null) {
       resume(Effect.void)
@@ -124,7 +123,7 @@ function terminateProcess(child: ChildProcess) {
         }
       }
       finish()
-    }, TERMINATION_WAIT_MS)
+    }, desktopShutdownTimeouts.desktopServiceTerminationMs)
     timer.unref?.()
     child.once('exit', finish)
     try {
@@ -172,7 +171,7 @@ export function makeLiveProcessAdapter(
           resume(Effect.fail(serviceError('send', error)))
         }
       }),
-    terminate: terminateProcess,
+    terminate: terminateDesktopServiceProcess,
     isRunning: (child) => !child.killed && child.exitCode === null,
   }
 }

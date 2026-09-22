@@ -14,9 +14,35 @@ export type AppRouteSnapshot = {
 
 type AppShellUrlSyncInput = {
   dispatch: React.Dispatch<WorkspaceAction>
+  loadProjectThreads: (
+    projectId: string,
+    options?: { chat?: boolean | undefined },
+  ) => Promise<unknown>
   projects: Project[]
+  shellLoading: boolean
   state: WorkspaceState
 }
+
+type AppShellUrlSyncCursor = {
+  routeKey: string | null
+  stateKey: string | null
+}
+
+type AppShellUrlSyncDecision =
+  | { type: 'defer' }
+  | {
+      type: 'dispatch-route'
+      action: WorkspaceAction | WorkspaceAction[]
+      next: AppShellUrlSyncCursor
+    }
+  | {
+      type: 'hydrate-route-scope'
+      intent: AppShellUrlSyncCursor
+      projectId: string
+      scope: 'chat' | 'code'
+    }
+  | { type: 'navigate-state'; next: AppShellUrlSyncCursor }
+  | { type: 'synchronized'; next: AppShellUrlSyncCursor }
 
 const leadingSlashesPattern = /^\/+/
 
@@ -149,16 +175,24 @@ function getRouteAction(
   return { type: 'show-landing' }
 }
 
-function isWaitingForRouteData(snapshot: AppRouteSnapshot, projects: Project[]) {
+function getRouteDataWait(snapshot: AppRouteSnapshot, projects: Project[], shellLoading: boolean) {
   const route = getCurrentRoute(snapshot)
   if (!(route.routeName === 'thread' || route.routeName === 'chat' || route.routeName === 'git')) {
-    return false
+    return null
   }
   if (!(route.projectId && route.threadId)) {
-    return false
+    return null
   }
 
-  return !findThread(projects, route.projectId, route.threadId)
+  if (findThread(projects, route.projectId, route.threadId)) return null
+  if (shellLoading) return { type: 'shell' } as const
+
+  const project = projects.find((candidate) => candidate.id === route.projectId)
+  if (!project) return null
+
+  const relevantScope = route.routeName === 'chat' ? 'chat' : 'code'
+  if (project.threadsLoaded === true && project.threadsScope === relevantScope) return null
+  return { type: 'scope', projectId: project.id, scope: relevantScope } as const
 }
 
 function dispatchRouteAction(
@@ -174,17 +208,83 @@ function getRouteKey(snapshot: AppRouteSnapshot) {
   return JSON.stringify(snapshot)
 }
 
-export function shouldDeferStateRouteNavigation(input: {
-  projects: Project[]
-  routeChanged: boolean
-  routeSnapshot: AppRouteSnapshot
-  stateChanged: boolean
-}) {
-  if (!input.stateChanged) return true
-  return input.routeChanged && isWaitingForRouteData(input.routeSnapshot, input.projects)
+function getRouteDataDecision(
+  routeSnapshot: AppRouteSnapshot,
+  projects: Project[],
+  shellLoading: boolean,
+  intent: AppShellUrlSyncCursor,
+) {
+  const routeDataWait = getRouteDataWait(routeSnapshot, projects, shellLoading)
+  if (!routeDataWait) return null
+  if (routeDataWait.type === 'shell') return { type: 'defer' } as const
+  return {
+    type: 'hydrate-route-scope',
+    intent,
+    projectId: routeDataWait.projectId,
+    scope: routeDataWait.scope,
+  } as const
 }
 
-export function useAppShellUrlSync({ dispatch, projects, state }: AppShellUrlSyncInput) {
+export function getAppShellUrlSyncDecision(input: {
+  previous: AppShellUrlSyncCursor
+  projects: Project[]
+  routeHydration: AppShellUrlSyncCursor | null
+  routeSnapshot: AppRouteSnapshot
+  shellLoading: boolean
+  stateRoute: AppRouteSnapshot
+}): AppShellUrlSyncDecision {
+  const routeKey = getRouteKey(input.routeSnapshot)
+  const stateKey = getRouteKey(input.stateRoute)
+  const routeChanged = input.previous.routeKey !== routeKey
+  const stateChanged = input.previous.stateKey !== stateKey
+
+  if (routesMatch(input.routeSnapshot, input.stateRoute)) {
+    return { type: 'synchronized', next: { routeKey, stateKey } }
+  }
+  if (input.routeHydration?.routeKey === routeKey && input.routeHydration.stateKey !== stateKey) {
+    return { type: 'navigate-state', next: { routeKey, stateKey } }
+  }
+
+  if (routeChanged && (input.previous.routeKey === null || !stateChanged)) {
+    const routeDataDecision = getRouteDataDecision(
+      input.routeSnapshot,
+      input.projects,
+      input.shellLoading,
+      { routeKey, stateKey },
+    )
+    if (routeDataDecision) return routeDataDecision
+    const action = getRouteAction(input.routeSnapshot, input.projects)
+    if (action) {
+      return {
+        type: 'dispatch-route',
+        action,
+        next: { routeKey, stateKey: input.previous.stateKey },
+      }
+    }
+    return { type: 'navigate-state', next: { routeKey, stateKey } }
+  }
+
+  if (!stateChanged) return { type: 'defer' }
+  if (routeChanged) {
+    const routeDataDecision = getRouteDataDecision(
+      input.routeSnapshot,
+      input.projects,
+      input.shellLoading,
+      { routeKey, stateKey },
+    )
+    if (routeDataDecision) return routeDataDecision
+  }
+
+  return { type: 'navigate-state', next: { routeKey, stateKey } }
+}
+
+export function useAppShellUrlSync({
+  dispatch,
+  loadProjectThreads,
+  projects,
+  shellLoading,
+  state,
+}: AppShellUrlSyncInput) {
   const router = useRouter()
   const snapshot = useRouterState({
     select: (routerState) => ({
@@ -197,39 +297,49 @@ export function useAppShellUrlSync({ dispatch, projects, state }: AppShellUrlSyn
     [snapshot.pathname, snapshot.search],
   )
   const stateRoute = useMemo(() => getRouteForState(state), [state])
-  const syncRef = useRef<{ routeKey: string | null; stateKey: string | null }>({
+  const syncRef = useRef<AppShellUrlSyncCursor>({
     routeKey: null,
     stateKey: null,
   })
-  const routeKey = getRouteKey(routeSnapshot)
-  const stateKey = getRouteKey(stateRoute)
+  const routeHydrationRef = useRef<AppShellUrlSyncCursor | null>(null)
 
   useEffect(() => {
-    const previous = syncRef.current
-    const routeChanged = previous.routeKey !== routeKey
-    const stateChanged = previous.stateKey !== stateKey
-
-    if (routesMatch(routeSnapshot, stateRoute)) {
-      syncRef.current = { routeKey, stateKey }
-      return
+    const decision = getAppShellUrlSyncDecision({
+      previous: syncRef.current,
+      projects,
+      routeHydration: routeHydrationRef.current,
+      routeSnapshot,
+      shellLoading,
+      stateRoute,
+    })
+    if (decision.type === 'defer') return
+    if (decision.type === 'hydrate-route-scope') {
+      let cancelled = false
+      routeHydrationRef.current = decision.intent
+      void loadProjectThreads(decision.projectId, { chat: decision.scope === 'chat' }).catch(() => {
+        if (cancelled || routeHydrationRef.current !== decision.intent) return
+        routeHydrationRef.current = null
+        syncRef.current = decision.intent
+        void router.navigate({
+          to: stateRoute.pathname,
+          search: stateRoute.search,
+        })
+      })
+      return () => {
+        cancelled = true
+      }
     }
 
-    if (routeChanged && (previous.routeKey === null || !stateChanged)) {
-      const action = getRouteAction(routeSnapshot, projects)
-      if (!action) return
-      syncRef.current = { routeKey, stateKey: previous.stateKey }
-      dispatchRouteAction(dispatch, action)
+    routeHydrationRef.current = null
+    syncRef.current = decision.next
+    if (decision.type === 'synchronized') return
+    if (decision.type === 'dispatch-route') {
+      dispatchRouteAction(dispatch, decision.action)
       return
     }
-
-    if (shouldDeferStateRouteNavigation({ projects, routeChanged, routeSnapshot, stateChanged })) {
-      return
-    }
-
-    syncRef.current = { routeKey, stateKey }
     void router.navigate({
       to: stateRoute.pathname,
       search: stateRoute.search,
     })
-  }, [dispatch, projects, routeKey, routeSnapshot, router, stateKey, stateRoute])
+  }, [dispatch, loadProjectThreads, projects, routeSnapshot, router, shellLoading, stateRoute])
 }

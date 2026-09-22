@@ -17,6 +17,7 @@ import {
   transcribeDictation as transcribeSherpaDictation,
 } from '../dictation/sherpa-onnx.ts'
 import {
+  disposeThreadUpdateForwarding,
   getComposerSkills,
   getComposerSlashCommands,
   getComposerState,
@@ -32,8 +33,10 @@ import {
   loadProjectGitState,
   startProjectDiffStream,
 } from '../project-git.ts'
+import { disposeWorkspaceOperations } from '../runtime/keyed-workspace-operations.ts'
 import { shutdownRuntimeHosts } from '../runtime-host/client-bridge.ts'
 import { disposeSessionWatcher, setWatchedSessionPath } from './session-watch.ts'
+import { disposeShellIndexScheduler } from './shell-index.ts'
 
 export { refreshShellIndex } from './shell-index.ts'
 export { loadShellState } from './shell-state.ts'
@@ -101,6 +104,15 @@ export {
 export const subscribeDesktopEvents = subscribeRuntimeEvents
 
 export async function disposeDesktopRuntime() {
-  disposeSessionWatcher()
-  await shutdownRuntimeHosts()
+  const results = await Promise.allSettled([
+    disposeSessionWatcher(),
+    disposeShellIndexScheduler(),
+    shutdownRuntimeHosts(),
+  ])
+  await disposeWorkspaceOperations()
+  await disposeThreadUpdateForwarding()
+  const failures = results.flatMap((result) =>
+    result.status === 'rejected' ? [result.reason] : [],
+  )
+  if (failures.length > 0) throw new AggregateError(failures, 'Failed to dispose desktop runtime.')
 }

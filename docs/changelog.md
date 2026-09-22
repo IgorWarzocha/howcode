@@ -1,3 +1,20 @@
+### 0.1.69
+
+- Updated Pi to 0.87.0, Effect v4 to rc.116, Electron to 44.4.3, React to 19.3, Pierre Diffs to 1.4.3, and the remaining dependencies.
+- Added Pi's prompt-cache warming control and included background, compaction and tool usage in session costs.
+- Shared concurrent attachment searches and bounded their cached project indexes.
+- Replaced handwritten runtime queues, locks and timers with scoped Effect coordination, keeping terminal history and thread updates ordered through shutdown.
+- Moved SQLite persistence to stock Node through Effect, preserving existing data and removing native SQLite builds.
+- Fixed obsolete session watchers, cleared terminal history being restored by an earlier write, and subscription cleanup after a failed headless server start.
+- Moved clipboard attachments to Electron's native file and image APIs, removing a separate native dependency.
+- Removed the custom Electron ZIP installer now that upstream handles extraction correctly.
+- Fixed the cache-warming setting's displayed value and Electron development rebuilds, restart sequencing and shutdown errors.
+- Project cleanup verifies folder ownership and protects linked worktrees outside Howcode's records.
+- Retained dirty diff drafts after failed saves, with explicit discard and reload after conflicts.
+- Fixed persistence of the Last diff baseline.
+- Fixed shutdown deadlines, cleanup of late-opening terminals, and thread URLs, including Git deep links.
+- Made website poll rate limits atomic under concurrent votes.
+
 ### 0.1.68
 
 - **An enormous release:** 910 files and roughly 75,000 changed lines. GitOps, worktrees, app updates, the UI architecture, and most of the desktop runtime were rebuilt rather than lightly patched.

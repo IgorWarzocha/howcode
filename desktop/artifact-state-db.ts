@@ -1,40 +1,12 @@
+import * as Effect from 'effect/Effect'
 import * as Schema from 'effect/Schema'
+import * as SqlClient from 'effect/unstable/sql/SqlClient'
 import type { Artifact, ArtifactKind, ArtifactVersion } from '../shared/desktop-contracts.ts'
 import { emitDesktopEvent } from './runtime/desktop-events.ts'
 import { emitDesktopEvent as emitRuntimeHostDesktopEvent } from './runtime-host/host-events.ts'
-import { getThreadStateDatabase } from './thread-state-db/db.ts'
+import { databaseOperation } from './thread-state-db/db.ts'
 import { decodePersistedRow, decodePersistedRows } from './thread-state-db/row-schema.ts'
-import { runInTransaction } from './thread-state-db/write-transaction.ts'
-
-let artifactSchemaReady = false
-
-function ensureArtifactSchema() {
-  if (artifactSchemaReady) return
-  const db = getThreadStateDatabase()
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS artifacts (
-      id TEXT PRIMARY KEY,
-      conversation_id TEXT NOT NULL,
-      kind TEXT NOT NULL,
-      content TEXT NOT NULL,
-      version INTEGER NOT NULL,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS artifact_versions (
-      artifact_id TEXT NOT NULL,
-      version INTEGER NOT NULL,
-      content TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (artifact_id, version),
-      FOREIGN KEY (artifact_id) REFERENCES artifacts(id) ON DELETE CASCADE
-    );
-
-    CREATE INDEX IF NOT EXISTS artifacts_conversation_idx ON artifacts(conversation_id, updated_at DESC);
-  `)
-  artifactSchemaReady = true
-}
+import { withDatabaseTransaction } from './thread-state-db/write-transaction.ts'
 
 const ArtifactRowSchema = Schema.Struct({
   slug: Schema.String,
@@ -75,16 +47,16 @@ function slugifyArtifactSlug(input: string) {
   return slug || 'artifact'
 }
 
-function createArtifactId(slug: string) {
-  const db = getThreadStateDatabase()
+const createArtifactId = Effect.fn('ArtifactState.createId')(function* (slug: string) {
+  const sql = yield* SqlClient.SqlClient
   const base = slugifyArtifactSlug(slug)
   for (let suffix = 0; suffix < 1000; suffix += 1) {
     const candidate = suffix === 0 ? base : `${base}-${suffix + 1}`
-    const row = db.prepare('SELECT 1 FROM artifacts WHERE id = ?').get(candidate)
-    if (!row) return candidate
+    const rows = yield* sql.unsafe('SELECT 1 FROM artifacts WHERE id = ?', [candidate])
+    if (!rows[0]) return candidate
   }
   throw new Error(`Could not allocate artifact slug for ${base}.`)
-}
+})
 
 function countOccurrences(content: string, text: string) {
   let count = 0
@@ -171,150 +143,183 @@ function emitArtifactChange(artifact: Artifact) {
   emitRuntimeHostDesktopEvent(event)
 }
 
-export function createArtifact(input: {
+type CreateArtifactInput = {
   conversationId: string
   slug: string
   kind: ArtifactKind
   content: string
-}) {
-  ensureArtifactSchema()
+}
+
+const createArtifactOperation = Effect.fn('ArtifactState.create')(function* (
+  input: CreateArtifactInput,
+) {
   const slug = slugifyArtifactSlug(input.slug)
   const content = input.content ?? ''
-  const id = createArtifactId(slug)
-  const db = getThreadStateDatabase()
-  try {
-    db.exec('BEGIN')
-    db.prepare(
-      `INSERT INTO artifacts (id, conversation_id, kind, content, version)
-       VALUES (?, ?, ?, ?, 1)`,
-    ).run(id, input.conversationId, input.kind, content)
-    db.prepare(
-      'INSERT INTO artifact_versions (artifact_id, version, content) VALUES (?, 1, ?)',
-    ).run(id, content)
-    db.exec('COMMIT')
-  } catch (error) {
-    db.exec('ROLLBACK')
-    throw error
-  }
-  const artifact = getArtifact(id)
+  const id = yield* createArtifactId(slug)
+  const sql = yield* SqlClient.SqlClient
+  yield* withDatabaseTransaction(
+    Effect.gen(function* () {
+      yield* sql.unsafe(
+        `INSERT INTO artifacts (id, conversation_id, kind, content, version)
+         VALUES (?, ?, ?, ?, 1)`,
+        [id, input.conversationId, input.kind, content],
+      )
+      yield* sql.unsafe(
+        'INSERT INTO artifact_versions (artifact_id, version, content) VALUES (?, 1, ?)',
+        [id, content],
+      )
+    }),
+  )
+  const artifact = yield* getArtifactOperation(id)
   if (!artifact) throw new Error('Artifact creation failed.')
   emitArtifactChange(artifact)
   return artifact
-}
+})
 
-export function deleteArtifactsForConversation(conversationId: string) {
-  ensureArtifactSchema()
-  getThreadStateDatabase()
-    .prepare('DELETE FROM artifacts WHERE conversation_id = ?')
-    .run(conversationId)
-}
+export const createArtifact = databaseOperation(createArtifactOperation)
 
-export function deleteArtifactsForConversations(conversationIds: string[]) {
-  ensureArtifactSchema()
-  if (conversationIds.length === 0) return
-  const db = getThreadStateDatabase()
-  const deleteArtifacts = db.prepare('DELETE FROM artifacts WHERE conversation_id = ?')
-  runInTransaction(db, () => {
-    for (const conversationId of conversationIds) deleteArtifacts.run(conversationId)
-  })
-}
+const deleteArtifactsForConversationOperation = Effect.fn('ArtifactState.deleteForConversation')(
+  function* (conversationId: string) {
+    const sql = yield* SqlClient.SqlClient
+    yield* sql.unsafe('DELETE FROM artifacts WHERE conversation_id = ?', [conversationId])
+  },
+)
 
-export function updateArtifact(input: {
+export const deleteArtifactsForConversation = databaseOperation(
+  deleteArtifactsForConversationOperation,
+)
+
+const deleteArtifactsForConversationsOperation = Effect.fn('ArtifactState.deleteForConversations')(
+  function* (conversationIds: string[]) {
+    if (conversationIds.length === 0) return
+    const sql = yield* SqlClient.SqlClient
+    yield* withDatabaseTransaction(
+      Effect.gen(function* () {
+        for (const conversationId of conversationIds) {
+          yield* sql.unsafe('DELETE FROM artifacts WHERE conversation_id = ?', [conversationId])
+        }
+      }),
+    )
+  },
+)
+
+export const deleteArtifactsForConversations = databaseOperation(
+  deleteArtifactsForConversationsOperation,
+)
+
+type UpdateArtifactInput = {
   slug: string
   content: string
   conversationId?: string | undefined | null | undefined
-}) {
-  ensureArtifactSchema()
-  const current = getArtifact(input.slug, input.conversationId)
+}
+
+const updateArtifactOperation = Effect.fn('ArtifactState.update')(function* (
+  input: UpdateArtifactInput,
+) {
+  const current = yield* getArtifactOperation(input.slug, input.conversationId)
   if (!current) throw new Error(`Artifact not found: ${input.slug}`)
   const nextVersion = current.version + 1
-  const db = getThreadStateDatabase()
-  try {
-    db.exec('BEGIN')
-    db.prepare(
-      'UPDATE artifacts SET content = ?, version = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-    ).run(input.content, nextVersion, input.slug)
-    db.prepare(
-      'INSERT INTO artifact_versions (artifact_id, version, content) VALUES (?, ?, ?)',
-    ).run(input.slug, nextVersion, input.content)
-    db.exec('COMMIT')
-  } catch (error) {
-    db.exec('ROLLBACK')
-    throw error
-  }
-  const artifact = getArtifact(input.slug, input.conversationId)
+  const sql = yield* SqlClient.SqlClient
+  yield* withDatabaseTransaction(
+    Effect.gen(function* () {
+      yield* sql.unsafe(
+        'UPDATE artifacts SET content = ?, version = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [input.content, nextVersion, input.slug],
+      )
+      yield* sql.unsafe(
+        'INSERT INTO artifact_versions (artifact_id, version, content) VALUES (?, ?, ?)',
+        [input.slug, nextVersion, input.content],
+      )
+    }),
+  )
+  const artifact = yield* getArtifactOperation(input.slug, input.conversationId)
   if (!artifact) throw new Error('Artifact update failed.')
   emitArtifactChange(artifact)
   return artifact
-}
+})
 
-export function editArtifact(input: {
+export const updateArtifact = databaseOperation(updateArtifactOperation)
+
+type EditArtifactInput = {
   slug: string
   conversationId?: string | undefined | null | undefined
   edits: Array<{ oldText: string; newText: string }>
-}) {
-  const current = getArtifact(input.slug, input.conversationId)
+}
+
+const editArtifactOperation = Effect.fn('ArtifactState.edit')(function* (input: EditArtifactInput) {
+  const current = yield* getArtifactOperation(input.slug, input.conversationId)
   if (!current) throw new Error(`Artifact not found: ${input.slug}`)
-  return updateArtifact({
+  return yield* updateArtifactOperation({
     slug: input.slug,
     ...(input.conversationId === undefined ? {} : { conversationId: input.conversationId }),
     content: applyArtifactEdits(current.content, input.edits, input.slug),
   })
-}
+})
 
-export function getArtifact(
+export const editArtifact = databaseOperation(editArtifactOperation)
+
+const getArtifactOperation = Effect.fn('ArtifactState.get')(function* (
   artifactId: string,
   conversationId?: string | undefined | null | undefined,
-): Artifact | null {
-  ensureArtifactSchema()
-  const row = conversationId
-    ? getThreadStateDatabase()
-        .prepare(
-          `SELECT id AS slug, conversation_id AS conversationId, kind, content, version,
-                  created_at AS createdAt, updated_at AS updatedAt
-           FROM artifacts WHERE id = ? AND conversation_id = ?`,
-        )
-        .get(artifactId, conversationId)
-    : getThreadStateDatabase()
-        .prepare(
-          `SELECT id AS slug, conversation_id AS conversationId, kind, content, version,
-                  created_at AS createdAt, updated_at AS updatedAt
-           FROM artifacts WHERE id = ?`,
-        )
-        .get(artifactId)
-  return row ? mapArtifactRow(row) : null
-}
-
-export function listArtifacts(conversationId?: string | undefined | null | undefined): Artifact[] {
-  ensureArtifactSchema()
+) {
+  const sql = yield* SqlClient.SqlClient
   const rows = conversationId
-    ? getThreadStateDatabase()
-        .prepare(
-          `SELECT id AS slug, conversation_id AS conversationId, kind, content, version,
-                  created_at AS createdAt, updated_at AS updatedAt
-           FROM artifacts WHERE conversation_id = ? ORDER BY updated_at DESC`,
-        )
-        .all(conversationId)
-    : getThreadStateDatabase()
-        .prepare(
-          `SELECT id AS slug, conversation_id AS conversationId, kind, content, version,
-                  created_at AS createdAt, updated_at AS updatedAt
-           FROM artifacts ORDER BY updated_at DESC`,
-        )
-        .all()
-  return rows.map(mapArtifactRow)
-}
+    ? yield* sql.unsafe(
+        `SELECT id AS slug, conversation_id AS conversationId, kind, content, version,
+                created_at AS createdAt, updated_at AS updatedAt
+         FROM artifacts WHERE id = ? AND conversation_id = ?`,
+        [artifactId, conversationId],
+      )
+    : yield* sql.unsafe(
+        `SELECT id AS slug, conversation_id AS conversationId, kind, content, version,
+                created_at AS createdAt, updated_at AS updatedAt
+         FROM artifacts WHERE id = ?`,
+        [artifactId],
+      )
+  const row = rows[0]
+  return row ? mapArtifactRow(row) : null
+})
 
-export function listArtifactVersions(artifactId: string): ArtifactVersion[] {
-  ensureArtifactSchema()
+export const getArtifact: (artifactId: string, conversationId?: string | null) => Artifact | null =
+  databaseOperation(getArtifactOperation)
+
+const listArtifactsOperation = Effect.fn('ArtifactState.list')(function* (
+  conversationId?: string | undefined | null | undefined,
+) {
+  const sql = yield* SqlClient.SqlClient
+  const rows = conversationId
+    ? yield* sql.unsafe(
+        `SELECT id AS slug, conversation_id AS conversationId, kind, content, version,
+                created_at AS createdAt, updated_at AS updatedAt
+         FROM artifacts WHERE conversation_id = ? ORDER BY updated_at DESC`,
+        [conversationId],
+      )
+    : yield* sql.unsafe(
+        `SELECT id AS slug, conversation_id AS conversationId, kind, content, version,
+                created_at AS createdAt, updated_at AS updatedAt
+         FROM artifacts ORDER BY updated_at DESC`,
+      )
+  return rows.map(mapArtifactRow)
+})
+
+export const listArtifacts: (conversationId?: string | null) => Artifact[] =
+  databaseOperation(listArtifactsOperation)
+
+const listArtifactVersionsOperation = Effect.fn('ArtifactState.listVersions')(function* (
+  artifactId: string,
+) {
+  const sql = yield* SqlClient.SqlClient
   return decodePersistedRows(
     ArtifactVersionRowSchema,
-    getThreadStateDatabase()
-      .prepare(
-        `SELECT artifact_id AS slug, version, content, created_at AS createdAt
+    yield* sql.unsafe(
+      `SELECT artifact_id AS slug, version, content, created_at AS createdAt
        FROM artifact_versions WHERE artifact_id = ? ORDER BY version DESC`,
-      )
-      .all(artifactId),
+      [artifactId],
+    ),
     'artifact version',
   )
-}
+})
+
+export const listArtifactVersions: (artifactId: string) => ArtifactVersion[] = databaseOperation(
+  listArtifactVersionsOperation,
+)

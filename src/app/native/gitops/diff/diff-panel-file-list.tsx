@@ -9,7 +9,7 @@ import { useCallback, useMemo } from 'react'
 import type { ProjectDiffBaseline } from '../../../desktop/types'
 import { diffFileShellClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { createPierreEditor, pierreEditorOptions } from '../edit/pierre-editor'
+import { pierreEditorOptions } from '../edit/pierre-editor'
 import type { DiffEditingController } from '../edit/use-diff-editing'
 import type { GitOpsAnnotationMetadata } from '../review/pierre-review-adapter'
 import type { ReviewCodeViewController } from '../review/review-code-view'
@@ -33,7 +33,7 @@ import { useTrailingContextExpansion } from './use-trailing-context-expansion'
 
 type DiffPanelFileListProps = {
   baseline: ProjectDiffBaseline | null
-  codeViewRef: React.RefObject<CodeViewHandle<GitOpsAnnotationMetadata> | null>
+  codeViewRef: React.RefObject<CodeViewHandle<GitOpsAnnotationMetadata, undefined> | null>
   scrollContainerRef: React.RefObject<HTMLDivElement | null>
   collapsedFiles: Record<string, boolean>
   diffRenderMode: 'stacked' | 'split'
@@ -138,7 +138,7 @@ export function DiffPanelFileList({
   }, [changeReview.files])
   const { onGutterUtilityClick, onSelectedLinesChange, renderAnnotation, selectedLines } =
     usePierreReviewCodeView({ changeReview, contextExpansion, fileIdentityByKey, review })
-  const codeViewOptions = useMemo<CodeViewOptions<GitOpsAnnotationMetadata>>(
+  const codeViewOptions = useMemo<CodeViewOptions<GitOpsAnnotationMetadata, undefined>>(
     () => ({
       diffStyle: diffRenderMode === 'split' ? 'split' : 'unified',
       lineDiffType: 'none',
@@ -167,7 +167,7 @@ export function DiffPanelFileList({
   )
 
   return (
-    <EditProvider<GitOpsAnnotationMetadata> createEditor={createPierreEditor}>
+    <EditProvider<GitOpsAnnotationMetadata> createEditor={editing.createEditor}>
       <div className="h-full min-h-0">
         <CodeView<GitOpsAnnotationMetadata>
           ref={setHandle}
@@ -181,6 +181,7 @@ export function DiffPanelFileList({
           )}
           options={codeViewOptions}
           editorOptions={pierreEditorOptions}
+          getEditStateKey={editing.getEditStateKey}
           onItemEditChange={editing.onItemEditChange}
           renderCustomHeader={renderCustomHeader}
           renderAnnotation={renderAnnotation}

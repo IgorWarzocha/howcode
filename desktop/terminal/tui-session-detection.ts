@@ -1,10 +1,14 @@
+import * as Effect from 'effect/Effect'
+import * as Fiber from 'effect/Fiber'
+import * as FiberHandle from 'effect/FiberHandle'
+import * as Option from 'effect/Option'
 import { getPersistedSessionPath, isLocalSessionPath } from '../../shared/session-paths.ts'
 import type { TerminalOpenRequest } from '../../shared/terminal-contracts.ts'
 import { publishExternalThreadUpdate } from '../pi-threads/external-thread-publisher.ts'
 import { listAllSessionsStrict } from '../pi-threads/session-index.ts'
 import { loadThreadSnapshot } from '../pi-threads/thread-loader.ts'
 import { nowIso } from './session-history.ts'
-import type { TerminalSessionRecord } from './session-record.ts'
+import type { TerminalSessionRecord, TuiSessionDetection } from './session-record.ts'
 import type { TerminalSessionStore } from './session-store.ts'
 
 const detectionDelayMs = 180
@@ -21,19 +25,21 @@ function shouldDetect(record: TerminalSessionRecord) {
   )
 }
 
-export function createTuiSessionDetection(
-  request: TerminalOpenRequest,
-): TerminalSessionRecord['tuiSessionDetection'] {
-  if ((request.launchMode ?? 'shell') !== 'pi-session') return null
-  if (getPersistedSessionPath(request.sessionPath)) return null
-  return {
-    startedAtMs: Date.now(),
-    submittedPrompts: [],
-    resolvedSessionPath: null,
-    refreshTimer: null,
-    inFlight: null,
-    stopped: false,
-  }
+export function createTuiSessionDetection(request: TerminalOpenRequest) {
+  return Effect.gen(function* () {
+    if ((request.launchMode ?? 'shell') !== 'pi-session') return null
+    if (getPersistedSessionPath(request.sessionPath)) return null
+    const binding = yield* FiberHandle.make<void, never>()
+    return {
+      startedAtMs: Date.now(),
+      submittedPrompts: [],
+      resolvedSessionPath: null,
+      binding,
+      runBinding: yield* FiberHandle.runtime(binding)<never>(),
+      runScheduled: yield* FiberHandle.makeRuntime<never, never, void>(),
+      stopped: false,
+    } satisfies TuiSessionDetection
+  })
 }
 
 function getThreadUserPrompts(snapshot: Awaited<ReturnType<typeof loadThreadSnapshot>>) {
@@ -138,11 +144,11 @@ async function bindDetectedSession(store: TerminalSessionStore, record: Terminal
 
 function startBindingDetectedSession(store: TerminalSessionStore, record: TerminalSessionRecord) {
   const detection = record.tuiSessionDetection
-  if (!detection || detection.stopped || detection.inFlight) return
-  const inFlight = bindDetectedSession(store, record).finally(() => {
-    if (detection.inFlight === inFlight) detection.inFlight = null
-  })
-  detection.inFlight = inFlight
+  if (!detection || detection.stopped) return
+  detection.runBinding(
+    Effect.promise(() => bindDetectedSession(store, record)).pipe(Effect.uninterruptible),
+    { onlyIfMissing: true },
+  )
 }
 
 export function scheduleTuiSessionDetection(
@@ -153,13 +159,10 @@ export function scheduleTuiSessionDetection(
   if (!shouldDetect(record)) return
   const detection = record.tuiSessionDetection
   if (!detection) return
-  if (detection.refreshTimer) clearTimeout(detection.refreshTimer)
-  detection.refreshTimer = setTimeout(
-    () => {
-      detection.refreshTimer = null
-      startBindingDetectedSession(store, record)
-    },
-    timing === 'retry' ? detectionRetryMs : detectionDelayMs,
+  detection.runScheduled(
+    Effect.sleep(timing === 'retry' ? detectionRetryMs : detectionDelayMs).pipe(
+      Effect.andThen(Effect.sync(() => startBindingDetectedSession(store, record))),
+    ),
   )
 }
 
@@ -167,9 +170,7 @@ export async function stopTuiSessionDetection(record: TerminalSessionRecord) {
   const detection = record.tuiSessionDetection
   if (!detection) return
   detection.stopped = true
-  if (detection.refreshTimer) clearTimeout(detection.refreshTimer)
-  detection.refreshTimer = null
-  await detection.inFlight?.catch(() => {
-    // bindDetectedSession already reports and contains detection failures.
-  })
+  detection.runScheduled(Effect.void)
+  const pending = FiberHandle.getUnsafe(detection.binding)
+  if (Option.isSome(pending)) await Effect.runPromise(Fiber.join(pending.value))
 }

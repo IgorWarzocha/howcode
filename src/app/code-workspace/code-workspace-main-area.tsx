@@ -42,16 +42,21 @@ function CodeWorkspaceDiffMain(props: CodeWorkspaceContentProps) {
   )
 }
 
+function getSelectedMainProjectId(
+  state: CodeWorkspaceContentProps['controller']['workspace']['state'],
+) {
+  return (state.activeView === 'project' ||
+    state.activeView === 'sessions' ||
+    state.activeView === 'extensions' ||
+    state.activeView === 'skills') &&
+    state.hasSelectedProject
+    ? state.selectedProjectId
+    : ''
+}
+
 function CodeWorkspaceDefaultMain(props: CodeWorkspaceContentProps) {
   const appSettings = props.shellState?.appSettings ?? FALLBACK_APP_SETTINGS
-  const selectedProjectId =
-    (props.controller.workspace.state.activeView === 'project' ||
-      props.controller.workspace.state.activeView === 'sessions' ||
-      props.controller.workspace.state.activeView === 'extensions' ||
-      props.controller.workspace.state.activeView === 'skills') &&
-    props.controller.workspace.state.hasSelectedProject
-      ? props.controller.workspace.state.selectedProjectId
-      : ''
+  const selectedProjectId = getSelectedMainProjectId(props.controller.workspace.state)
   return (
     <CodeWorkspaceMainView
       activeView={props.state.activeView}

@@ -1,6 +1,4 @@
-import { createReadStream } from 'node:fs'
 import { access } from 'node:fs/promises'
-import { createInterface } from 'node:readline'
 import type {
   ProjectUsageSessionSummary,
   ProjectUsageSummary,
@@ -11,7 +9,7 @@ import {
   listProjectThreads,
 } from '../thread-state-db.ts'
 import { mapWithConcurrency } from './map-with-concurrency.ts'
-import { decodeSessionFileLine } from './session-entry-schema.ts'
+import { readSessionUsage } from './session-usage.ts'
 
 const PROJECT_USAGE_SCAN_CONCURRENCY = 6
 const TOP_USAGE_SESSION_LIMIT = 10
@@ -62,10 +60,6 @@ function setBoundedCacheEntry<TKey, TValue>(
   pruneCache(cache, limit)
 }
 
-function finiteNumber(value: number | undefined) {
-  return typeof value === 'number' && Number.isFinite(value) ? value : 0
-}
-
 function emptySessionSummary(input: {
   threadId: string
   title: string
@@ -111,27 +105,7 @@ async function summarizeSession(input: {
   const summary = emptySessionSummary(input)
   if (!(await sessionFileExists(input.sessionPath))) return summary
 
-  const lines = createInterface({
-    input: createReadStream(input.sessionPath, { encoding: 'utf8' }),
-    crlfDelay: Number.POSITIVE_INFINITY,
-  })
-
-  for await (const line of lines) {
-    const entry = decodeSessionFileLine(line)
-    const usage =
-      entry?.type === 'message' && entry.message?.role === 'assistant'
-        ? entry.message.usage
-        : undefined
-    if (!usage) continue
-
-    summary.input += finiteNumber(usage.input)
-    summary.output += finiteNumber(usage.output)
-    summary.cacheRead += finiteNumber(usage.cacheRead)
-    summary.cacheWrite += finiteNumber(usage.cacheWrite)
-    summary.totalTokens += finiteNumber(usage.totalTokens)
-    summary.costTotal += finiteNumber(usage.cost?.total)
-    summary.assistantTurnCount += 1
-  }
+  Object.assign(summary, await readSessionUsage(input.sessionPath))
 
   return summary
 }

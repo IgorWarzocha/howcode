@@ -18,6 +18,8 @@ import { resolveDiffFilePath, resolveFileDiffPath } from './diff-panel-content.h
 export type DiffFileContentController = {
   loadFiles: FileDiffContentsLoader
   prepareEdit: (fileDiff: FileDiffMetadata) => Promise<{
+    baselineFile: FileContents | null
+    file: FileContents
     path: string
     revision: string
   }>
@@ -127,7 +129,21 @@ export function useDiffFileContent({
         newFile: toPierreFile(projectId, result.newFile),
       }
       hydrateDiffForEditing(fileDiff, files)
-      return { path: result.newFile.path, revision: result.newFile.revision }
+      const baselineFile =
+        fileDiff.type === 'new'
+          ? null
+          : fileDiff.type === 'rename-pure'
+            ? { ...files.newFile, name: fileDiff.prevName ?? fileDiff.name }
+            : files.oldFile
+      if (fileDiff.type !== 'new' && !baselineFile) {
+        throw new Error(`Could not read the baseline contents for ${result.newFile.path}.`)
+      }
+      return {
+        baselineFile,
+        file: files.newFile,
+        path: result.newFile.path,
+        revision: result.newFile.revision,
+      }
     },
     [loadContent, projectId],
   )

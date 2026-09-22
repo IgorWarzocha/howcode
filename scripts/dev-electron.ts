@@ -1,4 +1,5 @@
 import { type ChildProcess, spawn } from 'node:child_process'
+import { once } from 'node:events'
 import { existsSync, unwatchFile, watchFile } from 'node:fs'
 import path from 'node:path'
 import { getDevUserDataPath } from './dev-user-data-path'
@@ -23,6 +24,8 @@ const watchedFiles = [
 
 let electronProcess: ChildProcess | null = null
 let restartTimer: NodeJS.Timeout | null = null
+let restartTask = Promise.resolve()
+let shuttingDown = false
 
 function getRequestedViewport() {
   const viewportArg = process.argv.find((arg) => arg.startsWith('--viewport='))
@@ -38,13 +41,14 @@ function wait(ms: number) {
 }
 
 async function waitForBuildArtifacts() {
-  while (!watchedFiles.every((filePath) => existsSync(filePath))) {
+  while (!(shuttingDown || watchedFiles.every((filePath) => existsSync(filePath)))) {
     await wait(150)
   }
 }
 
 async function startElectronProcess() {
   const electronBinary = await ensureElectronBinary()
+  if (shuttingDown) return
 
   const child = spawn(electronBinary, [entryFile], {
     cwd: projectRoot,
@@ -64,31 +68,78 @@ async function startElectronProcess() {
       electronProcess = null
     }
   })
+
+  try {
+    await once(child, 'spawn')
+  } catch (error) {
+    if (electronProcess === child) electronProcess = null
+    throw error
+  }
 }
 
-function stopElectronProcess() {
-  if (!electronProcess) {
-    return
-  }
+async function stopElectronProcess() {
+  const child = electronProcess
+  if (!child || child.exitCode !== null || child.signalCode !== null) return
 
-  electronProcess.kill('SIGTERM')
-  electronProcess = null
+  // Electron's async shutdown must release CDP and its service before a replacement starts.
+  const exited = once(child, 'exit')
+  child.kill('SIGTERM')
+  await exited
+}
+
+function restartElectronProcess() {
+  restartTask = restartTask
+    .then(async () => {
+      if (shuttingDown) return
+      await stopElectronProcess()
+      await startElectronProcess()
+    })
+    .catch((error) => {
+      console.error('Failed to restart Electron.', error)
+      void shutdown(1)
+    })
+  return restartTask
 }
 
 function scheduleRestart() {
+  if (shuttingDown) return
   if (restartTimer) {
     clearTimeout(restartTimer)
   }
 
   restartTimer = setTimeout(() => {
-    stopElectronProcess()
-    void startElectronProcess()
+    restartTimer = null
+    void restartElectronProcess()
   }, 200)
+}
+
+async function shutdown(exitCode: number) {
+  if (shuttingDown) return
+  shuttingDown = true
+  if (restartTimer) {
+    clearTimeout(restartTimer)
+    restartTimer = null
+  }
+
+  for (const filePath of watchedFiles) {
+    unwatchFile(filePath)
+  }
+
+  try {
+    await restartTask
+    await stopElectronProcess()
+    process.exit(exitCode)
+  } catch (error) {
+    console.error('Failed to stop Electron.', error)
+    process.exit(1)
+  }
 }
 
 async function main() {
   await waitForBuildArtifacts()
-  await startElectronProcess()
+  if (shuttingDown) return
+  await restartElectronProcess()
+  if (shuttingDown) return
 
   for (const filePath of watchedFiles) {
     watchFile(filePath, { interval: 250 }, (current, previous) => {
@@ -97,31 +148,12 @@ async function main() {
       }
     })
   }
-
-  const cleanup = () => {
-    if (restartTimer) {
-      clearTimeout(restartTimer)
-      restartTimer = null
-    }
-
-    for (const filePath of watchedFiles) {
-      unwatchFile(filePath)
-    }
-
-    stopElectronProcess()
-  }
-
-  process.once('SIGINT', () => {
-    cleanup()
-    process.exit(0)
-  })
-  process.once('SIGTERM', () => {
-    cleanup()
-    process.exit(0)
-  })
 }
+
+process.on('SIGINT', () => void shutdown(0))
+process.on('SIGTERM', () => void shutdown(0))
 
 void main().catch((error) => {
   console.error(error)
-  process.exit(1)
+  void shutdown(1)
 })

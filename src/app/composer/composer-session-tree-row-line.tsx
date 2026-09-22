@@ -103,6 +103,33 @@ function SessionTreeNavigateTrigger({
   )
 }
 
+function SessionTreeExpandControl({
+  hasChildren,
+  expanded,
+  onToggleExpand,
+}: {
+  hasChildren: boolean
+  expanded: boolean
+  onToggleExpand: () => void
+}) {
+  if (!hasChildren) return <span className={chevronSlotClass} aria-hidden />
+  return (
+    <button
+      type="button"
+      className={cn(chevronSlotClass, 'text-[color:var(--muted)]')}
+      aria-label={expanded ? 'Collapse subtree' : 'Expand subtree'}
+      aria-expanded={expanded}
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={(event) => {
+        event.stopPropagation()
+        onToggleExpand()
+      }}
+    >
+      {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+    </button>
+  )
+}
+
 export function ComposerSessionTreeRowLine({
   row,
   selected,
@@ -177,23 +204,11 @@ export function ComposerSessionTreeRowLine({
       style={{ gridTemplateColumns: `${indentPx}px 1rem minmax(0,1fr) 1.5rem` }}
     >
       <span aria-hidden />
-      {hasChildren ? (
-        <button
-          type="button"
-          className={cn(chevronSlotClass, 'text-[color:var(--muted)]')}
-          aria-label={expanded ? 'Collapse subtree' : 'Expand subtree'}
-          aria-expanded={expanded}
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={(event) => {
-            event.stopPropagation()
-            onToggleExpand()
-          }}
-        >
-          {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-        </button>
-      ) : (
-        <span className={chevronSlotClass} aria-hidden />
-      )}
+      <SessionTreeExpandControl
+        hasChildren={hasChildren}
+        expanded={expanded}
+        onToggleExpand={onToggleExpand}
+      />
       <button
         type="button"
         className={contentSurfaceClass}

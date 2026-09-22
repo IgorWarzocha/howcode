@@ -11,6 +11,11 @@ import {
   type PendingTerminalEvents,
   takePendingTerminalEvents,
 } from './terminal-pending-events'
+import {
+  createTerminalSessionOwnership,
+  getTerminalViewportIdentity,
+  type TerminalSessionRelease,
+} from './terminal-session-ownership'
 import { getTerminalCleanupAction, type TerminalSessionPolicy } from './terminal-session-policy'
 import {
   cancelScheduledTerminalClose,
@@ -29,6 +34,8 @@ type TerminalLaunchMode = 'shell' | 'pi-session'
 type TerminalSize = { cols: number; rows: number }
 
 type TerminalSessionSnapshot = NonNullable<Awaited<ReturnType<typeof openDesktopTerminal>>>
+
+const terminalSessionOwnership = createTerminalSessionOwnership()
 
 type TerminalSessionLifecycleInput = {
   appendTerminalHistory: (chunk: string) => void
@@ -49,36 +56,33 @@ type TerminalSessionLifecycleInput = {
   writeToTerminal: (data: string | Uint8Array) => void
 }
 
-function cleanupTerminalSessionOnUnmount(input: {
-  policy: TerminalSessionPolicy
-  sessionId: string | null
-  terminalHistory: string
-  terminalPersistedSessionPath: string | null
-}) {
-  if (!input.sessionId) return
-  const action = getTerminalCleanupAction(input)
-  switch (action.kind) {
+function releaseTerminalSession(release: TerminalSessionRelease) {
+  switch (release.action.kind) {
     case 'preserve':
       return
     case 'close':
       void closeDesktopTerminal({
-        sessionId: input.sessionId,
-        deleteHistory: action.deleteHistory,
+        sessionId: release.sessionId,
+        deleteHistory: release.action.deleteHistory,
       })
       return
     case 'close-after-delay':
-      scheduleTerminalClose(input.sessionId, action.delayMs)
+      scheduleTerminalClose(release.sessionId, release.action.delayMs)
       return
     case 'close-after-session-file-idle':
       void scheduleTerminalCloseAfterSessionFileIdle(
-        input.sessionId,
-        action.pollMs,
-        action.maxKeepAliveMs,
+        release.sessionId,
+        release.action.pollMs,
+        release.action.maxKeepAliveMs,
       )
       return
     default:
       return
   }
+}
+
+function releaseTerminalSessions(releases: TerminalSessionRelease[]) {
+  for (const release of releases) releaseTerminalSession(release)
 }
 
 function rememberOpenedSession(input: {
@@ -95,6 +99,33 @@ function rememberOpenedSession(input: {
   cancelScheduledTerminalClose(input.snapshot.sessionId)
 }
 
+function activateOpenedSession(input: {
+  lifecycle: TerminalSessionLifecycleInput
+  replayBufferedEvents: (sessionId: string) => void
+  snapshot: TerminalSessionSnapshot
+}) {
+  rememberOpenedSession({
+    lastSentSizeRef: input.lifecycle.lastSentSizeRef,
+    sessionIdRef: input.lifecycle.sessionIdRef,
+    snapshot: input.snapshot,
+  })
+  input.lifecycle.resetTerminal(input.snapshot.history)
+  if (input.snapshot.status === 'exited') {
+    writeSystemMessage(
+      (message) => input.lifecycle.writeToTerminal(message),
+      `Process exited${input.snapshot.exitCode === null ? '' : ` (${input.snapshot.exitCode})`}.`,
+    )
+  }
+  input.replayBufferedEvents(input.snapshot.sessionId)
+  input.lifecycle.focusTerminal()
+
+  const resizedSize = input.lifecycle.getCurrentSize()
+  if (resizedSize.cols !== input.snapshot.cols || resizedSize.rows !== input.snapshot.rows) {
+    input.lifecycle.handleTerminalResize(resizedSize.cols, resizedSize.rows)
+  }
+  input.lifecycle.scheduleTerminalResizeSettlingPasses()
+}
+
 export function useTerminalSessionLifecycle(input: TerminalSessionLifecycleInput) {
   useEffect(() => {
     if (input.terminalReadyRevision === 0) return
@@ -107,6 +138,17 @@ export function useTerminalSessionLifecycle(input: TerminalSessionLifecycleInput
     input.terminalHistoryRef.current = ''
     input.resetTerminal()
     const launchMode: TerminalLaunchMode = input.policy.kind
+    const viewportIdentity = getTerminalViewportIdentity({
+      launchMode,
+      projectId: input.projectId,
+      sessionPath: input.terminalSessionPath,
+    })
+    const releaseReadyTerminalSessions = () => {
+      queueMicrotask(() => {
+        releaseTerminalSessions(terminalSessionOwnership.takeReadyReleases(viewportIdentity))
+      })
+    }
+    const viewport = terminalSessionOwnership.begin(viewportIdentity)
 
     const applyEvent = (event: TerminalEvent) => {
       switch (event.type) {
@@ -161,34 +203,37 @@ export function useTerminalSessionLifecycle(input: TerminalSessionLifecycleInput
         cols: size.cols,
         rows: size.rows,
       })
-      if (cancelled || !snapshot) return
+      if (!snapshot) {
+        terminalSessionOwnership.failed(viewport)
+        releaseReadyTerminalSessions()
+        return
+      }
+
+      const adopted = terminalSessionOwnership.opened(viewport, {
+        sessionId: snapshot.sessionId,
+        action: getTerminalCleanupAction({
+          policy: input.policy,
+          terminalHistory: snapshot.history,
+          terminalPersistedSessionPath: input.terminalPersistedSessionPath,
+        }),
+      })
+      releaseReadyTerminalSessions()
+      if (!adopted) return
 
       acceptPendingEvents = false
-      rememberOpenedSession({
-        lastSentSizeRef: input.lastSentSizeRef,
-        sessionIdRef: input.sessionIdRef,
+      activateOpenedSession({
+        lifecycle: input,
+        replayBufferedEvents,
         snapshot,
       })
-      input.resetTerminal(snapshot.history)
-      if (snapshot.status === 'exited') {
-        writeSystemMessage(
-          (message) => input.writeToTerminal(message),
-          `Process exited${snapshot.exitCode === null ? '' : ` (${snapshot.exitCode})`}.`,
-        )
-      }
-      replayBufferedEvents(snapshot.sessionId)
-      input.focusTerminal()
-
-      const resizedSize = input.getCurrentSize()
-      if (resizedSize.cols !== snapshot.cols || resizedSize.rows !== snapshot.rows) {
-        input.handleTerminalResize(resizedSize.cols, resizedSize.rows)
-      }
-      input.scheduleTerminalResizeSettlingPasses()
     }
 
     void openSession().catch((error) => {
+      terminalSessionOwnership.failed(viewport)
+      releaseReadyTerminalSessions()
       acceptPendingEvents = false
       pendingEvents.clear()
+      if (cancelled) return
       writeSystemMessage(
         (message) => input.writeToTerminal(message),
         error instanceof Error ? error.message : 'Unable to open terminal.',
@@ -197,17 +242,19 @@ export function useTerminalSessionLifecycle(input: TerminalSessionLifecycleInput
 
     return () => {
       cancelled = true
-      const sessionId = input.sessionIdRef.current
       input.sessionIdRef.current = null
       pendingEvents.clear()
       input.lastSentSizeRef.current = null
       unsubscribe()
-      cleanupTerminalSessionOnUnmount({
-        policy: input.policy,
-        sessionId,
-        terminalHistory: input.terminalHistoryRef.current,
-        terminalPersistedSessionPath: input.terminalPersistedSessionPath,
-      })
+      terminalSessionOwnership.leave(
+        viewport,
+        getTerminalCleanupAction({
+          policy: input.policy,
+          terminalHistory: input.terminalHistoryRef.current,
+          terminalPersistedSessionPath: input.terminalPersistedSessionPath,
+        }),
+      )
+      releaseReadyTerminalSessions()
     }
   }, [input])
 }

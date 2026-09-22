@@ -47,7 +47,7 @@ type DiffPanelContentBodyProps = {
     show: boolean
   }
   codeView: {
-    ref: RefObject<CodeViewHandle<GitOpsAnnotationMetadata> | null>
+    ref: RefObject<CodeViewHandle<GitOpsAnnotationMetadata, undefined> | null>
     editing: DiffEditingController
     fileContent: DiffFileContentController
     renderMode: 'stacked' | 'split'

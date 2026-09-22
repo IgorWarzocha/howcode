@@ -1,12 +1,12 @@
 import path from 'node:path'
-import { ensureChatStateSchema } from '../chat-state-db.ts'
-import { getThreadStateDatabase } from './db.ts'
+import { Effect } from 'effect'
+import * as SqlClient from 'effect/unstable/sql/SqlClient'
 
-export function ensureProject(cwd: string) {
-  const db = getThreadStateDatabase()
+export const ensureProject = Effect.fn('threadStateDb.ensureProject')(function* (cwd: string) {
+  const sql = yield* SqlClient.SqlClient
   const projectName = path.basename(cwd) || cwd
 
-  db.prepare(
+  yield* sql.unsafe(
     `
       INSERT INTO projects (cwd, name, collapsed, hidden)
       VALUES (?, ?, 1, 0)
@@ -15,45 +15,54 @@ export function ensureProject(cwd: string) {
         hidden = 0,
         updated_at = CURRENT_TIMESTAMP
     `,
-  ).run(cwd, projectName)
-}
+    [cwd, projectName],
+  )
+})
 
-export function setProjectCollapsed(projectId: string, collapsed: boolean) {
-  const db = getThreadStateDatabase()
-  db.prepare(
+export const setProjectCollapsed = Effect.fn('threadStateDb.setProjectCollapsed')(function* (
+  projectId: string,
+  collapsed: boolean,
+) {
+  const sql = yield* SqlClient.SqlClient
+  yield* sql.unsafe(
     `
       UPDATE projects
       SET collapsed = ?, updated_at = CURRENT_TIMESTAMP
       WHERE cwd = ?
     `,
-  ).run(collapsed ? 1 : 0, projectId)
-}
+    [collapsed ? 1 : 0, projectId],
+  )
+})
 
-export function toggleProjectPinned(projectId: string) {
-  const db = getThreadStateDatabase()
-  db.prepare(
+export const toggleProjectPinned = Effect.fn('threadStateDb.toggleProjectPinned')(function* (
+  projectId: string,
+) {
+  const sql = yield* SqlClient.SqlClient
+  yield* sql.unsafe(
     `
       UPDATE projects
       SET pinned = CASE pinned WHEN 1 THEN 0 ELSE 1 END, updated_at = CURRENT_TIMESTAMP
       WHERE cwd = ?
     `,
-  ).run(projectId)
-}
+    [projectId],
+  )
+})
 
-export function collapseAllProjects() {
-  const db = getThreadStateDatabase()
-  db.prepare(
+export const collapseAllProjects = Effect.fn('threadStateDb.collapseAllProjects')(function* () {
+  const sql = yield* SqlClient.SqlClient
+  yield* sql.unsafe(
     `
       UPDATE projects
       SET collapsed = 1, updated_at = CURRENT_TIMESTAMP
     `,
-  ).run()
-}
+  )
+})
 
-export function archiveProjectThreads(projectId: string) {
-  ensureChatStateSchema()
-  const db = getThreadStateDatabase()
-  db.prepare(
+export const archiveProjectThreads = Effect.fn('threadStateDb.archiveProjectThreads')(function* (
+  projectId: string,
+) {
+  const sql = yield* SqlClient.SqlClient
+  yield* sql.unsafe(
     `
       UPDATE threads
       SET archived = 1, updated_at = CURRENT_TIMESTAMP
@@ -63,65 +72,83 @@ export function archiveProjectThreads(projectId: string) {
           SELECT 1 FROM chat_threads WHERE chat_threads.session_path = threads.session_path
         )
     `,
-  ).run(projectId)
-}
+    [projectId],
+  )
+})
 
-export function renameProject(projectId: string, projectName: string) {
-  const db = getThreadStateDatabase()
-  db.prepare(
+export const renameProject = Effect.fn('threadStateDb.renameProject')(function* (
+  projectId: string,
+  projectName: string,
+) {
+  const sql = yield* SqlClient.SqlClient
+  yield* sql.unsafe(
     `
       UPDATE projects
       SET custom_name = ?, updated_at = CURRENT_TIMESTAMP
       WHERE cwd = ?
     `,
-  ).run(projectName, projectId)
-}
+    [projectName, projectId],
+  )
+})
 
-export function setProjectRepoOrigin(projectId: string, originUrl: string | null) {
-  const db = getThreadStateDatabase()
-  db.prepare(
+export const setProjectRepoOrigin = Effect.fn('threadStateDb.setProjectRepoOrigin')(function* (
+  projectId: string,
+  originUrl: string | null,
+) {
+  const sql = yield* SqlClient.SqlClient
+  yield* sql.unsafe(
     `
       UPDATE projects
       SET repo_origin_url = ?, repo_origin_checked = 1, updated_at = CURRENT_TIMESTAMP
       WHERE cwd = ?
     `,
-  ).run(originUrl, projectId)
-}
+    [originUrl, projectId],
+  )
+})
 
-export function setProjectGitOpsMode(projectId: string, mode: 'commit' | 'commit-push' | null) {
-  const db = getThreadStateDatabase()
-  db.prepare(
+export const setProjectGitOpsMode = Effect.fn('threadStateDb.setProjectGitOpsMode')(function* (
+  projectId: string,
+  mode: 'commit' | 'commit-push' | null,
+) {
+  const sql = yield* SqlClient.SqlClient
+  yield* sql.unsafe(
     `
       UPDATE projects
       SET git_ops_mode = ?, updated_at = CURRENT_TIMESTAMP
       WHERE cwd = ?
     `,
-  ).run(mode, projectId)
-}
+    [mode, projectId],
+  )
+})
 
-export function hideProject(projectId: string) {
-  const db = getThreadStateDatabase()
-  db.prepare(
+export const hideProject = Effect.fn('threadStateDb.hideProject')(function* (projectId: string) {
+  const sql = yield* SqlClient.SqlClient
+  yield* sql.unsafe(
     `
       UPDATE projects
       SET hidden = 1, updated_at = CURRENT_TIMESTAMP
       WHERE cwd = ?
     `,
-  ).run(projectId)
-}
+    [projectId],
+  )
+})
 
-export function deleteProject(projectId: string) {
-  const db = getThreadStateDatabase()
-  db.prepare(
+export const deleteProject = Effect.fn('threadStateDb.deleteProject')(function* (
+  projectId: string,
+) {
+  const sql = yield* SqlClient.SqlClient
+  yield* sql.unsafe(
     `
       DELETE FROM project_usage_totals
       WHERE cwd = ?
     `,
-  ).run(projectId)
-  db.prepare(
+    [projectId],
+  )
+  yield* sql.unsafe(
     `
       DELETE FROM projects
       WHERE cwd = ?
     `,
-  ).run(projectId)
-}
+    [projectId],
+  )
+})

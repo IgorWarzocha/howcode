@@ -9,7 +9,7 @@ import {
   diffFileHeaderClass,
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { DiffFileEditButton } from '../edit/diff-file-edit-button'
+import { DiffFileDiscardAndReloadButton, DiffFileEditButton } from '../edit/diff-file-edit-button'
 import type { DiffEditingController } from '../edit/use-diff-editing'
 import { ChangeReviewResetButton } from '../review/change-review-reset-button'
 import { getFileChangeCounts, getFileHeaderContextLabel } from './diff-panel-content.helpers'
@@ -34,6 +34,10 @@ export function DiffPanelFileHeader({
   const headerContextLabel = getFileHeaderContextLabel(fileDiff)
   const { additions, deletions } = getFileChangeCounts(fileDiff)
   const editOwnsFile = editing.state.kind !== 'idle' && editing.state.fileKey === fileKey
+  const canDiscardAndReload =
+    editing.state.kind === 'editing' &&
+    editing.state.fileKey === fileKey &&
+    editing.state.canDiscardAndReload
   return (
     <div className={diffFileHeaderClass} data-diff-file-path={filePath}>
       <button
@@ -73,6 +77,9 @@ export function DiffPanelFileHeader({
       <div className="mr-2 flex shrink-0 items-center gap-0.5">
         {changeReview.reviewed && !editOwnsFile ? (
           <ChangeReviewResetButton onReset={changeReview.reset} />
+        ) : null}
+        {canDiscardAndReload ? (
+          <DiffFileDiscardAndReloadButton editing={editing} fileDiff={fileDiff} fileKey={fileKey} />
         ) : null}
         <DiffFileEditButton
           editing={editing}
