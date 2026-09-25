@@ -1,3 +1,17 @@
+### 0.1.70
+
+Follow-up fixes originally bundled into 0.1.69.
+
+- Project cleanup verifies folder ownership and protects linked worktrees outside Howcode's records.
+- Retained dirty diff drafts after failed saves, with explicit discard and reload after conflicts.
+- Fixed persistence of the Last diff baseline.
+- Fixed shutdown deadlines so child processes have time to finish cleanup.
+- Cleaned up late-opening terminals without closing sessions adopted by another view.
+- Fixed missing-thread recovery and thread-scoped Git links.
+- Made website poll rate limits atomic under concurrent votes.
+
+Snapshot: 25 September 2026.
+
 ### 0.1.69
 
 - Updated Pi to 0.87.0, Effect v4 to rc.116, Electron to 44.4.3, React to 19.3, Pierre Diffs to 1.4.3, and the remaining dependencies.
@@ -9,11 +23,8 @@
 - Moved clipboard attachments to Electron's native file and image APIs, removing a separate native dependency.
 - Removed the custom Electron ZIP installer now that upstream handles extraction correctly.
 - Fixed the cache-warming setting's displayed value and Electron development rebuilds, restart sequencing and shutdown errors.
-- Project cleanup verifies folder ownership and protects linked worktrees outside Howcode's records.
-- Retained dirty diff drafts after failed saves, with explicit discard and reload after conflicts.
-- Fixed persistence of the Last diff baseline.
-- Fixed shutdown deadlines, cleanup of late-opening terminals, and thread URLs, including Git deep links.
-- Made website poll rate limits atomic under concurrent votes.
+
+Snapshot: 22 September 2026.
 
 ### 0.1.68
 
