@@ -8,6 +8,7 @@ import { copyFile, cp, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'n
 import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
+import { validateMacosLauncherArchive } from './validate-macos-launcher-archive'
 
 const appName = 'howcode'
 const nodeMajorVersionPattern = /^v?(\d+)/
@@ -143,7 +144,9 @@ async function createNormalizedArchive(bundlePath: string, target: Target) {
   const normalizedBundlePath = path.join(tempRoot, normalizedBundleName)
   const archivePath = path.join(launcherOutputRoot, `${appName}-${target.os}-${target.arch}.tar.gz`)
 
-  await cp(bundlePath, normalizedBundlePath, { recursive: true })
+  // Electron's framework uses relative symlinks. Node cp rewrites them to absolute
+  // build-runner paths unless verbatimSymlinks is set.
+  await cp(bundlePath, normalizedBundlePath, { recursive: true, verbatimSymlinks: true })
 
   const resourcesPath =
     target.os === 'macos'
@@ -178,6 +181,10 @@ async function createNormalizedArchive(bundlePath: string, target: Target) {
 
   if (tarResult.status !== 0) {
     throw new Error(`Failed to package launcher archive for ${target.os}-${target.arch}.`)
+  }
+
+  if (target.os === 'macos') {
+    await validateMacosLauncherArchive(archivePath)
   }
 
   return archivePath

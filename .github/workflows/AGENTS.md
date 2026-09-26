@@ -1,4 +1,5 @@
 - Pages deploys from `main` and `dev` so the site can show both stable and dev-channel release info.
 - PRs to `dev` must not build release artifacts. Only `push`/tag/manual runs build, publish, or upload release assets.
-- Channel releases must keep stable `channel-main` and `channel-dev` assets so existing launchers update without an npm publish.
+- Stable versions have their own `vVERSION` release and publication date. Never overwrite a published version or make a moving channel the latest release.
+- Keep `channel-main` and `channel-dev` assets for existing launchers. Channel manifest asset URLs must stay under their channel tag; shipped launchers reject cross-tag URLs.
 - Root app and `packages/howcode` launcher versions are independent; do not add a workflow check that forces them to match.
