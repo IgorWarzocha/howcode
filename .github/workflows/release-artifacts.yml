@@ -271,6 +271,7 @@ jobs:
     runs-on: ubuntu-24.04
     concurrency:
       group: ${{ github.ref_name == 'dev' && 'release-publication-dev' || 'release-publication-stable' }}
+      queue: max
       cancel-in-progress: false
 
     steps:
@@ -303,6 +304,7 @@ jobs:
     runs-on: ubuntu-24.04
     concurrency:
       group: release-publication-stable
+      queue: max
       cancel-in-progress: false
 
     steps:
