@@ -50,7 +50,48 @@ function requireUniqueFile(filesByName: ReadonlyMap<string, string[]>, fileName:
   return filePath
 }
 
-export async function validateReleaseAssets(releaseDirectory: string, expectedChannel?: string) {
+function checkManifestFields(
+  metadata: {
+    protocolVersion?: unknown
+    channel?: unknown
+    version?: unknown
+    hash?: unknown
+    assetUrl?: unknown
+  },
+  name: string,
+  channel?: string,
+  version?: string,
+): asserts metadata is {
+  protocolVersion: 2
+  channel: string
+  version: string
+  hash: string
+  assetUrl: string
+} {
+  if (metadata.protocolVersion !== 2) throw new Error(`${name} is not protocol v2`)
+  if (channel && metadata.channel !== channel) {
+    throw new Error(`${name} has channel ${String(metadata.channel)}, expected ${channel}`)
+  }
+  if (version && metadata.version !== version) {
+    throw new Error(`${name} has version ${String(metadata.version)}, expected ${version}`)
+  }
+  if (
+    typeof metadata.version !== 'string' ||
+    !semverPattern.test(metadata.version) ||
+    typeof metadata.hash !== 'string' ||
+    !sha256Pattern.test(metadata.hash) ||
+    typeof metadata.assetUrl !== 'string'
+  ) {
+    throw new Error(`${name} has invalid metadata fields`)
+  }
+}
+
+export async function validateReleaseAssets(
+  releaseDirectory: string,
+  expectedChannel?: string,
+  expectedVersion?: string,
+  expectedAssetBaseUrl?: string,
+) {
   const filesByName = await indexReleaseFiles(releaseDirectory)
   for (const target of expectedTargets) {
     const metadataName = `stable-${target}-update.json`
@@ -63,23 +104,15 @@ export async function validateReleaseAssets(releaseDirectory: string, expectedCh
       hash?: unknown
       assetUrl?: unknown
     }
-    if (metadata.protocolVersion !== 2) throw new Error(`${metadataName} is not protocol v2`)
-    if (expectedChannel && metadata.channel !== expectedChannel) {
-      throw new Error(
-        `${metadataName} has channel ${String(metadata.channel)}, expected ${expectedChannel}`,
-      )
-    }
-    if (
-      typeof metadata.version !== 'string' ||
-      !semverPattern.test(metadata.version) ||
-      typeof metadata.hash !== 'string' ||
-      !sha256Pattern.test(metadata.hash) ||
-      typeof metadata.assetUrl !== 'string'
-    ) {
-      throw new Error(`${metadataName} has invalid metadata fields`)
-    }
+    checkManifestFields(metadata, metadataName, expectedChannel, expectedVersion)
     const assetName = path.basename(new URL(metadata.assetUrl).pathname)
     const expectedAssetName = `archive-howcode-${target}-${metadata.hash.toLowerCase()}.tar.gz`
+    if (
+      expectedAssetBaseUrl &&
+      metadata.assetUrl !== `${expectedAssetBaseUrl}/${expectedAssetName}`
+    ) {
+      throw new Error(`${metadataName} does not point beneath ${expectedAssetBaseUrl}`)
+    }
     if (assetName !== expectedAssetName) {
       throw new Error(`${metadataName} points to ${assetName}, expected ${expectedAssetName}`)
     }

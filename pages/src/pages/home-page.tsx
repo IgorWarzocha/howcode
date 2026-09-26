@@ -68,7 +68,7 @@ const channels: Record<ChannelId, ChannelConfig> = {
     title: 'Try the stable launcher first.',
     description:
       'The normal channel. The launcher downloads the current stable desktop build and relaunches the cached app.',
-    releaseUrl: 'https://github.com/IgorWarzocha/howcode/releases/tag/channel-main',
+    releaseUrl: 'https://github.com/IgorWarzocha/howcode/releases/latest',
     changelogIndex: 0,
     installCommands: [
       { label: 'launcher', command: 'npx howcode' },

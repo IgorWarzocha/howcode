@@ -1,6 +1,7 @@
 ### 0.1.71
 
 - Fixed macOS launcher archives pointing Electron framework links at the build machine. Release checks now reject broken framework links in the finished archive.
+- Stable versions now get their own GitHub release and publication date. Existing launcher and app update links keep working.
 
 Snapshot: 26 September 2026.
 
