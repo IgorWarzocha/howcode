@@ -8,6 +8,7 @@ const managedLocation = /^[0-9a-f-]{36}$/
 export interface PackageRecord {
   source: string
   location?: string
+  revision?: string
 }
 
 export async function readPackageSettings(path: string): Promise<PackageRecord[]> {
@@ -26,6 +27,7 @@ export async function readPackageSettings(path: string): Promise<PackageRecord[]
       record === null ||
       !('source' in record) ||
       typeof record.source !== 'string' ||
+      ('revision' in record && typeof record.revision !== 'string') ||
       ('location' in record &&
         (typeof record.location !== 'string' || !managedLocation.test(record.location)))
     ) {
@@ -33,6 +35,7 @@ export async function readPackageSettings(path: string): Promise<PackageRecord[]
     }
     return {
       source: record.source,
+      ...('revision' in record ? { revision: String(record.revision) } : {}),
       ...('location' in record ? { location: String(record.location) } : {}),
     }
   })

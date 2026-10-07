@@ -42,7 +42,11 @@ howcode remove ./my-tools
 
 Git and npm installs require Bun on `PATH`. Install only trusted packages. Installation scripts and extensions run with your user permissions. Local sources stay in place and are not built or modified by Howcode.
 
-Restart Howcode after package changes. Installed extensions are selected for new conversations. Existing conversations keep their explicit selections. Use `--data-path <directory>` with both Howcode and its package commands when using a separate profile.
+Package changes load before the next submitted turn and after each completed tool round, without restarting the backend. Conversations created with default selections also pick up new installed extensions in the same conversation. Explicit selections, including older stored lists, stay exact. Use `--data-path <directory>` with both Howcode and its package commands when using a separate profile.
+
+Run `howcode update <local-path>` after rebuilding or editing a local source to reload its modules. Unchanged packages keep their runtime state. Notebook replacement or removal waits until its active cells finish. Loading failures are reported and block the next model request rather than silently continuing with stale tools.
+
+Committed Git and npm installation directories remain under the profile's `packages/sources` after update or removal, because running tools may still import their files. Remove unused directories only after stopping every Howcode backend using that profile. Local source directories are never deleted.
 
 Packages export ordinary Durable extension objects from their package entry point or Pi's `pi.extensions` paths. Normal Pi coding-agent extensions use a different API and are not compatible. Howcode checks declared `@earendil-works/pi-durable` peer requirements before loading. The Durable notebook package's host setup is handled automatically.
 

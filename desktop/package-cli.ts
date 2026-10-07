@@ -45,5 +45,5 @@ switch (command) {
 }
 if (command !== 'list')
   console.log(
-    'Restart Howcode to load package changes. New conversations use installed extensions.',
+    'Package changes load at the next conversation boundary. Default-selected conversations include installed extensions.',
   )

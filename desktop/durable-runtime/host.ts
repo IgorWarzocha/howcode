@@ -17,12 +17,10 @@ import { getDurableModels } from '../settings/models.ts'
 import { loadPiSettings } from '../settings/preferences.ts'
 import { getDesktopUserDataPath } from '../user-data-path.ts'
 import { getComposerDefaults } from './defaults.ts'
-import {
-  createDesktopExtensionRegistry,
-  resolveDesktopExtensions,
-} from './extension-composition.ts'
+import { defaultExtensionExclusions, resolveDesktopExtensions } from './extension-composition.ts'
 import { decodeConversationId, decodeEntryId } from './identity.ts'
-import { loadInstalledPackages } from './packages.ts'
+import { openLiveExtensions } from './live-extensions.ts'
+import { liveModels } from './live-models.ts'
 
 export { decodeConversationId, decodeEntryId, decodeSubmissionId } from './identity.ts'
 
@@ -57,18 +55,12 @@ let extensions: Promise<Awaited<ReturnType<typeof openExtensions>>> | undefined
 
 async function openExtensions() {
   const directory = getDesktopUserDataPath()
-  const packages = await loadInstalledPackages({
+  return openLiveExtensions({
     directory,
     cwd: getDesktopWorkingDirectory(),
     stateDirectory: join(directory, 'notebook'),
     environmentId: new NodeExecutionEnv({ cwd: getDesktopWorkingDirectory() }).id,
   })
-  try {
-    return { packages, registry: createDesktopExtensionRegistry(packages.extensions) }
-  } catch (error) {
-    await packages.close()
-    throw error
-  }
 }
 
 function getExtensions() {
@@ -85,17 +77,16 @@ export async function refreshDurableSettings() {
 async function openRuntime() {
   const storage = await openNodeSqliteStorage(join(getDesktopUserDataPath(), 'durable.sqlite'))
   try {
-    const [, { registry, packages }] = await Promise.all([
-      refreshDurableSettings(),
-      getExtensions(),
-    ])
+    const [, installed] = await Promise.all([refreshDurableSettings(), getExtensions()])
+    const { registry, packages } = installed
     const harness = await Harness.open(
       storage,
       {
-        get models() {
+        models: liveModels(() => {
+          installed.assertReady()
           if (!activeModels) throw new Error('Durable model access is unavailable.')
           return activeModels
-        },
+        }),
         registry,
         settings: {
           get compaction() {
@@ -126,10 +117,15 @@ async function openRuntime() {
   }
 }
 
-export function getDurableRuntime() {
+export async function getDurableRuntime() {
   if (closing) throw new Error('Durable runtime is closing.')
   runtime ??= openRuntime()
   return runtime
+}
+
+/** Refresh only execution admission, never reads or cancellation paths. */
+export async function refreshRuntimePackages() {
+  await (await getExtensions()).refresh()
 }
 
 export async function resolveConversation(conversationId: string) {
@@ -158,7 +154,9 @@ export async function createRuntimeConversation(request: ComposerStateRequest = 
         cwd: request.projectId ?? getDesktopWorkingDirectory(),
         ...(model ? { model } : {}),
         thinkingLevel: defaults.thinkingLevel,
-        ...selection,
+        ...(request.composerExtensions === undefined
+          ? { extensions: { remove: defaultExtensionExclusions(request) } }
+          : selection),
       },
       init: async (tx, conversationId) => {
         const origin = await tx.doc(RuntimeOriginDoc, conversationId)
@@ -176,7 +174,9 @@ export async function createRuntimeConversation(request: ComposerStateRequest = 
 }
 
 export async function resolveRuntimeExtensions(request: ComposerStateRequest) {
-  return resolveDesktopExtensions(request, (await getExtensions()).registry)
+  const installed = await getExtensions()
+  await installed.refresh()
+  return resolveDesktopExtensions(request, installed.registry)
 }
 
 export async function listRuntimeConversations() {

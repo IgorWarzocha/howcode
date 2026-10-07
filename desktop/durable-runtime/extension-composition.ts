@@ -15,9 +15,19 @@ const ChatTools = createChatTools({
 })
 
 /** Durable owns activation and persisted selection. */
-export function createDesktopExtensionRegistry(packages: readonly Extension[] = []) {
+export function createDesktopExtensionRegistry(
+  packages: readonly Extension[] = [],
+  host: readonly Extension[] = [],
+) {
   const registry = createRegistry()
-  for (const extension of [CodingTools, ChatTools, CodeArtifactTools, Resources, ...packages]) {
+  for (const extension of [
+    CodingTools,
+    ChatTools,
+    CodeArtifactTools,
+    Resources,
+    ...host,
+    ...packages,
+  ]) {
     if (registry.snapshot().extension(extension.name))
       throw new Error(`Duplicate installed extension: ${extension.name}`)
     registry.install(extension)
@@ -27,26 +37,14 @@ export function createDesktopExtensionRegistry(packages: readonly Extension[] = 
 
 /** The only compatibility boundary for old UI mode defaults. Explicit lists are exact. */
 export function resolveDesktopExtensions(request: ComposerStateRequest, registry: RegistryReader) {
-  const builtins = new Set([
-    ChatTools.name,
-    CodingTools.name,
-    CodeArtifactTools.name,
-    Resources.name,
-  ])
-  const packages = registry
-    .snapshot()
-    .installed()
-    .filter((extension) => !builtins.has(extension.name))
+  const excluded = new Set(defaultExtensionExclusions(request).map((extension) => extension.name))
   const names =
     request.composerExtensions ??
-    (request.composerMode === 'chat'
-      ? [ChatTools.name, Resources.name, ...packages.map((extension) => extension.name)]
-      : [
-          CodingTools.name,
-          CodeArtifactTools.name,
-          Resources.name,
-          ...packages.map((extension) => extension.name),
-        ])
+    registry
+      .snapshot()
+      .installed()
+      .filter((extension) => !excluded.has(extension.name))
+      .map((extension) => extension.name)
   const snapshot = registry.snapshot()
   const seen = new Set<string>()
   const extensions = names.map((name) => {
@@ -57,4 +55,9 @@ export function resolveDesktopExtensions(request: ComposerStateRequest, registry
     return extension
   })
   return { extensions }
+}
+
+/** Default conversations follow live host packages. Explicit choices stay exact. */
+export function defaultExtensionExclusions(request: ComposerStateRequest): Extension[] {
+  return request.composerMode === 'chat' ? [CodingTools, CodeArtifactTools] : [ChatTools]
 }

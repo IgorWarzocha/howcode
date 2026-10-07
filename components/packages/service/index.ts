@@ -22,6 +22,8 @@ export interface InstalledPackage {
   root: string
   name?: string
   version?: string
+  /** Changes on explicit install/update, including local sources. */
+  revision?: string
 }
 
 export interface PackageManagerOptions {
@@ -156,6 +158,7 @@ export function createPackageManager(options: PackageManagerOptions): PackageMan
       source: record.source,
       kind: source.kind,
       root,
+      ...(record.revision === undefined ? {} : { revision: record.revision }),
       ...(await packageMetadata(root, options.hostVersion)),
     }
   }
@@ -171,6 +174,7 @@ export function createPackageManager(options: PackageManagerOptions): PackageMan
     )
     const record: PackageRecord = {
       source: source.source,
+      revision: randomUUID(),
       ...(source.kind === 'local' ? {} : { location: randomUUID() }),
     }
     let committed = false
@@ -182,7 +186,8 @@ export function createPackageManager(options: PackageManagerOptions): PackageMan
       const installed = await describe(record)
       await writePackageSettings(settings, [...records.filter((item) => item !== previous), record])
       committed = true
-      if (previous) await cleanup(previous)
+      // Retain committed generations: another process may still lazily import
+      // their files. Only failed, unpublished installations can be deleted here.
       return installed
     } catch (error) {
       // Cleanup only uncommitted installations. Committed roots must survive cleanup errors.
@@ -208,7 +213,6 @@ export function createPackageManager(options: PackageManagerOptions): PackageMan
           settings,
           records.filter((item) => item !== record),
         )
-        await cleanup(record)
         return true
       }),
     update: (argument) =>

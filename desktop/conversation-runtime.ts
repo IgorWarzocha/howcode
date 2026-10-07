@@ -22,6 +22,7 @@ import {
   getDurableRuntime,
   RuntimeOriginDoc,
   readRuntimeConversationOrigin,
+  refreshRuntimePackages,
   resolveConversation,
   runtimeContext,
 } from './durable-runtime/host.ts'
@@ -138,6 +139,7 @@ export async function sendComposerPrompt(
       await conversation.abort(runtimeContext)
       return { outcome: 'stopped' as const, conversationId, threadId: conversationId }
     }
+    await refreshRuntimePackages()
     const compact = parseCompactSlashCommand(request.text)
     if (compact === null) {
       await conversation.submit(

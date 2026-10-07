@@ -1,9 +1,13 @@
 import { glob, readdir, readFile, stat } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { BACKGROUND_CONTEXT } from '@earendil-works/chord/context'
 import { createRegistry, type Extension, type Harness } from '@earendil-works/pi-durable'
 import { createJiti } from 'jiti'
-import { createPackageManager } from '../../components/packages/service/index.ts'
+import {
+  createPackageManager,
+  type InstalledPackage,
+} from '../../components/packages/service/index.ts'
 
 const hostPackages = [
   '@earendil-works/pi-durable',
@@ -90,6 +94,8 @@ async function hostLoader() {
       nativeModules: hostPackages,
       interopDefault: false,
       tryNative: false,
+      moduleCache: false,
+      fsCache: false,
     }),
   }
 }
@@ -152,7 +158,7 @@ type NotebookFactory = (options: {
   cancelTask: Harness['abortTask']
 }) => NotebookAdapter
 
-interface PackageLoadOptions {
+export interface PackageLoadOptions {
   directory: string
   cwd: string
   stateDirectory: string
@@ -193,66 +199,158 @@ async function closeNotebooks(notebooks: NotebookAdapter[]) {
   if (errors.length > 0) throw new AggregateError(errors, 'Failed to close installed packages.')
 }
 
+interface LoadedPackage {
+  installed: InstalledPackage
+  extensions: Extension[]
+  notebooks: NotebookAdapter[]
+}
+
+/** Incremental package generations. Retired resources stay alive until shutdown:
+ * yielded notebook cells and old task phases may still own their definitions. */
 export async function loadInstalledPackages(options: PackageLoadOptions) {
-  const { hostVersion, loader } = await hostLoader()
-  const packages = await createPackageManager({ ...options, hostVersion }).resolve()
-  const extensions: Extension[] = []
-  const notebooks: NotebookAdapter[] = []
-  const validation = createRegistry()
+  const manager = createPackageManager({ ...options, hostVersion: await getDurableHostVersion() })
+  let active: LoadedPackage[] = []
+  const retained: LoadedPackage[] = []
   let harness: Harness | undefined
+  let queue: Promise<unknown> = Promise.resolve()
+  let closed = false
   const cancelTask: Harness['abortTask'] = (id, context) => {
     if (!harness) throw new Error('Notebook runtime is not bound.')
     return harness.abortTask(id, context)
   }
-  const close = () => closeNotebooks(notebooks)
-  // Finish all module imports before constructing resources. Registration order
-  // remains package order, independent of import completion order.
-  const plans = await Promise.all(
-    packages.map(async (installed) => {
-      const metadata = await manifest(installed.root)
-      const paths = await entrypoints(installed.root, metadata)
-      const modules = await Promise.all(
-        paths.map(async (path) => ({
-          path,
-          loaded: await loader.import<RecordValue>(path),
-        })),
-      )
-      return { installed, modules }
-    }),
-  )
-  try {
-    for (const { installed, modules } of plans) {
+  const allExtensions = (packages: LoadedPackage[]) => packages.flatMap((item) => item.extensions)
+  const busyNotebooks = async () => {
+    const tasks = harness ? (await harness.inspect(BACKGROUND_CONTEXT)).tasks : []
+    return active.filter(
+      (item) =>
+        item.notebooks.length > 0 &&
+        item.extensions.some((candidate) =>
+          candidate.tasks?.some((definition) =>
+            tasks.some((task) => task.record.kind === definition.definition.name),
+          ),
+        ),
+    )
+  }
+  const load = async (installed: InstalledPackage): Promise<LoadedPackage> => {
+    const [{ loader }, metadata] = await Promise.all([hostLoader(), manifest(installed.root)])
+    const paths = await entrypoints(installed.root, metadata)
+    const modules = await Promise.all(
+      paths.map(async (path) => ({
+        path,
+        loaded: await loader.import<RecordValue>(path),
+      })),
+    )
+    const item: LoadedPackage = { installed, extensions: [], notebooks: [] }
+    try {
       for (const { path, loaded } of modules) {
-        let candidates: Extension[]
         if (installed.name === '@howaboua/pi-durable-notebook') {
           const notebook = createNotebook(loaded, options, cancelTask)
-          notebooks.push(notebook)
-          candidates = [notebook.extension]
-        } else {
-          candidates = exportedExtensions(loaded, path)
-        }
-        for (const candidate of candidates) {
-          if (extensions.some((existing) => existing.name === candidate.name))
-            throw new Error(`Duplicate installed extension: ${candidate.name}`)
-          validation.install(candidate)
-          extensions.push(candidate)
-        }
+          item.notebooks.push(notebook)
+          item.extensions.push(notebook.extension)
+          if (harness) notebook.bind(harness)
+        } else item.extensions.push(...exportedExtensions(loaded, path))
       }
+      return item
+    } catch (error) {
+      await closeNotebooks(item.notebooks)
+      throw error
     }
-  } catch (error) {
-    try {
-      await close()
-    } catch (cleanup) {
-      throw new AggregateError([error, cleanup], 'Package loading and cleanup failed.')
-    }
-    throw error
   }
+  const buildNext = async (installed: InstalledPackage[], created: LoadedPackage[]) => {
+    const busy = new Set(await busyNotebooks())
+    const next: LoadedPackage[] = []
+    for (const source of installed) {
+      const previous = active.find(
+        (candidate) =>
+          candidate.installed.source === source.source &&
+          (busy.has(candidate) ||
+            (candidate.installed.root === source.root &&
+              candidate.installed.revision === source.revision)),
+      )
+      const item = previous ?? (await load(source))
+      if (!previous) created.push(item)
+      next.push(item)
+    }
+    return next
+  }
+  const preserveBusy = (next: LoadedPackage[], busy: LoadedPackage[]) => {
+    for (const item of busy) {
+      const index = next.findIndex(
+        (candidate) => candidate.installed.source === item.installed.source,
+      )
+      if (index === -1) next.splice(Math.min(active.indexOf(item), next.length), 0, item)
+      else next[index] = item
+    }
+  }
+  const validate = (candidates: Extension[]) => {
+    const validation = createRegistry()
+    const names = new Set<string>()
+    for (const candidate of candidates) {
+      if (names.has(candidate.name))
+        throw new Error(`Duplicate installed extension: ${candidate.name}`)
+      names.add(candidate.name)
+      validation.install(candidate)
+    }
+  }
+  const refresh = (
+    publish: (extensions: Extension[]) => void = () => {
+      /* Initial load has no host registry yet. */
+    },
+  ) => {
+    const result = queue
+      .catch(() => undefined)
+      .then(async () => {
+        if (closed) throw new Error('Installed packages are closed.')
+        const installed = await manager.resolve()
+        const created: LoadedPackage[] = []
+        try {
+          // Sequential construction makes partial failure cleanup deterministic.
+          const next = await buildNext(installed, created)
+          // Recheck after imports: another conversation may have admitted a cell.
+          // Publication is synchronous from this point, before another phase runs.
+          preserveBusy(next, await busyNotebooks())
+          if (
+            next.length === active.length &&
+            next.every((item, index) => item === active[index])
+          ) {
+            retained.push(...created)
+            return false
+          }
+          const extensions = allExtensions(next)
+          validate(extensions)
+          // Host validates built-in collisions before publishing synchronously.
+          publish(extensions)
+          const selected = new Set(next)
+          retained.push(...active.filter((item) => !selected.has(item)))
+          retained.push(...created.filter((item) => !selected.has(item)))
+          active = next
+          return true
+        } catch (error) {
+          try {
+            await closeNotebooks(created.flatMap((item) => item.notebooks))
+          } catch (cleanup) {
+            throw new AggregateError([error, cleanup], 'Package reload and cleanup failed.')
+          }
+          throw error
+        }
+      })
+    queue = result
+    return result
+  }
+  await refresh()
   return {
-    extensions,
-    close,
+    get extensions() {
+      return allExtensions(active)
+    },
+    refresh,
+    async close() {
+      closed = true
+      await queue.catch(() => undefined)
+      await closeNotebooks([...active, ...retained].flatMap((item) => item.notebooks))
+    },
     bind(runtime: Harness) {
       harness = runtime
-      for (const notebook of notebooks) notebook.bind(runtime)
+      for (const item of active) for (const notebook of item.notebooks) notebook.bind(runtime)
     },
   }
 }
