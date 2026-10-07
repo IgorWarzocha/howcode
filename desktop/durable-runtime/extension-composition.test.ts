@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getComposerRequest } from '../../shared/pi-thread-action-payloads.ts'
+import { getComposerRequest } from '../../shared/desktop-action-payloads.ts'
 import {
   createDesktopExtensionRegistry,
   resolveDesktopExtensions,

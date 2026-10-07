@@ -1,4 +1,4 @@
-import { skillsPlugin } from '@howcode/plugins/skills/ui/extension'
+import { skillsComponent } from '@howcode/components/skills/ui/component'
 import { Sidebar } from '@howcode/sidebar'
 import type { AppSettings } from '../desktop/types'
 import type { AppShellController } from './useAppShellController'
@@ -89,7 +89,7 @@ export function AppShellSidebar({
       onToggleSettings={controller.navigation.toggleSettings}
       onToggleSidebar={onToggle}
       onOpenAbout={controller.navigation.showLanding}
-      onOpenSkillsView={() => controller.navigation.showView(skillsPlugin.utility.view)}
+      onOpenSkillsView={() => controller.navigation.showView(skillsComponent.utility.view)}
       onOpenSettingsPanel={(target) => controller.navigation.showView('settings', target)}
       onOpenArchivedThreads={() => controller.navigation.showView('archived')}
       onDismissInboxThread={controller.inbox.dismiss}

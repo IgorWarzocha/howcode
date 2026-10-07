@@ -1,4 +1,4 @@
-import { isToolkitExtensionEnabled } from '@howcode/shared/toolkit-extensions'
+import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
 import type { AppSettings } from '../../desktop/types'
 import { buildProjectBasicsSettingsDescriptors } from './settingsDescriptorProjectBasics'
 import { buildGitDiffSettingsDescriptors } from './settingsDescriptorProjectGitDiffs'
@@ -10,7 +10,7 @@ export function buildProjectsSettingsDescriptors(input: {
   appSettings: AppSettings
   controller: SettingsController
 }): SettingDescriptor[] {
-  const codingEnabled = isToolkitExtensionEnabled(input.appSettings, 'coding')
+  const codingEnabled = isToolkitComponentEnabled(input.appSettings, 'coding')
   return [
     ...buildProjectBasicsSettingsDescriptors(input),
     ...buildGitDiffSettingsDescriptors(input),

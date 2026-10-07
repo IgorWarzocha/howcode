@@ -1,5 +1,5 @@
-import { createInitialCodingWorkspaceState } from '@howcode/plugins/coding/ui'
-import { createInitialTerminalWorkspaceState } from '@howcode/plugins/terminal/ui'
+import { createInitialCodingWorkspaceState } from '@howcode/components/coding/ui'
+import { createInitialTerminalWorkspaceState } from '@howcode/components/terminal/ui'
 import type { Project, Thread, View } from '../types'
 import { workspaceActionHandlers } from './workspace-action-handlers'
 import type { WorkspaceAction, WorkspaceState } from './workspace-model'

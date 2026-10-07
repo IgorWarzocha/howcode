@@ -114,7 +114,7 @@ export type DictationService = {
   ) => Promise<DictationTranscriptionResult>
 }
 
-export type PiThreadsService = {
+export type AppService = {
   disposeDesktopRuntime?: () => Promise<void> | void
   handleDesktopAction: (
     action: DesktopAction,
@@ -183,7 +183,7 @@ export type PiSkillsService = {
 }
 
 export type DesktopServiceRuntime = {
-  piThreads: PiThreadsService
+  app: AppService
   skills: PiSkillsService
   coding: CodingService
   artifacts: ArtifactsService

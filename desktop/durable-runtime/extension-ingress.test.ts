@@ -5,7 +5,7 @@ import { BACKGROUND_CONTEXT } from '@earendil-works/chord/context'
 import { createModels } from '@earendil-works/pi-ai/models'
 import { Harness, MemoryStorage } from '@earendil-works/pi-durable'
 import { describe, expect, it } from 'vitest'
-import { AttachmentGrantsDoc } from '../../plugins/chat-tools/service/index.ts'
+import { AttachmentGrantsDoc } from '../../components/chat-tools/service/index.ts'
 import {
   createDesktopExtensionRegistry,
   resolveDesktopExtensions,

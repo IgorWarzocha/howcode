@@ -3,9 +3,9 @@ import {
   useCodingGitStateSync,
   useProjectShellSync,
   useTerminalGitStateSync,
-} from '@howcode/plugins/coding/ui'
-import { listDesktopTerminals, subscribeDesktopTerminal } from '@howcode/plugins/terminal/ui'
-import { isToolkitExtensionEnabled } from '@howcode/shared/toolkit-extensions'
+} from '@howcode/components/coding/ui'
+import { listDesktopTerminals, subscribeDesktopTerminal } from '@howcode/components/terminal/ui'
+import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
 import type { Dispatch, SetStateAction } from 'react'
 import type {
   AppSettings,
@@ -86,7 +86,7 @@ export function useAppShellEffects({
   setThreadHistoryCompactions: Dispatch<SetStateAction<number>>
 }) {
   useProjectShellSync({
-    enabled: shellAppSettings != null && isToolkitExtensionEnabled(shellAppSettings, 'coding'),
+    enabled: shellAppSettings != null && isToolkitComponentEnabled(shellAppSettings, 'coding'),
     projects,
     collapsedProjectIds,
     activeView: workspaceState.activeView,
@@ -125,15 +125,15 @@ export function useAppShellEffects({
     subscribeDesktopTerminal,
     enabled:
       shellAppSettings != null &&
-      isToolkitExtensionEnabled(shellAppSettings, 'terminal') &&
-      isToolkitExtensionEnabled(shellAppSettings, 'coding'),
+      isToolkitComponentEnabled(shellAppSettings, 'terminal') &&
+      isToolkitComponentEnabled(shellAppSettings, 'coding'),
     composerProjectId,
     loadProjectGitState,
     setProjectGitState,
   })
 
   const threadEndContribution = useCodingDesktopEventContribution({
-    enabled: shellAppSettings != null && isToolkitExtensionEnabled(shellAppSettings, 'coding'),
+    enabled: shellAppSettings != null && isToolkitComponentEnabled(shellAppSettings, 'coding'),
     composerProjectId,
     loadProjectThreads,
     loadProjectGitState,

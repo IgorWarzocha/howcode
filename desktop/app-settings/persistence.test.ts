@@ -1,15 +1,17 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import * as Effect from 'effect/Effect'
+import * as SqlClient from 'effect/sql/SqlClient'
 import { expect, it, vi } from 'vitest'
-import { getSettingsToolkitExtensions } from '../../shared/pi-thread-action-payloads.ts'
-import { isToolkitExtensionEnabled, toolkitExtensions } from '../../shared/toolkit-extensions.ts'
+import { getSettingsToolkitComponents } from '../../shared/desktop-action-payloads.ts'
+import { isToolkitComponentEnabled, toolkitComponents } from '../../shared/toolkit-components.ts'
 
 async function openSettings() {
   vi.resetModules()
   const [
     { loadAppSettings },
-    { setGitDiffBaselineDefault, setEnabledToolkitExtensions },
+    { setGitDiffBaselineDefault, setEnabledToolkitComponents },
     { disposeThreadStateDatabase },
   ] = await Promise.all([
     import('./readers.ts'),
@@ -19,7 +21,7 @@ async function openSettings() {
   return {
     loadAppSettings,
     setGitDiffBaselineDefault,
-    setEnabledToolkitExtensions,
+    setEnabledToolkitComponents,
     dispose: disposeThreadStateDatabase,
   }
 }
@@ -51,23 +53,36 @@ it('persists explicit HEAD across reopening and restores the main-branch default
   }
 })
 
-it('preserves an explicit empty toolkit selection across reopening and rejects unknown IDs at ingress', async () => {
+it('preserves legacy component choices and explicit empty selections across reopening', async () => {
   const directory = await mkdtemp(path.join(tmpdir(), 'howcode-toolkit-settings-'))
   vi.stubEnv('HOWCODE_USER_DATA_PATH', directory)
   let settings: Awaited<ReturnType<typeof openSettings>> | undefined
   try {
     settings = await openSettings()
     const defaults = settings.loadAppSettings()
-    expect(defaults.enabledToolkitExtensions).toBeUndefined()
-    expect(toolkitExtensions.every(({ id }) => isToolkitExtensionEnabled(defaults, id))).toBe(true)
-    expect(() => getSettingsToolkitExtensions({ value: ['unknown'] })).toThrow()
-    expect(settings.loadAppSettings().enabledToolkitExtensions).toBeUndefined()
-    settings.setEnabledToolkitExtensions(getSettingsToolkitExtensions({ value: [] }))
+    expect(defaults.enabledToolkitComponents).toBeUndefined()
+    expect(toolkitComponents.every(({ id }) => isToolkitComponentEnabled(defaults, id))).toBe(true)
+    expect(() => getSettingsToolkitComponents({ value: ['unknown'] })).toThrow()
+    expect(settings.loadAppSettings().enabledToolkitComponents).toBeUndefined()
+    const { databaseOperation } = await import('../thread-state-db/db.ts')
+    databaseOperation(() =>
+      Effect.gen(function* () {
+        const sql = yield* SqlClient.SqlClient
+        yield* sql.unsafe('INSERT INTO app_preferences (key, value_json) VALUES (?, ?)', [
+          'enabledToolkitExtensions',
+          JSON.stringify(['terminal']),
+        ])
+      }),
+    )()
+    await settings.dispose()
+    settings = await openSettings()
+    expect(settings.loadAppSettings().enabledToolkitComponents).toEqual(['terminal'])
+    settings.setEnabledToolkitComponents(getSettingsToolkitComponents({ value: [] }))
     await settings.dispose()
     settings = await openSettings()
     const disabled = settings.loadAppSettings()
-    expect(disabled.enabledToolkitExtensions).toEqual([])
-    expect(toolkitExtensions.some(({ id }) => isToolkitExtensionEnabled(disabled, id))).toBe(false)
+    expect(disabled.enabledToolkitComponents).toEqual([])
+    expect(toolkitComponents.some(({ id }) => isToolkitComponentEnabled(disabled, id))).toBe(false)
   } finally {
     await settings?.dispose()
     vi.unstubAllEnvs()

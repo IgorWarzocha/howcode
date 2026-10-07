@@ -2,7 +2,7 @@ import type { ChildProcess } from 'node:child_process'
 import * as Context from 'effect/Context'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
-import type { TerminalRpcServiceClient } from '../../../plugins/terminal/host/index'
+import type { TerminalRpcServiceClient } from '../../../components/terminal/host/index'
 import { makeDesktopServiceCore } from './core'
 import { makeLiveProcessAdapter } from './live-process'
 import {

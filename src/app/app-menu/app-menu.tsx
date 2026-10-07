@@ -1,4 +1,4 @@
-import { skillsPlugin } from '@howcode/plugins/skills/ui/extension'
+import { skillsComponent } from '@howcode/components/skills/ui/component'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { Archive, Info, Settings } from 'lucide-react'
 import type { ReactNode, RefObject } from 'react'
@@ -39,8 +39,8 @@ export function AppMenu({
     ...(skillsEnabled
       ? [
           {
-            icon: <skillsPlugin.utility.icon size={15} />,
-            title: skillsPlugin.utility.label,
+            icon: <skillsComponent.utility.icon size={15} />,
+            title: skillsComponent.utility.label,
             onClick: onOpenSkillsView,
           },
         ]

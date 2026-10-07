@@ -1,6 +1,6 @@
 import { type KeyboardEvent, useEffect, useMemo, useState } from 'react'
+import { useToolkitComponentEnabled } from '../component-system/component-context'
 import type { ComposerAttachment, ComposerFileSearchEntry } from '../desktop/types'
-import { useToolkitExtensionEnabled } from '../extensions/toolkit-context'
 import { searchComposerAttachmentEntriesQuery } from '../query/desktop-query'
 
 const fileMentionListboxId = 'composer-file-mention-listbox'
@@ -42,7 +42,7 @@ export function useComposerFileMentions({
   setDraft,
   attachAttachments,
 }: UseComposerFileMentionsOptions) {
-  const enabled = useToolkitExtensionEnabled('coding')
+  const enabled = useToolkitComponentEnabled('coding')
   const [files, setFiles] = useState<ComposerFileSearchEntry[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(0)

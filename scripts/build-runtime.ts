@@ -39,7 +39,7 @@ const buildTargets = [
 
 const resourceTargets = [
   { source: 'desktop/resources/themes', name: 'themes' },
-  { source: 'plugins/skills/resources/skills', name: 'skills' },
+  { source: 'components/skills/resources/skills', name: 'skills' },
 ] as const
 
 async function prepareBuildDirectories() {

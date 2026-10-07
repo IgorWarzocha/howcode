@@ -1,7 +1,7 @@
-import { useProjectRepoOriginRefresh } from '@howcode/plugins/coding/ui'
-import { useSkillsProjectScopeSync } from '@howcode/plugins/skills/ui'
-import { useRunningTerminalSessions } from '@howcode/plugins/terminal/ui'
-import { isToolkitExtensionEnabled } from '@howcode/shared/toolkit-extensions'
+import { useProjectRepoOriginRefresh } from '@howcode/components/coding/ui'
+import { useSkillsProjectScopeSync } from '@howcode/components/skills/ui'
+import { useRunningTerminalSessions } from '@howcode/components/terminal/ui'
+import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
 import { useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useDesktopBridge } from '../hooks/useDesktopBridge'
@@ -54,7 +54,7 @@ export function useAppShellController() {
   )
   const terminals = useRunningTerminalSessions(
     desktopShell.shellState !== null &&
-      isToolkitExtensionEnabled(desktopShell.shellState?.appSettings, 'terminal'),
+      isToolkitComponentEnabled(desktopShell.shellState?.appSettings, 'terminal'),
   )
   const viewModel = useMemo(
     () =>
@@ -121,7 +121,7 @@ export function useAppShellController() {
   useProjectRepoOriginRefresh({
     enabled:
       desktopShell.shellState !== null &&
-      isToolkitExtensionEnabled(desktopShell.shellState.appSettings, 'coding'),
+      isToolkitComponentEnabled(desktopShell.shellState.appSettings, 'coding'),
     projects,
     selectedProjectId: bundle.workspace.state.selectedProjectId,
     runDesktopAction: actions.runDesktopAction,

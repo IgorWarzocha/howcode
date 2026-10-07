@@ -1,9 +1,9 @@
-import { skillsPlugin } from '@howcode/plugins/skills/ui/extension'
+import { skillsComponent } from '@howcode/components/skills/ui/component'
 import type { View } from '../types'
 
 export function getProjectSelectionAction(view: View) {
-  return skillsPlugin.views.some((route) => route === view)
-    ? skillsPlugin.projectSelectionAction
+  return skillsComponent.views.some((route) => route === view)
+    ? skillsComponent.projectSelectionAction
     : 'select-project'
 }
 

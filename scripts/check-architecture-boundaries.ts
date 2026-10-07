@@ -6,7 +6,7 @@ const sourceRoots = [
   'src/server',
   'src/desktop-host',
   'desktop',
-  'plugins',
+  'components',
   'shared',
   'node-runtime',
   'scripts',
@@ -17,9 +17,10 @@ const sourceRoots = [
 const sourceExtensions = ['.ts', '.tsx', '.js', '.cjs', '.mjs'] as const
 const testFilePattern = /\.(?:spec|test)\.[cm]?[jt]sx?$/u
 const ignoredDirectoryPattern = /(?:^|\/)(?:build|dist|node_modules)(?:\/|$)/u
-const pluginPathPattern = /^plugins\/([^/]+)\/(ui|service|host)\/(.+)$/u
-const pluginPublicEntries = new Set([
+const componentPathPattern = /^components\/([^/]+)\/(ui|service|host)\/(.+)$/u
+const componentPublicEntries = new Set([
   'index.ts',
+  'component.ts',
   'extension.ts',
   'views.ts',
   'schema.ts',
@@ -142,10 +143,10 @@ function getImportSpecifiers(filePath: string) {
 
 function getLayer(filePath: string): Layer {
   const repoPath = toRepoPath(filePath)
-  const pluginRuntime = pluginPathPattern.exec(repoPath)?.[2]
-  if (pluginRuntime === 'ui') return 'renderer'
-  if (pluginRuntime === 'service') return 'service'
-  if (pluginRuntime === 'host') return 'host'
+  const componentRuntime = componentPathPattern.exec(repoPath)?.[2]
+  if (componentRuntime === 'ui') return 'renderer'
+  if (componentRuntime === 'service') return 'service'
+  if (componentRuntime === 'host') return 'host'
   if (repoPath.startsWith('src/app/')) return 'renderer'
   if (repoPath.startsWith('src/server/')) return 'server'
   if (repoPath.startsWith('src/desktop-host/')) return 'host'
@@ -187,7 +188,7 @@ function isForbiddenBoundary(from: Layer, to: Layer) {
 
 function isAllowedPiRuntimeFile(filePath: string) {
   const repoPath = toRepoPath(filePath)
-  if (pluginPathPattern.exec(repoPath)?.[2] === 'service') return true
+  if (componentPathPattern.exec(repoPath)?.[2] === 'service') return true
   return allowedPiRuntimeImportPrefixes.some(
     (prefix) => repoPath === prefix || repoPath.startsWith(prefix),
   )
@@ -200,10 +201,10 @@ function getSpecialBoundaryViolation(
 ) {
   const importerLayer = getLayer(importer)
   const importerPath = toRepoPath(importer)
-  const plugin = dependency ? pluginPathPattern.exec(toRepoPath(dependency)) : null
-  const owner = pluginPathPattern.exec(importerPath)
-  if (plugin && owner?.[1] !== plugin[1] && !pluginPublicEntries.has(plugin[3] ?? '')) {
-    return `${importerPath} imports private plugin implementation ${toRepoPath(dependency ?? '')}`
+  const component = dependency ? componentPathPattern.exec(toRepoPath(dependency)) : null
+  const owner = componentPathPattern.exec(importerPath)
+  if (component && owner?.[1] !== component[1] && !componentPublicEntries.has(component[3] ?? '')) {
+    return `${importerPath} imports private component implementation ${toRepoPath(dependency ?? '')}`
   }
   const importsSqlite =
     specifier === 'node:sqlite' ||

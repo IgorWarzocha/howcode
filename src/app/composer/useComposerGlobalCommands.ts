@@ -1,4 +1,4 @@
-import { useDictationCommand } from '@howcode/plugins/dictation/ui'
+import { useDictationCommand } from '@howcode/components/dictation/ui'
 import { type RefObject, useEffect, useEffectEvent } from 'react'
 import {
   howcodeDismissTransientUiEvent,

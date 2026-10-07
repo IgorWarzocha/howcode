@@ -1,4 +1,4 @@
-import { useDictationSettingsDraft } from '@howcode/plugins/dictation/ui'
+import { useDictationSettingsDraft } from '@howcode/components/dictation/ui'
 import { useCallback, useRef } from 'react'
 import { ViewHeader } from '../common/view-header'
 import { ViewShell } from '../common/view-shell'

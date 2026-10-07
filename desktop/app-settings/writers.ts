@@ -16,7 +16,7 @@ import {
   DEFAULT_DICTATION_MAX_DURATION_SECONDS,
   normalizeDictationMaxDurationSeconds,
 } from '../../shared/dictation-settings.ts'
-import type { ToolkitExtensionId } from '../../shared/toolkit-extensions.ts'
+import type { ToolkitComponentId } from '../../shared/toolkit-components.ts'
 import { databaseOperation } from '../thread-state-db/db.ts'
 import {
   chatModelKey,
@@ -28,7 +28,7 @@ import {
   customPiDirectoryKey,
   dictationMaxDurationSecondsKey,
   dictationModelIdKey,
-  enabledToolkitExtensionsKey,
+  enabledToolkitComponentsKey,
   favoriteFoldersKey,
   gitCommitMessageModelKey,
   gitCommitMessageThinkingLevelKey,
@@ -334,6 +334,6 @@ export function setComposerSendMode(mode: ComposerSendMode) {
   writeAppPreferenceSync(composerSendModeKey, JSON.stringify(mode))
 }
 
-export function setEnabledToolkitExtensions(value: readonly ToolkitExtensionId[]) {
-  writeAppPreferenceSync(enabledToolkitExtensionsKey, JSON.stringify(value))
+export function setEnabledToolkitComponents(value: readonly ToolkitComponentId[]) {
+  writeAppPreferenceSync(enabledToolkitComponentsKey, JSON.stringify(value))
 }

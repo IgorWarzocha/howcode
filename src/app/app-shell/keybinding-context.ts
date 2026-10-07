@@ -1,6 +1,9 @@
 import type { KeybindingCommandId } from '@howcode/shared/keybindings'
-import { isToolkitExtensionEnabled } from '@howcode/shared/toolkit-extensions'
-import { getPluginKeybindingPolicy, pluginRendererCommandIds } from '../extensions/toolkit-plugins'
+import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
+import {
+  componentRendererCommandIds,
+  getComponentKeybindingPolicy,
+} from '../component-system/toolkit-components'
 import type { KeybindingRuntime } from './keybinding-runtime'
 
 export const rendererCommandIds = new Set<KeybindingCommandId>([
@@ -8,7 +11,7 @@ export const rendererCommandIds = new Set<KeybindingCommandId>([
   'thread.find',
   'sidebar.find',
   'composer.focus',
-  ...pluginRendererCommandIds,
+  ...componentRendererCommandIds,
 ])
 
 export function eventTargetIsEditable(target: EventTarget | null) {
@@ -30,7 +33,7 @@ export function appShortcutCanRunFromTextInput(
   event: KeyboardEvent,
   runtime: KeybindingRuntime,
 ) {
-  const policy = getPluginKeybindingPolicy(commandId)?.policy
+  const policy = getComponentKeybindingPolicy(commandId)?.policy
   const { activeView, terminalVisible } = runtime.appController.workspace.state
   return (
     policy?.allowFromTextInput?.({
@@ -55,8 +58,8 @@ function modalOrSettingsLayerIsOpen() {
 
 function toolkitShortcutIsDisabled(commandId: KeybindingCommandId, runtime: KeybindingRuntime) {
   const settings = runtime.appController.desktop.shellState?.appSettings
-  const contribution = getPluginKeybindingPolicy(commandId)
-  return contribution ? !isToolkitExtensionEnabled(settings, contribution.pluginId) : false
+  const contribution = getComponentKeybindingPolicy(commandId)
+  return contribution ? !isToolkitComponentEnabled(settings, contribution.componentId) : false
 }
 
 export function appLevelShortcutsAreBlocked(
@@ -68,7 +71,7 @@ export function appLevelShortcutsAreBlocked(
   if (commandId === 'sidebar.toggle' || commandId === 'app.commandPalette') {
     return false
   }
-  const layer = getPluginKeybindingPolicy(commandId)?.policy.layer
+  const layer = getComponentKeybindingPolicy(commandId)?.policy.layer
   if (commandId === 'composer.focus' || layer === 'modal') {
     return (
       state.activeView === 'settings' ||

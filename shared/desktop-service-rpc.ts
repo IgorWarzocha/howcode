@@ -1,13 +1,13 @@
 import type {
+  AppService,
   ArtifactsService,
   CodingService,
   DictationService,
   PiSkillsService,
-  PiThreadsService,
 } from './desktop-service-contracts'
 
 export type DesktopServiceRemoteRuntime = {
-  piThreads: Omit<PiThreadsService, 'disposeDesktopRuntime' | 'subscribeDesktopEvents'>
+  app: Omit<AppService, 'disposeDesktopRuntime' | 'subscribeDesktopEvents'>
   skills: PiSkillsService
   coding: CodingService
   artifacts: ArtifactsService
@@ -19,7 +19,7 @@ export type DesktopServiceRemoteModuleName = keyof DesktopServiceRemoteRuntime
 type MethodAllowlist<T> = { readonly [K in keyof T]-?: true }
 
 export const desktopServiceRemoteMethods = {
-  piThreads: {
+  app: {
     handleDesktopAction: true,
     loadArchivedThreadList: true,
     loadInboxThreadList: true,

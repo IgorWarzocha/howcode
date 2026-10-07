@@ -1,15 +1,15 @@
-import { useCodingWorkspaceCommands } from '@howcode/plugins/coding/ui'
-import { useTerminalCommands } from '@howcode/plugins/terminal/ui'
+import { useCodingWorkspaceCommands } from '@howcode/components/coding/ui'
+import { useTerminalCommands } from '@howcode/components/terminal/ui'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { isLocalConversationId } from '@howcode/shared/conversation-ids'
 import {
-  isToolkitExtensionEnabled,
-  type ToolkitExtensionSettings,
-} from '@howcode/shared/toolkit-extensions'
+  isToolkitComponentEnabled,
+  type ToolkitComponentSettings,
+} from '@howcode/shared/toolkit-components'
 import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch, SetStateAction } from 'react'
+import { isWorkspaceViewEnabled } from '../component-system/toolkit-components'
 import type { DesktopActionResult, InboxThread } from '../desktop/types'
-import { isWorkspaceViewEnabled } from '../extensions/toolkit-plugins'
 import { forgetLocalDraftThread } from '../hooks/useDesktopProjectThreads'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace-model'
 import type { View } from '../types'
@@ -29,7 +29,7 @@ type HandleAction = (
 ) => Promise<DesktopActionResult | null>
 
 type UseAppShellCommandsInput = {
-  toolkitSettings: ToolkitExtensionSettings | undefined
+  toolkitSettings: ToolkitComponentSettings | undefined
   collapsedProjectIds: Record<string, boolean>
   composerProjectId: string
   dispatch: Dispatch<WorkspaceAction>
@@ -77,7 +77,7 @@ export function useAppShellCommands({
 
   const handleShowLanding = () => {
     dispatch(
-      isToolkitExtensionEnabled(toolkitSettings, 'coding')
+      isToolkitComponentEnabled(toolkitSettings, 'coding')
         ? { type: 'show-landing' }
         : { type: 'show-view', view: 'chat' },
     )

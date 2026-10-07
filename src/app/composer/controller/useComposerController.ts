@@ -1,4 +1,4 @@
-import { useComposerDictation } from '@howcode/plugins/dictation/ui'
+import { useComposerDictation } from '@howcode/components/dictation/ui'
 import { useEffect, useRef, useState } from 'react'
 import type {
   ComposerFilePickerState,

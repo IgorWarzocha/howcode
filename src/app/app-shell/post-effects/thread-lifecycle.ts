@@ -1,4 +1,4 @@
-import { removeShellProjectFamily } from '@howcode/plugins/coding/ui'
+import { removeShellProjectFamily } from '@howcode/components/coding/ui'
 import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch } from 'react'
 import type { ArchivedThread, DesktopActionResult } from '../../desktop/types'

@@ -17,7 +17,7 @@ const howcodeAliasEntries = [
   ['@howcode/common', 'src/app/common'],
   ['@howcode/composer', 'src/app/composer'],
   ['@howcode/desktop', 'src/app/desktop'],
-  ['@howcode/extensions', 'src/app/extensions'],
+  ['@howcode/component-system', 'src/app/component-system'],
   ['@howcode/inbox', 'src/app/inbox'],
   ['@howcode/query', 'src/app/query'],
   ['@howcode/roadmaps', 'src/app/roadmaps'],
@@ -31,7 +31,10 @@ const howcodeAliasEntries = [
 ] as const
 
 const howcodeAliases = [
-  { find: /^@howcode\/plugins\/(.+)$/u, replacement: path.resolve(projectRoot, 'plugins', '$1') },
+  {
+    find: /^@howcode\/components\/(.+)$/u,
+    replacement: path.resolve(projectRoot, 'components', '$1'),
+  },
   ...howcodeAliasEntries.map(([alias, target]) => ({
     find: new RegExp(`^${alias.replace('/', '\\/')}/(.+)$`, 'u'),
     replacement: path.resolve(projectRoot, target, '$1'),

@@ -2,7 +2,7 @@ import {
   setShellSidebarVisibleProjectIds,
   updateShellProject,
   upsertShellProject,
-} from '@howcode/plugins/coding/ui'
+} from '@howcode/components/coding/ui'
 import type { ShellState } from '../../desktop/types'
 import { desktopQueryKeys } from '../../query/desktop-query'
 import type { PostEffectHandler } from './context'

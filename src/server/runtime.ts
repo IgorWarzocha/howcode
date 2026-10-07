@@ -1,11 +1,11 @@
 import path from 'node:path'
 import type {
+  AppService,
   ArtifactsService,
   CodingService,
   DesktopServiceRuntime,
   DictationService,
   PiSkillsService,
-  PiThreadsService,
 } from '../../shared/desktop-service-contracts'
 import {
   type DesktopServiceRemoteModuleName,
@@ -50,7 +50,7 @@ export function createServerRuntime(
   })
   return {
     dispose: () => service.dispose(),
-    piThreads: proxyModule<PiThreadsService>(service, 'piThreads'),
+    app: proxyModule<AppService>(service, 'app'),
     skills: proxyModule<PiSkillsService>(service, 'skills'),
     coding: proxyModule<CodingService>(service, 'coding'),
     artifacts: proxyModule<ArtifactsService>(service, 'artifacts'),

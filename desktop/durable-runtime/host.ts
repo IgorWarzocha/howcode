@@ -229,7 +229,7 @@ export async function subscribeRuntimeConversationChanges(listener: (id: string)
   }
 }
 
-export async function deleteRuntimeConversation(conversationId: string) {
+export async function abortRuntimeConversation(conversationId: string) {
   const conversation = await resolveConversation(conversationId)
   // Durable retains its spend ledger. App metadata owns deletion visibility.
   await conversation.abort(runtimeContext, { background: true })

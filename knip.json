@@ -2,7 +2,7 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
     "src/main.tsx",
-    "desktop/pi-threads.ts",
+    "desktop/app-service.ts",
     "desktop/pi-skills.ts",
     "desktop/terminal/runtime.ts",
     "scripts/*.ts",

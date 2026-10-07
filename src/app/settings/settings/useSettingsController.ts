@@ -1,4 +1,4 @@
-import { useSettingsDictationController } from '@howcode/plugins/dictation/ui'
+import { useSettingsDictationController } from '@howcode/components/dictation/ui'
 import type { AppSettings, DesktopActionInvoker } from '../../desktop/types'
 import { buildModelSelectionPayload } from './helpers'
 import { useSettingsMaintenanceController } from './useSettingsMaintenanceController'

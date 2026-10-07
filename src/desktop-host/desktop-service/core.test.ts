@@ -174,7 +174,7 @@ describe('Desktop service core', () => {
 
         first.handlers.onExit(first, 0, null)
         const request = yield* fixture.core
-          .invoke('piThreads', 'loadComposerState', [])
+          .invoke('app', 'loadComposerState', [])
           .pipe(Effect.forkScoped)
         const [sentTo, message] = yield* Queue.take(fixture.sent)
         expect(sentTo).toBe(second)
@@ -195,7 +195,7 @@ describe('Desktop service core', () => {
         const fixture = yield* makeFixture()
         const firstProcess = yield* fixture.core.ensureStarted
         const pending = yield* fixture.core
-          .invoke('piThreads', 'loadComposerState', [])
+          .invoke('app', 'loadComposerState', [])
           .pipe(Effect.exit, Effect.forkScoped)
         yield* Queue.take(fixture.sent)
 
@@ -213,7 +213,7 @@ describe('Desktop service core', () => {
         const fixture = yield* makeFixture({ requestTimeoutMs: 1_000 })
         const process = yield* fixture.core.ensureStarted
         const first = yield* fixture.core
-          .invoke('piThreads', 'loadComposerState', [])
+          .invoke('app', 'loadComposerState', [])
           .pipe(Effect.exit, Effect.forkScoped)
         const [, firstMessage] = yield* Queue.take(fixture.sent)
 
@@ -227,7 +227,7 @@ describe('Desktop service core', () => {
         })
 
         const second = yield* fixture.core
-          .invoke('piThreads', 'loadComposerState', [])
+          .invoke('app', 'loadComposerState', [])
           .pipe(Effect.forkScoped)
         const [, secondMessage] = yield* Queue.take(fixture.sent)
         process.handlers.onMessage(process, {

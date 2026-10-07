@@ -1,5 +1,5 @@
-import { buildDictationSettingsDescriptors } from '@howcode/plugins/dictation/ui'
-import { isToolkitExtensionEnabled } from '@howcode/shared/toolkit-extensions'
+import { buildDictationSettingsDescriptors } from '@howcode/components/dictation/ui'
+import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
 import type { Dispatch, SetStateAction } from 'react'
 import type {
   AppSettings,
@@ -11,11 +11,11 @@ import type {
   PiThemeState,
 } from '../../desktop/types'
 import { buildCommonSettingsDescriptors } from './settingsDescriptorCommon'
+import { buildComponentSettingsDescriptors } from './settingsDescriptorComponents'
 import { buildKeybindingSettingsDescriptors } from './settingsDescriptorKeybindings'
 import { buildModelSettingsDescriptors } from './settingsDescriptorModels'
 import { buildPiRuntimeSettingsDescriptors } from './settingsDescriptorPiRuntime'
 import { buildProjectsSettingsDescriptors } from './settingsDescriptorProjects'
-import { buildToolkitSettingsDescriptors } from './settingsDescriptorToolkit'
 import type { SetDraftPiSetting, SettingsController } from './settingsDescriptorTypes'
 import type { SettingDescriptor } from './settingsTypes'
 
@@ -51,7 +51,7 @@ export function buildSettingsDescriptors({
   onAction: DesktopActionInvoker
 }): SettingDescriptor[] {
   return [
-    ...buildToolkitSettingsDescriptors(appSettings, onAction),
+    ...buildComponentSettingsDescriptors(appSettings, onAction),
     ...buildCommonSettingsDescriptors({ appSettings, controller }),
     ...buildProjectsSettingsDescriptors({ appSettings, controller }),
     ...buildModelSettingsDescriptors({
@@ -71,7 +71,7 @@ export function buildSettingsDescriptors({
       openSelectId,
       setOpenSelectId,
     }),
-    ...(isToolkitExtensionEnabled(appSettings, 'dictation')
+    ...(isToolkitComponentEnabled(appSettings, 'dictation')
       ? buildDictationSettingsDescriptors({
           appSettings,
           controller,

@@ -1,4 +1,4 @@
-import { isSelectedConversationView } from '../extensions/toolkit-plugins'
+import { isSelectedConversationView } from '../component-system/toolkit-components'
 import type { WorkspaceState } from '../state/workspace-model'
 
 export function getLayoutThreadSelection(state: WorkspaceState) {

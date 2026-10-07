@@ -1,3 +1,3 @@
 - Workspace shell owns docks, shared workspace footer primitives, and generic host presentation.
-- Capability implementations belong in their modules, under `plugins/<id>/ui`. Core and peer features consume public entrypoints.
+- Capability implementations belong in their modules, under `components/<id>/ui`. Core and peer features consume public entrypoints.
 - Composer/footer responsiveness belongs in `WorkspaceComposerDock`; do not patch fold/sidebar spacing separately in code/chat views.

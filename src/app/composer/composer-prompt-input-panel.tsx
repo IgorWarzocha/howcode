@@ -1,10 +1,10 @@
-import { ComposerDictationControls } from '@howcode/plugins/dictation/ui'
+import { ComposerDictationControls } from '@howcode/components/dictation/ui'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import type { ComposerSendMode, KeybindingOverrides } from '@howcode/shared/keybindings'
 import { AlertTriangle } from 'lucide-react'
 import type { ClipboardEvent, ReactNode, RefObject } from 'react'
+import { useToolkitComponentEnabled } from '../component-system/component-context'
 import type { DesktopActionInvoker } from '../desktop/types'
-import { useToolkitExtensionEnabled } from '../extensions/toolkit-context'
 import { appTypeSmallClass } from '../ui/classes'
 import { cn } from '../utils/cn'
 import { ComposerFileMentionPanel } from './composer-file-mention-panel'
@@ -119,7 +119,7 @@ export function ComposerPromptInputPanel({
 }: ComposerPromptInputPanelProps) {
   const showBranchGuardPopup = isBranchGuardError(errorMessage)
   const statusMessage = getComposerStatusMessage({ draft, errorMessage, showBranchGuardPopup })
-  const dictationEnabled = useToolkitExtensionEnabled('dictation')
+  const dictationEnabled = useToolkitComponentEnabled('dictation')
   const dictationButtonVisible = dictationEnabled && showDictationButton && !inputLocked
 
   return (

@@ -1,4 +1,4 @@
-import type { WorkspaceViewContributions } from '@howcode/extensions/workspace-views'
+import type { WorkspaceViewContributions } from '@howcode/component-system/workspace-views'
 import type { View } from '../types'
 
 type AppShellWorkspaceProps = {

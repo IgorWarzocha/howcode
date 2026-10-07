@@ -5,7 +5,7 @@ import {
   getCodingStateForPreviewedThread,
   getCodingStateForShownView,
   getCodingUtilityReturnState,
-} from '@howcode/plugins/coding/ui'
+} from '@howcode/components/coding/ui'
 import {
   getTerminalStateForNextView,
   getTerminalStateForOpenedThread,
@@ -14,8 +14,8 @@ import {
   migrateTerminalVisibility,
   setTerminalVisibleState,
   shouldRestoreTerminalOnGitOpsClose,
-} from '@howcode/plugins/terminal/ui'
-import { isWorkspaceUtilityView } from '../extensions/toolkit-plugins'
+} from '@howcode/components/terminal/ui'
+import { isWorkspaceUtilityView } from '../component-system/toolkit-components'
 import type { View } from '../types'
 import type {
   UtilityView,

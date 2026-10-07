@@ -1,4 +1,4 @@
-import { updateShellProject } from '@howcode/plugins/coding/ui'
+import { updateShellProject } from '@howcode/components/coding/ui'
 import type { ThreadData } from '../../desktop/types'
 import { desktopQueryKeys } from '../../query/desktop-query'
 import { hasActionError } from '../controller-action-utils'

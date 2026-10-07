@@ -25,7 +25,7 @@
       "@howcode/composer/*": ["./src/app/composer/*"],
       "@howcode/desktop": ["./src/app/desktop/index.ts"],
       "@howcode/desktop/*": ["./src/app/desktop/*"],
-      "@howcode/extensions/*": ["./src/app/extensions/*"],
+      "@howcode/component-system/*": ["./src/app/component-system/*"],
       "@howcode/inbox": ["./src/app/inbox/index.ts"],
       "@howcode/inbox/*": ["./src/app/inbox/*"],
       "@howcode/query/*": ["./src/app/query/*"],
@@ -44,7 +44,7 @@
       "@howcode/ui/*": ["./src/app/ui/*"],
       "@howcode/workspace-shell": ["./src/app/workspace-shell/index.ts"],
       "@howcode/workspace-shell/*": ["./src/app/workspace-shell/*"],
-      "@howcode/plugins/*": ["./plugins/*"]
+      "@howcode/components/*": ["./components/*"]
     },
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -68,8 +68,8 @@
     "src",
     "vite.config.ts",
     "vitest.config.ts",
-    "plugins/*/ui/**/*.ts",
-    "plugins/*/ui/**/*.tsx"
+    "components/*/ui/**/*.ts",
+    "components/*/ui/**/*.tsx"
   ],
   "exclude": ["src/server/**/*"]
 }

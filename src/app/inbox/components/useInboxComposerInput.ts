@@ -1,4 +1,4 @@
-import { useComposerDictation } from '@howcode/plugins/dictation/ui'
+import { useComposerDictation } from '@howcode/components/dictation/ui'
 import { useComposerAttachmentPicker } from '../../composer/useComposerAttachmentPicker'
 import { useComposerClipboardHandlers } from '../../composer/useComposerClipboardHandlers'
 import type { InboxComposerProps } from './inbox-composer-types'

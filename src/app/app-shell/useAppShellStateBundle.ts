@@ -1,5 +1,5 @@
-import { useAppShellProjectState } from '@howcode/plugins/coding/ui'
-import { useSkillsProjectScopeState } from '@howcode/plugins/skills/ui'
+import { useAppShellProjectState } from '@howcode/components/coding/ui'
+import { useSkillsProjectScopeState } from '@howcode/components/skills/ui'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { useReducer, useState } from 'react'
 import { createInitialWorkspaceState, workspaceReducer } from '../state/workspace'

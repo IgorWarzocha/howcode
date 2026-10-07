@@ -1,7 +1,7 @@
 - This backend is bundled separately and loaded under stock Node; do not introduce Electron or DOM dependencies.
-- `pi-threads.ts` owns core thread, composer and settings APIs. Domain service APIs belong to `plugins/*/service` and are composed in `service-host-runtime.ts`.
+- `app-service.ts` owns core thread, composer and settings APIs. Domain service APIs belong to `components/*/service` and are composed in `service-host-runtime.ts`.
 - Service-host signal handlers delegate to the shared shutdown coordinator; drain Durable and terminal RPC before terminal-runtime and app-database disposal.
 - API or event changes must update their `shared/*` contracts, action routing, host bridge, and transport consumers together.
 - Publish runtime changes through the existing event publishers; persistence belongs in the relevant state DB, not view-model caches.
 - Decode npm API payloads with local Schema contracts before catalog mapping. Keep package lookup caches bounded with Effect `Cache`; transient lookup failures are not cache entries.
-- Validate chat/thread query rows before mapping. Plugin database startup tasks are scoped background work and must never block schema initialization.
+- Validate chat/thread query rows before mapping. Component database startup tasks are scoped background work and must never block schema initialization.

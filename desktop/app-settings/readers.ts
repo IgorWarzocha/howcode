@@ -6,7 +6,7 @@ import {
   DEFAULT_DICTATION_MAX_DURATION_SECONDS,
   normalizeDictationMaxDurationSeconds,
 } from '../../shared/dictation-settings.ts'
-import { EnabledToolkitExtensionsSchema } from '../../shared/toolkit-extensions.ts'
+import { EnabledToolkitComponentsSchema } from '../../shared/toolkit-components.ts'
 import { databaseOperation } from '../thread-state-db/db.ts'
 import {
   chatModelKey,
@@ -18,7 +18,7 @@ import {
   customPiDirectoryKey,
   dictationMaxDurationSecondsKey,
   dictationModelIdKey,
-  enabledToolkitExtensionsKey,
+  enabledToolkitComponentsKey,
   favoriteFoldersKey,
   gitCommitMessageModelKey,
   gitCommitMessageThinkingLevelKey,
@@ -110,11 +110,11 @@ const loadAppSettingsOperation = Effect.fn('AppSettings.load')(function* () {
   const value = (key: string) => rows.get(key)?.valueJson
 
   return {
-    ...(value(enabledToolkitExtensionsKey) === undefined
+    ...(value(enabledToolkitComponentsKey) === undefined
       ? {}
       : {
-          enabledToolkitExtensions: Schema.decodeUnknownSync(EnabledToolkitExtensionsSchema)(
-            JSON.parse(value(enabledToolkitExtensionsKey) ?? 'null'),
+          enabledToolkitComponents: Schema.decodeUnknownSync(EnabledToolkitComponentsSchema)(
+            JSON.parse(value(enabledToolkitComponentsKey) ?? 'null'),
           ),
         }),
     chatModel: parseModelSelection(value(chatModelKey)),

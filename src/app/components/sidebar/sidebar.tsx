@@ -1,8 +1,8 @@
 import { Tooltip } from '@howcode/common/tooltip'
-import { codingPlugin } from '@howcode/plugins/coding/ui/extension'
-import { skillsPlugin } from '@howcode/plugins/skills/ui/extension'
+import { codingComponent } from '@howcode/components/coding/ui/component'
+import { skillsComponent } from '@howcode/components/skills/ui/component'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
-import { isToolkitExtensionEnabled } from '@howcode/shared/toolkit-extensions'
+import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
 import { Inbox, MessageSquare, PanelLeftClose, Settings } from 'lucide-react'
 import { useCallback, useRef } from 'react'
 import type {
@@ -20,7 +20,7 @@ type SidebarNavigableView = Exclude<View, 'gitops'>
 
 import { AppMenu } from '@howcode/app-menu'
 import { NavButton } from '@howcode/common/nav-button'
-import { ProjectWorkSection } from '@howcode/plugins/coding/ui'
+import { ProjectWorkSection } from '@howcode/components/coding/ui'
 import { iconButtonClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import { SidebarChatSection } from './chat/sidebar-chat-section'
@@ -101,12 +101,12 @@ function SidebarModeNav({
         active={activeView === 'chat'}
         onClick={() => onShowView('chat')}
       />
-      {isToolkitExtensionEnabled(appSettings, codingPlugin.id) ? (
+      {isToolkitComponentEnabled(appSettings, codingComponent.id) ? (
         <NavButton
-          icon={<codingPlugin.navigation.icon size={16} />}
-          label={codingPlugin.navigation.label}
+          icon={<codingComponent.navigation.icon size={16} />}
+          label={codingComponent.navigation.label}
           active={codeModeActive && activeView !== 'inbox'}
-          onClick={() => onShowView(codingPlugin.navigation.view)}
+          onClick={() => onShowView(codingComponent.navigation.view)}
         />
       ) : null}
     </nav>
@@ -146,7 +146,7 @@ function SidebarContent(props: SidebarProps) {
       />
     )
   }
-  if (!isToolkitExtensionEnabled(props.appSettings, 'coding') && props.activeView !== 'skills')
+  if (!isToolkitComponentEnabled(props.appSettings, 'coding') && props.activeView !== 'skills')
     return null
   if (props.activeView !== 'skills') {
     return (
@@ -369,7 +369,7 @@ export function Sidebar({
             open={settingsOpen}
             panelRef={settingsMenuRef}
             onOpenAbout={onOpenAbout}
-            skillsEnabled={isToolkitExtensionEnabled(appSettings, skillsPlugin.id)}
+            skillsEnabled={isToolkitComponentEnabled(appSettings, skillsComponent.id)}
             onOpenSkillsView={onOpenSkillsView}
             onOpenSettingsPanel={onOpenSettingsPanel}
             onOpenArchivedThreads={onOpenArchivedThreads}

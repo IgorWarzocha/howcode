@@ -1,4 +1,4 @@
-import { applySwitchBranchPostEffect } from '@howcode/plugins/coding/ui'
+import { applySwitchBranchPostEffect } from '@howcode/components/coding/ui'
 import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch, SetStateAction } from 'react'
 import type { DesktopAction } from '../desktop/actions'

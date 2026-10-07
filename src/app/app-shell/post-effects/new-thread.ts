@@ -1,4 +1,4 @@
-import { upsertShellProject } from '@howcode/plugins/coding/ui'
+import { upsertShellProject } from '@howcode/components/coding/ui'
 import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch } from 'react'
 import type { ComposerState, DesktopActionResult } from '../../desktop/types'

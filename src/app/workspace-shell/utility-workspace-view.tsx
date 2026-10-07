@@ -4,7 +4,7 @@ import { defaultPiSettings } from '@howcode/shared/default-pi-settings'
 import type { AppShellController } from '../app-shell/useAppShellController'
 import type { AppSettings, ComposerState } from '../desktop/types'
 import { SettingsView } from '../settings/settings-view'
-import { HostWorkspacePresentation } from './host-workspace-presentation'
+import { WorkspacePresentation } from './workspace-presentation'
 
 type UtilityWorkspaceViewProps = {
   controller: Pick<
@@ -29,7 +29,7 @@ export function UtilityWorkspaceView({
   const { handleAction } = controller.desktop
   const view = controller.workspace.state.activeView
   return (
-    <HostWorkspacePresentation flush={view === 'inbox'}>
+    <WorkspacePresentation flush={view === 'inbox'}>
       {view === 'inbox' ? (
         <InboxWorkspaceContent
           controller={controller}
@@ -48,7 +48,7 @@ export function UtilityWorkspaceView({
       ) : view === 'archived' ? (
         <ArchivedThreadsView threads={controller.thread.archived} onAction={handleAction} />
       ) : null}
-    </HostWorkspacePresentation>
+    </WorkspacePresentation>
   )
 }
 

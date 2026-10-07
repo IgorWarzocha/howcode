@@ -3,7 +3,7 @@ import path from 'node:path'
 import * as Schema from 'effect/Schema'
 import type { PiThemeState } from '../../shared/desktop-contracts.ts'
 import { getBundledThemes } from '../bundled-themes.ts'
-import { mapWithConcurrency } from '../pi-threads/map-with-concurrency.ts'
+import { mapWithConcurrency } from '../runtime/map-with-concurrency.ts'
 import { getAgentDirectory } from './paths.ts'
 
 const ThemeSchema = Schema.Struct({

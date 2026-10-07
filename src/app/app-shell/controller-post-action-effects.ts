@@ -1,4 +1,4 @@
-import { workspacePostEffectHandlers } from '@howcode/plugins/coding/ui'
+import { workspacePostEffectHandlers } from '@howcode/components/coding/ui'
 import { desktopQueryKeys } from '../query/desktop-query'
 import type {
   PostEffectHandler,
@@ -8,7 +8,7 @@ import type {
 import { shellPostEffectHandlers } from './post-effects/shell-handlers'
 import { threadPostEffectHandlers } from './post-effects/thread-handlers'
 
-export { applyDiffPreferencesToThread } from '@howcode/plugins/coding/ui'
+export { applyDiffPreferencesToThread } from '@howcode/components/coding/ui'
 export {
   applyOptimisticPinUpdate,
   applyOptimisticPiSettingsUpdate,

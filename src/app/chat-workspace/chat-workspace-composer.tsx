@@ -1,6 +1,6 @@
+import type { ChatArtifactDrawerState } from '@howcode/components/artifacts/ui'
 import { getComposerRuntimeModel, QueuedPromptsCard } from '@howcode/composer'
 import type { useQueuedPromptCancellation } from '@howcode/composer/useQueuedPromptCancellation'
-import type { ChatArtifactDrawerState } from '@howcode/plugins/artifacts/ui'
 import { Composer } from '@howcode/workspace-shell'
 import { DesktopComposerStatusModelPicker } from '@howcode/workspace-shell/desktop-composer-status'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'

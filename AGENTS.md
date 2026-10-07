@@ -1,10 +1,11 @@
 ## Product architecture
 
 - Design Howcode as chat with an agent first, with a small, malleable core built around Pi Durable. Coding is an optional domain, not the core's identity.
-- Prefer Howcode UI extensions and Durable tool/resource extensions for domain capabilities. Users should be able to enable coding UI and tools, choose other domain capabilities, and add their own UI extensions without changing core.
+- Prefer Howcode components and Durable tool/resource extensions for domain capabilities. Users should be able to enable coding UI and tools, choose other domain capabilities, and add their own components without changing core.
 - Keep agent capability selection independent from UI presentation. Default-enabled tools are still extensions; do not bake fixed chat/code tool bundles into core or use plumbing work to redesign product bundles or artifact storage.
-- Reuse Durable's extension machinery and Effect's infrastructure primitives. Keep domain policy out of core; introduce shared extension contracts only for concrete capabilities, not a speculative framework or parallel runtime.
-- Plugins must own their feature implementation, state, services and cleanup, not just registrations or visibility switches. Core and peer features consume explicit public contracts; removing a plugin from composition must not break unrelated features. Composer skill suggestions belong to core, not the skill-management UI plugin.
+- Reuse Durable's extension machinery and Effect's infrastructure primitives. Keep domain policy out of core; introduce shared component contracts only for concrete capabilities, not a speculative framework or parallel runtime.
+- Components must own their feature implementation, state, services and cleanup, not just registrations or visibility switches. Core and peer features consume explicit public contracts; removing a component from composition must not break unrelated features. Composer skill suggestions belong to core, not the skill-management UI component.
+- When ownership or behavior changes, update names and remove obsolete forwarding layers in the same pass. Keep historical terminology only at explicit compatibility boundaries.
 
 ## Runtime boundaries
 

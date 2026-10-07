@@ -1,5 +1,5 @@
+import { ArtifactDrawerViews, useChatArtifactDrawerState } from '@howcode/components/artifacts/ui'
 import { useQueuedPromptCancellation } from '@howcode/composer/useQueuedPromptCancellation'
-import { ArtifactDrawerViews, useChatArtifactDrawerState } from '@howcode/plugins/artifacts/ui'
 import {
   getLocalDraftChatGroupId,
   getPersistedConversationId,

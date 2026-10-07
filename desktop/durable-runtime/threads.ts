@@ -7,7 +7,7 @@ import type {
 import type { ComposerStateRequest, ThreadData } from '../../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
 import { mapDurableEntriesToThread } from '../../shared/durable-message-mapper.ts'
-import { getRuntimeConversationMetadata } from '../pi-threads/conversation-state.ts'
+import { getRuntimeConversationMetadata } from '../app-service/conversation-state.ts'
 import { emitDesktopEvent } from '../runtime/desktop-events.ts'
 import { getComposerState } from './composer.ts'
 import { readRuntimeEntries, resolveConversation, runtimeContext } from './host.ts'

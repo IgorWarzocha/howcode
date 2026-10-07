@@ -1,7 +1,7 @@
-import type { ToolkitExtensionSettings } from '@howcode/shared/toolkit-extensions'
+import type { ToolkitComponentSettings } from '@howcode/shared/toolkit-components'
 import { useRouter, useRouterState } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef } from 'react'
-import { isWorkspaceViewEnabled } from '../extensions/toolkit-plugins'
+import { isWorkspaceViewEnabled } from '../component-system/toolkit-components'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace-model'
 import type { Project, View } from '../types'
 
@@ -15,7 +15,7 @@ export type AppRouteSnapshot = {
 }
 
 type AppShellUrlSyncInput = {
-  toolkitSettings?: ToolkitExtensionSettings | undefined
+  toolkitSettings?: ToolkitComponentSettings | undefined
   dispatch: React.Dispatch<WorkspaceAction>
   loadProjectThreads: (
     projectId: string,

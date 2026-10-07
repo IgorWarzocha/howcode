@@ -1,9 +1,9 @@
 import { createRegistry, type RegistryReader } from '@earendil-works/pi-durable'
-import { createAgentResources } from '../../plugins/agent-resources/service/index.ts'
-import { artifactTools, CodeArtifactTools } from '../../plugins/artifacts/service/extension.ts'
-import { createChatTools } from '../../plugins/chat-tools/service/index.ts'
-import { CodingTools } from '../../plugins/coding/service/extension.ts'
-import { getComposerSkills } from '../../plugins/skills/service/extension.ts'
+import { createAgentResources } from '../../components/agent-resources/service/index.ts'
+import { artifactTools, CodeArtifactTools } from '../../components/artifacts/service/extension.ts'
+import { createChatTools } from '../../components/chat-tools/service/index.ts'
+import { CodingTools } from '../../components/coding/service/extension.ts'
+import { getComposerSkills } from '../../components/skills/service/extension.ts'
 import type { ComposerStateRequest } from '../../shared/desktop-contracts.ts'
 
 const resources = createAgentResources(getComposerSkills)

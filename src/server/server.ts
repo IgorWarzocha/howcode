@@ -78,7 +78,7 @@ export async function startHeadlessServer(input: HeadlessServerInput) {
     terminalEventClients: new Set(),
   }
 
-  const unsubscribeDesktopEvents = input.runtime.piThreads.subscribeDesktopEvents((event) => {
+  const unsubscribeDesktopEvents = input.runtime.app.subscribeDesktopEvents((event) => {
     sendHeadlessSseEvent(requestContext.desktopEventClients, 'desktopEvent', event)
   })
   const unsubscribeTerminalEvents = input.runtime.terminalManager.subscribeTerminalEvents(

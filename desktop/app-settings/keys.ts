@@ -28,4 +28,5 @@ export const keybindingsKey = 'keybindings'
 export const composerSendModeKey = 'composerSendMode'
 export const sidebarVisibleProjectIdsKey = 'sidebarVisibleProjectIds'
 
-export const enabledToolkitExtensionsKey = 'enabledToolkitExtensions'
+// Keep the legacy SQLite preference key so existing component choices survive the rename.
+export const enabledToolkitComponentsKey = 'enabledToolkitExtensions'

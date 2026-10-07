@@ -1,15 +1,18 @@
 import * as Effect from 'effect/Effect'
 import * as Result from 'effect/Result'
 import * as Schema from 'effect/Schema'
-import * as artifacts from '../plugins/artifacts/service/index.ts'
-import { artifactsDatabaseSchema } from '../plugins/artifacts/service/schema.ts'
-import { cleanupLegacyCheckpoints, createCodingService } from '../plugins/coding/service/index.ts'
-import { codingDatabaseSchema } from '../plugins/coding/service/schema.ts'
-import { codingThreadBranchFallbacks } from '../plugins/coding/service/state.ts'
-import { createDictationService } from '../plugins/dictation/service/index.ts'
-import { createSkillsService } from '../plugins/skills/service/index.ts'
-import * as terminalManager from '../plugins/terminal/service/index.ts'
-import { createTerminalServicePlugin } from '../plugins/terminal/service/index.ts'
+import * as artifacts from '../components/artifacts/service/index.ts'
+import { artifactsDatabaseSchema } from '../components/artifacts/service/schema.ts'
+import {
+  cleanupLegacyCheckpoints,
+  createCodingService,
+} from '../components/coding/service/index.ts'
+import { codingDatabaseSchema } from '../components/coding/service/schema.ts'
+import { codingThreadBranchFallbacks } from '../components/coding/service/state.ts'
+import { createDictationService } from '../components/dictation/service/index.ts'
+import { createSkillsService } from '../components/skills/service/index.ts'
+import * as terminalManager from '../components/terminal/service/index.ts'
+import { createTerminalServiceComponent } from '../components/terminal/service/index.ts'
 import {
   type DesktopServiceRemoteModuleName,
   type DesktopServiceRemoteRuntime,
@@ -18,9 +21,9 @@ import {
 import { desktopShutdownTimeouts } from '../shared/desktop-shutdown-deadlines.ts'
 import { makeShutdownCoordinator } from '../shared/effect-shutdown.ts'
 import type { TerminalRpcRequest } from '../shared/terminal-rpc.ts'
+import { registerConversationCleanup } from './app-service/thread-actions.ts'
+import * as coreApp from './app-service.ts'
 import { loadAppSettings } from './app-settings/readers.ts'
-import { registerConversationCleanup } from './pi-threads/thread-actions.ts'
-import * as coreThreads from './pi-threads.ts'
 import { getAgentDirectory } from './settings/paths.ts'
 import {
   configureDatabaseSchemas,
@@ -33,7 +36,7 @@ import { getDesktopUserDataPath } from './user-data-path.ts'
 const ServiceRequestSchema = Schema.Struct({
   type: Schema.Literal('request'),
   id: Schema.String,
-  module: Schema.Literals(['piThreads', 'skills', 'coding', 'artifacts', 'dictation']),
+  module: Schema.Literals(['app', 'skills', 'coding', 'artifacts', 'dictation']),
   method: Schema.String,
   args: Schema.mutable(Schema.Array(Schema.Unknown)),
 })
@@ -58,33 +61,33 @@ const decodeServiceInboundMessage = Schema.decodeUnknownResult(ServiceInboundMes
 
 configureDatabaseSchemas([codingDatabaseSchema, artifactsDatabaseSchema])
 
-const skillsPlugin = createSkillsService()
-const skills = skillsPlugin.service
-const dictationPlugin = createDictationService()
-const dictation = dictationPlugin.service
-const codingPlugin = createCodingService({
+const skillsComponent = createSkillsService()
+const skills = skillsComponent.service
+const dictationComponent = createDictationService()
+const dictation = dictationComponent.service
+const codingComponent = createCodingService({
   deleteArtifactsForConversations: artifacts.deleteArtifactsForConversations,
   listTerminals: terminalManager.listTerminals,
   closeWorkspaceTerminals: terminalManager.closeWorkspaceTerminals,
   hasActiveWorkspaceTerminal: terminalManager.hasActiveWorkspaceTerminal,
 })
-const coding = codingPlugin.service
+const coding = codingComponent.service
 const unregisterArtifactCleanup = registerConversationCleanup(
   artifacts.deleteArtifactsForConversation,
 )
 const unregisterCodingBranchFallbacks = registerThreadBranchFallbacks(codingThreadBranchFallbacks)
 const unregisterCodingMigration = registerDatabaseStartupTask(cleanupLegacyCheckpoints())
-const piThreads = {
-  ...coreThreads,
-  loadShellState: (cwd: string) => coreThreads.loadShellState(cwd, codingPlugin.loadShell),
-  async handleDesktopAction(...args: Parameters<typeof coreThreads.handleDesktopAction>) {
-    const result = await codingPlugin.handleAction(...args)
-    return result.handled ? result.result : coreThreads.handleDesktopAction(...args)
+const app = {
+  ...coreApp,
+  loadShellState: (cwd: string) => coreApp.loadShellState(cwd, codingComponent.loadShell),
+  async handleDesktopAction(...args: Parameters<typeof coreApp.handleDesktopAction>) {
+    const result = await codingComponent.handleAction(...args)
+    return result.handled ? result.result : coreApp.handleDesktopAction(...args)
   },
 }
 
 const modules = {
-  piThreads,
+  app,
   skills,
   coding,
   artifacts,
@@ -116,11 +119,11 @@ async function getServiceDiagnostics() {
   }
 }
 
-piThreads.subscribeDesktopEvents((event) => {
+app.subscribeDesktopEvents((event) => {
   process.send?.({ type: 'desktop-event', event })
 })
 
-const terminalPlugin = createTerminalServicePlugin((message) =>
+const terminalComponent = createTerminalServiceComponent((message) =>
   process.send?.({ type: 'terminal-rpc-response', message }),
 )
 
@@ -160,7 +163,7 @@ process.on('message', (message: unknown) => {
   }
   const inbound = decoded.success
   if (inbound.type === 'terminal-rpc-request') {
-    void terminalPlugin.write(inbound.message as TerminalRpcRequest).catch((error) => {
+    void terminalComponent.write(inbound.message as TerminalRpcRequest).catch((error) => {
       console.error('Desktop terminal RPC failed.', error)
       requestShutdown()
     })
@@ -178,16 +181,16 @@ const shutdownCoordinatorPromise = Effect.runPromise(
     Effect.gen(function* () {
       yield* Effect.all(
         [
-          settledTask(() => codingPlugin.dispose()),
-          settledTask(() => skillsPlugin.dispose()),
-          settledTask(() => dictationPlugin.dispose()),
+          settledTask(() => codingComponent.dispose()),
+          settledTask(() => skillsComponent.dispose()),
+          settledTask(() => dictationComponent.dispose()),
         ],
         { concurrency: 'unbounded', discard: true },
       )
       yield* Effect.all(
         [
-          settledTask(() => terminalPlugin.dispose()),
-          settledTask(() => piThreads.disposeDesktopRuntime?.()),
+          settledTask(() => terminalComponent.dispose()),
+          settledTask(() => app.disposeDesktopRuntime?.()),
         ],
         { concurrency: 'unbounded', discard: true },
       )

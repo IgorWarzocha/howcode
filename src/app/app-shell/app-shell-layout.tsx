@@ -1,8 +1,8 @@
-import { useAppShellDiffPreferences } from '@howcode/plugins/coding/ui'
+import { useAppShellDiffPreferences } from '@howcode/components/coding/ui'
 import {
   useTerminalDrawerPresentation,
   useTerminalResponsiveState,
-} from '@howcode/plugins/terminal/ui'
+} from '@howcode/components/terminal/ui'
 import { useRef } from 'react'
 import { WORKSPACE_CONTENT_MAX_WIDTH_CLASS } from '../ui/layout'
 import { getLayoutThreadSelection } from './app-shell-layout-model'

@@ -29,7 +29,7 @@
   },
   "include": [
     "desktop/**/*.ts",
-    "plugins/*/service/**/*.ts",
+    "components/*/service/**/*.ts",
     "node-runtime/**/*.ts",
     "shared/**/*.ts"
   ]

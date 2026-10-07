@@ -18,7 +18,7 @@ import type {
   ProjectFileWriteResult,
   ProjectImportCandidate,
 } from './desktop-data-contracts'
-import type { ToolkitExtensionId } from './toolkit-extensions'
+import type { ToolkitComponentId } from './toolkit-components'
 
 type EmptyActionPayload = Record<string, never>
 
@@ -114,7 +114,7 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'dictationModelId'; value: DictationModelId | null }
   | { key: 'dictationMaxDurationSeconds'; value: number }
   | { key: 'showDictationButton'; value: boolean }
-  | { key: 'enabledToolkitExtensions'; value: readonly ToolkitExtensionId[] }
+  | { key: 'enabledToolkitComponents'; value: readonly ToolkitComponentId[] }
   | { key: 'favoriteFolders'; folders: string[] }
   | { key: 'projectImportState'; imported: boolean | null }
   | { key: 'preferredProjectLocation'; value: string | null }

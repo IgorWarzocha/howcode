@@ -1,3 +1,3 @@
 - `workspace-model.ts` owns workspace state and action contracts; `workspace.ts` is the stable reducer/selector facade.
-- Keep transitions in `workspace-action-handlers.ts` and compose plugin-owned coding and terminal transforms through public UI contracts. Transforms import `workspace-model.ts`, never the reducer facade.
+- Keep transitions in `workspace-action-handlers.ts` and compose component-owned coding and terminal transforms through public UI contracts. Transforms import `workspace-model.ts`, never the reducer facade.
 - Preserve project selection, utility-return, GitOps-return, and per-session terminal state across structural changes.

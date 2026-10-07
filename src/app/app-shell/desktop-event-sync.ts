@@ -1,4 +1,4 @@
-import { isSelectedConversationView } from '@howcode/extensions/toolkit-plugins'
+import { isSelectedConversationView } from '@howcode/component-system/toolkit-components'
 import {
   getLocalDraftProjectId,
   getPersistedConversationId,
