@@ -1,5 +1,6 @@
+import { skillsPlugin } from '@howcode/plugins/skills/ui/extension'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
-import { Archive, Info, Settings, Sparkles } from 'lucide-react'
+import { Archive, Info, Settings } from 'lucide-react'
 import type { ReactNode, RefObject } from 'react'
 import { FeatureStatusBadge } from '../common/feature-status-badge'
 import { PopoverPanel } from '../common/popover'
@@ -36,7 +37,13 @@ export function AppMenu({
   }> = [
     { icon: <Info size={15} />, title: 'About', onClick: onOpenAbout },
     ...(skillsEnabled
-      ? [{ icon: <Sparkles size={15} />, title: 'Skills', onClick: onOpenSkillsView }]
+      ? [
+          {
+            icon: <skillsPlugin.utility.icon size={15} />,
+            title: skillsPlugin.utility.label,
+            onClick: onOpenSkillsView,
+          },
+        ]
       : []),
     { icon: <Archive size={15} />, title: 'Archived threads', onClick: onOpenArchivedThreads },
     { icon: <Settings size={15} />, title: 'App settings', onClick: onOpenSettingsPanel },

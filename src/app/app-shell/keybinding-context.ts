@@ -1,16 +1,14 @@
 import type { KeybindingCommandId } from '@howcode/shared/keybindings'
 import { isToolkitExtensionEnabled } from '@howcode/shared/toolkit-extensions'
+import { getPluginKeybindingPolicy, pluginRendererCommandIds } from '../extensions/toolkit-plugins'
 import type { KeybindingRuntime } from './keybinding-runtime'
 
 export const rendererCommandIds = new Set<KeybindingCommandId>([
   'app.commandPalette',
-  'gitops.toggleChangedFiles',
-  'terminal.focus',
-  'terminal.clear',
   'thread.find',
   'sidebar.find',
   'composer.focus',
-  'dictation.toggle',
+  ...pluginRendererCommandIds,
 ])
 
 export function eventTargetIsEditable(target: EventTarget | null) {
@@ -27,25 +25,20 @@ function eventTargetIsComposer(target: EventTarget | null) {
   return target instanceof HTMLElement && target.closest('[data-composer-root="true"]') !== null
 }
 
-function dictationShortcutIsAllowed(event: KeyboardEvent, runtime: KeybindingRuntime) {
-  return (
-    eventTargetIsComposer(event.target) ||
-    runtime.appController.workspace.state.activeView === 'gitops' ||
-    runtime.appController.workspace.state.activeView === 'inbox'
-  )
-}
-
 export function appShortcutCanRunFromTextInput(
   commandId: KeybindingCommandId,
   event: KeyboardEvent,
   runtime: KeybindingRuntime,
 ) {
-  // Composer text input still lets app shortcuts through; normal text is unaffected because
-  // only registered accelerators reach this point. Changed-files stays GitOps-panel scoped.
-  if (commandId === 'gitops.toggleChangedFiles') return false
-  if (commandId === 'dictation.toggle') return dictationShortcutIsAllowed(event, runtime)
-  if (commandId === 'terminal.clear') return runtime.appController.workspace.state.terminalVisible
-  return true
+  const policy = getPluginKeybindingPolicy(commandId)?.policy
+  const { activeView, terminalVisible } = runtime.appController.workspace.state
+  return (
+    policy?.allowFromTextInput?.({
+      composerTarget: eventTargetIsComposer(event.target),
+      activeView,
+      terminalVisible,
+    }) ?? true
+  )
 }
 
 function interactiveLayerIsOpen() {
@@ -62,12 +55,8 @@ function modalOrSettingsLayerIsOpen() {
 
 function toolkitShortcutIsDisabled(commandId: KeybindingCommandId, runtime: KeybindingRuntime) {
   const settings = runtime.appController.desktop.shellState?.appSettings
-  if (commandId.startsWith('terminal.') && !isToolkitExtensionEnabled(settings, 'terminal'))
-    return true
-  if (commandId.startsWith('gitops.') && !isToolkitExtensionEnabled(settings, 'coding')) return true
-  if (commandId.startsWith('dictation.') && !isToolkitExtensionEnabled(settings, 'dictation'))
-    return true
-  return false
+  const contribution = getPluginKeybindingPolicy(commandId)
+  return contribution ? !isToolkitExtensionEnabled(settings, contribution.pluginId) : false
 }
 
 export function appLevelShortcutsAreBlocked(
@@ -79,7 +68,8 @@ export function appLevelShortcutsAreBlocked(
   if (commandId === 'sidebar.toggle' || commandId === 'app.commandPalette') {
     return false
   }
-  if (commandId === 'composer.focus' || commandId === 'terminal.focus') {
+  const layer = getPluginKeybindingPolicy(commandId)?.policy.layer
+  if (commandId === 'composer.focus' || layer === 'modal') {
     return (
       state.activeView === 'settings' ||
       state.settingsOpen ||
@@ -87,7 +77,7 @@ export function appLevelShortcutsAreBlocked(
       modalOrSettingsLayerIsOpen()
     )
   }
-  if (commandId === 'terminal.toggle') {
+  if (layer === 'settings') {
     return state.activeView === 'settings' || state.settingsOpen || state.settingsPanelOpen
   }
   if (commandId === 'settings.open') return state.settingsPanelOpen || interactiveLayerIsOpen()

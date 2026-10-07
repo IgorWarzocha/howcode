@@ -3,6 +3,7 @@ import { ChatWorkspaceView } from '@howcode/chat-workspace'
 import { codingPlugin } from '@howcode/plugins/coding/ui/extension'
 import { CodeWorkspaceView } from '@howcode/plugins/coding/ui/views'
 import { SkillsWorkspaceView } from '@howcode/plugins/skills/ui'
+import { skillsPlugin } from '@howcode/plugins/skills/ui/extension'
 import { isToolkitExtensionEnabled } from '@howcode/shared/toolkit-extensions'
 import type { ComponentProps } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
@@ -86,12 +87,13 @@ export function composeBuiltInWorkspaceViews(props: BuiltInWorkspaceViewProps) {
     work: roadmapView('work', props.currentProjectName),
     automations: roadmapView('automations', props.currentProjectName),
   }
-  if (isToolkitExtensionEnabled(settings, 'coding')) {
+  if (isToolkitExtensionEnabled(settings, codingPlugin.id)) {
     Object.assign(contributions, codingPlugin.contribute(code))
   }
-  if (isToolkitExtensionEnabled(settings, 'skills')) {
-    Object.assign(contributions, {
-      skills: (
+  if (isToolkitExtensionEnabled(settings, skillsPlugin.id)) {
+    Object.assign(
+      contributions,
+      skillsPlugin.contribute(
         <HostWorkspacePresentation>
           <SkillsWorkspaceView
             appSettings={settings ?? FALLBACK_APP_SETTINGS}
@@ -105,9 +107,9 @@ export function composeBuiltInWorkspaceViews(props: BuiltInWorkspaceViewProps) {
             onAction={controller.desktop.handleAction}
             onClose={controller.navigation.closeUtilityView}
           />
-        </HostWorkspacePresentation>
+        </HostWorkspacePresentation>,
       ),
-    })
+    )
   }
   return contributions
 }

@@ -1,15 +1,21 @@
 import {
+  clearCodingThreadSelection,
   createCodingWorkspaceTransitions,
-  getCurrentCodeThreadSelection,
+  getCodingStateForOpenedThread,
+  getCodingStateForPreviewedThread,
+  getCodingStateForShownView,
+  getCodingUtilityReturnState,
 } from '@howcode/plugins/coding/ui'
 import {
   getTerminalStateForNextView,
+  getTerminalStateForOpenedThread,
+  getTerminalUtilityReturnState,
   getTerminalVisibilityForSession,
   migrateTerminalVisibility,
   setTerminalVisibleState,
-  shouldMigrateTerminalVisibilityForOpenedThread,
   shouldRestoreTerminalOnGitOpsClose,
 } from '@howcode/plugins/terminal/ui'
+import { isWorkspaceUtilityView } from '../extensions/toolkit-plugins'
 import type { View } from '../types'
 import type {
   UtilityView,
@@ -18,17 +24,16 @@ import type {
   WorkspaceState,
 } from './workspace-model'
 
-const { codingWorkspaceActionHandlers, withCodeThreadSelection } = createCodingWorkspaceTransitions(
-  {
+const { codingWorkspaceActionHandlers, restoreCodeThreadForView } =
+  createCodingWorkspaceTransitions({
     getTerminalStateForNextView,
     getTerminalVisibilityForSession,
     migrateTerminalVisibility,
     shouldRestoreTerminalOnGitOpsClose,
-  },
-)
+  })
 
 export function isUtilityView(view: View): view is UtilityView {
-  return view === 'settings' || view === 'skills' || view === 'sessions'
+  return isWorkspaceUtilityView(view)
 }
 
 function createUtilityViewReturnState(state: WorkspaceState): UtilityViewReturnState {
@@ -40,11 +45,8 @@ function createUtilityViewReturnState(state: WorkspaceState): UtilityViewReturnS
     selectedInboxConversationId: state.selectedInboxConversationId,
     selectedThreadId: state.selectedThreadId,
     selectedConversationId: state.selectedConversationId,
-    terminalVisible: state.terminalVisible,
-    workspaceTerminalVisibleByWorkspace: state.workspaceTerminalVisibleByWorkspace,
-    restoreTerminalVisibleOnGitOpsClose: state.restoreTerminalVisibleOnGitOpsClose,
-    gitOpsReturnView: state.gitOpsReturnView,
-    selectedDiffFilePath: state.selectedDiffFilePath,
+    ...getTerminalUtilityReturnState(state),
+    ...getCodingUtilityReturnState(state),
   }
 }
 
@@ -52,10 +54,8 @@ function showViewState(
   state: WorkspaceState,
   action: Extract<WorkspaceAction, { type: 'show-view' }>,
 ): WorkspaceState {
-  const lastCodeThreadSelection = getCurrentCodeThreadSelection(state)
-  if (action.view === 'code' && lastCodeThreadSelection) {
-    return withCodeThreadSelection(state, lastCodeThreadSelection)
-  }
+  const restoredCodeThread = restoreCodeThreadForView(state, action.view)
+  if (restoredCodeThread) return restoredCodeThread
 
   const utilityViewReturnState = isUtilityView(action.view)
     ? isUtilityView(state.activeView)
@@ -66,10 +66,9 @@ function showViewState(
     ...state,
     ...getTerminalStateForNextView(state, action.view),
     activeView: action.view,
-    landingVisible: action.view === 'code' ? state.landingVisible : false,
     settingsOpen: false,
     settingsPanelOpen: false,
-    lastCodeThreadSelection,
+    ...getCodingStateForShownView(state, action.view),
     selectedThreadId:
       action.view === 'thread' || (action.view === 'chat' && state.activeView === 'chat')
         ? state.selectedThreadId
@@ -78,7 +77,6 @@ function showViewState(
       action.view === 'thread' || (action.view === 'chat' && state.activeView === 'chat')
         ? state.selectedConversationId
         : null,
-    selectedDiffFilePath: action.view === 'thread' ? state.selectedDiffFilePath : null,
     utilityViewReturnState,
   }
 }
@@ -88,18 +86,6 @@ function openThreadState(
   action: Extract<WorkspaceAction, { type: 'open-thread' }>,
 ): WorkspaceState {
   const activeView = action.view ?? (state.activeView === 'chat' ? 'chat' : 'thread')
-  const nextTerminalVisibleBySession = shouldMigrateTerminalVisibilityForOpenedThread(state, action)
-    ? {
-        ...state.terminalVisibleBySession,
-        [action.conversationId]:
-          state.activeView === 'project'
-            ? (state.workspaceTerminalVisibleByWorkspace[action.projectId] ?? false)
-            : getTerminalVisibilityForSession(
-                state.terminalVisibleBySession,
-                state.selectedConversationId,
-              ),
-      }
-    : state.terminalVisibleBySession
   return {
     ...state,
     activeView,
@@ -108,23 +94,9 @@ function openThreadState(
     landingVisible: false,
     selectedThreadId: action.threadId,
     selectedConversationId: action.conversationId,
-    terminalVisible: getTerminalVisibilityForSession(
-      nextTerminalVisibleBySession,
-      action.conversationId,
-    ),
-    terminalVisibleBySession: nextTerminalVisibleBySession,
-    selectedDiffFilePath: null,
-    gitOpsReturnView: 'thread',
+    ...getTerminalStateForOpenedThread(state, action),
     utilityViewReturnState: null,
-    collapsedProjectIds: { ...state.collapsedProjectIds, [action.projectId]: false },
-    lastCodeThreadSelection:
-      activeView === 'chat'
-        ? state.lastCodeThreadSelection
-        : {
-            projectId: action.projectId,
-            threadId: action.threadId,
-            conversationId: action.conversationId,
-          },
+    ...getCodingStateForOpenedThread(state, action, activeView),
   }
 }
 
@@ -139,10 +111,8 @@ function previewThreadState(
     hasSelectedProject: true,
     landingVisible: false,
     selectedThreadId: action.threadId,
-    selectedDiffFilePath: null,
-    gitOpsReturnView: 'thread',
     utilityViewReturnState: null,
-    collapsedProjectIds: { ...state.collapsedProjectIds, [action.projectId]: false },
+    ...getCodingStateForPreviewedThread(state, action),
   }
 }
 
@@ -163,8 +133,7 @@ export const workspaceActionHandlers = {
     ...state,
     selectedThreadId: null,
     selectedConversationId: null,
-    selectedDiffFilePath: null,
-    lastCodeThreadSelection: null,
+    ...clearCodingThreadSelection(),
   }),
   'select-inbox-thread': (
     state: WorkspaceState,

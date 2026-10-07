@@ -7,6 +7,7 @@ import {
   useMemo,
   useState,
 } from 'react'
+import type { View } from '../../../../src/app/types'
 
 type WorkspacePreferences = {
   gitOpsFileTreeVisibilityByThread: Record<string, boolean>
@@ -20,11 +21,16 @@ const WorkspacePreferencesContext = createContext<WorkspacePreferences | null>(n
 // Preferences outlive route presentations, including visits to core utility views.
 export function CodingWorkspacePreferencesProvider({
   children,
-  retain,
+  activeView,
 }: {
   children: ReactNode
-  retain: boolean
+  activeView: View
 }) {
+  const retain =
+    activeView !== 'chat' &&
+    activeView !== 'claw' &&
+    activeView !== 'work' &&
+    activeView !== 'automations'
   const [gitOpsFileTreeVisibilityByThread, setGitOpsFileTreeVisibilityByThread] = useState<
     Record<string, boolean>
   >({})

@@ -24,7 +24,10 @@ export {
 export { TerminalPanel } from './terminal-panel'
 export { useRunningTerminalSessions } from './useRunningTerminalSessions'
 export {
+  createInitialTerminalWorkspaceState,
   getTerminalStateForNextView,
+  getTerminalStateForOpenedThread,
+  getTerminalUtilityReturnState,
   getTerminalVisibilityForSession,
   migrateTerminalVisibility,
   setTerminalVisibleState,

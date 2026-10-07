@@ -1,5 +1,6 @@
 import { Tooltip } from '@howcode/common/tooltip'
 import { codingPlugin } from '@howcode/plugins/coding/ui/extension'
+import { skillsPlugin } from '@howcode/plugins/skills/ui/extension'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { isToolkitExtensionEnabled } from '@howcode/shared/toolkit-extensions'
 import { Inbox, MessageSquare, PanelLeftClose, Settings } from 'lucide-react'
@@ -368,7 +369,7 @@ export function Sidebar({
             open={settingsOpen}
             panelRef={settingsMenuRef}
             onOpenAbout={onOpenAbout}
-            skillsEnabled={isToolkitExtensionEnabled(appSettings, 'skills')}
+            skillsEnabled={isToolkitExtensionEnabled(appSettings, skillsPlugin.id)}
             onOpenSkillsView={onOpenSkillsView}
             onOpenSettingsPanel={onOpenSettingsPanel}
             onOpenArchivedThreads={onOpenArchivedThreads}

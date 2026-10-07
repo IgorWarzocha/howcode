@@ -45,6 +45,10 @@ export {
   startProjectDiffStreamQuery,
 } from './query'
 export { useCodingWorkspaceCommands } from './shell/commands'
+export {
+  invalidateProjectWorktreeQueries,
+  useCodingDesktopEventContribution,
+} from './shell/desktop-events'
 export type { DiffPreferencesPatch } from './shell/post-effects/diff-preferences'
 export {
   applyDiffPreferencesPostEffect,
@@ -81,7 +85,13 @@ export { useProjectRepoOriginRefresh } from './shell/useProjectRepoOriginRefresh
 export { useProjectShellSync } from './shell/useProjectShellSync'
 export { useTerminalGitStateSync } from './shell/useTerminalGitStateSync'
 export {
+  clearCodingThreadSelection,
   createCodingWorkspaceTransitions,
+  createInitialCodingWorkspaceState,
+  getCodingStateForOpenedThread,
+  getCodingStateForPreviewedThread,
+  getCodingStateForShownView,
+  getCodingUtilityReturnState,
   getCurrentCodeThreadSelection,
   resolveCodeThreadSelection,
 } from './shell/workspace-state'

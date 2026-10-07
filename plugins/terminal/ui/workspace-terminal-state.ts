@@ -123,3 +123,45 @@ export function setTerminalVisibleState(state: WorkspaceState, visible: boolean)
     },
   }
 }
+
+export function createInitialTerminalWorkspaceState() {
+  return {
+    terminalVisible: false,
+    workspaceTerminalVisibleByWorkspace: {},
+    terminalVisibleBySession: {},
+    restoreTerminalVisibleOnGitOpsClose: false,
+  }
+}
+
+export function getTerminalUtilityReturnState(state: WorkspaceState) {
+  return {
+    terminalVisible: state.terminalVisible,
+    workspaceTerminalVisibleByWorkspace: state.workspaceTerminalVisibleByWorkspace,
+    restoreTerminalVisibleOnGitOpsClose: state.restoreTerminalVisibleOnGitOpsClose,
+  }
+}
+
+export function getTerminalStateForOpenedThread(
+  state: WorkspaceState,
+  action: Extract<WorkspaceAction, { type: 'open-thread' }>,
+) {
+  const nextTerminalVisibleBySession = shouldMigrateTerminalVisibilityForOpenedThread(state, action)
+    ? {
+        ...state.terminalVisibleBySession,
+        [action.conversationId]:
+          state.activeView === 'project'
+            ? (state.workspaceTerminalVisibleByWorkspace[action.projectId] ?? false)
+            : getTerminalVisibilityForSession(
+                state.terminalVisibleBySession,
+                state.selectedConversationId,
+              ),
+      }
+    : state.terminalVisibleBySession
+  return {
+    terminalVisible: getTerminalVisibilityForSession(
+      nextTerminalVisibleBySession,
+      action.conversationId,
+    ),
+    terminalVisibleBySession: nextTerminalVisibleBySession,
+  }
+}

@@ -1,3 +1,5 @@
+import { createInitialCodingWorkspaceState } from '@howcode/plugins/coding/ui'
+import { createInitialTerminalWorkspaceState } from '@howcode/plugins/terminal/ui'
 import type { Project, Thread, View } from '../types'
 import { workspaceActionHandlers } from './workspace-action-handlers'
 import type { WorkspaceAction, WorkspaceState } from './workspace-model'
@@ -11,8 +13,6 @@ export type {
   WorkspaceState,
 } from './workspace-model'
 
-// The collapsed map is derived once from project metadata so the tree interaction
-// stays deterministic even before we add persisted desktop state.
 export function createInitialWorkspaceState(projects: Project[]): WorkspaceState {
   return {
     activeView: 'landing',
@@ -22,19 +22,11 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
     selectedInboxConversationId: null,
     selectedThreadId: null,
     selectedConversationId: null,
-    terminalVisible: false,
-    workspaceTerminalVisibleByWorkspace: {},
-    terminalVisibleBySession: {},
-    restoreTerminalVisibleOnGitOpsClose: false,
-    gitOpsReturnView: 'code',
-    selectedDiffFilePath: null,
+    ...createInitialTerminalWorkspaceState(),
+    ...createInitialCodingWorkspaceState(projects),
     utilityViewReturnState: null,
     settingsOpen: false,
     settingsPanelOpen: false,
-    collapsedProjectIds: Object.fromEntries(
-      projects.map((project) => [project.id, project.collapsed ?? true]),
-    ),
-    lastCodeThreadSelection: null,
   }
 }
 

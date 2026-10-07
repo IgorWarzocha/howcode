@@ -1,4 +1,4 @@
-import { notifyProjectDiffInvalidated } from '@howcode/plugins/coding/ui'
+import { isSelectedConversationView } from '@howcode/extensions/toolkit-plugins'
 import {
   getLocalDraftProjectId,
   getPersistedConversationId,
@@ -23,10 +23,7 @@ export type DesktopEventSelectionState = Pick<
 >
 
 export function getVisibleDesktopConversationId(workspaceState: DesktopEventSelectionState) {
-  return workspaceState.activeView === 'chat' ||
-    workspaceState.activeView === 'thread' ||
-    workspaceState.activeView === 'gitops' ||
-    workspaceState.activeView === 'project'
+  return isSelectedConversationView(workspaceState.activeView)
     ? getPersistedConversationId(workspaceState.selectedConversationId)
     : workspaceState.activeView === 'inbox'
       ? (workspaceState.selectedInboxConversationId ?? null)
@@ -102,30 +99,4 @@ export async function refreshVisibleInboxThread({
     loadProjectThreads(event.projectId),
     queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() }),
   ])
-}
-
-export function invalidateProjectWorktreeQueries({
-  activeView,
-  projectId,
-  queryClient,
-}: {
-  activeView: WorkspaceState['activeView']
-  projectId: string
-  queryClient: QueryClientLike
-}) {
-  if (activeView === 'gitops') {
-    notifyProjectDiffInvalidated(projectId)
-  }
-
-  void queryClient.invalidateQueries({
-    queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
-  })
-
-  void queryClient.invalidateQueries({
-    queryKey: desktopQueryKeys.projectDiffImagePreviewPrefix(projectId),
-  })
-
-  void queryClient.invalidateQueries({
-    queryKey: desktopQueryKeys.projectCommitsPrefix(projectId),
-  })
 }

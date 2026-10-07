@@ -1,12 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react'
 import { useEffect, useRef } from 'react'
-import type {
-  ChatSidebarState,
-  ComposerState,
-  DesktopEvent,
-  ProjectGitState,
-  ThreadData,
-} from '../desktop/types'
+import type { ChatSidebarState, ComposerState, DesktopEvent, ThreadData } from '../desktop/types'
 import { subscribeDesktopEvents } from '../query/desktop-query'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace-model'
 import {
@@ -15,9 +9,10 @@ import {
   type QueryClientLike,
 } from './desktop-event-handlers'
 import type { DesktopEventSelectionState } from './desktop-event-sync'
+import type { DesktopThreadEndContribution } from './desktop-events/runtime'
 
 type UseDesktopEventSyncInput = {
-  codingEnabled?: boolean
+  threadEndContribution?: DesktopThreadEndContribution | undefined
   composerProjectId: string
   workspaceState: WorkspaceState
   loadProjectThreads: (
@@ -27,7 +22,6 @@ type UseDesktopEventSyncInput = {
       replaceLocalDraftConversationId?: string | null | undefined
     },
   ) => Promise<unknown>
-  loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
   scheduleShellStateRefresh: () => void
   refreshChatSidebarState: () => Promise<unknown>
   queryClient: QueryClientLike
@@ -35,16 +29,14 @@ type UseDesktopEventSyncInput = {
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>
   setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>
   setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>
-  setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>
   setThreadHistoryCompactions: Dispatch<SetStateAction<number>>
 }
 
 export function useDesktopEventSync({
-  codingEnabled = true,
+  threadEndContribution,
   composerProjectId,
   workspaceState,
   loadProjectThreads,
-  loadProjectGitState,
   scheduleShellStateRefresh,
   refreshChatSidebarState,
   queryClient,
@@ -52,11 +44,10 @@ export function useDesktopEventSync({
   setComposerState,
   setChatSidebarState,
   setLiveThreadData,
-  setProjectGitState,
   setThreadHistoryCompactions,
 }: UseDesktopEventSyncInput) {
   const desktopEventStateRef = useRef({
-    codingEnabled,
+    threadEndContribution,
     composerProjectId,
     workspaceState: {
       activeView: workspaceState.activeView,
@@ -70,7 +61,7 @@ export function useDesktopEventSync({
 
   useEffect(() => {
     desktopEventStateRef.current = {
-      codingEnabled,
+      threadEndContribution,
       composerProjectId,
       workspaceState: {
         activeView: workspaceState.activeView,
@@ -81,7 +72,7 @@ export function useDesktopEventSync({
       },
     }
   }, [
-    codingEnabled,
+    threadEndContribution,
     composerProjectId,
     workspaceState.activeView,
     workspaceState.selectedProjectId,
@@ -95,7 +86,6 @@ export function useDesktopEventSync({
     // thread updates when a GUI-started thread flips from local draft to persisted session path.
     const runtime: DesktopEventSyncRuntime = {
       dispatch,
-      loadProjectGitState,
       loadProjectThreads,
       queryClient,
       refreshChatSidebarState,
@@ -103,7 +93,6 @@ export function useDesktopEventSync({
       setChatSidebarState,
       setComposerState,
       setLiveThreadData,
-      setProjectGitState,
       setThreadHistoryCompactions,
       desktopEventStateRef,
       localDraftConversationIdByPersistedConversationIdRef,
@@ -111,7 +100,6 @@ export function useDesktopEventSync({
     return subscribeDesktopEvents((event: DesktopEvent) => handleDesktopEvent(runtime, event))
   }, [
     dispatch,
-    loadProjectGitState,
     loadProjectThreads,
     queryClient,
     refreshChatSidebarState,
@@ -119,7 +107,6 @@ export function useDesktopEventSync({
     setChatSidebarState,
     setComposerState,
     setLiveThreadData,
-    setProjectGitState,
     setThreadHistoryCompactions,
   ])
 }

@@ -6,7 +6,6 @@ import type { WorkspaceAction } from '../../state/workspace-model'
 import {
   type DesktopEventSelectionState,
   getVisibleDesktopConversationId,
-  invalidateProjectWorktreeQueries,
   refreshVisibleInboxThread,
   shouldAutoOpenStartedThread,
   shouldDisplayStartedThreadForLocalDraft,
@@ -152,40 +151,17 @@ function dispatchThreadOpenIfNeeded(input: {
 
 function refreshThreadEndState(input: {
   event: Extract<DesktopEvent, { type: 'thread-update' }>
-  latestComposerProjectId: string
   latestWorkspaceState: DesktopEventSelectionState
   runtime: DesktopEventSyncRuntime
 }) {
   if (!(input.event.reason === 'end' || input.event.reason === 'external')) return
+  const { threadEndContribution } = input.runtime.desktopEventStateRef.current
+  // Preserve list refresh, core sidebar refresh, then project cache/Git refresh ordering.
+  threadEndContribution?.refreshThreadList(input.event, input.latestWorkspaceState.activeView)
   if (input.event.isChat === true) {
-    if (
-      input.runtime.desktopEventStateRef.current.codingEnabled !== false &&
-      input.latestWorkspaceState.activeView === 'chat'
-    )
-      void input.runtime.loadProjectThreads(input.event.projectId, { chat: true })
     void input.runtime.refreshChatSidebarState()
-  } else if (
-    input.runtime.desktopEventStateRef.current.codingEnabled !== false &&
-    input.latestWorkspaceState.activeView !== 'chat'
-  ) {
-    void input.runtime.loadProjectThreads(input.event.projectId)
   }
-  invalidateProjectWorktreeQueries({
-    activeView: input.latestWorkspaceState.activeView,
-    projectId: input.event.projectId,
-    queryClient: input.runtime.queryClient,
-  })
-  void input.runtime.queryClient.invalidateQueries({
-    queryKey: desktopQueryKeys.projectUsageSummary(input.event.projectId),
-  })
-  if (
-    input.runtime.desktopEventStateRef.current.codingEnabled !== false &&
-    input.event.projectId === input.latestComposerProjectId
-  ) {
-    void input.runtime
-      .loadProjectGitState(input.event.projectId)
-      .then(input.runtime.setProjectGitState)
-  }
+  threadEndContribution?.refreshProjectState(input.event, input.latestWorkspaceState.activeView)
 }
 
 function rememberLocalDraftSessionAlias(input: {
@@ -216,8 +192,7 @@ export function handleThreadUpdateEvent(
   runtime: DesktopEventSyncRuntime,
   event: Extract<DesktopEvent, { type: 'thread-update' }>,
 ) {
-  const { composerProjectId: latestComposerProjectId, workspaceState: latestWorkspaceState } =
-    runtime.desktopEventStateRef.current
+  const { workspaceState: latestWorkspaceState } = runtime.desktopEventStateRef.current
   const visibleConversationId = getVisibleDesktopConversationId(latestWorkspaceState)
   const threadWithPreferences = mergeThreadPreferences({ event, queryClient: runtime.queryClient })
   const flags = getThreadEventFlags({ event, latestWorkspaceState, visibleConversationId })
@@ -272,7 +247,7 @@ export function handleThreadUpdateEvent(
     }).catch((error) => console.warn('Failed to keep active inbox thread marked read.', error))
   }
   dispatchThreadOpenIfNeeded({ dispatch: runtime.dispatch, event, flags, latestWorkspaceState })
-  refreshThreadEndState({ event, latestComposerProjectId, latestWorkspaceState, runtime })
+  refreshThreadEndState({ event, latestWorkspaceState, runtime })
   void runtime.queryClient.invalidateQueries({
     queryKey: desktopQueryKeys.conversationEntries(event.conversationId),
   })

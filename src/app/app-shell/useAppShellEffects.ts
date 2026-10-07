@@ -1,4 +1,5 @@
 import {
+  useCodingDesktopEventContribution,
   useCodingGitStateSync,
   useProjectShellSync,
   useTerminalGitStateSync,
@@ -131,13 +132,20 @@ export function useAppShellEffects({
     setProjectGitState,
   })
 
+  const threadEndContribution = useCodingDesktopEventContribution({
+    enabled: shellAppSettings != null && isToolkitExtensionEnabled(shellAppSettings, 'coding'),
+    composerProjectId,
+    loadProjectThreads,
+    loadProjectGitState,
+    setProjectGitState,
+    queryClient,
+  })
+
   useDesktopEventSync({
-    codingEnabled:
-      shellAppSettings != null && isToolkitExtensionEnabled(shellAppSettings, 'coding'),
+    threadEndContribution,
     composerProjectId,
     workspaceState,
     loadProjectThreads,
-    loadProjectGitState,
     scheduleShellStateRefresh,
     refreshChatSidebarState,
     queryClient,
@@ -145,7 +153,6 @@ export function useAppShellEffects({
     setComposerState,
     setChatSidebarState,
     setLiveThreadData,
-    setProjectGitState,
     setThreadHistoryCompactions,
   })
 }

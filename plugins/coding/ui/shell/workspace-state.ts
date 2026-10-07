@@ -379,5 +379,74 @@ export function createCodingWorkspaceTransitions(terminal: TerminalWorkspaceTran
     ) => WorkspaceState
   }>
 
-  return { codingWorkspaceActionHandlers, withCodeThreadSelection }
+  function restoreCodeThreadForView(state: WorkspaceState, view: View): WorkspaceState | null {
+    const selection = getCurrentCodeThreadSelection(state)
+    return view === 'code' && selection ? withCodeThreadSelection(state, selection) : null
+  }
+
+  return { codingWorkspaceActionHandlers, withCodeThreadSelection, restoreCodeThreadForView }
+}
+
+export function createInitialCodingWorkspaceState(
+  projects: Project[],
+): Pick<
+  WorkspaceState,
+  'gitOpsReturnView' | 'selectedDiffFilePath' | 'collapsedProjectIds' | 'lastCodeThreadSelection'
+> {
+  return {
+    gitOpsReturnView: 'code',
+    selectedDiffFilePath: null,
+    collapsedProjectIds: Object.fromEntries(
+      projects.map((project) => [project.id, project.collapsed ?? true]),
+    ),
+    lastCodeThreadSelection: null,
+  }
+}
+
+export function getCodingUtilityReturnState(state: WorkspaceState) {
+  return {
+    gitOpsReturnView: state.gitOpsReturnView,
+    selectedDiffFilePath: state.selectedDiffFilePath,
+  }
+}
+
+export function getCodingStateForShownView(state: WorkspaceState, view: View) {
+  return {
+    landingVisible: view === 'code' ? state.landingVisible : false,
+    lastCodeThreadSelection: getCurrentCodeThreadSelection(state),
+    selectedDiffFilePath: view === 'thread' ? state.selectedDiffFilePath : null,
+  }
+}
+
+export function clearCodingThreadSelection() {
+  return { selectedDiffFilePath: null, lastCodeThreadSelection: null }
+}
+
+export function getCodingStateForPreviewedThread(
+  state: WorkspaceState,
+  action: Extract<WorkspaceAction, { type: 'preview-thread' | 'open-thread' }>,
+): Pick<WorkspaceState, 'selectedDiffFilePath' | 'gitOpsReturnView' | 'collapsedProjectIds'> {
+  return {
+    selectedDiffFilePath: null,
+    gitOpsReturnView: 'thread',
+    collapsedProjectIds: { ...state.collapsedProjectIds, [action.projectId]: false },
+  }
+}
+
+export function getCodingStateForOpenedThread(
+  state: WorkspaceState,
+  action: Extract<WorkspaceAction, { type: 'open-thread' }>,
+  activeView: View,
+) {
+  return {
+    ...getCodingStateForPreviewedThread(state, action),
+    lastCodeThreadSelection:
+      activeView === 'chat'
+        ? state.lastCodeThreadSelection
+        : {
+            projectId: action.projectId,
+            threadId: action.threadId,
+            conversationId: action.conversationId,
+          },
+  }
 }
