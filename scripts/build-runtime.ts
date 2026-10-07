@@ -27,6 +27,7 @@ const buildTargets = [
     entrypoints: [
       path.join(projectRoot, 'desktop', 'service-host.ts'),
       path.join(projectRoot, 'desktop', 'service-host-runtime.ts'),
+      path.join(projectRoot, 'desktop', 'package-cli.ts'),
     ],
     outdir: path.join(buildRoot, 'desktop'),
     root: path.join(projectRoot, 'desktop'),

@@ -21,7 +21,7 @@ export async function getComposerSkills(request: ComposerStateRequest = {}) {
   const agent = conversationId
     ? await (await resolveConversation(conversationId)).agent(runtimeContext)
     : {
-        ...resolveRuntimeExtensions(request),
+        ...(await resolveRuntimeExtensions(request)),
         ...(request.projectId ? { cwd: request.projectId } : {}),
       }
   return discoverConversationSkills(agent)

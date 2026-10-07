@@ -70,10 +70,6 @@ try {
     Object.keys(packageJson.dependencies).map((name) => {
       const version = rootPackage.dependencies[name]
       if (!version) throw new Error(`Missing runtime dependency: ${name}`)
-      if (version.startsWith('file:') || version.startsWith('link:'))
-        throw new Error(
-          `Publish ${name} and replace its local dependency before packaging Howcode.`,
-        )
       return [name, version]
     }),
   )

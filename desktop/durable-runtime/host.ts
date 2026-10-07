@@ -18,12 +18,11 @@ import { loadPiSettings } from '../settings/preferences.ts'
 import { getDesktopUserDataPath } from '../user-data-path.ts'
 import { getComposerDefaults } from './defaults.ts'
 import {
-  bindDesktopExtensions,
   createDesktopExtensionRegistry,
-  disposeDesktopExtensions,
   resolveDesktopExtensions,
 } from './extension-composition.ts'
 import { decodeConversationId, decodeEntryId } from './identity.ts'
+import { loadInstalledPackages } from './packages.ts'
 
 export { decodeConversationId, decodeEntryId, decodeSubmissionId } from './identity.ts'
 
@@ -54,7 +53,28 @@ let runtimeStorage: Storage | undefined
 let shutdown: Promise<void> | undefined
 let activeModels: Models | undefined
 let preferences: Awaited<ReturnType<typeof loadPiSettings>> | undefined
-const extensionRegistry = createDesktopExtensionRegistry()
+let extensions: Promise<Awaited<ReturnType<typeof openExtensions>>> | undefined
+
+async function openExtensions() {
+  const directory = getDesktopUserDataPath()
+  const packages = await loadInstalledPackages({
+    directory,
+    cwd: getDesktopWorkingDirectory(),
+    stateDirectory: join(directory, 'notebook'),
+    environmentId: new NodeExecutionEnv({ cwd: getDesktopWorkingDirectory() }).id,
+  })
+  try {
+    return { packages, registry: createDesktopExtensionRegistry(packages.extensions) }
+  } catch (error) {
+    await packages.close()
+    throw error
+  }
+}
+
+function getExtensions() {
+  extensions ??= openExtensions()
+  return extensions
+}
 
 export async function refreshDurableSettings() {
   const [models, settings] = await Promise.all([getDurableModels(), loadPiSettings()])
@@ -63,9 +83,12 @@ export async function refreshDurableSettings() {
 }
 
 async function openRuntime() {
-  await refreshDurableSettings()
   const storage = await openNodeSqliteStorage(join(getDesktopUserDataPath(), 'durable.sqlite'))
   try {
+    const [, { registry, packages }] = await Promise.all([
+      refreshDurableSettings(),
+      getExtensions(),
+    ])
     const harness = await Harness.open(
       storage,
       {
@@ -73,7 +96,7 @@ async function openRuntime() {
           if (!activeModels) throw new Error('Durable model access is unavailable.')
           return activeModels
         },
-        registry: extensionRegistry,
+        registry,
         settings: {
           get compaction() {
             return { enabled: preferences?.autoCompact ?? true }
@@ -94,7 +117,7 @@ async function openRuntime() {
       runtimeContext,
     )
     runtimeStorage = storage
-    bindDesktopExtensions(harness)
+    packages.bind(harness)
     harness.resume()
     return harness
   } catch (error) {
@@ -120,7 +143,7 @@ export async function resolveConversation(conversationId: string) {
 }
 
 export async function createRuntimeConversation(request: ComposerStateRequest = {}) {
-  const selection = resolveRuntimeExtensions(request)
+  const selection = await resolveRuntimeExtensions(request)
   const defaults = getComposerDefaults(request)
   const models = await getDurableModels()
   const defaultModel = (await models.getAvailable())[0]
@@ -152,8 +175,8 @@ export async function createRuntimeConversation(request: ComposerStateRequest = 
   )
 }
 
-export function resolveRuntimeExtensions(request: ComposerStateRequest) {
-  return resolveDesktopExtensions(request, extensionRegistry)
+export async function resolveRuntimeExtensions(request: ComposerStateRequest) {
+  return resolveDesktopExtensions(request, (await getExtensions()).registry)
 }
 
 export async function listRuntimeConversations() {
@@ -242,11 +265,15 @@ export function disposeDurableRuntime() {
   if (shutdown) return shutdown
   closing = true
   shutdown = (async () => {
-    const harness = runtime ? await runtime : undefined
+    let harness: Harness | undefined
     try {
-      await disposeDesktopExtensions()
+      harness = runtime ? await runtime : undefined
     } finally {
-      await harness?.close(runtimeContext)
+      try {
+        if (extensions) await (await extensions).packages.close()
+      } finally {
+        await harness?.close(runtimeContext)
+      }
     }
   })()
   return shutdown

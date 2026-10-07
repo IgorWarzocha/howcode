@@ -27,6 +27,25 @@ The npm package contains the server and browser app. Native terminal and dictati
 
 Works on my machine™
 
+## Packages
+
+Install Durable extensions from a local directory, Git, or npm. No published release is required for local or Git packages.
+
+```bash
+howcode install ./my-tools
+howcode install git:github.com/example/my-tools@v1
+howcode install npm:@example/my-tools@1.0.0
+howcode list
+howcode update
+howcode remove ./my-tools
+```
+
+Git and npm installs require Bun on `PATH`. Install only trusted packages. Installation scripts and extensions run with your user permissions. Local sources stay in place and are not built or modified by Howcode.
+
+Restart Howcode after package changes. Installed extensions are selected for new conversations. Existing conversations keep their explicit selections. Use `--data-path <directory>` with both Howcode and its package commands when using a separate profile.
+
+Packages export ordinary Durable extension objects from their package entry point or Pi's `pi.extensions` paths. Normal Pi coding-agent extensions use a different API and are not compatible. Howcode checks declared `@earendil-works/pi-durable` peer requirements before loading. The Durable notebook package's host setup is handled automatically.
+
 ## What it does
 
 - **Durable conversations**: start threads from projects, branches, worktrees, or chat.
