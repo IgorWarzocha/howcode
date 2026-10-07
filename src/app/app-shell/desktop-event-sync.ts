@@ -1,12 +1,12 @@
+import { notifyProjectDiffInvalidated } from '@howcode/plugins/coding/ui'
 import {
   getLocalDraftProjectId,
   getPersistedConversationId,
   isLocalConversationId,
 } from '@howcode/shared/conversation-ids'
 import type { DesktopEvent } from '../desktop/types'
-import { notifyProjectDiffInvalidated } from '../hooks/project-diff-invalidation'
 import { desktopQueryKeys, invokeDesktopActionQuery } from '../query/desktop-query'
-import type { WorkspaceState } from '../state/workspace'
+import type { WorkspaceState } from '../state/workspace-model'
 
 type QueryClientLike = {
   setQueryData: (queryKey: readonly unknown[], updater: unknown) => void

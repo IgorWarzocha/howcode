@@ -1,3 +1,4 @@
+import { ComposerDictationControls } from '@howcode/plugins/dictation/ui'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import type { ComposerSendMode, KeybindingOverrides } from '@howcode/shared/keybindings'
 import { AlertTriangle } from 'lucide-react'
@@ -6,7 +7,6 @@ import type { DesktopActionInvoker } from '../desktop/types'
 import { useToolkitExtensionEnabled } from '../extensions/toolkit-context'
 import { appTypeSmallClass } from '../ui/classes'
 import { cn } from '../utils/cn'
-import { ComposerDictationControls } from './composer-dictation-controls'
 import { ComposerFileMentionPanel } from './composer-file-mention-panel'
 import {
   getComposerAttachmentsFromClipboardData,

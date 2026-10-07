@@ -2,7 +2,7 @@ import type { ToolkitExtensionSettings } from '@howcode/shared/toolkit-extension
 import { useRouter, useRouterState } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef } from 'react'
 import { isWorkspaceViewEnabled } from '../extensions/toolkit-plugins'
-import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
+import type { WorkspaceAction, WorkspaceState } from '../state/workspace-model'
 import type { Project, View } from '../types'
 
 type NonGitOpsView = Exclude<View, 'gitops'>

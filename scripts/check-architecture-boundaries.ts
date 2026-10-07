@@ -6,6 +6,7 @@ const sourceRoots = [
   'src/server',
   'src/desktop-host',
   'desktop',
+  'plugins',
   'shared',
   'node-runtime',
   'scripts',
@@ -15,11 +16,18 @@ const sourceRoots = [
 ] as const
 const sourceExtensions = ['.ts', '.tsx', '.js', '.cjs', '.mjs'] as const
 const testFilePattern = /\.(?:spec|test)\.[cm]?[jt]sx?$/u
-const ignoredDirectoryPattern = /(?:^|\/)(?:artifacts|build|dist|node_modules)(?:\/|$)/u
+const ignoredDirectoryPattern = /(?:^|\/)(?:build|dist|node_modules)(?:\/|$)/u
+const pluginPathPattern = /^plugins\/([^/]+)\/(ui|service|host)\/(.+)$/u
+const pluginPublicEntries = new Set([
+  'index.ts',
+  'extension.ts',
+  'views.ts',
+  'schema.ts',
+  'state.ts',
+])
 const allowedPiRuntimeImportPrefixes = [
   'desktop/durable-runtime/',
   'desktop/settings/',
-  'desktop/resources/',
   'desktop/service-host.ts',
   'desktop/service-host-runtime.ts',
 ] as const
@@ -134,6 +142,10 @@ function getImportSpecifiers(filePath: string) {
 
 function getLayer(filePath: string): Layer {
   const repoPath = toRepoPath(filePath)
+  const pluginRuntime = pluginPathPattern.exec(repoPath)?.[2]
+  if (pluginRuntime === 'ui') return 'renderer'
+  if (pluginRuntime === 'service') return 'service'
+  if (pluginRuntime === 'host') return 'host'
   if (repoPath.startsWith('src/app/')) return 'renderer'
   if (repoPath.startsWith('src/server/')) return 'server'
   if (repoPath.startsWith('src/desktop-host/')) return 'host'
@@ -175,6 +187,7 @@ function isForbiddenBoundary(from: Layer, to: Layer) {
 
 function isAllowedPiRuntimeFile(filePath: string) {
   const repoPath = toRepoPath(filePath)
+  if (pluginPathPattern.exec(repoPath)?.[2] === 'service') return true
   return allowedPiRuntimeImportPrefixes.some(
     (prefix) => repoPath === prefix || repoPath.startsWith(prefix),
   )
@@ -187,6 +200,11 @@ function getSpecialBoundaryViolation(
 ) {
   const importerLayer = getLayer(importer)
   const importerPath = toRepoPath(importer)
+  const plugin = dependency ? pluginPathPattern.exec(toRepoPath(dependency)) : null
+  const owner = pluginPathPattern.exec(importerPath)
+  if (plugin && owner?.[1] !== plugin[1] && !pluginPublicEntries.has(plugin[3] ?? '')) {
+    return `${importerPath} imports private plugin implementation ${toRepoPath(dependency ?? '')}`
+  }
   const importsSqlite =
     specifier === 'node:sqlite' ||
     specifier === '@effect/sql-sqlite-node' ||

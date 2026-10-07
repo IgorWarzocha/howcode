@@ -8,7 +8,6 @@ import {
   getThreadId,
   getThreadIds,
 } from '../../shared/pi-thread-action-payloads.ts'
-import { deleteArtifactsForConversation } from '../artifact-state-db.ts'
 import { deleteChatThread } from '../chat-state-db.ts'
 import { deleteRuntimeConversation } from '../durable-runtime/host.ts'
 import { openThreadRuntime, startNewThread } from '../pi-desktop-runtime.ts'
@@ -30,11 +29,20 @@ import {
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
 
+const conversationCleanup = new Set<(conversationId: string) => Promise<void> | void>()
+
+export function registerConversationCleanup(
+  cleanup: (conversationId: string) => Promise<void> | void,
+) {
+  conversationCleanup.add(cleanup)
+  return () => conversationCleanup.delete(cleanup)
+}
+
 async function deletePersistedThread(threadId: string) {
   const conversationId = getThreadConversationId(threadId)
   if (conversationId) {
     await deleteRuntimeConversation(conversationId)
-    deleteArtifactsForConversation(conversationId)
+    await Promise.all(Array.from(conversationCleanup, (cleanup) => cleanup(conversationId)))
     deleteChatThread(conversationId)
   }
   deleteThreadRecord(threadId)

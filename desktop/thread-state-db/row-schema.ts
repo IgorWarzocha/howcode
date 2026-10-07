@@ -1,25 +1,6 @@
 import * as Result from 'effect/Result'
 import * as Schema from 'effect/Schema'
 
-export const ProjectRowSchema = Schema.Struct({
-  id: Schema.String,
-  name: Schema.String,
-  pinned: Schema.Number,
-  collapsed: Schema.Number,
-  threadCount: Schema.Number,
-  latestModifiedMs: Schema.Number,
-  repoOriginUrl: Schema.NullOr(Schema.String),
-  repoOriginChecked: Schema.Number,
-  gitOpsMode: Schema.NullOr(Schema.String),
-  worktreeRootProjectId: Schema.NullOr(Schema.String),
-  worktreeBranchName: Schema.NullOr(Schema.String),
-  worktreeParentBranchName: Schema.NullOr(Schema.String),
-  worktreeIsMain: Schema.NullOr(Schema.Number),
-  worktreeSource: Schema.NullOr(Schema.String),
-  worktreeCompleted: Schema.NullOr(Schema.Number),
-  worktreeDirectory: Schema.NullOr(Schema.String),
-})
-
 export const ThreadRowSchema = Schema.Struct({
   id: Schema.String,
   title: Schema.String,

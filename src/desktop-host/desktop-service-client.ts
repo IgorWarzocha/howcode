@@ -2,10 +2,10 @@ import type { ChildProcess } from 'node:child_process'
 import * as Effect from 'effect/Effect'
 import * as ManagedRuntime from 'effect/ManagedRuntime'
 import * as Stream from 'effect/Stream'
+import { TerminalRpcServiceClient } from '../../plugins/terminal/host/index'
 import type { DesktopEvent } from '../../shared/desktop-contracts'
 import { makeLayer, Service } from './desktop-service/service'
 import type { DesktopServiceClientOptions, DesktopServiceModuleName } from './desktop-service/types'
-import { TerminalRpcServiceClient } from './terminal-rpc-client'
 
 export type {
   DesktopServiceApi,

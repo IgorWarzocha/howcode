@@ -7,7 +7,6 @@ export type ConversationSummaryRecord = {
   branchName?: string | undefined | null | undefined
 }
 
-export type ProjectRow = typeof ProjectRowSchema.Type
 export type ThreadRow = typeof ThreadRowSchema.Type
 export type InboxThreadRow = typeof InboxThreadRowSchema.Type
 
@@ -42,6 +41,5 @@ export type ThreadCwdRow = {
 import type {
   ArchivedThreadRowSchema,
   InboxThreadRowSchema,
-  ProjectRowSchema,
   ThreadRowSchema,
 } from './row-schema.ts'

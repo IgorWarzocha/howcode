@@ -4,20 +4,22 @@ import { loadAppSettings, loadSidebarVisibleProjectIds } from '../app-settings/r
 import { getComposerState } from '../pi-desktop-runtime.ts'
 import { loadPiSettings, loadPiThemeState } from '../pi-settings.ts'
 import { getAgentDirectory } from '../settings/paths.ts'
-import { loadCodingShell } from '../toolkit/coding-shell.ts'
 import { ensureConversationProjection } from './conversation-projection.ts'
 
-export async function loadShellState(cwd: string): Promise<ShellState> {
+export async function loadShellState(
+  cwd: string,
+  loadWorkspace?: (cwd: string) => Promise<Pick<ShellState, 'resolvedCwd' | 'projects'>>,
+): Promise<ShellState> {
   const agentDir = getAgentDirectory()
   await ensureConversationProjection()
 
   const appSettings = loadAppSettings()
-  const codingEnabled = isToolkitExtensionEnabled(appSettings, 'coding')
+  const codingEnabled = Boolean(loadWorkspace) && isToolkitExtensionEnabled(appSettings, 'coding')
   const [composer, piSettings, piTheme, workspace] = await Promise.all([
     getComposerState(codingEnabled ? { projectId: cwd } : { composerMode: 'chat' }),
     loadPiSettings(codingEnabled ? cwd : null),
     loadPiThemeState(codingEnabled ? cwd : null),
-    codingEnabled ? loadCodingShell(cwd) : { resolvedCwd: cwd, projects: [] },
+    codingEnabled && loadWorkspace ? loadWorkspace(cwd) : { resolvedCwd: cwd, projects: [] },
   ])
 
   return {

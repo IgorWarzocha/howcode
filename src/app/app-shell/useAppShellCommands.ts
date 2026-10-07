@@ -1,3 +1,5 @@
+import { useCodingWorkspaceCommands } from '@howcode/plugins/coding/ui'
+import { useTerminalCommands } from '@howcode/plugins/terminal/ui'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { isLocalConversationId } from '@howcode/shared/conversation-ids'
 import {
@@ -6,13 +8,10 @@ import {
 } from '@howcode/shared/toolkit-extensions'
 import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch, SetStateAction } from 'react'
-import { useCallback } from 'react'
 import type { DesktopActionResult, InboxThread } from '../desktop/types'
 import { isWorkspaceViewEnabled } from '../extensions/toolkit-plugins'
-import { notifyProjectDiffInvalidated } from '../hooks/project-diff-invalidation'
 import { forgetLocalDraftThread } from '../hooks/useDesktopProjectThreads'
-import { desktopQueryKeys } from '../query/desktop-query'
-import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
+import type { WorkspaceAction, WorkspaceState } from '../state/workspace-model'
 import type { View } from '../types'
 import { removeProjectThreadFromShellState } from './project-thread-cache'
 import { getProjectSelectionAction } from './scoped-project-view'
@@ -42,19 +41,6 @@ type UseAppShellCommandsInput = {
   workspaceState: WorkspaceState
 }
 
-function resetProjectDiffCaches(queryClient: QueryClient, projectId: string) {
-  notifyProjectDiffInvalidated(projectId)
-  void queryClient.invalidateQueries({
-    queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
-  })
-  void queryClient.invalidateQueries({
-    queryKey: desktopQueryKeys.projectDiffImagePreviewPrefix(projectId),
-  })
-  void queryClient.invalidateQueries({
-    queryKey: desktopQueryKeys.projectCommitsPrefix(projectId),
-  })
-}
-
 export function useAppShellCommands({
   toolkitSettings,
   collapsedProjectIds,
@@ -74,14 +60,12 @@ export function useAppShellCommands({
     workspaceState,
   })
 
-  const handleToggleTerminal = useCallback(() => {
-    if (isToolkitExtensionEnabled(toolkitSettings, 'terminal'))
-      dispatch({ type: 'toggle-terminal' })
-  }, [dispatch, toolkitSettings])
-  const handleCloseTerminalDrawer = useCallback(
-    () => dispatch({ type: 'set-terminal-visible', visible: false }),
-    [dispatch],
-  )
+  const { handleToggleTerminal, handleCloseTerminalDrawer } = useTerminalCommands({
+    dispatch,
+    toolkitSettings,
+  })
+  const { handleOpenGitOpsView, handleCloseGitOpsView, handleOpenWorktreeDiffFile } =
+    useCodingWorkspaceCommands({ composerProjectId, dispatch, queryClient })
 
   const handleShowView = (view: Exclude<View, 'gitops'>, target?: SettingsOpenTarget) => {
     const enabledView = isWorkspaceViewEnabled(toolkitSettings, view) ? view : 'chat'
@@ -181,22 +165,6 @@ export function useAppShellCommands({
     }
 
     setThreadHistoryCompactions((current) => current + 1)
-  }
-
-  const handleOpenGitOpsView = (options: { filePath?: string | null } = {}) => {
-    if (composerProjectId) {
-      resetProjectDiffCaches(queryClient, composerProjectId)
-    }
-
-    dispatch({ type: 'open-gitops', filePath: options.filePath ?? null })
-  }
-
-  const handleCloseGitOpsView = () => {
-    dispatch({ type: 'close-gitops' })
-  }
-
-  const handleOpenWorktreeDiffFile = (filePath: string) => {
-    handleOpenGitOpsView({ filePath })
   }
 
   return {

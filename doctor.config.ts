@@ -4,7 +4,7 @@ export default {
     overrides: [
       {
         // Shutdown can begin during startup. The post-await guard prevents dispatch to a closing server.
-        files: ['desktop/terminal/host-plugin.ts'],
+        files: ['plugins/terminal/service/host-plugin.ts'],
         rules: ['react-doctor/async-defer-await'],
       },
       {

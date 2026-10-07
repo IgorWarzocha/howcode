@@ -1,3 +1,6 @@
+import { ArtifactsComposerControl } from '@howcode/plugins/artifacts/ui'
+import { CodingComposerControls } from '@howcode/plugins/coding/ui'
+import { TerminalComposerControl } from '@howcode/plugins/terminal/ui'
 import { Bot } from 'lucide-react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import { ToolbarButton } from '../common/toolbar-button'
@@ -8,9 +11,6 @@ import type {
   ProjectDiffBaseline,
   ProjectGitState,
 } from '../desktop/types'
-import { ArtifactsComposerControl } from '../extensions/artifacts-plugin'
-import { CodingComposerControls } from '../extensions/coding-composer-controls'
-import { TerminalComposerControl } from '../extensions/terminal-plugin'
 import type { Message } from '../types'
 import { cn } from '../utils/cn'
 import {

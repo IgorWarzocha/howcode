@@ -1,0 +1,34 @@
+import type { DesktopRequestHandlerMap } from '../../../shared/desktop-ipc'
+import type { TerminalService } from '../../../shared/desktop-service-contracts'
+
+export { TerminalRpcServiceClient } from './rpc-client'
+
+type TerminalRequestHandlers = Pick<
+  DesktopRequestHandlerMap,
+  | 'listTerminals'
+  | 'terminalOpen'
+  | 'terminalWrite'
+  | 'terminalResize'
+  | 'terminalClose'
+  | 'terminalStatus'
+>
+
+export function createTerminalHandlers(terminalManager: TerminalService): TerminalRequestHandlers {
+  return {
+    listTerminals: () => terminalManager.listTerminals(),
+    terminalOpen: (request) => terminalManager.openTerminal(request),
+    terminalWrite: async ({ sessionId, data }) => {
+      await terminalManager.writeTerminal(sessionId, data)
+      return { ok: true }
+    },
+    terminalResize: async ({ sessionId, cols, rows }) => {
+      await terminalManager.resizeTerminal(sessionId, cols, rows)
+      return { ok: true }
+    },
+    terminalClose: async (request) => {
+      await terminalManager.closeTerminal(request)
+      return { ok: true }
+    },
+    terminalStatus: ({ sessionId }) => terminalManager.getTerminalStatus(sessionId),
+  }
+}

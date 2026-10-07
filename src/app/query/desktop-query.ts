@@ -1,6 +1,8 @@
+export { desktopQueryKeys } from './desktop-query-keys'
+
 import { fallbackAppSlashCommands } from '@howcode/shared/composer-slash-commands'
 import { browserDesktopBridgeCapabilities } from '@howcode/shared/desktop-bridge-capabilities'
-import type { DesktopRequestMap } from '@howcode/shared/desktop-ipc'
+
 import { getSafeExternalUrl } from '@howcode/shared/external-url'
 import type {
   ArchivedThread,
@@ -11,44 +13,11 @@ import type {
   ComposerState,
   ComposerStateRequest,
   InboxThread,
-  ProjectCommitEntry,
-  ProjectDiffBaseline,
-  ProjectDiffFileContentsRequest,
-  ProjectDiffFileContentsResult,
-  ProjectDiffImagePreview,
-  ProjectDiffImageSide,
-  ProjectDiffStatsResult,
-  ProjectGitState,
-  ProjectUsageSummary,
   ShellState,
   Thread,
   ThreadData,
   ThreadSearchResult,
 } from '../desktop/types'
-
-export {
-  compileReactArtifactQuery,
-  listArtifactsQuery,
-  listArtifactVersionsQuery,
-  saveTextToDownloadsQuery,
-  updateArtifactQuery,
-} from './desktop-artifact-query'
-export { desktopQueryKeys } from './desktop-query-keys'
-export {
-  canSearchPiSkillsQuery,
-  getConfiguredPiSkillsQuery,
-  installPiSkillQuery,
-  removePiSkillQuery,
-  searchPiSkillsQuery,
-} from './desktop-skill-query'
-export {
-  closeDesktopTerminalQuery,
-  listDesktopTerminalsQuery,
-  openDesktopTerminalQuery,
-  resizeDesktopTerminalQuery,
-  subscribeDesktopTerminalQuery,
-  writeDesktopTerminalQuery,
-} from './desktop-terminal-query'
 
 export function hasDesktopBridgeQuery() {
   return typeof window !== 'undefined' && typeof window.piDesktop?.invokeAction === 'function'
@@ -119,84 +88,6 @@ export async function getComposerSkillsQuery(request: ComposerStateRequest = {})
   return (await window.piDesktop?.getComposerSkills?.(request)) ?? []
 }
 
-export async function getProjectGitStateQuery(projectId: string): Promise<ProjectGitState | null> {
-  return (await window.piDesktop?.getProjectGitState?.(projectId)) ?? null
-}
-
-export async function getProjectUsageSummaryQuery(
-  projectId: string,
-): Promise<ProjectUsageSummary | null> {
-  return (await window.piDesktop?.getProjectUsageSummary?.(projectId)) ?? null
-}
-
-export async function getProjectFaviconQuery(projectId: string): Promise<string | null> {
-  return (await window.piDesktop?.getProjectFavicon?.(projectId)) ?? null
-}
-
-export async function startProjectDiffStreamQuery(
-  projectId: string,
-  baseline: ProjectDiffBaseline | null = null,
-  streamId: string | null = null,
-  includeUntracked = false,
-) {
-  return (
-    (await window.piDesktop?.startProjectDiffStream?.(
-      projectId,
-      baseline,
-      streamId,
-      includeUntracked,
-    )) ?? null
-  )
-}
-
-export function canStartProjectDiffStreamQuery() {
-  return (
-    typeof window !== 'undefined' && typeof window.piDesktop?.startProjectDiffStream === 'function'
-  )
-}
-
-export async function cancelProjectDiffStreamQuery(streamId: string): Promise<void> {
-  await window.piDesktop?.cancelProjectDiffStream?.(streamId)
-}
-
-export async function getProjectDiffStatsQuery(
-  projectId: string,
-  baseline: ProjectDiffBaseline | null = null,
-  includeUntracked = false,
-): Promise<ProjectDiffStatsResult | null> {
-  return (
-    (await window.piDesktop?.getProjectDiffStats?.(projectId, baseline, includeUntracked)) ?? null
-  )
-}
-
-export async function getProjectDiffImagePreviewQuery(request: {
-  projectId: string
-  baseline?: ProjectDiffBaseline | null | undefined
-  path: string
-  side: ProjectDiffImageSide
-}): Promise<ProjectDiffImagePreview> {
-  return (await window.piDesktop?.getProjectDiffImagePreview?.(request)) ?? null
-}
-
-export async function getProjectDiffFileContentsQuery(
-  request: ProjectDiffFileContentsRequest,
-): Promise<ProjectDiffFileContentsResult | null> {
-  return (await window.piDesktop?.getProjectDiffFileContents?.(request)) ?? null
-}
-
-export async function listProjectCommitsQuery(
-  projectId: string,
-  limit = 50,
-): Promise<ProjectCommitEntry[]> {
-  return (await window.piDesktop?.listProjectCommits?.(projectId, limit)) ?? []
-}
-
-export async function listProjectDirectoryEntriesQuery(
-  request: DesktopRequestMap['listProjectDirectoryEntries']['params'] = {},
-): Promise<DesktopRequestMap['listProjectDirectoryEntries']['response'] | null> {
-  return (await window.piDesktop?.listProjectDirectoryEntries?.(request)) ?? null
-}
-
 export async function listComposerAttachmentEntriesQuery(
   request: {
     projectId?: string | null | undefined
@@ -252,38 +143,6 @@ export async function searchThreadQuery(
       matches: [],
       searchedMessageCount: 0,
     }
-  )
-}
-
-export async function getDictationStateQuery() {
-  return (await window.piDesktop?.getDictationState?.().catch(() => null)) ?? null
-}
-
-export async function listDictationModelsQuery() {
-  return (await window.piDesktop?.listDictationModels?.().catch(() => [])) ?? []
-}
-
-export async function installDictationModelQuery(
-  modelId: import('../desktop/types').DictationModelId,
-) {
-  return (await window.piDesktop?.installDictationModel?.(modelId)) ?? null
-}
-
-export async function removeDictationModelQuery(
-  modelId: import('../desktop/types').DictationModelId,
-) {
-  return (await window.piDesktop?.removeDictationModel?.(modelId)) ?? null
-}
-
-export async function transcribeDictationQuery(
-  request: import('../desktop/types').DictationTranscriptionRequest,
-) {
-  return (await window.piDesktop?.transcribeDictation?.(request)) ?? null
-}
-
-export function canTranscribeDictationQuery() {
-  return (
-    typeof window !== 'undefined' && typeof window.piDesktop?.transcribeDictation === 'function'
   )
 }
 

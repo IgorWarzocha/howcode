@@ -1,3 +1,4 @@
+import { useComposerDictation } from '@howcode/plugins/dictation/ui'
 import { useEffect, useRef, useState } from 'react'
 import type {
   ComposerFilePickerState,
@@ -8,7 +9,6 @@ import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
 import type { View } from '../../types'
 import { useComposerAttachmentPicker } from '../useComposerAttachmentPicker'
 import { useComposerClipboardHandlers } from '../useComposerClipboardHandlers'
-import { useComposerDictation } from '../useComposerDictation'
 import { useComposerSubmission } from '../useComposerSubmission'
 import { useComposerActionRunner } from './useComposerActionRunner'
 import { useComposerDraftState } from './useComposerDraftState'

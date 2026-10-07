@@ -1,10 +1,5 @@
-import type {
-  ArchivedThread,
-  InboxThread,
-  Project,
-  Thread,
-} from '../../shared/desktop-contracts.ts'
-import type { ArchivedThreadRow, InboxThreadRow, ProjectRow, ThreadRow } from './types.ts'
+import type { ArchivedThread, InboxThread, Thread } from '../../shared/desktop-contracts.ts'
+import type { ArchivedThreadRow, InboxThreadRow, ThreadRow } from './types.ts'
 
 export function formatRelativeAge(lastModifiedMs: number) {
   const elapsedMs = Math.max(0, Date.now() - lastModifiedMs)
@@ -36,32 +31,6 @@ export function formatRelativeAge(lastModifiedMs: number) {
   }
 
   return `${Math.floor(elapsedMs / year)}y`
-}
-
-export function mapProjectRow(row: ProjectRow): Project {
-  return {
-    id: row.id,
-    name: row.name,
-    threads: [],
-    latestModifiedMs: row.latestModifiedMs,
-    pinned: Boolean(row.pinned),
-    threadCount: row.threadCount,
-    threadsLoaded: false,
-    collapsed: Boolean(row.collapsed),
-    repoOriginUrl: row.repoOriginUrl,
-    repoOriginChecked: Boolean(row.repoOriginChecked),
-    worktreeDirectory: row.worktreeDirectory ?? './.worktrees',
-    worktree: row.worktreeRootProjectId
-      ? {
-          rootProjectId: row.worktreeRootProjectId,
-          branchName: row.worktreeBranchName,
-          parentBranchName: row.worktreeParentBranchName,
-          isMain: Boolean(row.worktreeIsMain),
-          source: row.worktreeSource === 'imported' ? 'imported' : 'howcode',
-          completed: Boolean(row.worktreeCompleted),
-        }
-      : undefined,
-  }
 }
 
 export function mapThreadRow(row: ThreadRow): Thread {

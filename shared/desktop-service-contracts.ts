@@ -48,28 +48,7 @@ import type {
   TerminalStatusSnapshot,
 } from './terminal-contracts'
 
-export type PiThreadsService = {
-  disposeDesktopRuntime?: () => Promise<void> | void
-  handleDesktopAction: (
-    action: DesktopAction,
-    payload: AnyDesktopActionPayload,
-  ) => Promise<DesktopActionResultData | null | undefined>
-  loadArchivedThreadList: () => Promise<ArchivedThread[]>
-  loadInboxThreadList: () => Promise<InboxThread[]>
-  loadComposerState: (request: ComposerStateRequest) => Promise<ComposerState>
-  loadComposerSlashCommands: (request: ComposerStateRequest) => Promise<ComposerSlashCommand[]>
-  loadComposerSkills: (request: ComposerStateRequest) => Promise<ComposerSkillReference[]>
-  getDictationState: () => Promise<DictationState>
-  listDictationModels: () => Promise<DictationModelSummary[]>
-  installDictationModel: (request: {
-    modelId: 'tiny.en' | 'base.en' | 'small.en'
-  }) => Promise<DictationModelInstallResult>
-  removeDictationModel: (request: {
-    modelId: 'tiny.en' | 'base.en' | 'small.en'
-  }) => Promise<DictationModelRemoveResult>
-  transcribeDictation: (
-    request: DictationTranscriptionRequest,
-  ) => Promise<DictationTranscriptionResult>
+export type CodingService = {
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
   loadProjectUsageSummary: (projectId: string) => Promise<ProjectUsageSummary>
   loadProjectFavicon: (projectId: string) => Promise<string | null>
@@ -99,14 +78,9 @@ export type PiThreadsService = {
     projectId: string,
     limit?: number | null | undefined,
   ) => Promise<ProjectCommitEntry[]>
-  loadProjectThreads: (
-    projectId: string,
-    options?: { chat?: boolean | undefined },
-  ) => Promise<Thread[]>
-  loadChatSidebarState: (
-    selectedGroupId?: string | null,
-  ) => Promise<ChatSidebarState> | ChatSidebarState
-  createChatGroup: (name: string) => Promise<ChatSidebarState> | ChatSidebarState
+}
+
+export type ArtifactsService = {
   listArtifacts: (conversationId?: string | null) => Promise<Artifact[]> | Artifact[]
   getArtifact: (
     artifactSlug: string,
@@ -124,6 +98,41 @@ export type PiThreadsService = {
   }) => Promise<Artifact> | Artifact
   listArtifactVersions: (artifactSlug: string) => Promise<ArtifactVersion[]> | ArtifactVersion[]
   compileReactArtifact: (source: string) => Promise<ReactArtifactCompileResult>
+}
+
+export type DictationService = {
+  getDictationState: () => Promise<DictationState>
+  listDictationModels: () => Promise<DictationModelSummary[]>
+  installDictationModel: (request: {
+    modelId: 'tiny.en' | 'base.en' | 'small.en'
+  }) => Promise<DictationModelInstallResult>
+  removeDictationModel: (request: {
+    modelId: 'tiny.en' | 'base.en' | 'small.en'
+  }) => Promise<DictationModelRemoveResult>
+  transcribeDictation: (
+    request: DictationTranscriptionRequest,
+  ) => Promise<DictationTranscriptionResult>
+}
+
+export type PiThreadsService = {
+  disposeDesktopRuntime?: () => Promise<void> | void
+  handleDesktopAction: (
+    action: DesktopAction,
+    payload: AnyDesktopActionPayload,
+  ) => Promise<DesktopActionResultData | null | undefined>
+  loadArchivedThreadList: () => Promise<ArchivedThread[]>
+  loadInboxThreadList: () => Promise<InboxThread[]>
+  loadComposerState: (request: ComposerStateRequest) => Promise<ComposerState>
+  loadComposerSlashCommands: (request: ComposerStateRequest) => Promise<ComposerSlashCommand[]>
+  loadComposerSkills: (request: ComposerStateRequest) => Promise<ComposerSkillReference[]>
+  loadProjectThreads: (
+    projectId: string,
+    options?: { chat?: boolean | undefined },
+  ) => Promise<Thread[]>
+  loadChatSidebarState: (
+    selectedGroupId?: string | null,
+  ) => Promise<ChatSidebarState> | ChatSidebarState
+  createChatGroup: (name: string) => Promise<ChatSidebarState> | ChatSidebarState
   loadShellState: (cwd: string) => Promise<ShellState>
   loadAppSettings: () => Promise<AppSettings> | AppSettings
   loadConversationEntries: (conversationId: string) => Promise<ConversationEntryList | null>
@@ -140,7 +149,6 @@ export type PiThreadsService = {
   watchConversation: (conversationId: string | null) => Promise<void>
   subscribeDesktopEvents: (listener: (event: DesktopEvent) => void) => () => void
 }
-
 export type TerminalService = {
   closeAllTerminals: () => Promise<void>
   closeTerminal: (request: TerminalCloseRequest) => Promise<void>
@@ -176,6 +184,9 @@ export type PiSkillsService = {
 
 export type DesktopServiceRuntime = {
   piThreads: PiThreadsService
-  piSkills: PiSkillsService
+  skills: PiSkillsService
+  coding: CodingService
+  artifacts: ArtifactsService
+  dictation: DictationService
   terminalManager: TerminalService
 }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createChatGroupQuery, getChatSidebarStateQuery } from '../query/desktop-query'
-import type { WorkspaceState } from '../state/workspace'
+import type { WorkspaceState } from '../state/workspace-model'
 
 type ChatSidebarState = Awaited<ReturnType<typeof getChatSidebarStateQuery>>
 

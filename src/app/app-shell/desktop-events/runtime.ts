@@ -5,7 +5,7 @@ import type {
   ProjectGitState,
   ThreadData,
 } from '../../desktop/types'
-import type { WorkspaceAction } from '../../state/workspace'
+import type { WorkspaceAction } from '../../state/workspace-model'
 import type { DesktopEventSelectionState } from '../desktop-event-sync'
 
 export type DesktopEventQueryClient = {

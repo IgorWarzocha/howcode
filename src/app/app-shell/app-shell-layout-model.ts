@@ -1,4 +1,4 @@
-import type { WorkspaceState } from '../state/workspace'
+import type { WorkspaceState } from '../state/workspace-model'
 
 export function getLayoutThreadSelection(state: WorkspaceState) {
   const hasThreadSelection =

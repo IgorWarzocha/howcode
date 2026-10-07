@@ -1,7 +1,7 @@
 import { getPersistedConversationId } from '@howcode/shared/conversation-ids'
 import type { DesktopAction } from '../desktop/actions'
 import type { AnyDesktopActionPayload, ArchivedThread } from '../desktop/types'
-import type { WorkspaceState } from '../state/workspace'
+import type { WorkspaceState } from '../state/workspace-model'
 
 function getContextualConversationId({
   activeView,

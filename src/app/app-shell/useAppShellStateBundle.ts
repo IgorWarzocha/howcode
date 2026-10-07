@@ -1,9 +1,9 @@
+import { useAppShellProjectState } from '@howcode/plugins/coding/ui'
+import { useSkillsProjectScopeState } from '@howcode/plugins/skills/ui'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { useReducer, useState } from 'react'
 import { createInitialWorkspaceState, workspaceReducer } from '../state/workspace'
 import { useAppShellComposerState } from './useAppShellComposerState'
-import { useAppShellProjectState } from './useAppShellProjectState'
-import { useAppShellResourceScopeState } from './useAppShellResourceScopeState'
 import { useAppShellThreadState } from './useAppShellThreadState'
 
 export function useAppShellStateBundle() {
@@ -12,7 +12,7 @@ export function useAppShellStateBundle() {
   const [settingsOpenTarget, setSettingsOpenTarget] = useState<SettingsOpenTarget | null>(null)
   const composer = useAppShellComposerState()
   const projects = useAppShellProjectState()
-  const resourceScope = useAppShellResourceScopeState()
+  const resourceScope = useSkillsProjectScopeState()
   const thread = useAppShellThreadState()
 
   return {

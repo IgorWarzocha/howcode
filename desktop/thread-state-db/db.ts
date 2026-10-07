@@ -6,12 +6,30 @@ import * as Layer from 'effect/Layer'
 import * as ManagedRuntime from 'effect/ManagedRuntime'
 import type * as SqlClient from 'effect/sql/SqlClient'
 import { getDesktopUserDataPath } from '../user-data-path.ts'
-import { cleanupLegacyCheckpoints, initializeThreadStateSchema } from './schema.ts'
+import { type DatabaseSchema, initializeThreadStateSchema } from './schema.ts'
 import { type DatabaseTransactions, databaseTransactionsLayer } from './write-transaction.ts'
 
 type DatabaseServices = SqlClient.SqlClient | DatabaseTransactions
 
-export function makeThreadStateDatabaseRuntime(filename: string) {
+type DatabaseStartupTask = Effect.Effect<void, unknown, SqlClient.SqlClient>
+const startupTasks = new Set<DatabaseStartupTask>()
+let databaseSchemas: readonly DatabaseSchema[] = []
+
+export function configureDatabaseSchemas(contributions: readonly DatabaseSchema[]) {
+  if (database) throw new Error('Database schemas must be composed before database demand.')
+  databaseSchemas = [...contributions]
+}
+
+export function registerDatabaseStartupTask(task: DatabaseStartupTask) {
+  if (database) throw new Error('Database startup tasks must be composed before database demand.')
+  startupTasks.add(task)
+  return () => startupTasks.delete(task)
+}
+
+export function makeThreadStateDatabaseRuntime(
+  filename: string,
+  contributions: readonly DatabaseSchema[] = [],
+) {
   const sqlite = Layer.unwrap(
     Effect.sync(() => {
       if (filename !== ':memory:') mkdirSync(path.dirname(filename), { recursive: true })
@@ -21,15 +39,15 @@ export function makeThreadStateDatabaseRuntime(filename: string) {
   const transactions = databaseTransactionsLayer.pipe(Layer.provideMerge(sqlite))
   const initialized = Layer.effectDiscard(
     Effect.gen(function* () {
-      yield* initializeThreadStateSchema()
-      yield* cleanupLegacyCheckpoints().pipe(
-        Effect.catch((error) =>
-          Effect.sync(() =>
-            console.warn('Failed to complete legacy Git checkpoint cleanup.', error),
+      yield* initializeThreadStateSchema(contributions)
+      for (const task of startupTasks) {
+        yield* task.pipe(
+          Effect.catch((error) =>
+            Effect.sync(() => console.warn('Database startup task failed.', error)),
           ),
-        ),
-        Effect.forkScoped,
-      )
+          Effect.forkScoped,
+        )
+      }
     }),
   ).pipe(Layer.provideMerge(transactions))
   return ManagedRuntime.make(initialized)
@@ -42,6 +60,7 @@ function getDatabaseRuntime() {
   if (closed) throw new Error('Thread state database is closed.')
   database ??= makeThreadStateDatabaseRuntime(
     path.join(getDesktopUserDataPath(), 'state', 'desktop.sqlite'),
+    databaseSchemas,
   )
   return database
 }

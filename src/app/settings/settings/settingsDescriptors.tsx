@@ -1,3 +1,4 @@
+import { buildDictationSettingsDescriptors } from '@howcode/plugins/dictation/ui'
 import { isToolkitExtensionEnabled } from '@howcode/shared/toolkit-extensions'
 import type { Dispatch, SetStateAction } from 'react'
 import type {
@@ -10,7 +11,6 @@ import type {
   PiThemeState,
 } from '../../desktop/types'
 import { buildCommonSettingsDescriptors } from './settingsDescriptorCommon'
-import { buildDictationSettingsDescriptors } from './settingsDescriptorDictation'
 import { buildKeybindingSettingsDescriptors } from './settingsDescriptorKeybindings'
 import { buildModelSettingsDescriptors } from './settingsDescriptorModels'
 import { buildPiRuntimeSettingsDescriptors } from './settingsDescriptorPiRuntime'

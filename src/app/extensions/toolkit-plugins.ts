@@ -1,10 +1,10 @@
+import { codingPlugin } from '@howcode/plugins/coding/ui/extension'
+import { skillsPlugin } from '@howcode/plugins/skills/ui/extension'
 import {
   isToolkitExtensionEnabled,
   type ToolkitExtensionSettings,
 } from '@howcode/shared/toolkit-extensions'
 import type { View } from '../types'
-import { codingPlugin } from './coding-plugin'
-import { skillsPlugin } from './skills-plugin'
 
 export const workspacePlugins = [codingPlugin, skillsPlugin]
 

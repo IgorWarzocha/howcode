@@ -1,3 +1,0 @@
-- Keep built-in terminal UI and session presentation in this boundary; backend PTY ownership remains under `desktop/terminal`.
-- Treat it as plugin-shaped but not dynamically pluggable yet: no disable flags, registries, or runtime loading.
-- Keep `TerminalViewportBase` internal xterm mechanics; `ShellTerminalViewport` owns the public presentation defaults.

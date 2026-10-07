@@ -1,0 +1,4 @@
+- Keep each plugin's UI, host adapter, backend implementation and owned state here. Cross-runtime contracts stay in `shared/*`.
+- Expose runtime operations through `index.ts`, Durable or UI contributions through `extension.ts`, persistence operations through `state.ts`, and database declarations through `schema.ts`. Core and peer plugins must not import private implementation files.
+- Keep route metadata independent of UI execution. Put heavy route presentations in `views.ts`, not in the descriptor entrypoint imported by URL and navigation policy.
+- Compose peer capabilities at the host boundary instead of importing a peer's controller or runtime. Preserve independent UI toggles and Durable selections.

@@ -1,5 +1,5 @@
 import { composeBuiltInWorkspaceViews } from '@howcode/extensions/built-in-workspace-views'
-import { TerminalPanel } from '@howcode/workspace-shell'
+import { TerminalDrawerLayer } from '@howcode/plugins/terminal/ui'
 import type { RefObject } from 'react'
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
 import { isWorkspaceViewEnabled } from '../extensions/toolkit-plugins'
@@ -120,27 +120,10 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
             })}
           />
         </div>
-        <TerminalDrawerLayer {...props} />
-      </div>
-    </section>
-  )
-}
-
-function TerminalDrawerLayer(props: AppShellLayoutViewProps) {
-  const { controller } = props
-  if (!props.terminal.drawerPresent) return null
-  return (
-    <div
-      className={cn(
-        'pointer-events-none absolute top-0 right-0 bottom-0 z-20 max-w-full overflow-hidden',
-        props.sidebar.compactMode ? 'w-full' : 'w-[min(28rem,calc(100%_-_2.5rem))]',
-      )}
-    >
-      <div
-        data-open={props.terminal.drawerVisible ? 'true' : 'false'}
-        className={`motion-terminal-drawer absolute inset-0 min-h-0 min-w-0 ${props.terminal.drawerVisible ? 'pointer-events-auto' : 'pointer-events-none'}`}
-      >
-        <TerminalPanel
+        <TerminalDrawerLayer
+          drawerPresent={props.terminal.drawerPresent}
+          drawerVisible={props.terminal.drawerVisible}
+          compactMode={props.sidebar.compactMode}
           projectId={controller.composer.projectId}
           conversationId={props.terminal.conversationId}
           onClose={controller.terminal.closeDrawer}
@@ -148,7 +131,7 @@ function TerminalDrawerLayer(props: AppShellLayoutViewProps) {
           hoverToBlur={controller.desktop.shellState?.appSettings.hoverToBlur ?? false}
         />
       </div>
-    </div>
+    </section>
   )
 }
 

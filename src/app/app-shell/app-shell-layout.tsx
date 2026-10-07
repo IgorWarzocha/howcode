@@ -1,12 +1,14 @@
+import { useAppShellDiffPreferences } from '@howcode/plugins/coding/ui'
+import {
+  useTerminalDrawerPresentation,
+  useTerminalResponsiveState,
+} from '@howcode/plugins/terminal/ui'
 import { useRef } from 'react'
-import { useToolkitExtensionEnabled } from '../extensions/toolkit-context'
-import { useAnimatedPresence } from '../hooks/useAnimatedPresence'
 import { WORKSPACE_CONTENT_MAX_WIDTH_CLASS } from '../ui/layout'
 import { getLayoutThreadSelection } from './app-shell-layout-model'
 import { AppShellLayoutView } from './app-shell-layout-view'
 import { useAppKeybindings } from './useAppKeybindings'
 import type { AppShellController } from './useAppShellController'
-import { useAppShellDiffPreferences } from './useAppShellDiffPreferences'
 import { useAppShellResponsiveLayout } from './useAppShellResponsiveLayout'
 
 type AppShellLayoutProps = {
@@ -14,9 +16,12 @@ type AppShellLayoutProps = {
 }
 
 export function AppShellLayout({ controller }: AppShellLayoutProps) {
-  const terminalEnabled = useToolkitExtensionEnabled('terminal')
   const composerProjectId = controller.composer.projectId
   const { state } = controller.workspace
+  const terminalResponsive = useTerminalResponsiveState(
+    state.terminalVisible,
+    controller.terminal.closeDrawer,
+  )
   const {
     handleFocusComposer,
     handleFocusTerminal,
@@ -26,20 +31,16 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     sidebarCollapsed,
     sidebarCompactMode,
     sidebarOverlayOpen,
-    terminalHiddenByCompactResize,
-  } = useAppShellResponsiveLayout(controller)
+  } = useAppShellResponsiveLayout(controller, terminalResponsive)
   const { conversationId: terminalConversationId, threadId: activeThreadId } =
     getLayoutThreadSelection(state)
-  const terminalDrawerVisible =
-    terminalEnabled &&
-    (state.activeView === 'thread' || state.activeView === 'project') &&
-    state.terminalVisible &&
-    !(sidebarCompactMode && terminalHiddenByCompactResize)
-  const animatedTerminalDrawerPresent = useAnimatedPresence(terminalDrawerVisible)
-  const terminalDrawerPresent =
-    sidebarCompactMode && terminalHiddenByCompactResize
-      ? terminalDrawerVisible
-      : animatedTerminalDrawerPresent
+  const { drawerVisible: terminalDrawerVisible, drawerPresent: terminalDrawerPresent } =
+    useTerminalDrawerPresentation({
+      activeView: state.activeView,
+      visible: state.terminalVisible,
+      compactMode: sidebarCompactMode,
+      hiddenByCompactResize: terminalResponsive.hiddenByCompactResize,
+    })
   const parentBranchName =
     controller.desktop.shellState?.projects.find((project) => project.id === composerProjectId)
       ?.worktree?.parentBranchName ?? null
@@ -80,7 +81,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
         renderMode: diffRenderMode,
       }}
       terminal={{
-        drawerPresent: terminalEnabled && terminalDrawerPresent,
+        drawerPresent: terminalDrawerPresent,
         drawerVisible: terminalDrawerVisible,
         conversationId: terminalConversationId,
       }}

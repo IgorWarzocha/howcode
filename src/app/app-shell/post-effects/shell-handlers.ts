@@ -1,10 +1,10 @@
-import type { ShellState } from '../../desktop/types'
-import { desktopQueryKeys } from '../../query/desktop-query'
 import {
   setShellSidebarVisibleProjectIds,
   updateShellProject,
   upsertShellProject,
-} from '../project-shell-cache'
+} from '@howcode/plugins/coding/ui'
+import type { ShellState } from '../../desktop/types'
+import { desktopQueryKeys } from '../../query/desktop-query'
 import type { PostEffectHandler } from './context'
 import { applyNewThreadPostEffect } from './new-thread'
 

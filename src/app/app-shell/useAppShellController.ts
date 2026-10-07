@@ -1,3 +1,6 @@
+import { useProjectRepoOriginRefresh } from '@howcode/plugins/coding/ui'
+import { useSkillsProjectScopeSync } from '@howcode/plugins/skills/ui'
+import { useRunningTerminalSessions } from '@howcode/plugins/terminal/ui'
 import { isToolkitExtensionEnabled } from '@howcode/shared/toolkit-extensions'
 import { useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
@@ -13,9 +16,6 @@ import { useAppShellStateBundle } from './useAppShellStateBundle'
 import { useAppShellUrlSync } from './useAppShellUrlSync'
 import { useDesktopActionHandlers } from './useDesktopActionHandlers'
 import { useInboxAutoReadSync } from './useInboxAutoReadSync'
-import { useProjectRepoOriginRefresh } from './useProjectRepoOriginRefresh'
-import { useRunningTerminalSessions } from './useRunningTerminalSessions'
-import { useScopedProjectViewSync } from './useScopedProjectViewSync'
 import { useSelectedThreadData } from './useSelectedThreadData'
 
 const EMPTY_LIST: [] = []
@@ -126,7 +126,7 @@ export function useAppShellController() {
     selectedProjectId: bundle.workspace.state.selectedProjectId,
     runDesktopAction: actions.runDesktopAction,
   })
-  useScopedProjectViewSync({
+  useSkillsProjectScopeSync({
     activeView: bundle.workspace.state.activeView,
     setSkillsProjectScopeActive: bundle.resourceScope.setSkillsActive,
     skillsProjectScopeActive: bundle.resourceScope.skillsActive,

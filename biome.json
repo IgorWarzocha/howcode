@@ -8,7 +8,7 @@
   "files": {
     "includes": [
       "**",
-      "!**/artifacts",
+      "!artifacts",
       "!**/build",
       "!**/dist",
       "!**/dist-pages",

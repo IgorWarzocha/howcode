@@ -1,6 +1,15 @@
 import * as Effect from 'effect/Effect'
 import * as Result from 'effect/Result'
 import * as Schema from 'effect/Schema'
+import * as artifacts from '../plugins/artifacts/service/index.ts'
+import { artifactsDatabaseSchema } from '../plugins/artifacts/service/schema.ts'
+import { cleanupLegacyCheckpoints, createCodingService } from '../plugins/coding/service/index.ts'
+import { codingDatabaseSchema } from '../plugins/coding/service/schema.ts'
+import { codingThreadBranchFallbacks } from '../plugins/coding/service/state.ts'
+import { createDictationService } from '../plugins/dictation/service/index.ts'
+import { createSkillsService } from '../plugins/skills/service/index.ts'
+import * as terminalManager from '../plugins/terminal/service/index.ts'
+import { createTerminalServicePlugin } from '../plugins/terminal/service/index.ts'
 import {
   type DesktopServiceRemoteModuleName,
   type DesktopServiceRemoteRuntime,
@@ -10,18 +19,21 @@ import { desktopShutdownTimeouts } from '../shared/desktop-shutdown-deadlines.ts
 import { makeShutdownCoordinator } from '../shared/effect-shutdown.ts'
 import type { TerminalRpcRequest } from '../shared/terminal-rpc.ts'
 import { loadAppSettings } from './app-settings/readers.ts'
-import * as piSkills from './pi-skills.ts'
-import * as piThreads from './pi-threads.ts'
+import { registerConversationCleanup } from './pi-threads/thread-actions.ts'
+import * as coreThreads from './pi-threads.ts'
 import { getAgentDirectory } from './settings/paths.ts'
-import { createTerminalHostPlugin } from './terminal/host-plugin.ts'
-import * as terminalManager from './terminal/runtime.ts'
-import { disposeThreadStateDatabase } from './thread-state-db/db.ts'
+import {
+  configureDatabaseSchemas,
+  disposeThreadStateDatabase,
+  registerDatabaseStartupTask,
+} from './thread-state-db/db.ts'
+import { registerThreadBranchFallbacks } from './thread-state-db/thread-branch-fallbacks.ts'
 import { getDesktopUserDataPath } from './user-data-path.ts'
 
 const ServiceRequestSchema = Schema.Struct({
   type: Schema.Literal('request'),
   id: Schema.String,
-  module: Schema.Literals(['piThreads', 'piSkills']),
+  module: Schema.Literals(['piThreads', 'skills', 'coding', 'artifacts', 'dictation']),
   method: Schema.String,
   args: Schema.mutable(Schema.Array(Schema.Unknown)),
 })
@@ -44,9 +56,39 @@ const ServiceInboundMessageSchema = Schema.Union([
 
 const decodeServiceInboundMessage = Schema.decodeUnknownResult(ServiceInboundMessageSchema)
 
+configureDatabaseSchemas([codingDatabaseSchema, artifactsDatabaseSchema])
+
+const skillsPlugin = createSkillsService()
+const skills = skillsPlugin.service
+const dictationPlugin = createDictationService()
+const dictation = dictationPlugin.service
+const codingPlugin = createCodingService({
+  deleteArtifactsForConversations: artifacts.deleteArtifactsForConversations,
+  listTerminals: terminalManager.listTerminals,
+  closeWorkspaceTerminals: terminalManager.closeWorkspaceTerminals,
+  hasActiveWorkspaceTerminal: terminalManager.hasActiveWorkspaceTerminal,
+})
+const coding = codingPlugin.service
+const unregisterArtifactCleanup = registerConversationCleanup(
+  artifacts.deleteArtifactsForConversation,
+)
+const unregisterCodingBranchFallbacks = registerThreadBranchFallbacks(codingThreadBranchFallbacks)
+const unregisterCodingMigration = registerDatabaseStartupTask(cleanupLegacyCheckpoints())
+const piThreads = {
+  ...coreThreads,
+  loadShellState: (cwd: string) => coreThreads.loadShellState(cwd, codingPlugin.loadShell),
+  async handleDesktopAction(...args: Parameters<typeof coreThreads.handleDesktopAction>) {
+    const result = await codingPlugin.handleAction(...args)
+    return result.handled ? result.result : coreThreads.handleDesktopAction(...args)
+  },
+}
+
 const modules = {
   piThreads,
-  piSkills,
+  skills,
+  coding,
+  artifacts,
+  dictation,
 } satisfies DesktopServiceRemoteRuntime
 
 function isServiceModuleName(value: string): value is DesktopServiceRemoteModuleName {
@@ -78,12 +120,15 @@ piThreads.subscribeDesktopEvents((event) => {
   process.send?.({ type: 'desktop-event', event })
 })
 
-const terminalHostPlugin = createTerminalHostPlugin((message) =>
+const terminalPlugin = createTerminalServicePlugin((message) =>
   process.send?.({ type: 'terminal-rpc-response', message }),
 )
 
+let acceptingRequests = true
+
 async function handleRequest(message: ServiceRequest): Promise<ServiceResponse> {
   try {
+    if (!acceptingRequests) throw new Error('Desktop service is shutting down.')
     if (!isServiceModuleName(message.module)) {
       throw new Error(`Unknown desktop service module: ${message.module}`)
     }
@@ -115,7 +160,7 @@ process.on('message', (message: unknown) => {
   }
   const inbound = decoded.success
   if (inbound.type === 'terminal-rpc-request') {
-    void terminalHostPlugin.write(inbound.message as TerminalRpcRequest).catch((error) => {
+    void terminalPlugin.write(inbound.message as TerminalRpcRequest).catch((error) => {
       console.error('Desktop terminal RPC failed.', error)
       requestShutdown()
     })
@@ -133,19 +178,29 @@ const shutdownCoordinatorPromise = Effect.runPromise(
     Effect.gen(function* () {
       yield* Effect.all(
         [
-          settledTask(() => terminalHostPlugin.dispose()),
-          settledTask(() => piThreads.disposeDesktopRuntime?.()),
-          settledTask(() => terminalManager.closeAllTerminals()),
+          settledTask(() => codingPlugin.dispose()),
+          settledTask(() => skillsPlugin.dispose()),
+          settledTask(() => dictationPlugin.dispose()),
         ],
         { concurrency: 'unbounded', discard: true },
       )
-      yield* settledTask(() => terminalManager.disposeTerminalRuntime())
+      yield* Effect.all(
+        [
+          settledTask(() => terminalPlugin.dispose()),
+          settledTask(() => piThreads.disposeDesktopRuntime?.()),
+        ],
+        { concurrency: 'unbounded', discard: true },
+      )
+      unregisterArtifactCleanup()
+      unregisterCodingMigration()
+      unregisterCodingBranchFallbacks()
     }).pipe(Effect.ensuring(Effect.promise(disposeThreadStateDatabase))),
     { label: 'Desktop service', timeout: desktopShutdownTimeouts.desktopServiceCleanupMs },
   ),
 )
 
 function requestShutdown() {
+  acceptingRequests = false
   void shutdownCoordinatorPromise
     .then((coordinator) => Effect.runPromise(coordinator.shutdown))
     .finally(() => process.exit(0))

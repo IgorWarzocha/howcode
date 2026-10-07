@@ -6,6 +6,7 @@ type PiThreadsRequestHandlers = Pick<
   DesktopRequestHandlerMap,
   | 'getShellState'
   | 'getComposerState'
+  | 'getComposerSkills'
   | 'getComposerSlashCommands'
   | 'getProjectThreads'
   | 'getChatSidebarState'
@@ -27,6 +28,7 @@ export function createPiThreadsHandlers(
   return {
     getShellState: async () => piThreads.loadShellState(getDesktopWorkingDirectory()),
     getComposerState: (request) => piThreads.loadComposerState(request),
+    getComposerSkills: (request) => piThreads.loadComposerSkills(request),
     getComposerSlashCommands: (request) => piThreads.loadComposerSlashCommands(request),
     getProjectThreads: (request) =>
       piThreads.loadProjectThreads(

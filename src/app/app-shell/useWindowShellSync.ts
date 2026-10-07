@@ -2,8 +2,8 @@ import { getPersistedConversationId } from '@howcode/shared/conversation-ids'
 import type { Dispatch } from 'react'
 import { useEffect } from 'react'
 import { watchConversationQuery } from '../query/desktop-query'
-import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
 import { isUtilityView } from '../state/workspace'
+import type { WorkspaceAction, WorkspaceState } from '../state/workspace-model'
 
 export function shouldCloseUtilityViewOnEscape(
   activeView: WorkspaceState['activeView'],

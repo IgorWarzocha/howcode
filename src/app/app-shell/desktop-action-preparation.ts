@@ -1,3 +1,4 @@
+import { applySwitchBranchPostEffect } from '@howcode/plugins/coding/ui'
 import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch, SetStateAction } from 'react'
 import type { DesktopAction } from '../desktop/actions'
@@ -9,12 +10,11 @@ import type {
   ShellState,
   ThreadData,
 } from '../desktop/types'
-import type { WorkspaceAction } from '../state/workspace'
+import type { WorkspaceAction } from '../state/workspace-model'
 import type { View } from '../types'
 import { guardBranchResume } from './branch-resume-guard'
 import { buildContextualActionPayload } from './controller-action-helpers'
 import type { ActionPayload } from './controller-action-utils'
-import { applySwitchBranchPostEffect } from './post-effects/workspace'
 import { applyOptimisticComposerThread } from './sidebar-thread-sync'
 
 export async function prepareDesktopAction(input: {

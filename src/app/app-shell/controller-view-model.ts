@@ -1,6 +1,6 @@
 import type { ThreadData } from '../desktop/types'
-import type { WorkspaceState } from '../state/workspace'
 import { getCurrentTitle, getProjectName, selectProject, selectThread } from '../state/workspace'
+import type { WorkspaceState } from '../state/workspace-model'
 import type { Project, Thread } from '../types'
 
 const pathSeparatorPattern = /[\\/]/

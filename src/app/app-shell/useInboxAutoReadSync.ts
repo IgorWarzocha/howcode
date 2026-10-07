@@ -2,7 +2,7 @@ import type { QueryClient } from '@tanstack/react-query'
 import { type Dispatch, useEffect } from 'react'
 import type { DesktopActionInvoker, InboxThread } from '../desktop/types'
 import { desktopQueryKeys } from '../query/desktop-query'
-import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
+import type { WorkspaceAction, WorkspaceState } from '../state/workspace-model'
 
 type UseInboxAutoReadSyncInput = {
   dispatch: Dispatch<WorkspaceAction>

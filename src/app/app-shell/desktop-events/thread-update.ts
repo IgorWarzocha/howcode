@@ -2,7 +2,7 @@ import { isLocalConversationId } from '@howcode/shared/conversation-ids'
 import type { Dispatch, SetStateAction } from 'react'
 import type { DesktopEvent, ThreadData } from '../../desktop/types'
 import { desktopQueryKeys } from '../../query/desktop-query'
-import type { WorkspaceAction } from '../../state/workspace'
+import type { WorkspaceAction } from '../../state/workspace-model'
 import {
   type DesktopEventSelectionState,
   getVisibleDesktopConversationId,

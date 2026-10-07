@@ -3,7 +3,6 @@ import type {
   AnyDesktopActionPayload,
   DesktopActionResultData,
 } from '../../shared/desktop-contracts.ts'
-import { codingHostPlugin } from '../toolkit/coding-actions.ts'
 import { assertUnhandledDesktopAction } from './action-router-result.ts'
 import { handleChatDesktopAction } from './chat-actions.ts'
 import { handleComposerDesktopAction } from './composer-actions.ts'
@@ -16,7 +15,6 @@ export async function handleDesktopAction(
   payload: AnyDesktopActionPayload,
 ): Promise<DesktopActionResultData | null | undefined> {
   const handlers = [
-    codingHostPlugin.handleAction,
     handleChatDesktopAction,
     handleThreadDesktopAction,
     handleComposerDesktopAction,

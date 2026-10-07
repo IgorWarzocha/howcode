@@ -1,6 +1,6 @@
+import { useSettingsDictationController } from '@howcode/plugins/dictation/ui'
 import type { AppSettings, DesktopActionInvoker } from '../../desktop/types'
 import { buildModelSelectionPayload } from './helpers'
-import { useSettingsDictationController } from './useSettingsDictationController'
 import { useSettingsMaintenanceController } from './useSettingsMaintenanceController'
 import { useSettingsProjectController } from './useSettingsProjectController'
 
@@ -40,28 +40,7 @@ export function useSettingsController(input: {
           value: !input.appSettings.hoverToFocus,
         }),
     },
-    dictation: {
-      deleteDictationModel: dictation.deleteDictationModel,
-      dictationInstallError: dictation.dictationInstallError,
-      dictationModels: dictation.dictationModels,
-      dictationPendingAction: dictation.dictationPendingAction,
-      installDictationModel: dictation.installDictationModel,
-      setDictationMaxDurationSeconds: (value: AppSettings['dictationMaxDurationSeconds']) =>
-        void input.onAction('settings.update', {
-          key: 'dictationMaxDurationSeconds',
-          value,
-        }),
-      setDictationModelId: (value: AppSettings['dictationModelId']) =>
-        void input.onAction('settings.update', {
-          key: 'dictationModelId',
-          value,
-        }),
-      setShowDictationButton: (value: boolean) =>
-        void input.onAction('settings.update', {
-          key: 'showDictationButton',
-          value,
-        }),
-    },
+    dictation,
     models: {
       selectChatModel: (id: string) => selectModel('chatModel', id),
       selectCodeModel: (id: string) => selectModel('codeModel', id),

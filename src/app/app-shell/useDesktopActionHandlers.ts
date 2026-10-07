@@ -13,7 +13,7 @@ import type {
   ShellState,
   ThreadData,
 } from '../desktop/types'
-import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
+import type { WorkspaceAction, WorkspaceState } from '../state/workspace-model'
 import type { View } from '../types'
 import { applyOptimisticDesktopAction } from './controller-optimistic-updates'
 import { runPostDesktopActionEffects } from './controller-post-action-effects'

@@ -1,8 +1,9 @@
+import { removeShellProjectFamily } from '@howcode/plugins/coding/ui'
 import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch } from 'react'
 import type { ArchivedThread, DesktopActionResult } from '../../desktop/types'
 import { desktopQueryKeys } from '../../query/desktop-query'
-import type { WorkspaceAction, WorkspaceState } from '../../state/workspace'
+import type { WorkspaceAction, WorkspaceState } from '../../state/workspace-model'
 import { refreshArchivedThreadsIfOpen } from '../controller-action-helpers'
 import {
   type ActionPayload,
@@ -12,7 +13,6 @@ import {
   getResultThreadIds,
   isThreadList,
 } from '../controller-action-utils'
-import { removeShellProjectFamily } from '../project-shell-cache'
 
 type ThreadLifecycleInput = {
   action: string

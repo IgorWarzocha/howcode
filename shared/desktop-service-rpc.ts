@@ -1,8 +1,17 @@
-import type { PiSkillsService, PiThreadsService } from './desktop-service-contracts'
+import type {
+  ArtifactsService,
+  CodingService,
+  DictationService,
+  PiSkillsService,
+  PiThreadsService,
+} from './desktop-service-contracts'
 
 export type DesktopServiceRemoteRuntime = {
   piThreads: Omit<PiThreadsService, 'disposeDesktopRuntime' | 'subscribeDesktopEvents'>
-  piSkills: PiSkillsService
+  skills: PiSkillsService
+  coding: CodingService
+  artifacts: ArtifactsService
+  dictation: DictationService
 }
 
 export type DesktopServiceRemoteModuleName = keyof DesktopServiceRemoteRuntime
@@ -17,11 +26,18 @@ export const desktopServiceRemoteMethods = {
     loadComposerState: true,
     loadComposerSlashCommands: true,
     loadComposerSkills: true,
-    getDictationState: true,
-    listDictationModels: true,
-    installDictationModel: true,
-    removeDictationModel: true,
-    transcribeDictation: true,
+    loadProjectThreads: true,
+    loadChatSidebarState: true,
+    createChatGroup: true,
+    loadShellState: true,
+    loadAppSettings: true,
+    loadConversationEntries: true,
+    loadThreadPreviewAtEntry: true,
+    loadThread: true,
+    searchThread: true,
+    watchConversation: true,
+  },
+  coding: {
     loadProjectGitState: true,
     loadProjectUsageSummary: true,
     loadProjectFavicon: true,
@@ -32,30 +48,28 @@ export const desktopServiceRemoteMethods = {
     loadProjectDiffFileContents: true,
     captureProjectDiffBaseline: true,
     listProjectCommits: true,
-    loadProjectThreads: true,
-    loadChatSidebarState: true,
-    createChatGroup: true,
+  },
+  artifacts: {
     listArtifacts: true,
     getArtifact: true,
     updateArtifact: true,
     editArtifact: true,
     listArtifactVersions: true,
     compileReactArtifact: true,
-    loadShellState: true,
-    loadAppSettings: true,
-    loadConversationEntries: true,
-    loadThreadPreviewAtEntry: true,
-    loadThread: true,
-    searchThread: true,
-    watchConversation: true,
   },
-  piSkills: {
+  dictation: {
+    getDictationState: true,
+    listDictationModels: true,
+    installDictationModel: true,
+    removeDictationModel: true,
+    transcribeDictation: true,
+  },
+  skills: {
     searchPiSkills: true,
     listConfiguredPiSkills: true,
     installPiSkill: true,
     removePiSkill: true,
   },
 } as const satisfies {
-  readonly piThreads: MethodAllowlist<DesktopServiceRemoteRuntime['piThreads']>
-  readonly piSkills: MethodAllowlist<DesktopServiceRemoteRuntime['piSkills']>
+  readonly [K in DesktopServiceRemoteModuleName]: MethodAllowlist<DesktopServiceRemoteRuntime[K]>
 }

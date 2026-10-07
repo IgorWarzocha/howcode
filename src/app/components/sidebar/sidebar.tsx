@@ -1,5 +1,5 @@
 import { Tooltip } from '@howcode/common/tooltip'
-import { codingPlugin } from '@howcode/extensions/coding-plugin'
+import { codingPlugin } from '@howcode/plugins/coding/ui/extension'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { isToolkitExtensionEnabled } from '@howcode/shared/toolkit-extensions'
 import { Inbox, MessageSquare, PanelLeftClose, Settings } from 'lucide-react'
@@ -19,11 +19,11 @@ type SidebarNavigableView = Exclude<View, 'gitops'>
 
 import { AppMenu } from '@howcode/app-menu'
 import { NavButton } from '@howcode/common/nav-button'
+import { ProjectWorkSection } from '@howcode/plugins/coding/ui'
 import { iconButtonClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import { SidebarChatSection } from './chat/sidebar-chat-section'
 import { SidebarInboxSection } from './inbox/sidebar-inbox-section'
-import { ProjectWorkSection } from './project-work-section'
 import { SidebarChatSkeleton, SidebarInboxSkeleton } from './sidebar-skeletons'
 
 type SidebarProps = {

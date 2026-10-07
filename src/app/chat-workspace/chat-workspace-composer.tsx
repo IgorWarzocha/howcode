@@ -1,16 +1,16 @@
 import { getComposerRuntimeModel, QueuedPromptsCard } from '@howcode/composer'
+import type { useQueuedPromptCancellation } from '@howcode/composer/useQueuedPromptCancellation'
+import type { ChatArtifactDrawerState } from '@howcode/plugins/artifacts/ui'
 import { Composer } from '@howcode/workspace-shell'
+import { DesktopComposerStatusModelPicker } from '@howcode/workspace-shell/desktop-composer-status'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
-import { DesktopComposerStatusModelPicker } from '../code-workspace/desktop-composer-status'
-import type { useQueuedPromptCancellation } from '../code-workspace/useQueuedPromptCancellation'
 import type { AppSettings, ProjectDiffBaseline } from '../desktop/types'
 import type { Message } from '../types'
 import { cn } from '../utils/cn'
 import { WorkspaceComposerDock } from '../workspace-shell/workspace-composer-dock'
 import type { ChatWorkspaceController } from './chat-workspace-contract'
-import type { ChatArtifactDrawerState } from './useChatArtifactDrawerState'
 
 const FALLBACK_APP_SETTINGS = {
   chatModel: null,

@@ -1,3 +1,4 @@
+import { getProjectGitStateQuery } from '@howcode/plugins/coding/ui'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import type {
@@ -10,7 +11,6 @@ import {
   desktopQueryKeys,
   getArchivedThreadsQuery,
   getComposerStateQuery,
-  getProjectGitStateQuery,
   listComposerAttachmentEntriesQuery,
 } from '../query/desktop-query'
 import { useDesktopProjectThreads } from './useDesktopProjectThreads'

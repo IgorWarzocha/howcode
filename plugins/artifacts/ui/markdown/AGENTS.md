@@ -1,0 +1,3 @@
+- Keep markdown preview and MDXEditor here; Prism is injected by `../panel` before this module loads.
+- Keep generic artifact drawer/list state in `../panel`.
+- Keep iframe/HTML/React preview behavior in `../interactive`.

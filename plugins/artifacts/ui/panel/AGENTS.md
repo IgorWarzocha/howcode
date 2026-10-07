@@ -1,0 +1,5 @@
+- Keep drawer/list/selection/version/save/download state here.
+- `artifact-panel-model.ts` owns view-state primitives shared by panel hooks; hooks do not import the composing panel-state hook for types.
+- Bootstrap Prism before lazy-loading `../markdown`; do not leak it into the interactive preview path.
+- Markdown editing/preview belongs in `../markdown`.
+- HTML and React iframe preview runtime belongs in `../interactive`.

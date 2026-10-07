@@ -90,46 +90,6 @@ export function threadStateSchemaStatements(sql: SqlClient.SqlClient) {
   );`,
     sql`CREATE INDEX IF NOT EXISTS chat_groups_order_idx ON chat_groups(order_index, name COLLATE NOCASE);`,
     sql`CREATE INDEX IF NOT EXISTS chat_conversations_group_idx ON chat_conversations(group_id, order_index);`,
-    sql`CREATE TABLE IF NOT EXISTS project_worktree_settings (
-    root_cwd TEXT PRIMARY KEY,
-    worktree_dir TEXT NOT NULL DEFAULT './.worktrees',
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (root_cwd) REFERENCES projects(cwd) ON DELETE CASCADE
-  );`,
-    sql`CREATE TABLE IF NOT EXISTS project_worktrees (
-    cwd TEXT PRIMARY KEY,
-    root_cwd TEXT NOT NULL,
-    branch_name TEXT,
-    parent_branch_name TEXT,
-    git_common_dir_identity TEXT,
-    is_main INTEGER NOT NULL DEFAULT 0,
-    source TEXT NOT NULL DEFAULT 'howcode',
-    completed INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (cwd) REFERENCES projects(cwd) ON DELETE CASCADE,
-    FOREIGN KEY (root_cwd) REFERENCES projects(cwd) ON DELETE CASCADE
-  );`,
-    sql`CREATE INDEX IF NOT EXISTS project_worktrees_by_root_idx ON project_worktrees(root_cwd, is_main DESC, branch_name COLLATE NOCASE);`,
-    sql`CREATE TABLE IF NOT EXISTS artifacts (
-    id TEXT PRIMARY KEY,
-    conversation_id TEXT NOT NULL,
-    kind TEXT NOT NULL,
-    content TEXT NOT NULL,
-    version INTEGER NOT NULL,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-  );`,
-    sql`CREATE TABLE IF NOT EXISTS artifact_versions (
-    artifact_id TEXT NOT NULL,
-    version INTEGER NOT NULL,
-    content TEXT NOT NULL,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (artifact_id, version),
-    FOREIGN KEY (artifact_id) REFERENCES artifacts(id) ON DELETE CASCADE
-  );`,
-    sql`CREATE INDEX IF NOT EXISTS artifacts_conversation_idx ON artifacts(conversation_id, updated_at DESC);`,
   ]
 }
 
@@ -170,20 +130,5 @@ export const columnMigrations = [
     table: 'project_usage_totals',
     column: 'sessions_with_usage_count',
     definition: 'sessions_with_usage_count INTEGER NOT NULL DEFAULT 0',
-  },
-  {
-    table: 'project_worktrees',
-    column: 'completed',
-    definition: 'completed INTEGER NOT NULL DEFAULT 0',
-  },
-  {
-    table: 'project_worktrees',
-    column: 'parent_branch_name',
-    definition: 'parent_branch_name TEXT',
-  },
-  {
-    table: 'project_worktrees',
-    column: 'git_common_dir_identity',
-    definition: 'git_common_dir_identity TEXT',
   },
 ] as const

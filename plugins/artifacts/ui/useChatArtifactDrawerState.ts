@@ -1,0 +1,173 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useToolkitExtensionEnabled } from '../../../src/app/extensions/toolkit-context'
+import { useAnimatedPresence } from '../../../src/app/hooks/useAnimatedPresence'
+import { subscribeDesktopEvents } from '../../../src/app/query/desktop-query'
+
+export const ARTIFACT_DRAWER_WIDTH = 'clamp(320px, calc(100% - 820px), 760px)'
+
+type UseChatArtifactDrawerStateInput = {
+  conversationId: string | null | undefined
+  sidebarCompactMode: boolean
+  settingsOpen: boolean
+}
+
+export type ChatArtifactDrawerState = ReturnType<typeof useChatArtifactDrawerState>
+
+export function useChatArtifactDrawerState({
+  conversationId,
+  sidebarCompactMode,
+  settingsOpen,
+}: UseChatArtifactDrawerStateInput) {
+  const enabled = useToolkitExtensionEnabled('artifacts')
+  const [artifactsVisibleByConversation, setArtifactsVisibleByConversation] = useState<
+    Record<string, boolean>
+  >({})
+  const [artifactFullscreenConversationId, setArtifactFullscreenConversationId] = useState<
+    string | null
+  >(null)
+  const desktopContentRef = useRef<HTMLDivElement>(null)
+  const artifactDrawerRef = useRef<HTMLDivElement>(null)
+  const artifactOverlayPreviousFocusRef = useRef<HTMLElement | null>(null)
+
+  const artifactsVisible =
+    enabled && conversationId ? (artifactsVisibleByConversation[conversationId] ?? false) : false
+  const artifactsFullscreen = Boolean(
+    enabled && conversationId && artifactFullscreenConversationId === conversationId,
+  )
+  const artifactDrawerVisible = artifactsVisible && !artifactsFullscreen
+  const artifactDrawerOverlay = sidebarCompactMode
+  const showDesktopArtifactDrawer = artifactDrawerVisible && !artifactDrawerOverlay
+  const animatedDrawerPresent = useAnimatedPresence(artifactDrawerVisible)
+  const artifactDrawerPresent = enabled && animatedDrawerPresent
+  const artifactDrawerInsetStyle = showDesktopArtifactDrawer
+    ? { right: ARTIFACT_DRAWER_WIDTH }
+    : undefined
+  const artifactDrawerStyle = artifactDrawerPresent
+    ? { width: artifactDrawerOverlay ? '100%' : ARTIFACT_DRAWER_WIDTH }
+    : undefined
+
+  const setArtifactsFullscreen = useCallback(
+    (fullscreen: boolean) => {
+      setArtifactFullscreenConversationId(fullscreen && conversationId ? conversationId : null)
+    },
+    [conversationId],
+  )
+
+  const handleCloseArtifacts = useCallback(() => {
+    if (conversationId) {
+      setArtifactsVisibleByConversation((current) => ({
+        ...current,
+        [conversationId]: false,
+      }))
+    }
+    setArtifactsFullscreen(false)
+  }, [conversationId, setArtifactsFullscreen])
+
+  const toggleArtifacts = useCallback(() => {
+    if (!conversationId) return
+    const nextVisible = !artifactsVisible
+    setArtifactsVisibleByConversation((current) => ({
+      ...current,
+      [conversationId]: nextVisible,
+    }))
+    if (!nextVisible) setArtifactFullscreenConversationId(null)
+  }, [artifactsVisible, conversationId])
+
+  useEffect(() => {
+    const desktopContentElement = desktopContentRef.current
+    if (!desktopContentElement) return
+    const shouldInertDesktopContent = artifactDrawerOverlay && artifactDrawerVisible
+    if (shouldInertDesktopContent) {
+      desktopContentElement.setAttribute('inert', '')
+      desktopContentElement.setAttribute('aria-hidden', 'true')
+      return () => {
+        desktopContentElement.removeAttribute('inert')
+        desktopContentElement.removeAttribute('aria-hidden')
+      }
+    }
+
+    desktopContentElement.removeAttribute('inert')
+    desktopContentElement.removeAttribute('aria-hidden')
+  }, [artifactDrawerOverlay, artifactDrawerVisible])
+
+  useEffect(() => {
+    if (!(artifactDrawerOverlay && artifactDrawerVisible)) return
+    const drawerElement = artifactDrawerRef.current
+    if (!drawerElement) return
+    if (document.activeElement && drawerElement.contains(document.activeElement)) return
+    artifactOverlayPreviousFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      const focusTarget = drawerElement.querySelector<HTMLElement>(
+        'button:not([disabled]), select:not([disabled]), textarea:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )
+      focusTarget?.focus()
+    })
+    return () => {
+      window.cancelAnimationFrame(animationFrame)
+      const previousFocus = artifactOverlayPreviousFocusRef.current
+      artifactOverlayPreviousFocusRef.current = null
+      if (!previousFocus?.isConnected) return
+      if (
+        document.activeElement instanceof HTMLElement &&
+        drawerElement.contains(document.activeElement)
+      ) {
+        previousFocus.focus()
+      }
+    }
+  }, [artifactDrawerOverlay, artifactDrawerVisible])
+
+  useEffect(() => {
+    if (!(enabled && conversationId)) return
+    return subscribeDesktopEvents((event) => {
+      if (event.type !== 'artifact-update') return
+      if (event.conversationId !== conversationId) return
+      setArtifactsVisibleByConversation((current) => ({
+        ...current,
+        [conversationId]: true,
+      }))
+    })
+  }, [enabled, conversationId])
+
+  useEffect(() => {
+    if (!(artifactsVisible && (artifactDrawerOverlay || artifactsFullscreen))) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      if (settingsOpen) return
+      event.preventDefault()
+      event.stopPropagation()
+      if (artifactsFullscreen) {
+        setArtifactsFullscreen(false)
+        return
+      }
+      handleCloseArtifacts()
+    }
+
+    window.addEventListener('keydown', handleKeyDown, { capture: true })
+    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true })
+  }, [
+    artifactDrawerOverlay,
+    artifactsFullscreen,
+    artifactsVisible,
+    handleCloseArtifacts,
+    settingsOpen,
+    setArtifactsFullscreen,
+  ])
+
+  return {
+    artifactDrawerInsetStyle,
+    artifactDrawerPresent,
+    artifactDrawerRef,
+    artifactDrawerStyle,
+    artifactDrawerVisible,
+    artifactsFullscreen,
+    artifactsVisible,
+    desktopContentRef,
+    handleCloseArtifacts,
+    setArtifactsFullscreen,
+    showDesktopArtifactDrawer,
+    toggleArtifacts,
+  }
+}

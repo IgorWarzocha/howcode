@@ -7,7 +7,7 @@ import type {
   ThreadData,
 } from '../desktop/types'
 import { forgetLocalDraftThread } from '../hooks/useDesktopProjectThreads'
-import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
+import type { WorkspaceAction, WorkspaceState } from '../state/workspace-model'
 import {
   applyChatThreadToSidebarState,
   removeChatThreadFromSidebarState,

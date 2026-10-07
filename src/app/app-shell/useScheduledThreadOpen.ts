@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react'
 import { useCallback, useEffect, useRef } from 'react'
 import type { DesktopActionResult } from '../desktop/types'
-import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
+import type { WorkspaceAction, WorkspaceState } from '../state/workspace-model'
 
 type HandleThreadOpenAction = (
   action: 'thread.open',

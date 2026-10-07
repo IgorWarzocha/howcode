@@ -2,7 +2,7 @@ node_modules/
 package-lock.json
 dist/
 build/
-artifacts/
+/artifacts/
 .DS_Store
 *.log
 coverage/
@@ -17,7 +17,5 @@ coverage/
 .pi/agent-message-board.sqlite
 .pi/agent-message-board.sqlite-shm
 .pi/agent-message-board.sqlite-wal
-!src/app/features/chat/artifacts/
-!src/app/features/chat/artifacts/**
 
 dist-pages/

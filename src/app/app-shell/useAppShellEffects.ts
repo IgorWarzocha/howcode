@@ -1,3 +1,9 @@
+import {
+  useCodingGitStateSync,
+  useProjectShellSync,
+  useTerminalGitStateSync,
+} from '@howcode/plugins/coding/ui'
+import { listDesktopTerminals, subscribeDesktopTerminal } from '@howcode/plugins/terminal/ui'
 import { isToolkitExtensionEnabled } from '@howcode/shared/toolkit-extensions'
 import type { Dispatch, SetStateAction } from 'react'
 import type {
@@ -9,12 +15,10 @@ import type {
   ProjectGitState,
   ThreadData,
 } from '../desktop/types'
-import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
+import type { WorkspaceAction, WorkspaceState } from '../state/workspace-model'
 import type { Project } from '../types'
-import { useComposerGitStateSync } from './useComposerGitStateSync'
+import { useComposerStateSync } from './useComposerStateSync'
 import { useDesktopEventSync } from './useDesktopEventSync'
-import { useProjectShellSync } from './useProjectShellSync'
-import { useTerminalGitStateSync } from './useTerminalGitStateSync'
 import { useUtilityViewEscape, useWatchedConversationSync } from './useWindowShellSync'
 
 type QueryClientLike = {
@@ -95,15 +99,20 @@ export function useAppShellEffects({
     setArchivedThreads,
   })
 
-  useComposerGitStateSync({
+  useComposerStateSync({
     workspaceState,
     selectedInboxThread,
     composerProjectId,
     shellComposerState,
     shellAppSettings,
     loadComposerState,
-    loadProjectGitState,
     setComposerState,
+  })
+  useCodingGitStateSync({
+    activeView: workspaceState.activeView,
+    composerProjectId,
+    shellAppSettings,
+    loadProjectGitState,
     setProjectGitState,
     setProjectGitLoading,
   })
@@ -111,6 +120,8 @@ export function useAppShellEffects({
   useWatchedConversationSync(workspaceState)
   useUtilityViewEscape({ activeView: workspaceState.activeView, dispatch })
   useTerminalGitStateSync({
+    listDesktopTerminals,
+    subscribeDesktopTerminal,
     enabled:
       shellAppSettings != null &&
       isToolkitExtensionEnabled(shellAppSettings, 'terminal') &&

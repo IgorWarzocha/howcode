@@ -8,7 +8,7 @@ import type {
   ThreadData,
 } from '../desktop/types'
 import { subscribeDesktopEvents } from '../query/desktop-query'
-import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
+import type { WorkspaceAction, WorkspaceState } from '../state/workspace-model'
 import {
   type DesktopEventSyncRuntime,
   handleDesktopEvent,

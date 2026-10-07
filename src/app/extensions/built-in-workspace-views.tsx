@@ -1,17 +1,21 @@
 import { MainView } from '@howcode/app-shell'
 import { ChatWorkspaceView } from '@howcode/chat-workspace'
-import { CodeWorkspaceView } from '@howcode/code-workspace'
+import { codingPlugin } from '@howcode/plugins/coding/ui/extension'
+import { CodeWorkspaceView } from '@howcode/plugins/coding/ui/views'
+import { SkillsWorkspaceView } from '@howcode/plugins/skills/ui'
 import { isToolkitExtensionEnabled } from '@howcode/shared/toolkit-extensions'
 import type { ComponentProps } from 'react'
+import type { AppShellController } from '../app-shell/useAppShellController'
 import { mainPanelClass } from '../ui/classes'
-import { workspacePlugins } from './toolkit-plugins'
+import { FALLBACK_APP_SETTINGS } from '../workspace-shell/default-app-settings'
+import { HostWorkspacePresentation } from '../workspace-shell/host-workspace-presentation'
+import { UtilityWorkspaceView } from '../workspace-shell/utility-workspace-view'
 import type { WorkspaceViewContributions } from './workspace-views'
 
-type ChatProps = ComponentProps<typeof ChatWorkspaceView>
 type CodeProps = ComponentProps<typeof CodeWorkspaceView>
 
 export type BuiltInWorkspaceViewProps = CodeProps & {
-  controller: ChatProps['controller'] & CodeProps['controller']
+  controller: AppShellController
 }
 
 function roadmapView(activeView: 'claw' | 'work' | 'automations', projectName: string) {
@@ -60,11 +64,8 @@ export function composeBuiltInWorkspaceViews(props: BuiltInWorkspaceViewProps) {
         composer: controller.composer,
         desktop: controller.desktop,
         gitOps: controller.gitOps,
-        inbox: controller.inbox,
         navigation: controller.navigation,
         projects: controller.projects,
-        resourceScope: controller.resourceScope,
-        settings: controller.settings,
         terminal: controller.terminal,
         thread: controller.thread,
         workspace: controller.workspace,
@@ -73,19 +74,40 @@ export function composeBuiltInWorkspaceViews(props: BuiltInWorkspaceViewProps) {
   )
 
   const settings = controller.desktop.shellState?.appSettings
+  const utility = (
+    <UtilityWorkspaceView {...props} appSettings={settings ?? FALLBACK_APP_SETTINGS} />
+  )
   const contributions: WorkspaceViewContributions = {
-    inbox: code,
-    archived: code,
-    settings: code,
+    inbox: utility,
+    archived: utility,
+    settings: utility,
     chat,
     claw: roadmapView('claw', props.currentProjectName),
     work: roadmapView('work', props.currentProjectName),
     automations: roadmapView('automations', props.currentProjectName),
   }
-  for (const plugin of workspacePlugins) {
-    if (isToolkitExtensionEnabled(settings, plugin.id)) {
-      Object.assign(contributions, plugin.contribute(code))
-    }
+  if (isToolkitExtensionEnabled(settings, 'coding')) {
+    Object.assign(contributions, codingPlugin.contribute(code))
+  }
+  if (isToolkitExtensionEnabled(settings, 'skills')) {
+    Object.assign(contributions, {
+      skills: (
+        <HostWorkspacePresentation>
+          <SkillsWorkspaceView
+            appSettings={settings ?? FALLBACK_APP_SETTINGS}
+            projectPath={
+              controller.workspace.state.hasSelectedProject
+                ? controller.workspace.state.selectedProjectId || null
+                : null
+            }
+            onSetProjectScopeActive={controller.resourceScope.setSkillsActive}
+            onProjectTargetSelected={() => controller.resourceScope.setSkillsActive(true)}
+            onAction={controller.desktop.handleAction}
+            onClose={controller.navigation.closeUtilityView}
+          />
+        </HostWorkspacePresentation>
+      ),
+    })
   }
   return contributions
 }

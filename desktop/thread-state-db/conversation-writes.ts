@@ -1,6 +1,6 @@
 import { Effect } from 'effect'
 import * as SqlClient from 'effect/sql/SqlClient'
-import { ensureProject } from './project-writes.ts'
+import { ensureProject } from './conversation-scopes.ts'
 import type { ConversationSummaryRecord } from './types.ts'
 import { withDatabaseTransaction } from './write-transaction.ts'
 

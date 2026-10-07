@@ -1,13 +1,13 @@
+import { upsertShellProject } from '@howcode/plugins/coding/ui'
 import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch } from 'react'
 import type { ComposerState, DesktopActionResult } from '../../desktop/types'
-import type { WorkspaceAction, WorkspaceState } from '../../state/workspace'
+import type { WorkspaceAction, WorkspaceState } from '../../state/workspace-model'
 import {
   type ActionPayload,
   getPayloadProjectId,
   hasDesktopBridge,
 } from '../controller-action-utils'
-import { upsertShellProject } from '../project-shell-cache'
 import { applyProjectThreadToShellState } from '../project-thread-cache'
 import {
   buildLocalThreadFallback,

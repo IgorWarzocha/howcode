@@ -1,0 +1,132 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { TerminalSessionSnapshot } from '../../../src/app/desktop/types'
+import { listDesktopTerminals, subscribeDesktopTerminal } from './desktop-terminal'
+
+type RunningTerminalSession = {
+  projectId: string
+  conversationId: string | null
+}
+
+function isRunningShellSnapshot(snapshot: TerminalSessionSnapshot) {
+  return snapshot.status === 'starting' || snapshot.status === 'running'
+}
+
+function shouldShowTerminalSnapshot(
+  snapshot: TerminalSessionSnapshot,
+  openedInThisSession = false,
+) {
+  return isRunningShellSnapshot(snapshot) && (openedInThisSession || snapshot.hasVisibleContent)
+}
+
+function removeRunningTerminalSession(
+  setRunningTerminalSessionsById: React.Dispatch<
+    React.SetStateAction<Record<string, RunningTerminalSession>>
+  >,
+  sessionId: string,
+) {
+  setRunningTerminalSessionsById((current) => {
+    if (!(sessionId in current)) return current
+    const next = { ...current }
+    delete next[sessionId]
+    return next
+  })
+}
+
+function upsertRunningTerminalSession(
+  setRunningTerminalSessionsById: React.Dispatch<
+    React.SetStateAction<Record<string, RunningTerminalSession>>
+  >,
+  snapshot: TerminalSessionSnapshot,
+  sessionId: string,
+) {
+  setRunningTerminalSessionsById((current) => ({
+    ...current,
+    [sessionId]: { projectId: snapshot.projectId, conversationId: snapshot.conversationId },
+  }))
+}
+
+function handleTerminalSessionEvent(
+  setRunningTerminalSessionsById: React.Dispatch<
+    React.SetStateAction<Record<string, RunningTerminalSession>>
+  >,
+  event: Parameters<typeof subscribeDesktopTerminal>[0] extends (event: infer Event) => void
+    ? Event
+    : never,
+) {
+  if (event.type === 'started' || event.type === 'restarted') {
+    upsertRunningTerminalSession(setRunningTerminalSessionsById, event.snapshot, event.sessionId)
+    return
+  }
+  if (event.type === 'updated') {
+    if (shouldShowTerminalSnapshot(event.snapshot))
+      upsertRunningTerminalSession(setRunningTerminalSessionsById, event.snapshot, event.sessionId)
+    else removeRunningTerminalSession(setRunningTerminalSessionsById, event.sessionId)
+    return
+  }
+  if (event.type === 'cleared' || event.type === 'exited' || event.type === 'error') {
+    removeRunningTerminalSession(setRunningTerminalSessionsById, event.sessionId)
+  }
+}
+
+export function useRunningTerminalSessions(enabled = true) {
+  const terminalEventTouchedSessionIdsRef = useRef(new Set<string>())
+  const [runningTerminalSessionsById, setRunningTerminalSessionsById] = useState<
+    Record<string, RunningTerminalSession>
+  >({})
+
+  useEffect(() => {
+    if (!enabled) return
+    let disposed = false
+    terminalEventTouchedSessionIdsRef.current.clear()
+    const applySnapshots = (snapshots: TerminalSessionSnapshot[]) => {
+      if (disposed) return
+      const touchedSessionIds = terminalEventTouchedSessionIdsRef.current
+      setRunningTerminalSessionsById((current) => ({
+        ...Object.fromEntries(
+          Object.entries(current).filter(([sessionId]) => touchedSessionIds.has(sessionId)),
+        ),
+        ...Object.fromEntries(
+          snapshots.flatMap((snapshot) =>
+            !touchedSessionIds.has(snapshot.sessionId) && shouldShowTerminalSnapshot(snapshot)
+              ? [
+                  [
+                    snapshot.sessionId,
+                    { projectId: snapshot.projectId, conversationId: snapshot.conversationId },
+                  ] as const,
+                ]
+              : [],
+          ),
+        ),
+      }))
+    }
+
+    void listDesktopTerminals().then(applySnapshots)
+    const unsubscribe = subscribeDesktopTerminal((event) => {
+      terminalEventTouchedSessionIdsRef.current.add(event.sessionId)
+      handleTerminalSessionEvent(setRunningTerminalSessionsById, event)
+    })
+    return () => {
+      disposed = true
+      unsubscribe()
+    }
+  }, [enabled])
+
+  const terminalRunningConversationIds = useMemo(
+    () =>
+      new Set(
+        Object.values(runningTerminalSessionsById)
+          .map((session) => session.conversationId)
+          .filter((conversationId): conversationId is string => typeof conversationId === 'string'),
+      ),
+    [runningTerminalSessionsById],
+  )
+  const terminalRunningWorkspaceIds = useMemo(
+    () => new Set(Object.values(runningTerminalSessionsById).map((session) => session.projectId)),
+    [runningTerminalSessionsById],
+  )
+
+  return {
+    terminalRunningWorkspaceIds: enabled ? terminalRunningWorkspaceIds : new Set<string>(),
+    terminalRunningConversationIds: enabled ? terminalRunningConversationIds : new Set<string>(),
+  }
+}

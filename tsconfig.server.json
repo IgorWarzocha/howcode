@@ -30,6 +30,7 @@
     "src/server/**/*.ts",
     "shared/**/*.ts",
     "src/desktop-host/**/*.ts",
+    "plugins/*/host/**/*.ts",
     "node-runtime/**/*.ts"
   ]
 }

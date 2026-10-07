@@ -1,4 +1,5 @@
-import { type Dispatch, type SetStateAction, useCallback, useRef, useState } from 'react'
+import { useDictationSettingsDraft } from '@howcode/plugins/dictation/ui'
+import { useCallback, useRef } from 'react'
 import { ViewHeader } from '../common/view-header'
 import { ViewShell } from '../common/view-shell'
 import type {
@@ -6,13 +7,11 @@ import type {
   ComposerModel,
   ComposerThinkingLevel,
   DesktopActionInvoker,
-  DictationModelId,
   PiSettings,
   PiThemeState,
 } from '../desktop/types'
 import { cn } from '../utils/cn'
 import { buildSettingsDescriptors } from './settings/settingsDescriptors'
-import { normalizeManagedDictationModelId } from './settings/settingsDictationHelpers'
 import { filterSettings, groupSettingsByCategory } from './settings/settingsGroups'
 import { SettingsGroupsList } from './settings/settingsGroupsList'
 import {
@@ -56,30 +55,8 @@ export function SettingsView({
   const controller = useSettingsController({ appSettings, resolvedPiDirectory, onAction })
   const piDraft = useDraftPiSettings({ onAction, piSettings })
   const navigation = useSettingsNavigation({ openTarget, settingsScrollRef })
-  const configuredDictationModelId = normalizeManagedDictationModelId(appSettings.dictationModelId)
-  const [dictationModelEdit, setDictationModelEdit] = useState<{
-    source: DictationModelId | null
-    value: DictationModelId | null
-  } | null>(null)
-  const dictationModelDraft =
-    dictationModelEdit?.source === configuredDictationModelId
-      ? dictationModelEdit.value
-      : configuredDictationModelId
-  const setDictationModelDraft: Dispatch<SetStateAction<DictationModelId | null>> = useCallback(
-    (value) => {
-      setDictationModelEdit((current) => {
-        const currentValue =
-          current?.source === configuredDictationModelId
-            ? current.value
-            : configuredDictationModelId
-        return {
-          source: configuredDictationModelId,
-          value: typeof value === 'function' ? value(currentValue) : value,
-        }
-      })
-    },
-    [configuredDictationModelId],
-  )
+  const { configuredDictationModelId, dictationModelDraft, setDictationModelDraft } =
+    useDictationSettingsDraft(appSettings)
 
   const settings = buildSettingsDescriptors({
     appSettings,

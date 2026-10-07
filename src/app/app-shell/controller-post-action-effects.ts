@@ -1,3 +1,4 @@
+import { workspacePostEffectHandlers } from '@howcode/plugins/coding/ui'
 import { desktopQueryKeys } from '../query/desktop-query'
 import type {
   PostEffectHandler,
@@ -6,8 +7,8 @@ import type {
 } from './post-effects/context'
 import { shellPostEffectHandlers } from './post-effects/shell-handlers'
 import { threadPostEffectHandlers } from './post-effects/thread-handlers'
-import { workspacePostEffectHandlers } from './post-effects/workspace-handlers'
 
+export { applyDiffPreferencesToThread } from '@howcode/plugins/coding/ui'
 export {
   applyOptimisticPinUpdate,
   applyOptimisticPiSettingsUpdate,
@@ -19,7 +20,6 @@ export {
   getOptimisticallyUpdatedPiSettingsState,
   getOptimisticallyUpdatedShellState,
 } from './controller-optimistic-updates'
-export { applyDiffPreferencesToThread } from './post-effects/diff-preferences'
 
 const postEffectHandlers: PostEffectHandler[] = [
   ...shellPostEffectHandlers,

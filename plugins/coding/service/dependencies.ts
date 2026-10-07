@@ -1,0 +1,9 @@
+import type { TerminalSessionSnapshot } from '../../../shared/terminal-contracts.ts'
+
+// Optional peers are supplied by the service composition, never imported here.
+export type CodingPeers = {
+  deleteArtifactsForConversations: (conversationIds: string[]) => void
+  listTerminals: () => Promise<TerminalSessionSnapshot[]>
+  closeWorkspaceTerminals: (projectId: string) => Promise<void>
+  hasActiveWorkspaceTerminal: (projectId: string) => Promise<boolean>
+}

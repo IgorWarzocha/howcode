@@ -25,8 +25,6 @@ const buildTargets = [
   {
     label: 'desktop-runtime',
     entrypoints: [
-      path.join(projectRoot, 'desktop', 'pi-threads.ts'),
-      path.join(projectRoot, 'desktop', 'pi-skills.ts'),
       path.join(projectRoot, 'desktop', 'service-host.ts'),
       path.join(projectRoot, 'desktop', 'service-host-runtime.ts'),
     ],
@@ -37,29 +35,25 @@ const buildTargets = [
     },
     format: 'esm',
   },
-  {
-    label: 'terminal-manager',
-    entrypoints: [path.join(projectRoot, 'desktop', 'terminal', 'runtime.ts')],
-    outdir: path.join(buildRoot, 'desktop'),
-    root: path.join(projectRoot, 'desktop', 'terminal'),
-    naming: {
-      entry: 'terminal-manager.mjs',
-    },
-    format: 'esm',
-  },
+] as const
+
+const resourceTargets = [
+  { source: 'desktop/resources/themes', name: 'themes' },
+  { source: 'plugins/skills/resources/skills', name: 'skills' },
 ] as const
 
 async function prepareBuildDirectories() {
   await rm(path.join(buildRoot, 'server'), { recursive: true, force: true })
   await rm(path.join(buildRoot, 'desktop'), { recursive: true, force: true })
+  await rm(path.join(buildRoot, 'resources'), { recursive: true, force: true })
   await mkdir(path.join(buildRoot, 'server'), { recursive: true })
   await mkdir(path.join(buildRoot, 'desktop'), { recursive: true })
 }
 
-async function copyDesktopResources() {
-  const outputPath = path.join(buildRoot, 'resources')
+async function copyResources(target: (typeof resourceTargets)[number]) {
+  const outputPath = path.join(buildRoot, 'resources', target.name)
   await rm(outputPath, { recursive: true, force: true })
-  await cp(path.join(projectRoot, 'desktop', 'resources'), outputPath, {
+  await cp(path.join(projectRoot, target.source), outputPath, {
     recursive: true,
   })
 }
@@ -90,24 +84,24 @@ async function buildTarget(target: (typeof buildTargets)[number]) {
   console.log(`Built ${target.label}.`)
 }
 
-async function watchDesktopResources() {
-  for await (const _event of watch(path.join(projectRoot, 'desktop', 'resources'), {
+async function watchResources(target: (typeof resourceTargets)[number]) {
+  for await (const _event of watch(path.join(projectRoot, target.source), {
     recursive: true,
     signal: buildLifetime.signal,
   })) {
-    await copyDesktopResources()
-    console.log('Copied desktop resources.')
+    await copyResources(target)
+    console.log(`Copied ${target.name} resources.`)
   }
 }
 
 async function runBuild() {
   await prepareBuildDirectories()
-  await copyDesktopResources()
+  await Promise.all(resourceTargets.map(copyResources))
   if (buildLifetime.signal.aborted) return
 
   const tasks = buildTargets.map(buildTarget)
   if (isWatchMode) {
-    tasks.push(watchDesktopResources())
+    tasks.push(...resourceTargets.map(watchResources))
     console.log('Watching Node runtime bundles...')
   }
   try {

@@ -1,3 +1,4 @@
+import { useDictationCommand } from '@howcode/plugins/dictation/ui'
 import { type RefObject, useEffect, useEffectEvent } from 'react'
 import {
   howcodeDismissTransientUiEvent,
@@ -49,11 +50,7 @@ export function useComposerGlobalCommands(input: {
     dismissTransientUi()
     input.openConversationFork()
   })
-  useHowcodeKeybindingCommand('dictation.toggle', (event) => {
-    if (!(input.showDictationButton && !input.inputLocked)) return
-    event.preventDefault()
-    void input.toggleDictation()
-  })
+  useDictationCommand(input)
 
   useEffect(() => {
     window.addEventListener(howcodeDismissTransientUiEvent, dismissTransientUiEvent)

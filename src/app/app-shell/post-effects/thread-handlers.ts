@@ -1,7 +1,7 @@
+import { updateShellProject } from '@howcode/plugins/coding/ui'
 import type { ThreadData } from '../../desktop/types'
 import { desktopQueryKeys } from '../../query/desktop-query'
 import { hasActionError } from '../controller-action-utils'
-import { updateShellProject } from '../project-shell-cache'
 import { reconcileComposerThreadResult } from '../sidebar-thread-sync'
 import type { PostEffectHandler, PostEffectsContext } from './context'
 import {

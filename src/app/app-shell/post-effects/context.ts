@@ -9,7 +9,7 @@ import type {
   ProjectGitState,
   ThreadData,
 } from '../../desktop/types'
-import type { WorkspaceAction, WorkspaceState } from '../../state/workspace'
+import type { WorkspaceAction, WorkspaceState } from '../../state/workspace-model'
 import type { ActionPayload } from '../controller-action-utils'
 
 export type RunPostDesktopActionEffectsInput = {

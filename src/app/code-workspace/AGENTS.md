@@ -1,3 +1,0 @@
-- `code-workspace-contract.ts` owns the view/content prop contracts; render areas depend on it rather than importing each other for types.
-- `CodeWorkspaceView` owns local layout state and composes the main/footer areas. Keep those areas render-focused.
-- `CodeWorkspaceController` explicitly lists its AppShell capability groups; do not widen it to the whole controller. Preserve terminal, footer, and project-selection behaviour.

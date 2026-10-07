@@ -32,8 +32,8 @@ import {
   getRuntimeConversationMetadata,
   registerRuntimeConversation,
 } from './pi-threads/conversation-state.ts'
-import { withWorkspaceActivity } from './project-worktrees/workspace-teardown-gate.ts'
 import { emitDesktopEvent, subscribeDesktopEvents } from './runtime/desktop-events.ts'
+import { withWorkspaceActivity } from './runtime/workspace-activity.ts'
 
 export {
   getComposerState,

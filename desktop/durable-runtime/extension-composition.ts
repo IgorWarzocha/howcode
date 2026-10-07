@@ -1,9 +1,18 @@
 import { createRegistry, type RegistryReader } from '@earendil-works/pi-durable'
-import { CodingTools } from '@earendil-works/pi-durable/tools'
+import { createAgentResources } from '../../plugins/agent-resources/service/index.ts'
+import { artifactTools, CodeArtifactTools } from '../../plugins/artifacts/service/extension.ts'
+import { createChatTools } from '../../plugins/chat-tools/service/index.ts'
+import { CodingTools } from '../../plugins/coding/service/extension.ts'
+import { getComposerSkills } from '../../plugins/skills/service/extension.ts'
 import type { ComposerStateRequest } from '../../shared/desktop-contracts.ts'
-import { CodeArtifactTools } from '../resources/artifacts.ts'
-import { Resources } from '../resources/instructions.ts'
-import { ChatTools } from '../resources/tools.ts'
+
+const resources = createAgentResources(getComposerSkills)
+const Resources = resources.extension
+const ChatTools = createChatTools({
+  artifactTools,
+  discoverSkills: () => getComposerSkills({ composerMode: 'chat' }),
+  skillsSection: resources.createSkillsSection('chat'),
+})
 
 /** Statically installed, trusted extensions. Durable owns activation and persisted selection. */
 export function createDesktopExtensionRegistry() {
