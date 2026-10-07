@@ -4,7 +4,7 @@ import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
 import { DesktopComposerStatusModelPicker } from '../code-workspace/desktop-composer-status'
-import type { useQueuedPromptRestore } from '../code-workspace/useQueuedPromptRestore'
+import type { useQueuedPromptCancellation } from '../code-workspace/useQueuedPromptCancellation'
 import type { AppSettings, ProjectDiffBaseline } from '../desktop/types'
 import type { Message } from '../types'
 import { cn } from '../utils/cn'
@@ -36,8 +36,6 @@ const FALLBACK_APP_SETTINGS = {
   gitDiffIncludeUntrackedDefault: false,
   projectDeletionMode: 'pi-only',
   useAgentsSkillsPaths: false,
-  devUpdateBranch: false,
-  piTuiTakeover: false,
   hideSidebarSessionCounts: false,
   hoverToFocus: true,
   hoverToBlur: false,
@@ -47,7 +45,6 @@ const FALLBACK_APP_SETTINGS = {
 
 export type ChatWorkspaceComposerProps = {
   activeComposerState: AppShellController['composer']['state']
-  activePiExtensionUiState: AppShellController['composer']['extensionUiState']
   activeThreadData: AppShellController['thread']['activeData']
   artifactDrawer: ChatArtifactDrawerState
   composerProjectId: string
@@ -55,32 +52,27 @@ export type ChatWorkspaceComposerProps = {
   draftChatGroupId: string | null
   footerRef: RefObject<HTMLElement | null>
   handleAction: AppShellController['desktop']['handleAction']
-  handleShowTakeoverTerminal: AppShellController['takeover']['show']
   handleToggleTerminal: AppShellController['terminal']['toggle']
   hasConversation: boolean
   hasConversationLayout: boolean
   hasPersistedChatSession: boolean
   listComposerAttachmentEntries: AppShellController['composer']['listAttachmentEntries']
   mainViewRef: RefObject<HTMLElement | null>
-  markRestoredQueuedPromptApplied: ReturnType<
-    typeof useQueuedPromptRestore
-  >['markRestoredQueuedPromptApplied']
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
   pendingQueuedPromptIdsForSession: ReturnType<
-    typeof useQueuedPromptRestore
+    typeof useQueuedPromptCancellation
   >['pendingQueuedPromptIdsForSession']
-  handleEditQueuedPrompt: ReturnType<typeof useQueuedPromptRestore>['handleEditQueuedPrompt']
-  handleRemoveQueuedPrompt: ReturnType<typeof useQueuedPromptRestore>['handleRemoveQueuedPrompt']
-  scopedRestoredQueuedPrompt: ReturnType<
-    typeof useQueuedPromptRestore
-  >['scopedRestoredQueuedPrompt']
+  queuedPromptError: ReturnType<typeof useQueuedPromptCancellation>['queuedPromptError']
+  handleRemoveQueuedPrompt: ReturnType<
+    typeof useQueuedPromptCancellation
+  >['handleRemoveQueuedPrompt']
   setComposerOverlayHeight: Dispatch<SetStateAction<number>>
   shellState: AppShellController['desktop']['shellState']
   sidebarAutoHidden: boolean
   sidebarCollapsed: boolean
   sidebarCompactMode: boolean
   state: AppShellController['workspace']['state']
-  terminalSessionPath: string | null
+  terminalConversationId: string | null
   controller: ChatWorkspaceController
   onToggleSidebar: () => void
 }
@@ -135,16 +127,14 @@ function getToggleArtifacts({ hasConversationLayout, artifactDrawer }: ChatWorks
 function ChatQueuedPrompts({
   activeComposerState,
   pendingQueuedPromptIdsForSession,
-  handleEditQueuedPrompt,
+  queuedPromptError,
   handleRemoveQueuedPrompt,
 }: ChatWorkspaceComposerProps) {
   return (
     <QueuedPromptsCard
       prompts={activeComposerState?.queuedPrompts ?? []}
       pendingPromptIds={pendingQueuedPromptIdsForSession}
-      onEditPrompt={(prompt) => {
-        void handleEditQueuedPrompt(prompt)
-      }}
+      errorMessage={queuedPromptError}
       onRemovePrompt={(prompt) => {
         void handleRemoveQueuedPrompt(prompt)
       }}
@@ -155,19 +145,15 @@ function ChatQueuedPrompts({
 function ChatComposer(props: ChatWorkspaceComposerProps) {
   const {
     activeComposerState,
-    activePiExtensionUiState,
     state,
     activeThreadData,
-    scopedRestoredQueuedPrompt,
     shellState,
     composerProjectId,
     diffBaseline,
-    terminalSessionPath,
+    terminalConversationId,
     onSetDiffBaseline,
     setComposerOverlayHeight,
     footerRef,
-    handleShowTakeoverTerminal,
-    markRestoredQueuedPromptApplied,
     handleToggleTerminal,
     hasConversationLayout,
     hasConversation,
@@ -177,7 +163,7 @@ function ChatComposer(props: ChatWorkspaceComposerProps) {
     controller,
   } = props
   const appSettings = shellState?.appSettings ?? FALLBACK_APP_SETTINGS
-  const composerRuntime = getComposerRuntimeModel(activeComposerState, activePiExtensionUiState)
+  const composerRuntime = getComposerRuntimeModel(activeComposerState)
   return (
     <Composer
       activeView={state.activeView}
@@ -185,13 +171,12 @@ function ChatComposer(props: ChatWorkspaceComposerProps) {
       messages={activeThreadData?.messages}
       isStreaming={activeThreadData?.isStreaming ?? false}
       replyActivityKey={getReplyActivityKey(activeThreadData?.messages ?? [])}
-      restoredQueuedPrompt={scopedRestoredQueuedPrompt}
       streamingBehaviorPreference={appSettings.composerStreamingBehavior}
       projectId={composerProjectId}
       chatGroupId={getChatGroupId(props)}
       projectGitState={null}
       diffBaseline={diffBaseline}
-      sessionPath={terminalSessionPath}
+      conversationId={terminalConversationId}
       dictationModelId={appSettings.dictationModelId}
       dictationMaxDurationSeconds={appSettings.dictationMaxDurationSeconds}
       favoriteFolders={appSettings.favoriteFolders}
@@ -200,23 +185,19 @@ function ChatComposer(props: ChatWorkspaceComposerProps) {
       hoverToBlur={appSettings.hoverToBlur}
       composerSendMode={appSettings.composerSendMode}
       keybindings={appSettings.keybindings}
-      piTreeFilterMode={shellState?.piSettings.treeFilterMode ?? 'no-tools'}
       onSetDiffBaseline={onSetDiffBaseline}
       onOverlayHeightChange={setComposerOverlayHeight}
       workspaceFooterRef={footerRef}
-      onOpenTakeoverTerminal={handleShowTakeoverTerminal}
       onOpenGitOpsView={() => {
         /* Already in chat workspace. */
       }}
       onOpenSettingsView={(target) => controller.navigation.showView('settings', target)}
-      onRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
       onToggleTerminal={handleToggleTerminal}
       onToggleArtifacts={getToggleArtifacts(props)}
       artifactsAvailable={hasConversation}
       showTerminalControls={false}
       artifactsVisible={artifactDrawer.artifactsVisible}
       terminalVisible={state.terminalVisible}
-      takeoverVisible={state.takeoverVisible}
       preferPortalModelPopover={!hasConversationLayout}
       onListAttachmentEntries={listComposerAttachmentEntries}
       onAction={handleAction}
@@ -240,7 +221,7 @@ export function ChatComposerDock(props: ChatWorkspaceComposerProps) {
     artifactDrawer,
     activeComposerState,
     composerProjectId,
-    terminalSessionPath,
+    terminalConversationId,
     handleAction,
   } = props
   return (
@@ -260,7 +241,7 @@ export function ChatComposerDock(props: ChatWorkspaceComposerProps) {
           contextUsage={activeComposerState?.contextUsage ?? null}
           model={activeComposerState?.currentModel ?? null}
           projectId={composerProjectId}
-          sessionPath={terminalSessionPath}
+          conversationId={terminalConversationId}
           thinkingLevel={activeComposerState?.currentThinkingLevel ?? 'off'}
           onAction={handleAction}
         />

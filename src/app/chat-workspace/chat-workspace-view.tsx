@@ -1,8 +1,11 @@
-import { getLocalDraftChatGroupId, getPersistedSessionPath } from '@howcode/shared/session-paths'
+import {
+  getLocalDraftChatGroupId,
+  getPersistedConversationId,
+} from '@howcode/shared/conversation-ids'
 import { ThreadView } from '@howcode/thread'
 import { lazy, type RefObject, Suspense, useRef, useState } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
-import { useQueuedPromptRestore } from '../code-workspace/useQueuedPromptRestore'
+import { useQueuedPromptCancellation } from '../code-workspace/useQueuedPromptCancellation'
 import { useWorkspaceFooterHeight } from '../code-workspace/useWorkspaceFooterHeight'
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
 import { WORKSPACE_EDGE_PADDING_CLASS } from '../ui/layout'
@@ -20,12 +23,11 @@ const ArtifactPanel = lazy(() =>
 type ChatWorkspaceViewProps = {
   controller: ChatWorkspaceController
   activeComposerState: AppShellController['composer']['state']
-  activePiExtensionUiState: AppShellController['composer']['extensionUiState']
   activeThreadData: AppShellController['thread']['activeData']
   composerProjectId: string
   diffBaseline: ProjectDiffBaseline
   diffRenderMode: ProjectDiffRenderMode
-  terminalSessionPath: string | null
+  terminalConversationId: string | null
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
   onSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void
   sidebarCollapsed: boolean
@@ -59,14 +61,14 @@ function ChatWorkspaceMain({
   return (
     <main ref={mainViewRef} className="h-full min-h-0 overflow-hidden">
       <ThreadView
-        key={activeThreadData?.sessionPath ?? 'new-chat'}
+        key={activeThreadData?.conversationId ?? 'new-chat'}
         messages={shouldShowConversationContent ? (activeThreadData?.messages ?? []) : []}
         previousMessageCount={activeThreadData?.previousMessageCount ?? 0}
         isStreaming={activeThreadData?.isStreaming ?? false}
         isCompacting={activeThreadData?.isCompacting ?? false}
         composerLayoutVersion={composerLayoutVersion}
         composerOverlayHeight={composerOverlayHeight}
-        sessionPath={activeThreadData?.sessionPath ?? null}
+        conversationId={activeThreadData?.conversationId ?? null}
         loading={
           controller.thread.activeLoading || (hasConversation && !shouldShowConversationContent)
         }
@@ -174,12 +176,11 @@ function ChatWorkspaceViewContent(props: ChatWorkspaceContentProps) {
 export function ChatWorkspaceView({
   controller,
   activeComposerState,
-  activePiExtensionUiState,
   activeThreadData,
   composerProjectId,
   diffBaseline,
   diffRenderMode,
-  terminalSessionPath,
+  terminalConversationId,
   onSetDiffBaseline,
   onSetDiffRenderMode,
   sidebarCollapsed,
@@ -193,34 +194,28 @@ export function ChatWorkspaceView({
   const mainViewRef = useRef<HTMLElement>(null)
   const handleAction = controller.desktop.handleAction
   const handleLoadEarlierMessages = controller.thread.loadEarlierMessages
-  const handleShowTakeoverTerminal = controller.takeover.show
   const handleToggleTerminal = controller.terminal.toggle
   const listComposerAttachmentEntries = controller.composer.listAttachmentEntries
   const { shellState } = controller.desktop
   const { state } = controller.workspace
   const footerHeight = useWorkspaceFooterHeight({ footerRef, visible: true })
-  const conversationId = activeThreadData?.sessionPath ?? terminalSessionPath
+  const conversationId = activeThreadData?.conversationId ?? terminalConversationId
   const hasConversation = (activeThreadData?.messages.length ?? 0) > 0
   const hasConversationLayout = hasConversation
-  const hasPersistedChatSession = getPersistedSessionPath(terminalSessionPath) !== null
-  const draftChatGroupId = getLocalDraftChatGroupId(terminalSessionPath)
+  const hasPersistedChatSession = getPersistedConversationId(terminalConversationId) !== null
+  const draftChatGroupId = getLocalDraftChatGroupId(terminalConversationId)
   const shouldShowConversationContent = hasConversation
   const artifactDrawer = useChatArtifactDrawerState({
     conversationId,
     sidebarCompactMode,
     settingsOpen: state.settingsOpen,
   })
-  const {
-    handleEditQueuedPrompt,
-    handleRemoveQueuedPrompt,
-    markRestoredQueuedPromptApplied,
-    pendingQueuedPromptIdsForSession,
-    scopedRestoredQueuedPrompt,
-  } = useQueuedPromptRestore({
-    composerProjectId,
-    handleAction,
-    terminalSessionPath,
-  })
+  const { handleRemoveQueuedPrompt, pendingQueuedPromptIdsForSession, queuedPromptError } =
+    useQueuedPromptCancellation({
+      composerProjectId,
+      handleAction,
+      terminalConversationId,
+    })
 
   return (
     <ChatWorkspaceViewContent
@@ -242,25 +237,21 @@ export function ChatWorkspaceView({
       onToggleSidebar={onToggleSidebar}
       sidebarCollapsed={sidebarCollapsed}
       activeComposerState={activeComposerState}
-      activePiExtensionUiState={activePiExtensionUiState}
       pendingQueuedPromptIdsForSession={pendingQueuedPromptIdsForSession}
-      handleEditQueuedPrompt={handleEditQueuedPrompt}
+      queuedPromptError={queuedPromptError}
       handleRemoveQueuedPrompt={handleRemoveQueuedPrompt}
       state={state}
-      scopedRestoredQueuedPrompt={scopedRestoredQueuedPrompt}
       shellState={shellState}
       composerProjectId={composerProjectId}
       hasPersistedChatSession={hasPersistedChatSession}
       draftChatGroupId={draftChatGroupId}
-      terminalSessionPath={terminalSessionPath}
+      terminalConversationId={terminalConversationId}
       diffBaseline={diffBaseline}
       diffRenderMode={diffRenderMode}
       onSetDiffBaseline={onSetDiffBaseline}
       onSetDiffRenderMode={onSetDiffRenderMode}
       setComposerOverlayHeight={setComposerOverlayHeight}
-      handleShowTakeoverTerminal={handleShowTakeoverTerminal}
       handleToggleTerminal={handleToggleTerminal}
-      markRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
       conversationId={conversationId ?? null}
       listComposerAttachmentEntries={listComposerAttachmentEntries}
       handleAction={handleAction}

@@ -6,7 +6,7 @@ import { cn } from '../utils/cn'
 type QueuedPromptsCardProps = {
   prompts: ComposerQueuedPrompt[]
   pendingPromptIds?: string[]
-  onEditPrompt: (prompt: ComposerQueuedPrompt) => void
+  errorMessage?: string | null
   onRemovePrompt: (prompt: ComposerQueuedPrompt) => void
 }
 
@@ -15,20 +15,23 @@ const EMPTY_PENDING_PROMPT_IDS: string[] = []
 export function QueuedPromptsCard({
   prompts,
   pendingPromptIds = EMPTY_PENDING_PROMPT_IDS,
-  onEditPrompt,
+  errorMessage,
   onRemovePrompt,
 }: QueuedPromptsCardProps) {
   const pendingPromptIdSet = new Set(pendingPromptIds)
-  if (prompts.length === 0) {
+  if (prompts.length === 0 && !errorMessage) {
     return null
   }
 
   return (
     <div className="grid w-full overflow-visible px-[3.5rem]">
       <div className="grid w-full gap-1.5 rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-2.5 py-2 shadow-none">
-        <div className={cn('pl-3.5', appTypeSmallClass, appToneMutedClass)}>
-          Queued messages. Click to edit.
-        </div>
+        <div className={cn('pl-3.5', appTypeSmallClass, appToneMutedClass)}>Queued messages</div>
+        {errorMessage ? (
+          <p role="alert" className={appTypeSmallClass}>
+            {errorMessage}
+          </p>
+        ) : null}
 
         <div className="grid gap-1">
           {prompts.map((prompt) => {
@@ -43,25 +46,22 @@ export function QueuedPromptsCard({
                   isPending && 'opacity-60',
                 )}
               >
-                <button
-                  type="button"
+                <div
                   className={cn(
                     'min-w-0 px-2.5 py-1 text-left text-[color:var(--text)]/88 disabled:cursor-default',
                     appTypeSmallClass,
                   )}
-                  onClick={() => onEditPrompt(prompt)}
-                  disabled={isPending}
                 >
                   <span className="block truncate">{prompt.text}</span>
-                </button>
+                </div>
 
                 <button
                   type="button"
                   className={cn(compactIconButtonClass, 'mr-1 shrink-0')}
                   onClick={() => onRemovePrompt(prompt)}
-                  aria-label="Remove queued"
+                  aria-label="Cancel queued message"
                   disabled={isPending}
-                  data-tooltip="Remove queued"
+                  data-tooltip="Cancel queued message"
                 >
                   <X size={12} />
                 </button>

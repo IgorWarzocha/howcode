@@ -10,8 +10,6 @@ export function useSettingsMaintenanceController(input: { onAction: DesktopActio
   const [importBusy, setImportBusy] = useState(false)
   const [importStatusMessage, setImportStatusMessage] = useState<string | null>(null)
   const [importErrorMessage, setImportErrorMessage] = useState<string | null>(null)
-  const [clearImagesBusy, setClearImagesBusy] = useState(false)
-  const [clearImagesStatusMessage, setClearImagesStatusMessage] = useState<string | null>(null)
   const desktopBridgeAvailable = useDesktopBridgeAvailable()
 
   const handleImportProjectUi = async () => {
@@ -37,39 +35,8 @@ export function useSettingsMaintenanceController(input: { onAction: DesktopActio
     }
   }
 
-  const handleClearClipboardImages = async () => {
-    if (!desktopBridgeAvailable) {
-      setClearImagesStatusMessage(desktopBridgeUnavailableMessage)
-      return
-    }
-    setClearImagesBusy(true)
-    setClearImagesStatusMessage(null)
-    try {
-      const result = await input.onAction('settings.clear-clipboard-images', {})
-      const error = getActionError(result)
-      if (error) {
-        setClearImagesStatusMessage(error)
-        return
-      }
-      const clearedCount = result?.result?.clearedCount ?? 0
-      const failedCount = result?.result?.clearFailedCount ?? 0
-      const deletedMessage =
-        clearedCount === 1
-          ? 'Deleted 1 clipboard image.'
-          : `Deleted ${clearedCount} clipboard images.`
-      setClearImagesStatusMessage(
-        failedCount > 0 ? `${deletedMessage} ${failedCount} failed.` : deletedMessage,
-      )
-    } finally {
-      setClearImagesBusy(false)
-    }
-  }
-
   return {
-    clearImagesBusy,
-    clearImagesStatusMessage,
     desktopBridgeAvailable,
-    handleClearClipboardImages,
     handleImportProjectUi,
     importBusy,
     importErrorMessage,

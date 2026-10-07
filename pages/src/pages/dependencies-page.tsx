@@ -1,5 +1,5 @@
 import rootPackage from '../../../package.json'
-import launcherPackage from '../../../packages/howcode/package.json'
+import serverPackage from '../../../packages/howcode/package.json'
 import { asset } from '../site-assets'
 import { SiteNav } from '../site-shell'
 
@@ -12,7 +12,7 @@ type DependencyGroup = {
 const dependencyGroups: DependencyGroup[] = [
   {
     title: 'App runtime',
-    description: 'Packages shipped with or used directly by the desktop app.',
+    description: 'Packages used by the browser app and Node backend.',
     dependencies: rootPackage.dependencies,
   },
   {
@@ -21,9 +21,9 @@ const dependencyGroups: DependencyGroup[] = [
     dependencies: rootPackage.devDependencies,
   },
   {
-    title: 'npm launcher',
-    description: 'Runtime dependencies for the small `howcode` launcher package.',
-    dependencies: launcherPackage.dependencies,
+    title: 'npm server package',
+    description: 'Runtime dependencies installed with the `howcode` server package.',
+    dependencies: serverPackage.dependencies,
   },
 ]
 

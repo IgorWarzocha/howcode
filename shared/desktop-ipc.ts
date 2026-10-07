@@ -1,12 +1,11 @@
+import type { ConversationEntryList } from './conversation-entries'
 import type { DesktopAction } from './desktop-actions'
 import type {
   AnyDesktopActionPayload,
-  AppUpdateState,
   ArchivedThread,
   Artifact,
   ArtifactVersion,
   ChatSidebarState,
-  ComposerAttachment,
   ComposerFilePickerState,
   ComposerFileSearchEntry,
   ComposerSkillReference,
@@ -14,9 +13,6 @@ import type {
   ComposerState,
   ComposerStateRequest,
   DesktopActionResult,
-  DesktopClipboardFilePaths,
-  DesktopClipboardImage,
-  DesktopClipboardSnapshot,
   DesktopEvent,
   DictationModelInstallResult,
   DictationModelRemoveResult,
@@ -25,10 +21,7 @@ import type {
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
   InboxThread,
-  PiConfiguredPackage,
   PiConfiguredSkill,
-  PiPackageCatalogPage,
-  PiPackageMutationResult,
   PiSkillCatalogPage,
   PiSkillMutationResult,
   ProjectCommitEntry,
@@ -48,14 +41,11 @@ import type {
   ThreadData,
   ThreadSearchResult,
 } from './desktop-contracts'
-import type { SessionTreeList } from './session-tree.ts'
 import type {
   TerminalCloseRequest,
   TerminalEvent,
   TerminalOpenRequest,
   TerminalResizeRequest,
-  TerminalSessionFileStat,
-  TerminalSessionFileStatRequest,
   TerminalSessionSnapshot,
   TerminalStatusRequest,
   TerminalStatusSnapshot,
@@ -63,14 +53,6 @@ import type {
 } from './terminal-contracts'
 
 export type DesktopRequestMap = {
-  getAppUpdateState: { params: Record<string, never>; response: AppUpdateState }
-  checkAppUpdate: { params: Record<string, never>; response: AppUpdateState }
-  installAppUpdate: { params: Record<string, never>; response: AppUpdateState }
-  restartAppUpdate: { params: Record<string, never>; response: AppUpdateState }
-  clearClipboardImages: {
-    params: Record<string, never>
-    response: { clearedCount: number; clearFailedCount: number }
-  }
   getShellState: { params: Record<string, never>; response: ShellState }
   getProjectGitState: { params: { projectId: string }; response: ProjectGitState | null }
   getProjectUsageSummary: { params: { projectId: string }; response: ProjectUsageSummary }
@@ -117,37 +99,6 @@ export type DesktopRequestMap = {
     params: { projectId: string; limit?: number | undefined | null | undefined }
     response: ProjectCommitEntry[]
   }
-  searchPiPackages: {
-    params: {
-      query?: string | undefined | null | undefined
-      cursor?: number | undefined | null | undefined
-      pageSize?: number | undefined | null | undefined
-    }
-    response: PiPackageCatalogPage
-  }
-  getConfiguredPiPackages: {
-    params: { projectPath?: string | undefined | null | undefined; chat?: boolean | undefined }
-    response: PiConfiguredPackage[]
-  }
-  installPiPackage: {
-    params: {
-      source: string
-      kind?: 'npm' | 'git' | undefined
-      local?: boolean | undefined
-      projectPath?: string | undefined | null | undefined
-      chat?: boolean | undefined
-    }
-    response: PiPackageMutationResult
-  }
-  removePiPackage: {
-    params: {
-      source: string
-      local?: boolean | undefined
-      projectPath?: string | undefined | null | undefined
-      chat?: boolean | undefined
-    }
-    response: PiPackageMutationResult
-  }
   searchPiSkills: {
     params: {
       query?: string | undefined | null | undefined
@@ -176,10 +127,6 @@ export type DesktopRequestMap = {
     }
     response: PiSkillMutationResult
   }
-  pickComposerAttachments: {
-    params: { projectId?: string | undefined | null | undefined }
-    response: ComposerAttachment[]
-  }
   listProjectDirectoryEntries: {
     params: { path?: string | undefined | null | undefined }
     response: {
@@ -188,22 +135,6 @@ export type DesktopRequestMap = {
       parentPath: string | null
       entries: Array<{ path: string; name: string; kind: 'directory' }>
     }
-  }
-  readClipboardSnapshot: {
-    params: { formats?: string[] | undefined | null | undefined }
-    response: DesktopClipboardSnapshot
-  }
-  readClipboardFilePaths: {
-    params: Record<string, never>
-    response: DesktopClipboardFilePaths
-  }
-  readClipboardImage: {
-    params: Record<string, never>
-    response: DesktopClipboardImage
-  }
-  getAttachmentKindsForPaths: {
-    params: { paths: string[] }
-    response: Record<string, ComposerAttachment['kind'] | null>
   }
   listComposerAttachmentEntries: {
     params: {
@@ -276,26 +207,26 @@ export type DesktopRequestMap = {
   getInboxThreads: { params: Record<string, never>; response: InboxThread[] }
   getArchivedThreads: { params: Record<string, never>; response: ArchivedThread[] }
   getThread: {
-    params: { sessionPath: string; historyCompactions?: number | undefined }
+    params: { conversationId: string; historyCompactions?: number | undefined }
     response: ThreadData | null
   }
-  getSessionTreeList: {
-    params: { sessionPath: string }
-    response: SessionTreeList | null
+  getConversationEntries: {
+    params: { conversationId: string }
+    response: ConversationEntryList | null
   }
   getThreadPreviewAtEntry: {
     params: {
-      sessionPath: string
+      conversationId: string
       targetEntryId: string
       historyCompactions?: number | undefined
     }
     response: ThreadData | null
   }
   searchThread: {
-    params: { sessionPath: string; query: string }
+    params: { conversationId: string; query: string }
     response: ThreadSearchResult
   }
-  watchSession: { params: { sessionPath: string | null }; response: { ok: boolean } }
+  watchConversation: { params: { conversationId: string | null }; response: { ok: boolean } }
   invokeAction: {
     params: { action: DesktopAction; payload?: AnyDesktopActionPayload | undefined }
     response: DesktopActionResult
@@ -305,17 +236,7 @@ export type DesktopRequestMap = {
   terminalWrite: { params: TerminalWriteRequest; response: { ok: boolean } }
   terminalResize: { params: TerminalResizeRequest; response: { ok: boolean } }
   terminalClose: { params: TerminalCloseRequest; response: { ok: boolean } }
-  terminalSessionFileStat: {
-    params: TerminalSessionFileStatRequest
-    response: TerminalSessionFileStat | null
-  }
   terminalStatus: { params: TerminalStatusRequest; response: TerminalStatusSnapshot }
-  openExternal: { params: { url: string }; response: { ok: boolean } }
-  openPath: { params: { path: string }; response: { ok: boolean } }
-  saveTextToDownloads: {
-    params: { fileName: string; content: string }
-    response: { ok: boolean; path?: string | undefined; error?: string | undefined }
-  }
 }
 
 export type DesktopEventMap = {

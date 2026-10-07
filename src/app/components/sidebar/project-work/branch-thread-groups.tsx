@@ -17,7 +17,7 @@ export function ProjectExpandedBranchGroups({
   normalizedSearchQuery,
   project,
   selectedThreadId,
-  terminalRunningSessionPaths,
+  terminalRunningConversationIds,
   onAction,
   onSetCollapsedBranchIds,
   onThreadOpen,
@@ -31,12 +31,12 @@ export function ProjectExpandedBranchGroups({
   normalizedSearchQuery: string
   project: Project
   selectedThreadId: string | null
-  terminalRunningSessionPaths: ReadonlySet<string>
+  terminalRunningConversationIds: ReadonlySet<string>
   onAction: DesktopActionInvoker
   onSetCollapsedBranchIds: (
     updater: (current: Record<string, boolean>) => Record<string, boolean>,
   ) => void
-  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
+  onThreadOpen: (projectId: string, threadId: string, conversationId: string) => void
 }) {
   return (
     <div className="sidebar-project-work-project-expanded-branches">
@@ -63,7 +63,7 @@ export function ProjectExpandedBranchGroups({
             hideSessionCounts={hideSessionCounts}
             project={project}
             selectedThreadId={selectedThreadId}
-            terminalRunningSessionPaths={terminalRunningSessionPaths}
+            terminalRunningConversationIds={terminalRunningConversationIds}
             onAction={onAction}
             showBottomDivider={showBottomDivider}
             showTopDivider={showTopDivider}

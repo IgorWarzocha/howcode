@@ -16,7 +16,6 @@ export function useTerminalResize({
   fitAddonRef,
   scheduleXtermBottomAlign,
   sessionIdRef,
-  stickToBottomOnOutput,
   terminalInstanceRef,
   terminalReadyRevision,
   viewportRef,
@@ -24,7 +23,6 @@ export function useTerminalResize({
   fitAddonRef: RefObject<FitAddon | null>
   scheduleXtermBottomAlign: () => void
   sessionIdRef: RefObject<string | null>
-  stickToBottomOnOutput: boolean
   terminalInstanceRef: RefObject<XTerm | null>
   terminalReadyRevision: number
   viewportRef: RefObject<HTMLDivElement | null>
@@ -67,7 +65,7 @@ export function useTerminalResize({
     const terminal = terminalInstanceRef.current
     if (!terminal?.element) return
 
-    const shouldStickToBottom = stickToBottomOnOutput && isXtermNearBottom(terminal)
+    const shouldStickToBottom = isXtermNearBottom(terminal)
     fitAddonRef.current?.fit()
     const cols = normalizeTerminalDimension(terminal.cols, lastKnownSizeRef.current.cols)
     const rows = normalizeTerminalDimension(terminal.rows, lastKnownSizeRef.current.rows)
@@ -76,13 +74,7 @@ export function useTerminalResize({
     handleTerminalResize(cols, rows)
     if (shouldStickToBottom) terminal.scrollToBottom()
     scheduleXtermBottomAlign()
-  }, [
-    fitAddonRef,
-    handleTerminalResize,
-    scheduleXtermBottomAlign,
-    stickToBottomOnOutput,
-    terminalInstanceRef,
-  ])
+  }, [fitAddonRef, handleTerminalResize, scheduleXtermBottomAlign, terminalInstanceRef])
 
   const scheduleTerminalResizeToContainer = useCallback(() => {
     if (resizeFrameRef.current !== null) window.cancelAnimationFrame(resizeFrameRef.current)

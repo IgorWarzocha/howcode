@@ -52,7 +52,7 @@ export function useInboxComposerActions(
       props.thread.running ||
       props.isCompacting ||
       localActionPending ||
-      !props.thread.sessionPath ||
+      !props.thread.conversationId ||
       sendLockRef.current
     ) {
       return
@@ -65,7 +65,7 @@ export function useInboxComposerActions(
         await input.stopDictationAndFlush()
         const result = await props.onAction('composer.send', {
           projectId: props.thread.projectId,
-          sessionPath: props.thread.sessionPath,
+          conversationId: props.thread.conversationId,
           text: '/compact',
           attachments: [],
           streamingBehavior: props.appSettings.composerStreamingBehavior,
@@ -111,7 +111,7 @@ export function useInboxComposerActions(
       provider: model.provider,
       modelId: model.id,
       projectId: props.thread.projectId,
-      sessionPath: props.thread.sessionPath,
+      conversationId: props.thread.conversationId,
       composerMode,
     })
 
@@ -119,7 +119,7 @@ export function useInboxComposerActions(
     updateComposerOption('composer.thinking', {
       level,
       projectId: props.thread.projectId,
-      sessionPath: props.thread.sessionPath,
+      conversationId: props.thread.conversationId,
       composerMode,
     })
 

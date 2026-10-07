@@ -2,21 +2,16 @@ import { useCallback } from 'react'
 import { getDesktopActionErrorMessage } from '../../desktop/action-results'
 import type { DesktopAction } from '../../desktop/actions'
 import { getErrorMessage } from '../../desktop/error-messages'
-import type { DesktopActionInvoker, DesktopActionResult } from '../../desktop/types'
+import type { DesktopActionInvoker } from '../../desktop/types'
 
 type ComposerOpenMenu = 'model' | 'picker' | null
 
-function isCancelledSessionTreeNavigate(action: DesktopAction, result: DesktopActionResult) {
-  return action === 'composer.session-tree.navigate' && result.result?.sessionTreeNavigateCancelled
-}
-
 export function useComposerActionRunner(input: {
   onAction: DesktopActionInvoker
-  setDraft: (value: string) => void
   setErrorMessage: (message: string | null) => void
   setOpenMenu: React.Dispatch<React.SetStateAction<ComposerOpenMenu>>
 }) {
-  const { onAction, setDraft, setErrorMessage, setOpenMenu } = input
+  const { onAction, setErrorMessage, setOpenMenu } = input
 
   const invokeComposerAction = useCallback(
     async (action: DesktopAction, payload: NonNullable<Parameters<DesktopActionInvoker>[1]>) => {
@@ -47,16 +42,12 @@ export function useComposerActionRunner(input: {
       options?: { closeMenu?: boolean } | undefined,
     ) => {
       const result = await invokeComposerAction(action, payload)
-      if (!result || isCancelledSessionTreeNavigate(action, result)) return false
+      if (!result) return false
 
-      if (action === 'composer.session-tree.navigate') {
-        const editorText = result.result?.sessionTreeNavigateEditorText
-        if (typeof editorText === 'string') setDraft(editorText)
-      }
       if (options?.closeMenu ?? true) setOpenMenu(null)
       return true
     },
-    [invokeComposerAction, setDraft, setOpenMenu],
+    [invokeComposerAction, setOpenMenu],
   )
 
   return { invokeComposerAction, runComposerAction }

@@ -1,10 +1,4 @@
-import {
-  type Dispatch,
-  type MutableRefObject,
-  type SetStateAction,
-  useCallback,
-  useRef,
-} from 'react'
+import { type Dispatch, type MutableRefObject, type SetStateAction, useCallback } from 'react'
 import { getDesktopActionErrorMessage } from '../desktop/action-results'
 import { getErrorMessage } from '../desktop/error-messages'
 import type {
@@ -12,11 +6,7 @@ import type {
   ComposerStreamingBehavior,
   DesktopActionInvoker,
 } from '../desktop/types'
-import {
-  clearPendingSubmitted,
-  runComposerSendSubmission,
-  runExtensionCommandSubmission,
-} from './composer-submission-runner'
+import { clearPendingSubmitted, runComposerSendSubmission } from './composer-submission-runner'
 import { withComposerSendLock } from './composerSendLock'
 import { submitComposerDraft } from './submitComposerDraft'
 
@@ -26,15 +16,13 @@ type UseComposerSubmissionProps = {
   isSending: boolean
   isStreaming: boolean
   isCompacting: boolean
-  extensionCommandRunning: boolean
   onAction: DesktopActionInvoker
   projectId: string
   chatGroupId?: string | null
-  sessionPath: string | null
+  conversationId: string | null
   setAttachments: Dispatch<SetStateAction<ComposerAttachment[]>>
   setDraftValue: Dispatch<SetStateAction<string>>
   setErrorMessage: Dispatch<SetStateAction<string | null>>
-  setExtensionCommandRunning: Dispatch<SetStateAction<boolean>>
   setIsSending: Dispatch<SetStateAction<boolean>>
   setPendingSubmittedDraft: Dispatch<SetStateAction<string | null>>
   pendingSubmittedReplyActivityKeyRef: MutableRefObject<string | null>
@@ -56,15 +44,13 @@ export function useComposerSubmission({
   isSending,
   isStreaming,
   isCompacting,
-  extensionCommandRunning,
   onAction,
   projectId,
   chatGroupId = null,
-  sessionPath,
+  conversationId,
   setAttachments,
   setDraftValue,
   setErrorMessage,
-  setExtensionCommandRunning,
   setIsSending,
   setPendingSubmittedDraft,
   pendingSubmittedReplyActivityKeyRef,
@@ -79,58 +65,6 @@ export function useComposerSubmission({
   sendLockRef,
   skipNextDraftPersistenceRef,
 }: UseComposerSubmissionProps) {
-  const extensionCommandRunIdRef = useRef(0)
-
-  const sendExtensionCommand = useCallback(() => {
-    if (isCompacting || extensionCommandRunning || sendLockRef.current) {
-      return
-    }
-
-    const runId = extensionCommandRunIdRef.current + 1
-    extensionCommandRunIdRef.current = runId
-    setErrorMessage(null)
-    setOpenMenu(null)
-    setExtensionCommandRunning(true)
-
-    void withComposerSendLock(sendLockRef, () =>
-      runExtensionCommandSubmission({
-        activeComposerScopeKeyRef,
-        chatGroupId,
-        composerScopeKey,
-        draftThreadId,
-        draftValueRef,
-        extensionCommandRunIdRef,
-        onAction,
-        projectId,
-        runId,
-        sessionPath,
-        setDraftValue,
-        setErrorMessage,
-        setExtensionCommandRunning,
-        stopDictationAndFlush,
-        streamingBehaviorPreference,
-      }),
-    )
-  }, [
-    activeComposerScopeKeyRef,
-    chatGroupId,
-    composerScopeKey,
-    draftThreadId,
-    draftValueRef,
-    extensionCommandRunning,
-    isCompacting,
-    onAction,
-    projectId,
-    sessionPath,
-    sendLockRef,
-    setDraftValue,
-    setErrorMessage,
-    setExtensionCommandRunning,
-    setOpenMenu,
-    stopDictationAndFlush,
-    streamingBehaviorPreference,
-  ])
-
   const send = useCallback(async () => {
     if (isSending || isCompacting || sendLockRef.current) {
       return
@@ -152,7 +86,7 @@ export function useComposerSubmission({
           pendingSubmittedReplyActivityKeyRef,
           projectId,
           replyActivityKey,
-          sessionPath,
+          conversationId,
           setAttachments,
           setDraftValue,
           setErrorMessage,
@@ -186,7 +120,7 @@ export function useComposerSubmission({
     projectId,
     replyActivityKey,
     sendLockRef,
-    sessionPath,
+    conversationId,
     setAttachments,
     setDraftValue,
     setErrorMessage,
@@ -199,9 +133,7 @@ export function useComposerSubmission({
   ])
 
   const stop = useCallback(async () => {
-    if (!(isStreaming || extensionCommandRunning) || isSending || !sessionPath) {
-      return
-    }
+    if (!isStreaming || isSending || !conversationId) return
 
     setIsSending(true)
     setErrorMessage(null)
@@ -209,7 +141,7 @@ export function useComposerSubmission({
     try {
       const result = await onAction('composer.stop', {
         projectId,
-        sessionPath,
+        conversationId,
       })
 
       const actionErrorMessage = getDesktopActionErrorMessage(result, 'Could not stop Pi.')
@@ -221,19 +153,10 @@ export function useComposerSubmission({
     } finally {
       setIsSending(false)
     }
-  }, [
-    extensionCommandRunning,
-    isSending,
-    isStreaming,
-    onAction,
-    projectId,
-    sessionPath,
-    setErrorMessage,
-    setIsSending,
-  ])
+  }, [isSending, isStreaming, onAction, projectId, conversationId, setErrorMessage, setIsSending])
 
   const compact = useCallback(async () => {
-    if (isSending || isStreaming || isCompacting || !sessionPath || sendLockRef.current) {
+    if (isSending || isStreaming || isCompacting || !conversationId || sendLockRef.current) {
       return
     }
 
@@ -250,7 +173,7 @@ export function useComposerSubmission({
           isSending: false,
           projectId,
           chatGroupId,
-          sessionPath,
+          conversationId,
           streamingBehaviorPreference,
           onAction,
         })
@@ -270,7 +193,7 @@ export function useComposerSubmission({
     onAction,
     projectId,
     sendLockRef,
-    sessionPath,
+    conversationId,
     setErrorMessage,
     setIsSending,
     stopDictationAndFlush,
@@ -280,7 +203,6 @@ export function useComposerSubmission({
   return {
     compact,
     send,
-    sendExtensionCommand,
     stop,
   }
 }

@@ -11,12 +11,7 @@ export {
   createChatGroup,
   getChatSidebarState as loadChatSidebarState,
 } from './chat-state-db.ts'
-export {
-  installPiPackage,
-  listConfiguredPiPackages,
-  removePiPackage,
-  searchPiPackages,
-} from './pi-packages/index.ts'
+export { watchConversation } from './pi-desktop-runtime.ts'
 export { handleDesktopAction } from './pi-threads/action-router.ts'
 export { loadProjectUsageSummary } from './pi-threads/project-usage-summary.ts'
 export {
@@ -36,16 +31,15 @@ export {
   loadProjectGitState,
   loadShellState,
   removeDictationModel,
-  setWatchedSessionPath,
   startProjectDiffStream,
   subscribeDesktopEvents,
   transcribeDictation,
 } from './pi-threads/shell-loader.ts'
 export {
   loadArchivedThreadList,
+  loadConversationEntries,
   loadInboxThreadList,
   loadProjectThreads,
-  loadSessionTreeList,
   loadThread,
   loadThreadPreviewAtEntry,
   searchThread,

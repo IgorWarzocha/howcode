@@ -1,20 +1,16 @@
-import { stat } from 'node:fs/promises'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
 import * as Fiber from 'effect/Fiber'
 import * as FiberMap from 'effect/FiberMap'
 import * as Option from 'effect/Option'
 import * as Scope from 'effect/Scope'
-import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import type {
   TerminalCloseRequest,
   TerminalOpenRequest,
-  TerminalSessionFileStat,
   TerminalSessionSnapshot,
   TerminalStatusSnapshot,
 } from '../../shared/terminal-contracts.ts'
 import { withWorkspaceActivity } from '../project-worktrees/workspace-teardown-gate.ts'
-import { releaseGuiRuntimeForPiSession } from './pi-session-runtime-handoff.ts'
 import { findUnboundWorkspaceShellTerminal } from './session-binding.ts'
 import { nowIso } from './session-history.ts'
 import { makeSessionId } from './session-id.ts'
@@ -30,14 +26,15 @@ import { clearTerminalHistory, didSubmitClear, rememberTerminalInput } from './t
 import type { PtyAdapter } from './types.ts'
 
 export interface TerminalManager {
-  readonly closeAllTerminals: () => Promise<void>
-  readonly closeTerminal: (request: TerminalCloseRequest) => Promise<void>
-  readonly getTerminalStatus: (sessionId: string) => Promise<TerminalStatusSnapshot>
-  readonly listTerminals: () => Promise<TerminalSessionSnapshot[]>
-  readonly openTerminal: (request: TerminalOpenRequest) => Promise<TerminalSessionSnapshot>
-  readonly resizeTerminal: (sessionId: string, cols: number, rows: number) => Promise<void>
-  readonly statSessionFile: (sessionId: string) => Promise<TerminalSessionFileStat | null>
-  readonly writeTerminal: (sessionId: string, data: string) => Promise<void>
+  readonly closeAllTerminals: () => Effect.Effect<void, unknown>
+  readonly closeTerminal: (request: TerminalCloseRequest) => Effect.Effect<void, unknown>
+  readonly getTerminalStatus: (sessionId: string) => Effect.Effect<TerminalStatusSnapshot>
+  readonly listTerminals: () => Effect.Effect<TerminalSessionSnapshot[]>
+  readonly openTerminal: (
+    request: TerminalOpenRequest,
+  ) => Effect.Effect<TerminalSessionSnapshot, unknown>
+  readonly resizeTerminal: (sessionId: string, cols: number, rows: number) => Effect.Effect<void>
+  readonly writeTerminal: (sessionId: string, data: string) => Effect.Effect<void, unknown>
 }
 
 export function makeTerminalManager(
@@ -82,30 +79,39 @@ export function makeTerminalManager(
       return createTerminalRecord({ store, rootScope: sessionsScope, adapter, request, sessionId })
     }
 
-    async function openTerminal(request: TerminalOpenRequest): Promise<TerminalSessionSnapshot> {
-      return withWorkspaceActivity(request.projectId, async () => {
-        await releaseGuiRuntimeForPiSession(request)
-        const sessionId = makeSessionId(request)
-        return Effect.runPromise(
-          Effect.gen(function* () {
-            if (closed) return yield* Effect.fail(new Error('Terminal manager is closed.'))
-            const pending = FiberMap.getUnsafe(openingSessions, sessionId)
-            if (Option.isSome(pending)) return yield* Effect.flatten(Fiber.join(pending.value))
-            const opening = yield* FiberMap.run(
-              openingSessions,
-              sessionId,
-              Effect.tryPromise({
-                try: () => openUnreservedTerminal(request, sessionId),
-                catch: (error) => error,
-              }).pipe(Effect.exit, Effect.uninterruptible),
+    const openTerminal = Effect.fn('TerminalManager.open')(function* (
+      request: TerminalOpenRequest,
+    ) {
+      // Workspace admission owns a Promise callback boundary outside the terminal runtime.
+      return yield* Effect.tryPromise({
+        try: () =>
+          withWorkspaceActivity(request.projectId, async () => {
+            const sessionId = makeSessionId(request)
+            return Effect.runPromise(
+              Effect.gen(function* () {
+                if (closed) return yield* Effect.fail(new Error('Terminal manager is closed.'))
+                const pending = FiberMap.getUnsafe(openingSessions, sessionId)
+                if (Option.isSome(pending)) return yield* Effect.flatten(Fiber.join(pending.value))
+                const opening = yield* FiberMap.run(
+                  openingSessions,
+                  sessionId,
+                  Effect.tryPromise({
+                    try: () => openUnreservedTerminal(request, sessionId),
+                    catch: (error) => error,
+                  }).pipe(Effect.exit, Effect.uninterruptible),
+                )
+                return yield* Effect.flatten(Fiber.join(opening))
+              }),
             )
-            return yield* Effect.flatten(Fiber.join(opening))
           }),
-        )
+        catch: (error) => error,
       })
-    }
+    })
 
-    async function writeTerminal(sessionId: string, data: string) {
+    const writeTerminal = Effect.fn('TerminalManager.write')(function* (
+      sessionId: string,
+      data: string,
+    ) {
       const record = store.get(sessionId)
       if (!record) return
       const input = rememberTerminalInput(store, record, data)
@@ -119,55 +125,56 @@ export function makeTerminalManager(
           exitSignal: null,
           updatedAt: nowIso(),
         }
-        await ensureProcessStarted(store, adapter, record, 'restarted')
+        yield* ensureProcessStarted(store, adapter, record, 'restarted')
       }
 
       record.process?.write(data)
       if (didSubmitClear(input)) clearTerminalHistory(store, record)
-    }
+    }, Effect.uninterruptible)
 
-    async function resizeTerminal(sessionId: string, cols: number, rows: number) {
-      const record = store.get(sessionId)
-      if (!record) return
-      record.snapshot = { ...record.snapshot, cols, rows, updatedAt: nowIso() }
-      record.process?.resize(cols, rows)
-    }
+    const resizeTerminal = Effect.fn('TerminalManager.resize')(
+      (sessionId: string, cols: number, rows: number) =>
+        Effect.sync(() => {
+          const record = store.get(sessionId)
+          if (!record) return
+          record.snapshot = { ...record.snapshot, cols, rows, updatedAt: nowIso() }
+          record.process?.resize(cols, rows)
+        }),
+    )
 
-    async function listTerminals(): Promise<TerminalSessionSnapshot[]> {
-      return store.list().map((record) => record.snapshot)
-    }
+    const listTerminals = Effect.fn('TerminalManager.list')(() =>
+      Effect.sync(() => store.list().map((record) => record.snapshot)),
+    )
 
-    async function getTerminalStatus(sessionId: string) {
-      const record = store.get(sessionId)
-      return record ? { sessionId, status: record.snapshot.status } : null
-    }
+    const getTerminalStatus = Effect.fn('TerminalManager.status')((sessionId: string) =>
+      Effect.sync(() => {
+        const record = store.get(sessionId)
+        return record ? { sessionId, status: record.snapshot.status } : null
+      }),
+    )
 
-    async function statSessionFile(sessionId: string) {
-      const record = store.get(sessionId)
-      const persistedSessionPath = getPersistedSessionPath(record?.snapshot.sessionPath ?? null)
-      if (!persistedSessionPath) return null
-
-      try {
-        const fileStat = await stat(persistedSessionPath)
-        return fileStat.isFile() ? { mtimeMs: fileStat.mtimeMs, size: fileStat.size } : null
-      } catch {
-        return null
-      }
-    }
-
-    async function closeTerminal(request: TerminalCloseRequest) {
+    const closeTerminal = Effect.fn('TerminalManager.close')(function* (
+      request: TerminalCloseRequest,
+    ) {
       const record = store.get(request.sessionId)
       if (!record) return
       record.deleteHistoryOnClose = request.deleteHistory === true
       record.forceKillOnClose = request.force === true
-      await Effect.runPromise(Scope.close(record.scope, Exit.void))
-    }
+      yield* Scope.close(record.scope, Exit.void)
+    })
 
-    async function closeAllTerminals() {
-      await Effect.runPromise(FiberMap.awaitEmpty(openingSessions))
+    const closeAllTerminals = Effect.fn('TerminalManager.closeAll')(function* () {
+      yield* FiberMap.awaitEmpty(openingSessions)
       const sessionIds = store.list().map((record) => record.snapshot.sessionId)
-      await Promise.all(sessionIds.map((sessionId) => closeTerminal({ sessionId })))
-    }
+      const exits = yield* Effect.forEach(
+        sessionIds,
+        (sessionId) => closeTerminal({ sessionId }).pipe(Effect.exit),
+        {
+          concurrency: 'unbounded',
+        },
+      )
+      yield* Effect.forEach(exits, (exit) => exit, { discard: true })
+    }, Effect.uninterruptible)
 
     return {
       closeAllTerminals,
@@ -176,7 +183,6 @@ export function makeTerminalManager(
       listTerminals,
       openTerminal,
       resizeTerminal,
-      statSessionFile,
       writeTerminal,
     } satisfies TerminalManager
   })

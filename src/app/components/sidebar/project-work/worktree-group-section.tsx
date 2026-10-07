@@ -13,7 +13,7 @@ export function WorktreeGroupSection({
   isLast,
   project,
   selectedThreadId,
-  terminalRunningSessionPaths,
+  terminalRunningConversationIds,
   worktree,
   onAction,
   onThreadOpen,
@@ -24,10 +24,10 @@ export function WorktreeGroupSection({
   isLast: boolean
   project: Project
   selectedThreadId: string | null
-  terminalRunningSessionPaths: ReadonlySet<string>
+  terminalRunningConversationIds: ReadonlySet<string>
   worktree: WorktreeBranchGroup
   onAction: DesktopActionInvoker
-  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
+  onThreadOpen: (projectId: string, threadId: string, conversationId: string) => void
 }) {
   const threadProject = { ...project, id: worktree.path }
   const threadAssignBranch = worktree.branchName ?? null
@@ -83,7 +83,7 @@ export function WorktreeGroupSection({
               activeView={activeView}
               project={threadProject}
               selectedThreadId={selectedThreadId}
-              terminalRunningSessionPaths={terminalRunningSessionPaths}
+              terminalRunningConversationIds={terminalRunningConversationIds}
               thread={thread}
               onAction={onAction}
               onThreadOpen={onThreadOpen}

@@ -1,5 +1,5 @@
 import { Effect } from 'effect'
-import * as SqlClient from 'effect/unstable/sql/SqlClient'
+import * as SqlClient from 'effect/sql/SqlClient'
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../../shared/desktop-contracts.ts'
 import { withDatabaseTransaction } from './write-transaction.ts'
 
@@ -7,18 +7,6 @@ const pathSeparatorPattern = /[\\/]/
 
 function isString(value: unknown): value is string {
   return typeof value === 'string'
-}
-
-export type ProjectUsageTotalsDelta = {
-  cwd: string
-  input: number
-  output: number
-  cacheRead: number
-  cacheWrite: number
-  totalTokens: number
-  costTotal: number
-  assistantTurnCount: number
-  sessionsWithUsageCount?: number | undefined
 }
 
 function getChanges(result: unknown, operation: string) {
@@ -34,23 +22,23 @@ function getChanges(result: unknown, operation: string) {
 }
 
 export const setThreadRunningState = Effect.fn('threadStateDb.setThreadRunningState')(function* (
-  sessionPath: string,
+  conversationId: string,
   running: boolean,
 ) {
   const sql = yield* SqlClient.SqlClient
   yield* sql.unsafe(
     `
-      UPDATE threads
+      UPDATE conversation_facts
       SET running = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE session_path = ? AND running != ?
+      WHERE conversation_id = ? AND running != ?
     `,
-    [running ? 1 : 0, sessionPath, running ? 1 : 0],
+    [running ? 1 : 0, conversationId, running ? 1 : 0],
   )
 })
 
 export const setThreadDiffPreferences = Effect.fn('threadStateDb.setThreadDiffPreferences')(
   function* (
-    sessionPath: string,
+    conversationId: string,
     preferences: {
       baseline?: ProjectDiffBaseline | null
       renderMode?: ProjectDiffRenderMode | null
@@ -77,9 +65,9 @@ export const setThreadDiffPreferences = Effect.fn('threadStateDb.setThreadDiffPr
 
     const sql = yield* SqlClient.SqlClient
     const result = yield* sql`
-      UPDATE threads
+      UPDATE conversation_facts
       SET ${sql.update(updates)}, updated_at = CURRENT_TIMESTAMP
-      WHERE session_path = ${sessionPath}
+      WHERE conversation_id = ${conversationId}
     `.raw
     return getChanges(result, 'thread diff preferences update') > 0
   },
@@ -91,7 +79,7 @@ export const toggleThreadPinned = Effect.fn('threadStateDb.toggleThreadPinned')(
   const sql = yield* SqlClient.SqlClient
   yield* sql.unsafe(
     `
-      UPDATE threads
+      UPDATE conversation_facts
       SET pinned = CASE pinned WHEN 1 THEN 0 ELSE 1 END, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `,
@@ -108,11 +96,11 @@ export const renameThreadTitle = Effect.fn('threadStateDb.renameThreadTitle')(fu
   const sql = yield* SqlClient.SqlClient
   const result = yield* sql.unsafe(
     `
-      UPDATE threads
-      SET title = ?, updated_at = CURRENT_TIMESTAMP
+      UPDATE conversation_facts
+      SET title = ?, custom_title = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `,
-    [normalizedTitle, threadId],
+    [normalizedTitle, normalizedTitle, threadId],
   ).raw
   return getChanges(result, 'thread title update') > 0
 })
@@ -132,7 +120,7 @@ export const assignThreadToProjectBranch = Effect.fn('threadStateDb.assignThread
     const current = (yield* sql.unsafe<{ projectId?: string | undefined }>(
       `
         SELECT cwd AS projectId
-        FROM threads
+        FROM conversation_facts
         WHERE id = ?
       `,
       [threadId],
@@ -156,7 +144,7 @@ export const assignThreadToProjectBranch = Effect.fn('threadStateDb.assignThread
     if (normalizedProjectId) {
       yield* sql.unsafe(
         `
-        UPDATE threads
+        UPDATE conversation_facts
         SET cwd = ?, branch_name = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `,
@@ -165,7 +153,7 @@ export const assignThreadToProjectBranch = Effect.fn('threadStateDb.assignThread
     } else {
       yield* sql.unsafe(
         `
-        UPDATE threads
+        UPDATE conversation_facts
         SET branch_name = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `,
@@ -185,7 +173,7 @@ export const archiveThread = Effect.fn('threadStateDb.archiveThread')(function* 
   const sql = yield* SqlClient.SqlClient
   yield* sql.unsafe(
     `
-      UPDATE threads
+      UPDATE conversation_facts
       SET archived = 1, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `,
@@ -219,7 +207,7 @@ const updateArchivedFlag = Effect.fn('threadStateDb.updateArchivedFlag')(functio
       for (const threadId of threadIds) {
         yield* sql.unsafe(
           `
-            UPDATE threads
+            UPDATE conversation_facts
             SET archived = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
           `,
@@ -234,7 +222,7 @@ export const restoreThread = Effect.fn('threadStateDb.restoreThread')(function* 
   const sql = yield* SqlClient.SqlClient
   yield* sql.unsafe(
     `
-      UPDATE threads
+      UPDATE conversation_facts
       SET archived = 0, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `,
@@ -248,74 +236,30 @@ export const deleteThreadRecord = Effect.fn('threadStateDb.deleteThreadRecord')(
   const sql = yield* SqlClient.SqlClient
   yield* sql.unsafe(
     `
-      DELETE FROM threads
+      UPDATE conversation_facts SET deleted = 1, running = 0
       WHERE id = ?
     `,
     [threadId],
   )
 })
 
-export const addProjectUsageTotals = Effect.fn('threadStateDb.addProjectUsageTotals')(function* (
-  snapshot: ProjectUsageTotalsDelta,
-) {
-  const sql = yield* SqlClient.SqlClient
-  yield* sql.unsafe(
-    `
-      INSERT INTO project_usage_totals (
-        cwd,
-        input,
-        output,
-        cache_read,
-        cache_write,
-        total_tokens,
-        cost_total,
-        assistant_turn_count,
-        session_count,
-        sessions_with_usage_count
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(cwd) DO UPDATE SET
-        input = project_usage_totals.input + excluded.input,
-        output = project_usage_totals.output + excluded.output,
-        cache_read = project_usage_totals.cache_read + excluded.cache_read,
-        cache_write = project_usage_totals.cache_write + excluded.cache_write,
-        total_tokens = project_usage_totals.total_tokens + excluded.total_tokens,
-        cost_total = project_usage_totals.cost_total + excluded.cost_total,
-        assistant_turn_count = project_usage_totals.assistant_turn_count + excluded.assistant_turn_count,
-        session_count = project_usage_totals.session_count + excluded.session_count,
-        sessions_with_usage_count = project_usage_totals.sessions_with_usage_count + excluded.sessions_with_usage_count
-    `,
-    [
-      snapshot.cwd,
-      snapshot.input,
-      snapshot.output,
-      snapshot.cacheRead,
-      snapshot.cacheWrite,
-      snapshot.totalTokens,
-      snapshot.costTotal,
-      snapshot.assistantTurnCount,
-      1,
-      snapshot.sessionsWithUsageCount ?? (snapshot.assistantTurnCount > 0 ? 1 : 0),
-    ],
-  )
-})
-
-export const deleteThreadRecordsBySessionPaths = Effect.fn(
-  'threadStateDb.deleteThreadRecordsBySessionPaths',
-)(function* (sessionPaths: string[]) {
-  if (sessionPaths.length === 0) {
+export const deleteThreadRecordsByConversationIds = Effect.fn(
+  'threadStateDb.deleteThreadRecordsByConversationIds',
+)(function* (conversationIds: string[]) {
+  if (conversationIds.length === 0) {
     return
   }
 
   const sql = yield* SqlClient.SqlClient
   yield* withDatabaseTransaction(
     Effect.gen(function* () {
-      for (const sessionPath of sessionPaths) {
+      for (const conversationId of conversationIds) {
         yield* sql.unsafe(
           `
-            DELETE FROM threads
-            WHERE session_path = ?
+            UPDATE conversation_facts SET deleted = 1, running = 0
+            WHERE conversation_id = ?
           `,
-          [sessionPath],
+          [conversationId],
         )
       }
     }),

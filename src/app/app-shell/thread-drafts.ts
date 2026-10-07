@@ -1,4 +1,4 @@
-import { createLocalThreadDraft } from '@howcode/shared/session-paths'
+import { createLocalThreadDraft } from '@howcode/shared/conversation-ids'
 import type { Thread } from '../desktop/types'
 
 export function getInitialThreadBranchName(branchName: unknown) {
@@ -15,7 +15,7 @@ export function buildLocalThreadFallback(
 export function buildOptimisticThread(input: {
   id: string
   title?: string | undefined
-  sessionPath: string
+  conversationId: string
   branchName?: string | undefined | null
   running?: boolean | undefined
   lastModifiedMs?: number | undefined
@@ -25,7 +25,7 @@ export function buildOptimisticThread(input: {
     title: input.title ?? 'New thread',
     age: 'Now',
     lastModifiedMs: input.lastModifiedMs ?? Date.now(),
-    sessionPath: input.sessionPath,
+    conversationId: input.conversationId,
     running: input.running,
   }
   const branchName = getInitialThreadBranchName(input.branchName)

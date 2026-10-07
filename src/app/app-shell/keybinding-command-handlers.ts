@@ -11,11 +11,11 @@ export function stopActiveRun(runtime: KeybindingRuntime) {
   const activeThreadData = runtime.appController.thread.activeData
   const composerProjectId = runtime.appController.composer.projectId
   const { state } = runtime.appController.workspace
-  if (!(activeThreadData?.isStreaming && state.selectedSessionPath)) return false
+  if (!(activeThreadData?.isStreaming && state.selectedConversationId)) return false
   if (appLevelShortcutsAreBlocked('agent.interrupt', runtime)) return false
   void runtime.appController.desktop.handleAction('composer.stop', {
     projectId: composerProjectId,
-    sessionPath: state.selectedSessionPath,
+    conversationId: state.selectedConversationId,
   })
   return true
 }
@@ -34,27 +34,27 @@ function handleSettingsCommand(runtime: KeybindingRuntime) {
 
 function handleGitOpsCommand(runtime: KeybindingRuntime) {
   const controller = runtime.appController
-  const { activeView, selectedSessionPath } = controller.workspace.state
+  const { activeView, selectedConversationId } = controller.workspace.state
   if (activeView === 'gitops') {
     controller.gitOps.close()
     return true
   }
-  if (activeView !== 'thread' || !selectedSessionPath) return false
+  if (activeView !== 'thread' || !selectedConversationId) return false
   controller.gitOps.open()
   return true
 }
 
 function handleTerminalToggleCommand(runtime: KeybindingRuntime) {
-  const { selectedProjectId, selectedSessionPath } = runtime.appController.workspace.state
-  if (!(selectedProjectId || selectedSessionPath)) return false
+  const { selectedProjectId, selectedConversationId } = runtime.appController.workspace.state
+  if (!(selectedProjectId || selectedConversationId)) return false
   runtime.appController.terminal.toggle()
   return true
 }
 
 function handleTerminalFocusCommand(runtime: KeybindingRuntime) {
-  const { selectedProjectId, selectedSessionPath, terminalVisible } =
+  const { selectedProjectId, selectedConversationId, terminalVisible } =
     runtime.appController.workspace.state
-  if (!(selectedProjectId || selectedSessionPath)) return false
+  if (!(selectedProjectId || selectedConversationId)) return false
   dispatchHowcodeDismissTransientUi()
   runtime.onFocusTerminal()
   if (!terminalVisible) runtime.appController.terminal.toggle()

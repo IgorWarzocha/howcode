@@ -1,32 +1,17 @@
 import type { DesktopAction } from '../../shared/desktop-actions.ts'
 import type { AnyDesktopActionPayload } from '../../shared/desktop-contracts.ts'
+import { refreshDurableSettings } from '../durable-runtime/host.ts'
 import { loadPiThemeState, type PiSettingsKey, updatePiSetting } from '../pi-settings.ts'
 import { type ActionHandlerResult, handledAction, unhandledAction } from './action-router-result.ts'
 
 const piSettingsKeys = new Set<PiSettingsKey>([
   'theme',
-  'extensions',
   'autoCompact',
-  'cacheWarming',
   'enableSkillCommands',
-  'hideThinkingBlock',
-  'quietStartup',
-  'showImages',
-  'autoResizeImages',
   'blockImages',
-  'collapseChangelog',
-  'enableInstallTelemetry',
-  'showHardwareCursor',
-  'clearOnShrink',
   'transport',
   'steeringMode',
   'followUpMode',
-  'doubleEscapeAction',
-  'defaultProjectTrust',
-  'treeFilterMode',
-  'editorPaddingX',
-  'autocompleteMaxVisible',
-  'imageWidthCells',
 ])
 
 function getPiSettingsKey(payload: AnyDesktopActionPayload): PiSettingsKey | null {
@@ -50,6 +35,7 @@ export async function handlePiSettingsDesktopAction(
   }
 
   const piSettings = await updatePiSetting(key, payload.value)
+  await refreshDurableSettings()
   if (key !== 'theme') {
     return handledAction({ piSettings })
   }

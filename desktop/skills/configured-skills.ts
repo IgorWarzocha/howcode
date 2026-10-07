@@ -1,4 +1,4 @@
-import { readdir, readFile } from 'node:fs/promises'
+import { readdir, readFile, realpath, stat } from 'node:fs/promises'
 import path from 'node:path'
 import type { PiConfiguredSkill } from '../../shared/desktop-contracts.ts'
 import { parseSkillFrontmatter } from './frontmatter.ts'
@@ -12,23 +12,29 @@ import {
 async function listSkillsInDirectory(
   skillsDirPath: string,
   scope: PiConfiguredSkill['scope'],
+  visited = new Set<string>(),
 ): Promise<PiConfiguredSkill[]> {
   if (!(await pathExists(skillsDirPath))) {
     return []
   }
+  const resolved = await realpath(skillsDirPath)
+  if (visited.has(resolved)) return []
+  visited.add(resolved)
 
   const directoryEntries = await readdir(skillsDirPath, { withFileTypes: true })
   const skills: PiConfiguredSkill[] = []
 
   for (const entry of directoryEntries) {
-    if (!entry.isDirectory()) {
+    const skillDirPath = path.join(skillsDirPath, entry.name)
+    if (
+      !(entry.isDirectory() || (entry.isSymbolicLink() && (await stat(skillDirPath)).isDirectory()))
+    ) {
       continue
     }
-
-    const skillDirPath = path.join(skillsDirPath, entry.name)
     const skillFilePath = path.join(skillDirPath, 'SKILL.md')
 
     if (!(await pathExists(skillFilePath))) {
+      skills.push(...(await listSkillsInDirectory(skillDirPath, scope, visited)))
       continue
     }
 

@@ -38,11 +38,11 @@ function getThreadRenameContext(ctx: PostEffectsContext) {
         : typeof ctx.contextualPayload.projectId === 'string'
           ? ctx.contextualPayload.projectId
           : null,
-    sessionPath:
-      typeof result?.sessionPath === 'string'
-        ? result.sessionPath
-        : typeof ctx.contextualPayload.sessionPath === 'string'
-          ? ctx.contextualPayload.sessionPath
+    conversationId:
+      typeof result?.conversationId === 'string'
+        ? result.conversationId
+        : typeof ctx.contextualPayload.conversationId === 'string'
+          ? ctx.contextualPayload.conversationId
           : null,
     threadId:
       typeof result?.threadId === 'string'
@@ -60,18 +60,18 @@ function getThreadRenameContext(ctx: PostEffectsContext) {
 }
 
 function isRenamedThread(
-  thread: { id: string; sessionPath?: string | null | undefined },
-  input: { threadId: string; sessionPath: string | null },
+  thread: { id: string; conversationId?: string | null | undefined },
+  input: { threadId: string; conversationId: string | null },
 ) {
-  return thread.id === input.threadId || thread.sessionPath === input.sessionPath
+  return thread.id === input.threadId || thread.conversationId === input.conversationId
 }
 
 function renameCachedProjectThreads(
   ctx: PostEffectsContext,
-  input: { projectId: string; sessionPath: string | null; threadId: string; title: string },
+  input: { projectId: string; conversationId: string | null; threadId: string; title: string },
 ) {
   for (const chat of [false, true]) {
-    ctx.queryClient.setQueryData<{ id: string; sessionPath?: string | null; title: string }[]>(
+    ctx.queryClient.setQueryData<{ id: string; conversationId?: string | null; title: string }[]>(
       desktopQueryKeys.projectThreads(input.projectId, chat),
       (current) =>
         current?.map((thread) =>
@@ -82,7 +82,7 @@ function renameCachedProjectThreads(
 }
 
 async function handleThreadRenameEffects(ctx: PostEffectsContext) {
-  const { projectId, sessionPath, threadId, title } = getThreadRenameContext(ctx)
+  const { projectId, conversationId, threadId, title } = getThreadRenameContext(ctx)
   if (hasActionError(ctx.actionResult)) {
     if (projectId) {
       await Promise.all([
@@ -101,7 +101,7 @@ async function handleThreadRenameEffects(ctx: PostEffectsContext) {
         thread.id === threadId ? { ...thread, title } : thread,
       ),
     }))
-    renameCachedProjectThreads(ctx, { projectId, sessionPath, threadId, title })
+    renameCachedProjectThreads(ctx, { projectId, conversationId, threadId, title })
   }
 
   ctx.setChatSidebarState((currentState) =>
@@ -109,12 +109,12 @@ async function handleThreadRenameEffects(ctx: PostEffectsContext) {
       ? {
           ...currentState,
           ungroupedThreads: currentState.ungroupedThreads.map((thread) =>
-            isRenamedThread(thread, { threadId, sessionPath }) ? { ...thread, title } : thread,
+            isRenamedThread(thread, { threadId, conversationId }) ? { ...thread, title } : thread,
           ),
           groups: currentState.groups.map((group) => ({
             ...group,
             threads: group.threads.map((thread) =>
-              isRenamedThread(thread, { threadId, sessionPath }) ? { ...thread, title } : thread,
+              isRenamedThread(thread, { threadId, conversationId }) ? { ...thread, title } : thread,
             ),
           })),
         }
@@ -122,13 +122,13 @@ async function handleThreadRenameEffects(ctx: PostEffectsContext) {
   )
 
   ctx.setLiveThreadData((current) =>
-    current && (!sessionPath || current.sessionPath === sessionPath)
+    current && (!conversationId || current.conversationId === conversationId)
       ? { ...current, title }
       : current,
   )
-  if (sessionPath) {
+  if (conversationId) {
     ctx.queryClient.setQueriesData<ThreadData | null>(
-      { queryKey: desktopQueryKeys.threadPrefix(sessionPath) },
+      { queryKey: desktopQueryKeys.threadPrefix(conversationId) },
       (current) => (current ? { ...current, title } : current),
     )
   }
@@ -136,6 +136,32 @@ async function handleThreadRenameEffects(ctx: PostEffectsContext) {
 }
 
 export const threadPostEffectHandlers: PostEffectHandler[] = [
+  {
+    matches: (ctx) => ctx.action === 'composer.conversation.fork',
+    run: async (ctx) => {
+      if (hasActionError(ctx.actionResult)) return
+      const result = ctx.actionResult?.result
+      const conversationId = result?.conversationId
+      const threadId = result?.threadId
+      const projectId = result?.projectId ?? ctx.composerProjectId
+      if (!(conversationId && threadId)) return
+      const chat = ctx.workspaceState.activeView === 'chat'
+      ctx.dispatch({
+        type: 'open-thread',
+        projectId,
+        threadId,
+        conversationId,
+        view: chat ? 'chat' : 'thread',
+      })
+      ctx.setLiveThreadData(() => null)
+      ctx.setComposerState(null)
+      await Promise.all([
+        ctx.loadProjectThreads(projectId, { chat }),
+        ctx.queryClient.invalidateQueries({ queryKey: desktopQueryKeys.chatSidebarState() }),
+        ctx.refreshShellState(),
+      ])
+    },
+  },
   {
     matches: (ctx) =>
       ctx.action === 'thread.pin' ||

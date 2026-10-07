@@ -1,21 +1,11 @@
 import { accessSync, constants } from 'node:fs'
 import path from 'node:path'
-import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import type { TerminalOpenRequest } from '../../shared/terminal-contracts.ts'
-import { getBundledThemes } from '../bundled-themes.ts'
 
 const wslUncPathPattern = /^\\\\(?:wsl\$|wsl\.localhost)\\([^\\/]+)([\\/].*)?$/i
 
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
-}
-
-type TerminalEnvironmentVariables = NodeJS.ProcessEnv & {
-  TERM_PROGRAM?: string
-  COLORTERM?: string
-  HOWCODE_EMBEDDED_TERMINAL?: string
-  HOWCODE_TERMINAL_CAPABILITIES?: string
-  PI_CLEAR_ON_SHRINK?: string
 }
 
 function getEnvironmentVariable(env: NodeJS.ProcessEnv, name: string) {
@@ -51,30 +41,6 @@ export function getWslTerminalLaunch(
   }
 }
 
-function getPiSessionCommandArgs(sessionPath: string | null | undefined) {
-  const persistedSessionPath = getPersistedSessionPath(sessionPath)
-  const args = persistedSessionPath ? ['--session', persistedSessionPath] : []
-  for (const theme of getBundledThemes()) {
-    args.push('--theme', theme.path)
-  }
-
-  return args
-}
-
-function getPiSessionShell(platform: NodeJS.Platform, env: NodeJS.ProcessEnv) {
-  return platform === 'win32'
-    ? findExecutable('pi.cmd', getEnvironmentVariable(env, 'PATH') ?? '')
-    : findExecutable('pi', getEnvironmentVariable(env, 'PATH') ?? '')
-}
-
-const hostTerminalCapabilityEnvKeys = [
-  'GHOSTTY_RESOURCES_DIR',
-  'ITERM_SESSION_ID',
-  'KITTY_WINDOW_ID',
-  'TERM_PROGRAM',
-  'WEZTERM_PANE',
-]
-
 export function findExecutable(
   name: string,
   pathValue = getProcessEnvironmentVariable('PATH') ?? '',
@@ -107,30 +73,6 @@ export function resolveTerminalCommand(
   const env = options?.env ?? process.env
   const wslLaunch = getWslTerminalLaunch(request.cwd, { platform, env })
 
-  if (request.launchMode === 'pi-session') {
-    if (wslLaunch) {
-      return {
-        shell: findExecutable('wsl.exe', getEnvironmentVariable(env, 'PATH') ?? ''),
-        args: [
-          '-d',
-          wslLaunch.distro,
-          '--cd',
-          wslLaunch.linuxPath,
-          '--',
-          'pi',
-          ...getPiSessionCommandArgs(request.sessionPath),
-        ],
-        cwd: wslLaunch.windowsSpawnCwd,
-      }
-    }
-
-    return {
-      shell: getPiSessionShell(platform, env),
-      args: getPiSessionCommandArgs(request.sessionPath),
-      cwd: undefined,
-    }
-  }
-
   if (wslLaunch) {
     return {
       shell: findExecutable('wsl.exe', getEnvironmentVariable(env, 'PATH') ?? ''),
@@ -154,29 +96,10 @@ export function resolveTerminalCommand(
   }
 }
 
-export function resolveTerminalEnv(
-  request: TerminalOpenRequest,
-  env: NodeJS.ProcessEnv = process.env,
-): NodeJS.ProcessEnv {
-  const nextEnv: NodeJS.ProcessEnv = {
+export function resolveTerminalEnv(env: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  return {
     ...env,
     TERM: 'xterm-256color',
     COLORTERM: getEnvironmentVariable(env, 'COLORTERM') ?? 'truecolor',
   }
-  const nextEnvVariables = nextEnv as TerminalEnvironmentVariables
-
-  if (request.launchMode !== 'pi-session') {
-    return nextEnv
-  }
-
-  for (const key of hostTerminalCapabilityEnvKeys) {
-    delete nextEnv[key]
-  }
-
-  nextEnvVariables.TERM_PROGRAM = 'howcode'
-  nextEnvVariables.HOWCODE_EMBEDDED_TERMINAL = '1'
-  nextEnvVariables.HOWCODE_TERMINAL_CAPABILITIES =
-    'ansi,256color,truecolor,unicode,no-terminal-protocols'
-  nextEnvVariables.PI_CLEAR_ON_SHRINK = '1'
-  return nextEnv
 }

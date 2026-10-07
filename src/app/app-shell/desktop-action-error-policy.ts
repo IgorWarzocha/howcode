@@ -25,6 +25,12 @@ export function getActionNoticeMessage(
   action: DesktopAction,
   actionResult: DesktopActionResult | null,
 ) {
+  if (action === 'composer.dequeue' && actionResult?.ok) {
+    if (actionResult.result?.queueCancelOutcome === 'already_placed')
+      return 'This message has already been placed and cannot be canceled.'
+    if (actionResult.result?.queueCancelOutcome === 'already_settled')
+      return 'This message is no longer queued.'
+  }
   const supportsWorktreeNotice =
     action === 'workspace.create-worktree' ||
     action === 'workspace.remove-worktree' ||

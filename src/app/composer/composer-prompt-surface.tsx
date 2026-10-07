@@ -1,13 +1,9 @@
-import { type RefObject, useCallback, useRef, useState } from 'react'
+import { type RefObject, useRef } from 'react'
 
 import { composerPanelClass } from '../ui/classes'
 import { WORKSPACE_RAIL_GRID_CLASS } from '../ui/layout'
 import { cn } from '../utils/cn'
 import type { ComposerProps } from './composer-contract'
-import {
-  PiExtensionStatusLine,
-  useComposerExtensionStatusFooterOffset,
-} from './composer-pi-extension-overlay'
 import { ComposerPromptFooter } from './composer-prompt-footer'
 import { ComposerPromptInputPanel } from './composer-prompt-input-panel'
 import { ComposerPromptOverlays } from './composer-prompt-overlays'
@@ -15,10 +11,8 @@ import { getComposerPlaceholderText } from './composer-prompt-surface-helpers'
 import { ComposerAttachmentRail, ComposerStopRail } from './composer-side-controls'
 import { useComposerController } from './controller/useComposerController'
 import { useComposerGlobalCommands } from './useComposerGlobalCommands'
-import { useComposerPiExtensionShortcuts } from './useComposerPiExtensionShortcuts'
 import { useComposerPromptAutocomplete } from './useComposerPromptAutocomplete'
 import { useComposerEscapeEffects } from './useComposerPromptSurfaceEffects'
-import { useComposerSessionTreeNavigate } from './useComposerSessionTreeNavigate'
 import { useComposerThreadOverlayHeight } from './useComposerThreadOverlayHeight'
 import { useGlobalComposerFileDrop } from './useGlobalComposerFileDrop'
 
@@ -34,19 +28,17 @@ function hasComposerOverlayAbove(...visibleFlags: boolean[]) {
 export function ComposerPromptSurface({
   activeView,
   composerPanelRef,
-  workspaceFooterRef,
   runtime,
   messages,
   isStreaming,
   replyActivityKey,
-  restoredQueuedPrompt,
   streamingBehaviorPreference,
   projectId,
   chatGroupId,
   projectGitState,
   parentBranchName,
   diffBaseline,
-  sessionPath,
+  conversationId,
   dictationModelId,
   dictationMaxDurationSeconds,
   favoriteFolders,
@@ -55,16 +47,12 @@ export function ComposerPromptSurface({
   hoverToBlur,
   composerSendMode,
   keybindings,
-  piTreeFilterMode = 'no-tools',
-  onOpenTakeoverTerminal,
   onToggleTerminal,
   onToggleArtifacts,
   onOpenSettingsView,
-  onRestoredQueuedPromptApplied,
   onListAttachmentEntries,
   onAction,
   terminalVisible,
-  takeoverVisible,
   preferPortalModelPopover = false,
   artifactsVisible,
   artifactsAvailable,
@@ -73,15 +61,7 @@ export function ComposerPromptSurface({
   onOverlayHeightChange,
   showTerminalControls = true,
 }: ComposerPromptSurfaceProps) {
-  const {
-    isCompacting,
-    isExtensionCommandRunning,
-    piExtensionDialogRequest,
-    piExtensionShortcuts,
-    piExtensionStatuses,
-    piExtensionWidgets,
-    projectTrustRequest,
-  } = runtime
+  const { isCompacting } = runtime
   const {
     attachments,
     cancelDictation,
@@ -93,7 +73,6 @@ export function ComposerPromptSurface({
     dictationMissingModel,
     dictationSupported,
     errorMessage,
-    extensionCommandRunning,
     inputLocked,
     isSending,
     isStreaming: composerIsStreaming,
@@ -109,11 +88,9 @@ export function ComposerPromptSurface({
     openPickerDirectory,
     openPickerRoot,
     removeAttachment,
-    invokeComposerAction,
     runComposerAction,
     compact,
     send,
-    sendExtensionCommand,
     setDraft,
     setOpenMenu,
     stop,
@@ -126,51 +103,33 @@ export function ComposerPromptSurface({
     activeView,
     projectId,
     chatGroupId,
-    sessionPath,
+    conversationId,
     dictationModelId,
     dictationMaxDurationSeconds,
     isStreaming,
     replyActivityKey,
     isCompacting,
-    isExtensionCommandRunning,
-    restoredQueuedPrompt,
     streamingBehaviorPreference,
     onAction,
-    onRestoredQueuedPromptApplied,
     onListAttachmentEntries,
   })
   const dictationTranscribing = dictationInterimText.length > 0
-  const composerHoverToFocus = hoverToFocus && !takeoverVisible
-  const composerHoverToBlur = hoverToBlur && !takeoverVisible
   const composerMode = activeView === 'chat' ? 'chat' : 'code'
-  const sessionTreeCloseRef = useRef<(() => void) | null>(null)
-  const sessionTreeCancelNavigateConfirmRef = useRef<(() => void) | null>(null)
-  const sessionTreeCancelLabelPopoverRef = useRef<(() => void) | null>(null)
-  const [sessionTreeNavigateConfirmOpen, setSessionTreeNavigateConfirmOpen] = useState(false)
-  const [sessionTreeLabelPopoverOpen, setSessionTreeLabelPopoverOpen] = useState(false)
   const stopButtonBoundaryRef = useRef<HTMLDivElement>(null)
   const composerOverlayStackRef = useRef<HTMLDivElement>(null)
-  const piExtensionStatusLineRef = useRef<HTMLDivElement>(null)
-  const showNativeDialog = piExtensionDialogRequest !== null
-  const showProjectTrust = projectTrustRequest !== null
-  const visiblePiExtensionWidgets = piExtensionWidgets.filter(
-    (widget) => widget.placement === undefined || widget.placement === 'aboveEditor',
-  )
-  const showPiExtensionOverlay =
-    showNativeDialog || showProjectTrust || visiblePiExtensionWidgets.length > 0
-  const attachmentsTopRounded = !hasComposerOverlayAbove(showPiExtensionOverlay)
-  const inputPopoversTopRounded = !hasComposerOverlayAbove(showPiExtensionOverlay, pickerOpen)
+  const attachmentsTopRounded = true
+  const inputPopoversTopRounded = !pickerOpen
   const startNewSession = () => {
     void runComposerAction('thread.new', { projectId, chatGroupId, composerMode })
   }
   const {
     composerPopoverStackRef,
-    dismissSessionTree,
+    dismissConversationFork,
     fileMentionPanelRef,
     fileMentions,
-    openSessionTree,
-    sessionTreeOpen,
-    sessionTreePanelRef,
+    openConversationFork,
+    conversationForkOpen,
+    conversationForkPanelRef,
     skillMentionPanelRef,
     skillMentions,
     slashCommandPanelRef,
@@ -184,40 +143,25 @@ export function ComposerPromptSurface({
     onStartNewSession: startNewSession,
     projectId,
     send,
-    sendExtensionCommand,
-    sessionPath,
+    conversationId,
     setDraft,
     stopButtonBoundaryRef,
   })
 
-  const closeSessionTree = useCallback(() => {
-    sessionTreeCloseRef.current?.()
-    dismissSessionTree()
-  }, [dismissSessionTree])
+  const closeConversationFork = dismissConversationFork
 
   useComposerEscapeEffects({
     cancelDictation,
     dictationActive,
     dictationTranscribing,
     pickerOpen,
-    sessionTreeOpen,
-    sessionTreeNavigateConfirmOpen,
-    sessionTreeLabelPopoverOpen,
-    onCloseSessionTree: closeSessionTree,
-    onCancelSessionTreeNavigateConfirm: () => {
-      sessionTreeCancelNavigateConfirmRef.current?.()
-      setSessionTreeNavigateConfirmOpen(false)
-    },
-    onCancelSessionTreeLabelPopover: () => {
-      sessionTreeCancelLabelPopoverRef.current?.()
-      setSessionTreeLabelPopoverOpen(false)
-    },
+    conversationForkOpen,
+    onCloseConversationFork: closeConversationFork,
     setOpenMenu,
   })
 
   useGlobalComposerFileDrop(handleDrop)
 
-  const extensionRunning = extensionCommandRunning
   const placeholderText = getComposerPlaceholderText({
     activeView,
     composerSendMode,
@@ -225,71 +169,40 @@ export function ComposerPromptSurface({
     showAskQuestions: false,
   })
   const attachmentButtonLabel = attachments.length > 0 ? 'Manage attachments' : 'Add attachment'
-  const {
-    handleSessionTreeLabel,
-    handleSessionTreeNavigateAndClose,
-    revealSessionTreeEntryInThread,
-    sessionTreeForceHidden,
-    sessionTreeNavigateDisabled,
-  } = useComposerSessionTreeNavigate({
-    activeView,
-    chatGroupId,
-    composerIsStreaming,
-    extensionRunning,
-    isCompacting,
-    isSending,
-    onClose: closeSessionTree,
-    projectId,
-    runComposerAction,
-    sessionPath,
-  })
-  const showPromptOverlays = (sessionTreeOpen && !sessionTreeForceHidden) || slashCommands.open
+  const forkDisabled = !conversationId || isSending || isCompacting
+  const handleFork = async (targetEntryId: string) => {
+    const ok = await runComposerAction(
+      'composer.conversation.fork',
+      { projectId, conversationId: conversationId, composerMode, chatGroupId, targetEntryId },
+      { closeMenu: false },
+    )
+    if (ok) closeConversationFork()
+    return ok
+  }
+  const showPromptOverlays = conversationForkOpen || slashCommands.open
   useComposerThreadOverlayHeight({
-    extensionOverlayRef: composerOverlayStackRef,
-    extensionOverlayVisible: hasComposerOverlayAbove(
-      showPiExtensionOverlay,
-      pickerOpen,
-      showPromptOverlays,
-    ),
+    overlayRef: composerOverlayStackRef,
+    overlayVisible: hasComposerOverlayAbove(pickerOpen, showPromptOverlays),
     popoverStackRef: composerPopoverStackRef,
     popoverStackVisible: false,
     onOverlayHeightChange,
   })
 
-  useComposerExtensionStatusFooterOffset({
-    statusLineRef: piExtensionStatusLineRef,
-    visible: piExtensionStatuses.length > 0,
-    workspaceFooterRef,
-  })
-
-  const composerWorking = composerIsStreaming || extensionRunning
-  const canStopComposer = composerWorking && !isSending && !!sessionPath
+  const composerWorking = composerIsStreaming
+  const canStopComposer = composerWorking && !isSending && !!conversationId
   useComposerGlobalCommands({
-    closeSessionTree,
+    closeConversationFork,
     composerPanelRef,
     composerWorking,
     fileMentions,
     inputLocked,
-    openSessionTree,
+    openConversationFork,
     send,
     setOpenMenu,
     showDictationButton,
     skillMentions,
     slashCommands,
     toggleDictation,
-  })
-
-  useComposerPiExtensionShortcuts({
-    chatGroupId,
-    composerMode,
-    composerPanelRef,
-    draft,
-    invokeAction: invokeComposerAction,
-    overlayRef: composerOverlayStackRef,
-    projectId,
-    sessionPath,
-    setDraft,
-    shortcuts: piExtensionShortcuts,
   })
 
   return (
@@ -313,17 +226,6 @@ export function ComposerPromptSurface({
       <div className="relative grid gap-0 overflow-visible [container-type:inline-size]">
         <ComposerPromptOverlays
           stackRef={composerOverlayStackRef}
-          extension={{
-            visible: showPiExtensionOverlay,
-            chatGroupId,
-            composerMode,
-            dialogRequest: piExtensionDialogRequest,
-            projectId,
-            projectTrustRequest,
-            runComposerAction,
-            sessionPath,
-            widgets: visiblePiExtensionWidgets,
-          }}
           attachments={{
             visible: pickerOpen,
             topRounded: attachmentsTopRounded,
@@ -343,23 +245,13 @@ export function ComposerPromptSurface({
           }}
           prompts={{
             visible: showPromptOverlays,
-            sessionPath,
-            sessionTreeOpen,
-            treeFilterMode: piTreeFilterMode,
-            sessionTreePanelRef,
+            conversationId,
+            conversationForkOpen,
+            onCloseConversationFork: closeConversationFork,
+            conversationForkPanelRef,
             popoverStackRef: composerPopoverStackRef,
-            sessionTreeForceHidden,
-            sessionTreeNavigateDisabled,
-            onSessionTreeNavigate: handleSessionTreeNavigateAndClose,
-            onSessionTreeLabel: handleSessionTreeLabel,
-            onRevealSessionTreeEntryInThread: revealSessionTreeEntryInThread,
-            onBindSessionTreeClose: (close) => {
-              sessionTreeCloseRef.current = close
-            },
-            onSessionTreeNavigateConfirmOpenChange: setSessionTreeNavigateConfirmOpen,
-            onSessionTreeLabelPopoverOpenChange: setSessionTreeLabelPopoverOpen,
-            sessionTreeCancelNavigateConfirmRef,
-            sessionTreeCancelLabelPopoverRef,
+            forkDisabled,
+            onFork: handleFork,
             slashCommandPanelRef,
             slashCommands,
             topRounded: inputPopoversTopRounded,
@@ -387,7 +279,6 @@ export function ComposerPromptSurface({
               dictationTranscribing={dictationTranscribing}
               draft={draft}
               errorMessage={errorMessage}
-              extensionRunning={extensionRunning}
               inputLocked={inputLocked}
               placeholderText={placeholderText}
               slashCommands={slashCommands}
@@ -398,15 +289,15 @@ export function ComposerPromptSurface({
               showDictationButton={showDictationButton}
               cancelDictation={cancelDictation}
               handlePaste={handlePaste}
-              hoverToFocus={composerHoverToFocus}
-              hoverToBlur={composerHoverToBlur}
+              hoverToFocus={hoverToFocus}
+              hoverToBlur={hoverToBlur}
               composerSendMode={composerSendMode}
               keybindings={keybindings}
               hoverBoundaryRef={composerPanelRef}
               onAction={onAction}
               onOpenSettingsView={onOpenSettingsView}
               setDraft={(next) => {
-                if (sessionTreeOpen) closeSessionTree()
+                if (conversationForkOpen) closeConversationFork()
                 setDraft(next)
               }}
               toggleDictation={toggleDictation}
@@ -430,7 +321,6 @@ export function ComposerPromptSurface({
             modelMenuOpen={modelMenuOpen}
             modelMenuRef={modelMenuRef}
             onOpenGitOps={onOpenGitOps}
-            onOpenTakeoverTerminal={onOpenTakeoverTerminal}
             onSetDiffBaseline={onSetDiffBaseline}
             onToggleArtifacts={onToggleArtifacts}
             onToggleTerminal={onToggleTerminal}
@@ -440,15 +330,12 @@ export function ComposerPromptSurface({
             projectId={projectId}
             runComposerAction={runComposerAction}
             runtime={runtime}
-            sessionPath={sessionPath}
+            conversationId={conversationId}
             setOpenMenu={setOpenMenu}
             showTerminalControls={showTerminalControls}
             terminalVisible={terminalVisible}
           />
         </section>
-        <div ref={piExtensionStatusLineRef}>
-          <PiExtensionStatusLine statuses={piExtensionStatuses} />
-        </div>
       </div>
 
       <ComposerStopRail

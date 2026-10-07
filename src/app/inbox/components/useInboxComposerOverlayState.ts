@@ -10,7 +10,6 @@ export function useInboxComposerOverlayState() {
   const pickerPanelRef = useRef<HTMLDivElement>(null)
   const modelButtonRef = useRef<HTMLButtonElement>(null)
   const modelMenuRef = useRef<HTMLDivElement>(null)
-  const sessionTreePanelRef = useRef<HTMLDivElement>(null)
   const slashCommandPanelRef = useRef<HTMLDivElement>(null)
   const fileMentionPanelRef = useRef<HTMLDivElement>(null)
   const skillMentionPanelRef = useRef<HTMLDivElement>(null)
@@ -37,7 +36,6 @@ export function useInboxComposerOverlayState() {
     openMenu,
     pickerButtonRef,
     pickerPanelRef,
-    sessionTreePanelRef,
     setOpenMenu,
     skillMentionPanelRef,
     slashCommandPanelRef,

@@ -14,5 +14,4 @@ export type View =
   | 'work'
   | 'automations'
   | 'settings'
-  | 'extensions'
   | 'skills'

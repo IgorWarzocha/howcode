@@ -14,7 +14,7 @@ type ChatThreadDropItemProps = {
   onThreadOpen: (
     projectId: string,
     threadId: string,
-    sessionPath: string,
+    conversationId: string,
     view?: 'chat' | 'thread' | undefined,
   ) => void
 }
@@ -48,14 +48,14 @@ export function ChatThreadDropItem({
         title={thread.title}
         onDelete={() => void onAction('thread.archive', { threadId: thread.id }).then(onRefresh)}
         onOpen={() =>
-          thread.sessionPath &&
-          onThreadOpen(thread.projectId, thread.id, thread.sessionPath, 'chat')
+          thread.conversationId &&
+          onThreadOpen(thread.projectId, thread.id, thread.conversationId, 'chat')
         }
         onPin={() => void onAction('thread.pin', { threadId: thread.id }).then(onRefresh)}
         onRename={(title) =>
           void onAction('thread.rename', {
             projectId: thread.projectId,
-            sessionPath: thread.sessionPath,
+            conversationId: thread.conversationId,
             threadId: thread.id,
             value: title,
           })

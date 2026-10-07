@@ -1,7 +1,7 @@
 import { stat } from 'node:fs/promises'
 import * as Effect from 'effect/Effect'
-import * as SqlClient from 'effect/unstable/sql/SqlClient'
-import type { SqlError } from 'effect/unstable/sql/SqlError'
+import * as SqlClient from 'effect/sql/SqlClient'
+import type { SqlError } from 'effect/sql/SqlError'
 import { runProcessProbe } from '../../node-runtime/process-probe.ts'
 import { formatGitCommandError, getNonInteractiveGitEnv } from '../project-git/git-runner.ts'
 import { columnMigrations, threadStateSchemaStatements } from './schema-sql.ts'
@@ -50,7 +50,13 @@ export const initializeThreadStateSchema: () => Effect.Effect<void, SqlError, Sq
       yield* addColumnIfMissing(sql, migration)
     }
 
-    yield* sql`UPDATE threads SET running = 0 WHERE running != 0`
+    // No history importer: path-keyed transcript mirrors are retired, not reinterpreted as IDs.
+    yield* sql`DROP TABLE IF EXISTS inbox_reply_suppressions`
+    yield* sql`DROP TABLE IF EXISTS inbox_items`
+    yield* sql`DROP TABLE IF EXISTS chat_threads`
+    yield* sql`DROP TABLE IF EXISTS threads`
+
+    yield* sql`UPDATE conversation_facts SET running = 0 WHERE running != 0`
   })
 
 function runMigrationGitProbe(projectId: string, args: string[], stdin?: string | undefined) {

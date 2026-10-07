@@ -31,6 +31,7 @@ export class DesktopServiceClient {
   private readonly desktopListeners = new Set<(event: DesktopEvent) => void>()
   private readonly runtime: ManagedRuntime.ManagedRuntime<Service, never>
   private readonly terminalRpc: TerminalRpcServiceClient
+  private disposal: Promise<void> | null = null
   readonly terminalManager
 
   constructor(options: DesktopServiceClientOptions) {
@@ -59,7 +60,8 @@ export class DesktopServiceClient {
   }
 
   dispose() {
-    return this.run((service) => service.dispose)
+    this.disposal ??= this.run((service) => service.dispose).finally(() => this.runtime.dispose())
+    return this.disposal
   }
 
   subscribeDesktopEvents(listener: (event: DesktopEvent) => void) {

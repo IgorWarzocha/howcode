@@ -5,7 +5,7 @@ import type { Message } from '../types'
 import type { CodeWorkspaceViewProps } from './code-workspace-contract'
 import { CodeWorkspaceViewContent } from './code-workspace-footer'
 import { useGitOpsReviewController } from './useGitOpsReviewController'
-import { useQueuedPromptRestore } from './useQueuedPromptRestore'
+import { useQueuedPromptCancellation } from './useQueuedPromptCancellation'
 import { useWorkspaceFooterHeight } from './useWorkspaceFooterHeight'
 
 const TERMINAL_DRAWER_OFFSET = 'min(28rem, calc(100% - 2.5rem))'
@@ -78,7 +78,6 @@ function getCodeWorkspaceFlags(input: {
 export function CodeWorkspaceView({
   controller,
   activeComposerState,
-  activePiExtensionUiState,
   activeThreadData,
   composerProjectId,
   currentProjectName,
@@ -86,7 +85,7 @@ export function CodeWorkspaceView({
   diffRenderMode,
   terminalDrawerVisible,
   terminalDrawerOverlay = false,
-  terminalSessionPath,
+  terminalConversationId,
   workspaceContentClass,
   onSetDiffBaseline,
   onSetDiffRenderMode,
@@ -107,7 +106,6 @@ export function CodeWorkspaceView({
   const handleCloseGitOpsView = controller.gitOps.close
   const handleOpenGitOpsView = controller.gitOps.open
   const handleOpenWorktreeDiffFile = controller.gitOps.openWorktreeFile
-  const handleShowTakeoverTerminal = controller.takeover.show
   const handleToggleTerminal = controller.terminal.toggle
   const listComposerAttachmentEntries = controller.composer.listAttachmentEntries
   const projectGitState = controller.projects.gitState
@@ -124,7 +122,7 @@ export function CodeWorkspaceView({
     terminalDrawerVisible,
     terminalDrawerOverlay,
   )
-  const gitOpsFileTreeStateKey = `${composerProjectId}:${terminalSessionPath ?? 'project'}`
+  const gitOpsFileTreeStateKey = `${composerProjectId}:${terminalConversationId ?? 'project'}`
   const gitOpsFileTreeVisible =
     gitOpsFileTreeVisibilityByThread[gitOpsFileTreeStateKey] ??
     shellState?.appSettings.gitDiffFileTreeDefaultVisible ??
@@ -179,17 +177,12 @@ export function CodeWorkspaceView({
     shellState,
     includeUntracked: includeUntrackedDiffFiles,
   })
-  const {
-    handleEditQueuedPrompt,
-    handleRemoveQueuedPrompt,
-    markRestoredQueuedPromptApplied,
-    pendingQueuedPromptIdsForSession,
-    scopedRestoredQueuedPrompt,
-  } = useQueuedPromptRestore({
-    composerProjectId,
-    handleAction,
-    terminalSessionPath,
-  })
+  const { handleRemoveQueuedPrompt, pendingQueuedPromptIdsForSession, queuedPromptError } =
+    useQueuedPromptCancellation({
+      composerProjectId,
+      handleAction,
+      terminalConversationId,
+    })
 
   const terminalDrawerInsetStyle = showDesktopTerminalDrawer
     ? { right: TERMINAL_DRAWER_OFFSET }
@@ -221,7 +214,6 @@ export function CodeWorkspaceView({
       controller={controller}
       shellState={shellState}
       activeComposerState={activeComposerState}
-      activePiExtensionUiState={activePiExtensionUiState}
       currentProjectName={currentProjectName}
       workspaceContentClass={workspaceContentClass}
       activeThreadData={activeThreadData}
@@ -240,26 +232,23 @@ export function CodeWorkspaceView({
       centerThreadFooter={centerThreadFooter}
       threadFooterStyle={threadFooterStyle}
       sidebarAutoHidden={sidebarAutoHidden}
-      terminalSessionPath={terminalSessionPath}
+      terminalConversationId={terminalConversationId}
       diffLoadError={diffLoadError}
       setDiffLoadError={setDiffLoadError}
       onSetDiffBaseline={onSetDiffBaseline}
       onSetDiffRenderMode={onSetDiffRenderMode}
       setComposerLayoutVersion={setComposerLayoutVersion}
       handleCloseGitOpsView={handleCloseGitOpsView}
-      handleEditQueuedPrompt={handleEditQueuedPrompt}
       handleRemoveQueuedPrompt={handleRemoveQueuedPrompt}
       pendingQueuedPromptIdsForSession={pendingQueuedPromptIdsForSession}
+      queuedPromptError={queuedPromptError}
       setComposerOverlayHeight={setComposerOverlayHeight}
-      handleShowTakeoverTerminal={handleShowTakeoverTerminal}
       handleOpenGitOpsView={handleOpenGitOpsView}
-      markRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
       handleToggleTerminal={handleToggleTerminal}
       showDesktopTerminalDrawer={showDesktopTerminalDrawer}
       toggleGitOpsFileTree={toggleGitOpsFileTree}
       toggleIncludeUntrackedDiffFiles={toggleIncludeUntrackedDiffFiles}
       showCodeSidebarFooter={showCodeSidebarFooter}
-      scopedRestoredQueuedPrompt={scopedRestoredQueuedPrompt}
     />
   )
 }

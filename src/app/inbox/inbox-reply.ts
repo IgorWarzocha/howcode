@@ -30,7 +30,7 @@ export function createInboxReplySubmission(input: {
     isCompactCommand,
     payload: {
       projectId: input.thread.projectId,
-      sessionPath: input.thread.sessionPath,
+      conversationId: input.thread.conversationId,
       text,
       attachments: isCompactCommand ? [] : input.attachments,
       suppressInbox: true,

@@ -154,7 +154,7 @@ export function BranchThreadGroupSection({
   hideSessionCounts,
   project,
   selectedThreadId,
-  terminalRunningSessionPaths,
+  terminalRunningConversationIds,
   onAction,
   showBottomDivider = false,
   showTopDivider = false,
@@ -170,11 +170,11 @@ export function BranchThreadGroupSection({
   hideSessionCounts: boolean
   project: Project
   selectedThreadId: string | null
-  terminalRunningSessionPaths: ReadonlySet<string>
+  terminalRunningConversationIds: ReadonlySet<string>
   onAction: DesktopActionInvoker
   showBottomDivider?: boolean
   showTopDivider?: boolean
-  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
+  onThreadOpen: (projectId: string, threadId: string, conversationId: string) => void
   onToggle: () => void
 }) {
   const visibilityState = getBranchGroupVisibilityState(group)
@@ -250,7 +250,7 @@ export function BranchThreadGroupSection({
                   activeView={activeView}
                   project={threadProject}
                   selectedThreadId={selectedThreadId}
-                  terminalRunningSessionPaths={terminalRunningSessionPaths}
+                  terminalRunningConversationIds={terminalRunningConversationIds}
                   thread={thread}
                   onAction={onAction}
                   onThreadOpen={onThreadOpen}
@@ -268,7 +268,7 @@ export function BranchThreadGroupSection({
               isLast={index === group.worktrees.length - 1}
               project={project}
               selectedThreadId={selectedThreadId}
-              terminalRunningSessionPaths={terminalRunningSessionPaths}
+              terminalRunningConversationIds={terminalRunningConversationIds}
               worktree={worktree}
               onAction={onAction}
               onThreadOpen={onThreadOpen}

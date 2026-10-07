@@ -1,4 +1,4 @@
-import { getPersistedSessionPath } from '@howcode/shared/session-paths'
+import { getPersistedConversationId } from '@howcode/shared/conversation-ids'
 import { Bot, Brain, Gauge, Server } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
 import { ComposerModelPopover } from '../composer/composer-model-popover'
@@ -31,7 +31,7 @@ type DesktopComposerStatusModelPickerProps = {
   contextUsage: ComposerContextUsage | null
   model: ComposerModel | null
   projectId: string
-  sessionPath: string | null
+  conversationId: string | null
   thinkingLevel: ComposerThinkingLevel
   onAction: DesktopActionInvoker
 }
@@ -135,7 +135,7 @@ export function DesktopComposerStatusModelPicker({
   contextUsage,
   model,
   projectId,
-  sessionPath,
+  conversationId,
   thinkingLevel,
   onAction,
 }: DesktopComposerStatusModelPickerProps) {
@@ -143,14 +143,14 @@ export function DesktopComposerStatusModelPicker({
   const triggerRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const closeMenu = useCallback(() => setOpen(false), [])
-  const persistedSessionPath = getPersistedSessionPath(sessionPath)
+  const persistedConversationId = getPersistedConversationId(conversationId)
 
   useDismissibleLayer({ open, onDismiss: closeMenu, refs: [triggerRef, panelRef] })
 
   const selectModel = useCallback(
     (availableModel: ComposerModel) => {
       setOpen(false)
-      if (!persistedSessionPath) {
+      if (!persistedConversationId) {
         void onAction('settings.update', {
           key: composerMode === 'chat' ? 'chatModel' : 'codeModel',
           provider: availableModel.provider,
@@ -163,16 +163,16 @@ export function DesktopComposerStatusModelPicker({
         provider: availableModel.provider,
         modelId: availableModel.id,
         projectId,
-        sessionPath,
+        conversationId,
       })
     },
-    [composerMode, onAction, persistedSessionPath, projectId, sessionPath],
+    [composerMode, onAction, persistedConversationId, projectId, conversationId],
   )
 
   const selectThinkingLevel = useCallback(
     (level: ComposerThinkingLevel) => {
       setOpen(false)
-      if (!persistedSessionPath) {
+      if (!persistedConversationId) {
         void onAction('settings.update', {
           key: composerMode === 'chat' ? 'chatThinkingLevel' : 'codeThinkingLevel',
           value: level,
@@ -183,10 +183,10 @@ export function DesktopComposerStatusModelPicker({
       void onAction('composer.thinking', {
         level,
         projectId,
-        sessionPath,
+        conversationId,
       })
     },
-    [composerMode, onAction, persistedSessionPath, projectId, sessionPath],
+    [composerMode, onAction, persistedConversationId, projectId, conversationId],
   )
 
   return (

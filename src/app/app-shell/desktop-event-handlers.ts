@@ -1,12 +1,7 @@
-import { keybindingCommandIsActiveInMode } from '@howcode/shared/keybindings'
 import type { DesktopEvent } from '../desktop/types'
 import { handleComposerUpdateEvent } from './desktop-events/composer-update'
-import { applyPiExtensionUiState } from './desktop-events/pi-extension-ui-state'
 import type { DesktopEventQueryClient, DesktopEventSyncRuntime } from './desktop-events/runtime'
-import {
-  handleSessionTreeRefreshEvent,
-  handleThreadUpdateEvent,
-} from './desktop-events/thread-update'
+import { handleThreadUpdateEvent } from './desktop-events/thread-update'
 import { dispatchHowcodeKeybindingCommand } from './keybinding-events'
 
 export type { DesktopEventSyncRuntime }
@@ -16,9 +11,7 @@ function handleKeybindingCommandEvent(
   runtime: DesktopEventSyncRuntime,
   event: Extract<DesktopEvent, { type: 'keybinding-command' }>,
 ) {
-  const { activeView, takeoverVisible } = runtime.desktopEventStateRef.current.workspaceState
-  const mode = takeoverVisible ? 'pi-tui' : 'desktop'
-  if (!keybindingCommandIsActiveInMode(event.commandId, mode)) return
+  const { activeView } = runtime.desktopEventStateRef.current.workspaceState
   const allowedOverSettings =
     event.commandId === 'settings.open' ||
     event.commandId === 'sidebar.toggle' ||
@@ -38,18 +31,8 @@ export function handleDesktopEvent(runtime: DesktopEventSyncRuntime, event: Desk
     case 'composer-update':
       handleComposerUpdateEvent(runtime, event)
       return
-    case 'pi-extension-ui-update':
-      applyPiExtensionUiState({
-        extensionUi: event.extensionUi,
-        sessionPath: event.sessionPath,
-        setPiExtensionUiStateBySession: runtime.setPiExtensionUiStateBySession,
-      })
-      return
     case 'thread-update':
       handleThreadUpdateEvent(runtime, event)
-      return
-    case 'session-tree-refresh':
-      handleSessionTreeRefreshEvent(runtime, event)
       return
     default:
       // Update, dictation, diff, and artifact events have feature-owned subscriptions.

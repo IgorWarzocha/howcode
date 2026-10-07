@@ -5,31 +5,28 @@ function measureElementHeight(element: HTMLElement | null) {
   return Math.ceil(element.getBoundingClientRect().height)
 }
 
-/** Pushes thread content up via `composerOverlayHeight` (padding-bottom), like ask-questions / BTW. */
+/** Reserves transcript space for visible composer overlays. */
 export function useComposerThreadOverlayHeight(input: {
-  extensionOverlayRef: RefObject<HTMLDivElement | null>
-  extensionOverlayVisible: boolean
+  overlayRef: RefObject<HTMLDivElement | null>
+  overlayVisible: boolean
   popoverStackRef: RefObject<HTMLDivElement | null>
   popoverStackVisible: boolean
   onOverlayHeightChange?: ((height: number) => void) | undefined
 }) {
-  const { extensionOverlayRef, extensionOverlayVisible, popoverStackRef, popoverStackVisible } =
-    input
+  const { overlayRef, overlayVisible, popoverStackRef, popoverStackVisible } = input
   const lastReportedRef = useRef(0)
 
   useLayoutEffect(() => {
     const reportIfChanged = () => {
-      const extensionHeight = extensionOverlayVisible
-        ? measureElementHeight(extensionOverlayRef.current)
-        : 0
+      const overlayHeight = overlayVisible ? measureElementHeight(overlayRef.current) : 0
       const popoverHeight = popoverStackVisible ? measureElementHeight(popoverStackRef.current) : 0
-      const nextHeight = extensionHeight + popoverHeight
+      const nextHeight = overlayHeight + popoverHeight
       if (lastReportedRef.current === nextHeight) return
       lastReportedRef.current = nextHeight
       input.onOverlayHeightChange?.(nextHeight)
     }
 
-    if (!(extensionOverlayVisible || popoverStackVisible)) {
+    if (!(overlayVisible || popoverStackVisible)) {
       if (lastReportedRef.current !== 0) {
         lastReportedRef.current = 0
         input.onOverlayHeightChange?.(0)
@@ -41,16 +38,16 @@ export function useComposerThreadOverlayHeight(input: {
 
     if (typeof ResizeObserver === 'undefined') return
     const observer = new ResizeObserver(reportIfChanged)
-    if (extensionOverlayVisible && extensionOverlayRef.current) {
-      observer.observe(extensionOverlayRef.current)
+    if (overlayVisible && overlayRef.current) {
+      observer.observe(overlayRef.current)
     }
     if (popoverStackVisible && popoverStackRef.current) {
       observer.observe(popoverStackRef.current)
     }
     return () => observer.disconnect()
   }, [
-    extensionOverlayRef,
-    extensionOverlayVisible,
+    overlayRef,
+    overlayVisible,
     input.onOverlayHeightChange,
     popoverStackRef,
     popoverStackVisible,

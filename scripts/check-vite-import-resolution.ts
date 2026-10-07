@@ -3,7 +3,7 @@ import path from 'node:path'
 import { createServer } from 'vite'
 
 const sourceFileExtensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.mts', '.mjs'])
-const sourceRoots = ['src/app', 'src/test', 'src/electron', 'desktop']
+const sourceRoots = ['src/app', 'src/test', 'src/server', 'desktop']
 const howcodeImportPattern =
   /(?:import\s*\(\s*|(?:import|export)\s+(?:type\s+)?(?:[^'";]*?\s+from\s+)?)['"](@howcode\/[^'"]+)['"]/g
 

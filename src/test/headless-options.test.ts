@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { getHeadlessAccessUrl, parseHeadlessServerOptions } from '../electron/main/headless/options'
+import { getHeadlessAccessUrl, parseHeadlessServerOptions } from '../server/options'
 
 describe('headless options', () => {
   it('uses configured access tokens for remote headless auth', () => {
     expect(
-      parseHeadlessServerOptions(['--headless', '--host', '0.0.0.0', '--token', 'secret'], {}),
+      parseHeadlessServerOptions(['--host', '0.0.0.0', '--token', 'secret'], {}),
     ).toMatchObject({
       accessToken: 'secret',
       authRequired: true,

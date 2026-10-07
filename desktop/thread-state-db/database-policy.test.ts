@@ -3,16 +3,23 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import * as Effect from 'effect/Effect'
-import * as SqlClient from 'effect/unstable/sql/SqlClient'
+import * as SqlClient from 'effect/sql/SqlClient'
 import { afterEach, describe, expect, it } from 'vitest'
+import { repairConversationProjection } from './conversation-projection.ts'
+import { registerConversationFacts, upsertThreadSummary } from './conversation-writes.ts'
 import { makeThreadStateDatabaseRuntime } from './db.ts'
 import {
-  consumeInboxReplySuppression,
+  dismissInboxThread,
   dismissInboxThreadAfterReply,
-  upsertInboxThreadMessage,
+  markInboxThreadRead,
 } from './inbox-writes.ts'
-import { syncSessionSummaries, upsertThreadSummary } from './session-writes.ts'
-import { archiveThreads, setThreadDiffPreferences } from './thread-writes.ts'
+import { deleteProject } from './project-writes.ts'
+import {
+  archiveThreads,
+  deleteThreadRecord,
+  renameThreadTitle,
+  setThreadDiffPreferences,
+} from './thread-writes.ts'
 import {
   registerManagedWorktree,
   setProjectWorktreeCompleted,
@@ -152,174 +159,34 @@ function createLegacyDatabase(database: DatabaseSync) {
 }
 
 describe('thread state database policy', () => {
-  it('migrates legacy rows without losing values and applies migration defaults', async () => {
+  it('retains project facts and deleted spend without importing legacy transcript mirrors', async () => {
     const { runtime } = await makeFixture(createLegacyDatabase)
-
-    const [rootProject, childProject] = runtime.runSync(
-      query<{
-        collapsed: number
-        customName: string | null
-        gitOpsMode: string | null
-        hidden: number
-        name: string
-        pinned: number
-        repoOriginChecked: number
-        repoOriginUrl: string | null
-      }>(`
-        SELECT
-          name,
-          custom_name AS customName,
-          hidden,
-          pinned,
-          collapsed,
-          repo_origin_url AS repoOriginUrl,
-          repo_origin_checked AS repoOriginChecked,
-          git_ops_mode AS gitOpsMode
-        FROM projects
-        ORDER BY cwd DESC
-      `),
-    )
-    expect(rootProject).toEqual({
-      name: 'Root name',
-      customName: null,
-      hidden: 0,
-      pinned: 0,
-      collapsed: 0,
-      repoOriginUrl: null,
-      repoOriginChecked: 0,
-      gitOpsMode: null,
-    })
-    expect(childProject).toMatchObject({ name: 'Child name', collapsed: 1 })
-
+    expect(
+      runtime.runSync(query('SELECT cwd, name, collapsed FROM projects ORDER BY cwd')),
+    ).toEqual([
+      { cwd: '/legacy-child', name: 'Child name', collapsed: 1 },
+      { cwd: '/legacy-root', name: 'Root name', collapsed: 0 },
+    ])
     expect(
       runtime.runSync(
-        query<{
-          archived: number
-          branchName: string | null
-          diffBaselineJson: string | null
-          diffRenderMode: string | null
-          id: string
-          lastAssistantAtMs: number | null
-          lastAssistantMessageJson: string | null
-          lastAssistantPreview: string | null
-          lastModifiedMs: number
-          pinned: number
-          running: number
-          title: string
-        }>(`
-          SELECT
-            id, title, running, pinned, archived, last_modified_ms AS lastModifiedMs,
-            last_assistant_message_json AS lastAssistantMessageJson,
-            last_assistant_preview AS lastAssistantPreview,
-            last_assistant_at_ms AS lastAssistantAtMs,
-            branch_name AS branchName, diff_baseline_json AS diffBaselineJson,
-            diff_render_mode AS diffRenderMode
-          FROM threads
-        `),
-      )[0],
-    ).toEqual({
-      id: 'thread-1',
-      title: 'Legacy thread',
-      running: 0,
-      pinned: 1,
-      archived: 0,
-      lastModifiedMs: 1234,
-      lastAssistantMessageJson: null,
-      lastAssistantPreview: null,
-      lastAssistantAtMs: null,
-      branchName: null,
-      diffBaselineJson: null,
-      diffRenderMode: null,
-    })
-
+        query('SELECT cost_total AS cost, session_count AS count FROM project_usage_totals'),
+      ),
+    ).toEqual([{ cost: 1.5, count: 7 }])
     expect(
       runtime.runSync(
-        query<{
-          lastAssistantAtMs: number
-          lastAssistantMessageJson: string
-          lastAssistantPreview: string
-          lastUserPrompt: string | null
-          unread: number
-        }>(`
-          SELECT
-            unread, last_user_prompt AS lastUserPrompt,
-            last_assistant_message_json AS lastAssistantMessageJson,
-            last_assistant_preview AS lastAssistantPreview,
-            last_assistant_at_ms AS lastAssistantAtMs
-          FROM inbox_items
-        `),
-      )[0],
-    ).toEqual({
-      unread: 1,
-      lastUserPrompt: null,
-      lastAssistantMessageJson: '["legacy"]',
-      lastAssistantPreview: 'Legacy preview',
-      lastAssistantAtMs: 1200,
-    })
-
+        query('SELECT source, parent_branch_name AS parent, completed FROM project_worktrees'),
+      ),
+    ).toEqual([{ source: 'imported', parent: null, completed: 0 }])
+    expect(runtime.runSync(query('SELECT COUNT(*) AS count FROM conversation_facts'))).toEqual([
+      { count: 0 },
+    ])
     expect(
       runtime.runSync(
-        query<{
-          assistantTurnCount: number
-          cacheRead: number
-          cacheWrite: number
-          costTotal: number
-          input: number
-          output: number
-          sessionCount: number
-          sessionsWithUsageCount: number
-          totalTokens: number
-        }>(`
-          SELECT
-            input, output, cache_read AS cacheRead, cache_write AS cacheWrite,
-            total_tokens AS totalTokens, cost_total AS costTotal,
-            assistant_turn_count AS assistantTurnCount, session_count AS sessionCount,
-            sessions_with_usage_count AS sessionsWithUsageCount
-          FROM project_usage_totals
-        `),
-      )[0],
-    ).toEqual({
-      input: 1,
-      output: 2,
-      cacheRead: 3,
-      cacheWrite: 4,
-      totalTokens: 10,
-      costTotal: 1.5,
-      assistantTurnCount: 6,
-      sessionCount: 7,
-      sessionsWithUsageCount: 0,
-    })
-
-    expect(
-      runtime.runSync(
-        query<{
-          branchName: string
-          completed: number
-          cwd: string
-          gitCommonDirectoryIdentity: string | null
-          isMain: number
-          parentBranchName: string | null
-          rootCwd: string
-          source: string
-        }>(`
-          SELECT
-            cwd, root_cwd AS rootCwd, branch_name AS branchName,
-            parent_branch_name AS parentBranchName,
-            git_common_dir_identity AS gitCommonDirectoryIdentity,
-            is_main AS isMain, source, completed
-          FROM project_worktrees
-        `),
-      )[0],
-    ).toEqual({
-      cwd: '/legacy-child',
-      rootCwd: '/legacy-root',
-      branchName: 'feature/legacy',
-      parentBranchName: null,
-      gitCommonDirectoryIdentity: null,
-      isMain: 0,
-      source: 'imported',
-      completed: 0,
-    })
+        query(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('threads', 'inbox_items', 'chat_threads')",
+        ),
+      ),
+    ).toEqual([])
   })
 
   it('enforces foreign keys and cascades thread and artifact dependents', async () => {
@@ -330,16 +197,16 @@ describe('thread state database policy', () => {
         { statement: `INSERT INTO projects (cwd, name) VALUES ('/project', 'Project')` },
         {
           statement: `
-            INSERT INTO threads (id, cwd, session_path, title, last_modified_ms)
+            INSERT INTO conversation_facts (id, cwd, conversation_id, title, last_modified_ms)
             VALUES ('thread-1', '/project', '/sessions/one.jsonl', 'Thread', 1)
           `,
         },
         {
-          statement: `INSERT INTO inbox_items (session_path) VALUES ('/sessions/one.jsonl')`,
+          statement: `INSERT INTO conversation_inbox (conversation_id) VALUES ('/sessions/one.jsonl')`,
         },
         {
           statement: `
-            INSERT INTO inbox_reply_suppressions (session_path) VALUES ('/sessions/one.jsonl')
+            INSERT INTO conversation_reply_suppressions (conversation_id) VALUES ('/sessions/one.jsonl')
           `,
         },
         {
@@ -374,16 +241,21 @@ describe('thread state database policy', () => {
         artifactVersions: number
         inboxItems: number
         suppressions: number
-        threads: number
+        conversation_facts: number
       }>(`
         SELECT
-          (SELECT COUNT(*) FROM threads) AS threads,
-          (SELECT COUNT(*) FROM inbox_items) AS inboxItems,
-          (SELECT COUNT(*) FROM inbox_reply_suppressions) AS suppressions,
+          (SELECT COUNT(*) FROM conversation_facts) AS conversation_facts,
+          (SELECT COUNT(*) FROM conversation_inbox) AS inboxItems,
+          (SELECT COUNT(*) FROM conversation_reply_suppressions) AS suppressions,
           (SELECT COUNT(*) FROM artifact_versions) AS artifactVersions
       `),
     )
-    expect(counts).toEqual({ threads: 0, inboxItems: 0, suppressions: 0, artifactVersions: 0 })
+    expect(counts).toEqual({
+      conversation_facts: 0,
+      inboxItems: 0,
+      suppressions: 0,
+      artifactVersions: 0,
+    })
   })
 
   it('keeps read-only transactions deferred while another WAL connection owns the write lock', async () => {
@@ -518,166 +390,245 @@ describe('thread state database policy', () => {
     },
   )
 
-  it('updates both message snapshots synchronously and consumes reply suppression once', async () => {
+  it('keeps one sidebar preview and consumes reply suppression once', async () => {
     const { runtime } = await makeFixture()
-    const sessionPath = '/sessions/inbox.jsonl'
-
     runtime.runSync(
-      execute([
-        { statement: `INSERT INTO projects (cwd, name) VALUES ('/project', 'Project')` },
-        {
-          statement: `
-            INSERT INTO threads (id, cwd, session_path, title, last_modified_ms)
-            VALUES ('thread-1', '/project', ?, 'Inbox thread', 1)
-          `,
-          params: [sessionPath],
-        },
-      ]),
-    )
-    runtime.runSync(
-      upsertInboxThreadMessage({
-        sessionPath,
-        userPrompt: 'First prompt',
-        content: ['First answer'],
-        preview: 'First preview',
-        lastAssistantAtMs: 10,
+      upsertThreadSummary({
+        id: '1',
+        conversationId: '1',
+        cwd: '/repo',
+        title: 'Thread',
+        lastModifiedMs: 1,
       }),
     )
-
-    const [snapshots] = runtime.runSync(
-      query<{
-        inboxMessage: string
-        inboxPreview: string
-        threadMessage: string
-        threadPreview: string
-      }>(
-        `
-          SELECT
-            inbox_items.last_assistant_message_json AS inboxMessage,
-            inbox_items.last_assistant_preview AS inboxPreview,
-            threads.last_assistant_message_json AS threadMessage,
-            threads.last_assistant_preview AS threadPreview
-          FROM threads
-          INNER JOIN inbox_items ON inbox_items.session_path = threads.session_path
-          WHERE threads.session_path = ?
-        `,
-        [sessionPath],
-      ),
-    )
-    expect(snapshots).toEqual({
-      inboxMessage: '["First answer"]',
-      inboxPreview: 'First preview',
-      threadMessage: '["First answer"]',
-      threadPreview: 'First preview',
-    })
-
-    runtime.runSync(dismissInboxThreadAfterReply(sessionPath))
     runtime.runSync(
-      upsertInboxThreadMessage({
-        sessionPath,
-        userPrompt: 'Suppressed prompt',
-        content: ['Suppressed answer'],
-        preview: 'Suppressed preview',
-        lastAssistantAtMs: 20,
+      repairConversationProjection({
+        conversationId: '1',
+        entryId: '2',
+        assistantId: '2',
+        preview: 'Answer',
+        title: 'Question',
+        lastModifiedMs: 2,
+        running: false,
       }),
     )
-    expect(runtime.runSync(consumeInboxReplySuppression(sessionPath))).toBe(true)
     expect(
-      runtime.runSync(
-        query<{ count: number }>(
-          'SELECT COUNT(*) AS count FROM inbox_items WHERE session_path = ?',
-          [sessionPath],
-        ),
-      )[0]?.count,
-    ).toBe(0)
-
+      runtime.runSync(query('SELECT last_assistant_preview AS preview FROM conversation_facts')),
+    ).toEqual([{ preview: 'Answer' }])
+    expect(runtime.runSync(query('SELECT unread FROM conversation_inbox'))).toEqual([{ unread: 1 }])
+    runtime.runSync(dismissInboxThreadAfterReply('1'))
     runtime.runSync(
-      upsertInboxThreadMessage({
-        sessionPath,
-        userPrompt: 'Kept prompt',
-        content: ['Kept answer'],
-        preview: 'Kept preview',
-        lastAssistantAtMs: 30,
+      repairConversationProjection({
+        conversationId: '1',
+        entryId: '3',
+        assistantId: '3',
+        preview: 'Reply',
+        title: 'Question',
+        lastModifiedMs: 3,
+        running: false,
       }),
     )
-    expect(runtime.runSync(consumeInboxReplySuppression(sessionPath))).toBe(false)
-    expect(
-      runtime.runSync(
-        query<{ preview: string }>(
-          'SELECT last_assistant_preview AS preview FROM inbox_items WHERE session_path = ?',
-          [sessionPath],
-        ),
-      ),
-    ).toEqual([{ preview: 'Kept preview' }])
+    expect(runtime.runSync(query('SELECT unread, dismissed FROM conversation_inbox'))).toEqual([
+      { unread: 0, dismissed: 1 },
+    ])
+    expect(runtime.runSync(query('SELECT * FROM conversation_reply_suppressions'))).toEqual([])
+    runtime.runSync(
+      repairConversationProjection({
+        conversationId: '1',
+        entryId: '4',
+        assistantId: '4',
+        preview: 'Next reply',
+        title: 'Question',
+        lastModifiedMs: 4,
+        running: false,
+      }),
+    )
+    expect(runtime.runSync(query('SELECT unread, dismissed FROM conversation_inbox'))).toEqual([
+      { unread: 1, dismissed: 0 },
+    ])
   })
 
-  it('preserves stored branch attribution when later session scans disagree', async () => {
+  it('preserves app-owned title and branch when repairing summaries', async () => {
     const { runtime } = await makeFixture()
-    runtime.runSync(
-      registerManagedWorktree({
-        rootProjectId: '/repo',
-        projectId: '/worktree',
-        branchName: 'feature/worktree',
-        gitCommonDirectoryIdentity: 'git-common-dir-v1:1:2:3',
-        parentBranchName: 'main',
-      }),
-    )
-    const session = {
-      id: 'thread-1',
-      cwd: '/worktree',
-      sessionPath: "/sessions/it's-a-session.jsonl",
-      title: "A title'); DROP TABLE threads; --",
+    const conversation = {
+      id: '1',
+      conversationId: '1',
+      cwd: '/repo',
+      title: "A title'); DROP TABLE conversation_facts; --",
+      branchName: 'feature/original',
       lastModifiedMs: 1,
     }
-    runtime.runSync(upsertThreadSummary(session))
+    runtime.runSync(upsertThreadSummary(conversation))
     runtime.runSync(
-      syncSessionSummaries('/worktree', [
-        { ...session, branchName: 'feature/new-scan', lastModifiedMs: 2 },
-        { ...session, id: 'thread-2', sessionPath: '/sessions/two.jsonl', branchName: 'explicit' },
-      ]),
+      upsertThreadSummary({
+        ...conversation,
+        title: 'New inferred title',
+        branchName: 'feature/new',
+        lastModifiedMs: 2,
+      }),
     )
     expect(
       runtime.runSync(
-        query<{ branch: string; title: string; modified: number }>(
-          'SELECT branch_name AS branch, title, last_modified_ms AS modified FROM threads ORDER BY id',
+        query(
+          'SELECT title, branch_name AS branch, last_modified_ms AS modified FROM conversation_facts',
         ),
       ),
-    ).toEqual([
-      { branch: 'feature/worktree', title: session.title, modified: 2 },
-      { branch: 'explicit', title: session.title, modified: 1 },
-    ])
+    ).toEqual([{ title: conversation.title, branch: 'feature/original', modified: 2 }])
   })
 
   it('keeps omitted diff preferences and clears only explicitly null values', async () => {
     const { runtime } = await makeFixture()
-    const sessionPath = "/sessions/it's-a-session.jsonl"
+    const conversationId = "/sessions/it's-a-session.jsonl"
     runtime.runSync(
       upsertThreadSummary({
         id: 'thread-1',
         cwd: '/repo',
-        sessionPath,
+        conversationId,
         title: 'Thread',
         lastModifiedMs: 1,
       }),
     )
     const baseline = { kind: 'branch' as const, branchName: "feature/it's-bound" }
     expect(
-      runtime.runSync(setThreadDiffPreferences(sessionPath, { baseline, renderMode: 'split' })),
+      runtime.runSync(setThreadDiffPreferences(conversationId, { baseline, renderMode: 'split' })),
     ).toBe(true)
-    expect(runtime.runSync(setThreadDiffPreferences(sessionPath, { baseline: null }))).toBe(true)
-    expect(runtime.runSync(setThreadDiffPreferences(sessionPath, {}))).toBe(true)
+    expect(runtime.runSync(setThreadDiffPreferences(conversationId, { baseline: null }))).toBe(true)
+    expect(runtime.runSync(setThreadDiffPreferences(conversationId, {}))).toBe(true)
     const readPreferences = query<{ baseline: string | null; mode: string | null }>(
-      'SELECT diff_baseline_json AS baseline, diff_render_mode AS mode FROM threads WHERE session_path = ?',
-      [sessionPath],
+      'SELECT diff_baseline_json AS baseline, diff_render_mode AS mode FROM conversation_facts WHERE conversation_id = ?',
+      [conversationId],
     )
     expect(runtime.runSync(readPreferences)).toEqual([{ baseline: null, mode: 'split' }])
     expect(
-      runtime.runSync(setThreadDiffPreferences(sessionPath, { baseline, renderMode: null })),
+      runtime.runSync(setThreadDiffPreferences(conversationId, { baseline, renderMode: null })),
     ).toBe(true)
     expect(runtime.runSync(readPreferences)).toEqual([
       { baseline: JSON.stringify(baseline), mode: null },
     ])
     expect(runtime.runSync(setThreadDiffPreferences('/missing', { baseline }))).toBe(false)
+  })
+
+  it('rolls back conversation facts when chat attribution cannot be persisted', async () => {
+    const { runtime } = await makeFixture()
+    expect(() =>
+      runtime.runSync(
+        registerConversationFacts({
+          conversationId: '1',
+          projectId: '/repo',
+          title: 'Thread',
+          lastModifiedMs: 1,
+          isChat: true,
+          chatGroupId: 'missing-group',
+        }),
+      ),
+    ).toThrow()
+    expect(runtime.runSync(query('SELECT COUNT(*) AS count FROM conversation_facts'))).toEqual([
+      { count: 0 },
+    ])
+    expect(runtime.runSync(query('SELECT COUNT(*) AS count FROM projects'))).toEqual([{ count: 0 }])
+    runtime.runSync(
+      registerConversationFacts({
+        conversationId: '1',
+        projectId: '/repo',
+        title: 'Thread',
+        lastModifiedMs: 1,
+        isChat: true,
+      }),
+    )
+    expect(runtime.runSync(query('SELECT conversation_id AS id FROM chat_conversations'))).toEqual([
+      { id: '1' },
+    ])
+  })
+
+  it('repairs projections without changing read, dismissal, title or activity facts', async () => {
+    const { runtime } = await makeFixture()
+    runtime.runSync(
+      upsertThreadSummary({
+        id: '1',
+        conversationId: '1',
+        cwd: '/repo',
+        title: 'Initial',
+        lastModifiedMs: 1,
+      }),
+    )
+    const projection = {
+      conversationId: '1',
+      entryId: '2',
+      assistantId: '2',
+      preview: 'Answer',
+      title: 'Derived title',
+      lastModifiedMs: 100,
+      running: false,
+    }
+    runtime.runSync(repairConversationProjection(projection))
+    runtime.runSync(markInboxThreadRead('1'))
+    runtime.runSync(dismissInboxThread('1'))
+    runtime.runSync(renameThreadTitle('1', 'Chosen title'))
+    runtime.runSync(
+      query(
+        'UPDATE conversation_facts SET projection_entry_id = NULL, projection_assistant_id = NULL, last_assistant_preview = NULL',
+      ),
+    )
+    runtime.runSync(repairConversationProjection(projection))
+    expect(
+      runtime.runSync(
+        query(
+          'SELECT title, last_modified_ms AS activity, last_assistant_preview AS preview FROM conversation_facts',
+        ),
+      ),
+    ).toEqual([{ title: 'Chosen title', activity: 100, preview: 'Answer' }])
+    expect(runtime.runSync(query('SELECT unread, dismissed FROM conversation_inbox'))).toEqual([
+      { unread: 0, dismissed: 1 },
+    ])
+    runtime.runSync(
+      repairConversationProjection({
+        ...projection,
+        entryId: '3',
+        assistantId: '3',
+        lastModifiedMs: 200,
+      }),
+    )
+    expect(runtime.runSync(query('SELECT unread, dismissed FROM conversation_inbox'))).toEqual([
+      { unread: 1, dismissed: 0 },
+    ])
+  })
+
+  it('keeps deletion tombstones and spend attribution through repair and project removal', async () => {
+    const { runtime } = await makeFixture()
+    runtime.runSync(
+      upsertThreadSummary({
+        id: '1',
+        conversationId: '1',
+        cwd: '/repo',
+        title: 'Thread',
+        lastModifiedMs: 1,
+      }),
+    )
+    runtime.runSync(
+      query("INSERT INTO project_usage_totals (cwd, cost_total) VALUES ('/repo', 9.5)"),
+    )
+    runtime.runSync(deleteThreadRecord('1'))
+    runtime.runSync(
+      repairConversationProjection({
+        conversationId: '1',
+        entryId: '2',
+        assistantId: '2',
+        preview: 'Late result',
+        title: 'Derived',
+        lastModifiedMs: 200,
+        running: true,
+      }),
+    )
+    runtime.runSync(deleteProject('/repo'))
+    expect(
+      runtime.runSync(
+        query('SELECT cwd, deleted, running, last_modified_ms AS activity FROM conversation_facts'),
+      ),
+    ).toEqual([{ cwd: '/repo', deleted: 1, running: 0, activity: 1 }])
+    expect(runtime.runSync(query('SELECT cost_total AS cost FROM project_usage_totals'))).toEqual([
+      { cost: 9.5 },
+    ])
+    expect(runtime.runSync(query('SELECT hidden FROM projects'))).toEqual([{ hidden: 1 }])
   })
 
   it('finishes large grouped writes before the synchronous runtime call returns', async () => {
@@ -695,7 +646,7 @@ describe('thread state database policy', () => {
               UNION ALL
               SELECT value + 1 FROM sequence WHERE value + 1 < ?
             )
-            INSERT INTO threads (id, cwd, session_path, title, last_modified_ms)
+            INSERT INTO conversation_facts (id, cwd, conversation_id, title, last_modified_ms)
             SELECT
               'thread-' || value,
               '/batch',
@@ -715,7 +666,7 @@ describe('thread state database policy', () => {
       runtime.runSync(
         query<{ archived: number; total: number }>(`
           SELECT COUNT(*) AS total, SUM(archived) AS archived
-          FROM threads
+          FROM conversation_facts
         `),
       ),
     ).toEqual([{ total: threadCount, archived: threadCount }])

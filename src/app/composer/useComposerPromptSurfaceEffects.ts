@@ -79,7 +79,7 @@ export function useComposerAutocompleteEffects({
   slashCommandPanelRef,
   slashCommandListSignature,
   slashCommands,
-  sessionTreePanelRef,
+  conversationForkPanelRef,
   stopButtonBoundaryRef,
 }: {
   composerPanelRef: RefObject<HTMLDivElement | null>
@@ -92,7 +92,7 @@ export function useComposerAutocompleteEffects({
   slashCommandPanelRef: RefObject<HTMLDivElement | null>
   slashCommandListSignature: string
   slashCommands: ComposerSlashCommands
-  sessionTreePanelRef?: RefObject<HTMLDivElement | null> | undefined
+  conversationForkPanelRef?: RefObject<HTMLDivElement | null> | undefined
   stopButtonBoundaryRef: RefObject<HTMLDivElement | null>
 }) {
   const handlePointerDown = useEffectEvent((event: PointerEvent) => {
@@ -100,7 +100,7 @@ export function useComposerAutocompleteEffects({
     if (
       !target ||
       slashCommandPanelRef.current?.contains(target) ||
-      sessionTreePanelRef?.current?.contains(target) ||
+      conversationForkPanelRef?.current?.contains(target) ||
       fileMentionPanelRef.current?.contains(target) ||
       skillMentionPanelRef.current?.contains(target) ||
       composerPanelRef.current?.contains(target) ||
@@ -146,38 +146,24 @@ export function useComposerEscapeEffects({
   dictationActive,
   dictationTranscribing,
   pickerOpen,
-  sessionTreeOpen,
-  sessionTreeNavigateConfirmOpen,
-  sessionTreeLabelPopoverOpen,
-  onCloseSessionTree,
-  onCancelSessionTreeNavigateConfirm,
-  onCancelSessionTreeLabelPopover,
+  conversationForkOpen,
+  onCloseConversationFork,
   setOpenMenu,
 }: {
   cancelDictation: () => Promise<void>
   dictationActive: boolean
   dictationTranscribing: boolean
   pickerOpen: boolean
-  sessionTreeOpen?: boolean | undefined
-  sessionTreeNavigateConfirmOpen?: boolean | undefined
-  sessionTreeLabelPopoverOpen?: boolean | undefined
-  onCloseSessionTree?: (() => void) | undefined
-  onCancelSessionTreeNavigateConfirm?: (() => void) | undefined
-  onCancelSessionTreeLabelPopover?: (() => void) | undefined
+  conversationForkOpen?: boolean | undefined
+  onCloseConversationFork?: (() => void) | undefined
   setOpenMenu: (menu: null) => void
 }) {
   const handleKeyDown = useEffectEvent((event: KeyboardEvent) => {
     if (event.key !== 'Escape') return
-    if (sessionTreeOpen === true) {
+    if (conversationForkOpen === true) {
       event.preventDefault()
       event.stopImmediatePropagation()
-      if (sessionTreeLabelPopoverOpen) {
-        onCancelSessionTreeLabelPopover?.()
-      } else if (sessionTreeNavigateConfirmOpen) {
-        onCancelSessionTreeNavigateConfirm?.()
-      } else {
-        onCloseSessionTree?.()
-      }
+      onCloseConversationFork?.()
       return
     }
     if (pickerOpen) {
@@ -194,10 +180,10 @@ export function useComposerEscapeEffects({
   })
 
   useEffect(() => {
-    const sessionTreeActive = sessionTreeOpen === true
-    if (!(pickerOpen || dictationActive || dictationTranscribing || sessionTreeActive)) return
+    const conversationForkActive = conversationForkOpen === true
+    if (!(pickerOpen || dictationActive || dictationTranscribing || conversationForkActive)) return
 
     window.addEventListener('keydown', handleKeyDown, true)
     return () => window.removeEventListener('keydown', handleKeyDown, true)
-  }, [dictationActive, dictationTranscribing, pickerOpen, sessionTreeOpen])
+  }, [dictationActive, dictationTranscribing, pickerOpen, conversationForkOpen])
 }

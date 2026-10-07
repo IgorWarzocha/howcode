@@ -35,7 +35,7 @@ function TopSessionRow({
 }: {
   projectId: string
   session: ProjectUsageSessionSummary
-  onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void
+  onOpenThread: (projectId: string, threadId: string, conversationId: string) => void
 }) {
   return (
     <button
@@ -44,7 +44,7 @@ function TopSessionRow({
         quietListRowClass,
         `min-h-11 grid-cols-[minmax(0,1fr)] items-center gap-1 ${appTypeSmallClass} active:scale-[0.99] min-[560px]:grid-cols-[minmax(0,1fr)_auto] min-[560px]:gap-4`,
       )}
-      onClick={() => onOpenThread(projectId, session.threadId, session.sessionPath)}
+      onClick={() => onOpenThread(projectId, session.threadId, session.conversationId)}
     >
       <span className={`min-w-0 truncate ${appTypeGroupTitleClass} ${appToneTextClass}`}>
         {session.title}
@@ -69,7 +69,7 @@ export function TopSessionsSection({
   loading: boolean
   projectId: string
   sessions: ProjectUsageSessionSummary[]
-  onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void
+  onOpenThread: (projectId: string, threadId: string, conversationId: string) => void
 }) {
   return (
     <section className="col-span-2 col-start-2 grid gap-2 [@media(max-height:560px)]:hidden">
@@ -89,7 +89,7 @@ export function TopSessionsSection({
         >
           {sessions.map((session) => (
             <TopSessionRow
-              key={session.sessionPath}
+              key={session.conversationId}
               projectId={projectId}
               session={session}
               onOpenThread={onOpenThread}

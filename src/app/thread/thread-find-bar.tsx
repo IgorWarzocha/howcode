@@ -14,7 +14,7 @@ import {
 import { cn } from '../utils/cn'
 
 type ThreadFindBarProps = {
-  sessionPath?: string | null | undefined
+  conversationId?: string | null | undefined
   onActiveMatchChange: (match: ThreadSearchMatch | null) => void
   onQueryChange: (query: string) => void
 }
@@ -35,7 +35,7 @@ function HighlightedSnippet({ match }: { match: ThreadSearchMatch }) {
 }
 
 export function ThreadFindBar({
-  sessionPath,
+  conversationId,
   onActiveMatchChange,
   onQueryChange,
 }: ThreadFindBarProps) {
@@ -107,7 +107,7 @@ export function ThreadFindBar({
     notifyQueryChange(open ? query : '')
     setMatchIndex(0)
     notifyActiveMatchChange(null)
-    if (!(open && sessionPath && query.trim())) {
+    if (!(open && conversationId && query.trim())) {
       setResult({ matches: [], searchedMessageCount: 0 })
       setSearching(false)
       return
@@ -116,7 +116,7 @@ export function ThreadFindBar({
     setSearching(true)
     setResult({ matches: [], searchedMessageCount: 0 })
     const timeout = window.setTimeout(() => {
-      void searchThreadQuery(sessionPath, query)
+      void searchThreadQuery(conversationId, query)
         .then((nextResult) => {
           if (requestIdRef.current !== requestId) return
           setResult(nextResult)
@@ -134,7 +134,7 @@ export function ThreadFindBar({
     }, 220)
 
     return () => window.clearTimeout(timeout)
-  }, [open, query, sessionPath])
+  }, [open, query, conversationId])
 
   if (!open) return null
 

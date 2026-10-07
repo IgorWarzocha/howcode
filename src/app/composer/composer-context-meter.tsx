@@ -312,7 +312,7 @@ export function ComposerContextMeter({
       </button>
 
       {open ? (
-        // Passive hover preview: keep above composer-adjacent extension UI.
+        // Passive hover previews stay above adjacent composer popovers.
         <PopoverPanel
           surface={false}
           ref={popoverRef}

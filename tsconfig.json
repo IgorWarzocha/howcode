@@ -79,5 +79,5 @@
     "libReplacement": false
   },
   "include": ["src", "vite.config.ts", "vitest.config.ts"],
-  "exclude": ["src/electron/**/*"]
+  "exclude": ["src/server/**/*"]
 }

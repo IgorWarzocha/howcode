@@ -10,12 +10,5 @@ export function ShellTerminalViewport({
   hoverToBlur = false,
   ...props
 }: ShellTerminalViewportProps) {
-  return (
-    <TerminalViewportBase
-      {...props}
-      mode="shell"
-      hoverToFocus={hoverToFocus}
-      hoverToBlur={hoverToBlur}
-    />
-  )
+  return <TerminalViewportBase {...props} hoverToFocus={hoverToFocus} hoverToBlur={hoverToBlur} />
 }

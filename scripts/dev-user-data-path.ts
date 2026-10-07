@@ -5,7 +5,7 @@ function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
 }
 
-function getDefaultElectronUserDataPath() {
+function getDefaultUserDataPath() {
   switch (process.platform) {
     case 'darwin':
       return path.join(os.homedir(), 'Library', 'Application Support', 'howcode')
@@ -24,11 +24,11 @@ function getDefaultElectronUserDataPath() {
 
 export function getDevUserDataPath() {
   if (getProcessEnvironmentVariable('HOWCODE_DEV_USER_DATA_PROFILE')?.trim() === 'app') {
-    return getDefaultElectronUserDataPath()
+    return getDefaultUserDataPath()
   }
 
   return (
     getProcessEnvironmentVariable('HOWCODE_DEV_USER_DATA_PATH')?.trim() ||
-    path.join(getDefaultElectronUserDataPath(), 'dev')
+    path.join(getDefaultUserDataPath(), 'dev')
   )
 }

@@ -2,17 +2,14 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
     "src/main.tsx",
-    "src/electron/main/index.ts",
-    "src/electron/preload/index.ts",
     "desktop/pi-threads.ts",
     "desktop/pi-skills.ts",
-    "desktop/runtime-host/worker.ts",
     "desktop/terminal/runtime.ts",
     "scripts/*.ts",
     "pages/src/main.tsx",
     "workers/polls/src/index.ts",
     "packages/howcode/bin/howcode.js",
-    "packages/howcode/lib/howcode.js"
+    "src/server/index.ts"
   ],
   "project": [
     "src/**/*.{ts,tsx}",
@@ -26,12 +23,10 @@
   "ignore": ["build/**", "dist/**", "dist-pages/**", "artifacts/**", "node_modules/**"],
   "ignoreDependencies": [
     "@earendil-works/pi-ai",
-    "@earendil-works/pi-tui",
     "bindings",
     "file-uri-to-path",
     "node-pty",
     "sherpa-onnx-node",
-    "tar",
     "tailwindcss"
   ]
 }

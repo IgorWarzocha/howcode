@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { Effect } from 'effect'
-import * as SqlClient from 'effect/unstable/sql/SqlClient'
+import * as SqlClient from 'effect/sql/SqlClient'
 
 export const ensureProject = Effect.fn('threadStateDb.ensureProject')(function* (cwd: string) {
   const sql = yield* SqlClient.SqlClient
@@ -64,12 +64,12 @@ export const archiveProjectThreads = Effect.fn('threadStateDb.archiveProjectThre
   const sql = yield* SqlClient.SqlClient
   yield* sql.unsafe(
     `
-      UPDATE threads
+      UPDATE conversation_facts
       SET archived = 1, updated_at = CURRENT_TIMESTAMP
       WHERE cwd = ?
         AND archived = 0
         AND NOT EXISTS (
-          SELECT 1 FROM chat_threads WHERE chat_threads.session_path = threads.session_path
+          SELECT 1 FROM chat_conversations WHERE chat_conversations.conversation_id = conversation_facts.conversation_id
         )
     `,
     [projectId],
@@ -133,22 +133,11 @@ export const hideProject = Effect.fn('threadStateDb.hideProject')(function* (pro
   )
 })
 
-export const deleteProject = Effect.fn('threadStateDb.deleteProject')(function* (
+export const deleteProject = Effect.fn('ConversationState.deleteProject')(function* (
   projectId: string,
 ) {
   const sql = yield* SqlClient.SqlClient
-  yield* sql.unsafe(
-    `
-      DELETE FROM project_usage_totals
-      WHERE cwd = ?
-    `,
-    [projectId],
-  )
-  yield* sql.unsafe(
-    `
-      DELETE FROM projects
-      WHERE cwd = ?
-    `,
-    [projectId],
-  )
+  // Keep attribution and deletion tombstones even after the project leaves the sidebar.
+  yield* sql`UPDATE conversation_facts SET deleted = 1, running = 0 WHERE cwd = ${projectId}`
+  yield* sql`UPDATE projects SET hidden = 1 WHERE cwd = ${projectId}`
 })

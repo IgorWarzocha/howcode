@@ -1,6 +1,5 @@
 import { isCompactSlashCommand } from '@howcode/shared/composer-slash-commands'
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
-import { getErrorMessage } from '../desktop/error-messages'
 import type {
   ComposerAttachment,
   ComposerStreamingBehavior,
@@ -107,56 +106,6 @@ function handleRestorableComposerResult(input: {
   if (input.result.status === 'error') input.setErrorMessage(input.result.errorMessage)
 }
 
-export async function runExtensionCommandSubmission(input: {
-  activeComposerScopeKeyRef: MutableRefObject<string>
-  chatGroupId: string | null
-  composerScopeKey: string
-  draftThreadId: string | null
-  draftValueRef: MutableRefObject<string>
-  onAction: DesktopActionInvoker
-  projectId: string
-  runId: number
-  sessionPath: string | null
-  setDraftValue: Dispatch<SetStateAction<string>>
-  setErrorMessage: Dispatch<SetStateAction<string | null>>
-  setExtensionCommandRunning: Dispatch<SetStateAction<boolean>>
-  extensionCommandRunIdRef: MutableRefObject<number>
-  stopDictationAndFlush: () => Promise<void>
-  streamingBehaviorPreference: ComposerStreamingBehavior
-}) {
-  try {
-    await input.stopDictationAndFlush()
-    if (input.activeComposerScopeKeyRef.current !== input.composerScopeKey) return
-    const submittedDraft = input.draftValueRef.current.trim()
-    if (submittedDraft.length === 0) return
-    input.setDraftValue('')
-    if (input.draftThreadId) composerDraftStore.setPrompt(input.draftThreadId, '')
-    const result = await submitComposerDraft({
-      draft: submittedDraft,
-      attachments: [],
-      isSending: false,
-      projectId: input.projectId,
-      chatGroupId: input.chatGroupId,
-      sessionPath: input.sessionPath,
-      streamingBehaviorPreference: input.streamingBehaviorPreference,
-      onAction: input.onAction,
-    })
-    if (input.activeComposerScopeKeyRef.current !== input.composerScopeKey) return
-    if (result.status === 'error') {
-      input.setDraftValue(result.text)
-      input.setErrorMessage(result.errorMessage)
-    } else if (result.status === 'stopped') input.setDraftValue(result.text)
-  } catch (error) {
-    if (input.activeComposerScopeKeyRef.current === input.composerScopeKey) {
-      input.setErrorMessage(getErrorMessage(error, 'Could not send prompt.'))
-    }
-  } finally {
-    if (input.extensionCommandRunIdRef.current === input.runId) {
-      input.setExtensionCommandRunning(false)
-    }
-  }
-}
-
 export async function runComposerSendSubmission(input: {
   activeComposerScopeKeyRef: MutableRefObject<string>
   activeDraftThreadIdRef: MutableRefObject<string | null>
@@ -170,7 +119,7 @@ export async function runComposerSendSubmission(input: {
   pendingSubmittedReplyActivityKeyRef: MutableRefObject<string | null>
   projectId: string
   replyActivityKey: string
-  sessionPath: string | null
+  conversationId: string | null
   setAttachments: Dispatch<SetStateAction<ComposerAttachment[]>>
   setDraftValue: Dispatch<SetStateAction<string>>
   setErrorMessage: Dispatch<SetStateAction<string | null>>
@@ -197,7 +146,7 @@ export async function runComposerSendSubmission(input: {
     isSending: false,
     projectId: input.projectId,
     chatGroupId: input.chatGroupId,
-    sessionPath: input.sessionPath,
+    conversationId: input.conversationId,
     streamingBehaviorPreference: input.streamingBehaviorPreference,
     onAction: input.onAction,
   })

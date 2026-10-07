@@ -1,5 +1,5 @@
 import { Effect } from 'effect'
-import * as SqlClient from 'effect/unstable/sql/SqlClient'
+import * as SqlClient from 'effect/sql/SqlClient'
 import { ensureProject } from './project-writes.ts'
 import { withDatabaseTransaction } from './write-transaction.ts'
 
@@ -190,7 +190,7 @@ export const upsertProjectWorktree = Effect.fn('threadStateDb.upsertProjectWorkt
   if (!metadata.isMain && metadata.branchName) {
     yield* sql.unsafe(
       `
-        UPDATE threads
+        UPDATE conversation_facts
         SET branch_name = COALESCE(branch_name, ?),
           updated_at = CURRENT_TIMESTAMP
         WHERE cwd = ?

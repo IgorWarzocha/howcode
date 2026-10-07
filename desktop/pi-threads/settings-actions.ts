@@ -1,6 +1,3 @@
-import { readdir, rm } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import path from 'node:path'
 import type { DesktopAction } from '../../shared/desktop-actions.ts'
 import type { AnyDesktopActionPayload } from '../../shared/desktop-contracts.ts'
 import {
@@ -30,7 +27,6 @@ import {
   setComposerSendMode,
   setComposerStreamingBehavior,
   setCustomPiDirectory,
-  setDevUpdateBranch,
   setDictationMaxDurationSeconds,
   setDictationModelId,
   setFavoriteFolders,
@@ -46,7 +42,6 @@ import {
   setHoverToFocus,
   setInitializeGitOnProjectCreate,
   setKeybindings,
-  setPiTuiTakeover,
   setPreferredProjectLocation,
   setProjectDashboardEnabled,
   setProjectDeletionMode,
@@ -54,36 +49,9 @@ import {
   setShowDictationButton,
   setUseAgentsSkillsPaths,
 } from '../app-settings/writers.ts'
-import { restartRuntimeHostsForEnvironmentChange } from '../runtime-host/client-bridge.ts'
+import { refreshDurableSettings } from '../durable-runtime/host.ts'
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
-
-const clipboardImageTempDir = path.join(tmpdir(), 'howcode-clipboard-images')
-
-async function clearClipboardImageTempFiles() {
-  let entries: Array<{ isFile(): boolean; name: string }>
-  try {
-    entries = await readdir(clipboardImageTempDir, { withFileTypes: true })
-  } catch (error) {
-    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT') {
-      return { clearedCount: 0, clearFailedCount: 0 }
-    }
-
-    return { clearedCount: 0, clearFailedCount: 1 }
-  }
-
-  const targets = entries.filter(
-    (entry) =>
-      entry.isFile() && entry.name.startsWith('howcode-clipboard-') && entry.name.endsWith('.png'),
-  )
-  const results = await Promise.allSettled(
-    targets.map((entry) => rm(path.join(clipboardImageTempDir, entry.name), { force: true })),
-  )
-  return {
-    clearedCount: results.filter((result) => result.status === 'fulfilled').length,
-    clearFailedCount: results.filter((result) => result.status === 'rejected').length,
-  }
-}
 
 type SettingsUpdateHandler = (payload: AnyDesktopActionPayload) => unknown | Promise<unknown>
 
@@ -150,9 +118,6 @@ const settingsUpdateHandlers = {
   useAgentsSkillsPaths: (payload) =>
     setUseAgentsSkillsPaths(getSettingsBooleanValue(payload) ?? false),
 
-  devUpdateBranch: (payload) => setDevUpdateBranch(getSettingsBooleanValue(payload) ?? false),
-  betaUpdateBranch: (payload) => setDevUpdateBranch(getSettingsBooleanValue(payload) ?? false),
-  piTuiTakeover: (payload) => setPiTuiTakeover(getSettingsBooleanValue(payload) ?? false),
   hideSidebarSessionCounts: (payload) =>
     setHideSidebarSessionCounts(getSettingsBooleanValue(payload) ?? false),
   hoverToFocus: (payload) => setHoverToFocus(getSettingsBooleanValue(payload) ?? true),
@@ -179,7 +144,7 @@ const settingsUpdateHandlers = {
     if (currentCustomPiDirectory === nextCustomPiDirectory) return { didMutate: false }
 
     setCustomPiDirectory(nextCustomPiDirectory)
-    await restartRuntimeHostsForEnvironmentChange()
+    await refreshDurableSettings()
     return { didMutate: true }
   },
   initializeGitOnProjectCreate: (payload) =>
@@ -220,10 +185,6 @@ export async function handleSettingsDesktopAction(
   action: DesktopAction,
   payload: AnyDesktopActionPayload,
 ): Promise<ActionHandlerResult> {
-  if (action === 'settings.clear-clipboard-images') {
-    return handledAction(await clearClipboardImageTempFiles())
-  }
-
   if (action !== 'settings.update') return unhandledAction()
 
   const key = getSettingsKey(payload)

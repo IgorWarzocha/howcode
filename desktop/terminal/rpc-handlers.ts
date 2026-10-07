@@ -11,7 +11,6 @@ export function createTerminalRpcHandlers(terminal: Interface) {
     'terminal.resize': ({ sessionId, cols, rows }) => terminal.resize(sessionId, cols, rows),
     'terminal.close': terminal.close,
     'terminal.closeAll': terminal.closeAll,
-    'terminal.statSessionFile': ({ sessionId }) => terminal.statSessionFile(sessionId),
     'terminal.status': ({ sessionId }) => terminal.status(sessionId),
     'terminal.events': () =>
       Stream.unwrap(

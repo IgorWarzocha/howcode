@@ -26,11 +26,11 @@ export async function prepareDesktopAction(input: {
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
   loadProjectThreads: (
     projectId: string,
-    options?: { chat?: boolean; replaceLocalDraftSessionPath?: string | null },
+    options?: { chat?: boolean; replaceLocalDraftConversationId?: string | null },
   ) => Promise<unknown>
   payload: ActionPayload
   queryClient: QueryClient
-  selectedSessionPath: string | null
+  selectedConversationId: string | null
   setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>
   setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>
   setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>
@@ -44,7 +44,7 @@ export async function prepareDesktopAction(input: {
     payload: input.payload,
     composerProjectId: input.composerProjectId,
     activeView: input.activeView,
-    selectedSessionPath: input.selectedSessionPath,
+    selectedConversationId: input.selectedConversationId,
   })
 
   if (input.action === 'composer.send' || input.action === 'thread.open') {

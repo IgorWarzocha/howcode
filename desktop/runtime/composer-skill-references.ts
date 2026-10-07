@@ -1,16 +1,6 @@
 import type { ComposerSkillReference } from '../../shared/desktop-contracts.ts'
-import type { PiRuntime } from './types.ts'
 
 const dollarSkillTokenPattern = /(^|\s)\$([\w./-]+)/g
-
-export function mapSessionSkills(session: PiRuntime['session']): ComposerSkillReference[] {
-  return session.resourceLoader.getSkills().skills.map((skill) => ({
-    name: skill.name,
-    description: skill.description,
-    filePath: skill.filePath,
-    sourceInfo: skill.sourceInfo,
-  }))
-}
 
 export function buildSkillReferencePrompt(input: {
   skills: ComposerSkillReference[]
@@ -48,12 +38,5 @@ export function expandDollarSkillReferences(input: {
   return buildSkillReferencePrompt({
     skills,
     userRequest: input.text,
-  })
-}
-
-export function expandRuntimeDollarSkillReferences(runtime: PiRuntime, text: string) {
-  return expandDollarSkillReferences({
-    skills: mapSessionSkills(runtime.session),
-    text,
   })
 }

@@ -36,9 +36,6 @@ const optimisticSettingKeys = new Set([
   'gitDiffIncludeUntrackedDefault',
   'projectDeletionMode',
   'useAgentsSkillsPaths',
-  'devUpdateBranch',
-  'betaUpdateBranch',
-  'piTuiTakeover',
   'hideSidebarSessionCounts',
   'hoverToFocus',
   'hoverToBlur',
@@ -145,10 +142,6 @@ function applyOptimisticBooleanSetting(
   if (directBooleanKeys.includes(payload.key as (typeof directBooleanKeys)[number])) {
     nextSettings[payload.key as (typeof directBooleanKeys)[number]] = payload.value
   }
-  if (payload.key === 'devUpdateBranch' || payload.key === 'betaUpdateBranch') {
-    nextSettings.devUpdateBranch = payload.value
-  }
-  if (payload.key === 'piTuiTakeover') nextSettings.piTuiTakeover = payload.value
   if (payload.key === 'hideSidebarSessionCounts')
     nextSettings.hideSidebarSessionCounts = payload.value
   if (payload.key === 'hoverToFocus') nextSettings.hoverToFocus = payload.value

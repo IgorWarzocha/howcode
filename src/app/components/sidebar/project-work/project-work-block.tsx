@@ -111,7 +111,7 @@ function NonGitProjectBlockThreads({
   project,
   searchQuery,
   selectedThreadId,
-  terminalRunningSessionPaths,
+  terminalRunningConversationIds,
   threads,
   onAction,
   onThreadOpen,
@@ -120,10 +120,10 @@ function NonGitProjectBlockThreads({
   project: Project
   searchQuery: string
   selectedThreadId: string | null
-  terminalRunningSessionPaths: ReadonlySet<string>
+  terminalRunningConversationIds: ReadonlySet<string>
   threads: Thread[]
   onAction: DesktopActionInvoker
-  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
+  onThreadOpen: (projectId: string, threadId: string, conversationId: string) => void
 }) {
   return (
     <div className="sidebar-project-work-thread-list">
@@ -134,7 +134,7 @@ function NonGitProjectBlockThreads({
           currentBranch={null}
           project={project}
           selectedThreadId={selectedThreadId}
-          terminalRunningSessionPaths={terminalRunningSessionPaths}
+          terminalRunningConversationIds={terminalRunningConversationIds}
           thread={thread}
           onAction={onAction}
           onThreadOpen={onThreadOpen}
@@ -213,7 +213,7 @@ export function ProjectWorkSummaryBlock({
   searchQuery,
   selectedProjectId,
   selectedThreadId,
-  terminalRunningSessionPaths,
+  terminalRunningConversationIds,
   threads,
   unassignedCollapsed,
   onAction,
@@ -238,7 +238,7 @@ export function ProjectWorkSummaryBlock({
   searchQuery: string
   selectedProjectId: string
   selectedThreadId: string | null
-  terminalRunningSessionPaths: ReadonlySet<string>
+  terminalRunningConversationIds: ReadonlySet<string>
   threads: Thread[]
   unassignedCollapsed: boolean
   onAction: DesktopActionInvoker
@@ -248,7 +248,7 @@ export function ProjectWorkSummaryBlock({
     updater: (current: Record<string, boolean>) => Record<string, boolean>,
   ) => void
   onShowView: (view: Exclude<View, 'gitops'>) => void
-  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
+  onThreadOpen: (projectId: string, threadId: string, conversationId: string) => void
   onToggleExpanded: () => void
   onToggleUnassigned: () => void
 }) {
@@ -321,7 +321,7 @@ export function ProjectWorkSummaryBlock({
             normalizedSearchQuery={normalizedSearchQuery}
             project={project}
             selectedThreadId={selectedThreadId}
-            terminalRunningSessionPaths={terminalRunningSessionPaths}
+            terminalRunningConversationIds={terminalRunningConversationIds}
             onAction={onAction}
             onSetCollapsedBranchIds={onSetCollapsedBranchIds}
             onThreadOpen={onThreadOpen}
@@ -339,7 +339,7 @@ export function ProjectWorkSummaryBlock({
             hideSessionCounts={hideSessionCounts}
             project={project}
             selectedThreadId={selectedThreadId}
-            terminalRunningSessionPaths={terminalRunningSessionPaths}
+            terminalRunningConversationIds={terminalRunningConversationIds}
             unassignedExpanded={unassignedExpanded}
             unassignedThreads={unassignedThreads}
             worktrees={currentBranchWorktrees}
@@ -362,7 +362,7 @@ export function ProjectWorkSummaryBlock({
           project={project}
           searchQuery={searchQuery}
           selectedThreadId={selectedThreadId}
-          terminalRunningSessionPaths={terminalRunningSessionPaths}
+          terminalRunningConversationIds={terminalRunningConversationIds}
           threads={expanded || searchExpanded ? threads : sortThreads(threads).slice(0, 5)}
           onAction={onAction}
           onThreadOpen={onThreadOpen}

@@ -17,7 +17,7 @@ export function useInboxComposerAutocomplete(
   const slashCommands = useComposerSlashCommands({
     draft: props.reply.draft,
     projectId: props.thread.projectId,
-    sessionPath: props.thread.sessionPath,
+    conversationId: props.thread.conversationId,
     setDraft: input.setDraftValue,
     send: () => void actions.send(),
     composerMode: actions.composerMode,
@@ -27,7 +27,7 @@ export function useInboxComposerAutocomplete(
   const skillMentions = useComposerSkillMentions({
     draft: props.reply.draft,
     projectId: props.thread.projectId,
-    sessionPath: props.thread.sessionPath,
+    conversationId: props.thread.conversationId,
     composerMode: actions.composerMode,
     setDraft: input.setDraftValue,
   })

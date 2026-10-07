@@ -68,7 +68,7 @@ export type DesktopActionPayloadFields = {
   queueMode?: Exclude<ComposerStreamingBehavior | undefined, 'stop'>
   repoUrl?: string | undefined | null | undefined
   reset?: boolean | undefined
-  sessionPath?: string | undefined | null | undefined
+  conversationId?: string | undefined | null | undefined
   shortcut?: string | undefined
   summarize?: boolean | undefined
   streamingBehavior?: ComposerStreamingBehavior
@@ -124,9 +124,6 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'gitDiffIncludeUntrackedDefault'; value: boolean }
   | { key: 'projectDeletionMode'; value: ProjectDeletionMode }
   | { key: 'useAgentsSkillsPaths'; value: boolean }
-  | { key: 'devUpdateBranch'; value: boolean }
-  | { key: 'betaUpdateBranch'; value: boolean }
-  | { key: 'piTuiTakeover'; value: boolean }
   | { key: 'hideSidebarSessionCounts'; value: boolean }
   | { key: 'hoverToFocus'; value: boolean }
   | { key: 'hoverToBlur'; value: boolean }
@@ -144,11 +141,10 @@ export type DesktopActionPayloadMap = {
   }
   'project.select': {
     projectId?: string | undefined | null | undefined
-    sessionPath?: string | undefined | null | undefined
+    conversationId?: string | undefined | null | undefined
   }
   'project.expand': { projectId: string }
   'project.collapse': { projectId: string }
-  'project.open-in-file-manager': { projectId: string }
   'project.pin': { projectId: string }
   'project.edit-name': { projectId: string; projectName: string }
   'project.refresh-repo-origin': { projectId: string }
@@ -163,18 +159,18 @@ export type DesktopActionPayloadMap = {
   'chat.group.collapse': { chatGroupId: string; value: boolean }
   'chat.thread.move': {
     threadId: string
-    sessionPath?: string | undefined | null | undefined
+    conversationId?: string | undefined | null | undefined
     chatGroupId?: string | undefined | null | undefined
   }
   'thread.new': {
     projectId?: string | undefined | null | undefined
-    sessionPath?: string | undefined | null | undefined
+    conversationId?: string | undefined | null | undefined
     chatGroupId?: string | undefined | null | undefined
     branchName?: string | undefined | null | undefined
   }
   'thread.open': {
     projectId?: string | undefined | null | undefined
-    sessionPath?: string | undefined | null | undefined
+    conversationId?: string | undefined | null | undefined
     threadId?: string | undefined
     composerMode?: 'chat' | 'code' | null
     branchName?: string | undefined | null | undefined
@@ -194,12 +190,12 @@ export type DesktopActionPayloadMap = {
   'thread.rename': {
     threadId: string
     projectId?: string | undefined | null | undefined
-    sessionPath?: string | undefined | null | undefined
+    conversationId?: string | undefined | null | undefined
     value: string
   }
   'workspace.commit': {
     projectId?: string | undefined | null | undefined
-    sessionPath?: string | undefined | null | undefined
+    conversationId?: string | undefined | null | undefined
     includeUnstaged?: boolean | undefined
     includeUntracked?: boolean | undefined
     message?: string | undefined | null | undefined
@@ -208,13 +204,13 @@ export type DesktopActionPayloadMap = {
   }
   'workspace.commit-options': {
     projectId?: string | undefined | null | undefined
-    sessionPath?: string | undefined | null | undefined
+    conversationId?: string | undefined | null | undefined
     repoUrl?: string | undefined | null | undefined
     gitOpsMode?: GitOpsMode | null
   }
   'workspace.diff-preferences': {
     projectId?: string | undefined | null | undefined
-    sessionPath?: string | undefined | null | undefined
+    conversationId?: string | undefined | null | undefined
     diffBaseline?: ProjectDiffBaseline | null
     diffRenderMode?: ProjectDiffRenderMode | null
   }
@@ -265,18 +261,18 @@ export type DesktopActionPayloadMap = {
   }
   'composer.model': {
     projectId?: string | undefined | null | undefined
-    sessionPath?: string | undefined | null | undefined
+    conversationId?: string | undefined | null | undefined
     provider: string
     modelId: string
   }
   'composer.thinking': {
     projectId?: string | undefined | null | undefined
-    sessionPath?: string | undefined | null | undefined
+    conversationId?: string | undefined | null | undefined
     level: ComposerThinkingLevel
   }
   'composer.send': {
     projectId?: string | undefined | null | undefined
-    sessionPath?: string | undefined | null | undefined
+    conversationId?: string | undefined | null | undefined
     chatGroupId?: string | undefined | null | undefined
     suppressInbox?: boolean | undefined | null | undefined
     text: string
@@ -285,69 +281,28 @@ export type DesktopActionPayloadMap = {
   }
   'composer.stop': {
     projectId?: string | undefined | null | undefined
-    sessionPath?: string | undefined | null | undefined
+    conversationId?: string | undefined | null | undefined
   }
   'composer.dequeue': {
     projectId?: string | undefined | null | undefined
-    sessionPath?: string | undefined | null | undefined
+    conversationId?: string | undefined | null | undefined
     queueId: string
-    queueSnapshotKey: string
-    queueMode: Exclude<ComposerStreamingBehavior, 'stop'>
   }
   'composer.reload-settings': {
     projectId?: string | undefined | null | undefined
-    sessionPath?: string | undefined | null | undefined
+    conversationId?: string | undefined | null | undefined
   }
-  'composer.answer-pi-extension-dialog': {
+  'composer.conversation.fork': {
     projectId?: string | undefined | null | undefined
-    sessionPath?: string | undefined | null | undefined
-    composerMode?: 'chat' | 'code' | null
-    chatGroupId?: string | undefined | null | undefined
-    requestId: string
-    value?: string | undefined | null
-    confirmed?: boolean | undefined
-    cancelled?: boolean | undefined
-  }
-  'composer.pi-extension-shortcut': {
-    projectId?: string | undefined | null | undefined
-    sessionPath?: string | undefined | null | undefined
-    composerMode?: 'chat' | 'code' | null
-    chatGroupId?: string | undefined | null | undefined
-    editorSelectionEnd?: number | undefined
-    editorSelectionStart?: number | undefined
-    editorText?: string | undefined
-    shortcut: string
-  }
-  'composer.set-project-trust': {
-    projectId?: string | undefined | null | undefined
-    sessionPath?: string | undefined | null | undefined
-    composerMode?: 'chat' | 'code' | null
-    chatGroupId?: string | undefined | null | undefined
-    cwd: string
-    trusted: boolean
-  }
-  'composer.session-tree.label': {
-    projectId?: string | undefined | null | undefined
-    sessionPath?: string | undefined | null | undefined
+    conversationId?: string | undefined | null | undefined
     composerMode?: 'chat' | 'code' | null
     chatGroupId?: string | undefined | null | undefined
     targetEntryId: string
-    label?: string | undefined | null | undefined
   }
-  'composer.session-tree.navigate': {
-    projectId?: string | undefined | null | undefined
-    sessionPath?: string | undefined | null | undefined
-    composerMode?: 'chat' | 'code' | null
-    chatGroupId?: string | undefined | null | undefined
-    targetEntryId: string
-    summarize?: boolean | undefined
-    label?: string | undefined | null | undefined
-  }
-  'inbox.mark-read': { sessionPath: string; projectId?: string | undefined | null | undefined }
-  'inbox.dismiss': { sessionPath: string; projectId?: string | undefined | null | undefined }
+  'inbox.mark-read': { conversationId: string; projectId?: string | undefined | null | undefined }
+  'inbox.dismiss': { conversationId: string; projectId?: string | undefined | null | undefined }
   'inbox.clear-read': { olderThanDays?: number | undefined | null | undefined }
   'settings.update': DesktopSettingsUpdatePayload
-  'settings.clear-clipboard-images': EmptyActionPayload
   'pi-settings.update': {
     piSettingsKey: keyof PiSettings
     value: string | number | boolean | string[]
@@ -370,11 +325,9 @@ export type DesktopActionResultData = {
   committed?: boolean | undefined
   composer?: ComposerState
   composerSendOutcome?: 'sent' | 'stopped'
-  composerSendSessionPath?: string | undefined | null | undefined
+  composerSendConversationId?: string | undefined | null | undefined
   composerSendThreadId?: string | undefined | null | undefined
-  sessionTreeNavigateCancelled?: boolean | undefined
-  sessionTreeNavigateEditorText?: string | undefined | null | undefined
-  dequeuedText?: string | undefined | null | undefined
+  queueCancelOutcome?: 'aborted' | 'already_placed' | 'already_settled'
   deletedThreadIds?: string[] | undefined
   didMutate?: boolean | undefined
   error?: string | undefined
@@ -401,7 +354,7 @@ export type DesktopActionResultData = {
   pushed?: boolean | undefined
   pushFailed?: boolean | undefined
   repoProjectCount?: number | undefined
-  sessionPath?: string | undefined | null | undefined
+  conversationId?: string | undefined | null | undefined
   title?: string | undefined
   threadId?: string | undefined
   worktreeRemoved?: boolean | undefined

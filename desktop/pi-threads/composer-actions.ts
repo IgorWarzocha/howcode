@@ -6,36 +6,20 @@ import {
   getComposerAttachments,
   getComposerModelSelection,
   getComposerQueueId,
-  getComposerQueueMode,
-  getComposerQueueSnapshotKey,
   getComposerRequest,
   getComposerStreamingBehavior,
   getComposerText,
   getComposerThinkingLevel,
-  getPiExtensionDialogAnswer,
-  getPiExtensionEditorState,
-  getPiExtensionRequestId,
-  getPiExtensionShortcut,
-  getProjectTrustCwd,
-  getProjectTrustDecision,
-  getSessionTreeLabel,
-  getSessionTreeNavigate,
+  getConversationFork,
 } from '../../shared/pi-thread-action-payloads.ts'
 import {
-  answerPiExtensionDialog,
   dequeueComposerPrompt,
-  disposeWorkspaceComposerRuns,
-  invokePiExtensionShortcut,
-  labelSessionTreeEntry,
-  navigateSessionTree,
-  refreshComposerAfterProjectTrust,
+  forkConversation,
   sendComposerPrompt,
   setComposerModel,
   setComposerThinkingLevel,
-  setProjectTrust,
   stopComposerRun,
 } from '../pi-desktop-runtime.ts'
-import { invalidateRuntimeHostSettings } from '../runtime-host/client-bridge.ts'
 import { assignThreadBranch, dismissInboxThreadAfterReply } from '../thread-state-db.ts'
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
@@ -72,13 +56,13 @@ async function sendComposerPromptFromPayload(payload: AnyDesktopActionPayload) {
   })
   if (
     payload.suppressInbox === true &&
-    composerRequest.sessionPath &&
-    composerSendResult.sessionPath &&
+    composerRequest.conversationId &&
+    composerSendResult.conversationId &&
     composerSendResult.threadId &&
     composerSendResult.outcome === 'sent' &&
     !isCompactSlashCommand(text)
   ) {
-    dismissInboxThreadAfterReply(composerRequest.sessionPath)
+    dismissInboxThreadAfterReply(composerRequest.conversationId)
   }
   const branchName = getBranchName(payload) ?? composerRequest.branchName?.trim()
   if (composerSendResult.threadId && branchName) {
@@ -86,109 +70,25 @@ async function sendComposerPromptFromPayload(payload: AnyDesktopActionPayload) {
   }
   return handledAction({
     composerSendOutcome: composerSendResult.outcome,
-    composerSendSessionPath: composerSendResult.sessionPath,
+    composerSendConversationId: composerSendResult.conversationId,
     composerSendThreadId: composerSendResult.threadId,
   })
 }
 
 async function dequeueComposerPromptFromPayload(payload: AnyDesktopActionPayload) {
   const queueId = getComposerQueueId(payload)
-  const queueMode = getComposerQueueMode(payload)
-  const queueSnapshotKey = getComposerQueueSnapshotKey(payload)
-
-  if (!(queueId && queueMode && queueSnapshotKey)) return handledAction()
-
-  const dequeuedText = await dequeueComposerPrompt({
+  if (!queueId) return handledAction()
+  const queueCancelOutcome = await dequeueComposerPrompt({
     ...getComposerRequest(payload),
     queueId,
-    queueSnapshotKey,
-    queueMode,
   })
-
-  return handledAction({ dequeuedText })
+  return handledAction({ queueCancelOutcome })
 }
 
-async function invokePiExtensionShortcutFromPayload(payload: AnyDesktopActionPayload) {
-  const shortcut = getPiExtensionShortcut(payload)
-  if (!shortcut) return handledAction()
-  const result = await invokePiExtensionShortcut({
-    ...getComposerRequest(payload),
-    ...getPiExtensionEditorState(payload),
-    shortcut,
-  })
-  return result.ok
-    ? handledAction({
-        editorSelectionEnd: result.editorSelectionEnd,
-        editorSelectionStart: result.editorSelectionStart,
-        editorText: result.editorText,
-      })
-    : handledAction({ error: 'Could not run Pi extension shortcut.' })
-}
-
-async function answerPiExtensionDialogFromPayload(payload: AnyDesktopActionPayload) {
-  const requestId = getPiExtensionRequestId(payload)
-  if (!requestId) return handledAction()
-  const result = await answerPiExtensionDialog({
-    ...getComposerRequest(payload),
-    requestId,
-    ...getPiExtensionDialogAnswer(payload),
-  })
-  return result?.ok
-    ? handledAction()
-    : handledAction({ error: 'Could not answer extension UI request.' })
-}
-
-async function setProjectTrustFromPayload(payload: AnyDesktopActionPayload) {
-  const trusted = getProjectTrustDecision(payload)
-  const cwd = getProjectTrustCwd(payload)
-  const composerRequest = getComposerRequest(payload)
-  if (trusted === null || !cwd) return handledAction()
-
-  await setProjectTrust({ ...composerRequest, cwd, trusted })
-  await disposeWorkspaceComposerRuns({
-    projectPath: cwd,
-    sessionPaths: composerRequest.sessionPath ? [composerRequest.sessionPath] : [],
-  })
-  const composer = await refreshComposerAfterProjectTrust(composerRequest)
-  return handledAction({ composer })
-}
-
-async function navigateSessionTreeFromPayload(payload: AnyDesktopActionPayload) {
-  const navigate = getSessionTreeNavigate(payload)
-  if (!navigate) return handledAction({ error: 'Session tree entry is required.' })
-  try {
-    const result = await navigateSessionTree({
-      ...getComposerRequest(payload),
-      targetEntryId: navigate.targetEntryId,
-      summarize: navigate.summarize,
-      label: navigate.label,
-    })
-    if (result.cancelled) return handledAction({ sessionTreeNavigateCancelled: true })
-    return handledAction({
-      ...(result.editorText === undefined
-        ? {}
-        : { sessionTreeNavigateEditorText: result.editorText }),
-    })
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    return handledAction({ error: message })
-  }
-}
-
-async function labelSessionTreeEntryFromPayload(payload: AnyDesktopActionPayload) {
-  const labelRequest = getSessionTreeLabel(payload)
-  if (!labelRequest) return handledAction({ error: 'Session tree entry is required.' })
-  try {
-    await labelSessionTreeEntry({
-      ...getComposerRequest(payload),
-      targetEntryId: labelRequest.targetEntryId,
-      label: labelRequest.label,
-    })
-    return handledAction()
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    return handledAction({ error: message })
-  }
+async function forkConversationFromPayload(payload: AnyDesktopActionPayload) {
+  const fork = getConversationFork(payload)
+  if (!fork) return handledAction({ error: 'Conversation entry is required.' })
+  return handledAction(await forkConversation({ ...getComposerRequest(payload), ...fork }))
 }
 
 const composerActionHandlers = {
@@ -209,15 +109,7 @@ const composerActionHandlers = {
     return handledAction()
   },
   'composer.dequeue': dequeueComposerPromptFromPayload,
-  'composer.reload-settings': async (payload) => {
-    await invalidateRuntimeHostSettings({ sessionPath: getComposerRequest(payload).sessionPath })
-    return handledAction()
-  },
-  'composer.answer-pi-extension-dialog': answerPiExtensionDialogFromPayload,
-  'composer.pi-extension-shortcut': invokePiExtensionShortcutFromPayload,
-  'composer.set-project-trust': setProjectTrustFromPayload,
-  'composer.session-tree.label': labelSessionTreeEntryFromPayload,
-  'composer.session-tree.navigate': navigateSessionTreeFromPayload,
+  'composer.conversation.fork': forkConversationFromPayload,
 } satisfies Partial<Record<DesktopAction, ComposerActionHandler>>
 
 export async function handleComposerDesktopAction(

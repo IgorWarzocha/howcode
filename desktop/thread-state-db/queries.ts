@@ -1,14 +1,7 @@
-import path from 'node:path'
 import { Effect } from 'effect'
-import * as SqlClient from 'effect/unstable/sql/SqlClient'
+import * as SqlClient from 'effect/sql/SqlClient'
 import type { ProjectDiffBaseline, ProjectDiffPreferences } from '../../shared/desktop-contracts.ts'
-import {
-  getEffectiveThreadRunningState,
-  sortInboxThreadsByPriority,
-} from '../../shared/thread-running-state.ts'
-import { getChatSessionDir } from '../chat-session-dir.ts'
-import { isChatSessionPath } from '../chat-state-db.ts'
-import { getLiveThread } from '../runtime/live-thread-store.ts'
+import { sortInboxThreadsByPriority } from '../../shared/thread-running-state.ts'
 import { mapArchivedThreadRow, mapInboxThreadRow, mapProjectRow, mapThreadRow } from './mappers.ts'
 import { ensureProject } from './project-writes.ts'
 import {
@@ -19,26 +12,20 @@ import {
   ThreadRowSchema,
 } from './row-schema.ts'
 import type {
-  InboxPathRow,
   ProjectUsageTotalsRow,
-  ThreadAssistantSnapshotRow,
   ThreadCwdRow,
-  ThreadDeletionSnapshotRow,
   ThreadDiffPreferencesRow,
   ThreadPathRow,
 } from './types.ts'
 
 function matchesThreadScope(
-  row: { branchName?: string | null | undefined; sessionPath: string },
-  options: { chat?: boolean | undefined } = {},
+  row: { branchName?: string | null | undefined; conversationId: string },
+  options: { chat?: boolean | undefined },
+  chatIds: Set<string>,
 ) {
-  const isChat = isChatSessionPath(row.sessionPath)
+  const isChat = chatIds.has(row.conversationId)
   if (options.chat) return isChat && !row.branchName?.trim()
   return !isChat || Boolean(row.branchName?.trim())
-}
-
-function getChatSessionLikePattern() {
-  return `${getChatSessionDir() + path.sep}%`
 }
 
 export const listProjects = Effect.fn('threadStateDb.listProjects')(function* (cwd: string) {
@@ -64,33 +51,32 @@ export const listProjects = Effect.fn('threadStateDb.listProjects')(function* (c
           project_worktrees.source AS worktreeSource,
           project_worktrees.completed AS worktreeCompleted,
           project_worktree_settings.worktree_dir AS worktreeDirectory,
-          COUNT(threads.id) AS threadCount,
-          COALESCE(MAX(threads.last_modified_ms), 0) AS latestModifiedMs
+          COUNT(conversation_facts.id) AS threadCount,
+          COALESCE(MAX(conversation_facts.last_modified_ms), 0) AS latestModifiedMs
         FROM projects
         LEFT JOIN project_worktrees
           ON project_worktrees.cwd = projects.cwd
         LEFT JOIN project_worktree_settings
           ON project_worktree_settings.root_cwd = COALESCE(project_worktrees.root_cwd, projects.cwd)
-        LEFT JOIN threads
-          ON threads.cwd = projects.cwd
-          AND threads.archived = 0
+        LEFT JOIN conversation_facts
+          ON conversation_facts.cwd = projects.cwd
+          AND conversation_facts.deleted = 0 AND conversation_facts.archived = 0
           AND (
             (
-              threads.branch_name IS NOT NULL
-              AND TRIM(threads.branch_name) != ''
+              conversation_facts.branch_name IS NOT NULL
+              AND TRIM(conversation_facts.branch_name) != ''
             )
             OR EXISTS (
               SELECT 1
               FROM project_worktrees AS thread_worktrees
-              WHERE thread_worktrees.cwd = threads.cwd
+              WHERE thread_worktrees.cwd = conversation_facts.cwd
                 AND thread_worktrees.is_main = 0
                 AND thread_worktrees.branch_name IS NOT NULL
                 AND TRIM(thread_worktrees.branch_name) != ''
             )
             OR (
-              threads.session_path NOT LIKE ?
-              AND NOT EXISTS (
-                SELECT 1 FROM chat_threads WHERE chat_threads.session_path = threads.session_path
+              NOT EXISTS (
+                SELECT 1 FROM chat_conversations WHERE chat_conversations.conversation_id = conversation_facts.conversation_id
               )
             )
           )
@@ -115,7 +101,7 @@ export const listProjects = Effect.fn('threadStateDb.listProjects')(function* (c
           latestModifiedMs DESC,
           projects.name COLLATE NOCASE ASC
       `,
-      [getChatSessionLikePattern()],
+      [],
     ),
     'project',
   )
@@ -140,20 +126,18 @@ export const hasProject = Effect.fn('threadStateDb.hasProject')(function* (proje
 export const hasRunningProjectThread = Effect.fn('threadStateDb.hasRunningProjectThread')(
   function* (projectId: string) {
     const sql = yield* SqlClient.SqlClient
-    const rows = yield* sql.unsafe<{ sessionPath: string; running: number }>(
+    const rows = yield* sql.unsafe<{ conversationId: string; running: number }>(
       `
         SELECT
-          session_path AS sessionPath,
+          conversation_id AS conversationId,
           running AS running
-        FROM threads
-        WHERE cwd = ?
+        FROM conversation_facts
+        WHERE cwd = ? AND deleted = 0
       `,
       [projectId],
     )
 
-    return rows.some((row) =>
-      getEffectiveThreadRunningState(row.running, getLiveThread(row.sessionPath)),
-    )
+    return rows.some((row) => Boolean(row.running))
   },
 )
 
@@ -217,17 +201,17 @@ function parseNamedDiffBaseline(
 }
 
 export const getThreadDiffPreferences = Effect.fn('threadStateDb.getThreadDiffPreferences')(
-  function* (sessionPath: string) {
+  function* (conversationId: string) {
     const sql = yield* SqlClient.SqlClient
     const row = (yield* sql.unsafe<ThreadDiffPreferencesRow>(
       `
         SELECT
           diff_baseline_json AS diffBaselineJson,
           diff_render_mode AS diffRenderMode
-        FROM threads
-        WHERE session_path = ?
+        FROM conversation_facts
+        WHERE conversation_id = ?
       `,
-      [sessionPath],
+      [conversationId],
     ))[0]
     const renderMode = row?.diffRenderMode
 
@@ -244,25 +228,30 @@ export const listProjectThreads = Effect.fn('threadStateDb.listProjectThreads')(
   options: { chat?: boolean | undefined } = {},
 ) {
   const sql = yield* SqlClient.SqlClient
+  const chatIds = new Set(
+    (yield* sql<{ id: string }>`SELECT conversation_id AS id FROM chat_conversations`).map(
+      (row) => row.id,
+    ),
+  )
   const rows = decodePersistedRows(
     ThreadRowSchema,
     yield* sql.unsafe(
       `
         SELECT
-          threads.id AS id,
-          threads.title AS title,
-          threads.session_path AS sessionPath,
-          COALESCE(inbox_items.last_assistant_preview, threads.last_assistant_preview) AS summary,
-          threads.running AS running,
-          COALESCE(inbox_items.unread, 0) AS unread,
-          threads.pinned AS pinned,
-          COALESCE(NULLIF(TRIM(threads.branch_name), ''), project_worktrees.branch_name) AS branchName,
-          threads.last_modified_ms AS lastModifiedMs
-        FROM threads
-        LEFT JOIN inbox_items ON inbox_items.session_path = threads.session_path
-        LEFT JOIN project_worktrees ON project_worktrees.cwd = threads.cwd AND project_worktrees.is_main = 0
-        WHERE threads.cwd = ? AND threads.archived = 0
-        ORDER BY threads.pinned DESC, threads.last_modified_ms DESC, threads.title COLLATE NOCASE ASC
+          conversation_facts.id AS id,
+          conversation_facts.title AS title,
+          conversation_facts.conversation_id AS conversationId,
+          conversation_facts.last_assistant_preview AS summary,
+          conversation_facts.running AS running,
+          COALESCE(conversation_inbox.unread, 0) AS unread,
+          conversation_facts.pinned AS pinned,
+          COALESCE(NULLIF(TRIM(conversation_facts.branch_name), ''), project_worktrees.branch_name) AS branchName,
+          conversation_facts.last_modified_ms AS lastModifiedMs
+        FROM conversation_facts
+        LEFT JOIN conversation_inbox ON conversation_inbox.conversation_id = conversation_facts.conversation_id
+        LEFT JOIN project_worktrees ON project_worktrees.cwd = conversation_facts.cwd AND project_worktrees.is_main = 0
+        WHERE conversation_facts.deleted = 0 AND conversation_facts.cwd = ? AND conversation_facts.archived = 0
+        ORDER BY conversation_facts.pinned DESC, conversation_facts.last_modified_ms DESC, conversation_facts.title COLLATE NOCASE ASC
       `,
       [projectId],
     ),
@@ -270,41 +259,37 @@ export const listProjectThreads = Effect.fn('threadStateDb.listProjectThreads')(
   )
 
   return rows.flatMap((row) =>
-    matchesThreadScope(row, options)
-      ? [
-          mapThreadRow({
-            ...row,
-            running: getEffectiveThreadRunningState(row.running, getLiveThread(row.sessionPath))
-              ? 1
-              : 0,
-          }),
-        ]
-      : [],
+    matchesThreadScope(row, options, chatIds) ? [mapThreadRow(row)] : [],
   )
 })
 
 export const listArchivedProjectThreads = Effect.fn('threadStateDb.listArchivedProjectThreads')(
   function* (projectId: string, options: { chat?: boolean | undefined } = {}) {
     const sql = yield* SqlClient.SqlClient
+    const chatIds = new Set(
+      (yield* sql<{ id: string }>`SELECT conversation_id AS id FROM chat_conversations`).map(
+        (row) => row.id,
+      ),
+    )
     const rows = decodePersistedRows(
       ThreadRowSchema,
       yield* sql.unsafe(
         `
         SELECT
-          threads.id AS id,
-          threads.title AS title,
-          threads.session_path AS sessionPath,
-          COALESCE(inbox_items.last_assistant_preview, threads.last_assistant_preview) AS summary,
-          threads.running AS running,
-          COALESCE(inbox_items.unread, 0) AS unread,
-          threads.pinned AS pinned,
-          COALESCE(NULLIF(TRIM(threads.branch_name), ''), project_worktrees.branch_name) AS branchName,
-          threads.last_modified_ms AS lastModifiedMs
-        FROM threads
-        LEFT JOIN inbox_items ON inbox_items.session_path = threads.session_path
-        LEFT JOIN project_worktrees ON project_worktrees.cwd = threads.cwd AND project_worktrees.is_main = 0
-        WHERE threads.cwd = ? AND threads.archived = 1
-        ORDER BY threads.last_modified_ms DESC, threads.title COLLATE NOCASE ASC
+          conversation_facts.id AS id,
+          conversation_facts.title AS title,
+          conversation_facts.conversation_id AS conversationId,
+          conversation_facts.last_assistant_preview AS summary,
+          conversation_facts.running AS running,
+          COALESCE(conversation_inbox.unread, 0) AS unread,
+          conversation_facts.pinned AS pinned,
+          COALESCE(NULLIF(TRIM(conversation_facts.branch_name), ''), project_worktrees.branch_name) AS branchName,
+          conversation_facts.last_modified_ms AS lastModifiedMs
+        FROM conversation_facts
+        LEFT JOIN conversation_inbox ON conversation_inbox.conversation_id = conversation_facts.conversation_id
+        LEFT JOIN project_worktrees ON project_worktrees.cwd = conversation_facts.cwd AND project_worktrees.is_main = 0
+        WHERE conversation_facts.deleted = 0 AND conversation_facts.cwd = ? AND conversation_facts.archived = 1
+        ORDER BY conversation_facts.last_modified_ms DESC, conversation_facts.title COLLATE NOCASE ASC
       `,
         [projectId],
       ),
@@ -312,16 +297,7 @@ export const listArchivedProjectThreads = Effect.fn('threadStateDb.listArchivedP
     )
 
     return rows.flatMap((row) =>
-      matchesThreadScope(row, options)
-        ? [
-            mapThreadRow({
-              ...row,
-              running: getEffectiveThreadRunningState(row.running, getLiveThread(row.sessionPath))
-                ? 1
-                : 0,
-            }),
-          ]
-        : [],
+      matchesThreadScope(row, options, chatIds) ? [mapThreadRow(row)] : [],
     )
   },
 )
@@ -333,47 +309,36 @@ export const listInboxThreads = Effect.fn('threadStateDb.listInboxThreads')(func
     yield* sql.unsafe(
       `
         SELECT
-          threads.id AS threadId,
-          threads.title AS title,
-          threads.cwd AS projectId,
+          conversation_facts.id AS threadId,
+          conversation_facts.title AS title,
+          conversation_facts.cwd AS projectId,
           COALESCE(projects.custom_name, projects.name) AS projectName,
-          threads.session_path AS sessionPath,
-          inbox_items.last_user_prompt AS lastUserPrompt,
-          inbox_items.last_assistant_message_json AS lastAssistantMessageJson,
-          inbox_items.last_assistant_preview AS lastAssistantPreview,
-          threads.running AS running,
-          inbox_items.unread AS unread,
-          COALESCE(NULLIF(TRIM(threads.branch_name), ''), project_worktrees.branch_name) AS branchName,
-          COALESCE(inbox_items.last_assistant_at_ms, threads.last_modified_ms) AS lastActivityMs,
-          CASE WHEN chat_threads.session_path IS NULL THEN 0 ELSE 1 END AS isChat
-        FROM inbox_items
-        INNER JOIN threads ON threads.session_path = inbox_items.session_path
-        INNER JOIN projects ON projects.cwd = threads.cwd
-        LEFT JOIN project_worktrees ON project_worktrees.cwd = threads.cwd AND project_worktrees.is_main = 0
-        LEFT JOIN chat_threads ON chat_threads.session_path = threads.session_path
+          conversation_facts.conversation_id AS conversationId,
+          conversation_facts.last_assistant_preview AS lastAssistantPreview,
+          conversation_facts.running AS running,
+          conversation_inbox.unread AS unread,
+          COALESCE(NULLIF(TRIM(conversation_facts.branch_name), ''), project_worktrees.branch_name) AS branchName,
+          COALESCE(conversation_facts.last_assistant_at_ms, conversation_facts.last_modified_ms) AS lastActivityMs,
+          CASE WHEN chat_conversations.conversation_id IS NULL THEN 0 ELSE 1 END AS isChat
+        FROM conversation_inbox
+        INNER JOIN conversation_facts ON conversation_facts.conversation_id = conversation_inbox.conversation_id
+        INNER JOIN projects ON projects.cwd = conversation_facts.cwd
+        LEFT JOIN project_worktrees ON project_worktrees.cwd = conversation_facts.cwd AND project_worktrees.is_main = 0
+        LEFT JOIN chat_conversations ON chat_conversations.conversation_id = conversation_facts.conversation_id
         WHERE
-          projects.hidden = 0
-          AND threads.archived = 0
+          conversation_facts.deleted = 0 AND projects.hidden = 0
+          AND conversation_inbox.dismissed = 0 AND conversation_facts.archived = 0
         ORDER BY
-          inbox_items.unread DESC,
-          threads.running DESC,
-          COALESCE(inbox_items.last_assistant_at_ms, threads.last_modified_ms) DESC,
-          threads.title COLLATE NOCASE ASC
+          conversation_inbox.unread DESC,
+          conversation_facts.running DESC,
+          COALESCE(conversation_facts.last_assistant_at_ms, conversation_facts.last_modified_ms) DESC,
+          conversation_facts.title COLLATE NOCASE ASC
       `,
     ),
     'inbox thread',
   )
 
-  return sortInboxThreadsByPriority(
-    rows.map((row) =>
-      mapInboxThreadRow({
-        ...row,
-        running: getEffectiveThreadRunningState(row.running, getLiveThread(row.sessionPath))
-          ? 1
-          : 0,
-      }),
-    ),
-  )
+  return sortInboxThreadsByPriority(rows.map((row) => mapInboxThreadRow(row)))
 })
 
 export const listArchivedThreads = Effect.fn('threadStateDb.listArchivedThreads')(function* () {
@@ -383,18 +348,18 @@ export const listArchivedThreads = Effect.fn('threadStateDb.listArchivedThreads'
     yield* sql.unsafe(
       `
         SELECT
-          threads.id AS id,
-          threads.title AS title,
-          threads.session_path AS sessionPath,
-          threads.cwd AS projectId,
+          conversation_facts.id AS id,
+          conversation_facts.title AS title,
+          conversation_facts.conversation_id AS conversationId,
+          conversation_facts.cwd AS projectId,
           COALESCE(projects.custom_name, projects.name) AS projectName,
-          threads.last_modified_ms AS lastModifiedMs,
-          CASE WHEN chat_threads.session_path IS NULL THEN 0 ELSE 1 END AS isChat
-        FROM threads
-        INNER JOIN projects ON projects.cwd = threads.cwd
-        LEFT JOIN chat_threads ON chat_threads.session_path = threads.session_path
-        WHERE threads.archived = 1
-        ORDER BY threads.last_modified_ms DESC, threads.title COLLATE NOCASE ASC
+          conversation_facts.last_modified_ms AS lastModifiedMs,
+          CASE WHEN chat_conversations.conversation_id IS NULL THEN 0 ELSE 1 END AS isChat
+        FROM conversation_facts
+        INNER JOIN projects ON projects.cwd = conversation_facts.cwd
+        LEFT JOIN chat_conversations ON chat_conversations.conversation_id = conversation_facts.conversation_id
+        WHERE conversation_facts.deleted = 0 AND conversation_facts.archived = 1
+        ORDER BY conversation_facts.last_modified_ms DESC, conversation_facts.title COLLATE NOCASE ASC
       `,
     ),
     'archived thread',
@@ -403,32 +368,32 @@ export const listArchivedThreads = Effect.fn('threadStateDb.listArchivedThreads'
   return rows.map(mapArchivedThreadRow)
 })
 
-export const listProjectSessionPaths = Effect.fn('threadStateDb.listProjectSessionPaths')(
+export const listProjectConversationIds = Effect.fn('threadStateDb.listProjectConversationIds')(
   function* (projectId: string) {
     const sql = yield* SqlClient.SqlClient
     const rows = yield* sql.unsafe<ThreadPathRow>(
       `
-        SELECT session_path AS sessionPath
-        FROM threads
+        SELECT conversation_id AS conversationId
+        FROM conversation_facts
         WHERE cwd = ?
       `,
       [projectId],
     )
 
-    return rows.map((row) => row.sessionPath)
+    return rows.map((row) => row.conversationId)
   },
 )
 
-export const listProjectFamilySessionPaths = Effect.fn(
-  'threadStateDb.listProjectFamilySessionPaths',
+export const listProjectFamilyConversationIds = Effect.fn(
+  'threadStateDb.listProjectFamilyConversationIds',
 )(function* (projectId: string) {
   const sql = yield* SqlClient.SqlClient
   const rows = yield* sql.unsafe<ThreadPathRow>(
     `
-        SELECT threads.session_path AS sessionPath
-        FROM threads
-        WHERE threads.cwd = ?
-          OR threads.cwd IN (
+        SELECT conversation_facts.conversation_id AS conversationId
+        FROM conversation_facts
+        WHERE conversation_facts.deleted = 0 AND conversation_facts.cwd = ?
+          OR conversation_facts.cwd IN (
             SELECT cwd
             FROM project_worktrees
             WHERE root_cwd = ? AND is_main = 0
@@ -437,7 +402,7 @@ export const listProjectFamilySessionPaths = Effect.fn(
     [projectId, projectId],
   )
 
-  return rows.map((row) => row.sessionPath)
+  return rows.map((row) => row.conversationId)
 })
 
 export const listProjectFamilyProjectIds = Effect.fn('threadStateDb.listProjectFamilyProjectIds')(
@@ -461,22 +426,21 @@ export const listProjectFamilyProjectIds = Effect.fn('threadStateDb.listProjectF
   },
 )
 
-export const listBranchSessionPaths = Effect.fn('threadStateDb.listBranchSessionPaths')(function* (
-  projectId: string,
-  branchName: string,
-) {
-  const sql = yield* SqlClient.SqlClient
-  const rows = yield* sql.unsafe<ThreadPathRow>(
-    `
-        SELECT session_path AS sessionPath
-        FROM threads
+export const listBranchConversationIds = Effect.fn('threadStateDb.listBranchConversationIds')(
+  function* (projectId: string, branchName: string) {
+    const sql = yield* SqlClient.SqlClient
+    const rows = yield* sql.unsafe<ThreadPathRow>(
+      `
+        SELECT conversation_id AS conversationId
+        FROM conversation_facts
         WHERE cwd = ? AND branch_name = ?
       `,
-    [projectId, branchName],
-  )
+      [projectId, branchName],
+    )
 
-  return rows.map((row) => row.sessionPath)
-})
+    return rows.map((row) => row.conversationId)
+  },
+)
 
 export const listBranchThreadIds = Effect.fn('threadStateDb.listBranchThreadIds')(function* (
   projectId: string,
@@ -485,8 +449,8 @@ export const listBranchThreadIds = Effect.fn('threadStateDb.listBranchThreadIds'
   const sql = yield* SqlClient.SqlClient
   const rows = yield* sql.unsafe<ThreadPathRow>(
     `
-        SELECT id AS id, session_path AS sessionPath
-        FROM threads
+        SELECT id AS id, conversation_id AS conversationId
+        FROM conversation_facts
         WHERE cwd = ? AND branch_name = ?
       `,
     [projectId, branchName],
@@ -501,13 +465,13 @@ export const listProjectFamilyBranchThreadIds = Effect.fn(
   const sql = yield* SqlClient.SqlClient
   const rows = yield* sql.unsafe<ThreadPathRow>(
     `
-        SELECT id AS id, session_path AS sessionPath
-        FROM threads
-        LEFT JOIN project_worktrees ON project_worktrees.cwd = threads.cwd AND project_worktrees.is_main = 0
-        WHERE COALESCE(NULLIF(TRIM(threads.branch_name), ''), project_worktrees.branch_name) = ?
+        SELECT id AS id, conversation_id AS conversationId
+        FROM conversation_facts
+        LEFT JOIN project_worktrees ON project_worktrees.cwd = conversation_facts.cwd AND project_worktrees.is_main = 0
+        WHERE COALESCE(NULLIF(TRIM(conversation_facts.branch_name), ''), project_worktrees.branch_name) = ?
           AND (
-            threads.cwd = ?
-            OR threads.cwd IN (
+            conversation_facts.cwd = ?
+            OR conversation_facts.cwd IN (
               SELECT cwd
               FROM project_worktrees
               WHERE root_cwd = ? AND is_main = 0
@@ -526,8 +490,8 @@ export const listProjectThreadIds = Effect.fn('threadStateDb.listProjectThreadId
   const sql = yield* SqlClient.SqlClient
   const rows = yield* sql.unsafe<ThreadPathRow>(
     `
-        SELECT id AS id, session_path AS sessionPath
-        FROM threads
+        SELECT id AS id, conversation_id AS conversationId
+        FROM conversation_facts
         WHERE cwd = ?
       `,
     [projectId],
@@ -561,92 +525,34 @@ export const getProjectStoredUsageTotals = Effect.fn('threadStateDb.getProjectSt
   },
 )
 
-export const getThreadSessionPath = Effect.fn('threadStateDb.getThreadSessionPath')(function* (
-  threadId: string,
-) {
-  const sql = yield* SqlClient.SqlClient
-  const row = (yield* sql.unsafe<ThreadPathRow>(
-    `
-        SELECT session_path AS sessionPath
-        FROM threads
-        WHERE id = ?
-      `,
-    [threadId],
-  ))[0]
-
-  return row?.sessionPath ?? null
-})
-
-export const getThreadDeletionSnapshot = Effect.fn('threadStateDb.getThreadDeletionSnapshot')(
+export const getThreadConversationId = Effect.fn('threadStateDb.getThreadConversationId')(
   function* (threadId: string) {
     const sql = yield* SqlClient.SqlClient
-    const row = (yield* sql.unsafe<ThreadDeletionSnapshotRow>(
+    const row = (yield* sql.unsafe<ThreadPathRow>(
       `
-        SELECT
-          cwd AS cwd,
-          title AS title,
-          session_path AS sessionPath,
-          last_modified_ms AS lastModifiedMs
-        FROM threads
+        SELECT conversation_id AS conversationId
+        FROM conversation_facts
         WHERE id = ?
       `,
       [threadId],
     ))[0]
 
-    return row ?? null
+    return row?.conversationId ?? null
   },
 )
 
 export const getThreadCwd = Effect.fn('threadStateDb.getThreadCwd')(function* (
-  sessionPath: string,
+  conversationId: string,
 ) {
   const sql = yield* SqlClient.SqlClient
   const row = (yield* sql.unsafe<ThreadCwdRow>(
     `
         SELECT cwd
-        FROM threads
-        WHERE session_path = ?
+        FROM conversation_facts
+        WHERE conversation_id = ?
       `,
-    [sessionPath],
+    [conversationId],
   ))[0]
 
   return row?.cwd ?? null
 })
-
-export const hasInboxItem = Effect.fn('threadStateDb.hasInboxItem')(function* (
-  sessionPath: string,
-) {
-  const sql = yield* SqlClient.SqlClient
-  const row = (yield* sql.unsafe<InboxPathRow>(
-    `
-        SELECT session_path AS sessionPath
-        FROM inbox_items
-        WHERE session_path = ?
-      `,
-    [sessionPath],
-  ))[0]
-
-  return Boolean(row?.sessionPath)
-})
-
-export const getThreadAssistantSnapshot = Effect.fn('threadStateDb.getThreadAssistantSnapshot')(
-  function* (sessionPath: string) {
-    const sql = yield* SqlClient.SqlClient
-    const row = (yield* sql.unsafe<ThreadAssistantSnapshotRow>(
-      `
-        SELECT
-          last_assistant_message_json AS messageJson,
-          last_assistant_preview AS preview
-        FROM threads
-        WHERE session_path = ?
-      `,
-      [sessionPath],
-    ))[0]
-
-    if (!row?.messageJson) {
-      return null
-    }
-
-    return row
-  },
-)

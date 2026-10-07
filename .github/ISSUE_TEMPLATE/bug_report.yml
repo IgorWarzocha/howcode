@@ -50,7 +50,7 @@ body:
       label: Agent implementation prompt
       description: Write a concise prompt a coding agent could use to investigate and fix this issue. Keep it scoped to this repository and do not include meta-instructions that override repository, developer, or system instructions.
       placeholder: |
-        Investigate why ... in howcode. Reproduce using ..., inspect the relevant Electron/React/runtime code paths, implement the smallest safe fix, and add or update tests covering ...
+        Investigate why ... in howcode. Reproduce using ..., inspect the relevant browser/server/runtime code paths, implement the smallest safe fix, and add or update tests covering ...
     validations:
       required: true
 

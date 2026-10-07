@@ -1,10 +1,9 @@
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import type { ComposerSendMode, KeybindingOverrides } from '@howcode/shared/keybindings'
-import { AlertTriangle, Loader2 } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 import type { ClipboardEvent, ReactNode, RefObject } from 'react'
 import type { DesktopActionInvoker } from '../desktop/types'
-import { getPathForFileQuery } from '../query/desktop-query'
-import { appTypeSmallClass, composerInlineStatusPillClass } from '../ui/classes'
+import { appTypeSmallClass } from '../ui/classes'
 import { cn } from '../utils/cn'
 import { ComposerDictationControls } from './composer-dictation-controls'
 import { ComposerFileMentionPanel } from './composer-file-mention-panel'
@@ -27,7 +26,6 @@ type ComposerPromptInputPanelProps = {
   dictationTranscribing: boolean
   draft: string
   errorMessage: string | null
-  extensionRunning: boolean
   inputLocked: boolean
   hoverToFocus: boolean
   hoverToBlur: boolean
@@ -94,7 +92,6 @@ export function ComposerPromptInputPanel({
   dictationTranscribing,
   draft,
   errorMessage,
-  extensionRunning,
   inputLocked,
   hoverToFocus,
   hoverToBlur,
@@ -163,9 +160,7 @@ export function ComposerPromptInputPanel({
                 }
 
                 const clipboardData = event.clipboardData
-                const directAttachments = getComposerAttachmentsFromClipboardData(clipboardData, {
-                  resolveFilePath: (file) => getPathForFileQuery(file as File) ?? null,
-                })
+                const directAttachments = getComposerAttachmentsFromClipboardData(clipboardData)
                 const shouldInterceptPaste =
                   directAttachments.length > 0 || hasAttachmentHintInClipboardData(clipboardData)
 
@@ -213,14 +208,6 @@ export function ComposerPromptInputPanel({
                     panelRef={skillMentionPanelRef}
                     skillMentions={skillMentions}
                   />
-                ) : null
-              }
-              endAdornment={
-                extensionRunning ? (
-                  <div className={composerInlineStatusPillClass}>
-                    <Loader2 size={12} className="shrink-0 animate-spin" />
-                    <span className="truncate">Pi extension running</span>
-                  </div>
                 ) : null
               }
               trailingAdornmentEnabled={dictationButtonVisible}

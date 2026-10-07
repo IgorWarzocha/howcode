@@ -163,6 +163,7 @@ function appendDownsampledAudioChunk(input: {
 export function canUseLocalDictationCapture() {
   return (
     typeof navigator !== 'undefined' &&
+    globalThis.isSecureContext === true &&
     typeof navigator.mediaDevices?.getUserMedia === 'function' &&
     getAudioContextConstructor() !== null
   )
@@ -172,7 +173,9 @@ export async function startLocalDictationCapture(
   maxDurationSeconds = DEFAULT_DICTATION_MAX_DURATION_SECONDS,
 ): Promise<LocalDictationCaptureSession> {
   if (!canUseLocalDictationCapture()) {
-    throw new Error('Local microphone capture is unavailable in this runtime.')
+    throw new Error(
+      'Microphone capture requires HTTPS or localhost and browser microphone support.',
+    )
   }
 
   const stream = await navigator.mediaDevices.getUserMedia({

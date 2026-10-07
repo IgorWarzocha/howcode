@@ -3,7 +3,6 @@ import type { RefObject } from 'react'
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
 import { appToneTextClass, appTypeGroupTextClass } from '../ui/classes'
 import { cn } from '../utils/cn'
-import { AppShellOverlays } from './app-shell-overlays'
 import { AppShellSidebar } from './app-shell-sidebar'
 import { AppShellWorkspace } from './app-shell-workspace'
 import { appShellRootClass } from './layout-classes'
@@ -25,15 +24,10 @@ type AppShellLayoutViewProps = {
     onToggle: () => void
     overlayOpen: boolean
   }
-  takeover: {
-    onOpenGitOps: () => Promise<void>
-    present: boolean
-    terminalKey: string
-  }
   terminal: {
     drawerPresent: boolean
     drawerVisible: boolean
-    sessionPath: string | null
+    conversationId: string | null
   }
   workspaceContentClass: string
 }
@@ -88,28 +82,23 @@ function CompactSidebarPanel(props: AppShellLayoutViewProps) {
 
 function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
   const { mainSectionRef, controller, workspaceContentClass } = props
-  const takeoverVisible = controller.workspace.state.takeoverVisible
   return (
     <section
       ref={mainSectionRef}
       className="flex min-w-0 min-h-0 h-full flex-1 flex-col overflow-hidden bg-[color:var(--workspace)]"
     >
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div
-          data-open={takeoverVisible ? 'false' : 'true'}
-          className="motion-desktop-workspace flex min-h-0 flex-1 flex-col overflow-hidden"
-        >
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <AppShellWorkspace
             controller={controller}
             activeComposerState={controller.composer.state}
-            activePiExtensionUiState={controller.composer.extensionUiState}
             activeThreadData={controller.thread.activeData}
             composerProjectId={controller.composer.projectId}
             currentProjectName={controller.projects.currentName}
             diffBaseline={props.diff.baseline}
             diffRenderMode={props.diff.renderMode}
             terminalDrawerVisible={props.terminal.drawerVisible}
-            terminalSessionPath={props.terminal.sessionPath}
+            terminalConversationId={props.terminal.conversationId}
             workspaceContentClass={workspaceContentClass}
             onSetDiffBaseline={props.diff.onBaselineChange}
             onSetDiffRenderMode={props.diff.onRenderModeChange}
@@ -119,23 +108,6 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
             onToggleSidebar={props.sidebar.onToggle}
           />
         </div>
-        <AppShellOverlays
-          controller={controller}
-          composerProjectId={controller.composer.projectId}
-          diffBaseline={props.diff.baseline}
-          takeoverPresent={props.takeover.present}
-          takeoverVisible={takeoverVisible}
-          takeoverTerminalKey={props.takeover.terminalKey}
-          terminalDrawerVisible={props.terminal.drawerVisible}
-          terminalSessionPath={props.terminal.sessionPath}
-          terminalDrawerOverlay={props.sidebar.compactMode}
-          sidebarCollapsed={props.sidebar.collapsed}
-          sidebarCompactMode={props.sidebar.compactMode}
-          sidebarOverlayOpen={props.sidebar.overlayOpen}
-          onToggleSidebar={props.sidebar.onToggle}
-          onOpenGitOps={props.takeover.onOpenGitOps}
-          onSetDiffBaseline={props.diff.onBaselineChange}
-        />
         <TerminalDrawerLayer {...props} />
       </div>
     </section>
@@ -158,7 +130,7 @@ function TerminalDrawerLayer(props: AppShellLayoutViewProps) {
       >
         <TerminalPanel
           projectId={controller.composer.projectId}
-          sessionPath={props.terminal.sessionPath}
+          conversationId={props.terminal.conversationId}
           onClose={controller.terminal.closeDrawer}
           hoverToFocus={controller.desktop.shellState?.appSettings.hoverToFocus ?? true}
           hoverToBlur={controller.desktop.shellState?.appSettings.hoverToBlur ?? false}
@@ -184,19 +156,10 @@ function AppShellToast(props: AppShellLayoutViewProps) {
   )
 }
 
-function MacWindowDragZones() {
-  return (
-    <div className="mac-window-drag-zones" aria-hidden="true">
-      <div className="mac-window-drag-zone mac-window-drag-zone--titlebar" />
-    </div>
-  )
-}
-
 export function AppShellLayoutView(props: AppShellLayoutViewProps) {
   return (
     <>
       <div className={appShellRootClass}>
-        <MacWindowDragZones />
         <DesktopSidebarFrame {...props} />
         <CompactSidebarOverlay {...props} />
         <CompactSidebarPanel {...props} />

@@ -1,6 +1,5 @@
 import { Info, Search, X } from 'lucide-react'
 import { Tooltip } from '../../common/tooltip'
-import type { AppSettings } from '../../desktop/types'
 import {
   appToneMutedClass,
   appToneTextClass,
@@ -12,22 +11,6 @@ import {
 import { cn } from '../../utils/cn'
 import { settingsCategories } from './settingsGroups'
 import type { SettingsCategoryId } from './settingsTypes'
-
-function DevBranchToggle({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
-  return (
-    <label
-      className={`mt-2 flex min-h-8 cursor-pointer items-center justify-between gap-2 px-3 ${appTypeSmallClass} ${appToneMutedClass} transition-colors hover:text-[color:var(--text)]`}
-    >
-      <span className="min-w-0 truncate">Dev branch</span>
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={onToggle}
-        className="h-3.5 w-3.5 shrink-0 accent-[color:var(--accent)]"
-      />
-    </label>
-  )
-}
 
 export function SettingsSearchField({
   value,
@@ -111,15 +94,11 @@ export function SettingsHeaderActions({
 export function SettingsCategorySidebar({
   activeCategory,
   normalizedFilter,
-  appSettings,
   onSelectCategory,
-  onToggleDevBranch,
 }: {
   activeCategory: SettingsCategoryId | null
   normalizedFilter: string
-  appSettings: AppSettings
   onSelectCategory: (category: SettingsCategoryId | null) => void
-  onToggleDevBranch: () => void
 }) {
   return (
     <div className="sticky top-0 hidden max-h-full min-w-0 overflow-y-auto lg:grid">
@@ -152,7 +131,6 @@ export function SettingsCategorySidebar({
           </button>
         ))}
       </nav>
-      <DevBranchToggle checked={appSettings.devUpdateBranch} onToggle={onToggleDevBranch} />
     </div>
   )
 }
@@ -160,17 +138,13 @@ export function SettingsCategorySidebar({
 export function SettingsMobileFilters({
   filter,
   activeCategory,
-  appSettings,
   onFilterChange,
   onSelectCategory,
-  onToggleDevBranch,
 }: {
   filter: string
   activeCategory: SettingsCategoryId | null
-  appSettings: AppSettings
   onFilterChange: (value: string) => void
   onSelectCategory: (category: SettingsCategoryId | null) => void
-  onToggleDevBranch: () => void
 }) {
   return (
     <div className="grid min-w-0 content-start gap-4 lg:hidden">
@@ -200,7 +174,6 @@ export function SettingsMobileFilters({
             {category.label}
           </button>
         ))}
-        <DevBranchToggle checked={appSettings.devUpdateBranch} onToggle={onToggleDevBranch} />
       </div>
     </div>
   )

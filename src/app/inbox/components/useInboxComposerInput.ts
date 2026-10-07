@@ -20,7 +20,7 @@ export function useInboxComposerInput(
   const attachmentPicker = useComposerAttachmentPicker({
     openMenu: overlay.openMenu,
     pickerRootPath: props.thread.projectId,
-    pickerSessionKey: props.thread.sessionPath,
+    pickerSessionKey: props.thread.conversationId,
     setAttachments: setAttachmentValue,
     setErrorMessage: props.reply.setErrorMessage,
     setOpenMenu: overlay.setOpenMenu,
@@ -33,7 +33,7 @@ export function useInboxComposerInput(
     dictationMaxDurationSeconds: props.appSettings.dictationMaxDurationSeconds,
     draftThreadId: props.thread.threadId,
     projectId: props.thread.projectId,
-    sessionPath: props.thread.sessionPath,
+    conversationId: props.thread.conversationId,
     setDraftValue,
     setErrorMessage: props.reply.setErrorMessage,
   })

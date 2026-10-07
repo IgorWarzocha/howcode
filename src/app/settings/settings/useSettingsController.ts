@@ -24,11 +24,6 @@ export function useSettingsController(input: {
           key: 'composerStreamingBehavior',
           value,
         }),
-      toggleDevUpdateBranch: () =>
-        void input.onAction('settings.update', {
-          key: 'devUpdateBranch',
-          value: !input.appSettings.devUpdateBranch,
-        }),
       toggleHideSidebarSessionCounts: () =>
         void input.onAction('settings.update', {
           key: 'hideSidebarSessionCounts',
@@ -43,11 +38,6 @@ export function useSettingsController(input: {
         void input.onAction('settings.update', {
           key: 'hoverToFocus',
           value: !input.appSettings.hoverToFocus,
-        }),
-      togglePiTuiTakeover: () =>
-        void input.onAction('settings.update', {
-          key: 'piTuiTakeover',
-          value: !input.appSettings.piTuiTakeover,
         }),
     },
     dictation: {

@@ -9,37 +9,32 @@ import {
 } from 'react'
 import type { ComposerAttachment } from '../../desktop/types'
 import { useLatestRef } from '../../hooks/useLatestRef'
-import { mergeDraftWithRestoredQueuedPrompt } from '../composer-queue.helpers'
 import { composerDraftStore, getComposerDraftThreadId } from '../composerDraftStore'
 
 export function useComposerDraftState({
   composerMode,
   projectId,
-  sessionPath,
+  conversationId,
   openMenu,
   setOpenMenu,
   setErrorMessage,
-  restoredQueuedPrompt,
-  onRestoredQueuedPromptApplied,
 }: {
   composerMode: 'chat' | 'code'
   projectId: string
-  sessionPath: string | null
+  conversationId: string | null
   openMenu: 'model' | 'picker' | null
   setOpenMenu: (value: SetStateAction<'model' | 'picker' | null>) => void
   setErrorMessage: (value: SetStateAction<string | null>) => void
-  restoredQueuedPrompt: string | null
-  onRestoredQueuedPromptApplied: () => void
 }) {
   const draftThreadId = useMemo(
-    () => getComposerDraftThreadId({ composerMode, projectId, sessionPath }),
-    [composerMode, projectId, sessionPath],
+    () => getComposerDraftThreadId({ composerMode, projectId, conversationId }),
+    [composerMode, projectId, conversationId],
   )
   const [draft, setDraft] = useState('')
   const [attachments, setAttachments] = useState<ComposerAttachment[]>([])
   const composerScopeKey = useMemo(
-    () => `${composerMode}::${projectId}::${sessionPath ?? ''}::${draftThreadId ?? ''}`,
-    [composerMode, draftThreadId, projectId, sessionPath],
+    () => `${composerMode}::${projectId}::${conversationId ?? ''}::${draftThreadId ?? ''}`,
+    [composerMode, draftThreadId, projectId, conversationId],
   )
   const activeComposerScopeKeyRef = useLatestRef(composerScopeKey)
   const activeDraftThreadIdRef = useLatestRef(draftThreadId)
@@ -94,18 +89,6 @@ export function useComposerDraftState({
       pickerOpen: openMenu === 'picker',
     })
   }, [attachments, draft, draftThreadId, openMenu])
-
-  useEffect(() => {
-    if (!restoredQueuedPrompt) {
-      return
-    }
-
-    setDraftValue((currentDraft) =>
-      mergeDraftWithRestoredQueuedPrompt(currentDraft, restoredQueuedPrompt),
-    )
-    setErrorMessage(null)
-    onRestoredQueuedPromptApplied()
-  }, [onRestoredQueuedPromptApplied, restoredQueuedPrompt, setDraftValue, setErrorMessage])
 
   return {
     activeComposerScopeKeyRef,

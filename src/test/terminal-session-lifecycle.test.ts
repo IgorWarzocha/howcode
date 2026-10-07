@@ -3,26 +3,15 @@ import {
   createTerminalSessionOwnership,
   getTerminalViewportIdentity,
 } from '../app/native/terminal/terminal-session-ownership'
-import {
-  getTerminalCleanupAction,
-  type TerminalCleanupAction,
-  type TerminalSessionPolicy,
-} from '../app/native/terminal/terminal-session-policy'
-
-const shellPolicy = { kind: 'shell' } satisfies TerminalSessionPolicy
+import { getTerminalCleanupAction } from '../app/native/terminal/terminal-session-policy'
 
 function shellCleanup(history: string) {
-  return getTerminalCleanupAction({
-    policy: shellPolicy,
-    terminalHistory: history,
-    terminalPersistedSessionPath: null,
-  })
+  return getTerminalCleanupAction(history)
 }
 
 const terminalIdentity = getTerminalViewportIdentity({
-  launchMode: 'shell',
   projectId: '/project',
-  sessionPath: null,
+  conversationId: null,
 })
 
 describe('terminal session lifecycle', () => {
@@ -139,39 +128,5 @@ describe('terminal session retention policy', () => {
   it('preserves shell sessions with visible history and deletes empty shell sessions', () => {
     expect(shellCleanup('\u001b[32mvisible output\u001b[0m')).toEqual({ kind: 'preserve' })
     expect(shellCleanup('\u001b[2J\u001b[H')).toEqual({ kind: 'close', deleteHistory: true })
-  })
-
-  it('retains Pi sessions with their configured unmount policy', () => {
-    const delayedPolicy = {
-      kind: 'pi-session',
-      closeWhenSessionFileIdleMs: 250,
-      keepAliveMsOnUnmount: 5_000,
-      maxKeepAliveMsOnUnmount: 60_000,
-    } satisfies TerminalSessionPolicy
-    const immediatePolicy = {
-      kind: 'pi-session',
-      closeWhenSessionFileIdleMs: 0,
-      keepAliveMsOnUnmount: 0,
-      maxKeepAliveMsOnUnmount: 60_000,
-    } satisfies TerminalSessionPolicy
-
-    expect(
-      getTerminalCleanupAction({
-        policy: delayedPolicy,
-        terminalHistory: '',
-        terminalPersistedSessionPath: '/sessions/thread.jsonl',
-      }),
-    ).toEqual({
-      kind: 'close-after-session-file-idle',
-      pollMs: 250,
-      maxKeepAliveMs: 60_000,
-    } satisfies TerminalCleanupAction)
-    expect(
-      getTerminalCleanupAction({
-        policy: immediatePolicy,
-        terminalHistory: 'visible output',
-        terminalPersistedSessionPath: null,
-      }),
-    ).toEqual({ kind: 'close', deleteHistory: false })
   })
 })

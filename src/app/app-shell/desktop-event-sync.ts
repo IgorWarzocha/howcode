@@ -1,8 +1,8 @@
 import {
   getLocalDraftProjectId,
-  getPersistedSessionPath,
-  isLocalSessionPath,
-} from '@howcode/shared/session-paths'
+  getPersistedConversationId,
+  isLocalConversationId,
+} from '@howcode/shared/conversation-ids'
 import type { DesktopEvent } from '../desktop/types'
 import { notifyProjectDiffInvalidated } from '../hooks/project-diff-invalidation'
 import { desktopQueryKeys, invokeDesktopActionQuery } from '../query/desktop-query'
@@ -18,18 +18,18 @@ export type DesktopEventSelectionState = Pick<
   | 'activeView'
   | 'selectedProjectId'
   | 'selectedThreadId'
-  | 'selectedSessionPath'
-  | 'selectedInboxSessionPath'
-> & { takeoverVisible?: boolean | undefined }
+  | 'selectedConversationId'
+  | 'selectedInboxConversationId'
+>
 
-export function getVisibleDesktopSessionPath(workspaceState: DesktopEventSelectionState) {
+export function getVisibleDesktopConversationId(workspaceState: DesktopEventSelectionState) {
   return workspaceState.activeView === 'chat' ||
     workspaceState.activeView === 'thread' ||
     workspaceState.activeView === 'gitops' ||
     workspaceState.activeView === 'project'
-    ? getPersistedSessionPath(workspaceState.selectedSessionPath)
+    ? getPersistedConversationId(workspaceState.selectedConversationId)
     : workspaceState.activeView === 'inbox'
-      ? (workspaceState.selectedInboxSessionPath ?? null)
+      ? (workspaceState.selectedInboxConversationId ?? null)
       : null
 }
 
@@ -47,7 +47,7 @@ export function shouldAutoOpenStartedThread({
     return false
   }
 
-  // Do not let background/runtime-host starts steal focus. User-initiated sends and explicit
+  // Do not let background runtime starts steal focus. User-initiated sends and explicit
   // thread creation open from their action result; ambient thread events should only update caches.
   return false
 }
@@ -56,23 +56,23 @@ export function shouldDisplayStartedThreadForLocalDraft({
   reason,
   projectId,
   isChat,
-  replacesSessionPath,
+  replacesConversationId,
   workspaceState,
 }: {
   reason: Extract<DesktopEvent, { type: 'thread-update' }>['reason']
   projectId: string
   isChat?: boolean | undefined
-  replacesSessionPath?: string | null | undefined
+  replacesConversationId?: string | null | undefined
   workspaceState: DesktopEventSelectionState
 }) {
   const explicitlyReplacesSelectedDraft =
-    isLocalSessionPath(replacesSessionPath) &&
-    replacesSessionPath === workspaceState.selectedSessionPath
+    isLocalConversationId(replacesConversationId) &&
+    replacesConversationId === workspaceState.selectedConversationId
   if (reason !== 'start' && !explicitlyReplacesSelectedDraft) {
     return false
   }
 
-  const localDraftProjectId = getLocalDraftProjectId(workspaceState.selectedSessionPath)
+  const localDraftProjectId = getLocalDraftProjectId(workspaceState.selectedConversationId)
   if (localDraftProjectId !== projectId) {
     return false
   }
@@ -94,7 +94,7 @@ export async function refreshVisibleInboxThread({
   queryClient: QueryClientLike
 }) {
   await invokeDesktopActionQuery('inbox.mark-read', {
-    sessionPath: event.sessionPath,
+    conversationId: event.conversationId,
     projectId: event.projectId,
   })
 

@@ -1,7 +1,6 @@
 import { clearSessionTranscript, nowIso, reportTranscriptWriteFailure } from './session-history.ts'
 import type { TerminalSessionRecord } from './session-record.ts'
 import type { TerminalSessionStore } from './session-store.ts'
-import { rememberSubmittedPrompts, scheduleTuiSessionDetection } from './tui-session-detection.ts'
 
 function applyToBuffer(buffer: string, data: string) {
   let nextBuffer = buffer
@@ -46,10 +45,8 @@ export function rememberTerminalInput(
   const input = applyToBuffer(record.inputBuffer, data)
   record.inputBuffer = input.nextBuffer
   if (input.submittedLines.some((line) => line.trim() && line.trim() !== 'clear')) {
-    rememberSubmittedPrompts(record, input.submittedLines)
     record.suppressOutputVisibilityUntilInput = false
     markVisible(store, record)
-    scheduleTuiSessionDetection(store, record)
   }
   return input
 }

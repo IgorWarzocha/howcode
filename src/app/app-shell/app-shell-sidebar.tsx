@@ -40,8 +40,6 @@ const FALLBACK_APP_SETTINGS = {
   gitDiffIncludeUntrackedDefault: false,
   projectDeletionMode: 'pi-only',
   useAgentsSkillsPaths: false,
-  devUpdateBranch: false,
-  piTuiTakeover: false,
   hideSidebarSessionCounts: false,
   hoverToFocus: true,
   hoverToBlur: false,
@@ -59,8 +57,7 @@ export function AppShellSidebar({
   onToggle: () => void
 }) {
   const { state } = controller.workspace
-  const projectScopeLockActive =
-    controller.resourceScope.extensionsActive || controller.resourceScope.skillsActive
+  const projectScopeLockActive = controller.resourceScope.skillsActive
   return (
     <Sidebar
       projects={controller.projects.items}
@@ -77,20 +74,19 @@ export function AppShellSidebar({
       protectedProjectId={
         controller.desktop.shellState?.resolvedCwd ?? controller.desktop.shellState?.cwd ?? null
       }
-      selectedInboxSessionPath={state.selectedInboxSessionPath}
+      selectedInboxConversationId={state.selectedInboxConversationId}
       selectedProjectId={state.selectedProjectId}
       selectedThreadId={state.selectedThreadId}
       selectedChatGroupId={controller.chat.selectedGroupId}
       settingsOpen={state.settingsOpen}
       projectScopeLockActive={projectScopeLockActive}
       terminalRunningWorkspaceIds={controller.terminal.runningWorkspaceIds}
-      terminalRunningSessionPaths={controller.terminal.runningSessionPaths}
+      terminalRunningConversationIds={controller.terminal.runningConversationIds}
       collapsedProjectIds={controller.projects.collapsedIds}
       onAction={controller.desktop.handleAction}
       onShowView={controller.navigation.showView}
       onToggleSettings={controller.navigation.toggleSettings}
       onToggleSidebar={onToggle}
-      onOpenExtensionsView={() => controller.navigation.showView('extensions')}
       onOpenAbout={controller.navigation.showLanding}
       onOpenSkillsView={() => controller.navigation.showView('skills')}
       onOpenSettingsPanel={(target) => controller.navigation.showView('settings', target)}
@@ -106,7 +102,6 @@ export function AppShellSidebar({
       onProjectSelect={controller.projects.select}
       onProjectPrimeSelection={controller.projects.primeSelection}
       onProjectTargetSelected={() => {
-        if (state.activeView === 'extensions') controller.resourceScope.setExtensionsActive(true)
         if (state.activeView === 'skills') controller.resourceScope.setSkillsActive(true)
       }}
       onLoadProjectThreads={controller.projects.loadThreads}

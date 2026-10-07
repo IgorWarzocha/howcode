@@ -26,7 +26,7 @@ type NewThreadPostEffectInput = {
   refreshShellState: () => Promise<unknown>
   loadProjectThreads: (
     projectId: string,
-    options?: { chat?: boolean; replaceLocalDraftSessionPath?: string | null },
+    options?: { chat?: boolean; replaceLocalDraftConversationId?: string | null },
   ) => Promise<unknown>
   loadComposerState: (request?: {
     projectId?: string | null
@@ -41,21 +41,21 @@ function getNewThreadResult(input: NewThreadPostEffectInput) {
     typeof input.actionResult?.result?.projectId === 'string'
       ? input.actionResult.result.projectId
       : null
-  const sessionPath =
-    typeof input.actionResult?.result?.sessionPath === 'string'
-      ? input.actionResult.result.sessionPath
+  const conversationId =
+    typeof input.actionResult?.result?.conversationId === 'string'
+      ? input.actionResult.result.conversationId
       : null
   const threadId =
     typeof input.actionResult?.result?.threadId === 'string'
       ? input.actionResult.result.threadId
       : null
   const localFallback =
-    !(threadId || sessionPath) && projectId && !hasDesktopBridge()
+    !(threadId || conversationId) && projectId && !hasDesktopBridge()
       ? buildLocalThreadFallback(projectId, {
           branchName: getInitialThreadBranchName(input.contextualPayload.branchName),
         })
       : null
-  return { projectId, resultProjectId, sessionPath, threadId, localFallback }
+  return { projectId, resultProjectId, conversationId, threadId, localFallback }
 }
 
 function shouldStayOnCodeDashboard(input: NewThreadPostEffectInput) {
@@ -79,11 +79,11 @@ function getComposerModeForNextView(input: NewThreadPostEffectInput): 'chat' | '
 
 function applyOptimisticThread(
   input: NewThreadPostEffectInput,
-  thread: { projectId: string; threadId: string; sessionPath: string },
+  thread: { projectId: string; threadId: string; conversationId: string },
 ) {
   const optimisticThread = buildOptimisticThread({
     id: thread.threadId,
-    sessionPath: thread.sessionPath,
+    conversationId: thread.conversationId,
     branchName: getInitialThreadBranchName(input.contextualPayload.branchName),
   })
   applyProjectThreadToShellState(input.queryClient, thread.projectId, optimisticThread, {
@@ -94,14 +94,14 @@ function applyOptimisticThread(
 
 function openOptimisticThread(
   input: NewThreadPostEffectInput,
-  thread: { projectId: string; threadId: string; sessionPath: string },
+  thread: { projectId: string; threadId: string; conversationId: string },
 ) {
   const optimisticThread = applyOptimisticThread(input, thread)
   input.dispatch({
     type: 'open-thread',
     projectId: thread.projectId,
     threadId: thread.threadId,
-    sessionPath: thread.sessionPath,
+    conversationId: thread.conversationId,
     view: getRequestedComposerMode(input) === 'chat' ? 'chat' : 'thread',
   })
   return optimisticThread
@@ -109,14 +109,14 @@ function openOptimisticThread(
 
 function startOptimisticProjectThread(
   input: NewThreadPostEffectInput,
-  thread: { projectId: string; threadId: string; sessionPath: string },
+  thread: { projectId: string; threadId: string; conversationId: string },
 ) {
   const optimisticThread = applyOptimisticThread(input, thread)
   input.dispatch({
     type: 'start-project-thread',
     projectId: thread.projectId,
     threadId: thread.threadId,
-    sessionPath: thread.sessionPath,
+    conversationId: thread.conversationId,
   })
   return optimisticThread
 }
@@ -126,19 +126,19 @@ async function handleNewThreadBridgeResult(
   result: ReturnType<typeof getNewThreadResult>,
 ) {
   const nextProjectId = result.resultProjectId ?? result.projectId
-  if (!(nextProjectId && result.threadId && result.sessionPath)) return false
+  if (!(nextProjectId && result.threadId && result.conversationId)) return false
   if (shouldShowCodeDashboard(input)) {
     startOptimisticProjectThread(input, {
       projectId: nextProjectId,
       threadId: result.threadId,
-      sessionPath: result.sessionPath,
+      conversationId: result.conversationId,
     })
     return true
   }
   const optimisticThread = openOptimisticThread(input, {
     projectId: nextProjectId,
     threadId: result.threadId,
-    sessionPath: result.sessionPath,
+    conversationId: result.conversationId,
   })
   await input.loadProjectThreads(nextProjectId, {
     chat: getRequestedComposerMode(input) === 'chat',
@@ -163,7 +163,7 @@ async function handleNewThreadNavigation(
     openOptimisticThread(input, {
       projectId: result.localFallback.projectId,
       threadId: result.localFallback.threadId,
-      sessionPath: result.localFallback.sessionPath,
+      conversationId: result.localFallback.conversationId,
     })
     return
   }

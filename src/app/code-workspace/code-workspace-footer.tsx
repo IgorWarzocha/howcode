@@ -38,19 +38,13 @@ function CodeSidebarToggleButton(props: CodeWorkspaceContentProps) {
   )
 }
 
-function CodeFooterLeft(props: CodeWorkspaceContentProps) {
-  const { state } = props
-  if (state.takeoverVisible) return null
-  return <CodeSidebarToggleButton {...props} />
-}
-
 function CodeGitOpsComposer(props: CodeWorkspaceContentProps) {
   const {
     shellState,
     projectGitState,
     parentBranchName,
     composerProjectId,
-    terminalSessionPath,
+    terminalConversationId,
     diffBaseline,
     diffRenderMode,
     gitOpsReview,
@@ -75,7 +69,7 @@ function CodeGitOpsComposer(props: CodeWorkspaceContentProps) {
           id: composerProjectId,
           gitState: projectGitState,
           parentBranchName,
-          sessionPath: terminalSessionPath,
+          conversationId: terminalConversationId,
         }}
         diff={{
           baseline: diffBaseline,
@@ -105,16 +99,14 @@ function CodeQueuedPrompts(props: CodeWorkspaceContentProps) {
   const {
     activeComposerState,
     pendingQueuedPromptIdsForSession,
-    handleEditQueuedPrompt,
     handleRemoveQueuedPrompt,
+    queuedPromptError,
   } = props
   return (
     <QueuedPromptsCard
       prompts={activeComposerState?.queuedPrompts ?? []}
       pendingPromptIds={pendingQueuedPromptIdsForSession}
-      onEditPrompt={(prompt) => {
-        void handleEditQueuedPrompt(prompt)
-      }}
+      errorMessage={queuedPromptError}
       onRemovePrompt={(prompt) => {
         void handleRemoveQueuedPrompt(prompt)
       }}
@@ -126,28 +118,24 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
   const {
     state,
     activeComposerState,
-    activePiExtensionUiState,
     activeThreadData,
-    scopedRestoredQueuedPrompt,
     shellState,
     composerProjectId,
     projectGitState,
     parentBranchName,
     diffBaseline,
-    terminalSessionPath,
+    terminalConversationId,
     onSetDiffBaseline,
     setComposerOverlayHeight,
     footerRef,
-    handleShowTakeoverTerminal,
     handleOpenGitOpsView,
     controller,
-    markRestoredQueuedPromptApplied,
     handleToggleTerminal,
     listComposerAttachmentEntries,
     handleAction,
   } = props
   const appSettings = shellState?.appSettings ?? FALLBACK_APP_SETTINGS
-  const composerRuntime = getComposerRuntimeModel(activeComposerState, activePiExtensionUiState)
+  const composerRuntime = getComposerRuntimeModel(activeComposerState)
   return (
     <Composer
       activeView={state.activeView}
@@ -155,13 +143,12 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
       messages={activeThreadData?.messages}
       isStreaming={activeThreadData?.isStreaming ?? false}
       replyActivityKey={getReplyActivityKey(activeThreadData?.messages ?? [])}
-      restoredQueuedPrompt={scopedRestoredQueuedPrompt}
       streamingBehaviorPreference={appSettings.composerStreamingBehavior}
       projectId={composerProjectId}
       projectGitState={projectGitState}
       parentBranchName={parentBranchName}
       diffBaseline={diffBaseline}
-      sessionPath={terminalSessionPath}
+      conversationId={terminalConversationId}
       dictationModelId={appSettings.dictationModelId}
       dictationMaxDurationSeconds={appSettings.dictationMaxDurationSeconds}
       favoriteFolders={appSettings.favoriteFolders}
@@ -170,17 +157,13 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
       hoverToBlur={appSettings.hoverToBlur}
       composerSendMode={appSettings.composerSendMode}
       keybindings={appSettings.keybindings}
-      piTreeFilterMode={shellState?.piSettings.treeFilterMode ?? 'no-tools'}
       onSetDiffBaseline={onSetDiffBaseline}
       onOverlayHeightChange={setComposerOverlayHeight}
       workspaceFooterRef={footerRef}
-      onOpenTakeoverTerminal={handleShowTakeoverTerminal}
       onOpenGitOpsView={handleOpenGitOpsView}
       onOpenSettingsView={(target) => controller.navigation.showView('settings', target)}
-      onRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
       onToggleTerminal={handleToggleTerminal}
       terminalVisible={state.terminalVisible}
-      takeoverVisible={state.takeoverVisible}
       preferPortalModelPopover={state.activeView === 'project'}
       onListAttachmentEntries={listComposerAttachmentEntries}
       onAction={handleAction}
@@ -207,10 +190,10 @@ function CodeFooterRight(props: CodeWorkspaceContentProps) {
     showDesktopTerminalDrawer,
     activeComposerState,
     composerProjectId,
-    terminalSessionPath,
+    terminalConversationId,
     handleAction,
   } = props
-  if (state.activeView === 'thread' && !state.takeoverVisible && !showDesktopTerminalDrawer)
+  if (state.activeView === 'thread' && !showDesktopTerminalDrawer)
     return (
       <DesktopComposerStatusModelPicker
         availableModels={activeComposerState?.availableModels ?? []}
@@ -219,7 +202,7 @@ function CodeFooterRight(props: CodeWorkspaceContentProps) {
         contextUsage={activeComposerState?.contextUsage ?? null}
         model={activeComposerState?.currentModel ?? null}
         projectId={composerProjectId}
-        sessionPath={terminalSessionPath}
+        conversationId={terminalConversationId}
         thinkingLevel={activeComposerState?.currentThinkingLevel ?? 'off'}
         onAction={handleAction}
       />
@@ -254,7 +237,7 @@ function CodeWorkspaceThreadFooter(props: CodeWorkspaceContentProps) {
       <div className="pointer-events-auto grid gap-2.5">
         <WorkspaceComposerDock
           compactControls={sidebarAutoHidden || sidebarCollapsed}
-          left={<CodeFooterLeft {...props} />}
+          left={<CodeSidebarToggleButton {...props} />}
           center={<CodeThreadComposerCenter {...props} />}
           rightClassName={cn(
             state.activeView === 'gitops' ? 'opacity-100' : 'min-[1400px]:opacity-100 opacity-0',

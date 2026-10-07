@@ -1,4 +1,3 @@
-import { isLocalSessionPath } from '@howcode/shared/session-paths'
 import type { Dispatch } from 'react'
 import { useEffect } from 'react'
 import type { ArchivedThread } from '../desktop/types'
@@ -12,12 +11,11 @@ type UseProjectShellSyncInput = {
   activeView: WorkspaceState['activeView']
   selectedProjectId: WorkspaceState['selectedProjectId']
   selectedThreadId: WorkspaceState['selectedThreadId']
-  selectedSessionPath: WorkspaceState['selectedSessionPath']
+  selectedConversationId: WorkspaceState['selectedConversationId']
   lastCodeThreadSelection: CodeThreadSelection | null
-  takeoverVisible: WorkspaceState['takeoverVisible']
   loadProjectThreads: (
     projectId: string,
-    options?: { chat?: boolean; replaceLocalDraftSessionPath?: string | null },
+    options?: { chat?: boolean; replaceLocalDraftConversationId?: string | null },
   ) => Promise<unknown>
   loadArchivedThreads: () => Promise<ArchivedThread[]>
   dispatch: Dispatch<WorkspaceAction>
@@ -30,9 +28,8 @@ export function useProjectShellSync({
   activeView,
   selectedProjectId,
   selectedThreadId,
-  selectedSessionPath,
+  selectedConversationId,
   lastCodeThreadSelection,
-  takeoverVisible,
   loadProjectThreads,
   loadArchivedThreads,
   dispatch,
@@ -49,9 +46,9 @@ export function useProjectShellSync({
       !selectedThreadId ||
       projects.some((project) => project.threads.some((thread) => thread.id === selectedThreadId))
     const hasSelectedSession =
-      !selectedSessionPath ||
+      !selectedConversationId ||
       projects.some((project) =>
-        project.threads.some((thread) => thread.sessionPath === selectedSessionPath),
+        project.threads.some((thread) => thread.conversationId === selectedConversationId),
       )
 
     const resolvedLastCodeThreadSelection = resolveCodeThreadSelection(
@@ -61,7 +58,7 @@ export function useProjectShellSync({
     const hasSyncedRememberedCodeThread =
       resolvedLastCodeThreadSelection?.projectId === lastCodeThreadSelection?.projectId &&
       resolvedLastCodeThreadSelection?.threadId === lastCodeThreadSelection?.threadId &&
-      resolvedLastCodeThreadSelection?.sessionPath === lastCodeThreadSelection?.sessionPath
+      resolvedLastCodeThreadSelection?.conversationId === lastCodeThreadSelection?.conversationId
 
     if (
       hasSelectedProject &&
@@ -78,7 +75,7 @@ export function useProjectShellSync({
     lastCodeThreadSelection,
     projects,
     selectedProjectId,
-    selectedSessionPath,
+    selectedConversationId,
     selectedThreadId,
   ])
 
@@ -94,32 +91,6 @@ export function useProjectShellSync({
       void loadProjectThreads(project.id, { chat: activeView === 'chat' })
     }
   }, [activeView, collapsedProjectIds, loadProjectThreads, projects])
-
-  useEffect(() => {
-    if (
-      !takeoverVisible ||
-      activeView === 'chat' ||
-      !selectedProjectId ||
-      !isLocalSessionPath(selectedSessionPath)
-    ) {
-      return
-    }
-
-    let cancelled = false
-    const pollProjectThreads = () => {
-      void loadProjectThreads(selectedProjectId, {
-        replaceLocalDraftSessionPath: selectedSessionPath,
-      }).finally(() => {
-        if (!cancelled) timeoutId = window.setTimeout(pollProjectThreads, 1000)
-      })
-    }
-    let timeoutId = window.setTimeout(pollProjectThreads, 1000)
-
-    return () => {
-      cancelled = true
-      window.clearTimeout(timeoutId)
-    }
-  }, [activeView, loadProjectThreads, selectedProjectId, selectedSessionPath, takeoverVisible])
 
   useEffect(() => {
     if (activeView !== 'archived') {

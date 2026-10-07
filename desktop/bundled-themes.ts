@@ -11,24 +11,7 @@ export type BundledTheme = {
   path: string
 }
 
-function getProcessEnvironmentVariable(name: string) {
-  return process.env[name]
-}
-
 function resolvePackagedThemePath(name: string) {
-  const processWithResourcesPath = process as NodeJS.Process & {
-    resourcesPath?: string | undefined
-  }
-  const resourcesPath =
-    getProcessEnvironmentVariable('HOWCODE_ELECTRON_RESOURCES_PATH')?.trim() ||
-    processWithResourcesPath.resourcesPath
-  const packaged = resourcesPath
-    ? path.join(resourcesPath, 'resources', 'themes', `${name}.json`)
-    : null
-  if (packaged && fs.existsSync(packaged)) {
-    return packaged
-  }
-
   const fromBuild = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
     '..',
@@ -51,5 +34,7 @@ export function getBundledThemes(): BundledTheme[] {
       source: 'howcode',
       path: resolvePackagedThemePath(defaultHowcodeThemeName),
     },
+    { name: 'dark', label: 'Dark', source: 'howcode', path: resolvePackagedThemePath('dark') },
+    { name: 'light', label: 'Light', source: 'howcode', path: resolvePackagedThemePath('light') },
   ]
 }

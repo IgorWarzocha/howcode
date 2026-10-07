@@ -4,13 +4,6 @@ import { useLatestRef } from '../../hooks/useLatestRef'
 import { saveTextToDownloadsQuery } from '../../query/desktop-query'
 import { getArtifactExtension } from './artifactFormat'
 
-const pathSeparatorPattern = /[\\/]/
-
-function getPathBaseName(filePath: string) {
-  const segments = filePath.split(pathSeparatorPattern).filter(Boolean)
-  return segments[segments.length - 1] ?? filePath
-}
-
 export function useArtifactDownload(input: {
   displayedContent: string
   draft: string
@@ -36,15 +29,11 @@ export function useArtifactDownload(input: {
       if (selectedArtifactSlugRef.current === downloadArtifactSlug) setDownloadStatus(message)
     }
     try {
-      const result = await saveTextToDownloadsQuery(fileName, content)
-      if (result?.ok) {
-        setCurrentDownloadStatus(`Saved ${getPathBaseName(result.path ?? fileName)} to Downloads.`)
-      } else {
-        setCurrentDownloadStatus(result?.error ?? 'Could not save artifact to Downloads.')
-      }
+      await saveTextToDownloadsQuery(fileName, content)
+      setCurrentDownloadStatus(`Download requested for ${fileName}.`)
     } catch (error) {
       setCurrentDownloadStatus(
-        error instanceof Error ? error.message : 'Could not save artifact to Downloads.',
+        error instanceof Error ? error.message : 'Could not download artifact.',
       )
     }
   }

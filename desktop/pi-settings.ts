@@ -1,34 +1,8 @@
-import type { PiSettings, PiThemeState } from '../shared/desktop-contracts.ts'
-import { invalidateRuntimeHostSettings, invokeRuntimeHost } from './runtime-host/client-bridge.ts'
+import { loadPiSettings } from './settings/preferences.ts'
+import { loadThemeState } from './settings/themes.ts'
 
-export type PiSettingsKey = keyof PiSettings
+export { loadPiSettings, type PiSettingsKey, updatePiSetting } from './settings/preferences.ts'
 
-export function loadPiSettings(
-  projectPath?: string | undefined | null | undefined,
-): Promise<PiSettings> {
-  return invokeRuntimeHost('loadPiSettings', {
-    projectPath: projectPath ?? null,
-  })
-}
-
-export function loadPiThemeState(
-  projectPath?: string | undefined | null | undefined,
-): Promise<PiThemeState> {
-  return invokeRuntimeHost('loadPiThemeState', {
-    projectPath: projectPath ?? null,
-  })
-}
-
-export async function updatePiSetting(
-  key: PiSettingsKey,
-  value: unknown,
-  projectPath?: string | undefined | null | undefined,
-): Promise<PiSettings> {
-  const settings = await invokeRuntimeHost('updatePiSetting', {
-    key,
-    value,
-    projectPath: projectPath ?? null,
-  })
-  await invalidateRuntimeHostSettings({ projectPath: projectPath ?? null })
-  return settings
+export async function loadPiThemeState(projectPath?: string | null) {
+  return loadThemeState((await loadPiSettings(projectPath)).theme, projectPath)
 }

@@ -4,5 +4,5 @@
 - When a module exposes an `@howcode/*` surface, cross it there rather than through implementation files; keep internal imports relative.
 - Use `features/feature-status.tsx` for mock or partial UI states.
 - Popovers, menus, and custom selects close on Escape and outside click. Nested Escape handlers run in capture phase and stop propagation.
-- Keep the dev-web bridge dynamically loaded outside Electron and Schema-decode SSE envelopes before they enter renderer state.
+- Keep the browser HTTP bridge dynamically loaded before rendering and Schema-decode SSE envelopes before they enter renderer state.
 - Decode headless auth, config, upload, and error responses through `dev-web-response-schema.ts` rather than casting endpoint JSON.

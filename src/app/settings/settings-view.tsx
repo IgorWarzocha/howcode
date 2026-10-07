@@ -143,9 +143,7 @@ export function SettingsView({
         <SettingsCategorySidebar
           activeCategory={navigation.activeCategory}
           normalizedFilter={navigation.normalizedFilter}
-          appSettings={appSettings}
           onSelectCategory={navigation.setActiveCategory}
-          onToggleDevBranch={controller.app.toggleDevUpdateBranch}
         />
 
         <div
@@ -159,10 +157,8 @@ export function SettingsView({
           <SettingsMobileFilters
             filter={navigation.filter}
             activeCategory={navigation.activeCategory}
-            appSettings={appSettings}
             onFilterChange={navigation.setFilter}
             onSelectCategory={navigation.setActiveCategory}
-            onToggleDevBranch={controller.app.toggleDevUpdateBranch}
           />
           <SettingsGroupsList
             visibleGroups={visibleGroups}

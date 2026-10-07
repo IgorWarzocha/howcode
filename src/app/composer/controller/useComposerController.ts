@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type {
   ComposerFilePickerState,
   ComposerStreamingBehavior,
@@ -17,17 +17,14 @@ type UseComposerControllerProps = {
   activeView: View
   projectId: string
   chatGroupId?: string | null | undefined
-  sessionPath: string | null
+  conversationId: string | null
   dictationModelId: string | null
   dictationMaxDurationSeconds: number
   isStreaming: boolean
   replyActivityKey: string
   isCompacting: boolean
-  isExtensionCommandRunning: boolean
-  restoredQueuedPrompt: string | null
   streamingBehaviorPreference: ComposerStreamingBehavior
   onAction: DesktopActionInvoker
-  onRestoredQueuedPromptApplied: () => void
   onListAttachmentEntries: (request: {
     projectId?: string | null
     path?: string | null
@@ -39,23 +36,17 @@ export function useComposerController({
   activeView,
   projectId,
   chatGroupId = null,
-  sessionPath,
+  conversationId,
   dictationModelId,
   dictationMaxDurationSeconds,
   isStreaming,
   replyActivityKey,
   isCompacting,
-  isExtensionCommandRunning,
-  restoredQueuedPrompt,
   streamingBehaviorPreference,
   onAction,
-  onRestoredQueuedPromptApplied,
   onListAttachmentEntries,
 }: UseComposerControllerProps) {
   const [openMenu, setOpenMenu] = useState<'model' | 'picker' | null>(null)
-  const [localExtensionCommandRunningScopeKey, setLocalExtensionCommandRunningScopeKey] = useState<
-    string | null
-  >(null)
   const [isSending, setIsSending] = useState(false)
   const [pendingSubmittedDraft, setPendingSubmittedDraft] = useState<string | null>(null)
   const pendingSubmittedReplyActivityKeyRef = useRef<string | null>(null)
@@ -82,26 +73,11 @@ export function useComposerController({
   } = useComposerDraftState({
     composerMode,
     projectId,
-    sessionPath,
+    conversationId,
     openMenu,
     setOpenMenu,
     setErrorMessage,
-    restoredQueuedPrompt,
-    onRestoredQueuedPromptApplied,
   })
-  const localExtensionCommandRunning = localExtensionCommandRunningScopeKey === composerScopeKey
-  const setLocalExtensionCommandRunning: React.Dispatch<React.SetStateAction<boolean>> =
-    useCallback(
-      (value) => {
-        setLocalExtensionCommandRunningScopeKey((currentScopeKey) => {
-          const current = currentScopeKey === composerScopeKey
-          const next = typeof value === 'function' ? value(current) : value
-          return next ? composerScopeKey : null
-        })
-      },
-      [composerScopeKey],
-    )
-
   useDismissibleLayer({
     open: openMenu === 'model',
     onDismiss: () => setOpenMenu(null),
@@ -133,8 +109,6 @@ export function useComposerController({
     }
   }, [openMenu])
 
-  const extensionCommandRunning = isExtensionCommandRunning || localExtensionCommandRunning
-  const compactionBlocksComposer = isCompacting && !extensionCommandRunning
   useEffect(() => {
     if (
       !pendingSubmittedDraft ||
@@ -184,7 +158,7 @@ export function useComposerController({
     dictationMaxDurationSeconds,
     draftThreadId,
     projectId,
-    sessionPath,
+    conversationId,
     setDraftValue,
     setErrorMessage,
   })
@@ -211,26 +185,23 @@ export function useComposerController({
 
   const { invokeComposerAction, runComposerAction } = useComposerActionRunner({
     onAction,
-    setDraft: setDraftValue,
     setErrorMessage,
     setOpenMenu,
   })
 
-  const { compact, send, sendExtensionCommand, stop } = useComposerSubmission({
+  const { compact, send, stop } = useComposerSubmission({
     composerScopeKey,
     draftThreadId,
     isSending,
     isStreaming,
-    isCompacting: compactionBlocksComposer,
+    isCompacting,
     onAction,
     projectId,
     chatGroupId,
-    sessionPath,
+    conversationId,
     setAttachments: setAttachmentValue,
     setDraftValue,
     setErrorMessage,
-    extensionCommandRunning,
-    setExtensionCommandRunning: setLocalExtensionCommandRunning,
     setIsSending,
     setPendingSubmittedDraft,
     pendingSubmittedReplyActivityKeyRef,
@@ -265,13 +236,11 @@ export function useComposerController({
     dictationMissingModel,
     dictationSupported,
     errorMessage,
-    extensionCommandRunning,
     isSending,
     inputLocked:
       isSending ||
       pendingSubmittedDraft !== null ||
-      extensionCommandRunning ||
-      compactionBlocksComposer ||
+      isCompacting ||
       (isStreaming && !replyActivityKey),
     pickerButtonRef,
     pickerLoading,
@@ -290,7 +259,6 @@ export function useComposerController({
     runComposerAction,
     compact,
     send,
-    sendExtensionCommand,
     setDraft: setDraftValue,
     setOpenMenu,
     stop,

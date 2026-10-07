@@ -26,11 +26,11 @@ type ControllerViewModel = {
 }
 
 function buildFallbackThreadData(
-  sessionPath: string,
+  conversationId: string,
   selectedThread: Thread | undefined,
 ): ThreadData {
   return {
-    sessionPath,
+    conversationId,
     title: selectedThread?.title ?? 'New thread',
     messages: [],
     previousMessageCount: 0,
@@ -72,8 +72,8 @@ export function deriveControllerViewModel({
   )
   const selectedProject = selectProject(projects, workspaceState.selectedProjectId)
   const selectedThread = selectThread(selectedProject, workspaceState.selectedThreadId)
-  const activeThreadData = workspaceState.selectedSessionPath
-    ? (threadData ?? buildFallbackThreadData(workspaceState.selectedSessionPath, selectedThread))
+  const activeThreadData = workspaceState.selectedConversationId
+    ? (threadData ?? buildFallbackThreadData(workspaceState.selectedConversationId, selectedThread))
     : null
 
   return {

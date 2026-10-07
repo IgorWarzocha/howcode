@@ -1,13 +1,11 @@
-import type { AppUpdateState } from './desktop-app-update-contracts'
 import type { Artifact } from './desktop-artifact-contracts'
-import type { ComposerState, PiExtensionUiState } from './desktop-composer-contracts'
+import type { ComposerState } from './desktop-composer-contracts'
 import type { DictationModelId } from './desktop-dictation-contracts'
 import type { ProjectDiffStreamEvent } from './desktop-project-git-contracts'
 import type { ThreadData } from './desktop-thread-contracts'
 import type { KeybindingCommandId } from './keybindings'
 
 export type DesktopEvent =
-  | { type: 'app-update'; state: AppUpdateState }
   | { type: 'shell-state-refresh' }
   | { type: 'keybinding-command'; commandId: KeybindingCommandId }
   | {
@@ -24,11 +22,10 @@ export type DesktopEvent =
       severity: 'info' | 'warning' | 'error'
       message: string
       details?: unknown
-      sessionPath?: string | null | undefined
+      conversationId?: string | null | undefined
       projectId?: string | null | undefined
     }
-  | { type: 'internal-thread-update'; sessionPath: string }
-  | { type: 'session-tree-refresh'; sessionPath: string }
+  | { type: 'internal-thread-update'; conversationId: string }
   | {
       type: 'artifact-update'
       conversationId: string
@@ -39,9 +36,9 @@ export type DesktopEvent =
       reason: 'start' | 'update' | 'end' | 'external' | 'compaction-start' | 'compaction'
       projectId: string
       threadId: string
-      sessionPath: string
+      conversationId: string
       branchName?: string | null | undefined
-      replacesSessionPath?: string | null | undefined
+      replacesConversationId?: string | null | undefined
       chatGroupId?: string | null | undefined
       isChat?: boolean | undefined
       thread: ThreadData
@@ -50,12 +47,6 @@ export type DesktopEvent =
   | {
       type: 'composer-update'
       projectId: string | null
-      sessionPath: string | null
+      conversationId: string | null
       composer: ComposerState
-    }
-  | {
-      type: 'pi-extension-ui-update'
-      projectId: string | null
-      sessionPath: string
-      extensionUi: PiExtensionUiState
     }

@@ -1,9 +1,8 @@
 import * as Effect from 'effect/Effect'
 import * as Schema from 'effect/Schema'
-import * as SqlClient from 'effect/unstable/sql/SqlClient'
+import * as SqlClient from 'effect/sql/SqlClient'
 import type { Artifact, ArtifactKind, ArtifactVersion } from '../shared/desktop-contracts.ts'
 import { emitDesktopEvent } from './runtime/desktop-events.ts'
-import { emitDesktopEvent as emitRuntimeHostDesktopEvent } from './runtime-host/host-events.ts'
 import { databaseOperation } from './thread-state-db/db.ts'
 import { decodePersistedRow, decodePersistedRows } from './thread-state-db/row-schema.ts'
 import { withDatabaseTransaction } from './thread-state-db/write-transaction.ts'
@@ -140,7 +139,6 @@ function emitArtifactChange(artifact: Artifact) {
     artifact,
   }
   emitDesktopEvent(event)
-  emitRuntimeHostDesktopEvent(event)
 }
 
 type CreateArtifactInput = {

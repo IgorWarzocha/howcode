@@ -6,7 +6,7 @@
 <img width="1920" height="1080" alt="Howcode screenshot" src="https://github.com/user-attachments/assets/c81d022e-75bd-4657-8d46-821514997d9c" />
 <br />
 
-Howcode is a desktop app for coding with Pi.
+Howcode is a browser app for coding with Pi. A local Node server runs the agent, terminal, and project workflows.
 
 It is not trying to be a file editor. It is not trying to be VS Code with a chat panel glued on. The idea is simpler: keep the agent, terminal, project state, diffs, threads, and messy follow-up work in one place.
 
@@ -21,30 +21,26 @@ npm i -g howcode
 howcode
 ```
 
-The npm package is a launcher. It downloads the right desktop build from GitHub Releases, caches it, and relaunches the app.
+Requires Node 24.15 or newer, below Node 27. Open the access URL printed by Howcode in your browser. Keep the server running while you work.
 
-The 0.1.68 release is the updater handoff release. Launching `bunx howcode` (or `bunx howcode@dev`)
-once moves an older cached install onto the new updater. Older Windows installer installs may need
-one manual reinstall; updates after that are staged and handed off automatically.
-
-You can also download builds from the Releases page. Windows has an installer. Linux has an AppImage. macOS exists, but I build and test primarily on Linux, so please yell if it does something cursed.
+The npm package contains the server and browser app. Native terminal and dictation dependencies install for your machine through npm. Updating Howcode means installing a newer npm package, not an in-app updater.
 
 Works on my machine™
 
 ## What it does
 
-- **Pi sessions tied to projects** — start threads from projects, branches, worktrees, or chat.
+- **Durable conversations**: start threads from projects, branches, worktrees, or chat.
 - **Project sidebar** — projects, branches, worktrees, sessions, favorites, and recent activity.
-- **Session tree** — navigate, label, and summarize parts of long agent threads with `/tree`.
-- **Built-in terminal** — persisted transcript history, terminal drawer, and Pi TUI takeover mode when you want raw Pi.
+- **Conversation forks**: continue from an earlier message with `/fork` without changing the original conversation.
+- **Built-in terminal** — a shell terminal drawer with persisted transcript history.
 - **Git/worktree flow** — create branches and worktrees, run sessions inside them, review diffs, and merge/remove completed work.
 - **GitOps composer** — a separate composer for reviewing changed files and sending diff comments.
 - **Inbox** — recent local session activity in one place.
 - **Artifacts** — preview generated HTML/React-ish output without leaving the app.
 - **Voice input** — local dictation through sherpa-ONNX, running on CPU.
-- **Skills and extensions** — browse, install, remove, and configure Pi skills/extensions from inside the app.
-- **Pi SDK extension UI** — dialogs, widgets, status lines, notifications, shortcuts, and project trust prompts.
-- **Headless/browser mode** — run the app as a local server and use it from another browser on your LAN or Tailscale.
+- **Skills**: browse, install, remove, and configure skills from inside the app.
+- **Pi Durable conversations**: persistent history, queued messages, and conversation forks. Legacy Pi coding-agent extensions are not loaded.
+- **Browser access** — use the local server from your machine, LAN, or Tailscale.
 
 ## What it deliberately is not
 
@@ -55,21 +51,21 @@ Works on my machine™
 
 It is a cockpit for local/remote-ish agent work on a machine you trust.
 
-## Headless / browser mode
+## Browser access
 
-Installed builds can run without opening the desktop window:
+Start the server:
 
 ```bash
-bunx howcode --headless
+bunx howcode
 ```
 
 To access it from another device on your network:
 
 ```bash
-bunx howcode --headless --host 0.0.0.0 --port 4173
+bunx howcode --host 0.0.0.0 --port 4173
 ```
 
-Howcode prints an access URL with a token:
+For remote access, Howcode prints an access URL with a token:
 
 ```text
 http://<server-ip>:4173/#token=<printed-token>
@@ -78,18 +74,19 @@ http://<server-ip>:4173/#token=<printed-token>
 For a stable token:
 
 ```bash
-bunx howcode --headless --host 0.0.0.0 --port 4173 --token my-secret
+bunx howcode --host 0.0.0.0 --port 4173 --token my-secret
 # or
-HOWCODE_HEADLESS_TOKEN=my-secret bunx howcode --headless --host 0.0.0.0 --port 4173
+HOWCODE_HEADLESS_TOKEN=my-secret bunx howcode --host 0.0.0.0 --port 4173
 ```
 
 Notes:
 
-- Default host is `127.0.0.1`.
+- Default host is `127.0.0.1`, with port `5173`. Local loopback access needs no token by default.
 - Use `--host 0.0.0.0` only on a trusted network, Tailscale, WireGuard, etc.
 - Browser-picked, pasted, or dropped files are uploaded to a temp folder on the host before attaching.
 - Host file browsing still browses the host filesystem.
-- `openPath` and terminal actions happen on the host machine.
+- Terminal actions happen on the host machine. Browser file uploads do not expose local filesystem paths.
+- Microphone capture requires HTTPS or a loopback address. Plain HTTP access from another device cannot use dictation.
 - This is not hardened SaaS auth. Treat it more like SSH with a UI.
 
 ## Run from source
@@ -99,17 +96,20 @@ bun install
 bun run dev
 ```
 
-Headless/browser dev mode skips the Electron window and serves the app through Vite:
-
-```bash
-bun run dev:headless
-```
+Development serves the browser app through Vite and runs the backend under stock Node. Open the URL printed at startup.
 
 To try dev mode from another device on your network:
 
 ```bash
-bun run dev:headless:host
+bun run dev:host
 # open http://<this-machine-ip>:5173/#token=<printed-token>
+```
+
+Build and run the production server:
+
+```bash
+bun run build
+bun start
 ```
 
 Repo-wide verification:

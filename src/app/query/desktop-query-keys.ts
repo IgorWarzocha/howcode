@@ -1,12 +1,8 @@
-import { getPersistedSessionPath } from '@howcode/shared/session-paths'
+import { getPersistedConversationId } from '@howcode/shared/conversation-ids'
 import type { ComposerStateRequest, ProjectDiffBaseline } from '../desktop/types'
 
 export const desktopQueryKeys = {
-  appUpdateState: () => ['desktop', 'appUpdateState'] as const,
   shellState: () => ['desktop', 'shellState'] as const,
-  piPackageCatalog: (query: string) => ['desktop', 'piPackages', 'catalog', query] as const,
-  configuredPiPackages: (projectPath?: string | null | undefined, chat = false) =>
-    ['desktop', 'piPackages', 'configured', projectPath ?? null, chat] as const,
   piSkillCatalog: (query: string, limit?: number | undefined) =>
     ['desktop', 'piSkills', 'catalog', query, limit ?? null] as const,
   configuredPiSkills: (projectPath?: string | null | undefined, chat = false) =>
@@ -22,7 +18,7 @@ export const desktopQueryKeys = {
       'desktop',
       'composerState',
       request.projectId ?? null,
-      getPersistedSessionPath(request.sessionPath),
+      getPersistedConversationId(request.conversationId),
       request.composerMode ?? null,
       request.chatGroupId ?? null,
     ] as const,
@@ -64,10 +60,11 @@ export const desktopQueryKeys = {
   projectCommitsPrefix: (projectId: string) => ['desktop', 'projectCommits', projectId] as const,
   projectCommits: (projectId: string, limit = 50) =>
     ['desktop', 'projectCommits', projectId, limit] as const,
-  threadPrefix: (sessionPath: string) => ['desktop', 'thread', sessionPath] as const,
-  thread: (sessionPath: string, refreshKey = 0, historyCompactions = 0) =>
-    ['desktop', 'thread', sessionPath, refreshKey, historyCompactions] as const,
-  sessionTreeList: (sessionPath: string) => ['desktop', 'sessionTreeList', sessionPath] as const,
-  threadPreviewAtEntry: (sessionPath: string, targetEntryId: string, historyCompactions = 0) =>
-    ['desktop', 'threadPreviewAtEntry', sessionPath, targetEntryId, historyCompactions] as const,
+  threadPrefix: (conversationId: string) => ['desktop', 'thread', conversationId] as const,
+  thread: (conversationId: string, refreshKey = 0, historyCompactions = 0) =>
+    ['desktop', 'thread', conversationId, refreshKey, historyCompactions] as const,
+  conversationEntries: (conversationId: string) =>
+    ['desktop', 'conversationEntries', conversationId] as const,
+  threadPreviewAtEntry: (conversationId: string, targetEntryId: string, historyCompactions = 0) =>
+    ['desktop', 'threadPreviewAtEntry', conversationId, targetEntryId, historyCompactions] as const,
 }

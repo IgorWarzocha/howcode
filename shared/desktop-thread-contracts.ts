@@ -5,7 +5,7 @@ export type Thread = {
   title: string
   age: string
   lastModifiedMs?: number | undefined
-  sessionPath?: string | undefined
+  conversationId?: string | undefined
   summary?: string | undefined
   running?: boolean | undefined
   unread?: boolean | undefined
@@ -27,7 +27,7 @@ export type InboxThread = {
   title: string
   projectId: string
   projectName: string
-  sessionPath: string
+  conversationId: string
   age: string
   lastActivityMs?: number | undefined
   prompt: string | null
@@ -59,7 +59,7 @@ export type Project = {
 export type ProjectUsageSessionSummary = {
   threadId: string
   title: string
-  sessionPath: string
+  conversationId: string
   lastModifiedMs?: number | undefined
   input: number
   output: number
@@ -100,7 +100,7 @@ export type ArchivedThread = {
   age: string
   projectId: string
   projectName: string
-  sessionPath: string
+  conversationId: string
   isChat?: boolean | undefined
 }
 
@@ -195,7 +195,7 @@ export type Message =
   | SummaryThreadMessage
 
 export type ThreadData = {
-  sessionPath: string
+  conversationId: string
   title: string
   messages: Message[]
   customMessages?: ThreadCustomMessageRecord[] | undefined

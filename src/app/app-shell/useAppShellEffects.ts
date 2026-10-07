@@ -5,7 +5,6 @@ import type {
   ChatSidebarState,
   ComposerState,
   InboxThread,
-  PiExtensionUiState,
   ProjectGitState,
   ThreadData,
 } from '../desktop/types'
@@ -14,9 +13,8 @@ import type { Project } from '../types'
 import { useComposerGitStateSync } from './useComposerGitStateSync'
 import { useDesktopEventSync } from './useDesktopEventSync'
 import { useProjectShellSync } from './useProjectShellSync'
-import { useTakeoverVisibilitySync } from './useTakeoverVisibilitySync'
 import { useTerminalGitStateSync } from './useTerminalGitStateSync'
-import { useUtilityViewEscape, useWatchedSessionSync } from './useWindowShellSync'
+import { useUtilityViewEscape, useWatchedConversationSync } from './useWindowShellSync'
 
 type QueryClientLike = {
   setQueryData: (queryKey: readonly unknown[], updater: unknown) => void
@@ -44,7 +42,6 @@ export function useAppShellEffects({
   setComposerState,
   setChatSidebarState,
   setLiveThreadData,
-  setPiExtensionUiStateBySession,
   setProjectGitState,
   setProjectGitLoading,
   setThreadHistoryCompactions,
@@ -60,13 +57,13 @@ export function useAppShellEffects({
     projectId: string,
     options?: {
       chat?: boolean | undefined
-      replaceLocalDraftSessionPath?: string | null | undefined
+      replaceLocalDraftConversationId?: string | null | undefined
     },
   ) => Promise<unknown>
   loadArchivedThreads: () => Promise<ArchivedThread[]>
   loadComposerState: (request?: {
     projectId?: string | null
-    sessionPath?: string | null
+    conversationId?: string | null
     composerMode?: 'chat' | 'code' | null
   }) => Promise<ComposerState | null>
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
@@ -78,7 +75,6 @@ export function useAppShellEffects({
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>
   setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>
   setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>
-  setPiExtensionUiStateBySession: Dispatch<SetStateAction<Record<string, PiExtensionUiState>>>
   setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>
   setProjectGitLoading: Dispatch<SetStateAction<boolean>>
   setThreadHistoryCompactions: Dispatch<SetStateAction<number>>
@@ -89,16 +85,13 @@ export function useAppShellEffects({
     activeView: workspaceState.activeView,
     selectedProjectId: workspaceState.selectedProjectId,
     selectedThreadId: workspaceState.selectedThreadId,
-    selectedSessionPath: workspaceState.selectedSessionPath,
+    selectedConversationId: workspaceState.selectedConversationId,
     lastCodeThreadSelection: workspaceState.lastCodeThreadSelection,
-    takeoverVisible: workspaceState.takeoverVisible,
     loadProjectThreads,
     loadArchivedThreads,
     dispatch,
     setArchivedThreads,
   })
-
-  useTakeoverVisibilitySync({ shellAppSettings, workspaceState, dispatch })
 
   useComposerGitStateSync({
     workspaceState,
@@ -113,7 +106,7 @@ export function useAppShellEffects({
     setProjectGitLoading,
   })
 
-  useWatchedSessionSync(workspaceState)
+  useWatchedConversationSync(workspaceState)
   useUtilityViewEscape({ activeView: workspaceState.activeView, dispatch })
   useTerminalGitStateSync({ composerProjectId, loadProjectGitState, setProjectGitState })
 
@@ -129,7 +122,6 @@ export function useAppShellEffects({
     setComposerState,
     setChatSidebarState,
     setLiveThreadData,
-    setPiExtensionUiStateBySession,
     setProjectGitState,
     setThreadHistoryCompactions,
   })

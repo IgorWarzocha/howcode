@@ -24,13 +24,11 @@ function resolveNodeExecutable(options: DesktopServiceClientOptions) {
   })
 }
 
-function prepareNodeRuntime(options: DesktopServiceClientOptions, nodeExecutable: string) {
+function prepareNodeRuntime(nodeExecutable: string) {
   return Effect.tryPromise({
     try: () =>
       prepareServiceNativeRuntime({
         nodeExecutable,
-        // biome-ignore lint/complexity/useLiteralKeys: ProcessEnv is an index-signature type.
-        resourcesPath: options.env?.['HOWCODE_ELECTRON_RESOURCES_PATH'],
       }),
     catch: (error) => serviceError('prepareNativeRuntime', error),
   })
@@ -49,7 +47,8 @@ function spawnServiceProcess(
         env: {
           ...process.env,
           ...options.env,
-          HOWCODE_REPO_ROOT: options.cwd,
+          // biome-ignore lint/complexity/useLiteralKeys: ProcessEnv requires index-signature access.
+          HOWCODE_REPO_ROOT: options.env?.['HOWCODE_REPO_ROOT'] ?? options.cwd,
           HOWCODE_SERVICE_NODE_ABI: nodeRuntime.abi,
           HOWCODE_SERVICE_NODE_VERSION: nodeRuntime.version,
         },
@@ -146,7 +145,7 @@ export function makeLiveProcessAdapter(
     spawn: (handlers) =>
       resolveNodeExecutable(options).pipe(
         Effect.flatMap((nodeExecutable) =>
-          prepareNodeRuntime(options, nodeExecutable).pipe(
+          prepareNodeRuntime(nodeExecutable).pipe(
             Effect.flatMap((nodeRuntime) =>
               spawnServiceProcess(options, nodeExecutable, nodeRuntime, handlers),
             ),

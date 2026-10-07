@@ -65,7 +65,7 @@ export function useInboxReplyController(input: {
     try {
       const result = await input.onAction('composer.stop', {
         projectId: input.thread.projectId,
-        sessionPath: input.thread.sessionPath,
+        conversationId: input.thread.conversationId,
       })
       const actionErrorMessage = getDesktopActionErrorMessage(result, 'Could not stop Pi.')
       if (actionErrorMessage) setErrorMessage(actionErrorMessage)

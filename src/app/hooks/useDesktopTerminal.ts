@@ -6,11 +6,9 @@ import type {
 } from '../desktop/types'
 import {
   closeDesktopTerminalQuery,
-  getDesktopTerminalStatusQuery,
   listDesktopTerminalsQuery,
   openDesktopTerminalQuery,
   resizeDesktopTerminalQuery,
-  statDesktopTerminalSessionFileQuery,
   subscribeDesktopTerminalQuery,
   writeDesktopTerminalQuery,
 } from '../query/desktop-query'
@@ -33,14 +31,6 @@ export async function resizeDesktopTerminal(request: TerminalResizeRequest) {
 
 export async function closeDesktopTerminal(request: TerminalCloseRequest) {
   await closeDesktopTerminalQuery(request)
-}
-
-export async function statDesktopTerminalSessionFile(sessionId: string) {
-  return statDesktopTerminalSessionFileQuery(sessionId)
-}
-
-export async function getDesktopTerminalStatus(sessionId: string) {
-  return getDesktopTerminalStatusQuery(sessionId)
 }
 
 export function subscribeDesktopTerminal(listener: (event: TerminalEvent) => void) {

@@ -3,7 +3,7 @@ import type { KeybindingRuntime } from './keybinding-runtime'
 
 function findSelectedThreadIndex(
   project: Project | null,
-  selectedSessionPath: string | null,
+  selectedConversationId: string | null,
   selectedThreadId: string | null,
 ) {
   if (!project) return -1
@@ -12,12 +12,12 @@ function findSelectedThreadIndex(
   )
   if (selectedThreadIndex >= 0) return selectedThreadIndex
   return project.threads.findIndex((thread) => {
-    return Boolean(selectedSessionPath && thread.sessionPath === selectedSessionPath)
+    return Boolean(selectedConversationId && thread.conversationId === selectedConversationId)
   })
 }
 
-function getThreadSessionPath(thread: Thread) {
-  return thread.sessionPath ?? thread.id
+function getThreadConversationId(thread: Thread) {
+  return thread.conversationId ?? thread.id
 }
 
 function getAdjacentIndex(currentIndex: number, length: number, direction: -1 | 1) {
@@ -54,8 +54,8 @@ function openAdjacentThread(runtime: KeybindingRuntime, direction: -1 | 1) {
   const index = findSelectedThreadIndex(
     project,
     hasThreadCycleSelection
-      ? cycleSelection.sessionPath
-      : controller.workspace.state.selectedSessionPath,
+      ? cycleSelection.conversationId
+      : controller.workspace.state.selectedConversationId,
     hasThreadCycleSelection ? cycleSelection.threadId : controller.workspace.state.selectedThreadId,
   )
   if (!(project && project.threads.length > 0)) return false
@@ -65,10 +65,10 @@ function openAdjacentThread(runtime: KeybindingRuntime, direction: -1 | 1) {
   runtime.cycleSelectionRef.current = {
     projectId: project.id,
     threadId: nextThread.id,
-    sessionPath: getThreadSessionPath(nextThread),
+    conversationId: getThreadConversationId(nextThread),
     view: 'thread',
   }
-  controller.thread.cycle(project.id, nextThread.id, getThreadSessionPath(nextThread), 'thread')
+  controller.thread.cycle(project.id, nextThread.id, getThreadConversationId(nextThread), 'thread')
   return true
 }
 
@@ -87,28 +87,28 @@ function openAdjacentChatThread(runtime: KeybindingRuntime, direction: -1 | 1) {
   const index = findSelectedThreadIndex(
     { id: 'chat', name: 'Chat', threads },
     hasChatCycleSelection
-      ? cycleSelection.sessionPath
-      : controller.workspace.state.selectedSessionPath,
+      ? cycleSelection.conversationId
+      : controller.workspace.state.selectedConversationId,
     hasChatCycleSelection ? cycleSelection.threadId : controller.workspace.state.selectedThreadId,
   )
   const nextThread = threads[getAdjacentIndex(index, threads.length, direction)]
-  if (!nextThread?.sessionPath) return false
+  if (!nextThread?.conversationId) return false
   runtime.cycleSelectionRef.current = {
     projectId: nextThread.projectId,
     threadId: nextThread.id,
-    sessionPath: nextThread.sessionPath,
+    conversationId: nextThread.conversationId,
     view: 'chat',
   }
-  controller.thread.cycle(nextThread.projectId, nextThread.id, nextThread.sessionPath, 'chat')
+  controller.thread.cycle(nextThread.projectId, nextThread.id, nextThread.conversationId, 'chat')
   return true
 }
 
 function selectAdjacentInboxThread(runtime: KeybindingRuntime, direction: -1 | 1) {
   const controller = runtime.appController
   if (controller.workspace.state.activeView !== 'inbox') return null
-  const selectedPath = controller.workspace.state.selectedInboxSessionPath
+  const selectedPath = controller.workspace.state.selectedInboxConversationId
   const currentIndex = selectedPath
-    ? controller.inbox.threads.findIndex((thread) => thread.sessionPath === selectedPath)
+    ? controller.inbox.threads.findIndex((thread) => thread.conversationId === selectedPath)
     : 0
   if (controller.inbox.threads.length === 0) return false
   const nextIndex = getAdjacentIndex(currentIndex, controller.inbox.threads.length, direction)

@@ -52,7 +52,7 @@ function NonGitProjectThreads({
   branchGroups,
   project,
   selectedThreadId,
-  terminalRunningSessionPaths,
+  terminalRunningConversationIds,
   onAction,
   onThreadOpen,
 }: {
@@ -60,9 +60,9 @@ function NonGitProjectThreads({
   branchGroups: BranchThreadGroup[]
   project: Project
   selectedThreadId: string | null
-  terminalRunningSessionPaths: ReadonlySet<string>
+  terminalRunningConversationIds: ReadonlySet<string>
   onAction: DesktopActionInvoker
-  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
+  onThreadOpen: (projectId: string, threadId: string, conversationId: string) => void
 }) {
   const threads = branchGroups.flatMap((group) => group.threads)
   return (
@@ -74,7 +74,7 @@ function NonGitProjectThreads({
           currentBranch={null}
           project={project}
           selectedThreadId={selectedThreadId}
-          terminalRunningSessionPaths={terminalRunningSessionPaths}
+          terminalRunningConversationIds={terminalRunningConversationIds}
           thread={thread}
           onAction={onAction}
           onThreadOpen={onThreadOpen}
@@ -96,7 +96,7 @@ export function MultiProjectWorkContent({
   selectedProjectId,
   selectedThreadId,
   hideSessionCounts,
-  terminalRunningSessionPaths,
+  terminalRunningConversationIds,
   visibleProjects,
   onAction,
   onFocusProject,
@@ -118,7 +118,7 @@ export function MultiProjectWorkContent({
   selectedProjectId: string
   selectedThreadId: string | null
   hideSessionCounts: boolean
-  terminalRunningSessionPaths: ReadonlySet<string>
+  terminalRunningConversationIds: ReadonlySet<string>
   visibleProjects: Project[]
   onAction: DesktopActionInvoker
   onFocusProject: (projectId: string) => void
@@ -129,7 +129,7 @@ export function MultiProjectWorkContent({
   ) => void
   onToggleProjectCollapse: (projectId: string) => void
   onShowView: (view: Exclude<View, 'gitops'>) => void
-  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
+  onThreadOpen: (projectId: string, threadId: string, conversationId: string) => void
 }) {
   return (
     <div className="sidebar-project-work-lane">
@@ -187,7 +187,7 @@ export function MultiProjectWorkContent({
                 searchQuery={searchQuery}
                 selectedProjectId={selectedProjectId}
                 selectedThreadId={selectedThreadId}
-                terminalRunningSessionPaths={terminalRunningSessionPaths}
+                terminalRunningConversationIds={terminalRunningConversationIds}
                 threads={buckets.activeThreads}
                 unassignedCollapsed={collapsedBranchIds[unassignedGroupId] ?? true}
                 onAction={onAction}
@@ -227,7 +227,7 @@ export function SingleProjectWorkContent({
   searchQuery,
   selectedGroupId,
   selectedThreadId,
-  terminalRunningSessionPaths,
+  terminalRunningConversationIds,
   onAction,
   onFocusProject,
   onSearchQueryChange,
@@ -249,7 +249,7 @@ export function SingleProjectWorkContent({
   searchQuery: string
   selectedGroupId: string
   selectedThreadId: string | null
-  terminalRunningSessionPaths: ReadonlySet<string>
+  terminalRunningConversationIds: ReadonlySet<string>
   onAction: DesktopActionInvoker
   onFocusProject: (projectId: string) => void
   onSearchQueryChange: (query: string) => void
@@ -257,7 +257,7 @@ export function SingleProjectWorkContent({
     updater: (current: Record<string, boolean>) => Record<string, boolean>,
   ) => void
   onShowView: (view: Exclude<View, 'gitops'>) => void
-  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
+  onThreadOpen: (projectId: string, threadId: string, conversationId: string) => void
 }) {
   const openProjectView = (view: Exclude<View, 'gitops'>) => {
     onFocusProject(project.id)
@@ -346,7 +346,7 @@ export function SingleProjectWorkContent({
                     hideSessionCounts={hideSessionCounts}
                     project={project}
                     selectedThreadId={selectedThreadId}
-                    terminalRunningSessionPaths={terminalRunningSessionPaths}
+                    terminalRunningConversationIds={terminalRunningConversationIds}
                     onAction={onAction}
                     showBottomDivider={showBottomDivider}
                     onThreadOpen={onThreadOpen}
@@ -366,7 +366,7 @@ export function SingleProjectWorkContent({
               branchGroups={branchGroups}
               project={project}
               selectedThreadId={selectedThreadId}
-              terminalRunningSessionPaths={terminalRunningSessionPaths}
+              terminalRunningConversationIds={terminalRunningConversationIds}
               onAction={onAction}
               onThreadOpen={onThreadOpen}
             />

@@ -23,14 +23,12 @@ type Viewport = object
 type DeferredRelease = TerminalSessionRelease & { identity: string }
 
 export function getTerminalViewportIdentity(input: {
-  launchMode: 'shell' | 'pi-session'
   projectId: string
-  sessionPath: string | null
+  conversationId: string | null
 }) {
   return JSON.stringify({
     projectId: input.projectId,
-    sessionPath: input.sessionPath,
-    launchMode: input.launchMode,
+    conversationId: input.conversationId,
   })
 }
 

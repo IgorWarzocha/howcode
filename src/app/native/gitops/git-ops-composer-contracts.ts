@@ -8,7 +8,7 @@ export type GitOpsComposerProject = {
   id: string
   gitState: ProjectGitState | null
   parentBranchName?: string | null | undefined
-  sessionPath: string | null
+  conversationId: string | null
 }
 
 export type GitOpsComposerDiff = {

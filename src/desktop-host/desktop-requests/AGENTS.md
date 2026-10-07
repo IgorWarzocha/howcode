@@ -1,4 +1,4 @@
-- `handlers.ts` is the one complete desktop request composition boundary for Electron IPC, packaged headless, and development web.
+- `handlers.ts` is the one complete desktop request composition boundary for production HTTP and development web.
 - Pi thread/package/skill and terminal handlers own runtime operation mapping. Add a domain handler here rather than branching in a transport.
-- `system.ts` owns shared filesystem request behaviour; platform adapters supply updater, dialogs, clipboard, opening, and downloads-directory capabilities.
+- `system.ts` owns server filesystem request behaviour. Browser uploads, clipboard, downloads, and external links belong to the renderer.
 - Keep transports limited to authentication, framing, event delivery, uploads, and lifecycle. Preserve request and response semantics across every host.

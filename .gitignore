@@ -14,6 +14,9 @@ coverage/
 
 .pi/semantic-grep.sqlite-shm
 .pi/semantic-grep.sqlite-wal
+.pi/agent-message-board.sqlite
+.pi/agent-message-board.sqlite-shm
+.pi/agent-message-board.sqlite-wal
 !src/app/features/chat/artifacts/
 !src/app/features/chat/artifacts/**
 

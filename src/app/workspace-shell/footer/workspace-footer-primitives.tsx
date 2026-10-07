@@ -2,7 +2,7 @@ import { Tooltip } from '../../common/tooltip'
 import { cn } from '../../utils/cn'
 
 // Keep workspace bottom chrome visually in sync across the prompt composer,
-// git-ops composer, and Pi-TUI takeover terminal footer.
+// git-ops composer.
 export const workspaceFooterRowClass =
   'composer-footer-row flex items-center gap-1.5 pr-2.5 pl-2.5 py-2 text-[color:var(--muted)] max-md:flex-wrap'
 

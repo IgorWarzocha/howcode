@@ -10,12 +10,11 @@ export function resolveSlashCommandAfterLoad(input: {
   draftRef: { current: string }
   projectId: string
   send: () => void
-  sendExtensionCommand: (() => void) | undefined
-  sessionPath: string | null
+  conversationId: string | null
 }) {
   void getComposerSlashCommandsQuery({
     projectId: input.projectId,
-    sessionPath: input.sessionPath,
+    conversationId: input.conversationId,
     composerMode: input.composerMode,
   })
     .then((nextCommands) => {
@@ -26,8 +25,7 @@ export function resolveSlashCommandAfterLoad(input: {
         return
       const commandName = input.draft.trim().slice(1).split(whitespaceRunPattern, 1)[0]
       const resolvedCommand = nextCommands.find((command) => command.name === commandName)
-      if (resolvedCommand?.source === 'extension') input.sendExtensionCommand?.()
-      else if (resolvedCommand) input.send()
+      if (resolvedCommand) input.send()
     })
     .catch(() => {
       // Keep slash text in the editor rather than leaking an unresolved command to the model.
@@ -46,21 +44,11 @@ export function tryResolveSlashDraft(input: {
   loading: boolean
   projectId: string
   send: () => void
-  sendExtensionCommand: (() => void) | undefined
-  sessionPath: string | null
+  conversationId: string | null
 }) {
   if (!input.draft.trim().startsWith('/')) return false
   input.dismiss()
-  if (input.draftCommand?.source === 'extension' && input.sendExtensionCommand) {
-    input.sendExtensionCommand()
-    return true
-  }
-  if (
-    input.draftCommand ||
-    !input.sendExtensionCommand ||
-    !(input.loading || input.commands.length === 0)
-  )
-    return false
+  if (input.draftCommand || !(input.loading || input.commands.length === 0)) return false
   resolveSlashCommandAfterLoad(input)
   return true
 }

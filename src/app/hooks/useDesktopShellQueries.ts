@@ -12,7 +12,6 @@ import {
   getComposerStateQuery,
   getProjectGitStateQuery,
   listComposerAttachmentEntriesQuery,
-  pickComposerAttachmentsQuery,
 } from '../query/desktop-query'
 import { useDesktopProjectThreads } from './useDesktopProjectThreads'
 
@@ -46,10 +45,6 @@ export function useDesktopShellQueries() {
       }),
     [queryClient],
   )
-  const pickComposerAttachments = useCallback(
-    async (projectId?: string | null) => pickComposerAttachmentsQuery(projectId ?? null),
-    [],
-  )
   const listComposerAttachmentEntries = useCallback(
     async (request: {
       projectId?: string | null
@@ -64,6 +59,5 @@ export function useDesktopShellQueries() {
     listComposerAttachmentEntries,
     loadProjectGitState,
     loadProjectThreads,
-    pickComposerAttachments,
   }
 }

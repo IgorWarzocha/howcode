@@ -1,17 +1,12 @@
 import type { DesktopAction } from '@howcode/shared/desktop-actions'
 import { browserDesktopBridgeCapabilities } from '@howcode/shared/desktop-bridge-capabilities'
-import type {
-  AnyDesktopActionPayload,
-  ComposerAttachment,
-  DesktopEvent,
-} from '@howcode/shared/desktop-contracts'
+import type { AnyDesktopActionPayload, DesktopEvent } from '@howcode/shared/desktop-contracts'
 import type {
   DesktopEventChannel,
   DesktopEventMap,
   DesktopRequestChannel,
   DesktopRequestMap,
 } from '@howcode/shared/desktop-ipc'
-import { getSafeExternalUrl } from '@howcode/shared/external-url'
 import type { TerminalEvent, TerminalOpenRequest } from '@howcode/shared/terminal-contracts'
 import * as Result from 'effect/Result'
 import * as Schema from 'effect/Schema'
@@ -329,16 +324,9 @@ export async function installDevWebDesktopBridge() {
     return
   }
 
-  window.howcodeDevWebBridge = true
-
   window.piDesktop = {
     platform: navigator.platform.toLowerCase().includes('mac') ? 'darwin' : 'browser',
     capabilities: browserDesktopBridgeCapabilities,
-    getAppUpdateState: () => invokeRequest('getAppUpdateState', {}),
-    checkAppUpdate: () => invokeRequest('checkAppUpdate', {}),
-    installAppUpdate: () => invokeRequest('installAppUpdate', {}),
-    restartAppUpdate: () => invokeRequest('restartAppUpdate', {}),
-    clearClipboardImages: () => invokeRequest('clearClipboardImages', {}),
     getShellState: () => invokeRequest('getShellState', {}),
     getProjectGitState: (projectId: string) => invokeRequest('getProjectGitState', { projectId }),
     getProjectUsageSummary: (projectId: string) =>
@@ -361,24 +349,12 @@ export async function installDevWebDesktopBridge() {
       invokeRequest('captureProjectDiffBaseline', { projectId }),
     listProjectCommits: (projectId: string, limit: number | null = null) =>
       invokeRequest('listProjectCommits', { projectId, limit }),
-    searchPiPackages: (request = {}) => invokeRequest('searchPiPackages', request),
-    getConfiguredPiPackages: (request = {}) => invokeRequest('getConfiguredPiPackages', request),
-    installPiPackage: (request) => invokeRequest('installPiPackage', request),
-    removePiPackage: (request) => invokeRequest('removePiPackage', request),
     searchPiSkills: (request = {}) => invokeRequest('searchPiSkills', request),
     getConfiguredPiSkills: (request = {}) => invokeRequest('getConfiguredPiSkills', request),
     installPiSkill: (request) => invokeRequest('installPiSkill', request),
     removePiSkill: (request) => invokeRequest('removePiSkill', request),
-    pickComposerAttachments: () => Promise.resolve([] satisfies ComposerAttachment[]),
     listProjectDirectoryEntries: (request = {}) =>
       invokeRequest('listProjectDirectoryEntries', request),
-    readClipboardSnapshot: (formats: string[] | null = null) =>
-      invokeRequest('readClipboardSnapshot', { formats }),
-    readClipboardFilePaths: () => invokeRequest('readClipboardFilePaths', {}),
-    readClipboardImage: () => invokeRequest('readClipboardImage', {}),
-    getAttachmentKindsForPaths: (paths: string[]) =>
-      invokeRequest('getAttachmentKindsForPaths', { paths }),
-    getPathForFile: () => null,
     uploadComposerFiles: (files: File[]) => uploadComposerFiles(files),
     listComposerAttachmentEntries: (request = {}) =>
       invokeRequest('listComposerAttachmentEntries', request),
@@ -415,16 +391,14 @@ export async function installDevWebDesktopBridge() {
     compileReactArtifact: (source: string) => invokeRequest('compileReactArtifact', { source }),
     getInboxThreads: () => invokeRequest('getInboxThreads', {}),
     getArchivedThreads: () => invokeRequest('getArchivedThreads', {}),
-    getThread: (sessionPath: string, historyCompactions = 0) =>
-      invokeRequest('getThread', { sessionPath, historyCompactions }),
-    getSessionTreeList: (sessionPath: string) =>
-      invokeRequest('getSessionTreeList', { sessionPath }),
-    getThreadPreviewAtEntry: (sessionPath: string, targetEntryId: string, historyCompactions = 0) =>
-      invokeRequest('getThreadPreviewAtEntry', { sessionPath, targetEntryId, historyCompactions }),
-    searchThread: (sessionPath: string, query: string) =>
-      invokeRequest('searchThread', { sessionPath, query }),
-    watchSession: async (sessionPath: string | null) => {
-      await invokeRequest('watchSession', { sessionPath })
+    getThread: (conversationId: string, historyCompactions = 0) =>
+      invokeRequest('getThread', { conversationId, historyCompactions }),
+    getConversationEntries: (conversationId: string) =>
+      invokeRequest('getConversationEntries', { conversationId }),
+    searchThread: (conversationId: string, query: string) =>
+      invokeRequest('searchThread', { conversationId, query }),
+    watchConversation: async (conversationId: string | null) => {
+      await invokeRequest('watchConversation', { conversationId })
     },
     invokeAction: (action: DesktopAction, payload: AnyDesktopActionPayload = {}) =>
       invokeRequest('invokeAction', { action, payload }),
@@ -439,18 +413,7 @@ export async function installDevWebDesktopBridge() {
     closeTerminal: async (request) => {
       await invokeRequest('terminalClose', request)
     },
-    statTerminalSessionFile: (sessionId: string) =>
-      invokeRequest('terminalSessionFileStat', { sessionId }),
     getTerminalStatus: (sessionId: string) => invokeRequest('terminalStatus', { sessionId }),
-    openExternal: (url: string) => {
-      const safeUrl = getSafeExternalUrl(url)
-      if (!safeUrl) return Promise.resolve(false)
-      window.open(safeUrl, '_blank', 'noopener,noreferrer')
-      return Promise.resolve(true)
-    },
-    openPath: (path: string) => invokeRequest('openPath', { path }).then(({ ok }) => ok),
-    saveTextToDownloads: (fileName: string, content: string) =>
-      invokeRequest('saveTextToDownloads', { fileName, content }),
     subscribe: (listener: (event: DesktopEvent) => void) =>
       subscribeToEvent(
         'desktopEvent',

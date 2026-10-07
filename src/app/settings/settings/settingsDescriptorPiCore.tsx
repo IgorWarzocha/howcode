@@ -18,17 +18,7 @@ const queueModeSettings = [
 ] as const
 
 const piBooleanSettings = [
-  {
-    key: 'autoResizeImages',
-    title: 'Auto resize images',
-    description: 'Shrink images before upload.',
-  },
   { key: 'blockImages', title: 'Block images', description: 'Never send images to providers.' },
-  {
-    key: 'enableInstallTelemetry',
-    title: 'Install telemetry',
-    description: 'Anonymous Pi version check.',
-  },
 ] as const
 
 export function buildPiCoreSettingsDescriptors({
@@ -49,8 +39,8 @@ export function buildPiCoreSettingsDescriptors({
       id: 'pi-runtime.theme',
       category: 'howcode',
       title: 'Theme',
-      description: 'Shared with your Pi TUI.',
-      keywords: 'theme color json pi gui terminal appearance howcode tui',
+      description: 'Colors for Howcode.',
+      keywords: 'theme color json pi gui appearance howcode',
       render: () => {
         const themes =
           (piTheme?.themes.length ?? 0) > 0
@@ -100,15 +90,16 @@ export function buildPiCoreSettingsDescriptors({
       id: 'pi-runtime.transport',
       category: 'pi',
       title: 'Transport',
-      description: 'Soon to be deprecated.',
-      keywords: 'transport sse websocket auto provider runtime',
+      description: 'Connection mode for providers that support it.',
+      keywords: 'transport sse websocket cached auto provider runtime',
       render: () => (
         <SettingsSegmentedControl
-          columnsClassName="grid-cols-3"
+          columnsClassName="grid-cols-4"
           value={draftPiSettings.transport}
           options={[
             { value: 'sse', label: 'SSE' },
             { value: 'websocket', label: 'WebSocket' },
+            { value: 'websocket-cached', label: 'Cached WebSocket' },
             { value: 'auto', label: 'Auto' },
           ]}
           onChange={(value) => setDraftPiSetting('transport', value)}
@@ -126,25 +117,6 @@ export function buildPiCoreSettingsDescriptors({
           checked={draftPiSettings.autoCompact}
           label="Auto compact context"
           onClick={() => setDraftPiSetting('autoCompact', !draftPiSettings.autoCompact)}
-        />
-      ),
-    },
-    {
-      id: 'pi-runtime.cache-warming',
-      category: 'pi',
-      title: 'Prompt cache warming',
-      description: 'Keep provider prompt caches alive. This can make metered requests.',
-      keywords: 'cache prompt provider cost runtime',
-      render: () => (
-        <SettingsSegmentedControl
-          columnsClassName="grid-cols-3"
-          value={draftPiSettings.cacheWarming}
-          options={[
-            { value: 'off', label: 'Off' },
-            { value: 'streaming', label: 'Working' },
-            { value: 'idle', label: 'Idle' },
-          ]}
-          onChange={(value) => setDraftPiSetting('cacheWarming', value)}
         />
       ),
     },

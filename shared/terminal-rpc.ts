@@ -1,15 +1,13 @@
+import * as Rpc from 'effect/rpc/Rpc'
+import * as RpcGroup from 'effect/rpc/RpcGroup'
+import type * as RpcMessage from 'effect/rpc/RpcMessage'
 import * as Schema from 'effect/Schema'
-import * as Rpc from 'effect/unstable/rpc/Rpc'
-import * as RpcGroup from 'effect/unstable/rpc/RpcGroup'
-import type * as RpcMessage from 'effect/unstable/rpc/RpcMessage'
 import {
   TerminalCloseRequest,
   TerminalError,
   TerminalEvent,
   TerminalOpenRequest,
   TerminalResizeRequest,
-  TerminalSessionFileStat,
-  TerminalSessionFileStatRequest,
   TerminalSessionSnapshot,
   TerminalStatusRequest,
   TerminalStatusSnapshot,
@@ -48,12 +46,6 @@ const TerminalCloseAllRpc = Rpc.make('terminal.closeAll', {
   error: TerminalError,
 })
 
-const TerminalStatSessionFileRpc = Rpc.make('terminal.statSessionFile', {
-  payload: TerminalSessionFileStatRequest,
-  success: Schema.NullOr(TerminalSessionFileStat),
-  error: TerminalError,
-})
-
 const TerminalStatusRpc = Rpc.make('terminal.status', {
   payload: TerminalStatusRequest,
   success: TerminalStatusSnapshot,
@@ -80,7 +72,6 @@ export const TerminalRpcGroup = RpcGroup.make(
   TerminalResizeRpc,
   TerminalCloseRpc,
   TerminalCloseAllRpc,
-  TerminalStatSessionFileRpc,
   TerminalStatusRpc,
   TerminalEventsRpc,
 )

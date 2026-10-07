@@ -117,7 +117,11 @@ type StartDictationCaptureInput = {
 
 async function startDictationCapture(input: StartDictationCaptureInput) {
   if (!(canUseLocalDictationCapture() && canTranscribeDictationQuery())) {
-    input.setErrorMessage('Local dictation is unavailable in this runtime.')
+    input.setErrorMessage(
+      globalThis.isSecureContext
+        ? 'Local dictation is unavailable in this browser.'
+        : 'Dictation requires HTTPS or localhost for microphone access.',
+    )
     return 'unavailable' as const
   }
 
@@ -154,7 +158,7 @@ type UseComposerDictationProps = {
   dictationMaxDurationSeconds: number
   draftThreadId: string | null
   projectId: string
-  sessionPath: string | null
+  conversationId: string | null
   setDraftValue: Dispatch<SetStateAction<string>>
   setErrorMessage: Dispatch<SetStateAction<string | null>>
 }
@@ -165,7 +169,7 @@ export function useComposerDictation({
   dictationMaxDurationSeconds,
   draftThreadId,
   projectId,
-  sessionPath,
+  conversationId,
   setDraftValue,
   setErrorMessage,
 }: UseComposerDictationProps) {
@@ -179,8 +183,8 @@ export function useComposerDictation({
     'started' | 'setup-required' | 'unavailable'
   > | null>(null)
   const dictationScopeKey = useMemo(
-    () => `${activeView}::${projectId}::${sessionPath ?? ''}::${draftThreadId ?? ''}`,
-    [activeView, draftThreadId, projectId, sessionPath],
+    () => `${activeView}::${projectId}::${conversationId ?? ''}::${draftThreadId ?? ''}`,
+    [activeView, draftThreadId, projectId, conversationId],
   )
   const activeDictationScopeKeyRef = useLatestRef(dictationScopeKey)
 

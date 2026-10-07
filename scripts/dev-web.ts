@@ -7,7 +7,7 @@ import type { AddressInfo } from 'node:net'
 import path from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { createServer, type ViteDevServer } from 'vite'
-
+import { desktopShutdownTimeouts } from '../shared/desktop-shutdown-deadlines'
 import {
   DEV_SERVER_HOST,
   DEV_SERVER_METADATA_RELATIVE_PATH,
@@ -71,9 +71,24 @@ async function shutdown(exitCode = 0) {
   isShuttingDown = true
 
   try {
-    bridge?.child.kill()
+    const child = bridge?.child
+    const bridgeClosed =
+      child && child.exitCode === null && child.signalCode === null
+        ? new Promise<void>((resolve) => {
+            const timer = setTimeout(() => {
+              child.kill('SIGKILL')
+              resolve()
+            }, desktopShutdownTimeouts.serverCleanupMs + 1_000)
+            child.once('exit', () => {
+              clearTimeout(timer)
+              resolve()
+            })
+            child.kill('SIGTERM')
+          })
+        : Promise.resolve()
     await removeDevServerMetadata()
     await server?.close()
+    await bridgeClosed
   } finally {
     process.exit(exitCode)
   }
@@ -123,6 +138,7 @@ async function startDevWebBridge() {
 
     child.once('error', fail)
     child.once('exit', (code, signal) => {
+      if (isShuttingDown) return
       if (!settled) {
         fail(new Error(`dev:web bridge exited before startup (code=${code}, signal=${signal}).`))
         return
@@ -333,9 +349,7 @@ try {
       `[howcode] dev:web access token URL: http://${devServerPublicHost}:${port}/#token=${encodeURIComponent(devWebAccess.accessToken ?? '')}`,
     )
   }
-  console.warn(
-    '\n[howcode] dev:web local desktop bridge is enabled for project sync/import. `bun run dev` remains the preferred full desktop dev loop.\n',
-  )
+  console.warn('\n[howcode] dev:web server bridge is enabled for project sync/import.\n')
   await listenPromise
 } catch (error) {
   bridge?.child.kill()

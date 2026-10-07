@@ -1,12 +1,12 @@
 ## Runtime boundaries
 
-- Use Bun for installs and scripts; the shipped app runs on Electron with a backend service under stock Node.
-- Put cross-runtime API contracts in `shared/*`; do not add ad-hoc renderer, Electron, or desktop-service shims.
-- Keep ASAR enabled. Stock-Node code and its complete native dependency trees must remain outside it.
+- Use Bun for installs and scripts; the browser app's server and backend service run under stock Node.
+- Put browser/server/service API contracts in `shared/*`; do not add ad-hoc transport shims.
+- Native terminal and dictation dependencies belong on the server, never in browser bundles.
 
 ## Workflow
 
-- Assume the dev app is already running; do not start it. Inspect Electron through CDP at `127.0.0.1:39217`.
+- Assume the dev server is already running; do not start or restart it. Read `build/dev-server.json` for its address and exercise the app in a browser.
 - Commits run `bun run ai:check`, including blocking React Doctor; keep its score at 100. Run the gate manually only when asked, when not committing, or while diagnosing a failed hook.
 - Do not relax Biome or TypeScript rules merely to make checks pass; fix the code or use a narrow, justified override.
 - Hardening is behaviour-preserving unless separately scoped: do not change product semantics, UI, UX, copy, layout, or interaction during structural passes.

@@ -1,330 +1,218 @@
-import { stat } from 'node:fs/promises'
-import * as Effect from 'effect/Effect'
-import * as Exit from 'effect/Exit'
-import * as Scope from 'effect/Scope'
+import {
+  fallbackAppSlashCommands,
+  parseCompactSlashCommand,
+} from '../shared/composer-slash-commands.ts'
 import type {
   ComposerAttachment,
   ComposerStateRequest,
   ComposerStreamingBehavior,
-  ComposerThinkingLevel,
-  DesktopEvent,
-  ProseMessage,
-  ThreadData,
 } from '../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../shared/desktop-working-directory.ts'
-import { getPersistedSessionPath } from '../shared/session-paths.ts'
-import { getLatestInboxAssistantMessage } from '../shared/thread-inbox.ts'
 import { loadAppSettings } from './app-settings/readers.ts'
-import { getChatSessionDir } from './chat-session-dir.ts'
-import { isChatSessionPath, upsertChatThread } from './chat-state-db.ts'
+import { getComposerState } from './durable-runtime/composer.ts'
+import {
+  createRuntimeConversation,
+  decodeEntryId,
+  decodeSubmissionId,
+  deleteRuntimeConversation,
+  getDurableRuntime,
+  RuntimeOriginDoc,
+  readRuntimeConversationOrigin,
+  resolveConversation,
+  runtimeContext,
+} from './durable-runtime/host.ts'
+import { prepareRuntimeInput } from './durable-runtime/input.ts'
+import {
+  disposeRuntimeWatches,
+  getLiveThread,
+  selectRuntimeConversation,
+  watchRuntimeConversation,
+} from './durable-runtime/threads.ts'
+import {
+  getRuntimeConversationMetadata,
+  registerRuntimeConversation,
+} from './pi-threads/conversation-state.ts'
 import { withWorkspaceActivity } from './project-worktrees/workspace-teardown-gate.ts'
-import { subscribeDesktopEvents as subscribeLocalDesktopEvents } from './runtime/desktop-events.ts'
-import { getLiveThread, markInternalThreadUpdate } from './runtime/live-thread-store.ts'
-import { makeThreadUpdateForwarder } from './runtime/thread-update-forwarding.ts'
-import {
-  disposeRuntimeHostsForWorkspace,
-  invokeRuntimeHost,
-  subscribeRuntimeHostEvents,
-} from './runtime-host/client-bridge.ts'
-import {
-  beginInboxThreadTurn,
-  consumeInboxReplySuppression,
-  hasInboxItem,
-  setThreadRunningState,
-  upsertInboxThreadMessage,
-  upsertThreadSummary,
-} from './thread-state-db.ts'
+import { getComposerSkills } from './resources/discovery.ts'
+import { emitDesktopEvent, subscribeDesktopEvents } from './runtime/desktop-events.ts'
 
-export { getLiveThread, loadAppSettings }
+export {
+  getComposerState,
+  setComposerModel,
+  setComposerThinkingLevel,
+} from './durable-runtime/composer.ts'
+export { getComposerSkills, getLiveThread, loadAppSettings, subscribeDesktopEvents }
 
-function withComposerModeSettings<TRequest extends ComposerStateRequest>(
-  request: TRequest,
-): TRequest {
-  const appSettings = loadAppSettings()
-  const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
-  const composerSessionDir = request.composerMode === 'chat' ? getChatSessionDir() : null
+export async function getComposerSlashCommands(request: ComposerStateRequest = {}) {
+  const skills = await getComposerSkills(request)
+  return [
+    ...fallbackAppSlashCommands,
+    ...skills.map((skill) => ({
+      name: `skill:${skill.name}`,
+      description: skill.description,
+      source: 'skill' as const,
+    })),
+  ]
+}
 
-  if (persistedSessionPath) {
-    return {
-      ...request,
-      composerStreamingBehavior: appSettings.composerStreamingBehavior,
-      composerSessionDir,
-    }
-  }
+async function publishComposer(request: ComposerStateRequest = {}) {
+  const composer = await getComposerState(request)
+  emitDesktopEvent({
+    type: 'composer-update',
+    projectId: request.projectId ?? null,
+    conversationId: request.conversationId ?? null,
+    composer,
+  })
+  return composer
+}
 
-  const composerModelSelection =
-    request.composerMode === 'chat'
-      ? appSettings.chatModel
-      : request.composerMode === 'code'
-        ? appSettings.codeModel
-        : null
-  const composerThinkingLevel =
-    request.composerMode === 'chat'
-      ? appSettings.chatThinkingLevel
-      : request.composerMode === 'code'
-        ? appSettings.codeThinkingLevel
-        : null
-
-  return {
+async function registerConversation(conversationId: string, request: ComposerStateRequest) {
+  const existing = getRuntimeConversationMetadata(conversationId)
+  if (existing?.deleted) throw new Error('This conversation has been deleted.')
+  const origin = await readRuntimeConversationOrigin(conversationId)
+  if (!existing)
+    registerRuntimeConversation({
+      conversationId,
+      projectId: origin?.projectId ?? request.projectId ?? getDesktopWorkingDirectory(),
+      branchName: origin?.branchName ?? request.branchName,
+      chatGroupId: origin?.chatGroupId ?? request.chatGroupId,
+      isChat: (origin?.composerMode ?? request.composerMode) === 'chat',
+    })
+  await watchRuntimeConversation({
     ...request,
-    composerModelSelection,
-    composerUseDefaultModel: Boolean(request.composerMode) && composerModelSelection === null,
-    composerThinkingLevel,
-    composerStreamingBehavior: appSettings.composerStreamingBehavior,
-    composerSessionDir,
-  }
-}
-
-function withWorkspaceRequest<T>(request: ComposerStateRequest, operation: () => Promise<T>) {
-  return withWorkspaceActivity(request.projectId ?? getDesktopWorkingDirectory(), operation)
-}
-
-function withPreparedWorkspaceRequest<TRequest extends ComposerStateRequest, TResult>(
-  request: TRequest,
-  operation: (preparedRequest: TRequest) => Promise<TResult>,
-) {
-  const preparedRequest = withComposerModeSettings(request)
-  return withWorkspaceRequest(preparedRequest, () => operation(preparedRequest))
-}
-
-function getLatestUserPrompt(thread: ThreadData) {
-  let latestUserMessage: ProseMessage | undefined
-  for (let index = thread.messages.length - 1; index >= 0; index -= 1) {
-    const message = thread.messages[index]
-    if (message?.role === 'user') {
-      latestUserMessage = message as ProseMessage
-      break
-    }
-  }
-
-  if (!latestUserMessage) {
-    return null
-  }
-
-  const prompt = latestUserMessage.content.join('\n\n').trim()
-  return prompt.length > 0 ? prompt : null
-}
-
-async function persistHostThreadUpdate(event: Extract<DesktopEvent, { type: 'thread-update' }>) {
-  try {
-    await stat(event.sessionPath)
-  } catch {
-    return
-  }
-  const timestamp = Date.now()
-  const threadId = upsertThreadSummary({
-    id: event.threadId,
-    cwd: event.projectId,
-    sessionPath: event.sessionPath,
-    title: event.thread.title,
-    lastModifiedMs: timestamp,
-    branchName: event.branchName ?? null,
+    projectId: existing?.projectId ?? origin?.projectId ?? request.projectId,
+    composerMode: origin?.composerMode ?? request.composerMode,
+    chatGroupId: origin?.chatGroupId ?? request.chatGroupId,
+    branchName: origin?.branchName ?? request.branchName,
+    conversationId,
   })
-
-  event.threadId = threadId
-  if (isChatSessionPath(event.sessionPath)) {
-    upsertChatThread({ sessionPath: event.sessionPath, groupId: event.chatGroupId ?? null })
-  }
-  setThreadRunningState(
-    event.sessionPath,
-    event.thread.isStreaming ||
-      event.thread.isCompacting ||
-      event.reason === 'compaction-start' ||
-      (event.reason === 'start' && event.thread.messages.length > 0),
-  )
-
-  const latestUserPrompt = getLatestUserPrompt(event.thread)
-  if (event.reason === 'start' && (latestUserPrompt || hasInboxItem(event.sessionPath))) {
-    beginInboxThreadTurn(event.sessionPath, latestUserPrompt)
-  }
-
-  if (event.reason === 'end') {
-    if (consumeInboxReplySuppression(event.sessionPath)) return
-    const latestAssistantMessage = getLatestInboxAssistantMessage(event.thread.messages)
-    if (latestAssistantMessage) {
-      upsertInboxThreadMessage({
-        sessionPath: event.sessionPath,
-        userPrompt: latestUserPrompt,
-        content: latestAssistantMessage.content,
-        preview: latestAssistantMessage.preview,
-        lastAssistantAtMs: timestamp,
-      })
-    }
-  }
 }
 
-const forwardingScope = Scope.makeUnsafe()
-const enqueueHostThreadUpdate = Effect.runSync(
-  Scope.provide(makeThreadUpdateForwarder(persistHostThreadUpdate), forwardingScope),
-)
-
-export function disposeThreadUpdateForwarding() {
-  return Effect.runPromise(Scope.close(forwardingScope, Exit.void))
-}
-
-export function subscribeDesktopEvents(listener: (event: DesktopEvent) => void) {
-  const unsubscribeLocal = subscribeLocalDesktopEvents(listener)
-  const unsubscribeHost = subscribeRuntimeHostEvents((event) => {
-    if (event.type === 'internal-thread-update') {
-      markInternalThreadUpdate(event.sessionPath)
-      return
+export async function startNewThread(request: ComposerStateRequest = {}) {
+  return withWorkspaceActivity(request.projectId ?? getDesktopWorkingDirectory(), async () => {
+    const conversation = await createRuntimeConversation(request)
+    const conversationId = String(conversation.id)
+    await registerConversation(conversationId, request)
+    return {
+      composer: await publishComposer({ ...request, conversationId }),
+      projectId: request.projectId ?? getDesktopWorkingDirectory(),
+      conversationId,
+      threadId: conversationId,
     }
-
-    if (event.type !== 'thread-update') {
-      listener(event)
-      return
-    }
-
-    enqueueHostThreadUpdate(event, listener)
   })
-
-  return () => {
-    unsubscribeLocal()
-    unsubscribeHost()
-  }
 }
 
-export function startNewThread(request: ComposerStateRequest = {}) {
-  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
-    invokeRuntimeHost('startNewThread', { request: preparedRequest }),
-  )
+export const selectProjectRuntime = publishComposer
+
+export async function openThreadRuntime(request: ComposerStateRequest) {
+  if (request.conversationId)
+    await watchRuntimeConversation({ ...request, conversationId: request.conversationId })
+  return publishComposer(request)
 }
 
-export function selectProjectRuntime(request: ComposerStateRequest = {}) {
-  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
-    invokeRuntimeHost('selectProjectRuntime', { request: preparedRequest }),
-  )
+export async function watchConversation(conversationId: string | null) {
+  if (!conversationId) return selectRuntimeConversation(null)
+  const metadata = getRuntimeConversationMetadata(conversationId)
+  if (metadata?.deleted) throw new Error('This conversation has been deleted.')
+  const origin = await readRuntimeConversationOrigin(conversationId)
+  return selectRuntimeConversation({
+    conversationId,
+    projectId: metadata?.projectId ?? origin?.projectId,
+    composerMode: metadata?.isChat ? 'chat' : origin?.composerMode,
+    chatGroupId: metadata?.chatGroupId ?? origin?.chatGroupId,
+    branchName: metadata?.branchName ?? origin?.branchName,
+  })
 }
 
-export function openThreadRuntime(request: ComposerStateRequest) {
-  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
-    invokeRuntimeHost('openThreadRuntime', { request: preparedRequest }),
-  )
-}
-
-export function getComposerSlashCommands(request: ComposerStateRequest = {}) {
-  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
-    invokeRuntimeHost('getComposerSlashCommands', { request: preparedRequest }),
-  )
-}
-
-export function getComposerSkills(request: ComposerStateRequest = {}) {
-  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
-    invokeRuntimeHost('getComposerSkills', { request: preparedRequest }),
-  )
-}
-
-export function getComposerState(request: ComposerStateRequest = {}) {
-  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
-    invokeRuntimeHost('getComposerState', { request: preparedRequest }),
-  )
-}
-
-export function setComposerModel(request: ComposerStateRequest, provider: string, modelId: string) {
-  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
-    invokeRuntimeHost('setComposerModel', { request: preparedRequest, provider, modelId }),
-  )
-}
-
-export function setComposerThinkingLevel(
-  request: ComposerStateRequest,
-  level: ComposerThinkingLevel,
-) {
-  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
-    invokeRuntimeHost('setComposerThinkingLevel', { request: preparedRequest, level }),
-  )
-}
-
-export function sendComposerPrompt(
+export async function sendComposerPrompt(
   request: ComposerStateRequest & {
     text: string
     attachments?: ComposerAttachment[]
     streamingBehavior?: ComposerStreamingBehavior | null
   },
 ) {
-  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
-    invokeRuntimeHost('sendComposerPrompt', preparedRequest),
+  return withWorkspaceActivity(request.projectId ?? getDesktopWorkingDirectory(), async () => {
+    const conversation = request.conversationId
+      ? await resolveConversation(request.conversationId)
+      : await createRuntimeConversation(request)
+    const conversationId = String(conversation.id)
+    await registerConversation(conversationId, request)
+    const behavior = request.streamingBehavior ?? loadAppSettings().composerStreamingBehavior
+    if (behavior === 'stop') {
+      await conversation.abort(runtimeContext)
+      return { outcome: 'stopped' as const, conversationId, threadId: conversationId }
+    }
+    const compact = parseCompactSlashCommand(request.text)
+    if (compact === null) {
+      await conversation.submit(
+        {
+          type: 'input',
+          content: await prepareRuntimeInput(conversation, request),
+          whenBusy: behavior,
+        },
+        runtimeContext,
+      )
+    } else await conversation.compact(compact || undefined, runtimeContext)
+    await publishComposer({ ...request, conversationId })
+    return { outcome: 'sent' as const, conversationId, threadId: conversationId }
+  })
+}
+
+export async function stopComposerRun(request: ComposerStateRequest = {}) {
+  if (request.conversationId)
+    await (await resolveConversation(request.conversationId)).abort(runtimeContext)
+  await publishComposer(request)
+  return { ok: true as const }
+}
+
+export async function forkConversation(request: ComposerStateRequest & { targetEntryId: string }) {
+  if (!request.conversationId) throw new Error('Select a conversation to fork.')
+  const parentId = request.conversationId
+  return withWorkspaceActivity(request.projectId ?? getDesktopWorkingDirectory(), async () => {
+    const parent = await resolveConversation(parentId)
+    const metadata = getRuntimeConversationMetadata(parentId)
+    if (metadata?.deleted) throw new Error('This conversation has been deleted.')
+    const child = await parent.fork(
+      decodeEntryId(request.targetEntryId),
+      {
+        ownership: { kind: 'ownerless' },
+        init: async (tx, id) => {
+          const origin = await tx.doc(RuntimeOriginDoc, id)
+          if (metadata)
+            Object.assign(origin, {
+              projectId: metadata.projectId,
+              composerMode: metadata.isChat ? 'chat' : 'code',
+              chatGroupId: metadata.chatGroupId,
+              branchName: metadata.branchName,
+            })
+        },
+      },
+      runtimeContext,
+    )
+    const conversationId = String(child.id)
+    await registerConversation(conversationId, request)
+    await publishComposer({ ...request, conversationId })
+    return { conversationId, threadId: conversationId, projectId: request.projectId ?? undefined }
+  })
+}
+
+export async function dequeueComposerPrompt(request: ComposerStateRequest & { queueId: string }) {
+  if (!request.conversationId) throw new Error('Select a conversation to cancel a queued input.')
+  const outcome = await (await getDurableRuntime()).abortSubmission(
+    decodeSubmissionId(request.queueId),
+    runtimeContext,
+    (await resolveConversation(request.conversationId)).id,
   )
+  if (outcome === 'not_found') throw new Error('Queued submission not found in this conversation.')
+  await publishComposer(request)
+  return outcome === 'settled' ? ('already_settled' as const) : outcome
 }
 
-export function stopComposerRun(request: ComposerStateRequest = {}) {
-  return withWorkspaceRequest(request, () => invokeRuntimeHost('stopComposerRun', { request }))
-}
-
-export function navigateSessionTree(
-  request: ComposerStateRequest & {
-    targetEntryId: string
-    summarize: boolean
-    label?: string | undefined | null
-  },
-) {
-  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
-    invokeRuntimeHost('navigateSessionTree', preparedRequest),
-  )
-}
-
-export function labelSessionTreeEntry(
-  request: ComposerStateRequest & {
-    targetEntryId: string
-    label?: string | undefined | null
-  },
-) {
-  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
-    invokeRuntimeHost('labelSessionTreeEntry', preparedRequest),
-  )
-}
-
-export function disposeWorkspaceComposerRuns(request: {
+export async function disposeWorkspaceComposerRuns(request: {
   projectPath: string
-  sessionPaths: string[]
+  conversationIds: string[]
 }) {
-  return disposeRuntimeHostsForWorkspace(request)
+  await Promise.all(request.conversationIds.map(deleteRuntimeConversation))
 }
 
-export function dequeueComposerPrompt(
-  request: ComposerStateRequest & {
-    queueId: string
-    queueSnapshotKey: string
-    queueMode: Exclude<ComposerStreamingBehavior, 'stop'>
-  },
-) {
-  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
-    invokeRuntimeHost('dequeueComposerPrompt', preparedRequest),
-  )
-}
-
-export function answerPiExtensionDialog(
-  request: ComposerStateRequest & {
-    requestId: string
-    cancelled?: boolean | undefined
-    confirmed?: boolean | undefined
-    value?: string | undefined
-  },
-) {
-  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
-    invokeRuntimeHost('answerPiExtensionDialog', preparedRequest),
-  )
-}
-
-export function invokePiExtensionShortcut(
-  request: ComposerStateRequest & {
-    editorSelectionEnd?: number | undefined
-    editorSelectionStart?: number | undefined
-    editorText?: string | undefined
-    shortcut: string
-  },
-) {
-  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
-    invokeRuntimeHost('invokePiExtensionShortcut', preparedRequest),
-  )
-}
-
-export function refreshComposerAfterProjectTrust(request: ComposerStateRequest) {
-  return withPreparedWorkspaceRequest(request, (preparedRequest) =>
-    invokeRuntimeHost('getComposerState', { request: preparedRequest }),
-  )
-}
-
-export function setProjectTrust(request: ComposerStateRequest & { cwd: string; trusted: boolean }) {
-  return invokeRuntimeHost('setProjectTrust', withComposerModeSettings(request))
-}
+export const disposeThreadUpdateForwarding = disposeRuntimeWatches

@@ -1,19 +1,7 @@
 import { createRequire } from 'node:module'
 import path from 'node:path'
+import { ensureNodePtyHelpersExecutable } from './node-pty-helper.ts'
 import type { PtyAdapter, PtyExitEvent, PtyProcess, PtySpawnInput } from './types.ts'
-
-const require = createRequire(import.meta.url)
-type NodePtyModule = typeof import('node-pty')
-
-function loadNodePty(): Promise<NodePtyModule> | NodePtyModule {
-  // biome-ignore lint/complexity/useLiteralKeys: ProcessEnv is an index-signature type.
-  const serviceNativeNodeModulesPath = process.env['HOWCODE_SERVICE_NATIVE_NODE_MODULES']?.trim()
-  if (serviceNativeNodeModulesPath) {
-    return require(path.join(serviceNativeNodeModulesPath, 'node-pty')) as NodePtyModule
-  }
-
-  return import('node-pty')
-}
 
 class NodePtyProcess implements PtyProcess {
   private readonly process: import('node-pty').IPty
@@ -59,7 +47,14 @@ class NodePtyProcess implements PtyProcess {
 export const nodePtyAdapter: PtyAdapter = {
   name: 'node-pty',
   async spawn(input: PtySpawnInput) {
-    const nodePty = await loadNodePty()
+    if (process.platform === 'darwin') {
+      const require = createRequire(import.meta.url)
+      ensureNodePtyHelpersExecutable(
+        path.dirname(require.resolve('node-pty/package.json')),
+        process.arch,
+      )
+    }
+    const nodePty = await import('node-pty')
     const processHandle = nodePty.spawn(input.shell, input.args ?? [], {
       cwd: input.cwd,
       cols: input.cols,

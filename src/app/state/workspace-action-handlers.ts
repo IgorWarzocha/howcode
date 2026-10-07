@@ -10,7 +10,6 @@ import {
   getGitOpsReturnView,
   getTerminalStateForNextView,
   getTerminalVisibilityForSession,
-  migrateTakeoverOverride,
   migrateTerminalVisibility,
   setTerminalVisibleState,
   shouldMigrateTerminalVisibilityForOpenedThread,
@@ -18,7 +17,7 @@ import {
 } from './workspace-terminal-state'
 
 export function isUtilityView(view: View): view is UtilityView {
-  return view === 'settings' || view === 'extensions' || view === 'skills' || view === 'sessions'
+  return view === 'settings' || view === 'skills' || view === 'sessions'
 }
 
 function createUtilityViewReturnState(state: WorkspaceState): UtilityViewReturnState {
@@ -27,13 +26,12 @@ function createUtilityViewReturnState(state: WorkspaceState): UtilityViewReturnS
     selectedProjectId: state.selectedProjectId,
     hasSelectedProject: state.hasSelectedProject,
     landingVisible: state.landingVisible,
-    selectedInboxSessionPath: state.selectedInboxSessionPath,
+    selectedInboxConversationId: state.selectedInboxConversationId,
     selectedThreadId: state.selectedThreadId,
-    selectedSessionPath: state.selectedSessionPath,
+    selectedConversationId: state.selectedConversationId,
     terminalVisible: state.terminalVisible,
     workspaceTerminalVisibleByWorkspace: state.workspaceTerminalVisibleByWorkspace,
     restoreTerminalVisibleOnGitOpsClose: state.restoreTerminalVisibleOnGitOpsClose,
-    takeoverVisible: state.takeoverVisible,
     gitOpsReturnView: state.gitOpsReturnView,
     selectedDiffFilePath: state.selectedDiffFilePath,
   }
@@ -44,12 +42,12 @@ function getCurrentCodeThreadSelection(state: WorkspaceState): CodeThreadSelecti
     (state.activeView === 'thread' || state.activeView === 'project') &&
     state.selectedProjectId &&
     state.selectedThreadId &&
-    state.selectedSessionPath
+    state.selectedConversationId
   ) {
     return {
       projectId: state.selectedProjectId,
       threadId: state.selectedThreadId,
-      sessionPath: state.selectedSessionPath,
+      conversationId: state.selectedConversationId,
     }
   }
 
@@ -72,12 +70,12 @@ function isProjectLoadedForCodeThreads(project: Project) {
 function getThreadCodeSelection(
   project: Project,
   thread: Project['threads'][number],
-  fallbackSessionPath: string,
+  fallbackConversationId: string,
 ): CodeThreadSelection {
   return {
     projectId: project.id,
     threadId: thread.id,
-    sessionPath: thread.sessionPath ?? fallbackSessionPath,
+    conversationId: thread.conversationId ?? fallbackConversationId,
   }
 }
 
@@ -90,15 +88,15 @@ export function resolveCodeThreadSelection(
   for (const project of projects) {
     if (!isProjectLoadedForCodeThreads(project)) continue
     const thread = project.threads.find(
-      (candidate) => candidate.sessionPath === selection.sessionPath,
+      (candidate) => candidate.conversationId === selection.conversationId,
     )
-    if (thread) return getThreadCodeSelection(project, thread, selection.sessionPath)
+    if (thread) return getThreadCodeSelection(project, thread, selection.conversationId)
   }
 
   for (const project of projects) {
     if (!isProjectLoadedForCodeThreads(project)) continue
     const thread = project.threads.find((candidate) => candidate.id === selection.threadId)
-    if (thread) return getThreadCodeSelection(project, thread, selection.sessionPath)
+    if (thread) return getThreadCodeSelection(project, thread, selection.conversationId)
   }
 
   const rememberedProject = projects.find((project) => project.id === selection.projectId)
@@ -117,13 +115,12 @@ function withCodeThreadSelection(
     hasSelectedProject: true,
     landingVisible: false,
     selectedThreadId: selection.threadId,
-    selectedSessionPath: selection.sessionPath,
+    selectedConversationId: selection.conversationId,
     terminalVisible: getTerminalVisibilityForSession(
       state.terminalVisibleBySession,
-      selection.sessionPath,
+      selection.conversationId,
     ),
     selectedDiffFilePath: null,
-    takeoverVisible: false,
     gitOpsReturnView: 'thread',
     utilityViewReturnState: null,
     collapsedProjectIds: { ...state.collapsedProjectIds, [selection.projectId]: false },
@@ -132,10 +129,10 @@ function withCodeThreadSelection(
 }
 
 function findProjectContainingThread(projects: Project[], state: WorkspaceState) {
-  if (state.selectedSessionPath) {
+  if (state.selectedConversationId) {
     return (
       projects.find((project) =>
-        project.threads.some((thread) => thread.sessionPath === state.selectedSessionPath),
+        project.threads.some((thread) => thread.conversationId === state.selectedConversationId),
       ) ?? null
     )
   }
@@ -222,10 +219,10 @@ function syncProjectsState(
       shouldPreserveProjectSelection,
       state.selectedThreadId,
     ),
-    selectedSessionPath: getPreservedThreadValue(
+    selectedConversationId: getPreservedThreadValue(
       state,
       shouldPreserveProjectSelection,
-      state.selectedSessionPath,
+      state.selectedConversationId,
     ),
     selectedDiffFilePath: getPreservedThreadValue(
       state,
@@ -271,12 +268,11 @@ function showViewState(
       action.view === 'thread' || (action.view === 'chat' && state.activeView === 'chat')
         ? state.selectedThreadId
         : null,
-    selectedSessionPath:
+    selectedConversationId:
       action.view === 'thread' || (action.view === 'chat' && state.activeView === 'chat')
-        ? state.selectedSessionPath
+        ? state.selectedConversationId
         : null,
     selectedDiffFilePath: action.view === 'thread' ? state.selectedDiffFilePath : null,
-    takeoverVisible: action.view === 'thread' ? state.takeoverVisible : false,
     utilityViewReturnState,
   }
 }
@@ -289,12 +285,12 @@ function openThreadState(
   const nextTerminalVisibleBySession = shouldMigrateTerminalVisibilityForOpenedThread(state, action)
     ? {
         ...state.terminalVisibleBySession,
-        [action.sessionPath]:
+        [action.conversationId]:
           state.activeView === 'project'
             ? (state.workspaceTerminalVisibleByWorkspace[action.projectId] ?? false)
             : getTerminalVisibilityForSession(
                 state.terminalVisibleBySession,
-                state.selectedSessionPath,
+                state.selectedConversationId,
               ),
       }
     : state.terminalVisibleBySession
@@ -305,17 +301,12 @@ function openThreadState(
     hasSelectedProject: true,
     landingVisible: false,
     selectedThreadId: action.threadId,
-    selectedSessionPath: action.sessionPath,
+    selectedConversationId: action.conversationId,
     terminalVisible: getTerminalVisibilityForSession(
       nextTerminalVisibleBySession,
-      action.sessionPath,
+      action.conversationId,
     ),
     terminalVisibleBySession: nextTerminalVisibleBySession,
-    takeoverOverrides: migrateTakeoverOverride(
-      state.takeoverOverrides,
-      state.selectedSessionPath,
-      action.sessionPath,
-    ),
     selectedDiffFilePath: null,
     gitOpsReturnView: 'thread',
     utilityViewReturnState: null,
@@ -326,7 +317,7 @@ function openThreadState(
         : {
             projectId: action.projectId,
             threadId: action.threadId,
-            sessionPath: action.sessionPath,
+            conversationId: action.conversationId,
           },
   }
 }
@@ -337,8 +328,8 @@ function startProjectThreadState(
 ): WorkspaceState {
   const nextTerminalVisibleBySession = migrateTerminalVisibility(
     state.terminalVisibleBySession,
-    state.selectedSessionPath,
-    action.sessionPath,
+    state.selectedConversationId,
+    action.conversationId,
   )
   return {
     ...state,
@@ -348,17 +339,12 @@ function startProjectThreadState(
     hasSelectedProject: true,
     landingVisible: false,
     selectedThreadId: action.threadId,
-    selectedSessionPath: action.sessionPath,
+    selectedConversationId: action.conversationId,
     terminalVisible: getTerminalVisibilityForSession(
       nextTerminalVisibleBySession,
-      action.sessionPath,
+      action.conversationId,
     ),
     terminalVisibleBySession: nextTerminalVisibleBySession,
-    takeoverOverrides: migrateTakeoverOverride(
-      state.takeoverOverrides,
-      state.selectedSessionPath,
-      action.sessionPath,
-    ),
     selectedDiffFilePath: null,
     gitOpsReturnView: 'project',
     utilityViewReturnState: null,
@@ -366,7 +352,7 @@ function startProjectThreadState(
     lastCodeThreadSelection: {
       projectId: action.projectId,
       threadId: action.threadId,
-      sessionPath: action.sessionPath,
+      conversationId: action.conversationId,
     },
   }
 }
@@ -401,7 +387,6 @@ function openGitOpsState(
       state.activeView === 'gitops'
         ? state.restoreTerminalVisibleOnGitOpsClose
         : shouldRestoreTerminalOnGitOpsClose(state),
-    takeoverVisible: false,
     gitOpsReturnView:
       action.returnView ?? getGitOpsReturnView(state.activeView, state.gitOpsReturnView),
     selectedDiffFilePath: action.filePath ?? null,
@@ -418,27 +403,12 @@ function closeGitOpsState(state: WorkspaceState): WorkspaceState {
       state.gitOpsReturnView === 'chat' || state.gitOpsReturnView === 'thread'
         ? state.selectedThreadId
         : null,
-    selectedSessionPath:
+    selectedConversationId:
       state.gitOpsReturnView === 'chat' || state.gitOpsReturnView === 'thread'
-        ? state.selectedSessionPath
+        ? state.selectedConversationId
         : null,
     selectedDiffFilePath: null,
     utilityViewReturnState: null,
-  }
-}
-
-function setSessionTakeoverOverrideState(
-  state: WorkspaceState,
-  action: Extract<WorkspaceAction, { type: 'set-session-takeover-override' }>,
-): WorkspaceState {
-  if (action.visible === null) {
-    const { [action.sessionPath]: _removedOverride, ...remainingOverrides } =
-      state.takeoverOverrides
-    return { ...state, takeoverOverrides: remainingOverrides }
-  }
-  return {
-    ...state,
-    takeoverOverrides: { ...state.takeoverOverrides, [action.sessionPath]: action.visible },
   }
 }
 
@@ -450,12 +420,11 @@ export const workspaceActionHandlers = {
     activeView: 'landing',
     terminalVisible: false,
     selectedProjectId: '',
-    selectedInboxSessionPath: null,
+    selectedInboxConversationId: null,
     selectedThreadId: null,
-    selectedSessionPath: null,
+    selectedConversationId: null,
     selectedDiffFilePath: null,
     lastCodeThreadSelection: null,
-    takeoverVisible: false,
     settingsOpen: false,
     settingsPanelOpen: false,
     gitOpsReturnView: 'code',
@@ -476,15 +445,14 @@ export const workspaceActionHandlers = {
   'clear-thread-selection': (state: WorkspaceState) => ({
     ...state,
     selectedThreadId: null,
-    selectedSessionPath: null,
+    selectedConversationId: null,
     selectedDiffFilePath: null,
-    takeoverVisible: false,
     lastCodeThreadSelection: null,
   }),
   'select-inbox-thread': (
     state: WorkspaceState,
     action: Extract<WorkspaceAction, { type: 'select-inbox-thread' }>,
-  ) => ({ ...state, selectedInboxSessionPath: action.sessionPath }),
+  ) => ({ ...state, selectedInboxConversationId: action.conversationId }),
   'select-project': (
     state: WorkspaceState,
     action: Extract<WorkspaceAction, { type: 'select-project' }>,
@@ -496,10 +464,9 @@ export const workspaceActionHandlers = {
     hasSelectedProject: true,
     landingVisible: false,
     selectedThreadId: null,
-    selectedSessionPath: null,
+    selectedConversationId: null,
     terminalVisible: state.workspaceTerminalVisibleByWorkspace[action.projectId] ?? false,
     selectedDiffFilePath: null,
-    takeoverVisible: false,
     gitOpsReturnView: 'project',
     utilityViewReturnState: null,
     lastCodeThreadSelection: getScopedCodeThreadSelection(state, action.projectId),
@@ -525,13 +492,6 @@ export const workspaceActionHandlers = {
     state: WorkspaceState,
     action: Extract<WorkspaceAction, { type: 'set-terminal-visible' }>,
   ) => setTerminalVisibleState(state, action.visible),
-  'show-takeover': (state: WorkspaceState) => ({ ...state, takeoverVisible: true }),
-  'hide-takeover': (state: WorkspaceState) => ({ ...state, takeoverVisible: false }),
-  'set-takeover-visible': (
-    state: WorkspaceState,
-    action: Extract<WorkspaceAction, { type: 'set-takeover-visible' }>,
-  ) => ({ ...state, takeoverVisible: action.visible }),
-  'set-session-takeover-override': setSessionTakeoverOverrideState,
   'toggle-settings': (state: WorkspaceState) => ({ ...state, settingsOpen: !state.settingsOpen }),
   'set-settings-panel-open': (
     state: WorkspaceState,

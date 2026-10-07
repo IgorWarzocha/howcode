@@ -1,5 +1,5 @@
 import { IconButton } from '@howcode/common/icon-button'
-import { FolderOpen, MoreHorizontal, Pencil, Star, Trash2 } from 'lucide-react'
+import { MoreHorizontal, Pencil, Star, Trash2 } from 'lucide-react'
 import { forwardRef, useEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Project } from '../../../types'
@@ -74,9 +74,7 @@ const ProjectWorkActionsMenu = forwardRef<
     worktreeDirInputRef.current?.focus()
     worktreeDirInputRef.current?.select()
   }, [editingWorktreeDir])
-  const runProjectAction = (
-    action: 'project.open-in-file-manager' | 'project.pin' | 'project.remove-project',
-  ) => {
+  const runProjectAction = (action: 'project.pin' | 'project.remove-project') => {
     if (action === 'project.remove-project') {
       if (confirmAction !== action) {
         setConfirmAction(action)
@@ -115,15 +113,6 @@ const ProjectWorkActionsMenu = forwardRef<
           <span>Rename</span>
         </button>
       ) : null}
-      <button
-        type="button"
-        className="sidebar-menu-item sidebar-project-work-project-actions-menu-item"
-        onClick={() => runProjectAction('project.open-in-file-manager')}
-        role="menuitem"
-      >
-        <FolderOpen size={12} />
-        <span>Reveal in file manager</span>
-      </button>
       {editingWorktreeDir ? (
         <div className="sidebar-menu-item sidebar-menu-item--with-meta sidebar-project-work-project-actions-menu-item sidebar-project-work-worktree-dir-item">
           <WorktreeSmallIcon size={12} />

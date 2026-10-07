@@ -21,7 +21,10 @@ function isTerminalRpcExit(value: unknown) {
     const { _tag: causeTag, fiberId } = entry
     if (causeTag === 'Fail') return Object.hasOwn(entry, 'error')
     if (causeTag === 'Die') return Object.hasOwn(entry, 'defect')
-    return causeTag === 'Interrupt' && (fiberId === undefined || typeof fiberId === 'number')
+    return (
+      causeTag === 'Interrupt' &&
+      (fiberId === undefined || fiberId === null || typeof fiberId === 'number')
+    )
   })
 }
 

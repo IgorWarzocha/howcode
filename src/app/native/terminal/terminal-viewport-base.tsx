@@ -7,10 +7,6 @@ import { writeDesktopTerminal } from '../../hooks/useDesktopTerminal'
 import { useHoverToFocus } from '../../hooks/useHoverToFocus'
 import { cn } from '../../utils/cn'
 import {
-  getTerminalPersistedSessionPath,
-  type TerminalSessionPolicy,
-} from './terminal-session-policy'
-import {
   type TerminalBackgroundCssVar,
   terminalStyleVars,
   terminalWrapperStyle,
@@ -24,45 +20,26 @@ import { useTerminalXtermInstance } from './useTerminalXtermInstance'
 
 type SharedTerminalViewportProps = {
   projectId: string
-  sessionPath: string | null
+  conversationId: string | null
   backgroundCssVar: TerminalBackgroundCssVar
   className?: string
 }
 
-type TerminalViewportBaseProps = SharedTerminalViewportProps &
-  (
-    | { mode: 'shell'; hoverToFocus: boolean; hoverToBlur: boolean }
-    | {
-        mode: 'pi-session'
-        keepAliveMsOnUnmount: number
-        closeWhenSessionFileIdleMs: number
-        maxKeepAliveMsOnUnmount: number
-      }
-  )
+type TerminalViewportBaseProps = SharedTerminalViewportProps & {
+  hoverToFocus: boolean
+  hoverToBlur: boolean
+}
 
 export function TerminalViewportBase(props: TerminalViewportBaseProps) {
-  const { projectId, sessionPath, backgroundCssVar, className } = props
+  const { projectId, conversationId, backgroundCssVar, className } = props
   const viewportRef = useRef<HTMLDivElement | null>(null)
   const terminalMountRef = useRef<HTMLDivElement | null>(null)
   const terminalInstanceRef = useRef<XTerm | null>(null)
   const fitAddonRef = useRef<FitAddon | null>(null)
   const terminalInitialFitTimerRef = useRef<number | null>(null)
   const sessionIdRef = useRef<string | null>(null)
-  const initialPiSessionPathRef = useRef(
-    props.mode === 'pi-session' ? { value: sessionPath } : null,
-  )
   const [terminalReadyRevision, setTerminalReadyRevision] = useState(0)
   const [terminalInitError, setTerminalInitError] = useState<string | null>(null)
-  const isShell = props.mode === 'shell'
-  const closeWhenSessionFileIdleMs = isShell ? 0 : props.closeWhenSessionFileIdleMs
-  const keepAliveMsOnUnmount = isShell ? 0 : props.keepAliveMsOnUnmount
-  const maxKeepAliveMsOnUnmount = isShell ? 0 : props.maxKeepAliveMsOnUnmount
-  const terminalSessionPath = isShell ? sessionPath : initialPiSessionPathRef.current?.value
-  const terminalPersistedSessionPath = getTerminalPersistedSessionPath({
-    launchMode: props.mode,
-    sessionPath,
-    terminalSessionPath,
-  })
   const viewportStyle = useMemo(() => terminalWrapperStyle(backgroundCssVar), [backgroundCssVar])
   const terminalStyle = useMemo(() => terminalStyleVars(backgroundCssVar), [backgroundCssVar])
 
@@ -76,19 +53,14 @@ export function TerminalViewportBase(props: TerminalViewportBaseProps) {
     return !!terminalElement && !!activeElement && terminalElement.contains(activeElement)
   }, [])
   const handleHoverToFocus = useHoverToFocus({
-    enabled: isShell ? props.hoverToFocus : false,
+    enabled: props.hoverToFocus,
     boundaryRef: viewportRef,
     focus: focusTerminal,
     blur: blurTerminal,
-    blurOnLeave: isShell ? props.hoverToBlur : false,
+    blurOnLeave: props.hoverToBlur,
     isFocused: isTerminalFocused,
   })
-
-  const bottomAlignInitialContent = isShell
-  const stickToBottomOnOutput = isShell
   const { scheduleXtermBottomAlign, writeToTerminal } = useTerminalOutputBehavior({
-    bottomAlignInitialContent,
-    stickToBottomOnOutput,
     terminalInstanceRef,
   })
   const { appendTerminalHistory, resetTerminal, terminalHistoryRef } = useTerminalHistory({
@@ -98,12 +70,11 @@ export function TerminalViewportBase(props: TerminalViewportBaseProps) {
   })
 
   useHowcodeKeybindingCommand('terminal.clear', (event) => {
-    if (!(isShell && isTerminalFocused())) return
+    if (!isTerminalFocused()) return
     event.preventDefault()
     resetTerminal()
   })
   useHowcodeKeybindingCommand('terminal.focus', (event) => {
-    if (!isShell) return
     event.preventDefault()
     focusTerminal()
   })
@@ -135,7 +106,6 @@ export function TerminalViewportBase(props: TerminalViewportBaseProps) {
     fitAddonRef,
     scheduleXtermBottomAlign,
     sessionIdRef,
-    stickToBottomOnOutput,
     terminalInstanceRef,
     terminalReadyRevision,
     viewportRef,
@@ -156,18 +126,6 @@ export function TerminalViewportBase(props: TerminalViewportBaseProps) {
     writeToTerminal,
   })
 
-  const sessionPolicy = useMemo<TerminalSessionPolicy>(
-    () =>
-      isShell
-        ? { kind: 'shell' }
-        : {
-            kind: 'pi-session',
-            closeWhenSessionFileIdleMs,
-            keepAliveMsOnUnmount,
-            maxKeepAliveMsOnUnmount,
-          },
-    [closeWhenSessionFileIdleMs, isShell, keepAliveMsOnUnmount, maxKeepAliveMsOnUnmount],
-  )
   const terminalSessionLifecycle = useMemo(
     () => ({
       appendTerminalHistory,
@@ -175,16 +133,14 @@ export function TerminalViewportBase(props: TerminalViewportBaseProps) {
       getCurrentSize: getCurrentTerminalSize,
       handleTerminalResize,
       lastSentSizeRef,
-      policy: sessionPolicy,
       projectId,
       resetTerminal,
       scheduleTerminalResizeSettlingPasses,
       scheduleXtermBottomAlign,
       sessionIdRef,
       terminalHistoryRef,
-      terminalPersistedSessionPath,
       terminalReadyRevision,
-      terminalSessionPath: terminalSessionPath ?? null,
+      terminalConversationId: conversationId,
       writeToTerminal,
     }),
     [
@@ -197,11 +153,9 @@ export function TerminalViewportBase(props: TerminalViewportBaseProps) {
       resetTerminal,
       scheduleTerminalResizeSettlingPasses,
       scheduleXtermBottomAlign,
-      sessionPolicy,
       terminalHistoryRef,
-      terminalPersistedSessionPath,
       terminalReadyRevision,
-      terminalSessionPath,
+      conversationId,
       writeToTerminal,
     ],
   )

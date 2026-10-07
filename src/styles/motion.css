@@ -148,41 +148,12 @@
   transform: translateX(0);
 }
 
-.motion-desktop-workspace,
-.motion-takeover-panel {
-  transition:
-    opacity var(--motion-duration-standard) var(--motion-ease-standard),
-    transform var(--motion-duration-standard) var(--motion-ease-standard);
-}
-
-.motion-desktop-workspace {
-  opacity: 0;
-  transform: translateY(var(--motion-slide-y-sm));
-}
-
-.motion-desktop-workspace[data-open="true"] {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.motion-takeover-panel {
-  opacity: 0;
-  transform: translateY(var(--motion-slide-y-lg));
-}
-
-.motion-takeover-panel[data-open="true"] {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 @media (prefers-reduced-motion: reduce) {
   .motion-collapse-panel,
   .motion-popover,
   .motion-overlay-panel,
   .motion-terminal-drawer-offset,
-  .motion-terminal-drawer,
-  .motion-desktop-workspace,
-  .motion-takeover-panel {
+  .motion-terminal-drawer {
     transition: none;
     transform: none;
   }

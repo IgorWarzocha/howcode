@@ -1,4 +1,4 @@
-import { getLocalDraftChatGroupId, isLocalSessionPath } from '@howcode/shared/session-paths'
+import { getLocalDraftChatGroupId, isLocalConversationId } from '@howcode/shared/conversation-ids'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import type { ShellState, Thread } from '../desktop/types'
@@ -8,7 +8,9 @@ function hasSameThread(threads: Thread[], candidate: Thread) {
   return threads.some(
     (thread) =>
       thread.id === candidate.id ||
-      (thread.sessionPath && candidate.sessionPath && thread.sessionPath === candidate.sessionPath),
+      (thread.conversationId &&
+        candidate.conversationId &&
+        thread.conversationId === candidate.conversationId),
   )
 }
 
@@ -19,8 +21,8 @@ type ProjectDraftCache = Record<ThreadsScope, Thread[]>
 const localDraftCacheByProject = new Map<string, ProjectDraftCache>()
 
 function localDraftMatchesScope(thread: Thread, threadsScope: ThreadsScope) {
-  if (!(thread.sessionPath && isLocalSessionPath(thread.sessionPath))) return false
-  const chatGroupId = getLocalDraftChatGroupId(thread.sessionPath)
+  if (!(thread.conversationId && isLocalConversationId(thread.conversationId))) return false
+  const chatGroupId = getLocalDraftChatGroupId(thread.conversationId)
   return threadsScope === 'chat' ? chatGroupId !== null : chatGroupId === null
 }
 
@@ -29,7 +31,7 @@ export function preserveLocalDraftThreads(
   currentThreads: Thread[],
   threadsScope: ThreadsScope,
   cachedThreads: Thread[] = [],
-  replaceLocalDraftSessionPath: string | null = null,
+  replaceLocalDraftConversationId: string | null = null,
 ) {
   const localDrafts = [...cachedThreads, ...currentThreads].filter((thread) =>
     localDraftMatchesScope(thread, threadsScope),
@@ -40,8 +42,8 @@ export function preserveLocalDraftThreads(
   const preservedDrafts = uniqueLocalDrafts.filter((draft) => {
     if (hasSameThread(fetchedThreads, draft)) return false
     if (
-      replaceLocalDraftSessionPath === null ||
-      draft.sessionPath !== replaceLocalDraftSessionPath
+      replaceLocalDraftConversationId === null ||
+      draft.conversationId !== replaceLocalDraftConversationId
     ) {
       return true
     }
@@ -49,8 +51,8 @@ export function preserveLocalDraftThreads(
     const draftStartedAt = draft.lastModifiedMs ?? Number.POSITIVE_INFINITY
     return !fetchedThreads.some(
       (thread) =>
-        thread.sessionPath &&
-        !isLocalSessionPath(thread.sessionPath) &&
+        thread.conversationId &&
+        !isLocalConversationId(thread.conversationId) &&
         (thread.lastModifiedMs ?? 0) >= draftStartedAt - 1000,
     )
   })
@@ -106,12 +108,15 @@ function updateLocalDraftCache(
   })
 }
 
-export function forgetLocalDraftThread(projectId: string, sessionPath: string | null | undefined) {
-  if (!sessionPath) return
+export function forgetLocalDraftThread(
+  projectId: string,
+  conversationId: string | null | undefined,
+) {
+  if (!conversationId) return
   const cache = getLocalDraftCache(projectId)
   setLocalDraftCache(projectId, {
-    chat: cache.chat.filter((thread) => thread.sessionPath !== sessionPath),
-    code: cache.code.filter((thread) => thread.sessionPath !== sessionPath),
+    chat: cache.chat.filter((thread) => thread.conversationId !== conversationId),
+    code: cache.code.filter((thread) => thread.conversationId !== conversationId),
   })
 }
 
@@ -122,7 +127,7 @@ export function useDesktopProjectThreads() {
       projectId: string,
       options: {
         chat?: boolean | undefined
-        replaceLocalDraftSessionPath?: string | null | undefined
+        replaceLocalDraftConversationId?: string | null | undefined
       } = {},
     ) => {
       const threadsScope = options.chat ? 'chat' : 'code'
@@ -143,7 +148,7 @@ export function useDesktopProjectThreads() {
               project.threads,
               threadsScope,
               getLocalDraftCache(projectId)[threadsScope],
-              options.replaceLocalDraftSessionPath ?? null,
+              options.replaceLocalDraftConversationId ?? null,
             )
             updateLocalDraftCache(projectId, threadsScope, threads, mergedThreads)
             return {

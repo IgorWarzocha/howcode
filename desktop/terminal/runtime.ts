@@ -30,9 +30,6 @@ export const openTerminal: TerminalService['openTerminal'] = (request) =>
 export const resizeTerminal: TerminalService['resizeTerminal'] = (sessionId, cols, rows) =>
   run((service) => service.resize(sessionId, cols, rows))
 
-export const statSessionFile: TerminalService['statSessionFile'] = (sessionId) =>
-  run((service) => service.statSessionFile(sessionId))
-
 export const writeTerminal: TerminalService['writeTerminal'] = (sessionId, data) =>
   run((service) => service.write(sessionId, data))
 

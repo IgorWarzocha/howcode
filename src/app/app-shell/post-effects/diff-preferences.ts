@@ -33,7 +33,7 @@ export function applyDiffPreferencesToThread(
 }
 
 export function getDiffPreferencesPatch(payload: ActionPayload): DiffPreferencesPatch | null {
-  if (typeof payload.sessionPath !== 'string') return null
+  if (typeof payload.conversationId !== 'string') return null
 
   const baselinePreference = getProjectDiffBaselinePreference(payload)
   const renderModePreference = getProjectDiffRenderModePreference(payload)
@@ -52,24 +52,24 @@ export async function applyDiffPreferencesPostEffect(input: {
   queryClient: QueryClient
   setLiveThreadData: (updater: (state: ThreadData | null) => ThreadData | null) => void
 }) {
-  const sessionPath =
-    typeof input.contextualPayload.sessionPath === 'string'
-      ? input.contextualPayload.sessionPath
+  const conversationId =
+    typeof input.contextualPayload.conversationId === 'string'
+      ? input.contextualPayload.conversationId
       : null
-  if (!sessionPath) return
+  if (!conversationId) return
 
   const patch = getDiffPreferencesPatch(input.contextualPayload)
   if (!patch) return
 
-  input.queryClient.setQueryData(desktopQueryKeys.thread(sessionPath), (current: unknown) =>
+  input.queryClient.setQueryData(desktopQueryKeys.thread(conversationId), (current: unknown) =>
     applyDiffPreferencesToThread(current as ThreadData | null | undefined, patch),
   )
   input.setLiveThreadData((current) =>
-    current?.sessionPath === sessionPath
+    current?.conversationId === conversationId
       ? (applyDiffPreferencesToThread(current, patch) ?? null)
       : current,
   )
   await input.queryClient.invalidateQueries({
-    queryKey: desktopQueryKeys.threadPrefix(sessionPath),
+    queryKey: desktopQueryKeys.threadPrefix(conversationId),
   })
 }

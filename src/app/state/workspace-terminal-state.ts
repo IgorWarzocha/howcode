@@ -1,21 +1,6 @@
-import { isLocalSessionPath } from '@howcode/shared/session-paths'
+import { isLocalConversationId } from '@howcode/shared/conversation-ids'
 import type { View } from '../types'
 import type { NonGitOpsView, WorkspaceAction, WorkspaceState } from './workspace-model'
-
-export function migrateTakeoverOverride(
-  takeoverOverrides: Record<string, boolean>,
-  fromSessionPath: string | null,
-  toSessionPath: string,
-) {
-  if (!fromSessionPath || fromSessionPath === toSessionPath) return takeoverOverrides
-  if (!isLocalSessionPath(fromSessionPath) || isLocalSessionPath(toSessionPath)) {
-    return takeoverOverrides
-  }
-  if (!Object.hasOwn(takeoverOverrides, fromSessionPath)) return takeoverOverrides
-
-  const { [fromSessionPath]: override, ...remainingOverrides } = takeoverOverrides
-  return { ...remainingOverrides, [toSessionPath]: override ?? false }
-}
 
 export function getGitOpsReturnView(activeView: View, fallback: NonGitOpsView): NonGitOpsView {
   return activeView === 'gitops' ? fallback : activeView
@@ -23,26 +8,27 @@ export function getGitOpsReturnView(activeView: View, fallback: NonGitOpsView): 
 
 export function getTerminalVisibilityForSession(
   terminalVisibleBySession: Record<string, boolean>,
-  sessionPath: string | null,
+  conversationId: string | null,
 ) {
-  return sessionPath ? (terminalVisibleBySession[sessionPath] ?? false) : false
+  return conversationId ? (terminalVisibleBySession[conversationId] ?? false) : false
 }
 
 export function migrateTerminalVisibility(
   terminalVisibleBySession: Record<string, boolean>,
-  fromSessionPath: string | null,
-  toSessionPath: string,
+  fromConversationId: string | null,
+  toConversationId: string,
 ) {
-  if (!fromSessionPath || fromSessionPath === toSessionPath) return terminalVisibleBySession
-  if (!isLocalSessionPath(fromSessionPath) || isLocalSessionPath(toSessionPath)) {
+  if (!fromConversationId || fromConversationId === toConversationId)
+    return terminalVisibleBySession
+  if (!isLocalConversationId(fromConversationId) || isLocalConversationId(toConversationId)) {
     return terminalVisibleBySession
   }
-  if (Object.hasOwn(terminalVisibleBySession, toSessionPath)) return terminalVisibleBySession
-  if (!Object.hasOwn(terminalVisibleBySession, fromSessionPath)) return terminalVisibleBySession
+  if (Object.hasOwn(terminalVisibleBySession, toConversationId)) return terminalVisibleBySession
+  if (!Object.hasOwn(terminalVisibleBySession, fromConversationId)) return terminalVisibleBySession
 
   return {
     ...terminalVisibleBySession,
-    [toSessionPath]: terminalVisibleBySession[fromSessionPath] ?? false,
+    [toConversationId]: terminalVisibleBySession[fromConversationId] ?? false,
   }
 }
 
@@ -64,14 +50,14 @@ export function shouldMigrateTerminalVisibilityForOpenedThread(
 
   if (
     state.activeView !== 'thread' ||
-    !state.selectedSessionPath ||
-    state.selectedSessionPath === action.sessionPath
+    !state.selectedConversationId ||
+    state.selectedConversationId === action.conversationId
   ) {
     return false
   }
 
   if (state.selectedThreadId === action.threadId) {
-    return !Object.hasOwn(state.terminalVisibleBySession, action.sessionPath)
+    return !Object.hasOwn(state.terminalVisibleBySession, action.conversationId)
   }
 
   return false
@@ -79,10 +65,10 @@ export function shouldMigrateTerminalVisibilityForOpenedThread(
 
 export function getTerminalStateForNextView(state: WorkspaceState, nextView: View) {
   const getWorkspaceTerminalVisible = () => {
-    if (state.selectedSessionPath) {
+    if (state.selectedConversationId) {
       return getTerminalVisibilityForSession(
         state.terminalVisibleBySession,
-        state.selectedSessionPath,
+        state.selectedConversationId,
       )
     }
     return state.selectedProjectId
@@ -96,7 +82,7 @@ export function getTerminalStateForNextView(state: WorkspaceState, nextView: Vie
         nextView === 'thread'
           ? getTerminalVisibilityForSession(
               state.terminalVisibleBySession,
-              state.selectedSessionPath,
+              state.selectedConversationId,
             )
           : nextView === 'project'
             ? getWorkspaceTerminalVisible()
@@ -121,7 +107,7 @@ export function getTerminalStateForNextView(state: WorkspaceState, nextView: Vie
 }
 
 export function setTerminalVisibleState(state: WorkspaceState, visible: boolean): WorkspaceState {
-  if (!state.selectedSessionPath) {
+  if (!state.selectedConversationId) {
     if (!state.selectedProjectId) return { ...state, terminalVisible: visible }
     return {
       ...state,
@@ -137,7 +123,7 @@ export function setTerminalVisibleState(state: WorkspaceState, visible: boolean)
     terminalVisible: visible,
     terminalVisibleBySession: {
       ...state.terminalVisibleBySession,
-      [state.selectedSessionPath]: visible,
+      [state.selectedConversationId]: visible,
     },
   }
 }

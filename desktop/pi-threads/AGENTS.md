@@ -1,0 +1,3 @@
+- Durable owns conversation transcripts and usage. App facts own title overrides, project attribution, pin, archive, deletion and inbox read/dismissal. Sidebar preview, running state and activity are repairable projections, not transcript snapshots.
+- Collect commit invalidations before the startup conversation scan, then drain. Keep failed and unprocessed IDs for explicit retry. Durable commit callbacks must not call Session APIs synchronously.
+- Repair missing facts only from the explicit Howcode origin document. A cwd does not identify an app-owned conversation or distinguish chat from code. Preserve inbox notification identity while rebuilding projections so read and dismissed replies do not return.

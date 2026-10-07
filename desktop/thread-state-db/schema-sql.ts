@@ -1,4 +1,4 @@
-import type * as SqlClient from 'effect/unstable/sql/SqlClient'
+import type * as SqlClient from 'effect/sql/SqlClient'
 
 export function threadStateSchemaStatements(sql: SqlClient.SqlClient) {
   return [
@@ -17,17 +17,20 @@ export function threadStateSchemaStatements(sql: SqlClient.SqlClient) {
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );`,
-    sql`CREATE TABLE IF NOT EXISTS threads (
+    sql`CREATE TABLE IF NOT EXISTS conversation_facts (
     id TEXT PRIMARY KEY,
     cwd TEXT NOT NULL,
-    session_path TEXT NOT NULL UNIQUE,
+    conversation_id TEXT NOT NULL UNIQUE,
     title TEXT NOT NULL,
-    last_assistant_message_json TEXT,
+    custom_title TEXT,
+    projection_entry_id TEXT,
+    projection_assistant_id TEXT,
     last_assistant_preview TEXT,
     last_assistant_at_ms INTEGER,
     running INTEGER NOT NULL DEFAULT 0,
     pinned INTEGER NOT NULL DEFAULT 0,
     archived INTEGER NOT NULL DEFAULT 0,
+    deleted INTEGER NOT NULL DEFAULT 0,
     branch_name TEXT,
     diff_baseline_json TEXT,
     diff_render_mode TEXT,
@@ -36,23 +39,20 @@ export function threadStateSchemaStatements(sql: SqlClient.SqlClient) {
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (cwd) REFERENCES projects(cwd) ON DELETE CASCADE
   );`,
-    sql`CREATE INDEX IF NOT EXISTS threads_by_cwd_idx ON threads(cwd, pinned DESC, last_modified_ms DESC);`,
-    sql`CREATE INDEX IF NOT EXISTS threads_by_path_idx ON threads(session_path);`,
-    sql`CREATE TABLE IF NOT EXISTS inbox_items (
-    session_path TEXT PRIMARY KEY,
+    sql`CREATE INDEX IF NOT EXISTS conversations_by_cwd_idx ON conversation_facts(cwd, pinned DESC, last_modified_ms DESC);`,
+    sql`CREATE TABLE IF NOT EXISTS conversation_inbox (
+    conversation_id TEXT PRIMARY KEY,
     unread INTEGER NOT NULL DEFAULT 1,
-    last_user_prompt TEXT,
-    last_assistant_message_json TEXT,
-    last_assistant_preview TEXT,
-    last_assistant_at_ms INTEGER,
+    dismissed INTEGER NOT NULL DEFAULT 0,
+    notification_assistant_id TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (session_path) REFERENCES threads(session_path) ON DELETE CASCADE
+    FOREIGN KEY (conversation_id) REFERENCES conversation_facts(conversation_id) ON DELETE CASCADE
   );`,
-    sql`CREATE TABLE IF NOT EXISTS inbox_reply_suppressions (
-    session_path TEXT PRIMARY KEY,
+    sql`CREATE TABLE IF NOT EXISTS conversation_reply_suppressions (
+    conversation_id TEXT PRIMARY KEY,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (session_path) REFERENCES threads(session_path) ON DELETE CASCADE
+    FOREIGN KEY (conversation_id) REFERENCES conversation_facts(conversation_id) ON DELETE CASCADE
   );`,
     sql`CREATE TABLE IF NOT EXISTS project_usage_totals (
     cwd TEXT PRIMARY KEY,
@@ -66,7 +66,7 @@ export function threadStateSchemaStatements(sql: SqlClient.SqlClient) {
     session_count INTEGER NOT NULL DEFAULT 0,
     sessions_with_usage_count INTEGER NOT NULL DEFAULT 0
   );`,
-    sql`CREATE INDEX IF NOT EXISTS inbox_items_by_unread_idx ON inbox_items(unread DESC, last_assistant_at_ms DESC);`,
+    sql`CREATE INDEX IF NOT EXISTS conversation_inbox_by_unread_idx ON conversation_inbox(unread DESC);`,
     sql`CREATE TABLE IF NOT EXISTS app_preferences (
     key TEXT PRIMARY KEY,
     value_json TEXT NOT NULL,
@@ -80,8 +80,8 @@ export function threadStateSchemaStatements(sql: SqlClient.SqlClient) {
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );`,
-    sql`CREATE TABLE IF NOT EXISTS chat_threads (
-    session_path TEXT PRIMARY KEY,
+    sql`CREATE TABLE IF NOT EXISTS chat_conversations (
+    conversation_id TEXT PRIMARY KEY,
     group_id TEXT,
     order_index INTEGER,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -89,7 +89,7 @@ export function threadStateSchemaStatements(sql: SqlClient.SqlClient) {
     FOREIGN KEY (group_id) REFERENCES chat_groups(id) ON DELETE SET NULL
   );`,
     sql`CREATE INDEX IF NOT EXISTS chat_groups_order_idx ON chat_groups(order_index, name COLLATE NOCASE);`,
-    sql`CREATE INDEX IF NOT EXISTS chat_threads_group_idx ON chat_threads(group_id, order_index);`,
+    sql`CREATE INDEX IF NOT EXISTS chat_conversations_group_idx ON chat_conversations(group_id, order_index);`,
     sql`CREATE TABLE IF NOT EXISTS project_worktree_settings (
     root_cwd TEXT PRIMARY KEY,
     worktree_dir TEXT NOT NULL DEFAULT './.worktrees',
@@ -145,25 +145,27 @@ export const columnMigrations = [
   },
   { table: 'projects', column: 'git_ops_mode', definition: 'git_ops_mode TEXT' },
   {
-    table: 'threads',
-    column: 'last_assistant_message_json',
-    definition: 'last_assistant_message_json TEXT',
-  },
-  {
-    table: 'threads',
+    table: 'conversation_facts',
     column: 'last_assistant_preview',
     definition: 'last_assistant_preview TEXT',
   },
   {
-    table: 'threads',
+    table: 'conversation_facts',
     column: 'last_assistant_at_ms',
     definition: 'last_assistant_at_ms INTEGER',
   },
-  { table: 'threads', column: 'running', definition: 'running INTEGER NOT NULL DEFAULT 0' },
-  { table: 'threads', column: 'branch_name', definition: 'branch_name TEXT' },
-  { table: 'threads', column: 'diff_baseline_json', definition: 'diff_baseline_json TEXT' },
-  { table: 'threads', column: 'diff_render_mode', definition: 'diff_render_mode TEXT' },
-  { table: 'inbox_items', column: 'last_user_prompt', definition: 'last_user_prompt TEXT' },
+  {
+    table: 'conversation_facts',
+    column: 'running',
+    definition: 'running INTEGER NOT NULL DEFAULT 0',
+  },
+  { table: 'conversation_facts', column: 'branch_name', definition: 'branch_name TEXT' },
+  {
+    table: 'conversation_facts',
+    column: 'diff_baseline_json',
+    definition: 'diff_baseline_json TEXT',
+  },
+  { table: 'conversation_facts', column: 'diff_render_mode', definition: 'diff_render_mode TEXT' },
   {
     table: 'project_usage_totals',
     column: 'sessions_with_usage_count',

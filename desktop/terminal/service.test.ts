@@ -52,6 +52,48 @@ class FakePtyProcess implements PtyProcess {
 }
 
 describe('Terminal service', () => {
+  it('drains every session when one close fails', async () => {
+    const failedProcess = new FakePtyProcess()
+    const healthyProcess = new FakePtyProcess()
+    vi.spyOn(failedProcess, 'kill').mockImplementation(() => {
+      throw new Error('Cannot terminate PTY.')
+    })
+    const processes = [failedProcess, healthyProcess]
+    const adapter: PtyAdapter = {
+      name: 'partial-close-failure',
+      spawn: async () => {
+        const process = processes.shift()
+        if (!process) throw new Error('Unexpected spawn.')
+        return process
+      },
+    }
+    const sessionIds: string[] = []
+    const testLayer = layer.pipe(Layer.provide(Layer.succeed(Pty.Service, adapter)))
+    try {
+      await Effect.runPromise(
+        Effect.gen(function* () {
+          const terminal = yield* Service
+          for (const suffix of ['failed', 'healthy']) {
+            const snapshot = yield* terminal.open({
+              projectId: `/tmp/howcode-terminal-close-all-${suffix}`,
+              cwd: '/tmp',
+              cols: 80,
+              rows: 24,
+            })
+            sessionIds.push(snapshot.sessionId)
+          }
+          const result = yield* Effect.exit(terminal.closeAll())
+          expect(result._tag).toBe('Failure')
+          expect(healthyProcess.killCount).toBe(1)
+          expect(healthyProcess.disposeCount).toBe(3)
+          expect(yield* terminal.list()).toEqual([])
+        }).pipe(Effect.provide(testLayer)),
+      )
+    } finally {
+      for (const sessionId of sessionIds) rmSync(getTranscriptPath(sessionId), { force: true })
+    }
+  })
+
   it('reports failed termination of a PTY that arrives after its record was closed', async () => {
     const process = new FakePtyProcess()
     vi.spyOn(process, 'kill').mockImplementation(() => {
@@ -108,7 +150,6 @@ describe('Terminal service', () => {
         const opened = yield* terminal.open({
           projectId: '/tmp/howcode-effect-terminal-close-test',
           cwd: '/tmp',
-          launchMode: 'shell',
           cols: 80,
           rows: 24,
         })
@@ -143,7 +184,6 @@ describe('Terminal service', () => {
         terminal.open({
           projectId: '/tmp/howcode-effect-terminal-spawn-race-test',
           cwd: '/tmp',
-          launchMode: 'shell',
           cols: 80,
           rows: 24,
         }),
@@ -178,14 +218,12 @@ describe('Terminal service', () => {
             terminal.open({
               projectId: '/tmp/howcode-effect-terminal-concurrent-open-test',
               cwd: '/tmp',
-              launchMode: 'shell',
               cols: 80,
               rows: 24,
             }),
             terminal.open({
               projectId: '/tmp/howcode-effect-terminal-concurrent-open-test',
               cwd: '/tmp',
-              launchMode: 'shell',
               cols: 80,
               rows: 24,
             }),

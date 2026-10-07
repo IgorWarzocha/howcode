@@ -52,7 +52,6 @@ const routeViews = new Set<NonGitOpsView>([
   'chat',
   'claw',
   'code',
-  'extensions',
   'inbox',
   'settings',
   'sessions',
@@ -69,8 +68,8 @@ function findThread(projects: Project[], projectId: string | null, threadId: str
   if (!(projectId && threadId)) return null
   const project = projects.find((candidate) => candidate.id === projectId)
   const thread = project?.threads.find((candidate) => candidate.id === threadId) ?? null
-  return project && thread?.sessionPath
-    ? { project, thread, sessionPath: thread.sessionPath }
+  return project && thread?.conversationId
+    ? { project, thread, conversationId: thread.conversationId }
     : null
 }
 
@@ -78,8 +77,8 @@ function getCurrentRoute(snapshot: AppRouteSnapshot) {
   const routeName = snapshot.pathname.replace(leadingSlashesPattern, '') || 'landing'
   const projectId = getStringSearchValue(snapshot.search, 'projectId')
   const threadId = getStringSearchValue(snapshot.search, 'threadId')
-  const sessionPath = getStringSearchValue(snapshot.search, 'sessionPath')
-  return { routeName, projectId, threadId, sessionPath }
+  const conversationId = getStringSearchValue(snapshot.search, 'conversationId')
+  return { routeName, projectId, threadId, conversationId }
 }
 
 function routesMatch(a: AppRouteSnapshot, b: AppRouteSnapshot) {
@@ -120,7 +119,7 @@ function getRouteForState(state: WorkspaceState): AppRouteSnapshot {
   if (state.activeView === 'inbox') {
     return {
       pathname: '/inbox',
-      search: cleanSearch({ sessionPath: state.selectedInboxSessionPath }),
+      search: cleanSearch({ conversationId: state.selectedInboxConversationId }),
     }
   }
 
@@ -143,7 +142,7 @@ function getRouteAction(
       type: 'open-thread',
       projectId: thread.project.id,
       threadId: thread.thread.id,
-      sessionPath: thread.sessionPath,
+      conversationId: thread.conversationId,
       view: route.routeName,
     }
   }
@@ -155,7 +154,7 @@ function getRouteAction(
             type: 'open-thread',
             projectId: thread.project.id,
             threadId: thread.thread.id,
-            sessionPath: thread.sessionPath,
+            conversationId: thread.conversationId,
           },
           { type: 'open-gitops' },
         ]
@@ -166,7 +165,7 @@ function getRouteAction(
   if (route.routeName === 'inbox') {
     return [
       { type: 'show-view', view: 'inbox' },
-      { type: 'select-inbox-thread', sessionPath: route.sessionPath },
+      { type: 'select-inbox-thread', conversationId: route.conversationId },
     ]
   }
   if (isRouteView(route.routeName)) {

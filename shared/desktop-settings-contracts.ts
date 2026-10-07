@@ -45,8 +45,6 @@ export type AppSettings = {
   gitDiffIncludeUntrackedDefault: boolean
   projectDeletionMode: ProjectDeletionMode
   useAgentsSkillsPaths: boolean
-  devUpdateBranch: boolean
-  piTuiTakeover: boolean
   hideSidebarSessionCounts: boolean
   hoverToFocus: boolean
   hoverToBlur: boolean
@@ -54,11 +52,8 @@ export type AppSettings = {
   composerSendMode: ComposerSendMode
 }
 
-export type PiTransportMode = 'sse' | 'websocket' | 'auto'
+export type PiTransportMode = 'sse' | 'websocket' | 'websocket-cached' | 'auto'
 export type PiQueueMode = 'all' | 'one-at-a-time'
-export type PiDoubleEscapeAction = 'fork' | 'tree' | 'none'
-export type PiTreeFilterMode = 'default' | 'no-tools' | 'user-only' | 'labeled-only' | 'all'
-export type PiDefaultProjectTrust = 'ask' | 'always' | 'never'
 
 export type PiSettings = typeof PiSettingsSchema.Type
 
@@ -71,7 +66,6 @@ export type ShellState = {
   cwd: string
   resolvedCwd?: string | undefined
   agentDir: string
-  sessionDir: string
   projects: Project[]
   sidebarVisibleProjectIds: string[] | null
   appSettings: AppSettings

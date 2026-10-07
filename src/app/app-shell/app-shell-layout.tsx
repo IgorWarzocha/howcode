@@ -1,13 +1,12 @@
-import { useCallback } from 'react'
+import { useRef } from 'react'
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence'
+import { WORKSPACE_CONTENT_MAX_WIDTH_CLASS } from '../ui/layout'
 import { getLayoutThreadSelection } from './app-shell-layout-model'
 import { AppShellLayoutView } from './app-shell-layout-view'
 import { useAppKeybindings } from './useAppKeybindings'
 import type { AppShellController } from './useAppShellController'
 import { useAppShellDiffPreferences } from './useAppShellDiffPreferences'
-import { useAppShellLayoutState } from './useAppShellLayoutState'
 import { useAppShellResponsiveLayout } from './useAppShellResponsiveLayout'
-import { useTakeoverTerminalIdentity } from './useTakeoverTerminalIdentity'
 
 type AppShellLayoutProps = {
   controller: AppShellController
@@ -17,7 +16,6 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const composerProjectId = controller.composer.projectId
   const { state } = controller.workspace
   const {
-    controllerRef,
     handleFocusComposer,
     handleFocusTerminal,
     handleOpenSidebar,
@@ -28,9 +26,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     sidebarOverlayOpen,
     terminalHiddenByCompactResize,
   } = useAppShellResponsiveLayout(controller)
-  const { sessionPath: terminalSessionPath, threadId: activeThreadId } =
+  const { conversationId: terminalConversationId, threadId: activeThreadId } =
     getLayoutThreadSelection(state)
-  const takeoverVisible = state.takeoverVisible
   const terminalDrawerVisible =
     (state.activeView === 'thread' || state.activeView === 'project') &&
     state.terminalVisible &&
@@ -49,26 +46,9 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
       composerProjectId,
       controller,
       parentBranchName,
-      terminalSessionPath,
+      terminalConversationId,
     })
-  const { mainSectionRef, takeoverPresent, workspaceContentClass } = useAppShellLayoutState({
-    takeoverVisible,
-  })
-  const takeoverTerminalKey = useTakeoverTerminalIdentity({
-    activeView: state.activeView,
-    composerProjectId,
-    takeoverPresent,
-    takeoverVisible,
-    terminalSessionPath,
-    threadId: activeThreadId,
-  })
-  const handleOpenGitOpsFromTakeover = useCallback(async () => {
-    controllerRef.current.gitOps.open()
-    await controllerRef.current.takeover.close({
-      preserveSessionOverride: true,
-      refreshThread: false,
-    })
-  }, [controllerRef])
+  const mainSectionRef = useRef<HTMLElement>(null)
 
   useAppKeybindings({
     controller,
@@ -96,17 +76,12 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
         onRenderModeChange: handleSetDiffRenderMode,
         renderMode: diffRenderMode,
       }}
-      takeover={{
-        onOpenGitOps: handleOpenGitOpsFromTakeover,
-        present: takeoverPresent,
-        terminalKey: takeoverTerminalKey,
-      }}
       terminal={{
         drawerPresent: terminalDrawerPresent,
         drawerVisible: terminalDrawerVisible,
-        sessionPath: terminalSessionPath,
+        conversationId: terminalConversationId,
       }}
-      workspaceContentClass={workspaceContentClass}
+      workspaceContentClass={`mx-auto w-full ${WORKSPACE_CONTENT_MAX_WIDTH_CLASS}`}
     />
   )
 }

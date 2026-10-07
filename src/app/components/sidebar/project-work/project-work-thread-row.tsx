@@ -6,7 +6,7 @@ export function ProjectWorkThreadRow({
   activeView,
   project,
   selectedThreadId,
-  terminalRunningSessionPaths,
+  terminalRunningConversationIds,
   thread,
   currentBranch,
   onAction,
@@ -15,11 +15,11 @@ export function ProjectWorkThreadRow({
   activeView: View
   project: Project
   selectedThreadId: string | null
-  terminalRunningSessionPaths: ReadonlySet<string>
+  terminalRunningConversationIds: ReadonlySet<string>
   thread: Thread
   currentBranch: string | null
   onAction: DesktopActionInvoker
-  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
+  onThreadOpen: (projectId: string, threadId: string, conversationId: string) => void
 }) {
   const isSelected =
     selectedThreadId === thread.id &&
@@ -32,7 +32,7 @@ export function ProjectWorkThreadRow({
       pinned={Boolean(thread.pinned)}
       running={Boolean(thread.running)}
       terminalRunning={Boolean(
-        thread.sessionPath && terminalRunningSessionPaths.has(thread.sessionPath),
+        thread.conversationId && terminalRunningConversationIds.has(thread.conversationId),
       )}
       unread={Boolean(thread.unread)}
       isSelected={isSelected}
@@ -56,8 +56,8 @@ export function ProjectWorkThreadRow({
           : undefined
       }
       onOpen={() => {
-        if (!thread.sessionPath) return
-        onThreadOpen(project.id, thread.id, thread.sessionPath)
+        if (!thread.conversationId) return
+        onThreadOpen(project.id, thread.id, thread.conversationId)
       }}
       onPin={() =>
         onAction('thread.pin', {
@@ -68,7 +68,7 @@ export function ProjectWorkThreadRow({
       onRename={(title) =>
         onAction('thread.rename', {
           projectId: project.id,
-          sessionPath: thread.sessionPath,
+          conversationId: thread.conversationId,
           threadId: thread.id,
           value: title,
         })

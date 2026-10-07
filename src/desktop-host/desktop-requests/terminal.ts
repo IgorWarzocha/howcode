@@ -8,7 +8,6 @@ type TerminalRequestHandlers = Pick<
   | 'terminalWrite'
   | 'terminalResize'
   | 'terminalClose'
-  | 'terminalSessionFileStat'
   | 'terminalStatus'
 >
 
@@ -28,7 +27,6 @@ export function createTerminalHandlers(terminalManager: TerminalService): Termin
       await terminalManager.closeTerminal(request)
       return { ok: true }
     },
-    terminalSessionFileStat: ({ sessionId }) => terminalManager.statSessionFile(sessionId),
     terminalStatus: ({ sessionId }) => terminalManager.getTerminalStatus(sessionId),
   }
 }

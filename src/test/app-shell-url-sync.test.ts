@@ -20,7 +20,7 @@ function createProject(options: {
       id,
       title: id,
       age: 'now',
-      sessionPath: `/sessions/${id}.jsonl`,
+      conversationId: `/sessions/${id}.jsonl`,
     })),
     threadsLoaded: options.threadsLoaded,
     threadsScope: options.threadsScope,

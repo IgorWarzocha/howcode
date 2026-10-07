@@ -1,19 +1,17 @@
-import { isLocalSessionPath } from '@howcode/shared/session-paths'
-import { sessionTreeRefreshWithSessionWatch } from '@howcode/shared/session-tree-watch'
+import { isLocalConversationId } from '@howcode/shared/conversation-ids'
 import type { Dispatch, SetStateAction } from 'react'
 import type { DesktopEvent, ThreadData } from '../../desktop/types'
 import { desktopQueryKeys } from '../../query/desktop-query'
 import type { WorkspaceAction } from '../../state/workspace'
 import {
   type DesktopEventSelectionState,
-  getVisibleDesktopSessionPath,
+  getVisibleDesktopConversationId,
   invalidateProjectWorktreeQueries,
   refreshVisibleInboxThread,
   shouldAutoOpenStartedThread,
   shouldDisplayStartedThreadForLocalDraft,
 } from '../desktop-event-sync'
 import { applyThreadEventToSidebarState } from '../sidebar-thread-sync'
-import { applyPiExtensionUiState, getComposerExtensionUi } from './pi-extension-ui-state'
 import type { DesktopEventQueryClient, DesktopEventSyncRuntime } from './runtime'
 
 function mergeThreadPreferences(input: {
@@ -23,7 +21,7 @@ function mergeThreadPreferences(input: {
   let threadWithPreferences = input.event.thread
   let hadCachedThread = false
   input.queryClient.setQueryData(
-    desktopQueryKeys.thread(input.event.sessionPath),
+    desktopQueryKeys.thread(input.event.conversationId),
     (current: unknown) => {
       const currentThread = current as ThreadData | null | undefined
       hadCachedThread = Boolean(currentThread)
@@ -36,7 +34,7 @@ function mergeThreadPreferences(input: {
   )
   if (!(input.event.thread.diffPreferences || hadCachedThread)) {
     void input.queryClient.invalidateQueries({
-      queryKey: desktopQueryKeys.threadPrefix(input.event.sessionPath),
+      queryKey: desktopQueryKeys.threadPrefix(input.event.conversationId),
     })
   }
   return threadWithPreferences
@@ -45,7 +43,7 @@ function mergeThreadPreferences(input: {
 function getThreadEventFlags(input: {
   event: Extract<DesktopEvent, { type: 'thread-update' }>
   latestWorkspaceState: DesktopEventSelectionState
-  visibleSessionPath: string | null
+  visibleConversationId: string | null
 }) {
   const shouldAutoOpenThread = shouldAutoOpenStartedThread({
     reason: input.event.reason,
@@ -57,7 +55,7 @@ function getThreadEventFlags(input: {
     reason: input.event.reason,
     projectId: input.event.projectId,
     isChat: input.event.isChat,
-    replacesSessionPath: input.event.replacesSessionPath,
+    replacesConversationId: input.event.replacesConversationId,
     workspaceState: input.latestWorkspaceState,
   })
   return {
@@ -66,14 +64,14 @@ function getThreadEventFlags(input: {
     ),
     isCompactionThreadUpdate:
       input.event.reason === 'compaction-start' || input.event.reason === 'compaction',
-    isVisibleThreadUpdate: input.event.sessionPath === input.visibleSessionPath,
+    isVisibleThreadUpdate: input.event.conversationId === input.visibleConversationId,
     shouldAutoOpenThread,
     shouldDisplayLocalDraftThread,
   }
 }
 
 function updateLiveThreadData(input: {
-  aliasedLocalDraftSessionPath: string | null
+  aliasedLocalDraftConversationId: string | null
   event: Extract<DesktopEvent, { type: 'thread-update' }>
   flags: ReturnType<typeof getThreadEventFlags>
   setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>
@@ -83,22 +81,22 @@ function updateLiveThreadData(input: {
     const shouldApplyLiveThread =
       input.flags.isVisibleThreadUpdate ||
       input.flags.shouldAutoOpenThread ||
-      input.aliasedLocalDraftSessionPath === current?.sessionPath ||
-      current?.sessionPath === input.event.sessionPath
+      input.aliasedLocalDraftConversationId === current?.conversationId ||
+      current?.conversationId === input.event.conversationId
     if (!shouldApplyLiveThread) return current
     const shouldSuppressFirstTurnTimeline =
       !input.flags.hasVisibleAssistantActivity &&
-      (input.aliasedLocalDraftSessionPath === current?.sessionPath ||
+      (input.aliasedLocalDraftConversationId === current?.conversationId ||
         (input.flags.isVisibleThreadUpdate &&
           current?.isStreaming === true &&
           current.messages.length === 0))
     return {
       ...input.threadWithPreferences,
       messages: shouldSuppressFirstTurnTimeline ? [] : input.threadWithPreferences.messages,
-      sessionPath:
-        input.aliasedLocalDraftSessionPath && !input.flags.hasVisibleAssistantActivity
-          ? input.aliasedLocalDraftSessionPath
-          : input.threadWithPreferences.sessionPath,
+      conversationId:
+        input.aliasedLocalDraftConversationId && !input.flags.hasVisibleAssistantActivity
+          ? input.aliasedLocalDraftConversationId
+          : input.threadWithPreferences.conversationId,
       diffPreferences: input.threadWithPreferences.diffPreferences ?? current?.diffPreferences,
     }
   })
@@ -118,7 +116,7 @@ function dispatchThreadOpenIfNeeded(input: {
       type: 'start-project-thread',
       projectId: input.event.projectId,
       threadId: input.event.threadId,
-      sessionPath: input.event.sessionPath,
+      conversationId: input.event.conversationId,
     })
     return
   }
@@ -131,7 +129,7 @@ function dispatchThreadOpenIfNeeded(input: {
       type: 'open-thread',
       projectId: input.event.projectId,
       threadId: input.event.threadId,
-      sessionPath: input.event.sessionPath,
+      conversationId: input.event.conversationId,
       view: input.event.isChat === true ? 'chat' : 'thread',
     })
     return
@@ -146,7 +144,7 @@ function dispatchThreadOpenIfNeeded(input: {
       type: 'open-thread',
       projectId: input.event.projectId,
       threadId: input.event.threadId,
-      sessionPath: input.event.sessionPath,
+      conversationId: input.event.conversationId,
       view: input.latestWorkspaceState.activeView,
     })
   }
@@ -185,19 +183,22 @@ function rememberLocalDraftSessionAlias(input: {
   event: Extract<DesktopEvent, { type: 'thread-update' }>
   flags: ReturnType<typeof getThreadEventFlags>
   latestWorkspaceState: DesktopEventSelectionState
-  localDraftSessionPathByPersistedSessionPathRef: React.RefObject<Map<string, string>>
+  localDraftConversationIdByPersistedConversationIdRef: React.RefObject<Map<string, string>>
 }) {
-  if (input.flags.shouldDisplayLocalDraftThread && input.latestWorkspaceState.selectedSessionPath) {
-    input.localDraftSessionPathByPersistedSessionPathRef.current.set(
-      input.event.sessionPath,
-      input.latestWorkspaceState.selectedSessionPath,
+  if (
+    input.flags.shouldDisplayLocalDraftThread &&
+    input.latestWorkspaceState.selectedConversationId
+  ) {
+    input.localDraftConversationIdByPersistedConversationIdRef.current.set(
+      input.event.conversationId,
+      input.latestWorkspaceState.selectedConversationId,
     )
   }
-  const replacesSessionPath = input.event.replacesSessionPath
-  if (typeof replacesSessionPath === 'string' && isLocalSessionPath(replacesSessionPath)) {
-    input.localDraftSessionPathByPersistedSessionPathRef.current.set(
-      input.event.sessionPath,
-      replacesSessionPath,
+  const replacesConversationId = input.event.replacesConversationId
+  if (typeof replacesConversationId === 'string' && isLocalConversationId(replacesConversationId)) {
+    input.localDraftConversationIdByPersistedConversationIdRef.current.set(
+      input.event.conversationId,
+      replacesConversationId,
     )
   }
 }
@@ -208,20 +209,22 @@ export function handleThreadUpdateEvent(
 ) {
   const { composerProjectId: latestComposerProjectId, workspaceState: latestWorkspaceState } =
     runtime.desktopEventStateRef.current
-  const visibleSessionPath = getVisibleDesktopSessionPath(latestWorkspaceState)
+  const visibleConversationId = getVisibleDesktopConversationId(latestWorkspaceState)
   const threadWithPreferences = mergeThreadPreferences({ event, queryClient: runtime.queryClient })
-  const flags = getThreadEventFlags({ event, latestWorkspaceState, visibleSessionPath })
+  const flags = getThreadEventFlags({ event, latestWorkspaceState, visibleConversationId })
   rememberLocalDraftSessionAlias({
     event,
     flags,
     latestWorkspaceState,
-    localDraftSessionPathByPersistedSessionPathRef:
-      runtime.localDraftSessionPathByPersistedSessionPathRef,
+    localDraftConversationIdByPersistedConversationIdRef:
+      runtime.localDraftConversationIdByPersistedConversationIdRef,
   })
-  const aliasedLocalDraftSessionPath =
-    runtime.localDraftSessionPathByPersistedSessionPathRef.current.get(event.sessionPath) ?? null
+  const aliasedLocalDraftConversationId =
+    runtime.localDraftConversationIdByPersistedConversationIdRef.current.get(
+      event.conversationId,
+    ) ?? null
   updateLiveThreadData({
-    aliasedLocalDraftSessionPath,
+    aliasedLocalDraftConversationId,
     event,
     flags,
     setLiveThreadData: runtime.setLiveThreadData,
@@ -231,16 +234,10 @@ export function handleThreadUpdateEvent(
     runtime.setThreadHistoryCompactions(0)
   if (
     event.composer &&
-    (event.sessionPath === visibleSessionPath ||
-      aliasedLocalDraftSessionPath === latestWorkspaceState.selectedSessionPath)
+    (event.conversationId === visibleConversationId ||
+      aliasedLocalDraftConversationId === latestWorkspaceState.selectedConversationId)
   )
     runtime.setComposerState(event.composer)
-  if (event.composer)
-    applyPiExtensionUiState({
-      extensionUi: getComposerExtensionUi(event.composer),
-      sessionPath: event.sessionPath,
-      setPiExtensionUiStateBySession: runtime.setPiExtensionUiStateBySession,
-    })
   if (
     event.reason === 'start' ||
     event.reason === 'end' ||
@@ -257,7 +254,7 @@ export function handleThreadUpdateEvent(
   }
   if (
     (event.reason === 'end' || event.reason === 'external') &&
-    visibleSessionPath === event.sessionPath
+    visibleConversationId === event.conversationId
   ) {
     void refreshVisibleInboxThread({
       event,
@@ -267,19 +264,7 @@ export function handleThreadUpdateEvent(
   }
   dispatchThreadOpenIfNeeded({ dispatch: runtime.dispatch, event, flags, latestWorkspaceState })
   refreshThreadEndState({ event, latestComposerProjectId, latestWorkspaceState, runtime })
-  if (sessionTreeRefreshWithSessionWatch) {
-    void runtime.queryClient.invalidateQueries({
-      queryKey: desktopQueryKeys.sessionTreeList(event.sessionPath),
-    })
-  }
-}
-
-export function handleSessionTreeRefreshEvent(
-  runtime: DesktopEventSyncRuntime,
-  event: Extract<DesktopEvent, { type: 'session-tree-refresh' }>,
-) {
-  if (!sessionTreeRefreshWithSessionWatch) return
   void runtime.queryClient.invalidateQueries({
-    queryKey: desktopQueryKeys.sessionTreeList(event.sessionPath),
+    queryKey: desktopQueryKeys.conversationEntries(event.conversationId),
   })
 }

@@ -7,7 +7,7 @@ function getProcessEnvironmentVariable(name: string) {
 
 let cachedUserDataPath: string | null = null
 
-function getDefaultElectronUserDataPath() {
+function getDefaultUserDataPath() {
   switch (process.platform) {
     case 'darwin':
       return path.join(os.homedir(), 'Library', 'Application Support', 'howcode')
@@ -35,6 +35,6 @@ export function getDesktopUserDataPath() {
     return configuredUserDataPath
   }
 
-  cachedUserDataPath = getDefaultElectronUserDataPath()
+  cachedUserDataPath = getDefaultUserDataPath()
   return cachedUserDataPath
 }

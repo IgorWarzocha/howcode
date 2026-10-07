@@ -4,20 +4,19 @@ import * as Deferred from 'effect/Deferred'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
 import * as Queue from 'effect/Queue'
+import type * as RpcClient from 'effect/rpc/RpcClient'
+import * as RpcClientRuntime from 'effect/rpc/RpcClient'
+import { RpcClientDefect, RpcClientError } from 'effect/rpc/RpcClientError'
+import * as RpcSerialization from 'effect/rpc/RpcSerialization'
 import * as Schema from 'effect/Schema'
 import * as Scope from 'effect/Scope'
 import * as Stream from 'effect/Stream'
-import type * as RpcClient from 'effect/unstable/rpc/RpcClient'
-import * as RpcClientRuntime from 'effect/unstable/rpc/RpcClient'
-import { RpcClientDefect, RpcClientError } from 'effect/unstable/rpc/RpcClientError'
-import * as RpcSerialization from 'effect/unstable/rpc/RpcSerialization'
 import type { TerminalService } from '../../shared/desktop-service-contracts'
 import {
   TerminalCloseRequest,
   type TerminalEvent,
   TerminalOpenRequest,
   TerminalResizeRequest,
-  TerminalSessionFileStatRequest,
   TerminalStatusRequest,
   TerminalWriteRequest,
 } from '../../shared/terminal-contracts'
@@ -80,12 +79,6 @@ export class TerminalRpcServiceClient {
         this.run((client) =>
           Schema.decodeUnknownEffect(TerminalResizeRequest)({ sessionId, cols, rows }).pipe(
             Effect.flatMap((decoded) => client['terminal.resize'](decoded)),
-          ),
-        ),
-      statSessionFile: (sessionId) =>
-        this.run((client) =>
-          Schema.decodeUnknownEffect(TerminalSessionFileStatRequest)({ sessionId }).pipe(
-            Effect.flatMap((decoded) => client['terminal.statSessionFile'](decoded)),
           ),
         ),
       subscribeTerminalEvents: (listener) => this.subscribe(listener),

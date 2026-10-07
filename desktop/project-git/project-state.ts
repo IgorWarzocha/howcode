@@ -1,5 +1,5 @@
 import * as Effect from 'effect/Effect'
-import * as SqlClient from 'effect/unstable/sql/SqlClient'
+import * as SqlClient from 'effect/sql/SqlClient'
 import type { ProjectGitState } from '../../shared/desktop-contracts.ts'
 import { databaseOperation } from '../thread-state-db/db.ts'
 import { hasHeadCommit, runGit, runGitWithOptions } from './git-runner.ts'

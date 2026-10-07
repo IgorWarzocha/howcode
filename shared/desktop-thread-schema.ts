@@ -14,11 +14,11 @@ function isThreadData(value: unknown): value is ThreadData {
     isStreaming,
     messages,
     previousMessageCount,
-    sessionPath,
+    conversationId,
     title,
   } = value
   return (
-    typeof sessionPath === 'string' &&
+    typeof conversationId === 'string' &&
     typeof title === 'string' &&
     Array.isArray(messages) &&
     (customMessages === undefined || Array.isArray(customMessages)) &&

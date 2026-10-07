@@ -11,7 +11,7 @@ import { ProjectOverview } from './landing-view-parts'
 type ProjectOverviewViewProps = {
   composerOverlayHeight: number
   project: Project
-  onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void
+  onOpenThread: (projectId: string, threadId: string, conversationId: string) => void
   onAction: DesktopActionInvoker
 }
 

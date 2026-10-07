@@ -1,5 +1,5 @@
 import * as Effect from 'effect/Effect'
-import * as SqlClient from 'effect/unstable/sql/SqlClient'
+import * as SqlClient from 'effect/sql/SqlClient'
 import type { AppSettings } from '../../shared/desktop-contracts.ts'
 import {
   DEFAULT_DICTATION_MAX_DURATION_SECONDS,
@@ -14,7 +14,6 @@ import {
   composerSendModeKey,
   composerStreamingBehaviorKey,
   customPiDirectoryKey,
-  devUpdateBranchKey,
   dictationMaxDurationSecondsKey,
   dictationModelIdKey,
   favoriteFoldersKey,
@@ -30,8 +29,6 @@ import {
   hoverToFocusKey,
   initializeGitOnProjectCreateKey,
   keybindingsKey,
-  legacyDevUpdateBranchKey,
-  piTuiTakeoverKey,
   preferredProjectLocationKey,
   projectDashboardEnabledKey,
   projectDeletionModeKey,
@@ -75,14 +72,6 @@ function getDictationMaxDurationSeconds(valueJson: string | undefined) {
     normalizeDictationMaxDurationSeconds(parseNumberPreference(valueJson)) ??
     DEFAULT_DICTATION_MAX_DURATION_SECONDS
   )
-}
-
-function getDevUpdateBranch(valueJson: string | undefined) {
-  return parseBooleanPreference(valueJson) ?? false
-}
-
-function getDevUpdateBranchValue(value: (key: string) => string | undefined) {
-  return value(devUpdateBranchKey) ?? value(legacyDevUpdateBranchKey)
 }
 
 function loadKeybindingSettings(value: (key: string) => string | undefined) {
@@ -150,8 +139,6 @@ const loadAppSettingsOperation = Effect.fn('AppSettings.load')(function* () {
     projectDeletionMode:
       parseProjectDeletionModePreference(value(projectDeletionModeKey)) ?? 'pi-only',
     useAgentsSkillsPaths: parseBooleanPreference(value(useAgentsSkillsPathsKey)) ?? false,
-    devUpdateBranch: getDevUpdateBranch(getDevUpdateBranchValue(value)),
-    piTuiTakeover: parseBooleanPreference(value(piTuiTakeoverKey)) ?? false,
     hoverToFocus: parseBooleanPreference(value(hoverToFocusKey)) ?? true,
     hoverToBlur: parseBooleanPreference(value(hoverToBlurKey)) ?? false,
     ...loadKeybindingSettings(value),

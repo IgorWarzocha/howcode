@@ -3,7 +3,6 @@ import type {
   TerminalEvent,
   TerminalOpenRequest,
   TerminalResizeRequest,
-  TerminalSessionFileStat,
   TerminalSessionSnapshot,
 } from '../desktop/types'
 
@@ -27,16 +26,6 @@ export async function resizeDesktopTerminalQuery(request: TerminalResizeRequest)
 
 export async function closeDesktopTerminalQuery(request: TerminalCloseRequest): Promise<void> {
   await window.piDesktop?.closeTerminal?.(request)
-}
-
-export async function statDesktopTerminalSessionFileQuery(
-  sessionId: string,
-): Promise<TerminalSessionFileStat | null> {
-  return (await window.piDesktop?.statTerminalSessionFile?.(sessionId)) ?? null
-}
-
-export async function getDesktopTerminalStatusQuery(sessionId: string) {
-  return (await window.piDesktop?.getTerminalStatus?.(sessionId)) ?? null
 }
 
 export function subscribeDesktopTerminalQuery(listener: (event: TerminalEvent) => void) {

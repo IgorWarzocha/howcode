@@ -34,7 +34,7 @@ type InboxViewProps = {
   onOpenThread: (
     projectId: string,
     threadId: string,
-    sessionPath: string,
+    conversationId: string,
     view?: 'chat' | 'thread' | undefined,
     branchName?: string | null | undefined,
   ) => void
@@ -132,7 +132,7 @@ function InboxThreadView({
                 onOpenThread(
                   thread.projectId,
                   thread.threadId,
-                  thread.sessionPath,
+                  thread.conversationId,
                   getInboxThreadOpenView(thread),
                   thread.branchName,
                 )

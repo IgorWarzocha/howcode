@@ -37,7 +37,7 @@ type ProjectWorkSectionProps = {
   projectTargetMode?: boolean | undefined
   projectScopeLockActive?: boolean | undefined
   terminalRunningWorkspaceIds: ReadonlySet<string>
-  terminalRunningSessionPaths: ReadonlySet<string>
+  terminalRunningConversationIds: ReadonlySet<string>
   onAction: DesktopActionInvoker
   onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
   appSettings: AppSettings
@@ -45,7 +45,7 @@ type ProjectWorkSectionProps = {
   onProjectSelect: (projectId: string) => void
   onProjectPrimeSelection: (projectId: string) => void
   onProjectTargetSelected?: (() => void) | undefined
-  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
+  onThreadOpen: (projectId: string, threadId: string, conversationId: string) => void
   onShowView: (view: Exclude<View, 'gitops'>) => void
   onToggleProjectCollapse: (projectId: string) => void
 }
@@ -62,7 +62,7 @@ export function ProjectWorkSection({
   selectedProjectId,
   selectedThreadId,
   terminalRunningWorkspaceIds,
-  terminalRunningSessionPaths,
+  terminalRunningConversationIds,
   onAction,
   onLoadProjectThreads,
   onOpenSettingsPanel,
@@ -241,7 +241,7 @@ export function ProjectWorkSection({
           selectedProjectId={selectedProjectId}
           selectedThreadId={selectedThreadId}
           hideSessionCounts={appSettings.hideSidebarSessionCounts}
-          terminalRunningSessionPaths={terminalRunningSessionPaths}
+          terminalRunningConversationIds={terminalRunningConversationIds}
           visibleProjects={visibleProjects}
           onAction={onAction}
           onFocusProject={focusProject}
@@ -268,7 +268,7 @@ export function ProjectWorkSection({
           searchQuery={searchQuery}
           selectedGroupId={selectedGroupId}
           selectedThreadId={selectedThreadId}
-          terminalRunningSessionPaths={terminalRunningSessionPaths}
+          terminalRunningConversationIds={terminalRunningConversationIds}
           onAction={onAction}
           onFocusProject={focusProject}
           onSearchQueryChange={setSearchQuery}

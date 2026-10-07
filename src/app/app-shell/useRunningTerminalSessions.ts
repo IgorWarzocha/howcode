@@ -4,14 +4,11 @@ import { listDesktopTerminals, subscribeDesktopTerminal } from '../hooks/useDesk
 
 type RunningTerminalSession = {
   projectId: string
-  sessionPath: string | null
+  conversationId: string | null
 }
 
 function isRunningShellSnapshot(snapshot: TerminalSessionSnapshot) {
-  return (
-    snapshot.launchMode === 'shell' &&
-    (snapshot.status === 'starting' || snapshot.status === 'running')
-  )
+  return snapshot.status === 'starting' || snapshot.status === 'running'
 }
 
 function shouldShowTerminalSnapshot(
@@ -44,7 +41,7 @@ function upsertRunningTerminalSession(
 ) {
   setRunningTerminalSessionsById((current) => ({
     ...current,
-    [sessionId]: { projectId: snapshot.projectId, sessionPath: snapshot.sessionPath },
+    [sessionId]: { projectId: snapshot.projectId, conversationId: snapshot.conversationId },
   }))
 }
 
@@ -57,8 +54,7 @@ function handleTerminalSessionEvent(
     : never,
 ) {
   if (event.type === 'started' || event.type === 'restarted') {
-    if (event.snapshot.launchMode === 'shell')
-      upsertRunningTerminalSession(setRunningTerminalSessionsById, event.snapshot, event.sessionId)
+    upsertRunningTerminalSession(setRunningTerminalSessionsById, event.snapshot, event.sessionId)
     return
   }
   if (event.type === 'updated') {
@@ -89,7 +85,7 @@ export function useRunningTerminalSessions() {
               ? [
                   [
                     snapshot.sessionId,
-                    { projectId: snapshot.projectId, sessionPath: snapshot.sessionPath },
+                    { projectId: snapshot.projectId, conversationId: snapshot.conversationId },
                   ] as const,
                 ]
               : [],
@@ -105,12 +101,12 @@ export function useRunningTerminalSessions() {
     })
   }, [])
 
-  const terminalRunningSessionPaths = useMemo(
+  const terminalRunningConversationIds = useMemo(
     () =>
       new Set(
         Object.values(runningTerminalSessionsById)
-          .map((session) => session.sessionPath)
-          .filter((sessionPath): sessionPath is string => typeof sessionPath === 'string'),
+          .map((session) => session.conversationId)
+          .filter((conversationId): conversationId is string => typeof conversationId === 'string'),
       ),
     [runningTerminalSessionsById],
   )
@@ -119,5 +115,5 @@ export function useRunningTerminalSessions() {
     [runningTerminalSessionsById],
   )
 
-  return { terminalRunningWorkspaceIds, terminalRunningSessionPaths }
+  return { terminalRunningWorkspaceIds, terminalRunningConversationIds }
 }

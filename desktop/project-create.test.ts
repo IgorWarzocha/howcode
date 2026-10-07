@@ -8,7 +8,7 @@ const startNewThreadMock = vi.fn(async (request: { projectId?: string }) => {
   callOrder.push(`start:${request.projectId ?? ''}`)
   return {
     projectId: request.projectId,
-    sessionPath: `${request.projectId ?? 'missing'}/.pi/sessions/draft.jsonl`,
+    conversationId: '1',
     threadId: 'draft-thread',
   }
 })

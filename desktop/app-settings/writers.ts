@@ -1,5 +1,5 @@
 import * as Effect from 'effect/Effect'
-import * as SqlClient from 'effect/unstable/sql/SqlClient'
+import * as SqlClient from 'effect/sql/SqlClient'
 import type {
   ComposerSendMode,
   ComposerStreamingBehavior,
@@ -25,7 +25,6 @@ import {
   composerSendModeKey,
   composerStreamingBehaviorKey,
   customPiDirectoryKey,
-  devUpdateBranchKey,
   dictationMaxDurationSecondsKey,
   dictationModelIdKey,
   favoriteFoldersKey,
@@ -41,7 +40,6 @@ import {
   hoverToFocusKey,
   initializeGitOnProjectCreateKey,
   keybindingsKey,
-  piTuiTakeoverKey,
   preferredProjectLocationKey,
   projectDashboardEnabledKey,
   projectDeletionModeKey,
@@ -287,14 +285,6 @@ export function setProjectDeletionMode(mode: ProjectDeletionMode) {
 
 export function setUseAgentsSkillsPaths(enabled: boolean) {
   writeAppPreferenceSync(useAgentsSkillsPathsKey, JSON.stringify(enabled))
-}
-
-export function setDevUpdateBranch(enabled: boolean) {
-  writeAppPreferenceSync(devUpdateBranchKey, JSON.stringify(enabled))
-}
-
-export function setPiTuiTakeover(enabled: boolean) {
-  writeAppPreferenceSync(piTuiTakeoverKey, JSON.stringify(enabled))
 }
 
 export function setHideSidebarSessionCounts(enabled: boolean) {

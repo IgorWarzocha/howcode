@@ -20,38 +20,30 @@ import {
 import type { TerminalSessionRecord } from './session-record.ts'
 import type { TerminalSessionStore } from './session-store.ts'
 import { clearSessionBindings, startProcess } from './terminal-process.ts'
-import { hasVisibleTerminalContent } from './terminal-visibility.ts'
-import {
-  createTuiSessionDetection,
-  scheduleTuiSessionDetection,
-  stopTuiSessionDetection,
-} from './tui-session-detection.ts'
 import type { PtyAdapter } from './types.ts'
 
 export function isRestartableTerminalStatus(status: TerminalSessionSnapshot['status']) {
   return status === 'exited' || status === 'error'
 }
 
-export function ensureProcessStarted(
+export const ensureProcessStarted = Effect.fn('Terminal.ensureProcessStarted')(function* (
   store: TerminalSessionStore,
   adapter: PtyAdapter,
   record: TerminalSessionRecord,
   reason: 'started' | 'restarted',
 ) {
-  if (record.process) return Promise.resolve()
+  if (record.process) return
   const pending = FiberHandle.getUnsafe(record.restart)
-  const task = Option.getOrElse(pending, () =>
-    Effect.runSync(
-      FiberHandle.run(
+  const task = Option.isSome(pending)
+    ? pending.value
+    : yield* FiberHandle.run(
         record.restart,
         Effect.promise(() => startProcess(store, adapter, record, reason)).pipe(
           Effect.uninterruptible,
         ),
-      ),
-    ),
-  )
-  return Effect.runPromise(Fiber.join(task))
-}
+      )
+  yield* Fiber.join(task)
+})
 
 function startProcessInBackground(
   store: TerminalSessionStore,
@@ -59,7 +51,7 @@ function startProcessInBackground(
   record: TerminalSessionRecord,
   reason: 'started' | 'restarted',
 ) {
-  void ensureProcessStarted(store, adapter, record, reason).catch((error) => {
+  void Effect.runPromise(ensureProcessStarted(store, adapter, record, reason)).catch((error) => {
     console.warn('Failed to finish terminal process startup.', error)
   })
 }
@@ -73,7 +65,6 @@ async function finalizeTerminalRecord(store: TerminalSessionStore, record: Termi
     cleanupError ??= error
   }
 
-  await stopTuiSessionDetection(record).catch(captureError)
   clearSessionBindings(record)
   record.process = null
   await (processHandle
@@ -167,16 +158,14 @@ export async function createTerminalRecord(input: {
   const snapshot: TerminalSessionSnapshot = {
     sessionId: input.sessionId,
     projectId: input.request.projectId,
-    sessionPath: input.request.sessionPath ?? null,
+    conversationId: input.request.conversationId ?? null,
     cwd: input.request.cwd ?? input.request.projectId,
-    launchMode: input.request.launchMode ?? 'shell',
     status: 'starting',
     pid: null,
     cols: input.request.cols,
     rows: input.request.rows,
     history,
-    hasVisibleContent:
-      (input.request.launchMode ?? 'shell') === 'shell' || hasVisibleTerminalContent(history),
+    hasVisibleContent: true,
     exitCode: null,
     exitSignal: null,
     updatedAt: nowIso(),
@@ -191,9 +180,6 @@ export async function createTerminalRecord(input: {
     inputBuffer: '',
     suppressOutputVisibilityUntilInput: false,
     transcriptWriter: Effect.runSync(Scope.provide(makeTranscriptWriter(), sessionScope)),
-    tuiSessionDetection: Effect.runSync(
-      Scope.provide(createTuiSessionDetection(input.request), sessionScope),
-    ),
     cleanup: [],
     deleteHistoryOnClose: false,
     forceKillOnClose: false,
@@ -206,7 +192,6 @@ export async function createTerminalRecord(input: {
     ),
   )
   input.store.set(input.sessionId, record)
-  scheduleTuiSessionDetection(input.store, record, 'retry')
   startProcessInBackground(input.store, input.adapter, record, 'started')
   return snapshot
 }

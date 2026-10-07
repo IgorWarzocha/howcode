@@ -20,7 +20,7 @@ export function SessionRow({
   thread: PastSessionThread
   onAction: DesktopActionInvoker
   onDelete: () => void
-  onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void
+  onOpenThread: (projectId: string, threadId: string, conversationId: string) => void
   onToggleSelected: () => void
 }) {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
@@ -41,8 +41,8 @@ export function SessionRow({
         type="button"
         className="grid min-w-0 grid-cols-[minmax(0,1fr)] items-center text-left"
         onClick={() => {
-          if (!thread.sessionPath) return
-          onOpenThread(thread.projectId, thread.id, thread.sessionPath)
+          if (!thread.conversationId) return
+          onOpenThread(thread.projectId, thread.id, thread.conversationId)
         }}
       >
         <span className={`truncate ${appToneTextClass}`}>{thread.title}</span>

@@ -9,9 +9,8 @@ export type TerminalStatus = typeof TerminalStatus.Type
 
 export const TerminalOpenRequest = Schema.Struct({
   projectId: TerminalIdentifier,
-  sessionPath: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  conversationId: Schema.optionalKey(Schema.NullOr(Schema.String)),
   cwd: Schema.optionalKey(Schema.NullOr(Schema.String)),
-  launchMode: Schema.optionalKey(Schema.Literals(['shell', 'pi-session'])),
   cols: TerminalColumns,
   rows: TerminalRows,
   env: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
@@ -38,19 +37,6 @@ export const TerminalCloseRequest = Schema.Struct({
 })
 export interface TerminalCloseRequest extends Schema.Schema.Type<typeof TerminalCloseRequest> {}
 
-export const TerminalSessionFileStatRequest = Schema.Struct({
-  sessionId: TerminalIdentifier,
-})
-export interface TerminalSessionFileStatRequest
-  extends Schema.Schema.Type<typeof TerminalSessionFileStatRequest> {}
-
-export const TerminalSessionFileStat = Schema.Struct({
-  mtimeMs: Schema.Number,
-  size: Schema.Number.check(Schema.isGreaterThanOrEqualTo(0)),
-})
-export interface TerminalSessionFileStat
-  extends Schema.Schema.Type<typeof TerminalSessionFileStat> {}
-
 export const TerminalStatusRequest = Schema.Struct({
   sessionId: TerminalIdentifier,
 })
@@ -67,9 +53,8 @@ export type TerminalStatusSnapshot = typeof TerminalStatusSnapshot.Type
 export const TerminalSessionSnapshot = Schema.Struct({
   sessionId: TerminalIdentifier,
   projectId: TerminalIdentifier,
-  sessionPath: Schema.NullOr(Schema.String),
+  conversationId: Schema.NullOr(Schema.String),
   cwd: Schema.String,
-  launchMode: Schema.Literals(['shell', 'pi-session']),
   status: TerminalStatus,
   pid: Schema.NullOr(Schema.Int),
   cols: TerminalColumns,
@@ -159,7 +144,6 @@ export const TerminalOperation = Schema.Literals([
   'resize',
   'close',
   'closeAll',
-  'statSessionFile',
   'status',
   'subscribeEvents',
 ])

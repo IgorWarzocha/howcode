@@ -1,3 +1,4 @@
+import { getPersistedConversationId } from '../../shared/conversation-ids.ts'
 import type { DesktopAction } from '../../shared/desktop-actions.ts'
 import type { AnyDesktopActionPayload } from '../../shared/desktop-contracts.ts'
 import {
@@ -14,7 +15,6 @@ import {
   getProjectId,
   getProjectIds,
 } from '../../shared/pi-thread-action-payloads.ts'
-import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import { setSidebarVisibleProjectIds } from '../app-settings/writers.ts'
 import { generateGitCommitMessage } from '../git-commit-message.ts'
 import {
@@ -79,10 +79,10 @@ async function handleCommitOptionsWorkspaceAction(payload: AnyDesktopActionPaylo
 }
 
 function handleDiffPreferencesWorkspaceAction(payload: AnyDesktopActionPayload) {
-  const sessionPath = getPersistedSessionPath(
-    typeof payload.sessionPath === 'string' ? payload.sessionPath : null,
+  const conversationId = getPersistedConversationId(
+    typeof payload.conversationId === 'string' ? payload.conversationId : null,
   )
-  if (!sessionPath) {
+  if (!conversationId) {
     return handledAction({ error: 'Diff preferences can only be saved for persisted sessions.' })
   }
 
@@ -91,7 +91,7 @@ function handleDiffPreferencesWorkspaceAction(payload: AnyDesktopActionPayload) 
   if (baseline === 'invalid') return handledAction({ error: 'Invalid diff baseline.' })
   if (renderMode === 'invalid') return handledAction({ error: 'Invalid diff render mode.' })
 
-  const saved = setThreadDiffPreferences(sessionPath, {
+  const saved = setThreadDiffPreferences(conversationId, {
     ...(baseline === undefined ? {} : { baseline }),
     ...(renderMode === undefined ? {} : { renderMode }),
   })

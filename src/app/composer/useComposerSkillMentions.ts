@@ -26,7 +26,7 @@ function getSkillMentionMatch(draft: string) {
 type UseComposerSkillMentionsOptions = {
   draft: string
   projectId: string
-  sessionPath: string | null
+  conversationId: string | null
   composerMode?: 'chat' | 'code'
   setDraft: (draft: string) => void
 }
@@ -34,7 +34,7 @@ type UseComposerSkillMentionsOptions = {
 export function useComposerSkillMentions({
   draft,
   projectId,
-  sessionPath,
+  conversationId,
   composerMode = 'code',
   setDraft,
 }: UseComposerSkillMentionsOptions) {
@@ -103,7 +103,7 @@ export function useComposerSkillMentions({
     setSkills([])
     setSelectedIndex(0)
     setLoading(true)
-    void getComposerSkillsQuery({ projectId, sessionPath, composerMode })
+    void getComposerSkillsQuery({ projectId, conversationId, composerMode })
       .then((nextSkills) => {
         if (!cancelled) setSkills(nextSkills)
       })
@@ -117,7 +117,7 @@ export function useComposerSkillMentions({
     return () => {
       cancelled = true
     }
-  }, [composerMode, open, projectId, sessionPath])
+  }, [composerMode, open, projectId, conversationId])
 
   useEffect(() => {
     if (selectedIndex >= filteredSkills.length) {

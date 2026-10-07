@@ -11,7 +11,6 @@ import { getTimelineRowMessageIds } from './thread-message-ids'
 import { ThreadTimelineRow } from './thread-timeline-row'
 import { buildThreadTimelineState } from './thread-timeline-state'
 import type { TimelineRow } from './timeline-row'
-import { useSessionTreeReveal } from './useSessionTreeReveal'
 import { useThreadFindNavigation } from './useThreadFindNavigation'
 import { useThreadTimelineScroll } from './useThreadTimelineScroll'
 
@@ -22,7 +21,7 @@ type ThreadTimelineProps = {
   isCompacting: boolean
   composerLayoutVersion: number
   composerOverlayHeight?: number
-  sessionPath?: string | null | undefined
+  conversationId?: string | null | undefined
   onLoadEarlierMessages: () => void
   onLoadAroundMessage?: ((targetHistoryCompactions: number) => void) | undefined
 }
@@ -37,7 +36,7 @@ export function ThreadTimeline({
   isCompacting,
   composerLayoutVersion,
   composerOverlayHeight = 0,
-  sessionPath,
+  conversationId,
   onLoadEarlierMessages,
   onLoadAroundMessage,
 }: ThreadTimelineProps) {
@@ -68,16 +67,6 @@ export function ThreadTimeline({
       setCollapsedRowIds,
       shouldStickToBottomRef,
     })
-
-  useSessionTreeReveal({
-    containerRef,
-    programmaticScrollFrameRef,
-    rowStructureSignature: findRowStructureSignature,
-    rows,
-    sessionPath,
-    setCollapsedRowIds,
-    shouldStickToBottomRef,
-  })
 
   const {
     bottomAnchorKey,
@@ -237,7 +226,7 @@ export function ThreadTimeline({
   return (
     <div className={cn('relative h-full', WORKSPACE_RAIL_ROOT_CLASS)}>
       <ThreadFindBar
-        sessionPath={sessionPath}
+        conversationId={conversationId}
         onActiveMatchChange={revealFindMatch}
         onQueryChange={setFindQuery}
       />

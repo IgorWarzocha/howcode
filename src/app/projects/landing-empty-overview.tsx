@@ -1,13 +1,6 @@
-import { Download, RotateCw } from 'lucide-react'
 import type { KeyboardEvent } from 'react'
 import { MarkdownContent } from '../common/markdown-content'
-import { useAppUpdateFlow } from '../hooks/useAppUpdateFlow'
-import {
-  appTypeGroupTextClass,
-  appTypeSectionTitleClass,
-  compactRoundIconButtonClass,
-  toolbarButtonClass,
-} from '../ui/classes'
+import { appTypeGroupTextClass, appTypeSectionTitleClass } from '../ui/classes'
 import { cn } from '../utils/cn'
 import type { LandingOverviewContent } from './landing-overview-content'
 
@@ -69,39 +62,6 @@ function PixelHLogo() {
   )
 }
 
-function LandingUpdateCard() {
-  const { step, isRunning, advance } = useAppUpdateFlow()
-  const Icon =
-    step.id === 'idle' ||
-    step.id === 'up-to-date' ||
-    step.id === 'checking' ||
-    step.id === 'error' ||
-    step.id === 'ready' ||
-    step.id === 'restarting' ||
-    step.id === 'installing'
-      ? RotateCw
-      : Download
-
-  return (
-    <div className={cn(toolbarButtonClass, 'group rounded-full opacity-55 hover:opacity-100')}>
-      <span>{step.label}</span>
-      <button
-        type="button"
-        aria-label={step.action}
-        title={step.action}
-        className={cn(
-          compactRoundIconButtonClass,
-          'h-6 w-6 opacity-70 active:scale-[0.96] disabled:cursor-default group-hover:opacity-100',
-        )}
-        onClick={advance}
-        disabled={isRunning}
-      >
-        <Icon size={14} className={cn(isRunning && 'animate-spin')} aria-hidden="true" />
-      </button>
-    </div>
-  )
-}
-
 export function EmptyLandingOverview({
   content,
   activeSectionIndex,
@@ -117,10 +77,9 @@ export function EmptyLandingOverview({
 }) {
   const activeContent = content.sections[activeSectionIndex] ?? content.sections[0]
   return (
-    <div className="grid h-full min-h-0 w-full max-w-[760px] grid-rows-[auto_auto_minmax(0,1fr)] justify-items-center gap-3 text-center sm:gap-4">
+    <div className="grid h-full min-h-0 w-full max-w-[760px] grid-rows-[auto_minmax(0,1fr)] justify-items-center gap-3 text-center sm:gap-4">
       <PixelHLogo />
       <h1 className="sr-only">{content.title}</h1>
-      <LandingUpdateCard />
       <div className="grid min-h-0 w-full max-w-[680px] grid-rows-[auto_minmax(0,1fr)] gap-0">
         <div
           className="grid border-b border-[rgba(169,178,215,0.08)]"

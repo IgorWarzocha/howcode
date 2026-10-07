@@ -1,20 +1,18 @@
-import { unlink } from 'node:fs/promises'
 import type { DesktopAction } from '../../shared/desktop-actions.ts'
 import type { AnyDesktopActionPayload } from '../../shared/desktop-contracts.ts'
 import {
   getBranchName,
   getComposerRequest,
+  getConversationId,
   getProjectId,
-  getSessionPath,
   getThreadId,
   getThreadIds,
 } from '../../shared/pi-thread-action-payloads.ts'
 import { deleteArtifactsForConversation } from '../artifact-state-db.ts'
 import { deleteChatThread } from '../chat-state-db.ts'
+import { deleteRuntimeConversation } from '../durable-runtime/host.ts'
 import { openThreadRuntime, startNewThread } from '../pi-desktop-runtime.ts'
-import { invokeRuntimeHost } from '../runtime-host/client-bridge.ts'
 import {
-  addProjectUsageTotals,
   archiveThread,
   archiveThreads,
   assignThreadBranch,
@@ -22,8 +20,7 @@ import {
   clearReadInboxThreads,
   deleteThreadRecord,
   dismissInboxThread,
-  getThreadDeletionSnapshot,
-  getThreadSessionPath,
+  getThreadConversationId,
   markInboxThreadRead,
   renameThreadTitle,
   restoreThread,
@@ -32,46 +29,15 @@ import {
 } from '../thread-state-db.ts'
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
-import { readSessionUsage } from './session-usage.ts'
-
-function isMissingFileError(error: unknown) {
-  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT'
-}
-
-async function storeUsageBeforeDelete(threadId: string, sessionPath: string) {
-  const deletionSnapshot = getThreadDeletionSnapshot(threadId)
-  if (!deletionSnapshot) return null
-  let usage: Awaited<ReturnType<typeof readSessionUsage>>
-  try {
-    usage = await readSessionUsage(sessionPath)
-  } catch (error) {
-    if (!isMissingFileError(error)) throw error
-    return null
-  }
-  return {
-    cwd: deletionSnapshot.cwd,
-    ...usage,
-  }
-}
-
-async function unlinkSessionFile(sessionPath: string) {
-  try {
-    await unlink(sessionPath)
-  } catch (error) {
-    if (!isMissingFileError(error)) throw error
-  }
-}
 
 async function deletePersistedThread(threadId: string) {
-  const sessionPath = getThreadSessionPath(threadId)
-  const usageSnapshot = sessionPath ? await storeUsageBeforeDelete(threadId, sessionPath) : null
-  if (sessionPath) {
-    await unlinkSessionFile(sessionPath)
-    deleteArtifactsForConversation(sessionPath)
-    deleteChatThread(sessionPath)
+  const conversationId = getThreadConversationId(threadId)
+  if (conversationId) {
+    await deleteRuntimeConversation(conversationId)
+    deleteArtifactsForConversation(conversationId)
+    deleteChatThread(conversationId)
   }
   deleteThreadRecord(threadId)
-  if (usageSnapshot) addProjectUsageTotals(usageSnapshot)
 }
 
 export async function deletePersistedThreads(threadIds: string[]) {
@@ -135,12 +101,11 @@ async function renameThreadFromPayload(payload: AnyDesktopActionPayload) {
   const name = getRenameValue(payload)
   if (!(threadId && name)) return handledAction()
 
-  const sessionPath = getSessionPath(payload) ?? getThreadSessionPath(threadId)
-  if (!sessionPath) return handledAction({ error: 'Thread session not found.' })
+  const conversationId = getConversationId(payload) ?? getThreadConversationId(threadId)
+  if (!conversationId) return handledAction({ error: 'Thread session not found.' })
 
-  const result = await invokeRuntimeHost('renameThreadSession', { sessionPath, name })
-  renameThreadTitle(threadId, result.title)
-  return handledAction({ ...result, sessionPath, threadId })
+  renameThreadTitle(threadId, name)
+  return handledAction({ title: name, conversationId: conversationId, threadId })
 }
 
 const threadActionHandlers = {
@@ -150,9 +115,9 @@ const threadActionHandlers = {
     return handledAction()
   },
   'thread.open': async (payload) => {
-    const sessionPath = getSessionPath(payload)
+    const conversationId = getConversationId(payload)
     await openThreadRuntime(getComposerRequest(payload))
-    if (sessionPath) markInboxThreadRead(sessionPath)
+    if (conversationId) markInboxThreadRead(conversationId)
     return handledAction()
   },
   'thread.archive': (payload) => {
@@ -196,13 +161,13 @@ const threadActionHandlers = {
     return handledAction(result)
   },
   'inbox.mark-read': (payload) => {
-    const sessionPath = getSessionPath(payload)
-    if (sessionPath) markInboxThreadRead(sessionPath)
+    const conversationId = getConversationId(payload)
+    if (conversationId) markInboxThreadRead(conversationId)
     return handledAction()
   },
   'inbox.dismiss': (payload) => {
-    const sessionPath = getSessionPath(payload)
-    if (sessionPath) dismissInboxThread(sessionPath)
+    const conversationId = getConversationId(payload)
+    if (conversationId) dismissInboxThread(conversationId)
     return handledAction()
   },
   'inbox.clear-read': (payload) => {

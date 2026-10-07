@@ -2,13 +2,14 @@ import type { ChatSidebarState, ChatThread } from '../desktop/types'
 import { mergeThreadCacheFields } from './thread-cache-merge'
 
 type ApplyChatThreadOptions = {
-  replaceSessionPath?: string | null
+  replaceConversationId?: string | null
 }
 
-function sameChatThread(left: ChatThread, right: ChatThread, replaceSessionPath: string | null) {
+function sameChatThread(left: ChatThread, right: ChatThread, replaceConversationId: string | null) {
   if (left.id === right.id) return true
-  if (left.sessionPath && right.sessionPath && left.sessionPath === right.sessionPath) return true
-  return Boolean(replaceSessionPath && left.sessionPath === replaceSessionPath)
+  if (left.conversationId && right.conversationId && left.conversationId === right.conversationId)
+    return true
+  return Boolean(replaceConversationId && left.conversationId === replaceConversationId)
 }
 
 export function applyChatThreadToSidebarState(
@@ -18,14 +19,14 @@ export function applyChatThreadToSidebarState(
 ): ChatSidebarState | null {
   if (!currentState) return currentState
 
-  const replaceSessionPath = options.replaceSessionPath ?? null
+  const replaceConversationId = options.replaceConversationId ?? null
   const targetGroupId = thread.groupId ?? null
   const applyToThreads = (threads: ChatThread[], shouldInsert: boolean) => {
     const existingThread = threads.find((candidate) =>
-      sameChatThread(candidate, thread, replaceSessionPath),
+      sameChatThread(candidate, thread, replaceConversationId),
     )
     const remainingThreads = threads.filter(
-      (candidate) => !sameChatThread(candidate, thread, replaceSessionPath),
+      (candidate) => !sameChatThread(candidate, thread, replaceConversationId),
     )
 
     if (!shouldInsert) return remainingThreads
@@ -45,18 +46,18 @@ export function applyChatThreadToSidebarState(
 
 export function removeChatThreadFromSidebarState(
   currentState: ChatSidebarState | null,
-  sessionPath: string,
+  conversationId: string,
 ): ChatSidebarState | null {
   if (!currentState) return currentState
 
   return {
     ...currentState,
     ungroupedThreads: currentState.ungroupedThreads.filter(
-      (thread) => thread.sessionPath !== sessionPath,
+      (thread) => thread.conversationId !== conversationId,
     ),
     groups: currentState.groups.map((group) => ({
       ...group,
-      threads: group.threads.filter((thread) => thread.sessionPath !== sessionPath),
+      threads: group.threads.filter((thread) => thread.conversationId !== conversationId),
     })),
   }
 }

@@ -2,6 +2,6 @@
 - `composer-contract.ts` owns the public component props; composer render modules may depend on it, never on each other merely to recover those types.
 - Keep Git-specific controls in `@howcode/native-gitops`; expose props/extension points rather than importing GitOps internals.
 - Shared footer row/chip/text primitives live in `@howcode/workspace-shell/footer/workspace-footer-primitives`.
-- `ComposerPromptInputPanel` owns the editor, mentions, paste, and dictation controls; hosts compose picker/session-tree/slash overlays around it.
-- Keep Pi-extension overlay chrome, widget protocol rendering, and shortcut execution in their dedicated composer modules.
+- `ComposerPromptInputPanel` owns the editor, mentions, paste, and dictation controls; hosts compose attachment, conversation-fork, and slash overlays around it.
+- Forks create a new conversation at an entry. Queued submissions may be canceled by ID, never edited or restored to the draft; placed submissions cannot be canceled.
 - Route fallible composer actions through `useComposerActionRunner` so backend and thrown failures reach the visible composer error state.

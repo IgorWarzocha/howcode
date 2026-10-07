@@ -16,6 +16,7 @@ import {
   removeDictationModel as removeSherpaDictationModel,
   transcribeDictation as transcribeSherpaDictation,
 } from '../dictation/sherpa-onnx.ts'
+import { disposeDurableRuntime } from '../durable-runtime/host.ts'
 import {
   disposeThreadUpdateForwarding,
   getComposerSkills,
@@ -34,9 +35,7 @@ import {
   startProjectDiffStream,
 } from '../project-git.ts'
 import { disposeWorkspaceOperations } from '../runtime/keyed-workspace-operations.ts'
-import { shutdownRuntimeHosts } from '../runtime-host/client-bridge.ts'
-import { disposeSessionWatcher, setWatchedSessionPath } from './session-watch.ts'
-import { disposeShellIndexScheduler } from './shell-index.ts'
+import { disposeConversationProjection } from './conversation-projection.ts'
 
 export { refreshShellIndex } from './shell-index.ts'
 export { loadShellState } from './shell-state.ts'
@@ -97,7 +96,6 @@ export {
   loadProjectDiffImagePreview,
   loadProjectDiffStats,
   loadProjectGitState,
-  setWatchedSessionPath,
   startProjectDiffStream,
 }
 
@@ -105,12 +103,12 @@ export const subscribeDesktopEvents = subscribeRuntimeEvents
 
 export async function disposeDesktopRuntime() {
   const results = await Promise.allSettled([
-    disposeSessionWatcher(),
-    disposeShellIndexScheduler(),
-    shutdownRuntimeHosts(),
+    disposeConversationProjection(),
+    disposeWorkspaceOperations(),
+    disposeThreadUpdateForwarding(),
   ])
-  await disposeWorkspaceOperations()
-  await disposeThreadUpdateForwarding()
+  // The Harness is closed only after projection reads and watch publishers have settled.
+  results.push(...(await Promise.allSettled([disposeDurableRuntime()])))
   const failures = results.flatMap((result) =>
     result.status === 'rejected' ? [result.reason] : [],
   )

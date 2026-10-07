@@ -1,4 +1,4 @@
-import { getLocalDraftBranchName, isLocalSessionPath } from '@howcode/shared/session-paths'
+import { getLocalDraftBranchName, isLocalConversationId } from '@howcode/shared/conversation-ids'
 import type {
   ChatSidebarState,
   DesktopActionResult,
@@ -16,7 +16,7 @@ import type { ActionPayload } from './controller-action-utils'
 import { getPayloadProjectId, hasActionError } from './controller-action-utils'
 import {
   applyProjectThreadToShellState,
-  getDraftReplacementSessionPath,
+  getDraftReplacementConversationId,
   removeProjectThreadFromShellState,
 } from './project-thread-cache'
 import {
@@ -52,7 +52,7 @@ function upsertSidebarThread({
   thread,
   chatGroupId,
   updateProjectThreads = true,
-  replaceSessionPath = null,
+  replaceConversationId = null,
   revealProject = false,
 }: {
   queryClient: QueryClientLike
@@ -61,12 +61,12 @@ function upsertSidebarThread({
   thread: Thread
   chatGroupId?: string | null | undefined
   updateProjectThreads?: boolean | undefined
-  replaceSessionPath?: string | null | undefined
+  replaceConversationId?: string | null | undefined
   revealProject?: boolean | undefined
 }) {
   if (updateProjectThreads) {
     applyProjectThreadToShellState(queryClient, projectId, thread, {
-      replaceSessionPath,
+      replaceConversationId,
       revealProject,
     })
   }
@@ -80,7 +80,7 @@ function upsertSidebarThread({
           projectId,
           groupId: chatGroupId,
         },
-        { replaceSessionPath },
+        { replaceConversationId },
       ),
     )
   }
@@ -90,7 +90,7 @@ function getCachedThreadTitle(
   queryClient: QueryClientLike,
   projectId: string,
   threadId: string,
-  sessionPath: string,
+  conversationId: string,
 ) {
   const shellState = queryClient.getQueryData?.(['desktop', 'shellState']) as
     | {
@@ -98,7 +98,7 @@ function getCachedThreadTitle(
           id: string
           threads: Array<{
             id: string
-            sessionPath?: string | null
+            conversationId?: string | null
             title?: string
           }>
         }>
@@ -110,7 +110,7 @@ function getCachedThreadTitle(
     shellState?.projects
       ?.find((candidate) => candidate.id === projectId)
       ?.threads.find(
-        (candidate) => candidate.id === threadId || candidate.sessionPath === sessionPath,
+        (candidate) => candidate.id === threadId || candidate.conversationId === conversationId,
       )?.title ?? null
   )
 }
@@ -133,7 +133,7 @@ export function applyOptimisticComposerThread({
   if (
     activeView === 'inbox' ||
     typeof contextualPayload.projectId !== 'string' ||
-    contextualPayload.sessionPath
+    contextualPayload.conversationId
   ) {
     return { contextualPayload }
   }
@@ -144,11 +144,11 @@ export function applyOptimisticComposerThread({
     chatGroupId,
     branchName,
   })
-  const nextPayload = { ...contextualPayload, sessionPath: localFallback.sessionPath }
+  const nextPayload = { ...contextualPayload, conversationId: localFallback.conversationId }
   const thread = buildOptimisticThread({
     id: localFallback.threadId,
-    sessionPath: localFallback.sessionPath,
-    branchName: getLocalDraftBranchName(localFallback.sessionPath),
+    conversationId: localFallback.conversationId,
+    branchName: getLocalDraftBranchName(localFallback.conversationId),
     running: true,
   })
 
@@ -161,7 +161,7 @@ export function applyOptimisticComposerThread({
     revealProject: true,
   })
   setLiveThreadData(() => ({
-    sessionPath: localFallback.sessionPath,
+    conversationId: localFallback.conversationId,
     title: 'New thread',
     messages: [],
     previousMessageCount: 0,
@@ -172,7 +172,7 @@ export function applyOptimisticComposerThread({
     type: 'open-thread',
     projectId: localFallback.projectId,
     threadId: localFallback.threadId,
-    sessionPath: localFallback.sessionPath,
+    conversationId: localFallback.conversationId,
     view: activeView === 'chat' ? 'chat' : 'thread',
   })
 
@@ -191,14 +191,14 @@ export function removeFailedOptimisticComposerThread({
   setLiveThreadData?: SetLiveThreadData
 }) {
   const projectId = getPayloadProjectId(contextualPayload)
-  const sessionPath =
-    typeof contextualPayload.sessionPath === 'string' ? contextualPayload.sessionPath : null
+  const conversationId =
+    typeof contextualPayload.conversationId === 'string' ? contextualPayload.conversationId : null
 
-  if (!(projectId && sessionPath && isLocalSessionPath(sessionPath))) return
+  if (!(projectId && conversationId && isLocalConversationId(conversationId))) return
 
-  removeProjectThreadFromShellState(queryClient, projectId, sessionPath)
-  setChatSidebarState((current) => removeChatThreadFromSidebarState(current, sessionPath))
-  setLiveThreadData?.((current) => (current?.sessionPath === sessionPath ? null : current))
+  removeProjectThreadFromShellState(queryClient, projectId, conversationId)
+  setChatSidebarState((current) => removeChatThreadFromSidebarState(current, conversationId))
+  setLiveThreadData?.((current) => (current?.conversationId === conversationId ? null : current))
 }
 
 export function reconcileComposerThreadResult({
@@ -229,11 +229,11 @@ export function reconcileComposerThreadResult({
   }
 
   const projectId = getPayloadProjectId(contextualPayload)
-  const submittedSessionPath =
-    typeof contextualPayload.sessionPath === 'string' ? contextualPayload.sessionPath : null
-  const resultSessionPath =
-    typeof actionResult?.result?.composerSendSessionPath === 'string'
-      ? actionResult.result.composerSendSessionPath
+  const submittedConversationId =
+    typeof contextualPayload.conversationId === 'string' ? contextualPayload.conversationId : null
+  const resultConversationId =
+    typeof actionResult?.result?.composerSendConversationId === 'string'
+      ? actionResult.result.composerSendConversationId
       : null
   const resultThreadId =
     typeof actionResult?.result?.composerSendThreadId === 'string'
@@ -242,8 +242,8 @@ export function reconcileComposerThreadResult({
   const sendOutcome = actionResult?.result?.composerSendOutcome
 
   if (
-    !(projectId && resultSessionPath && resultThreadId) ||
-    (submittedSessionPath && !isLocalSessionPath(submittedSessionPath))
+    !(projectId && resultConversationId && resultThreadId) ||
+    (submittedConversationId && !isLocalConversationId(submittedConversationId))
   ) {
     if (sendOutcome === 'stopped') {
       removeFailedOptimisticComposerThread({
@@ -256,9 +256,11 @@ export function reconcileComposerThreadResult({
     return
   }
 
-  const title = getCachedThreadTitle(queryClient, projectId, resultThreadId, resultSessionPath)
-  const replaceSessionPath = isLocalSessionPath(submittedSessionPath) ? submittedSessionPath : null
-  if (replaceSessionPath) forgetLocalDraftThread(projectId, replaceSessionPath)
+  const title = getCachedThreadTitle(queryClient, projectId, resultThreadId, resultConversationId)
+  const replaceConversationId = isLocalConversationId(submittedConversationId)
+    ? submittedConversationId
+    : null
+  if (replaceConversationId) forgetLocalDraftThread(projectId, replaceConversationId)
   upsertSidebarThread({
     queryClient,
     setChatSidebarState,
@@ -266,21 +268,21 @@ export function reconcileComposerThreadResult({
     thread: buildOptimisticThread({
       id: resultThreadId,
       title: title ?? 'New thread',
-      sessionPath: resultSessionPath,
-      branchName: getLocalDraftBranchName(submittedSessionPath),
+      conversationId: resultConversationId,
+      branchName: getLocalDraftBranchName(submittedConversationId),
     }),
     chatGroupId:
       workspaceState.activeView === 'chat'
         ? getContextualChatGroupId(contextualPayload)
         : undefined,
-    replaceSessionPath,
+    replaceConversationId,
     revealProject: true,
   })
   setLiveThreadData((current) =>
-    current?.sessionPath === submittedSessionPath
+    current?.conversationId === submittedConversationId
       ? {
           ...current,
-          sessionPath: resultSessionPath,
+          conversationId: resultConversationId,
           title: title ?? current.title,
         }
       : current,
@@ -289,7 +291,7 @@ export function reconcileComposerThreadResult({
     type: 'open-thread',
     projectId,
     threadId: resultThreadId,
-    sessionPath: resultSessionPath,
+    conversationId: resultConversationId,
     view: workspaceState.activeView === 'chat' ? 'chat' : 'thread',
   })
 }
@@ -301,28 +303,31 @@ export function applyThreadEventToSidebarState({
   setChatSidebarState,
 }: {
   event: Extract<DesktopEvent, { type: 'thread-update' }>
-  workspaceState: Pick<WorkspaceState, 'activeView' | 'selectedProjectId' | 'selectedSessionPath'>
+  workspaceState: Pick<
+    WorkspaceState,
+    'activeView' | 'selectedProjectId' | 'selectedConversationId'
+  >
   queryClient: QueryClientLike
   setChatSidebarState: SetChatSidebarState
 }) {
   const eventIsChat = event.isChat === true
-  const eventReplacementSessionPath =
-    typeof event.replacesSessionPath === 'string' ? event.replacesSessionPath : null
-  const explicitReplacementSessionPath = isLocalSessionPath(eventReplacementSessionPath)
-    ? eventReplacementSessionPath
+  const eventReplacementConversationId =
+    typeof event.replacesConversationId === 'string' ? event.replacesConversationId : null
+  const explicitReplacementConversationId = isLocalConversationId(eventReplacementConversationId)
+    ? eventReplacementConversationId
     : null
-  const replaceSessionPath =
-    explicitReplacementSessionPath ??
+  const replaceConversationId =
+    explicitReplacementConversationId ??
     (event.reason === 'start'
-      ? getDraftReplacementSessionPath(
-          workspaceState.selectedSessionPath,
+      ? getDraftReplacementConversationId(
+          workspaceState.selectedConversationId,
           workspaceState.selectedProjectId,
           event.projectId,
         )
       : null)
   const projectThreadScopeMatchesView =
     workspaceState.activeView !== 'inbox' && eventIsChat === (workspaceState.activeView === 'chat')
-  if (replaceSessionPath) forgetLocalDraftThread(event.projectId, replaceSessionPath)
+  if (replaceConversationId) forgetLocalDraftThread(event.projectId, replaceConversationId)
   upsertSidebarThread({
     queryClient,
     setChatSidebarState,
@@ -330,12 +335,12 @@ export function applyThreadEventToSidebarState({
     thread: buildOptimisticThread({
       id: event.threadId,
       title: event.thread.title,
-      sessionPath: event.sessionPath,
+      conversationId: event.conversationId,
       branchName: event.branchName,
       running: event.thread.isStreaming || event.thread.isCompacting,
     }),
     chatGroupId: event.isChat === true ? event.chatGroupId : undefined,
     updateProjectThreads: projectThreadScopeMatchesView,
-    replaceSessionPath,
+    replaceConversationId,
   })
 }

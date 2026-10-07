@@ -34,12 +34,11 @@ export async function startProcess(
   clearSessionBindings(record)
   const request = {
     projectId: record.snapshot.projectId,
-    sessionPath: record.snapshot.sessionPath,
+    conversationId: record.snapshot.conversationId,
     cwd: record.snapshot.cwd,
-    launchMode: record.snapshot.launchMode,
     cols: record.snapshot.cols,
     rows: record.snapshot.rows,
-  } as TerminalOpenRequest
+  } satisfies TerminalOpenRequest
   const command = resolveTerminalCommand(request)
 
   let processStarted = false
@@ -50,7 +49,7 @@ export async function startProcess(
       cwd: command.cwd ?? record.snapshot.cwd,
       cols: record.snapshot.cols,
       rows: record.snapshot.rows,
-      env: resolveTerminalEnv(request),
+      env: resolveTerminalEnv(),
     })
     processStarted = true
 

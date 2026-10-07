@@ -23,11 +23,6 @@ import { SettingsView } from '../settings/settings-view'
 import type { Project, View } from '../types'
 import { viewSubtitleClass, viewTitleClass } from '../ui/classes'
 
-const ExtensionsView = lazy(async () => {
-  const module = await import('../extensions/extensions-view')
-  return { default: module.ExtensionsView }
-})
-
 const SkillsView = lazy(async () => {
   const module = await import('../skills/skills-view')
   return { default: module.SkillsView }
@@ -65,13 +60,12 @@ type CodeWorkspaceMainViewProps = {
     rootPath?: string | null
   }) => Promise<ComposerFilePickerState | null>
   onCloseUtilityView: () => void
-  onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void
+  onOpenThread: (projectId: string, threadId: string, conversationId: string) => void
   onOpenSettingsView: (target?: SettingsOpenTarget) => void
   sidebarCollapsed: boolean
   sidebarCompactMode: boolean
   onToggleSidebar: () => void
   onLoadEarlierMessages: () => void
-  onSetExtensionsProjectScopeActive: (active: boolean) => void
   onSetSkillsProjectScopeActive: (active: boolean) => void
   onSelectProject: (projectId: string) => void
 }
@@ -92,14 +86,14 @@ function CodeThreadMainView({
 >) {
   return (
     <ThreadView
-      key={threadData?.sessionPath ?? 'new-thread'}
+      key={threadData?.conversationId ?? 'new-thread'}
       messages={threadData?.messages ?? []}
       previousMessageCount={threadData?.previousMessageCount ?? 0}
       isStreaming={threadData?.isStreaming ?? false}
       isCompacting={threadData?.isCompacting ?? false}
       composerLayoutVersion={composerLayoutVersion}
       composerOverlayHeight={composerOverlayHeight}
-      sessionPath={threadData?.sessionPath ?? null}
+      conversationId={threadData?.conversationId ?? null}
       loading={threadLoading ?? false}
       onLoadEarlierMessages={onLoadEarlierMessages}
       onLoadAroundMessage={onLoadEarlierMessages}
@@ -195,7 +189,6 @@ export function CodeWorkspaceMainView({
   sidebarCompactMode,
   onToggleSidebar,
   onLoadEarlierMessages,
-  onSetExtensionsProjectScopeActive,
   onSetSkillsProjectScopeActive,
   onSelectProject,
 }: CodeWorkspaceMainViewProps) {
@@ -214,7 +207,7 @@ export function CodeWorkspaceMainView({
   if (activeView === 'inbox') {
     return (
       <InboxView
-        key={selectedInboxThread?.sessionPath ?? 'inbox-empty'}
+        key={selectedInboxThread?.conversationId ?? 'inbox-empty'}
         appSettings={appSettings}
         availableModels={availableModels}
         availableThinkingLevels={availableThinkingLevels}
@@ -271,28 +264,6 @@ export function CodeWorkspaceMainView({
         onClose={onCloseUtilityView}
         onOpenThread={onOpenThread}
       />
-    )
-  }
-
-  if (activeView === 'extensions') {
-    return (
-      <Suspense
-        fallback={
-          <div className="mx-auto grid h-full w-full max-w-[760px] content-start gap-4 px-2 pt-6 pb-6">
-            <div className="grid gap-1">
-              <h1 className={viewTitleClass}>Extensions</h1>
-              <p className={viewSubtitleClass}>Loading packages…</p>
-            </div>
-          </div>
-        }
-      >
-        <ExtensionsView
-          projectPath={selectedProjectId || null}
-          onSetProjectScopeActive={onSetExtensionsProjectScopeActive}
-          onProjectTargetSelected={() => onSetExtensionsProjectScopeActive(true)}
-          onClose={onCloseUtilityView}
-        />
-      </Suspense>
     )
   }
 

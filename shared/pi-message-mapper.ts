@@ -1,4 +1,4 @@
-import type { AgentMessage } from '@earendil-works/pi-agent-core'
+import type { Message as ModelMessage } from '@earendil-works/pi-ai'
 import type { AssistantUsageSummary, Message, ToolResultImage } from './desktop-contracts'
 
 type TextPart = {
@@ -79,12 +79,6 @@ function mapAssistantUsage(runtimeMessage: RuntimeMessage): AssistantUsageSummar
     totalTokens: getNumberValue(usage.totalTokens),
     costTotal: getNumberValue(usage.cost?.total),
   }
-}
-
-type SessionBranchEntry = {
-  type: string
-  id: string
-  firstKeptEntryId?: string | undefined
 }
 
 const paragraphBreakPattern = /\n{2,}/
@@ -407,7 +401,7 @@ function mapFallbackMessage(id: string, runtimeMessage: RuntimeMessage): Message
 }
 
 export function mapAgentMessageToUiMessage(
-  agentMessage: AgentMessage,
+  agentMessage: ModelMessage,
   messageIndex: number,
 ): Message | null {
   const runtimeMessage = agentMessage as RuntimeMessage
@@ -449,7 +443,7 @@ export function mapAgentMessageToUiMessage(
   }
 }
 
-export function mapAgentMessagesToUiMessages(messages: AgentMessage[]) {
+export function mapAgentMessagesToUiMessages(messages: readonly ModelMessage[]) {
   return messages
     .map((agentMessage, messageIndex) => mapAgentMessageToUiMessage(agentMessage, messageIndex))
     .filter((uiMessage): uiMessage is Message => uiMessage !== null)
@@ -460,44 +454,4 @@ export function getFirstUserTurnTitle(messages: Message[]) {
     | Extract<Message, { role: 'assistant' | 'user' }>
     | undefined
   return normalizeThreadTitle(firstUserMessage?.content[0])
-}
-
-export function getPreviousMessageCount(entries: SessionBranchEntry[]) {
-  let compactionIndex = -1
-  for (let entryIndex = entries.length - 1; entryIndex >= 0; entryIndex -= 1) {
-    if (entries[entryIndex]?.type === 'compaction') {
-      compactionIndex = entryIndex
-      break
-    }
-  }
-
-  if (compactionIndex === -1) {
-    return 0
-  }
-
-  const compactionEntry = entries[compactionIndex]
-  const firstKeptEntryId = compactionEntry?.firstKeptEntryId
-
-  if (!firstKeptEntryId) {
-    return 0
-  }
-
-  let count = 0
-
-  for (let entryIndex = 0; entryIndex < compactionIndex; entryIndex += 1) {
-    const entry = entries[entryIndex]
-    if (entry?.id === firstKeptEntryId) {
-      break
-    }
-
-    if (
-      entry?.type === 'message' ||
-      entry?.type === 'custom_message' ||
-      entry?.type === 'branch_summary'
-    ) {
-      count += 1
-    }
-  }
-
-  return count
 }

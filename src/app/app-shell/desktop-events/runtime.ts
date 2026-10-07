@@ -2,7 +2,6 @@ import type { Dispatch, SetStateAction } from 'react'
 import type {
   ChatSidebarState,
   ComposerState,
-  PiExtensionUiState,
   ProjectGitState,
   ThreadData,
 } from '../../desktop/types'
@@ -25,17 +24,16 @@ export type DesktopEventSyncRuntime = {
     projectId: string,
     options?: {
       chat?: boolean | undefined
-      replaceLocalDraftSessionPath?: string | null | undefined
+      replaceLocalDraftConversationId?: string | null | undefined
     },
   ) => Promise<unknown>
-  localDraftSessionPathByPersistedSessionPathRef: React.RefObject<Map<string, string>>
+  localDraftConversationIdByPersistedConversationIdRef: React.RefObject<Map<string, string>>
   queryClient: DesktopEventQueryClient
   refreshChatSidebarState: () => Promise<unknown>
   scheduleShellStateRefresh: () => void
   setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>
   setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>
-  setPiExtensionUiStateBySession: Dispatch<SetStateAction<Record<string, PiExtensionUiState>>>
   setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>
   setThreadHistoryCompactions: Dispatch<SetStateAction<number>>
 }

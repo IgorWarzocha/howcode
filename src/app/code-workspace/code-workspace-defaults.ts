@@ -24,8 +24,6 @@ export const FALLBACK_APP_SETTINGS = {
   gitDiffIncludeUntrackedDefault: false,
   projectDeletionMode: 'pi-only',
   useAgentsSkillsPaths: false,
-  devUpdateBranch: false,
-  piTuiTakeover: false,
   hideSidebarSessionCounts: false,
   hoverToFocus: true,
   hoverToBlur: false,

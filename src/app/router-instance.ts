@@ -19,7 +19,6 @@ const appRoutes = [
   '/chat',
   '/claw',
   '/code',
-  '/extensions',
   '/git',
   '/inbox',
   '/project',

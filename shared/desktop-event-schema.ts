@@ -1,5 +1,5 @@
 import * as Schema from 'effect/Schema'
-import { ComposerStateSchema, PiExtensionUiStateSchema } from './desktop-composer-schema'
+import { ComposerStateSchema } from './desktop-composer-schema'
 import type { ProjectDiffStreamEvent } from './desktop-project-git-contracts'
 import { ThreadDataSchema } from './desktop-thread-schema'
 import { isKeybindingCommandId, type KeybindingCommandId } from './keybindings'
@@ -16,24 +16,6 @@ function isProjectDiffStreamEvent(value: unknown): value is ProjectDiffStreamEve
   if (type === 'complete') return result === null || isRecord(result)
   return type === 'error' && typeof error === 'string'
 }
-
-const AppUpdateStateSchema = Schema.Struct({
-  status: Schema.Literals([
-    'idle',
-    'checking',
-    'up-to-date',
-    'available',
-    'downloading',
-    'installing',
-    'ready',
-    'restarting',
-    'error',
-  ]),
-  currentVersion: Schema.String,
-  latestVersion: Schema.NullOr(Schema.String),
-  channel: Schema.NullOr(Schema.Literals(['main', 'dev'])),
-  error: Schema.NullOr(Schema.String),
-})
 
 const ArtifactSchema = Schema.Struct({
   slug: Schema.String,
@@ -55,7 +37,6 @@ const KeybindingCommandIdSchema = Schema.declare<KeybindingCommandId>(isKeybindi
 
 /** Runtime decoder for DesktopEvent values received across process boundaries. */
 export const DesktopEventSchema = Schema.Union([
-  Schema.Struct({ type: Schema.Literal('app-update'), state: AppUpdateStateSchema }),
   Schema.Struct({ type: Schema.Literal('shell-state-refresh') }),
   Schema.Struct({
     type: Schema.Literal('keybinding-command'),
@@ -78,11 +59,10 @@ export const DesktopEventSchema = Schema.Union([
     severity: Schema.Literals(['info', 'warning', 'error']),
     message: Schema.String,
     details: Schema.optionalKey(Schema.Unknown),
-    sessionPath: Schema.optionalKey(Schema.NullOr(Schema.String)),
+    conversationId: Schema.optionalKey(Schema.NullOr(Schema.String)),
     projectId: Schema.optionalKey(Schema.NullOr(Schema.String)),
   }),
-  Schema.Struct({ type: Schema.Literal('internal-thread-update'), sessionPath: Schema.String }),
-  Schema.Struct({ type: Schema.Literal('session-tree-refresh'), sessionPath: Schema.String }),
+  Schema.Struct({ type: Schema.Literal('internal-thread-update'), conversationId: Schema.String }),
   Schema.Struct({
     type: Schema.Literal('artifact-update'),
     conversationId: Schema.String,
@@ -100,9 +80,9 @@ export const DesktopEventSchema = Schema.Union([
     ]),
     projectId: Schema.String,
     threadId: Schema.String,
-    sessionPath: Schema.String,
+    conversationId: Schema.String,
     branchName: Schema.optionalKey(Schema.NullOr(Schema.String)),
-    replacesSessionPath: Schema.optionalKey(Schema.NullOr(Schema.String)),
+    replacesConversationId: Schema.optionalKey(Schema.NullOr(Schema.String)),
     chatGroupId: Schema.optionalKey(Schema.NullOr(Schema.String)),
     isChat: Schema.optionalKey(Schema.Boolean),
     thread: ThreadDataSchema,
@@ -111,13 +91,7 @@ export const DesktopEventSchema = Schema.Union([
   Schema.Struct({
     type: Schema.Literal('composer-update'),
     projectId: Schema.NullOr(Schema.String),
-    sessionPath: Schema.NullOr(Schema.String),
+    conversationId: Schema.NullOr(Schema.String),
     composer: ComposerStateSchema,
-  }),
-  Schema.Struct({
-    type: Schema.Literal('pi-extension-ui-update'),
-    projectId: Schema.NullOr(Schema.String),
-    sessionPath: Schema.String,
-    extensionUi: PiExtensionUiStateSchema,
   }),
 ]).pipe(Schema.toTaggedUnion('type'))

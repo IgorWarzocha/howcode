@@ -2,19 +2,26 @@ import { stat } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { loadAppSettings } from '../app-settings/readers.ts'
-import { getChatSessionDir } from '../chat-session-dir.ts'
+import { getAgentDirectory } from '../settings/paths.ts'
+import { getDesktopUserDataPath } from '../user-data-path.ts'
 
 export async function pathExists(targetPath: string) {
   try {
     await stat(targetPath)
     return true
-  } catch {
-    return false
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      'code' in error &&
+      (error.code === 'ENOENT' || error.code === 'ENOTDIR')
+    )
+      return false
+    throw error
   }
 }
 
 export function getGlobalNativeSkillsDir() {
-  return path.join(os.homedir(), '.pi', 'agent', 'skills')
+  return path.join(getAgentDirectory(), 'skills')
 }
 
 export function getGlobalInteropSkillsDir() {
@@ -30,7 +37,7 @@ export function getProjectNativeSkillsDir(projectPath?: string | undefined | nul
 }
 
 export function getChatNativeSkillsDir() {
-  return getProjectNativeSkillsDir(getChatSessionDir())
+  return path.join(getDesktopUserDataPath(), 'chat', '.pi', 'skills')
 }
 
 export function getProjectInteropSkillsDir(projectPath?: string | undefined | null | undefined) {
@@ -42,7 +49,7 @@ export function getProjectInteropSkillsDir(projectPath?: string | undefined | nu
 }
 
 export function getChatInteropSkillsDir() {
-  return getProjectInteropSkillsDir(getChatSessionDir())
+  return path.join(getDesktopUserDataPath(), 'chat', '.agents', 'skills')
 }
 
 export function getGlobalSkillsDirs() {

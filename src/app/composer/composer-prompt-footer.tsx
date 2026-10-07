@@ -1,4 +1,4 @@
-import { getPersistedSessionPath } from '@howcode/shared/session-paths'
+import { getPersistedConversationId } from '@howcode/shared/conversation-ids'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type { DesktopAction } from '../desktop/actions'
 import type { DesktopActionInvoker, ProjectDiffBaseline, ProjectGitState } from '../desktop/types'
@@ -36,7 +36,6 @@ export function ComposerPromptFooter({
   modelMenuOpen,
   modelMenuRef,
   onOpenGitOps,
-  onOpenTakeoverTerminal,
   onSetDiffBaseline,
   onToggleArtifacts,
   onToggleTerminal,
@@ -46,7 +45,7 @@ export function ComposerPromptFooter({
   projectId,
   runComposerAction,
   runtime,
-  sessionPath,
+  conversationId,
   setOpenMenu,
   showTerminalControls,
   terminalVisible,
@@ -63,7 +62,6 @@ export function ComposerPromptFooter({
   modelMenuOpen: boolean
   modelMenuRef: RefObject<HTMLDivElement | null>
   onOpenGitOps: () => void
-  onOpenTakeoverTerminal: () => void
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
   onToggleArtifacts?: (() => void) | undefined
   onToggleTerminal: () => void
@@ -73,13 +71,13 @@ export function ComposerPromptFooter({
   projectId: string
   runComposerAction: RunComposerAction
   runtime: ComposerRuntimeModel
-  sessionPath: string | null
+  conversationId: string | null
   setOpenMenu: Dispatch<SetStateAction<'model' | 'picker' | null>>
   showTerminalControls: boolean
   terminalVisible: boolean
 }) {
   const composerMode = activeView === 'chat' ? 'chat' : 'code'
-  const persistedSessionPath = getPersistedSessionPath(sessionPath)
+  const persistedConversationId = getPersistedConversationId(conversationId)
 
   return (
     <ComposerFooter
@@ -90,17 +88,16 @@ export function ComposerPromptFooter({
       model={runtime.currentModel}
       contextUsage={runtime.contextUsage}
       messages={messages}
-      compactDisabled={isStreaming || runtime.isCompacting || !sessionPath}
+      compactDisabled={isStreaming || runtime.isCompacting || !conversationId}
       isCompacting={runtime.isCompacting}
       modelButtonRef={modelButtonRef}
       modelMenuOpen={modelMenuOpen}
       modelMenuRef={modelMenuRef}
       preferPortalModelPopover={preferPortalModelPopover}
       onOpenGitOps={onOpenGitOps}
-      onOpenTakeoverTerminal={onOpenTakeoverTerminal}
       onSelectBaseline={onSetDiffBaseline}
       onSelectModel={(availableModel) => {
-        if (isConversationComposerView(activeView) && !persistedSessionPath) {
+        if (isConversationComposerView(activeView) && !persistedConversationId) {
           return runComposerAction(
             'settings.update',
             {
@@ -118,13 +115,13 @@ export function ComposerPromptFooter({
             provider: availableModel.provider,
             modelId: availableModel.id,
             projectId,
-            sessionPath,
+            conversationId,
           },
           { closeMenu: false },
         )
       }}
       onSelectThinkingLevel={(level) => {
-        if (isConversationComposerView(activeView) && !persistedSessionPath) {
+        if (isConversationComposerView(activeView) && !persistedConversationId) {
           return runComposerAction('settings.update', {
             key: composerMode === 'chat' ? 'chatThinkingLevel' : 'codeThinkingLevel',
             value: level,
@@ -134,7 +131,7 @@ export function ComposerPromptFooter({
         return runComposerAction('composer.thinking', {
           level,
           projectId,
-          sessionPath,
+          conversationId,
         })
       }}
       onCompact={() => void compact()}

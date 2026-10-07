@@ -7,7 +7,7 @@ import {
   reorderChatGroups,
   setChatGroupCollapsed,
 } from '../chat-state-db.ts'
-import { getThreadSessionPath } from '../thread-state-db.ts'
+import { getThreadConversationId } from '../thread-state-db.ts'
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
 
@@ -23,13 +23,13 @@ function getChatGroupIds(payload: AnyDesktopActionPayload) {
 
 async function moveChatThreadFromPayload(payload: AnyDesktopActionPayload) {
   const threadId = typeof payload.threadId === 'string' ? payload.threadId : null
-  const sessionPath =
-    typeof payload.sessionPath === 'string'
-      ? payload.sessionPath
+  const conversationId =
+    typeof payload.conversationId === 'string'
+      ? payload.conversationId
       : threadId
-        ? getThreadSessionPath(threadId)
+        ? getThreadConversationId(threadId)
         : null
-  if (sessionPath) moveChatThread(sessionPath, getChatGroupId(payload))
+  if (conversationId) moveChatThread(conversationId, getChatGroupId(payload))
 }
 
 export async function handleChatDesktopAction(

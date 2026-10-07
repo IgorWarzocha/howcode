@@ -11,7 +11,7 @@ import { withWorkspaceTeardown } from '../project-worktrees/workspace-teardown-g
 import { closeWorkspaceTerminals } from '../terminal/workspace-terminals.ts'
 import {
   deleteProject,
-  listProjectSessionPaths,
+  listProjectConversationIds,
   listProjectThreadIds,
   setProjectWorktreeCompleted,
   setThreadRunningState,
@@ -31,9 +31,9 @@ export type WorktreeLifecycleResult = {
 }
 
 async function disposeWorkspaceSessions(projectId: string) {
-  const sessionPaths = listProjectSessionPaths(projectId)
-  await disposeWorkspaceComposerRuns({ projectPath: projectId, sessionPaths })
-  for (const sessionPath of sessionPaths) setThreadRunningState(sessionPath, false)
+  const conversationIds = listProjectConversationIds(projectId)
+  await disposeWorkspaceComposerRuns({ projectPath: projectId, conversationIds })
+  for (const conversationId of conversationIds) setThreadRunningState(conversationId, false)
   await closeWorkspaceTerminals(projectId)
 }
 

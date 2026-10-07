@@ -12,7 +12,6 @@ export type {
   DesktopActionInvoker,
   DesktopActionResult,
   InboxThread,
-  PiExtensionDialogRequest,
   ProjectDiffBaseline,
   ProjectDiffRenderMode,
   ProjectGitState,

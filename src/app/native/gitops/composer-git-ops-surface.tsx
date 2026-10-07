@@ -72,7 +72,7 @@ export function ComposerGitOpsSurface({
     dictationMaxDurationSeconds: appSettings.dictationMaxDurationSeconds,
     draftThreadId: `gitops:${project.id}`,
     projectId: project.id,
-    sessionPath: project.sessionPath,
+    conversationId: project.conversationId,
     setDraftValue: message.setValue,
     setErrorMessage: status.setErrorMessage,
   })

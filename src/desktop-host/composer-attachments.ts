@@ -1,4 +1,4 @@
-import { readdir, realpath, stat } from 'node:fs/promises'
+import { readdir, realpath } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import * as Effect from 'effect/Effect'
@@ -14,35 +14,6 @@ const searchAttachments = Effect.runSync(makeComposerAttachmentSearch)
 
 export function searchComposerAttachmentEntries(input: Parameters<typeof searchAttachments>[0]) {
   return Effect.runPromise(searchAttachments(input))
-}
-
-async function pathExists(targetPath: string) {
-  try {
-    await stat(targetPath)
-    return true
-  } catch {
-    return false
-  }
-}
-
-export async function normalizeDialogFilePaths(filePaths: string[]) {
-  const normalized: string[] = []
-
-  for (let index = 0; index < filePaths.length; index += 1) {
-    let candidate = filePaths[index]?.trim()
-    if (!candidate) {
-      continue
-    }
-
-    while (!(await pathExists(candidate)) && index + 1 < filePaths.length) {
-      index += 1
-      candidate = `${candidate},${filePaths[index] ?? ''}`
-    }
-
-    normalized.push(candidate)
-  }
-
-  return normalized
 }
 
 export async function listComposerAttachmentEntries(request: {

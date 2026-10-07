@@ -7,10 +7,6 @@ export default {
         rules: ['react-doctor/path-traversal-risk'],
       },
       {
-        files: ['src/electron/main/updater/app-updater.ts'],
-        rules: ['react-doctor/plugin-update-trust-risk'],
-      },
-      {
         files: ['src/app/features/pi-extensions/pi-extension-dialog-card.tsx'],
         rules: ['react-doctor/no-loading-flag-reset-outside-finally'],
       },

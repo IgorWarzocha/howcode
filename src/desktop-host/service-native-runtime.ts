@@ -1,5 +1,3 @@
-import { existsSync, readFileSync } from 'node:fs'
-import path from 'node:path'
 import * as Effect from 'effect/Effect'
 import * as Schema from 'effect/Schema'
 import { runProcessProbe } from '../../node-runtime/process-probe'
@@ -60,66 +58,7 @@ export async function probeNodeRuntime(nodeExecutable: string): Promise<NodeRunt
   )
 }
 
-function getUnpackedAppPath(resourcesPath: string) {
-  return path.join(resourcesPath, 'app.asar.unpacked')
-}
-
-function validateAbiNativeDependencies(resourcesPath: string, abi: string) {
-  const unpackedAppPath = getUnpackedAppPath(resourcesPath)
-  const abiBundleRoot = path.join(
-    unpackedAppPath,
-    serviceNativeAbi.nativeServiceAbiDirectoryName,
-    abi,
-  )
-
-  if (!existsSync(abiBundleRoot)) {
-    throw new Error(
-      `Missing packaged native dependencies for Node ABI ${abi}. Supported ABIs: ${getSupportedServiceNodeAbiLabel()}.`,
-    )
-  }
-
-  const manifestPath = path.join(abiBundleRoot, 'manifest.json')
-  if (!existsSync(manifestPath)) {
-    throw new Error(`Missing packaged native dependency manifest for ABI ${abi}: ${manifestPath}`)
-  }
-
-  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as {
-    abi?: unknown
-    files?: unknown
-    packages?: unknown
-  }
-  const manifestPackages = Array.isArray(manifest.packages) ? manifest.packages : null
-  const manifestPackageSet = manifestPackages ? new Set(manifestPackages) : null
-  if (
-    manifest.abi !== abi ||
-    !Array.isArray(manifest.files) ||
-    !manifestPackageSet ||
-    !serviceNativeAbi.serviceAbiPackages.every((packageName) => manifestPackageSet.has(packageName))
-  ) {
-    throw new Error(`Invalid packaged native dependency manifest for ABI ${abi}: ${manifestPath}`)
-  }
-
-  for (const packageName of serviceNativeAbi.serviceAbiPackages) {
-    const packageManifestPath = path.join(
-      abiBundleRoot,
-      'node_modules',
-      packageName,
-      'package.json',
-    )
-    if (!existsSync(packageManifestPath)) {
-      throw new Error(`Missing packaged native dependency for ABI ${abi}: ${packageManifestPath}`)
-    }
-  }
-}
-
-function hasPackagedNativeDependencies(resourcesPath: string) {
-  return existsSync(getUnpackedAppPath(resourcesPath))
-}
-
-export async function prepareServiceNativeRuntime(input: {
-  nodeExecutable: string
-  resourcesPath?: string | undefined
-}) {
+export async function prepareServiceNativeRuntime(input: { nodeExecutable: string }) {
   const runtime = await probeNodeRuntime(input.nodeExecutable)
   if (
     !(
@@ -130,11 +69,6 @@ export async function prepareServiceNativeRuntime(input: {
     throw new Error(
       `Howcode desktop service requires Node ABI ${getSupportedServiceNodeAbiLabel()} (Node ${serviceNativeAbi.minimumServiceNodeVersion}+ through ${maximumServiceNodeMajor}). ${input.nodeExecutable} is ${runtime.version} ABI ${runtime.abi}.`,
     )
-  }
-
-  const resourcesPath = input.resourcesPath?.trim()
-  if (resourcesPath && hasPackagedNativeDependencies(resourcesPath)) {
-    validateAbiNativeDependencies(resourcesPath, runtime.abi)
   }
 
   return runtime

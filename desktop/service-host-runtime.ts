@@ -11,9 +11,9 @@ import { desktopShutdownTimeouts } from '../shared/desktop-shutdown-deadlines.ts
 import { makeShutdownCoordinator } from '../shared/effect-shutdown.ts'
 import type { TerminalRpcRequest } from '../shared/terminal-rpc.ts'
 import { loadAppSettings } from './app-settings/readers.ts'
-import { getPiModule } from './pi-module.ts'
 import * as piSkills from './pi-skills.ts'
 import * as piThreads from './pi-threads.ts'
+import { getAgentDirectory } from './settings/paths.ts'
 import { createTerminalRpcServer } from './terminal/rpc-server.ts'
 import * as terminalManager from './terminal/runtime.ts'
 import { disposeThreadStateDatabase } from './thread-state-db/db.ts'
@@ -62,13 +62,7 @@ function getServiceMethod(moduleName: DesktopServiceRemoteModuleName, methodName
 }
 
 async function getServiceDiagnostics() {
-  let piAgentDir: string | null = null
-  try {
-    const { getAgentDir } = await getPiModule()
-    piAgentDir = getAgentDir()
-  } catch {
-    piAgentDir = null
-  }
+  const piAgentDir = getAgentDirectory()
 
   return {
     nodeExecPath: process.execPath,

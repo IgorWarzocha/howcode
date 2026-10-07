@@ -1,26 +1,26 @@
-import { getPersistedSessionPath } from '@howcode/shared/session-paths'
+import { getPersistedConversationId } from '@howcode/shared/conversation-ids'
 import { useQuery } from '@tanstack/react-query'
 import type { ThreadData } from '../desktop/types'
 import { desktopQueryKeys, getThreadQuery } from '../query/desktop-query'
 
 export function useDesktopThreadQuery(
-  sessionPath: string | null | undefined,
+  conversationId: string | null | undefined,
   refreshKey = 0,
   historyCompactions = 0,
   options: { enabled?: boolean | undefined } = {},
 ) {
-  const persistedSessionPath = getPersistedSessionPath(sessionPath)
+  const persistedConversationId = getPersistedConversationId(conversationId)
 
   return useQuery<ThreadData | null>({
-    queryKey: persistedSessionPath
-      ? desktopQueryKeys.thread(persistedSessionPath, refreshKey, historyCompactions)
+    queryKey: persistedConversationId
+      ? desktopQueryKeys.thread(persistedConversationId, refreshKey, historyCompactions)
       : ['desktop', 'thread', null, refreshKey, historyCompactions],
     queryFn: () =>
-      persistedSessionPath
-        ? getThreadQuery(persistedSessionPath, historyCompactions)
+      persistedConversationId
+        ? getThreadQuery(persistedConversationId, historyCompactions)
         : Promise.resolve(null),
     placeholderData: (previousData) => previousData,
-    enabled: Boolean(persistedSessionPath) && options.enabled !== false,
+    enabled: Boolean(persistedConversationId) && options.enabled !== false,
     staleTime: Number.POSITIVE_INFINITY,
   })
 }

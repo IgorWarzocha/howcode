@@ -1,16 +1,7 @@
-import {
-  mergeComposerAttachments,
-  normalizeComposerAttachments,
-} from '@howcode/shared/composer-attachments'
+import { mergeComposerAttachments } from '@howcode/shared/composer-attachments'
 import { isSafeExternalUrl } from '@howcode/shared/external-url'
 import type { ComposerAttachment, ComposerFilePickerState } from '../desktop/types'
-import {
-  getAttachmentKindsForPathsQuery,
-  getPathForFileQuery,
-  openExternalQuery,
-  openPathQuery,
-} from '../query/desktop-query'
-import { buildLocalAttachmentKindLookup } from './composer-attachment-kind-lookup'
+import { openExternalQuery } from '../query/desktop-query'
 import { uploadTransferFilesAsAttachments } from './composer-browser-file-uploads'
 import { getComposerAttachmentsFromClipboardData } from './composer-paste-attachments'
 
@@ -92,47 +83,12 @@ export function getAttachmentDisplayLabel(attachment: ComposerAttachment) {
 
 export async function openComposerAttachment(attachment: ComposerAttachment) {
   if (isSafeExternalUrl(attachment.path)) {
-    if (openExternalQuery) {
-      await openExternalQuery(attachment.path)
-      return
-    }
-
-    window.open(attachment.path, '_blank', 'noopener,noreferrer')
-    return
+    await openExternalQuery(attachment.path)
   }
-
-  await openPathQuery(attachment.path)
-}
-
-function resolveAttachmentKindFromLookup(
-  path: string,
-  kindsByPath: Record<string, ComposerAttachment['kind'] | null> | null,
-  fallbackKindsByPath: Record<string, ComposerAttachment['kind']>,
-) {
-  if (kindsByPath && Object.hasOwn(kindsByPath, path)) {
-    return kindsByPath[path] ?? null
-  }
-
-  return fallbackKindsByPath[path] ?? null
 }
 
 export async function getDroppedComposerAttachments(dataTransfer: DataTransfer) {
+  const rawAttachments = getComposerAttachmentsFromClipboardData(dataTransfer)
   const uploadedAttachments = await uploadTransferFilesAsAttachments(dataTransfer)
-  const rawAttachments = getComposerAttachmentsFromClipboardData(dataTransfer, {
-    resolveFilePath: (file) => getPathForFileQuery(file as File) ?? null,
-  })
-  const mergedAttachments = mergeComposerAttachments(rawAttachments, uploadedAttachments)
-  const { fallbackKindsByPath, localPaths } = buildLocalAttachmentKindLookup(mergedAttachments)
-  let kindsByPath: Record<string, ComposerAttachment['kind'] | null> | null = null
-
-  try {
-    kindsByPath = (await getAttachmentKindsForPathsQuery(localPaths)) ?? null
-  } catch {
-    kindsByPath = null
-  }
-
-  return normalizeComposerAttachments(mergedAttachments, {
-    resolveAttachmentKind: (path) =>
-      resolveAttachmentKindFromLookup(path, kindsByPath, fallbackKindsByPath),
-  })
+  return mergeComposerAttachments(rawAttachments, uploadedAttachments)
 }

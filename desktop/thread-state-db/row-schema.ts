@@ -23,7 +23,7 @@ export const ProjectRowSchema = Schema.Struct({
 export const ThreadRowSchema = Schema.Struct({
   id: Schema.String,
   title: Schema.String,
-  sessionPath: Schema.String,
+  conversationId: Schema.String,
   summary: Schema.NullOr(Schema.String),
   running: Schema.Number,
   unread: Schema.Number,
@@ -37,9 +37,7 @@ export const InboxThreadRowSchema = Schema.Struct({
   title: Schema.String,
   projectId: Schema.String,
   projectName: Schema.String,
-  sessionPath: Schema.String,
-  lastUserPrompt: Schema.NullOr(Schema.String),
-  lastAssistantMessageJson: Schema.NullOr(Schema.String),
+  conversationId: Schema.String,
   lastAssistantPreview: Schema.NullOr(Schema.String),
   running: Schema.Number,
   unread: Schema.Number,
@@ -51,7 +49,7 @@ export const InboxThreadRowSchema = Schema.Struct({
 export const ArchivedThreadRowSchema = Schema.Struct({
   id: Schema.String,
   title: Schema.String,
-  sessionPath: Schema.String,
+  conversationId: Schema.String,
   projectId: Schema.String,
   projectName: Schema.String,
   lastModifiedMs: Schema.Number,

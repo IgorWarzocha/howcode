@@ -1,3 +1,4 @@
+import type { ConversationEntryList } from './conversation-entries'
 import type { DesktopAction } from './desktop-actions'
 import type {
   AnyDesktopActionPayload,
@@ -19,10 +20,7 @@ import type {
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
   InboxThread,
-  PiConfiguredPackage,
   PiConfiguredSkill,
-  PiPackageCatalogPage,
-  PiPackageMutationResult,
   PiSkillCatalogPage,
   PiSkillMutationResult,
   ProjectCommitEntry,
@@ -42,12 +40,10 @@ import type {
   ThreadData,
   ThreadSearchResult,
 } from './desktop-contracts'
-import type { SessionTreeList } from './session-tree.ts'
 import type {
   TerminalCloseRequest,
   TerminalEvent,
   TerminalOpenRequest,
-  TerminalSessionFileStat,
   TerminalSessionSnapshot,
   TerminalStatusSnapshot,
 } from './terminal-contracts'
@@ -74,28 +70,6 @@ export type PiThreadsService = {
   transcribeDictation: (
     request: DictationTranscriptionRequest,
   ) => Promise<DictationTranscriptionResult>
-  searchPiPackages: (request?: {
-    query?: string | null | undefined
-    cursor?: number | null | undefined
-    pageSize?: number | null | undefined
-  }) => Promise<PiPackageCatalogPage>
-  listConfiguredPiPackages: (request?: {
-    projectPath?: string | null | undefined
-    chat?: boolean | undefined
-  }) => Promise<PiConfiguredPackage[]>
-  installPiPackage: (request: {
-    source: string
-    kind?: 'npm' | 'git' | undefined
-    local?: boolean | undefined
-    projectPath?: string | null | undefined
-    chat?: boolean | undefined
-  }) => Promise<PiPackageMutationResult>
-  removePiPackage: (request: {
-    source: string
-    local?: boolean | undefined
-    projectPath?: string | null | undefined
-    chat?: boolean | undefined
-  }) => Promise<PiPackageMutationResult>
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
   loadProjectUsageSummary: (projectId: string) => Promise<ProjectUsageSummary>
   loadProjectFavicon: (projectId: string) => Promise<string | null>
@@ -152,18 +126,18 @@ export type PiThreadsService = {
   compileReactArtifact: (source: string) => Promise<ReactArtifactCompileResult>
   loadShellState: (cwd: string) => Promise<ShellState>
   loadAppSettings: () => Promise<AppSettings> | AppSettings
-  loadSessionTreeList: (sessionPath: string) => Promise<SessionTreeList | null>
+  loadConversationEntries: (conversationId: string) => Promise<ConversationEntryList | null>
   loadThreadPreviewAtEntry: (
-    sessionPath: string,
+    conversationId: string,
     targetEntryId: string,
     options?: { historyCompactions?: number },
   ) => Promise<ThreadData | null>
   loadThread: (
-    sessionPath: string,
+    conversationId: string,
     options?: { historyCompactions?: number },
   ) => Promise<ThreadData | null>
-  searchThread: (sessionPath: string, query: string) => Promise<ThreadSearchResult>
-  setWatchedSessionPath: (sessionPath: string | null) => Promise<void>
+  searchThread: (conversationId: string, query: string) => Promise<ThreadSearchResult>
+  watchConversation: (conversationId: string | null) => Promise<void>
   subscribeDesktopEvents: (listener: (event: DesktopEvent) => void) => () => void
 }
 
@@ -174,7 +148,6 @@ export type TerminalService = {
   listTerminals: () => Promise<TerminalSessionSnapshot[]>
   openTerminal: (request: TerminalOpenRequest) => Promise<TerminalSessionSnapshot>
   resizeTerminal: (sessionId: string, cols: number, rows: number) => Promise<void>
-  statSessionFile: (sessionId: string) => Promise<TerminalSessionFileStat | null>
   subscribeTerminalEvents: (listener: (event: TerminalEvent) => void) => () => void
   writeTerminal: (sessionId: string, data: string) => Promise<void>
 }

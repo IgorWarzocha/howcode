@@ -56,6 +56,7 @@ function getDictationButtonTooltip(input: {
 }) {
   if (input.dictationActive) return 'Stop dictation'
   if (input.dictationTranscribing) return 'Transcribing dictation'
+  if (!globalThis.isSecureContext) return 'Dictation requires HTTPS or localhost'
   if (input.dictationSupported) return 'Dictate'
   if (input.dictationMissingModel) return 'Install model'
   return 'Dictation unavailable'

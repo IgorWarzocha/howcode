@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createHostTrust } from '../electron/main/headless/auth'
+import { createHostTrust } from '../server/auth'
 
 describe('headless server host trust', () => {
   it('rejects unconfigured hosts and ports', () => {

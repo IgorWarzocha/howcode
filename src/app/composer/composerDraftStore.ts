@@ -1,4 +1,4 @@
-import { getLocalDraftProjectId } from '@howcode/shared/session-paths'
+import { getLocalDraftProjectId } from '@howcode/shared/conversation-ids'
 
 import type { ComposerAttachment } from '../desktop/types'
 import {
@@ -102,14 +102,14 @@ function serializeDrafts(
 export function getComposerDraftThreadId({
   composerMode = 'code',
   projectId,
-  sessionPath,
+  conversationId,
 }: {
   composerMode?: 'chat' | 'code'
   projectId: string
-  sessionPath: string | null
+  conversationId: string | null
 }) {
-  if (typeof sessionPath === 'string' && sessionPath.length > 0) {
-    return `session:${sessionPath}`
+  if (typeof conversationId === 'string' && conversationId.length > 0) {
+    return `session:${conversationId}`
   }
 
   return projectId.length > 0 ? `project:${projectId}:${composerMode}:new-thread` : null

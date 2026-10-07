@@ -33,9 +33,9 @@ export const compactSlashCommand: ComposerSlashCommand = {
   source: 'builtin',
 }
 
-export const sessionTreeSlashCommand: ComposerSlashCommand = {
-  name: 'tree',
-  description: 'Browse the session tree and go back to an earlier point',
+export const conversationForkSlashCommand: ComposerSlashCommand = {
+  name: 'fork',
+  description: 'Fork the conversation from an earlier message',
   source: 'app',
 }
 
@@ -43,5 +43,5 @@ export const fallbackAppSlashCommands: ComposerSlashCommand[] = [
   appSettingsSlashCommand,
   appNewSessionSlashCommand,
   compactSlashCommand,
-  sessionTreeSlashCommand,
+  conversationForkSlashCommand,
 ]

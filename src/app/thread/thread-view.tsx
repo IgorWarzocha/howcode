@@ -9,7 +9,7 @@ export type ThreadViewProps = {
   isCompacting: boolean
   composerLayoutVersion: number
   composerOverlayHeight?: number
-  sessionPath?: string | null | undefined
+  conversationId?: string | null | undefined
   loading?: boolean
   onLoadEarlierMessages: () => void
   onLoadAroundMessage?: ((targetHistoryCompactions: number) => void) | undefined
@@ -22,7 +22,7 @@ export function ThreadView({
   isCompacting,
   composerLayoutVersion,
   composerOverlayHeight = 0,
-  sessionPath,
+  conversationId,
   loading = false,
   onLoadEarlierMessages,
   onLoadAroundMessage,
@@ -43,7 +43,7 @@ export function ThreadView({
       isCompacting={isCompacting}
       composerLayoutVersion={composerLayoutVersion}
       composerOverlayHeight={composerOverlayHeight}
-      sessionPath={sessionPath}
+      conversationId={conversationId}
       onLoadAroundMessage={onLoadAroundMessage}
       onLoadEarlierMessages={() => {
         if (previousMessageCount === 0) {

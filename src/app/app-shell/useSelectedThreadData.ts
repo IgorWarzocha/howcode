@@ -1,8 +1,6 @@
-import { getPersistedSessionPath } from '@howcode/shared/session-paths'
+import { getPersistedConversationId } from '@howcode/shared/conversation-ids'
 import type { ThreadCustomMessageRecord, ThreadData } from '../desktop/types'
 import { useDesktopThreadQuery } from '../hooks/useDesktopThread'
-import { useSessionTreePreviewThread } from '../hooks/useSessionTreePreviewThread'
-import { mergePreviewThreadWithLive } from '../thread/session-tree-preview'
 
 function mergeCustomMessages(
   liveMessages: ThreadCustomMessageRecord[] | undefined,
@@ -17,7 +15,8 @@ function mergeCustomMessages(
 }
 
 function mergeThreadHistorySideChannels(liveThread: ThreadData, snapshotThread: ThreadData | null) {
-  if (!snapshotThread || liveThread.sessionPath !== snapshotThread.sessionPath) return liveThread
+  if (!snapshotThread || liveThread.conversationId !== snapshotThread.conversationId)
+    return liveThread
   const customMessages = mergeCustomMessages(
     liveThread.customMessages,
     snapshotThread.customMessages,
@@ -29,37 +28,31 @@ function mergeThreadHistorySideChannels(liveThread: ThreadData, snapshotThread: 
 
 export function useSelectedThreadData(input: {
   liveThreadData: ThreadData | null
-  selectedSessionPath: string | null
+  selectedConversationId: string | null
   threadHistoryCompactions: number
   threadQueryDeferred: boolean
   threadRefreshKey: number
 }) {
   const threadQuery = useDesktopThreadQuery(
-    input.selectedSessionPath,
+    input.selectedConversationId,
     input.threadRefreshKey,
     input.threadHistoryCompactions,
     { enabled: !input.threadQueryDeferred },
   )
   const threadData = threadQuery.data ?? null
-  const sessionTreePreview = useSessionTreePreviewThread(
-    input.selectedSessionPath,
-    input.threadHistoryCompactions,
-  )
-  const selectedPersistedSessionPath = getPersistedSessionPath(input.selectedSessionPath)
-  const threadDataMatchesSelection = threadData?.sessionPath === selectedPersistedSessionPath
+  const selectedPersistedConversationId = getPersistedConversationId(input.selectedConversationId)
+  const threadDataMatchesSelection = threadData?.conversationId === selectedPersistedConversationId
   const liveDataMatchesSelection =
-    input.liveThreadData?.sessionPath === selectedPersistedSessionPath
+    input.liveThreadData?.conversationId === selectedPersistedConversationId
   const activeThreadLoading = Boolean(
-    selectedPersistedSessionPath &&
-      (threadQuery.isLoading ||
-        threadQuery.isFetching ||
-        (sessionTreePreview.previewEntryId && sessionTreePreview.previewThreadLoading)) &&
+    selectedPersistedConversationId &&
+      (threadQuery.isLoading || threadQuery.isFetching) &&
       !(liveDataMatchesSelection || threadDataMatchesSelection),
   )
 
   const baseEffectiveThreadData =
     input.threadHistoryCompactions === 0 &&
-    input.liveThreadData?.sessionPath === input.selectedSessionPath
+    input.liveThreadData?.conversationId === input.selectedConversationId
       ? mergeThreadHistorySideChannels(
           input.liveThreadData,
           threadDataMatchesSelection ? threadData : null,
@@ -68,10 +61,7 @@ export function useSelectedThreadData(input: {
         ? threadData
         : null
 
-  const effectiveThreadData =
-    sessionTreePreview.previewThreadData && sessionTreePreview.previewEntryId
-      ? mergePreviewThreadWithLive(sessionTreePreview.previewThreadData, baseEffectiveThreadData)
-      : baseEffectiveThreadData
+  const effectiveThreadData = baseEffectiveThreadData
 
   return { activeThreadLoading, effectiveThreadData }
 }

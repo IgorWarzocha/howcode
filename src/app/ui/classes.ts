@@ -191,7 +191,7 @@ export const composerInlineConfirmButtonClass =
 
 export const composerPopoverInputClass = `settings-control-text h-8 min-w-0 rounded-md border-0 bg-[color:var(--surface-hover)] px-2.5 ${appTypeControlClass} ${appToneTextClass} outline-none placeholder:text-[color:var(--muted)] focus:bg-[color:var(--surface-hover)]`
 
-// Composer-local overlay ladder. Context popover should win because it can overlap extension UI.
+// Composer-local overlay ladder. Context previews stay above adjacent popovers.
 export const composerPopoverContextLayerClass = 'z-[180]'
 
 export const composerPopoverBottomRowLayerClass = 'z-[140]'
@@ -199,10 +199,6 @@ export const composerPopoverBottomRowLayerClass = 'z-[140]'
 export const composerPopoverInputLayerClass = 'z-[120]'
 
 export const composerPopoverExtensionLayerClass = 'z-[100]'
-
-export const piExtensionMonoClass = 'pi-extension-mono'
-
-export const piExtensionTextClass = piExtensionMonoClass
 
 export const composerPopoverPanelClass =
   'pointer-events-auto scroll-py-1.5 rounded-xl border-0 bg-[color:var(--panel)] p-1.5 shadow-[var(--shadow)]'
@@ -222,9 +218,6 @@ export const composerAttachmentPickerTextClass = appTypeMetaClass
 export const composerOverlayPanelInsetClass = 'px-4'
 
 export const menuOptionClass = `grid grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-xl px-2.5 py-2 text-left ${appTypeGroupTextClass} hover:bg-[color:var(--surface-hover)]`
-
-export const terminalTakeoverFooterClass =
-  'relative z-[80] overflow-visible rounded-b-[20px] bg-[color:var(--panel)] shadow-none'
 
 export const terminalDrawerFooterClass =
   'flex h-[3.75rem] shrink-0 items-start justify-end gap-3 bg-[color:var(--workspace)] px-3 pt-1.5'

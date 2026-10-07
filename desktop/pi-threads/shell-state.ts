@@ -5,12 +5,10 @@ import { getComposerState } from '../pi-desktop-runtime.ts'
 import { loadPiSettings, loadPiThemeState } from '../pi-settings.ts'
 import { importProjects } from '../project-import.ts'
 import { emitDesktopEvent } from '../runtime/desktop-events.ts'
-import { invokeRuntimeHost } from '../runtime-host/client-bridge.ts'
+import { getAgentDirectory } from '../settings/paths.ts'
 import { ensureProject, listProjects } from '../thread-state-db.ts'
+import { ensureConversationProjection } from './conversation-projection.ts'
 import { enrichProjectsWithResolvedIds, resolveProjectPathForComparison } from './project-paths.ts'
-import { scheduleShellIndexSync } from './shell-index.ts'
-
-type SessionStorage = { agentDir: string; sessionDir: string }
 
 let startupProjectMetadataRefresh: Promise<unknown> | null = null
 
@@ -42,10 +40,6 @@ function disambiguateDuplicateProjectNames<Project extends { id: string; name: s
   })
 }
 
-function getSessionStorage(cwd: string): Promise<SessionStorage> {
-  return invokeRuntimeHost('getPiSessionStorage', { projectPath: cwd })
-}
-
 function scheduleStartupProjectMetadataRefresh() {
   if (startupProjectMetadataRefresh) return
   startupProjectMetadataRefresh = importProjects([])
@@ -57,10 +51,10 @@ function scheduleStartupProjectMetadataRefresh() {
 }
 
 export async function loadShellState(cwd: string): Promise<ShellState> {
-  const { agentDir, sessionDir } = await getSessionStorage(cwd)
+  const agentDir = getAgentDirectory()
+  await ensureConversationProjection()
 
   ensureProject(cwd)
-  scheduleShellIndexSync(cwd)
   scheduleStartupProjectMetadataRefresh()
   const composer = await getComposerState({ projectId: cwd })
   const appSettings = loadAppSettings()
@@ -81,7 +75,6 @@ export async function loadShellState(cwd: string): Promise<ShellState> {
     cwd,
     resolvedCwd,
     agentDir,
-    sessionDir,
     appSettings,
     sidebarVisibleProjectIds: loadSidebarVisibleProjectIds(),
     piSettings,

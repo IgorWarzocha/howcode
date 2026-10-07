@@ -1,8 +1,7 @@
-const ELECTRON_REMOTE_ERROR_PREFIX = /^Error invoking remote method '[^']+':\s*/i
 const LEADING_ERROR_PREFIX = /^Error:\s*/i
 
 function stripKnownWrappers(message: string) {
-  return message.trim().replace(ELECTRON_REMOTE_ERROR_PREFIX, '').replace(LEADING_ERROR_PREFIX, '')
+  return message.trim().replace(LEADING_ERROR_PREFIX, '')
 }
 
 export function cleanUserErrorMessage(

@@ -1,4 +1,4 @@
-import { isLocalSessionPath } from '@howcode/shared/session-paths'
+import { isLocalConversationId } from '@howcode/shared/conversation-ids'
 import type { ShellState, Thread } from '../desktop/types'
 import { desktopQueryKeys } from '../query/desktop-query'
 import { mergeThreadCacheFields } from './thread-cache-merge'
@@ -8,20 +8,20 @@ type QueryClientLike = {
 }
 
 type ApplyProjectThreadOptions = {
-  replaceSessionPath?: string | null
+  replaceConversationId?: string | null
   revealProject?: boolean
 }
 
-function sameThread(left: Thread, right: Thread, replaceSessionPath: string | null) {
+function sameThread(left: Thread, right: Thread, replaceConversationId: string | null) {
   if (left.id === right.id) {
     return true
   }
 
-  if (left.sessionPath && right.sessionPath && left.sessionPath === right.sessionPath) {
+  if (left.conversationId && right.conversationId && left.conversationId === right.conversationId) {
     return true
   }
 
-  return Boolean(replaceSessionPath && left.sessionPath === replaceSessionPath)
+  return Boolean(replaceConversationId && left.conversationId === replaceConversationId)
 }
 
 export function applyProjectThreadToShellState(
@@ -30,7 +30,7 @@ export function applyProjectThreadToShellState(
   thread: Thread,
   options: ApplyProjectThreadOptions = {},
 ) {
-  const replaceSessionPath = options.replaceSessionPath ?? null
+  const replaceConversationId = options.replaceConversationId ?? null
   const revealProject = options.revealProject ?? false
 
   queryClient.setQueryData(desktopQueryKeys.shellState(), (current) => {
@@ -47,11 +47,11 @@ export function applyProjectThreadToShellState(
         }
 
         const existingThread = project.threads.find((candidate) =>
-          sameThread(candidate, thread, replaceSessionPath),
+          sameThread(candidate, thread, replaceConversationId),
         )
         const nextThread = mergeThreadCacheFields(existingThread, thread)
         const remainingThreads = project.threads.filter(
-          (candidate) => !sameThread(candidate, thread, replaceSessionPath),
+          (candidate) => !sameThread(candidate, thread, replaceConversationId),
         )
         const threads = [nextThread, ...remainingThreads]
 
@@ -68,20 +68,20 @@ export function applyProjectThreadToShellState(
   })
 }
 
-export function getDraftReplacementSessionPath(
-  selectedSessionPath: string | null,
+export function getDraftReplacementConversationId(
+  selectedConversationId: string | null,
   selectedProjectId: string,
   eventProjectId: string,
 ) {
-  return selectedProjectId === eventProjectId && isLocalSessionPath(selectedSessionPath)
-    ? selectedSessionPath
+  return selectedProjectId === eventProjectId && isLocalConversationId(selectedConversationId)
+    ? selectedConversationId
     : null
 }
 
 export function removeProjectThreadFromShellState(
   queryClient: QueryClientLike,
   projectId: string,
-  sessionPath: string,
+  conversationId: string,
 ) {
   queryClient.setQueryData(desktopQueryKeys.shellState(), (current) => {
     const currentState = current as ShellState | null | undefined
@@ -96,7 +96,7 @@ export function removeProjectThreadFromShellState(
           return project
         }
 
-        const threads = project.threads.filter((thread) => thread.sessionPath !== sessionPath)
+        const threads = project.threads.filter((thread) => thread.conversationId !== conversationId)
         const removedThreadCount = project.threads.length - threads.length
         const indexedThreadCount = project.threadCount ?? project.threads.length
         const nextThreadCount =

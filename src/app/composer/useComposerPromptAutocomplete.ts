@@ -1,8 +1,8 @@
 import { type RefObject, useLayoutEffect, useRef } from 'react'
 import type { ComposerAttachment } from '../desktop/types'
+import { useComposerConversationForkPanel } from './useComposerConversationForkPanel'
 import { useComposerFileMentions } from './useComposerFileMentions'
 import { useComposerAutocompleteEffects } from './useComposerPromptSurfaceEffects'
-import { useComposerSessionTreePanel } from './useComposerSessionTreePanel'
 import { useComposerSkillMentions } from './useComposerSkillMentions'
 import { useComposerSlashCommands } from './useComposerSlashCommands'
 
@@ -15,42 +15,39 @@ export function useComposerPromptAutocomplete(input: {
   onStartNewSession: () => void
   projectId: string
   send: () => Promise<void>
-  sendExtensionCommand: NonNullable<
-    Parameters<typeof useComposerSlashCommands>[0]['sendExtensionCommand']
-  >
-  sessionPath: string | null
+  conversationId: string | null
   setDraft: (value: string) => void
   stopButtonBoundaryRef: RefObject<HTMLDivElement | null>
 }) {
-  const sessionTreePanelRef = useRef<HTMLDivElement>(null)
+  const conversationForkPanelRef = useRef<HTMLDivElement>(null)
   const composerPopoverStackRef = useRef<HTMLDivElement>(null)
   const slashCommandPanelRef = useRef<HTMLDivElement>(null)
   const fileMentionPanelRef = useRef<HTMLDivElement>(null)
   const skillMentionPanelRef = useRef<HTMLDivElement>(null)
-  const openSessionTreeRef = useRef<() => void>(() => undefined)
+  const openConversationForkRef = useRef<() => void>(() => undefined)
   const slashCommands = useComposerSlashCommands({
     draft: input.draft,
     projectId: input.projectId,
-    sessionPath: input.sessionPath,
+    conversationId: input.conversationId,
     composerMode: input.composerMode,
     setDraft: input.setDraft,
     send: input.send,
-    sendExtensionCommand: input.sendExtensionCommand,
     onOpenSettingsView: input.onOpenSettingsView,
     onStartNewSession: input.onStartNewSession,
-    onOpenSessionTree: () => openSessionTreeRef.current(),
+    onOpenConversationFork: () => openConversationForkRef.current(),
   })
-  const { dismissSessionTree, openSessionTree, sessionTreeOpen } = useComposerSessionTreePanel({
-    sessionPath: input.sessionPath,
-    slashCommandsOpen: slashCommands.open,
-  })
+  const { dismissConversationFork, openConversationFork, conversationForkOpen } =
+    useComposerConversationForkPanel({
+      conversationId: input.conversationId,
+      slashCommandsOpen: slashCommands.open,
+    })
   useLayoutEffect(() => {
-    openSessionTreeRef.current = openSessionTree
+    openConversationForkRef.current = openConversationFork
   })
   const skillMentions = useComposerSkillMentions({
     draft: input.draft,
     projectId: input.projectId,
-    sessionPath: input.sessionPath,
+    conversationId: input.conversationId,
     composerMode: input.composerMode,
     setDraft: input.setDraft,
   })
@@ -78,18 +75,18 @@ export function useComposerPromptAutocomplete(input: {
       .map((command) => `${command.source}:${command.name}`)
       .join('|'),
     slashCommands,
-    sessionTreePanelRef,
+    conversationForkPanelRef,
     stopButtonBoundaryRef: input.stopButtonBoundaryRef,
   })
 
   return {
     composerPopoverStackRef,
-    dismissSessionTree,
+    dismissConversationFork,
     fileMentionPanelRef,
     fileMentions,
-    openSessionTree,
-    sessionTreeOpen,
-    sessionTreePanelRef,
+    openConversationFork,
+    conversationForkOpen,
+    conversationForkPanelRef,
     skillMentionPanelRef,
     skillMentions,
     slashCommandPanelRef,

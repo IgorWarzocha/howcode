@@ -6,7 +6,7 @@ import { cn } from '../utils/cn'
 
 export type ShellTerminalPanelProps = {
   projectId: string
-  sessionPath: string | null
+  conversationId: string | null
   onClose: () => void
   hoverToFocus?: boolean
   hoverToBlur?: boolean
@@ -14,7 +14,7 @@ export type ShellTerminalPanelProps = {
 
 export function ShellTerminalPanel({
   projectId,
-  sessionPath,
+  conversationId,
   onClose,
   hoverToFocus = true,
   hoverToBlur = false,
@@ -30,7 +30,7 @@ export function ShellTerminalPanel({
       <div className="min-h-0 min-w-0 flex-1 overflow-hidden bg-[color:var(--sidebar)]">
         <ShellTerminalViewport
           projectId={projectId}
-          sessionPath={sessionPath}
+          conversationId={conversationId}
           backgroundCssVar="--sidebar"
           hoverToFocus={hoverToFocus}
           hoverToBlur={hoverToBlur}

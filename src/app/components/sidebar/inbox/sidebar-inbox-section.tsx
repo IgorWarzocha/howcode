@@ -29,9 +29,9 @@ type InboxFilterMode = 'all' | 'terminal' | 'recent'
 
 type SidebarInboxSectionProps = {
   appLaunchedAtMs: number
-  terminalRunningSessionPaths: ReadonlySet<string>
+  terminalRunningConversationIds: ReadonlySet<string>
   threads: InboxThread[]
-  selectedSessionPath: string | null
+  selectedConversationId: string | null
   onAction: DesktopActionInvoker
   onDismissThread: (thread: InboxThread) => void
   onSelectThread: (thread: InboxThread) => void
@@ -40,10 +40,10 @@ type SidebarInboxSectionProps = {
 function matchesInboxFilter(
   thread: InboxThread,
   filterMode: InboxFilterMode,
-  terminalRunningSessionPaths: ReadonlySet<string>,
+  terminalRunningConversationIds: ReadonlySet<string>,
   appLaunchedAtMs: number,
 ) {
-  if (filterMode === 'terminal') return terminalRunningSessionPaths.has(thread.sessionPath)
+  if (filterMode === 'terminal') return terminalRunningConversationIds.has(thread.conversationId)
   if (filterMode === 'recent') return (thread.lastActivityMs ?? 0) >= appLaunchedAtMs
   return true
 }
@@ -166,9 +166,9 @@ function SidebarInboxClearMenu({
 
 export function SidebarInboxSection({
   appLaunchedAtMs,
-  terminalRunningSessionPaths,
+  terminalRunningConversationIds,
   threads,
-  selectedSessionPath,
+  selectedConversationId,
   onAction,
   onDismissThread,
   onSelectThread,
@@ -217,14 +217,14 @@ export function SidebarInboxSection({
     return threads.filter((thread) => {
       if (showUnreadOnly && !thread.unread) return false
       if (normalizedQuery && !matchesInboxSearch(thread, normalizedQuery)) return false
-      return matchesInboxFilter(thread, filterMode, terminalRunningSessionPaths, appLaunchedAtMs)
+      return matchesInboxFilter(thread, filterMode, terminalRunningConversationIds, appLaunchedAtMs)
     })
   }, [
     appLaunchedAtMs,
     filterMode,
     searchQuery,
     showUnreadOnly,
-    terminalRunningSessionPaths,
+    terminalRunningConversationIds,
     threads,
   ])
 
@@ -232,13 +232,13 @@ export function SidebarInboxSection({
   const filterLabel = getInboxFilterLabel(filterMode)
 
   useEffect(() => {
-    if (!selectedSessionPath) return
-    if (!visibleThreads.some((thread) => thread.sessionPath === selectedSessionPath)) return
+    if (!selectedConversationId) return
+    if (!visibleThreads.some((thread) => thread.conversationId === selectedConversationId)) return
     const selectedRow = scrollRegionRef.current?.querySelector<HTMLElement>(
       '[data-inbox-thread-selected="true"]',
     )
     selectedRow?.scrollIntoView({ block: 'nearest' })
-  }, [selectedSessionPath, visibleThreads])
+  }, [selectedConversationId, visibleThreads])
 
   return (
     <section className="sidebar-section">
@@ -340,9 +340,9 @@ export function SidebarInboxSection({
           <div className="sidebar-list">
             {visibleThreads.map((thread) => (
               <div
-                key={thread.sessionPath}
+                key={thread.conversationId}
                 data-inbox-thread-selected={
-                  selectedSessionPath === thread.sessionPath ? 'true' : 'false'
+                  selectedConversationId === thread.conversationId ? 'true' : 'false'
                 }
               >
                 <InboxThreadRow
@@ -350,8 +350,8 @@ export function SidebarInboxSection({
                   preview={thread.preview}
                   projectName={thread.projectName}
                   running={thread.running}
-                  terminalRunning={terminalRunningSessionPaths.has(thread.sessionPath)}
-                  selected={selectedSessionPath === thread.sessionPath}
+                  terminalRunning={terminalRunningConversationIds.has(thread.conversationId)}
+                  selected={selectedConversationId === thread.conversationId}
                   title={thread.title}
                   unread={thread.unread}
                   onDismiss={() => onDismissThread(thread)}

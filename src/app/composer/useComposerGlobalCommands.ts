@@ -8,12 +8,12 @@ import type { ComposerSkillMentions } from './useComposerSkillMentions'
 import type { ComposerSlashCommands } from './useComposerSlashCommands'
 
 export function useComposerGlobalCommands(input: {
-  closeSessionTree: () => void
+  closeConversationFork: () => void
   composerPanelRef: RefObject<HTMLDivElement | null>
   composerWorking: boolean
   fileMentions: ComposerFileMentions
   inputLocked: boolean
-  openSessionTree: () => void
+  openConversationFork: () => void
   send: () => Promise<void>
   setOpenMenu: (menu: null) => void
   showDictationButton: boolean
@@ -24,7 +24,7 @@ export function useComposerGlobalCommands(input: {
   const dismissTransientUi = () => {
     input.setOpenMenu(null)
     input.slashCommands.dismiss()
-    input.closeSessionTree()
+    input.closeConversationFork()
     input.fileMentions.dismiss()
     input.skillMentions.dismiss()
   }
@@ -47,7 +47,7 @@ export function useComposerGlobalCommands(input: {
     if (input.composerWorking) return
     event.preventDefault()
     dismissTransientUi()
-    input.openSessionTree()
+    input.openConversationFork()
   })
   useHowcodeKeybindingCommand('dictation.toggle', (event) => {
     if (!(input.showDictationButton && !input.inputLocked)) return

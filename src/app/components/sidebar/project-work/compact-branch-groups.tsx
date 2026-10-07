@@ -12,7 +12,7 @@ export function ProjectCompactBranchGroups({
   hideSessionCounts,
   project,
   selectedThreadId,
-  terminalRunningSessionPaths,
+  terminalRunningConversationIds,
   unassignedExpanded,
   unassignedThreads,
   worktrees,
@@ -29,13 +29,13 @@ export function ProjectCompactBranchGroups({
   hideSessionCounts: boolean
   project: Project
   selectedThreadId: string | null
-  terminalRunningSessionPaths: ReadonlySet<string>
+  terminalRunningConversationIds: ReadonlySet<string>
   unassignedExpanded: boolean
   unassignedThreads: Thread[]
   worktrees: WorktreeBranchGroup[]
   onAction: DesktopActionInvoker
   onToggleCurrentBranch: () => void
-  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
+  onThreadOpen: (projectId: string, threadId: string, conversationId: string) => void
   onToggleUnassigned: () => void
 }) {
   const currentBranchGroup: BranchThreadGroup = {
@@ -68,7 +68,7 @@ export function ProjectCompactBranchGroups({
         hideSessionCounts={hideSessionCounts}
         project={project}
         selectedThreadId={selectedThreadId}
-        terminalRunningSessionPaths={terminalRunningSessionPaths}
+        terminalRunningConversationIds={terminalRunningConversationIds}
         onAction={onAction}
         showBottomDivider={unassignedThreads.length > 0}
         onThreadOpen={onThreadOpen}
@@ -84,7 +84,7 @@ export function ProjectCompactBranchGroups({
           hideSessionCounts={hideSessionCounts}
           project={project}
           selectedThreadId={selectedThreadId}
-          terminalRunningSessionPaths={terminalRunningSessionPaths}
+          terminalRunningConversationIds={terminalRunningConversationIds}
           onAction={onAction}
           showTopDivider
           onThreadOpen={onThreadOpen}

@@ -14,7 +14,7 @@ export const THREAD_CYCLE_OPEN_ACTION_DELAY_MS = 450
 export type ScheduledThreadOpenInput = {
   projectId: string
   threadId: string
-  sessionPath: string
+  conversationId: string
   view?: 'chat' | 'thread' | undefined
   branchName?: string | null | undefined
   delayMs?: number | undefined
@@ -26,7 +26,7 @@ export function getScheduledThreadOpenActionPayload(input: ScheduledThreadOpenIn
   return {
     projectId: input.projectId,
     threadId: input.threadId,
-    sessionPath: input.sessionPath,
+    conversationId: input.conversationId,
     composerMode: input.view === 'chat' ? 'chat' : 'code',
     branchName: input.branchName,
   }
@@ -84,7 +84,7 @@ export function useScheduledThreadOpen(input: {
             type: 'open-thread',
             projectId: scheduledThreadOpen.projectId,
             threadId: scheduledThreadOpen.threadId,
-            sessionPath: scheduledThreadOpen.sessionPath,
+            conversationId: scheduledThreadOpen.conversationId,
             view: scheduledThreadOpen.view,
           })
         }

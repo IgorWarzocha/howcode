@@ -5,11 +5,8 @@ env:
 
 on:
   push:
-    branches:
-      - dev
-      - main
-    tags:
-      - "v*"
+    branches: [dev, main]
+    tags: ["v*"]
   workflow_dispatch:
 
 concurrency:
@@ -17,315 +14,42 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
-  id-token: write
+  contents: read
 
 jobs:
   build:
-    name: Build ${{ matrix.name }}
-    runs-on: ${{ matrix.runs_on }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: linux-x64
-            runs_on: ubuntu-24.04
-          - name: linux-arm64
-            runs_on: ubuntu-24.04-arm
-          - name: windows-x64
-            runs_on: windows-2025
-          - name: windows-arm64
-            runs_on: windows-11-arm
-          - name: macos-arm64
-            runs_on: macos-15
-          - name: macos-x64
-            runs_on: macos-15-intel
-
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
-
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.4.2
-          no-cache: true
-
+          bun-version-file: package.json
       - uses: actions/setup-node@v6
         with:
           node-version: 24.15.0
-
-      - name: Install Linux build dependencies
-        if: runner.os == 'Linux'
-        run: |
-          architecture=$(dpkg --print-architecture)
-          codename=$(. /etc/os-release && printf '%s' "$VERSION_CODENAME")
-          sources_file=$(mktemp)
-
-          case "$architecture" in
-            amd64)
-              cat >"$sources_file" <<EOF
-          deb [arch=amd64] https://archive.ubuntu.com/ubuntu $codename main universe
-          deb [arch=amd64] https://archive.ubuntu.com/ubuntu $codename-updates main universe
-          deb [arch=amd64] https://security.ubuntu.com/ubuntu $codename-security main universe
-          EOF
-              ;;
-            arm64)
-              cat >"$sources_file" <<EOF
-          deb [arch=arm64] https://ports.ubuntu.com/ubuntu-ports $codename main universe
-          deb [arch=arm64] https://ports.ubuntu.com/ubuntu-ports $codename-updates main universe
-          deb [arch=arm64] https://ports.ubuntu.com/ubuntu-ports $codename-security main universe
-          EOF
-              ;;
-            *)
-              echo "Unsupported Linux build architecture: $architecture" >&2
-              exit 1
-              ;;
-          esac
-
-          apt_options=(
-            -o "Dir::Etc::sourcelist=$sources_file"
-            -o "Dir::Etc::sourceparts=-"
-            -o "Acquire::ForceIPv4=true"
-            -o "Acquire::Retries=2"
-            -o "Acquire::https::Timeout=20"
-          )
-
-          sudo timeout 180 apt-get "${apt_options[@]}" update
-          sudo timeout 180 apt-get "${apt_options[@]}" install -y --no-install-recommends \
-            build-essential \
-            cmake \
-            pkg-config \
-            unzip
-
-      - name: Install dependencies
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - name: Pack server package
         shell: bash
         run: |
-          if ! bun install --frozen-lockfile; then
-            echo "Initial bun install failed; clearing Bun package cache and retrying once"
-            bun pm cache rm
-            bun install --frozen-lockfile
+          if [ "$GITHUB_REF_NAME" = dev ]; then
+            bun run pack:howcode:dev
+          else
+            bun run pack:howcode
           fi
-
-      - name: Install Windows ARM64 Rollup native package
-        if: matrix.name == 'windows-arm64'
-        run: npm install --no-save --ignore-scripts --no-audit --no-fund @rollup/rollup-win32-arm64-msvc@4.60.2
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 25.9.0
-
-      - name: Capture Node 25 path
-        shell: bash
-        run: echo "HOWCODE_NODE_25_PATH=$(node -p 'process.execPath')" >> "$GITHUB_ENV"
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 26.1.0
-
-      - name: Capture Node 26 path
-        shell: bash
-        run: echo "HOWCODE_NODE_26_PATH=$(node -p 'process.execPath')" >> "$GITHUB_ENV"
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24.15.0
-
-      - name: Verify release version alignment
+      - name: Verify installed runtime dependencies
         shell: bash
         run: |
-          ROOT_VERSION=$(node -p "require('./package.json').version")
-          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            TAG_VERSION="${GITHUB_REF_NAME#v}"
-            if [ "$ROOT_VERSION" != "$TAG_VERSION" ]; then
-              echo "Tag version $TAG_VERSION does not match package version $ROOT_VERSION"
-              exit 1
-            fi
-          fi
-
-      - name: Build stable desktop release
-        shell: bash
-        run: |
-          if [ "${RUNNER_OS}" = "macOS" ]; then
-            ulimit -n 65536 || ulimit -n 10240 || true
-          fi
-          bun run build:release
-
-      - name: Build launcher archives
-        env:
-          HOWCODE_RELEASE_CHANNEL: ${{ github.ref_type == 'tag' && 'main' || (github.ref_name == 'dev' && 'dev' || 'main') }}
-          HOWCODE_RELEASE_ASSET_BASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_type == 'tag' && github.ref_name || (github.ref_name == 'dev' && 'channel-dev' || 'channel-main') }}
-        run: bun run build:launcher-artifacts
-
-      - name: Upload dev artifacts
-        if: github.event_name == 'push' && github.ref_name == 'dev'
-        uses: actions/upload-artifact@v7
+          package=$(realpath artifacts/howcode-*.tgz)
+          install_root=$(mktemp -d)
+          cd "$install_root"
+          npm init -y
+          npm install "$package"
+          node -e "require('node-pty'); require('sherpa-onnx-node'); require('node:sqlite')"
+          test -f node_modules/howcode/build/server/index.mjs
+          test -f node_modules/howcode/dist/index.html
+      - uses: actions/upload-artifact@v7
         with:
-          name: dev-${{ matrix.name }}
-          retention-days: 1
+          name: howcode-server-package
           if-no-files-found: error
-          path: |
-            artifacts/stable-*-update.json
-            artifacts/npm-launcher/*.tar.gz
-            artifacts/electron/*.AppImage
-            artifacts/electron/*.exe
-            artifacts/electron/*.zip
-
-      - name: Upload main artifacts
-        if: github.event_name == 'push' && github.ref_name == 'main'
-        uses: actions/upload-artifact@v7
-        with:
-          name: main-${{ matrix.name }}
-          retention-days: 1
-          if-no-files-found: error
-          path: |
-            artifacts/stable-*-update.json
-            artifacts/npm-launcher/*.tar.gz
-            artifacts/electron/*.AppImage
-            artifacts/electron/*.exe
-            artifacts/electron/*.zip
-
-      - name: Upload manual preview artifacts
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v7
-        with:
-          name: preview-${{ matrix.name }}
-          retention-days: 1
-          if-no-files-found: error
-          path: |
-            artifacts/stable-*-update.json
-            artifacts/npm-launcher/*.tar.gz
-            artifacts/electron/*.AppImage
-            artifacts/electron/*.exe
-            artifacts/electron/*.zip
-
-      - name: Upload release files
-        if: github.event_name == 'push' && github.ref_type == 'tag'
-        uses: actions/upload-artifact@v7
-        with:
-          name: release-${{ matrix.name }}
-          retention-days: 1
-          if-no-files-found: error
-          path: |
-            artifacts/stable-*-update.json
-            artifacts/npm-launcher/*.tar.gz
-            artifacts/electron/*.AppImage
-            artifacts/electron/*.exe
-            artifacts/electron/*.zip
-
-  cleanup-dev-artifacts:
-    name: Cleanup old dev artifacts
-    if: github.event_name == 'push' && github.ref_name == 'dev'
-    needs: build
-    runs-on: ubuntu-24.04
-    permissions:
-      actions: write
-
-    steps:
-      - name: Delete artifacts from older dev runs
-        uses: actions/github-script@v9
-        with:
-          script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const currentRunId = context.runId;
-            const artifacts = await github.paginate(github.rest.actions.listArtifactsForRepo, {
-              owner,
-              repo,
-              per_page: 100,
-            });
-
-            for (const artifact of artifacts) {
-              const workflowRun = artifact.workflow_run;
-              if (!workflowRun) {
-                continue;
-              }
-
-              if (workflowRun.head_branch !== "dev") {
-                continue;
-              }
-
-              if (workflowRun.id === currentRunId) {
-                continue;
-              }
-
-              if (!artifact.name.startsWith("dev-")) {
-                core.info(
-                  `Skipping unrelated artifact ${artifact.name} (${artifact.id}) from dev run ${workflowRun.id}`,
-                );
-                continue;
-              }
-
-              core.info(
-                `Deleting artifact ${artifact.name} (${artifact.id}) from dev run ${workflowRun.id}`,
-              );
-              await github.rest.actions.deleteArtifact({
-                owner,
-                repo,
-                artifact_id: artifact.id,
-              });
-            }
-
-  publish-channel-release:
-    name: Publish channel GitHub release
-    if: github.event_name == 'push' && (github.ref_name == 'dev' || github.ref_name == 'main')
-    needs: build
-    runs-on: ubuntu-24.04
-    concurrency:
-      group: ${{ github.ref_name == 'dev' && 'release-publication-dev' || 'release-publication-stable' }}
-      queue: max
-      cancel-in-progress: false
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.4.2
-          no-cache: true
-
-      - name: Download built artifacts
-        uses: actions/download-artifact@v8
-        with:
-          pattern: ${{ github.ref_name }}-*
-          merge-multiple: true
-          path: release-assets
-
-      - name: List channel release assets
-        run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' -o -name '*.zip' \) -print | sort
-
-      - name: Publish channel release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: bun scripts/publish-release.ts "${{ github.ref_name }}" release-assets
-
-  publish-release:
-    name: Publish versioned GitHub release
-    if: github.event_name == 'push' && github.ref_type == 'tag'
-    needs: build
-    runs-on: ubuntu-24.04
-    concurrency:
-      group: release-publication-stable
-      queue: max
-      cancel-in-progress: false
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.4.2
-          no-cache: true
-
-      - name: Download built artifacts
-        uses: actions/download-artifact@v8
-        with:
-          pattern: release-*
-          merge-multiple: true
-          path: release-assets
-
-      - name: List release assets
-        run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' -o -name '*.zip' \) -print | sort
-
-      - name: Publish versioned release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: bun scripts/publish-release.ts tag release-assets
+          path: artifacts/howcode-*.tgz

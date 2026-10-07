@@ -4,7 +4,6 @@ import type {
   ChatSidebarState,
   ComposerState,
   DesktopEvent,
-  PiExtensionUiState,
   ProjectGitState,
   ThreadData,
 } from '../desktop/types'
@@ -24,7 +23,7 @@ type UseDesktopEventSyncInput = {
     projectId: string,
     options?: {
       chat?: boolean | undefined
-      replaceLocalDraftSessionPath?: string | null | undefined
+      replaceLocalDraftConversationId?: string | null | undefined
     },
   ) => Promise<unknown>
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
@@ -35,7 +34,6 @@ type UseDesktopEventSyncInput = {
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>
   setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>
   setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>
-  setPiExtensionUiStateBySession: Dispatch<SetStateAction<Record<string, PiExtensionUiState>>>
   setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>
   setThreadHistoryCompactions: Dispatch<SetStateAction<number>>
 }
@@ -52,7 +50,6 @@ export function useDesktopEventSync({
   setComposerState,
   setChatSidebarState,
   setLiveThreadData,
-  setPiExtensionUiStateBySession,
   setProjectGitState,
   setThreadHistoryCompactions,
 }: UseDesktopEventSyncInput) {
@@ -62,12 +59,11 @@ export function useDesktopEventSync({
       activeView: workspaceState.activeView,
       selectedProjectId: workspaceState.selectedProjectId,
       selectedThreadId: workspaceState.selectedThreadId,
-      selectedSessionPath: workspaceState.selectedSessionPath,
-      selectedInboxSessionPath: workspaceState.selectedInboxSessionPath,
-      takeoverVisible: workspaceState.takeoverVisible,
+      selectedConversationId: workspaceState.selectedConversationId,
+      selectedInboxConversationId: workspaceState.selectedInboxConversationId,
     } satisfies DesktopEventSelectionState,
   })
-  const localDraftSessionPathByPersistedSessionPathRef = useRef(new Map<string, string>())
+  const localDraftConversationIdByPersistedConversationIdRef = useRef(new Map<string, string>())
 
   useEffect(() => {
     desktopEventStateRef.current = {
@@ -76,9 +72,8 @@ export function useDesktopEventSync({
         activeView: workspaceState.activeView,
         selectedProjectId: workspaceState.selectedProjectId,
         selectedThreadId: workspaceState.selectedThreadId,
-        selectedSessionPath: workspaceState.selectedSessionPath,
-        selectedInboxSessionPath: workspaceState.selectedInboxSessionPath,
-        takeoverVisible: workspaceState.takeoverVisible,
+        selectedConversationId: workspaceState.selectedConversationId,
+        selectedInboxConversationId: workspaceState.selectedInboxConversationId,
       },
     }
   }, [
@@ -86,9 +81,8 @@ export function useDesktopEventSync({
     workspaceState.activeView,
     workspaceState.selectedProjectId,
     workspaceState.selectedThreadId,
-    workspaceState.selectedInboxSessionPath,
-    workspaceState.selectedSessionPath,
-    workspaceState.takeoverVisible,
+    workspaceState.selectedInboxConversationId,
+    workspaceState.selectedConversationId,
   ])
 
   useEffect(() => {
@@ -104,11 +98,10 @@ export function useDesktopEventSync({
       setChatSidebarState,
       setComposerState,
       setLiveThreadData,
-      setPiExtensionUiStateBySession,
       setProjectGitState,
       setThreadHistoryCompactions,
       desktopEventStateRef,
-      localDraftSessionPathByPersistedSessionPathRef,
+      localDraftConversationIdByPersistedConversationIdRef,
     }
     return subscribeDesktopEvents((event: DesktopEvent) => handleDesktopEvent(runtime, event))
   }, [
@@ -121,7 +114,6 @@ export function useDesktopEventSync({
     setChatSidebarState,
     setComposerState,
     setLiveThreadData,
-    setPiExtensionUiStateBySession,
     setProjectGitState,
     setThreadHistoryCompactions,
   ])

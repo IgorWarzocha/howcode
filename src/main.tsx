@@ -12,22 +12,16 @@ import { queryClient } from './app/query/query-client'
 function applyDesktopPlatformAttribute() {
   const platform = window.piDesktop?.platform ?? 'browser'
   document.documentElement.setAttribute('data-desktop-platform', platform)
-  document.documentElement.setAttribute(
-    'data-desktop-shell',
-    window.piDesktop && !window.howcodeDevWebBridge ? 'electron' : 'browser',
-  )
+  document.documentElement.setAttribute('data-desktop-shell', 'browser')
 }
 
 if (import.meta.env.DEV) {
   void import('react-grab')
 }
 
-const bridgeInstallPromise =
-  !window.piDesktop && window.location.protocol.startsWith('http')
-    ? import('./app/dev-web-bridge').then(({ installDevWebDesktopBridge }) =>
-        installDevWebDesktopBridge(),
-      )
-    : Promise.resolve()
+const bridgeInstallPromise = import('./app/dev-web-bridge').then(({ installDevWebDesktopBridge }) =>
+  installDevWebDesktopBridge(),
+)
 
 void bridgeInstallPromise
   .then(() => {
@@ -44,7 +38,10 @@ void bridgeInstallPromise
   .catch((error) => {
     const root = document.getElementById('root')
     if (root) {
-      root.innerHTML = `<pre class="bootstrap-error">Bootstrap error:\n${String(error)}</pre>`
+      const message = document.createElement('pre')
+      message.className = 'bootstrap-error'
+      message.textContent = `Bootstrap error:\n${String(error)}`
+      root.replaceChildren(message)
     }
 
     throw error

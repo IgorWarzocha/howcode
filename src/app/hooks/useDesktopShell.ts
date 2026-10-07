@@ -16,6 +16,5 @@ export function useDesktopShell() {
     loadComposerState: shellQueries.loadComposerState,
     listComposerAttachmentEntries: shellQueries.listComposerAttachmentEntries,
     loadProjectGitState: shellQueries.loadProjectGitState,
-    pickComposerAttachments: shellQueries.pickComposerAttachments,
   }
 }

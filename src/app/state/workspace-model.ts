@@ -1,12 +1,12 @@
 import type { Project, View } from '../types'
 
 export type NonGitOpsView = Exclude<View, 'gitops'>
-export type UtilityView = Extract<View, 'settings' | 'extensions' | 'skills' | 'sessions'>
+export type UtilityView = Extract<View, 'settings' | 'skills' | 'sessions'>
 
 export type CodeThreadSelection = {
   projectId: string
   threadId: string
-  sessionPath: string
+  conversationId: string
 }
 
 export type UtilityViewReturnState = {
@@ -14,13 +14,12 @@ export type UtilityViewReturnState = {
   selectedProjectId: string
   hasSelectedProject: boolean
   landingVisible: boolean
-  selectedInboxSessionPath: string | null
+  selectedInboxConversationId: string | null
   selectedThreadId: string | null
-  selectedSessionPath: string | null
+  selectedConversationId: string | null
   terminalVisible: boolean
   workspaceTerminalVisibleByWorkspace: Record<string, boolean>
   restoreTerminalVisibleOnGitOpsClose: boolean
-  takeoverVisible: boolean
   gitOpsReturnView: NonGitOpsView
   selectedDiffFilePath: string | null
 }
@@ -30,15 +29,13 @@ export type WorkspaceState = {
   selectedProjectId: string
   hasSelectedProject: boolean
   landingVisible: boolean
-  selectedInboxSessionPath: string | null
+  selectedInboxConversationId: string | null
   selectedThreadId: string | null
-  selectedSessionPath: string | null
+  selectedConversationId: string | null
   terminalVisible: boolean
   workspaceTerminalVisibleByWorkspace: Record<string, boolean>
   terminalVisibleBySession: Record<string, boolean>
   restoreTerminalVisibleOnGitOpsClose: boolean
-  takeoverVisible: boolean
-  takeoverOverrides: Record<string, boolean>
   gitOpsReturnView: NonGitOpsView
   selectedDiffFilePath: string | null
   utilityViewReturnState: UtilityViewReturnState | null
@@ -53,21 +50,21 @@ export type WorkspaceAction =
   | { type: 'show-view'; view: NonGitOpsView }
   | { type: 'show-landing' }
   | { type: 'close-utility-view' }
-  | { type: 'select-inbox-thread'; sessionPath: string | null }
+  | { type: 'select-inbox-thread'; conversationId: string | null }
   | { type: 'clear-thread-selection' }
   | { type: 'select-project'; projectId: string }
   | {
       type: 'start-project-thread'
       projectId: string
       threadId: string
-      sessionPath: string
+      conversationId: string
     }
   | { type: 'set-selected-project'; projectId: string }
   | {
       type: 'open-thread'
       projectId: string
       threadId: string
-      sessionPath: string
+      conversationId: string
       view?: 'chat' | 'thread' | undefined
     }
   | {
@@ -84,10 +81,6 @@ export type WorkspaceAction =
   | { type: 'close-gitops' }
   | { type: 'toggle-terminal' }
   | { type: 'set-terminal-visible'; visible: boolean }
-  | { type: 'show-takeover' }
-  | { type: 'hide-takeover' }
-  | { type: 'set-takeover-visible'; visible: boolean }
-  | { type: 'set-session-takeover-override'; sessionPath: string; visible: boolean | null }
   | { type: 'toggle-settings' }
   | { type: 'set-settings-panel-open'; open: boolean }
   | { type: 'toggle-project-collapse'; projectId: string }

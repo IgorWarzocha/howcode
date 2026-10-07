@@ -13,7 +13,6 @@ import type {
   ShellState,
   ThreadData,
 } from '../desktop/types'
-import { checkAppUpdateQuery } from '../query/desktop-query'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
 import type { View } from '../types'
 import { applyOptimisticDesktopAction } from './controller-optimistic-updates'
@@ -50,16 +49,16 @@ type UseDesktopActionHandlersArgs = {
   loadArchivedThreads: () => Promise<ArchivedThread[]>
   loadComposerState: (request?: {
     projectId?: string | null
-    sessionPath?: string | null
+    conversationId?: string | null
     composerMode?: 'chat' | 'code' | null
   }) => Promise<ComposerState | null>
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
   loadProjectThreads: (
     projectId: string,
-    options?: { chat?: boolean; replaceLocalDraftSessionPath?: string | null },
+    options?: { chat?: boolean; replaceLocalDraftConversationId?: string | null },
   ) => Promise<unknown>
   refreshShellState: () => Promise<unknown>
-  selectedSessionPath: string | null
+  selectedConversationId: string | null
   shellState: ShellState | null
   setArchivedThreads: Dispatch<SetStateAction<ArchivedThread[]>>
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>
@@ -80,7 +79,7 @@ export function useDesktopActionHandlers({
   loadProjectGitState,
   loadProjectThreads,
   refreshShellState,
-  selectedSessionPath,
+  selectedConversationId,
   shellState,
   setArchivedThreads,
   setComposerState,
@@ -107,7 +106,7 @@ export function useDesktopActionHandlers({
         loadProjectThreads,
         payload,
         queryClient,
-        selectedSessionPath,
+        selectedConversationId,
         setProjectGitState,
         setChatSidebarState,
         setLiveThreadData,
@@ -151,16 +150,7 @@ export function useDesktopActionHandlers({
         queryClient,
       })
 
-      const actionErrorMessage = publishActionFeedback({ action, actionResult, showToast })
-
-      if (
-        action === 'settings.update' &&
-        (contextualPayload.key === 'devUpdateBranch' ||
-          contextualPayload.key === 'betaUpdateBranch') &&
-        !actionErrorMessage
-      ) {
-        void checkAppUpdateQuery()
-      }
+      publishActionFeedback({ action, actionResult, showToast })
 
       return actionResult
     },
@@ -174,7 +164,7 @@ export function useDesktopActionHandlers({
       loadProjectGitState,
       loadProjectThreads,
       refreshShellState,
-      selectedSessionPath,
+      selectedConversationId,
       shellState,
       setArchivedThreads,
       setComposerState,

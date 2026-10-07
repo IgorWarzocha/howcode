@@ -4,12 +4,9 @@ import type {
   EditorInitialState,
   TextDocument as PierreTextDocument,
 } from '@pierre/diffs/edit'
-import { readClipboardSnapshotQuery } from '../../../query/desktop-query'
 import type { GitOpsAnnotationMetadata } from '../review/pierre-review-adapter'
 import { createDiffEditingFileDiff } from './diff-editing-drafts'
 import type { DiffEditingSession } from './diff-editing-save'
-
-const fallbackTextClipboardFormat: string = 'text'
 
 let editorFactory: EditorFactory<GitOpsAnnotationMetadata, undefined> | null = null
 let editorModulePromise: Promise<void> | null = null
@@ -68,14 +65,6 @@ export const createPierreEditor: EditorFactory<GitOpsAnnotationMetadata, undefin
 
 export const pierreEditorOptions = {
   clipboard: {
-    readText: async (type = 'text/plain') => {
-      const snapshot = await readClipboardSnapshotQuery([type, 'text/plain', 'text'])
-      return (
-        snapshot?.valuesByFormat[type] ??
-        snapshot?.valuesByFormat['text/plain'] ??
-        snapshot?.valuesByFormat[fallbackTextClipboardFormat] ??
-        ''
-      )
-    },
+    readText: () => navigator.clipboard.readText(),
   },
 }

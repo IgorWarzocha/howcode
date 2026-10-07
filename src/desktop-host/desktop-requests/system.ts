@@ -1,7 +1,6 @@
-import { open, readdir, realpath, stat } from 'node:fs/promises'
+import { readdir, realpath, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import path from 'node:path'
-import { getAttachmentKind } from '../../../shared/composer-attachments'
 import type { DesktopRequestHandlerMap } from '../../../shared/desktop-ipc'
 import {
   listComposerAttachmentEntries,
@@ -10,65 +9,10 @@ import {
 
 type SystemRequestHandlers = Pick<
   DesktopRequestHandlerMap,
-  | 'clearClipboardImages'
-  | 'pickComposerAttachments'
   | 'listProjectDirectoryEntries'
-  | 'readClipboardSnapshot'
-  | 'readClipboardFilePaths'
-  | 'readClipboardImage'
-  | 'getAttachmentKindsForPaths'
   | 'listComposerAttachmentEntries'
   | 'searchComposerAttachmentEntries'
-  | 'openExternal'
-  | 'openPath'
-  | 'saveTextToDownloads'
 >
-
-type PlatformSystemHandlers = Pick<
-  SystemRequestHandlers,
-  | 'clearClipboardImages'
-  | 'pickComposerAttachments'
-  | 'readClipboardSnapshot'
-  | 'readClipboardFilePaths'
-  | 'readClipboardImage'
-  | 'openExternal'
-  | 'openPath'
->
-
-export type DesktopSystemRequestCapabilities = PlatformSystemHandlers & {
-  getDownloadsPath: () => string
-  prepareDownloadsDirectory: (directoryPath: string) => Promise<void>
-}
-
-const leadingDotsPattern = /^\.+/
-
-async function writeUniqueTextFile(directoryPath: string, fileName: string, content: string) {
-  const parsed = path.parse(fileName)
-  for (let index = 0; index < 100; index += 1) {
-    const candidateName = index === 0 ? fileName : `${parsed.name}-${index + 1}${parsed.ext}`
-    const candidatePath = path.join(directoryPath, candidateName)
-    try {
-      const file = await open(candidatePath, 'wx', 0o600)
-      try {
-        await file.writeFile(content, 'utf8')
-      } finally {
-        await file.close()
-      }
-      return candidatePath
-    } catch (error) {
-      if (
-        typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        error.code === 'EEXIST'
-      ) {
-        continue
-      }
-      throw error
-    }
-  }
-  throw new Error('Could not find an unused file name in Downloads.')
-}
 
 async function listProjectDirectoryEntries(request: { path?: string | null | undefined }) {
   const homePath = homedir()
@@ -112,56 +56,10 @@ async function listProjectDirectoryEntries(request: { path?: string | null | und
   }
 }
 
-export function createSystemRequestHandlers(
-  capabilities: DesktopSystemRequestCapabilities,
-): SystemRequestHandlers {
+export function createSystemRequestHandlers(): SystemRequestHandlers {
   return {
-    clearClipboardImages: capabilities.clearClipboardImages,
-    pickComposerAttachments: capabilities.pickComposerAttachments,
     listProjectDirectoryEntries,
-    readClipboardSnapshot: capabilities.readClipboardSnapshot,
-    readClipboardFilePaths: capabilities.readClipboardFilePaths,
-    readClipboardImage: capabilities.readClipboardImage,
-    getAttachmentKindsForPaths: async ({ paths }) => {
-      const uniquePaths = [...new Set(Array.isArray(paths) ? paths : [])].filter(
-        (candidatePath): candidatePath is string =>
-          typeof candidatePath === 'string' && candidatePath.trim().length > 0,
-      )
-
-      const entries = await Promise.all(
-        uniquePaths.map(async (attachmentPath) => {
-          try {
-            const stats = await stat(attachmentPath)
-            return [
-              attachmentPath,
-              stats.isDirectory() ? 'directory' : getAttachmentKind(attachmentPath),
-            ] as const
-          } catch {
-            return [attachmentPath, null] as const
-          }
-        }),
-      )
-
-      return Object.fromEntries(entries)
-    },
     listComposerAttachmentEntries: (request) => listComposerAttachmentEntries(request),
     searchComposerAttachmentEntries: (request) => searchComposerAttachmentEntries(request),
-    openExternal: capabilities.openExternal,
-    openPath: capabilities.openPath,
-    saveTextToDownloads: async ({ fileName, content }) => {
-      const safeFileName = fileName
-        .replace(/[\\/:*?"<>|]/g, '-')
-        .replace(leadingDotsPattern, '')
-        .trim()
-      if (!safeFileName) return { ok: false, error: 'Invalid file name.' }
-      const downloadsPath = capabilities.getDownloadsPath()
-      try {
-        await capabilities.prepareDownloadsDirectory(downloadsPath)
-        const filePath = await writeUniqueTextFile(downloadsPath, safeFileName, content)
-        return { ok: true, path: filePath }
-      } catch (error) {
-        return { ok: false, error: error instanceof Error ? error.message : String(error) }
-      }
-    },
   }
 }

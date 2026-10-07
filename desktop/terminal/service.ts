@@ -1,3 +1,4 @@
+import * as Cause from 'effect/Cause'
 import * as Context from 'effect/Context'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
@@ -9,7 +10,6 @@ import type {
   TerminalEvent,
   TerminalOpenRequest,
   TerminalOperation,
-  TerminalSessionFileStat,
   TerminalSessionSnapshot,
   TerminalStatusSnapshot,
 } from '../../shared/terminal-contracts.ts'
@@ -32,9 +32,6 @@ export interface Interface {
     cols: number,
     rows: number,
   ) => Effect.Effect<void, TerminalError>
-  readonly statSessionFile: (
-    sessionId: string,
-  ) => Effect.Effect<TerminalSessionFileStat | null, TerminalError>
   readonly status: (sessionId: string) => Effect.Effect<TerminalStatusSnapshot, TerminalError>
   readonly write: (sessionId: string, data: string) => Effect.Effect<void, TerminalError>
 }
@@ -48,11 +45,14 @@ function operationError(operation: TerminalOperation, error: unknown) {
   })
 }
 
-function fromPromise<A>(operation: TerminalOperation, evaluate: () => PromiseLike<A>) {
-  return Effect.tryPromise({
-    try: evaluate,
-    catch: (error) => operationError(operation, error),
-  })
+function operationEffect<A>(operation: TerminalOperation, effect: Effect.Effect<A, unknown>) {
+  return effect.pipe(
+    Effect.catchCause((cause) =>
+      Cause.hasInterrupts(cause)
+        ? Effect.interrupt
+        : Effect.fail(operationError(operation, Cause.squash(cause))),
+    ),
+  )
 }
 
 export const layer = Layer.effect(
@@ -64,32 +64,29 @@ export const layer = Layer.effect(
     const manager = yield* makeTerminalManager(store, scope, pty)
 
     const closeAll = Effect.fn('Terminal.closeAll')(function* () {
-      yield* fromPromise('closeAll', manager.closeAllTerminals)
+      yield* operationEffect('closeAll', manager.closeAllTerminals())
     })
     const close = Effect.fn('Terminal.close')(function* (request: TerminalCloseRequest) {
-      yield* fromPromise('close', () => manager.closeTerminal(request))
+      yield* operationEffect('close', manager.closeTerminal(request))
     })
     const list = Effect.fn('Terminal.list')(function* () {
-      return yield* fromPromise('list', manager.listTerminals)
+      return yield* operationEffect('list', manager.listTerminals())
     })
     const open = Effect.fn('Terminal.open')(function* (request: TerminalOpenRequest) {
-      return yield* fromPromise('open', () => manager.openTerminal(request))
+      return yield* operationEffect('open', manager.openTerminal(request))
     })
     const resize = Effect.fn('Terminal.resize')(function* (
       sessionId: string,
       cols: number,
       rows: number,
     ) {
-      yield* fromPromise('resize', () => manager.resizeTerminal(sessionId, cols, rows))
-    })
-    const statSessionFile = Effect.fn('Terminal.statSessionFile')(function* (sessionId: string) {
-      return yield* fromPromise('statSessionFile', () => manager.statSessionFile(sessionId))
+      yield* operationEffect('resize', manager.resizeTerminal(sessionId, cols, rows))
     })
     const status = Effect.fn('Terminal.status')(function* (sessionId: string) {
-      return yield* fromPromise('status', () => manager.getTerminalStatus(sessionId))
+      return yield* operationEffect('status', manager.getTerminalStatus(sessionId))
     })
     const write = Effect.fn('Terminal.write')(function* (sessionId: string, data: string) {
-      yield* fromPromise('write', () => manager.writeTerminal(sessionId, data))
+      yield* operationEffect('write', manager.writeTerminal(sessionId, data))
     })
 
     return Service.of({
@@ -100,7 +97,6 @@ export const layer = Layer.effect(
       list,
       open,
       resize,
-      statSessionFile,
       status,
       write,
     })

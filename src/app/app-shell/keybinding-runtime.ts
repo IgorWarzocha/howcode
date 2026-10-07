@@ -5,7 +5,7 @@ import type { AppShellController } from './useAppShellController'
 export type ThreadCycleSelection = {
   projectId: string
   threadId: string
-  sessionPath: string | null
+  conversationId: string | null
   view: 'chat' | 'thread'
 }
 

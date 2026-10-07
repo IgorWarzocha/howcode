@@ -5,7 +5,6 @@ import { useDesktopInbox } from '../hooks/useDesktopInbox'
 import { useDesktopShell } from '../hooks/useDesktopShell'
 import { useToast } from '../hooks/useToast'
 import { deriveControllerViewModel } from './controller-view-model'
-import { getVisibleDesktopSessionPath } from './desktop-event-sync'
 import { useAppShellChatSidebar } from './useAppShellChatSidebar'
 import { useAppShellCommands } from './useAppShellCommands'
 import { useAppShellEffects } from './useAppShellEffects'
@@ -37,7 +36,7 @@ export function useAppShellController() {
   })
   const selectedThread = useSelectedThreadData({
     liveThreadData: bundle.thread.liveThreadData,
-    selectedSessionPath: bundle.workspace.state.selectedSessionPath,
+    selectedConversationId: bundle.workspace.state.selectedConversationId,
     threadHistoryCompactions: bundle.thread.historyCompactions,
     threadQueryDeferred: bundle.thread.queryDeferred,
     threadRefreshKey: bundle.thread.refreshKey,
@@ -47,15 +46,11 @@ export function useAppShellController() {
   const selectedInboxThread = useMemo(
     () =>
       inboxThreads.find(
-        (thread) => thread.sessionPath === bundle.workspace.state.selectedInboxSessionPath,
+        (thread) => thread.conversationId === bundle.workspace.state.selectedInboxConversationId,
       ) ?? null,
-    [inboxThreads, bundle.workspace.state.selectedInboxSessionPath],
+    [inboxThreads, bundle.workspace.state.selectedInboxConversationId],
   )
   const terminals = useRunningTerminalSessions()
-  const visibleExtensionUiSessionPath = getVisibleDesktopSessionPath(bundle.workspace.state)
-  const activePiExtensionUiState = visibleExtensionUiSessionPath
-    ? (bundle.composer.extensionUiBySession[visibleExtensionUiSessionPath] ?? null)
-    : null
   const viewModel = useMemo(
     () =>
       deriveControllerViewModel({
@@ -94,7 +89,6 @@ export function useAppShellController() {
     setComposerState: bundle.composer.setState,
     setChatSidebarState: chatSidebar.setChatSidebarState,
     setLiveThreadData: bundle.thread.setLiveThreadData,
-    setPiExtensionUiStateBySession: bundle.composer.setExtensionUiBySession,
     setProjectGitState: bundle.projects.setGitState,
     setProjectGitLoading: bundle.projects.setGitLoading,
     setThreadHistoryCompactions: bundle.thread.setHistoryCompactions,
@@ -109,7 +103,7 @@ export function useAppShellController() {
     loadProjectGitState: desktopShell.loadProjectGitState,
     loadProjectThreads: desktopShell.loadProjectThreads,
     refreshShellState: desktopShell.refreshShellState,
-    selectedSessionPath: bundle.workspace.state.selectedSessionPath,
+    selectedConversationId: bundle.workspace.state.selectedConversationId,
     shellState: desktopShell.shellState,
     setArchivedThreads: bundle.thread.setArchivedThreads,
     setChatSidebarState: chatSidebar.setChatSidebarState,
@@ -126,8 +120,6 @@ export function useAppShellController() {
   })
   useScopedProjectViewSync({
     activeView: bundle.workspace.state.activeView,
-    extensionsProjectScopeActive: bundle.resourceScope.extensionsActive,
-    setExtensionsProjectScopeActive: bundle.resourceScope.setExtensionsActive,
     setSkillsProjectScopeActive: bundle.resourceScope.setSkillsActive,
     skillsProjectScopeActive: bundle.resourceScope.skillsActive,
   })
@@ -148,9 +140,7 @@ export function useAppShellController() {
     queryClient,
     setSettingsOpenTarget: bundle.settings.setOpenTarget,
     setThreadHistoryCompactions: bundle.thread.setHistoryCompactions,
-    setThreadRefreshKey: bundle.thread.setRefreshKey,
     setThreadQueryDeferred: bundle.thread.setQueryDeferred,
-    shellState: desktopShell.shellState,
     workspaceState: bundle.workspace.state,
   })
 
@@ -184,7 +174,6 @@ export function useAppShellController() {
       open: commands.handleThreadOpen,
     },
     composer: {
-      extensionUiState: activePiExtensionUiState,
       listAttachmentEntries: desktopShell.listComposerAttachmentEntries,
       projectId: viewModel.composerProjectId,
       state: viewModel.activeComposerState,
@@ -206,7 +195,7 @@ export function useAppShellController() {
     },
     terminal: {
       closeDrawer: commands.handleCloseTerminalDrawer,
-      runningSessionPaths: terminals.terminalRunningSessionPaths,
+      runningConversationIds: terminals.terminalRunningConversationIds,
       runningWorkspaceIds: terminals.terminalRunningWorkspaceIds,
       toggle: commands.handleToggleTerminal,
     },
@@ -215,11 +204,6 @@ export function useAppShellController() {
       open: commands.handleOpenGitOpsView,
       openWorktreeFile: commands.handleOpenWorktreeDiffFile,
     },
-    takeover: {
-      close: commands.handleCloseTakeoverTerminal,
-      returnToDesktop: commands.handleReturnToDesktopFromTakeover,
-      show: commands.handleShowTakeoverTerminal,
-    },
     navigation: {
       closeUtilityView: commands.handleCloseUtilityView,
       showLanding: commands.handleShowLanding,
@@ -227,8 +211,6 @@ export function useAppShellController() {
       toggleSettings: commands.handleToggleSettings,
     },
     resourceScope: {
-      extensionsActive: bundle.resourceScope.extensionsActive,
-      setExtensionsActive: bundle.resourceScope.setExtensionsActive,
       setSkillsActive: bundle.resourceScope.setSkillsActive,
       skillsActive: bundle.resourceScope.skillsActive,
     },

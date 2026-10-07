@@ -2,8 +2,8 @@ import * as Context from 'effect/Context'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
 import * as Scope from 'effect/Scope'
-import * as SqlClient from 'effect/unstable/sql/SqlClient'
-import type { Connection } from 'effect/unstable/sql/SqlConnection'
+import * as SqlClient from 'effect/sql/SqlClient'
+import type { Connection } from 'effect/sql/SqlConnection'
 
 export class DatabaseTransactions extends Context.Service<
   DatabaseTransactions,

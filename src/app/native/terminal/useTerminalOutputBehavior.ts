@@ -11,12 +11,8 @@ export function isXtermNearBottom(terminal: XTerm) {
 }
 
 export function useTerminalOutputBehavior({
-  bottomAlignInitialContent,
-  stickToBottomOnOutput,
   terminalInstanceRef,
 }: {
-  bottomAlignInitialContent: boolean
-  stickToBottomOnOutput: boolean
   terminalInstanceRef: RefObject<XTerm | null>
 }) {
   const pendingScrollFrameRef = useRef<number | null>(null)
@@ -47,7 +43,7 @@ export function useTerminalOutputBehavior({
       return
     }
 
-    if (!bottomAlignInitialContent || terminal.buffer.active.baseY > 0) {
+    if (terminal.buffer.active.baseY > 0) {
       screen.style.transform = ''
       return
     }
@@ -62,7 +58,7 @@ export function useTerminalOutputBehavior({
     const cursorY = terminal.buffer.active.cursorY
     const offsetRows = Math.max(0, terminal.rows - cursorY - 1)
     screen.style.transform = offsetRows > 0 ? `translateY(${offsetRows * rowHeight}px)` : ''
-  }, [bottomAlignInitialContent, terminalInstanceRef])
+  }, [terminalInstanceRef])
 
   const scheduleXtermBottomAlign = useCallback(() => {
     if (pendingBottomAlignFrameRef.current !== null) {
@@ -80,8 +76,7 @@ export function useTerminalOutputBehavior({
   const writeToTerminal = useCallback(
     (data: string | Uint8Array) => {
       const terminal = terminalInstanceRef.current
-      const shouldStickToBottom =
-        stickToBottomOnOutput && (!terminal || isXtermNearBottom(terminal))
+      const shouldStickToBottom = !terminal || isXtermNearBottom(terminal)
 
       terminal?.write(data, () => {
         scheduleXtermBottomAlign()
@@ -90,12 +85,7 @@ export function useTerminalOutputBehavior({
 
       if (shouldStickToBottom) scheduleTerminalScrollToBottom()
     },
-    [
-      scheduleTerminalScrollToBottom,
-      scheduleXtermBottomAlign,
-      stickToBottomOnOutput,
-      terminalInstanceRef,
-    ],
+    [scheduleTerminalScrollToBottom, scheduleXtermBottomAlign, terminalInstanceRef],
   )
 
   useEffect(

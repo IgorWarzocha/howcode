@@ -1,10 +1,9 @@
-import { ArrowUpRight, Trash2 } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { CompactMetaRow } from '../../common/compact-meta-row'
 import { ConfirmPopover } from '../../common/confirm-popover'
 import { Tooltip } from '../../common/tooltip'
 import type { PiConfiguredSkill } from '../../desktop/types'
-import { openPathQuery } from '../../query/desktop-query'
 import {
   appToneMutedClass,
   appToneTextClass,
@@ -86,27 +85,12 @@ export function InstalledSkillsSection({
             </div>
           }
         >
-          <Tooltip content="Open SKILL.md in default editor">
-            <button
-              type="button"
-              className="group inline-flex shrink-0 items-center gap-0.5 p-0"
-              onClick={() => void openPathQuery(configuredSkill.skillFilePath)}
-              aria-label={`Open ${configuredSkill.displayName} SKILL.md in default editor`}
-            >
-              <span
-                className={cn(
-                  `${appTypeGroupTextClass} ${appToneTextClass}`,
-                  'transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]',
-                )}
-              >
-                {configuredSkill.displayName}
-              </span>
-              <ArrowUpRight
-                size={12}
-                className="shrink-0 text-[color:var(--muted)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]"
-              />
-            </button>
-          </Tooltip>
+          <span
+            className={cn(appTypeGroupTextClass, appToneTextClass)}
+            title={configuredSkill.skillFilePath}
+          >
+            {configuredSkill.displayName}
+          </span>
           <div className={cn(`${appTypeGroupTextClass} ${appToneMutedClass}`, 'min-w-0 truncate')}>
             {configuredSkill.description || configuredSkill.sourceRepo || configuredSkill.source}
           </div>

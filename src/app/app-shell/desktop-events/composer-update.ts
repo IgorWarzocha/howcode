@@ -1,22 +1,23 @@
 import type { DesktopEvent } from '../../desktop/types'
-import { getVisibleDesktopSessionPath } from '../desktop-event-sync'
-import { applyPiExtensionUiState, getComposerExtensionUi } from './pi-extension-ui-state'
+import { getVisibleDesktopConversationId } from '../desktop-event-sync'
 import type { DesktopEventSyncRuntime } from './runtime'
 
 function shouldApplyComposerUpdate(input: {
   event: Extract<DesktopEvent, { type: 'composer-update' }>
   latestComposerProjectId: string
   latestWorkspaceState: DesktopEventSyncRuntime['desktopEventStateRef']['current']['workspaceState']
-  localDraftSessionPathByPersistedSessionPathRef: React.RefObject<Map<string, string>>
-  visibleSessionPath: string | null
+  localDraftConversationIdByPersistedConversationIdRef: React.RefObject<Map<string, string>>
+  visibleConversationId: string | null
 }) {
-  const aliasedLocalDraftSessionPath = input.event.sessionPath
-    ? input.localDraftSessionPathByPersistedSessionPathRef.current.get(input.event.sessionPath)
+  const aliasedLocalDraftConversationId = input.event.conversationId
+    ? input.localDraftConversationIdByPersistedConversationIdRef.current.get(
+        input.event.conversationId,
+      )
     : null
-  if (input.event.sessionPath) {
+  if (input.event.conversationId) {
     return (
-      input.event.sessionPath === input.visibleSessionPath ||
-      aliasedLocalDraftSessionPath === input.latestWorkspaceState.selectedSessionPath
+      input.event.conversationId === input.visibleConversationId ||
+      aliasedLocalDraftConversationId === input.latestWorkspaceState.selectedConversationId
     )
   }
   return (
@@ -24,7 +25,7 @@ function shouldApplyComposerUpdate(input: {
     ((input.latestWorkspaceState.activeView !== 'thread' &&
       input.latestWorkspaceState.activeView !== 'gitops' &&
       input.latestWorkspaceState.activeView !== 'chat') ||
-      input.visibleSessionPath === null)
+      input.visibleConversationId === null)
   )
 }
 
@@ -34,21 +35,16 @@ export function handleComposerUpdateEvent(
 ) {
   const { composerProjectId: latestComposerProjectId, workspaceState: latestWorkspaceState } =
     runtime.desktopEventStateRef.current
-  const visibleSessionPath = getVisibleDesktopSessionPath(latestWorkspaceState)
+  const visibleConversationId = getVisibleDesktopConversationId(latestWorkspaceState)
   if (
     shouldApplyComposerUpdate({
       event,
       latestComposerProjectId,
       latestWorkspaceState,
-      localDraftSessionPathByPersistedSessionPathRef:
-        runtime.localDraftSessionPathByPersistedSessionPathRef,
-      visibleSessionPath,
+      localDraftConversationIdByPersistedConversationIdRef:
+        runtime.localDraftConversationIdByPersistedConversationIdRef,
+      visibleConversationId,
     })
   )
     runtime.setComposerState(event.composer)
-  applyPiExtensionUiState({
-    extensionUi: getComposerExtensionUi(event.composer),
-    sessionPath: event.sessionPath,
-    setPiExtensionUiStateBySession: runtime.setPiExtensionUiStateBySession,
-  })
 }

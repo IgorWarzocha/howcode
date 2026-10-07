@@ -2,8 +2,8 @@ import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import {
   appNewSessionSlashCommand,
   appSettingsSlashCommand,
+  conversationForkSlashCommand,
   fallbackAppSlashCommands,
-  sessionTreeSlashCommand,
 } from '@howcode/shared/composer-slash-commands'
 import { type KeyboardEvent, useEffect, useMemo, useState } from 'react'
 import type { ComposerSlashCommand } from '../desktop/types'
@@ -28,14 +28,13 @@ export {
 type UseComposerSlashCommandsOptions = {
   draft: string
   projectId: string
-  sessionPath: string | null
+  conversationId: string | null
   composerMode?: 'chat' | 'code'
   setDraft: (draft: string) => void
   send: () => void
-  sendExtensionCommand?: () => void
   onOpenSettingsView: (target?: SettingsOpenTarget) => void
   onStartNewSession?: () => void
-  onOpenSessionTree?: () => void
+  onOpenConversationFork?: () => void
 }
 
 export type ComposerSlashCommands = ReturnType<typeof useComposerSlashCommands>
@@ -43,14 +42,13 @@ export type ComposerSlashCommands = ReturnType<typeof useComposerSlashCommands>
 export function useComposerSlashCommands({
   draft,
   projectId,
-  sessionPath,
+  conversationId,
   composerMode = 'code',
   setDraft,
   send,
-  sendExtensionCommand,
   onOpenSettingsView,
   onStartNewSession,
-  onOpenSessionTree,
+  onOpenConversationFork,
 }: UseComposerSlashCommandsOptions) {
   const [commands, setCommands] = useState<ComposerSlashCommand[]>([])
   const [loading, setLoading] = useState(false)
@@ -59,7 +57,7 @@ export function useComposerSlashCommands({
   const candidateFilter = getSlashCommandFilter(draft)
   const filter = draft === dismissedDraft ? null : candidateFilter
   const open = filter !== null
-  const commandScopeKey = `${projectId}\0${sessionPath ?? ''}\0${composerMode}`
+  const commandScopeKey = `${projectId}\0${conversationId ?? ''}\0${composerMode}`
   const draftRef = useLatestRef(draft)
   const commandScopeKeyRef = useLatestRef(commandScopeKey)
   const filteredCommands = useMemo(
@@ -89,9 +87,9 @@ export function useComposerSlashCommands({
       onStartNewSession?.()
       return true
     }
-    if (command.name === 'tree') {
+    if (command.name === 'fork') {
       setDraft('')
-      onOpenSessionTree?.()
+      onOpenConversationFork?.()
       return true
     }
     return false
@@ -102,11 +100,7 @@ export function useComposerSlashCommands({
 
     if (isExactCommandDraft(command)) {
       dismiss()
-      if (command.source === 'extension' && sendExtensionCommand) {
-        sendExtensionCommand()
-      } else {
-        send()
-      }
+      send()
       return
     }
 
@@ -131,8 +125,6 @@ export function useComposerSlashCommands({
       return
     }
 
-    // Keep this exact-match only: selected Pi commands named "settings" intentionally insert
-    // "/settings " so they can still be sent through AgentSession.prompt().
     if (draft === '/settings') {
       selectCommand(appSettingsSlashCommand)
       return
@@ -143,8 +135,8 @@ export function useComposerSlashCommands({
       return
     }
 
-    if (draft === '/tree') {
-      selectCommand(sessionTreeSlashCommand)
+    if (draft === '/fork') {
+      selectCommand(conversationForkSlashCommand)
       return
     }
 
@@ -161,8 +153,7 @@ export function useComposerSlashCommands({
         loading,
         projectId,
         send,
-        sendExtensionCommand,
-        sessionPath,
+        conversationId,
       })
     )
       return
@@ -211,7 +202,7 @@ export function useComposerSlashCommands({
     setCommands([])
     setSelectedIndex(0)
     setLoading(true)
-    void getComposerSlashCommandsQuery({ projectId, sessionPath, composerMode })
+    void getComposerSlashCommandsQuery({ projectId, conversationId, composerMode })
       .then((nextCommands) => {
         if (!cancelled) {
           setCommands(nextCommands)
@@ -231,7 +222,7 @@ export function useComposerSlashCommands({
     return () => {
       cancelled = true
     }
-  }, [composerMode, open, projectId, sessionPath])
+  }, [composerMode, open, projectId, conversationId])
 
   useEffect(() => {
     void commandScopeKey

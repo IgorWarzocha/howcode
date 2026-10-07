@@ -6,22 +6,6 @@ import type {
 } from '../../shared/desktop-contracts.ts'
 import type { ArchivedThreadRow, InboxThreadRow, ProjectRow, ThreadRow } from './types.ts'
 
-function parseStringArrayJson(value: string | null, context: string) {
-  if (!value) {
-    return [] as string[]
-  }
-
-  try {
-    const parsed = JSON.parse(value)
-    return Array.isArray(parsed)
-      ? parsed.filter((item): item is string => typeof item === 'string')
-      : []
-  } catch (error) {
-    console.warn(`Failed to parse ${context}.`, error)
-    return []
-  }
-}
-
 export function formatRelativeAge(lastModifiedMs: number) {
   const elapsedMs = Math.max(0, Date.now() - lastModifiedMs)
   const minute = 60 * 1000
@@ -90,7 +74,7 @@ export function mapThreadRow(row: ThreadRow): Thread {
     running: Boolean(row.running),
     unread: Boolean(row.unread),
     pinned: Boolean(row.pinned),
-    sessionPath: row.sessionPath,
+    conversationId: row.conversationId,
     branchName: row.branchName ?? undefined,
   }
 }
@@ -101,11 +85,11 @@ export function mapInboxThreadRow(row: InboxThreadRow): InboxThread {
     title: row.title,
     projectId: row.projectId,
     projectName: row.projectName,
-    sessionPath: row.sessionPath,
+    conversationId: row.conversationId,
     age: formatRelativeAge(row.lastActivityMs),
     lastActivityMs: row.lastActivityMs,
-    prompt: row.lastUserPrompt,
-    content: parseStringArrayJson(row.lastAssistantMessageJson, `inbox thread ${row.sessionPath}`),
+    prompt: null,
+    content: [],
     preview: row.lastAssistantPreview,
     running: Boolean(row.running),
     unread: Boolean(row.unread),
@@ -121,7 +105,7 @@ export function mapArchivedThreadRow(row: ArchivedThreadRow): ArchivedThread {
     age: formatRelativeAge(row.lastModifiedMs),
     projectId: row.projectId,
     projectName: row.projectName,
-    sessionPath: row.sessionPath,
+    conversationId: row.conversationId,
     isChat: Boolean(row.isChat),
   }
 }

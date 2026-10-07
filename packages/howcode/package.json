@@ -1,7 +1,7 @@
 {
   "name": "howcode",
   "version": "0.1.72",
-  "description": "Desktop coding app for Pi with projects, terminal, git, and diff workflows.",
+  "description": "Browser coding app for Pi with projects, terminal, git, and diff workflows.",
   "license": "MIT",
   "author": "Igor Warzocha",
   "homepage": "https://github.com/IgorWarzocha/howcode",
@@ -17,28 +17,34 @@
   },
   "files": [
     "bin",
-    "lib",
+    "build",
+    "dist",
     "README.md",
     "LICENSE"
   ],
   "dependencies": {
-    "tar": "^7.5.22"
+    "@earendil-works/chord": "1.0.4",
+    "@earendil-works/pi-ai": "1.0.4",
+    "@earendil-works/pi-durable": "1.0.4",
+    "@effect/sql-sqlite-node": "4.0.0-rc.116",
+    "effect": "4.0.0-rc.116",
+    "esbuild": "0.28.2",
+    "node-pty": "^1.1.0",
+    "proper-lockfile": "4.1.2",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "sherpa-onnx-node": "^1.13.8"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=24.15.0 <27"
   },
   "keywords": [
-    "desktop",
     "coding",
     "ai",
     "terminal",
     "git",
     "diff",
-    "assistant"
-  ],
-  "howcode": {
-    "appName": "howcode",
-    "releaseChannel": "main",
-    "releaseBaseUrl": "https://github.com/IgorWarzocha/howcode/releases/download/channel-main"
-  }
+    "assistant",
+    "browser"
+  ]
 }

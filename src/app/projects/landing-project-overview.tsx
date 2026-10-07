@@ -168,7 +168,7 @@ export function ProjectOverview({
   gitState: ProjectGitState | null | undefined
   usageLoading: boolean
   usageSummary: ProjectUsageSummary | null | undefined
-  onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void
+  onOpenThread: (projectId: string, threadId: string, conversationId: string) => void
   onAction: DesktopActionInvoker
 }) {
   const githubLink = getGitHubRepositoryLink(project, gitState)

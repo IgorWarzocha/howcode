@@ -2,7 +2,7 @@ import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
 import type { useGitOpsReviewController } from './useGitOpsReviewController'
-import type { useQueuedPromptRestore } from './useQueuedPromptRestore'
+import type { useQueuedPromptCancellation } from './useQueuedPromptCancellation'
 
 export type CodeWorkspaceController = Pick<
   AppShellController,
@@ -14,7 +14,6 @@ export type CodeWorkspaceController = Pick<
   | 'projects'
   | 'resourceScope'
   | 'settings'
-  | 'takeover'
   | 'terminal'
   | 'thread'
   | 'workspace'
@@ -23,7 +22,6 @@ export type CodeWorkspaceController = Pick<
 export type CodeWorkspaceViewProps = {
   controller: CodeWorkspaceController
   activeComposerState: AppShellController['composer']['state']
-  activePiExtensionUiState: AppShellController['composer']['extensionUiState']
   activeThreadData: AppShellController['thread']['activeData']
   composerProjectId: string
   currentProjectName: string
@@ -31,7 +29,7 @@ export type CodeWorkspaceViewProps = {
   diffRenderMode: ProjectDiffRenderMode
   terminalDrawerVisible: boolean
   terminalDrawerOverlay?: boolean
-  terminalSessionPath: string | null
+  terminalConversationId: string | null
   workspaceContentClass: string
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
   onSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void
@@ -42,7 +40,7 @@ export type CodeWorkspaceViewProps = {
 }
 
 export type CodeWorkspaceContentProps = CodeWorkspaceViewProps &
-  ReturnType<typeof useQueuedPromptRestore> & {
+  ReturnType<typeof useQueuedPromptCancellation> & {
     gitOpsReview: ReturnType<typeof useGitOpsReviewController>
     footerRef: RefObject<HTMLElement | null>
     mainViewRef: RefObject<HTMLElement | null>
@@ -70,7 +68,6 @@ export type CodeWorkspaceContentProps = CodeWorkspaceViewProps &
     handleLoadEarlierMessages: AppShellController['thread']['loadEarlierMessages']
     handleCloseGitOpsView: AppShellController['gitOps']['close']
     handleOpenGitOpsView: AppShellController['gitOps']['open']
-    handleShowTakeoverTerminal: AppShellController['takeover']['show']
     handleToggleTerminal: AppShellController['terminal']['toggle']
     listComposerAttachmentEntries: AppShellController['composer']['listAttachmentEntries']
     shellState: AppShellController['desktop']['shellState']

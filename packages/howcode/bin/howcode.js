@@ -1,3 +1,6 @@
 #!/usr/bin/env node
 
-require('../lib/howcode.js').main()
+import('../build/server/index.mjs').catch((error) => {
+  console.error(error)
+  process.exitCode = 1
+})

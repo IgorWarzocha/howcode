@@ -1,0 +1,150 @@
+import { readdir, realpath } from 'node:fs/promises'
+import path from 'node:path'
+import { Type } from '@earendil-works/pi-ai'
+import { defineExtension, defineTool } from '@earendil-works/pi-durable'
+import { createReadTool } from '@earendil-works/pi-durable/tools'
+import { createArtifact, editArtifact, getArtifact, listArtifacts } from '../artifact-state-db.ts'
+import { AttachmentGrantsDoc, authorizeAttachmentPath } from './attachment-grants.ts'
+import { getComposerSkills } from './discovery.ts'
+
+async function skillReadGrants() {
+  const skills = await getComposerSkills({ composerMode: 'chat' })
+  return {
+    files: [],
+    directories: await Promise.all(skills.map((skill) => realpath(path.dirname(skill.filePath)))),
+  }
+}
+
+async function authorizeChatRead(
+  filePath: string,
+  cwd: string,
+  grants: { readonly files: readonly string[]; readonly directories: readonly string[] },
+) {
+  const skillGrants = await skillReadGrants()
+  return authorizeAttachmentPath(filePath, cwd, {
+    files: grants.files,
+    directories: [...grants.directories, ...skillGrants.directories],
+  })
+}
+
+const read = createReadTool()
+const attachmentRead = defineTool({
+  ...read,
+  async execute(args, api, context) {
+    const grants = (await api.snapshot(AttachmentGrantsDoc, api.conversationId, context)) ?? {
+      files: [],
+      directories: [],
+    }
+    const resolved = await authorizeChatRead(args.path, api.env?.cwd ?? process.cwd(), grants)
+    return read.execute({ ...args, path: resolved }, api, context)
+  },
+})
+const attachmentList = defineTool({
+  name: 'ls',
+  description: 'List files in an attached folder.',
+  parameters: Type.Object({ path: Type.String() }),
+  async execute(args, api, context) {
+    const grants = (await api.snapshot(AttachmentGrantsDoc, api.conversationId, context)) ?? {
+      files: [],
+      directories: [],
+    }
+    const resolved = await authorizeAttachmentPath(
+      args.path,
+      api.env?.cwd ?? process.cwd(),
+      grants,
+      true,
+    )
+    const entries = await readdir(resolved, { withFileTypes: true })
+    return {
+      content: [
+        {
+          type: 'text',
+          text: entries.map((entry) => `${entry.name}${entry.isDirectory() ? '/' : ''}`).join('\n'),
+        },
+      ],
+    }
+  },
+})
+
+const artifactTools = [
+  defineTool({
+    name: 'create_artifact',
+    description: 'Create an html, react, or markdown artifact for this conversation.',
+    parameters: Type.Object({
+      slug: Type.String(),
+      kind: Type.Union([Type.Literal('html'), Type.Literal('react'), Type.Literal('markdown')]),
+      content: Type.String(),
+    }),
+    async execute(args, api) {
+      const artifact = createArtifact({ ...args, conversationId: String(api.conversationId) })
+      return {
+        content: [
+          { type: 'text', text: `Created artifact ${artifact.slug} version ${artifact.version}.` },
+        ],
+      }
+    },
+  }),
+  defineTool({
+    name: 'edit_artifact',
+    description: 'Edit an artifact using unique, non-overlapping exact text replacements.',
+    parameters: Type.Object({
+      id: Type.String(),
+      edits: Type.Array(Type.Object({ oldText: Type.String(), newText: Type.String() }), {
+        minItems: 1,
+      }),
+    }),
+    async execute(args, api) {
+      const artifact = editArtifact({
+        slug: args.id,
+        edits: args.edits,
+        conversationId: String(api.conversationId),
+      })
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Edited artifact ${artifact.slug} to version ${artifact.version}.`,
+          },
+        ],
+      }
+    },
+  }),
+  defineTool({
+    name: 'read_artifact',
+    description: 'Read the full current content of an artifact in this conversation.',
+    parameters: Type.Object({ id: Type.String() }),
+    async execute(args, api) {
+      const artifact = getArtifact(args.id, String(api.conversationId))
+      if (!artifact) throw new Error(`Artifact not found: ${args.id}`)
+      return { content: [{ type: 'text', text: JSON.stringify(artifact) }] }
+    },
+  }),
+  defineTool({
+    name: 'list_artifacts',
+    description: 'List artifacts in this conversation.',
+    parameters: Type.Object({}),
+    async execute(_args, api) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              listArtifacts(String(api.conversationId)).map(
+                ({ content: _content, ...artifact }) => artifact,
+              ),
+            ),
+          },
+        ],
+      }
+    },
+  }),
+]
+
+export const ChatTools = defineExtension({
+  name: 'howcode.chat',
+  tools: [attachmentRead, attachmentList, ...artifactTools],
+})
+export const CodeArtifactTools = defineExtension({
+  name: 'howcode.artifacts',
+  tools: artifactTools,
+})

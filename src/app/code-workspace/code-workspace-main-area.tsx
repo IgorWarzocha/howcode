@@ -47,7 +47,6 @@ function getSelectedMainProjectId(
 ) {
   return (state.activeView === 'project' ||
     state.activeView === 'sessions' ||
-    state.activeView === 'extensions' ||
     state.activeView === 'skills') &&
     state.hasSelectedProject
     ? state.selectedProjectId
@@ -92,7 +91,6 @@ function CodeWorkspaceDefaultMain(props: CodeWorkspaceContentProps) {
       onToggleSidebar={props.onToggleSidebar}
       onCloseUtilityView={props.controller.navigation.closeUtilityView}
       onLoadEarlierMessages={props.handleLoadEarlierMessages}
-      onSetExtensionsProjectScopeActive={props.controller.resourceScope.setExtensionsActive}
       onSetSkillsProjectScopeActive={props.controller.resourceScope.setSkillsActive}
       onSelectProject={props.controller.projects.select}
     />

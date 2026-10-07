@@ -1,69 +1,27 @@
 # howcode
 
-Howcode is a desktop app for coding with Pi.
+Howcode is a browser app for coding with Pi. The local Node server runs your agent sessions, terminal, files, and Git workflows.
 
-It gives you:
-
-- threaded Pi chats tied to your projects
-- a built-in terminal
-- project and inbox sidebars
-- git and diff workflows in the app, with some early-release actions still partial
-- local desktop performance instead of a browser tab
-
-## Install / run
+Requires Node 24.15 or newer, below Node 27.
 
 ```bash
 npx howcode
 # or
-npm i -g howcode
+npm install -g howcode
 howcode
 ```
 
-Headless/browser mode:
+Open the access URL printed by the server. Keep the process running while you work. Press Ctrl+C to stop it.
+
+To connect from another device on a trusted network:
 
 ```bash
-bunx howcode --headless
-bunx howcode --headless --host 0.0.0.0 --port 4173
-bunx howcode --headless --host 0.0.0.0 --port 4173 --token my-secret
+howcode --host 0.0.0.0 --port 4173
+howcode --host 0.0.0.0 --port 4173 --token my-secret
 ```
 
-Open `http://<server-ip>:4173/#token=<printed-token>` from another device.
+The default host is `127.0.0.1`. Remote access requires a token. The server generates one unless you pass `--token` or set `HOWCODE_HEADLESS_TOKEN`. Loopback access needs no token by default. Do not expose it to strangers. Project files, commands, terminal processes, and agent tools run on the server machine. Browser-picked files upload to temporary host storage.
 
-Remote host mode requires an access token before the browser can use the local desktop bridge. Pass `--token`,
-set `HOWCODE_HEADLESS_TOKEN`, or use the random token printed at startup. Keep it on a trusted network.
-Files picked, pasted, or dropped from a browser device are uploaded to a temp folder on the host before attaching.
+The package includes the server and browser assets. npm installs the native `node-pty` and `sherpa-onnx-node` dependencies for your platform. Native installation may require a compiler toolchain. No desktop runtime or release archive is downloaded at launch.
 
-This npm package is a small launcher.
-
-On first run, it downloads the matching desktop app for your platform from GitHub Releases and caches it locally.
-After the first successful download, it can fall back to the cached app if release metadata is temporarily unavailable.
-The launcher validates release manifests, serialises concurrent installs, and reports launch failures
-instead of silently detaching a broken executable.
-
-On Windows, the first successful run also creates a Start Menu shortcut for `howcode`, so you do
-not need to find the cached executable or add the cache directory to `PATH`.
-
-## What you actually get
-
-- macOS, Linux, and Windows desktop builds
-- Windows installer artifacts in GitHub Releases
-- Linux AppImage artifacts for direct installs
-- local cached installs after first download
-- desktop builds that bundle Electron/Chromium for a more consistent renderer
-
-## Project
-
-- App repo: https://github.com/IgorWarzocha/howcode
-- Issues: https://github.com/IgorWarzocha/howcode/issues
-
-## Renderer note
-
-Release builds now bundle Electron/Chromium on macOS, Linux, and Windows. The launcher no longer needs to inject the old Linux `WEBKIT_DISABLE_DMABUF_RENDERER` workaround.
-
-Expect downloads to be larger than the native-webview builds in exchange for more consistent rendering behavior.
-
-## Cache location
-
-- macOS: `~/Library/Caches/howcode`
-- Linux: `$XDG_CACHE_HOME/howcode` or `~/.cache/howcode`
-- Windows: `%LOCALAPPDATA%\howcode`
+Update with `npm install -g howcode@latest`. Remove a global install with `npm uninstall -g howcode`. Removing the package does not remove your project files or Howcode data.

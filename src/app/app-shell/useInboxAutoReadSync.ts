@@ -44,7 +44,7 @@ function markInboxThreadRead({
 }) {
   void invokeDesktopAction('inbox.mark-read', {
     projectId: thread.projectId,
-    sessionPath: thread.sessionPath,
+    conversationId: thread.conversationId,
   })
     .then(async () => {
       await refreshInboxThreadState({
@@ -61,22 +61,25 @@ function markInboxThreadRead({
 function syncInboxAutoReadSelection(
   input: Omit<UseInboxAutoReadSyncInput, 'workspaceState'> & {
     activeView: WorkspaceState['activeView']
-    selectedInboxSessionPath: string | null
+    selectedInboxConversationId: string | null
   },
 ) {
   if (!input.inboxQueryIsSuccess) return
   if (input.inboxThreads.length === 0) {
-    if (input.selectedInboxSessionPath !== null) {
-      input.dispatch({ type: 'select-inbox-thread', sessionPath: null })
+    if (input.selectedInboxConversationId !== null) {
+      input.dispatch({ type: 'select-inbox-thread', conversationId: null })
     }
     return
   }
   const selectedInboxThread = input.inboxThreads.find(
-    (thread) => thread.sessionPath === input.selectedInboxSessionPath,
+    (thread) => thread.conversationId === input.selectedInboxConversationId,
   )
   const visibleThread = selectedInboxThread ?? input.inboxThreads[0] ?? null
   if (!selectedInboxThread) {
-    input.dispatch({ type: 'select-inbox-thread', sessionPath: visibleThread?.sessionPath ?? null })
+    input.dispatch({
+      type: 'select-inbox-thread',
+      conversationId: visibleThread?.conversationId ?? null,
+    })
   }
   if (input.activeView !== 'inbox' || !visibleThread?.unread) return
   markInboxThreadRead({
@@ -99,7 +102,7 @@ export function useInboxAutoReadSync({
   queryClient,
   workspaceState,
 }: UseInboxAutoReadSyncInput) {
-  const { activeView, selectedInboxSessionPath } = workspaceState
+  const { activeView, selectedInboxConversationId } = workspaceState
 
   useEffect(() => {
     syncInboxAutoReadSelection({
@@ -110,7 +113,7 @@ export function useInboxAutoReadSync({
       loadProjectThreads,
       queryClient,
       activeView,
-      selectedInboxSessionPath,
+      selectedInboxConversationId,
     })
   }, [
     dispatch,
@@ -120,6 +123,6 @@ export function useInboxAutoReadSync({
     loadProjectThreads,
     queryClient,
     activeView,
-    selectedInboxSessionPath,
+    selectedInboxConversationId,
   ])
 }

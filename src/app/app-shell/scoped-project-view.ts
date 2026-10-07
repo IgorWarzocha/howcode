@@ -1,9 +1,9 @@
 import type { View } from '../types'
 
 export function getProjectSelectionAction(view: View) {
-  return view === 'extensions' || view === 'skills' ? 'set-selected-project' : 'select-project'
+  return view === 'skills' ? 'set-selected-project' : 'select-project'
 }
 
-export function shouldResetProjectScope(activeView: View, scopedView: 'extensions' | 'skills') {
+export function shouldResetProjectScope(activeView: View, scopedView: 'skills') {
   return activeView !== scopedView
 }

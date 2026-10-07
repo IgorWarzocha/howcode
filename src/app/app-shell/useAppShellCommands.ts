@@ -1,15 +1,14 @@
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
-import { isLocalSessionPath } from '@howcode/shared/session-paths'
+import { isLocalConversationId } from '@howcode/shared/conversation-ids'
 import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch, SetStateAction } from 'react'
 import { useCallback } from 'react'
-import type { DesktopActionResult, InboxThread, ShellState } from '../desktop/types'
+import type { DesktopActionResult, InboxThread } from '../desktop/types'
 import { notifyProjectDiffInvalidated } from '../hooks/project-diff-invalidation'
 import { forgetLocalDraftThread } from '../hooks/useDesktopProjectThreads'
 import { desktopQueryKeys } from '../query/desktop-query'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
 import type { View } from '../types'
-import { closePiTuiSession } from './pi-tui-handoff'
 import { removeProjectThreadFromShellState } from './project-thread-cache'
 import { getProjectSelectionAction } from './scoped-project-view'
 import { THREAD_CYCLE_OPEN_ACTION_DELAY_MS, useScheduledThreadOpen } from './useScheduledThreadOpen'
@@ -20,10 +19,8 @@ type HandleAction = (
     | 'project.collapse'
     | 'project.expand'
     | 'thread.open'
-    | 'thread.new'
     | 'inbox.mark-read'
-    | 'inbox.dismiss'
-    | 'composer.reload-settings',
+    | 'inbox.dismiss',
   payload?: Record<string, unknown>,
 ) => Promise<DesktopActionResult | null>
 
@@ -34,10 +31,8 @@ type UseAppShellCommandsInput = {
   handleAction: HandleAction
   queryClient: QueryClient
   setThreadHistoryCompactions: Dispatch<SetStateAction<number>>
-  setThreadRefreshKey: Dispatch<SetStateAction<number>>
   setThreadQueryDeferred: Dispatch<SetStateAction<boolean>>
   setSettingsOpenTarget: Dispatch<SetStateAction<SettingsOpenTarget | null>>
-  shellState: ShellState | null
   workspaceState: WorkspaceState
 }
 
@@ -62,9 +57,7 @@ export function useAppShellCommands({
   queryClient,
   setSettingsOpenTarget,
   setThreadHistoryCompactions,
-  setThreadRefreshKey,
   setThreadQueryDeferred,
-  shellState,
   workspaceState,
 }: UseAppShellCommandsInput) {
   const scheduleThreadOpenAction = useScheduledThreadOpen({
@@ -107,36 +100,32 @@ export function useAppShellCommands({
   }
 
   const clearSelectedUnstartedDraft = () => {
-    const selectedSessionPath = workspaceState.selectedSessionPath
+    const selectedConversationId = workspaceState.selectedConversationId
     const selectedProjectId = workspaceState.selectedProjectId
-    if (
-      workspaceState.takeoverVisible ||
-      !(selectedProjectId && isLocalSessionPath(selectedSessionPath))
-    )
-      return
+    if (!(selectedProjectId && isLocalConversationId(selectedConversationId))) return
 
-    const localSessionPath = selectedSessionPath ?? ''
-    forgetLocalDraftThread(selectedProjectId, localSessionPath)
-    removeProjectThreadFromShellState(queryClient, selectedProjectId, localSessionPath)
+    const localConversationId = selectedConversationId ?? ''
+    forgetLocalDraftThread(selectedProjectId, localConversationId)
+    removeProjectThreadFromShellState(queryClient, selectedProjectId, localConversationId)
   }
 
   const handleThreadOpen = (
     projectId: string,
     threadId: string,
-    sessionPath: string,
+    conversationId: string,
     view?: 'chat' | 'thread' | undefined,
     branchName?: string | null | undefined,
   ) => {
     clearSelectedUnstartedDraft()
     setThreadHistoryCompactions(0)
-    dispatch({ type: 'open-thread', projectId, threadId, sessionPath, view })
-    scheduleThreadOpenAction({ projectId, threadId, sessionPath, view, branchName })
+    dispatch({ type: 'open-thread', projectId, threadId, conversationId, view })
+    scheduleThreadOpenAction({ projectId, threadId, conversationId, view, branchName })
   }
 
   const handleThreadCycle = (
     projectId: string,
     threadId: string,
-    sessionPath: string,
+    conversationId: string,
     view?: 'chat' | 'thread' | undefined,
   ) => {
     setThreadHistoryCompactions(0)
@@ -144,7 +133,7 @@ export function useAppShellCommands({
     scheduleThreadOpenAction({
       projectId,
       threadId,
-      sessionPath,
+      conversationId,
       view,
       delayMs: THREAD_CYCLE_OPEN_ACTION_DELAY_MS,
       deferThreadQuery: true,
@@ -153,12 +142,12 @@ export function useAppShellCommands({
   }
 
   const handleSelectInboxThread = (thread: InboxThread) => {
-    dispatch({ type: 'select-inbox-thread', sessionPath: thread.sessionPath })
+    dispatch({ type: 'select-inbox-thread', conversationId: thread.conversationId })
 
     if (thread.unread) {
       void handleAction('inbox.mark-read', {
         projectId: thread.projectId,
-        sessionPath: thread.sessionPath,
+        conversationId: thread.conversationId,
       })
     }
   }
@@ -166,7 +155,7 @@ export function useAppShellCommands({
   const handleDismissInboxThread = (thread: InboxThread) => {
     void handleAction('inbox.dismiss', {
       projectId: thread.projectId,
-      sessionPath: thread.sessionPath,
+      conversationId: thread.conversationId,
     })
   }
 
@@ -195,70 +184,8 @@ export function useAppShellCommands({
     handleOpenGitOpsView({ filePath })
   }
 
-  const setTakeoverOverrideForSelectedSession = (visible: boolean) => {
-    const sessionPath = workspaceState.selectedSessionPath
-    const globalTakeoverVisible = shellState?.appSettings?.piTuiTakeover
-
-    if (!sessionPath || typeof globalTakeoverVisible !== 'boolean') {
-      return
-    }
-
-    dispatch({
-      type: 'set-session-takeover-override',
-      sessionPath,
-      visible: visible === globalTakeoverVisible ? null : visible,
-    })
-  }
-
-  const handleShowTakeoverTerminal = async () => {
-    if (
-      workspaceState.activeView === 'project' &&
-      composerProjectId &&
-      !workspaceState.selectedSessionPath
-    ) {
-      await handleAction('thread.new', { projectId: composerProjectId })
-    }
-
-    dispatch({ type: 'set-takeover-visible', visible: true })
-    setTakeoverOverrideForSelectedSession(true)
-  }
-
-  const closeTakeover = async ({
-    preserveSessionOverride = false,
-    refreshThread = true,
-  }: {
-    preserveSessionOverride?: boolean
-    refreshThread?: boolean
-  } = {}) => {
-    await closePiTuiSession({
-      projectId: composerProjectId,
-      sessionPath: workspaceState.selectedSessionPath,
-    })
-    dispatch({ type: 'set-takeover-visible', visible: false })
-
-    if (!preserveSessionOverride) {
-      setTakeoverOverrideForSelectedSession(false)
-    }
-
-    if (refreshThread) {
-      setThreadRefreshKey((current) => current + 1)
-    }
-
-    if (workspaceState.selectedSessionPath) {
-      await handleAction('composer.reload-settings', {
-        projectId: composerProjectId,
-        sessionPath: workspaceState.selectedSessionPath,
-      })
-    }
-  }
-
-  const handleReturnToDesktopFromTakeover = () => {
-    void closeTakeover()
-  }
-
   return {
     handleCloseGitOpsView,
-    handleCloseTakeoverTerminal: closeTakeover,
     handleCloseUtilityView,
     handleCollapseAll,
     handleDismissInboxThread,
@@ -270,9 +197,7 @@ export function useAppShellCommands({
       dispatch({ type: getProjectSelectionAction(workspaceState.activeView), projectId }),
     handleSetSelectedProject: (projectId: string) =>
       dispatch({ type: 'set-selected-project', projectId }),
-    handleReturnToDesktopFromTakeover,
     handleSelectInboxThread,
-    handleShowTakeoverTerminal,
     handleShowView,
     handleShowLanding,
     handleThreadOpen,

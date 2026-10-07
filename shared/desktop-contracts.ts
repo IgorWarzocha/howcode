@@ -9,7 +9,6 @@ export type {
   DesktopActionResultData,
   DesktopSettingsUpdatePayload,
 } from './desktop-action-contracts'
-export type { AppUpdateState, AppUpdateStatus } from './desktop-app-update-contracts'
 export type {
   Artifact,
   ArtifactKind,
@@ -18,11 +17,6 @@ export type {
 } from './desktop-artifact-contracts'
 export type { DesktopBridgeCapabilities } from './desktop-bridge-capabilities'
 export type { ChatGroup, ChatSidebarState, ChatThread } from './desktop-chat-contracts'
-export type {
-  DesktopClipboardFilePaths,
-  DesktopClipboardImage,
-  DesktopClipboardSnapshot,
-} from './desktop-clipboard-contracts'
 export type {
   ComposerAttachment,
   ComposerContextUsage,
@@ -38,12 +32,6 @@ export type {
   ComposerStateRequest,
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
-  PiExtensionDialogRequest,
-  PiExtensionShortcut,
-  PiExtensionStatus,
-  PiExtensionUiState,
-  PiExtensionWidget,
-  ProjectTrustRequest,
 } from './desktop-composer-contracts'
 export type {
   DictationModelId,
@@ -56,12 +44,7 @@ export type {
 } from './desktop-dictation-contracts'
 export type { DesktopEvent } from './desktop-event-contracts'
 export type {
-  PiConfiguredPackage,
-  PiConfiguredPackageType,
   PiConfiguredSkill,
-  PiPackageCatalogItem,
-  PiPackageCatalogPage,
-  PiPackageMutationResult,
   PiSkillCatalogItem,
   PiSkillCatalogPage,
   PiSkillMutationResult,
@@ -91,12 +74,10 @@ export type {
   AppSettings,
   GitOpsMode,
   ModelSelection,
-  PiDoubleEscapeAction,
   PiQueueMode,
   PiSettings,
   PiThemeState,
   PiTransportMode,
-  PiTreeFilterMode,
   ProjectDeletionMode,
   ShellState,
 } from './desktop-settings-contracts'

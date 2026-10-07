@@ -1,6 +1,6 @@
 import { ComposerFilePicker } from '../../composer/composer-file-picker'
 import { ComposerPromptInputPanel } from '../../composer/composer-prompt-input-panel'
-import { ComposerPromptPopoverStack } from '../../composer/composer-prompt-popover-stack'
+import { SlashCommandPanel } from '../../composer/composer-slash-command-panel'
 import { composerPanelClass } from '../../ui/classes'
 import { InboxComposerFooter } from './inbox-composer-footer'
 import { InboxAttachmentRail, InboxStopRail } from './inbox-composer-rails'
@@ -68,13 +68,11 @@ export function InboxComposerSurface({
             dictationTranscribing={input.dictationInterimText.length > 0 && !input.dictationActive}
             draft={props.reply.draft}
             errorMessage={props.reply.errorMessage}
-            extensionRunning={false}
             inputLocked={actions.inputLocked}
             placeholderText={props.reply.errorMessage ?? 'Reply to this thread…'}
             promptPopover={
-              <ComposerPromptPopoverStack
-                sessionTreePanelRef={overlay.sessionTreePanelRef}
-                slashCommandPanelRef={overlay.slashCommandPanelRef}
+              <SlashCommandPanel
+                panelRef={overlay.slashCommandPanelRef}
                 slashCommands={autocomplete.slashCommands}
               />
             }
@@ -115,7 +113,7 @@ export function InboxComposerSurface({
             modelButtonRef={overlay.modelButtonRef}
             modelMenuOpen={overlay.openMenu === 'model'}
             modelMenuRef={overlay.modelMenuRef}
-            sessionPath={props.thread.sessionPath}
+            conversationId={props.thread.conversationId}
             onCompact={() => void actions.compact()}
             onDismiss={props.onDismiss}
             onOpenThread={props.onOpenThread}

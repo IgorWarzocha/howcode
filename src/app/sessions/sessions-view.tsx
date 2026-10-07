@@ -26,7 +26,7 @@ type SessionsViewProps = {
   currentBranch: string | null
   onAction: DesktopActionInvoker
   onClose: () => void
-  onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void
+  onOpenThread: (projectId: string, threadId: string, conversationId: string) => void
 }
 
 export function SessionsView({

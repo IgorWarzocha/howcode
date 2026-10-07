@@ -1,4 +1,3 @@
-import { Trash2 } from 'lucide-react'
 import type { AppSettings } from '../../desktop/types'
 import {
   appToneDangerClass,
@@ -25,7 +24,7 @@ export function buildProjectMaintenanceSettingsDescriptors({
       id: 'projects.deletion-mode',
       category: 'howcode',
       title: 'Project deletion cleanup',
-      description: 'Delete only Pi session files, or nuke the full project folder.',
+      description: 'Remove conversations from Howcode, or also delete the project folder.',
       keywords: 'delete deletion cleanup project full clean pi only',
       render: () => (
         <SettingsSegmentedControl
@@ -148,35 +147,6 @@ export function buildProjectMaintenanceSettingsDescriptors({
               ))}
             </div>
           ) : null}
-        </div>
-      ),
-    },
-    {
-      id: 'projects.clipboard-images',
-      category: 'howcode',
-      title: 'Clipboard images',
-      description: 'Delete temp clipboard images.',
-      keywords: 'clipboard images screenshots attachments delete cleanup temp',
-      render: () => (
-        <div className="flex max-w-full items-center justify-end gap-2">
-          {controller.projects.clearImagesStatusMessage ? (
-            <div
-              className={`min-w-0 truncate text-right ${appTypeSmallClass} ${appToneMutedClass}`}
-            >
-              {controller.projects.clearImagesStatusMessage}
-            </div>
-          ) : null}
-          <button
-            type="button"
-            className={cn(composerTextActionButtonClass, 'shrink-0 text-[color:var(--danger)]')}
-            onClick={() => void controller.projects.handleClearClipboardImages()}
-            disabled={
-              controller.projects.clearImagesBusy || !controller.projects.desktopBridgeAvailable
-            }
-          >
-            <Trash2 size={12} />
-            {controller.projects.clearImagesBusy ? 'Deleting…' : 'Delete images'}
-          </button>
         </div>
       ),
     },

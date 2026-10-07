@@ -1,4 +1,5 @@
 import { isComposerThinkingLevel } from './composer-thinking-level'
+import { getLocalDraftBranchName, getPersistedConversationId } from './conversation-ids'
 import type {
   AppSettings,
   ComposerAttachment,
@@ -14,13 +15,12 @@ import type {
   ProjectDiffRenderMode,
   ProjectFileWriteRequest,
 } from './desktop-contracts'
-import { getLocalDraftBranchName, getPersistedSessionPath } from './session-paths'
 
 export function getComposerRequest(payload: DesktopActionPayloadInput): ComposerStateRequest {
   return {
     projectId: typeof payload.projectId === 'string' ? payload.projectId : null,
-    sessionPath: getPersistedSessionPath(
-      typeof payload.sessionPath === 'string' ? payload.sessionPath : null,
+    conversationId: getPersistedConversationId(
+      typeof payload.conversationId === 'string' ? payload.conversationId : null,
     ),
     composerMode:
       payload.composerMode === 'chat' || payload.composerMode === 'code'
@@ -31,7 +31,7 @@ export function getComposerRequest(payload: DesktopActionPayloadInput): Composer
       typeof payload.branchName === 'string'
         ? payload.branchName
         : getLocalDraftBranchName(
-            typeof payload.sessionPath === 'string' ? payload.sessionPath : null,
+            typeof payload.conversationId === 'string' ? payload.conversationId : null,
           ),
   }
 }
@@ -67,8 +67,8 @@ export function getProjectFileWriteRequest(
   }
 }
 
-export function getSessionPath(payload: DesktopActionPayloadInput) {
-  return typeof payload.sessionPath === 'string' ? payload.sessionPath : null
+export function getConversationId(payload: DesktopActionPayloadInput) {
+  return typeof payload.conversationId === 'string' ? payload.conversationId : null
 }
 
 export function getThreadId(payload: DesktopActionPayloadInput) {
@@ -336,9 +336,6 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === 'gitDiffIncludeUntrackedDefault' ||
     payload.key === 'projectDeletionMode' ||
     payload.key === 'useAgentsSkillsPaths' ||
-    payload.key === 'devUpdateBranch' ||
-    payload.key === 'betaUpdateBranch' ||
-    payload.key === 'piTuiTakeover' ||
     payload.key === 'hideSidebarSessionCounts' ||
     payload.key === 'hoverToFocus' ||
     payload.key === 'hoverToBlur' ||
@@ -348,59 +345,10 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     : null
 }
 
-export function getPiExtensionRequestId(payload: DesktopActionPayloadInput) {
-  return typeof payload.requestId === 'string' ? payload.requestId : null
-}
-
-export function getPiExtensionShortcut(payload: DesktopActionPayloadInput) {
-  return typeof payload.shortcut === 'string' ? payload.shortcut : null
-}
-
-export function getPiExtensionEditorState(payload: DesktopActionPayloadInput) {
-  return {
-    editorSelectionEnd:
-      typeof payload.editorSelectionEnd === 'number' ? payload.editorSelectionEnd : undefined,
-    editorSelectionStart:
-      typeof payload.editorSelectionStart === 'number' ? payload.editorSelectionStart : undefined,
-    editorText: typeof payload.editorText === 'string' ? payload.editorText : undefined,
-  }
-}
-
-export function getPiExtensionDialogAnswer(payload: DesktopActionPayloadInput) {
-  return {
-    cancelled: payload.cancelled === true,
-    confirmed: payload.confirmed === true,
-    value: typeof payload.value === 'string' ? payload.value : undefined,
-  }
-}
-
-export function getProjectTrustDecision(payload: DesktopActionPayloadInput) {
-  return typeof payload.trusted === 'boolean' ? payload.trusted : null
-}
-
-export function getProjectTrustCwd(payload: DesktopActionPayloadInput) {
-  return typeof payload.cwd === 'string' && payload.cwd.length > 0 ? payload.cwd : null
-}
-
-export function getSessionTreeNavigate(payload: DesktopActionPayloadInput) {
+export function getConversationFork(payload: DesktopActionPayloadInput) {
   const targetEntryId =
     typeof payload.targetEntryId === 'string' ? payload.targetEntryId.trim() : ''
-  if (!targetEntryId) return null
-  return {
-    targetEntryId,
-    summarize: payload.summarize === true,
-    label: typeof payload.label === 'string' ? payload.label.trim() : '',
-  }
-}
-
-export function getSessionTreeLabel(payload: DesktopActionPayloadInput) {
-  const targetEntryId =
-    typeof payload.targetEntryId === 'string' ? payload.targetEntryId.trim() : ''
-  if (!targetEntryId) return null
-  return {
-    targetEntryId,
-    label: typeof payload.label === 'string' ? payload.label.trim() : '',
-  }
+  return targetEntryId ? { targetEntryId } : null
 }
 
 export function getSettingsThinkingLevel(payload: DesktopActionPayloadInput) {

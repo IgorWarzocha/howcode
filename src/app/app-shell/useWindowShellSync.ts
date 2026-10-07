@@ -1,7 +1,7 @@
-import { getPersistedSessionPath } from '@howcode/shared/session-paths'
+import { getPersistedConversationId } from '@howcode/shared/conversation-ids'
 import type { Dispatch } from 'react'
 import { useEffect } from 'react'
-import { watchSessionQuery } from '../query/desktop-query'
+import { watchConversationQuery } from '../query/desktop-query'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
 import { isUtilityView } from '../state/workspace'
 
@@ -12,19 +12,19 @@ export function shouldCloseUtilityViewOnEscape(
   return isUtilityView(activeView) && event.key === 'Escape' && !event.defaultPrevented
 }
 
-export function useWatchedSessionSync(workspaceState: WorkspaceState) {
+export function useWatchedConversationSync(workspaceState: WorkspaceState) {
   useEffect(() => {
-    const watchedSessionPath =
+    const watchedConversationId =
       workspaceState.activeView === 'chat' ||
       workspaceState.activeView === 'thread' ||
       workspaceState.activeView === 'gitops'
-        ? getPersistedSessionPath(workspaceState.selectedSessionPath)
+        ? getPersistedConversationId(workspaceState.selectedConversationId)
         : null
 
-    void watchSessionQuery(watchedSessionPath).catch((error) => {
-      console.warn('Failed to update watched Pi session.', error)
+    void watchConversationQuery(watchedConversationId).catch((error) => {
+      console.warn('Failed to watch conversation.', error)
     })
-  }, [workspaceState.activeView, workspaceState.selectedSessionPath])
+  }, [workspaceState.activeView, workspaceState.selectedConversationId])
 }
 
 export function useUtilityViewEscape({

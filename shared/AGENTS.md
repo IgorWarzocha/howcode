@@ -1,7 +1,7 @@
 - `shared/` is a cross-runtime contract boundary; treat edits here as API changes.
-- Keep action definitions, payload contracts, coverage maps, IPC channels, and bridge capabilities synchronized.
-- Shared helpers stay pure and runtime-agnostic; verify Electron, desktop-service, headless, and renderer consumers after contract changes.
-- `effect-shutdown.ts` is the cross-runtime idempotence/deadline primitive; process and Electron adapters supply their cleanup effects.
+- Keep action definitions, payload contracts, IPC channels, and bridge capabilities synchronized.
+- Shared helpers stay pure and runtime-agnostic; verify server, backend-service, and renderer consumers after contract changes.
+- `effect-shutdown.ts` is the cross-runtime idempotence/deadline primitive; process adapters supply their cleanup effects.
 - Keep leaf contracts acyclic. When domains need the same primitive model, extract it to the smallest named contract owner rather than making contract files import each other or adding a catch-all types file.
 - Derive composer boundary types from `desktop-composer-schema.ts`; extend that schema rather than adding parallel event-only validators.
-- Package, Pi settings/theme, session-tree, and thread-search wire types likewise derive from their named Schema modules.
+- Skill, Pi settings/theme, and thread-search wire types likewise derive from their named Schema modules.

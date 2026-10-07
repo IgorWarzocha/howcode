@@ -12,7 +12,7 @@ export function findUnboundWorkspaceShellTerminal(
   store: TerminalSessionStore,
   request: TerminalOpenRequest,
 ) {
-  if (!request.sessionPath) return null
+  if (!request.conversationId) return null
   const cwd = request.cwd ?? request.projectId
   return (
     store
@@ -20,9 +20,8 @@ export function findUnboundWorkspaceShellTerminal(
       .find(
         (record) =>
           record.snapshot.projectId === request.projectId &&
-          record.snapshot.sessionPath === null &&
-          record.snapshot.cwd === cwd &&
-          record.snapshot.launchMode === (request.launchMode ?? 'shell'),
+          record.snapshot.conversationId === null &&
+          record.snapshot.cwd === cwd,
       ) ?? null
   )
 }
@@ -41,7 +40,7 @@ export async function bindWorkspaceTerminalToSession(input: {
   input.record.snapshot = {
     ...input.record.snapshot,
     sessionId: input.sessionId,
-    sessionPath: input.request.sessionPath ?? null,
+    conversationId: input.request.conversationId ?? null,
     cols: input.request.cols,
     rows: input.request.rows,
     updatedAt: nowIso(),

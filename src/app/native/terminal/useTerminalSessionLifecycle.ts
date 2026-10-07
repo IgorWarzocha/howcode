@@ -16,20 +16,13 @@ import {
   getTerminalViewportIdentity,
   type TerminalSessionRelease,
 } from './terminal-session-ownership'
-import { getTerminalCleanupAction, type TerminalSessionPolicy } from './terminal-session-policy'
-import {
-  cancelScheduledTerminalClose,
-  scheduleTerminalClose,
-  scheduleTerminalCloseAfterSessionFileIdle,
-} from './terminalViewportSessionLifecycle'
+import { getTerminalCleanupAction } from './terminal-session-policy'
 import {
   clearTerminal,
   MIN_INITIAL_TERMINAL_COLS,
   MIN_INITIAL_TERMINAL_ROWS,
   writeSystemMessage,
 } from './terminalViewportUtils'
-
-type TerminalLaunchMode = 'shell' | 'pi-session'
 
 type TerminalSize = { cols: number; rows: number }
 
@@ -43,16 +36,14 @@ type TerminalSessionLifecycleInput = {
   getCurrentSize: () => TerminalSize
   handleTerminalResize: (cols: number, rows: number) => void
   lastSentSizeRef: MutableRefObject<{ sessionId: string; cols: number; rows: number } | null>
-  policy: TerminalSessionPolicy
   projectId: string
   resetTerminal: (history?: string) => void
   scheduleTerminalResizeSettlingPasses: () => void
   scheduleXtermBottomAlign: () => void
   sessionIdRef: MutableRefObject<string | null>
   terminalHistoryRef: MutableRefObject<string>
-  terminalPersistedSessionPath: string | null
   terminalReadyRevision: number
-  terminalSessionPath: string | null
+  terminalConversationId: string | null
   writeToTerminal: (data: string | Uint8Array) => void
 }
 
@@ -65,16 +56,6 @@ function releaseTerminalSession(release: TerminalSessionRelease) {
         sessionId: release.sessionId,
         deleteHistory: release.action.deleteHistory,
       })
-      return
-    case 'close-after-delay':
-      scheduleTerminalClose(release.sessionId, release.action.delayMs)
-      return
-    case 'close-after-session-file-idle':
-      void scheduleTerminalCloseAfterSessionFileIdle(
-        release.sessionId,
-        release.action.pollMs,
-        release.action.maxKeepAliveMs,
-      )
       return
     default:
       return
@@ -96,7 +77,6 @@ function rememberOpenedSession(input: {
     cols: input.snapshot.cols,
     rows: input.snapshot.rows,
   }
-  cancelScheduledTerminalClose(input.snapshot.sessionId)
 }
 
 function activateOpenedSession(input: {
@@ -137,11 +117,9 @@ export function useTerminalSessionLifecycle(input: TerminalSessionLifecycleInput
     input.lastSentSizeRef.current = null
     input.terminalHistoryRef.current = ''
     input.resetTerminal()
-    const launchMode: TerminalLaunchMode = input.policy.kind
     const viewportIdentity = getTerminalViewportIdentity({
-      launchMode,
       projectId: input.projectId,
-      sessionPath: input.terminalSessionPath,
+      conversationId: input.terminalConversationId,
     })
     const releaseReadyTerminalSessions = () => {
       queueMicrotask(() => {
@@ -198,8 +176,7 @@ export function useTerminalSessionLifecycle(input: TerminalSessionLifecycleInput
       }
       const snapshot = await openDesktopTerminal({
         projectId: input.projectId,
-        sessionPath: input.terminalSessionPath,
-        launchMode,
+        conversationId: input.terminalConversationId,
         cols: size.cols,
         rows: size.rows,
       })
@@ -211,11 +188,7 @@ export function useTerminalSessionLifecycle(input: TerminalSessionLifecycleInput
 
       const adopted = terminalSessionOwnership.opened(viewport, {
         sessionId: snapshot.sessionId,
-        action: getTerminalCleanupAction({
-          policy: input.policy,
-          terminalHistory: snapshot.history,
-          terminalPersistedSessionPath: input.terminalPersistedSessionPath,
-        }),
+        action: getTerminalCleanupAction(snapshot.history),
       })
       releaseReadyTerminalSessions()
       if (!adopted) return
@@ -248,11 +221,7 @@ export function useTerminalSessionLifecycle(input: TerminalSessionLifecycleInput
       unsubscribe()
       terminalSessionOwnership.leave(
         viewport,
-        getTerminalCleanupAction({
-          policy: input.policy,
-          terminalHistory: input.terminalHistoryRef.current,
-          terminalPersistedSessionPath: input.terminalPersistedSessionPath,
-        }),
+        getTerminalCleanupAction(input.terminalHistoryRef.current),
       )
       releaseReadyTerminalSessions()
     }

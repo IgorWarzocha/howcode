@@ -28,16 +28,16 @@ function findProject(projects: readonly ShellProject[], projectId: string | null
   return projects.find((project) => project.id === projectId) ?? null
 }
 
-function findThreadBySessionPath(
+function findThreadByConversationId(
   project: ShellProject | null,
-  sessionPath: string | null | undefined,
+  conversationId: string | null | undefined,
 ) {
-  if (!(project && sessionPath)) return null
-  return project.threads.find((thread) => thread.sessionPath === sessionPath) ?? null
+  if (!(project && conversationId)) return null
+  return project.threads.find((thread) => thread.conversationId === conversationId) ?? null
 }
 
-function getPayloadSessionPath(payload: AnyDesktopActionPayload) {
-  return typeof payload.sessionPath === 'string' ? payload.sessionPath : null
+function getPayloadConversationId(payload: AnyDesktopActionPayload) {
+  return typeof payload.conversationId === 'string' ? payload.conversationId : null
 }
 
 function getPayloadProjectId(payload: AnyDesktopActionPayload) {
@@ -59,7 +59,7 @@ export function getBranchResumeGuardCheck(input: {
   const project = findProject(input.shellState?.projects ?? [], projectId)
   if (!project || project.worktree?.isMain === false) return { shouldSwitch: false }
 
-  const thread = findThreadBySessionPath(project, getPayloadSessionPath(input.payload))
+  const thread = findThreadByConversationId(project, getPayloadConversationId(input.payload))
   const targetBranch = getTargetThreadBranch(thread, input.payload)
   if (!targetBranch) return { shouldSwitch: false }
 

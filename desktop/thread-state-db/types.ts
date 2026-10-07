@@ -1,7 +1,7 @@
-export type SessionSummaryRecord = {
+export type ConversationSummaryRecord = {
   id: string
   cwd: string
-  sessionPath: string
+  conversationId: string
   title: string
   lastModifiedMs: number
   branchName?: string | undefined | null | undefined
@@ -11,28 +11,11 @@ export type ProjectRow = typeof ProjectRowSchema.Type
 export type ThreadRow = typeof ThreadRowSchema.Type
 export type InboxThreadRow = typeof InboxThreadRowSchema.Type
 
-export type ThreadInboxMessageRecord = {
-  sessionPath: string
-  userPrompt: string | null
-  content: string[]
-  preview: string | null
-  lastAssistantAtMs: number
-}
-
-export type InboxPathRow = {
-  sessionPath: string
-}
-
-export type ThreadAssistantSnapshotRow = {
-  messageJson: string | null
-  preview: string | null
-}
-
 export type ArchivedThreadRow = typeof ArchivedThreadRowSchema.Type
 
 export type ThreadPathRow = {
   id?: string | undefined
-  sessionPath: string
+  conversationId: string
 }
 
 export type ProjectUsageTotalsRow = {
@@ -54,13 +37,6 @@ export type ThreadDiffPreferencesRow = {
 
 export type ThreadCwdRow = {
   cwd: string
-}
-
-export type ThreadDeletionSnapshotRow = {
-  cwd: string
-  title: string
-  sessionPath: string
-  lastModifiedMs: number
 }
 
 import type {

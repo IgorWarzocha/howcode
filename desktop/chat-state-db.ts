@@ -1,17 +1,11 @@
 import { randomUUID } from 'node:crypto'
-import path from 'node:path'
 import * as Effect from 'effect/Effect'
 import * as Schema from 'effect/Schema'
-import * as SqlClient from 'effect/unstable/sql/SqlClient'
+import * as SqlClient from 'effect/sql/SqlClient'
 import type { ChatSidebarState, ChatThread } from '../shared/desktop-contracts.ts'
-import { getChatSessionDir } from './chat-session-dir.ts'
 import { databaseOperation } from './thread-state-db/db.ts'
 import { mapThreadRow } from './thread-state-db/mappers.ts'
-import {
-  decodePersistedRow,
-  decodePersistedRows,
-  ThreadRowSchema,
-} from './thread-state-db/row-schema.ts'
+import { decodePersistedRows, ThreadRowSchema } from './thread-state-db/row-schema.ts'
 
 const ChatGroupRowSchema = Schema.Struct({
   id: Schema.String,
@@ -27,12 +21,6 @@ const ChatThreadGroupRowSchema = Schema.Struct({
 })
 
 type ChatThreadGroupRow = typeof ChatThreadGroupRowSchema.Type
-
-export function isChatSessionPath(sessionPath: string) {
-  const chatSessionDir = getChatSessionDir()
-  const relativePath = path.relative(chatSessionDir, sessionPath)
-  return relativePath.length > 0 && !relativePath.startsWith('..') && !path.isAbsolute(relativePath)
-}
 
 const createChatGroupOperation = Effect.fn('ChatState.createGroup')(function* (name: string) {
   const trimmedName = name.trim()
@@ -98,25 +86,25 @@ const reorderChatGroupsOperation = Effect.fn('ChatState.reorderGroups')(function
 export const reorderChatGroups = databaseOperation(reorderChatGroupsOperation)
 
 const moveChatThreadOperation = Effect.fn('ChatState.moveThread')(function* (
-  sessionPath: string,
+  conversationId: string,
   groupId: string | null,
 ) {
-  yield* upsertChatThreadOperation({ sessionPath, groupId, updateGroup: true })
+  yield* upsertChatThreadOperation({ conversationId, groupId, updateGroup: true })
 })
 
 export const moveChatThread = databaseOperation(moveChatThreadOperation)
 
 const deleteChatThreadOperation = Effect.fn('ChatState.deleteThread')(function* (
-  sessionPath: string,
+  conversationId: string,
 ) {
   const sql = yield* SqlClient.SqlClient
-  yield* sql.unsafe('DELETE FROM chat_threads WHERE session_path = ?', [sessionPath])
+  yield* sql.unsafe('DELETE FROM chat_conversations WHERE conversation_id = ?', [conversationId])
 })
 
 export const deleteChatThread = databaseOperation(deleteChatThreadOperation)
 
 type UpsertChatThreadOptions = {
-  sessionPath: string
+  conversationId: string
   groupId?: string | undefined | null | undefined
   updateGroup?: boolean | undefined
 }
@@ -124,24 +112,22 @@ type UpsertChatThreadOptions = {
 const upsertChatThreadOperation = Effect.fn('ChatState.upsertThread')(function* (
   options: UpsertChatThreadOptions,
 ) {
-  if (!isChatSessionPath(options.sessionPath)) return
   const sql = yield* SqlClient.SqlClient
   yield* sql.unsafe(
     `
-        INSERT INTO chat_threads (session_path, group_id)
+        INSERT INTO chat_conversations (conversation_id, group_id)
         VALUES (?, ?)
-        ON CONFLICT(session_path) DO UPDATE SET
-          group_id = CASE WHEN ? THEN excluded.group_id ELSE chat_threads.group_id END,
+        ON CONFLICT(conversation_id) DO UPDATE SET
+          group_id = CASE WHEN ? THEN excluded.group_id ELSE chat_conversations.group_id END,
           updated_at = CURRENT_TIMESTAMP
       `,
-    [options.sessionPath, options.groupId ?? null, options.updateGroup ? 1 : 0],
+    [options.conversationId, options.groupId ?? null, options.updateGroup ? 1 : 0],
   )
 })
 
 export const upsertChatThread = databaseOperation(upsertChatThreadOperation)
 
-function mapChatThreadRow(input: unknown): ChatThread {
-  const row: ChatThreadGroupRow = decodePersistedRow(ChatThreadGroupRowSchema, input, 'chat thread')
+function mapChatThreadRow(row: ChatThreadGroupRow): ChatThread {
   return { ...mapThreadRow(row), groupId: row.groupId, projectId: row.projectId }
 }
 
@@ -172,31 +158,30 @@ const getChatSidebarStateOperation = Effect.fn('ChatState.getSidebarState')(func
     yield* sql.unsafe(
       `
         SELECT
-          threads.id AS id,
-          threads.cwd AS projectId,
-          threads.title AS title,
-          threads.session_path AS sessionPath,
-          COALESCE(inbox_items.last_assistant_preview, threads.last_assistant_preview) AS summary,
-          threads.running AS running,
-          COALESCE(inbox_items.unread, 0) AS unread,
-          threads.pinned AS pinned,
-          threads.last_modified_ms AS lastModifiedMs,
-          chat_threads.group_id AS groupId
-        FROM threads
-        LEFT JOIN chat_threads ON chat_threads.session_path = threads.session_path
-        LEFT JOIN inbox_items ON inbox_items.session_path = threads.session_path
-        WHERE threads.archived = 0
-        ORDER BY threads.pinned DESC, COALESCE(chat_threads.order_index, threads.last_modified_ms) DESC, threads.title COLLATE NOCASE ASC
+          conversation_facts.id AS id,
+          conversation_facts.cwd AS projectId,
+          conversation_facts.title AS title,
+          conversation_facts.conversation_id AS conversationId,
+          conversation_facts.last_assistant_preview AS summary,
+          conversation_facts.running AS running,
+          COALESCE(conversation_inbox.unread, 0) AS unread,
+          conversation_facts.pinned AS pinned,
+          conversation_facts.branch_name AS branchName,
+          conversation_facts.last_modified_ms AS lastModifiedMs,
+          chat_conversations.group_id AS groupId
+        FROM conversation_facts
+        INNER JOIN chat_conversations ON chat_conversations.conversation_id = conversation_facts.conversation_id
+        LEFT JOIN conversation_inbox ON conversation_inbox.conversation_id = conversation_facts.conversation_id
+        WHERE conversation_facts.deleted = 0 AND conversation_facts.archived = 0
+        ORDER BY conversation_facts.pinned DESC, COALESCE(chat_conversations.order_index, conversation_facts.last_modified_ms) DESC, conversation_facts.title COLLATE NOCASE ASC
       `,
     ),
     'chat thread',
   )
 
-  const chatRows = rows.filter((row) => isChatSessionPath(row.sessionPath))
-
   const groupsById = new Map(groups.map((group) => [group.id, group]))
   const ungroupedThreads: ChatThread[] = []
-  for (const row of chatRows) {
+  for (const row of rows) {
     const thread = mapChatThreadRow(row)
     const group = thread.groupId ? groupsById.get(thread.groupId) : null
     if (group) group.threads.push(thread)

@@ -23,7 +23,7 @@ type SidebarChatSectionProps = {
   selectedThreadId: string | null
   onCreateGroup: (name: string) => Promise<unknown>
   onSelectGroup: (groupId: string | null) => void
-  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
+  onThreadOpen: (projectId: string, threadId: string, conversationId: string) => void
   onNewChat: (groupId: string | null) => void
   onRefresh: () => Promise<unknown>
   onAction: DesktopActionInvoker

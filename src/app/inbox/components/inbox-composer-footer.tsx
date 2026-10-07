@@ -39,7 +39,7 @@ type InboxComposerFooterProps = {
   modelButtonRef: RefObject<HTMLButtonElement | null>
   modelMenuOpen: boolean
   modelMenuRef: RefObject<HTMLDivElement | null>
-  sessionPath: string | null
+  conversationId: string | null
   onCompact: () => void
   onDismiss: () => void
   onOpenThread: () => void
@@ -60,7 +60,7 @@ export function InboxComposerFooter({
   modelButtonRef,
   modelMenuOpen,
   modelMenuRef,
-  sessionPath,
+  conversationId,
   onCompact,
   onDismiss,
   onOpenThread,
@@ -85,7 +85,7 @@ export function InboxComposerFooter({
         <div className="absolute top-0 right-0">
           <ComposerContextMeter
             contextUsage={contextUsage}
-            compactDisabled={isStreaming || isCompacting || localActionPending || !sessionPath}
+            compactDisabled={isStreaming || isCompacting || localActionPending || !conversationId}
             isCompacting={isCompacting}
             onCompact={onCompact}
           />

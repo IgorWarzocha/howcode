@@ -37,20 +37,19 @@ type SidebarProps = {
   sidebarVisibleProjectIds: string[] | null | undefined
   protectedProjectId?: string | null
   activeView: View
-  selectedInboxSessionPath: string | null
+  selectedInboxConversationId: string | null
   selectedProjectId: string
   selectedThreadId: string | null
   selectedChatGroupId: string | null
   settingsOpen: boolean
   projectScopeLockActive: boolean
   terminalRunningWorkspaceIds: ReadonlySet<string>
-  terminalRunningSessionPaths: ReadonlySet<string>
+  terminalRunningConversationIds: ReadonlySet<string>
   collapsedProjectIds: Record<string, boolean>
   onAction: DesktopActionInvoker
   onShowView: (view: SidebarNavigableView) => void
   onToggleSettings: () => void
   onToggleSidebar: () => void
-  onOpenExtensionsView: () => void
   onOpenAbout: () => void
   onOpenSkillsView: () => void
   onOpenSettingsPanel: (target?: SettingsOpenTarget) => void
@@ -65,7 +64,7 @@ type SidebarProps = {
   onProjectTargetSelected?: (() => void) | undefined
   onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
   onSelectInboxThread: (thread: InboxThread) => void
-  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
+  onThreadOpen: (projectId: string, threadId: string, conversationId: string) => void
   onToggleProjectCollapse: (projectId: string) => void
   compactMode?: boolean
 }
@@ -114,9 +113,9 @@ function SidebarContent(props: SidebarProps) {
     return (
       <SidebarInboxSection
         appLaunchedAtMs={props.appLaunchedAtMs}
-        terminalRunningSessionPaths={props.terminalRunningSessionPaths}
+        terminalRunningConversationIds={props.terminalRunningConversationIds}
         threads={props.inboxThreads}
-        selectedSessionPath={props.selectedInboxSessionPath}
+        selectedConversationId={props.selectedInboxConversationId}
         onAction={props.onAction}
         onDismissThread={props.onDismissInboxThread}
         onSelectThread={props.onSelectInboxThread}
@@ -140,7 +139,7 @@ function SidebarContent(props: SidebarProps) {
       />
     )
   }
-  if (props.activeView !== 'extensions' && props.activeView !== 'skills') {
+  if (props.activeView !== 'skills') {
     return (
       <ProjectWorkSection
         activeView={props.activeView}
@@ -152,7 +151,7 @@ function SidebarContent(props: SidebarProps) {
         selectedProjectId={props.selectedProjectId}
         selectedThreadId={props.selectedThreadId}
         terminalRunningWorkspaceIds={props.terminalRunningWorkspaceIds}
-        terminalRunningSessionPaths={props.terminalRunningSessionPaths}
+        terminalRunningConversationIds={props.terminalRunningConversationIds}
         onAction={props.onAction}
         appSettings={props.appSettings}
         onLoadProjectThreads={props.onLoadProjectThreads}
@@ -178,7 +177,7 @@ function SidebarContent(props: SidebarProps) {
       selectedProjectId={props.selectedProjectId}
       selectedThreadId={props.selectedThreadId}
       terminalRunningWorkspaceIds={props.terminalRunningWorkspaceIds}
-      terminalRunningSessionPaths={props.terminalRunningSessionPaths}
+      terminalRunningConversationIds={props.terminalRunningConversationIds}
       onAction={props.onAction}
       appSettings={props.appSettings}
       onLoadProjectThreads={props.onLoadProjectThreads}
@@ -206,20 +205,19 @@ export function Sidebar({
   sidebarVisibleProjectIds,
   protectedProjectId = null,
   activeView,
-  selectedInboxSessionPath,
+  selectedInboxConversationId,
   selectedProjectId,
   selectedThreadId,
   selectedChatGroupId,
   settingsOpen,
   projectScopeLockActive,
   terminalRunningWorkspaceIds,
-  terminalRunningSessionPaths,
+  terminalRunningConversationIds,
   collapsedProjectIds,
   onAction,
   onShowView,
   onToggleSettings,
   onToggleSidebar,
-  onOpenExtensionsView,
   onOpenAbout,
   onOpenSkillsView,
   onOpenSettingsPanel,
@@ -243,7 +241,7 @@ export function Sidebar({
   const settingsMenuId = 'sidebar-settings-menu'
   const settingsMenuPresent = useAnimatedPresence(settingsOpen)
   const codeModeActive = isCodeModeActive(activeView)
-  const showModeSelection = activeView !== 'extensions' && activeView !== 'skills'
+  const showModeSelection = activeView !== 'skills'
   const closeSettings = useCallback(() => {
     if (settingsOpen) {
       onToggleSettings()
@@ -269,20 +267,19 @@ export function Sidebar({
     sidebarVisibleProjectIds,
     protectedProjectId,
     activeView,
-    selectedInboxSessionPath,
+    selectedInboxConversationId,
     selectedProjectId,
     selectedThreadId,
     selectedChatGroupId,
     settingsOpen,
     projectScopeLockActive,
     terminalRunningWorkspaceIds,
-    terminalRunningSessionPaths,
+    terminalRunningConversationIds,
     collapsedProjectIds,
     onAction,
     onShowView,
     onToggleSettings,
     onToggleSidebar,
-    onOpenExtensionsView,
     onOpenAbout,
     onOpenSkillsView,
     onOpenSettingsPanel,
@@ -306,9 +303,7 @@ export function Sidebar({
     <aside
       aria-label="Workspace sidebar"
       data-pulse-active={projectScopeLockActive ? 'true' : 'false'}
-      data-project-target-mode={
-        activeView === 'extensions' || activeView === 'skills' ? 'true' : 'false'
-      }
+      data-project-target-mode={activeView === 'skills' ? 'true' : 'false'}
       className="sidebar-shell motion-surface-pulse motion-sidebar-selection-pulse relative"
     >
       <div className="sidebar-shell-row sidebar-shell-row--top">
@@ -363,7 +358,6 @@ export function Sidebar({
             menuId={settingsMenuId}
             open={settingsOpen}
             panelRef={settingsMenuRef}
-            onOpenExtensionsView={onOpenExtensionsView}
             onOpenAbout={onOpenAbout}
             onOpenSkillsView={onOpenSkillsView}
             onOpenSettingsPanel={onOpenSettingsPanel}

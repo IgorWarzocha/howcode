@@ -1,56 +1,18 @@
-import { useEffect, useState } from 'react'
 import type { DesktopAction } from '../desktop/actions'
 import { getErrorMessage } from '../desktop/error-messages'
 import type { DesktopActionInvoker, DesktopActionResult } from '../desktop/types'
 import { hasDesktopBridgeQuery, invokeDesktopActionQuery } from '../query/desktop-query'
 
 export const desktopBridgeUnavailableMessage =
-  'Desktop bridge is unavailable. Restart the dev server or run `bun run dev` for the full desktop app.'
+  'Server connection is unavailable. Reload the page or check that the Howcode server is running.'
 
 export function hasDesktopBridge() {
   return hasDesktopBridgeQuery()
 }
 
 export function useDesktopBridgeAvailable() {
-  const [available, setAvailable] = useState(() => {
-    if (!hasDesktopBridge()) {
-      return false
-    }
-
-    return !window.howcodeDevWebBridge
-  })
-
-  useEffect(() => {
-    if (!hasDesktopBridge()) {
-      setAvailable(false)
-      return
-    }
-
-    if (!window.howcodeDevWebBridge) {
-      setAvailable(true)
-      return
-    }
-
-    let cancelled = false
-    setAvailable(false)
-    void fetch('/__howcode/config', { cache: 'no-store' })
-      .then((response) => {
-        if (!cancelled) {
-          setAvailable(response.ok)
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setAvailable(false)
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  return available
+  // Bootstrap authenticates the HTTP bridge before mounting the app.
+  return hasDesktopBridge()
 }
 
 const invokeDesktopAction: DesktopActionInvoker = async (
@@ -88,7 +50,7 @@ const invokeDesktopAction: DesktopActionInvoker = async (
       at: new Date().toISOString(),
       payload: { action, payload },
       result: {
-        error: getErrorMessage(error, 'Desktop action request failed.'),
+        error: getErrorMessage(error, 'Server action request failed.'),
       },
     }
   }

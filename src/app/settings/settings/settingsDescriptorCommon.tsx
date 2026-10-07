@@ -34,20 +34,6 @@ export function buildCommonSettingsDescriptors({
       ),
     },
     {
-      id: 'common.pi-tui-takeover',
-      category: 'howcode',
-      title: 'Open in TUI',
-      description: 'Always use Pi TUI takeover.',
-      keywords: 'takeover terminal tui open conversations',
-      render: () => (
-        <ToggleBox
-          checked={appSettings.piTuiTakeover}
-          label="Open in TUI"
-          onClick={controller.app.togglePiTuiTakeover}
-        />
-      ),
-    },
-    {
       id: 'common.hide-sidebar-session-counts',
       category: 'howcode',
       title: 'Hide sidebar counts',

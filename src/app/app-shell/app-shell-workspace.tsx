@@ -8,7 +8,6 @@ import type { AppShellController } from './useAppShellController'
 type AppShellWorkspaceProps = {
   controller: AppShellController
   activeComposerState: AppShellController['composer']['state']
-  activePiExtensionUiState: AppShellController['composer']['extensionUiState']
   activeThreadData: AppShellController['thread']['activeData']
   composerProjectId: string
   currentProjectName: string
@@ -16,7 +15,7 @@ type AppShellWorkspaceProps = {
   diffRenderMode: ProjectDiffRenderMode
   terminalDrawerVisible: boolean
   terminalDrawerOverlay?: boolean
-  terminalSessionPath: string | null
+  terminalConversationId: string | null
   workspaceContentClass: string
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
   onSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void
@@ -29,7 +28,6 @@ type AppShellWorkspaceProps = {
 export function AppShellWorkspace({
   controller,
   activeComposerState,
-  activePiExtensionUiState,
   activeThreadData,
   composerProjectId,
   currentProjectName,
@@ -37,7 +35,7 @@ export function AppShellWorkspace({
   diffRenderMode,
   terminalDrawerVisible,
   terminalDrawerOverlay = false,
-  terminalSessionPath,
+  terminalConversationId,
   workspaceContentClass,
   onSetDiffBaseline,
   onSetDiffRenderMode,
@@ -53,12 +51,11 @@ export function AppShellWorkspace({
       <ChatWorkspaceView
         controller={controller}
         activeComposerState={activeComposerState}
-        activePiExtensionUiState={activePiExtensionUiState}
         activeThreadData={activeThreadData}
         composerProjectId={composerProjectId}
         diffBaseline={diffBaseline}
         diffRenderMode={diffRenderMode}
-        terminalSessionPath={terminalSessionPath}
+        terminalConversationId={terminalConversationId}
         onSetDiffBaseline={onSetDiffBaseline}
         onSetDiffRenderMode={onSetDiffRenderMode}
         sidebarCollapsed={sidebarCollapsed}
@@ -87,7 +84,6 @@ export function AppShellWorkspace({
     <CodeWorkspaceView
       controller={controller}
       activeComposerState={activeComposerState}
-      activePiExtensionUiState={activePiExtensionUiState}
       activeThreadData={activeThreadData}
       composerProjectId={composerProjectId}
       currentProjectName={currentProjectName}
@@ -95,7 +91,7 @@ export function AppShellWorkspace({
       diffRenderMode={diffRenderMode}
       terminalDrawerVisible={terminalDrawerVisible}
       terminalDrawerOverlay={terminalDrawerOverlay}
-      terminalSessionPath={terminalSessionPath}
+      terminalConversationId={terminalConversationId}
       workspaceContentClass={workspaceContentClass}
       onSetDiffBaseline={onSetDiffBaseline}
       onSetDiffRenderMode={onSetDiffRenderMode}

@@ -14,7 +14,7 @@ type LandingViewProps = {
   composerOverlayHeight: number
   onAction: DesktopActionInvoker
   onSelectProject: (projectId: string) => void
-  onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void
+  onOpenThread: (projectId: string, threadId: string, conversationId: string) => void
 }
 
 export function LandingView({ className }: LandingViewProps) {

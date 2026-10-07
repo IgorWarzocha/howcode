@@ -102,14 +102,20 @@ export function ComposerFilePickerAttachmentsPanel({
               )}
               title={attachment.path}
             >
-              <button
-                type="button"
-                className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded p-0 text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]"
-                onClick={() => void openComposerAttachment(attachment)}
-                aria-label={getOpenAttachmentLabel(attachment)}
-              >
-                {getOpenAttachmentIcon(attachment)}
-              </button>
+              {isSafeExternalUrl(attachment.path) ? (
+                <button
+                  type="button"
+                  className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded p-0 text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]"
+                  onClick={() => void openComposerAttachment(attachment)}
+                  aria-label={getOpenAttachmentLabel(attachment)}
+                >
+                  {getOpenAttachmentIcon(attachment)}
+                </button>
+              ) : (
+                <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center text-[color:var(--muted)]">
+                  {getOpenAttachmentIcon(attachment)}
+                </span>
+              )}
               <span className="min-w-0 flex-1 truncate">
                 {getAttachmentDisplayLabel(attachment)}
               </span>

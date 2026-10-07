@@ -8,7 +8,7 @@ Warnings: 0
 Score:    100
 ```
 
-The scan covers the app, Electron and desktop services, shared contracts, scripts, the Pages site, launcher, and polls worker. Generated `dist-pages` output and local reference checkouts under `Frameworks` are excluded in `doctor.config.ts`.
+The scan covers the browser app, Node server and backend services, shared contracts, scripts, the Pages site, npm package, and polls worker. Generated `dist-pages` output and local reference checkouts under `Frameworks` are excluded in `doctor.config.ts`.
 
 ## UX checks
 
@@ -22,18 +22,18 @@ These paths changed enough to deserve a human pass. The automated suite protects
 - **Sidebar project work:** change the visible-project scope, remove a project from that scope, rename a project, edit its worktree directory, and run bulk archive actions. Compact and expanded sidebar layouts should remain in step.
 - **GitOps:** open and search the baseline selector, close and reopen it, change baseline, edit a commit message, commit, and then dirty a clean tree. Search and clean-state messages should reset without a one-frame stale value.
 - **Settings:** edit project location, custom Pi directory, dictation model, and a searchable select. External settings updates should replace stale drafts; closing and reopening a select should clear its search.
-- **Terminal:** open a shell and a Pi session, resize into and out of compact mode, focus the composer, and return from takeover. The terminal must keep the session path captured at launch.
+- **Terminal:** open a shell, resize into and out of compact mode, and focus the composer. The terminal must keep the session path captured at launch.
 - **Pages site:** check the GitHub mark at normal and high-DPI scale. Its path coordinates were rounded to remove needless SVG precision.
 
 ## Load-bearing scan policy
 
 `doctor.config.ts` keeps project-wide exceptions in one visible place:
 
-- Native/runtime packages are retained even without static imports because Electron packaging and runtime `require()` calls need their complete dependency trees outside ASAR.
+- Native/runtime packages are retained even without static imports because runtime `require()` calls need their complete installed dependency trees.
 - Component line-count, local-component-count, and boolean-prop thresholds are not gates here; Biome and React Doctor's control-flow checks remain blocking. The count-based rule defaults produced counts, not defects.
 - Long-lived controller surfaces reset feature-local transient state when their ownership props change; remounting them would also discard unrelated drafts, focus, and scroll state.
 - A few committed effects intentionally publish async data or imperative close handlers to their owner after commit. Moving those writes into render would expose work React may discard.
 - A successful Pi extension dialog answer stays busy until its owner removes the request. Resetting it in `finally` would briefly allow duplicate answers before unmount.
-- Attachment roots are chosen by the trusted desktop picker, canonicalized, and descendants are constrained to that root. Updater assets are restricted to the configured release origin and verified by SHA-256 before installation. React Doctor cannot follow either trust check through the full flow.
+- Attachment roots are selected on the trusted host, canonicalized, and descendants are constrained to that root. React Doctor cannot follow that trust check through the full flow.
 
 Do not replace these with inline disables. If an exception stops matching the architecture, remove it from `doctor.config.ts` and fix the newly visible diagnostics.

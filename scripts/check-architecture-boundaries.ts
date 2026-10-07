@@ -3,7 +3,7 @@ import path from 'node:path'
 
 const sourceRoots = [
   'src/app',
-  'src/electron',
+  'src/server',
   'src/desktop-host',
   'desktop',
   'shared',
@@ -17,20 +17,16 @@ const sourceExtensions = ['.ts', '.tsx', '.js', '.cjs', '.mjs'] as const
 const testFilePattern = /\.(?:spec|test)\.[cm]?[jt]sx?$/u
 const ignoredDirectoryPattern = /(?:^|\/)(?:artifacts|build|dist|node_modules)(?:\/|$)/u
 const allowedPiRuntimeImportPrefixes = [
-  'desktop/runtime-host/',
-  'desktop/runtime/',
+  'desktop/durable-runtime/',
+  'desktop/settings/',
+  'desktop/resources/',
   'desktop/service-host.ts',
   'desktop/service-host-runtime.ts',
-  'desktop/pi-module.ts',
-  'desktop/pi-packages/services.ts',
-  'desktop/pi-packages/configured.ts',
-  'desktop/pi-packages/mutations.ts',
-  'desktop/skills/mutations.ts',
 ] as const
 
 type Layer =
   | 'renderer'
-  | 'electron'
+  | 'server'
   | 'host'
   | 'service'
   | 'shared'
@@ -139,7 +135,7 @@ function getImportSpecifiers(filePath: string) {
 function getLayer(filePath: string): Layer {
   const repoPath = toRepoPath(filePath)
   if (repoPath.startsWith('src/app/')) return 'renderer'
-  if (repoPath.startsWith('src/electron/')) return 'electron'
+  if (repoPath.startsWith('src/server/')) return 'server'
   if (repoPath.startsWith('src/desktop-host/')) return 'host'
   if (repoPath.startsWith('desktop/')) return 'service'
   if (repoPath.startsWith('shared/')) return 'shared'
@@ -157,13 +153,13 @@ function isForbiddenBoundary(from: Layer, to: Layer) {
     case 'node-runtime':
       return to !== 'node-runtime' && to !== 'shared'
     case 'service':
-      return to === 'renderer' || to === 'electron' || to === 'host'
+      return to === 'renderer' || to === 'server' || to === 'host'
     case 'host':
-      return to === 'renderer' || to === 'electron' || to === 'service'
-    case 'electron':
+      return to === 'renderer' || to === 'server' || to === 'service'
+    case 'server':
       return to === 'renderer' || to === 'service'
     case 'renderer':
-      return to === 'electron' || to === 'host' || to === 'service' || to === 'node-runtime'
+      return to === 'server' || to === 'host' || to === 'service' || to === 'node-runtime'
     case 'launcher':
       return to !== 'launcher'
     case 'scripts':
@@ -195,19 +191,14 @@ function getSpecialBoundaryViolation(
     specifier === 'node:sqlite' ||
     specifier === '@effect/sql-sqlite-node' ||
     specifier.startsWith('@effect/sql-sqlite-node/')
-  if (importerLayer === 'electron' && importsSqlite) {
-    return `${importerPath} imports ${specifier} (Electron must not own stock-Node database access)`
+  if (importerLayer === 'server' && importsSqlite) {
+    return `${importerPath} imports ${specifier} (HTTP server must not own database access)`
   }
   if (importerLayer !== 'service' || isAllowedPiRuntimeFile(importer)) return undefined
 
   const dependencyPath = dependency ? toRepoPath(dependency) : null
   const importsPiRuntime =
-    specifier.startsWith('@earendil-works/pi-') ||
-    dependencyPath === 'desktop/pi-module.ts' ||
-    dependencyPath === 'desktop/runtime/composer-service.ts' ||
-    dependencyPath === 'desktop/runtime/composer-state.ts' ||
-    dependencyPath === 'desktop/runtime/runtime-registry.ts' ||
-    dependencyPath === 'desktop/runtime/thread-publisher.ts'
+    specifier.startsWith('@earendil-works/pi-') || specifier.startsWith('@earendil-works/chord')
   return importsPiRuntime
     ? `${importerPath} imports ${dependencyPath ?? specifier} outside the Pi runtime boundary`
     : undefined

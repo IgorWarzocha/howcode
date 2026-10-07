@@ -68,7 +68,7 @@ function stripGhosttyPackageSourcemaps(): Plugin {
 }
 
 export default defineConfig({
-  base: './',
+  base: '/',
   assetsInclude: ['**/*.wasm'],
   resolve: {
     alias: howcodeAliases,

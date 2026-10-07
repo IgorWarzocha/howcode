@@ -108,9 +108,9 @@ export function useChatSidebarController({
   }
 
   const moveThread = (thread: ChatThread, groupId: string | null) => {
-    if (!thread.sessionPath) return
+    if (!thread.conversationId) return
     void onAction('chat.thread.move', {
-      sessionPath: thread.sessionPath,
+      conversationId: thread.conversationId,
       chatGroupId: groupId,
     }).then(onRefresh)
   }

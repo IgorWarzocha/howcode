@@ -1,58 +1,36 @@
-import type { PiTreeFilterMode } from '@howcode/shared/desktop-settings-contracts'
-import type { MutableRefObject, RefObject } from 'react'
+import type { RefObject } from 'react'
 import { composerPopoverInputLayerClass } from '../ui/classes'
 import { cn } from '../utils/cn'
-import { ComposerSessionTreePanel } from './composer-session-tree-panel'
+import { ComposerConversationForkPanel } from './composer-conversation-fork-panel'
 import { SlashCommandPanel } from './composer-slash-command-panel'
 import type { ComposerSlashCommands } from './useComposerSlashCommands'
 
 export function ComposerPromptPopoverStack({
-  sessionPath,
-  sessionTreeOpen = false,
-  treeFilterMode = 'no-tools',
-  sessionTreePanelRef,
+  conversationId,
+  conversationForkOpen,
+  conversationForkPanelRef,
   slashCommandPanelRef,
   slashCommands,
-  sessionTreeForceHidden = false,
-  sessionTreeNavigateDisabled = false,
-  onSessionTreeNavigate,
-  onSessionTreeLabel,
-  onRevealSessionTreeEntryInThread,
-  onBindSessionTreeClose,
-  onSessionTreeNavigateConfirmOpenChange,
-  onSessionTreeLabelPopoverOpenChange,
-  sessionTreeCancelNavigateConfirmRef,
-  sessionTreeCancelLabelPopoverRef,
+  forkDisabled,
+  onFork,
+  onCloseConversationFork,
   popoverStackRef,
   embedded = false,
   topRounded = true,
 }: {
-  sessionPath?: string | null | undefined
-  sessionTreeOpen?: boolean | undefined
-  treeFilterMode?: PiTreeFilterMode | undefined
-  sessionTreePanelRef: RefObject<HTMLDivElement | null>
+  conversationId?: string | null | undefined
+  conversationForkOpen: boolean
+  conversationForkPanelRef: RefObject<HTMLDivElement | null>
   slashCommandPanelRef: RefObject<HTMLDivElement | null>
   slashCommands: ComposerSlashCommands
-  sessionTreeForceHidden?: boolean | undefined
-  sessionTreeNavigateDisabled?: boolean | undefined
-  onSessionTreeNavigate?:
-    | ((entryId: string, summarize: boolean, label?: string) => Promise<boolean>)
-    | undefined
-  onSessionTreeLabel?: ((entryId: string, label: string) => Promise<boolean> | boolean) | undefined
-  onRevealSessionTreeEntryInThread?: ((entryId: string) => void) | undefined
-  onBindSessionTreeClose?: ((close: (() => void) | null) => void) | undefined
-  onSessionTreeNavigateConfirmOpenChange?: ((open: boolean) => void) | undefined
-  onSessionTreeLabelPopoverOpenChange?: ((open: boolean) => void) | undefined
-  sessionTreeCancelNavigateConfirmRef?: MutableRefObject<(() => void) | null> | undefined
-  sessionTreeCancelLabelPopoverRef?: MutableRefObject<(() => void) | null> | undefined
+  forkDisabled: boolean
+  onFork: (entryId: string) => Promise<boolean>
+  onCloseConversationFork: () => void
   popoverStackRef?: RefObject<HTMLDivElement | null> | undefined
   embedded?: boolean | undefined
   topRounded?: boolean | undefined
 }) {
-  const sessionTreeVisible = sessionTreeOpen && !sessionTreeForceHidden
-  const slashVisible = slashCommands.open
-  const stackVisible = sessionTreeVisible || slashVisible
-
+  const stackVisible = conversationForkOpen || slashCommands.open
   return (
     <div
       ref={popoverStackRef}
@@ -62,27 +40,19 @@ export function ComposerPromptPopoverStack({
         !stackVisible && 'pointer-events-none invisible h-0 min-h-0 overflow-hidden gap-0',
       )}
     >
-      <ComposerSessionTreePanel
-        panelRef={sessionTreePanelRef}
-        sessionPath={sessionPath}
-        treeFilterMode={treeFilterMode}
-        open={sessionTreeOpen}
-        forceHidden={sessionTreeForceHidden}
-        navigateDisabled={sessionTreeNavigateDisabled}
-        onNavigate={onSessionTreeNavigate}
-        onLabelEntry={onSessionTreeLabel}
-        onRevealInThread={onRevealSessionTreeEntryInThread}
-        onBindClose={onBindSessionTreeClose}
-        onNavigateConfirmOpenChange={onSessionTreeNavigateConfirmOpenChange}
-        onLabelPopoverOpenChange={onSessionTreeLabelPopoverOpenChange}
-        cancelNavigateConfirmRef={sessionTreeCancelNavigateConfirmRef}
-        cancelLabelPopoverRef={sessionTreeCancelLabelPopoverRef}
+      <ComposerConversationForkPanel
+        panelRef={conversationForkPanelRef}
+        conversationId={conversationId}
+        open={conversationForkOpen}
+        forkDisabled={forkDisabled}
+        onFork={onFork}
+        onClose={onCloseConversationFork}
         topRounded={topRounded}
       />
       <SlashCommandPanel
         panelRef={slashCommandPanelRef}
         slashCommands={slashCommands}
-        topRounded={topRounded && !sessionTreeVisible}
+        topRounded={topRounded && !conversationForkOpen}
       />
     </div>
   )

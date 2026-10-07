@@ -3,4 +3,4 @@ export {
   installPiSkill,
   listConfiguredPiSkills,
   removePiSkill,
-} from './skills/runtime-host-bridge.ts'
+} from './skills/service.ts'
