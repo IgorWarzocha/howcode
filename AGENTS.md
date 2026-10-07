@@ -1,3 +1,9 @@
+## Product architecture
+
+- Design Howcode as chat with an agent first, with a small, malleable core built around Pi Durable. Coding is an optional domain, not the core's identity.
+- Prefer Howcode UI extensions and Durable tool/resource extensions for domain capabilities. Users should be able to enable coding UI and tools, choose other domain capabilities, and add their own UI extensions without changing core.
+- Reuse Durable's extension machinery and Effect's infrastructure primitives. Keep domain policy out of core; introduce shared extension contracts only for concrete capabilities, not a speculative framework or parallel runtime.
+
 ## Runtime boundaries
 
 - Use Bun for installs and scripts; the browser app's server and backend service run under stock Node.
