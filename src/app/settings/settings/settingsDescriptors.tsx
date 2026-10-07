@@ -1,3 +1,4 @@
+import { isToolkitExtensionEnabled } from '@howcode/shared/toolkit-extensions'
 import type { Dispatch, SetStateAction } from 'react'
 import type {
   AppSettings,
@@ -14,6 +15,7 @@ import { buildKeybindingSettingsDescriptors } from './settingsDescriptorKeybindi
 import { buildModelSettingsDescriptors } from './settingsDescriptorModels'
 import { buildPiRuntimeSettingsDescriptors } from './settingsDescriptorPiRuntime'
 import { buildProjectsSettingsDescriptors } from './settingsDescriptorProjects'
+import { buildToolkitSettingsDescriptors } from './settingsDescriptorToolkit'
 import type { SetDraftPiSetting, SettingsController } from './settingsDescriptorTypes'
 import type { SettingDescriptor } from './settingsTypes'
 
@@ -49,6 +51,7 @@ export function buildSettingsDescriptors({
   onAction: DesktopActionInvoker
 }): SettingDescriptor[] {
   return [
+    ...buildToolkitSettingsDescriptors(appSettings, onAction),
     ...buildCommonSettingsDescriptors({ appSettings, controller }),
     ...buildProjectsSettingsDescriptors({ appSettings, controller }),
     ...buildModelSettingsDescriptors({
@@ -68,15 +71,17 @@ export function buildSettingsDescriptors({
       openSelectId,
       setOpenSelectId,
     }),
-    ...buildDictationSettingsDescriptors({
-      appSettings,
-      controller,
-      openSelectId,
-      setOpenSelectId,
-      dictationModelDraft,
-      setDictationModelDraft,
-      configuredDictationModelId,
-    }),
+    ...(isToolkitExtensionEnabled(appSettings, 'dictation')
+      ? buildDictationSettingsDescriptors({
+          appSettings,
+          controller,
+          openSelectId,
+          setOpenSelectId,
+          dictationModelDraft,
+          setDictationModelDraft,
+          configuredDictationModelId,
+        })
+      : []),
     ...buildKeybindingSettingsDescriptors({
       appSettings,
       openSelectId,

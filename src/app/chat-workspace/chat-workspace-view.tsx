@@ -3,22 +3,17 @@ import {
   getPersistedConversationId,
 } from '@howcode/shared/conversation-ids'
 import { ThreadView } from '@howcode/thread'
-import { lazy, type RefObject, Suspense, useRef, useState } from 'react'
+import { type RefObject, Suspense, useRef, useState } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
 import { useQueuedPromptCancellation } from '../code-workspace/useQueuedPromptCancellation'
 import { useWorkspaceFooterHeight } from '../code-workspace/useWorkspaceFooterHeight'
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
+import { ArtifactWorkspacePanel as ArtifactPanel } from '../extensions/artifacts-plugin'
 import { WORKSPACE_EDGE_PADDING_CLASS } from '../ui/layout'
 import { cn } from '../utils/cn'
 import { ChatComposerDock, type ChatWorkspaceComposerProps } from './chat-workspace-composer'
 import type { ChatWorkspaceController } from './chat-workspace-contract'
 import { useChatArtifactDrawerState } from './useChatArtifactDrawerState'
-
-const ArtifactPanel = lazy(() =>
-  import('@howcode/native-artifacts').then((module) => ({
-    default: module.ArtifactPanel,
-  })),
-)
 
 type ChatWorkspaceViewProps = {
   controller: ChatWorkspaceController

@@ -2,6 +2,7 @@ import { composeBuiltInWorkspaceViews } from '@howcode/extensions/built-in-works
 import { TerminalPanel } from '@howcode/workspace-shell'
 import type { RefObject } from 'react'
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
+import { isWorkspaceViewEnabled } from '../extensions/toolkit-plugins'
 import { appToneTextClass, appTypeGroupTextClass } from '../ui/classes'
 import { cn } from '../utils/cn'
 import { AppShellSidebar } from './app-shell-sidebar'
@@ -91,7 +92,14 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <AppShellWorkspace
-            activeView={controller.workspace.state.activeView}
+            activeView={
+              isWorkspaceViewEnabled(
+                controller.desktop.shellState?.appSettings,
+                controller.workspace.state.activeView,
+              )
+                ? controller.workspace.state.activeView
+                : 'chat'
+            }
             contributions={composeBuiltInWorkspaceViews({
               controller,
               activeComposerState: controller.composer.state,

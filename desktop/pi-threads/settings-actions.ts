@@ -15,6 +15,7 @@ import {
   getSettingsProjectImportState,
   getSettingsReset,
   getSettingsThinkingLevel,
+  getSettingsToolkitExtensions,
 } from '../../shared/pi-thread-action-payloads.ts'
 import { parseKeybindingOverrides } from '../app-settings/parsers.ts'
 import { normalizeOptionalSettingsPath } from '../app-settings/path-normalization.ts'
@@ -29,6 +30,7 @@ import {
   setCustomPiDirectory,
   setDictationMaxDurationSeconds,
   setDictationModelId,
+  setEnabledToolkitExtensions,
   setFavoriteFolders,
   setGitCommitMessageModelSelection,
   setGitCommitMessageThinkingLevel,
@@ -102,6 +104,8 @@ function setOptionalThinkingLevel(
 }
 
 const settingsUpdateHandlers = {
+  enabledToolkitExtensions: (payload) =>
+    setEnabledToolkitExtensions(getSettingsToolkitExtensions(payload)),
   favoriteFolders: (payload) => setFavoriteFolders(getSettingsFavoriteFolders(payload)),
   composerStreamingBehavior: (payload) => {
     const value = getSettingsComposerStreamingBehavior(payload)

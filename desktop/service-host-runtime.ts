@@ -1,5 +1,4 @@
 import * as Effect from 'effect/Effect'
-import * as Option from 'effect/Option'
 import * as Result from 'effect/Result'
 import * as Schema from 'effect/Schema'
 import {
@@ -14,7 +13,7 @@ import { loadAppSettings } from './app-settings/readers.ts'
 import * as piSkills from './pi-skills.ts'
 import * as piThreads from './pi-threads.ts'
 import { getAgentDirectory } from './settings/paths.ts'
-import { createTerminalRpcServer } from './terminal/rpc-server.ts'
+import { createTerminalHostPlugin } from './terminal/host-plugin.ts'
 import * as terminalManager from './terminal/runtime.ts'
 import { disposeThreadStateDatabase } from './thread-state-db/db.ts'
 import { getDesktopUserDataPath } from './user-data-path.ts'
@@ -79,13 +78,9 @@ piThreads.subscribeDesktopEvents((event) => {
   process.send?.({ type: 'desktop-event', event })
 })
 
-const terminalRpcServerPromise = terminalManager
-  .getTerminalEffectService()
-  .then((service) =>
-    createTerminalRpcServer(service, (message) =>
-      process.send?.({ type: 'terminal-rpc-response', message }),
-    ),
-  )
+const terminalHostPlugin = createTerminalHostPlugin((message) =>
+  process.send?.({ type: 'terminal-rpc-response', message }),
+)
 
 async function handleRequest(message: ServiceRequest): Promise<ServiceResponse> {
   try {
@@ -120,9 +115,10 @@ process.on('message', (message: unknown) => {
   }
   const inbound = decoded.success
   if (inbound.type === 'terminal-rpc-request') {
-    void terminalRpcServerPromise.then((server) =>
-      server.write(inbound.message as TerminalRpcRequest),
-    )
+    void terminalHostPlugin.write(inbound.message as TerminalRpcRequest).catch((error) => {
+      console.error('Desktop terminal RPC failed.', error)
+      requestShutdown()
+    })
     return
   }
   void handleRequest(inbound).then((response) => process.send?.(response))
@@ -135,17 +131,9 @@ function settledTask<A>(evaluate: () => A) {
 const shutdownCoordinatorPromise = Effect.runPromise(
   makeShutdownCoordinator(
     Effect.gen(function* () {
-      const terminalRpcServer = yield* Effect.option(
-        Effect.tryPromise({
-          try: () => terminalRpcServerPromise,
-          catch: (error) => error,
-        }),
-      )
       yield* Effect.all(
         [
-          Option.isSome(terminalRpcServer)
-            ? settledTask(() => terminalRpcServer.value.dispose())
-            : Effect.void,
+          settledTask(() => terminalHostPlugin.dispose()),
           settledTask(() => piThreads.disposeDesktopRuntime?.()),
           settledTask(() => terminalManager.closeAllTerminals()),
         ],
@@ -169,6 +157,6 @@ process.once('disconnect', requestShutdown)
 process.on('SIGTERM', requestShutdown)
 process.on('SIGINT', requestShutdown)
 
-void Promise.all([getServiceDiagnostics(), terminalRpcServerPromise]).then(([diagnostics]) => {
+void getServiceDiagnostics().then((diagnostics) => {
   process.send?.({ type: 'ready', diagnostics })
 })

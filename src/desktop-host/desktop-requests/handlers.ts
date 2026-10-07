@@ -1,8 +1,7 @@
 import type { DesktopRequestHandlerMap } from '../../../shared/desktop-ipc'
 import type { DesktopServiceRuntime } from '../../../shared/desktop-service-contracts'
-import { createPiSkillsHandlers } from './pi-skills'
 import { createPiThreadsHandlers } from './pi-threads'
-import { createTerminalHandlers } from './terminal'
+import { createToolkitHostPlugins } from './toolkit-plugins'
 
 export type DesktopPlatformRequestHandlers = Pick<
   DesktopRequestHandlerMap,
@@ -16,10 +15,18 @@ export function createDesktopRequestHandlers(input: {
   platform: DesktopPlatformRequestHandlers
   onSettingsChanged?: (() => Promise<void> | void) | undefined
 }): DesktopRequestHandlerMap {
+  const plugins = createToolkitHostPlugins(
+    input.runtime,
+    input.platform.listProjectDirectoryEntries,
+  )
   return {
-    ...input.platform,
+    listComposerAttachmentEntries: input.platform.listComposerAttachmentEntries,
+    searchComposerAttachmentEntries: input.platform.searchComposerAttachmentEntries,
     ...createPiThreadsHandlers(input.runtime.piThreads, input.onSettingsChanged),
-    ...createPiSkillsHandlers(input.runtime.piSkills),
-    ...createTerminalHandlers(input.runtime.terminalManager),
+    ...plugins.coding,
+    ...plugins.terminal,
+    ...plugins.artifacts,
+    ...plugins.skills,
+    ...plugins.dictation,
   }
 }

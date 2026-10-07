@@ -3,6 +3,7 @@ import type { ComposerSendMode, KeybindingOverrides } from '@howcode/shared/keyb
 import { AlertTriangle } from 'lucide-react'
 import type { ClipboardEvent, ReactNode, RefObject } from 'react'
 import type { DesktopActionInvoker } from '../desktop/types'
+import { useToolkitExtensionEnabled } from '../extensions/toolkit-context'
 import { appTypeSmallClass } from '../ui/classes'
 import { cn } from '../utils/cn'
 import { ComposerDictationControls } from './composer-dictation-controls'
@@ -118,7 +119,8 @@ export function ComposerPromptInputPanel({
 }: ComposerPromptInputPanelProps) {
   const showBranchGuardPopup = isBranchGuardError(errorMessage)
   const statusMessage = getComposerStatusMessage({ draft, errorMessage, showBranchGuardPopup })
-  const dictationButtonVisible = showDictationButton && !inputLocked
+  const dictationEnabled = useToolkitExtensionEnabled('dictation')
+  const dictationButtonVisible = dictationEnabled && showDictationButton && !inputLocked
 
   return (
     <div className="relative grid content-end pr-4 pl-[1.1rem] pt-4 pb-1">

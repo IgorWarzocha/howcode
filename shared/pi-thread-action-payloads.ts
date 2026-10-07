@@ -17,6 +17,7 @@ import type {
   ProjectDiffRenderMode,
   ProjectFileWriteRequest,
 } from './desktop-contracts'
+import { EnabledToolkitExtensionsSchema } from './toolkit-extensions'
 
 export function getComposerRequest(payload: DesktopActionPayloadInput): ComposerStateRequest {
   return {
@@ -322,7 +323,8 @@ export function getSettingsProjectDiffRenderModeDefault(
 }
 
 export function getSettingsKey(payload: DesktopActionPayloadInput) {
-  return payload.key === 'chatModel' ||
+  return payload.key === 'enabledToolkitExtensions' ||
+    payload.key === 'chatModel' ||
     payload.key === 'chatThinkingLevel' ||
     payload.key === 'codeModel' ||
     payload.key === 'codeThinkingLevel' ||
@@ -430,4 +432,8 @@ export function getSettingsProjectDeletionMode(
   payload: DesktopActionPayloadInput,
 ): ProjectDeletionMode | null {
   return payload.value === 'pi-only' || payload.value === 'full-clean' ? payload.value : null
+}
+
+export function getSettingsToolkitExtensions(payload: DesktopActionPayloadInput) {
+  return Schema.decodeUnknownSync(EnabledToolkitExtensionsSchema)(payload.value)
 }

@@ -17,6 +17,7 @@ import {
 import type { DesktopEventSelectionState } from './desktop-event-sync'
 
 type UseDesktopEventSyncInput = {
+  codingEnabled?: boolean
   composerProjectId: string
   workspaceState: WorkspaceState
   loadProjectThreads: (
@@ -39,6 +40,7 @@ type UseDesktopEventSyncInput = {
 }
 
 export function useDesktopEventSync({
+  codingEnabled = true,
   composerProjectId,
   workspaceState,
   loadProjectThreads,
@@ -54,6 +56,7 @@ export function useDesktopEventSync({
   setThreadHistoryCompactions,
 }: UseDesktopEventSyncInput) {
   const desktopEventStateRef = useRef({
+    codingEnabled,
     composerProjectId,
     workspaceState: {
       activeView: workspaceState.activeView,
@@ -67,6 +70,7 @@ export function useDesktopEventSync({
 
   useEffect(() => {
     desktopEventStateRef.current = {
+      codingEnabled,
       composerProjectId,
       workspaceState: {
         activeView: workspaceState.activeView,
@@ -77,6 +81,7 @@ export function useDesktopEventSync({
       },
     }
   }, [
+    codingEnabled,
     composerProjectId,
     workspaceState.activeView,
     workspaceState.selectedProjectId,

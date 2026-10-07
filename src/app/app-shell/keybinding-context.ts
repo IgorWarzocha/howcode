@@ -1,4 +1,5 @@
 import type { KeybindingCommandId } from '@howcode/shared/keybindings'
+import { isToolkitExtensionEnabled } from '@howcode/shared/toolkit-extensions'
 import type { KeybindingRuntime } from './keybinding-runtime'
 
 export const rendererCommandIds = new Set<KeybindingCommandId>([
@@ -59,10 +60,21 @@ function modalOrSettingsLayerIsOpen() {
   return document.querySelector('dialog[open], [aria-modal="true"], [role="dialog"]') !== null
 }
 
+function toolkitShortcutIsDisabled(commandId: KeybindingCommandId, runtime: KeybindingRuntime) {
+  const settings = runtime.appController.desktop.shellState?.appSettings
+  if (commandId.startsWith('terminal.') && !isToolkitExtensionEnabled(settings, 'terminal'))
+    return true
+  if (commandId.startsWith('gitops.') && !isToolkitExtensionEnabled(settings, 'coding')) return true
+  if (commandId.startsWith('dictation.') && !isToolkitExtensionEnabled(settings, 'dictation'))
+    return true
+  return false
+}
+
 export function appLevelShortcutsAreBlocked(
   commandId: KeybindingCommandId,
   runtime: KeybindingRuntime,
 ) {
+  if (toolkitShortcutIsDisabled(commandId, runtime)) return true
   const { state } = runtime.appController.workspace
   if (commandId === 'sidebar.toggle' || commandId === 'app.commandPalette') {
     return false

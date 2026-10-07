@@ -1,9 +1,9 @@
-import { type Agent, createRegistry, type RegistryReader } from '@earendil-works/pi-durable'
+import { createRegistry, type RegistryReader } from '@earendil-works/pi-durable'
 import { CodingTools } from '@earendil-works/pi-durable/tools'
 import type { ComposerStateRequest } from '../../shared/desktop-contracts.ts'
+import { CodeArtifactTools } from '../resources/artifacts.ts'
 import { Resources } from '../resources/instructions.ts'
-import { ChatTools, CodeArtifactTools } from '../resources/tools.ts'
-import { howcodeChatSystemPrompt } from '../runtime/chat-system-prompt.ts'
+import { ChatTools } from '../resources/tools.ts'
 
 /** Statically installed, trusted extensions. Durable owns activation and persisted selection. */
 export function createDesktopExtensionRegistry() {
@@ -29,20 +29,5 @@ export function resolveDesktopExtensions(request: ComposerStateRequest, registry
     if (!extension) throw new Error(`Unknown conversation extension: ${name}`)
     return extension
   })
-  return {
-    extensions,
-    ...(extensions.includes(ChatTools) ? { instructions: howcodeChatSystemPrompt } : {}),
-  }
-}
-
-/** Read policy follows the resolved, persisted selection, never the current UI mode. */
-export function getConversationResourceRequest(
-  agent: Pick<Agent, 'extensions' | 'cwd'>,
-): ComposerStateRequest {
-  const chat = agent.extensions.includes(ChatTools)
-  return { projectId: chat ? null : agent.cwd, composerMode: chat ? 'chat' : 'code' }
-}
-
-export function hasConversationSkills(agent: Pick<Agent, 'extensions'>) {
-  return agent.extensions.includes(Resources)
+  return { extensions }
 }

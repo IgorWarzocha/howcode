@@ -68,17 +68,23 @@ function handleTerminalSessionEvent(
   }
 }
 
-export function useRunningTerminalSessions() {
+export function useRunningTerminalSessions(enabled = true) {
   const terminalEventTouchedSessionIdsRef = useRef(new Set<string>())
   const [runningTerminalSessionsById, setRunningTerminalSessionsById] = useState<
     Record<string, RunningTerminalSession>
   >({})
 
   useEffect(() => {
+    if (!enabled) return
+    let disposed = false
+    terminalEventTouchedSessionIdsRef.current.clear()
     const applySnapshots = (snapshots: TerminalSessionSnapshot[]) => {
+      if (disposed) return
       const touchedSessionIds = terminalEventTouchedSessionIdsRef.current
       setRunningTerminalSessionsById((current) => ({
-        ...current,
+        ...Object.fromEntries(
+          Object.entries(current).filter(([sessionId]) => touchedSessionIds.has(sessionId)),
+        ),
         ...Object.fromEntries(
           snapshots.flatMap((snapshot) =>
             !touchedSessionIds.has(snapshot.sessionId) && shouldShowTerminalSnapshot(snapshot)
@@ -95,11 +101,15 @@ export function useRunningTerminalSessions() {
     }
 
     void listDesktopTerminals().then(applySnapshots)
-    return subscribeDesktopTerminal((event) => {
+    const unsubscribe = subscribeDesktopTerminal((event) => {
       terminalEventTouchedSessionIdsRef.current.add(event.sessionId)
       handleTerminalSessionEvent(setRunningTerminalSessionsById, event)
     })
-  }, [])
+    return () => {
+      disposed = true
+      unsubscribe()
+    }
+  }, [enabled])
 
   const terminalRunningConversationIds = useMemo(
     () =>
@@ -115,5 +125,8 @@ export function useRunningTerminalSessions() {
     [runningTerminalSessionsById],
   )
 
-  return { terminalRunningWorkspaceIds, terminalRunningConversationIds }
+  return {
+    terminalRunningWorkspaceIds: enabled ? terminalRunningWorkspaceIds : new Set<string>(),
+    terminalRunningConversationIds: enabled ? terminalRunningConversationIds : new Set<string>(),
+  }
 }

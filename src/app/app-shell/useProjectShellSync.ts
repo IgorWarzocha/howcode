@@ -6,6 +6,7 @@ import { resolveCodeThreadSelection } from '../state/workspace-action-handlers'
 import type { Project } from '../types'
 
 type UseProjectShellSyncInput = {
+  enabled?: boolean
   projects: Project[]
   collapsedProjectIds: Record<string, boolean>
   activeView: WorkspaceState['activeView']
@@ -23,6 +24,7 @@ type UseProjectShellSyncInput = {
 }
 
 export function useProjectShellSync({
+  enabled = true,
   projects,
   collapsedProjectIds,
   activeView,
@@ -80,6 +82,7 @@ export function useProjectShellSync({
   ])
 
   useEffect(() => {
+    if (!enabled) return
     const threadsScope = activeView === 'chat' ? 'chat' : 'code'
     const expandedProjects = projects.filter(
       (project) =>
@@ -90,7 +93,7 @@ export function useProjectShellSync({
     for (const project of expandedProjects) {
       void loadProjectThreads(project.id, { chat: activeView === 'chat' })
     }
-  }, [activeView, collapsedProjectIds, loadProjectThreads, projects])
+  }, [enabled, activeView, collapsedProjectIds, loadProjectThreads, projects])
 
   useEffect(() => {
     if (activeView !== 'archived') {

@@ -1,85 +1,36 @@
-import path from 'node:path'
 import type { ShellState } from '../../shared/desktop-contracts.ts'
+import { isToolkitExtensionEnabled } from '../../shared/toolkit-extensions.ts'
 import { loadAppSettings, loadSidebarVisibleProjectIds } from '../app-settings/readers.ts'
 import { getComposerState } from '../pi-desktop-runtime.ts'
 import { loadPiSettings, loadPiThemeState } from '../pi-settings.ts'
-import { importProjects } from '../project-import.ts'
-import { emitDesktopEvent } from '../runtime/desktop-events.ts'
 import { getAgentDirectory } from '../settings/paths.ts'
-import { ensureProject, listProjects } from '../thread-state-db.ts'
+import { loadCodingShell } from '../toolkit/coding-shell.ts'
 import { ensureConversationProjection } from './conversation-projection.ts'
-import { enrichProjectsWithResolvedIds, resolveProjectPathForComparison } from './project-paths.ts'
-
-let startupProjectMetadataRefresh: Promise<unknown> | null = null
-
-function getProjectNameQualifier(projectId: string) {
-  const parentName = path.basename(path.dirname(projectId))
-  return parentName || path.dirname(projectId) || projectId
-}
-
-function disambiguateDuplicateProjectNames<Project extends { id: string; name: string }>(
-  projects: Project[],
-) {
-  const projectsByName = new Map<string, Project[]>()
-
-  for (const project of projects) {
-    const normalizedName = project.name.trim().toLowerCase()
-    projectsByName.set(normalizedName, [...(projectsByName.get(normalizedName) ?? []), project])
-  }
-
-  return projects.map((project) => {
-    const duplicateProjects = projectsByName.get(project.name.trim().toLowerCase())
-    if (!duplicateProjects || duplicateProjects.length <= 1) {
-      return project
-    }
-
-    return {
-      ...project,
-      name: `${project.name} · ${getProjectNameQualifier(project.id)}`,
-    }
-  })
-}
-
-function scheduleStartupProjectMetadataRefresh() {
-  if (startupProjectMetadataRefresh) return
-  startupProjectMetadataRefresh = importProjects([])
-    .then(() => emitDesktopEvent({ type: 'shell-state-refresh' }))
-    .catch((error) => {
-      startupProjectMetadataRefresh = null
-      console.warn('Failed to refresh project metadata.', error)
-    })
-}
 
 export async function loadShellState(cwd: string): Promise<ShellState> {
   const agentDir = getAgentDirectory()
   await ensureConversationProjection()
 
-  ensureProject(cwd)
-  scheduleStartupProjectMetadataRefresh()
-  const composer = await getComposerState({ projectId: cwd })
   const appSettings = loadAppSettings()
-  const [piSettings, piTheme, resolvedCwd, projects] = await Promise.all([
-    loadPiSettings(cwd),
-    loadPiThemeState(cwd),
-    resolveProjectPathForComparison(cwd),
-    enrichProjectsWithResolvedIds(listProjects(cwd)),
+  const codingEnabled = isToolkitExtensionEnabled(appSettings, 'coding')
+  const [composer, piSettings, piTheme, workspace] = await Promise.all([
+    getComposerState(codingEnabled ? { projectId: cwd } : { composerMode: 'chat' }),
+    loadPiSettings(codingEnabled ? cwd : null),
+    loadPiThemeState(codingEnabled ? cwd : null),
+    codingEnabled ? loadCodingShell(cwd) : { resolvedCwd: cwd, projects: [] },
   ])
-  const visibleProjects = disambiguateDuplicateProjectNames(
-    projects.filter((project) => project.id.trim().length > 0 && project.name.trim().length > 0),
-  )
 
   return {
     platform: process.platform,
     mockMode: false,
     productName: 'howcode',
     cwd,
-    resolvedCwd,
+    ...workspace,
     agentDir,
     appSettings,
     sidebarVisibleProjectIds: loadSidebarVisibleProjectIds(),
     piSettings,
     piTheme,
     composer,
-    projects: visibleProjects,
   }
 }

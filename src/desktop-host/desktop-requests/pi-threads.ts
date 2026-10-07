@@ -5,33 +5,11 @@ import { getDesktopWorkingDirectory } from '../../../shared/desktop-working-dire
 type PiThreadsRequestHandlers = Pick<
   DesktopRequestHandlerMap,
   | 'getShellState'
-  | 'getProjectGitState'
-  | 'getProjectUsageSummary'
-  | 'getProjectFavicon'
-  | 'startProjectDiffStream'
-  | 'cancelProjectDiffStream'
-  | 'getProjectDiffStats'
-  | 'getProjectDiffImagePreview'
-  | 'getProjectDiffFileContents'
-  | 'captureProjectDiffBaseline'
-  | 'listProjectCommits'
   | 'getComposerState'
   | 'getComposerSlashCommands'
-  | 'getComposerSkills'
-  | 'getDictationState'
-  | 'listDictationModels'
-  | 'installDictationModel'
-  | 'removeDictationModel'
-  | 'transcribeDictation'
   | 'getProjectThreads'
   | 'getChatSidebarState'
   | 'createChatGroup'
-  | 'listArtifacts'
-  | 'getArtifact'
-  | 'updateArtifact'
-  | 'editArtifact'
-  | 'listArtifactVersions'
-  | 'compileReactArtifact'
   | 'getInboxThreads'
   | 'getArchivedThreads'
   | 'getThread'
@@ -48,35 +26,8 @@ export function createPiThreadsHandlers(
 ): PiThreadsRequestHandlers {
   return {
     getShellState: async () => piThreads.loadShellState(getDesktopWorkingDirectory()),
-    getProjectGitState: ({ projectId }) => piThreads.loadProjectGitState(projectId),
-    getProjectUsageSummary: ({ projectId }) => piThreads.loadProjectUsageSummary(projectId),
-    getProjectFavicon: ({ projectId }) => piThreads.loadProjectFavicon(projectId),
-    startProjectDiffStream: ({ projectId, baseline, streamId, includeUntracked }) =>
-      piThreads.startProjectDiffStream(
-        projectId,
-        baseline ?? null,
-        streamId ?? null,
-        includeUntracked ?? false,
-      ),
-    cancelProjectDiffStream: async ({ streamId }) => {
-      await piThreads.cancelProjectDiffStream(streamId)
-      return undefined
-    },
-    getProjectDiffStats: ({ projectId, baseline, includeUntracked }) =>
-      piThreads.loadProjectDiffStats(projectId, baseline ?? null, includeUntracked ?? false),
-    getProjectDiffImagePreview: (request) => piThreads.loadProjectDiffImagePreview(request),
-    getProjectDiffFileContents: (request) => piThreads.loadProjectDiffFileContents(request),
-    captureProjectDiffBaseline: ({ projectId }) => piThreads.captureProjectDiffBaseline(projectId),
-    listProjectCommits: ({ projectId, limit }) =>
-      piThreads.listProjectCommits(projectId, limit ?? null),
     getComposerState: (request) => piThreads.loadComposerState(request),
     getComposerSlashCommands: (request) => piThreads.loadComposerSlashCommands(request),
-    getComposerSkills: (request) => piThreads.loadComposerSkills(request),
-    getDictationState: () => piThreads.getDictationState(),
-    listDictationModels: () => piThreads.listDictationModels(),
-    installDictationModel: (request) => piThreads.installDictationModel(request),
-    removeDictationModel: (request) => piThreads.removeDictationModel(request),
-    transcribeDictation: (request) => piThreads.transcribeDictation(request),
     getProjectThreads: (request) =>
       piThreads.loadProjectThreads(
         request?.projectId ?? '',
@@ -85,19 +36,6 @@ export function createPiThreadsHandlers(
     getChatSidebarState: (request) =>
       piThreads.loadChatSidebarState(request?.selectedGroupId ?? null),
     createChatGroup: ({ name }) => piThreads.createChatGroup(name),
-    listArtifacts: (request) => piThreads.listArtifacts(request?.conversationId ?? null),
-    getArtifact: ({ artifactSlug, conversationId }) =>
-      piThreads.getArtifact(artifactSlug, conversationId ?? null),
-    updateArtifact: ({ artifactSlug, content, conversationId }) =>
-      piThreads.updateArtifact({
-        slug: artifactSlug,
-        content,
-        conversationId: conversationId ?? null,
-      }),
-    editArtifact: ({ artifactSlug, edits, conversationId }) =>
-      piThreads.editArtifact({ slug: artifactSlug, edits, conversationId: conversationId ?? null }),
-    listArtifactVersions: ({ artifactSlug }) => piThreads.listArtifactVersions(artifactSlug),
-    compileReactArtifact: ({ source }) => piThreads.compileReactArtifact(source),
     getInboxThreads: () => piThreads.loadInboxThreadList(),
     getArchivedThreads: () => piThreads.loadArchivedThreadList(),
     getThread: ({ conversationId, historyCompactions = 0 }) =>

@@ -1,5 +1,7 @@
+import type { ToolkitExtensionSettings } from '@howcode/shared/toolkit-extensions'
 import { useRouter, useRouterState } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef } from 'react'
+import { isWorkspaceViewEnabled } from '../extensions/toolkit-plugins'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
 import type { Project, View } from '../types'
 
@@ -13,6 +15,7 @@ export type AppRouteSnapshot = {
 }
 
 type AppShellUrlSyncInput = {
+  toolkitSettings?: ToolkitExtensionSettings | undefined
   dispatch: React.Dispatch<WorkspaceAction>
   loadProjectThreads: (
     projectId: string,
@@ -278,6 +281,7 @@ export function getAppShellUrlSyncDecision(input: {
 }
 
 export function useAppShellUrlSync({
+  toolkitSettings,
   dispatch,
   loadProjectThreads,
   projects,
@@ -303,6 +307,20 @@ export function useAppShellUrlSync({
   const routeHydrationRef = useRef<AppShellUrlSyncCursor | null>(null)
 
   useEffect(() => {
+    if (shellLoading) return
+    const routeView = snapshot.pathname.replace(leadingSlashesPattern, '') || 'landing'
+    if (
+      !(
+        isWorkspaceViewEnabled(toolkitSettings, routeView as View) &&
+        isWorkspaceViewEnabled(toolkitSettings, state.activeView)
+      )
+    ) {
+      routeHydrationRef.current = null
+      dispatch({ type: 'show-view', view: 'chat' })
+      const fallbackRoute: AppRouteSnapshot = { pathname: '/chat', search: {} }
+      void router.navigate({ to: fallbackRoute.pathname, search: fallbackRoute.search })
+      return
+    }
     const decision = getAppShellUrlSyncDecision({
       previous: syncRef.current,
       projects,
@@ -340,5 +358,16 @@ export function useAppShellUrlSync({
       to: stateRoute.pathname,
       search: stateRoute.search,
     })
-  }, [dispatch, loadProjectThreads, projects, routeSnapshot, router, shellLoading, stateRoute])
+  }, [
+    dispatch,
+    loadProjectThreads,
+    projects,
+    routeSnapshot,
+    router,
+    shellLoading,
+    stateRoute,
+    toolkitSettings,
+    snapshot.pathname,
+    state.activeView,
+  ])
 }

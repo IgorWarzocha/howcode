@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useToolkitExtensionEnabled } from '../extensions/toolkit-context'
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence'
 import { subscribeDesktopEvents } from '../query/desktop-query'
 
@@ -17,6 +18,7 @@ export function useChatArtifactDrawerState({
   sidebarCompactMode,
   settingsOpen,
 }: UseChatArtifactDrawerStateInput) {
+  const enabled = useToolkitExtensionEnabled('artifacts')
   const [artifactsVisibleByConversation, setArtifactsVisibleByConversation] = useState<
     Record<string, boolean>
   >({})
@@ -27,16 +29,16 @@ export function useChatArtifactDrawerState({
   const artifactDrawerRef = useRef<HTMLDivElement>(null)
   const artifactOverlayPreviousFocusRef = useRef<HTMLElement | null>(null)
 
-  const artifactsVisible = conversationId
-    ? (artifactsVisibleByConversation[conversationId] ?? false)
-    : false
+  const artifactsVisible =
+    enabled && conversationId ? (artifactsVisibleByConversation[conversationId] ?? false) : false
   const artifactsFullscreen = Boolean(
-    conversationId && artifactFullscreenConversationId === conversationId,
+    enabled && conversationId && artifactFullscreenConversationId === conversationId,
   )
   const artifactDrawerVisible = artifactsVisible && !artifactsFullscreen
   const artifactDrawerOverlay = sidebarCompactMode
   const showDesktopArtifactDrawer = artifactDrawerVisible && !artifactDrawerOverlay
-  const artifactDrawerPresent = useAnimatedPresence(artifactDrawerVisible)
+  const animatedDrawerPresent = useAnimatedPresence(artifactDrawerVisible)
+  const artifactDrawerPresent = enabled && animatedDrawerPresent
   const artifactDrawerInsetStyle = showDesktopArtifactDrawer
     ? { right: ARTIFACT_DRAWER_WIDTH }
     : undefined
@@ -117,7 +119,7 @@ export function useChatArtifactDrawerState({
   }, [artifactDrawerOverlay, artifactDrawerVisible])
 
   useEffect(() => {
-    if (!conversationId) return
+    if (!(enabled && conversationId)) return
     return subscribeDesktopEvents((event) => {
       if (event.type !== 'artifact-update') return
       if (event.conversationId !== conversationId) return
@@ -126,7 +128,7 @@ export function useChatArtifactDrawerState({
         [conversationId]: true,
       }))
     })
-  }, [conversationId])
+  }, [enabled, conversationId])
 
   useEffect(() => {
     if (!(artifactsVisible && (artifactDrawerOverlay || artifactsFullscreen))) return

@@ -1,10 +1,12 @@
 import * as Effect from 'effect/Effect'
+import * as Schema from 'effect/Schema'
 import * as SqlClient from 'effect/sql/SqlClient'
 import type { AppSettings } from '../../shared/desktop-contracts.ts'
 import {
   DEFAULT_DICTATION_MAX_DURATION_SECONDS,
   normalizeDictationMaxDurationSeconds,
 } from '../../shared/dictation-settings.ts'
+import { EnabledToolkitExtensionsSchema } from '../../shared/toolkit-extensions.ts'
 import { databaseOperation } from '../thread-state-db/db.ts'
 import {
   chatModelKey,
@@ -16,6 +18,7 @@ import {
   customPiDirectoryKey,
   dictationMaxDurationSecondsKey,
   dictationModelIdKey,
+  enabledToolkitExtensionsKey,
   favoriteFoldersKey,
   gitCommitMessageModelKey,
   gitCommitMessageThinkingLevelKey,
@@ -107,6 +110,13 @@ const loadAppSettingsOperation = Effect.fn('AppSettings.load')(function* () {
   const value = (key: string) => rows.get(key)?.valueJson
 
   return {
+    ...(value(enabledToolkitExtensionsKey) === undefined
+      ? {}
+      : {
+          enabledToolkitExtensions: Schema.decodeUnknownSync(EnabledToolkitExtensionsSchema)(
+            JSON.parse(value(enabledToolkitExtensionsKey) ?? 'null'),
+          ),
+        }),
     chatModel: parseModelSelection(value(chatModelKey)),
     chatThinkingLevel: parseThinkingLevelPreference(value(chatThinkingLevelKey)),
     codeModel: parseModelSelection(value(codeModelKey)),

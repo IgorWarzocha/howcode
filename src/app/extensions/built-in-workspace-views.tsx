@@ -1,9 +1,11 @@
 import { MainView } from '@howcode/app-shell'
 import { ChatWorkspaceView } from '@howcode/chat-workspace'
 import { CodeWorkspaceView } from '@howcode/code-workspace'
-import type { ComponentProps, ReactElement } from 'react'
-import type { View } from '../types'
+import { isToolkitExtensionEnabled } from '@howcode/shared/toolkit-extensions'
+import type { ComponentProps } from 'react'
 import { mainPanelClass } from '../ui/classes'
+import { workspacePlugins } from './toolkit-plugins'
+import type { WorkspaceViewContributions } from './workspace-views'
 
 type ChatProps = ComponentProps<typeof ChatWorkspaceView>
 type CodeProps = ComponentProps<typeof CodeWorkspaceView>
@@ -70,22 +72,20 @@ export function composeBuiltInWorkspaceViews(props: BuiltInWorkspaceViewProps) {
     />
   )
 
-  // Keep the same CodeWorkspaceView identity across its legacy routes so local
-  // drawer/footer state is not reset when switching between them.
-  return {
-    landing: code,
+  const settings = controller.desktop.shellState?.appSettings
+  const contributions: WorkspaceViewContributions = {
     inbox: code,
-    code,
-    project: code,
-    thread: code,
-    gitops: code,
     archived: code,
-    sessions: code,
     settings: code,
-    skills: code,
     chat,
     claw: roadmapView('claw', props.currentProjectName),
     work: roadmapView('work', props.currentProjectName),
     automations: roadmapView('automations', props.currentProjectName),
-  } satisfies Record<View, ReactElement>
+  }
+  for (const plugin of workspacePlugins) {
+    if (isToolkitExtensionEnabled(settings, plugin.id)) {
+      Object.assign(contributions, plugin.contribute(code))
+    }
+  }
+  return contributions
 }

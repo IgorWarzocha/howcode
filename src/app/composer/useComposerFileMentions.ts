@@ -1,5 +1,6 @@
 import { type KeyboardEvent, useEffect, useMemo, useState } from 'react'
 import type { ComposerAttachment, ComposerFileSearchEntry } from '../desktop/types'
+import { useToolkitExtensionEnabled } from '../extensions/toolkit-context'
 import { searchComposerAttachmentEntriesQuery } from '../query/desktop-query'
 
 const fileMentionListboxId = 'composer-file-mention-listbox'
@@ -41,12 +42,13 @@ export function useComposerFileMentions({
   setDraft,
   attachAttachments,
 }: UseComposerFileMentionsOptions) {
+  const enabled = useToolkitExtensionEnabled('coding')
   const [files, setFiles] = useState<ComposerFileSearchEntry[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [dismissedDraft, setDismissedDraft] = useState<string | null>(null)
   const candidateMatch = getFileMentionMatch(draft)
-  const filter = draft === dismissedDraft ? null : (candidateMatch?.filter ?? null)
+  const filter = !enabled || draft === dismissedDraft ? null : (candidateMatch?.filter ?? null)
   const open = filter !== null
 
   const visibleFiles = useMemo(() => files, [files])

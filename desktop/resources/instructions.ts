@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { defineExtension, section } from '@earendil-works/pi-durable'
+import { withExtensionIngress } from '../durable-runtime/extension-ingress.ts'
 import { mapWithConcurrency } from '../pi-threads/map-with-concurrency.ts'
 import { getAgentDirectory } from '../settings/paths.ts'
 import { getComposerSkills } from './discovery.ts'
@@ -28,19 +29,45 @@ async function workspaceInstructions(cwd: string) {
   return contents.filter(Boolean).join('\n\n')
 }
 
-export const Resources = defineExtension({
-  name: 'howcode.resources',
-  sections: [
-    section('howcode-instructions', async ({ agent }) => {
-      const global =
-        (await optionalInstructions(path.join(getAgentDirectory(), 'AGENTS.md'))) ??
-        (await optionalInstructions(path.join(getAgentDirectory(), 'AGENTS.MD')))
-      const workspace = agent.cwd ? await workspaceInstructions(agent.cwd) : ''
-      return [global, workspace].filter(Boolean).join('\n\n') || undefined
-    }),
-    createSkillsSection('workspace'),
-  ],
-})
+const dollarSkillTokenPattern = /(^|\s)\$([\w./-]+)/g
+const skillCommandPattern = /^\/skill:([^\s]+)(?:\s|$)/
+
+export const Resources = withExtensionIngress(
+  defineExtension({
+    name: 'howcode.resources',
+    sections: [
+      section('howcode-instructions', async ({ agent }) => {
+        const global =
+          (await optionalInstructions(path.join(getAgentDirectory(), 'AGENTS.md'))) ??
+          (await optionalInstructions(path.join(getAgentDirectory(), 'AGENTS.MD')))
+        const workspace = agent.cwd ? await workspaceInstructions(agent.cwd) : ''
+        return [global, workspace].filter(Boolean).join('\n\n') || undefined
+      }),
+      createSkillsSection('workspace'),
+    ],
+  }),
+  {
+    skills: getComposerSkills,
+    async prepareInput({ request, resources }) {
+      const selectedNames = new Set(
+        Array.from(request.text.matchAll(dollarSkillTokenPattern), (match) => match[2]),
+      )
+      const commandName = skillCommandPattern.exec(request.text)?.[1]
+      if (commandName) selectedNames.add(commandName)
+      if (selectedNames.size === 0) return request.text
+      const skills = await getComposerSkills(resources)
+      const instructions = await Promise.all(
+        skills
+          .filter((skill) => selectedNames.has(skill.name))
+          .map(
+            async (skill) =>
+              `<skill name="${skill.name}">\n${await readFile(skill.filePath, 'utf8')}\n</skill>`,
+          ),
+      )
+      return [...instructions, request.text].join('\n\n')
+    },
+  },
+)
 
 /** Resource discovery is explicit extension behavior, not a name check on the agent. */
 export function createSkillsSection(scope: 'chat' | 'workspace') {

@@ -7,5 +7,5 @@
 - Keep editor loading/state in `edit/`. Writes cross the grouped `GitOpsFileActions` host adapter, require the read revision, and finish through the atomic `workspace.write-file` action; never write from the renderer.
 - The edit revision check only prevents clobbering concurrent agent changes. Do not grow it into synchronization machinery; merge UI, staging workbenches, and multiplayer review are out of scope.
 - Compose GitOps UI through grouped project, diff, review, and file-tree contracts. Message and commit-option lifecycles belong in their owned hooks; popover effects belong with their controls, not in the surface entrypoint.
-- Treat it as plugin-shaped but not dynamically pluggable yet: no disable flags, registries, or runtime loading until the app shell has a deliberate contribution API.
+- Coding workspace contributions belong to `extensions/coding-plugin.tsx`; disabling presentation never changes persisted conversation tools.
 - Generic composer primitives may be imported from `@howcode/composer`; do not move non-Git composer behavior here.

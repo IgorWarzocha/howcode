@@ -1,3 +1,4 @@
+import { isToolkitExtensionEnabled } from '@howcode/shared/toolkit-extensions'
 import type { Dispatch, SetStateAction } from 'react'
 import type {
   AppSettings,
@@ -80,6 +81,7 @@ export function useAppShellEffects({
   setThreadHistoryCompactions: Dispatch<SetStateAction<number>>
 }) {
   useProjectShellSync({
+    enabled: shellAppSettings != null && isToolkitExtensionEnabled(shellAppSettings, 'coding'),
     projects,
     collapsedProjectIds,
     activeView: workspaceState.activeView,
@@ -108,9 +110,19 @@ export function useAppShellEffects({
 
   useWatchedConversationSync(workspaceState)
   useUtilityViewEscape({ activeView: workspaceState.activeView, dispatch })
-  useTerminalGitStateSync({ composerProjectId, loadProjectGitState, setProjectGitState })
+  useTerminalGitStateSync({
+    enabled:
+      shellAppSettings != null &&
+      isToolkitExtensionEnabled(shellAppSettings, 'terminal') &&
+      isToolkitExtensionEnabled(shellAppSettings, 'coding'),
+    composerProjectId,
+    loadProjectGitState,
+    setProjectGitState,
+  })
 
   useDesktopEventSync({
+    codingEnabled:
+      shellAppSettings != null && isToolkitExtensionEnabled(shellAppSettings, 'coding'),
     composerProjectId,
     workspaceState,
     loadProjectThreads,

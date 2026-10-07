@@ -4,6 +4,7 @@ import type { ProjectGitState, TerminalSessionSnapshot } from '../desktop/types'
 import { listDesktopTerminals, subscribeDesktopTerminal } from '../hooks/useDesktopTerminal'
 
 type UseTerminalGitStateSyncInput = {
+  enabled?: boolean
   composerProjectId: string
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
   setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>
@@ -40,6 +41,7 @@ function isSameProjectGitState(left: ProjectGitState | null, right: ProjectGitSt
 }
 
 export function useTerminalGitStateSync({
+  enabled = true,
   composerProjectId,
   loadProjectGitState,
   setProjectGitState,
@@ -53,6 +55,8 @@ export function useTerminalGitStateSync({
   }, [composerProjectId, loadProjectGitState, setProjectGitState])
 
   useEffect(() => {
+    if (!enabled) return
+    let disposed = false
     const rememberSnapshot = (snapshot: TerminalSessionSnapshot) => {
       if (!shouldTrackTerminal(snapshot)) {
         terminalSessionsByIdRef.current.delete(snapshot.sessionId)
@@ -89,6 +93,7 @@ export function useTerminalGitStateSync({
     }
 
     void listDesktopTerminals().then((snapshots) => {
+      if (disposed) return
       for (const snapshot of snapshots) {
         rememberSnapshot(snapshot)
       }
@@ -121,6 +126,7 @@ export function useTerminalGitStateSync({
     })
 
     return () => {
+      disposed = true
       unsubscribe()
       for (const timer of refreshTimersByProjectIdRef.current.values()) {
         clearTimeout(timer)
@@ -128,5 +134,5 @@ export function useTerminalGitStateSync({
       refreshTimersByProjectIdRef.current.clear()
       terminalSessionsByIdRef.current.clear()
     }
-  }, [])
+  }, [enabled])
 }

@@ -7,13 +7,15 @@ import type { TerminalEvent } from '../../shared/terminal-contracts.ts'
 import { liveLayer, Service } from './service.ts'
 
 const runtime = ManagedRuntime.make(liveLayer)
+let demanded = false
 
 function run<A, E>(evaluate: (service: Service['Service']) => Effect.Effect<A, E>) {
+  demanded = true
   return runtime.runPromise(Effect.flatMap(Service, evaluate))
 }
 
 export const closeAllTerminals: TerminalService['closeAllTerminals'] = () =>
-  run((service) => service.closeAll())
+  demanded ? run((service) => service.closeAll()) : Promise.resolve()
 
 export const closeTerminal: TerminalService['closeTerminal'] = (request) =>
   run((service) => service.close(request))
@@ -34,6 +36,7 @@ export const writeTerminal: TerminalService['writeTerminal'] = (sessionId, data)
   run((service) => service.write(sessionId, data))
 
 export function subscribeTerminalEvents(listener: (event: TerminalEvent) => void) {
+  demanded = true
   const fiber = runtime.runFork(
     Effect.flatMap(Service, (service) =>
       service.events.pipe(Stream.runForEach((event) => Effect.sync(() => listener(event)))),

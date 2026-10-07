@@ -15,6 +15,7 @@ export type DesktopEventQueryClient = {
 
 export type DesktopEventSyncRuntime = {
   desktopEventStateRef: React.RefObject<{
+    codingEnabled?: boolean
     composerProjectId: string
     workspaceState: DesktopEventSelectionState
   }>

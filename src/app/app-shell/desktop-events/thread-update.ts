@@ -158,10 +158,16 @@ function refreshThreadEndState(input: {
 }) {
   if (!(input.event.reason === 'end' || input.event.reason === 'external')) return
   if (input.event.isChat === true) {
-    if (input.latestWorkspaceState.activeView === 'chat')
+    if (
+      input.runtime.desktopEventStateRef.current.codingEnabled !== false &&
+      input.latestWorkspaceState.activeView === 'chat'
+    )
       void input.runtime.loadProjectThreads(input.event.projectId, { chat: true })
     void input.runtime.refreshChatSidebarState()
-  } else if (input.latestWorkspaceState.activeView !== 'chat') {
+  } else if (
+    input.runtime.desktopEventStateRef.current.codingEnabled !== false &&
+    input.latestWorkspaceState.activeView !== 'chat'
+  ) {
     void input.runtime.loadProjectThreads(input.event.projectId)
   }
   invalidateProjectWorktreeQueries({
@@ -172,7 +178,10 @@ function refreshThreadEndState(input: {
   void input.runtime.queryClient.invalidateQueries({
     queryKey: desktopQueryKeys.projectUsageSummary(input.event.projectId),
   })
-  if (input.event.projectId === input.latestComposerProjectId) {
+  if (
+    input.runtime.desktopEventStateRef.current.codingEnabled !== false &&
+    input.event.projectId === input.latestComposerProjectId
+  ) {
     void input.runtime
       .loadProjectGitState(input.event.projectId)
       .then(input.runtime.setProjectGitState)

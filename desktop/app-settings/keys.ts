@@ -27,3 +27,5 @@ export const hoverToBlurKey = 'hoverToBlur'
 export const keybindingsKey = 'keybindings'
 export const composerSendModeKey = 'composerSendMode'
 export const sidebarVisibleProjectIdsKey = 'sidebarVisibleProjectIds'
+
+export const enabledToolkitExtensionsKey = 'enabledToolkitExtensions'

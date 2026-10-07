@@ -4,6 +4,7 @@ import {
   isValidAccelerator,
   normalizeAccelerator,
 } from '@howcode/shared/keybindings'
+import { getSettingsToolkitExtensions } from '@howcode/shared/pi-thread-action-payloads'
 import type {
   ComposerThinkingLevel,
   ModelSelection,
@@ -13,6 +14,7 @@ import type {
 import type { ActionPayload } from './controller-action-utils'
 
 const optimisticSettingKeys = new Set([
+  'enabledToolkitExtensions',
   'chatModel',
   'chatThinkingLevel',
   'codeModel',
@@ -261,6 +263,8 @@ export function getOptimisticallyUpdatedShellState(
   if (!(currentState && optimisticSettingKeys.has(String(payload.key)))) return currentState
 
   const appSettings = { ...currentState.appSettings }
+  if (payload.key === 'enabledToolkitExtensions')
+    appSettings.enabledToolkitExtensions = getSettingsToolkitExtensions(payload)
   applyOptimisticModelSetting(appSettings, payload)
   applyOptimisticThinkingSetting(appSettings, payload)
   applyOptimisticBooleanSetting(appSettings, payload)

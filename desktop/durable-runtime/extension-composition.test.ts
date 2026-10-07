@@ -2,10 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { getComposerRequest } from '../../shared/pi-thread-action-payloads.ts'
 import {
   createDesktopExtensionRegistry,
-  getConversationResourceRequest,
-  hasConversationSkills,
   resolveDesktopExtensions,
 } from './extension-composition.ts'
+import { discoverConversationSkills, getConversationResourceRequest } from './extension-ingress.ts'
 
 describe('conversation extension selection', () => {
   const registry = createDesktopExtensionRegistry()
@@ -37,8 +36,6 @@ describe('conversation extension selection', () => {
     expect(tools(chat)).not.toContain('write')
     expect(tools(code)).toContain('bash')
     expect(tools(code)).toContain('write')
-    expect(chat.instructions).toBeTruthy()
-    expect(code.instructions).toBeUndefined()
   })
 
   it('derives resource scope from selection instead of incoming mode or project attribution', () => {
@@ -48,7 +45,6 @@ describe('conversation extension selection', () => {
     )
     const agent = { ...selected, cwd: '/project' }
     expect(getConversationResourceRequest(agent)).toEqual({ projectId: null, composerMode: 'chat' })
-    expect(hasConversationSkills({ extensions: [] })).toBe(false)
     const workspace = resolveDesktopExtensions(
       { composerMode: 'chat', composerExtensions: ['howcode.resources'] },
       registry,
@@ -57,5 +53,11 @@ describe('conversation extension selection', () => {
       projectId: '/project',
       composerMode: 'code',
     })
+  })
+
+  it('does not discover skills for an explicit empty selection', async () => {
+    expect(await discoverConversationSkills({ extensions: [], cwd: '/missing-project' })).toEqual(
+      [],
+    )
   })
 })

@@ -1,3 +1,4 @@
+import { isToolkitExtensionEnabled } from '@howcode/shared/toolkit-extensions'
 import type { Dispatch, SetStateAction } from 'react'
 import { useEffect } from 'react'
 import { getInboxThreadComposerMode } from '../common/inbox-thread-scope'
@@ -61,6 +62,8 @@ export function useComposerGitStateSync({
   setProjectGitState,
   setProjectGitLoading,
 }: UseComposerGitStateSyncInput) {
+  const codingEnabled =
+    shellAppSettings != null && isToolkitExtensionEnabled(shellAppSettings, 'coding')
   const inboxComposerMode = getInboxThreadComposerMode(selectedInboxThread)
   const inboxProjectId = selectedInboxThread?.projectId ?? null
   const inboxConversationId = selectedInboxThread?.conversationId ?? null
@@ -127,7 +130,7 @@ export function useComposerGitStateSync({
   ])
 
   useEffect(() => {
-    if (!composerProjectId) {
+    if (!(codingEnabled && composerProjectId)) {
       setProjectGitState(null)
       setProjectGitLoading(false)
       return
@@ -156,10 +159,16 @@ export function useComposerGitStateSync({
     return () => {
       cancelled = true
     }
-  }, [composerProjectId, loadProjectGitState, setProjectGitLoading, setProjectGitState])
+  }, [
+    codingEnabled,
+    composerProjectId,
+    loadProjectGitState,
+    setProjectGitLoading,
+    setProjectGitState,
+  ])
 
   useEffect(() => {
-    if (workspaceState.activeView !== 'gitops' || !composerProjectId) {
+    if (!codingEnabled || workspaceState.activeView !== 'gitops' || !composerProjectId) {
       return
     }
 
@@ -185,6 +194,7 @@ export function useComposerGitStateSync({
       cancelled = true
     }
   }, [
+    codingEnabled,
     composerProjectId,
     loadProjectGitState,
     setProjectGitLoading,

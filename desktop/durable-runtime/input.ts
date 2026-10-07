@@ -1,13 +1,11 @@
-import { open, readFile } from 'node:fs/promises'
+import { open } from 'node:fs/promises'
 import type { Conversation, UserInput } from '@earendil-works/pi-durable'
 import { buildComposerAttachmentPrompt } from '../../shared/composer-attachment-prompt.ts'
 import type { ComposerAttachment, ComposerStateRequest } from '../../shared/desktop-contracts.ts'
 import { mapWithConcurrency } from '../pi-threads/map-with-concurrency.ts'
-import { AttachmentGrantsDoc, resolveAttachmentGrants } from '../resources/attachment-grants.ts'
-import { getComposerSkills } from '../resources/discovery.ts'
 import { getDurableModels } from '../settings/models.ts'
 import { loadPiSettings } from '../settings/preferences.ts'
-import { getConversationResourceRequest, hasConversationSkills } from './extension-composition.ts'
+import { getConversationResourceRequest, prepareExtensionInput } from './extension-ingress.ts'
 import { runtimeContext } from './host.ts'
 
 const externalReferencePattern = /^https?:\/\//i
@@ -19,8 +17,6 @@ const imageMimeTypes: Record<string, string> = {
   gif: 'image/gif',
   webp: 'image/webp',
 }
-const dollarSkillTokenPattern = /(^|\s)\$([\w./-]+)/g
-const skillCommandPattern = /^\/skill:([^\s]+)(?:\s|$)/
 async function readImageInput(image: ComposerAttachment) {
   const extension = image.path.split('.').at(-1)?.toLowerCase()
   const mimeType = extension ? imageMimeTypes[extension] : undefined
@@ -84,25 +80,6 @@ export async function prepareRuntimeInput(
     if (!model?.input.includes('image'))
       throw new Error('The selected model does not support image inputs.')
   }
-  const skills = hasConversationSkills(agent) ? await getComposerSkills(resourceRequest) : []
-  const selectedNames = new Set(
-    Array.from(request.text.matchAll(dollarSkillTokenPattern), (match) => match[2]),
-  )
-  const commandName = skillCommandPattern.exec(request.text)?.[1]
-  if (commandName) selectedNames.add(commandName)
-  const selectedSkills = skills.filter((skill) => selectedNames.has(skill.name))
-  const grants = await resolveAttachmentGrants(request.attachments ?? [])
-  await conversation.commit(async (tx) => {
-    const existing = await tx.doc(AttachmentGrantsDoc, conversation.id)
-    existing.files = [...new Set([...existing.files, ...grants.files])]
-    existing.directories = [...new Set([...existing.directories, ...grants.directories])]
-  }, runtimeContext)
-  const instructions = await Promise.all(
-    selectedSkills.map(
-      async (skill) =>
-        `<skill name="${skill.name}">\n${await readFile(skill.filePath, 'utf8')}\n</skill>`,
-    ),
-  )
-
-  return promptContent([...instructions, request.text].join('\n\n'), request.attachments ?? [])
+  const text = await prepareExtensionInput(agent, conversation, request, runtimeContext)
+  return promptContent(text, request.attachments ?? [])
 }

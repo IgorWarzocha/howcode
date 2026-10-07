@@ -1,5 +1,4 @@
-import { ComposerDiffBaselineSelector, getGitOpsEntryButtonClass } from '@howcode/native-gitops'
-import { Bot, FileCode2, GitBranch, Terminal } from 'lucide-react'
+import { Bot } from 'lucide-react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import { ToolbarButton } from '../common/toolbar-button'
 import type {
@@ -9,8 +8,10 @@ import type {
   ProjectDiffBaseline,
   ProjectGitState,
 } from '../desktop/types'
+import { ArtifactsComposerControl } from '../extensions/artifacts-plugin'
+import { CodingComposerControls } from '../extensions/coding-composer-controls'
+import { TerminalComposerControl } from '../extensions/terminal-plugin'
 import type { Message } from '../types'
-import { compactIconButtonClass, iconActionButtonDisabledClass } from '../ui/classes'
 import { cn } from '../utils/cn'
 import {
   workspaceFooterRowClass,
@@ -93,25 +94,11 @@ export function ComposerFooter({
     ignoreSource: 'model',
     onDismiss: () => onSetOpenMenu((current) => (current === 'model' ? null : current)),
   })
-  const gitVisualMode = projectGitState?.isGitRepo
-    ? projectGitState.fileCount > 0
-      ? 'dirty'
-      : 'clean'
-    : 'not-git'
 
   return (
     <div className={workspaceFooterRowClass}>
       {showTerminalControls ? (
-        <ToolbarButton
-          label="Terminal"
-          icon={<Terminal size={14} />}
-          onClick={onToggleTerminal}
-          className={cn(
-            workspaceFooterTextClass,
-            'composer-terminal-control',
-            terminalVisible && 'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
-          )}
-        />
+        <TerminalComposerControl visible={terminalVisible} onToggle={onToggleTerminal} />
       ) : null}
       <div className="relative inline-flex h-7 items-center">
         <ToolbarButton
@@ -158,44 +145,23 @@ export function ComposerFooter({
         ) : null}
       </div>
       <div className={workspaceFooterTrailingGroupClass}>
-        {projectGitState?.isGitRepo ? (
-          <ComposerDiffBaselineSelector
-            composerPanelRef={composerPanelRef}
-            branch={projectGitState.branch}
-            parentBranchName={parentBranchName}
-            projectId={projectId}
-            projectGitState={projectGitState}
-            selectedBaseline={diffBaseline}
-            onSelectBaseline={onSelectBaseline}
-          />
-        ) : null}
-        {showTerminalControls ? (
-          <button
-            type="button"
-            className={cn(
-              compactIconButtonClass,
-              'composer-gitops-control h-7 w-7',
-              getGitOpsEntryButtonClass(gitVisualMode),
-            )}
-            onClick={onOpenGitOps}
-            aria-label="Git ops"
-            data-tooltip="Git ops"
-          >
-            <GitBranch size={14} />
-          </button>
-        ) : (
-          <ToolbarButton
-            label="Artifacts"
-            icon={<FileCode2 size={14} />}
-            trailing
-            className={cn(
-              workspaceFooterTextClass,
-              iconActionButtonDisabledClass,
-              artifactsVisible && 'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
-            )}
-            onClick={onToggleArtifacts}
-            disabled={!(artifactsAvailable && onToggleArtifacts)}
-            aria-disabled={!(artifactsAvailable && onToggleArtifacts)}
+        <CodingComposerControls
+          selector={{
+            composerPanelRef,
+            parentBranchName,
+            projectId,
+            projectGitState,
+            selectedBaseline: diffBaseline,
+            onSelectBaseline,
+          }}
+          showGitOps={showTerminalControls}
+          onOpenGitOps={onOpenGitOps}
+        />
+        {showTerminalControls ? null : (
+          <ArtifactsComposerControl
+            available={artifactsAvailable}
+            visible={artifactsVisible ?? false}
+            onToggle={onToggleArtifacts}
           />
         )}
       </div>

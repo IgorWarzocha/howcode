@@ -4,10 +4,12 @@ import type { AnyDesktopActionPayload, DesktopActionResult } from '../desktop/ty
 import type { Project } from '../types'
 
 export function useProjectRepoOriginRefresh({
+  enabled = true,
   projects,
   selectedProjectId,
   runDesktopAction,
 }: {
+  enabled?: boolean
   projects: Project[]
   selectedProjectId: string
   runDesktopAction: (
@@ -18,6 +20,7 @@ export function useProjectRepoOriginRefresh({
   const inspectedProjectIdsRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
+    if (!enabled) return
     const selectedProject = projects.find((project) => project.id === selectedProjectId)
     if (!selectedProject || selectedProject.repoOriginChecked) {
       return
@@ -29,5 +32,5 @@ export function useProjectRepoOriginRefresh({
 
     inspectedProjectIdsRef.current.add(selectedProject.id)
     void runDesktopAction('project.refresh-repo-origin', { projectId: selectedProject.id })
-  }, [projects, runDesktopAction, selectedProjectId])
+  }, [enabled, projects, runDesktopAction, selectedProjectId])
 }

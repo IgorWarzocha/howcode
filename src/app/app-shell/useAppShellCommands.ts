@@ -1,9 +1,14 @@
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { isLocalConversationId } from '@howcode/shared/conversation-ids'
+import {
+  isToolkitExtensionEnabled,
+  type ToolkitExtensionSettings,
+} from '@howcode/shared/toolkit-extensions'
 import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch, SetStateAction } from 'react'
 import { useCallback } from 'react'
 import type { DesktopActionResult, InboxThread } from '../desktop/types'
+import { isWorkspaceViewEnabled } from '../extensions/toolkit-plugins'
 import { notifyProjectDiffInvalidated } from '../hooks/project-diff-invalidation'
 import { forgetLocalDraftThread } from '../hooks/useDesktopProjectThreads'
 import { desktopQueryKeys } from '../query/desktop-query'
@@ -25,6 +30,7 @@ type HandleAction = (
 ) => Promise<DesktopActionResult | null>
 
 type UseAppShellCommandsInput = {
+  toolkitSettings: ToolkitExtensionSettings | undefined
   collapsedProjectIds: Record<string, boolean>
   composerProjectId: string
   dispatch: Dispatch<WorkspaceAction>
@@ -50,6 +56,7 @@ function resetProjectDiffCaches(queryClient: QueryClient, projectId: string) {
 }
 
 export function useAppShellCommands({
+  toolkitSettings,
   collapsedProjectIds,
   composerProjectId,
   dispatch,
@@ -67,21 +74,29 @@ export function useAppShellCommands({
     workspaceState,
   })
 
-  const handleToggleTerminal = useCallback(() => dispatch({ type: 'toggle-terminal' }), [dispatch])
+  const handleToggleTerminal = useCallback(() => {
+    if (isToolkitExtensionEnabled(toolkitSettings, 'terminal'))
+      dispatch({ type: 'toggle-terminal' })
+  }, [dispatch, toolkitSettings])
   const handleCloseTerminalDrawer = useCallback(
     () => dispatch({ type: 'set-terminal-visible', visible: false }),
     [dispatch],
   )
 
   const handleShowView = (view: Exclude<View, 'gitops'>, target?: SettingsOpenTarget) => {
-    if (view === 'settings') {
+    const enabledView = isWorkspaceViewEnabled(toolkitSettings, view) ? view : 'chat'
+    if (enabledView === 'settings') {
       setSettingsOpenTarget(target ?? null)
     }
-    dispatch({ type: 'show-view', view })
+    dispatch({ type: 'show-view', view: enabledView })
   }
 
   const handleShowLanding = () => {
-    dispatch({ type: 'show-landing' })
+    dispatch(
+      isToolkitExtensionEnabled(toolkitSettings, 'coding')
+        ? { type: 'show-landing' }
+        : { type: 'show-view', view: 'chat' },
+    )
   }
 
   const handleCloseUtilityView = () => {

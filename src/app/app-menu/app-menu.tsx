@@ -7,6 +7,7 @@ import { type FeatureStatusId, getFeatureStatusDataAttributes } from '../feature
 import { cn } from '../utils/cn'
 
 export type AppMenuProps = {
+  skillsEnabled?: boolean
   menuId: string
   open: boolean
   onOpenAbout: () => void
@@ -17,6 +18,7 @@ export type AppMenuProps = {
 }
 
 export function AppMenu({
+  skillsEnabled = true,
   menuId,
   open,
   onOpenAbout,
@@ -33,7 +35,9 @@ export function AppMenu({
     disabled?: boolean
   }> = [
     { icon: <Info size={15} />, title: 'About', onClick: onOpenAbout },
-    { icon: <Sparkles size={15} />, title: 'Skills', onClick: onOpenSkillsView },
+    ...(skillsEnabled
+      ? [{ icon: <Sparkles size={15} />, title: 'Skills', onClick: onOpenSkillsView }]
+      : []),
     { icon: <Archive size={15} />, title: 'Archived threads', onClick: onOpenArchivedThreads },
     { icon: <Settings size={15} />, title: 'App settings', onClick: onOpenSettingsPanel },
   ]

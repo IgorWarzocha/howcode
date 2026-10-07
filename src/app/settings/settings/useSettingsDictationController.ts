@@ -1,3 +1,4 @@
+import { isToolkitExtensionEnabled } from '@howcode/shared/toolkit-extensions'
 import { useCallback, useEffect, useState } from 'react'
 import { getDesktopActionErrorMessage } from '../../desktop/action-results'
 import type {
@@ -65,6 +66,7 @@ export function useSettingsDictationController({
   appSettings: AppSettings
   onAction: DesktopActionInvoker
 }) {
+  const enabled = isToolkitExtensionEnabled(appSettings, 'dictation')
   const [dictationState, setDictationState] = useState<DictationState | null>(null)
   const [dictationModels, setDictationModels] = useState<DictationModelSummary[]>([])
   const [dictationPendingAction, setDictationPendingAction] =
@@ -100,10 +102,11 @@ export function useSettingsDictationController({
   }, [])
 
   useEffect(() => {
-    void refreshDictationState()
-  }, [refreshDictationState])
+    if (enabled) void refreshDictationState()
+  }, [enabled, refreshDictationState])
 
   useEffect(() => {
+    if (!enabled) return
     return subscribeDesktopEvents((event: DesktopEvent) => {
       if (event.type !== 'dictation-download-log') {
         return
@@ -113,7 +116,7 @@ export function useSettingsDictationController({
         void refreshDictationState()
       }
     })
-  }, [refreshDictationState])
+  }, [enabled, refreshDictationState])
 
   const updateDictationModelSetting = useCallback(
     async (modelId: DictationModelId | null, fallbackMessage: string) => {

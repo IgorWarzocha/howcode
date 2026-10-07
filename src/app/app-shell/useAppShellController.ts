@@ -1,3 +1,4 @@
+import { isToolkitExtensionEnabled } from '@howcode/shared/toolkit-extensions'
 import { useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useDesktopBridge } from '../hooks/useDesktopBridge'
@@ -28,6 +29,7 @@ export function useAppShellController() {
   const invokeDesktopAction = useDesktopBridge()
   const projects = desktopShell.shellState?.projects ?? EMPTY_LIST
   useAppShellUrlSync({
+    toolkitSettings: desktopShell.shellState?.appSettings,
     dispatch: bundle.workspace.dispatch,
     loadProjectThreads: desktopShell.loadProjectThreads,
     projects,
@@ -50,7 +52,10 @@ export function useAppShellController() {
       ) ?? null,
     [inboxThreads, bundle.workspace.state.selectedInboxConversationId],
   )
-  const terminals = useRunningTerminalSessions()
+  const terminals = useRunningTerminalSessions(
+    desktopShell.shellState !== null &&
+      isToolkitExtensionEnabled(desktopShell.shellState?.appSettings, 'terminal'),
+  )
   const viewModel = useMemo(
     () =>
       deriveControllerViewModel({
@@ -114,6 +119,9 @@ export function useAppShellController() {
     workspaceState: bundle.workspace.state,
   })
   useProjectRepoOriginRefresh({
+    enabled:
+      desktopShell.shellState !== null &&
+      isToolkitExtensionEnabled(desktopShell.shellState.appSettings, 'coding'),
     projects,
     selectedProjectId: bundle.workspace.state.selectedProjectId,
     runDesktopAction: actions.runDesktopAction,
@@ -133,6 +141,7 @@ export function useAppShellController() {
     workspaceState: bundle.workspace.state,
   })
   const commands = useAppShellCommands({
+    toolkitSettings: desktopShell.shellState?.appSettings,
     collapsedProjectIds: viewModel.collapsedProjectIds,
     composerProjectId: viewModel.composerProjectId,
     dispatch: bundle.workspace.dispatch,

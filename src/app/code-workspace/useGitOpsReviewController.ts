@@ -9,6 +9,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
 import type { ProjectDiffBaseline } from '../desktop/types'
+import { useToolkitExtensionEnabled } from '../extensions/toolkit-context'
 
 function hasSavedComments(context: ReviewContext | null): context is ReviewContext {
   return Boolean(context && context.comments.length > 0)
@@ -29,6 +30,7 @@ export function useGitOpsReviewController({
   shellState: AppShellController['desktop']['shellState']
   includeUntracked: boolean
 }): GitOpsReviewController {
+  const enabled = useToolkitExtensionEnabled('coding')
   const [comments, setComments] = useState<SavedReviewComment[]>([])
   const [hasPendingReview, setHasPendingReview] = useState(false)
   const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null)
@@ -41,6 +43,7 @@ export function useGitOpsReviewController({
   )
 
   useEffect(() => {
+    if (!enabled) return
     const syncReview = () => {
       if (!contextId) {
         setComments([])
@@ -57,7 +60,7 @@ export function useGitOpsReviewController({
     setSelectedCommentJumpKey(0)
     syncReview()
     return reviewStore.subscribe(syncReview)
-  }, [contextId])
+  }, [contextId, enabled])
 
   const send = useCallback(
     async (instruction?: string | null) => {

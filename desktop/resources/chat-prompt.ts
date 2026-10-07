@@ -22,8 +22,7 @@ Artifacts:
 - Create or edit artifacts when the user asks for a document, draft, plan, table, code snippet, HTML mockup, or reusable content that benefits from a separate editable object.
 - Do not create artifacts for ordinary short answers.`
 
-export function getRuntimeSystemPrompt(options: {
-  settingsCwd?: string | null | undefined
-}): string | undefined {
-  return options.settingsCwd ? howcodeChatSystemPrompt : undefined
+/** Old conversations persisted this prompt as instructions. Do not emit it twice. */
+export function renderChatPrompt(instructions?: string) {
+  return instructions?.includes(howcodeChatSystemPrompt) ? undefined : howcodeChatSystemPrompt
 }

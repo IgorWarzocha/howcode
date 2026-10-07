@@ -1,6 +1,8 @@
 import { Tooltip } from '@howcode/common/tooltip'
+import { codingPlugin } from '@howcode/extensions/coding-plugin'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
-import { Code2, Inbox, MessageSquare, PanelLeftClose, Settings } from 'lucide-react'
+import { isToolkitExtensionEnabled } from '@howcode/shared/toolkit-extensions'
+import { Inbox, MessageSquare, PanelLeftClose, Settings } from 'lucide-react'
 import { useCallback, useRef } from 'react'
 import type {
   AppSettings,
@@ -76,9 +78,11 @@ function isCodeModeActive(activeView: View) {
 function SidebarModeNav({
   activeView,
   codeModeActive,
+  appSettings,
   onShowView,
 }: {
   activeView: View
+  appSettings: AppSettings
   codeModeActive: boolean
   onShowView: (view: SidebarNavigableView) => void
 }) {
@@ -96,12 +100,14 @@ function SidebarModeNav({
         active={activeView === 'chat'}
         onClick={() => onShowView('chat')}
       />
-      <NavButton
-        icon={<Code2 size={16} />}
-        label="Code"
-        active={codeModeActive && activeView !== 'inbox'}
-        onClick={() => onShowView('code')}
-      />
+      {isToolkitExtensionEnabled(appSettings, codingPlugin.id) ? (
+        <NavButton
+          icon={<codingPlugin.navigation.icon size={16} />}
+          label={codingPlugin.navigation.label}
+          active={codeModeActive && activeView !== 'inbox'}
+          onClick={() => onShowView(codingPlugin.navigation.view)}
+        />
+      ) : null}
     </nav>
   )
 }
@@ -139,6 +145,8 @@ function SidebarContent(props: SidebarProps) {
       />
     )
   }
+  if (!isToolkitExtensionEnabled(props.appSettings, 'coding') && props.activeView !== 'skills')
+    return null
   if (props.activeView !== 'skills') {
     return (
       <ProjectWorkSection
@@ -311,6 +319,7 @@ export function Sidebar({
           <SidebarModeNav
             activeView={activeView}
             codeModeActive={codeModeActive}
+            appSettings={appSettings}
             onShowView={onShowView}
           />
         ) : null}
@@ -359,6 +368,7 @@ export function Sidebar({
             open={settingsOpen}
             panelRef={settingsMenuRef}
             onOpenAbout={onOpenAbout}
+            skillsEnabled={isToolkitExtensionEnabled(appSettings, 'skills')}
             onOpenSkillsView={onOpenSkillsView}
             onOpenSettingsPanel={onOpenSettingsPanel}
             onOpenArchivedThreads={onOpenArchivedThreads}

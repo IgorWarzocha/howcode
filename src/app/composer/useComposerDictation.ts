@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { getErrorMessage } from '../desktop/error-messages'
 import type { DictationState } from '../desktop/types'
+import { useToolkitExtensionEnabled } from '../extensions/toolkit-context'
 import { useLatestRef } from '../hooks/useLatestRef'
 import {
   canTranscribeDictationQuery,
@@ -125,11 +126,13 @@ async function startDictationCapture(input: StartDictationCaptureInput) {
     return 'unavailable' as const
   }
 
+  const requestToken = input.dictationSessionTokenRef.current
   try {
     const availability = await readDictationAvailability(
       input.dictationState,
       input.setErrorMessage,
     )
+    if (requestToken !== input.dictationSessionTokenRef.current) return 'unavailable' as const
     if (availability === 'unavailable') return 'unavailable' as const
     if (availability) input.setDictationState(availability)
     const unavailableResult = getUnavailableDictationToggleResult(
@@ -139,6 +142,10 @@ async function startDictationCapture(input: StartDictationCaptureInput) {
     if (unavailableResult) return unavailableResult
 
     const capture = await startLocalDictationCapture(input.dictationMaxDurationSeconds)
+    if (requestToken !== input.dictationSessionTokenRef.current) {
+      await capture.abort()
+      return 'unavailable' as const
+    }
     input.dictationSessionTokenRef.current += 1
     input.dictationCaptureRef.current = capture
     input.setDictationActive(true)
@@ -173,6 +180,7 @@ export function useComposerDictation({
   setDraftValue,
   setErrorMessage,
 }: UseComposerDictationProps) {
+  const enabled = useToolkitExtensionEnabled('dictation')
   const dictationCaptureRef = useRef<LocalDictationCaptureSession | null>(null)
   const [dictationActive, setDictationActive] = useState(false)
   const [dictationInterimText, setDictationInterimText] = useState('')
@@ -257,14 +265,17 @@ export function useComposerDictation({
     abortDictationSession()
   }, [abortDictationSession, dictationScopeKey])
 
-  useEffect(() => abortDictationSession, [abortDictationSession])
+  useEffect(() => {
+    if (!enabled) abortDictationSession()
+    return abortDictationSession
+  }, [abortDictationSession, enabled])
 
   useEffect(() => {
     let disposed = false
 
     void dictationModelId
 
-    if (!canTranscribeDictationQuery()) {
+    if (!(enabled && canTranscribeDictationQuery())) {
       return
     }
 
@@ -283,7 +294,7 @@ export function useComposerDictation({
     return () => {
       disposed = true
     }
-  }, [dictationModelId])
+  }, [dictationModelId, enabled])
 
   const dictationMissingModel = dictationState?.reason === 'missing-model'
   const dictationSupported = useMemo(
@@ -295,6 +306,8 @@ export function useComposerDictation({
   )
 
   const toggleDictation = async () => {
+    if (!enabled) return 'unavailable' as const
+
     if (dictationCaptureRef.current) {
       void stopDictationAndFlush()
       return 'stopped' as const

@@ -4,7 +4,6 @@ import { LandingView, ProjectOverviewView } from '@howcode/projects'
 import { SessionsView } from '@howcode/sessions'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { ThreadView } from '@howcode/thread'
-import { lazy, Suspense } from 'react'
 import type {
   AppSettings,
   ArchivedThread,
@@ -19,14 +18,9 @@ import type {
   ProjectGitState,
   ThreadData,
 } from '../desktop/types'
+import { SkillsWorkspaceView } from '../extensions/skills-workspace-view'
 import { SettingsView } from '../settings/settings-view'
 import type { Project, View } from '../types'
-import { viewSubtitleClass, viewTitleClass } from '../ui/classes'
-
-const SkillsView = lazy(async () => {
-  const module = await import('../skills/skills-view')
-  return { default: module.SkillsView }
-})
 
 type CodeWorkspaceMainViewProps = {
   activeView: View
@@ -269,25 +263,14 @@ export function CodeWorkspaceMainView({
 
   if (activeView === 'skills') {
     return (
-      <Suspense
-        fallback={
-          <div className="mx-auto grid h-full w-full max-w-[760px] content-start gap-4 px-2 pt-6 pb-6">
-            <div className="grid gap-1">
-              <h1 className={viewTitleClass}>Skills</h1>
-              <p className={viewSubtitleClass}>Loading skills…</p>
-            </div>
-          </div>
-        }
-      >
-        <SkillsView
-          appSettings={appSettings}
-          projectPath={selectedProjectId || null}
-          onSetProjectScopeActive={onSetSkillsProjectScopeActive}
-          onProjectTargetSelected={() => onSetSkillsProjectScopeActive(true)}
-          onAction={onAction}
-          onClose={onCloseUtilityView}
-        />
-      </Suspense>
+      <SkillsWorkspaceView
+        appSettings={appSettings}
+        projectPath={selectedProjectId || null}
+        onSetProjectScopeActive={onSetSkillsProjectScopeActive}
+        onProjectTargetSelected={() => onSetSkillsProjectScopeActive(true)}
+        onAction={onAction}
+        onClose={onCloseUtilityView}
+      />
     )
   }
 

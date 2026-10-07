@@ -12,6 +12,7 @@ import type {
 import type { PiSettingsSchema, PiThemeStateSchema } from './desktop-settings-schema'
 import type { Project } from './desktop-thread-contracts'
 import type { ComposerSendMode, KeybindingOverrides } from './keybindings'
+import type { ToolkitExtensionId } from './toolkit-extensions'
 
 export type ModelSelection = {
   provider: string
@@ -22,6 +23,7 @@ export type ProjectDeletionMode = 'pi-only' | 'full-clean'
 export type { GitOpsMode } from './desktop-project-git-contracts'
 
 export type AppSettings = {
+  enabledToolkitExtensions?: readonly ToolkitExtensionId[]
   chatModel: ModelSelection | null
   chatThinkingLevel: ComposerThinkingLevel | null
   codeModel: ModelSelection | null

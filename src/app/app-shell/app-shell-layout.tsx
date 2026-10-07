@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { useToolkitExtensionEnabled } from '../extensions/toolkit-context'
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence'
 import { WORKSPACE_CONTENT_MAX_WIDTH_CLASS } from '../ui/layout'
 import { getLayoutThreadSelection } from './app-shell-layout-model'
@@ -13,6 +14,7 @@ type AppShellLayoutProps = {
 }
 
 export function AppShellLayout({ controller }: AppShellLayoutProps) {
+  const terminalEnabled = useToolkitExtensionEnabled('terminal')
   const composerProjectId = controller.composer.projectId
   const { state } = controller.workspace
   const {
@@ -29,6 +31,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const { conversationId: terminalConversationId, threadId: activeThreadId } =
     getLayoutThreadSelection(state)
   const terminalDrawerVisible =
+    terminalEnabled &&
     (state.activeView === 'thread' || state.activeView === 'project') &&
     state.terminalVisible &&
     !(sidebarCompactMode && terminalHiddenByCompactResize)
@@ -77,7 +80,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
         renderMode: diffRenderMode,
       }}
       terminal={{
-        drawerPresent: terminalDrawerPresent,
+        drawerPresent: terminalEnabled && terminalDrawerPresent,
         drawerVisible: terminalDrawerVisible,
         conversationId: terminalConversationId,
       }}
