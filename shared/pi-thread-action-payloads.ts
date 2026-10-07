@@ -1,5 +1,7 @@
+import * as Schema from 'effect/Schema'
 import { isComposerThinkingLevel } from './composer-thinking-level'
 import { getLocalDraftBranchName, getPersistedConversationId } from './conversation-ids'
+import { ComposerExtensionSelectionSchema } from './desktop-composer-schema'
 import type {
   AppSettings,
   ComposerAttachment,
@@ -18,6 +20,13 @@ import type {
 
 export function getComposerRequest(payload: DesktopActionPayloadInput): ComposerStateRequest {
   return {
+    ...(payload.composerExtensions === undefined
+      ? {}
+      : {
+          composerExtensions: Schema.decodeUnknownSync(ComposerExtensionSelectionSchema)(
+            payload.composerExtensions,
+          ),
+        }),
     projectId: typeof payload.projectId === 'string' ? payload.projectId : null,
     conversationId: getPersistedConversationId(
       typeof payload.conversationId === 'string' ? payload.conversationId : null,

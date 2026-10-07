@@ -1,11 +1,12 @@
 import { readdir, realpath } from 'node:fs/promises'
 import path from 'node:path'
 import { Type } from '@earendil-works/pi-ai'
-import { defineExtension, defineTool } from '@earendil-works/pi-durable'
+import { defineExtension, defineTool, wrapSection } from '@earendil-works/pi-durable'
 import { createReadTool } from '@earendil-works/pi-durable/tools'
 import { createArtifact, editArtifact, getArtifact, listArtifacts } from '../artifact-state-db.ts'
 import { AttachmentGrantsDoc, authorizeAttachmentPath } from './attachment-grants.ts'
 import { getComposerSkills } from './discovery.ts'
+import { createSkillsSection } from './instructions.ts'
 
 async function skillReadGrants() {
   const skills = await getComposerSkills({ composerMode: 'chat' })
@@ -143,6 +144,7 @@ const artifactTools = [
 export const ChatTools = defineExtension({
   name: 'howcode.chat',
   tools: [attachmentRead, attachmentList, ...artifactTools],
+  wraps: [wrapSection('skills', () => createSkillsSection('chat'))],
 })
 export const CodeArtifactTools = defineExtension({
   name: 'howcode.artifacts',

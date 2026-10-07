@@ -1,5 +1,6 @@
 import type {
   ComposerAttachmentSchema,
+  ComposerExtensionSelectionSchema,
   ComposerModelSchema,
   ComposerQueuedPromptSchema,
   ComposerSkillReferenceSchema,
@@ -15,6 +16,7 @@ export type ComposerQueuedPrompt = typeof ComposerQueuedPromptSchema.Type
 export type ComposerModel = typeof ComposerModelSchema.Type
 export type ComposerState = typeof ComposerStateSchema.Type
 export type ComposerAttachment = typeof ComposerAttachmentSchema.Type
+export type ComposerExtensionSelection = typeof ComposerExtensionSelectionSchema.Type
 
 export type ComposerContextUsage = NonNullable<ComposerState['contextUsage']>
 
@@ -37,6 +39,8 @@ export type ComposerFileSearchEntry = ComposerFilePickerEntry & {
 }
 
 export type ComposerStateRequest = {
+  /** Omitted uses compatibility defaults. An empty array selects no extensions. */
+  composerExtensions?: ComposerExtensionSelection | undefined
   projectId?: string | undefined | null | undefined
   conversationId?: string | undefined | null | undefined
   composerMode?: 'chat' | 'code' | null | undefined

@@ -3,6 +3,9 @@ import { composerThinkingLevels } from './composer-thinking-level'
 
 export const ComposerThinkingLevelSchema = Schema.Literals(composerThinkingLevels)
 
+// Names are resolved against the host's Durable registry before conversation creation.
+export const ComposerExtensionSelectionSchema = Schema.mutable(Schema.Array(Schema.String))
+
 export const ComposerStreamingBehaviorSchema = Schema.Literals(['steer', 'followUp', 'stop'])
 
 export const ComposerQueuedPromptSchema = Schema.Struct({

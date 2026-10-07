@@ -1,3 +1,4 @@
+import { composeBuiltInWorkspaceViews } from '@howcode/extensions/built-in-workspace-views'
 import { TerminalPanel } from '@howcode/workspace-shell'
 import type { RefObject } from 'react'
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
@@ -90,22 +91,25 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <AppShellWorkspace
-            controller={controller}
-            activeComposerState={controller.composer.state}
-            activeThreadData={controller.thread.activeData}
-            composerProjectId={controller.composer.projectId}
-            currentProjectName={controller.projects.currentName}
-            diffBaseline={props.diff.baseline}
-            diffRenderMode={props.diff.renderMode}
-            terminalDrawerVisible={props.terminal.drawerVisible}
-            terminalConversationId={props.terminal.conversationId}
-            workspaceContentClass={workspaceContentClass}
-            onSetDiffBaseline={props.diff.onBaselineChange}
-            onSetDiffRenderMode={props.diff.onRenderModeChange}
-            sidebarCollapsed={props.sidebar.collapsed}
-            sidebarAutoHidden={props.sidebar.compactMode}
-            sidebarCompactMode={props.sidebar.compactMode}
-            onToggleSidebar={props.sidebar.onToggle}
+            activeView={controller.workspace.state.activeView}
+            contributions={composeBuiltInWorkspaceViews({
+              controller,
+              activeComposerState: controller.composer.state,
+              activeThreadData: controller.thread.activeData,
+              composerProjectId: controller.composer.projectId,
+              currentProjectName: controller.projects.currentName,
+              diffBaseline: props.diff.baseline,
+              diffRenderMode: props.diff.renderMode,
+              terminalDrawerVisible: props.terminal.drawerVisible,
+              terminalConversationId: props.terminal.conversationId,
+              workspaceContentClass,
+              onSetDiffBaseline: props.diff.onBaselineChange,
+              onSetDiffRenderMode: props.diff.onRenderModeChange,
+              sidebarCollapsed: props.sidebar.collapsed,
+              sidebarAutoHidden: props.sidebar.compactMode,
+              sidebarCompactMode: props.sidebar.compactMode,
+              onToggleSidebar: props.sidebar.onToggle,
+            })}
           />
         </div>
         <TerminalDrawerLayer {...props} />

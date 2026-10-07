@@ -3,7 +3,6 @@ import { BACKGROUND_CONTEXT } from '@earendil-works/chord/context'
 import type { Models } from '@earendil-works/pi-ai'
 import {
   type Cursor,
-  createRegistry,
   defineDoc,
   type EntryRecord,
   Harness,
@@ -12,16 +11,16 @@ import {
 } from '@earendil-works/pi-durable'
 import { NodeExecutionEnv } from '@earendil-works/pi-durable/env/node'
 import { openNodeSqliteStorage } from '@earendil-works/pi-durable/storage/sqlite/node'
-import { CodingTools } from '@earendil-works/pi-durable/tools'
 import type { ComposerStateRequest } from '../../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
-import { Resources } from '../resources/instructions.ts'
-import { ChatTools, CodeArtifactTools } from '../resources/tools.ts'
-import { howcodeChatSystemPrompt } from '../runtime/chat-system-prompt.ts'
 import { getDurableModels } from '../settings/models.ts'
 import { loadPiSettings } from '../settings/preferences.ts'
 import { getDesktopUserDataPath } from '../user-data-path.ts'
 import { getComposerDefaults } from './defaults.ts'
+import {
+  createDesktopExtensionRegistry,
+  resolveDesktopExtensions,
+} from './extension-composition.ts'
 import { decodeConversationId, decodeEntryId } from './identity.ts'
 
 export { decodeConversationId, decodeEntryId, decodeSubmissionId } from './identity.ts'
@@ -53,6 +52,7 @@ let runtimeStorage: Storage | undefined
 let shutdown: Promise<void> | undefined
 let activeModels: Models | undefined
 let preferences: Awaited<ReturnType<typeof loadPiSettings>> | undefined
+const extensionRegistry = createDesktopExtensionRegistry()
 
 export async function refreshDurableSettings() {
   const [models, settings] = await Promise.all([getDurableModels(), loadPiSettings()])
@@ -64,11 +64,6 @@ async function openRuntime() {
   await refreshDurableSettings()
   const storage = await openNodeSqliteStorage(join(getDesktopUserDataPath(), 'durable.sqlite'))
   try {
-    const registry = createRegistry()
-    registry.install(CodingTools)
-    registry.install(ChatTools)
-    registry.install(CodeArtifactTools)
-    registry.install(Resources)
     const harness = await Harness.open(
       storage,
       {
@@ -76,7 +71,7 @@ async function openRuntime() {
           if (!activeModels) throw new Error('Durable model access is unavailable.')
           return activeModels
         },
-        registry,
+        registry: extensionRegistry,
         settings: {
           get compaction() {
             return { enabled: preferences?.autoCompact ?? true }
@@ -122,6 +117,7 @@ export async function resolveConversation(conversationId: string) {
 }
 
 export async function createRuntimeConversation(request: ComposerStateRequest = {}) {
+  const selection = resolveRuntimeExtensions(request)
   const defaults = getComposerDefaults(request)
   const models = await getDurableModels()
   const defaultModel = (await models.getAvailable())[0]
@@ -136,11 +132,7 @@ export async function createRuntimeConversation(request: ComposerStateRequest = 
         cwd: request.projectId ?? getDesktopWorkingDirectory(),
         ...(model ? { model } : {}),
         thinkingLevel: defaults.thinkingLevel,
-        extensions:
-          request.composerMode === 'chat'
-            ? [ChatTools, Resources]
-            : [CodingTools, CodeArtifactTools, Resources],
-        ...(request.composerMode === 'chat' ? { instructions: howcodeChatSystemPrompt } : {}),
+        ...selection,
       },
       init: async (tx, conversationId) => {
         const origin = await tx.doc(RuntimeOriginDoc, conversationId)
@@ -155,6 +147,10 @@ export async function createRuntimeConversation(request: ComposerStateRequest = 
     },
     runtimeContext,
   )
+}
+
+export function resolveRuntimeExtensions(request: ComposerStateRequest) {
+  return resolveDesktopExtensions(request, extensionRegistry)
 }
 
 export async function listRuntimeConversations() {

@@ -7,6 +7,7 @@ import { AttachmentGrantsDoc, resolveAttachmentGrants } from '../resources/attac
 import { getComposerSkills } from '../resources/discovery.ts'
 import { getDurableModels } from '../settings/models.ts'
 import { loadPiSettings } from '../settings/preferences.ts'
+import { getConversationResourceRequest, hasConversationSkills } from './extension-composition.ts'
 import { runtimeContext } from './host.ts'
 
 const externalReferencePattern = /^https?:\/\//i
@@ -68,23 +69,22 @@ export async function prepareRuntimeInput(
   conversation: Conversation,
   request: ComposerStateRequest & { text: string; attachments?: ComposerAttachment[] },
 ) {
-  const preferences = await loadPiSettings(
-    request.composerMode === 'chat' ? null : request.projectId,
-  )
+  const agent = await conversation.agent(runtimeContext)
+  const resourceRequest = getConversationResourceRequest(agent)
+  const preferences = await loadPiSettings(resourceRequest.projectId)
   if (
     preferences.blockImages &&
     request.attachments?.some((attachment) => attachment.kind === 'image')
   )
     throw new Error('Image inputs are disabled in Pi settings.')
   if (request.attachments?.some((attachment) => attachment.kind === 'image')) {
-    const agent = await conversation.agent(runtimeContext)
     const model = agent.model
       ? (await getDurableModels()).getModel(agent.model.provider, agent.model.modelId)
       : undefined
     if (!model?.input.includes('image'))
       throw new Error('The selected model does not support image inputs.')
   }
-  const skills = await getComposerSkills(request)
+  const skills = hasConversationSkills(agent) ? await getComposerSkills(resourceRequest) : []
   const selectedNames = new Set(
     Array.from(request.text.matchAll(dollarSkillTokenPattern), (match) => match[2]),
   )

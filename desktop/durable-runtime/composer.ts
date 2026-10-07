@@ -6,9 +6,27 @@ import type {
   ComposerStateRequest,
   ComposerThinkingLevel,
 } from '../../shared/desktop-contracts.ts'
+import { getComposerSkills as discoverSkills } from '../resources/discovery.ts'
 import { getComposerModels, getDurableModels } from '../settings/models.ts'
 import { getComposerDefaults } from './defaults.ts'
-import { getDurableRuntime, resolveConversation, runtimeContext } from './host.ts'
+import { getConversationResourceRequest, hasConversationSkills } from './extension-composition.ts'
+import {
+  getDurableRuntime,
+  resolveConversation,
+  resolveRuntimeExtensions,
+  runtimeContext,
+} from './host.ts'
+
+export async function getComposerSkills(request: ComposerStateRequest = {}) {
+  const conversationId = getPersistedConversationId(request.conversationId)
+  const agent = conversationId
+    ? await (await resolveConversation(conversationId)).agent(runtimeContext)
+    : {
+        ...resolveRuntimeExtensions(request),
+        ...(request.projectId ? { cwd: request.projectId } : {}),
+      }
+  return hasConversationSkills(agent) ? discoverSkills(getConversationResourceRequest(agent)) : []
+}
 
 function queuedPrompts(inbox: Readonly<InboxState> | undefined) {
   return (inbox?.items ?? []).flatMap((item) =>

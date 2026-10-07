@@ -1,4 +1,5 @@
 import type { DesktopAction } from './desktop-actions'
+import type { ComposerExtensionSelection } from './desktop-composer-contracts'
 import type {
   AppSettings,
   ComposerAttachment,
@@ -21,6 +22,7 @@ import type {
 type EmptyActionPayload = Record<string, never>
 
 export type DesktopActionPayloadFields = {
+  composerExtensions?: ComposerExtensionSelection
   attachments?: ComposerAttachment[]
   composerMode?: 'chat' | 'code' | null
   chatGroupId?: string | undefined | null | undefined
@@ -163,6 +165,7 @@ export type DesktopActionPayloadMap = {
     chatGroupId?: string | undefined | null | undefined
   }
   'thread.new': {
+    composerExtensions?: ComposerExtensionSelection
     projectId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
     chatGroupId?: string | undefined | null | undefined
@@ -271,6 +274,7 @@ export type DesktopActionPayloadMap = {
     level: ComposerThinkingLevel
   }
   'composer.send': {
+    composerExtensions?: ComposerExtensionSelection
     projectId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
     chatGroupId?: string | undefined | null | undefined

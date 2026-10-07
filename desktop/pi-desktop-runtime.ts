@@ -9,7 +9,7 @@ import type {
 } from '../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../shared/desktop-working-directory.ts'
 import { loadAppSettings } from './app-settings/readers.ts'
-import { getComposerState } from './durable-runtime/composer.ts'
+import { getComposerSkills, getComposerState } from './durable-runtime/composer.ts'
 import {
   createRuntimeConversation,
   decodeEntryId,
@@ -33,7 +33,6 @@ import {
   registerRuntimeConversation,
 } from './pi-threads/conversation-state.ts'
 import { withWorkspaceActivity } from './project-worktrees/workspace-teardown-gate.ts'
-import { getComposerSkills } from './resources/discovery.ts'
 import { emitDesktopEvent, subscribeDesktopEvents } from './runtime/desktop-events.ts'
 
 export {

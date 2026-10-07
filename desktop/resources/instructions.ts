@@ -38,19 +38,21 @@ export const Resources = defineExtension({
       const workspace = agent.cwd ? await workspaceInstructions(agent.cwd) : ''
       return [global, workspace].filter(Boolean).join('\n\n') || undefined
     }),
-    section('skills', async ({ agent }) => {
-      const chat = agent.extensions.some((extension) => extension.name === 'howcode.chat')
-      const skills = await getComposerSkills({
-        projectId: chat ? null : agent.cwd,
-        composerMode: chat ? 'chat' : 'code',
-      })
-      if (skills.length === 0) return undefined
-      return [
-        'Available skills. Read the relevant SKILL.md before using a skill.',
-        ...skills.map(
-          (skill) => `- ${skill.name}: ${skill.description}\n  File: ${skill.filePath}`,
-        ),
-      ].join('\n')
-    }),
+    createSkillsSection('workspace'),
   ],
 })
+
+/** Resource discovery is explicit extension behavior, not a name check on the agent. */
+export function createSkillsSection(scope: 'chat' | 'workspace') {
+  return section('skills', async ({ agent }) => {
+    const skills = await getComposerSkills({
+      projectId: scope === 'chat' ? null : agent.cwd,
+      composerMode: scope === 'chat' ? 'chat' : 'code',
+    })
+    if (skills.length === 0) return undefined
+    return [
+      'Available skills. Read the relevant SKILL.md before using a skill.',
+      ...skills.map((skill) => `- ${skill.name}: ${skill.description}\n  File: ${skill.filePath}`),
+    ].join('\n')
+  })
+}
