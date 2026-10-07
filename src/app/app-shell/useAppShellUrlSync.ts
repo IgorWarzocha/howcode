@@ -312,7 +312,8 @@ export function useAppShellUrlSync({
     if (
       !(
         isWorkspaceViewEnabled(toolkitSettings, routeView as View) &&
-        isWorkspaceViewEnabled(toolkitSettings, state.activeView)
+        (syncRef.current.routeKey === null ||
+          isWorkspaceViewEnabled(toolkitSettings, state.activeView))
       )
     ) {
       routeHydrationRef.current = null
