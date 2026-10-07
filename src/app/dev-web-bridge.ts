@@ -328,6 +328,9 @@ export async function installDevWebDesktopBridge() {
     platform: navigator.platform.toLowerCase().includes('mac') ? 'darwin' : 'browser',
     capabilities: browserDesktopBridgeCapabilities,
     getShellState: () => invokeRequest('getShellState', {}),
+    listPackageUis: () => invokeRequest('listPackageUis', {}),
+    loadPackageUi: (reference) => invokeRequest('loadPackageUi', reference),
+    invokePackageUiRpc: (request) => invokeRequest('invokePackageUiRpc', request),
     getProjectGitState: (projectId: string) => invokeRequest('getProjectGitState', { projectId }),
     getProjectUsageSummary: (projectId: string) =>
       invokeRequest('getProjectUsageSummary', { projectId }),
@@ -414,12 +417,21 @@ export async function installDevWebDesktopBridge() {
       await invokeRequest('terminalClose', request)
     },
     getTerminalStatus: (sessionId: string) => invokeRequest('terminalStatus', { sessionId }),
-    subscribe: (listener: (event: DesktopEvent) => void) =>
-      subscribeToEvent(
+    subscribe: (listener: (event: DesktopEvent) => void) => {
+      const unsubscribe = subscribeToEvent(
         'desktopEvent',
         Schema.decodeUnknownResult(DevWebDesktopEventEnvelope),
         listener,
-      ),
+      )
+      const source = getEventSubscription('desktopEvent').eventSource
+      // SSE does not replay inventory invalidations lost while disconnected.
+      const refreshPackageUis = () => listener({ type: 'package-ui-invalidation' })
+      source.addEventListener('open', refreshPackageUis)
+      return () => {
+        source.removeEventListener('open', refreshPackageUis)
+        unsubscribe()
+      }
+    },
     subscribeTerminal: (listener: (event: TerminalEvent) => void) =>
       subscribeToEvent(
         'terminalEvent',

@@ -40,6 +40,7 @@ import type {
   ThreadData,
   ThreadSearchResult,
 } from './desktop-contracts'
+import type { PackageUiService } from './package-ui-contracts'
 import type {
   TerminalCloseRequest,
   TerminalEvent,
@@ -184,6 +185,7 @@ export type PiSkillsService = {
 
 export type DesktopServiceRuntime = {
   app: AppService
+  packages: PackageUiService
   skills: PiSkillsService
   coding: CodingService
   artifacts: ArtifactsService

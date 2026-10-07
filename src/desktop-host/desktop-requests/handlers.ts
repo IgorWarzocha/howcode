@@ -1,3 +1,4 @@
+import { createPackageUiHandlers } from '../../../components/packages/host/index'
 import type { DesktopRequestHandlerMap } from '../../../shared/desktop-ipc'
 import type { DesktopServiceRuntime } from '../../../shared/desktop-service-contracts'
 import { createAppHandlers } from './app'
@@ -20,6 +21,7 @@ export function createDesktopRequestHandlers(input: {
     input.platform.listProjectDirectoryEntries,
   )
   return {
+    ...createPackageUiHandlers(input.runtime.packages),
     listComposerAttachmentEntries: input.platform.listComposerAttachmentEntries,
     searchComposerAttachmentEntries: input.platform.searchComposerAttachmentEntries,
     ...createAppHandlers(input.runtime.app, input.onSettingsChanged),

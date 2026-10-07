@@ -45,5 +45,5 @@ switch (command) {
 }
 if (command !== 'list')
   console.log(
-    'Package changes load at the next conversation boundary. Default-selected conversations include installed extensions.',
+    'UI package changes publish live. Agent extensions load at the next conversation boundary. Default selections include installed extensions.',
   )

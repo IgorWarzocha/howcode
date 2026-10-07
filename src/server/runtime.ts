@@ -11,6 +11,7 @@ import {
   type DesktopServiceRemoteModuleName,
   desktopServiceRemoteMethods,
 } from '../../shared/desktop-service-rpc'
+import type { PackageUiService } from '../../shared/package-ui-contracts'
 import { DesktopServiceClient } from '../desktop-host/desktop-service-client'
 
 function proxyModule<T extends Record<string, unknown>>(
@@ -51,6 +52,7 @@ export function createServerRuntime(
   return {
     dispose: () => service.dispose(),
     app: proxyModule<AppService>(service, 'app'),
+    packages: proxyModule<PackageUiService>(service, 'packages'),
     skills: proxyModule<PiSkillsService>(service, 'skills'),
     coding: proxyModule<CodingService>(service, 'coding'),
     artifacts: proxyModule<ArtifactsService>(service, 'artifacts'),

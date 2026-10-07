@@ -37,6 +37,7 @@ const KeybindingCommandIdSchema = Schema.declare<KeybindingCommandId>(isKeybindi
 
 /** Runtime decoder for DesktopEvent values received across process boundaries. */
 export const DesktopEventSchema = Schema.Union([
+  Schema.Struct({ type: Schema.Literal('package-ui-invalidation') }),
   Schema.Struct({ type: Schema.Literal('shell-state-refresh') }),
   Schema.Struct({
     type: Schema.Literal('keybinding-command'),

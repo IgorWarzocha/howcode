@@ -6,6 +6,7 @@ import type { ThreadData } from './desktop-thread-contracts'
 import type { KeybindingCommandId } from './keybindings'
 
 export type DesktopEvent =
+  | { type: 'package-ui-invalidation' }
   | { type: 'shell-state-refresh' }
   | { type: 'keybinding-command'; commandId: KeybindingCommandId }
   | {

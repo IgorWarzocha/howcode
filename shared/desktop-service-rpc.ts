@@ -5,8 +5,10 @@ import type {
   DictationService,
   PiSkillsService,
 } from './desktop-service-contracts'
+import type { PackageUiService } from './package-ui-contracts'
 
 export type DesktopServiceRemoteRuntime = {
+  packages: PackageUiService
   app: Omit<AppService, 'disposeDesktopRuntime' | 'subscribeDesktopEvents'>
   skills: PiSkillsService
   coding: CodingService
@@ -19,6 +21,11 @@ export type DesktopServiceRemoteModuleName = keyof DesktopServiceRemoteRuntime
 type MethodAllowlist<T> = { readonly [K in keyof T]-?: true }
 
 export const desktopServiceRemoteMethods = {
+  packages: {
+    listPackageUis: true,
+    loadPackageUi: true,
+    invokePackageUiRpc: true,
+  },
   app: {
     handleDesktopAction: true,
     loadArchivedThreadList: true,

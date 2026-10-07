@@ -10,6 +10,7 @@ import {
 import { codingDatabaseSchema } from '../components/coding/service/schema.ts'
 import { codingThreadBranchFallbacks } from '../components/coding/service/state.ts'
 import { createDictationService } from '../components/dictation/service/index.ts'
+import { createPackageUiService } from '../components/packages/service/index.ts'
 import { createSkillsService } from '../components/skills/service/index.ts'
 import * as terminalManager from '../components/terminal/service/index.ts'
 import { createTerminalServiceComponent } from '../components/terminal/service/index.ts'
@@ -24,6 +25,7 @@ import type { TerminalRpcRequest } from '../shared/terminal-rpc.ts'
 import { registerConversationCleanup } from './app-service/thread-actions.ts'
 import * as coreApp from './app-service.ts'
 import { loadAppSettings } from './app-settings/readers.ts'
+import { emitDesktopEvent } from './runtime/desktop-events.ts'
 import { getAgentDirectory } from './settings/paths.ts'
 import {
   configureDatabaseSchemas,
@@ -36,7 +38,7 @@ import { getDesktopUserDataPath } from './user-data-path.ts'
 const ServiceRequestSchema = Schema.Struct({
   type: Schema.Literal('request'),
   id: Schema.String,
-  module: Schema.Literals(['app', 'skills', 'coding', 'artifacts', 'dictation']),
+  module: Schema.Literals(['app', 'skills', 'coding', 'artifacts', 'dictation', 'packages']),
   method: Schema.String,
   args: Schema.mutable(Schema.Array(Schema.Unknown)),
 })
@@ -62,6 +64,11 @@ const decodeServiceInboundMessage = Schema.decodeUnknownResult(ServiceInboundMes
 configureDatabaseSchemas([codingDatabaseSchema, artifactsDatabaseSchema])
 
 const skillsComponent = createSkillsService()
+const packagesComponent = await createPackageUiService(
+  { directory: getDesktopUserDataPath(), cwd: process.cwd() },
+  () => emitDesktopEvent({ type: 'package-ui-invalidation' }),
+)
+const packages = packagesComponent.service
 const skills = skillsComponent.service
 const dictationComponent = createDictationService()
 const dictation = dictationComponent.service
@@ -87,6 +94,7 @@ const app = {
 }
 
 const modules = {
+  packages,
   app,
   skills,
   coding,
@@ -182,6 +190,7 @@ const shutdownCoordinatorPromise = Effect.runPromise(
       yield* Effect.all(
         [
           settledTask(() => codingComponent.dispose()),
+          settledTask(() => packagesComponent.dispose()),
           settledTask(() => skillsComponent.dispose()),
           settledTask(() => dictationComponent.dispose()),
         ],

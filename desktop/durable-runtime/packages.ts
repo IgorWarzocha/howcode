@@ -6,6 +6,7 @@ import { createRegistry, type Extension, type Harness } from '@earendil-works/pi
 import { createJiti } from 'jiti'
 import {
   createPackageManager,
+  hasPackageUi,
   type InstalledPackage,
 } from '../../components/packages/service/index.ts'
 
@@ -122,6 +123,18 @@ async function configuredEntrypoints(root: string, paths: string[]): Promise<str
   return [...new Set(matches)].sort()
 }
 
+async function defaultEntrypoints(root: string, target: unknown): Promise<string[]> {
+  if (target === undefined && (await hasPackageUi(root))) {
+    try {
+      await stat(join(root, 'index.js'))
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return []
+      throw error
+    }
+  }
+  return [resolve(root, typeof target === 'string' ? target : 'index.js')]
+}
+
 async function entrypoints(root: string, metadata: RecordValue): Promise<string[]> {
   if ((await stat(root)).isFile()) return [root]
   const pi = metadata.pi
@@ -143,7 +156,7 @@ async function entrypoints(root: string, metadata: RecordValue): Promise<string[
   const exports = metadata.exports
   const primary = record(exports) && '.' in exports ? exports['.'] : exports
   const target = exportTarget(primary) ?? metadata.main
-  return [resolve(root, typeof target === 'string' ? target : 'index.js')]
+  return defaultEntrypoints(root, target)
 }
 
 interface NotebookAdapter {

@@ -42,6 +42,12 @@ import type {
   ThreadSearchResult,
 } from './desktop-contracts'
 import type {
+  PackageUiDescriptor,
+  PackageUiJson,
+  PackageUiReference,
+  PackageUiRpcRequest,
+} from './package-ui-contracts'
+import type {
   TerminalCloseRequest,
   TerminalEvent,
   TerminalOpenRequest,
@@ -53,6 +59,9 @@ import type {
 } from './terminal-contracts'
 
 export type DesktopRequestMap = {
+  listPackageUis: { params: Record<string, never>; response: PackageUiDescriptor[] }
+  loadPackageUi: { params: PackageUiReference; response: { js: string } }
+  invokePackageUiRpc: { params: PackageUiRpcRequest; response: PackageUiJson }
   getShellState: { params: Record<string, never>; response: ShellState }
   getProjectGitState: { params: { projectId: string }; response: ProjectGitState | null }
   getProjectUsageSummary: { params: { projectId: string }; response: ProjectUsageSummary }

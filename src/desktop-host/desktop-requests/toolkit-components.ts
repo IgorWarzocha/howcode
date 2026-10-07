@@ -7,8 +7,8 @@ import type { DesktopRequestHandlerMap } from '../../../shared/desktop-ipc'
 import type { DesktopServiceRuntime } from '../../../shared/desktop-service-contracts'
 import type { ToolkitComponentId } from '../../../shared/toolkit-components'
 
-// Trusted host contributions remain available independently of UI presentation
-// and Durable's persisted agent tool selection. There is no third-party loader.
+// Built-in host contributions remain available independently of UI presentation
+// and Durable's persisted agent tool selection.
 export function createToolkitHostComponents(
   runtime: DesktopServiceRuntime,
   listProjectDirectoryEntries: DesktopRequestHandlerMap['listProjectDirectoryEntries'],

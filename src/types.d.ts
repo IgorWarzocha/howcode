@@ -161,6 +161,13 @@ declare global {
       ) => Promise<Artifact>
       listArtifactVersions?: (artifactSlug: string) => Promise<ArtifactVersion[]>
       compileReactArtifact?: (source: string) => Promise<ReactArtifactCompileResult>
+      listPackageUis?: () => Promise<DesktopRequestMap['listPackageUis']['response']>
+      loadPackageUi?: (
+        reference: DesktopRequestMap['loadPackageUi']['params'],
+      ) => Promise<DesktopRequestMap['loadPackageUi']['response']>
+      invokePackageUiRpc?: (
+        request: DesktopRequestMap['invokePackageUiRpc']['params'],
+      ) => Promise<DesktopRequestMap['invokePackageUiRpc']['response']>
       getInboxThreads?: () => Promise<InboxThread[]>
       getArchivedThreads?: () => Promise<ArchivedThread[]>
       getThread?: (
