@@ -18,7 +18,9 @@ import { loadPiSettings } from '../settings/preferences.ts'
 import { getDesktopUserDataPath } from '../user-data-path.ts'
 import { getComposerDefaults } from './defaults.ts'
 import {
+  bindDesktopExtensions,
   createDesktopExtensionRegistry,
+  disposeDesktopExtensions,
   resolveDesktopExtensions,
 } from './extension-composition.ts'
 import { decodeConversationId, decodeEntryId } from './identity.ts'
@@ -92,6 +94,7 @@ async function openRuntime() {
       runtimeContext,
     )
     runtimeStorage = storage
+    bindDesktopExtensions(harness)
     harness.resume()
     return harness
   } catch (error) {
@@ -239,7 +242,12 @@ export function disposeDurableRuntime() {
   if (shutdown) return shutdown
   closing = true
   shutdown = (async () => {
-    if (runtime) await (await runtime).close(runtimeContext)
+    const harness = runtime ? await runtime : undefined
+    try {
+      await disposeDesktopExtensions()
+    } finally {
+      await harness?.close(runtimeContext)
+    }
   })()
   return shutdown
 }

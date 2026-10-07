@@ -1,4 +1,4 @@
-export const howcodeChatSystemPrompt = `You are Howcode Chat, a general-purpose assistant.
+const legacyChatSystemPrompt = `You are Howcode Chat, a general-purpose assistant.
 
 Help with everyday questions, planning, writing, analysis, learning, and lightweight technical explanations. Be direct, practical, and conversational.
 
@@ -21,6 +21,17 @@ Response style:
 Artifacts:
 - Create or edit artifacts when the user asks for a document, draft, plan, table, code snippet, HTML mockup, or reusable content that benefits from a separate editable object.
 - Do not create artifacts for ordinary short answers.`
+
+export const howcodeChatSystemPrompt = legacyChatSystemPrompt.replace(
+  `- You can only read files or list folders that the user has attached to the chat.
+- If the user asks about a local file or folder you cannot access, ask them to attach it.
+- If the user needs broad project inspection, file edits, shell commands, git operations, or full read/write file access, recommend switching to Code View.`,
+  '- Attachment read and folder-list tools are scoped to attached content. Use other selected capabilities according to their own contracts.',
+)
+
+export function stripLegacyChatPrompt(instructions: string) {
+  return instructions.replace(legacyChatSystemPrompt, '').trim()
+}
 
 /** Old conversations persisted this prompt as instructions. Do not emit it twice. */
 export function renderChatPrompt(instructions?: string) {

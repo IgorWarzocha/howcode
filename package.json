@@ -64,6 +64,7 @@
     "@effect/sql-sqlite-node": "4.0.1",
     "@fontsource-variable/geist-mono": "^5.3.0",
     "@fontsource-variable/inter": "^5.3.0",
+    "@howaboua/pi-durable-notebook": "file:../pi-durable-components/packages/notebook",
     "@mdxeditor/editor": "4.2.5",
     "@pierre/diffs": "1.4.3",
     "@pierre/trees": "1.0.0-beta.6",

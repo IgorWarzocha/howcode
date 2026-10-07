@@ -17,7 +17,7 @@ import {
   authorizeAttachmentPath,
   resolveAttachmentGrants,
 } from './attachment-grants.ts'
-import { renderChatPrompt } from './chat-prompt.ts'
+import { renderChatPrompt, stripLegacyChatPrompt } from './chat-prompt.ts'
 
 export { AttachmentGrantsDoc } from './attachment-grants.ts'
 
@@ -100,7 +100,16 @@ export function createChatTools({
           tag: false,
         }),
       ],
-      wraps: [wrapSection('skills', () => skillsSection)],
+      wraps: [
+        wrapSection('skills', () => skillsSection),
+        wrapSection('instructions', (original) => ({
+          ...original,
+          async render(input, context) {
+            const text = await original.render(input, context)
+            return text ? stripLegacyChatPrompt(text) || undefined : undefined
+          },
+        })),
+      ],
     }),
     {
       resourceRequest: () => ({ projectId: null, composerMode: 'chat' }),
