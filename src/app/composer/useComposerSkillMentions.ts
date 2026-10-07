@@ -1,6 +1,5 @@
 import { type KeyboardEvent, useEffect, useMemo, useState } from 'react'
 import type { ComposerSkillReference } from '../desktop/types'
-import { useToolkitExtensionEnabled } from '../extensions/toolkit-context'
 import { getComposerSkillsQuery } from '../query/desktop-query'
 
 const skillMentionListboxId = 'composer-skill-mention-listbox'
@@ -39,13 +38,12 @@ export function useComposerSkillMentions({
   composerMode = 'code',
   setDraft,
 }: UseComposerSkillMentionsOptions) {
-  const enabled = useToolkitExtensionEnabled('skills')
   const [skills, setSkills] = useState<ComposerSkillReference[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [dismissedDraft, setDismissedDraft] = useState<string | null>(null)
   const candidateMatch = getSkillMentionMatch(draft)
-  const filter = !enabled || draft === dismissedDraft ? null : (candidateMatch?.filter ?? null)
+  const filter = draft === dismissedDraft ? null : (candidateMatch?.filter ?? null)
   const open = filter !== null
 
   const filteredSkills = useMemo(() => {
