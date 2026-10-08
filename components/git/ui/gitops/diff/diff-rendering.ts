@@ -1,15 +1,3 @@
-export const DIFF_THEME_NAMES = {
-  light: 'pierre-light',
-  dark: 'pierre-dark',
-} as const
-
-export const DIFF_THEMES = {
-  light: DIFF_THEME_NAMES.light,
-  dark: DIFF_THEME_NAMES.dark,
-} as const
-
-export type DiffThemeName = (typeof DIFF_THEME_NAMES)[keyof typeof DIFF_THEME_NAMES]
-
 const FNV_OFFSET_BASIS_32 = 0x811c9dc5
 const FNV_PRIME_32 = 0x01000193
 const SECONDARY_HASH_SEED = 0x9e3779b9

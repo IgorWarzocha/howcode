@@ -3,9 +3,10 @@ import { chmod, mkdtemp, readdir, readFile, rm, stat, symlink, writeFile } from 
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
+import { maxDirectoryDiffTextFileBytes } from '@howaboua/pi-durable-git/native'
 import { afterEach, describe, expect, it } from 'vitest'
-import { loadDirectoryDiffFileContents, maxDirectoryDiffTextFileBytes } from './file-content.ts'
 import { writeDirectoryTextFile } from './file-write.ts'
+import { loadDirectoryDiffFileContents } from './native-reader.ts'
 
 const run = promisify(execFile)
 const temporaryDirectories: string[] = []

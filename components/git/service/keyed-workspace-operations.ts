@@ -6,7 +6,7 @@ import * as RcMap from 'effect/RcMap'
 import * as Scope from 'effect/Scope'
 import * as Semaphore from 'effect/Semaphore'
 
-type WorkspaceOperation = 'root-git' | 'file-write' | 'worktree-snapshot'
+type WorkspaceOperation = 'root-git' | 'file-write'
 
 function makeKeyedWorkspaceOperations() {
   return Effect.gen(function* () {

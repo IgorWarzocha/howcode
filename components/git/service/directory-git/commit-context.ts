@@ -1,6 +1,4 @@
 import { randomUUID } from 'node:crypto'
-import { readFile, realpath, stat } from 'node:fs/promises'
-import nodePath from 'node:path'
 import { emitDesktopEvent } from '../../../../desktop/runtime/desktop-events.ts'
 import type {
   DirectoryDiffBaseline,
@@ -16,71 +14,16 @@ import {
 } from './commit-message-context.ts'
 import { resolveDirectoryDiffBaseline } from './directory-diff-baselines.ts'
 import { isGitRepository } from './directory-state.ts'
-import { formatGitCommandError, runGitBufferWithOptions } from './git-runner.ts'
+import { formatGitCommandError } from './git-runner.ts'
+import { gitReader } from './native-reader.ts'
 import type { CommitMessageContext } from './types.ts'
-import { loadWorktreeSnapshot, loadWorktreeStats } from './worktree-snapshot.ts'
 
-const maxDiffImagePreviewBytes = 12 * 1024 * 1024
-const fileExtensionPattern = /\.[^./]+$/
-const leadingSlashPattern = /^\/+/
 const activeDirectoryDiffStreams = new Map<string, AbortController>()
 const directoryDiffTasks = new Set<Promise<void>>()
-const imageMimeTypesByExtension: Record<string, string> = {
-  '.apng': 'image/apng',
-  '.avif': 'image/avif',
-  '.bmp': 'image/bmp',
-  '.gif': 'image/gif',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.png': 'image/png',
-  '.svg': 'image/svg+xml',
-  '.webp': 'image/webp',
-}
-
-function getImageMimeType(filePath: string) {
-  const match = filePath.toLowerCase().match(fileExtensionPattern)
-  return match ? imageMimeTypesByExtension[match[0] ?? ''] : undefined
-}
-
-function normalizeGitImagePath(filePath: string) {
-  const normalized = filePath.replaceAll('\\', '/').replace(leadingSlashPattern, '')
-  return normalized.length > 0 && !normalized.includes('\0') ? normalized : null
-}
 
 function isMissingNamedBranchBaseline(error: unknown) {
   const message = formatGitCommandError(error)
   return message === 'Could not find dev branch.' || message === 'Could not find main branch.'
-}
-
-async function readWorktreeFile(directoryId: string, filePath: string) {
-  const [directoryRoot, candidatePath] = await Promise.all([
-    realpath(directoryId),
-    realpath(nodePath.resolve(directoryId, filePath)),
-  ])
-  const relativePath = nodePath.relative(directoryRoot, candidatePath)
-  if (relativePath.startsWith('..') || nodePath.isAbsolute(relativePath)) {
-    return null
-  }
-
-  const fileStat = await stat(candidatePath)
-  if (!fileStat.isFile() || fileStat.size <= 0 || fileStat.size > maxDiffImagePreviewBytes) {
-    return null
-  }
-
-  return await readFile(candidatePath)
-}
-
-async function readGitObject(directoryId: string, revision: string, filePath: string) {
-  const { stdout } = await runGitBufferWithOptions(
-    directoryId,
-    ['show', `${revision}:${filePath}`],
-    {
-      timeout: 10_000,
-      maxBuffer: maxDiffImagePreviewBytes,
-    },
-  )
-
-  return stdout
 }
 
 export async function loadDirectoryDiffImagePreview({
@@ -98,31 +41,14 @@ export async function loadDirectoryDiffImagePreview({
     return null
   }
 
-  const normalizedPath = normalizeGitImagePath(path)
-  const mimeType = normalizedPath ? getImageMimeType(normalizedPath) : undefined
-  if (!(normalizedPath && mimeType)) {
-    return null
-  }
-
   try {
-    const content =
-      side === 'old'
-        ? await readGitObject(
-            directoryId,
-            (await resolveDirectoryDiffBaseline(directoryId, baseline)).rev,
-            normalizedPath,
-          )
-        : await readWorktreeFile(directoryId, normalizedPath)
-    if (!content) return null
-    if (content.length <= 0 || content.length > maxDiffImagePreviewBytes) {
-      return null
-    }
-
-    return {
+    return await gitReader.readImage({
+      cwd: directoryId,
+      baselineRevision:
+        side === 'old' ? (await resolveDirectoryDiffBaseline(directoryId, baseline)).rev : '',
+      path,
       side,
-      mimeType,
-      dataUrl: `data:${mimeType};base64,${content.toString('base64')}`,
-    }
+    })
   } catch {
     return null
   }
@@ -209,18 +135,23 @@ export async function startDirectoryDiffStream(
 
       let sequence = 0
       const resolvedBaseline = await resolveDirectoryDiffBaseline(directoryId, baseline)
-      const snapshot = await loadWorktreeSnapshot(directoryId, {
-        baselineRev: resolvedBaseline.rev,
-        includeUntracked: includeUntracked === true,
-        signal: abortController.signal,
-        onPatchChunk: (chunk) => {
-          if (abortController.signal.aborted) return
-          emitDesktopEvent({
-            type: 'directory-diff-stream',
-            event: { type: 'chunk', streamId, directoryId, sequence: sequence++, chunk },
-          })
+      const snapshot = await gitReader.diff(
+        {
+          cwd: directoryId,
+          baseRevision: resolvedBaseline.rev,
+          includeUntracked: includeUntracked === true,
         },
-      })
+        {
+          signal: abortController.signal,
+          onChunk: (chunk) => {
+            if (abortController.signal.aborted) return
+            emitDesktopEvent({
+              type: 'directory-diff-stream',
+              event: { type: 'chunk', streamId, directoryId, sequence: sequence++, chunk },
+            })
+          },
+        },
+      )
 
       if (abortController.signal.aborted) return
 
@@ -232,7 +163,7 @@ export async function startDirectoryDiffStream(
           directoryId,
           result: {
             directoryId,
-            diff: snapshot.patch,
+            diff: snapshot.diff,
             fileCount: snapshot.fileCount,
             insertions: snapshot.insertions,
             deletions: snapshot.deletions,
@@ -288,8 +219,9 @@ export async function loadDirectoryDiffStats(
 
   try {
     const resolvedBaseline = await resolveDirectoryDiffBaseline(directoryId, baseline)
-    const stats = await loadWorktreeStats(directoryId, {
-      baselineRev: resolvedBaseline.rev,
+    const stats = await gitReader.stats({
+      cwd: directoryId,
+      baseRevision: resolvedBaseline.rev,
       includeUntracked: includeUntracked === true,
     })
 

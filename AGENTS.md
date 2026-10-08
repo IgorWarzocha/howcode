@@ -16,6 +16,7 @@
 
 ## Workflow
 
+- Git/UI SDK dependencies currently use unpublished sibling tarballs. Build/pack them in `../pi-durable-components`, copy each canonical `dist/howaboua-pi-durable-{git,ui}-0.1.0.tgz` to a filename suffixed with its first eight SHA-256 characters, then update root dependency/override references and run `bun install`. New filenames prevent Bun reusing stale same-version tarball contents. These local references are not distributable release dependencies.
 - Assume the dev server is already running; do not start or restart it. Read `build/dev-server.json` for its address and exercise the app in a browser.
 - Commits run `bun run ai:check`, including blocking React Doctor; keep its score at 100. Run the gate manually only when asked, when not committing, or while diagnosing a failed hook.
 - Do not relax Biome or TypeScript rules merely to make checks pass; fix the code or use a narrow, justified override.

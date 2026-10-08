@@ -1,6 +1,6 @@
 const imageDiffFilePattern = /\.(?:apng|avif|bmp|gif|jpe?g|png|svg|webp)$/i
 
-import { parsePatchFiles } from '@pierre/diffs'
+import { parseDiffPatch } from '@howaboua/pi-durable-ui/react/diff'
 import type { FileDiffMetadata } from '@pierre/diffs/react'
 import type { RenderablePatch } from './diff-panel-content.types'
 import { buildPatchCacheKey } from './diff-rendering'
@@ -14,11 +14,7 @@ export function getRenderablePatch(
   if (normalizedPatch.length === 0) return null
 
   try {
-    const parsedPatches = parsePatchFiles(
-      normalizedPatch,
-      buildPatchCacheKey(normalizedPatch, cacheScope),
-    )
-    const files = parsedPatches.flatMap((parsedPatch) => parsedPatch.files)
+    const files = parseDiffPatch(normalizedPatch, buildPatchCacheKey(normalizedPatch, cacheScope))
     if (files.length > 0) {
       return { kind: 'files', files: orderRenderableFiles(files) }
     }

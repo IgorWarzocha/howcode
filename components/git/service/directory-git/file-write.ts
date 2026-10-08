@@ -1,18 +1,18 @@
 import { randomUUID } from 'node:crypto'
 import { chmod, lstat, open, readFile, realpath, rename, rm, stat } from 'node:fs/promises'
 import nodePath from 'node:path'
+import {
+  getDirectoryTextRevision,
+  isContainedDirectoryPath,
+  maxDirectoryDiffTextFileBytes,
+  normalizeDirectoryPath,
+} from '@howaboua/pi-durable-git/native'
 import type {
   DirectoryDiffFileContentIssue,
   DirectoryFileWriteRequest,
   DirectoryFileWriteResult,
 } from '../../../../shared/desktop-contracts.ts'
 import { runKeyedWorkspaceOperation } from '../keyed-workspace-operations.ts'
-import {
-  getDirectoryTextRevision,
-  isContainedDirectoryPath,
-  maxDirectoryDiffTextFileBytes,
-  normalizeDirectoryPath,
-} from './file-content.ts'
 
 function unavailable(
   path: string,

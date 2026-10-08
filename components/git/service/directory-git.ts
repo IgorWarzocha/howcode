@@ -21,11 +21,11 @@ export {
   resolveDirectoryDiffBaseline,
 } from './directory-git/directory-diff-baselines.ts'
 export { loadDirectoryGitState } from './directory-git/directory-state.ts'
-export { loadDirectoryDiffFileContents } from './directory-git/file-content.ts'
 export {
   getDirectoryFileWriteError,
   writeDirectoryTextFile,
 } from './directory-git/file-write.ts'
+export { loadDirectoryDiffFileContents } from './directory-git/native-reader.ts'
 export type { CommitMessageContext } from './directory-git/types.ts'
 export {
   createDirectoryWorktree,

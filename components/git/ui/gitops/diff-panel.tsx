@@ -1,7 +1,10 @@
+import { DiffWorkerProvider } from '@howaboua/pi-durable-ui/react/diff'
+import DiffsWorker from '@pierre/diffs/worker/worker.js?worker'
 import type { DirectoryDiffBaseline } from '../../../../src/app/desktop/types'
 import { DiffPanelContent } from './diff/diff-panel-content'
-import { DiffWorkerPoolProvider } from './diff/diff-worker-pool-provider'
 import type { GitOpsFileActions } from './edit/gitops-file-actions'
+
+const createDiffWorker = () => new DiffsWorker()
 
 type DiffPanelProps = {
   directoryId: string
@@ -35,7 +38,7 @@ export function DiffPanel({
   onLoadErrorChange,
 }: DiffPanelProps) {
   return (
-    <DiffWorkerPoolProvider>
+    <DiffWorkerProvider workerFactory={createDiffWorker}>
       <DiffPanelContent
         key={directoryId}
         fileActions={fileActions}
@@ -52,6 +55,6 @@ export function DiffPanel({
         loading={loading}
         onLoadErrorChange={onLoadErrorChange}
       />
-    </DiffWorkerPoolProvider>
+    </DiffWorkerProvider>
   )
 }

@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { EMPTY_TREE_OID } from '@howaboua/pi-durable-git/native'
 import type {
   DirectoryDiffBaseline,
   DirectoryDiffResolvedBaseline,
@@ -6,7 +7,7 @@ import type {
 import { getDirectoryCommitEntry, resolveCommitRevision } from './directory-commits.ts'
 import { isGitRepository } from './directory-state.ts'
 import { hasHeadCommit, runGit, runGitWithOptions } from './git-runner.ts'
-import { captureWorktreeTree, EMPTY_TREE_OID } from './worktree-snapshot.ts'
+import { gitReader } from './native-reader.ts'
 
 const remoteHeadRefPattern = /^refs\/remotes\/(?:upstream|origin)\/(.+)$/
 const lsRemoteHeadRefPattern = /^ref:\s+refs\/heads\/(.+)\s+HEAD$/m
@@ -350,7 +351,7 @@ export async function captureDirectoryDiffBaseline(
     return null
   }
 
-  const treeRev = await captureWorktreeTree(directoryId)
+  const treeRev = await gitReader.captureWorktreeTree(directoryId)
   const capturedAt = new Date().toISOString()
   const baselineRef = getLastOpenedBaselineRef(directoryId, capturedAt)
   const repositoryHasHead = await hasHeadCommit(directoryId)

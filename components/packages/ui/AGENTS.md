@@ -1,0 +1,1 @@
+When changing package UI lifecycle, keep disposed mounts from publishing status into their replacement. Report late cleanup failures diagnostically; do not reset the active catalog revision. Theme selectors must outrank nested SDK dark-theme defaults so package mounts inherit the host palette.

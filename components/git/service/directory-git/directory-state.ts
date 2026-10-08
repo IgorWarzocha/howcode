@@ -3,6 +3,7 @@ import * as SqlClient from 'effect/sql/SqlClient'
 import { databaseOperation } from '../../../../desktop/chat-repository/db.ts'
 import type { DirectoryGitState } from '../../../../shared/desktop-contracts.ts'
 import { hasHeadCommit, runGit, runGitWithOptions } from './git-runner.ts'
+import { gitReader } from './native-reader.ts'
 import { loadGitWorktrees } from './worktrees.ts'
 
 const shortStatInsertionsPattern = /(\d+)\s+insertions?\(\+\)/
@@ -62,12 +63,7 @@ function parseStatusSummary(output: string) {
 }
 
 export async function isGitRepository(directoryId: string) {
-  try {
-    const { stdout } = await runGit(directoryId, ['rev-parse', '--is-inside-work-tree'])
-    return stdout.trim() === 'true'
-  } catch {
-    return false
-  }
+  return gitReader.isRepository(directoryId)
 }
 
 async function getStatusSummary(directoryId: string) {

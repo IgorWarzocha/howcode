@@ -1,3 +1,4 @@
+import { mountUi, themeCss, type UiSession } from '@howaboua/pi-durable-ui'
 import type { PackageUiDescriptor, PackageUiModule } from '../../../shared/package-ui-contracts'
 import { watchPackageUiCatalog } from './catalog'
 import { invokePackageUiRpcQuery, loadPackageUiQuery } from './query'
@@ -36,8 +37,21 @@ export function mountPackageUi(
 ) {
   const lifetime = new AbortController()
   const element = document.createElement('div')
-  container.replaceChildren(element)
-  let cleanup: (() => void) | undefined
+  element.setAttribute('data-durable-ui', '')
+  element.setAttribute('data-howcode-package-ui', '')
+  const theme = document.createElement('style')
+  theme.textContent = `${themeCss}
+    [data-howcode-package-ui][data-howcode-package-ui][data-durable-ui],
+    [data-howcode-package-ui][data-howcode-package-ui] [data-durable-ui] {
+      --durable-ui-background: var(--panel);
+      --durable-ui-foreground: var(--text);
+      --durable-ui-muted: var(--muted);
+      --durable-ui-border: var(--border);
+      --durable-ui-accent: var(--accent);
+    }
+  `
+  container.replaceChildren(theme, element)
+  let session: UiSession | undefined
   const reportError = (error: unknown) => {
     const message = error instanceof Error ? error.message : String(error)
     element.textContent = message
@@ -47,7 +61,7 @@ export function mountPackageUi(
     receive({ status: 'loading' })
     try {
       const module = await loadUiModule(descriptor, lifetime.signal)
-      const dispose = await module.mount(element, {
+      session = mountUi(module.mount, element, {
         id: descriptor.id,
         revision: descriptor.revision,
         signal: lifetime.signal,
@@ -63,13 +77,16 @@ export function mountPackageUi(
           return result
         },
       })
-      if (typeof dispose !== 'function')
-        throw new Error('Package mount must return a cleanup function.')
-      if (lifetime.signal.aborted) dispose()
-      else {
-        cleanup = dispose
-        receive({ status: 'mounted' })
-      }
+      // Cleanup can finish after replacement. Diagnose it without changing host state.
+      void session.closed.catch((error: unknown) => {
+        if (lifetime.signal.aborted)
+          console.error(
+            `Package UI cleanup failed (${descriptor.id}@${descriptor.revision}).`,
+            error,
+          )
+      })
+      await session.ready
+      if (!lifetime.signal.aborted) receive({ status: 'mounted' })
     } catch (error) {
       if (!lifetime.signal.aborted) {
         lifetime.abort()
@@ -81,15 +98,10 @@ export function mountPackageUi(
     ready,
     dispose() {
       lifetime.abort()
-      const dispose = cleanup
-      cleanup = undefined
-      try {
-        dispose?.()
-      } catch (error) {
-        reportError(error)
-      } finally {
-        element.remove()
-      }
+      // closed above is the single cleanup-error observer.
+      if (session) void session.dispose().catch(() => undefined)
+      element.remove()
+      theme.remove()
     },
   }
 }

@@ -1,4 +1,4 @@
-import type * as Schema from 'effect/Schema'
+import type { JsonValue, UiContext, UiMount } from '@howaboua/pi-durable-ui'
 import type {
   PackageUiDescriptorSchema,
   PackageUiReferenceSchema,
@@ -8,7 +8,7 @@ import type {
 export type PackageUiReference = typeof PackageUiReferenceSchema.Type
 export type PackageUiDescriptor = typeof PackageUiDescriptorSchema.Type
 export type PackageUiRpcRequest = typeof PackageUiRpcRequestSchema.Type
-export type PackageUiJson = typeof Schema.Json.Type
+export type PackageUiJson = JsonValue
 
 export type PackageUiService = {
   listPackageUis(): Promise<PackageUiDescriptor[]>
@@ -17,13 +17,10 @@ export type PackageUiService = {
 }
 
 /** Trusted package code owns its DOM subtree and any independent framework root. */
-export type PackageUiContext = PackageUiReference & {
-  signal: AbortSignal
-  call(method: string, input: PackageUiJson): Promise<PackageUiJson>
-}
+export type PackageUiContext = UiContext
 
 export type PackageUiModule = {
-  mount(container: HTMLElement, context: PackageUiContext): (() => void) | Promise<() => void>
+  mount: UiMount
 }
 
 export type PackageUiRpcHandler = (

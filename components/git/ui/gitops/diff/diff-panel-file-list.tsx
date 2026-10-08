@@ -1,10 +1,6 @@
+import { DiffCodeView, diffThemes } from '@howaboua/pi-durable-ui/react/diff'
 import type { CodeViewItem, CodeViewOptions } from '@pierre/diffs'
-import {
-  CodeView,
-  type CodeViewHandle,
-  EditProvider,
-  type FileDiffMetadata,
-} from '@pierre/diffs/react'
+import { type CodeViewHandle, EditProvider, type FileDiffMetadata } from '@pierre/diffs/react'
 import { useCallback, useMemo } from 'react'
 import type { DirectoryDiffBaseline } from '../../../../../src/app/desktop/types'
 import { diffFileShellClass } from '../../../../../src/app/ui/classes'
@@ -26,7 +22,6 @@ import {
   isImageDiffFile,
 } from './diff-panel-content.helpers'
 import { DiffPanelFileHeader } from './diff-panel-file-header'
-import { DIFF_THEMES } from './diff-rendering'
 import { useDiffCodeViewItems } from './use-diff-code-view-items'
 import type { DiffFileContentController } from './use-diff-file-content'
 import { useTrailingContextExpansion } from './use-trailing-context-expansion'
@@ -143,7 +138,7 @@ export function DiffPanelFileList({
       diffStyle: diffRenderMode === 'split' ? 'split' : 'unified',
       lineDiffType: 'none',
       overflow: 'wrap',
-      theme: DIFF_THEMES,
+      theme: diffThemes,
       themeType: 'system',
       unsafeCSS: DIFF_PANEL_UNSAFE_CSS,
       enableGutterUtility: true,
@@ -169,7 +164,7 @@ export function DiffPanelFileList({
   return (
     <EditProvider<GitOpsAnnotationMetadata> createEditor={editing.createEditor}>
       <div className="h-full min-h-0">
-        <CodeView<GitOpsAnnotationMetadata>
+        <DiffCodeView<GitOpsAnnotationMetadata>
           ref={setHandle}
           initialItems={[]}
           selectedLines={selectedLines}
