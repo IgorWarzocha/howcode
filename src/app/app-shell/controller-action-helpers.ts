@@ -12,7 +12,7 @@ function getContextualConversationId({
   payload: AnyDesktopActionPayload
   selectedConversationId: string | null
 }) {
-  if (activeView === 'chat' || activeView === 'gitops' || activeView === 'directory') {
+  if (activeView === 'chat' || activeView === 'directory') {
     return selectedConversationId
   }
 
@@ -20,7 +20,7 @@ function getContextualConversationId({
 }
 
 function isContextualChatView(activeView: WorkspaceState['activeView']) {
-  return activeView === 'chat' || activeView === 'gitops' || activeView === 'directory'
+  return activeView === 'chat' || activeView === 'directory'
 }
 
 function buildComposerSendPayload({

@@ -92,7 +92,8 @@ export function ComposerGitOpsSurface({
       directoryId={directory.id}
       conversationId={directory.conversationId}
       draftChatId={`gitops:${directory.id}`}
-      activeView="gitops"
+      activeView="chat"
+      composerPanelRef={composerPanelRef}
       inputLocked={inputLocked}
       setDraftValue={message.setValue}
       setErrorMessage={status.setErrorMessage}

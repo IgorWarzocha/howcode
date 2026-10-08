@@ -1,7 +1,6 @@
 import type { ComposerProfile } from '@howcode/shared/desktop-composer-contracts'
 import type { View, WorkingDirectory } from '../types'
 
-export type NonGitOpsView = Exclude<View, 'gitops'>
 export type UtilityView = Extract<View, 'settings' | 'skills' | 'history'>
 
 export type CodeChatSelection = {
@@ -22,8 +21,6 @@ export type UtilityViewReturnState = {
   selectedConversationId: string | null
   terminalVisible: boolean
   workspaceTerminalVisibleByWorkspace: Record<string, boolean>
-  restoreTerminalVisibleOnGitOpsClose: boolean
-  gitOpsReturnView: NonGitOpsView
   selectedDiffFilePath: string | null
 }
 
@@ -40,8 +37,7 @@ export type WorkspaceState = {
   terminalVisible: boolean
   workspaceTerminalVisibleByWorkspace: Record<string, boolean>
   terminalVisibleBySession: Record<string, boolean>
-  restoreTerminalVisibleOnGitOpsClose: boolean
-  gitOpsReturnView: NonGitOpsView
+  gitDetailDirectoryId: string | null
   selectedDiffFilePath: string | null
   utilityViewReturnState: UtilityViewReturnState | null
   settingsOpen: boolean
@@ -57,7 +53,7 @@ export type WorkspaceAction =
       workspaceId: string | null
       directoryId?: string | null | undefined
     }
-  | { type: 'show-view'; view: NonGitOpsView }
+  | { type: 'show-view'; view: View }
   | { type: 'show-landing' }
   | { type: 'close-utility-view' }
   | { type: 'select-inbox-chat'; conversationId: string | null }
@@ -88,7 +84,6 @@ export type WorkspaceAction =
   | {
       type: 'open-gitops'
       filePath?: string | null
-      returnView?: NonGitOpsView
     }
   | { type: 'close-gitops' }
   | { type: 'toggle-terminal' }

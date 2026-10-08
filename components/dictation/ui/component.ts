@@ -7,7 +7,7 @@ export const dictationComponent = {
       id: 'dictation.toggle',
       renderer: true,
       allowFromTextInput: ({ composerTarget, activeView }) =>
-        composerTarget || activeView === 'gitops' || activeView === 'inbox',
+        composerTarget || activeView === 'inbox',
     },
   ] satisfies ComponentKeybindingPolicy[],
 } as const

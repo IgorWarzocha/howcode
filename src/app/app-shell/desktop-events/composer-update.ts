@@ -22,9 +22,7 @@ function shouldApplyComposerUpdate(input: {
   }
   return (
     input.event.directoryId === input.latestComposerDirectoryId &&
-    ((input.latestWorkspaceState.activeView !== 'chat' &&
-      input.latestWorkspaceState.activeView !== 'gitops') ||
-      input.visibleConversationId === null)
+    (input.latestWorkspaceState.activeView !== 'chat' || input.visibleConversationId === null)
   )
 }
 

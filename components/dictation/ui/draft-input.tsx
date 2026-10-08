@@ -13,6 +13,7 @@ export function DictationDraftInput(props: DraftInputContributionProps) {
     dictationMissingModel,
     dictationSupported,
     toggleDictation,
+    hasDictationSession,
   } = useComposerDictation({
     activeView: props.activeView,
     dictationModelId: appSettings.dictationModelId,
@@ -28,6 +29,9 @@ export function DictationDraftInput(props: DraftInputContributionProps) {
     showDictationButton: appSettings.showDictationButton,
     inputLocked: props.inputLocked,
     toggleDictation,
+    hasDictationSession,
+    composerPanelRef: props.composerPanelRef,
+    defaultDictationTarget: false,
   })
   useEffect(() => {
     if (!(dictationActive || dictationTranscribing)) return

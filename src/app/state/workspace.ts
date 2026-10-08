@@ -6,7 +6,6 @@ import type { WorkspaceAction, WorkspaceState } from './workspace-model'
 
 export type {
   CodeChatSelection,
-  NonGitOpsView,
   UtilityView,
   UtilityViewReturnState,
   WorkspaceAction,
@@ -24,6 +23,7 @@ export function createInitialWorkspaceState(directories: WorkingDirectory[]): Wo
     selectedInboxConversationId: null,
     selectedChatId: null,
     selectedConversationId: null,
+    gitDetailDirectoryId: null,
     ...createInitialTerminalWorkspaceState(),
     ...createInitialDirectoryWorkspaceState(directories),
     utilityViewReturnState: null,
@@ -68,10 +68,6 @@ export function getCurrentTitle(activeView: View, selectedChat: Chat | undefined
 
   if (activeView === 'directory') {
     return 'Workspace overview'
-  }
-
-  if (activeView === 'gitops') {
-    return 'Git ops'
   }
 
   if (activeView === 'archived') {

@@ -32,5 +32,4 @@ export {
   migrateTerminalVisibility,
   setTerminalVisibleState,
   shouldMigrateTerminalVisibilityForOpenedChat,
-  shouldRestoreTerminalOnGitOpsClose,
 } from './workspace-terminal-state'

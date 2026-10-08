@@ -28,10 +28,6 @@ export function migrateTerminalVisibility(
   }
 }
 
-export function shouldRestoreTerminalOnGitOpsClose(state: WorkspaceState) {
-  return state.terminalVisible && (state.activeView === 'chat' || state.activeView === 'directory')
-}
-
 export function shouldMigrateTerminalVisibilityForOpenedChat(
   state: WorkspaceState,
   action: Extract<WorkspaceAction, { type: 'open-chat' }>,
@@ -72,33 +68,16 @@ export function getTerminalStateForNextView(state: WorkspaceState, nextView: Vie
       : false
   }
 
-  if (state.activeView !== 'gitops') {
-    return {
-      terminalVisible:
-        nextView === 'chat'
-          ? getTerminalVisibilityForSession(
-              state.terminalVisibleBySession,
-              state.selectedConversationId,
-            )
-          : nextView === 'directory'
-            ? getWorkspaceTerminalVisible()
-            : state.terminalVisible,
-      restoreTerminalVisibleOnGitOpsClose: state.restoreTerminalVisibleOnGitOpsClose,
-    }
-  }
-
-  if (nextView === 'gitops') {
-    return {
-      terminalVisible: false,
-      restoreTerminalVisibleOnGitOpsClose: state.restoreTerminalVisibleOnGitOpsClose,
-    }
-  }
-
   return {
     terminalVisible:
-      (nextView === 'chat' || nextView === 'directory') &&
-      state.restoreTerminalVisibleOnGitOpsClose,
-    restoreTerminalVisibleOnGitOpsClose: false,
+      nextView === 'chat'
+        ? getTerminalVisibilityForSession(
+            state.terminalVisibleBySession,
+            state.selectedConversationId,
+          )
+        : nextView === 'directory'
+          ? getWorkspaceTerminalVisible()
+          : state.terminalVisible,
   }
 }
 
@@ -129,7 +108,6 @@ export function createInitialTerminalWorkspaceState() {
     terminalVisible: false,
     workspaceTerminalVisibleByWorkspace: {},
     terminalVisibleBySession: {},
-    restoreTerminalVisibleOnGitOpsClose: false,
   }
 }
 
@@ -137,7 +115,6 @@ export function getTerminalUtilityReturnState(state: WorkspaceState) {
   return {
     terminalVisible: state.terminalVisible,
     workspaceTerminalVisibleByWorkspace: state.workspaceTerminalVisibleByWorkspace,
-    restoreTerminalVisibleOnGitOpsClose: state.restoreTerminalVisibleOnGitOpsClose,
   }
 }
 

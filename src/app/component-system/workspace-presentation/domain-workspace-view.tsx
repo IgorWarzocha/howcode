@@ -1,5 +1,6 @@
 import {
   GitDiffPresentationProvider,
+  useGitDetailLayout,
   useGitWorkspacePresentation,
 } from '@howcode/components/git/ui'
 import { useRef, useState } from 'react'
@@ -48,11 +49,13 @@ function getFloatingFooterLayoutState(input: {
   activeChatData: Message[] | undefined
   activeChatLoading: boolean
   showChatFooter: boolean
+  gitDetailOpen: boolean
 }) {
   const hasChatConversation = input.showChatFooter && (input.activeChatData?.length ?? 0) > 0
   const hasChatConversationLayout = hasChatConversation || input.activeChatLoading
   const centerDashboardFooter = false
-  const centerChatFooter = input.showChatFooter && !hasChatConversationLayout
+  const centerChatFooter =
+    input.showChatFooter && !hasChatConversationLayout && !input.gitDetailOpen
   return {
     centerDashboardFooter,
     centerChatFooter,
@@ -71,12 +74,11 @@ function getDomainWorkspaceFlags(input: {
       ? input.selectedDirectoryId
       : ''
   return {
-    showWorkspaceFooter: input.activeView === 'chat' || input.activeView === 'gitops',
+    showWorkspaceFooter: input.activeView === 'chat',
     showChatFooter: input.activeView === 'chat',
     showCodeSidebarFooter:
       (input.activeView === 'directories' || input.activeView === 'landing') &&
       !selectedDirectoryIdForView,
-    gitDetailOpen: input.activeView === 'gitops',
   }
 }
 
@@ -100,6 +102,7 @@ export function DomainWorkspaceView({
   onToggleSidebar,
 }: DomainWorkspaceViewProps) {
   const [composerLayoutVersion, setComposerLayoutVersion] = useState(0)
+  const gitDetailLayout = useGitDetailLayout()
   const [composerOverlayHeight, setComposerOverlayHeight] = useState(0)
   const footerRef = useRef<HTMLElement>(null)
   const mainViewRef = useRef<HTMLElement>(null)
@@ -113,12 +116,14 @@ export function DomainWorkspaceView({
   const directoryGitState = controller.directories.gitState
   const { shellState } = controller.desktop
   const { state } = controller.workspace
-  const { showWorkspaceFooter, showChatFooter, showCodeSidebarFooter, gitDetailOpen } =
-    getDomainWorkspaceFlags({
-      activeView: state.activeView,
-      hasSelectedDirectory: state.hasSelectedDirectory,
-      selectedDirectoryId: state.selectedDirectoryId,
-    })
+  const gitDetailOpen = Boolean(
+    composerDirectoryId && state.gitDetailDirectoryId === composerDirectoryId,
+  )
+  const { showWorkspaceFooter, showChatFooter, showCodeSidebarFooter } = getDomainWorkspaceFlags({
+    activeView: state.activeView,
+    hasSelectedDirectory: state.hasSelectedDirectory,
+    selectedDirectoryId: state.selectedDirectoryId,
+  })
   const {
     gitOpsFileTreeVisible,
     parentBranchName,
@@ -129,7 +134,7 @@ export function DomainWorkspaceView({
     setDiffLoadError,
     gitOpsReview,
   } = useGitWorkspacePresentation({
-    activeView: state.activeView,
+    detailOpen: gitDetailOpen,
     composerDirectoryId,
     terminalConversationId,
     shellState,
@@ -152,6 +157,7 @@ export function DomainWorkspaceView({
       activeChatLoading: controller.chat.activeLoading,
       activeView: state.activeView,
       showChatFooter,
+      gitDetailOpen,
     })
   const footerInset = showWorkspaceFooter && !floatingWorkspaceFooter ? footerHeight : 0
   const { handleRemoveQueuedPrompt, pendingQueuedPromptIdsForSession, queuedPromptError } =
@@ -188,6 +194,7 @@ export function DomainWorkspaceView({
         mainViewRef={mainViewRef}
         state={state}
         gitDetailOpen={gitDetailOpen}
+        gitDetailLayout={gitDetailLayout}
         composerDirectoryId={composerDirectoryId}
         directoryGitState={directoryGitState}
         parentBranchName={parentBranchName}

@@ -5,7 +5,7 @@ export { defaultDiffBaseline } from './gitops/diff-baseline'
 export { DiffPanel } from './gitops/diff-panel'
 export type { GitOpsFileActions } from './gitops/edit/gitops-file-actions'
 export { getGitOpsEntryButtonClass } from './gitops/git-ops'
-export { GitOpsComposerPanel } from './gitops/git-ops-composer-panel'
+export { GitReviewPanel } from './gitops/git-review-panel'
 export type { GitOpsReviewController } from './gitops/review/review-controller'
 export type {
   DiffPoint,

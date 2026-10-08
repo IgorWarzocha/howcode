@@ -54,7 +54,7 @@ type DirectoryWorkSectionProps = {
   onDirectoryPrimeSelection: (directoryId: string) => void
   onDirectoryTargetSelected?: (() => void) | undefined
   onChatOpen: (directoryId: string, chatId: string, conversationId: string) => void
-  onShowView: (view: Exclude<View, 'gitops'>) => void
+  onShowView: (view: View) => void
   onToggleDirectoryCollapse: (directoryId: string) => void
 }
 

@@ -1,17 +1,16 @@
 import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
 import { type Dispatch, type SetStateAction, useEffect } from 'react'
 import type { AppSettings, DirectoryGitState } from '../../../../src/app/desktop/types'
-import type { View } from '../../../../src/app/types'
 
 export function useGitStateSync({
-  activeView,
+  detailOpen,
   composerDirectoryId,
   shellAppSettings,
   loadDirectoryGitState,
   setDirectoryGitState,
   setDirectoryGitLoading,
 }: {
-  activeView: View
+  detailOpen: boolean
   composerDirectoryId: string
   shellAppSettings: AppSettings | null | undefined
   loadDirectoryGitState: (directoryId: string) => Promise<DirectoryGitState | null>
@@ -59,7 +58,7 @@ export function useGitStateSync({
   ])
 
   useEffect(() => {
-    if (!codingEnabled || activeView !== 'gitops' || !composerDirectoryId) {
+    if (!(codingEnabled && detailOpen && composerDirectoryId)) {
       return
     }
 
@@ -90,6 +89,6 @@ export function useGitStateSync({
     loadDirectoryGitState,
     setDirectoryGitLoading,
     setDirectoryGitState,
-    activeView,
+    detailOpen,
   ])
 }

@@ -21,6 +21,7 @@ export function useComposerGlobalCommands(input: {
   skillMentions: ComposerSkillMentions
   slashCommands: ComposerSlashCommands
   toggleDictation: () => Promise<unknown>
+  hasDictationSession: () => boolean
 }) {
   const dismissTransientUi = () => {
     input.setOpenMenu(null)
@@ -50,7 +51,7 @@ export function useComposerGlobalCommands(input: {
     dismissTransientUi()
     input.openConversationFork()
   })
-  useDictationCommand(input)
+  useDictationCommand({ ...input, defaultDictationTarget: true })
 
   useEffect(() => {
     window.addEventListener(howcodeDismissTransientUiEvent, dismissTransientUiEvent)

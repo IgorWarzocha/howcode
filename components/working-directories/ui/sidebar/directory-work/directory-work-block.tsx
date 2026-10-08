@@ -243,7 +243,7 @@ export function DirectoryWorkSummaryBlock({
   onSetCollapsedBranchIds: (
     updater: (current: Record<string, boolean>) => Record<string, boolean>,
   ) => void
-  onShowView: (view: Exclude<View, 'gitops'>) => void
+  onShowView: (view: View) => void
   onChatOpen: (directoryId: string, chatId: string, conversationId: string) => void
   onToggleExpanded: () => void
   onToggleUnassigned: () => void

@@ -87,7 +87,10 @@ export function getRouteAction(
     return workspaceAction(workspace)
   }
   if (route.routeName === 'chat' || route.routeName === 'git') {
-    return getConversationRouteAction(route, navigation, workspace)
+    const action = getConversationRouteAction(route, navigation)
+    if (route.routeName !== 'git') return action
+    // A Git URL opens the panel over its real chat/workspace, never a replacement view.
+    return [action ?? workspaceAction(workspace), { type: 'open-gitops' }]
   }
   if (route.routeName === 'inbox') {
     return [
@@ -96,15 +99,14 @@ export function getRouteAction(
     ]
   }
   return utilityRoutes.has(route.routeName as View)
-    ? { type: 'show-view', view: route.routeName as Exclude<View, 'gitops'> }
+    ? { type: 'show-view', view: route.routeName as View }
     : null
 }
 
 function getConversationRouteAction(
   route: ReturnType<typeof normalizeAppRoute>,
   navigation: WorkspaceNavigationState | null,
-  workspace: Workspace | null,
-): WorkspaceAction | WorkspaceAction[] | null {
+): WorkspaceAction | null {
   const target = findWorkspaceChat(navigation, route.chatId, route.conversationId)
   if (target?.chat.conversationId) {
     const open: WorkspaceAction = {
@@ -115,11 +117,9 @@ function getConversationRouteAction(
       conversationId: target.chat.conversationId,
       composerProfile: target.chat.composerProfile,
     }
-    return route.routeName === 'git' ? [open, { type: 'open-gitops' }] : open
+    return open
   }
-  return route.routeName === 'git' && workspace?.directoryId
-    ? [workspaceAction(workspace), { type: 'open-gitops' }]
-    : null
+  return null
 }
 
 export function getRouteForState(
@@ -154,7 +154,6 @@ export function getRouteForState(
   ) {
     return { pathname: '/workspaces', search: workspaceId ? { workspaceId } : {} }
   }
-  if (state.activeView === 'gitops') return { pathname: '/git', search }
   if (state.activeView === 'inbox')
     return {
       pathname: '/inbox',

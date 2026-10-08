@@ -12,7 +12,6 @@ export type View =
   | 'directories'
   | 'directory'
   | 'chat'
-  | 'gitops'
   | 'archived'
   | 'history'
   | 'claw'

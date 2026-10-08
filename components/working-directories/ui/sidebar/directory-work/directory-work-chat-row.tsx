@@ -22,8 +22,7 @@ export function DirectoryWorkChatRow({
   onChatOpen: (directoryId: string, chatId: string, conversationId: string) => void
 }) {
   const isSelected =
-    selectedChatId === chat.id &&
-    (activeView === 'chat' || activeView === 'directory' || activeView === 'gitops')
+    selectedChatId === chat.id && (activeView === 'chat' || activeView === 'directory')
   const canAssignToCurrentBranch = Boolean(currentBranch && !chat.branchName?.trim())
 
   return (

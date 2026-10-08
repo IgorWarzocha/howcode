@@ -3,8 +3,8 @@ import type { View } from '../../../src/app/types'
 
 export const gitComponent = {
   id: 'git',
-  views: ['gitops'] satisfies View[],
-  selectedConversationViews: ['gitops'] satisfies View[],
+  views: [] satisfies View[],
+  selectedConversationViews: [] satisfies View[],
   utilityViews: [] satisfies View[],
   keybindings: [
     { id: 'gitops.open' },

@@ -3,7 +3,6 @@ import type { Dispatch, SetStateAction } from 'react'
 import { useMemo } from 'react'
 import type { DirectoryGitState } from '../../../../src/app/desktop/types'
 import { desktopQueryKeys } from '../../../../src/app/query/desktop-query'
-import type { View } from '../../../../src/app/types'
 import { notifyDirectoryDiffInvalidated } from '../hooks/directory-diff-invalidation'
 
 type QueryClientLike = {
@@ -11,15 +10,13 @@ type QueryClientLike = {
 }
 
 export function invalidateDirectoryWorktreeQueries({
-  activeView,
   directoryId,
   queryClient,
 }: {
-  activeView: View
   directoryId: string
   queryClient: QueryClientLike
 }) {
-  if (activeView === 'gitops') notifyDirectoryDiffInvalidated(directoryId)
+  notifyDirectoryDiffInvalidated(directoryId)
   void queryClient.invalidateQueries({
     queryKey: desktopQueryKeys.directoryDiffStatsPrefix(directoryId),
   })
@@ -46,10 +43,9 @@ export function useGitDesktopEventContribution({
 }): Pick<DesktopChatEndContribution, 'refreshDirectoryState'> {
   return useMemo(
     () => ({
-      refreshDirectoryState(event, activeView) {
+      refreshDirectoryState(event) {
         // Cache invalidation also ran with coding disabled before this policy moved here.
         invalidateDirectoryWorktreeQueries({
-          activeView,
           directoryId: event.directoryId,
           queryClient,
         })

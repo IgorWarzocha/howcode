@@ -153,6 +153,7 @@ export function useComposerController({
     dictationSupported,
     stopDictationAndFlush,
     toggleDictation,
+    hasDictationSession,
   } = useComposerDictation({
     activeView,
     dictationModelId,
@@ -264,6 +265,7 @@ export function useComposerController({
     setOpenMenu,
     stop,
     toggleDictation,
+    hasDictationSession,
     attachPickerAttachments,
     togglePendingPickerAttachment,
   }

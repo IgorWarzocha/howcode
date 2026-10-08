@@ -94,6 +94,7 @@ export function ComposerPromptSurface({
     setOpenMenu,
     stop,
     toggleDictation,
+    hasDictationSession,
     attachPickerAttachments,
     handleDrop,
     togglePendingPickerAttachment,
@@ -202,6 +203,7 @@ export function ComposerPromptSurface({
     skillMentions,
     slashCommands,
     toggleDictation,
+    hasDictationSession,
   })
 
   return (

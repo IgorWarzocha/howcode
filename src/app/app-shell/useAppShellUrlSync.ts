@@ -1,5 +1,8 @@
 import type { WorkspaceNavigationState } from '@howcode/shared/desktop-workspace-contracts'
-import type { ToolkitComponentSettings } from '@howcode/shared/toolkit-components'
+import {
+  isToolkitComponentEnabled,
+  type ToolkitComponentSettings,
+} from '@howcode/shared/toolkit-components'
 import { useRouter, useRouterState } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef } from 'react'
 import { isWorkspaceViewEnabled } from '../component-system/toolkit-components'
@@ -79,7 +82,11 @@ export function useAppShellUrlSync(input: {
     if (decision.type === 'synchronized') return
     if (decision.type === 'dispatch-route') {
       const routeView = normalizeAppRoute(snapshot).routeName
-      if (!isWorkspaceViewEnabled(input.toolkitSettings, routeView as View)) {
+      const enabled =
+        routeView === 'git'
+          ? isToolkitComponentEnabled(input.toolkitSettings, 'coding')
+          : isWorkspaceViewEnabled(input.toolkitSettings, routeView as View)
+      if (!enabled) {
         input.dispatch({ type: 'select-workspace', workspaceId: null })
         const fallback: AppRouteSnapshot = { pathname: '/workspaces', search: {} }
         void router.navigate({ to: fallback.pathname, search: fallback.search, replace: true })

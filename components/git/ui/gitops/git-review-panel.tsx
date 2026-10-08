@@ -1,5 +1,6 @@
 import { FolderGit2 } from 'lucide-react'
 import { useRef, useState } from 'react'
+import { Tooltip } from '../../../../src/app/common/tooltip'
 import type { AppSettings, DesktopActionInvoker } from '../../../../src/app/desktop/types'
 import type { SettingsOpenTarget } from '../../../../src/app/settings/settings/settingsTypes'
 import { compactIconButtonClass, composerPanelClass } from '../../../../src/app/ui/classes'
@@ -13,7 +14,7 @@ import type {
 import { GitOpsErrorDetails } from './git-ops-error-details'
 import type { GitOpsReviewController } from './review/review-controller'
 
-type GitOpsComposerPanelProps = {
+type GitReviewPanelProps = {
   appSettings: AppSettings
   diff: GitOpsComposerDiff
   fileTree: GitOpsFileTreeControl
@@ -26,7 +27,7 @@ type GitOpsComposerPanelProps = {
   review: GitOpsReviewController
 }
 
-export function GitOpsComposerPanel({
+export function GitReviewPanel({
   appSettings,
   diff,
   fileTree,
@@ -37,7 +38,7 @@ export function GitOpsComposerPanel({
   onReviewSent,
   directory,
   review,
-}: GitOpsComposerPanelProps) {
+}: GitReviewPanelProps) {
   const composerPanelRef = useRef<HTMLDivElement>(null)
   const [gitActionErrorMessage, setGitActionErrorMessage] = useState<string | null>(null)
   const [gitActionErrorDismissed, setGitActionErrorDismissed] = useState(false)
@@ -45,8 +46,8 @@ export function GitOpsComposerPanel({
     gitActionErrorMessage && !gitActionErrorDismissed ? gitActionErrorMessage : null
 
   return (
-    <div className="relative grid w-full grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible">
-      <div className="relative col-start-2 grid min-w-0 gap-0 overflow-visible">
+    <div className="git-review-panel relative grid w-full grid-cols-[minmax(0,1fr)_2rem] items-end gap-2 overflow-visible">
+      <div className="relative grid min-w-0 gap-0 overflow-visible">
         {visibleGitActionErrorMessage ? (
           <GitOpsErrorDetails
             detail={visibleGitActionErrorMessage}
@@ -56,7 +57,7 @@ export function GitOpsComposerPanel({
         <section
           ref={composerPanelRef}
           className={`${composerPanelClass} min-w-0`}
-          aria-label="Git ops composer panel"
+          aria-label="Git review controls"
         >
           <ComposerGitOpsSurface
             appSettings={appSettings}
@@ -78,18 +79,19 @@ export function GitOpsComposerPanel({
       </div>
       <div className="relative h-full min-h-0 w-8 shrink-0 self-stretch text-[color:var(--muted)]">
         <div className="absolute right-0 bottom-[3.35rem] flex w-7 items-center justify-center">
-          <button
-            type="button"
-            className={cn(
-              compactIconButtonClass,
-              'h-7 w-7 shrink-0 rounded-md opacity-70 hover:opacity-100',
-            )}
-            onClick={fileTree.toggle}
-            aria-label={fileTree.visible ? 'Hide changed files' : 'Show changed files'}
-            data-tooltip={fileTree.visible ? 'Hide changed files' : 'Show changed files'}
-          >
-            <FolderGit2 size={15} />
-          </button>
+          <Tooltip content={fileTree.visible ? 'Hide changed files' : 'Show changed files'}>
+            <button
+              type="button"
+              className={cn(
+                compactIconButtonClass,
+                'h-7 w-7 shrink-0 rounded-md opacity-70 hover:opacity-100',
+              )}
+              onClick={fileTree.toggle}
+              aria-label={fileTree.visible ? 'Hide changed files' : 'Show changed files'}
+            >
+              <FolderGit2 size={15} />
+            </button>
+          </Tooltip>
         </div>
       </div>
     </div>

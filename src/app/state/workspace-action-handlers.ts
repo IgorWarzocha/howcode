@@ -6,7 +6,6 @@ import {
   getTerminalVisibilityForSession,
   migrateTerminalVisibility,
   setTerminalVisibleState,
-  shouldRestoreTerminalOnGitOpsClose,
 } from '@howcode/components/terminal/ui'
 import {
   clearDirectoryChatSelection,
@@ -32,10 +31,7 @@ const { directoryWorkspaceActionHandlers, restoreCodeChatForView } =
     migrateTerminalVisibility,
   })
 
-const gitWorkspaceActionHandlers = createGitWorkspaceTransitions({
-  getTerminalStateForNextView,
-  shouldRestoreTerminalOnGitOpsClose,
-})
+const gitWorkspaceActionHandlers = createGitWorkspaceTransitions()
 
 export function isUtilityView(view: View): view is UtilityView {
   return isWorkspaceUtilityView(view)

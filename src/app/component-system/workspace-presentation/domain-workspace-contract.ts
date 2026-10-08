@@ -1,4 +1,4 @@
-import type { GitOpsReviewController } from '@howcode/components/git/ui'
+import type { GitOpsReviewController, useGitDetailLayout } from '@howcode/components/git/ui'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type { useQueuedPromptCancellation } from '../../composer/useQueuedPromptCancellation'
 import type {
@@ -31,7 +31,7 @@ export type DomainWorkspaceController = {
   }
   navigation: {
     closeUtilityView: () => void
-    showView: (view: Exclude<View, 'gitops'>, target?: SettingsOpenTarget) => void
+    showView: (view: View, target?: SettingsOpenTarget) => void
   }
   directories: {
     gitLoading: boolean
@@ -80,6 +80,7 @@ export type DomainWorkspaceContentProps = DomainWorkspaceViewProps &
     showChatFooter: boolean
     showCodeSidebarFooter: boolean
     gitDetailOpen: boolean
+    gitDetailLayout: ReturnType<typeof useGitDetailLayout>
     showDesktopTerminalDrawer: boolean
     centerChatFooter: boolean
     gitOpsFileTreeVisible: boolean

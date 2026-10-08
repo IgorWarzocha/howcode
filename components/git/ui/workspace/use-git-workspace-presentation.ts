@@ -5,12 +5,11 @@ import type {
   DirectoryDiffBaseline,
   ShellState,
 } from '../../../../src/app/desktop/types'
-import type { View } from '../../../../src/app/types'
 import { useGitOpsReviewController } from './useGitOpsReviewController'
 import { useGitWorkspacePreferences } from './workspace-preferences'
 
 export function useGitWorkspacePresentation({
-  activeView,
+  detailOpen,
   composerDirectoryId,
   terminalConversationId,
   shellState,
@@ -18,7 +17,7 @@ export function useGitWorkspacePresentation({
   handleAction,
   handleOpenWorktreeDiffFile,
 }: {
-  activeView: View
+  detailOpen: boolean
   composerDirectoryId: string
   terminalConversationId: string | null
   shellState: ShellState | null
@@ -60,7 +59,7 @@ export function useGitWorkspacePresentation({
     }))
   }, [gitDiffIncludeUntrackedDefault, gitOpsFileTreeStateKey, setIncludeUntrackedDiffFilesByChat])
   useHowcodeKeybindingCommand('gitops.toggleChangedFiles', (event) => {
-    if (activeView !== 'gitops') return
+    if (!detailOpen) return
     event.preventDefault()
     toggleGitOpsFileTree()
   })

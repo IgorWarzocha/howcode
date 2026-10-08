@@ -1,7 +1,6 @@
 import {
   DiffPanel,
   GitDetailLayoutControls,
-  useGitDetailLayout,
   useGitOpsFileActions,
 } from '@howcode/components/git/ui'
 import { useEffect, useRef, useState } from 'react'
@@ -11,6 +10,7 @@ import { WORKSPACE_EDGE_PADDING_CLASS } from '../../ui/layout'
 import { cn } from '../../utils/cn'
 import { FALLBACK_APP_SETTINGS } from '../../workspace-shell/default-app-settings'
 import type { DomainWorkspaceContentProps } from './domain-workspace-contract'
+import { DomainWorkspaceGitReview } from './domain-workspace-git-review'
 import { DomainWorkspaceMainView } from './domain-workspace-main-view'
 import './domain-workspace-main-area.css'
 
@@ -74,7 +74,7 @@ function DomainWorkspaceDefaultMain(props: DomainWorkspaceContentProps) {
   const selectedDirectoryId = getSelectedMainDirectoryId(props.controller.workspace.state)
   return (
     <DomainWorkspaceMainView
-      activeView={props.state.activeView === 'gitops' ? 'chat' : props.state.activeView}
+      activeView={props.state.activeView}
       appSettings={appSettings}
       currentDirectoryName={props.currentDirectoryName}
       directories={props.controller.directories.items}
@@ -95,7 +95,7 @@ function DomainWorkspaceDefaultMain(props: DomainWorkspaceContentProps) {
 }
 
 export function DomainWorkspaceMainArea(props: DomainWorkspaceContentProps) {
-  const detailLayout = useGitDetailLayout()
+  const detailLayout = props.gitDetailLayout
   const { layout } = detailLayout
   const open = props.gitDetailOpen
   const placement = open ? layout.placement : 'main'
@@ -148,6 +148,9 @@ export function DomainWorkspaceMainArea(props: DomainWorkspaceContentProps) {
           >
             <GitDetailLayoutControls {...detailLayout} />
             <DomainWorkspaceGitDetail {...props} />
+            <div className="git-detail-review shrink-0 border-t border-[color:var(--border)] p-2">
+              <DomainWorkspaceGitReview {...props} />
+            </div>
           </section>
         ) : null}
       </div>

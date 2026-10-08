@@ -67,7 +67,7 @@ export function ComposerGitOpsFooter({
   review,
 }: ComposerGitOpsFooterProps) {
   return (
-    <div className={workspaceFooterRowClass}>
+    <div className={cn(workspaceFooterRowClass, 'flex-wrap')}>
       {repository.isGitRepo ? (
         <div className="inline-flex items-center gap-1.5">
           <ComposerGitOpsSettings
@@ -82,7 +82,7 @@ export function ComposerGitOpsFooter({
         </div>
       ) : null}
 
-      <div className={cn(workspaceFooterTrailingGroupClass, 'relative')}>
+      <div className={cn(workspaceFooterTrailingGroupClass, 'relative min-w-0 flex-wrap')}>
         {repository.isGitRepo ? (
           <ComposerDiffBaselineSelector
             composerPanelRef={composerPanelRef}

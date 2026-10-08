@@ -29,7 +29,7 @@ export function useDirectoryScopeController({
   onAction: DesktopActionInvoker
   onDirectoryPrimeSelection: (directoryId: string) => void
   onDirectorySelect: (directoryId: string) => void
-  onShowView: (view: Exclude<View, 'gitops'>) => void
+  onShowView: (view: View) => void
 }) {
   const [directorySwitcherOpen, setDirectorySwitcherOpen] = useState(false)
   const [visibleDirectoryIdsOverride, setVisibleDirectoryIdsOverride] = useState<

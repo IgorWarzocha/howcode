@@ -112,7 +112,7 @@ export function useAppShellEffects({
     setComposerState,
   })
   useGitStateSync({
-    activeView: workspaceState.activeView,
+    detailOpen: workspaceState.gitDetailDirectoryId === composerDirectoryId,
     composerDirectoryId,
     shellAppSettings,
     loadDirectoryGitState,

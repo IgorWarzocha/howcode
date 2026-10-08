@@ -366,5 +366,11 @@ export function useComposerDictation({
     dictationSupported,
     stopDictationAndFlush,
     toggleDictation,
+    hasDictationSession: () =>
+      Boolean(
+        dictationCaptureRef.current ||
+          dictationStartPromiseRef.current ||
+          dictationFlushPromiseRef.current,
+      ),
   }
 }

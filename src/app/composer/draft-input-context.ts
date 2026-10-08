@@ -4,6 +4,7 @@ import {
   type Dispatch,
   type KeyboardEventHandler,
   type ReactNode,
+  type RefObject,
   type SetStateAction,
 } from 'react'
 import type { AppSettings, DesktopActionInvoker } from '../desktop/types'
@@ -16,6 +17,7 @@ export type DraftInputContributionProps = {
   conversationId: string | null
   draftChatId: string
   activeView: View
+  composerPanelRef: RefObject<HTMLElement | null>
   inputLocked: boolean
   setDraftValue: Dispatch<SetStateAction<string>>
   setErrorMessage: Dispatch<SetStateAction<string | null>>

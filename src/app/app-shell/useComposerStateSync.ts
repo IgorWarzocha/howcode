@@ -35,10 +35,7 @@ function getComposerStateSyncTarget(input: {
     }
   }
 
-  const conversationId =
-    input.activeView === 'chat' || input.activeView === 'gitops'
-      ? input.selectedConversationId
-      : null
+  const conversationId = input.activeView === 'chat' ? input.selectedConversationId : null
 
   return {
     composerProfile: input.composerProfile,

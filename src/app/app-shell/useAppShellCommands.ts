@@ -72,7 +72,7 @@ export function useAppShellCommands({
   const { handleOpenGitOpsView, handleCloseGitOpsView, handleOpenWorktreeDiffFile } =
     useGitWorkspaceCommands({ composerDirectoryId, dispatch, queryClient })
 
-  const handleShowView = (view: Exclude<View, 'gitops'>, target?: SettingsOpenTarget) => {
+  const handleShowView = (view: View, target?: SettingsOpenTarget) => {
     const enabledView = isWorkspaceViewEnabled(toolkitSettings, view) ? view : 'chat'
     if (enabledView === 'settings') {
       setSettingsOpenTarget(target ?? null)

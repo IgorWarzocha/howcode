@@ -1,4 +1,3 @@
-import { GitOpsComposerPanel } from '@howcode/components/git/ui'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { getComposerRuntimeModel, QueuedPromptsCard } from '../../composer/index'
 import type { Message } from '../../types'
@@ -35,63 +34,6 @@ function CodeSidebarToggleButton(props: DomainWorkspaceContentProps) {
     >
       {sidebarHidden ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
     </button>
-  )
-}
-
-function CodeGitOpsComposer(props: DomainWorkspaceContentProps) {
-  const {
-    shellState,
-    directoryGitState,
-    parentBranchName,
-    composerDirectoryId,
-    terminalConversationId,
-    diffBaseline,
-    diffRenderMode,
-    gitOpsReview,
-    diffLoadError,
-    includeUntrackedDiffFiles,
-    toggleIncludeUntrackedDiffFiles,
-    onSetDiffBaseline,
-    onSetDiffRenderMode,
-    setComposerLayoutVersion,
-    handleAction,
-    handleCloseGitOpsView,
-    gitOpsFileTreeVisible,
-    toggleGitOpsFileTree,
-    controller,
-  } = props
-  const appSettings = shellState?.appSettings ?? FALLBACK_APP_SETTINGS
-  return (
-    <div>
-      <GitOpsComposerPanel
-        appSettings={appSettings}
-        directory={{
-          id: composerDirectoryId,
-          gitState: directoryGitState,
-          parentBranchName,
-          conversationId: terminalConversationId,
-        }}
-        diff={{
-          baseline: diffBaseline,
-          renderMode: diffRenderMode,
-          loadError: diffLoadError,
-          includeUntracked: includeUntrackedDiffFiles,
-          setBaseline: onSetDiffBaseline,
-          setRenderMode: onSetDiffRenderMode,
-          toggleIncludeUntracked: toggleIncludeUntrackedDiffFiles,
-        }}
-        fileTree={{
-          visible: gitOpsFileTreeVisible,
-          toggle: toggleGitOpsFileTree,
-        }}
-        review={gitOpsReview}
-        onReviewSent={handleCloseGitOpsView}
-        onLayoutChange={() => setComposerLayoutVersion((current: number) => current + 1)}
-        onAction={handleAction}
-        onBack={handleCloseGitOpsView}
-        onOpenSettingsView={(target) => controller.navigation.showView('settings', target)}
-      />
-    </div>
   )
 }
 
@@ -170,8 +112,6 @@ function CodeChatComposer(props: DomainWorkspaceContentProps) {
 }
 
 function CodeChatComposerCenter(props: DomainWorkspaceContentProps) {
-  const { state } = props
-  if (state.activeView === 'gitops') return <CodeGitOpsComposer {...props} />
   return (
     <div className="grid gap-0">
       <CodeQueuedPrompts {...props} />
@@ -237,9 +177,7 @@ function DomainWorkspaceChatFooter(props: DomainWorkspaceContentProps) {
           compactControls={sidebarAutoHidden || sidebarCollapsed}
           left={<CodeSidebarToggleButton {...props} />}
           center={<CodeChatComposerCenter {...props} />}
-          rightClassName={cn(
-            state.activeView === 'gitops' ? 'opacity-100' : 'min-[1400px]:opacity-100 opacity-0',
-          )}
+          rightClassName="min-[1400px]:opacity-100 opacity-0"
           right={<CodeFooterRight {...props} />}
         />
       </div>

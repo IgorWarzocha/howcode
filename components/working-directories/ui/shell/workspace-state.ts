@@ -125,7 +125,7 @@ export type TerminalWorkspaceTransitions = {
   getTerminalStateForNextView: (
     state: WorkspaceState,
     view: View,
-  ) => Pick<WorkspaceState, 'terminalVisible' | 'restoreTerminalVisibleOnGitOpsClose'>
+  ) => Pick<WorkspaceState, 'terminalVisible'>
   getTerminalVisibilityForSession: (
     visibility: Record<string, boolean>,
     conversationId: string | null,
@@ -161,7 +161,7 @@ export function createDirectoryWorkspaceTransitions(terminal: TerminalWorkspaceT
         selection.conversationId,
       ),
       selectedDiffFilePath: null,
-      gitOpsReturnView: 'chat',
+
       utilityViewReturnState: null,
       collapsedDirectoryIds: { ...state.collapsedDirectoryIds, [selection.directoryId]: false },
       lastCodeChatSelection: selection,
@@ -225,9 +225,6 @@ export function createDirectoryWorkspaceTransitions(terminal: TerminalWorkspaceT
         shouldPreserveDirectorySelection,
         state.selectedDiffFilePath,
       ),
-      gitOpsReturnView:
-        getPreservedChatValue(state, shouldPreserveDirectorySelection, state.gitOpsReturnView) ??
-        'directories',
       utilityViewReturnState: getPreservedChatValue(
         state,
         shouldPreserveDirectorySelection,
@@ -263,7 +260,7 @@ export function createDirectoryWorkspaceTransitions(terminal: TerminalWorkspaceT
       ),
       terminalVisibleBySession: nextTerminalVisibleBySession,
       selectedDiffFilePath: null,
-      gitOpsReturnView: 'directory',
+
       utilityViewReturnState: null,
       collapsedDirectoryIds: { ...state.collapsedDirectoryIds, [action.directoryId]: false },
       lastCodeChatSelection: {
@@ -288,7 +285,7 @@ export function createDirectoryWorkspaceTransitions(terminal: TerminalWorkspaceT
       lastCodeChatSelection: null,
       settingsOpen: false,
       settingsPanelOpen: false,
-      gitOpsReturnView: 'directories',
+
       utilityViewReturnState: null,
       hasSelectedDirectory: false,
       landingVisible: true,
@@ -309,7 +306,7 @@ export function createDirectoryWorkspaceTransitions(terminal: TerminalWorkspaceT
       selectedConversationId: null,
       terminalVisible: state.workspaceTerminalVisibleByWorkspace[action.directoryId] ?? false,
       selectedDiffFilePath: null,
-      gitOpsReturnView: 'directory',
+
       utilityViewReturnState: null,
       lastCodeChatSelection: getScopedCodeChatSelection(state, action.directoryId),
     }),
@@ -360,10 +357,9 @@ export function createInitialDirectoryWorkspaceState(
   directories: WorkingDirectory[],
 ): Pick<
   WorkspaceState,
-  'gitOpsReturnView' | 'selectedDiffFilePath' | 'collapsedDirectoryIds' | 'lastCodeChatSelection'
+  'selectedDiffFilePath' | 'collapsedDirectoryIds' | 'lastCodeChatSelection'
 > {
   return {
-    gitOpsReturnView: 'directories',
     selectedDiffFilePath: null,
     collapsedDirectoryIds: Object.fromEntries(
       directories.map((directory) => [directory.id, directory.collapsed ?? true]),
@@ -374,7 +370,6 @@ export function createInitialDirectoryWorkspaceState(
 
 export function getDirectoryUtilityReturnState(state: WorkspaceState) {
   return {
-    gitOpsReturnView: state.gitOpsReturnView,
     selectedDiffFilePath: state.selectedDiffFilePath,
   }
 }
@@ -394,10 +389,10 @@ export function clearDirectoryChatSelection() {
 export function getDirectoryStateForPreviewedChat(
   state: WorkspaceState,
   action: Extract<WorkspaceAction, { type: 'preview-chat' | 'open-chat' }>,
-): Pick<WorkspaceState, 'selectedDiffFilePath' | 'gitOpsReturnView' | 'collapsedDirectoryIds'> {
+): Pick<WorkspaceState, 'selectedDiffFilePath' | 'collapsedDirectoryIds'> {
   return {
     selectedDiffFilePath: null,
-    gitOpsReturnView: 'chat',
+
     collapsedDirectoryIds: { ...state.collapsedDirectoryIds, [action.directoryId]: false },
   }
 }

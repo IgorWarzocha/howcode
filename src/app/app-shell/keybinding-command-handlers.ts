@@ -34,12 +34,12 @@ function handleSettingsCommand(runtime: KeybindingRuntime) {
 
 function handleGitOpsCommand(runtime: KeybindingRuntime) {
   const controller = runtime.appController
-  const { activeView, selectedConversationId } = controller.workspace.state
-  if (activeView === 'gitops') {
+  const { gitDetailDirectoryId, selectedDirectoryId } = controller.workspace.state
+  if (gitDetailDirectoryId === selectedDirectoryId && gitDetailDirectoryId) {
     controller.gitOps.close()
     return true
   }
-  if (activeView !== 'chat' || !selectedConversationId) return false
+  if (!selectedDirectoryId) return false
   controller.gitOps.open()
   return true
 }

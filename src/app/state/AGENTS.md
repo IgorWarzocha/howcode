@@ -1,3 +1,3 @@
 - `workspace-model.ts` owns workspace state and action contracts; `workspace.ts` is the stable reducer/selector facade.
 - Keep transitions in `workspace-action-handlers.ts` and compose directory, Git and terminal transforms through public UI contracts. Transforms import `workspace-model.ts`, never the reducer facade.
-- Preserve workspace and directory selection, utility-return, GitOps-return, and per-session terminal state across structural changes.
+- Preserve workspace and directory selection, utility-return, and per-session terminal state across structural changes. Git detail visibility is directory-scoped and independent of active-view navigation; opening or closing it must not rewrite the selected chat or terminal state.

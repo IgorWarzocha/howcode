@@ -128,7 +128,7 @@ export function MultiDirectoryWorkContent({
     updater: (current: Record<string, boolean>) => Record<string, boolean>,
   ) => void
   onToggleDirectoryCollapse: (directoryId: string) => void
-  onShowView: (view: Exclude<View, 'gitops'>) => void
+  onShowView: (view: View) => void
   onChatOpen: (directoryId: string, chatId: string, conversationId: string) => void
 }) {
   return (
@@ -262,10 +262,10 @@ export function SingleDirectoryWorkContent({
   onSetCollapsedBranchIds: (
     updater: (current: Record<string, boolean>) => Record<string, boolean>,
   ) => void
-  onShowView: (view: Exclude<View, 'gitops'>) => void
+  onShowView: (view: View) => void
   onChatOpen: (directoryId: string, chatId: string, conversationId: string) => void
 }) {
-  const openDirectoryView = (view: Exclude<View, 'gitops'>) => {
+  const openDirectoryView = (view: View) => {
     onFocusDirectory(directory.id)
     onShowView(view)
   }

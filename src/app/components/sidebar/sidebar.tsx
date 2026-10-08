@@ -15,7 +15,7 @@ import { useAnimatedPresence } from '../../hooks/useAnimatedPresence'
 import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
 import type { View, WorkingDirectory } from '../../types'
 
-type SidebarNavigableView = Exclude<View, 'gitops'>
+type SidebarNavigableView = View
 
 import { AppMenu } from '@howcode/app-menu'
 import { NavButton } from '@howcode/common/nav-button'
