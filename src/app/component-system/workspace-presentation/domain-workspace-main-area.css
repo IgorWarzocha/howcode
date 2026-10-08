@@ -1,0 +1,28 @@
+.git-workspace-layout {
+  container-type: inline-size;
+}
+
+.git-detail-viewport {
+  container-type: inline-size;
+}
+
+.git-detail-host {
+  grid-column: 1;
+}
+
+.git-workspace-layout[data-git-placement="right"] > .git-detail-host {
+  grid-column: 2;
+}
+
+/* A narrow dock must not squeeze chat and diff into two unusable columns. */
+@container (max-width: 600px) {
+  .git-workspace-layout[data-git-placement="left"] > main,
+  .git-workspace-layout[data-git-placement="right"] > main {
+    display: none;
+  }
+
+  .git-workspace-layout[data-git-placement="left"] > .git-detail-host,
+  .git-workspace-layout[data-git-placement="right"] > .git-detail-host {
+    grid-column: 1 / -1;
+  }
+}

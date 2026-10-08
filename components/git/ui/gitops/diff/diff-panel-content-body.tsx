@@ -20,6 +20,7 @@ import type { RenderablePatch } from './diff-panel-content.types'
 import { DiffPanelEmptyState } from './diff-panel-empty-state'
 import { DiffPanelFileList } from './diff-panel-file-list'
 import type { DiffFileContentController } from './use-diff-file-content'
+import './diff-panel-content-body.css'
 
 type DiffPanelContentBodyProps = {
   directoryId: string
@@ -112,7 +113,7 @@ function RawPatchView({ reason, text }: { reason: string; text: string }) {
 function DiffFilesView(input: DiffPanelContentBodyProps) {
   return (
     <div className="relative h-full min-h-0" aria-busy={input.diff.loading || input.diff.isLoading}>
-      <div className="flex h-full min-h-0">
+      <div className="git-diff-files-layout flex h-full min-h-0">
         <div className="min-h-0 min-w-0 flex-1 overflow-hidden [overflow-anchor:none]">
           <DiffPanelFileList
             baseline={input.diff.baseline}
@@ -130,9 +131,11 @@ function DiffFilesView(input: DiffPanelContentBodyProps) {
           />
         </div>
         <div
-          className="min-h-0 shrink-0 overflow-hidden transition-[width,opacity] duration-200 ease-out"
+          className="git-diff-file-tree min-h-0 shrink-0 overflow-hidden transition-[width,opacity] duration-200 ease-out"
           style={{
-            width: input.fileTree.show ? 'min(24rem, calc(100% - 2.5rem))' : 0,
+            width: input.fileTree.show
+              ? 'var(--git-file-tree-width, min(24rem, calc(100% - 2.5rem)))'
+              : 0,
             opacity: input.fileTree.show ? 1 : 0,
           }}
           aria-hidden={!input.fileTree.show}

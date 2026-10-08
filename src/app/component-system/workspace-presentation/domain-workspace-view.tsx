@@ -76,7 +76,7 @@ function getDomainWorkspaceFlags(input: {
     showCodeSidebarFooter:
       (input.activeView === 'directories' || input.activeView === 'landing') &&
       !selectedDirectoryIdForView,
-    showDiffInMainView: input.activeView === 'gitops',
+    gitDetailOpen: input.activeView === 'gitops',
   }
 }
 
@@ -113,7 +113,7 @@ export function DomainWorkspaceView({
   const directoryGitState = controller.directories.gitState
   const { shellState } = controller.desktop
   const { state } = controller.workspace
-  const { showWorkspaceFooter, showChatFooter, showCodeSidebarFooter, showDiffInMainView } =
+  const { showWorkspaceFooter, showChatFooter, showCodeSidebarFooter, gitDetailOpen } =
     getDomainWorkspaceFlags({
       activeView: state.activeView,
       hasSelectedDirectory: state.hasSelectedDirectory,
@@ -178,7 +178,7 @@ export function DomainWorkspaceView({
       baseline={diffBaseline}
       includeUntracked={includeUntrackedDiffFiles}
       directoryGitState={directoryGitState}
-      detailEnabled={showDiffInMainView}
+      detailEnabled={gitDetailOpen}
       onOpenDetail={handleOpenGitOpsView}
     >
       <DomainWorkspaceViewContent
@@ -187,7 +187,7 @@ export function DomainWorkspaceView({
         footerInset={footerInset}
         mainViewRef={mainViewRef}
         state={state}
-        showDiffInMainView={showDiffInMainView}
+        gitDetailOpen={gitDetailOpen}
         composerDirectoryId={composerDirectoryId}
         directoryGitState={directoryGitState}
         parentBranchName={parentBranchName}

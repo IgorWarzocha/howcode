@@ -79,7 +79,7 @@ export type DomainWorkspaceContentProps = DomainWorkspaceViewProps &
     showWorkspaceFooter: boolean
     showChatFooter: boolean
     showCodeSidebarFooter: boolean
-    showDiffInMainView: boolean
+    gitDetailOpen: boolean
     showDesktopTerminalDrawer: boolean
     centerChatFooter: boolean
     gitOpsFileTreeVisible: boolean
