@@ -1,4 +1,4 @@
-import { createServiceWork } from '../../../desktop/runtime/service-work.ts'
+import { createServiceWork } from '@howaboua/howcode-sdk/node/service-work'
 import type { DictationService } from '../../../shared/desktop-service-contracts.ts'
 import * as sherpa from './sherpa-onnx.ts'
 import { resetRecognizerCache } from './sherpa-runtime.ts'

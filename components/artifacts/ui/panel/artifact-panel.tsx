@@ -1,3 +1,23 @@
+import { AnchoredPopoverPanel } from '@howaboua/howcode-sdk/common/popover'
+import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
+import { useDismissibleLayer } from '@howaboua/howcode-sdk/hooks/useDismissibleLayer'
+import {
+  compactIconButtonClass,
+  composerPopoverOptionClass,
+  composerPopoverOptionSelectedClass,
+  composerPopoverPanelClass,
+} from '@howaboua/howcode-sdk/ui/classes'
+import { appTypeGroupTitleClass } from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import {
+  artifactBodyClass,
+  artifactHeaderClass,
+  artifactHeaderControlActiveClass,
+  artifactHeaderControlsClass,
+  artifactHeaderTitleClass,
+  artifactVersionTriggerClass,
+  viewCloseButtonClass,
+} from '@howcode/ui/classes'
 import {
   Check,
   ChevronDown,
@@ -11,24 +31,6 @@ import {
   Save,
 } from 'lucide-react'
 import { type KeyboardEvent, type PointerEvent, useCallback, useRef, useState } from 'react'
-import { AnchoredPopoverPanel } from '../../../../src/app/common/popover'
-import { Tooltip } from '../../../../src/app/common/tooltip'
-import { useDismissibleLayer } from '../../../../src/app/hooks/useDismissibleLayer'
-import {
-  appTypeGroupTitleClass,
-  artifactBodyClass,
-  artifactHeaderClass,
-  artifactHeaderControlActiveClass,
-  artifactHeaderControlsClass,
-  artifactHeaderTitleClass,
-  artifactVersionTriggerClass,
-  compactIconButtonClass,
-  composerPopoverOptionClass,
-  composerPopoverOptionSelectedClass,
-  composerPopoverPanelClass,
-  viewCloseButtonClass,
-} from '../../../../src/app/ui/classes'
-import { cn } from '../../../../src/app/utils/cn'
 import { ArtifactPanelBody } from './artifact-panel-body'
 import { formatArtifactSlug } from './artifactFormat'
 import { useArtifactPanelState } from './useArtifactPanelState'

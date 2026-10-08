@@ -1,3 +1,8 @@
+import type {
+  DirectoryDiffDefaultBaseline,
+  DirectoryDiffRenderMode,
+  GitOpsMode,
+} from '@howaboua/howcode-git/contracts'
 import type { WorkingDirectory } from './desktop-chat-contracts'
 import type {
   ComposerState,
@@ -5,11 +10,6 @@ import type {
   ComposerThinkingLevel,
 } from './desktop-composer-contracts'
 import type { DictationModelId } from './desktop-dictation-contracts'
-import type {
-  DirectoryDiffDefaultBaseline,
-  DirectoryDiffRenderMode,
-  GitOpsMode,
-} from './desktop-directory-git-contracts'
 import type { PiSettingsSchema, PiThemeStateSchema } from './desktop-settings-schema'
 import type { ComposerSendMode, KeybindingOverrides } from './keybindings'
 import type { ToolkitComponentId } from './toolkit-components'
@@ -20,7 +20,7 @@ export type ModelSelection = {
 }
 
 export type DirectoryDeletionMode = 'pi-only' | 'full-clean'
-export type { GitOpsMode } from './desktop-directory-git-contracts'
+export type { GitOpsMode } from '@howaboua/howcode-git/contracts'
 
 export type AppSettings = {
   enabledToolkitComponents?: readonly ToolkitComponentId[]

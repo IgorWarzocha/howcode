@@ -1,15 +1,15 @@
-import { BranchSwitchPopover } from '@howcode/components/git/ui'
-import { type RefObject, useEffect, useRef, useState } from 'react'
-import { AnchoredPopoverPanel } from '../../../../../src/app/common/popover'
+import { BranchSwitchPopover } from '@howaboua/howcode-git/ui'
+import { AnchoredPopoverPanel } from '@howaboua/howcode-sdk/common/popover'
 import {
   notifyComposerPopoverOpened,
   useComposerPopoverDismissSignal,
-} from '../../../../../src/app/composer/composer-popover-coordination'
+} from '@howaboua/howcode-sdk/composer/composer-popover-coordination'
+import { useDismissibleLayer } from '@howaboua/howcode-sdk/hooks/useDismissibleLayer'
+import { composerPopoverPanelClass } from '@howaboua/howcode-sdk/ui/classes'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { type RefObject, useEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker, DirectoryGitState } from '../../../../../src/app/desktop/types'
-import { useDismissibleLayer } from '../../../../../src/app/hooks/useDismissibleLayer'
 import type { WorkingDirectory } from '../../../../../src/app/types'
-import { composerPopoverPanelClass } from '../../../../../src/app/ui/classes'
-import { cn } from '../../../../../src/app/utils/cn'
 
 function DashboardBranchSwitchPopover({
   anchorRef,

@@ -1,20 +1,23 @@
-import { useQuery } from '@tanstack/react-query'
-import { Check, CornerDownLeft, PackagePlus, Search, Sparkles } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { DisclosureSection } from '../../../../../src/app/common/disclosure-section'
-import { Tooltip } from '../../../../../src/app/common/tooltip'
-import type { AppSettings, DesktopActionInvoker } from '../../../../../src/app/desktop/types'
-import { desktopQueryKeys } from '../../../../../src/app/query/desktop-query'
+import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
 import {
   appToneDangerClass,
   appTypeGroupTextClass,
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import {
   iconActionButtonDisabledClass,
   inlineEmptyNoteClass,
   quietCheckboxCheckedClass,
   quietCheckboxClass,
   quietSearchInputClass,
   viewCloseButtonClass,
-} from '../../../../../src/app/ui/classes'
+} from '@howcode/ui/classes'
+import { useQuery } from '@tanstack/react-query'
+import { Check, CornerDownLeft, PackagePlus, Search, Sparkles } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { DisclosureSection } from '../../../../../src/app/common/disclosure-section'
+import type { AppSettings, DesktopActionInvoker } from '../../../../../src/app/desktop/types'
+import { desktopQueryKeys } from '../../../../../src/app/query/desktop-query'
 import {
   skillsActionColumnClass,
   skillsBrowsePreferenceButtonClass,
@@ -23,7 +26,6 @@ import {
   skillsPreviewListClass,
   skillsSearchControlRowClass,
 } from '../../../../../src/app/ui/screen-classes'
-import { cn } from '../../../../../src/app/utils/cn'
 import { searchPiSkillsQuery } from '../../query'
 import type { SkillCatalogItem } from '../skill-catalog'
 import { getSelectedSkillInstallSources } from '../skill-catalog'

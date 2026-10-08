@@ -1,3 +1,4 @@
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import {
   BlockTypeSelect,
   BoldItalicUnderlineToggles,
@@ -21,7 +22,6 @@ import {
   toolbarPlugin,
   UndoRedo,
 } from '@mdxeditor/editor'
-import { cn } from '../../../../src/app/utils/cn'
 
 export function createMarkdownEditorPlugins(fullscreen: boolean, diffMarkdown: string) {
   return [

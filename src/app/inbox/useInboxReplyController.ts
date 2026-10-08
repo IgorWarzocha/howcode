@@ -1,6 +1,6 @@
+import { getErrorMessage } from '@howaboua/howcode-sdk/errors'
 import { useState } from 'react'
 import { getDesktopActionErrorMessage } from '../desktop/action-results'
-import { getErrorMessage } from '../desktop/error-messages'
 import type { ComposerAttachment, DesktopActionInvoker, InboxChat } from '../desktop/types'
 import { createInboxReplySubmission, getInboxReplyOutcome } from './inbox-reply'
 

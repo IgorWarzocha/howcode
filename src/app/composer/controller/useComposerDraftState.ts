@@ -1,3 +1,4 @@
+import { useLatestRef } from '@howaboua/howcode-sdk/hooks/useLatestRef'
 import {
   type SetStateAction,
   useCallback,
@@ -8,7 +9,6 @@ import {
   useState,
 } from 'react'
 import type { ComposerAttachment } from '../../desktop/types'
-import { useLatestRef } from '../../hooks/useLatestRef'
 import { composerDraftStore, getComposerDraftChatId } from '../composerDraftStore'
 
 export function useComposerDraftState({

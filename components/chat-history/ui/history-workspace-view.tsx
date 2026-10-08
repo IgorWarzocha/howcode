@@ -1,7 +1,7 @@
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { mainPanelClass } from '@howcode/ui/classes'
 import type { ComponentProps } from 'react'
-import { mainPanelClass } from '../../../src/app/ui/classes'
 import { WORKSPACE_EDGE_PADDING_CLASS } from '../../../src/app/ui/layout'
-import { cn } from '../../../src/app/utils/cn'
 import { DirectoryChatHistoryView } from './chat-history-view'
 
 export function ChatHistoryWorkspaceView(props: ComponentProps<typeof DirectoryChatHistoryView>) {

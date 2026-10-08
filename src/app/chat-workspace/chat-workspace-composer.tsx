@@ -1,3 +1,4 @@
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import type { ChatArtifactDrawerState } from '@howcode/components/artifacts/ui'
 import { getComposerRuntimeModel, QueuedPromptsCard } from '@howcode/composer'
 import type { useQueuedPromptCancellation } from '@howcode/composer/useQueuedPromptCancellation'
@@ -8,7 +9,6 @@ import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
 import type { AppSettings, DirectoryDiffBaseline } from '../desktop/types'
 import type { Message } from '../types'
-import { cn } from '../utils/cn'
 import { WorkspaceComposerDock } from '../workspace-shell/workspace-composer-dock'
 import type { ChatWorkspaceController } from './chat-workspace-contract'
 

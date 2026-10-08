@@ -1,7 +1,7 @@
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { type KeyboardEvent, useState } from 'react'
 import type { AppSettings, DesktopActionInvoker } from '../../../../src/app/desktop/types'
 import type { WorkingDirectory } from '../../../../src/app/types'
-import { cn } from '../../../../src/app/utils/cn'
 import { getLandingOverviewContent } from './landing-overview-content'
 import { EmptyLandingOverview } from './landing-view-parts'
 

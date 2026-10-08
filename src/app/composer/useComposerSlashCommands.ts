@@ -1,3 +1,4 @@
+import { useLatestRef } from '@howaboua/howcode-sdk/hooks/useLatestRef'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import {
   appNewSessionSlashCommand,
@@ -7,7 +8,6 @@ import {
 } from '@howcode/shared/composer-slash-commands'
 import { type KeyboardEvent, useEffect, useMemo, useState } from 'react'
 import type { ComposerSlashCommand } from '../desktop/types'
-import { useLatestRef } from '../hooks/useLatestRef'
 import { getComposerSlashCommandsQuery } from '../query/desktop-query'
 
 import { handleOpenSlashCommandKey } from './composer-slash-command-keydown'

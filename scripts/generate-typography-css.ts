@@ -1,4 +1,4 @@
-import { getTypographyCssVariables } from '../src/app/ui/typography-scale'
+import { getTypographyCssVariables } from '@howaboua/howcode-sdk/ui/typography-scale'
 
 const startMarker = '  /* app typography: generated start */'
 const endMarker = '  /* app typography: generated end */'

@@ -1,3 +1,4 @@
+import { useDismissibleLayer } from '@howaboua/howcode-sdk/hooks/useDismissibleLayer'
 import { useComposerDictation } from '@howcode/components/dictation/ui'
 import { useEffect, useRef, useState } from 'react'
 import type {
@@ -5,7 +6,6 @@ import type {
   ComposerStreamingBehavior,
   DesktopActionInvoker,
 } from '../../desktop/types'
-import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
 import type { View } from '../../types'
 import { useComposerAttachmentPicker } from '../useComposerAttachmentPicker'
 import { useComposerClipboardHandlers } from '../useComposerClipboardHandlers'

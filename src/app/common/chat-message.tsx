@@ -1,8 +1,3 @@
-import type {
-  CustomChatMessage,
-  ProseMessage,
-  SystemChatMessage,
-} from '@howcode/shared/desktop-chat-contracts'
 import {
   appTypeCodeClass,
   appTypeControlStrongClass,
@@ -11,6 +6,13 @@ import {
   appTypeReadableClass,
   appTypeSmallClass,
   appTypeTinyStrongClass,
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import type {
+  CustomChatMessage,
+  ProseMessage,
+  SystemChatMessage,
+} from '@howcode/shared/desktop-chat-contracts'
+import {
   chatSessionErrorStripClass,
   chatSessionStripClass,
   chatSessionSurfaceClass,
@@ -18,7 +20,7 @@ import {
   thinkingDisclosureBodyClass,
   thinkingDisclosureClass,
   thinkingDisclosureTriggerClass,
-} from '@howcode/ui'
+} from '@howcode/ui/classes'
 import { memo, useEffect, useId, useRef, useState } from 'react'
 import type { Message } from '../types'
 import { getThinkingPreview } from '../utils/chat-previews'

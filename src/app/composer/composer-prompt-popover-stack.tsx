@@ -1,6 +1,6 @@
+import { composerPopoverInputLayerClass } from '@howaboua/howcode-sdk/ui/classes'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import type { RefObject } from 'react'
-import { composerPopoverInputLayerClass } from '../ui/classes'
-import { cn } from '../utils/cn'
 import { ComposerConversationForkPanel } from './composer-conversation-fork-panel'
 import { SlashCommandPanel } from './composer-slash-command-panel'
 import type { ComposerSlashCommands } from './useComposerSlashCommands'

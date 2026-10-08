@@ -1,7 +1,8 @@
+import { compactIconButtonClass } from '@howaboua/howcode-sdk/ui/classes'
+import { appToneMutedClass, appTypeSmallClass } from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { X } from 'lucide-react'
 import type { ComposerQueuedPrompt } from '../desktop/types'
-import { appToneMutedClass, appTypeSmallClass, compactIconButtonClass } from '../ui/classes'
-import { cn } from '../utils/cn'
 
 type QueuedPromptsCardProps = {
   prompts: ComposerQueuedPrompt[]

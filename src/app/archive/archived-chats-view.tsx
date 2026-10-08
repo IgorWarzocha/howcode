@@ -1,26 +1,25 @@
-import { ArchiveRestore, Trash2 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { CompactMetaRow } from '../common/compact-meta-row'
-import { ConfirmPopover } from '../common/confirm-popover'
-import { Tooltip } from '../common/tooltip'
-import { ViewHeader } from '../common/view-header'
-import { ViewShell } from '../common/view-shell'
-import type { ArchivedChat, DesktopActionInvoker } from '../desktop/types'
+import { ConfirmPopover } from '@howaboua/howcode-sdk/common/confirm-popover'
+import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
 import {
   appToneMutedClass,
   appToneTextClass,
   appTypeGroupTextClass,
   appTypeSectionTitleClass,
   appTypeSmallClass,
-  inlineEmptyNoteClass,
-  viewCloseButtonClass,
-} from '../ui/classes'
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { inlineEmptyNoteClass, viewCloseButtonClass } from '@howcode/ui/classes'
+import { ArchiveRestore, Trash2 } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { CompactMetaRow } from '../common/compact-meta-row'
+import { ViewHeader } from '../common/view-header'
+import { ViewShell } from '../common/view-shell'
+import type { ArchivedChat, DesktopActionInvoker } from '../desktop/types'
 import {
   skillsActionColumnClass,
   skillsListClass,
   skillsViewShellClass,
 } from '../ui/screen-classes'
-import { cn } from '../utils/cn'
 
 type ArchivedChatsViewProps = {
   chats: ArchivedChat[]

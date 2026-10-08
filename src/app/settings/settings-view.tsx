@@ -1,3 +1,4 @@
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { useDictationSettingsDraft } from '@howcode/components/dictation/ui'
 import { useCallback, useRef } from 'react'
 import { ViewHeader } from '../common/view-header'
@@ -10,7 +11,6 @@ import type {
   PiSettings,
   PiThemeState,
 } from '../desktop/types'
-import { cn } from '../utils/cn'
 import { buildSettingsDescriptors } from './settings/settingsDescriptors'
 import { filterSettings, groupSettingsByCategory } from './settings/settingsGroups'
 import { SettingsGroupsList } from './settings/settingsGroupsList'

@@ -259,16 +259,6 @@ process.once('exit', () => {
 try {
   bridge = await startDevWebBridge()
 
-  server = await createServer({
-    configFile: path.join(directoryRoot, 'vite.config.ts'),
-    configLoader: 'runner',
-    server: {
-      host: devServerListenHost,
-      port: DEV_SERVER_START_PORT,
-      strictPort: false,
-    },
-  })
-
   const bridgeMiddleware = (
     request: http.IncomingMessage,
     response: http.ServerResponse,
@@ -301,13 +291,22 @@ try {
     next()
   }
 
-  ;(
-    server.middlewares as unknown as {
-      stack: Array<{ route: string; handle: typeof bridgeMiddleware }>
-    }
-  ).stack.unshift({
-    route: '',
-    handle: bridgeMiddleware,
+  server = await createServer({
+    configFile: path.join(directoryRoot, 'vite.config.ts'),
+    configLoader: 'runner',
+    plugins: [
+      {
+        name: 'howcode-dev-web-bridge',
+        configureServer(viteServer) {
+          viteServer.middlewares.use(bridgeMiddleware)
+        },
+      },
+    ],
+    server: {
+      host: devServerListenHost,
+      port: DEV_SERVER_START_PORT,
+      strictPort: false,
+    },
   })
 
   const listenPromise = server.listen()

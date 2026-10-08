@@ -1,13 +1,12 @@
-import { getLocalDraftDirectoryId } from '@howcode/shared/conversation-ids'
-
-import type { ComposerAttachment } from '../desktop/types'
 import {
   createStoragePersistence,
   getBeforeUnloadTarget,
   getBrowserStorage,
   hydratePersistedRecordMap,
   type PersistedRecordStoreOptions,
-} from '../workspace-shell/persistence/persistedRecordStore'
+} from '@howaboua/howcode-sdk/persistence/record-store'
+import { getLocalDraftDirectoryId } from '@howcode/shared/conversation-ids'
+import type { ComposerAttachment } from '../desktop/types'
 
 type ComposerDraft = {
   prompt: string

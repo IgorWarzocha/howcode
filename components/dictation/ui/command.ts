@@ -1,6 +1,6 @@
+import { useLatestRef } from '@howaboua/howcode-sdk/hooks/useLatestRef'
 import { type RefObject, useEffect } from 'react'
 import { useHowcodeKeybindingCommand } from '../../../src/app/app-shell/keybinding-events'
-import { useLatestRef } from '../../../src/app/hooks/useLatestRef'
 
 type DictationCommandTarget = {
   composerPanelRef: RefObject<HTMLElement | null>

@@ -1,8 +1,7 @@
+import { composerPanelClass } from '@howaboua/howcode-sdk/ui/classes'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { type RefObject, useRef } from 'react'
-
-import { composerPanelClass } from '../ui/classes'
 import { WORKSPACE_RAIL_GRID_CLASS } from '../ui/layout'
-import { cn } from '../utils/cn'
 import type { ComposerProps } from './composer-contract'
 import { ComposerPromptFooter } from './composer-prompt-footer'
 import { ComposerPromptInputPanel } from './composer-prompt-input-panel'

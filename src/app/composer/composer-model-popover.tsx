@@ -1,16 +1,18 @@
-import { Search } from 'lucide-react'
-import { type RefObject, useEffect, useMemo, useRef, useState } from 'react'
-import { AnchoredPopoverPanel, PopoverPanel } from '../common/popover'
-import type { ComposerModel, ComposerThinkingLevel } from '../desktop/types'
+import { AnchoredPopoverPanel, PopoverPanel } from '@howaboua/howcode-sdk/common/popover'
+import {
+  composerPopoverBottomRowLayerClass,
+  composerPopoverPanelClass,
+} from '@howaboua/howcode-sdk/ui/classes'
 import {
   appToneMutedClass,
   appToneTextClass,
   appTypeMetaClass,
   appTypeSmallClass,
-  composerPopoverBottomRowLayerClass,
-  composerPopoverPanelClass,
-} from '../ui/classes'
-import { cn } from '../utils/cn'
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { Search } from 'lucide-react'
+import { type RefObject, useEffect, useMemo, useRef, useState } from 'react'
+import type { ComposerModel, ComposerThinkingLevel } from '../desktop/types'
 import {
   type ComposerModelMenuOption,
   ModelPopoverMenuList,

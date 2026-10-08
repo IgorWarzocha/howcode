@@ -1,4 +1,4 @@
-import { cn } from '../utils/cn'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 
 type ActivitySpinnerProps = {
   className?: string

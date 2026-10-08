@@ -1,5 +1,5 @@
-import { appTypeGroupTextClass } from '../ui/classes'
-import { cn } from '../utils/cn'
+import { appTypeGroupTextClass } from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { CopyMessageButton } from './copy-message-button'
 import { MarkdownContent } from './markdown-content'
 

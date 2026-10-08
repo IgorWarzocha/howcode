@@ -1,3 +1,4 @@
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { ChatView } from '@howcode/chat'
 import { ArtifactDrawerViews, useChatArtifactDrawerState } from '@howcode/components/artifacts/ui'
 import { useQueuedPromptCancellation } from '@howcode/composer/useQueuedPromptCancellation'
@@ -10,7 +11,6 @@ import { type RefObject, useRef, useState } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
 import type { DirectoryDiffBaseline, DirectoryDiffRenderMode } from '../desktop/types'
 import { WORKSPACE_EDGE_PADDING_CLASS } from '../ui/layout'
-import { cn } from '../utils/cn'
 import { ChatComposerDock, type ChatWorkspaceComposerProps } from './chat-workspace-composer'
 import type { ChatWorkspaceController } from './chat-workspace-contract'
 

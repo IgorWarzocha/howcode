@@ -1,7 +1,7 @@
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { getComposerRuntimeModel, QueuedPromptsCard } from '../../composer/index'
 import type { Message } from '../../types'
-import { cn } from '../../utils/cn'
 import { FALLBACK_APP_SETTINGS } from '../../workspace-shell/default-app-settings'
 import { DesktopComposerStatusModelPicker } from '../../workspace-shell/desktop-composer-status'
 import { Composer } from '../../workspace-shell/index'

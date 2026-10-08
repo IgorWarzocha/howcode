@@ -1,4 +1,4 @@
-import { Tooltip } from '@howcode/common/tooltip'
+import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
 import type { ReactNode } from 'react'
 
 type SidebarActionTooltipProps = {

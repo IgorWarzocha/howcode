@@ -1,10 +1,10 @@
+import { useHoverToFocus } from '@howaboua/howcode-sdk/hooks/useHoverToFocus'
+import { appToneTextClass, appTypeSmallClass } from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import type { FitAddon } from '@xterm/addon-fit'
 import type { Terminal as XTerm } from '@xterm/xterm'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { useHowcodeKeybindingCommand } from '../../../../src/app/app-shell/keybinding-events'
-import { useHoverToFocus } from '../../../../src/app/hooks/useHoverToFocus'
-import { appToneTextClass, appTypeSmallClass } from '../../../../src/app/ui/index'
-import { cn } from '../../../../src/app/utils/cn'
 import { writeDesktopTerminal } from '../desktop-terminal'
 import {
   type TerminalBackgroundCssVar,

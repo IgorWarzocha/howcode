@@ -1,3 +1,4 @@
+import { getOriginUrl } from '@howaboua/howcode-git/service'
 import type { ActionHandlerResult } from '../../../../desktop/app-service/action-router-result.ts'
 import {
   handledAction,
@@ -17,7 +18,6 @@ import {
 import type { DesktopAction } from '../../../../shared/desktop-actions.ts'
 import type { AnyDesktopActionPayload } from '../../../../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../../../../shared/desktop-working-directory.ts'
-import { getOriginUrl } from '../../../git/service/index.ts'
 import type { WorkingDirectoryPeers } from '../dependencies.ts'
 import {
   addDirectoryFromPath,

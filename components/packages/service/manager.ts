@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, extname, join, resolve } from 'node:path'
 import { promisify } from 'node:util'
+import { howcodeMetadata, linkedDurablePackages } from '@howaboua/howcode-sdk/node/plugin-metadata'
 import { satisfies, valid, validRange } from 'semver'
 import { type PackageSource, parsePackageSource } from './source'
 import {
@@ -65,6 +66,8 @@ export async function packageMetadata(
   if (typeof manifest !== 'object' || manifest === null || Array.isArray(manifest))
     throw new Error(`Invalid package.json: ${root}`)
   checkPeerDependencies(manifest, root, hostVersion)
+  howcodeMetadata(manifest, root)
+  await linkedDurablePackages(manifestDirectory)
   return {
     ...('name' in manifest && typeof manifest.name === 'string' ? { name: manifest.name } : {}),
     ...('version' in manifest && typeof manifest.version === 'string'

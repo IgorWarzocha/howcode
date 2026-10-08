@@ -1,11 +1,12 @@
+import type { DirectoryDiffStreamEvent } from '@howaboua/howcode-git/contracts'
 import type { Artifact } from './desktop-artifact-contracts'
 import type { ChatData } from './desktop-chat-contracts'
 import type { ComposerState } from './desktop-composer-contracts'
 import type { DictationModelId } from './desktop-dictation-contracts'
-import type { DirectoryDiffStreamEvent } from './desktop-directory-git-contracts'
 import type { KeybindingCommandId } from './keybindings'
 
 export type DesktopEvent =
+  | { type: 'plugin-event'; plugin: string; event: unknown }
   | { type: 'package-ui-invalidation' }
   | { type: 'shell-state-refresh' }
   | { type: 'keybinding-command'; commandId: KeybindingCommandId }

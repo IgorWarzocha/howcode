@@ -1,3 +1,10 @@
+import {
+  getActiveBranch,
+  mergeDirectoryBranch,
+  pruneDirectoryBranch,
+  removeDirectoryWorktree,
+  withRootGitMutation,
+} from '@howaboua/howcode-git/service'
 import { deletePersistedChats } from '../../../../desktop/app-service/chat-actions.ts'
 import {
   listDirectoryChatIds,
@@ -6,13 +13,6 @@ import {
 } from '../../../../desktop/chat-repository.ts'
 import { abortWorkspaceConversations } from '../../../../desktop/conversation-runtime.ts'
 import { withDirectoryTeardown } from '../../../../desktop/runtime/directory-activity.ts'
-import {
-  getActiveBranch,
-  mergeDirectoryBranch,
-  pruneDirectoryBranch,
-  removeDirectoryWorktree,
-  withRootGitMutation,
-} from '../../../git/service/index.ts'
 import type { WorkingDirectoryPeers } from '../dependencies.ts'
 import type { RegisteredWorktree } from '../directory-worktrees/registered-worktree.ts'
 import {

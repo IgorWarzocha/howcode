@@ -1,9 +1,9 @@
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core'
-import { Tooltip } from '@howcode/common/tooltip'
+import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
+import { compactIconButtonClass } from '@howaboua/howcode-sdk/ui/classes'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { ChevronDown, ChevronRight, Folder, MoreHorizontal, Plus } from 'lucide-react'
 import { useEffect, useRef } from 'react'
-import { compactIconButtonClass } from '../../../ui/classes'
-import { cn } from '../../../utils/cn'
 
 type WorkspaceRowProps = {
   actionMenuId: string

@@ -1,4 +1,3 @@
-import { createGitWorkspaceTransitions } from '@howcode/components/git/ui'
 import {
   getTerminalStateForNextView,
   getTerminalStateForOpenedChat,
@@ -15,6 +14,7 @@ import {
   getDirectoryStateForShownView,
   getDirectoryUtilityReturnState,
 } from '@howcode/components/working-directories/ui'
+import { createGitWorkspaceTransitions } from '@howcode/git-integration'
 import { isWorkspaceUtilityView } from '../component-system/toolkit-components'
 import type { View } from '../types'
 import type {

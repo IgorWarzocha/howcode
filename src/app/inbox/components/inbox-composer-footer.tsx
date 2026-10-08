@@ -1,8 +1,14 @@
+import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
+import {
+  workspaceFooterRowClass,
+  workspaceFooterTextClass,
+  workspaceFooterTrailingGroupClass,
+} from '@howaboua/howcode-sdk/ui/footer-primitives'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { ArrowUpRight, Bot, X } from 'lucide-react'
 import type { RefObject } from 'react'
 import { IconButton } from '../../common/icon-button'
 import { ToolbarButton } from '../../common/toolbar-button'
-import { Tooltip } from '../../common/tooltip'
 import { ComposerContextMeter } from '../../composer/composer-context-meter'
 import { ComposerModelPopover } from '../../composer/composer-model-popover'
 import type {
@@ -10,12 +16,6 @@ import type {
   ComposerModel,
   ComposerThinkingLevel,
 } from '../../desktop/types'
-import { cn } from '../../utils/cn'
-import {
-  workspaceFooterRowClass,
-  workspaceFooterTextClass,
-  workspaceFooterTrailingGroupClass,
-} from '../../workspace-shell/footer/workspace-footer-primitives'
 
 const thinkingLevelLabels: Record<ComposerThinkingLevel, string> = {
   off: 'Off',

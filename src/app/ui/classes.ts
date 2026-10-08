@@ -10,51 +10,8 @@ import {
   appTypeReadableClass,
   appTypeSectionTitleClass,
   appTypeSmallClass,
-  appTypeTinyClass,
   appTypeViewTitleClass,
-} from './typography-scale'
-
-export {
-  appToneAccentClass,
-  appToneDangerClass,
-  appToneMutedClass,
-  appToneSubtleClass,
-  appToneTextClass,
-  appTypeBodyClass,
-  appTypeCodeBlockClass,
-  appTypeCodeClass,
-  appTypeCompactWidgetClass,
-  appTypeControlClass,
-  appTypeControlNormalClass,
-  appTypeControlStrongClass,
-  appTypeDashboardLabelClass,
-  appTypeDashboardLabelStrongClass,
-  appTypeDashboardMetricClass,
-  appTypeDashboardTitleClass,
-  appTypeGroupTextClass,
-  appTypeGroupTitleClass,
-  appTypeKickerClass,
-  appTypeLogoMarkClass,
-  appTypeMetaClass,
-  appTypeMetaStrongClass,
-  appTypeReadableClass,
-  appTypeReadableStrongClass,
-  appTypeSectionTitleClass,
-  appTypeSmallClass,
-  appTypeSmallStrongClass,
-  appTypeTinyClass,
-  appTypeTinyStrongClass,
-  appTypeViewTitleClass,
-} from './typography-scale'
-
-export const panelChromeClass =
-  'rounded-[20px] border border-[color:var(--border)] bg-[color:var(--panel)] shadow-[var(--shadow)] backdrop-blur-[18px]'
-
-export const popoverPanelClass =
-  'border-[color:var(--border-strong)] bg-[color:var(--panel)] shadow-[var(--shadow)]'
-
-export const confirmPopoverClass =
-  'motion-popover pointer-events-auto absolute top-[calc(100%+0.25rem)] right-0 z-50 flex gap-0.5 rounded-lg border-0 bg-[color:var(--panel)] p-1 shadow-[var(--shadow)]'
+} from '@howaboua/howcode-sdk/ui/typography-scale'
 
 export const mainPanelClass =
   'min-h-0 overflow-y-scroll overflow-x-hidden pt-1.5 [scrollbar-gutter:stable_both-edges]'
@@ -166,52 +123,20 @@ export const compactMetaRowActionsClass = 'flex items-center gap-0.5'
 export const iconButtonClass =
   'inline-flex h-7 w-7 items-center justify-center rounded-lg border border-transparent bg-transparent text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]'
 
-export const compactIconButtonClass =
-  'inline-flex h-6 w-6 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]'
-
 export const compactRoundIconButtonClass =
   'inline-flex h-7 w-7 items-center justify-center rounded-full px-0 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]'
 
 export const viewCloseButtonClass =
   'inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] opacity-75 transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100'
 
-export const toolbarButtonClass = `inline-flex min-h-7 items-center gap-1.5 rounded-lg border border-transparent px-1.5 ${appTypeControlClass} ${appToneMutedClass} transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]`
-
 export const ghostButtonClass = `rounded-[10px] border border-transparent px-2 py-1 ${appTypeControlClass} ${appToneMutedClass} transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]`
-
-export const composerTextActionButtonClass = `settings-control-text inline-flex h-7 items-center justify-center gap-1.5 rounded-md border border-[color:var(--border)] bg-[color:var(--panel-2)] px-3 font-medium ${appToneTextClass} transition-colors duration-150 ease-out hover:border-[color:var(--accent-border)] hover:bg-[color:var(--accent-bg-subtle)] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[color:var(--panel)] disabled:text-[color:var(--muted-2)]`
-
-export const composerPanelClass =
-  'grid gap-0 overflow-visible rounded-[20px] border border-[color:color-mix(in_srgb,var(--accent-border)_52%,transparent)] bg-[color:var(--panel)] shadow-none'
 
 export const composerInlineStatusPillClass = `inline-flex h-6 max-w-[min(10.75rem,45cqw)] shrink-0 items-center gap-1.5 rounded-full bg-[color:var(--surface-hover)] px-2.5 ${appTypeSmallClass} ${appToneMutedClass}`
 
-export const composerInlineConfirmButtonClass =
-  'composer-footer-text motion-popover pointer-events-auto absolute right-[calc(1.75rem+0.375rem)] bottom-0 z-40 inline-flex h-7 items-center rounded-lg border-0 bg-[color:var(--panel)] px-2 text-left whitespace-nowrap text-[color:var(--muted)] shadow-none transition-colors hover:bg-[color:var(--panel-2)] focus-visible:bg-[color:var(--panel-2)] focus-visible:outline-none'
-
-export const composerPopoverInputClass = `settings-control-text h-8 min-w-0 rounded-md border-0 bg-[color:var(--surface-hover)] px-2.5 ${appTypeControlClass} ${appToneTextClass} outline-none placeholder:text-[color:var(--muted)] focus:bg-[color:var(--surface-hover)]`
-
-// Composer-local overlay ladder. Context previews stay above adjacent popovers.
 export const composerPopoverContextLayerClass = 'z-[180]'
-
-export const composerPopoverBottomRowLayerClass = 'z-[140]'
-
-export const composerPopoverInputLayerClass = 'z-[120]'
-
-export const composerPopoverExtensionLayerClass = 'z-[100]'
-
-export const composerPopoverPanelClass =
-  'pointer-events-auto scroll-py-1.5 rounded-xl border-0 bg-[color:var(--panel)] p-1.5 shadow-[var(--shadow)]'
 
 export const settingsPopoverPanelClass =
   'pointer-events-auto scroll-py-1.5 rounded-xl border-0 bg-[color:var(--panel)] p-1.5 shadow-[0_18px_42px_rgba(0,0,0,0.34)]'
-
-export const composerPopoverOptionClass = `grid w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-md px-2.5 text-left ${appTypeControlClass} ${appToneMutedClass} transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] focus-visible:bg-[color:var(--surface-hover)] focus-visible:outline-none`
-
-export const composerPopoverOptionSelectedClass =
-  'bg-[color:var(--surface-hover)] text-[color:var(--text)]'
-
-export const composerPopoverSectionLabelClass = `px-2 pt-1 ${appTypeTinyClass} uppercase tracking-[0.08em] ${appToneMutedClass}`
 
 export const composerAttachmentPickerTextClass = appTypeMetaClass
 
@@ -221,49 +146,6 @@ export const menuOptionClass = `grid grid-cols-[16px_minmax(0,1fr)] items-center
 
 export const terminalDrawerFooterClass =
   'flex h-[3.75rem] shrink-0 items-start justify-end gap-3 bg-[color:var(--workspace)] px-3 pt-1.5'
-
-export const diffPanelEmptyStateClass = `flex min-h-60 items-center justify-center px-5 text-center ${appTypeSmallClass} ${appToneMutedClass}`
-
-export const diffPanelMainSurfaceClass =
-  'flex h-full min-h-0 flex-col overflow-hidden bg-[color:var(--workspace)]'
-
-export const diffPanelSplitSurfaceClass = `${diffPanelMainSurfaceClass} rounded-[20px] border-l border-[color:var(--border)]/70 xl:w-full`
-
-export const diffRailClass =
-  'flex h-full min-h-0 w-full flex-col bg-[color:var(--workspace)] text-[color:var(--text)]'
-
-export const diffRailHeaderClass =
-  'flex h-9 shrink-0 items-center gap-2 px-2.5 text-[color:var(--muted)]'
-
-export const diffRailSearchClass = `flex min-h-8 shrink-0 items-center gap-2 rounded-lg bg-[color:var(--surface-hover)] px-2.5 transition-colors focus-within:bg-[color:var(--folded-row-hover-bg)] ${appTypeGroupTextClass} ${appToneMutedClass}`
-
-export const diffRailTreeWrapperClass =
-  'flex min-h-0 flex-1 flex-col gap-2 bg-[color:var(--workspace)] px-2.5 pt-1.5 pb-0'
-
-export const diffFileHeaderClass =
-  'flex min-h-9 w-full items-center bg-transparent text-[color:var(--text)] transition-colors hover:bg-[color:var(--surface-hover)]'
-
-export const diffFileHeaderButtonClass =
-  'flex min-h-9 min-w-0 flex-1 items-center justify-between gap-3 bg-transparent px-3 py-1.5 text-left disabled:cursor-default'
-
-export const diffFileShellClass =
-  'overflow-hidden rounded-md border border-[color:var(--border)]/55 bg-[color:var(--workspace)]'
-
-export const diffCommentAnnotationClass = 'ml-3 mr-0 mb-1.5 grid gap-1.5 py-1 pl-2.5 pr-0'
-
-export const diffCommentTextareaClass = `min-h-12 w-full resize-y rounded-md border border-[color:var(--border)]/70 bg-transparent px-2 py-1.5 outline-none placeholder:text-[color:var(--muted)] focus:border-[color:var(--border-strong)] focus:bg-[color:var(--surface-hover)] ${appTypeSmallClass} ${appToneTextClass}`
-
-export const diffCommentSaveButtonClass =
-  'inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--green)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:opacity-40'
-
-export const diffImagePreviewClass =
-  'grid gap-3 border-t border-[color:var(--border)]/55 bg-[color:var(--workspace)] p-3 md:grid-cols-2'
-
-export const diffImagePreviewPanelClass =
-  'grid min-w-0 gap-2 rounded-md bg-[color:var(--folded-row-bg)] p-2'
-
-export const diffImagePreviewFrameClass =
-  'flex min-h-40 items-center justify-center overflow-hidden rounded-md bg-[color:var(--workspace)]'
 
 export const inlineCodeClass = `rounded-md bg-[rgba(114,120,152,0.18)] px-1.5 py-0.5 ${appTypeCodeClass} break-all ${appToneTextClass}`
 

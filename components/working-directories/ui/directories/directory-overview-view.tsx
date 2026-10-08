@@ -1,4 +1,4 @@
-import { getDirectoryGitStateQuery } from '@howcode/components/git/ui'
+import { getDirectoryGitStateQuery } from '@howcode/git-integration/client'
 import { useQuery } from '@tanstack/react-query'
 import type {
   DesktopActionInvoker,

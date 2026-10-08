@@ -16,10 +16,10 @@
     "dev:app-data": "HOWCODE_DEV_USER_DATA_PROFILE=app bun run dev",
     "dev:clean": "rm -rf build/server build/desktop build/resources build/dev-server.json build/dev-web-bridge.mjs build/dev-web-bridge.mjs.map",
     "prepush:clean": "rm -rf artifacts dist build",
-    "dev:web": "bun ./scripts/dev-web.ts",
+    "dev:web": "bun run generate:components && bun ./scripts/dev-web.ts",
     "dev:runtime": "bun ./scripts/build-runtime.ts --watch",
-    "build:runtime": "bun ./scripts/build-runtime.ts",
-    "build": "vite build --configLoader runner && bun run build:runtime",
+    "build:runtime": "bun run generate:components && bun ./scripts/build-runtime.ts",
+    "build": "bun run generate:components && vite build --configLoader runner && bun run build:runtime",
     "build:release": "bun run build",
     "release:prepare": "bun run build && bun run pack:howcode",
     "pack:howcode": "bun ./scripts/pack-howcode.ts main pack",
@@ -46,7 +46,9 @@
     "polls:deploy": "cd workers/polls && bunx wrangler deploy",
     "polls:migrate": "cd workers/polls && bunx wrangler d1 migrations apply howcode_polls --remote",
     "dev:host": "HOWCODE_DEV_SERVER_HOST=0.0.0.0 bun run dev",
-    "start": "node build/server/index.mjs"
+    "start": "node build/server/index.mjs",
+    "generate:components": "bun ./scripts/generate-component-registry.ts",
+    "postinstall": "bun run generate:components"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,cts,mts,cjs,mjs,json,css,md}": [
@@ -89,7 +91,9 @@
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
     "semver": "7.8.5",
-    "sherpa-onnx-node": "^1.13.8"
+    "sherpa-onnx-node": "^1.13.8",
+    "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-e09ac822.tgz",
+    "@howaboua/howcode-git": "file:../howcode-components/dist/howaboua-howcode-git-0.1.0-f827c0d0.tgz"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
@@ -115,6 +119,12 @@
   "overrides": {
     "@howaboua/pi-durable-git": "file:../pi-durable-components/dist/howaboua-pi-durable-git-0.1.0-33d23824.tgz",
     "@aws-sdk/client-bedrock-runtime": "3.1136.0",
-    "lightningcss": "1.33.0"
-  }
+    "lightningcss": "1.33.0",
+    "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-e09ac822.tgz",
+    "@howaboua/howcode-git": "file:../howcode-components/dist/howaboua-howcode-git-0.1.0-f827c0d0.tgz",
+    "@howaboua/pi-durable-ui": "file:../pi-durable-components/dist/howaboua-pi-durable-ui-0.1.0-7f88e772.tgz"
+  },
+  "howcodeComponents": [
+    "@howaboua/howcode-git"
+  ]
 }

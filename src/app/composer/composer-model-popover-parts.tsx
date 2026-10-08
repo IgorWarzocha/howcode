@@ -1,15 +1,15 @@
-import { Check } from 'lucide-react'
-import type { ComposerThinkingLevel } from '../desktop/types'
+import { toolbarButtonClass } from '@howaboua/howcode-sdk/ui/classes'
 import {
   appToneMutedClass,
   appToneSubtleClass,
   appTypeKickerClass,
   appTypeTinyClass,
   appTypeTinyStrongClass,
-  menuOptionClass,
-  toolbarButtonClass,
-} from '../ui/classes'
-import { cn } from '../utils/cn'
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { menuOptionClass } from '@howcode/ui/classes'
+import { Check } from 'lucide-react'
+import type { ComposerThinkingLevel } from '../desktop/types'
 
 export type NestedModelMenu = 'provider' | 'model' | 'thinking' | null
 

@@ -1,6 +1,6 @@
+import { runProcessProbe } from '@howaboua/howcode-sdk/node/process-probe'
 import * as Effect from 'effect/Effect'
 import * as Schema from 'effect/Schema'
-import { runProcessProbe } from '../../node-runtime/process-probe'
 import serviceNativeAbi from '../../shared/service-native-abi.json'
 
 const supportedServiceNodeAbis = new Set(serviceNativeAbi.supportedServiceNodeAbis)

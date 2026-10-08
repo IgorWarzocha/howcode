@@ -1,5 +1,5 @@
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
-import { cn } from '../utils/cn'
 
 type NavButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & {
   icon: ReactNode

@@ -1,6 +1,6 @@
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { cn } from '../utils/cn'
 
 type ExpandablePanelProps = {
   expanded: boolean

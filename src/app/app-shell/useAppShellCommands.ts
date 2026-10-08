@@ -1,5 +1,5 @@
-import { useGitWorkspaceCommands } from '@howcode/components/git/ui'
 import { useTerminalCommands } from '@howcode/components/terminal/ui'
+import { useGitWorkspaceCommands } from '@howcode/git-integration'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { isLocalConversationId } from '@howcode/shared/conversation-ids'
 import {

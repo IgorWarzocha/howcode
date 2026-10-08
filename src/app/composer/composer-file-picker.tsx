@@ -1,3 +1,8 @@
+import { AnchoredPopoverPanel, PopoverPanel } from '@howaboua/howcode-sdk/common/popover'
+import { composerPopoverInputLayerClass, popoverPanelClass } from '@howaboua/howcode-sdk/ui/classes'
+import { appToneDangerClass, appTypeMetaClass } from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { composerAttachmentPickerTextClass } from '@howcode/ui/classes'
 import {
   type DragEvent,
   type RefObject,
@@ -7,16 +12,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { AnchoredPopoverPanel, PopoverPanel } from '../common/popover'
 import type { ComposerAttachment, ComposerFilePickerState } from '../desktop/types'
-import {
-  appToneDangerClass,
-  appTypeMetaClass,
-  composerAttachmentPickerTextClass,
-  composerPopoverInputLayerClass,
-  popoverPanelClass,
-} from '../ui/classes'
-import { cn } from '../utils/cn'
 import {
   canUploadComposerFiles,
   uploadComposerFilesAsAttachments,

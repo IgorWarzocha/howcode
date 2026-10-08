@@ -1,12 +1,9 @@
+import { appToneMutedClass, appToneTextClass } from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { composerAttachmentPickerTextClass } from '@howcode/ui/classes'
 import { ChevronLeft, Home, Search } from 'lucide-react'
 import type { RefObject } from 'react'
 import type { ComposerFilePickerState } from '../desktop/types'
-import {
-  appToneMutedClass,
-  appToneTextClass,
-  composerAttachmentPickerTextClass,
-} from '../ui/classes'
-import { cn } from '../utils/cn'
 import type { ComposerFilePickerRootOption } from './composer-file-picker-utils'
 
 type ComposerFilePickerHeaderProps = {

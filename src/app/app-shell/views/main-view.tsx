@@ -1,9 +1,9 @@
+import { appTypeReadableClass } from '@howaboua/howcode-sdk/ui/typography-scale'
 import { getComingSoonViewContent } from '@howcode/roadmaps'
 import { MarkdownContent } from '../../common/markdown-content'
 import { ViewHeader } from '../../common/view-header'
 import { ViewShell } from '../../common/view-shell'
 import type { View } from '../../types'
-import { appTypeReadableClass } from '../../ui/classes'
 
 type MainViewProps = {
   activeView: View

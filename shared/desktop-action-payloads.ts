@@ -1,3 +1,4 @@
+import { isDirectoryDiffBaseline } from '@howaboua/howcode-git/action-payloads'
 import * as Schema from 'effect/Schema'
 import { isComposerThinkingLevel } from './composer-thinking-level'
 import { getLocalDraftBranchName, getPersistedConversationId } from './conversation-ids'
@@ -10,11 +11,8 @@ import type {
   DesktopActionPayloadInput,
   DictationModelId,
   DirectoryDeletionMode,
-  DirectoryDiffBaseline,
   DirectoryDiffDefaultBaseline,
   DirectoryDiffRenderMode,
-  DirectoryFileWriteRequest,
-  GitOpsMode,
   ModelSelection,
 } from './desktop-contracts'
 import { EnabledToolkitComponentsSchema } from './toolkit-components'
@@ -52,29 +50,6 @@ export function getDirectoryId(payload: DesktopActionPayloadInput) {
 
 export function getRootDirectoryId(payload: DesktopActionPayloadInput) {
   return typeof payload.rootDirectoryId === 'string' ? payload.rootDirectoryId : null
-}
-
-export function getDirectoryFileWriteRequest(
-  payload: DesktopActionPayloadInput,
-): DirectoryFileWriteRequest | null {
-  if (
-    typeof payload.directoryId !== 'string' ||
-    typeof payload.filePath !== 'string' ||
-    typeof payload.fileContents !== 'string' ||
-    typeof payload.expectedRevision !== 'string' ||
-    payload.directoryId.length === 0 ||
-    payload.filePath.length === 0 ||
-    payload.expectedRevision.length === 0
-  ) {
-    return null
-  }
-
-  return {
-    directoryId: payload.directoryId,
-    path: payload.filePath,
-    contents: payload.fileContents,
-    expectedRevision: payload.expectedRevision,
-  }
 }
 
 export function getConversationId(payload: DesktopActionPayloadInput) {
@@ -205,102 +180,6 @@ export function getComposerModelSelection(payload: DesktopActionPayloadInput) {
 export function getComposerThinkingLevel(payload: DesktopActionPayloadInput) {
   const level = typeof payload.level === 'string' ? payload.level : null
   return isComposerThinkingLevel(level) ? level : null
-}
-
-export function getGitCommitMessage(payload: DesktopActionPayloadInput) {
-  const message = typeof payload.message === 'string' ? payload.message.trim() : ''
-  return message.length > 0 ? message : null
-}
-
-export function getGitIncludeUnstaged(payload: DesktopActionPayloadInput) {
-  return typeof payload.includeUnstaged === 'boolean' ? payload.includeUnstaged : true
-}
-
-export function getGitIncludeUntracked(payload: DesktopActionPayloadInput) {
-  return typeof payload.includeUntracked === 'boolean' ? payload.includeUntracked : false
-}
-
-export function getGitPush(payload: DesktopActionPayloadInput) {
-  return typeof payload.push === 'boolean' ? payload.push : false
-}
-
-export function getGitPreview(payload: DesktopActionPayloadInput) {
-  return payload.preview === true
-}
-
-export function getGitRepoUrl(payload: DesktopActionPayloadInput) {
-  const repoUrl = typeof payload.repoUrl === 'string' ? payload.repoUrl.trim() : ''
-  return repoUrl.length > 0 ? repoUrl : null
-}
-
-export function getGitOpsMode(
-  payload: DesktopActionPayloadInput,
-): GitOpsMode | null | undefined | 'invalid' {
-  if (!('gitOpsMode' in payload) || payload.gitOpsMode === undefined) {
-    return undefined
-  }
-
-  if (payload.gitOpsMode === null) {
-    return null
-  }
-
-  return payload.gitOpsMode === 'commit' || payload.gitOpsMode === 'commit-push'
-    ? payload.gitOpsMode
-    : 'invalid'
-}
-
-function isDirectoryDiffBaseline(value: unknown): value is DirectoryDiffBaseline {
-  if (!value || typeof value !== 'object') {
-    return false
-  }
-
-  const baseline = value as { branchName?: unknown; kind?: unknown; rev?: unknown; sha?: unknown }
-  switch (baseline.kind) {
-    case 'head':
-    case 'previous':
-    case 'main-branch':
-    case 'dev-branch':
-      return true
-    case 'parent-branch':
-    case 'branch':
-      return typeof baseline.branchName === 'string' && baseline.branchName.trim().length > 0
-    case 'last-opened':
-      return typeof baseline.rev === 'string' && baseline.rev.trim().length > 0
-    case 'commit':
-      return typeof baseline.sha === 'string' && baseline.sha.trim().length > 0
-    default:
-      return false
-  }
-}
-
-export function getDirectoryDiffBaselinePreference(
-  payload: DesktopActionPayloadInput,
-): DirectoryDiffBaseline | null | undefined | 'invalid' {
-  if (!('diffBaseline' in payload) || payload.diffBaseline === undefined) {
-    return undefined
-  }
-
-  if (payload.diffBaseline === null) {
-    return null
-  }
-
-  return isDirectoryDiffBaseline(payload.diffBaseline) ? payload.diffBaseline : 'invalid'
-}
-
-export function getDirectoryDiffRenderModePreference(
-  payload: DesktopActionPayloadInput,
-): DirectoryDiffRenderMode | null | undefined | 'invalid' {
-  if (!('diffRenderMode' in payload) || payload.diffRenderMode === undefined) {
-    return undefined
-  }
-
-  if (payload.diffRenderMode === null) {
-    return null
-  }
-
-  return payload.diffRenderMode === 'stacked' || payload.diffRenderMode === 'split'
-    ? payload.diffRenderMode
-    : 'invalid'
 }
 
 export function getSettingsDirectoryDiffBaselineDefault(

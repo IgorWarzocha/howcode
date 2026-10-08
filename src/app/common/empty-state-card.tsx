@@ -1,6 +1,6 @@
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { quietEmptyStateClass } from '@howcode/ui/classes'
 import type { PropsWithChildren } from 'react'
-import { quietEmptyStateClass } from '../ui/classes'
-import { cn } from '../utils/cn'
 
 type EmptyStateCardProps = PropsWithChildren<{
   className?: string

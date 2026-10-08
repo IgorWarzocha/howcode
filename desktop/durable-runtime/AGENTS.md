@@ -1,0 +1,2 @@
+- Resolve linked Durable dependencies from each Howcode package's actual installed dependency closure. Reject competing roots for one package name; never install or mutate global Pi settings to satisfy a feature.
+- Linked dependencies may be SDK libraries rather than exported Extensions. Load them automatically, register only actual Extension exports, and preserve persisted conversation selections independently of presentation. Do not synthesize tools from library factories.

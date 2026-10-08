@@ -1,13 +1,12 @@
 import {
   appTypeGroupTitleClass,
   appTypeSmallClass,
-  foldedTimelineRowClass,
-  foldedUserTimelineRowClass,
-} from '@howcode/ui'
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { foldedTimelineRowClass, foldedUserTimelineRowClass } from '@howcode/ui/classes'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import type { PointerEvent, ReactNode } from 'react'
 import { useRef } from 'react'
-import { cn } from '../utils/cn'
 
 const clampOneLineClass =
   'overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:1]'

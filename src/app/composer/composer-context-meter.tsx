@@ -1,8 +1,5 @@
-import { type MouseEvent, useCallback, useEffect, useRef, useState } from 'react'
-import { PopoverPanel } from '../common/popover'
-import type { ComposerContextUsage } from '../desktop/types'
-import { useDismissibleLayer } from '../hooks/useDismissibleLayer'
-import type { Message } from '../types'
+import { PopoverPanel } from '@howaboua/howcode-sdk/common/popover'
+import { useDismissibleLayer } from '@howaboua/howcode-sdk/hooks/useDismissibleLayer'
 import {
   appToneAccentClass,
   appToneMutedClass,
@@ -11,9 +8,12 @@ import {
   appTypeCodeClass,
   appTypeMetaClass,
   appTypeSmallClass,
-  composerPopoverContextLayerClass,
-} from '../ui/classes'
-import { cn } from '../utils/cn'
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { composerPopoverContextLayerClass } from '@howcode/ui/classes'
+import { type MouseEvent, useCallback, useEffect, useRef, useState } from 'react'
+import type { ComposerContextUsage } from '../desktop/types'
+import type { Message } from '../types'
 
 type ComposerContextMeterProps = {
   contextUsage: ComposerContextUsage | null

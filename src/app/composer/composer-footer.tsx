@@ -1,5 +1,15 @@
+import { GitComposerControls } from '@howaboua/howcode-git/ui'
+import {
+  notifyComposerPopoverOpened,
+  useComposerPopoverDismissSignal,
+} from '@howaboua/howcode-sdk/composer/composer-popover-coordination'
+import {
+  workspaceFooterRowClass,
+  workspaceFooterTextClass,
+  workspaceFooterTrailingGroupClass,
+} from '@howaboua/howcode-sdk/ui/footer-primitives'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { ArtifactsComposerControl } from '@howcode/components/artifacts/ui'
-import { GitComposerControls } from '@howcode/components/git/ui'
 import { TerminalComposerControl } from '@howcode/components/terminal/ui'
 import { Bot } from 'lucide-react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
@@ -12,18 +22,8 @@ import type {
   DirectoryGitState,
 } from '../desktop/types'
 import type { Message } from '../types'
-import { cn } from '../utils/cn'
-import {
-  workspaceFooterRowClass,
-  workspaceFooterTextClass,
-  workspaceFooterTrailingGroupClass,
-} from '../workspace-shell/footer/workspace-footer-primitives'
 import { ComposerContextMeter } from './composer-context-meter'
 import { ComposerModelPopover } from './composer-model-popover'
-import {
-  notifyComposerPopoverOpened,
-  useComposerPopoverDismissSignal,
-} from './composer-popover-coordination'
 
 type ComposerFooterProps = {
   availableModels: ComposerModel[]

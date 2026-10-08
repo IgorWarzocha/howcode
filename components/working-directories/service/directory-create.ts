@@ -3,14 +3,6 @@ import { mkdir, realpath, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import path from 'node:path'
 import { promisify } from 'node:util'
-import { ensureDirectory } from '../../../desktop/chat-repository.ts'
-import { startNewChat } from '../../../desktop/conversation-runtime.ts'
-import { resolveDirectoryIdentity } from '../../../desktop/directory-identity.ts'
-import { getDesktopWorkingDirectory } from '../../../shared/desktop-working-directory.ts'
-import {
-  isSameGitHubRepository,
-  parseGitHubRepositoryUrl,
-} from '../../../shared/github-repository-url.ts'
 import {
   captureGitRepositoryIdentity,
   formatGitCommandError,
@@ -19,7 +11,15 @@ import {
   getOriginUrl,
   initializeDirectoryGit,
   isGitRepository,
-} from '../../git/service/index.ts'
+} from '@howaboua/howcode-git/service'
+import { resolveDirectoryIdentity } from '@howaboua/howcode-sdk/node/directory-identity'
+import { ensureDirectory } from '../../../desktop/chat-repository.ts'
+import { startNewChat } from '../../../desktop/conversation-runtime.ts'
+import { getDesktopWorkingDirectory } from '../../../shared/desktop-working-directory.ts'
+import {
+  isSameGitHubRepository,
+  parseGitHubRepositoryUrl,
+} from '../../../shared/github-repository-url.ts'
 import { listDirectories, setDirectoryRepoOrigin, upsertDirectoryWorktree } from './state.ts'
 
 const execFile = promisify(execFileCallback)

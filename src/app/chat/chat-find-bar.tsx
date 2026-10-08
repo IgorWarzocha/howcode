@@ -1,8 +1,3 @@
-import { Loader2, Search, X } from 'lucide-react'
-import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
-import { useHowcodeKeybindingCommand } from '../app-shell/keybinding-events'
-import type { ChatSearchMatch, ChatSearchResult } from '../desktop/types'
-import { searchChatQuery } from '../query/desktop-query'
 import {
   appToneMutedClass,
   appToneSubtleClass,
@@ -10,8 +5,13 @@ import {
   appTypeGroupTextClass,
   appTypeMetaClass,
   appTypeSmallClass,
-} from '../ui/classes'
-import { cn } from '../utils/cn'
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { Loader2, Search, X } from 'lucide-react'
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
+import { useHowcodeKeybindingCommand } from '../app-shell/keybinding-events'
+import type { ChatSearchMatch, ChatSearchResult } from '../desktop/types'
+import { searchChatQuery } from '../query/desktop-query'
 
 type ChatFindBarProps = {
   conversationId?: string | null | undefined

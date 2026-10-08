@@ -1,4 +1,4 @@
-import { createServiceWork } from '../../../desktop/runtime/service-work.ts'
+import { createServiceWork } from '@howaboua/howcode-sdk/node/service-work'
 import type { PiSkillsService } from '../../../shared/desktop-service-contracts.ts'
 import { disposeSkillsCatalog, searchPiSkills } from './catalog.ts'
 import { installPiSkill, listConfiguredPiSkills, removePiSkill } from './service.ts'

@@ -1,6 +1,6 @@
+import { useLatestRef } from '@howaboua/howcode-sdk/hooks/useLatestRef'
 import { useRef, useState } from 'react'
 import type { Artifact, ArtifactVersion } from '../../../../src/app/desktop/types'
-import { useLatestRef } from '../../../../src/app/hooks/useLatestRef'
 import { useArtifactPreview } from '../interactive/index'
 import type { ArtifactView } from './artifact-panel-model'
 import { useArtifactCollection } from './useArtifactCollection'

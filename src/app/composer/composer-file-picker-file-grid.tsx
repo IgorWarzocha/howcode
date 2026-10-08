@@ -1,7 +1,7 @@
+import { appToneMutedClass, appTypeSmallClass } from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import type { DragEvent } from 'react'
 import type { ComposerAttachment, ComposerFilePickerState } from '../desktop/types'
-import { appToneMutedClass, appTypeSmallClass } from '../ui/classes'
-import { cn } from '../utils/cn'
 import { FileEntryButton } from './file-entry-button'
 
 type ComposerFilePickerFileGridProps = {

@@ -1,3 +1,6 @@
+import { useDismissibleLayer } from '@howaboua/howcode-sdk/hooks/useDismissibleLayer'
+import { appToneMutedClass, appTypeMetaClass } from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { Bot, Brain, Gauge, Server } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
 import { getPersistedConversationId } from '../../../shared/conversation-ids'
@@ -8,9 +11,6 @@ import type {
   ComposerThinkingLevel,
   DesktopActionInvoker,
 } from '../desktop/types'
-import { useDismissibleLayer } from '../hooks/useDismissibleLayer'
-import { appToneMutedClass, appTypeMetaClass } from '../ui/classes'
-import { cn } from '../utils/cn'
 
 type DesktopComposerStatusProps = {
   className?: string | undefined

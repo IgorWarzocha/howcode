@@ -1,7 +1,7 @@
+import { resolveDirectoryIdentity } from '@howaboua/howcode-sdk/node/directory-identity'
 import * as Deferred from 'effect/Deferred'
 import * as Effect from 'effect/Effect'
 import * as Semaphore from 'effect/Semaphore'
-import { resolveDirectoryIdentity } from '../directory-identity.ts'
 
 type DirectoryActivity = {
   activeOperations: number

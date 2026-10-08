@@ -1,6 +1,6 @@
+import { getErrorMessage } from '@howaboua/howcode-sdk/errors'
 import { isCompactSlashCommand } from '@howcode/shared/composer-slash-commands'
 import { getDesktopActionErrorMessage } from '../desktop/action-results'
-import { getErrorMessage } from '../desktop/error-messages'
 import type {
   ComposerAttachment,
   ComposerStreamingBehavior,

@@ -1,6 +1,6 @@
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { viewShellClass } from '@howcode/ui/classes'
 import type { PropsWithChildren } from 'react'
-import { viewShellClass } from '../ui/classes'
-import { cn } from '../utils/cn'
 
 type ViewShellProps = PropsWithChildren<{
   className?: string

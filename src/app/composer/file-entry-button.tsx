@@ -1,8 +1,9 @@
+import { appToneTextClass } from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { composerAttachmentPickerTextClass } from '@howcode/ui/classes'
 import { Check, File, Folder } from 'lucide-react'
 import { type DragEvent, useState } from 'react'
 import type { ComposerAttachment } from '../desktop/types'
-import { appToneTextClass, composerAttachmentPickerTextClass } from '../ui/classes'
-import { cn } from '../utils/cn'
 import { resolveFileEntryActivation } from './composer-file-picker.helpers'
 
 type FileEntryButtonProps = {

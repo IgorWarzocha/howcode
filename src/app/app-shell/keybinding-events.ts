@@ -1,6 +1,6 @@
+import { useLatestRef } from '@howaboua/howcode-sdk/hooks/useLatestRef'
 import type { KeybindingCommandId } from '@howcode/shared/keybindings'
 import { useEffect } from 'react'
-import { useLatestRef } from '../hooks/useLatestRef'
 
 export const howcodeKeybindingCommandEvent = 'howcode:keybinding-command'
 export const howcodeDismissTransientUiEvent = 'howcode:dismiss-transient-ui'

@@ -1,5 +1,5 @@
-import { gitPostEffectHandlers } from '@howcode/components/git/ui'
 import { worktreePostEffectHandlers } from '@howcode/components/working-directories/ui'
+import { gitPostEffectHandlers } from '@howcode/git-integration'
 import { desktopQueryKeys } from '../query/desktop-query'
 import { chatPostEffectHandlers } from './post-effects/chat-handlers'
 import type {
@@ -10,7 +10,7 @@ import type {
 import { shellPostEffectHandlers } from './post-effects/shell-handlers'
 import { workspaceOrganizationPostEffect } from './post-effects/workspace-organization'
 
-export { applyDiffPreferencesToChat } from '@howcode/components/git/ui'
+export { applyDiffPreferencesToChat } from '@howcode/git-integration'
 export {
   applyOptimisticChatRename,
   applyOptimisticDirectoryRename,

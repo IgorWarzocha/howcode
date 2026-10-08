@@ -1,4 +1,5 @@
 - Development web scripts own Vite, authentication, proxying, and child lifecycle only. Operation behaviour comes from the host-neutral typed handler composition used by the production server.
 - `dev-web.ts` owns Vite/bridge process lifecycle and proxy installation; `dev-web-access.ts` owns renderer host trust, access-token sessions, and auth responses.
-- Use `HOWCODE_BUILD_ROOT` and `HOWCODE_RENDERER_ROOT` for staged validation when a running app consumes the default outputs. Never clean its live bundles.
+- Install dev auth/config/proxy middleware through Vite's `configureServer` plugin hook so configuration reloads preserve it. Never splice Vite's private middleware stack.
+- Stage runtime builds with `HOWCODE_BUILD_ROOT`, Vite builds with `--outDir`, and packing with `HOWCODE_RENDERER_ROOT`. The renderer environment variable does not change Vite's output. Never clean live bundles.
 - `check-architecture-boundaries.ts` derives aliases from `tsconfig.json`, rejects cross-runtime implementation imports, and rejects new production dependency cycles. Keep it rule-based; do not add a snapshot or historical allowlist.

@@ -1,6 +1,6 @@
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { ghostButtonClass } from '@howcode/ui/classes'
 import type { ButtonHTMLAttributes, PropsWithChildren, Ref } from 'react'
-import { ghostButtonClass } from '../ui/classes'
-import { cn } from '../utils/cn'
 
 type TextButtonProps = PropsWithChildren<
   Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & {

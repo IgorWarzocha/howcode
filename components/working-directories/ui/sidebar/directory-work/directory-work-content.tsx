@@ -1,10 +1,10 @@
+import { appToneSubtleClass } from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { Archive, ChevronRight, Home } from 'lucide-react'
 import type { RefObject } from 'react'
 import { IconButton } from '../../../../../src/app/common/icon-button'
 import type { DesktopActionInvoker, DirectoryGitState } from '../../../../../src/app/desktop/types'
 import type { View, WorkingDirectory } from '../../../../../src/app/types'
-import { appToneSubtleClass } from '../../../../../src/app/ui/classes'
-import { cn } from '../../../../../src/app/utils/cn'
 import { BranchWorkspaceSection } from './branch-chat-group-section'
 import { shouldSeparateBranchGroups } from './branch-group-layout'
 import {

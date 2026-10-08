@@ -1,16 +1,15 @@
-import { useQuery } from '@tanstack/react-query'
-import { type RefObject, useEffect, useRef, useState } from 'react'
-import { PopoverPanel } from '../common/popover'
-import { useDismissibleLayer } from '../hooks/useDismissibleLayer'
-import { desktopQueryKeys, getConversationEntriesQuery } from '../query/desktop-query'
+import { PopoverPanel } from '@howaboua/howcode-sdk/common/popover'
+import { useDismissibleLayer } from '@howaboua/howcode-sdk/hooks/useDismissibleLayer'
 import {
   appToneMutedClass,
   appTypeMetaClass,
   appTypeSmallClass,
-  composerOverlayPanelInsetClass,
-  inlineEmptyNoteClass,
-} from '../ui/classes'
-import { cn } from '../utils/cn'
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { composerOverlayPanelInsetClass, inlineEmptyNoteClass } from '@howcode/ui/classes'
+import { useQuery } from '@tanstack/react-query'
+import { type RefObject, useEffect, useRef, useState } from 'react'
+import { desktopQueryKeys, getConversationEntriesQuery } from '../query/desktop-query'
 
 export function ComposerConversationForkPanel({
   panelRef,

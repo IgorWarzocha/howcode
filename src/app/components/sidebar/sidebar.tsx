@@ -1,4 +1,6 @@
-import { Tooltip } from '@howcode/common/tooltip'
+import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
+import { useAnimatedPresence } from '@howaboua/howcode-sdk/hooks/useAnimatedPresence'
+import { useDismissibleLayer } from '@howaboua/howcode-sdk/hooks/useDismissibleLayer'
 import { skillsComponent } from '@howcode/components/skills/ui/component'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
@@ -11,20 +13,18 @@ import type {
   InboxChat,
   WorkspaceNavigationState,
 } from '../../desktop/types'
-import { useAnimatedPresence } from '../../hooks/useAnimatedPresence'
-import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
 import type { View, WorkingDirectory } from '../../types'
 
 type SidebarNavigableView = View
 
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { AppMenu } from '@howcode/app-menu'
 import { NavButton } from '@howcode/common/nav-button'
 import {
   DirectoryWorkSection,
   WorkspaceFolderCreateButton,
 } from '@howcode/components/working-directories/ui'
-import { iconButtonClass } from '../../ui/classes'
-import { cn } from '../../utils/cn'
+import { iconButtonClass } from '@howcode/ui/classes'
 import { SidebarInboxSection } from './inbox/sidebar-inbox-section'
 import { SidebarChatSkeleton, SidebarInboxSkeleton } from './sidebar-skeletons'
 import { WorkspaceNavigationSection } from './workspaces/workspace-navigation-section'

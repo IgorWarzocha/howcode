@@ -1,6 +1,6 @@
+import { toolbarButtonClass } from '@howaboua/howcode-sdk/ui/classes'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react'
-import { toolbarButtonClass } from '../ui/classes'
-import { cn } from '../utils/cn'
 
 type ToolbarButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & {
   label: ReactNode

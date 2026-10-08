@@ -1,9 +1,9 @@
+import { appToneSubtleClass } from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { Archive, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import type { DesktopActionInvoker } from '../../../../../src/app/desktop/types'
 import type { Chat, View, WorkingDirectory } from '../../../../../src/app/types'
-import { appToneSubtleClass } from '../../../../../src/app/ui/classes'
-import { cn } from '../../../../../src/app/utils/cn'
 import { DirectoryExpandedBranchGroups } from './branch-chat-groups'
 import {
   type BranchWorkspace,

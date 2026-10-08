@@ -1,8 +1,8 @@
+import { useAnimatedPresence } from '@howaboua/howcode-sdk/hooks/useAnimatedPresence'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { useCallback, useEffect, useState } from 'react'
 import { useToolkitComponentEnabled } from '../../../src/app/component-system/component-context'
-import { useAnimatedPresence } from '../../../src/app/hooks/useAnimatedPresence'
 import type { View } from '../../../src/app/types'
-import { cn } from '../../../src/app/utils/cn'
 import type { ShellTerminalPanelProps } from './shell-terminal-panel'
 import { TerminalPanel } from './terminal-panel'
 

@@ -1,5 +1,5 @@
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import type { ReactNode, RefObject } from 'react'
-import { cn } from '../utils/cn'
 
 export type ComposerOverlayStackItem = {
   id: string

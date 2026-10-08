@@ -1,6 +1,6 @@
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import type { ReactNode } from 'react'
 import { WORKSPACE_CONTENT_MAX_WIDTH_CLASS } from '../ui/layout'
-import { cn } from '../utils/cn'
 
 type WorkspaceComposerDockProps = {
   left?: ReactNode

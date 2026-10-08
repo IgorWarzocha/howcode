@@ -325,6 +325,8 @@ export async function installDevWebDesktopBridge() {
   }
 
   window.piDesktop = {
+    pluginRequest: (plugin, method, payload) =>
+      invokeRequest('pluginRequest', { plugin, method, payload }),
     platform: navigator.platform.toLowerCase().includes('mac') ? 'darwin' : 'browser',
     capabilities: browserDesktopBridgeCapabilities,
     getShellState: () => invokeRequest('getShellState', {}),

@@ -1,18 +1,17 @@
-import { Trash2 } from 'lucide-react'
-import { useRef, useState } from 'react'
-import { CompactMetaRow } from '../../../../../src/app/common/compact-meta-row'
-import { ConfirmPopover } from '../../../../../src/app/common/confirm-popover'
-import { Tooltip } from '../../../../../src/app/common/tooltip'
-import type { PiConfiguredSkill } from '../../../../../src/app/desktop/types'
+import { ConfirmPopover } from '@howaboua/howcode-sdk/common/confirm-popover'
+import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
 import {
   appToneMutedClass,
   appToneTextClass,
   appTypeGroupTextClass,
-  inlineEmptyNoteClass,
-  viewCloseButtonClass,
-} from '../../../../../src/app/ui/classes'
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { inlineEmptyNoteClass, viewCloseButtonClass } from '@howcode/ui/classes'
+import { Trash2 } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { CompactMetaRow } from '../../../../../src/app/common/compact-meta-row'
+import type { PiConfiguredSkill } from '../../../../../src/app/desktop/types'
 import { skillsListClass, skillsPreviewListClass } from '../../../../../src/app/ui/screen-classes'
-import { cn } from '../../../../../src/app/utils/cn'
 
 type InstalledSkillsSectionProps = {
   installScope: 'global' | 'directory' | 'chat'

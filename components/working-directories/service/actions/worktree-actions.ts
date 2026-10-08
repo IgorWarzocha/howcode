@@ -1,3 +1,9 @@
+import {
+  getActiveBranch,
+  getMainWorktreePath,
+  pruneDirectoryBranch,
+  withRootGitMutation,
+} from '@howaboua/howcode-git/service'
 import type { ActionHandlerResult } from '../../../../desktop/app-service/action-router-result.ts'
 import {
   handledAction,
@@ -14,12 +20,6 @@ import {
 } from '../../../../shared/desktop-action-payloads.ts'
 import type { DesktopAction } from '../../../../shared/desktop-actions.ts'
 import type { AnyDesktopActionPayload } from '../../../../shared/desktop-contracts.ts'
-import {
-  getActiveBranch,
-  getMainWorktreePath,
-  pruneDirectoryBranch,
-  withRootGitMutation,
-} from '../../../git/service/index.ts'
 import type { WorkingDirectoryPeers } from '../dependencies.ts'
 import {
   type RegisteredWorktree,

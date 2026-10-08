@@ -1,6 +1,6 @@
+import { appToneMutedClass, appTypeSmallClass } from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import type { ReactNode } from 'react'
-import { appToneMutedClass, appTypeSmallClass } from '../../ui/classes'
-import { cn } from '../../utils/cn'
 
 export type SettingsSegmentedOption<Value extends string> = {
   value: Value

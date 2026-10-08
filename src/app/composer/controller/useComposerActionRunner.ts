@@ -1,7 +1,7 @@
+import { getErrorMessage } from '@howaboua/howcode-sdk/errors'
 import { useCallback } from 'react'
 import { getDesktopActionErrorMessage } from '../../desktop/action-results'
 import type { DesktopAction } from '../../desktop/actions'
-import { getErrorMessage } from '../../desktop/error-messages'
 import type { DesktopActionInvoker } from '../../desktop/types'
 
 type ComposerOpenMenu = 'model' | 'picker' | null

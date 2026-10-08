@@ -1,6 +1,6 @@
+import { useAnimatedPresence } from '@howaboua/howcode-sdk/hooks/useAnimatedPresence'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useToolkitComponentEnabled } from '../../../src/app/component-system/component-context'
-import { useAnimatedPresence } from '../../../src/app/hooks/useAnimatedPresence'
 import { subscribeDesktopEvents } from '../../../src/app/query/desktop-query'
 
 export const ARTIFACT_DRAWER_WIDTH = 'clamp(320px, calc(100% - 820px), 760px)'

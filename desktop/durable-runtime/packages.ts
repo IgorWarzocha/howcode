@@ -3,12 +3,18 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { BACKGROUND_CONTEXT } from '@earendil-works/chord/context'
 import { createRegistry, type Extension, type Harness } from '@earendil-works/pi-durable'
+import {
+  howcodeMetadata,
+  linkedDurablePackages,
+  resolvePackageRoot,
+} from '@howaboua/howcode-sdk/node/plugin-metadata'
 import { createJiti } from 'jiti'
 import {
   createPackageManager,
   hasPackageUi,
   type InstalledPackage,
 } from '../../components/packages/service/index.ts'
+import { installedHowcodePackages } from './installed-durable.generated.ts'
 
 const hostPackages = [
   '@earendil-works/pi-durable',
@@ -196,11 +202,12 @@ function createNotebook(
   })
 }
 
-function exportedExtensions(loaded: RecordValue, path: string): Extension[] {
+function exportedExtensions(loaded: RecordValue, path: string, linked = false): Extension[] {
   const candidates = extension(loaded.default)
     ? [loaded.default]
     : [...new Set(Object.values(loaded).filter(extension))]
-  if (candidates.length === 0) throw new Error(`No supported Durable Extension export in ${path}`)
+  if (candidates.length === 0 && !linked)
+    throw new Error(`No supported Durable Extension export in ${path}`)
   return candidates
 }
 
@@ -212,10 +219,57 @@ async function closeNotebooks(notebooks: NotebookAdapter[]) {
   if (errors.length > 0) throw new AggregateError(errors, 'Failed to close installed packages.')
 }
 
+type DurablePackage = InstalledPackage & { linked?: boolean }
 interface LoadedPackage {
-  installed: InstalledPackage
+  installed: DurablePackage
   extensions: Extension[]
   notebooks: NotebookAdapter[]
+}
+
+async function durablePackageClosure(installed: InstalledPackage[]): Promise<DurablePackage[]> {
+  const configured: InstalledPackage[] = await Promise.all(
+    installedHowcodePackages.map(async (name) => ({
+      source: `howcode:${name}`,
+      kind: 'local' as const,
+      root: await resolvePackageRoot(name, dirname(fileURLToPath(import.meta.url))),
+      name,
+    })),
+  )
+  const result: DurablePackage[] = []
+  const roots = new Map<string, string>()
+  const add = (item: DurablePackage) => {
+    if (item.name) {
+      const previous = roots.get(item.name)
+      if (previous && previous !== item.root)
+        throw new Error(`Multiple resolved identities for Durable package ${item.name}`)
+      if (previous) return
+      roots.set(item.name, item.root)
+    }
+    result.push(item)
+  }
+  const closures = await Promise.all(
+    [...configured, ...installed].map(async (owner): Promise<DurablePackage[]> => {
+      if ((await stat(owner.root)).isFile()) return [owner]
+      const metadata = await manifest(owner.root)
+      const howcode = howcodeMetadata(metadata, owner.root)
+      const entries: DurablePackage[] = !howcode || metadata.pi !== undefined ? [owner] : []
+      if (!howcode) return entries
+      const linked = await linkedDurablePackages(owner.root)
+      return entries.concat(
+        linked.map((dependency) => ({
+          ...dependency,
+          linked: true,
+          kind: owner.kind,
+          source: `${owner.source}#${dependency.name}`,
+          ...(owner.revision === undefined ? {} : { revision: owner.revision }),
+        })),
+      )
+    }),
+  )
+  for (const closure of closures) {
+    for (const item of closure) add(item)
+  }
+  return result
 }
 
 /** Incremental package generations. Retired resources stay alive until shutdown:
@@ -244,7 +298,7 @@ export async function loadInstalledPackages(options: PackageLoadOptions) {
         ),
     )
   }
-  const load = async (installed: InstalledPackage): Promise<LoadedPackage> => {
+  const load = async (installed: DurablePackage): Promise<LoadedPackage> => {
     const [{ loader }, metadata] = await Promise.all([hostLoader(), manifest(installed.root)])
     const paths = await entrypoints(installed.root, metadata)
     const modules = await Promise.all(
@@ -261,7 +315,7 @@ export async function loadInstalledPackages(options: PackageLoadOptions) {
           item.notebooks.push(notebook)
           item.extensions.push(notebook.extension)
           if (harness) notebook.bind(harness)
-        } else item.extensions.push(...exportedExtensions(loaded, path))
+        } else item.extensions.push(...exportedExtensions(loaded, path, installed.linked))
       }
       return item
     } catch (error) {
@@ -269,7 +323,7 @@ export async function loadInstalledPackages(options: PackageLoadOptions) {
       throw error
     }
   }
-  const buildNext = async (installed: InstalledPackage[], created: LoadedPackage[]) => {
+  const buildNext = async (installed: DurablePackage[], created: LoadedPackage[]) => {
     const busy = new Set(await busyNotebooks())
     const next: LoadedPackage[] = []
     for (const source of installed) {
@@ -314,7 +368,7 @@ export async function loadInstalledPackages(options: PackageLoadOptions) {
       .catch(() => undefined)
       .then(async () => {
         if (closed) throw new Error('Installed packages are closed.')
-        const installed = await manager.resolve()
+        const installed = await durablePackageClosure(await manager.resolve())
         const created: LoadedPackage[] = []
         try {
           // Sequential construction makes partial failure cleanup deterministic.

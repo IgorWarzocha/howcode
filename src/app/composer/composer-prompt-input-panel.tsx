@@ -1,3 +1,6 @@
+import { ComposerTextField } from '@howaboua/howcode-sdk/composer/composer-text-field'
+import { appTypeSmallClass } from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { ComposerDictationControls } from '@howcode/components/dictation/ui'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import type { ComposerSendMode, KeybindingOverrides } from '@howcode/shared/keybindings'
@@ -5,15 +8,12 @@ import { AlertTriangle } from 'lucide-react'
 import type { ClipboardEvent, ReactNode, RefObject } from 'react'
 import { useToolkitComponentEnabled } from '../component-system/component-context'
 import type { DesktopActionInvoker } from '../desktop/types'
-import { appTypeSmallClass } from '../ui/classes'
-import { cn } from '../utils/cn'
 import { ComposerFileMentionPanel } from './composer-file-mention-panel'
 import {
   getComposerAttachmentsFromClipboardData,
   hasAttachmentHintInClipboardData,
 } from './composer-paste-attachments'
 import { ComposerSkillMentionPanel } from './composer-skill-mention-panel'
-import { ComposerTextField } from './composer-text-field'
 import { handleComposerTextKeyDown } from './composer-text-keydown'
 import type { ComposerFileMentions } from './useComposerFileMentions'
 import type { ComposerSkillMentions } from './useComposerSkillMentions'

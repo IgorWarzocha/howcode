@@ -1,7 +1,7 @@
+import { composerPanelClass } from '@howaboua/howcode-sdk/ui/classes'
 import { ComposerFilePicker } from '../../composer/composer-file-picker'
 import { ComposerPromptInputPanel } from '../../composer/composer-prompt-input-panel'
 import { SlashCommandPanel } from '../../composer/composer-slash-command-panel'
-import { composerPanelClass } from '../../ui/classes'
 import { InboxComposerFooter } from './inbox-composer-footer'
 import { InboxAttachmentRail, InboxStopRail } from './inbox-composer-rails'
 import type { InboxComposerProps } from './inbox-composer-types'

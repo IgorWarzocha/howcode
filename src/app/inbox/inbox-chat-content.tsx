@@ -1,6 +1,3 @@
-import { EmptyStateCard } from '../common/empty-state-card'
-import { MarkdownContent } from '../common/markdown-content'
-import type { InboxChat } from '../desktop/types'
 import {
   appToneMutedClass,
   appToneSubtleClass,
@@ -10,9 +7,11 @@ import {
   appTypeMetaClass,
   appTypeReadableClass,
   appTypeSectionTitleClass,
-  chatSessionStripClass,
-  inlineEmptyNoteClass,
-} from '../ui/classes'
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { chatSessionStripClass, inlineEmptyNoteClass } from '@howcode/ui/classes'
+import { EmptyStateCard } from '../common/empty-state-card'
+import { MarkdownContent } from '../common/markdown-content'
+import type { InboxChat } from '../desktop/types'
 import { WORKSPACE_CONTENT_MAX_WIDTH_CLASS } from '../ui/layout'
 
 export function InboxEmptyState() {

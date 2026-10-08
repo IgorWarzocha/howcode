@@ -1,4 +1,4 @@
-import { getDirectoryGitStateQuery } from '@howcode/components/git/ui'
+import { getDirectoryGitStateQuery } from '@howcode/git-integration/client'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import type {

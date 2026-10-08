@@ -1,15 +1,15 @@
-import { ArrowUpRight, Check, Sparkles } from 'lucide-react'
-import type { Dispatch, SetStateAction } from 'react'
-import { CompactMetaRow } from '../../../../../src/app/common/compact-meta-row'
-import { Tooltip } from '../../../../../src/app/common/tooltip'
-import { openPiResourceUrl } from '../../../../../src/app/pi-resources/open-pi-resource-url'
+import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
 import {
   appToneMutedClass,
   appToneTextClass,
   appTypeGroupTextClass,
-  viewCloseButtonClass,
-} from '../../../../../src/app/ui/classes'
-import { cn } from '../../../../../src/app/utils/cn'
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { viewCloseButtonClass } from '@howcode/ui/classes'
+import { ArrowUpRight, Check, Sparkles } from 'lucide-react'
+import type { Dispatch, SetStateAction } from 'react'
+import { CompactMetaRow } from '../../../../../src/app/common/compact-meta-row'
+import { openPiResourceUrl } from '../../../../../src/app/pi-resources/open-pi-resource-url'
 import type { SkillCatalogItem } from '../skill-catalog'
 import { formatInstalls, getCatalogSkillSource } from '../utils'
 

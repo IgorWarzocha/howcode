@@ -1,14 +1,13 @@
-import { Info, Search, X } from 'lucide-react'
-import { Tooltip } from '../../common/tooltip'
+import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
 import {
   appToneMutedClass,
   appToneTextClass,
   appTypeControlClass,
   appTypeSmallClass,
-  quietSearchInputClass,
-  viewCloseButtonClass,
-} from '../../ui/classes'
-import { cn } from '../../utils/cn'
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { quietSearchInputClass, viewCloseButtonClass } from '@howcode/ui/classes'
+import { Info, Search, X } from 'lucide-react'
 import { settingsCategories } from './settingsGroups'
 import type { SettingsCategoryId } from './settingsTypes'
 

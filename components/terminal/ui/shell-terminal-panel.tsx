@@ -1,10 +1,11 @@
+import { compactIconButtonClass } from '@howaboua/howcode-sdk/ui/classes'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { terminalDrawerFooterClass } from '@howcode/ui/classes'
 import { PanelRightClose } from 'lucide-react'
 import {
   type FeatureStatusId,
   getFeatureStatusDataAttributes,
 } from '../../../src/app/features/feature-status'
-import { compactIconButtonClass, terminalDrawerFooterClass } from '../../../src/app/ui/classes'
-import { cn } from '../../../src/app/utils/cn'
 import { ShellTerminalViewport } from './viewport/index'
 
 export type ShellTerminalPanelProps = {

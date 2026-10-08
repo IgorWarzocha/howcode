@@ -1,8 +1,8 @@
 import { accessSync, constants, statSync } from 'node:fs'
 import path from 'node:path'
+import { runProcessProbe } from '@howaboua/howcode-sdk/node/process-probe'
 import * as Effect from 'effect/Effect'
 import * as Option from 'effect/Option'
-import { runProcessProbe } from './process-probe'
 
 export function isExecutableFile(filePath: string) {
   try {

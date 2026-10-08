@@ -1,5 +1,5 @@
+import { useLatestRef } from '@howaboua/howcode-sdk/hooks/useLatestRef'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { useLatestRef } from '../hooks/useLatestRef'
 import type { AppShellController } from './useAppShellController'
 
 const COMPACT_SIDEBAR_MAX_WIDTH = 1236

@@ -1,3 +1,4 @@
+import type { GitRequestMap } from '@howaboua/howcode-git/host/contracts'
 import type { ConversationEntryList } from './conversation-entries'
 import type { DesktopAction } from './desktop-actions'
 import type {
@@ -22,16 +23,6 @@ import type {
   DictationState,
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
-  DirectoryCommitEntry,
-  DirectoryDiffBaseline,
-  DirectoryDiffFileContentsRequest,
-  DirectoryDiffFileContentsResult,
-  DirectoryDiffImagePreview,
-  DirectoryDiffImageSide,
-  DirectoryDiffResolvedBaseline,
-  DirectoryDiffStatsResult,
-  DirectoryDiffStreamStartResult,
-  DirectoryGitState,
   DirectoryUsageSummary,
   InboxChat,
   PiConfiguredSkill,
@@ -58,7 +49,8 @@ import type {
   TerminalWriteRequest,
 } from './terminal-contracts'
 
-export type DesktopRequestMap = {
+export type DesktopRequestMap = GitRequestMap & {
+  pluginRequest: { params: { plugin: string; method: string; payload: unknown }; response: unknown }
   listPackageUis: { params: Record<string, never>; response: PackageUiDescriptor[] }
   loadPackageUi: { params: PackageUiReference; response: { js: string } }
   openPackageUiBinding: {
@@ -78,51 +70,8 @@ export type DesktopRequestMap = {
     response: undefined
   }
   getShellState: { params: Record<string, never>; response: ShellState }
-  getDirectoryGitState: { params: { directoryId: string }; response: DirectoryGitState | null }
   getDirectoryUsageSummary: { params: { directoryId: string }; response: DirectoryUsageSummary }
   getDirectoryFavicon: { params: { directoryId: string }; response: string | null }
-  startDirectoryDiffStream: {
-    params: {
-      directoryId: string
-      baseline?: DirectoryDiffBaseline | null
-      streamId?: string | null
-      includeUntracked?: boolean | null
-    }
-    response: DirectoryDiffStreamStartResult
-  }
-  cancelDirectoryDiffStream: {
-    params: { streamId: string }
-    response: undefined
-  }
-  getDirectoryDiffStats: {
-    params: {
-      directoryId: string
-      baseline?: DirectoryDiffBaseline | null
-      includeUntracked?: boolean | null
-    }
-    response: DirectoryDiffStatsResult | null
-  }
-  getDirectoryDiffImagePreview: {
-    params: {
-      directoryId: string
-      baseline?: DirectoryDiffBaseline | null | undefined
-      path: string
-      side: DirectoryDiffImageSide
-    }
-    response: DirectoryDiffImagePreview
-  }
-  getDirectoryDiffFileContents: {
-    params: DirectoryDiffFileContentsRequest
-    response: DirectoryDiffFileContentsResult
-  }
-  captureDirectoryDiffBaseline: {
-    params: { directoryId: string }
-    response: DirectoryDiffResolvedBaseline | null
-  }
-  listDirectoryCommits: {
-    params: { directoryId: string; limit?: number | undefined | null | undefined }
-    response: DirectoryCommitEntry[]
-  }
   searchPiSkills: {
     params: {
       query?: string | undefined | null | undefined

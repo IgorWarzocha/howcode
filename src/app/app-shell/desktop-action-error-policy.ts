@@ -1,5 +1,5 @@
+import { cleanUserErrorMessage } from '@howaboua/howcode-sdk/errors'
 import type { DesktopAction } from '../desktop/actions'
-import { cleanUserErrorMessage } from '../desktop/error-messages'
 import type { DesktopActionResult } from '../desktop/types'
 
 export function getActionErrorMessage(actionResult: DesktopActionResult | null) {

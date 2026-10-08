@@ -1,4 +1,23 @@
 export type {
+  DirectoryCommitEntry,
+  DirectoryDiffBaseline,
+  DirectoryDiffDefaultBaseline,
+  DirectoryDiffFileContentIssue,
+  DirectoryDiffFileContentsRequest,
+  DirectoryDiffFileContentsResult,
+  DirectoryDiffImagePreview,
+  DirectoryDiffImageSide,
+  DirectoryDiffPreferences,
+  DirectoryDiffRenderMode,
+  DirectoryDiffResolvedBaseline,
+  DirectoryDiffResult,
+  DirectoryDiffStatsResult,
+  DirectoryDiffTextFile,
+  DirectoryFileWriteRequest,
+  DirectoryFileWriteResult,
+  DirectoryGitState,
+} from '@howaboua/howcode-git/contracts'
+export type {
   Artifact,
   ArtifactKind,
   ArtifactVersion,
@@ -45,25 +64,6 @@ export type {
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
 } from './desktop-dictation-contracts'
-export type {
-  DirectoryCommitEntry,
-  DirectoryDiffBaseline,
-  DirectoryDiffDefaultBaseline,
-  DirectoryDiffFileContentIssue,
-  DirectoryDiffFileContentsRequest,
-  DirectoryDiffFileContentsResult,
-  DirectoryDiffImagePreview,
-  DirectoryDiffImageSide,
-  DirectoryDiffPreferences,
-  DirectoryDiffRenderMode,
-  DirectoryDiffResolvedBaseline,
-  DirectoryDiffResult,
-  DirectoryDiffStatsResult,
-  DirectoryDiffTextFile,
-  DirectoryFileWriteRequest,
-  DirectoryFileWriteResult,
-  DirectoryGitState,
-} from './desktop-directory-git-contracts'
 export type { DesktopEvent } from './desktop-event-contracts'
 export type {
   PiConfiguredSkill,

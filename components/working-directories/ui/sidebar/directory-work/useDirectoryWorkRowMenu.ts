@@ -1,5 +1,5 @@
+import { useDismissibleLayer } from '@howaboua/howcode-sdk/hooks/useDismissibleLayer'
 import { useLayoutEffect, useRef, useState } from 'react'
-import { useDismissibleLayer } from '../../../../../src/app/hooks/useDismissibleLayer'
 
 type DirectoryWorkRowKind = 'directory' | 'branch'
 

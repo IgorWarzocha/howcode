@@ -1,5 +1,5 @@
+import { ConfirmPopover } from '@howaboua/howcode-sdk/common/confirm-popover'
 import { useRef, useState } from 'react'
-import { ConfirmPopover } from '../../../src/app/common/confirm-popover'
 import type { ChatHistoryBulkAction } from './chat-history-model'
 
 export function ChatHistoryToolbar({

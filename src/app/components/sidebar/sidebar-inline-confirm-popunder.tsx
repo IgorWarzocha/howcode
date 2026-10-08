@@ -1,8 +1,8 @@
+import { useDismissibleLayer } from '@howaboua/howcode-sdk/hooks/useDismissibleLayer'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useRef } from 'react'
-import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
-import { cn } from '../../utils/cn'
 
 type SidebarInlineConfirmPopunderProps = {
   open: boolean

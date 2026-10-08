@@ -1,3 +1,12 @@
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeDashboardTitleClass,
+  appTypeGroupTitleClass,
+  appTypeSmallClass,
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { ghostButtonClass, quietListFrameClass } from '@howcode/ui/classes'
 import { CircleDot, ExternalLink, GitBranch, GitPullRequest } from 'lucide-react'
 import { parseGitHubRepositoryUrl } from '../../../../shared/github-repository-url'
 import { GitHubInvertocatMark } from '../../../../src/app/common/github-invertocat-mark'
@@ -8,16 +17,6 @@ import type {
 } from '../../../../src/app/desktop/types'
 import { openExternalQuery } from '../../../../src/app/query/desktop-query'
 import type { WorkingDirectory } from '../../../../src/app/types'
-import {
-  appToneMutedClass,
-  appToneTextClass,
-  appTypeDashboardTitleClass,
-  appTypeGroupTitleClass,
-  appTypeSmallClass,
-  ghostButtonClass,
-  quietListFrameClass,
-} from '../../../../src/app/ui/classes'
-import { cn } from '../../../../src/app/utils/cn'
 import { DashboardBranchSwitcher } from './directory-overview/dashboard-branch-switcher'
 import { DirectoryMetric } from './directory-overview/directory-metric'
 import {

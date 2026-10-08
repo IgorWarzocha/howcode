@@ -1,6 +1,5 @@
 import { lstat, rm } from 'node:fs/promises'
 import path from 'node:path'
-import { resolveDirectoryIdentity } from '../../../../desktop/directory-identity.ts'
 import {
   formatGitCommandError,
   type GitWorktreeEntry,
@@ -8,7 +7,8 @@ import {
   loadGitWorktrees,
   runGitWithOptions,
   withRootGitMutation,
-} from '../../../git/service/index.ts'
+} from '@howaboua/howcode-git/service'
+import { resolveDirectoryIdentity } from '@howaboua/howcode-sdk/node/directory-identity'
 import type { StoredDirectoryWorktree } from '../state.ts'
 
 type GitWorkspaceProbe = {

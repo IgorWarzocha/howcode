@@ -1,4 +1,4 @@
-import { getDirectoryGitStateQuery } from '@howcode/components/git/ui'
+import { getDirectoryGitStateQuery } from '@howcode/git-integration/client'
 import { useQueries } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import type { DirectoryGitState } from '../../../../../src/app/desktop/types'

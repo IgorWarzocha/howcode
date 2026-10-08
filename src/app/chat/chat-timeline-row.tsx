@@ -1,6 +1,9 @@
+import {
+  appToneSubtleClass,
+  appTypeGroupTextClass,
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { ChatMessage } from '../common/chat-message'
-import { appToneSubtleClass, appTypeGroupTextClass } from '../ui/classes'
-import { cn } from '../utils/cn'
 import { getCollapsedTurnPreview } from './chat-timeline-previews'
 import {
   FoldedTimelineRow,

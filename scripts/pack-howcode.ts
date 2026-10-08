@@ -53,6 +53,7 @@ try {
   const rootPackage = JSON.parse(await readFile(path.join(repoRoot, 'package.json'), 'utf8')) as {
     dependencies: Record<string, string>
     engines: { node: string }
+    howcodeComponents: string[]
   }
 
   const packageJsonPath = path.join(packageDirectory, 'package.json')
@@ -67,11 +68,13 @@ try {
   }
 
   packageJson.dependencies = Object.fromEntries(
-    Object.keys(packageJson.dependencies).map((name) => {
-      const version = rootPackage.dependencies[name]
-      if (!version) throw new Error(`Missing runtime dependency: ${name}`)
-      return [name, version]
-    }),
+    [...new Set([...Object.keys(packageJson.dependencies), ...rootPackage.howcodeComponents])].map(
+      (name) => {
+        const version = rootPackage.dependencies[name]
+        if (!version) throw new Error(`Missing runtime dependency: ${name}`)
+        return [name, version]
+      },
+    ),
   )
   packageJson.engines = rootPackage.engines
 

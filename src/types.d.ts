@@ -57,6 +57,7 @@ declare global {
 
   interface Window {
     piDesktop?: {
+      pluginRequest: (plugin: string, method: string, payload: unknown) => Promise<unknown>
       platform?: string
       capabilities?: DesktopBridgeCapabilities
       getShellState: () => Promise<ShellState>

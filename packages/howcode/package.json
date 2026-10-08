@@ -37,7 +37,8 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "semver": "7.8.5",
-    "sherpa-onnx-node": "^1.13.8"
+    "sherpa-onnx-node": "^1.13.8",
+    "@howaboua/howcode-sdk": "0.1.0"
   },
   "engines": {
     "node": ">=24.15.0 <27"

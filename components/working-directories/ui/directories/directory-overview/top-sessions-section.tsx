@@ -1,15 +1,14 @@
-import { SkeletonBlock } from '../../../../../src/app/common/skeleton'
-import type { DirectoryUsageSessionSummary } from '../../../../../src/app/desktop/types'
 import {
   appToneMutedClass,
   appToneTextClass,
   appTypeGroupTextClass,
   appTypeGroupTitleClass,
   appTypeSmallClass,
-  inlineEmptyNoteClass,
-  quietListRowClass,
-} from '../../../../../src/app/ui/classes'
-import { cn } from '../../../../../src/app/utils/cn'
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { inlineEmptyNoteClass, quietListRowClass } from '@howcode/ui/classes'
+import { SkeletonBlock } from '../../../../../src/app/common/skeleton'
+import type { DirectoryUsageSessionSummary } from '../../../../../src/app/desktop/types'
 import { formatCost, formatTokens } from './overview-formatters'
 
 function TopSessionsSkeleton() {

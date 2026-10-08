@@ -1,11 +1,11 @@
+import { PopoverPanel } from '@howaboua/howcode-sdk/common/popover'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { skillsComponent } from '@howcode/components/skills/ui/component'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { Archive, Info, Settings } from 'lucide-react'
 import type { ReactNode, RefObject } from 'react'
 import { FeatureStatusBadge } from '../common/feature-status-badge'
-import { PopoverPanel } from '../common/popover'
 import { type FeatureStatusId, getFeatureStatusDataAttributes } from '../features/feature-status'
-import { cn } from '../utils/cn'
 
 export type AppMenuProps = {
   skillsEnabled?: boolean

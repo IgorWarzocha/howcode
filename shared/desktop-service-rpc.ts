@@ -2,8 +2,8 @@ import type {
   AppService,
   ArtifactsService,
   DictationService,
-  GitService,
   PiSkillsService,
+  PluginService,
   WorkingDirectoriesService,
 } from './desktop-service-contracts'
 import type { PackageUiService } from './package-ui-contracts'
@@ -12,7 +12,7 @@ export type DesktopServiceRemoteRuntime = {
   packages: PackageUiService
   app: Omit<AppService, 'disposeDesktopRuntime' | 'subscribeDesktopEvents'>
   skills: PiSkillsService
-  git: GitService
+  plugins: PluginService
   workingDirectories: WorkingDirectoriesService
   artifacts: ArtifactsService
   dictation: DictationService
@@ -53,16 +53,7 @@ export const desktopServiceRemoteMethods = {
     loadDirectoryUsageSummary: true,
     loadDirectoryFavicon: true,
   },
-  git: {
-    loadDirectoryGitState: true,
-    startDirectoryDiffStream: true,
-    cancelDirectoryDiffStream: true,
-    loadDirectoryDiffStats: true,
-    loadDirectoryDiffImagePreview: true,
-    loadDirectoryDiffFileContents: true,
-    captureDirectoryDiffBaseline: true,
-    listDirectoryCommits: true,
-  },
+  plugins: { request: true },
   artifacts: {
     listArtifacts: true,
     getArtifact: true,

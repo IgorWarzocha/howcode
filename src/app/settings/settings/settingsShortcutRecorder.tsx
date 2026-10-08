@@ -1,3 +1,10 @@
+import { compactIconButtonClass } from '@howaboua/howcode-sdk/ui/classes'
+import {
+  appToneTextClass,
+  appTypeMetaClass,
+  appTypeSmallClass,
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import {
   bundledKeybindings,
   eventToAcceleratorCandidates,
@@ -9,13 +16,6 @@ import { Ban, CheckCircle2, RotateCcw } from 'lucide-react'
 import type { KeyboardEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import type { AppSettings, DesktopActionInvoker, KeybindingCommandId } from '../../desktop/types'
-import {
-  appToneTextClass,
-  appTypeMetaClass,
-  appTypeSmallClass,
-  compactIconButtonClass,
-} from '../../ui/classes'
-import { cn } from '../../utils/cn'
 import {
   applyKeybindingMutation,
   formatSettingsAccelerator,

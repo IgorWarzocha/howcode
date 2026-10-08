@@ -1,9 +1,9 @@
+import { createServiceWork } from '@howaboua/howcode-sdk/node/service-work'
 import {
   handledAction,
   unhandledAction,
 } from '../../../desktop/app-service/action-router-result.ts'
 import { setSidebarVisibleDirectoryIds } from '../../../desktop/app-settings/writers.ts'
-import { createServiceWork } from '../../../desktop/runtime/service-work.ts'
 import { getDirectoryIds } from '../../../shared/desktop-action-payloads.ts'
 import type { DesktopAction } from '../../../shared/desktop-actions.ts'
 import type { AnyDesktopActionPayload } from '../../../shared/desktop-contracts.ts'

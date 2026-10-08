@@ -1,7 +1,7 @@
+import { viewSubtitleClass, viewTitleClass } from '@howcode/ui/classes'
 import { lazy, Suspense } from 'react'
 import { useToolkitComponentEnabled } from '../../../src/app/component-system/component-context'
 import type { AppSettings, DesktopActionInvoker } from '../../../src/app/desktop/types'
-import { viewSubtitleClass, viewTitleClass } from '../../../src/app/ui/classes'
 
 const SkillsView = lazy(async () => {
   const module = await import('./management/skills-view')

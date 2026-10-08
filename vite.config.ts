@@ -5,9 +5,13 @@ import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
+import packageMetadata from './package.json'
 import { DEV_SERVER_START_PORT, resolveDevServerListenHost } from './shared/dev-server'
 
 const directoryRoot = fileURLToPath(new URL('.', import.meta.url))
+const localPackageNames = Object.entries(packageMetadata.dependencies)
+  .filter(([, version]) => version.startsWith('file:'))
+  .map(([name]) => name)
 
 const howcodeAliasEntries = [
   ['@howcode/app-menu', 'src/app/app-menu'],
@@ -19,6 +23,7 @@ const howcodeAliasEntries = [
   ['@howcode/desktop', 'src/app/desktop'],
   ['@howcode/component-system', 'src/app/component-system'],
   ['@howcode/inbox', 'src/app/inbox'],
+  ['@howcode/git-integration', 'src/app/git-integration'],
   ['@howcode/query', 'src/app/query'],
   ['@howcode/roadmaps', 'src/app/roadmaps'],
   ['@howcode/settings', 'src/app/settings/settings'],
@@ -70,8 +75,13 @@ export default defineConfig({
     alias: howcodeAliases,
   },
   optimizeDeps: {
-    exclude: ['@wterm/ghostty'],
+    // Plugin assets/workers and local same-version packages need Vite's transform pipeline.
+    exclude: [
+      ...new Set(['@wterm/ghostty', ...packageMetadata.howcodeComponents, ...localPackageNames]),
+    ],
     include: [
+      // The unbundled Git renderer reaches Pierre's nested CommonJS cache in review and edit.
+      '@pierre/diffs > lru_map',
       'prismjs',
       'prismjs/components/prism-c',
       'prismjs/components/prism-clike',

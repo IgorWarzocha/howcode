@@ -1,4 +1,4 @@
-import { notifyDirectoryDiffInvalidated } from '@howcode/components/git/ui'
+import { notifyDirectoryDiffInvalidated } from '@howaboua/howcode-git/ui'
 import type { QueryClient } from '@tanstack/react-query'
 import type { ActionPayload } from '../../../../../src/app/app-shell/controller-action-utils'
 import { getPayloadDirectoryId } from '../../../../../src/app/app-shell/controller-action-utils'

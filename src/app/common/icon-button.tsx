@@ -1,7 +1,7 @@
+import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { iconButtonClass } from '@howcode/ui/classes'
 import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react'
-import { iconButtonClass } from '../ui/classes'
-import { cn } from '../utils/cn'
-import { Tooltip } from './tooltip'
 
 type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & {
   label: string

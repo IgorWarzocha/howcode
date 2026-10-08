@@ -1,4 +1,4 @@
-import { appTypeCodeClass, appTypeTinyStrongClass } from '@howcode/ui'
+import { appTypeCodeClass, appTypeTinyStrongClass } from '@howaboua/howcode-sdk/ui/typography-scale'
 import {
   getToolDiffSummary,
   getToolDiffs,

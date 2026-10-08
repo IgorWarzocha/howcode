@@ -1,7 +1,7 @@
+import type { DirectoryDiffStreamEvent } from '@howaboua/howcode-git/contracts'
 import * as Schema from 'effect/Schema'
 import { ChatDataSchema } from './desktop-chat-schema'
 import { ComposerStateSchema } from './desktop-composer-schema'
-import type { DirectoryDiffStreamEvent } from './desktop-directory-git-contracts'
 import { isKeybindingCommandId, type KeybindingCommandId } from './keybindings'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -38,6 +38,11 @@ const KeybindingCommandIdSchema = Schema.declare<KeybindingCommandId>(isKeybindi
 /** Runtime decoder for DesktopEvent values received across process boundaries. */
 export const DesktopEventSchema = Schema.Union([
   Schema.Struct({ type: Schema.Literal('package-ui-invalidation') }),
+  Schema.Struct({
+    type: Schema.Literal('plugin-event'),
+    plugin: Schema.String,
+    event: Schema.Unknown,
+  }),
   Schema.Struct({ type: Schema.Literal('shell-state-refresh') }),
   Schema.Struct({
     type: Schema.Literal('keybinding-command'),

@@ -1,6 +1,17 @@
 const trailingLineBreakPattern = /\n$/
 const languageClassPattern = /(?:^|\s)language-([^\s]+)/
 
+import {
+  appToneMutedClass,
+  appTypeCodeBlockClass,
+  appTypeGroupTextClass,
+  appTypeGroupTitleClass,
+  appTypeMetaStrongClass,
+  appTypeReadableClass,
+  appTypeReadableStrongClass,
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { inlineCodeClass } from '@howcode/ui/classes'
 import { Check, Clipboard } from 'lucide-react'
 import {
   type AnchorHTMLAttributes,
@@ -13,17 +24,6 @@ import {
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { openExternalQuery } from '../query/desktop-query'
-import {
-  appToneMutedClass,
-  appTypeCodeBlockClass,
-  appTypeGroupTextClass,
-  appTypeGroupTitleClass,
-  appTypeMetaStrongClass,
-  appTypeReadableClass,
-  appTypeReadableStrongClass,
-  inlineCodeClass,
-} from '../ui/classes'
-import { cn } from '../utils/cn'
 import { markdownHtmlRehypePlugins } from './markdown-html'
 
 type MarkdownTone = 'default' | 'thinking' | 'system' | 'user'

@@ -1,6 +1,6 @@
+import { getErrorMessage } from '@howaboua/howcode-sdk/errors'
 import { mergeComposerAttachments } from '@howcode/shared/composer-attachments'
 import { type Dispatch, type SetStateAction, useCallback, useEffect, useRef, useState } from 'react'
-import { getErrorMessage } from '../desktop/error-messages'
 import type { ComposerAttachment, ComposerFilePickerState } from '../desktop/types'
 
 type UseComposerAttachmentPickerProps = {

@@ -1,13 +1,13 @@
 import {
-  indexByDirectoryIdentity,
-  resolveDirectoryIdentity,
-} from '../../../../desktop/directory-identity.ts'
-import {
   formatGitCommandError,
   type GitWorktreeEntry,
   getActiveBranch,
   loadGitWorktrees,
-} from '../../../git/service/index.ts'
+} from '@howaboua/howcode-git/service'
+import {
+  indexByDirectoryIdentity,
+  resolveDirectoryIdentity,
+} from '@howaboua/howcode-sdk/node/directory-identity'
 import {
   getDirectoryWorktree,
   listDirectoryWorktreePaths,

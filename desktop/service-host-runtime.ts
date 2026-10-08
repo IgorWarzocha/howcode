@@ -4,7 +4,6 @@ import * as Schema from 'effect/Schema'
 import * as artifacts from '../components/artifacts/service/index.ts'
 import { artifactsDatabaseSchema } from '../components/artifacts/service/schema.ts'
 import { createDictationService } from '../components/dictation/service/index.ts'
-import { cleanupLegacyCheckpoints, createGitService } from '../components/git/service/index.ts'
 import { createPackageUiService } from '../components/packages/service/index.ts'
 import { createSkillsService } from '../components/skills/service/index.ts'
 import * as terminalManager from '../components/terminal/service/index.ts'
@@ -16,6 +15,7 @@ import {
   setDirectoryRepoOrigin,
   workingDirectoryChatBranchFallbacks,
 } from '../components/working-directories/service/state.ts'
+import type { DesktopEvent } from '../shared/desktop-contracts.ts'
 import {
   type DesktopServiceRemoteModuleName,
   type DesktopServiceRemoteRuntime,
@@ -35,6 +35,9 @@ import {
   disposeChatStateDatabase,
   registerDatabaseStartupTask,
 } from './chat-repository/db.ts'
+import { createGitIntegration } from './git-integration/index.ts'
+import { cleanupLegacyCheckpoints } from './git-integration/legacy-checkpoints.ts'
+import { createInstalledPluginServices } from './plugins/runtime.ts'
 import { emitDesktopEvent } from './runtime/desktop-events.ts'
 import { getAgentDirectory } from './settings/paths.ts'
 import { getDesktopUserDataPath } from './user-data-path.ts'
@@ -46,7 +49,7 @@ const ServiceRequestSchema = Schema.Struct({
   module: Schema.Literals([
     'app',
     'skills',
-    'git',
+    'plugins',
     'workingDirectories',
     'artifacts',
     'dictation',
@@ -92,8 +95,20 @@ const workingDirectoriesComponent = createWorkingDirectoriesService({
   hasActiveWorkspaceTerminal: terminalManager.hasActiveWorkspaceTerminal,
 })
 const workingDirectories = workingDirectoriesComponent.service
-const gitComponent = createGitService({ setDirectoryGitOpsMode, setDirectoryRepoOrigin })
-const git = gitComponent.service
+let gitComponent: ReturnType<typeof createGitIntegration> | undefined
+const pluginsComponent = await createInstalledPluginServices(
+  { publishEvent: (event) => emitDesktopEvent(event as DesktopEvent) },
+  {
+    '@howaboua/howcode-git': (contribution, host) => {
+      gitComponent = createGitIntegration(contribution, host, {
+        setDirectoryGitOpsMode,
+        setDirectoryRepoOrigin,
+      })
+      return gitComponent
+    },
+  },
+)
+const plugins = pluginsComponent.service
 const unregisterArtifactCleanup = registerConversationCleanup(
   artifacts.deleteArtifactsForConversation,
 )
@@ -121,8 +136,8 @@ const app = {
   async handleDesktopAction(...args: Parameters<typeof coreApp.handleDesktopAction>) {
     const result = await workingDirectoriesComponent.handleAction(...args)
     if (result.handled) return result.result
-    const gitResult = await gitComponent.handleAction(...args)
-    return gitResult.handled ? gitResult.result : coreApp.handleDesktopAction(...args)
+    const gitResult = await gitComponent?.handleAction(...args)
+    return gitResult?.handled ? gitResult.result : coreApp.handleDesktopAction(...args)
   },
 }
 
@@ -130,7 +145,7 @@ const modules = {
   packages,
   app,
   skills,
-  git,
+  plugins,
   workingDirectories,
   artifacts,
   dictation,
@@ -224,7 +239,7 @@ const shutdownCoordinatorPromise = Effect.runPromise(
       yield* Effect.all(
         [
           settledTask(() =>
-            workingDirectoriesComponent.dispose().then(() => gitComponent.dispose()),
+            workingDirectoriesComponent.dispose().then(() => pluginsComponent.dispose()),
           ),
           settledTask(() => packagesComponent.dispose()),
           settledTask(() => skillsComponent.dispose()),

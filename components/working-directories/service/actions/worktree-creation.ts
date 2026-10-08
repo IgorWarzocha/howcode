@@ -1,4 +1,4 @@
-import { createDirectoryWorktree, removeDirectoryWorktree } from '../../../git/service/index.ts'
+import { createDirectoryWorktree, removeDirectoryWorktree } from '@howaboua/howcode-git/service'
 import { registerManagedWorktree } from '../state.ts'
 
 function errorMessage(error: unknown) {

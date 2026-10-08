@@ -1,7 +1,7 @@
+import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
+import { compactIconButtonClass } from '@howaboua/howcode-sdk/ui/classes'
 import { ActivitySpinner } from '@howcode/common/activity-spinner'
-import { Tooltip } from '@howcode/common/tooltip'
 import { SquareTerminal, X } from 'lucide-react'
-import { compactIconButtonClass } from '../../../ui/classes'
 
 type InboxChatRowProps = {
   age: string

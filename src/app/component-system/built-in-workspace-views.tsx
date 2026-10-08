@@ -2,14 +2,13 @@ import { MainView } from '@howcode/app-shell'
 import { ChatWorkspaceView } from '@howcode/chat-workspace'
 import { chatHistoryComponent } from '@howcode/components/chat-history/ui/component'
 import { ChatHistoryWorkspaceView } from '@howcode/components/chat-history/ui/views'
-import { gitComponent } from '@howcode/components/git/ui/component'
 import { SkillsWorkspaceView } from '@howcode/components/skills/ui'
 import { skillsComponent } from '@howcode/components/skills/ui/component'
 import { workingDirectoriesComponent } from '@howcode/components/working-directories/ui/component'
 import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
+import { mainPanelClass } from '@howcode/ui/classes'
 import type { ComponentProps } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
-import { mainPanelClass } from '../ui/classes'
 import { FALLBACK_APP_SETTINGS } from '../workspace-shell/default-app-settings'
 import { UtilityWorkspaceView } from '../workspace-shell/utility-workspace-view'
 import { WorkspacePresentation } from '../workspace-shell/workspace-presentation'
@@ -115,7 +114,7 @@ export function composeBuiltInWorkspaceViews(props: BuiltInWorkspaceViewProps) {
     automations: roadmapView('automations', props.currentDirectoryName),
   }
   if (isToolkitComponentEnabled(settings, 'coding')) {
-    for (const component of [workingDirectoriesComponent, gitComponent]) {
+    for (const component of [workingDirectoriesComponent]) {
       Object.assign(contributions, Object.fromEntries(component.views.map((view) => [view, code])))
     }
     const history = composeChatHistory(controller)

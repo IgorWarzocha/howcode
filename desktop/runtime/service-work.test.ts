@@ -1,5 +1,5 @@
+import { createServiceWork } from '@howaboua/howcode-sdk/node/service-work'
 import { describe, expect, it } from 'vitest'
-import { createServiceWork } from './service-work.ts'
 
 describe('service work lifetime', () => {
   it('rejects late admission and drains work reserved before shutdown', async () => {

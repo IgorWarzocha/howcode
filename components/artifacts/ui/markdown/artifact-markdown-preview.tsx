@@ -1,14 +1,14 @@
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import { markdownHtmlRehypePlugins } from '../../../../src/app/common/markdown-html'
-import { openExternalQuery } from '../../../../src/app/query/desktop-query'
 import {
   appToneTextClass,
   appTypeCodeClass,
   appTypeReadableStrongClass,
   appTypeSectionTitleClass,
-  artifactMarkdownPreviewClass,
-} from '../../../../src/app/ui/classes'
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { artifactMarkdownPreviewClass } from '@howcode/ui/classes'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import { markdownHtmlRehypePlugins } from '../../../../src/app/common/markdown-html'
+import { openExternalQuery } from '../../../../src/app/query/desktop-query'
 
 export function HistoricalMarkdownPreview({ content }: { content: string }) {
   return (

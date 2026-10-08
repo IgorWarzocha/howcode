@@ -3,13 +3,17 @@ import { access, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promise
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { promisify } from 'node:util'
+import { loadGitRepositoryIdentity, loadGitWorktrees } from '@howaboua/howcode-git/service'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import * as gitWorktrees from '../../../git/service/directory-git/worktrees.ts'
-import { loadGitRepositoryIdentity } from '../../../git/service/index.ts'
 import type { StoredDirectoryWorktree } from '../state.ts'
 import { removeFullCleanDirectoryDirectories } from './full-clean-removal.ts'
 
 const execFileAsync = promisify(execFile)
+
+vi.mock(import('@howaboua/howcode-git/service'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return { ...actual, loadGitWorktrees: vi.fn(actual.loadGitWorktrees) }
+})
 
 describe('full-clean project directory removal', () => {
   let testDirectory: string
@@ -43,6 +47,7 @@ describe('full-clean project directory removal', () => {
   })
 
   afterEach(async () => {
+    vi.mocked(loadGitWorktrees).mockReset()
     vi.restoreAllMocks()
     vi.unstubAllEnvs()
     await rm(testDirectory, { recursive: true, force: true })
@@ -216,9 +221,11 @@ describe('full-clean project directory removal', () => {
 
   it('preserves the root when an external worktree appears before final deletion', async () => {
     const newlyAddedPath = path.join(testDirectory, 'late-worktree')
-    const loadGitWorktrees = gitWorktrees.loadGitWorktrees
+    const { loadGitWorktrees: actualLoadGitWorktrees } = await vi.importActual<
+      typeof import('@howaboua/howcode-git/service')
+    >('@howaboua/howcode-git/service')
     let loadCount = 0
-    vi.spyOn(gitWorktrees, 'loadGitWorktrees').mockImplementation(async (directoryId) => {
+    vi.mocked(loadGitWorktrees).mockImplementation(async (directoryId) => {
       loadCount += 1
       if (loadCount === 2) {
         await execFileAsync(
@@ -227,7 +234,7 @@ describe('full-clean project directory removal', () => {
           { cwd: rootDirectoryId },
         )
       }
-      return loadGitWorktrees(directoryId)
+      return actualLoadGitWorktrees(directoryId)
     })
 
     const result = await removeFullCleanDirectoryDirectories({

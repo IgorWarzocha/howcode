@@ -1,4 +1,4 @@
-import { appToneSubtleClass, appTypeTinyClass } from './classes'
+import { appToneSubtleClass, appTypeTinyClass } from '@howaboua/howcode-sdk/ui/typography-scale'
 
 export const skillsViewShellClass = 'view-shell--top-roomy'
 

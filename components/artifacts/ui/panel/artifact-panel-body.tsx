@@ -1,18 +1,20 @@
-import { Component, lazy, type ReactNode, Suspense, useEffect, useState } from 'react'
 import {
   appToneDangerClass,
   appToneMutedClass,
   appToneSubtleClass,
   appTypeSmallStrongClass,
   appTypeTinyClass,
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import {
   artifactCenteredStateClass,
   artifactCodeEditorClass,
   artifactErrorStripClass,
   artifactListClass,
   artifactListRowClass,
   artifactPreviewSurfaceClass,
-} from '../../../../src/app/ui/classes'
-import { cn } from '../../../../src/app/utils/cn'
+} from '@howcode/ui/classes'
+import { Component, lazy, type ReactNode, Suspense, useEffect, useState } from 'react'
 import { HistoricalMarkdownPreview } from '../markdown/artifact-markdown-preview'
 import { formatArtifactSlug } from './artifactFormat'
 import type { useArtifactPanelState } from './useArtifactPanelState'

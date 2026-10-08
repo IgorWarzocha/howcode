@@ -1,15 +1,17 @@
+import { PopoverPanel } from '@howaboua/howcode-sdk/common/popover'
+import {
+  composerPopoverOptionSelectedClass,
+  composerPopoverPanelClass,
+} from '@howaboua/howcode-sdk/ui/classes'
 import {
   appToneMutedClass,
   appToneTextClass,
   appTypeControlClass,
   appTypeSmallClass,
-  composerPopoverOptionSelectedClass,
-  composerPopoverPanelClass,
-  inlineEmptyNoteClass,
-} from '@howcode/ui'
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { inlineEmptyNoteClass } from '@howcode/ui/classes'
 import type { RefObject } from 'react'
-import { PopoverPanel } from '../common/popover'
-import { cn } from '../utils/cn'
 import {
   type ComposerSkillMentions,
   getComposerSkillMentionOptionId,

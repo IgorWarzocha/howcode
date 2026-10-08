@@ -20,16 +20,21 @@ export function createDesktopRequestHandlers(input: {
     input.runtime,
     input.platform.listDirectoryDirectoryEntries,
   )
-  return {
+  const handlers = {
     ...createPackageUiHandlers(input.runtime.packages),
     listComposerAttachmentEntries: input.platform.listComposerAttachmentEntries,
     searchComposerAttachmentEntries: input.platform.searchComposerAttachmentEntries,
     ...createAppHandlers(input.runtime.app, input.onSettingsChanged),
     ...components.workingDirectories,
-    ...components.git,
+    pluginRequest: components.pluginRequest,
     ...components.terminal,
     ...components.artifacts,
     ...components.skills,
     ...components.dictation,
   }
+  for (const method of Object.keys(components.plugins)) {
+    if (Object.hasOwn(handlers, method))
+      throw new Error(`Installed plugin request collides with host: ${method}`)
+  }
+  return { ...handlers, ...components.plugins }
 }

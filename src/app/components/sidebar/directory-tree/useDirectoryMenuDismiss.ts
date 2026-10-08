@@ -1,5 +1,5 @@
+import { useDismissibleLayer } from '@howaboua/howcode-sdk/hooks/useDismissibleLayer'
 import { useRef } from 'react'
-import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 
 export function useDirectoryMenuDismiss(open: boolean, onDismiss: () => void) {
   const containerRef = useRef<HTMLDivElement>(null)

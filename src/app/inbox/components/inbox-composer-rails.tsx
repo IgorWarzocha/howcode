@@ -1,7 +1,8 @@
+import { compactIconButtonClass } from '@howaboua/howcode-sdk/ui/classes'
+import { appToneTextClass, appTypeMetaClass } from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { Paperclip, Square, X } from 'lucide-react'
 import type { RefObject } from 'react'
-import { appToneTextClass, appTypeMetaClass, compactIconButtonClass } from '../../ui/classes'
-import { cn } from '../../utils/cn'
 
 type InboxAttachmentRailProps = {
   attachmentCount: number

@@ -1,8 +1,8 @@
+import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { ActivitySpinner } from '@howcode/common/activity-spinner'
-import { Tooltip } from '@howcode/common/tooltip'
 import { GitBranch, Pencil, SquareTerminal, Star, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { cn } from '../../../utils/cn'
 import { SidebarInlineConfirmPopunder } from '../sidebar-inline-confirm-popunder'
 
 type ChatRowProps = {

@@ -7,18 +7,20 @@ import {
   appTypeMetaStrongClass,
   appTypeSmallClass,
   appTypeTinyStrongClass,
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import {
   chatSessionSurfaceClass,
   processLedgerClass,
   processLedgerDetailBlockClass,
   processLedgerRowClass,
   processLedgerRowExpandedClass,
-} from '@howcode/ui'
+} from '@howcode/ui/classes'
 import { useState } from 'react'
 import { getParagraphRenderItems } from '../common/chat-message-utils'
 import { ExpandablePanel } from '../common/expandable-panel'
 import type { Message } from '../types'
 import { getToolCallPreview, getToolCallTitle } from '../utils/chat-previews'
-import { cn } from '../utils/cn'
 import { ToolDiffBlock, ToolDiffSummary } from './tool-diff-block'
 
 type ToolCallMessage = Extract<Message, { role: 'toolResult' | 'bashExecution' }>

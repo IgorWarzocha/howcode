@@ -1,6 +1,6 @@
+import { useLatestRef } from '@howaboua/howcode-sdk/hooks/useLatestRef'
 import { useEffect, useState } from 'react'
 import type { Artifact } from '../../../../src/app/desktop/types'
-import { useLatestRef } from '../../../../src/app/hooks/useLatestRef'
 
 import { saveTextToDownloadsQuery } from '../query'
 import { getArtifactExtension } from './artifactFormat'

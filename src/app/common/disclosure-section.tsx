@@ -1,7 +1,7 @@
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { disclosureButtonClass } from '@howcode/ui/classes'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import type { PropsWithChildren, ReactNode } from 'react'
-import { disclosureButtonClass } from '../ui/classes'
-import { cn } from '../utils/cn'
 
 type DisclosureSectionProps = PropsWithChildren<{
   title: ReactNode

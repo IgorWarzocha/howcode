@@ -1,5 +1,5 @@
+import { useDismissibleLayer } from '@howaboua/howcode-sdk/hooks/useDismissibleLayer'
 import { useRef, useState } from 'react'
-import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
 import type { InboxComposerOpenMenu } from './inbox-composer-types'
 import { useInboxComposerPickerDismiss } from './useInboxComposerPickerDismiss'
 

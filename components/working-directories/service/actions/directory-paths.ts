@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { resolveDirectoryIdentity } from '../../../../desktop/directory-identity.ts'
+import { resolveDirectoryIdentity } from '@howaboua/howcode-sdk/node/directory-identity'
 import type { WorkingDirectory } from '../../../../shared/desktop-contracts.ts'
 
 export async function resolveDirectoryPathForComparison(directoryId: string) {

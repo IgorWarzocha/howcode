@@ -1,3 +1,5 @@
+import { getErrorMessage } from '@howaboua/howcode-sdk/errors'
+import { useLatestRef } from '@howaboua/howcode-sdk/hooks/useLatestRef'
 import {
   type Dispatch,
   type SetStateAction,
@@ -8,9 +10,7 @@ import {
   useState,
 } from 'react'
 import { useToolkitComponentEnabled } from '../../../src/app/component-system/component-context'
-import { getErrorMessage } from '../../../src/app/desktop/error-messages'
 import type { DictationState } from '../../../src/app/desktop/types'
-import { useLatestRef } from '../../../src/app/hooks/useLatestRef'
 import {
   appendDictatedText,
   canUseLocalDictationCapture,

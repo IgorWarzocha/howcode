@@ -1,5 +1,5 @@
+import { getErrorMessage } from '@howaboua/howcode-sdk/errors'
 import type { DesktopAction } from '../desktop/actions'
-import { getErrorMessage } from '../desktop/error-messages'
 import type { DesktopActionInvoker, DesktopActionResult } from '../desktop/types'
 import { hasDesktopBridgeQuery, invokeDesktopActionQuery } from '../query/desktop-query'
 

@@ -189,6 +189,14 @@
           }
         }
       }
+    },
+    {
+      "includes": ["src/styles.css", "src/installed-plugin-sources.generated.css"],
+      "css": {
+        "parser": {
+          "tailwindDirectives": true
+        }
+      }
     }
   ]
 }

@@ -1,5 +1,5 @@
-import { appTypeTinyStrongClass } from '../ui/classes'
-import { cn } from '../utils/cn'
+import { appTypeTinyStrongClass } from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 
 export type FeatureStatus = 'mock' | 'partial'
 

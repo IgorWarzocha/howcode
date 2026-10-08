@@ -1,5 +1,5 @@
+import type { DirectoryDiffPreferences } from '@howaboua/howcode-git/contracts'
 import type { ComposerProfile } from './desktop-composer-contracts'
-import type { DirectoryDiffPreferences } from './desktop-directory-git-contracts'
 
 export type Chat = {
   composerProfile?: ComposerProfile | undefined

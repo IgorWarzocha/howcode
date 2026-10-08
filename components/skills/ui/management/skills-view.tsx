@@ -1,16 +1,16 @@
+import {
+  appToneDangerClass,
+  appToneMutedClass,
+  appTypeGroupTextClass,
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { ArrowUpRight } from 'lucide-react'
 import { DisclosureSection } from '../../../../src/app/common/disclosure-section'
 import { ViewHeader } from '../../../../src/app/common/view-header'
 import { ViewShell } from '../../../../src/app/common/view-shell'
 import { openPiResourceUrl } from '../../../../src/app/pi-resources/open-pi-resource-url'
 import { PiResourceScopeSwitcher } from '../../../../src/app/pi-resources/pi-resource-scope-switcher'
-import {
-  appToneDangerClass,
-  appToneMutedClass,
-  appTypeGroupTextClass,
-} from '../../../../src/app/ui/classes'
 import { skillsViewShellClass } from '../../../../src/app/ui/screen-classes'
-import { cn } from '../../../../src/app/utils/cn'
 import { BrowseSkillsSection } from './components/browse-skills-section'
 import { InstalledSkillsSection } from './components/installed-skills-section'
 import { useSkillsController } from './hooks/useSkillsController'

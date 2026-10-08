@@ -4,8 +4,8 @@ import type {
   ArtifactsService,
   DesktopServiceRuntime,
   DictationService,
-  GitService,
   PiSkillsService,
+  PluginService,
   WorkingDirectoriesService,
 } from '../../shared/desktop-service-contracts'
 import {
@@ -55,7 +55,7 @@ export function createServerRuntime(
     app: proxyModule<AppService>(service, 'app'),
     packages: proxyModule<PackageUiService>(service, 'packages'),
     skills: proxyModule<PiSkillsService>(service, 'skills'),
-    git: proxyModule<GitService>(service, 'git'),
+    plugins: proxyModule<PluginService>(service, 'plugins'),
     workingDirectories: proxyModule<WorkingDirectoriesService>(service, 'workingDirectories'),
     artifacts: proxyModule<ArtifactsService>(service, 'artifacts'),
     dictation: proxyModule<DictationService>(service, 'dictation'),

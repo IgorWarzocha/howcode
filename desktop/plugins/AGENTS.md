@@ -1,0 +1,2 @@
+- Installed service contributions own creation and disposal. Git's host adapter supplies database/model ports but never creates a second service outside the generated registry. Drain working-directory work before disposing plugins.
+- Plugin request dispatch is trusted code, not a sandbox. Validate package metadata and reject duplicate request names; keep new renderer/server/service transport in shared contracts.

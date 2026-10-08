@@ -1,6 +1,6 @@
+import { getErrorMessage } from '@howaboua/howcode-sdk/errors'
 import { useMemo, useRef, useState } from 'react'
 import { getDesktopActionErrorMessage } from '../desktop/action-results'
-import { getErrorMessage } from '../desktop/error-messages'
 import type { ComposerQueuedPrompt, DesktopActionInvoker } from '../desktop/types'
 
 export function useQueuedPromptCancellation({

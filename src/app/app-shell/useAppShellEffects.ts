@@ -1,13 +1,13 @@
-import {
-  useGitDesktopEventContribution,
-  useGitStateSync,
-  useTerminalGitStateSync,
-} from '@howcode/components/git/ui'
 import { listDesktopTerminals, subscribeDesktopTerminal } from '@howcode/components/terminal/ui'
 import {
   useDirectoryDesktopEventContribution,
   useDirectoryShellSync,
 } from '@howcode/components/working-directories/ui'
+import {
+  useGitDesktopEventContribution,
+  useGitStateSync,
+  useTerminalGitStateSync,
+} from '@howcode/git-integration'
 import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
 import { type Dispatch, type SetStateAction, useMemo } from 'react'
 import type {

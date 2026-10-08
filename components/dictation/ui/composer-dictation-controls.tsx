@@ -1,21 +1,21 @@
-import { AudioLines, Check, FileAudio, Mic, X } from 'lucide-react'
-import { useRef, useState } from 'react'
-import { AnchoredPopoverPanel } from '../../../src/app/common/popover'
-import { TextButton } from '../../../src/app/common/text-button'
-import type { DesktopActionInvoker } from '../../../src/app/desktop/types'
-import { useAnimatedPresence } from '../../../src/app/hooks/useAnimatedPresence'
-import { useDismissibleLayer } from '../../../src/app/hooks/useDismissibleLayer'
-import type { SettingsOpenTarget } from '../../../src/app/settings/settings/settingsTypes'
+import { AnchoredPopoverPanel } from '@howaboua/howcode-sdk/common/popover'
+import { useAnimatedPresence } from '@howaboua/howcode-sdk/hooks/useAnimatedPresence'
+import { useDismissibleLayer } from '@howaboua/howcode-sdk/hooks/useDismissibleLayer'
+import { compactIconButtonClass } from '@howaboua/howcode-sdk/ui/classes'
 import {
   appToneDangerClass,
   appToneTextClass,
   appTypeMetaClass,
   appTypeTinyClass,
   appTypeTinyStrongClass,
-  compactIconButtonClass,
-  iconButtonClass,
-} from '../../../src/app/ui/classes'
-import { cn } from '../../../src/app/utils/cn'
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { iconButtonClass } from '@howcode/ui/classes'
+import { AudioLines, Check, FileAudio, Mic, X } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { TextButton } from '../../../src/app/common/text-button'
+import type { DesktopActionInvoker } from '../../../src/app/desktop/types'
+import type { SettingsOpenTarget } from '../../../src/app/settings/settings/settingsTypes'
 
 type ComposerDictationControlsProps = {
   dictationActive: boolean

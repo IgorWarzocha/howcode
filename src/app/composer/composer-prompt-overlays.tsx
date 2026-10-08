@@ -1,5 +1,5 @@
+import { composerOverlayPanelInsetClass } from '@howcode/ui/classes'
 import type { RefObject } from 'react'
-import { composerOverlayPanelInsetClass } from '../ui/classes'
 import { ComposerFilePicker } from './composer-file-picker'
 import { ComposerOverlayStack } from './composer-overlay-stack'
 import { ComposerPromptPopoverStack } from './composer-prompt-popover-stack'

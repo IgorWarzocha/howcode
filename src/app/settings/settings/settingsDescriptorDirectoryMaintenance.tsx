@@ -1,13 +1,13 @@
-import type { AppSettings } from '../../desktop/types'
+import { composerTextActionButtonClass } from '@howaboua/howcode-sdk/ui/classes'
 import {
   appToneDangerClass,
   appToneMutedClass,
   appTypeMetaClass,
   appTypeSmallClass,
-  composerTextActionButtonClass,
-  settingsInputClass,
-} from '../../ui/classes'
-import { cn } from '../../utils/cn'
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { settingsInputClass } from '@howcode/ui/classes'
+import type { AppSettings } from '../../desktop/types'
 import type { SettingsController } from './settingsDescriptorTypes'
 import { SettingsSegmentedControl } from './settingsSegmentedControl'
 import type { SettingDescriptor } from './settingsTypes'

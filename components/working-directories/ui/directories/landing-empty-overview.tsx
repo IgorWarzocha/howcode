@@ -1,7 +1,10 @@
+import {
+  appTypeGroupTextClass,
+  appTypeSectionTitleClass,
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import type { KeyboardEvent } from 'react'
 import { MarkdownContent } from '../../../../src/app/common/markdown-content'
-import { appTypeGroupTextClass, appTypeSectionTitleClass } from '../../../../src/app/ui/classes'
-import { cn } from '../../../../src/app/utils/cn'
 import type { LandingOverviewContent } from './landing-overview-content'
 
 const pixelRows = [

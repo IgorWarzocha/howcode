@@ -1,3 +1,24 @@
+export type {
+  DirectoryCommitEntry,
+  DirectoryDiffBaseline,
+  DirectoryDiffDefaultBaseline,
+  DirectoryDiffFileContentIssue,
+  DirectoryDiffFileContentsRequest,
+  DirectoryDiffFileContentsResult,
+  DirectoryDiffImagePreview,
+  DirectoryDiffImageSide,
+  DirectoryDiffPreferences,
+  DirectoryDiffRenderMode,
+  DirectoryDiffResolvedBaseline,
+  DirectoryDiffResult,
+  DirectoryDiffStatsResult,
+  DirectoryDiffStreamEvent,
+  DirectoryDiffStreamStartResult,
+  DirectoryDiffTextFile,
+  DirectoryFileWriteRequest,
+  DirectoryFileWriteResult,
+  DirectoryGitState,
+} from '@howaboua/howcode-git/contracts'
 export type { ChatSearchMatch, ChatSearchResult } from './chat-search'
 export type {
   AnyDesktopActionPayload,
@@ -62,27 +83,6 @@ export type {
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
 } from './desktop-dictation-contracts'
-export type {
-  DirectoryCommitEntry,
-  DirectoryDiffBaseline,
-  DirectoryDiffDefaultBaseline,
-  DirectoryDiffFileContentIssue,
-  DirectoryDiffFileContentsRequest,
-  DirectoryDiffFileContentsResult,
-  DirectoryDiffImagePreview,
-  DirectoryDiffImageSide,
-  DirectoryDiffPreferences,
-  DirectoryDiffRenderMode,
-  DirectoryDiffResolvedBaseline,
-  DirectoryDiffResult,
-  DirectoryDiffStatsResult,
-  DirectoryDiffStreamEvent,
-  DirectoryDiffStreamStartResult,
-  DirectoryDiffTextFile,
-  DirectoryFileWriteRequest,
-  DirectoryFileWriteResult,
-  DirectoryGitState,
-} from './desktop-directory-git-contracts'
 export type { DesktopEvent } from './desktop-event-contracts'
 export type {
   PiConfiguredSkill,

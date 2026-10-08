@@ -1,5 +1,5 @@
-import { appToneMutedClass, appTypeGroupTextClass } from '../ui/classes'
-import { cn } from '../utils/cn'
+import { appToneMutedClass, appTypeGroupTextClass } from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import type { PiResourceInstallScope } from './types'
 
 const installScopeOptions: ReadonlyArray<{

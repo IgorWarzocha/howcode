@@ -28,6 +28,8 @@
       "@howcode/component-system/*": ["./src/app/component-system/*"],
       "@howcode/inbox": ["./src/app/inbox/index.ts"],
       "@howcode/inbox/*": ["./src/app/inbox/*"],
+      "@howcode/git-integration": ["./src/app/git-integration/index.ts"],
+      "@howcode/git-integration/*": ["./src/app/git-integration/*"],
       "@howcode/query/*": ["./src/app/query/*"],
       "@howcode/roadmaps": ["./src/app/roadmaps/index.ts"],
       "@howcode/roadmaps/*": ["./src/app/roadmaps/*"],

@@ -1,16 +1,16 @@
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeSectionTitleClass,
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { inlineEmptyNoteClass } from '@howcode/ui/classes'
 import { useEffect, useMemo, useState } from 'react'
 import { ViewHeader } from '../../../src/app/common/view-header'
 import { ViewShell } from '../../../src/app/common/view-shell'
 import type { DesktopActionInvoker } from '../../../src/app/desktop/types'
 import type { WorkingDirectory } from '../../../src/app/types'
-import {
-  appToneMutedClass,
-  appToneTextClass,
-  appTypeSectionTitleClass,
-  inlineEmptyNoteClass,
-} from '../../../src/app/ui/classes'
 import { skillsViewShellClass } from '../../../src/app/ui/screen-classes'
-import { cn } from '../../../src/app/utils/cn'
 import {
   type ChatHistoryBulkAction,
   filterPastChats,

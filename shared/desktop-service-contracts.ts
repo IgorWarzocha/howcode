@@ -21,16 +21,6 @@ import type {
   DictationState,
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
-  DirectoryCommitEntry,
-  DirectoryDiffBaseline,
-  DirectoryDiffFileContentsRequest,
-  DirectoryDiffFileContentsResult,
-  DirectoryDiffImagePreview,
-  DirectoryDiffImageSide,
-  DirectoryDiffResolvedBaseline,
-  DirectoryDiffStatsResult,
-  DirectoryDiffStreamStartResult,
-  DirectoryGitState,
   DirectoryUsageSummary,
   InboxChat,
   PiConfiguredSkill,
@@ -54,36 +44,8 @@ export type WorkingDirectoriesService = {
   loadDirectoryFavicon: (directoryId: string) => Promise<string | null>
 }
 
-export type GitService = {
-  loadDirectoryGitState: (directoryId: string) => Promise<DirectoryGitState | null>
-  startDirectoryDiffStream: (
-    directoryId: string,
-    baseline?: DirectoryDiffBaseline | null,
-    streamId?: string | null,
-    includeUntracked?: boolean | null,
-  ) => Promise<DirectoryDiffStreamStartResult>
-  cancelDirectoryDiffStream: (streamId: string) => Promise<void>
-  loadDirectoryDiffStats: (
-    directoryId: string,
-    baseline?: DirectoryDiffBaseline | null,
-    includeUntracked?: boolean | null,
-  ) => Promise<DirectoryDiffStatsResult | null>
-  loadDirectoryDiffImagePreview: (request: {
-    directoryId: string
-    baseline?: DirectoryDiffBaseline | null | undefined
-    path: string
-    side: DirectoryDiffImageSide
-  }) => Promise<DirectoryDiffImagePreview>
-  loadDirectoryDiffFileContents: (
-    request: DirectoryDiffFileContentsRequest,
-  ) => Promise<DirectoryDiffFileContentsResult>
-  captureDirectoryDiffBaseline: (
-    directoryId: string,
-  ) => Promise<DirectoryDiffResolvedBaseline | null>
-  listDirectoryCommits: (
-    directoryId: string,
-    limit?: number | null | undefined,
-  ) => Promise<DirectoryCommitEntry[]>
+export type PluginService = {
+  request: (plugin: string, method: string, payload: unknown) => Promise<unknown>
 }
 
 export type ArtifactsService = {
@@ -189,7 +151,7 @@ export type DesktopServiceRuntime = {
   app: AppService
   packages: PackageUiService
   skills: PiSkillsService
-  git: GitService
+  plugins: PluginService
   workingDirectories: WorkingDirectoriesService
   artifacts: ArtifactsService
   dictation: DictationService

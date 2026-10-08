@@ -1,14 +1,14 @@
-import { isSafeExternalUrl } from '@howcode/shared/external-url'
-import { File, Folder, Globe, Loader2, Upload, X } from 'lucide-react'
-import type { DragEvent } from 'react'
-import type { ComposerAttachment } from '../desktop/types'
 import {
   appToneMutedClass,
   appToneTextClass,
   appTypeTinyClass,
-  composerAttachmentPickerTextClass,
-} from '../ui/classes'
-import { cn } from '../utils/cn'
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { isSafeExternalUrl } from '@howcode/shared/external-url'
+import { composerAttachmentPickerTextClass } from '@howcode/ui/classes'
+import { File, Folder, Globe, Loader2, Upload, X } from 'lucide-react'
+import type { DragEvent } from 'react'
+import type { ComposerAttachment } from '../desktop/types'
 import {
   getAttachmentDisplayLabel,
   getOpenAttachmentLabel,

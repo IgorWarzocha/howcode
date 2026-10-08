@@ -1,5 +1,4 @@
-import { Fragment } from 'react'
-import { PopoverBoundary } from '../../common/popover'
+import { PopoverBoundary } from '@howaboua/howcode-sdk/common/popover'
 import {
   appToneMutedClass,
   appToneTextClass,
@@ -7,9 +6,10 @@ import {
   appTypeMetaClass,
   appTypeSectionTitleClass,
   appTypeSmallClass,
-  inlineEmptyNoteClass,
-} from '../../ui/classes'
-import { cn } from '../../utils/cn'
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { inlineEmptyNoteClass } from '@howcode/ui/classes'
+import { Fragment } from 'react'
 import { settingsHelpRowClass } from './settingsClasses'
 import type { settingsCategories } from './settingsGroups'
 import type { SettingsCategoryId } from './settingsTypes'

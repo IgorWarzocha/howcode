@@ -1,22 +1,26 @@
-import { Check, ChevronDown, Search } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { PopoverPanel, PopoverRoot } from '../../common/popover'
-import { Tooltip } from '../../common/tooltip'
+import { PopoverPanel, PopoverRoot } from '@howaboua/howcode-sdk/common/popover'
+import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
+import {
+  composerPopoverInputClass,
+  composerPopoverOptionClass,
+  composerPopoverOptionSelectedClass,
+  composerTextActionButtonClass,
+} from '@howaboua/howcode-sdk/ui/classes'
 import {
   appToneMutedClass,
   appToneTextClass,
   appTypeControlNormalClass,
   appTypeMetaClass,
   appTypeSmallClass,
-  composerPopoverInputClass,
-  composerPopoverOptionClass,
-  composerPopoverOptionSelectedClass,
-  composerTextActionButtonClass,
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import {
   quietCheckboxCheckedClass,
   quietCheckboxClass,
   settingsPopoverPanelClass,
-} from '../../ui/classes'
-import { cn } from '../../utils/cn'
+} from '@howcode/ui/classes'
+import { Check, ChevronDown, Search } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { settingRowClass } from './settingsClasses'
 import type { InlineSelectOption, SettingDescriptor } from './settingsTypes'
 

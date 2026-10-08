@@ -1,9 +1,10 @@
+import { ConfirmPopover } from '@howaboua/howcode-sdk/common/confirm-popover'
+import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
+import { appToneTextClass } from '@howaboua/howcode-sdk/ui/typography-scale'
+import { viewCloseButtonClass } from '@howcode/ui/classes'
 import { GitBranch, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { ConfirmPopover } from '../../../src/app/common/confirm-popover'
-import { Tooltip } from '../../../src/app/common/tooltip'
 import type { DesktopActionInvoker } from '../../../src/app/desktop/types'
-import { appToneTextClass, viewCloseButtonClass } from '../../../src/app/ui/classes'
 import { getChatAssignmentLabel, type PastChat } from './chat-history-model'
 
 export function ChatHistoryRow({

@@ -1,11 +1,3 @@
-import { setDirectoryImportState } from '../../../desktop/app-settings/writers.ts'
-import { ensureDirectory, listDirectoryChatIds } from '../../../desktop/chat-repository.ts'
-import {
-  indexByDirectoryIdentity,
-  resolveDirectoryIdentity,
-} from '../../../desktop/directory-identity.ts'
-import type { DirectoryImportCandidate } from '../../../shared/desktop-contracts.ts'
-import { getDesktopWorkingDirectory } from '../../../shared/desktop-working-directory.ts'
 import {
   captureGitCommonDirectoryIdentity,
   type GitWorktreeEntry,
@@ -14,7 +6,15 @@ import {
   isGitRepository,
   loadGitWorktrees,
   withRootGitMutation,
-} from '../../git/service/index.ts'
+} from '@howaboua/howcode-git/service'
+import {
+  indexByDirectoryIdentity,
+  resolveDirectoryIdentity,
+} from '@howaboua/howcode-sdk/node/directory-identity'
+import { setDirectoryImportState } from '../../../desktop/app-settings/writers.ts'
+import { ensureDirectory, listDirectoryChatIds } from '../../../desktop/chat-repository.ts'
+import type { DirectoryImportCandidate } from '../../../shared/desktop-contracts.ts'
+import { getDesktopWorkingDirectory } from '../../../shared/desktop-working-directory.ts'
 import {
   deleteDirectory,
   deleteDirectoryWorktreeMetadata,

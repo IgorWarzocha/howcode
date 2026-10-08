@@ -2,7 +2,7 @@ import {
   GitDiffPresentationProvider,
   useGitDetailLayout,
   useGitWorkspacePresentation,
-} from '@howcode/components/git/ui'
+} from '@howaboua/howcode-git/ui'
 import { useRef, useState } from 'react'
 import { useQueuedPromptCancellation } from '../../composer/useQueuedPromptCancellation'
 import type { Message, View } from '../../types'

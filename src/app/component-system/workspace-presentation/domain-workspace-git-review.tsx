@@ -1,4 +1,5 @@
-import { GitReviewPanel } from '@howcode/components/git/ui'
+import { GitReviewPanel } from '@howaboua/howcode-git/ui'
+import { DraftInputContribution } from '../../composer/draft-input-contribution'
 import { FALLBACK_APP_SETTINGS } from '../../workspace-shell/default-app-settings'
 import type { DomainWorkspaceContentProps } from './domain-workspace-contract'
 
@@ -54,7 +55,15 @@ export function DomainWorkspaceGitReview(props: DomainWorkspaceContentProps) {
         onAction={handleAction}
         onBack={handleCloseGitOpsView}
         closeConfirmation={props.gitCloseConfirmation}
-        onOpenSettingsView={(target) => controller.navigation.showView('settings', target)}
+        renderDraftInput={(input) => (
+          <DraftInputContribution
+            {...input}
+            activeView="chat"
+            appSettings={appSettings}
+            onAction={handleAction}
+            onOpenSettingsView={(target) => controller.navigation.showView('settings', target)}
+          />
+        )}
       />
     </div>
   )

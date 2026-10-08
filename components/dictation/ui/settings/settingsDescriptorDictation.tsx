@@ -1,18 +1,15 @@
+import { composerTextActionButtonClass } from '@howaboua/howcode-sdk/ui/classes'
+import { appToneDangerClass, appTypeSmallClass } from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import {
   DEFAULT_DICTATION_MAX_DURATION_SECONDS,
   DICTATION_MAX_DURATION_OPTIONS,
 } from '@howcode/shared/dictation-settings'
+import { settingsInputClass } from '@howcode/ui/classes'
 import { Download, Trash2 } from 'lucide-react'
 import type { Dispatch, SetStateAction } from 'react'
 import { ActivitySpinner } from '../../../../src/app/common/activity-spinner'
 import type { AppSettings, DictationModelId } from '../../../../src/app/desktop/types'
-import {
-  appToneDangerClass,
-  appTypeSmallClass,
-  composerTextActionButtonClass,
-  settingsInputClass,
-} from '../../../../src/app/ui/classes'
-import { cn } from '../../../../src/app/utils/cn'
 import type { useSettingsDictationController } from './useSettingsDictationController'
 
 type SettingsController = { dictation: ReturnType<typeof useSettingsDictationController> }

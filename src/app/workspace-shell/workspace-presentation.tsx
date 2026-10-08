@@ -1,7 +1,7 @@
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { mainPanelClass } from '@howcode/ui/classes'
 import { type ReactNode, useState } from 'react'
-import { mainPanelClass } from '../ui/classes'
 import { WORKSPACE_EDGE_PADDING_CLASS } from '../ui/layout'
-import { cn } from '../utils/cn'
 
 export type WorkspacePresentationCloseConfirmation = {
   open: boolean

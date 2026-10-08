@@ -1,6 +1,14 @@
+import { PopoverPanel } from '@howaboua/howcode-sdk/common/popover'
+import { useDismissibleLayer } from '@howaboua/howcode-sdk/hooks/useDismissibleLayer'
+import {
+  appToneMutedClass,
+  appToneTextClass,
+  appTypeControlClass,
+  appTypeGroupTextClass,
+} from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { EmptyStateCard } from '@howcode/common/empty-state-card'
 import { IconButton } from '@howcode/common/icon-button'
-import { PopoverPanel } from '@howcode/common/popover'
 import {
   BrushCleaning,
   Check,
@@ -15,14 +23,6 @@ import {
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
 import type { DesktopActionInvoker, InboxChat } from '../../../desktop/types'
-import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
-import {
-  appToneMutedClass,
-  appToneTextClass,
-  appTypeControlClass,
-  appTypeGroupTextClass,
-} from '../../../ui/classes'
-import { cn } from '../../../utils/cn'
 import { InboxChatRow } from './inbox-chat-row'
 
 type InboxFilterMode = 'all' | 'terminal' | 'recent'

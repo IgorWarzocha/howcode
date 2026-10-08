@@ -1,5 +1,5 @@
-import { appToneAccentClass, appTypeLogoMarkClass } from '../ui/classes'
-import { cn } from '../utils/cn'
+import { appToneAccentClass, appTypeLogoMarkClass } from '@howaboua/howcode-sdk/ui/typography-scale'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 
 type HowcodeLogoMarkProps = {
   className?: string

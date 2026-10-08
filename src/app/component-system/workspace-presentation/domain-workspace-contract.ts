@@ -1,4 +1,4 @@
-import type { GitOpsReviewController, useGitDetailLayout } from '@howcode/components/git/ui'
+import type { GitOpsReviewController, useGitDetailLayout } from '@howaboua/howcode-git/ui'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type { useQueuedPromptCancellation } from '../../composer/useQueuedPromptCancellation'
 import type {

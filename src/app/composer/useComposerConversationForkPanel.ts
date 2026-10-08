@@ -1,6 +1,6 @@
+import { useComposerPopoverDismissSignal } from '@howaboua/howcode-sdk/composer/composer-popover-coordination'
 import { getPersistedConversationId } from '@howcode/shared/conversation-ids'
 import { useCallback, useEffect, useState } from 'react'
-import { useComposerPopoverDismissSignal } from './composer-popover-coordination'
 
 export function useComposerConversationForkPanel(input: {
   conversationId: string | null

@@ -1,8 +1,8 @@
-import { useAppShellDiffPreferences } from '@howcode/components/git/ui'
 import {
   useTerminalDrawerPresentation,
   useTerminalResponsiveState,
 } from '@howcode/components/terminal/ui'
+import { useAppShellDiffPreferences } from '@howcode/git-integration'
 import { useRef } from 'react'
 import { WORKSPACE_CONTENT_MAX_WIDTH_CLASS } from '../ui/layout'
 import { getLayoutChatSelection } from './app-shell-layout-model'

@@ -1,6 +1,6 @@
+import { getErrorMessage } from '@howaboua/howcode-sdk/errors'
 import { type Dispatch, type MutableRefObject, type SetStateAction, useCallback } from 'react'
 import { getDesktopActionErrorMessage } from '../desktop/action-results'
-import { getErrorMessage } from '../desktop/error-messages'
 import type {
   ComposerAttachment,
   ComposerStreamingBehavior,

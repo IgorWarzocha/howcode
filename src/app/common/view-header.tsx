@@ -1,7 +1,7 @@
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { viewCloseButtonClass, viewSubtitleClass, viewTitleClass } from '@howcode/ui/classes'
 import { X } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { viewCloseButtonClass, viewSubtitleClass, viewTitleClass } from '../ui/classes'
-import { cn } from '../utils/cn'
 
 type ViewHeaderProps = {
   title: ReactNode

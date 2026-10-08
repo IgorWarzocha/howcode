@@ -1,3 +1,0 @@
-- Git owns repository operations, diff streams, file writes and keyed mutation locks. Working directories owns worktree registration and teardown policy. Cross-component callers use `index.ts`; metadata writes enter through `GitMetadataPeers` at service composition.
-- Shutdown must drain working-directory work before closing Git operations, then close terminal/runtime and the database. Diff cancellation and keyed mutation cleanup remain Git-owned.
-- Diff output must use canonical a/b prefixes regardless of user Git configuration. File reads and writes must validate traversal and symlink containment against an actual outside file.

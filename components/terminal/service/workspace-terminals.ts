@@ -1,4 +1,4 @@
-import { resolveDirectoryIdentity } from '../../../desktop/directory-identity.ts'
+import { resolveDirectoryIdentity } from '@howaboua/howcode-sdk/node/directory-identity'
 import { closeTerminal, listTerminals } from './runtime.ts'
 
 async function listWorkspaceTerminals(directoryId: string) {

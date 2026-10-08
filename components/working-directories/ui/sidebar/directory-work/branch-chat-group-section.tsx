@@ -1,7 +1,7 @@
+import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
 import { CircleOff, GitBranch, Plus } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { ActivitySpinner } from '../../../../../src/app/common/activity-spinner'
-import { Tooltip } from '../../../../../src/app/common/tooltip'
 import { SidebarActionTooltip } from '../../../../../src/app/components/sidebar/sidebar-action-tooltip'
 import type { DesktopActionInvoker } from '../../../../../src/app/desktop/types'
 import type { View, WorkingDirectory } from '../../../../../src/app/types'

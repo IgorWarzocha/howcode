@@ -1,11 +1,11 @@
-import type { PropsWithChildren, ReactNode } from 'react'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import {
   compactMetaRowActionsClass,
   quietMetaRowClass,
   quietMetaRowDenseClass,
   quietMetaRowSelectedClass,
-} from '../ui/classes'
-import { cn } from '../utils/cn'
+} from '@howcode/ui/classes'
+import type { PropsWithChildren, ReactNode } from 'react'
 
 type CompactMetaRowProps = PropsWithChildren<{
   actions?: ReactNode

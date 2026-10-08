@@ -1,13 +1,9 @@
-import {
-  DiffPanel,
-  GitDetailLayoutControls,
-  useGitOpsFileActions,
-} from '@howcode/components/git/ui'
+import { DiffPanel, GitDetailLayoutControls, useGitOpsFileActions } from '@howaboua/howcode-git/ui'
+import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { mainPanelClass } from '@howcode/ui/classes'
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react'
 import type { View } from '../../types'
-import { mainPanelClass } from '../../ui/classes'
 import { WORKSPACE_EDGE_PADDING_CLASS } from '../../ui/layout'
-import { cn } from '../../utils/cn'
 import { FALLBACK_APP_SETTINGS } from '../../workspace-shell/default-app-settings'
 import type { DomainWorkspaceContentProps } from './domain-workspace-contract'
 import { DomainWorkspaceGitReview } from './domain-workspace-git-review'
