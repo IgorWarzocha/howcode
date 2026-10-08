@@ -1,12 +1,15 @@
 import {
-  useCodingDesktopEventContribution,
-  useCodingGitStateSync,
-  useDirectoryShellSync,
+  useGitDesktopEventContribution,
+  useGitStateSync,
   useTerminalGitStateSync,
-} from '@howcode/components/coding/ui'
+} from '@howcode/components/git/ui'
 import { listDesktopTerminals, subscribeDesktopTerminal } from '@howcode/components/terminal/ui'
+import {
+  useDirectoryDesktopEventContribution,
+  useDirectoryShellSync,
+} from '@howcode/components/working-directories/ui'
 import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
-import type { Dispatch, SetStateAction } from 'react'
+import { type Dispatch, type SetStateAction, useMemo } from 'react'
 import type {
   AppSettings,
   ArchivedChat,
@@ -108,7 +111,7 @@ export function useAppShellEffects({
     loadComposerState,
     setComposerState,
   })
-  useCodingGitStateSync({
+  useGitStateSync({
     activeView: workspaceState.activeView,
     composerDirectoryId,
     shellAppSettings,
@@ -131,14 +134,31 @@ export function useAppShellEffects({
     setDirectoryGitState,
   })
 
-  const chatEndContribution = useCodingDesktopEventContribution({
+  const gitChatEndContribution = useGitDesktopEventContribution({
     enabled: shellAppSettings != null && isToolkitComponentEnabled(shellAppSettings, 'coding'),
     composerDirectoryId,
-    loadDirectoryChats,
     loadDirectoryGitState,
     setDirectoryGitState,
     queryClient,
   })
+
+  const directoryChatEndContribution = useDirectoryDesktopEventContribution({
+    enabled: shellAppSettings != null && isToolkitComponentEnabled(shellAppSettings, 'coding'),
+    loadDirectoryChats,
+    queryClient,
+  })
+  const chatEndContribution = useMemo(
+    () => ({
+      refreshChatList: directoryChatEndContribution.refreshChatList,
+      refreshDirectoryState: (
+        ...args: Parameters<typeof directoryChatEndContribution.refreshDirectoryState>
+      ) => {
+        gitChatEndContribution.refreshDirectoryState(...args)
+        directoryChatEndContribution.refreshDirectoryState(...args)
+      },
+    }),
+    [directoryChatEndContribution, gitChatEndContribution],
+  )
 
   useDesktopEventSync({
     chatEndContribution,

@@ -1,4 +1,4 @@
 - `handlers.ts` is the one complete desktop request composition boundary for production HTTP and development web.
-- `toolkit-components.ts` composes trusted coding, terminal, artifacts, skills and dictation request owners. Keep these available independently of renderer presentation settings and Durable's persisted tool selection.
+- `toolkit-components.ts` composes trusted directory, Git, terminal, artifacts, skills and dictation request owners. Keep these available independently of renderer presentation settings and Durable's persisted tool selection.
 - `system.ts` owns server filesystem request behaviour. Browser uploads, clipboard, downloads, and external links belong to the renderer.
 - Keep transports limited to authentication, framing, event delivery, uploads, and lifecycle. Preserve request and response semantics across every host.

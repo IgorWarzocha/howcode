@@ -19,7 +19,10 @@ type SidebarNavigableView = Exclude<View, 'gitops'>
 
 import { AppMenu } from '@howcode/app-menu'
 import { NavButton } from '@howcode/common/nav-button'
-import { DirectoryWorkSection, WorkspaceFolderCreateButton } from '@howcode/components/coding/ui'
+import {
+  DirectoryWorkSection,
+  WorkspaceFolderCreateButton,
+} from '@howcode/components/working-directories/ui'
 import { iconButtonClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import { SidebarInboxSection } from './inbox/sidebar-inbox-section'

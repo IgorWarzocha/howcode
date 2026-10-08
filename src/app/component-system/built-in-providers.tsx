@@ -1,5 +1,5 @@
-import { CodingWorkspacePreferencesProvider } from '@howcode/components/coding/ui/views'
 import { DictationDraftInput } from '@howcode/components/dictation/ui'
+import { GitWorkspacePreferencesProvider } from '@howcode/components/git/ui/views'
 import type { ToolkitComponentSettings } from '@howcode/shared/toolkit-components'
 import type { ReactNode } from 'react'
 import { DraftInputContributionContext } from '../composer/draft-input-context'
@@ -20,9 +20,9 @@ export function BuiltInComponentProviders({
   return (
     <ComponentSettingsContext value={settings ?? { enabledToolkitComponents: [] }}>
       <DraftInputContributionContext value={DictationDraftInput}>
-        <CodingWorkspacePreferencesProvider activeView={activeView}>
+        <GitWorkspacePreferencesProvider activeView={activeView}>
           {children}
-        </CodingWorkspacePreferencesProvider>
+        </GitWorkspacePreferencesProvider>
       </DraftInputContributionContext>
     </ComponentSettingsContext>
   )

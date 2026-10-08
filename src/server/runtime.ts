@@ -2,10 +2,11 @@ import path from 'node:path'
 import type {
   AppService,
   ArtifactsService,
-  CodingService,
   DesktopServiceRuntime,
   DictationService,
+  GitService,
   PiSkillsService,
+  WorkingDirectoriesService,
 } from '../../shared/desktop-service-contracts'
 import {
   type DesktopServiceRemoteModuleName,
@@ -54,7 +55,8 @@ export function createServerRuntime(
     app: proxyModule<AppService>(service, 'app'),
     packages: proxyModule<PackageUiService>(service, 'packages'),
     skills: proxyModule<PiSkillsService>(service, 'skills'),
-    coding: proxyModule<CodingService>(service, 'coding'),
+    git: proxyModule<GitService>(service, 'git'),
+    workingDirectories: proxyModule<WorkingDirectoriesService>(service, 'workingDirectories'),
     artifacts: proxyModule<ArtifactsService>(service, 'artifacts'),
     dictation: proxyModule<DictationService>(service, 'dictation'),
     terminalManager: service.terminalManager,

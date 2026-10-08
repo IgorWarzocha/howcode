@@ -49,10 +49,13 @@ import type {
   TerminalStatusSnapshot,
 } from './terminal-contracts'
 
-export type CodingService = {
-  loadDirectoryGitState: (directoryId: string) => Promise<DirectoryGitState | null>
+export type WorkingDirectoriesService = {
   loadDirectoryUsageSummary: (directoryId: string) => Promise<DirectoryUsageSummary>
   loadDirectoryFavicon: (directoryId: string) => Promise<string | null>
+}
+
+export type GitService = {
+  loadDirectoryGitState: (directoryId: string) => Promise<DirectoryGitState | null>
   startDirectoryDiffStream: (
     directoryId: string,
     baseline?: DirectoryDiffBaseline | null,
@@ -186,7 +189,8 @@ export type DesktopServiceRuntime = {
   app: AppService
   packages: PackageUiService
   skills: PiSkillsService
-  coding: CodingService
+  git: GitService
+  workingDirectories: WorkingDirectoriesService
   artifacts: ArtifactsService
   dictation: DictationService
   terminalManager: TerminalService

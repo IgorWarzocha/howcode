@@ -1,0 +1,11 @@
+- GitOps is a single-user loop for reviewing agent-authored changes, sending comments to the active agent chat, and making occasional direct edits—not a general Git client or collaborative review system.
+- Keep diff UI, review/comment state, branch/baseline controls, and GitOps composer surfaces in this boundary.
+- Keep review identity, persistence, prompts, and Pierre adapters in `review/`; `diff/` owns patch rendering and CodeView item lifecycle. Never recover review targets from Pierre DOM attributes or global pointer listeners.
+- Keep read-only review actions in transient Pierre annotations. `renderSelectionAction` is editor-only; do not enable editing or hand-position overlays to imitate it.
+- Keep accepted hunks as a local Pierre `diffAcceptRejectHunk` review transform. Reject opens a required hunk-scoped comment draft; only saved comments sent through the active agent chat carry rejection feedback. Review controls never write or stage files.
+- Load complete diff files through the typed desktop directory-git contract and Pierre's `loadDiffFiles`; keep parsed `fileDiff` identities stable so hydration survives rendering.
+- Keep editor loading/state in `edit/`. Writes cross the grouped `GitOpsFileActions` host adapter, require the read revision, and finish through the atomic `git.write-file` action; never write from the renderer. A save completion or conflict discard may clear only its captured draft, never newer edits or a replacement session.
+- The edit revision check only prevents clobbering concurrent agent changes. Do not grow it into synchronization machinery; merge UI, staging workbenches, and multiplayer review are out of scope.
+- Compose GitOps UI through grouped directory, diff, review, and file-tree contracts. Message and commit-option lifecycles belong in their owned hooks; popover effects belong with their controls, not in the surface entrypoint.
+- Git workspace contributions belong to `../component.ts`; disabling presentation never changes persisted conversation tools.
+- Generic composer primitives may be imported from `@howcode/composer`; do not move non-Git composer behavior here.

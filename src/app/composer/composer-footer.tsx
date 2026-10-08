@@ -1,5 +1,5 @@
 import { ArtifactsComposerControl } from '@howcode/components/artifacts/ui'
-import { CodingComposerControls } from '@howcode/components/coding/ui'
+import { GitComposerControls } from '@howcode/components/git/ui'
 import { TerminalComposerControl } from '@howcode/components/terminal/ui'
 import { Bot } from 'lucide-react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
@@ -145,7 +145,7 @@ export function ComposerFooter({
         ) : null}
       </div>
       <div className={workspaceFooterTrailingGroupClass}>
-        <CodingComposerControls
+        <GitComposerControls
           selector={{
             composerPanelRef,
             parentBranchName,

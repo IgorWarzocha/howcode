@@ -3,17 +3,19 @@ import * as Result from 'effect/Result'
 import * as Schema from 'effect/Schema'
 import * as artifacts from '../components/artifacts/service/index.ts'
 import { artifactsDatabaseSchema } from '../components/artifacts/service/schema.ts'
-import {
-  cleanupLegacyCheckpoints,
-  createCodingService,
-} from '../components/coding/service/index.ts'
-import { codingDatabaseSchema } from '../components/coding/service/schema.ts'
-import { codingChatBranchFallbacks } from '../components/coding/service/state.ts'
 import { createDictationService } from '../components/dictation/service/index.ts'
+import { cleanupLegacyCheckpoints, createGitService } from '../components/git/service/index.ts'
 import { createPackageUiService } from '../components/packages/service/index.ts'
 import { createSkillsService } from '../components/skills/service/index.ts'
 import * as terminalManager from '../components/terminal/service/index.ts'
 import { createTerminalServiceComponent } from '../components/terminal/service/index.ts'
+import { createWorkingDirectoriesService } from '../components/working-directories/service/index.ts'
+import { workingDirectoriesDatabaseSchema } from '../components/working-directories/service/schema.ts'
+import {
+  setDirectoryGitOpsMode,
+  setDirectoryRepoOrigin,
+  workingDirectoryChatBranchFallbacks,
+} from '../components/working-directories/service/state.ts'
 import {
   type DesktopServiceRemoteModuleName,
   type DesktopServiceRemoteRuntime,
@@ -41,7 +43,15 @@ import { syncWorkspaceOrganization } from './workspace-repository.ts'
 const ServiceRequestSchema = Schema.Struct({
   type: Schema.Literal('request'),
   id: Schema.String,
-  module: Schema.Literals(['app', 'skills', 'coding', 'artifacts', 'dictation', 'packages']),
+  module: Schema.Literals([
+    'app',
+    'skills',
+    'git',
+    'workingDirectories',
+    'artifacts',
+    'dictation',
+    'packages',
+  ]),
   method: Schema.String,
   args: Schema.mutable(Schema.Array(Schema.Unknown)),
 })
@@ -64,7 +74,7 @@ const ServiceInboundMessageSchema = Schema.Union([
 
 const decodeServiceInboundMessage = Schema.decodeUnknownResult(ServiceInboundMessageSchema)
 
-configureDatabaseSchemas([codingDatabaseSchema, artifactsDatabaseSchema])
+configureDatabaseSchemas([workingDirectoriesDatabaseSchema, artifactsDatabaseSchema])
 
 const skillsComponent = createSkillsService()
 const packagesComponent = await createPackageUiService(
@@ -75,24 +85,29 @@ const packages = packagesComponent.service
 const skills = skillsComponent.service
 const dictationComponent = createDictationService()
 const dictation = dictationComponent.service
-const codingComponent = createCodingService({
+const workingDirectoriesComponent = createWorkingDirectoriesService({
   deleteArtifactsForConversations: artifacts.deleteArtifactsForConversations,
   listTerminals: terminalManager.listTerminals,
   closeWorkspaceTerminals: terminalManager.closeWorkspaceTerminals,
   hasActiveWorkspaceTerminal: terminalManager.hasActiveWorkspaceTerminal,
 })
-const coding = codingComponent.service
+const workingDirectories = workingDirectoriesComponent.service
+const gitComponent = createGitService({ setDirectoryGitOpsMode, setDirectoryRepoOrigin })
+const git = gitComponent.service
 const unregisterArtifactCleanup = registerConversationCleanup(
   artifacts.deleteArtifactsForConversation,
 )
-const unregisterCodingBranchFallbacks = registerChatBranchFallbacks(codingChatBranchFallbacks)
-const unregisterCodingMigration = registerDatabaseStartupTask(cleanupLegacyCheckpoints())
+const unregisterDirectoryBranchFallbacks = registerChatBranchFallbacks(
+  workingDirectoryChatBranchFallbacks,
+)
+const unregisterGitMigration = registerDatabaseStartupTask(cleanupLegacyCheckpoints())
 const app = {
   ...coreApp,
-  loadShellState: (cwd: string) => coreApp.loadShellState(cwd, codingComponent.loadShell),
+  loadShellState: (cwd: string) =>
+    coreApp.loadShellState(cwd, workingDirectoriesComponent.loadShell),
   async loadWorkspaceNavigationState(workspaceId?: string | null) {
     if (isToolkitComponentEnabled(loadAppSettings(), 'coding')) {
-      const shell = await codingComponent.loadShell(getDesktopWorkingDirectory())
+      const shell = await workingDirectoriesComponent.loadShell(getDesktopWorkingDirectory())
       syncWorkspaceOrganization(
         shell.directories.map((directory) => ({
           id: directory.id,
@@ -104,8 +119,10 @@ const app = {
     return coreApp.loadWorkspaceNavigationState(workspaceId)
   },
   async handleDesktopAction(...args: Parameters<typeof coreApp.handleDesktopAction>) {
-    const result = await codingComponent.handleAction(...args)
-    return result.handled ? result.result : coreApp.handleDesktopAction(...args)
+    const result = await workingDirectoriesComponent.handleAction(...args)
+    if (result.handled) return result.result
+    const gitResult = await gitComponent.handleAction(...args)
+    return gitResult.handled ? gitResult.result : coreApp.handleDesktopAction(...args)
   },
 }
 
@@ -113,7 +130,8 @@ const modules = {
   packages,
   app,
   skills,
-  coding,
+  git,
+  workingDirectories,
   artifacts,
   dictation,
 } satisfies DesktopServiceRemoteRuntime
@@ -205,7 +223,9 @@ const shutdownCoordinatorPromise = Effect.runPromise(
     Effect.gen(function* () {
       yield* Effect.all(
         [
-          settledTask(() => codingComponent.dispose()),
+          settledTask(() =>
+            workingDirectoriesComponent.dispose().then(() => gitComponent.dispose()),
+          ),
           settledTask(() => packagesComponent.dispose()),
           settledTask(() => skillsComponent.dispose()),
           settledTask(() => dictationComponent.dispose()),
@@ -220,8 +240,8 @@ const shutdownCoordinatorPromise = Effect.runPromise(
         { concurrency: 'unbounded', discard: true },
       )
       unregisterArtifactCleanup()
-      unregisterCodingMigration()
-      unregisterCodingBranchFallbacks()
+      unregisterGitMigration()
+      unregisterDirectoryBranchFallbacks()
     }).pipe(Effect.ensuring(Effect.promise(disposeChatStateDatabase))),
     { label: 'Desktop service', timeout: desktopShutdownTimeouts.desktopServiceCleanupMs },
   ),

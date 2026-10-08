@@ -1,4 +1,5 @@
-import { workspacePostEffectHandlers } from '@howcode/components/coding/ui'
+import { gitPostEffectHandlers } from '@howcode/components/git/ui'
+import { worktreePostEffectHandlers } from '@howcode/components/working-directories/ui'
 import { desktopQueryKeys } from '../query/desktop-query'
 import { chatPostEffectHandlers } from './post-effects/chat-handlers'
 import type {
@@ -9,7 +10,7 @@ import type {
 import { shellPostEffectHandlers } from './post-effects/shell-handlers'
 import { workspaceOrganizationPostEffect } from './post-effects/workspace-organization'
 
-export { applyDiffPreferencesToChat } from '@howcode/components/coding/ui'
+export { applyDiffPreferencesToChat } from '@howcode/components/git/ui'
 export {
   applyOptimisticChatRename,
   applyOptimisticDirectoryRename,
@@ -25,7 +26,8 @@ export {
 const postEffectHandlers: PostEffectHandler[] = [
   ...shellPostEffectHandlers,
   ...chatPostEffectHandlers,
-  ...workspacePostEffectHandlers,
+  ...gitPostEffectHandlers,
+  ...worktreePostEffectHandlers,
   workspaceOrganizationPostEffect,
 ]
 

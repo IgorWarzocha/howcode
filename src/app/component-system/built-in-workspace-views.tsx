@@ -1,9 +1,11 @@
 import { MainView } from '@howcode/app-shell'
 import { ChatWorkspaceView } from '@howcode/chat-workspace'
-import { codingComponent } from '@howcode/components/coding/ui/component'
-import { CodeWorkspaceView } from '@howcode/components/coding/ui/views'
+import { chatHistoryComponent } from '@howcode/components/chat-history/ui/component'
+import { ChatHistoryWorkspaceView } from '@howcode/components/chat-history/ui/views'
+import { gitComponent } from '@howcode/components/git/ui/component'
 import { SkillsWorkspaceView } from '@howcode/components/skills/ui'
 import { skillsComponent } from '@howcode/components/skills/ui/component'
+import { workingDirectoriesComponent } from '@howcode/components/working-directories/ui/component'
 import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
 import type { ComponentProps } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
@@ -11,9 +13,10 @@ import { mainPanelClass } from '../ui/classes'
 import { FALLBACK_APP_SETTINGS } from '../workspace-shell/default-app-settings'
 import { UtilityWorkspaceView } from '../workspace-shell/utility-workspace-view'
 import { WorkspacePresentation } from '../workspace-shell/workspace-presentation'
+import { DomainWorkspaceView } from './workspace-presentation/domain-workspace-view'
 import type { WorkspaceViewContributions } from './workspace-views'
 
-type CodeProps = ComponentProps<typeof CodeWorkspaceView>
+type CodeProps = ComponentProps<typeof DomainWorkspaceView>
 
 export type BuiltInWorkspaceViewProps = CodeProps & {
   controller: AppShellController
@@ -29,8 +32,31 @@ function roadmapView(activeView: 'claw' | 'work' | 'automations', directoryName:
   )
 }
 
-// Trusted built-in presentations only. This compatibility composition preserves
-// existing routes; it neither loads user code nor selects Durable extensions.
+function composeChatHistory(controller: AppShellController) {
+  const selectedDirectoryId = controller.workspace.state.hasSelectedDirectory
+    ? controller.workspace.state.selectedDirectoryId
+    : ''
+  const directoryGitState = controller.directories.gitState
+  return (
+    <ChatHistoryWorkspaceView
+      directory={
+        controller.directories.items.find((directory) => directory.id === selectedDirectoryId) ??
+        null
+      }
+      directories={controller.directories.items}
+      currentBranch={
+        directoryGitState?.directoryId === selectedDirectoryId && directoryGitState.isGitRepo
+          ? directoryGitState.branch
+          : null
+      }
+      onAction={controller.desktop.handleAction}
+      onClose={controller.navigation.closeUtilityView}
+      onOpenChat={controller.chat.open}
+    />
+  )
+}
+
+// Trusted built-in presentation composition does not select Durable extensions.
 export function composeBuiltInWorkspaceViews(props: BuiltInWorkspaceViewProps) {
   const { controller } = props
   const chat = (
@@ -59,7 +85,7 @@ export function composeBuiltInWorkspaceViews(props: BuiltInWorkspaceViewProps) {
     />
   )
   const code = (
-    <CodeWorkspaceView
+    <DomainWorkspaceView
       {...props}
       controller={{
         composer: controller.composer,
@@ -88,8 +114,15 @@ export function composeBuiltInWorkspaceViews(props: BuiltInWorkspaceViewProps) {
     work: roadmapView('work', props.currentDirectoryName),
     automations: roadmapView('automations', props.currentDirectoryName),
   }
-  if (isToolkitComponentEnabled(settings, codingComponent.id)) {
-    Object.assign(contributions, codingComponent.contribute(code))
+  if (isToolkitComponentEnabled(settings, 'coding')) {
+    for (const component of [workingDirectoriesComponent, gitComponent]) {
+      Object.assign(contributions, Object.fromEntries(component.views.map((view) => [view, code])))
+    }
+    const history = composeChatHistory(controller)
+    Object.assign(
+      contributions,
+      Object.fromEntries(chatHistoryComponent.views.map((view) => [view, history])),
+    )
     if (controller.workspace.state.composerProfile === 'coding') {
       Object.assign(contributions, { chat: code, workspace: code })
     }

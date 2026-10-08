@@ -1,11 +1,4 @@
-import {
-  clearCodingChatSelection,
-  createCodingWorkspaceTransitions,
-  getCodingStateForOpenedChat,
-  getCodingStateForPreviewedChat,
-  getCodingStateForShownView,
-  getCodingUtilityReturnState,
-} from '@howcode/components/coding/ui'
+import { createGitWorkspaceTransitions } from '@howcode/components/git/ui'
 import {
   getTerminalStateForNextView,
   getTerminalStateForOpenedChat,
@@ -15,6 +8,14 @@ import {
   setTerminalVisibleState,
   shouldRestoreTerminalOnGitOpsClose,
 } from '@howcode/components/terminal/ui'
+import {
+  clearDirectoryChatSelection,
+  createDirectoryWorkspaceTransitions,
+  getDirectoryStateForOpenedChat,
+  getDirectoryStateForPreviewedChat,
+  getDirectoryStateForShownView,
+  getDirectoryUtilityReturnState,
+} from '@howcode/components/working-directories/ui'
 import { isWorkspaceUtilityView } from '../component-system/toolkit-components'
 import type { View } from '../types'
 import type {
@@ -24,10 +25,15 @@ import type {
   WorkspaceState,
 } from './workspace-model'
 
-const { codingWorkspaceActionHandlers, restoreCodeChatForView } = createCodingWorkspaceTransitions({
+const { directoryWorkspaceActionHandlers, restoreCodeChatForView } =
+  createDirectoryWorkspaceTransitions({
+    getTerminalStateForNextView,
+    getTerminalVisibilityForSession,
+    migrateTerminalVisibility,
+  })
+
+const gitWorkspaceActionHandlers = createGitWorkspaceTransitions({
   getTerminalStateForNextView,
-  getTerminalVisibilityForSession,
-  migrateTerminalVisibility,
   shouldRestoreTerminalOnGitOpsClose,
 })
 
@@ -47,7 +53,7 @@ function createUtilityViewReturnState(state: WorkspaceState): UtilityViewReturnS
     selectedChatId: state.selectedChatId,
     selectedConversationId: state.selectedConversationId,
     ...getTerminalUtilityReturnState(state),
-    ...getCodingUtilityReturnState(state),
+    ...getDirectoryUtilityReturnState(state),
   }
 }
 
@@ -69,7 +75,7 @@ function showViewState(
     activeView: action.view,
     settingsOpen: false,
     settingsPanelOpen: false,
-    ...getCodingStateForShownView(state, action.view),
+    ...getDirectoryStateForShownView(state, action.view),
     selectedChatId: action.view === 'chat' ? state.selectedChatId : null,
     selectedConversationId: action.view === 'chat' ? state.selectedConversationId : null,
     utilityViewReturnState,
@@ -93,7 +99,7 @@ function openChatState(
     selectedConversationId: action.conversationId,
     ...getTerminalStateForOpenedChat(state, action),
     utilityViewReturnState: null,
-    ...getCodingStateForOpenedChat(state, action),
+    ...getDirectoryStateForOpenedChat(state, action),
   }
 }
 
@@ -111,12 +117,13 @@ function previewChatState(
     landingVisible: false,
     selectedChatId: action.chatId,
     utilityViewReturnState: null,
-    ...getCodingStateForPreviewedChat(state, action),
+    ...getDirectoryStateForPreviewedChat(state, action),
   }
 }
 
 export const workspaceActionHandlers = {
-  ...codingWorkspaceActionHandlers,
+  ...directoryWorkspaceActionHandlers,
+  ...gitWorkspaceActionHandlers,
   'select-workspace': (
     state: WorkspaceState,
     action: Extract<WorkspaceAction, { type: 'select-workspace' }>,
@@ -149,7 +156,7 @@ export const workspaceActionHandlers = {
     ...state,
     selectedChatId: null,
     selectedConversationId: null,
-    ...clearCodingChatSelection(),
+    ...clearDirectoryChatSelection(),
   }),
   'select-inbox-chat': (
     state: WorkspaceState,

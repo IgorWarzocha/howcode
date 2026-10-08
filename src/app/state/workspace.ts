@@ -1,5 +1,5 @@
-import { createInitialCodingWorkspaceState } from '@howcode/components/coding/ui'
 import { createInitialTerminalWorkspaceState } from '@howcode/components/terminal/ui'
+import { createInitialDirectoryWorkspaceState } from '@howcode/components/working-directories/ui'
 import type { Chat, View, WorkingDirectory } from '../types'
 import { workspaceActionHandlers } from './workspace-action-handlers'
 import type { WorkspaceAction, WorkspaceState } from './workspace-model'
@@ -25,7 +25,7 @@ export function createInitialWorkspaceState(directories: WorkingDirectory[]): Wo
     selectedChatId: null,
     selectedConversationId: null,
     ...createInitialTerminalWorkspaceState(),
-    ...createInitialCodingWorkspaceState(directories),
+    ...createInitialDirectoryWorkspaceState(directories),
     utilityViewReturnState: null,
     settingsOpen: false,
     settingsPanelOpen: false,

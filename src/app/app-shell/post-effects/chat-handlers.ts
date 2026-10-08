@@ -1,4 +1,4 @@
-import { updateShellDirectory } from '@howcode/components/coding/ui'
+import { updateShellDirectory } from '@howcode/components/working-directories/ui'
 import type { ChatData } from '../../desktop/types'
 import { desktopQueryKeys } from '../../query/desktop-query'
 import { hasActionError } from '../controller-action-utils'

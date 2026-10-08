@@ -127,7 +127,7 @@ export async function guardBranchResume(input: {
     directoryId: guard.directoryId,
     value: guard.targetBranch,
   }
-  const switchResult = await input.invokeDesktopAction('coding.switch-branch', switchPayload)
+  const switchResult = await input.invokeDesktopAction('git.switch-branch', switchPayload)
   if (!switchResult?.result?.error && switchResult?.ok !== false) {
     await input.onSwitchBranchSuccess?.(switchPayload)
     return null

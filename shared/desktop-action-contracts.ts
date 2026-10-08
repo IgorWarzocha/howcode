@@ -198,7 +198,7 @@ export type DesktopActionPayloadMap = {
     conversationId?: string | undefined | null | undefined
     value: string
   }
-  'coding.commit': {
+  'git.commit': {
     directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
     includeUnstaged?: boolean | undefined
@@ -207,60 +207,60 @@ export type DesktopActionPayloadMap = {
     preview?: boolean | undefined
     push?: boolean | undefined
   }
-  'coding.commit-options': {
+  'git.commit-options': {
     directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
     repoUrl?: string | undefined | null | undefined
     gitOpsMode?: GitOpsMode | null
   }
-  'coding.diff-preferences': {
+  'git.diff-preferences': {
     directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
     diffBaseline?: DirectoryDiffBaseline | null
     diffRenderMode?: DirectoryDiffRenderMode | null
   }
-  'coding.write-file': {
+  'git.write-file': {
     directoryId: string
     filePath: string
     fileContents: string
     expectedRevision: string
   }
-  'coding.sidebar-scope': { directoryIds: string[] }
-  'coding.switch-branch': { directoryId?: string | undefined | null | undefined; value: string }
-  'coding.prune-branch': {
+  'directory.sidebar-scope': { directoryIds: string[] }
+  'git.switch-branch': { directoryId?: string | undefined | null | undefined; value: string }
+  'worktrees.prune-branch': {
     rootDirectoryId: string
     branchName: string
   }
-  'coding.create-worktree': {
+  'worktrees.create-worktree': {
     rootDirectoryId: string
     branchName: string
     worktreeDirectory?: string | undefined | null | undefined
   }
-  'coding.remove-worktree': {
+  'worktrees.remove-worktree': {
     rootDirectoryId: string
     worktreePath: string
   }
-  'coding.mark-worktree-complete': {
+  'worktrees.mark-worktree-complete': {
     rootDirectoryId: string
     worktreePath: string
   }
-  'coding.mark-worktree-incomplete': {
+  'worktrees.mark-worktree-incomplete': {
     rootDirectoryId: string
     worktreePath: string
   }
-  'coding.merge-worktree': {
+  'worktrees.merge-worktree': {
     rootDirectoryId: string
     worktreePath: string
   }
-  'coding.merge-completed-worktrees': {
+  'worktrees.merge-completed-worktrees': {
     rootDirectoryId: string
     worktrees: { worktreePath: string }[]
   }
-  'coding.remove-completed-worktrees': {
+  'worktrees.remove-completed-worktrees': {
     rootDirectoryId: string
     worktrees: { worktreePath: string }[]
   }
-  'coding.set-worktree-directory': {
+  'worktrees.set-worktree-directory': {
     rootDirectoryId: string
     worktreeDirectory: string
   }

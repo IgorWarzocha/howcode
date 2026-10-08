@@ -2,7 +2,7 @@ import {
   setShellSidebarVisibleDirectoryIds,
   updateShellDirectory,
   upsertShellDirectory,
-} from '@howcode/components/coding/ui'
+} from '@howcode/components/working-directories/ui'
 import type { ShellState } from '../../desktop/types'
 import { desktopQueryKeys } from '../../query/desktop-query'
 import type { PostEffectHandler } from './context'
@@ -74,7 +74,7 @@ export const shellPostEffectHandlers: PostEffectHandler[] = [
     },
   },
   {
-    matches: (ctx) => ctx.action === 'coding.sidebar-scope',
+    matches: (ctx) => ctx.action === 'directory.sidebar-scope',
     run: (ctx) => {
       const directoryIds = Array.isArray(ctx.contextualPayload.directoryIds)
         ? ctx.contextualPayload.directoryIds.filter(

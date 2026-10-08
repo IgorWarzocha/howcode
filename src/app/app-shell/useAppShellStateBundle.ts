@@ -1,5 +1,5 @@
-import { useAppShellDirectoryState } from '@howcode/components/coding/ui'
 import { useSkillsDirectoryScopeState } from '@howcode/components/skills/ui'
+import { useAppShellDirectoryState } from '@howcode/components/working-directories/ui'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { useReducer, useState } from 'react'
 import { createInitialWorkspaceState, workspaceReducer } from '../state/workspace'

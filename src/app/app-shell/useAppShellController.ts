@@ -1,6 +1,6 @@
-import { useDirectoryRepoOriginRefresh } from '@howcode/components/coding/ui'
 import { useSkillsDirectoryScopeSync } from '@howcode/components/skills/ui'
 import { useRunningTerminalSessions } from '@howcode/components/terminal/ui'
+import { useDirectoryRepoOriginRefresh } from '@howcode/components/working-directories/ui'
 import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
 import { useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'

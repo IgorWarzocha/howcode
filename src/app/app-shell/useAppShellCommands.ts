@@ -1,4 +1,4 @@
-import { useCodingWorkspaceCommands } from '@howcode/components/coding/ui'
+import { useGitWorkspaceCommands } from '@howcode/components/git/ui'
 import { useTerminalCommands } from '@howcode/components/terminal/ui'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { isLocalConversationId } from '@howcode/shared/conversation-ids'
@@ -70,7 +70,7 @@ export function useAppShellCommands({
     toolkitSettings,
   })
   const { handleOpenGitOpsView, handleCloseGitOpsView, handleOpenWorktreeDiffFile } =
-    useCodingWorkspaceCommands({ composerDirectoryId, dispatch, queryClient })
+    useGitWorkspaceCommands({ composerDirectoryId, dispatch, queryClient })
 
   const handleShowView = (view: Exclude<View, 'gitops'>, target?: SettingsOpenTarget) => {
     const enabledView = isWorkspaceViewEnabled(toolkitSettings, view) ? view : 'chat'

@@ -88,9 +88,9 @@ export function buildContextualActionPayload({
     action === 'composer.thinking' ||
     action === 'chat.new' ||
     action === 'chat.open' ||
-    action === 'coding.commit' ||
-    action === 'coding.commit-options' ||
-    action === 'coding.diff-preferences'
+    action === 'git.commit' ||
+    action === 'git.commit-options' ||
+    action === 'git.diff-preferences'
     ? {
         directoryId: composerDirectoryId,
         conversationId:

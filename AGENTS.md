@@ -2,6 +2,7 @@
 
 - Design Howcode as chat with an agent first, with a small, malleable core built around Pi Durable. Coding is an optional domain, not the core's identity.
 - Prefer Howcode components and Durable tool/resource extensions for domain capabilities. Users should be able to enable coding UI and tools, choose other domain capabilities, and add their own components without changing core.
+- Keep Howcode-specific packages in this repository. For capabilities reusable across Pi Durable apps, check `/home/igorw/Work/pi-durable-components` for an existing implementation before building one. If a requested capability is not Howcode-specific and is missing there, suggest creating it in that components monorepo, with only Howcode-specific integration kept here.
 - Keep agent capability selection independent from UI presentation. Default-enabled tools are still extensions; do not bake fixed chat/code tool bundles into core or use plumbing work to redesign product bundles or artifact storage.
 - Reuse Durable's extension machinery and Effect's infrastructure primitives. Keep domain policy out of core; introduce shared component contracts only for concrete capabilities, not a speculative framework or parallel runtime.
 - Components must own their feature implementation, state, services and cleanup, not just registrations or visibility switches. Core and peer features consume explicit public contracts; removing a component from composition must not break unrelated features. Composer skill suggestions belong to core, not the skill-management UI component.

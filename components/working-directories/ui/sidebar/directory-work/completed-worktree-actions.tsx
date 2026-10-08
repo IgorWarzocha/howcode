@@ -1,0 +1,190 @@
+import { GitMerge, Trash2 } from 'lucide-react'
+import { ActivitySpinner } from '../../../../../src/app/common/activity-spinner'
+import { SidebarActionTooltip } from '../../../../../src/app/components/sidebar/sidebar-action-tooltip'
+import { SidebarInlineConfirmPopunder } from '../../../../../src/app/components/sidebar/sidebar-inline-confirm-popunder'
+import type { DesktopActionInvoker } from '../../../../../src/app/desktop/types'
+import type { WorkingDirectory } from '../../../../../src/app/types'
+import type { BranchWorkspace } from './branch-group-model'
+import { getDesktopBranchActionFailure, useBranchActionExecution } from './useBranchActionExecution'
+
+function getCompletedWorktreeTargets(
+  group: BranchWorkspace,
+  options: { requireBranch?: boolean } = {},
+) {
+  const completedWorktrees = group.worktrees.filter((worktree) => worktree.complete)
+  return completedWorktrees.flatMap((worktree) =>
+    !options.requireBranch || worktree.branchName ? [{ worktreePath: worktree.path }] : [],
+  )
+}
+
+function getCompletedWorktreeFailureLabel(
+  group: BranchWorkspace,
+  failedWorktreePath: string | undefined,
+  failedWorktreeBranchName: string | null | undefined,
+) {
+  const completedWorktrees = group.worktrees.filter((worktree) => worktree.complete)
+  const failedWorktree = completedWorktrees.find((worktree) => worktree.path === failedWorktreePath)
+  return failedWorktree?.label ?? failedWorktreeBranchName ?? failedWorktreePath ?? 'a worktree'
+}
+
+type CompletedWorktreeActionProps = {
+  group: BranchWorkspace
+  directory: WorkingDirectory
+  confirming: boolean
+  onAction: DesktopActionInvoker
+  onCancel: () => void
+  onConfirm: () => void
+  onRequestConfirm: () => void
+}
+
+export function MergeCompletedWorktreesAction({
+  group,
+  directory,
+  confirming,
+  onAction,
+  onCancel,
+  onConfirm,
+  onRequestConfirm,
+}: CompletedWorktreeActionProps) {
+  const execution = useBranchActionExecution()
+  const worktrees = getCompletedWorktreeTargets(group, { requireBranch: true })
+  if (worktrees.length === 0) return null
+
+  const mergeCompleted = async () => {
+    execution.clearWarning()
+    onCancel()
+    await execution.run({
+      execute: () =>
+        onAction('worktrees.merge-completed-worktrees', {
+          rootDirectoryId: directory.id,
+          worktrees,
+        }),
+      getFailure: (result) => {
+        const failure = getDesktopBranchActionFailure(
+          result,
+          'Could not merge completed worktrees.',
+        )
+        if (!failure) return null
+        const failureLabel = getCompletedWorktreeFailureLabel(
+          group,
+          result?.result?.failedWorktreePath,
+          result?.result?.failedWorktreeBranchName,
+        )
+        return `${failureLabel}: ${failure}`
+      },
+      onSuccess: onConfirm,
+    })
+  }
+
+  const tooltipContent = execution.pending
+    ? 'Merging completed worktrees…'
+    : 'Merge completed worktrees'
+  const actionButton = (
+    <button
+      type="button"
+      className={`sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--optical-up sidebar-project-work-merge-action${confirming ? ' sidebar-directory-work-branch-action--danger' : ''}`}
+      data-warning={execution.warning ? 'true' : 'false'}
+      disabled={execution.pending}
+      onClick={(event) => {
+        event.stopPropagation()
+        execution.clearWarning()
+        onRequestConfirm()
+      }}
+      aria-label={`Merge completed worktrees under ${group.label}`}
+    >
+      {execution.pending ? (
+        <ActivitySpinner className="h-3 w-3 text-current" />
+      ) : (
+        <GitMerge size={12} />
+      )}
+    </button>
+  )
+
+  if (confirming) {
+    return (
+      <SidebarInlineConfirmPopunder
+        open={confirming}
+        trigger={actionButton}
+        confirmAriaLabel={`Merge completed worktrees under ${group.label}`}
+        confirmIcon={<GitMerge size={12} />}
+        onCancel={onCancel}
+        onConfirm={() => void mergeCompleted()}
+      />
+    )
+  }
+
+  return (
+    <SidebarActionTooltip description={tooltipContent} warning={execution.warning}>
+      {actionButton}
+    </SidebarActionTooltip>
+  )
+}
+
+export function RemoveCompletedWorktreesAction({
+  group,
+  directory,
+  confirming,
+  onAction,
+  onCancel,
+  onConfirm,
+  onRequestConfirm,
+}: CompletedWorktreeActionProps) {
+  const execution = useBranchActionExecution()
+  const worktrees = getCompletedWorktreeTargets(group)
+  if (worktrees.length === 0) return null
+
+  const removeCompleted = async () => {
+    execution.clearWarning()
+    onCancel()
+    await execution.run({
+      execute: () =>
+        onAction('worktrees.remove-completed-worktrees', {
+          rootDirectoryId: directory.id,
+          worktrees,
+        }),
+      getFailure: (result) =>
+        getDesktopBranchActionFailure(result, 'Could not remove completed worktrees.'),
+      onSuccess: onConfirm,
+    })
+  }
+
+  const actionButton = (
+    <button
+      type="button"
+      className={`sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--optical-up${confirming || execution.warning ? ' sidebar-directory-work-branch-action--danger' : ''}`}
+      data-warning={execution.warning ? 'true' : 'false'}
+      onClick={(event) => {
+        event.stopPropagation()
+        execution.clearWarning()
+        onRequestConfirm()
+      }}
+      aria-label={`Remove completed worktrees under ${group.label}`}
+      disabled={execution.pending}
+    >
+      {execution.pending ? (
+        <ActivitySpinner className="h-3 w-3 text-current" />
+      ) : (
+        <Trash2 size={12} />
+      )}
+    </button>
+  )
+
+  if (confirming) {
+    return (
+      <SidebarInlineConfirmPopunder
+        open={confirming}
+        trigger={actionButton}
+        confirmAriaLabel={`Remove completed worktrees under ${group.label}`}
+        confirmIcon={<Trash2 size={12} />}
+        onCancel={onCancel}
+        onConfirm={() => void removeCompleted()}
+      />
+    )
+  }
+
+  return (
+    <SidebarActionTooltip description="Remove completed worktrees" warning={execution.warning}>
+      {actionButton}
+    </SidebarActionTooltip>
+  )
+}

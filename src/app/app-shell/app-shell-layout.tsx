@@ -1,4 +1,4 @@
-import { useAppShellDiffPreferences } from '@howcode/components/coding/ui'
+import { useAppShellDiffPreferences } from '@howcode/components/git/ui'
 import {
   useTerminalDrawerPresentation,
   useTerminalResponsiveState,
