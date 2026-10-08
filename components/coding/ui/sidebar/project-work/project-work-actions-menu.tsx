@@ -21,7 +21,7 @@ export function ProjectWorkActionsMenuButton({
     <div className="sidebar-project-work-project-menu-anchor">
       <IconButton
         ref={menu.triggerRef}
-        label="Project actions"
+        label="Workspace actions"
         icon={<MoreHorizontal size={13} />}
         tooltipPlacement="right"
         className="sidebar-project-work-project-menu-button h-7 w-7 rounded-md"
@@ -167,7 +167,7 @@ const ProjectWorkActionsMenu = forwardRef<
       >
         <Trash2 size={12} />
         <span>
-          {confirmAction === 'project.remove-project' ? 'Click to confirm' : 'Delete project'}
+          {confirmAction === 'project.remove-project' ? 'Click to confirm' : 'Delete workspace'}
         </span>
       </button>
     </div>

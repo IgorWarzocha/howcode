@@ -94,6 +94,12 @@ export function threadStateSchemaStatements(sql: SqlClient.SqlClient) {
 }
 
 export const columnMigrations = [
+  { table: 'chat_groups', column: 'directory_id', definition: 'directory_id TEXT' },
+  {
+    table: 'conversation_facts',
+    column: 'workspace_id',
+    definition: 'workspace_id TEXT REFERENCES chat_groups(id) ON DELETE SET NULL',
+  },
   { table: 'projects', column: 'custom_name', definition: 'custom_name TEXT' },
   { table: 'projects', column: 'hidden', definition: 'hidden INTEGER NOT NULL DEFAULT 0' },
   { table: 'projects', column: 'pinned', definition: 'pinned INTEGER NOT NULL DEFAULT 0' },

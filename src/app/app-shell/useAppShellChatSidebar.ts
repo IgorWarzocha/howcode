@@ -1,21 +1,34 @@
-import { useCallback, useEffect, useState } from 'react'
-import { createChatGroupQuery, getChatSidebarStateQuery } from '../query/desktop-query'
-import type { WorkspaceState } from '../state/workspace-model'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { type SetStateAction, useCallback, useState } from 'react'
+import {
+  createChatGroupQuery,
+  desktopQueryKeys,
+  getChatSidebarStateQuery,
+} from '../query/desktop-query'
 
 type ChatSidebarState = Awaited<ReturnType<typeof getChatSidebarStateQuery>>
 
-export function useAppShellChatSidebar(activeView: WorkspaceState['activeView']) {
+const sidebarQueryOptions = {
+  queryKey: desktopQueryKeys.chatSidebarState(),
+  queryFn: () => getChatSidebarStateQuery(),
+}
+
+export function useAppShellChatSidebar() {
   const [selectedChatGroupId, setSelectedChatGroupId] = useState<string | null>(null)
-  const [chatSidebarState, setChatSidebarState] = useState<ChatSidebarState>(null)
-  const [chatSidebarLoading, setChatSidebarLoading] = useState(false)
+  const queryClient = useQueryClient()
+  const sidebarQuery = useQuery(sidebarQueryOptions)
+  const setChatSidebarState = useCallback(
+    (updater: SetStateAction<ChatSidebarState>) => {
+      queryClient.setQueryData<ChatSidebarState>(sidebarQueryOptions.queryKey, (current) =>
+        typeof updater === 'function' ? updater(current ?? null) : updater,
+      )
+    },
+    [queryClient],
+  )
 
   const refreshChatSidebarState = useCallback(
-    async (groupId = selectedChatGroupId) => {
-      const nextState = await getChatSidebarStateQuery(groupId)
-      setChatSidebarState(nextState)
-      return nextState
-    },
-    [selectedChatGroupId],
+    () => queryClient.fetchQuery(sidebarQueryOptions),
+    [queryClient],
   )
 
   const handleCreateChatGroup = async (name: string) => {
@@ -25,27 +38,9 @@ export function useAppShellChatSidebar(activeView: WorkspaceState['activeView'])
     return nextState
   }
 
-  useEffect(() => {
-    if (activeView !== 'chat') return
-    let cancelled = false
-    setChatSidebarLoading(true)
-
-    void getChatSidebarStateQuery(selectedChatGroupId)
-      .then((nextState) => {
-        if (!cancelled) setChatSidebarState(nextState)
-      })
-      .finally(() => {
-        if (!cancelled) setChatSidebarLoading(false)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [activeView, selectedChatGroupId])
-
   return {
-    chatSidebarLoading,
-    chatSidebarState,
+    chatSidebarLoading: sidebarQuery.isLoading,
+    chatSidebarState: sidebarQuery.data ?? null,
     handleCreateChatGroup,
     refreshChatSidebarState,
     selectedChatGroupId,

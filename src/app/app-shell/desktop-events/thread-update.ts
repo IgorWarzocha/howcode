@@ -154,13 +154,15 @@ function refreshThreadEndState(input: {
   latestWorkspaceState: DesktopEventSelectionState
   runtime: DesktopEventSyncRuntime
 }) {
+  if (input.event.reason === 'start') {
+    void input.runtime.refreshChatSidebarState()
+    return
+  }
   if (!(input.event.reason === 'end' || input.event.reason === 'external')) return
   const { threadEndContribution } = input.runtime.desktopEventStateRef.current
   // Preserve list refresh, core sidebar refresh, then project cache/Git refresh ordering.
   threadEndContribution?.refreshThreadList(input.event, input.latestWorkspaceState.activeView)
-  if (input.event.isChat === true) {
-    void input.runtime.refreshChatSidebarState()
-  }
+  void input.runtime.refreshChatSidebarState()
   threadEndContribution?.refreshProjectState(input.event, input.latestWorkspaceState.activeView)
 }
 
@@ -244,7 +246,7 @@ export function handleThreadUpdateEvent(
       event,
       loadProjectThreads: runtime.loadProjectThreads,
       queryClient: runtime.queryClient,
-    }).catch((error) => console.warn('Failed to keep active inbox thread marked read.', error))
+    }).catch((error) => console.warn('Failed to keep active inbox chat marked read.', error))
   }
   dispatchThreadOpenIfNeeded({ dispatch: runtime.dispatch, event, flags, latestWorkspaceState })
   refreshThreadEndState({ event, latestWorkspaceState, runtime })

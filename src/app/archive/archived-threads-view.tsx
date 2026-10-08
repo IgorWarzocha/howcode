@@ -104,9 +104,7 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
   const allVisibleSelected =
     visibleThreadIds.length > 0 && selectedThreadIds.length === visibleThreadIds.length
   const selectedCountLabel =
-    selectedThreadIds.length > 0
-      ? `${selectedThreadIds.length} selected`
-      : 'Select archived threads'
+    selectedThreadIds.length > 0 ? `${selectedThreadIds.length} selected` : 'Select archived chats'
 
   const runArchivedThreadMutation = async ({
     action,
@@ -166,17 +164,17 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
   return (
     <ViewShell className={skillsViewShellClass}>
       <ViewHeader
-        title="Archived threads"
+        title="Archived chats"
         actions={
           visibleThreads.length > 0 ? (
             <div className="relative">
-              <Tooltip content="Delete all archived threads" placement="left">
+              <Tooltip content="Delete all archived chats" placement="left">
                 <button
                   ref={deleteAllButtonRef}
                   type="button"
                   className={`inline-flex h-7 items-center gap-1 rounded-md px-1.5 ${appTypeSmallClass} ${appToneMutedClass} transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--danger)] disabled:cursor-not-allowed disabled:opacity-45`}
                   disabled={busyAction !== null}
-                  aria-label="Delete all archived threads"
+                  aria-label="Delete all archived chats"
                   onClick={() => {
                     setConfirmBulkDeleteTarget((current) => (current === 'all' ? null : 'all'))
                   }}
@@ -213,12 +211,12 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
             contentClassName={`grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 overflow-hidden ${appTypeGroupTextClass}`}
             actions={
               <div className="flex items-center gap-0.5">
-                <Tooltip content="Restore selected archived threads">
+                <Tooltip content="Restore selected archived chats">
                   <button
                     type="button"
                     className={viewCloseButtonClass}
                     disabled={selectedThreadIds.length === 0 || busyAction !== null}
-                    aria-label="Restore selected archived threads"
+                    aria-label="Restore selected archived chats"
                     onClick={() => {
                       void runArchivedThreadMutation({
                         action: 'thread.restore-many',
@@ -232,13 +230,13 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
                   </button>
                 </Tooltip>
                 <div className="relative">
-                  <Tooltip content="Delete selected archived threads">
+                  <Tooltip content="Delete selected archived chats">
                     <button
                       ref={deleteSelectedButtonRef}
                       type="button"
                       className={cn(viewCloseButtonClass, 'hover:text-[color:var(--danger)]')}
                       disabled={selectedThreadIds.length === 0 || busyAction !== null}
-                      aria-label="Delete selected archived threads"
+                      aria-label="Delete selected archived chats"
                       onClick={() => {
                         setConfirmBulkDeleteTarget((current) =>
                           current === 'selected' ? null : 'selected',
@@ -276,7 +274,7 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
                   checked={allVisibleSelected}
                   onChange={() => setSelectedThreadIds(allVisibleSelected ? [] : visibleThreadIds)}
                   disabled={busyAction !== null}
-                  aria-label="Select all archived threads"
+                  aria-label="Select all archived chats"
                 />
               </span>
               <span className={appTypeGroupTextClass}>{selectedCountLabel}</span>
@@ -291,7 +289,7 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
               contentClassName={`grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 overflow-hidden ${appTypeGroupTextClass}`}
               actions={
                 <div className="flex items-center gap-0.5">
-                  <Tooltip content="Restore thread">
+                  <Tooltip content="Restore chat">
                     <button
                       type="button"
                       className={viewCloseButtonClass}
@@ -309,7 +307,7 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
                       <ArchiveRestore size={13} />
                     </button>
                   </Tooltip>
-                  <Tooltip content="Delete thread">
+                  <Tooltip content="Delete chat">
                     <button
                       type="button"
                       className={cn(viewCloseButtonClass, 'hover:text-[color:var(--danger)]')}
@@ -377,10 +375,10 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
         <div className={inlineEmptyNoteClass}>
           <div className="grid gap-1">
             <div className={`${appTypeSectionTitleClass} ${appToneTextClass}`}>
-              No archived threads
+              No archived chats
             </div>
             <p className="m-0 max-w-[448px]">
-              Archive a thread from the sidebar and it will show up here for restore or permanent
+              Archive a chat from the sidebar and it will show up here for restore or permanent
               deletion.
             </p>
           </div>

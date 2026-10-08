@@ -61,15 +61,15 @@ function getInboxFilterIcon(filterMode: InboxFilterMode) {
 }
 
 function getInboxFilterLabel(filterMode: InboxFilterMode) {
-  if (filterMode === 'terminal') return 'Show inbox threads with terminals'
-  return filterMode === 'recent' ? 'Show inbox threads active since launch' : 'Filter inbox threads'
+  if (filterMode === 'terminal') return 'Show inbox chats with terminals'
+  return filterMode === 'recent' ? 'Show inbox chats active since launch' : 'Filter inbox chats'
 }
 
 function getEmptyInboxMessage(showUnreadOnly: boolean, filterMode: InboxFilterMode) {
-  if (showUnreadOnly) return 'No unread threads right now.'
-  if (filterMode === 'terminal') return 'No inbox threads have a running terminal.'
+  if (showUnreadOnly) return 'No unread chats right now.'
+  if (filterMode === 'terminal') return 'No inbox chats have a running terminal.'
   return filterMode === 'recent'
-    ? 'No inbox threads have been active since launch.'
+    ? 'No inbox chats have been active since launch.'
     : 'Nothing to catch up on yet.'
 }
 

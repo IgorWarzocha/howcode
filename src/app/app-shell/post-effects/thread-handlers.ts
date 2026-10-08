@@ -155,11 +155,7 @@ export const threadPostEffectHandlers: PostEffectHandler[] = [
       })
       ctx.setLiveThreadData(() => null)
       ctx.setComposerState(null)
-      await Promise.all([
-        ctx.loadProjectThreads(projectId, { chat }),
-        ctx.queryClient.invalidateQueries({ queryKey: desktopQueryKeys.chatSidebarState() }),
-        ctx.refreshShellState(),
-      ])
+      await Promise.all([ctx.loadProjectThreads(projectId, { chat }), ctx.refreshShellState()])
     },
   },
   {

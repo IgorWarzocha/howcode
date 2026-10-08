@@ -39,10 +39,10 @@ export const bundledKeybindings: readonly KeybindingDefinition[] = [
   { id: 'settings.open', label: 'Open settings', defaults: ['CmdOrCtrl+,'] },
   {
     id: 'thread.new',
-    label: 'New thread',
+    label: 'New chat',
     defaults: ['CmdOrCtrl+N'],
   },
-  { id: 'thread.find', label: 'Find in current thread', defaults: ['CmdOrCtrl+F'] },
+  { id: 'thread.find', label: 'Find in current chat', defaults: ['CmdOrCtrl+F'] },
   {
     id: 'sidebar.find',
     label: 'Find in sidebar',
@@ -72,12 +72,12 @@ export const bundledKeybindings: readonly KeybindingDefinition[] = [
   },
   {
     id: 'thread.previousInProject',
-    label: 'Previous thread in current project',
+    label: 'Previous chat in current workspace',
     defaults: ['CmdOrCtrl+Shift+['],
   },
   {
     id: 'thread.nextInProject',
-    label: 'Next thread in current project',
+    label: 'Next chat in current workspace',
     defaults: ['CmdOrCtrl+Shift+]'],
   },
   { id: 'composer.submit', label: 'Submit prompt', defaults: ['Enter'] },

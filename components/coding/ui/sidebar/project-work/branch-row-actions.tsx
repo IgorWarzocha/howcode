@@ -219,20 +219,19 @@ function BranchStartThreadAction({
           onAction,
           projectId: targetProjectId,
         }),
-      getFailure: (result) =>
-        getDesktopBranchActionFailure(result, 'Could not start a new session.'),
+      getFailure: (result) => getDesktopBranchActionFailure(result, 'Could not start a new chat.'),
     })
   }
 
   const label =
     group.kind === 'worktree'
-      ? `Start thread in ${group.label}`
+      ? `Start chat in ${group.label}`
       : group.kind === 'unassigned'
-        ? 'Start unassigned thread'
+        ? 'Start unassigned chat'
         : group.current
-          ? `Start thread on ${currentBranch ?? group.label}`
-          : `Start thread in ${group.label} worktree`
-  const tooltipContent = canSwitch ? `Start thread in ${group.label} worktree` : label
+          ? `Start chat on ${currentBranch ?? group.label}`
+          : `Start chat in ${group.label} worktree`
+  const tooltipContent = canSwitch ? `Start chat in ${group.label} worktree` : label
   const warning = execution.warning ?? (blocked ? 'Worktree is dirty. Commit first.' : null)
 
   return (

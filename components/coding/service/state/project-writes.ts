@@ -119,6 +119,8 @@ export const deleteProject = Effect.fn('ConversationState.deleteProject')(functi
 ) {
   const sql = yield* SqlClient.SqlClient
   // Keep attribution and deletion tombstones even after the project leaves the sidebar.
-  yield* sql`UPDATE conversation_facts SET deleted = 1, running = 0 WHERE cwd = ${projectId}`
+  yield* sql`UPDATE conversation_facts SET deleted = 1, running = 0
+    WHERE workspace_id = ${`directory:${projectId}`}
+      OR (workspace_id IS NULL AND cwd = ${projectId})`
   yield* sql`UPDATE projects SET hidden = 1 WHERE cwd = ${projectId}`
 })

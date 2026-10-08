@@ -69,7 +69,7 @@ export function InboxComposerSurface({
             draft={props.reply.draft}
             errorMessage={props.reply.errorMessage}
             inputLocked={actions.inputLocked}
-            placeholderText={props.reply.errorMessage ?? 'Reply to this thread…'}
+            placeholderText={props.reply.errorMessage ?? 'Reply to this chat…'}
             promptPopover={
               <SlashCommandPanel
                 panelRef={overlay.slashCommandPanelRef}

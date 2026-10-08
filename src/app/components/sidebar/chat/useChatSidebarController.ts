@@ -14,7 +14,6 @@ import { chatThreadDragType } from './chat-thread-drop-item'
 type UseChatSidebarControllerInput = {
   chatState: ChatSidebarState | null
   onCreateGroup: (name: string) => Promise<unknown>
-  onRefresh: () => Promise<unknown>
   onAction: DesktopActionInvoker
 }
 
@@ -23,7 +22,6 @@ const EMPTY_CHAT_GROUPS: [] = []
 export function useChatSidebarController({
   chatState,
   onCreateGroup,
-  onRefresh,
   onAction,
 }: UseChatSidebarControllerInput) {
   const [creating, setCreating] = useState(false)
@@ -80,9 +78,7 @@ export function useChatSidebarController({
     const newIndex = sourceGroups.findIndex((group) => group.id === over.id)
     if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return
     const nextGroups = arrayMove(sourceGroups, oldIndex, newIndex)
-    void onAction('chat.group.reorder', { chatGroupIds: nextGroups.map((group) => group.id) }).then(
-      onRefresh,
-    )
+    void onAction('chat.group.reorder', { chatGroupIds: nextGroups.map((group) => group.id) })
   }
 
   const handleStartEdit = (groupId: string, groupName: string) => {
@@ -102,7 +98,10 @@ export function useChatSidebarController({
       handleCancelEdit()
       return
     }
-    void onAction('chat.group.rename', { chatGroupId: groupId, value: nextName }).then(onRefresh)
+    const directoryId = sourceGroups.find((group) => group.id === groupId)?.directoryId
+    if (directoryId)
+      void onAction('project.edit-name', { projectId: directoryId, projectName: nextName })
+    else void onAction('chat.group.rename', { chatGroupId: groupId, value: nextName })
     setEditingGroupId(null)
     setRenameDraft('')
   }
@@ -112,7 +111,7 @@ export function useChatSidebarController({
     void onAction('chat.thread.move', {
       conversationId: thread.conversationId,
       chatGroupId: groupId,
-    }).then(onRefresh)
+    })
   }
 
   const getDraggedThread = (draggedThreadId: string) => {

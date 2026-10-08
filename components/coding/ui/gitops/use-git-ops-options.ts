@@ -47,7 +47,7 @@ export function useGitOpsOptions({
         const result = await onAction('workspace.commit-options', { gitOpsMode: mode })
         const errorMessage = getDesktopActionErrorMessage(
           result,
-          'Could not update the project GitOps default.',
+          'Could not update the workspace GitOps default.',
         )
         if (errorMessage) {
           setPushEnabled(previousPushEnabled)
@@ -59,7 +59,7 @@ export function useGitOpsOptions({
       } catch (error) {
         setPushEnabled(previousPushEnabled)
         status.setErrorMessage(
-          getErrorMessage(error, 'Could not update the project GitOps default.'),
+          getErrorMessage(error, 'Could not update the workspace GitOps default.'),
         )
         status.setStatusMessage(null)
       }

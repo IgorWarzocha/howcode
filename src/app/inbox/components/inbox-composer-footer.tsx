@@ -108,10 +108,10 @@ export function InboxComposerFooter({
         <Tooltip content="Dismiss">
           <IconButton tooltip={null} label="Dismiss" icon={<X size={14} />} onClick={onDismiss} />
         </Tooltip>
-        <Tooltip content="Open thread">
+        <Tooltip content="Open chat">
           <IconButton
             tooltip={null}
-            label="Open thread"
+            label="Open chat"
             icon={<ArrowUpRight size={14} />}
             onClick={onOpenThread}
           />

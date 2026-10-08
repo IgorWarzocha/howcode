@@ -18,7 +18,7 @@ function getThreadCreationError(actionResult: Awaited<ReturnType<typeof createTh
   if (actionResult?.ok && !threadError) return null
   return typeof threadError === 'string' && threadError.trim().length > 0
     ? threadError
-    : 'Could not start thread.'
+    : 'Could not start chat.'
 }
 
 function PendingMenuIcon({ icon, pending }: { icon: ReactNode; pending: boolean }) {
@@ -204,7 +204,7 @@ export function NewThreadMenu({
     <div className="sidebar-new-thread-menu-anchor">
       <IconButton
         ref={menu.triggerRef}
-        label="New thread"
+        label="New chat"
         icon={<Plus size={14} />}
         tooltipPlacement="right"
         className="h-7 w-7 rounded-md"
@@ -216,7 +216,7 @@ export function NewThreadMenu({
           className="sidebar-menu-surface sidebar-menu-surface--below-normal sidebar-new-thread-menu"
           style={{ right: `${menu.right}px`, width: `${menu.width}px` }}
           role="menu"
-          aria-label="New thread options"
+          aria-label="New chat options"
         >
           {isGitRepo ? null : (
             <button
@@ -226,7 +226,7 @@ export function NewThreadMenu({
               disabled={pendingAction !== null}
             >
               <PendingMenuIcon icon={<Plus size={11} />} pending={pendingAction === 'unassigned'} />
-              <span className="truncate">New session</span>
+              <span className="truncate">New chat</span>
             </button>
           )}
 

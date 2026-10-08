@@ -161,13 +161,13 @@ export function ThreadFindBar({
               goToMatch(event.shiftKey ? -1 : 1)
             }
           }}
-          placeholder="Find in thread"
+          placeholder="Find in chat"
           className={cn(
             'h-7 min-w-0 flex-1 bg-transparent px-1 outline-none placeholder:text-[color:var(--muted-2)]',
             appTypeGroupTextClass,
             appToneTextClass,
           )}
-          aria-label="Find in thread"
+          aria-label="Find in chat"
         />
         {searching ? (
           <Loader2 size={13} className="animate-spin text-[color:var(--muted)]" />
@@ -211,7 +211,7 @@ export function ThreadFindBar({
           type="button"
           className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)]"
           onClick={close}
-          aria-label="Close thread find"
+          aria-label="Close chat find"
         >
           <X size={14} />
         </button>
@@ -220,7 +220,7 @@ export function ThreadFindBar({
         <div className="max-h-56 overflow-y-auto border-t border-[color:var(--border)] p-1">
           {searching ? (
             <div className={cn('px-2 py-3', appTypeSmallClass, appToneMutedClass)}>
-              Searching thread…
+              Searching chat…
             </div>
           ) : matches.length > 0 ? (
             matches.map((match, index) => (

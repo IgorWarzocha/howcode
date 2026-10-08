@@ -63,7 +63,7 @@ export function SidebarProjectsCreatePopover({
       ref={panelRef}
       id={menuId}
       open
-      aria-label="Create project"
+      aria-label="Create workspace"
       {...getPopoverRootProps(open)}
       data-open="true"
       data-variant={variant}
@@ -93,10 +93,10 @@ export function SidebarProjectsCreatePopover({
           className="sidebar-project-create-input"
           placeholder={
             missingProjectNameWarning
-              ? 'Enter a project name.'
-              : 'Project name, path, or GitHub URI'
+              ? 'Enter a workspace name.'
+              : 'Workspace name, path, or GitHub URI'
           }
-          aria-label="Project name, path, or GitHub repository URI"
+          aria-label="Workspace name, path, or GitHub repository URI"
           data-warning={missingProjectNameWarning ? 'true' : 'false'}
         />
 
@@ -120,8 +120,8 @@ export function SidebarProjectsCreatePopover({
           onClick={() => onCreate({ parentPath: browseOpen ? currentFolderPath : null })}
           disabled={!canSubmit}
           data-enabled={canSubmit ? 'true' : 'false'}
-          aria-label={busy ? 'Adding project' : 'Add project'}
-          data-tooltip={busy ? 'Adding project' : 'Add project'}
+          aria-label={busy ? 'Adding workspace' : 'Add workspace'}
+          data-tooltip={busy ? 'Adding workspace' : 'Add workspace'}
         >
           <FolderPlus size={15} />
         </button>

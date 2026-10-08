@@ -46,8 +46,8 @@ export async function createThreadInWorktreeForBranch({
     return {
       error:
         typeof threadError === 'string' && threadError.trim().length > 0
-          ? `Worktree created, but could not start a session: ${threadError}`
-          : 'Worktree created, but could not start a session.',
+          ? `Worktree created, but could not start a chat: ${threadError}`
+          : 'Worktree created, but could not start a chat.',
     }
   }
   return { didMutate: true }

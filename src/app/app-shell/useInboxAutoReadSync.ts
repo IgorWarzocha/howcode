@@ -88,8 +88,8 @@ function syncInboxAutoReadSelection(
     queryClient: input.queryClient,
     thread: visibleThread,
     warningMessage: selectedInboxThread
-      ? 'Failed to mark visible inbox thread read.'
-      : 'Failed to auto-mark selected inbox thread read.',
+      ? 'Failed to mark visible inbox chat read.'
+      : 'Failed to auto-mark selected inbox chat read.',
   })
 }
 

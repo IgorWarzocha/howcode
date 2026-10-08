@@ -91,11 +91,7 @@ function ThreadMetaSlot({
       </span>
       <span className="sidebar-thread-meta-actions" data-action-count={actionCount}>
         {onRenameStart ? (
-          <Tooltip
-            content="Rename session"
-            placement="right"
-            className="sidebar-thread-action-anchor"
-          >
+          <Tooltip content="Rename chat" placement="right" className="sidebar-thread-action-anchor">
             <button
               type="button"
               className={cn(
@@ -103,7 +99,7 @@ function ThreadMetaSlot({
                 'border-transparent bg-transparent hover:bg-transparent',
               )}
               onClick={onRenameStart}
-              aria-label="Rename session"
+              aria-label="Rename chat"
             >
               <Pencil size={12} />
             </button>
@@ -128,11 +124,7 @@ function ThreadMetaSlot({
             </button>
           </Tooltip>
         ) : null}
-        <Tooltip
-          content="Delete session"
-          placement="right"
-          className="sidebar-thread-action-anchor"
-        >
+        <Tooltip content="Delete chat" placement="right" className="sidebar-thread-action-anchor">
           <SidebarInlineConfirmPopunder
             open={confirmDeleteOpen}
             trigger={
@@ -144,12 +136,12 @@ function ThreadMetaSlot({
                   'border-transparent bg-transparent hover:bg-transparent',
                 )}
                 onClick={handleDeleteClick}
-                aria-label="Delete session"
+                aria-label="Delete chat"
               >
                 <Trash2 size={12} />
               </button>
             }
-            confirmAriaLabel="Delete session"
+            confirmAriaLabel="Delete chat"
             confirmIcon={<Trash2 size={12} />}
             onCancel={() => setConfirmDeleteOpen(false)}
             onConfirm={() => {
@@ -251,7 +243,7 @@ export function ThreadRow({
                 cancelRename()
               }
             }}
-            aria-label="Session name"
+            aria-label="Chat name"
           />
         </form>
       ) : (

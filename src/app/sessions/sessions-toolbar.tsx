@@ -29,9 +29,9 @@ export function SessionsToolbar({
           className="h-3.5 w-3.5 accent-[color:var(--accent)]"
           checked={allVisibleSelected}
           onChange={() => onSetSelectedThreadIds(allVisibleSelected ? [] : visibleThreadIds)}
-          aria-label="Select visible sessions"
+          aria-label="Select visible chats"
         />
-        <span>{selectedCount > 0 ? `${selectedCount} selected` : 'Select sessions'}</span>
+        <span>{selectedCount > 0 ? `${selectedCount} selected` : 'Select chats'}</span>
       </label>
       <div className="flex shrink-0 items-center gap-1">
         <button

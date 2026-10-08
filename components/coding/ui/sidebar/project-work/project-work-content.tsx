@@ -39,7 +39,7 @@ function ProjectDashboardButton({
       label={`Open ${project.name} dashboard`}
       icon={<Home size={13} />}
       active={active}
-      tooltip="Project dashboard"
+      tooltip="Workspace dashboard"
       tooltipPlacement="right"
       className="sidebar-project-work-project-menu-button h-7 w-7 rounded-md"
       onClick={onOpenDashboard}
@@ -213,6 +213,7 @@ export function MultiProjectWorkContent({
 }
 
 export function SingleProjectWorkContent({
+  controlsOnly = false,
   activeView,
   branchGroups,
   collapsedBranchIds,
@@ -235,6 +236,7 @@ export function SingleProjectWorkContent({
   onShowView,
   onThreadOpen,
 }: {
+  controlsOnly?: boolean
   activeView: View
   branchGroups: BranchThreadGroup[]
   collapsedBranchIds: Record<string, boolean>
@@ -285,16 +287,18 @@ export function SingleProjectWorkContent({
       </div>
 
       <div className="sidebar-project-work-actions">
-        <button
-          type="button"
-          className="sidebar-compact-row sidebar-compact-row--action sidebar-project-work-action-row"
-          data-active={activeView === 'automations' ? 'true' : 'false'}
-          onClick={() => openProjectView('automations')}
-        >
-          <ChevronRight size={13} aria-hidden="true" />
-          <span>Automations</span>
-          <span className="sidebar-project-work-pill">Soon</span>
-        </button>
+        {controlsOnly ? null : (
+          <button
+            type="button"
+            className="sidebar-compact-row sidebar-compact-row--action sidebar-project-work-action-row"
+            data-active={activeView === 'automations' ? 'true' : 'false'}
+            onClick={() => openProjectView('automations')}
+          >
+            <ChevronRight size={13} aria-hidden="true" />
+            <span>Automations</span>
+            <span className="sidebar-project-work-pill">Soon</span>
+          </button>
+        )}
         <button
           type="button"
           className="sidebar-compact-row sidebar-compact-row--action sidebar-project-work-history-row"
@@ -302,7 +306,7 @@ export function SingleProjectWorkContent({
           onClick={() => openProjectView('sessions')}
         >
           <Archive size={14} />
-          <span>Past sessions</span>
+          <span>Past chats</span>
           {hideSessionCounts ? null : (
             <span className={cn('sidebar-project-work-history-count', appToneSubtleClass)}>
               {olderThreadCount}
@@ -312,13 +316,15 @@ export function SingleProjectWorkContent({
       </div>
 
       <div className="sidebar-project-work-lane">
-        <div className="sidebar-project-work-section-heading sidebar-project-work-section-heading--search-only">
-          <SearchHistoryField
-            inputRef={searchInputRef}
-            searchQuery={searchQuery}
-            onSearchQueryChange={onSearchQueryChange}
-          />
-        </div>
+        {controlsOnly ? null : (
+          <div className="sidebar-project-work-section-heading sidebar-project-work-section-heading--search-only">
+            <SearchHistoryField
+              inputRef={searchInputRef}
+              searchQuery={searchQuery}
+              onSearchQueryChange={onSearchQueryChange}
+            />
+          </div>
+        )}
 
         <div className="sidebar-project-work-scroll-shell">
           {isGitRepo ? (

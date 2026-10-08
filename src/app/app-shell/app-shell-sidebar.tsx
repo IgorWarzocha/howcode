@@ -86,6 +86,7 @@ export function AppShellSidebar({
       collapsedProjectIds={controller.projects.collapsedIds}
       onAction={controller.desktop.handleAction}
       onShowView={controller.navigation.showView}
+      onShowWorkspace={controller.navigation.showWorkspace}
       onToggleSettings={controller.navigation.toggleSettings}
       onToggleSidebar={onToggle}
       onOpenAbout={controller.navigation.showLanding}
@@ -96,10 +97,14 @@ export function AppShellSidebar({
       onCreateChatGroup={controller.chat.createGroup}
       onSelectChatGroup={controller.chat.selectGroup}
       onNewChat={(groupId) => {
+        const workspace = controller.chat.state?.groups.find((group) => group.id === groupId)
         controller.chat.selectGroup(groupId)
-        void controller.desktop.handleAction('thread.new', { chatGroupId: groupId })
+        void controller.desktop.handleAction('thread.new', {
+          chatGroupId: groupId,
+          composerMode: workspace?.directoryId ? 'code' : 'chat',
+          ...(workspace?.directoryId ? { projectId: workspace.directoryId } : {}),
+        })
       }}
-      onRefreshChatSidebar={controller.chat.refresh}
       onProjectSelect={controller.projects.select}
       onProjectPrimeSelection={controller.projects.primeSelection}
       onProjectTargetSelected={() => {

@@ -24,6 +24,8 @@ type AppShellUrlSyncInput = {
   projects: Project[]
   shellLoading: boolean
   state: WorkspaceState
+  selectedWorkspaceId: string | null
+  onSelectWorkspace: (workspaceId: string | null) => void
 }
 
 type AppShellUrlSyncCursor = {
@@ -77,10 +79,22 @@ function findThread(projects: Project[], projectId: string | null, threadId: str
 }
 
 function getCurrentRoute(snapshot: AppRouteSnapshot) {
-  const routeName = snapshot.pathname.replace(leadingSlashesPattern, '') || 'landing'
+  const pathName = snapshot.pathname.replace(leadingSlashesPattern, '') || 'landing'
   const projectId = getStringSearchValue(snapshot.search, 'projectId')
   const threadId = getStringSearchValue(snapshot.search, 'threadId')
   const conversationId = getStringSearchValue(snapshot.search, 'conversationId')
+  // Old chat/thread URLs stay readable. New URLs expose one Chat concept while
+  // retaining the saved composer capability context, not a second chat class.
+  const routeName =
+    pathName === 'chats'
+      ? getStringSearchValue(snapshot.search, 'composerMode') === 'code'
+        ? 'thread'
+        : 'chat'
+      : pathName === 'workspaces'
+        ? projectId
+          ? 'project'
+          : 'chat'
+        : pathName
   return { routeName, projectId, threadId, conversationId }
 }
 
@@ -96,21 +110,40 @@ function isRouteView(routeName: string): routeName is NonGitOpsView {
   return routeViews.has(routeName as NonGitOpsView)
 }
 
-function getRouteForState(state: WorkspaceState): AppRouteSnapshot {
+function getRouteForState(
+  state: WorkspaceState,
+  selectedWorkspaceId: string | null,
+): AppRouteSnapshot {
   if (state.activeView === 'landing') return { pathname: '/', search: {} }
   if (state.activeView === 'project') {
-    return { pathname: '/project', search: cleanSearch({ projectId: state.selectedProjectId }) }
+    return {
+      pathname: '/workspaces',
+      search: cleanSearch({
+        projectId: state.selectedProjectId,
+        workspaceId: selectedWorkspaceId,
+      }),
+    }
   }
   if (state.activeView === 'thread') {
     return {
-      pathname: '/thread',
-      search: cleanSearch({ projectId: state.selectedProjectId, threadId: state.selectedThreadId }),
+      pathname: '/chats',
+      search: cleanSearch({
+        projectId: state.selectedProjectId,
+        threadId: state.selectedThreadId,
+        composerMode: 'code',
+      }),
     }
   }
   if (state.activeView === 'chat') {
     return {
-      pathname: '/chat',
-      search: cleanSearch({ projectId: state.selectedProjectId, threadId: state.selectedThreadId }),
+      pathname: state.selectedThreadId ? '/chats' : '/workspaces',
+      search: state.selectedThreadId
+        ? cleanSearch({
+            projectId: state.selectedProjectId,
+            threadId: state.selectedThreadId,
+            composerMode: 'chat',
+          })
+        : cleanSearch({ workspaceId: selectedWorkspaceId }),
     }
   }
   if (state.activeView === 'gitops') {
@@ -129,6 +162,26 @@ function getRouteForState(state: WorkspaceState): AppRouteSnapshot {
   return { pathname: `/${state.activeView}`, search: {} }
 }
 
+function getChatRouteAction(
+  route: ReturnType<typeof getCurrentRoute>,
+  projects: Project[],
+  view: 'chat' | 'thread',
+): WorkspaceAction | WorkspaceAction[] | null {
+  if (view === 'chat' && !route.threadId) {
+    return [{ type: 'show-view', view: 'chat' }, { type: 'clear-thread-selection' }]
+  }
+  const thread = findThread(projects, route.projectId, route.threadId)
+  return thread
+    ? {
+        type: 'open-thread',
+        projectId: thread.project.id,
+        threadId: thread.thread.id,
+        conversationId: thread.conversationId,
+        view,
+      }
+    : null
+}
+
 function getRouteAction(
   snapshot: AppRouteSnapshot,
   projects: Project[],
@@ -139,15 +192,7 @@ function getRouteAction(
     return { type: 'select-project', projectId: route.projectId }
   }
   if (route.routeName === 'thread' || route.routeName === 'chat') {
-    const thread = findThread(projects, route.projectId, route.threadId)
-    if (!thread) return null
-    return {
-      type: 'open-thread',
-      projectId: thread.project.id,
-      threadId: thread.thread.id,
-      conversationId: thread.conversationId,
-      view: route.routeName,
-    }
+    return getChatRouteAction(route, projects, route.routeName)
   }
   if (route.routeName === 'git') {
     const thread = findThread(projects, route.projectId, route.threadId)
@@ -200,7 +245,12 @@ function getRouteDataWait(snapshot: AppRouteSnapshot, projects: Project[], shell
 function dispatchRouteAction(
   dispatch: React.Dispatch<WorkspaceAction>,
   action: WorkspaceAction | WorkspaceAction[],
+  snapshot: AppRouteSnapshot,
+  onSelectWorkspace: (workspaceId: string | null) => void,
 ) {
+  if (snapshot.pathname === '/workspaces') {
+    onSelectWorkspace(getStringSearchValue(snapshot.search, 'workspaceId'))
+  }
   for (const item of Array.isArray(action) ? action : [action]) {
     dispatch(item)
   }
@@ -287,6 +337,8 @@ export function useAppShellUrlSync({
   projects,
   shellLoading,
   state,
+  selectedWorkspaceId,
+  onSelectWorkspace,
 }: AppShellUrlSyncInput) {
   const router = useRouter()
   const snapshot = useRouterState({
@@ -299,7 +351,10 @@ export function useAppShellUrlSync({
     () => ({ pathname: snapshot.pathname, search: snapshot.search }),
     [snapshot.pathname, snapshot.search],
   )
-  const stateRoute = useMemo(() => getRouteForState(state), [state])
+  const stateRoute = useMemo(
+    () => getRouteForState(state, selectedWorkspaceId),
+    [state, selectedWorkspaceId],
+  )
   const syncRef = useRef<AppShellUrlSyncCursor>({
     routeKey: null,
     stateKey: null,
@@ -308,7 +363,7 @@ export function useAppShellUrlSync({
 
   useEffect(() => {
     if (shellLoading) return
-    const routeView = snapshot.pathname.replace(leadingSlashesPattern, '') || 'landing'
+    const routeView = getCurrentRoute(routeSnapshot).routeName
     if (
       !(
         isWorkspaceViewEnabled(toolkitSettings, routeView as View) &&
@@ -352,7 +407,7 @@ export function useAppShellUrlSync({
     syncRef.current = decision.next
     if (decision.type === 'synchronized') return
     if (decision.type === 'dispatch-route') {
-      dispatchRouteAction(dispatch, decision.action)
+      dispatchRouteAction(dispatch, decision.action, routeSnapshot, onSelectWorkspace)
       return
     }
     void router.navigate({
@@ -368,7 +423,7 @@ export function useAppShellUrlSync({
     shellLoading,
     stateRoute,
     toolkitSettings,
-    snapshot.pathname,
     state.activeView,
+    onSelectWorkspace,
   ])
 }

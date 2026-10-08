@@ -6,9 +6,9 @@
 <img width="1920" height="1080" alt="Howcode screenshot" src="https://github.com/user-attachments/assets/c81d022e-75bd-4657-8d46-821514997d9c" />
 <br />
 
-Howcode is a browser app for coding with Pi. A local Node server runs the agent, terminal, and project workflows.
+Howcode is a browser app for chatting with Pi. Workspaces contain chats and can cover more than repositories. Folder-backed workspaces keep the coding tools, terminal, and Git workflows on a local Node server.
 
-It is not trying to be a file editor. It is not trying to be VS Code with a chat panel glued on. The idea is simpler: keep the agent, terminal, project state, diffs, threads, and messy follow-up work in one place.
+It is not trying to be a file editor. It is not trying to be VS Code with a chat panel glued on. The idea is simpler: keep the agent, chats, workspace state, terminal, diffs, and messy follow-up work in one place.
 
 I built it because I clank a lot, and the existing apps kept making me babysit too many tabs, terminals, branches, and half-finished sessions. This one fits how I work. Maybe it fits how you work too.
 
@@ -52,8 +52,8 @@ Packages export ordinary Durable extension objects from their package entry poin
 
 ## What it does
 
-- **Durable conversations**: start threads from projects, branches, worktrees, or chat.
-- **Project sidebar** — projects, branches, worktrees, sessions, favorites, and recent activity.
+- **Durable chats**: start chats in any workspace, including folder-backed workspaces with branches and worktrees.
+- **Workspace sidebar**: one organization for existing coding conversations and standalone chats, with favorites and recent activity.
 - **Conversation forks**: continue from an earlier message with `/fork` without changing the original conversation.
 - **Built-in terminal** — a shell terminal drawer with persisted transcript history.
 - **Git/worktree flow** — create branches and worktrees, run sessions inside them, review diffs, and merge/remove completed work.

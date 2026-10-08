@@ -31,7 +31,7 @@ function buildFallbackThreadData(
 ): ThreadData {
   return {
     conversationId,
-    title: selectedThread?.title ?? 'New thread',
+    title: selectedThread?.title ?? 'New chat',
     messages: [],
     previousMessageCount: 0,
     isStreaming: false,
@@ -83,7 +83,7 @@ export function deriveControllerViewModel({
     activeThreadData,
     currentTitle:
       workspaceState.activeView === 'chat' || workspaceState.activeView === 'thread'
-        ? (activeThreadData?.title ?? selectedThread?.title ?? 'New thread')
+        ? (activeThreadData?.title ?? selectedThread?.title ?? 'New chat')
         : getCurrentTitle(workspaceState.activeView, selectedThread),
     currentProjectName: getSelectedProjectName(selectedProject, workspaceState.selectedProjectId),
     // Keep sidebar selection strict, but never let composer/runtime actions fall back

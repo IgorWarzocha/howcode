@@ -7,10 +7,10 @@ export function getProjectScopeLabel({
   selectedProject: Project | null
   visibleProjects: readonly Project[]
 }) {
-  if (visibleProjects.length === 0) return 'No projects selected'
+  if (visibleProjects.length === 0) return 'No workspaces selected'
   const primaryVisibleProject =
     visibleProjects.find((project) => project.id === selectedProject?.id) ?? visibleProjects[0]
-  const primaryProjectName = primaryVisibleProject?.name ?? selectedProject?.name ?? 'Projects'
+  const primaryProjectName = primaryVisibleProject?.name ?? selectedProject?.name ?? 'Workspaces'
   return visibleProjects.length > 1
     ? `${primaryProjectName} +${visibleProjects.length - 1}`
     : primaryProjectName

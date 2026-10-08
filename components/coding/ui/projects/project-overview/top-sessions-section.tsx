@@ -76,7 +76,7 @@ export function TopSessionsSection({
       <h2
         className={`m-0 w-[calc(100%_-_2.5rem)] px-1 ${appTypeGroupTitleClass} ${appToneTextClass}`}
       >
-        Top sessions by cost
+        Top chats by cost
       </h2>
       {loading ? (
         <TopSessionsSkeleton />
@@ -98,8 +98,7 @@ export function TopSessionsSection({
         </div>
       ) : (
         <div className={inlineEmptyNoteClass}>
-          No usage recorded yet. Start a session below and Pi usage will appear here after the first
-          assistant response.
+          No usage recorded yet. Pi usage appears here after the first assistant response.
         </div>
       )}
     </section>

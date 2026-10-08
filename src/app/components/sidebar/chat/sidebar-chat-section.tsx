@@ -4,7 +4,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { IconButton } from '@howcode/common/icon-button'
 import { PopoverPanel } from '@howcode/common/popover'
 import { Edit2, FolderPlus, Plus, Search } from 'lucide-react'
-import { useRef } from 'react'
+import { type ReactNode, useRef } from 'react'
 import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
 import type {
   ChatGroup,
@@ -25,8 +25,11 @@ type SidebarChatSectionProps = {
   onSelectGroup: (groupId: string | null) => void
   onThreadOpen: (projectId: string, threadId: string, conversationId: string) => void
   onNewChat: (groupId: string | null) => void
-  onRefresh: () => Promise<unknown>
   onAction: DesktopActionInvoker
+  onSelectDirectory: (directoryId: string) => void
+  onShowWorkspace: () => void
+  folderCreation?: ReactNode
+  renderDirectoryTools?: (directoryId: string) => ReactNode
 }
 
 export function SidebarChatSection({
@@ -37,8 +40,11 @@ export function SidebarChatSection({
   onSelectGroup,
   onThreadOpen,
   onNewChat,
-  onRefresh,
   onAction,
+  onSelectDirectory,
+  onShowWorkspace,
+  folderCreation,
+  renderDirectoryTools,
 }: SidebarChatSectionProps) {
   const searchInputRef = useRef<HTMLInputElement>(null)
   const {
@@ -67,13 +73,17 @@ export function SidebarChatSection({
     setSearchQuery,
     submitGroup,
     ungroupedThreads,
-  } = useChatSidebarController({ chatState, onCreateGroup, onRefresh, onAction })
+  } = useChatSidebarController({ chatState, onCreateGroup, onAction })
 
   useHowcodeKeybindingCommand('sidebar.find', (event) => {
     event.preventDefault()
     searchInputRef.current?.focus()
     searchInputRef.current?.select()
   })
+
+  const activeGroupId =
+    groups.find((group) => group.threads.some((thread) => thread.id === selectedThreadId))?.id ??
+    selectedGroupId
 
   const renderThread = (thread: ChatThread, groupId: string | null) => (
     <ChatThreadDropItem
@@ -82,7 +92,6 @@ export function SidebarChatSection({
       groupId={groupId}
       selectedThreadId={selectedThreadId}
       onAction={onAction}
-      onRefresh={onRefresh}
       onThreadDrop={handleThreadDrop}
       onThreadOpen={onThreadOpen}
     />
@@ -106,8 +115,9 @@ export function SidebarChatSection({
           />
         </label>
         <div className="sidebar-action-group">
+          {folderCreation}
           <IconButton
-            label="New group"
+            label="New workspace"
             tooltipPlacement="right"
             onClick={() => setCreating((current) => !current)}
             icon={<FolderPlus size={15} />}
@@ -124,9 +134,9 @@ export function SidebarChatSection({
         >
           <input
             className="sidebar-project-input w-full"
-            aria-label="Group name"
+            aria-label="Workspace name"
             value={draft}
-            placeholder="Group name"
+            placeholder="Workspace name"
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === 'Escape') setCreating(false)
@@ -188,7 +198,7 @@ export function SidebarChatSection({
                         actionMenuId={actionMenuId}
                         actionMenuOpen={groupMenuOpen}
                         dragHandleProps={dragHandleProps}
-                        isActive={selectedGroupId === group.id}
+                        isActive={activeGroupId === group.id}
                         isDragging={isDragging}
                         isExpanded={effectiveIsExpanded}
                         name={group.name}
@@ -205,6 +215,8 @@ export function SidebarChatSection({
                         onEdit={() => handleStartEdit(group.id, group.name)}
                         onSelect={() => {
                           onSelectGroup(group.id)
+                          if (group.directoryId) onSelectDirectory(group.directoryId)
+                          else onShowWorkspace()
                           setOpenGroupMenuId(null)
                         }}
                         onSubmitEdit={() => handleSubmitEdit(group.id)}
@@ -215,7 +227,7 @@ export function SidebarChatSection({
                           void onAction('chat.group.collapse', {
                             chatGroupId: group.id,
                             value: !group.collapsed,
-                          }).then(onRefresh)
+                          })
                         }
                       />
 
@@ -223,7 +235,7 @@ export function SidebarChatSection({
                         <PopoverPanel
                           id={actionMenuId}
                           role="menu"
-                          aria-label="Group actions"
+                          aria-label="Workspace actions"
                           className="sidebar-popover-panel sidebar-project-action-menu"
                         >
                           <div className="sidebar-project-menu-list">
@@ -250,6 +262,9 @@ export function SidebarChatSection({
                         onDrop={(event) => handleThreadDrop(event, group.id)}
                       >
                         {group.threads.map((thread) => renderThread(thread, group.id))}
+                        {group.directoryId && activeGroupId === group.id
+                          ? renderDirectoryTools?.(group.directoryId)
+                          : null}
                       </ul>
                     ) : null}
                   </ul>

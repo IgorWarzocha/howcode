@@ -13,12 +13,12 @@ type MainViewProps = {
 function AutomationsStubView({ projectName }: { projectName: string }) {
   return (
     <ViewShell maxWidthClassName="max-w-[760px]">
-      <ViewHeader title="Automations" subtitle={`${projectName} · project automation surface`} />
+      <ViewHeader title="Automations" subtitle={`${projectName} · workspace automation surface`} />
 
       <div className={`grid gap-3 ${appTypeReadableClass}`}>
         <p>
-          Automations will live here for this project. For now this is a project-scoped stub so the
-          new sidebar can route to the right surface without pretending the feature is ready.
+          Automations will live here for this workspace. For now this is a project-scoped stub so
+          the new sidebar can route to the right surface without pretending the feature is ready.
         </p>
         <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--panel)] p-4 text-[color:var(--muted)]">
           Coming next: recurring checks, branch/worktree tasks, and project-local automation runs.
@@ -28,7 +28,7 @@ function AutomationsStubView({ projectName }: { projectName: string }) {
   )
 }
 
-export function MainView({ activeView, projectName = 'Current project' }: MainViewProps) {
+export function MainView({ activeView, projectName = 'Current workspace' }: MainViewProps) {
   if (activeView === 'automations') {
     return <AutomationsStubView projectName={projectName} />
   }

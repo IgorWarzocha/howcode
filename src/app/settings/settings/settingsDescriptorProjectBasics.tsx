@@ -17,9 +17,9 @@ export function buildProjectBasicsSettingsDescriptors({
     {
       id: 'projects.default-location',
       category: 'howcode',
-      title: 'Default project location',
-      description: 'Default folder for new projects.',
-      keywords: 'project folder location path default',
+      title: 'Default workspace location',
+      description: 'Default folder for new folder-backed workspaces.',
+      keywords: 'workspace folder location path default',
       render: () => (
         <div className="relative w-[22rem] max-w-full">
           <FolderPlus
@@ -40,7 +40,7 @@ export function buildProjectBasicsSettingsDescriptors({
             }}
             className={cn(settingsInputClass, 'w-full pl-9')}
             placeholder="Paste an absolute folder path"
-            aria-label="Default project location"
+            aria-label="Default workspace location"
           />
         </div>
       ),
@@ -82,8 +82,8 @@ export function buildProjectBasicsSettingsDescriptors({
       id: 'projects.initialize-git',
       category: 'howcode',
       title: 'Initialise git',
-      description: 'Always git init when creating a new project.',
-      keywords: 'git init initialize projects diffs',
+      description: 'Always git init when creating a new folder-backed workspace.',
+      keywords: 'git init initialize workspaces diffs',
       render: () => (
         <ToggleBox
           checked={appSettings.initializeGitOnProjectCreate}
@@ -95,13 +95,13 @@ export function buildProjectBasicsSettingsDescriptors({
     {
       id: 'projects.dashboard',
       category: 'howcode',
-      title: 'Project dashboard',
-      description: 'Show the project dashboard when a project is selected in Code.',
-      keywords: 'project dashboard overview code landing performance disable',
+      title: 'Workspace dashboard',
+      description: 'Show the dashboard when a folder-backed workspace is selected.',
+      keywords: 'workspace dashboard overview code landing performance disable',
       render: () => (
         <ToggleBox
           checked={appSettings.projectDashboardEnabled}
-          label="Show project dashboard"
+          label="Show workspace dashboard"
           onClick={controller.projects.toggleProjectDashboardEnabled}
         />
       ),

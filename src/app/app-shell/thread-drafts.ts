@@ -22,7 +22,7 @@ export function buildOptimisticThread(input: {
 }): Thread {
   const thread: Thread = {
     id: input.id,
-    title: input.title ?? 'New thread',
+    title: input.title ?? 'New chat',
     age: 'Now',
     lastModifiedMs: input.lastModifiedMs ?? Date.now(),
     conversationId: input.conversationId,

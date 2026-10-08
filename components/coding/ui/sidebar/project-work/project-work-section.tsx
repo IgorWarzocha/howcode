@@ -39,6 +39,7 @@ type ProjectWorkSectionProps = {
   selectedProjectId: string
   selectedThreadId: string | null
   projectTargetMode?: boolean | undefined
+  embedded?: boolean
   projectScopeLockActive?: boolean | undefined
   terminalRunningWorkspaceIds: ReadonlySet<string>
   terminalRunningConversationIds: ReadonlySet<string>
@@ -62,6 +63,7 @@ export function ProjectWorkSection({
   projectGitState,
   collapsedProjectIds,
   projectTargetMode = false,
+  embedded = false,
   initialVisibleProjectIds,
   selectedProjectId,
   selectedThreadId,
@@ -106,6 +108,7 @@ export function ProjectWorkSection({
   } = scope
 
   useHowcodeKeybindingCommand('sidebar.find', (event) => {
+    if (embedded) return
     event.preventDefault()
     searchInputRef.current?.focus()
     searchInputRef.current?.select()
@@ -121,7 +124,7 @@ export function ProjectWorkSection({
   const gitStatesByProjectId = useProjectGitStates(visibleProjects, projectGitState)
   useProjectThreadLoading({
     allWorkspaces: displayableWorkspaces,
-    visibleProjects,
+    visibleProjects: embedded ? [] : visibleProjects,
     onLoadProjectThreads,
   })
 
@@ -131,7 +134,7 @@ export function ProjectWorkSection({
       <section className="sidebar-project-work-section" aria-label="Work">
         <ProjectScopeSelector
           appSettings={appSettings}
-          label="No projects yet"
+          label="No workspaces yet"
           open={projectSwitcherOpen}
           projects={scopeSelectorProjects}
           scopeProject={null}
@@ -145,7 +148,7 @@ export function ProjectWorkSection({
         />
         <div className="sidebar-project-work-empty">
           <FolderCode size={18} />
-          <span>Add a project to get started</span>
+          <span>Add a workspace to get started</span>
         </div>
       </section>
     )
@@ -153,7 +156,7 @@ export function ProjectWorkSection({
 
   if (projectTargetMode) {
     return (
-      <section className="sidebar-project-work-section" aria-label="Project install target">
+      <section className="sidebar-project-work-section" aria-label="Workspace install target">
         <ProjectInstallTargetList
           projects={displayableProjects}
           selectedProjectId={selectedProjectId}
@@ -171,11 +174,9 @@ export function ProjectWorkSection({
   const contentProject =
     visibleProjects.length === 1 ? (visibleProjects[0] ?? selectedProject) : selectedProject
 
-  const { activeThreads, olderThreads } = getThreadBucketsForProjectWork(
-    contentProject,
-    displayableWorkspaces,
-    selectedThreadId,
-  )
+  const { activeThreads, olderThreads } = embedded
+    ? { activeThreads: [], olderThreads: [] }
+    : getThreadBucketsForProjectWork(contentProject, displayableWorkspaces, selectedThreadId)
   const currentBranch = getCurrentBranchForProject(
     contentProject,
     projectGitState,
@@ -210,27 +211,29 @@ export function ProjectWorkSection({
   const selectedGroupId = selectedThread?.branchName?.trim() || UNASSIGNED_BRANCH_GROUP_ID
   const multiProjectMode = visibleProjects.length > 1
   return (
-    <section className="sidebar-project-work-section" aria-label="Project work">
-      <ProjectScopeSelector
-        appSettings={appSettings}
-        label={projectScopeLabel}
-        open={projectSwitcherOpen}
-        projects={scopeSelectorProjects}
-        scopeProject={scopeProject}
-        selectedProject={selectedProject}
-        terminalRunningWorkspaceIds={terminalRunningWorkspaceIds}
-        visibleProjects={visibleProjects}
-        onAction={onAction}
-        onOpenChange={setProjectSwitcherOpen}
-        onOpenSettingsPanel={onOpenSettingsPanel}
-        onToggleVisibleProject={toggleVisibleProject}
-      />
+    <section className="sidebar-project-work-section" aria-label="Workspace work">
+      {embedded ? null : (
+        <ProjectScopeSelector
+          appSettings={appSettings}
+          label={projectScopeLabel}
+          open={projectSwitcherOpen}
+          projects={scopeSelectorProjects}
+          scopeProject={scopeProject}
+          selectedProject={selectedProject}
+          terminalRunningWorkspaceIds={terminalRunningWorkspaceIds}
+          visibleProjects={visibleProjects}
+          onAction={onAction}
+          onOpenChange={setProjectSwitcherOpen}
+          onOpenSettingsPanel={onOpenSettingsPanel}
+          onToggleVisibleProject={toggleVisibleProject}
+        />
+      )}
 
       {visibleProjects.length === 0 ? (
         <div className="sidebar-project-work-empty sidebar-project-work-scope-empty">
           <FolderCode size={18} />
-          <span>No projects selected.</span>
-          <span>Choose projects from the selector above.</span>
+          <span>No workspaces selected.</span>
+          <span>Choose workspaces from the selector above.</span>
         </div>
       ) : multiProjectMode ? (
         <MultiProjectWorkContent
@@ -258,12 +261,13 @@ export function ProjectWorkSection({
         />
       ) : (
         <SingleProjectWorkContent
+          controlsOnly={embedded}
           activeView={activeView}
           branchGroups={visibleBranchGroups}
           collapsedBranchIds={collapsedBranchIds}
           currentBranch={currentBranch}
           currentBranchDirty={currentBranchDirty}
-          hideSessionCounts={appSettings.hideSidebarSessionCounts}
+          hideSessionCounts={embedded || appSettings.hideSidebarSessionCounts}
           isGitRepo={Boolean(contentProjectGitState?.isGitRepo)}
           normalizedSearchQuery={normalizedSearchQuery}
           olderThreadCount={olderThreads.length}

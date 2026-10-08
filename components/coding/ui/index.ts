@@ -26,7 +26,6 @@ export {
   reviewStore,
 } from './gitops/review/review-store'
 export { sendReviewCommentsToComposer } from './gitops/review/review-submission'
-
 export {
   notifyProjectDiffInvalidated,
   useProjectDiffInvalidationVersion,
@@ -96,3 +95,4 @@ export {
   resolveCodeThreadSelection,
 } from './shell/workspace-state'
 export { ProjectWorkSection } from './sidebar/project-work/project-work-section'
+export { WorkspaceFolderCreateButton } from './sidebar/projects/workspace-folder-create-button'

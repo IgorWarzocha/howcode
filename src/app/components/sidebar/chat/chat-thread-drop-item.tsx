@@ -9,7 +9,6 @@ type ChatThreadDropItemProps = {
   groupId: string | null
   selectedThreadId: string | null
   onAction: DesktopActionInvoker
-  onRefresh: () => Promise<unknown>
   onThreadDrop: (event: DragEvent, groupId: string | null) => void
   onThreadOpen: (
     projectId: string,
@@ -24,7 +23,6 @@ export function ChatThreadDropItem({
   groupId,
   selectedThreadId,
   onAction,
-  onRefresh,
   onThreadDrop,
   onThreadOpen,
 }: ChatThreadDropItemProps) {
@@ -46,12 +44,17 @@ export function ChatThreadDropItem({
         unread={Boolean(thread.unread)}
         isSelected={selectedThreadId === thread.id}
         title={thread.title}
-        onDelete={() => void onAction('thread.archive', { threadId: thread.id }).then(onRefresh)}
+        onDelete={() => void onAction('thread.archive', { threadId: thread.id })}
         onOpen={() =>
           thread.conversationId &&
-          onThreadOpen(thread.projectId, thread.id, thread.conversationId, 'chat')
+          onThreadOpen(
+            thread.projectId,
+            thread.id,
+            thread.conversationId,
+            thread.isChat === false ? 'thread' : 'chat',
+          )
         }
-        onPin={() => void onAction('thread.pin', { threadId: thread.id }).then(onRefresh)}
+        onPin={() => void onAction('thread.pin', { threadId: thread.id })}
         onRename={(title) =>
           void onAction('thread.rename', {
             projectId: thread.projectId,

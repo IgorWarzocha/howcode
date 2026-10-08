@@ -38,7 +38,7 @@ function BranchHeadingRow({ children, unassigned }: { children: ReactNode; unass
   if (!unassigned) return row
   return (
     <Tooltip
-      content="Sessions not assigned to a git branch"
+      content="Chats not assigned to a git branch"
       className="sidebar-project-work-row-tooltip"
     >
       {row}
@@ -107,7 +107,7 @@ function EmptyBranchPrompt({
           projectId: project.id,
         })
         return {
-          failure: getDesktopBranchActionFailure(threadResult, 'Could not start a new session.'),
+          failure: getDesktopBranchActionFailure(threadResult, 'Could not start a new chat.'),
         }
       },
       getFailure: (result) => result.failure,
@@ -116,11 +116,8 @@ function EmptyBranchPrompt({
   return (
     <div className="sidebar-project-work-empty-branch-row">
       <span className="sidebar-project-work-empty-branch-spacer" aria-hidden="true" />
-      <span>No sessions in this branch.</span>
-      <SidebarActionTooltip
-        description="Switch branches and start a new session."
-        warning={warning}
-      >
+      <span>No chats in this branch.</span>
+      <SidebarActionTooltip description="Switch branches and start a new chat." warning={warning}>
         <button
           type="button"
           className="sidebar-icon-action sidebar-icon-action--sm sidebar-project-work-branch-action sidebar-project-work-branch-action--optical-up sidebar-project-work-empty-start"
@@ -131,7 +128,7 @@ function EmptyBranchPrompt({
             if (currentBranchDirty) return
             void switchAndCreateThread()
           }}
-          aria-label="Switch branches and start a new session"
+          aria-label="Switch branches and start a new chat"
         >
           {execution.pending ? (
             <ActivitySpinner className="h-3 w-3 text-current" />

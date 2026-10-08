@@ -2,6 +2,7 @@ import { Effect } from 'effect'
 import * as SqlClient from 'effect/sql/SqlClient'
 import { ensureProject } from './conversation-scopes.ts'
 import type { ConversationSummaryRecord } from './types.ts'
+import { ensureDefaultWorkspace } from './workspace-organization.ts'
 import { withDatabaseTransaction } from './write-transaction.ts'
 
 export const upsertThreadSummary = Effect.fn('ConversationState.upsertSummary')(function* (
@@ -35,10 +36,17 @@ export const registerConversationFacts = Effect.fn('ConversationState.register')
         lastModifiedMs: input.lastModifiedMs,
         branchName: input.branchName,
       })
-      if (input.isChat)
+      const workspaceId =
+        input.chatGroupId ?? (input.isChat ? yield* ensureDefaultWorkspace() : null)
+      if (input.isChat) {
         yield* sql`INSERT INTO chat_conversations (conversation_id, group_id)
-        VALUES (${input.conversationId}, ${input.chatGroupId ?? null})
+        VALUES (${input.conversationId}, ${workspaceId})
         ON CONFLICT(conversation_id) DO NOTHING`
+      }
+      if (workspaceId) {
+        yield* sql`UPDATE conversation_facts SET workspace_id = ${workspaceId}
+          WHERE conversation_id = ${input.conversationId} AND workspace_id IS NULL`
+      }
       return threadId
     }),
   )

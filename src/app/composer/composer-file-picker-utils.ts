@@ -31,7 +31,7 @@ export function buildFilePickerRootOptions({
 }) {
   return [
     ...(picker?.homePath ? [{ path: picker.homePath, label: 'Home', iconOnly: true }] : []),
-    { path: projectRootPath, label: 'Project', iconOnly: false },
+    { path: projectRootPath, label: 'Workspace', iconOnly: false },
     ...favoriteFolders.map((folderPath) => ({
       path: folderPath,
       label: getFolderLabel(folderPath),

@@ -73,7 +73,7 @@ export function useCodingGitStateSync({
         }
       })
       .catch((error) => {
-        console.warn('Failed to refresh project git state for the diff panel.', error)
+        console.warn('Failed to refresh workspace git state for the diff panel.', error)
       })
       .finally(() => {
         if (!cancelled) {

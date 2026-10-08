@@ -187,7 +187,7 @@ function ProjectWorkBlockActions({
           onClick={onOpenProjectSessions}
         >
           <Archive size={14} />
-          <span>Past sessions</span>
+          <span>Past chats</span>
           {hideSessionCounts ? null : (
             <span className={cn('sidebar-project-work-history-count', appToneSubtleClass)}>
               {olderThreadCount}

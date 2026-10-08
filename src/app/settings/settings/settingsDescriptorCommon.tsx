@@ -37,8 +37,8 @@ export function buildCommonSettingsDescriptors({
       id: 'common.hide-sidebar-session-counts',
       category: 'howcode',
       title: 'Hide sidebar counts',
-      description: 'Hide branch and session count badges in the sidebar.',
-      keywords: 'sidebar counts sessions branch numbers badges hide',
+      description: 'Hide branch and chat count badges in the sidebar.',
+      keywords: 'sidebar counts chats branch numbers badges hide',
       render: () => (
         <ToggleBox
           checked={appSettings.hideSidebarSessionCounts}

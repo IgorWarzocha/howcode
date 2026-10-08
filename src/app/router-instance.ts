@@ -17,6 +17,7 @@ const appRoutes = [
   '/archived',
   '/automations',
   '/chat',
+  '/chats',
   '/claw',
   '/code',
   '/git',
@@ -27,6 +28,7 @@ const appRoutes = [
   '/skills',
   '/thread',
   '/work',
+  '/workspaces',
 ].map((path) => createRoute({ getParentRoute: () => rootRoute, path }))
 
 export const router = createRouter({ history, routeTree: rootRoute.addChildren(appRoutes) })

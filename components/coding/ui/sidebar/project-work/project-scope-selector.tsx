@@ -140,10 +140,10 @@ export function ProjectScopeSelector({
   return (
     <div ref={selectorRef} className="sidebar-project-work-project-card">
       <div className="sidebar-project-work-project-header-row">
-        <div className="sidebar-project-work-project-kicker">Projects</div>
+        <div className="sidebar-project-work-project-kicker">Workspaces</div>
         <IconButton
           ref={createButtonRef}
-          label="Add project"
+          label="Add workspace"
           icon={<Plus size={13} />}
           tooltipPlacement="right"
           className="sidebar-project-work-project-create-button h-7 w-7 -translate-x-px rounded-md"
@@ -180,9 +180,9 @@ export function ProjectScopeSelector({
                 event.stopPropagation()
                 setProjectSearchQuery('')
               }}
-              placeholder="Search projects"
+              placeholder="Search workspaces"
               className="sidebar-search-input"
-              aria-label="Search projects"
+              aria-label="Search workspaces"
             />
           </label>
           {filteredProjects.map((project) => (
@@ -196,7 +196,7 @@ export function ProjectScopeSelector({
             />
           ))}
           {filteredProjects.length === 0 ? (
-            <div className="sidebar-project-work-project-empty">No matching projects</div>
+            <div className="sidebar-project-work-project-empty">No matching workspaces</div>
           ) : null}
         </div>
       ) : null}

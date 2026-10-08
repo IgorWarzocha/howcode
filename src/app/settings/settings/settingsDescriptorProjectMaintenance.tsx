@@ -23,9 +23,9 @@ export function buildProjectMaintenanceSettingsDescriptors({
     {
       id: 'projects.deletion-mode',
       category: 'howcode',
-      title: 'Project deletion cleanup',
-      description: 'Remove conversations from Howcode, or also delete the project folder.',
-      keywords: 'delete deletion cleanup project full clean pi only',
+      title: 'Workspace deletion cleanup',
+      description: 'Remove conversations from Howcode, or also delete the workspace folder.',
+      keywords: 'delete deletion cleanup workspace full clean pi only',
       render: () => (
         <SettingsSegmentedControl
           columnsClassName="grid-cols-2"
@@ -41,9 +41,9 @@ export function buildProjectMaintenanceSettingsDescriptors({
     {
       id: 'projects.import-ui',
       category: 'howcode',
-      title: 'Project UI import',
-      description: 'Scan projects for UI info like repo and origin status.',
-      keywords: 'project import ui scan repo origin first launch',
+      title: 'Workspace UI import',
+      description: 'Scan workspaces for UI info like repo and origin status.',
+      keywords: 'workspace import ui scan repo origin first launch',
       render: () => (
         <div className="grid justify-items-end gap-1.5">
           <div className="flex items-center gap-2">
@@ -78,7 +78,7 @@ export function buildProjectMaintenanceSettingsDescriptors({
           ) : null}
           {controller.projects.desktopBridgeAvailable ? null : (
             <div className={`text-right ${appTypeSmallClass} ${appToneMutedClass}`}>
-              Project sync needs the desktop bridge.
+              Workspace sync needs the desktop bridge.
             </div>
           )}
           {controller.projects.importErrorMessage ? (

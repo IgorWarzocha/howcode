@@ -23,9 +23,9 @@
     "LICENSE"
   ],
   "dependencies": {
-    "@earendil-works/chord": "1.0.4",
-    "@earendil-works/pi-ai": "1.0.4",
-    "@earendil-works/pi-durable": "1.0.4",
+    "@earendil-works/chord": "1.1.0",
+    "@earendil-works/pi-ai": "1.1.0",
+    "@earendil-works/pi-durable": "1.1.0",
     "@effect/sql-sqlite-node": "4.0.0-rc.116",
     "effect": "4.0.0-rc.116",
     "esbuild": "0.28.2",

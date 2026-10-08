@@ -125,7 +125,7 @@ export function CodeWorkspaceView({
     terminalDrawerVisible,
     terminalDrawerOverlay,
   )
-  const gitOpsFileTreeStateKey = `${composerProjectId}:${terminalConversationId ?? 'project'}`
+  const gitOpsFileTreeStateKey = `${composerProjectId}:${terminalConversationId ?? 'workspace'}`
   const gitOpsFileTreeVisible =
     gitOpsFileTreeVisibilityByThread[gitOpsFileTreeStateKey] ??
     shellState?.appSettings.gitDiffFileTreeDefaultVisible ??

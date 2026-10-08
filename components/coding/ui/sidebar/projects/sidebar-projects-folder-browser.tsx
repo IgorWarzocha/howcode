@@ -64,7 +64,7 @@ function CurrentFolderProjectActions({
   const canTryCreateInCurrentFolder = !(draftLooksLikePath || busy || loading)
   const disabledCreateTitle = draftLooksLikePath
     ? 'Enter a folder name here, or use the add button to use the typed path.'
-    : 'Create a new project folder here.'
+    : 'Create a new workspace folder here.'
 
   return (
     <>
@@ -83,7 +83,7 @@ function CurrentFolderProjectActions({
         <span>
           {trimmedProjectNameDraft
             ? `Create “${trimmedProjectNameDraft}” in this folder`
-            : 'Create new project folder here'}
+            : 'Create new workspace folder here'}
         </span>
       </button>
       {draftLooksLikePath ? (
@@ -96,7 +96,7 @@ function CurrentFolderProjectActions({
         disabled={busy || loading}
       >
         <Plus size={13} />
-        <span>Use current folder as project</span>
+        <span>Use current folder as workspace</span>
       </button>
     </>
   )

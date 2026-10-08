@@ -23,7 +23,7 @@ const EMPTY_LIST: [] = []
 export function useAppShellController() {
   const queryClient = useQueryClient()
   const bundle = useAppShellStateBundle()
-  const chatSidebar = useAppShellChatSidebar(bundle.workspace.state.activeView)
+  const chatSidebar = useAppShellChatSidebar()
   const { toast, showToast } = useToast()
   const desktopShell = useDesktopShell()
   const invokeDesktopAction = useDesktopBridge()
@@ -35,6 +35,8 @@ export function useAppShellController() {
     projects,
     shellLoading: desktopShell.shellLoading,
     state: bundle.workspace.state,
+    selectedWorkspaceId: chatSidebar.selectedChatGroupId,
+    onSelectWorkspace: chatSidebar.setSelectedChatGroupId,
   })
   const selectedThread = useSelectedThreadData({
     liveThreadData: bundle.thread.liveThreadData,
@@ -217,6 +219,7 @@ export function useAppShellController() {
       closeUtilityView: commands.handleCloseUtilityView,
       showLanding: commands.handleShowLanding,
       showView: commands.handleShowView,
+      showWorkspace: commands.handleShowWorkspace,
       toggleSettings: commands.handleToggleSettings,
     },
     resourceScope: {

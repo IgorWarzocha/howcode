@@ -152,7 +152,7 @@ function DiffFilesView(input: DiffPanelContentBodyProps) {
 export function DiffPanelContentBody(input: DiffPanelContentBodyProps) {
   if (!input.diff.isGitRepo) {
     return (
-      <DiffPanelEmptyState message="Diffs are unavailable because this project is not a git repository." />
+      <DiffPanelEmptyState message="Diffs are unavailable because this workspace is not a git repository." />
     )
   }
   return (

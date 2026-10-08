@@ -71,7 +71,7 @@ export function SessionRow({
       ) : null}
       <span className="shrink-0 text-xs text-[color:var(--muted-2)]">{thread.age}</span>
       <div className="relative">
-        <Tooltip content="Delete session">
+        <Tooltip content="Delete chat">
           <button
             ref={deleteButtonRef}
             type="button"

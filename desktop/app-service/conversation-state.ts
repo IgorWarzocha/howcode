@@ -23,7 +23,7 @@ export const getRuntimeConversationMetadata = databaseOperation(
       ConversationMetadataSchema,
       yield* sql`
       SELECT conversation_facts.cwd AS projectId, title, deleted, branch_name AS branchName,
-        chat_conversations.group_id AS chatGroupId,
+        conversation_facts.workspace_id AS chatGroupId,
         CASE WHEN chat_conversations.conversation_id IS NULL THEN 0 ELSE 1 END AS isChat
       FROM conversation_facts LEFT JOIN chat_conversations ON chat_conversations.conversation_id = conversation_facts.conversation_id
       WHERE conversation_facts.conversation_id = ${conversationId}
@@ -49,7 +49,7 @@ export function registerRuntimeConversation(input: {
   if (existing) return input.conversationId
   return registerFacts({
     ...input,
-    title: input.title ?? 'New thread',
+    title: input.title ?? 'New chat',
     lastModifiedMs: input.lastModifiedMs ?? Date.now(),
   })
 }

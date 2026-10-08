@@ -24,7 +24,7 @@ export function InboxEmptyState() {
         >
           <div className={`${appTypeSectionTitleClass} ${appToneTextClass}`}>Inbox is waiting</div>
           <div>
-            Select a thread on the left to skim Pi’s latest reply and either answer or clear it.
+            Select a chat on the left to skim Pi’s latest reply and either answer or clear it.
           </div>
         </EmptyStateCard>
       </div>

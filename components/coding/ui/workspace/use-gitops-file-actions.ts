@@ -16,7 +16,7 @@ export function useGitOpsFileActions(handleAction: DesktopActionInvoker): GitOps
       })
       const fileWrite = actionResult?.result?.fileWrite
       if (fileWrite) return fileWrite
-      throw new Error(actionResult?.result?.error ?? 'Could not save the project file.')
+      throw new Error(actionResult?.result?.error ?? 'Could not save the workspace file.')
     },
     [handleAction],
   )

@@ -129,17 +129,32 @@ export const listProjectFamilyConversationIds = Effect.fn(
     `
         SELECT conversation_facts.conversation_id AS conversationId
         FROM conversation_facts
-        WHERE conversation_facts.deleted = 0 AND conversation_facts.cwd = ?
+        WHERE conversation_facts.deleted = 0 AND (
+          conversation_facts.workspace_id = 'directory:' || ?
+          OR (conversation_facts.workspace_id IS NULL AND (conversation_facts.cwd = ?
           OR conversation_facts.cwd IN (
             SELECT cwd
             FROM project_worktrees
             WHERE root_cwd = ? AND is_main = 0
-          )
+          ))))
       `,
-    [projectId, projectId],
+    [projectId, projectId, projectId],
   )
 
   return rows.map((row) => row.conversationId)
+})
+
+export const hasRetainedProjectFamilyConversations = Effect.fn(
+  'Workspace.hasRetainedDirectoryChats',
+)(function* (projectId: string) {
+  const sql = yield* SqlClient.SqlClient
+  const rows = yield* sql`SELECT 1 FROM conversation_facts
+      WHERE deleted = 0 AND workspace_id IS NOT NULL
+        AND workspace_id != ${`directory:${projectId}`}
+        AND (cwd = ${projectId} OR cwd IN (
+          SELECT cwd FROM project_worktrees WHERE root_cwd = ${projectId} AND is_main = 0
+        )) LIMIT 1`
+  return rows.length > 0
 })
 
 export const listProjectFamilyProjectIds = Effect.fn('threadStateDb.listProjectFamilyProjectIds')(

@@ -15,6 +15,9 @@ export type {
 export const getProjectStoredUsageTotals = databaseOperation(queries.getProjectStoredUsageTotals)
 export const hasProject = databaseOperation(queries.hasProject)
 export const hasRunningProjectThread = databaseOperation(queries.hasRunningProjectThread)
+export const hasRetainedProjectFamilyConversations = databaseOperation(
+  queries.hasRetainedProjectFamilyConversations,
+)
 export const listProjectFamilyBranchThreadIds = databaseOperation(
   queries.listProjectFamilyBranchThreadIds,
 )

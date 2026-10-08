@@ -87,6 +87,11 @@ export function useAppShellCommands({
     dispatch({ type: 'close-utility-view' })
   }
 
+  const handleShowWorkspace = () => {
+    dispatch({ type: 'show-view', view: 'chat' })
+    dispatch({ type: 'clear-thread-selection' })
+  }
+
   const handleCollapseAll = () => {
     dispatch({ type: 'collapse-all-projects' })
     void handleAction('threads.collapse-all')
@@ -182,6 +187,7 @@ export function useAppShellCommands({
       dispatch({ type: 'set-selected-project', projectId }),
     handleSelectInboxThread,
     handleShowView,
+    handleShowWorkspace,
     handleShowLanding,
     handleThreadOpen,
     handleThreadCycle,

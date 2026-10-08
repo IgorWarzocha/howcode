@@ -287,7 +287,7 @@ export function normalizeThreadTitle(value: unknown) {
     .replace(/\s+/g, ' ')
     .trim()
   if (!text) {
-    return 'New thread'
+    return 'New chat'
   }
 
   return text.length > 72 ? `${text.slice(0, 69)}...` : text

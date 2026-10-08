@@ -45,7 +45,7 @@ export function AppMenu({
           },
         ]
       : []),
-    { icon: <Archive size={15} />, title: 'Archived threads', onClick: onOpenArchivedThreads },
+    { icon: <Archive size={15} />, title: 'Archived chats', onClick: onOpenArchivedThreads },
     { icon: <Settings size={15} />, title: 'App settings', onClick: onOpenSettingsPanel },
   ]
 

@@ -7,6 +7,7 @@ import type {
 } from './post-effects/context'
 import { shellPostEffectHandlers } from './post-effects/shell-handlers'
 import { threadPostEffectHandlers } from './post-effects/thread-handlers'
+import { workspaceOrganizationPostEffect } from './post-effects/workspace-organization'
 
 export { applyDiffPreferencesToThread } from '@howcode/components/coding/ui'
 export {
@@ -25,6 +26,7 @@ const postEffectHandlers: PostEffectHandler[] = [
   ...shellPostEffectHandlers,
   ...threadPostEffectHandlers,
   ...workspacePostEffectHandlers,
+  workspaceOrganizationPostEffect,
 ]
 
 export async function runPostDesktopActionEffects(input: RunPostDesktopActionEffectsInput) {

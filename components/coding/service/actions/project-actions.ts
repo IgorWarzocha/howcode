@@ -28,6 +28,7 @@ import {
   deleteProject,
   getProjectWorktree,
   hasProject,
+  hasRetainedProjectFamilyConversations,
   hasRunningProjectThread,
   listProjectFamilyConversationIds,
   listProjectFamilyProjectIds,
@@ -116,6 +117,12 @@ export function createProjectActionHandler(peers: CodingPeers) {
     projectConversationIds: string[],
     projectFamilyIds: string[],
   ) {
+    if (hasRetainedProjectFamilyConversations(projectId)) {
+      return handledAction({
+        error:
+          'Cannot delete this folder: chats in other workspaces still use it. Choose Pi only cleanup to keep their working directories.',
+      })
+    }
     const projectWorktree = getProjectWorktree(projectId)
     if (projectWorktree && !projectWorktree.isMain) {
       return handledAction({

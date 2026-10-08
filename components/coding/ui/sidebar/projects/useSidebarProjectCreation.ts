@@ -131,7 +131,7 @@ export function useSidebarProjectCreation({
       recordCreatedProject({ result, setCreatedProjectIds })
       setPendingProject(null)
     } catch (error) {
-      setCreateErrorMessage(error instanceof Error ? error.message : 'Unable to add project.')
+      setCreateErrorMessage(error instanceof Error ? error.message : 'Unable to add workspace.')
       restoreCreateProjectDraft({ draft, setCreateOpen, setPendingProject, setProjectNameDraft })
     } finally {
       setCreateBusy(false)
@@ -164,7 +164,7 @@ export function useSidebarProjectCreation({
       recordCreatedProject({ result, setCreatedProjectIds })
       setPendingProject(null)
     } catch (error) {
-      setCreateErrorMessage(error instanceof Error ? error.message : 'Unable to add project.')
+      setCreateErrorMessage(error instanceof Error ? error.message : 'Unable to add workspace.')
       setCreateOpen(true)
       setPendingProject(null)
     } finally {

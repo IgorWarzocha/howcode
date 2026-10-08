@@ -51,6 +51,7 @@ function upsertSidebarThread({
   projectId,
   thread,
   chatGroupId,
+  isChat,
   updateProjectThreads = true,
   replaceConversationId = null,
   revealProject = false,
@@ -60,6 +61,7 @@ function upsertSidebarThread({
   projectId: string
   thread: Thread
   chatGroupId?: string | null | undefined
+  isChat?: boolean
   updateProjectThreads?: boolean | undefined
   replaceConversationId?: string | null | undefined
   revealProject?: boolean | undefined
@@ -79,6 +81,7 @@ function upsertSidebarThread({
           ...thread,
           projectId,
           groupId: chatGroupId,
+          ...(isChat === undefined ? {} : { isChat }),
         },
         { replaceConversationId },
       ),
@@ -162,7 +165,7 @@ export function applyOptimisticComposerThread({
   })
   setLiveThreadData(() => ({
     conversationId: localFallback.conversationId,
-    title: 'New thread',
+    title: 'New chat',
     messages: [],
     previousMessageCount: 0,
     isStreaming: true,
@@ -267,7 +270,7 @@ export function reconcileComposerThreadResult({
     projectId,
     thread: buildOptimisticThread({
       id: resultThreadId,
-      title: title ?? 'New thread',
+      title: title ?? 'New chat',
       conversationId: resultConversationId,
       branchName: getLocalDraftBranchName(submittedConversationId),
     }),
@@ -339,7 +342,8 @@ export function applyThreadEventToSidebarState({
       branchName: event.branchName,
       running: event.thread.isStreaming || event.thread.isCompacting,
     }),
-    chatGroupId: event.isChat === true ? event.chatGroupId : undefined,
+    chatGroupId: event.chatGroupId ?? (eventIsChat ? null : undefined),
+    isChat: eventIsChat,
     updateProjectThreads: projectThreadScopeMatchesView,
     replaceConversationId,
   })

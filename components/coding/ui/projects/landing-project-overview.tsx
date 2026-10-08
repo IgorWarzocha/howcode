@@ -11,7 +11,6 @@ import type { Project } from '../../../../src/app/types'
 import {
   appToneMutedClass,
   appToneTextClass,
-  appTypeDashboardLabelStrongClass,
   appTypeDashboardTitleClass,
   appTypeGroupTitleClass,
   appTypeSmallClass,
@@ -191,19 +190,17 @@ export function ProjectOverview({
     >
       <div className="col-start-2 grid min-h-0 w-full grid-cols-[2rem_minmax(0,1fr)_2rem] content-end gap-x-2 gap-y-3 min-[560px]:gap-y-4 [@media(max-height:660px)]:gap-y-2">
         <div className="col-start-2 grid w-full gap-1.5 [@media(max-height:660px)]:hidden">
-          <div
-            className={`${appTypeDashboardLabelStrongClass} tracking-[0.12em] ${appToneMutedClass} uppercase`}
-          >
-            Project overview
-          </div>
           <h1 className={`m-0 ${appTypeDashboardTitleClass} ${appToneTextClass} text-balance`}>
             {project.name}
           </h1>
+          <p className={`m-0 ${appTypeSmallClass} ${appToneMutedClass}`}>
+            Chat usage in this folder.
+          </p>
         </div>
 
         <div className="col-start-2 grid w-full grid-cols-[repeat(auto-fit,minmax(118px,1fr))] gap-3 py-3 min-[560px]:gap-4 [@media(max-height:660px)]:py-2">
           <ProjectMetric
-            label="Sessions"
+            label="Chats"
             loading={usageLoading}
             value={formatExactNumber(sessionCount)}
             detail={`${formatExactNumber(assistantTurnCount)} turns`}
@@ -212,7 +209,7 @@ export function ProjectOverview({
             label="Spend"
             loading={usageLoading}
             value={formatCost(usageSummary?.costTotal)}
-            detail={`${formatAverageCost(usageSummary?.costTotal, sessionsWithUsageCount)}/active session`}
+            detail={`${formatAverageCost(usageSummary?.costTotal, sessionsWithUsageCount)}/active chat`}
           />
           <ProjectMetric
             label="Tokens"

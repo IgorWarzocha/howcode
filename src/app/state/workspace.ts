@@ -62,7 +62,7 @@ export function getCurrentTitle(activeView: View, selectedThread: Thread | undef
   }
 
   if (activeView === 'project') {
-    return 'Project overview'
+    return 'Workspace overview'
   }
 
   if (activeView === 'gitops') {
@@ -70,16 +70,16 @@ export function getCurrentTitle(activeView: View, selectedThread: Thread | undef
   }
 
   if (activeView === 'archived') {
-    return 'Archived threads'
+    return 'Archived chats'
   }
 
   if (activeView === 'sessions') {
-    return 'Sessions'
+    return 'Past chats'
   }
 
   return (activeView === 'chat' || activeView === 'thread') && selectedThread
     ? selectedThread.title
-    : 'New thread'
+    : 'New chat'
 }
 
 export function getProjectName(project: Project | undefined): string {

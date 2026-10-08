@@ -38,7 +38,7 @@ export async function handleChatDesktopAction(
 ): Promise<ActionHandlerResult> {
   switch (action) {
     case 'chat.group.create': {
-      const name = typeof payload.value === 'string' ? payload.value : 'New group'
+      const name = typeof payload.value === 'string' ? payload.value : 'New workspace'
       createChatGroup(name)
       return handledAction()
     }

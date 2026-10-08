@@ -17,7 +17,7 @@ export function buildGitDiffSettingsDescriptors({
       category: 'git-diffs',
       title: 'GitOps default',
       description: 'Default global commit action.',
-      keywords: 'gitops commit push default project',
+      keywords: 'gitops commit push default workspace',
       render: () => (
         <SettingsSegmentedControl
           columnsClassName="grid-cols-2"

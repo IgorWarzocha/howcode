@@ -134,7 +134,7 @@ function ChatGroupActions({
         </button>
       </Tooltip>
 
-      <Tooltip content="Group actions" placement="right">
+      <Tooltip content="Workspace actions" placement="right">
         <button
           type="button"
           className={cn(
@@ -142,7 +142,7 @@ function ChatGroupActions({
             actionMenuOpen && 'bg-[rgba(255,255,255,0.05)] text-[color:var(--text)]',
           )}
           onClick={onToggleActions}
-          aria-label="Group actions"
+          aria-label="Workspace actions"
           aria-haspopup="menu"
           aria-expanded={actionMenuOpen}
           aria-controls={actionMenuId}
@@ -212,13 +212,13 @@ export function ChatGroupRow({
       data-highlighted={isActive || actionMenuOpen ? 'true' : 'false'}
       data-dragging={isDragging ? 'true' : 'false'}
     >
-      <Tooltip content={isExpanded ? 'Collapse group' : 'Expand group'} placement="right">
+      <Tooltip content={isExpanded ? 'Collapse workspace' : 'Expand workspace'} placement="right">
         <button
           type="button"
           className="sidebar-project-toggle"
           onClick={onToggleExpanded}
           data-can-toggle="true"
-          aria-label={isExpanded ? 'Collapse group' : 'Expand group'}
+          aria-label={isExpanded ? 'Collapse workspace' : 'Expand workspace'}
           aria-expanded={isExpanded}
           aria-controls={threadGroupId}
         >

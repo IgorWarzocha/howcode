@@ -22,10 +22,18 @@ import {
   renameThreadTitle,
   setThreadDiffPreferences,
 } from '../../../../desktop/thread-state-db/thread-writes.ts'
+import {
+  moveWorkspaceChat,
+  reconcileWorkspaceOrganization,
+} from '../../../../desktop/thread-state-db/workspace-organization.ts'
 import { withDatabaseTransaction } from '../../../../desktop/thread-state-db/write-transaction.ts'
 import { artifactsDatabaseSchema } from '../../../artifacts/service/schema.ts'
 import { codingDatabaseSchema } from '../schema.ts'
 import { deleteProject } from './project-writes.ts'
+import {
+  hasRetainedProjectFamilyConversations,
+  listProjectFamilyConversationIds,
+} from './queries.ts'
 import {
   registerManagedWorktree,
   setProjectWorktreeCompleted,
@@ -75,6 +83,54 @@ async function makeFixture(initialize?: (database: DatabaseSync) => void) {
   runtime.runSync(query('SELECT 1'))
   return { filename, runtime }
 }
+
+it('preserves moved-out chats and their artifacts across directory workspace removal and restart', async () => {
+  const { filename, runtime } = await makeFixture()
+  runtime.runSync(query("INSERT INTO chat_groups (id, name) VALUES ('research', 'Research')"))
+  for (const conversationId of ['moved', 'stays']) {
+    runtime.runSync(
+      registerConversationFacts({
+        conversationId,
+        projectId: '/repo',
+        title: conversationId,
+        lastModifiedMs: 1,
+      }),
+    )
+    runtime.runSync(
+      query(
+        'INSERT INTO artifacts (id, conversation_id, kind, content, version) VALUES (?, ?, ?, ?, 1)',
+        [conversationId, conversationId, 'markdown', 'Keep'],
+      ),
+    )
+  }
+  runtime.runSync(reconcileWorkspaceOrganization([{ id: '/repo', rootId: '/repo', name: 'Repo' }]))
+  runtime.runSync(moveWorkspaceChat('moved', 'research'))
+  expect(runtime.runSync(hasRetainedProjectFamilyConversations('/repo'))).toBe(true)
+  const removedIds = runtime.runSync(listProjectFamilyConversationIds('/repo'))
+  expect(removedIds).toEqual(['stays'])
+  for (const id of removedIds)
+    runtime.runSync(query('DELETE FROM artifacts WHERE conversation_id = ?', [id]))
+  runtime.runSync(deleteProject('/repo'))
+  await runtime.dispose()
+  const reopened = makeThreadStateDatabaseRuntime(filename, [
+    codingDatabaseSchema,
+    artifactsDatabaseSchema,
+  ])
+  fixtures[fixtures.length - 1]!.runtime = reopened
+  expect(
+    reopened.runSync(
+      query(
+        'SELECT conversation_id AS id, cwd, workspace_id AS workspace, deleted FROM conversation_facts ORDER BY id',
+      ),
+    ),
+  ).toEqual([
+    { id: 'moved', cwd: '/repo', workspace: 'research', deleted: 0 },
+    { id: 'stays', cwd: '/repo', workspace: 'directory:/repo', deleted: 1 },
+  ])
+  expect(reopened.runSync(query('SELECT conversation_id AS id, content FROM artifacts'))).toEqual([
+    { id: 'moved', content: 'Keep' },
+  ])
+})
 
 afterEach(async () => {
   for (const fixture of fixtures.splice(0).reverse()) {

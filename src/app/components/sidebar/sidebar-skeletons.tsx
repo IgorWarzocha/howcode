@@ -16,7 +16,7 @@ export function SidebarProjectsSkeleton() {
     <div
       className="sidebar-scroll-region"
       role="status"
-      aria-label="Loading projects"
+      aria-label="Loading workspaces"
       aria-busy="true"
     >
       <div className="sidebar-list px-1 pt-1">

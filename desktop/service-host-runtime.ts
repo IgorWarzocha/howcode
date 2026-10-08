@@ -20,11 +20,14 @@ import {
   desktopServiceRemoteMethods,
 } from '../shared/desktop-service-rpc.ts'
 import { desktopShutdownTimeouts } from '../shared/desktop-shutdown-deadlines.ts'
+import { getDesktopWorkingDirectory } from '../shared/desktop-working-directory.ts'
 import { makeShutdownCoordinator } from '../shared/effect-shutdown.ts'
 import type { TerminalRpcRequest } from '../shared/terminal-rpc.ts'
+import { isToolkitComponentEnabled } from '../shared/toolkit-components.ts'
 import { registerConversationCleanup } from './app-service/thread-actions.ts'
 import * as coreApp from './app-service.ts'
 import { loadAppSettings } from './app-settings/readers.ts'
+import { syncWorkspaceOrganization } from './chat-state-db.ts'
 import { emitDesktopEvent } from './runtime/desktop-events.ts'
 import { getAgentDirectory } from './settings/paths.ts'
 import {
@@ -87,6 +90,19 @@ const unregisterCodingMigration = registerDatabaseStartupTask(cleanupLegacyCheck
 const app = {
   ...coreApp,
   loadShellState: (cwd: string) => coreApp.loadShellState(cwd, codingComponent.loadShell),
+  async loadChatSidebarState(groupId?: string | null) {
+    if (isToolkitComponentEnabled(loadAppSettings(), 'coding')) {
+      const shell = await codingComponent.loadShell(getDesktopWorkingDirectory())
+      syncWorkspaceOrganization(
+        shell.projects.map((project) => ({
+          id: project.id,
+          name: project.name,
+          rootId: project.worktree?.rootProjectId ?? project.id,
+        })),
+      )
+    }
+    return coreApp.loadChatSidebarState(groupId)
+  },
   async handleDesktopAction(...args: Parameters<typeof coreApp.handleDesktopAction>) {
     const result = await codingComponent.handleAction(...args)
     return result.handled ? result.result : coreApp.handleDesktopAction(...args)

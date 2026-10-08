@@ -91,16 +91,16 @@ export function SessionsView({
       <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-4 overflow-hidden">
         <div className="grid gap-4">
           <ViewHeader
-            title="Past sessions"
+            title="Past chats"
             onClose={onClose}
-            closeLabel="Close past sessions"
+            closeLabel="Close past chats"
             closeTooltip={false}
           />
 
           <div className="grid gap-3">
             <div className="grid gap-1">
               <div className={`${appTypeSectionTitleClass} ${appToneTextClass}`}>
-                {project?.name ?? 'No project selected'}
+                {project?.name ?? 'No workspace selected'}
               </div>
             </div>
 
@@ -111,9 +111,9 @@ export function SessionsView({
                 onKeyDown={(event) => {
                   if (event.key === 'Escape') setSearchQuery('')
                 }}
-                placeholder="Search past sessions"
+                placeholder="Search past chats"
                 className="min-w-0 bg-transparent text-sm text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
-                aria-label="Search sessions"
+                aria-label="Search chats"
               />
             </label>
             {visibleThreads.length > 0 ? (
@@ -155,10 +155,10 @@ export function SessionsView({
             <div className={inlineEmptyNoteClass}>
               <div className="grid gap-1">
                 <div className={`${appTypeSectionTitleClass} ${appToneTextClass}`}>
-                  No past sessions
+                  No past chats
                 </div>
                 <p className={cn('m-0 max-w-[448px]', appToneMutedClass)}>
-                  Older project threads will appear here once they leave the active sidebar.
+                  Older workspace chats will appear here once they leave the active sidebar.
                 </p>
               </div>
             </div>

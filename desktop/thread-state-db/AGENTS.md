@@ -2,3 +2,4 @@
 - The synchronous boundary deliberately prevents query sequences from interleaving. Keep async work out of repository operations; background Git migrations have a separate scoped lifetime.
 - Use `withDatabaseTransaction` to preserve deferred locking. The Node adapter's default `BEGIN IMMEDIATE` is not equivalent.
 - Schema initialization executes explicit SQL statements. Effect's unprepared query path still prepares one statement; it is not a multi-statement `exec` replacement.
+- `workspace-organization.ts` owns universal workspace membership in `conversation_facts.workspace_id`. Keep `chat_groups` and `chat_conversations` names at persistence compatibility boundaries. The latter records legacy composer capabilities, not workspace membership. Directory mappings arrive from the coding component at host composition; worktrees belong to their root workspace.

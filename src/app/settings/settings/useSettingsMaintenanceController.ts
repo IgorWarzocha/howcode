@@ -19,7 +19,7 @@ export function useSettingsMaintenanceController(input: { onAction: DesktopActio
       return
     }
     setImportBusy(true)
-    setImportStatusMessage('Scanning projects for UI info…')
+    setImportStatusMessage('Scanning workspaces for UI info…')
     setImportErrorMessage(null)
     try {
       const result = await input.onAction('projects.import.apply', { projectIds: [] })

@@ -1,5 +1,4 @@
 import { Tooltip } from '@howcode/common/tooltip'
-import { codingComponent } from '@howcode/components/coding/ui/component'
 import { skillsComponent } from '@howcode/components/skills/ui/component'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
@@ -20,7 +19,7 @@ type SidebarNavigableView = Exclude<View, 'gitops'>
 
 import { AppMenu } from '@howcode/app-menu'
 import { NavButton } from '@howcode/common/nav-button'
-import { ProjectWorkSection } from '@howcode/components/coding/ui'
+import { ProjectWorkSection, WorkspaceFolderCreateButton } from '@howcode/components/coding/ui'
 import { iconButtonClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import { SidebarChatSection } from './chat/sidebar-chat-section'
@@ -51,6 +50,7 @@ type SidebarProps = {
   collapsedProjectIds: Record<string, boolean>
   onAction: DesktopActionInvoker
   onShowView: (view: SidebarNavigableView) => void
+  onShowWorkspace: () => void
   onToggleSettings: () => void
   onToggleSidebar: () => void
   onOpenAbout: () => void
@@ -61,31 +61,29 @@ type SidebarProps = {
   onCreateChatGroup: (name: string) => Promise<unknown>
   onSelectChatGroup: (groupId: string | null) => void
   onNewChat: (groupId: string | null) => void
-  onRefreshChatSidebar: () => Promise<unknown>
   onProjectSelect: (projectId: string) => void
   onProjectPrimeSelection: (projectId: string) => void
   onProjectTargetSelected?: (() => void) | undefined
   onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
   onSelectInboxThread: (thread: InboxThread) => void
-  onThreadOpen: (projectId: string, threadId: string, conversationId: string) => void
+  onThreadOpen: (
+    projectId: string,
+    threadId: string,
+    conversationId: string,
+    view?: 'chat' | 'thread',
+  ) => void
   onToggleProjectCollapse: (projectId: string) => void
   compactMode?: boolean
 }
 
-function isCodeModeActive(activeView: View) {
-  return activeView !== 'chat' && activeView !== 'claw' && activeView !== 'work'
-}
-
-function SidebarModeNav({
+function SidebarNavigation({
   activeView,
-  codeModeActive,
-  appSettings,
   onShowView,
+  onShowWorkspace,
 }: {
   activeView: View
-  appSettings: AppSettings
-  codeModeActive: boolean
   onShowView: (view: SidebarNavigableView) => void
+  onShowWorkspace: () => void
 }) {
   return (
     <nav className="sidebar-mode-nav" aria-label="Primary navigation">
@@ -97,18 +95,10 @@ function SidebarModeNav({
       />
       <NavButton
         icon={<MessageSquare size={16} />}
-        label="Chat"
-        active={activeView === 'chat'}
-        onClick={() => onShowView('chat')}
+        label="Workspaces"
+        active={activeView !== 'inbox'}
+        onClick={onShowWorkspace}
       />
-      {isToolkitComponentEnabled(appSettings, codingComponent.id) ? (
-        <NavButton
-          icon={<codingComponent.navigation.icon size={16} />}
-          label={codingComponent.navigation.label}
-          active={codeModeActive && activeView !== 'inbox'}
-          onClick={() => onShowView(codingComponent.navigation.view)}
-        />
-      ) : null}
     </nav>
   )
 }
@@ -129,47 +119,72 @@ function SidebarContent(props: SidebarProps) {
       />
     )
   }
-  if (props.activeView === 'chat' && props.chatSidebarLoading && !props.chatSidebarState)
+  if (props.activeView !== 'skills' && props.chatSidebarLoading && !props.chatSidebarState)
     return <SidebarChatSkeleton />
-  if (props.activeView === 'chat') {
+  if (props.activeView !== 'skills') {
     return (
       <SidebarChatSection
         chatState={props.chatSidebarState}
         selectedGroupId={props.selectedChatGroupId}
         selectedThreadId={props.selectedThreadId}
         onAction={props.onAction}
-        onCreateGroup={props.onCreateChatGroup}
+        onCreateGroup={async (name) => {
+          await props.onCreateChatGroup(name)
+          props.onShowWorkspace()
+        }}
         onSelectGroup={props.onSelectChatGroup}
         onNewChat={props.onNewChat}
-        onRefresh={props.onRefreshChatSidebar}
         onThreadOpen={props.onThreadOpen}
-      />
-    )
-  }
-  if (!isToolkitComponentEnabled(props.appSettings, 'coding') && props.activeView !== 'skills')
-    return null
-  if (props.activeView !== 'skills') {
-    return (
-      <ProjectWorkSection
-        activeView={props.activeView}
-        loading={props.projectsLoading ?? false}
-        projects={props.projects}
-        projectGitState={props.projectGitState}
-        collapsedProjectIds={props.collapsedProjectIds}
-        initialVisibleProjectIds={props.sidebarVisibleProjectIds}
-        selectedProjectId={props.selectedProjectId}
-        selectedThreadId={props.selectedThreadId}
-        terminalRunningWorkspaceIds={props.terminalRunningWorkspaceIds}
-        terminalRunningConversationIds={props.terminalRunningConversationIds}
-        onAction={props.onAction}
-        appSettings={props.appSettings}
-        onLoadProjectThreads={props.onLoadProjectThreads}
-        onOpenSettingsPanel={props.onOpenSettingsPanel}
-        onProjectSelect={props.onProjectSelect}
-        onProjectPrimeSelection={props.onProjectPrimeSelection}
-        onThreadOpen={props.onThreadOpen}
-        onShowView={props.onShowView}
-        onToggleProjectCollapse={props.onToggleProjectCollapse}
+        onSelectDirectory={props.onProjectSelect}
+        onShowWorkspace={props.onShowWorkspace}
+        folderCreation={
+          isToolkitComponentEnabled(props.appSettings, 'coding') ? (
+            <WorkspaceFolderCreateButton
+              appSettings={props.appSettings}
+              onAction={props.onAction}
+              onOpenSettingsPanel={props.onOpenSettingsPanel}
+            />
+          ) : null
+        }
+        renderDirectoryTools={(directoryId) =>
+          isToolkitComponentEnabled(props.appSettings, 'coding') ? (
+            <li>
+              <details className="mt-2">
+                <summary className="sidebar-project-work-project-kicker cursor-pointer">
+                  Git and worktrees
+                </summary>
+                <ProjectWorkSection
+                  key={directoryId}
+                  embedded
+                  activeView={props.activeView}
+                  loading={props.projectsLoading ?? false}
+                  projects={props.projects.filter(
+                    (project) =>
+                      project.id === directoryId || project.worktree?.rootProjectId === directoryId,
+                  )}
+                  projectGitState={props.projectGitState}
+                  collapsedProjectIds={props.collapsedProjectIds}
+                  initialVisibleProjectIds={[directoryId]}
+                  selectedProjectId={directoryId}
+                  selectedThreadId={props.selectedThreadId}
+                  terminalRunningWorkspaceIds={props.terminalRunningWorkspaceIds}
+                  terminalRunningConversationIds={props.terminalRunningConversationIds}
+                  onAction={props.onAction}
+                  appSettings={props.appSettings}
+                  onLoadProjectThreads={props.onLoadProjectThreads}
+                  onOpenSettingsPanel={props.onOpenSettingsPanel}
+                  onProjectSelect={props.onProjectSelect}
+                  onProjectPrimeSelection={props.onProjectPrimeSelection}
+                  onThreadOpen={(projectId, threadId, conversationId) =>
+                    props.onThreadOpen(projectId, threadId, conversationId, 'thread')
+                  }
+                  onShowView={props.onShowView}
+                  onToggleProjectCollapse={props.onToggleProjectCollapse}
+                />
+              </details>
+            </li>
+          ) : null
+        }
       />
     )
   }
@@ -226,6 +241,7 @@ export function Sidebar({
   onAction,
   onShowView,
   onToggleSettings,
+  onShowWorkspace,
   onToggleSidebar,
   onOpenAbout,
   onOpenSkillsView,
@@ -235,7 +251,6 @@ export function Sidebar({
   onCreateChatGroup,
   onSelectChatGroup,
   onNewChat,
-  onRefreshChatSidebar,
   onProjectSelect,
   onProjectPrimeSelection,
   onProjectTargetSelected,
@@ -249,7 +264,6 @@ export function Sidebar({
   const settingsMenuRef = useRef<HTMLDivElement>(null)
   const settingsMenuId = 'sidebar-settings-menu'
   const settingsMenuPresent = useAnimatedPresence(settingsOpen)
-  const codeModeActive = isCodeModeActive(activeView)
   const showModeSelection = activeView !== 'skills'
   const closeSettings = useCallback(() => {
     if (settingsOpen) {
@@ -287,6 +301,7 @@ export function Sidebar({
     collapsedProjectIds,
     onAction,
     onShowView,
+    onShowWorkspace,
     onToggleSettings,
     onToggleSidebar,
     onOpenAbout,
@@ -297,7 +312,6 @@ export function Sidebar({
     onCreateChatGroup,
     onSelectChatGroup,
     onNewChat,
-    onRefreshChatSidebar,
     onProjectSelect,
     onProjectPrimeSelection,
     ...(onProjectTargetSelected ? { onProjectTargetSelected } : {}),
@@ -317,11 +331,10 @@ export function Sidebar({
     >
       <div className="sidebar-shell-row sidebar-shell-row--top">
         {showModeSelection ? (
-          <SidebarModeNav
+          <SidebarNavigation
             activeView={activeView}
-            codeModeActive={codeModeActive}
-            appSettings={appSettings}
             onShowView={onShowView}
+            onShowWorkspace={onShowWorkspace}
           />
         ) : null}
       </div>
