@@ -7,6 +7,7 @@ import { useRef, useState } from 'react'
 import { useQueuedPromptCancellation } from '../../composer/useQueuedPromptCancellation'
 import type { Message, View } from '../../types'
 import { useWorkspaceFooterHeight } from '../../workspace-shell/useWorkspaceFooterHeight'
+import { useWorkspacePresentationToggle } from '../../workspace-shell/workspace-presentation'
 import type { DomainWorkspaceViewProps } from './domain-workspace-contract'
 import { DomainWorkspaceViewContent } from './domain-workspace-footer'
 
@@ -29,19 +30,16 @@ function getFloatingFooterStyle(input: {
   centerDashboardFooter: boolean
   centerChatFooter: boolean
   showChatFooter: boolean
-  terminalDrawerInsetStyle: { right: string } | undefined
 }) {
   if (input.centerDashboardFooter) {
-    return { ...input.terminalDrawerInsetStyle, top: EMPTY_COMPOSER_TOP }
+    return { top: EMPTY_COMPOSER_TOP }
   }
 
   if (!input.showChatFooter) {
-    return input.terminalDrawerInsetStyle
+    return undefined
   }
 
-  return input.centerChatFooter
-    ? { ...input.terminalDrawerInsetStyle, top: EMPTY_COMPOSER_TOP }
-    : { ...input.terminalDrawerInsetStyle, bottom: 0 }
+  return input.centerChatFooter ? { top: EMPTY_COMPOSER_TOP } : { bottom: 0 }
 }
 
 function getFloatingFooterLayoutState(input: {
@@ -108,7 +106,6 @@ export function DomainWorkspaceView({
   const mainViewRef = useRef<HTMLElement>(null)
   const handleAction = controller.desktop.handleAction
   const handleLoadEarlierMessages = controller.chat.loadEarlierMessages
-  const handleCloseGitOpsView = controller.gitOps.close
   const handleOpenGitOpsView = controller.gitOps.open
   const handleOpenWorktreeDiffFile = controller.gitOps.openWorktreeFile
   const handleToggleTerminal = controller.terminal.toggle
@@ -142,6 +139,13 @@ export function DomainWorkspaceView({
     handleAction,
     handleOpenWorktreeDiffFile,
   })
+  const gitPresentation = useWorkspacePresentationToggle({
+    id: composerDirectoryId,
+    open: gitDetailOpen,
+    confirmClose: gitOpsReview.hasPendingReview,
+    onOpen: handleOpenGitOpsView,
+    onClose: controller.gitOps.close,
+  })
   const showDesktopTerminalDrawer = shouldShowDesktopTerminalDrawer(
     state.activeView,
     terminalDrawerVisible,
@@ -174,7 +178,6 @@ export function DomainWorkspaceView({
     centerDashboardFooter,
     centerChatFooter,
     showChatFooter,
-    terminalDrawerInsetStyle,
   })
   const chatTimelineLoading = state.activeView === 'chat' && controller.chat.activeLoading
 
@@ -185,7 +188,7 @@ export function DomainWorkspaceView({
       includeUntracked={includeUntrackedDiffFiles}
       directoryGitState={directoryGitState}
       detailEnabled={gitDetailOpen}
-      onOpenDetail={handleOpenGitOpsView}
+      onOpenDetail={gitPresentation.toggle}
     >
       <DomainWorkspaceViewContent
         terminalDrawerInsetStyle={terminalDrawerInsetStyle}
@@ -194,6 +197,7 @@ export function DomainWorkspaceView({
         mainViewRef={mainViewRef}
         state={state}
         gitDetailOpen={gitDetailOpen}
+        gitCloseConfirmation={gitPresentation.closeConfirmation}
         gitDetailLayout={gitDetailLayout}
         composerDirectoryId={composerDirectoryId}
         directoryGitState={directoryGitState}
@@ -230,7 +234,7 @@ export function DomainWorkspaceView({
         onSetDiffBaseline={onSetDiffBaseline}
         onSetDiffRenderMode={onSetDiffRenderMode}
         setComposerLayoutVersion={setComposerLayoutVersion}
-        handleCloseGitOpsView={handleCloseGitOpsView}
+        handleCloseGitOpsView={gitPresentation.close}
         handleRemoveQueuedPrompt={handleRemoveQueuedPrompt}
         pendingQueuedPromptIdsForSession={pendingQueuedPromptIdsForSession}
         queuedPromptError={queuedPromptError}

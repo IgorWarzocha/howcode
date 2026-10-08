@@ -1,7 +1,44 @@
-import type { ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
 import { mainPanelClass } from '../ui/classes'
 import { WORKSPACE_EDGE_PADDING_CLASS } from '../ui/layout'
 import { cn } from '../utils/cn'
+
+export type WorkspacePresentationCloseConfirmation = {
+  open: boolean
+  setOpen: (open: boolean) => void
+}
+
+export function useWorkspacePresentationToggle({
+  id,
+  open,
+  confirmClose,
+  onOpen,
+  onClose,
+}: {
+  id: string
+  open: boolean
+  confirmClose: boolean
+  onOpen: () => void
+  onClose: () => void
+}) {
+  const [confirmationId, setConfirmationId] = useState<string | null>(null)
+  const close = () => {
+    setConfirmationId(null)
+    onClose()
+  }
+  return {
+    close,
+    toggle: () => {
+      if (!open) onOpen()
+      else if (confirmClose) setConfirmationId(id)
+      else close()
+    },
+    closeConfirmation: {
+      open: open && confirmationId === id,
+      setOpen: (requested: boolean) => setConfirmationId(requested ? id : null),
+    },
+  }
+}
 
 export function WorkspacePresentation({
   children,

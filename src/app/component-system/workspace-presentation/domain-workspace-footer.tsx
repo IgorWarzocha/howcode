@@ -1,14 +1,13 @@
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { getComposerRuntimeModel, QueuedPromptsCard } from '../../composer/index'
 import type { Message } from '../../types'
-import { WORKSPACE_EDGE_PADDING_CLASS } from '../../ui/layout'
 import { cn } from '../../utils/cn'
 import { FALLBACK_APP_SETTINGS } from '../../workspace-shell/default-app-settings'
 import { DesktopComposerStatusModelPicker } from '../../workspace-shell/desktop-composer-status'
 import { Composer } from '../../workspace-shell/index'
 import { WorkspaceComposerDock } from '../../workspace-shell/workspace-composer-dock'
 import type { DomainWorkspaceContentProps } from './domain-workspace-contract'
-import { DomainWorkspaceMainArea } from './domain-workspace-main-area'
+import { DomainWorkspaceLayout, DomainWorkspaceMainArea } from './domain-workspace-main-area'
 
 function getReplyActivityKey(messages: readonly Message[]) {
   const replyMessageIds: string[] = []
@@ -163,7 +162,6 @@ function DomainWorkspaceChatFooter(props: DomainWorkspaceContentProps) {
       ref={footerRef}
       className={cn(
         'motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-10 pb-4',
-        WORKSPACE_EDGE_PADDING_CLASS,
         centerChatFooter || state.activeView === 'directory'
           ? 'transition-[top,transform] duration-300 ease-out'
           : 'bottom-0',
@@ -205,8 +203,10 @@ function DomainWorkspaceFooterArea(props: DomainWorkspaceContentProps) {
 export function DomainWorkspaceViewContent(props: DomainWorkspaceContentProps) {
   return (
     <div className="relative min-h-0 flex-1 overflow-hidden">
-      <DomainWorkspaceMainArea {...props} />
-      <DomainWorkspaceFooterArea {...props} />
+      <DomainWorkspaceLayout {...props}>
+        <DomainWorkspaceMainArea {...props} />
+        <DomainWorkspaceFooterArea {...props} />
+      </DomainWorkspaceLayout>
     </div>
   )
 }

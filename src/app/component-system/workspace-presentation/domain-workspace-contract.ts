@@ -14,6 +14,7 @@ import type {
 import type { SettingsOpenTarget } from '../../settings/settings/settingsTypes'
 import type { WorkspaceState } from '../../state/workspace-model'
 import type { View, WorkingDirectory } from '../../types'
+import type { WorkspacePresentationCloseConfirmation } from '../../workspace-shell/workspace-presentation'
 
 export type DomainWorkspaceController = {
   composer: {
@@ -75,11 +76,12 @@ export type DomainWorkspaceContentProps = DomainWorkspaceViewProps &
     mainViewRef: RefObject<HTMLElement | null>
     terminalDrawerInsetStyle: { right: string } | undefined
     footerInset: number
-    chatFooterStyle: { right?: string; top?: string } | undefined
+    chatFooterStyle: { top?: string; bottom?: number } | undefined
     showWorkspaceFooter: boolean
     showChatFooter: boolean
     showCodeSidebarFooter: boolean
     gitDetailOpen: boolean
+    gitCloseConfirmation: WorkspacePresentationCloseConfirmation
     gitDetailLayout: ReturnType<typeof useGitDetailLayout>
     showDesktopTerminalDrawer: boolean
     centerChatFooter: boolean

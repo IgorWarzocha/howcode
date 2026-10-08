@@ -6,6 +6,7 @@ import {
   workspaceFooterRowClass,
   workspaceFooterTrailingGroupClass,
 } from '../../../../src/app/workspace-shell/footer/workspace-footer-primitives'
+import type { WorkspacePresentationCloseConfirmation } from '../../../../src/app/workspace-shell/workspace-presentation'
 import { ComposerDiffBaselineSelector } from './composer-diff-baseline-selector'
 import { ComposerGitOpsBackButton } from './composer-git-ops-back-button'
 import { ComposerGitOpsSettings } from './composer-git-ops-settings'
@@ -17,6 +18,7 @@ type ComposerGitOpsFooterProps = {
   composerPanelRef: RefObject<HTMLDivElement | null>
   diff: GitOpsComposerDiff
   onBack: () => void
+  closeConfirmation: WorkspacePresentationCloseConfirmation
   options: ComposerGitOpsState['options']
   directory: GitOpsComposerDirectory
   repository: ComposerGitOpsState['repository']
@@ -61,6 +63,7 @@ export function ComposerGitOpsFooter({
   composerPanelRef,
   diff,
   onBack,
+  closeConfirmation,
   options,
   directory,
   repository,
@@ -97,6 +100,7 @@ export function ComposerGitOpsFooter({
         <ComposerGitOpsBackButton
           hasPendingReview={review.hasPendingReview}
           onBack={onBack}
+          closeConfirmation={closeConfirmation}
           onDiscardReview={review.discard}
         />
       </div>

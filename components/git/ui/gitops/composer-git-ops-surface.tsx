@@ -4,6 +4,7 @@ import type { AppSettings, DesktopActionInvoker } from '../../../../src/app/desk
 import { getFeatureStatusDataAttributes } from '../../../../src/app/features/feature-status'
 import type { SettingsOpenTarget } from '../../../../src/app/settings/settings/settingsTypes'
 import { composerTextActionButtonClass } from '../../../../src/app/ui/classes'
+import type { WorkspacePresentationCloseConfirmation } from '../../../../src/app/workspace-shell/workspace-presentation'
 import { ComposerGitOpsFooter } from './composer-git-ops-footer'
 import { ComposerGitOpsMessageField } from './composer-git-ops-message-field'
 import { ComposerGitOpsTopBar } from './composer-git-ops-top-bar'
@@ -24,6 +25,7 @@ type ComposerGitOpsSurfaceProps = {
   onReviewSent: () => void
   directory: GitOpsComposerDirectory
   review: GitOpsReviewController
+  closeConfirmation: WorkspacePresentationCloseConfirmation
 }
 
 export function ComposerGitOpsSurface({
@@ -38,6 +40,7 @@ export function ComposerGitOpsSurface({
   onReviewSent,
   directory,
   review,
+  closeConfirmation,
 }: ComposerGitOpsSurfaceProps) {
   const state = useComposerGitOpsState({
     appSettings,
@@ -145,6 +148,7 @@ export function ComposerGitOpsSurface({
               composerPanelRef={composerPanelRef}
               diff={diff}
               onBack={onBack}
+              closeConfirmation={closeConfirmation}
               options={options}
               directory={directory}
               repository={repository}

@@ -1,3 +1,4 @@
 - `domain-workspace-contract.ts` owns the view/content prop contracts; render areas depend on it rather than importing each other for types.
 - `DomainWorkspaceView` composes chat, directory and Git presentations with terminal/footer layout. Feature state and operations come through public component contracts. Route-spanning diff preferences belong to Git's provider, preserving utility visits without keeping the renderer mounted. History has its own presentation.
 - `DomainWorkspaceController` defines concrete host capabilities, not an AppShell controller backreference. Preserve terminal, footer, and project-selection behaviour.
+- The workspace grid owns full-height docking and gesture bounds. Keep content and its composer in one stable column beside the stable detail subtree. Main detail and the narrow sidebar fallback reserve the composer inset; wide sidebars and floating detail do not. Apply terminal insets once at that grid boundary.

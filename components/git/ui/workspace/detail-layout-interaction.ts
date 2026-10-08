@@ -7,6 +7,8 @@ type Gesture = {
   operation: Operation
   frame: HTMLElement
   parent: HTMLElement
+  content: HTMLElement | null
+  contentStyle: string
   main: HTMLElement | null
   mainStyle: string
   mainHidden: HTMLElement['hidden']
@@ -61,6 +63,7 @@ function restore(active: Gesture) {
   active.preview?.remove()
   active.frame.style.cssText = active.frameStyle
   active.parent.style.gridTemplateColumns = active.columns
+  if (active.content) active.content.style.cssText = active.contentStyle
   if (active.main) {
     active.main.style.cssText = active.mainStyle
     active.main.hidden = active.mainHidden
@@ -110,14 +113,17 @@ export function useGitFrameInteraction({
       width: bounds.width,
       height: bounds.height,
     }
-    const main = parent.querySelector(':scope > main')
+    const main = parent.querySelector<HTMLElement>('main')
+    const content = parent.querySelector<HTMLElement>(':scope > .domain-workspace-content-column')
     gesture.current = {
       operation,
       frame,
       parent,
-      main: main instanceof HTMLElement ? main : null,
-      mainStyle: main instanceof HTMLElement ? main.style.cssText : '',
-      mainHidden: main instanceof HTMLElement ? main.hidden : false,
+      content,
+      contentStyle: content?.style.cssText ?? '',
+      main,
+      mainStyle: main?.style.cssText ?? '',
+      mainHidden: main?.hidden ?? false,
       pointerX: x,
       pointerY: y,
       initial,
@@ -152,13 +158,15 @@ export function useGitFrameInteraction({
       active.preview.setAttribute('aria-hidden', 'true')
       active.parent.append(active.preview)
       active.parent.style.gridTemplateColumns = 'minmax(0, 1fr)'
+      if (active.content) active.content.style.gridColumn = '1'
       if (active.main) {
         active.main.style.gridColumn = '1'
         active.main.hidden = false
       }
       Object.assign(active.frame.style, {
         position: 'absolute',
-        zIndex: '8',
+        bottom: 'auto',
+        zIndex: '30',
         boxShadow: 'var(--shadow)',
       })
     }

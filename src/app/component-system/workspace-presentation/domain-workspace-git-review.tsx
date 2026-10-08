@@ -53,6 +53,7 @@ export function DomainWorkspaceGitReview(props: DomainWorkspaceContentProps) {
         onLayoutChange={() => setComposerLayoutVersion((current: number) => current + 1)}
         onAction={handleAction}
         onBack={handleCloseGitOpsView}
+        closeConfirmation={props.gitCloseConfirmation}
         onOpenSettingsView={(target) => controller.navigation.showView('settings', target)}
       />
     </div>

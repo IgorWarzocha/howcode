@@ -5,6 +5,7 @@ import type { AppSettings, DesktopActionInvoker } from '../../../../src/app/desk
 import type { SettingsOpenTarget } from '../../../../src/app/settings/settings/settingsTypes'
 import { compactIconButtonClass, composerPanelClass } from '../../../../src/app/ui/classes'
 import { cn } from '../../../../src/app/utils/cn'
+import type { WorkspacePresentationCloseConfirmation } from '../../../../src/app/workspace-shell/workspace-presentation'
 import { ComposerGitOpsSurface } from './composer-git-ops-surface'
 import type {
   GitOpsComposerDiff,
@@ -25,6 +26,7 @@ type GitReviewPanelProps = {
   onReviewSent: () => void
   directory: GitOpsComposerDirectory
   review: GitOpsReviewController
+  closeConfirmation: WorkspacePresentationCloseConfirmation
 }
 
 export function GitReviewPanel({
@@ -38,6 +40,7 @@ export function GitReviewPanel({
   onReviewSent,
   directory,
   review,
+  closeConfirmation,
 }: GitReviewPanelProps) {
   const composerPanelRef = useRef<HTMLDivElement>(null)
   const [gitActionErrorMessage, setGitActionErrorMessage] = useState<string | null>(null)
@@ -65,6 +68,7 @@ export function GitReviewPanel({
             diff={diff}
             onAction={onAction}
             onBack={onBack}
+            closeConfirmation={closeConfirmation}
             onLayoutChange={onLayoutChange}
             onOpenSettingsView={onOpenSettingsView}
             onReviewSent={onReviewSent}

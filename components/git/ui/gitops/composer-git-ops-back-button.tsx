@@ -1,22 +1,25 @@
 import { ArrowLeft } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import { useDismissibleLayer } from '../../../../src/app/hooks/useDismissibleLayer'
 import {
   compactIconButtonClass,
   composerInlineConfirmButtonClass,
 } from '../../../../src/app/ui/classes'
 import { cn } from '../../../../src/app/utils/cn'
+import type { WorkspacePresentationCloseConfirmation } from '../../../../src/app/workspace-shell/workspace-presentation'
 
 export function ComposerGitOpsBackButton({
   hasPendingReview,
   onBack,
   onDiscardReview,
+  closeConfirmation,
 }: {
   hasPendingReview: boolean
   onBack: () => void
   onDiscardReview: () => void
+  closeConfirmation: WorkspacePresentationCloseConfirmation
 }) {
-  const [confirmingDiscard, setConfirmingDiscard] = useState(false)
+  const { open: confirmingDiscard, setOpen: setConfirmingDiscard } = closeConfirmation
   const backButtonRef = useRef<HTMLButtonElement>(null)
   const confirmButtonRef = useRef<HTMLButtonElement>(null)
 

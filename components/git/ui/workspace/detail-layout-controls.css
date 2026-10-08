@@ -6,7 +6,7 @@
 .git-detail-dock-preview {
   position: absolute;
   inset: 0;
-  z-index: 7;
+  z-index: 20;
   pointer-events: none;
   display: grid;
   place-items: center;

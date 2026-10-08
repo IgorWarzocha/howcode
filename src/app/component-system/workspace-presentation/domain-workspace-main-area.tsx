@@ -3,7 +3,7 @@ import {
   GitDetailLayoutControls,
   useGitOpsFileActions,
 } from '@howcode/components/git/ui'
-import { useEffect, useRef, useState } from 'react'
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react'
 import type { View } from '../../types'
 import { mainPanelClass } from '../../ui/classes'
 import { WORKSPACE_EDGE_PADDING_CLASS } from '../../ui/layout'
@@ -95,50 +95,76 @@ function DomainWorkspaceDefaultMain(props: DomainWorkspaceContentProps) {
 }
 
 export function DomainWorkspaceMainArea(props: DomainWorkspaceContentProps) {
+  return (
+    <div
+      className="absolute inset-x-0 top-0 overflow-hidden"
+      style={{ bottom: `${props.footerInset}px` }}
+    >
+      <main
+        ref={props.mainViewRef}
+        hidden={props.gitDetailOpen && props.gitDetailLayout.layout.placement === 'main'}
+        className={cn(
+          'h-full min-w-0',
+          getMainPanelClass(props.state.activeView, props.gitDetailOpen),
+        )}
+      >
+        <DomainWorkspaceDefaultMain {...props} />
+      </main>
+    </div>
+  )
+}
+
+export function DomainWorkspaceLayout({
+  children,
+  ...props
+}: DomainWorkspaceContentProps & { children: ReactNode }) {
   const detailLayout = props.gitDetailLayout
   const { layout } = detailLayout
   const open = props.gitDetailOpen
   const placement = open ? layout.placement : 'main'
+  const gridStyle = {
+    '--workspace-footer-inset': `${props.footerInset}px`,
+    gridTemplateColumns:
+      placement === 'left'
+        ? `min(${layout.sidebarWidth}px, 65%) minmax(0, 1fr)`
+        : placement === 'right'
+          ? `minmax(0, 1fr) min(${layout.sidebarWidth}px, 65%)`
+          : 'minmax(0, 1fr)',
+  } satisfies CSSProperties & { '--workspace-footer-inset': string }
   return (
     <div
       className={cn(
         'motion-terminal-drawer-offset absolute inset-x-0 top-0 overflow-hidden',
         WORKSPACE_EDGE_PADDING_CLASS,
       )}
-      style={{ ...props.terminalDrawerInsetStyle, bottom: `${props.footerInset}px` }}
+      style={{ ...props.terminalDrawerInsetStyle, bottom: 0 }}
     >
       <div
-        className="git-workspace-layout relative grid h-full min-h-0 min-w-0 gap-3 overflow-hidden"
+        className="git-workspace-layout relative grid h-full min-h-0 min-w-0 gap-3 overflow-clip"
         data-git-placement={placement}
-        style={{
-          gridTemplateColumns:
-            placement === 'left'
-              ? `min(${layout.sidebarWidth}px, 65%) minmax(0, 1fr)`
-              : placement === 'right'
-                ? `minmax(0, 1fr) min(${layout.sidebarWidth}px, 65%)`
-                : 'minmax(0, 1fr)',
-        }}
+        style={gridStyle}
       >
-        <main
-          ref={props.mainViewRef}
-          hidden={open && placement === 'main'}
-          className={cn('min-w-0', getMainPanelClass(props.state.activeView, open))}
-          style={{ gridColumn: placement === 'left' ? 2 : 1, gridRow: 1 }}
+        <div
+          className="domain-workspace-content-column relative min-h-0 min-w-0"
+          style={{ gridRow: 1 }}
         >
-          <DomainWorkspaceDefaultMain {...props} />
-        </main>
+          {children}
+        </div>
         {open ? (
           <section
             aria-label="Git diff"
             className="git-detail-host flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--panel)]"
             style={{
               gridRow: 1,
+              ...(placement === 'main'
+                ? { position: 'absolute', insetInline: 0, top: 0, bottom: props.footerInset }
+                : {}),
               ...(placement === 'floating'
                 ? {
                     position: 'absolute',
                     left: `calc((100% - min(${layout.floatingWidth}px, 100%)) * ${layout.floatingX / 100})`,
                     top: `calc((100% - min(${layout.floatingHeight}px, 100%)) * ${layout.floatingY / 100})`,
-                    zIndex: 5,
+                    zIndex: 20,
                     width: `min(${layout.floatingWidth}px, 100%)`,
                     height: `min(${layout.floatingHeight}px, 100%)`,
                     boxShadow: 'var(--shadow)',
