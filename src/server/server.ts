@@ -76,6 +76,7 @@ export async function startHeadlessServer(input: HeadlessServerInput) {
     bridgeToken: input.proxyToken,
     rendererDistDirectory,
     terminalEventClients: new Set(),
+    packageUiEventClients: new Map(),
   }
 
   const unsubscribeDesktopEvents = input.runtime.app.subscribeDesktopEvents((event) => {

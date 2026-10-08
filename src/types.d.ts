@@ -161,12 +161,21 @@ declare global {
       listArtifactVersions?: (artifactSlug: string) => Promise<ArtifactVersion[]>
       compileReactArtifact?: (source: string) => Promise<ReactArtifactCompileResult>
       listPackageUis?: () => Promise<DesktopRequestMap['listPackageUis']['response']>
+      openPackageUiBinding?: (
+        request: DesktopRequestMap['openPackageUiBinding']['params'],
+      ) => Promise<void>
+      readPackageUiBindingEvents?: (
+        request: DesktopRequestMap['readPackageUiBindingEvents']['params'],
+      ) => Promise<DesktopRequestMap['readPackageUiBindingEvents']['response']>
+      operatePackageUiBinding?: (
+        request: DesktopRequestMap['operatePackageUiBinding']['params'],
+      ) => Promise<DesktopRequestMap['operatePackageUiBinding']['response']>
+      closePackageUiBinding?: (
+        request: DesktopRequestMap['closePackageUiBinding']['params'],
+      ) => Promise<void>
       loadPackageUi?: (
         reference: DesktopRequestMap['loadPackageUi']['params'],
       ) => Promise<DesktopRequestMap['loadPackageUi']['response']>
-      invokePackageUiRpc?: (
-        request: DesktopRequestMap['invokePackageUiRpc']['params'],
-      ) => Promise<DesktopRequestMap['invokePackageUiRpc']['response']>
       getInboxChats?: () => Promise<InboxChat[]>
       getArchivedChats?: () => Promise<ArchivedChat[]>
       getChat?: (conversationId: string, historyCompactions?: number) => Promise<ChatData | null>

@@ -2,11 +2,14 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { PackageUiReference, PackageUiService } from '../../../shared/package-ui-contracts'
 import { createPackageManager } from './manager'
 import { writePackageSettings } from './state'
 import { createPackageUiService } from './ui'
 
 const cleanups: Array<() => Promise<void>> = []
+const uiSource =
+  "export const component = { id: 'fixture', version: 1, actions: [], streams: [], parseState: value => value, mount: () => () => {} }"
 afterEach(async () => {
   for (const cleanup of cleanups.splice(0).reverse()) await cleanup()
 })
@@ -16,14 +19,8 @@ async function fixture() {
   cleanups.push(() => rm(directory, { recursive: true, force: true }))
   const root = join(directory, 'ui-only')
   await mkdir(root)
-  await writeFile(
-    join(root, 'ui.tsx'),
-    "export const mount = () => () => {}; export const value = 'first'",
-  )
-  await writeFile(
-    join(root, 'ui-rpc.ts'),
-    "export default (method, input) => method === 'echo' ? input : 'first'",
-  )
+  await writeFile(join(root, 'ui.tsx'), `${uiSource}; export const value = 'first'`)
+  await writeBinding(root, "export default (method, input) => method === 'echo' ? input : 'first'")
   const manager = createPackageManager({ directory, cwd: directory })
   let invalidations = 0
   const component = await createPackageUiService(
@@ -32,6 +29,37 @@ async function fixture() {
   )
   cleanups.push(component.dispose)
   return { directory, root, manager, component, invalidations: () => invalidations }
+}
+
+async function writeBinding(root: string, source: string) {
+  await writeFile(
+    join(root, 'ui-binding.ts'),
+    `${source.replace('export default', 'const handler =')}
+export const createBinding = (context) => ({
+  getSnapshot: () => ({sequence: 0, value: null}),
+  subscribe: () => () => {},
+  call: (method, input, {signal}) => handler(method, input, {...context, signal}),
+})`,
+  )
+}
+
+async function callBinding(
+  service: PackageUiService,
+  request: PackageUiReference & { method: string; input: null },
+) {
+  const sessionId = crypto.randomUUID()
+  await service.openPackageUiBinding({ ...request, sessionId })
+  try {
+    return await service.operatePackageUiBinding({
+      sessionId,
+      operationId: crypto.randomUUID(),
+      kind: 'call',
+      name: request.method,
+      input: request.input,
+    })
+  } finally {
+    await service.closePackageUiBinding({ sessionId })
+  }
 }
 
 describe('package UI generations', () => {
@@ -44,9 +72,9 @@ describe('package UI generations', () => {
       component.service.loadPackageUi({ id: root, revision: first.revision }),
     ).rejects.toThrow('no longer installed')
     await expect(
-      component.service.invokePackageUiRpc({
+      callBinding(component.service, {
         ...first,
-        id: '../ui-rpc.ts',
+        id: '../ui-binding.ts',
         method: 'echo',
         input: null,
       }),
@@ -54,18 +82,18 @@ describe('package UI generations', () => {
     await manager.update(root)
     await expect(component.service.loadPackageUi(first)).rejects.toThrow('no longer installed')
     await expect(
-      component.service.invokePackageUiRpc({ ...first, method: 'echo', input: null }),
+      callBinding(component.service, { ...first, method: 'echo', input: null }),
     ).rejects.toThrow('no longer installed')
     const second = (await component.service.listPackageUis())[0]
     if (!second) throw new Error('Updated package missing.')
     await manager.remove(root)
     await expect(component.service.loadPackageUi(second)).rejects.toThrow('no longer installed')
     await expect(
-      component.service.invokePackageUiRpc({ ...second, method: 'echo', input: null }),
+      callBinding(component.service, { ...second, method: 'echo', input: null }),
     ).rejects.toThrow('no longer installed')
   })
 
-  it('keeps local source and RPC immutable until explicit update and exposes a broken new generation without last-good fallback', async () => {
+  it('keeps local source and binding immutable until explicit update and exposes a broken new generation without last-good fallback', async () => {
     const { root, manager, component } = await fixture()
     await manager.install(root)
     const first = (await component.service.listPackageUis())[0]
@@ -73,24 +101,21 @@ describe('package UI generations', () => {
     const original = await component.service.loadPackageUi(first)
     await rm(join(root, 'ui.tsx'))
     expect(await component.service.loadPackageUi(first)).toEqual(original)
-    await writeFile(
-      join(root, 'ui.tsx'),
-      "export const mount = () => () => {}; export const value = 'second'",
-    )
-    await writeFile(join(root, 'ui-rpc.ts'), "export default () => 'second'")
+    await writeFile(join(root, 'ui.tsx'), `${uiSource}; export const value = 'second'`)
+    await writeBinding(root, "export default () => 'second'")
     expect(await component.service.loadPackageUi(first)).toEqual(original)
-    expect(
-      await component.service.invokePackageUiRpc({ ...first, method: 'value', input: null }),
-    ).toBe('first')
+    expect(await callBinding(component.service, { ...first, method: 'value', input: null })).toBe(
+      'first',
+    )
     await manager.update(root)
     const second = (await component.service.listPackageUis())[0]
     if (!second) throw new Error('Updated package missing.')
     expect(second.id).toBe(first.id)
     expect(second.revision).not.toBe(first.revision)
-    expect(
-      await component.service.invokePackageUiRpc({ ...second, method: 'value', input: null }),
-    ).toBe('second')
-    await writeFile(join(root, 'ui.tsx'), 'export const mount = ???')
+    expect(await callBinding(component.service, { ...second, method: 'value', input: null })).toBe(
+      'second',
+    )
+    await writeFile(join(root, 'ui.tsx'), 'export const component = ???')
     await manager.update(root)
     const broken = (await component.service.listPackageUis())[0]
     if (!broken) throw new Error('Broken generation missing.')
@@ -120,13 +145,13 @@ describe('package UI generations', () => {
   })
 
   it.each(['missing', 'invalid metadata'])(
-    'retires removed RPC despite an unrelated package with %s',
+    'retires removed binding despite an unrelated package with %s',
     async (failure) => {
       const { directory, root, manager, component } = await fixture()
       const started = join(directory, 'started')
       const stopped = join(directory, 'stopped')
-      await writeFile(
-        join(root, 'ui-rpc.ts'),
+      await writeBinding(
+        root,
         `
       import { writeFile } from 'node:fs/promises'
       export default async (_method, _input, { signal }) => {
@@ -143,8 +168,7 @@ describe('package UI generations', () => {
       const healthy = join(directory, 'healthy')
       for (const path of [root, broken, healthy]) {
         await mkdir(path, { recursive: true })
-        if (path !== root)
-          await writeFile(join(path, 'ui.tsx'), 'export const mount = () => () => {}')
+        if (path !== root) await writeFile(join(path, 'ui.tsx'), uiSource)
         await manager.install(path)
       }
       const catalog = await component.service.listPackageUis()
@@ -153,7 +177,7 @@ describe('package UI generations', () => {
       if (!(active && unaffected)) throw new Error('Fixture packages missing.')
       const source = await component.service.loadPackageUi(unaffected)
       const rejected = expect(
-        component.service.invokePackageUiRpc({ ...active, method: 'wait', input: null }),
+        callBinding(component.service, { ...active, method: 'wait', input: null }),
       ).rejects.toThrow()
       await vi.waitFor(async () => expect(await readFile(started, 'utf8')).toBe('started'))
       if (failure === 'missing') await rm(broken, { recursive: true })
@@ -179,12 +203,12 @@ describe('package UI generations', () => {
     await expect(component.service.loadPackageUi(legacy)).rejects.toThrow('no longer installed')
   })
 
-  it('aborts and drains active browser RPC on retirement and rejects non-JSON results before IPC serialization', async () => {
+  it('aborts and drains active browser actions on retirement and rejects non-JSON results before IPC serialization', async () => {
     const { directory, root, manager, component } = await fixture()
     const started = join(directory, 'started')
     const stopped = join(directory, 'stopped')
-    await writeFile(
-      join(root, 'ui-rpc.ts'),
+    await writeBinding(
+      root,
       `
       import { writeFile } from 'node:fs/promises'
       export default async (method, _input, context) => {
@@ -202,9 +226,9 @@ describe('package UI generations', () => {
     const descriptor = (await component.service.listPackageUis())[0]
     if (!descriptor) throw new Error('Fixture package missing.')
     await expect(
-      component.service.invokePackageUiRpc({ ...descriptor, method: 'invalid', input: null }),
+      callBinding(component.service, { ...descriptor, method: 'invalid', input: null }),
     ).rejects.toThrow()
-    const call = component.service.invokePackageUiRpc({
+    const call = callBinding(component.service, {
       ...descriptor,
       method: 'wait',
       input: null,

@@ -3,6 +3,11 @@ export default {
     files: ['dist-pages/**', 'Frameworks/**'],
     overrides: [
       {
+        // SSE must await each read and socket drain to preserve order and bound slow-client buffering.
+        files: ['src/server/package-ui-events.ts'],
+        rules: ['react-doctor/async-await-in-loop'],
+      },
+      {
         // Shutdown can begin during startup. The post-await guard prevents dispatch to a closing server.
         files: ['components/terminal/service/host-component.ts'],
         rules: ['react-doctor/async-defer-await'],

@@ -17,6 +17,7 @@ import {
   hasTrustedBrowserOrigin,
 } from './auth'
 import { readJsonBody, sendJson, sendText } from './http-response'
+import { streamPackageUiEvents } from './package-ui-events'
 
 const bridgeToken = randomUUID()
 const leadingSlashesPattern = /^\/+/
@@ -41,6 +42,7 @@ export type HeadlessRequestContext = {
   isTrustedHost: (host: string | undefined) => boolean
   rendererDistDirectory: string
   terminalEventClients: Set<http.ServerResponse>
+  packageUiEventClients: Map<string, http.ServerResponse>
 }
 
 export function sendHeadlessSseEvent<TChannel extends DesktopEventChannel>(
@@ -125,6 +127,34 @@ function handleBridgeEvents(
     clients.delete(response)
     context.allSseClients.delete(response)
   })
+}
+
+function handlePackageBindingEvents(
+  context: HeadlessRequestContext,
+  request: http.IncomingMessage,
+  response: http.ServerResponse,
+) {
+  if (
+    !(
+      hasTrustedBrowserOrigin(request, context.isTrustedHost) &&
+      hasAuthenticatedSession(request, context.auth)
+    )
+  ) {
+    sendText(response, 403, 'Forbidden')
+    return
+  }
+  const sessionId = new URL(request.url ?? '/', 'http://headless').searchParams.get('sessionId')
+  if (!sessionId) {
+    sendText(response, 400, 'Package UI session is required.')
+    return
+  }
+  void streamPackageUiEvents(
+    context.handlers,
+    context.allSseClients,
+    context.packageUiEventClients,
+    response,
+    sessionId,
+  )
 }
 
 async function invokeBridgeRequest(
@@ -265,6 +295,10 @@ export function handleHeadlessHttpRequest(
   }
   if (pathname === '/__howcode/config') {
     handleBridgeConfig(context, request, response)
+    return
+  }
+  if (pathname === '/__howcode/events/package-ui') {
+    void handlePackageBindingEvents(context, request, response)
     return
   }
   if (pathname.startsWith('/__howcode/events/')) {

@@ -1,7 +1,8 @@
-import { mountUi, themeCss, type UiSession } from '@howaboua/pi-durable-ui'
+import { mountComponent, themeCss, type UiSession } from '@howaboua/pi-durable-ui'
 import type { PackageUiDescriptor, PackageUiModule } from '../../../shared/package-ui-contracts'
+import { connectPackageUiBinding } from './binding'
 import { watchPackageUiCatalog } from './catalog'
-import { invokePackageUiRpcQuery, loadPackageUiQuery } from './query'
+import { loadPackageUiQuery } from './query'
 
 export type PackageUiMountState =
   | { status: 'loading' | 'mounted' | 'removed' }
@@ -20,9 +21,8 @@ async function loadUiModule(
   try {
     const module: Partial<PackageUiModule> = await import(/* @vite-ignore */ url)
     signal.throwIfAborted()
-    if (typeof module.mount !== 'function')
-      throw new Error('Package ui.tsx must export mount(container, context).')
-    return { mount: module.mount }
+    if (!module.component) throw new Error('Package ui.tsx must export component.')
+    return { component: module.component }
   } finally {
     signal.removeEventListener('abort', revoke)
     revoke()
@@ -61,21 +61,15 @@ export function mountPackageUi(
     receive({ status: 'loading' })
     try {
       const module = await loadUiModule(descriptor, lifetime.signal)
-      session = mountUi(module.mount, element, {
+      const binding = await connectPackageUiBinding(descriptor, lifetime.signal)
+      void binding.closed.catch((error) => {
+        if (lifetime.signal.aborted) console.error('Package UI binding cleanup failed.', error)
+        else reportError(error)
+      })
+      session = mountComponent(module.component, element, {
         id: descriptor.id,
-        revision: descriptor.revision,
         signal: lifetime.signal,
-        async call(method, input) {
-          lifetime.signal.throwIfAborted()
-          const result = await invokePackageUiRpcQuery({
-            id: descriptor.id,
-            revision: descriptor.revision,
-            method,
-            input,
-          })
-          lifetime.signal.throwIfAborted()
-          return result
-        },
+        binding,
       })
       // Cleanup can finish after replacement. Diagnose it without changing host state.
       void session.closed.catch((error: unknown) => {

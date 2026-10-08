@@ -26,7 +26,10 @@ export const desktopServiceRemoteMethods = {
   packages: {
     listPackageUis: true,
     loadPackageUi: true,
-    invokePackageUiRpc: true,
+    openPackageUiBinding: true,
+    readPackageUiBindingEvents: true,
+    operatePackageUiBinding: true,
+    closePackageUiBinding: true,
   },
   app: {
     handleDesktopAction: true,

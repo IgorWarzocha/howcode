@@ -1,5 +1,5 @@
 import * as Schema from 'effect/Schema'
-import type { PackageUiReference, PackageUiRpcRequest } from '../../../shared/package-ui-contracts'
+import type { PackageUiReference } from '../../../shared/package-ui-contracts'
 import {
   PackageUiCatalogSchema,
   PackageUiModuleSourceSchema,
@@ -15,9 +15,4 @@ export async function loadPackageUiQuery(reference: PackageUiReference) {
   return Schema.decodeUnknownSync(PackageUiModuleSourceSchema)(
     await window.piDesktop.loadPackageUi(reference),
   )
-}
-
-export async function invokePackageUiRpcQuery(request: PackageUiRpcRequest) {
-  if (!window.piDesktop?.invokePackageUiRpc) throw new Error('Package UI bridge is unavailable.')
-  return Schema.decodeUnknownSync(Schema.Json)(await window.piDesktop.invokePackageUiRpc(request))
 }

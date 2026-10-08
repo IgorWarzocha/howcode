@@ -14,15 +14,32 @@ Older installations without a recorded revision must be updated before their UI 
 
 ## Package entrypoints
 
-Export `mount(container, context)` from `ui.tsx`. Mount into the supplied DOM element and return a cleanup function. An asynchronous mount can return a promise of that function. Respect `context.signal` during asynchronous work and release listeners, timers, subscriptions and framework roots during cleanup.
+Export a `UiComponent` named `component` from `ui.tsx`. The SDK validates snapshots with the component's `parseState`, grants its declared actions and streams, and owns the mount lifetime. Mount into the supplied DOM element and return a cleanup function. An asynchronous mount can return a promise of that function.
 
 ```tsx
-import { createRoot } from 'react-dom/client'
+import type { UiComponent } from '@howaboua/pi-durable-ui'
 
-export function mount(container, context) {
-  const root = createRoot(container)
-  root.render(<button onClick={() => context.call('hello', null)}>Hello</button>)
-  return () => root.unmount()
+export const component: UiComponent<{ count: number }> = {
+  id: 'counter',
+  version: 1,
+  actions: ['increment'],
+  streams: [],
+  parseState(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)
+      || typeof value.count !== 'number') throw new Error('Invalid counter state')
+    return { count: value.count }
+  },
+  mount(container, context) {
+    const button = document.createElement('button')
+    const render = () => { button.textContent = String(context.state.getSnapshot().count) }
+    const unsubscribe = context.state.subscribe(render)
+    button.addEventListener('click', () => {
+      void context.call('increment', null).catch(console.error)
+    }, { signal: context.signal })
+    container.replaceChildren(button)
+    render()
+    return () => { unsubscribe(); container.replaceChildren() }
+  },
 }
 ```
 
@@ -30,21 +47,40 @@ The module is bundled as one browser ESM file. React imports resolve from Howcod
 
 A UI-only package needs no Durable extension. Omit backend entrypoints such as `main`, a root export, `pi.extensions`, an `extensions` directory, or `index.js`. A tool-and-UI package keeps its normal Durable entrypoints alongside `ui.tsx`. Explicit backend declarations still fail when invalid.
 
-## Browser RPC
+## Server binding
 
-Optionally export one default handler from `ui-rpc.ts`. The handler is server code, not a model-callable tool. Dispatch and validate your own method names and input. Requests and results must be JSON values.
+Export `createBinding(context)` from `ui-binding.ts`. Return the SDK's `UiBinding`, synchronously or asynchronously. The factory is server code, not a model-callable tool. It receives the authorized installed package `id`, `revision`, and session `signal`. Use the package's own Durable capabilities and state. Howcode does not dispatch on component type.
 
 ```ts
-export default async function handle(method, input, context) {
-  context.signal.throwIfAborted()
-  if (method !== 'hello') throw new Error('Unknown UI method')
-  return { message: 'Hello from the server' }
+import type { UiBinding } from '@howaboua/pi-durable-ui'
+
+export function createBinding(): UiBinding {
+  let snapshot = { sequence: 0, value: { count: 0 } }
+  const listeners = new Set<(value: typeof snapshot) => void>()
+  return {
+    getSnapshot: () => snapshot,
+    subscribe(next) {
+      listeners.add(next)
+      return () => { listeners.delete(next) }
+    },
+    async call(action, input, { signal }) {
+      signal.throwIfAborted()
+      if (action !== 'increment' || input !== null) throw new Error('Action not granted')
+      snapshot = { sequence: snapshot.sequence + 1, value: { count: snapshot.value.count + 1 } }
+      for (const next of listeners) next(snapshot)
+      return null
+    },
+  }
 }
 ```
 
-The mount context provides `id`, `revision`, `signal`, and `call(method, input)`. The handler context provides the same package identity and a server `signal` that aborts when the installed generation is replaced, removed, or shut down. A mount's disposal rejects late browser results, but does not cancel an already admitted server request. Do not start persistent resources at module scope.
+Snapshots carry a nonnegative safe-integer `sequence` and JSON `value`. Increase the sequence for each state change. The host subscribes before reading the initial snapshot. The SDK parses state before publishing it and ignores stale sequences. Server calls and stream values must also be JSON.
 
-Only currently installed IDs and exact revisions can load modules or invoke handlers. Neither API accepts a filesystem path. The existing authenticated desktop bridge carries both operations.
+The mount context provides `id`, `signal`, `state`, `call(action, input, options?)`, and `stream(name, input, options?)`. Pass an operation `signal` to cancel a single call or stream without unmounting the component. A binding's optional `stream` returns an async iterable. Respect the supplied operation signal, unblock pending reads when aborted, and release resources when the iterator closes. The server receives cancellation and joins owned work, rather than merely discarding late browser results.
+
+Unmounting, channel disconnection, package retirement, and shutdown abort the binding session, release its subscription, and cancel its active operations. Async factories must honor their session signal. Subscribe cleanup may be asynchronous. Do not start persistent resources at module scope. An abandoned session that never acquires an event reader expires after 30 seconds.
+
+Only currently installed IDs and exact revisions can open bindings or load modules. Neither API accepts a filesystem path. The existing authenticated desktop bridge carries requests. Each browser mount owns an authenticated event channel with bounded buffering. A disconnected mount fails visibly and does not replay actions. Remount explicitly to reconnect.
 
 ## Host integration
 
@@ -52,4 +88,4 @@ The renderer surface is `@howcode/components/packages/ui/index`. `watchPackageUi
 
 These functions do not choose a sidebar, route, or layout. The caller owns placement. Catalog and mount states report failures explicitly. A broken update replaces the previous descriptor with an error. There is no automatic last-good fallback.
 
-Installed packages are trusted code. Browser UI runs in the same page with the user's access. Server RPC runs with the server process's access. This is not a sandbox or a permission boundary.
+Installed packages are trusted code. Browser UI runs in the same page with the user's access. Server bindings run with the server process's access. This is not a sandbox or a permission boundary.

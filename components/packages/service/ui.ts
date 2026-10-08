@@ -5,16 +5,12 @@ import { join } from 'node:path'
 import * as Schema from 'effect/Schema'
 import { createJiti } from 'jiti'
 import type {
+  PackageUiBindingFactory,
   PackageUiDescriptor,
   PackageUiReference,
-  PackageUiRpcHandler,
-  PackageUiRpcRequest,
   PackageUiService,
 } from '../../../shared/package-ui-contracts.ts'
-import {
-  PackageUiReferenceSchema,
-  PackageUiRpcRequestSchema,
-} from '../../../shared/package-ui-schema.ts'
+import { PackageUiReferenceSchema } from '../../../shared/package-ui-schema.ts'
 import {
   createPackageManager,
   type InstalledPackage,
@@ -22,6 +18,7 @@ import {
   packageMetadata,
 } from './manager.ts'
 import { parsePackageSource } from './source.ts'
+import { createPackageUiBindings } from './ui-bindings.ts'
 import { compilePackageUi } from './ui-compiler.ts'
 
 export async function hasPackageUi(root: string): Promise<boolean> {
@@ -43,15 +40,15 @@ type UiGeneration = {
   descriptor: PackageUiDescriptor
   js?: string
   controller: AbortController
-  rpc?: PackageUiRpcHandler
+  factory?: PackageUiBindingFactory
 }
 
 function validateReference(value: PackageUiReference) {
   Schema.decodeUnknownSync(PackageUiReferenceSchema)(value)
 }
 
-async function loadRpc(root: string): Promise<PackageUiRpcHandler | undefined> {
-  const path = join(root, 'ui-rpc.ts')
+async function loadBinding(root: string): Promise<PackageUiBindingFactory | undefined> {
+  const path = join(root, 'ui-binding.ts')
   try {
     await stat(path)
   } catch (error) {
@@ -64,10 +61,10 @@ async function loadRpc(root: string): Promise<PackageUiRpcHandler | undefined> {
     moduleCache: false,
     fsCache: false,
   })
-  const loaded = await loader.import<{ default?: unknown }>(path)
-  if (typeof loaded.default !== 'function')
-    throw new Error('Package ui-rpc.ts must export a default handler function.')
-  return loaded.default as PackageUiRpcHandler
+  const loaded = await loader.import<{ createBinding?: unknown }>(path)
+  if (typeof loaded.createBinding !== 'function')
+    throw new Error('Package ui-binding.ts must export createBinding(context).')
+  return loaded.createBinding as PackageUiBindingFactory
 }
 
 /** Directory watching survives the package manager's atomic settings-file rename. */
@@ -84,7 +81,6 @@ export async function createPackageUiService(
   let scanned = new Map<string, InstalledPackage>()
   let closed = false
   let watcherError: Error | undefined
-  const calls = new Set<Promise<unknown>>()
   let queue: Promise<unknown> = Promise.resolve()
   const serialized = <T>(operation: () => Promise<T>): Promise<T> => {
     const next = queue
@@ -115,8 +111,8 @@ export async function createPackageUiService(
     }
     try {
       generation.js = await compilePackageUi(join(installed.root, 'ui.tsx'))
-      const rpc = await loadRpc(installed.root)
-      if (rpc) generation.rpc = rpc
+      const factory = await loadBinding(installed.root)
+      if (factory) generation.factory = factory
     } catch (error) {
       generation.descriptor = {
         ...descriptor,
@@ -206,7 +202,16 @@ export async function createPackageUiService(
     console.error('Package UI settings watcher failed.', error)
     invalidate()
   })
+  const bindings = createPackageUiBindings(async (request) => {
+    const generation = await serialized(() => current(request))
+    if (!generation.factory) throw new Error('Package UI has no ui-binding.ts factory.')
+    return { factory: generation.factory, signal: generation.controller.signal }
+  })
   const service: PackageUiService = {
+    openPackageUiBinding: bindings.openPackageUiBinding,
+    readPackageUiBindingEvents: bindings.readPackageUiBindingEvents,
+    operatePackageUiBinding: bindings.operatePackageUiBinding,
+    closePackageUiBinding: bindings.closePackageUiBinding,
     listPackageUis: () =>
       serialized(async () => {
         await refresh()
@@ -219,30 +224,6 @@ export async function createPackageUiService(
           throw new Error('Package UI compilation produced no module.')
         return { js: generation.js }
       }),
-    async invokePackageUiRpc(input: PackageUiRpcRequest) {
-      const request = Schema.decodeUnknownSync(PackageUiRpcRequestSchema)(input)
-      const generation = await serialized(() => current(request))
-      if (!request.method.trim()) throw new Error('Package UI RPC method is required.')
-      const handler = generation.rpc
-      if (!handler) throw new Error('Package UI has no ui-rpc.ts handler.')
-      generation.controller.signal.throwIfAborted()
-      const call = Promise.resolve().then(() => {
-        generation.controller.signal.throwIfAborted()
-        return handler(request.method, request.input, {
-          id: request.id,
-          revision: request.revision,
-          signal: generation.controller.signal,
-        })
-      })
-      calls.add(call)
-      try {
-        const result = await call
-        generation.controller.signal.throwIfAborted()
-        return Schema.decodeUnknownSync(Schema.Json)(result)
-      } finally {
-        calls.delete(call)
-      }
-    },
   }
   return {
     service,
@@ -253,7 +234,7 @@ export async function createPackageUiService(
       for (const generation of generations.values()) generation.controller.abort()
       generations.clear()
       scanned.clear()
-      await Promise.allSettled(calls)
+      await bindings.dispose()
     },
   }
 }

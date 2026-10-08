@@ -1,0 +1,1 @@
+Package UI bindings own native work through the factory session signal and operation signals. Retirement can remove a session before asynchronous cleanup finishes, so shutdown must join tracked closing and factory promises. Preserve subscribe-before-snapshot ordering, pending-admission cancellation, and iterator cleanup when changing this lifecycle.

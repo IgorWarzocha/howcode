@@ -55,7 +55,7 @@
   },
   "dependencies": {
     "@howaboua/pi-durable-git": "file:../pi-durable-components/dist/howaboua-pi-durable-git-0.1.0-dad81b04.tgz",
-    "@howaboua/pi-durable-ui": "file:../pi-durable-components/dist/howaboua-pi-durable-ui-0.1.0-607a48e3.tgz",
+    "@howaboua/pi-durable-ui": "file:../pi-durable-components/dist/howaboua-pi-durable-ui-0.1.0-9aaccf4689cf37e9c70d5b9895ee796a7dc96d60655cdc2a01e6256b94b63a50.tgz",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",

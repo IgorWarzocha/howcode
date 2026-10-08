@@ -330,7 +330,10 @@ export async function installDevWebDesktopBridge() {
     getShellState: () => invokeRequest('getShellState', {}),
     listPackageUis: () => invokeRequest('listPackageUis', {}),
     loadPackageUi: (reference) => invokeRequest('loadPackageUi', reference),
-    invokePackageUiRpc: (request) => invokeRequest('invokePackageUiRpc', request),
+    openPackageUiBinding: (request) => invokeRequest('openPackageUiBinding', request),
+    readPackageUiBindingEvents: (request) => invokeRequest('readPackageUiBindingEvents', request),
+    operatePackageUiBinding: (request) => invokeRequest('operatePackageUiBinding', request),
+    closePackageUiBinding: (request) => invokeRequest('closePackageUiBinding', request),
     getDirectoryGitState: (directoryId: string) =>
       invokeRequest('getDirectoryGitState', { directoryId }),
     getDirectoryUsageSummary: (directoryId: string) =>

@@ -45,7 +45,7 @@ import type {
   PackageUiDescriptor,
   PackageUiJson,
   PackageUiReference,
-  PackageUiRpcRequest,
+  PackageUiService,
 } from './package-ui-contracts'
 import type {
   TerminalCloseRequest,
@@ -61,7 +61,22 @@ import type {
 export type DesktopRequestMap = {
   listPackageUis: { params: Record<string, never>; response: PackageUiDescriptor[] }
   loadPackageUi: { params: PackageUiReference; response: { js: string } }
-  invokePackageUiRpc: { params: PackageUiRpcRequest; response: PackageUiJson }
+  openPackageUiBinding: {
+    params: Parameters<PackageUiService['openPackageUiBinding']>[0]
+    response: undefined
+  }
+  readPackageUiBindingEvents: {
+    params: Parameters<PackageUiService['readPackageUiBindingEvents']>[0]
+    response: Awaited<ReturnType<PackageUiService['readPackageUiBindingEvents']>>
+  }
+  operatePackageUiBinding: {
+    params: Parameters<PackageUiService['operatePackageUiBinding']>[0]
+    response: PackageUiJson
+  }
+  closePackageUiBinding: {
+    params: Parameters<PackageUiService['closePackageUiBinding']>[0]
+    response: undefined
+  }
   getShellState: { params: Record<string, never>; response: ShellState }
   getDirectoryGitState: { params: { directoryId: string }; response: DirectoryGitState | null }
   getDirectoryUsageSummary: { params: { directoryId: string }; response: DirectoryUsageSummary }
