@@ -1,6 +1,9 @@
 import type { CodeViewHandle, FileDiffMetadata } from '@pierre/diffs/react'
 import type { RefObject } from 'react'
-import type { DirectoryDiffBaseline } from '../../../../../src/app/desktop/types'
+import type {
+  DirectoryDiffBaseline,
+  DirectoryDiffResult,
+} from '../../../../../src/app/desktop/types'
 import {
   appToneMutedClass,
   appTypeCodeClass,
@@ -8,7 +11,6 @@ import {
   appTypeSmallClass,
 } from '../../../../../src/app/ui/classes'
 import { cn } from '../../../../../src/app/utils/cn'
-import type { useDesktopDiff } from '../../hooks/useDesktopDiff'
 import { getDiffBaselinePrefix, getResolvedDiffBaselineLabel } from '../diff-baseline'
 import type { DiffEditingController } from '../edit/use-diff-editing'
 import type { GitOpsAnnotationMetadata } from '../review/pierre-review-adapter'
@@ -30,7 +32,7 @@ type DiffPanelContentBodyProps = {
     isLoading: boolean
     loading: boolean
     renderablePatch: RenderablePatch | null
-    result: ReturnType<typeof useDesktopDiff>['diff']
+    result: DirectoryDiffResult | null
   }
   files: {
     all: FileDiffMetadata[]
@@ -63,7 +65,7 @@ function DiffPanelUnavailable({
   hasNoNetChanges,
 }: {
   baseline: DirectoryDiffBaseline | null
-  diff: ReturnType<typeof useDesktopDiff>['diff']
+  diff: DirectoryDiffResult | null
   error: string | null
   hasNoNetChanges: boolean
 }) {

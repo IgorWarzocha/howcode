@@ -15,7 +15,6 @@ export function Composer(props: ComposerProps) {
       showDictationButton={dictationEnabled && props.showDictationButton}
       composerPanelRef={composerPanelRef}
       workspaceFooterRef={props.workspaceFooterRef}
-      onOpenGitOps={props.onOpenGitOpsView}
     />
   )
 }

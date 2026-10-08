@@ -18,7 +18,6 @@ import { useGlobalComposerFileDrop } from './useGlobalComposerFileDrop'
 
 type ComposerPromptSurfaceProps = ComposerProps & {
   composerPanelRef: RefObject<HTMLDivElement | null>
-  onOpenGitOps: () => void
 }
 
 function hasComposerOverlayAbove(...visibleFlags: boolean[]) {
@@ -58,7 +57,6 @@ export function ComposerPromptSurface({
   artifactsVisible,
   artifactsAvailable,
   onSetDiffBaseline,
-  onOpenGitOps,
   onOverlayHeightChange,
   showTerminalControls = true,
 }: ComposerPromptSurfaceProps) {
@@ -322,7 +320,6 @@ export function ComposerPromptSurface({
             modelButtonRef={modelButtonRef}
             modelMenuOpen={modelMenuOpen}
             modelMenuRef={modelMenuRef}
-            onOpenGitOps={onOpenGitOps}
             onSetDiffBaseline={onSetDiffBaseline}
             onToggleArtifacts={onToggleArtifacts}
             onToggleTerminal={onToggleTerminal}

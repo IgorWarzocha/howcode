@@ -12,14 +12,14 @@ import {
 import type {
   DirectoryCommitEntry,
   DirectoryDiffBaseline,
-  DirectoryDiffStatsResult,
   DirectoryGitState,
 } from '../../../../src/app/desktop/types'
 import { useDismissibleLayer } from '../../../../src/app/hooks/useDismissibleLayer'
 import { desktopQueryKeys } from '../../../../src/app/query/desktop-query'
 import { cn } from '../../../../src/app/utils/cn'
-import { getDirectoryDiffStatsQuery, listDirectoryCommitsQuery } from '../query'
-import { getBaselineCounts, matchesCommitSearch } from './composer-diff-baseline-data'
+import { listDirectoryCommitsQuery } from '../query'
+import { useGitDiffSummary } from '../workspace/diff-presentation'
+import { type getBaselineCounts, matchesCommitSearch } from './composer-diff-baseline-data'
 import { getDiffBaselineLabel, getDiffBaselinePrefix } from './diff-baseline'
 import { BaselineSelectorPortal } from './diff-baseline-selector/baseline-selector-popover'
 import { formatGitCount } from './git-ops'
@@ -33,7 +33,6 @@ type ComposerDiffBaselineSelectorProps = {
   branch?: string | null
   parentBranchName?: string | null | undefined
   selectedBaseline: DirectoryDiffBaseline
-  includeUntracked?: boolean
   onSelectBaseline: (baseline: DirectoryDiffBaseline) => void
 }
 
@@ -84,34 +83,19 @@ function getVisibleBaselineCommits(commits: DirectoryCommitEntry[], searchQuery:
 
 function useComposerBaselineData({
   open,
-  directoryGitState,
   directoryId,
   searchQuery,
   selectedBaseline,
-  includeUntracked = false,
 }: {
   open: boolean
-  directoryGitState: DirectoryGitState | null
   directoryId: string
   searchQuery: string
   selectedBaseline: DirectoryDiffBaseline
-  includeUntracked?: boolean
 }) {
   const commitsQuery = useQuery<DirectoryCommitEntry[]>({
     queryKey: desktopQueryKeys.directoryCommits(directoryId, 100),
     queryFn: () => listDirectoryCommitsQuery(directoryId, 100),
     enabled: open && directoryId.length > 0,
-    staleTime: Number.POSITIVE_INFINITY,
-  })
-  const baselineStatsQuery = useQuery<DirectoryDiffStatsResult | null, Error>({
-    queryKey: directoryId
-      ? desktopQueryKeys.directoryDiffStats(directoryId, selectedBaseline, includeUntracked)
-      : ['desktop', 'directoryDiffStats', null],
-    queryFn: () =>
-      directoryId
-        ? getDirectoryDiffStatsQuery(directoryId, selectedBaseline, includeUntracked)
-        : Promise.resolve(null),
-    enabled: directoryId.length > 0 && (selectedBaseline.kind !== 'head' || includeUntracked),
     staleTime: Number.POSITIVE_INFINITY,
   })
 
@@ -124,21 +108,10 @@ function useComposerBaselineData({
   const visibleCommits = useMemo(() => {
     return getVisibleBaselineCommits(commits, searchQuery)
   }, [commits, searchQuery])
-  const counts = useMemo(
-    () =>
-      getBaselineCounts({
-        baselineStats: baselineStatsQuery.data,
-        includeUntracked,
-        directoryGitState,
-        selectedBaseline,
-      }),
-    [baselineStatsQuery.data, includeUntracked, directoryGitState, selectedBaseline],
-  )
 
   return {
     baselineLabel,
     commitsQuery,
-    counts,
     selectedCommitSha,
     visibleCommits,
   }
@@ -270,7 +243,6 @@ export function ComposerDiffBaselineSelector({
   parentBranchName,
   selectedBaseline,
   onSelectBaseline,
-  includeUntracked = false,
 }: ComposerDiffBaselineSelectorProps) {
   const [open, setOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -290,14 +262,13 @@ export function ComposerDiffBaselineSelector({
     onDismiss: closePopover,
   })
 
-  const { baselineLabel, commitsQuery, counts, selectedCommitSha, visibleCommits } =
+  const { counts } = useGitDiffSummary()
+  const { baselineLabel, commitsQuery, selectedCommitSha, visibleCommits } =
     useComposerBaselineData({
       open,
-      directoryGitState,
       directoryId,
       searchQuery,
       selectedBaseline,
-      includeUntracked,
     })
   const baselinePrefix = getDiffBaselinePrefix(selectedBaseline)
 

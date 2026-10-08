@@ -39,7 +39,6 @@ type ComposerFooterProps = {
   modelMenuOpen: boolean
   modelMenuRef: RefObject<HTMLDivElement | null>
   preferPortalModelPopover?: boolean | undefined
-  onOpenGitOps: () => void
   onCompact: () => void
   onSelectBaseline: (baseline: DirectoryDiffBaseline) => void
   onSelectModel: (model: ComposerModel) => void
@@ -72,7 +71,6 @@ export function ComposerFooter({
   modelMenuOpen,
   modelMenuRef,
   preferPortalModelPopover = false,
-  onOpenGitOps,
   onCompact,
   onSelectBaseline,
   onSelectModel,
@@ -155,7 +153,6 @@ export function ComposerFooter({
             onSelectBaseline,
           }}
           showGitOps={showTerminalControls}
-          onOpenGitOps={onOpenGitOps}
         />
         {showTerminalControls ? null : (
           <ArtifactsComposerControl

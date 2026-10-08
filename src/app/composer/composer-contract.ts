@@ -34,7 +34,6 @@ export type ComposerProps = {
   composerSendMode: ComposerSendMode
   keybindings: KeybindingOverrides
   onSetDiffBaseline: (baseline: DirectoryDiffBaseline) => void
-  onOpenGitOpsView: () => void
   onOpenSettingsView: (target?: SettingsOpenTarget) => void
   onToggleTerminal: () => void
   onToggleArtifacts?: (() => void) | undefined

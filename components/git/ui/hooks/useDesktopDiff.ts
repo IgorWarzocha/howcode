@@ -41,10 +41,14 @@ function useDirectoryDiffStream(
   includeUntracked: boolean,
   refreshVersion: number,
 ) {
-  const [streamedPatch, setStreamedPatch] = useState<string | null>(null)
-  const [diff, setDiff] = useState<DirectoryDiffResult | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const scope = JSON.stringify([directoryId, baseline, enabled, includeUntracked, refreshVersion])
+  const [state, setState] = useState<DiffState & { scope: string | null }>({
+    scope: null,
+    streamedPatch: null,
+    diff: null,
+    error: null,
+    isLoading: false,
+  })
   const pendingChunksRef = useRef(new Map<number, string>())
   const nextSequenceRef = useRef(0)
   const flushFrameRef = useRef<number | null>(null)
@@ -59,10 +63,7 @@ function useDirectoryDiffStream(
     }
 
     const resetStreamState = () => {
-      setStreamedPatch(null)
-      setDiff(null)
-      setError(null)
-      setIsLoading(false)
+      setState({ scope, streamedPatch: null, diff: null, error: null, isLoading: false })
       pendingChunksRef.current.clear()
       nextSequenceRef.current = 0
       cancelChunkFlush()
@@ -75,16 +76,16 @@ function useDirectoryDiffStream(
 
     let active = true
     const streamId = createDirectoryDiffStreamId()
-    setStreamedPatch('')
-    setDiff(null)
-    setError(null)
-    setIsLoading(true)
+    setState({ scope, streamedPatch: '', diff: null, error: null, isLoading: true })
     pendingChunksRef.current.clear()
     nextSequenceRef.current = 0
     cancelChunkFlush()
 
     const appendPatchChunk = (chunk: string) => {
-      setStreamedPatch((current) => `${current ?? ''}${chunk}`)
+      setState((current) => ({
+        ...current,
+        streamedPatch: `${current.streamedPatch ?? ''}${chunk}`,
+      }))
     }
 
     const flushPendingChunks = () => {
@@ -132,29 +133,37 @@ function useDirectoryDiffStream(
       finishStream()
 
       if (streamEvent.type === 'complete') {
-        setDiff(streamEvent.result)
-        setStreamedPatch((current) => (streamEvent.result ? current : ''))
-        setIsLoading(false)
+        setState((current) => ({
+          ...current,
+          diff: streamEvent.result,
+          streamedPatch: streamEvent.result ? current.streamedPatch : '',
+          isLoading: false,
+        }))
         return
       }
 
-      setError(streamEvent.error)
-      setStreamedPatch(null)
-      setIsLoading(false)
+      setState((current) => ({
+        ...current,
+        error: streamEvent.error,
+        streamedPatch: null,
+        isLoading: false,
+      }))
     })
 
     startDirectoryDiffStreamQuery(directoryId, baseline, streamId, includeUntracked).then(
       (result) => {
         if (!active) return
         if (!result || result.streamId !== streamId) {
-          setIsLoading(false)
-          setError('Could not start diff stream.')
+          setState((current) => ({
+            ...current,
+            isLoading: false,
+            error: 'Could not start diff stream.',
+          }))
         }
       },
       (streamError: Error) => {
         if (!active) return
-        setIsLoading(false)
-        setError(streamError.message)
+        setState((current) => ({ ...current, isLoading: false, error: streamError.message }))
       },
     )
 
@@ -165,11 +174,14 @@ function useDirectoryDiffStream(
       unsubscribe()
       void cancelDirectoryDiffStreamQuery(streamId)
     }
-  }, [baseline, canStream, includeUntracked, directoryId, refreshVersion])
+  }, [baseline, canStream, includeUntracked, directoryId, refreshVersion, scope])
 
   return useMemo(
-    () => ({ canStream, diff, error, isLoading, streamedPatch }),
-    [canStream, diff, error, isLoading, streamedPatch],
+    () =>
+      state.scope === scope
+        ? { canStream, ...state }
+        : { canStream, diff: null, error: null, isLoading: canStream, streamedPatch: null },
+    [state, scope, canStream],
   )
 }
 

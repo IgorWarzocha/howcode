@@ -9,7 +9,7 @@ import {
   diffPanelSplitSurfaceClass,
 } from '../../../../../src/app/ui/classes'
 import { cn } from '../../../../../src/app/utils/cn'
-import { useDesktopDiff } from '../../hooks/useDesktopDiff'
+import { useGitDiffDetail } from '../../workspace/diff-presentation'
 import type { GitOpsFileActions } from '../edit/gitops-file-actions'
 import { useDiffEditing } from '../edit/use-diff-editing'
 import type { GitOpsAnnotationMetadata } from '../review/pierre-review-adapter'
@@ -63,12 +63,7 @@ export function DiffPanelContent({
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const codeViewRef = useRef<CodeViewHandle<GitOpsAnnotationMetadata, undefined> | null>(null)
   const draftCardRef = useRef<HTMLDivElement | null>(null)
-  const { diff, streamedPatch, isLoading, error } = useDesktopDiff(
-    directoryId,
-    baseline,
-    isGitRepo,
-    includeUntracked,
-  )
+  const { diff, streamedPatch, isLoading, error } = useGitDiffDetail()
   const fileContent = useDiffFileContent({
     directoryId,
     resolvedBaseline: diff?.resolvedBaseline ?? null,

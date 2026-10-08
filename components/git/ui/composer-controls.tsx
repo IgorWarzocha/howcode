@@ -4,11 +4,34 @@ import { useToolkitComponentEnabled } from '../../../src/app/component-system/co
 import { compactIconButtonClass } from '../../../src/app/ui/classes'
 import { cn } from '../../../src/app/utils/cn'
 import { ComposerDiffBaselineSelector, getGitOpsEntryButtonClass } from './gitops/index'
+import { useGitDiffSummary } from './workspace/diff-presentation'
+
+function GitOpsEntryButton({
+  gitVisualMode,
+}: {
+  gitVisualMode: Parameters<typeof getGitOpsEntryButtonClass>[0]
+}) {
+  const { requestDetail } = useGitDiffSummary()
+  return (
+    <button
+      type="button"
+      className={cn(
+        compactIconButtonClass,
+        'composer-gitops-control h-7 w-7',
+        getGitOpsEntryButtonClass(gitVisualMode),
+      )}
+      onClick={requestDetail}
+      aria-label="Git ops"
+      data-tooltip="Git ops"
+    >
+      <GitBranch size={14} />
+    </button>
+  )
+}
 
 export function GitComposerControls({
   selector,
   showGitOps,
-  onOpenGitOps,
 }: {
   selector: Omit<
     ComponentProps<typeof ComposerDiffBaselineSelector>,
@@ -19,7 +42,6 @@ export function GitComposerControls({
       | null
   }
   showGitOps: boolean
-  onOpenGitOps: () => void
 }) {
   const enabled = useToolkitComponentEnabled('coding')
   if (!enabled) return null
@@ -38,21 +60,7 @@ export function GitComposerControls({
           directoryGitState={gitState}
         />
       ) : null}
-      {showGitOps ? (
-        <button
-          type="button"
-          className={cn(
-            compactIconButtonClass,
-            'composer-gitops-control h-7 w-7',
-            getGitOpsEntryButtonClass(gitVisualMode),
-          )}
-          onClick={onOpenGitOps}
-          aria-label="Git ops"
-          data-tooltip="Git ops"
-        >
-          <GitBranch size={14} />
-        </button>
-      ) : null}
+      {showGitOps ? <GitOpsEntryButton gitVisualMode={gitVisualMode} /> : null}
     </>
   )
 }

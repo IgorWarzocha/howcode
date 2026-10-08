@@ -96,7 +96,6 @@ export type DomainWorkspaceContentProps = DomainWorkspaceViewProps &
     handleAction: DesktopActionInvoker
     handleLoadEarlierMessages: () => void
     handleCloseGitOpsView: () => void
-    handleOpenGitOpsView: DomainWorkspaceController['gitOps']['open']
     handleToggleTerminal: () => void
     listComposerAttachmentEntries: DomainWorkspaceController['composer']['listAttachmentEntries']
     shellState: ShellState | null

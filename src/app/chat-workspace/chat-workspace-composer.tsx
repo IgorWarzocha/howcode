@@ -189,9 +189,6 @@ function ChatComposer(props: ChatWorkspaceComposerProps) {
       onSetDiffBaseline={onSetDiffBaseline}
       onOverlayHeightChange={setComposerOverlayHeight}
       workspaceFooterRef={footerRef}
-      onOpenGitOpsView={() => {
-        /* Already in chat workspace. */
-      }}
       onOpenSettingsView={(target) => controller.navigation.showView('settings', target)}
       onToggleTerminal={handleToggleTerminal}
       onToggleArtifacts={getToggleArtifacts(props)}

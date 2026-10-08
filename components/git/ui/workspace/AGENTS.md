@@ -1,0 +1,2 @@
+- Keep compact summaries and detailed diff views on one bound capability. Compact-only presentation must not acquire patches; detail demand owns the stream and supplies summary stats without a second stats read.
+- Directory, baseline and untracked-policy changes cancel the old binding and stream before exposing replacement data. Do not key the surrounding composer subtree to reset diff state: that also discards live composer and popover state. Resolved-baseline metadata, loading, errors, review and editing remain host-owned.

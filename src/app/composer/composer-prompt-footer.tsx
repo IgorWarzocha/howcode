@@ -40,7 +40,6 @@ export function ComposerPromptFooter({
   modelButtonRef,
   modelMenuOpen,
   modelMenuRef,
-  onOpenGitOps,
   onSetDiffBaseline,
   onToggleArtifacts,
   onToggleTerminal,
@@ -67,7 +66,6 @@ export function ComposerPromptFooter({
   modelButtonRef: RefObject<HTMLButtonElement | null>
   modelMenuOpen: boolean
   modelMenuRef: RefObject<HTMLDivElement | null>
-  onOpenGitOps: () => void
   onSetDiffBaseline: (baseline: DirectoryDiffBaseline) => void
   onToggleArtifacts?: (() => void) | undefined
   onToggleTerminal: () => void
@@ -99,7 +97,6 @@ export function ComposerPromptFooter({
       modelMenuOpen={modelMenuOpen}
       modelMenuRef={modelMenuRef}
       preferPortalModelPopover={preferPortalModelPopover}
-      onOpenGitOps={onOpenGitOps}
       onSelectBaseline={onSetDiffBaseline}
       onSelectModel={(availableModel) => {
         if (isConversationComposerView(activeView) && !persistedConversationId) {

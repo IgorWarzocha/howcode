@@ -64,5 +64,6 @@ export {
 export { useGitStateSync } from './shell/useGitStateSync'
 export { useTerminalGitStateSync } from './shell/useTerminalGitStateSync'
 export { createGitWorkspaceTransitions } from './shell/workspace-state'
+export { GitDiffPresentationProvider } from './workspace/diff-presentation'
 export { useGitWorkspacePresentation } from './workspace/use-git-workspace-presentation'
 export { useGitOpsFileActions } from './workspace/use-gitops-file-actions'

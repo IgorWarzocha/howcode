@@ -92,7 +92,6 @@ export function ComposerGitOpsFooter({
             directoryGitState={directory.gitState}
             selectedBaseline={diff.baseline}
             onSelectBaseline={diff.setBaseline}
-            includeUntracked={diff.includeUntracked}
           />
         ) : null}
         <ComposerGitOpsBackButton

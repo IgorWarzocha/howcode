@@ -128,7 +128,6 @@ function CodeChatComposer(props: DomainWorkspaceContentProps) {
     onSetDiffBaseline,
     setComposerOverlayHeight,
     footerRef,
-    handleOpenGitOpsView,
     controller,
     handleToggleTerminal,
     listComposerAttachmentEntries,
@@ -160,7 +159,6 @@ function CodeChatComposer(props: DomainWorkspaceContentProps) {
       onSetDiffBaseline={onSetDiffBaseline}
       onOverlayHeightChange={setComposerOverlayHeight}
       workspaceFooterRef={footerRef}
-      onOpenGitOpsView={handleOpenGitOpsView}
       onOpenSettingsView={(target) => controller.navigation.showView('settings', target)}
       onToggleTerminal={handleToggleTerminal}
       terminalVisible={state.terminalVisible}
