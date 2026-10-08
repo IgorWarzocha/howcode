@@ -1,4 +1,4 @@
-import { ArchivedThreadsView } from '@howcode/archive'
+import { ArchivedChatsView } from '@howcode/archive'
 import { InboxView } from '@howcode/inbox'
 import { defaultPiSettings } from '@howcode/shared/default-pi-settings'
 import type { AppShellController } from '../app-shell/useAppShellController'
@@ -9,7 +9,7 @@ import { WorkspacePresentation } from './workspace-presentation'
 type UtilityWorkspaceViewProps = {
   controller: Pick<
     AppShellController,
-    'desktop' | 'workspace' | 'thread' | 'composer' | 'inbox' | 'navigation' | 'settings'
+    'desktop' | 'workspace' | 'chat' | 'composer' | 'inbox' | 'navigation' | 'settings'
   >
   activeComposerState: ComposerState | null
   appSettings: AppSettings
@@ -46,7 +46,7 @@ export function UtilityWorkspaceView({
           appSettings={appSettings}
         />
       ) : view === 'archived' ? (
-        <ArchivedThreadsView threads={controller.thread.archived} onAction={handleAction} />
+        <ArchivedChatsView chats={controller.chat.archived} onAction={handleAction} />
       ) : null}
     </WorkspacePresentation>
   )
@@ -63,7 +63,7 @@ function InboxWorkspaceContent({
   const { handleAction } = controller.desktop
   return (
     <InboxView
-      key={controller.inbox.selectedThread?.conversationId ?? 'inbox-empty'}
+      key={controller.inbox.selectedChat?.conversationId ?? 'inbox-empty'}
       appSettings={appSettings}
       availableModels={activeComposerState?.availableModels ?? []}
       availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ['off']}
@@ -71,11 +71,11 @@ function InboxWorkspaceContent({
       currentModel={activeComposerState?.currentModel ?? null}
       currentThinkingLevel={activeComposerState?.currentThinkingLevel ?? 'off'}
       isCompacting={activeComposerState?.isCompacting ?? false}
-      thread={controller.inbox.selectedThread}
+      chat={controller.inbox.selectedChat}
       onAction={handleAction}
-      onDismissThread={controller.inbox.dismiss}
+      onDismissChat={controller.inbox.dismiss}
       onListAttachmentEntries={controller.composer.listAttachmentEntries}
-      onOpenThread={controller.thread.open}
+      onOpenChat={controller.chat.open}
       onOpenSettingsView={(target) => controller.navigation.showView('settings', target)}
       sidebarCollapsed={sidebarCollapsed}
       sidebarCompactMode={sidebarCompactMode}

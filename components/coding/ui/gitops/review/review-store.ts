@@ -1,4 +1,4 @@
-import type { ProjectDiffBaseline } from '../../../../../src/app/desktop/types'
+import type { DirectoryDiffBaseline } from '../../../../../src/app/desktop/types'
 import {
   createStoragePersistence,
   getBeforeUnloadTarget,
@@ -227,7 +227,7 @@ function serializeContexts(contextsById: Record<string, ReviewContext>): Persist
   }
 }
 
-function getDiffBaselineScopeKey(baseline: ProjectDiffBaseline | null) {
+function getDiffBaselineScopeKey(baseline: DirectoryDiffBaseline | null) {
   if (!baseline) return 'head'
   if (baseline.kind === 'commit') return `commit:${baseline.sha}`
   if (baseline.kind === 'last-opened') return `last-opened:${baseline.rev}`
@@ -237,14 +237,14 @@ function getDiffBaselineScopeKey(baseline: ProjectDiffBaseline | null) {
 export function getReviewContextId({
   baseline = null,
   includeUntracked = false,
-  projectId,
+  directoryId,
 }: {
-  baseline?: ProjectDiffBaseline | null | undefined
+  baseline?: DirectoryDiffBaseline | null | undefined
   includeUntracked?: boolean | undefined
-  projectId: string
+  directoryId: string
 }) {
-  if (projectId.length === 0) return null
-  return `project:${projectId}:worktree-diff:${getDiffBaselineScopeKey(baseline)}:untracked:${includeUntracked ? 'included' : 'hidden'}`
+  if (directoryId.length === 0) return null
+  return `project:${directoryId}:worktree-diff:${getDiffBaselineScopeKey(baseline)}:untracked:${includeUntracked ? 'included' : 'hidden'}`
 }
 
 export function createReviewStore({

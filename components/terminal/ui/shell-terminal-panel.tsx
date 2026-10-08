@@ -8,7 +8,7 @@ import { cn } from '../../../src/app/utils/cn'
 import { ShellTerminalViewport } from './viewport/index'
 
 export type ShellTerminalPanelProps = {
-  projectId: string
+  directoryId: string
   conversationId: string | null
   onClose: () => void
   hoverToFocus?: boolean
@@ -16,7 +16,7 @@ export type ShellTerminalPanelProps = {
 }
 
 export function ShellTerminalPanel({
-  projectId,
+  directoryId,
   conversationId,
   onClose,
   hoverToFocus = true,
@@ -32,7 +32,7 @@ export function ShellTerminalPanel({
     >
       <div className="min-h-0 min-w-0 flex-1 overflow-hidden bg-[color:var(--sidebar)]">
         <ShellTerminalViewport
-          projectId={projectId}
+          directoryId={directoryId}
           conversationId={conversationId}
           backgroundCssVar="--sidebar"
           hoverToFocus={hoverToFocus}

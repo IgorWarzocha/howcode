@@ -1,6 +1,6 @@
 import { SkeletonBlock } from '@howcode/common/skeleton'
 
-const projectSkeletonRows = [
+const directorySkeletonRows = [
   'project-a',
   'project-b',
   'project-c',
@@ -11,7 +11,7 @@ const projectSkeletonRows = [
 const chatSkeletonRows = ['chat-a', 'chat-b', 'chat-c', 'chat-d', 'chat-e']
 const inboxSkeletonRows = ['inbox-a', 'inbox-b', 'inbox-c', 'inbox-d', 'inbox-e']
 
-export function SidebarProjectsSkeleton() {
+export function SidebarDirectoriesSkeleton() {
   return (
     <div
       className="sidebar-scroll-region"
@@ -20,7 +20,7 @@ export function SidebarProjectsSkeleton() {
       aria-busy="true"
     >
       <div className="sidebar-list px-1 pt-1">
-        {projectSkeletonRows.map((rowId, index) => (
+        {directorySkeletonRows.map((rowId, index) => (
           <div key={rowId} className="grid gap-1.5 py-1.5">
             <div className="grid h-7 grid-cols-[16px_minmax(0,1fr)_32px] items-center gap-2 px-1.5">
               <SkeletonBlock className="h-3.5 w-3.5 rounded-md" />

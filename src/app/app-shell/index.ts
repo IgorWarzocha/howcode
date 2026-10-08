@@ -1,2 +1,2 @@
-export type { DesktopThreadEndContribution } from './desktop-events/runtime'
+export type { DesktopChatEndContribution } from './desktop-events/runtime'
 export { MainView } from './views/main-view'

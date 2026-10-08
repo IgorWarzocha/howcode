@@ -3,7 +3,7 @@ import type { TerminalSessionSnapshot } from '../../../src/app/desktop/types'
 import { listDesktopTerminals, subscribeDesktopTerminal } from './desktop-terminal'
 
 type RunningTerminalSession = {
-  projectId: string
+  directoryId: string
   conversationId: string | null
 }
 
@@ -41,7 +41,7 @@ function upsertRunningTerminalSession(
 ) {
   setRunningTerminalSessionsById((current) => ({
     ...current,
-    [sessionId]: { projectId: snapshot.projectId, conversationId: snapshot.conversationId },
+    [sessionId]: { directoryId: snapshot.directoryId, conversationId: snapshot.conversationId },
   }))
 }
 
@@ -91,7 +91,7 @@ export function useRunningTerminalSessions(enabled = true) {
               ? [
                   [
                     snapshot.sessionId,
-                    { projectId: snapshot.projectId, conversationId: snapshot.conversationId },
+                    { directoryId: snapshot.directoryId, conversationId: snapshot.conversationId },
                   ] as const,
                 ]
               : [],
@@ -121,7 +121,7 @@ export function useRunningTerminalSessions(enabled = true) {
     [runningTerminalSessionsById],
   )
   const terminalRunningWorkspaceIds = useMemo(
-    () => new Set(Object.values(runningTerminalSessionsById).map((session) => session.projectId)),
+    () => new Set(Object.values(runningTerminalSessionsById).map((session) => session.directoryId)),
     [runningTerminalSessionsById],
   )
 

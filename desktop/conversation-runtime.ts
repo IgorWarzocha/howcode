@@ -13,7 +13,13 @@ import {
   registerRuntimeConversation,
 } from './app-service/conversation-state.ts'
 import { loadAppSettings } from './app-settings/readers.ts'
+import {
+  getLiveChat,
+  selectRuntimeConversation,
+  watchRuntimeConversation,
+} from './durable-runtime/chats.ts'
 import { getComposerSkills, getComposerState } from './durable-runtime/composer.ts'
+import { encodeConversationOrigin } from './durable-runtime/conversation-origin.ts'
 import {
   abortRuntimeConversation,
   createRuntimeConversation,
@@ -27,20 +33,15 @@ import {
   runtimeContext,
 } from './durable-runtime/host.ts'
 import { prepareRuntimeInput } from './durable-runtime/input.ts'
-import {
-  getLiveThread,
-  selectRuntimeConversation,
-  watchRuntimeConversation,
-} from './durable-runtime/threads.ts'
 import { emitDesktopEvent, subscribeDesktopEvents } from './runtime/desktop-events.ts'
-import { withWorkspaceActivity } from './runtime/workspace-activity.ts'
+import { withDirectoryActivity } from './runtime/directory-activity.ts'
 
 export {
   getComposerState,
   setComposerModel,
   setComposerThinkingLevel,
 } from './durable-runtime/composer.ts'
-export { getComposerSkills, getLiveThread, loadAppSettings, subscribeDesktopEvents }
+export { getComposerSkills, getLiveChat, loadAppSettings, subscribeDesktopEvents }
 
 export async function getComposerSlashCommands(request: ComposerStateRequest = {}) {
   const skills = await getComposerSkills(request)
@@ -58,7 +59,7 @@ export async function publishComposerState(request: ComposerStateRequest = {}) {
   const composer = await getComposerState(request)
   emitDesktopEvent({
     type: 'composer-update',
-    projectId: request.projectId ?? null,
+    directoryId: request.directoryId ?? null,
     conversationId: request.conversationId ?? null,
     composer,
   })
@@ -72,36 +73,36 @@ async function registerConversation(conversationId: string, request: ComposerSta
   if (!existing)
     registerRuntimeConversation({
       conversationId,
-      projectId: origin?.projectId ?? request.projectId ?? getDesktopWorkingDirectory(),
+      directoryId: origin?.directoryId ?? request.directoryId ?? getDesktopWorkingDirectory(),
       branchName: origin?.branchName ?? request.branchName,
-      chatGroupId: origin?.chatGroupId ?? request.chatGroupId,
-      isChat: (origin?.composerMode ?? request.composerMode) === 'chat',
+      workspaceId: origin?.workspaceId ?? request.workspaceId,
+      composerProfile: origin?.composerProfile ?? request.composerProfile ?? undefined,
     })
   await watchRuntimeConversation({
     ...request,
-    projectId: existing?.projectId ?? origin?.projectId ?? request.projectId,
-    composerMode: origin?.composerMode ?? request.composerMode,
-    chatGroupId: origin?.chatGroupId ?? request.chatGroupId,
+    directoryId: existing?.directoryId ?? origin?.directoryId ?? request.directoryId,
+    composerProfile: origin?.composerProfile ?? request.composerProfile,
+    workspaceId: origin?.workspaceId ?? request.workspaceId,
     branchName: origin?.branchName ?? request.branchName,
     conversationId,
   })
 }
 
-export async function startNewThread(request: ComposerStateRequest = {}) {
-  return withWorkspaceActivity(request.projectId ?? getDesktopWorkingDirectory(), async () => {
+export async function startNewChat(request: ComposerStateRequest = {}) {
+  return withDirectoryActivity(request.directoryId ?? getDesktopWorkingDirectory(), async () => {
     const conversation = await createRuntimeConversation(request)
     const conversationId = String(conversation.id)
     await registerConversation(conversationId, request)
     return {
       composer: await publishComposerState({ ...request, conversationId }),
-      projectId: request.projectId ?? getDesktopWorkingDirectory(),
+      directoryId: request.directoryId ?? getDesktopWorkingDirectory(),
       conversationId,
-      threadId: conversationId,
+      chatId: conversationId,
     }
   })
 }
 
-export async function openThreadRuntime(request: ComposerStateRequest) {
+export async function openChatRuntime(request: ComposerStateRequest) {
   if (request.conversationId)
     await watchRuntimeConversation({ ...request, conversationId: request.conversationId })
   return publishComposerState(request)
@@ -114,9 +115,9 @@ export async function watchConversation(conversationId: string | null) {
   const origin = await readRuntimeConversationOrigin(conversationId)
   return selectRuntimeConversation({
     conversationId,
-    projectId: metadata?.projectId ?? origin?.projectId,
-    composerMode: metadata?.isChat ? 'chat' : origin?.composerMode,
-    chatGroupId: metadata?.chatGroupId ?? origin?.chatGroupId,
+    directoryId: metadata?.directoryId ?? origin?.directoryId,
+    composerProfile: metadata?.composerProfile ?? origin?.composerProfile,
+    workspaceId: metadata?.workspaceId ?? origin?.workspaceId,
     branchName: metadata?.branchName ?? origin?.branchName,
   })
 }
@@ -128,7 +129,7 @@ export async function sendComposerPrompt(
     streamingBehavior?: ComposerStreamingBehavior | null
   },
 ) {
-  return withWorkspaceActivity(request.projectId ?? getDesktopWorkingDirectory(), async () => {
+  return withDirectoryActivity(request.directoryId ?? getDesktopWorkingDirectory(), async () => {
     const conversation = request.conversationId
       ? await resolveConversation(request.conversationId)
       : await createRuntimeConversation(request)
@@ -137,7 +138,7 @@ export async function sendComposerPrompt(
     const behavior = request.streamingBehavior ?? loadAppSettings().composerStreamingBehavior
     if (behavior === 'stop') {
       await conversation.abort(runtimeContext)
-      return { outcome: 'stopped' as const, conversationId, threadId: conversationId }
+      return { outcome: 'stopped' as const, conversationId, chatId: conversationId }
     }
     await refreshRuntimePackages()
     const compact = parseCompactSlashCommand(request.text)
@@ -152,7 +153,7 @@ export async function sendComposerPrompt(
       )
     } else await conversation.compact(compact || undefined, runtimeContext)
     await publishComposerState({ ...request, conversationId })
-    return { outcome: 'sent' as const, conversationId, threadId: conversationId }
+    return { outcome: 'sent' as const, conversationId, chatId: conversationId }
   })
 }
 
@@ -166,7 +167,7 @@ export async function stopComposerRun(request: ComposerStateRequest = {}) {
 export async function forkConversation(request: ComposerStateRequest & { targetEntryId: string }) {
   if (!request.conversationId) throw new Error('Select a conversation to fork.')
   const parentId = request.conversationId
-  return withWorkspaceActivity(request.projectId ?? getDesktopWorkingDirectory(), async () => {
+  return withDirectoryActivity(request.directoryId ?? getDesktopWorkingDirectory(), async () => {
     const parent = await resolveConversation(parentId)
     const metadata = getRuntimeConversationMetadata(parentId)
     if (metadata?.deleted) throw new Error('This conversation has been deleted.')
@@ -177,12 +178,16 @@ export async function forkConversation(request: ComposerStateRequest & { targetE
         init: async (tx, id) => {
           const origin = await tx.doc(RuntimeOriginDoc, id)
           if (metadata)
-            Object.assign(origin, {
-              projectId: metadata.projectId,
-              composerMode: metadata.isChat ? 'chat' : 'code',
-              chatGroupId: metadata.chatGroupId,
-              branchName: metadata.branchName,
-            })
+            Object.assign(
+              origin,
+              encodeConversationOrigin({
+                appOwned: true,
+                directoryId: metadata.directoryId,
+                composerProfile: metadata.composerProfile,
+                workspaceId: metadata.workspaceId,
+                branchName: metadata.branchName,
+              }),
+            )
         },
       },
       runtimeContext,
@@ -190,7 +195,7 @@ export async function forkConversation(request: ComposerStateRequest & { targetE
     const conversationId = String(child.id)
     await registerConversation(conversationId, request)
     await publishComposerState({ ...request, conversationId })
-    return { conversationId, threadId: conversationId, projectId: request.projectId ?? undefined }
+    return { conversationId, chatId: conversationId, directoryId: request.directoryId ?? undefined }
   })
 }
 

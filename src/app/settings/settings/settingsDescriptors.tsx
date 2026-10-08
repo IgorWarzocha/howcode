@@ -12,10 +12,10 @@ import type {
 } from '../../desktop/types'
 import { buildCommonSettingsDescriptors } from './settingsDescriptorCommon'
 import { buildComponentSettingsDescriptors } from './settingsDescriptorComponents'
+import { buildDirectoriesSettingsDescriptors } from './settingsDescriptorDirectories'
 import { buildKeybindingSettingsDescriptors } from './settingsDescriptorKeybindings'
 import { buildModelSettingsDescriptors } from './settingsDescriptorModels'
 import { buildPiRuntimeSettingsDescriptors } from './settingsDescriptorPiRuntime'
-import { buildProjectsSettingsDescriptors } from './settingsDescriptorProjects'
 import type { SetDraftPiSetting, SettingsController } from './settingsDescriptorTypes'
 import type { SettingDescriptor } from './settingsTypes'
 
@@ -53,7 +53,7 @@ export function buildSettingsDescriptors({
   return [
     ...buildComponentSettingsDescriptors(appSettings, onAction),
     ...buildCommonSettingsDescriptors({ appSettings, controller }),
-    ...buildProjectsSettingsDescriptors({ appSettings, controller }),
+    ...buildDirectoriesSettingsDescriptors({ appSettings, controller }),
     ...buildModelSettingsDescriptors({
       appSettings,
       availableModels,

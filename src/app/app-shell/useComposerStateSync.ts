@@ -1,63 +1,64 @@
 import type { Dispatch, SetStateAction } from 'react'
 import { useEffect } from 'react'
-import { getInboxThreadComposerMode } from '../common/inbox-thread-scope'
-import type { AppSettings, ComposerState, InboxThread } from '../desktop/types'
+import { getInboxChatComposerProfile } from '../common/inbox-chat-scope'
+import type { AppSettings, ComposerState, InboxChat } from '../desktop/types'
 import type { WorkspaceState } from '../state/workspace-model'
 
 type UseComposerStateSyncInput = {
   workspaceState: WorkspaceState
-  selectedInboxThread: InboxThread | null
-  composerProjectId: string
+  selectedInboxChat: InboxChat | null
+  composerDirectoryId: string
   shellComposerState: ComposerState | null | undefined
   shellAppSettings: AppSettings | null | undefined
   loadComposerState: (request?: {
-    projectId?: string | null
+    directoryId?: string | null
     conversationId?: string | null
-    composerMode?: 'chat' | 'code' | null
+    composerProfile?: 'general' | 'coding' | null
   }) => Promise<ComposerState | null>
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>
 }
 
 function getComposerStateSyncTarget(input: {
+  composerProfile: WorkspaceState['composerProfile']
   activeView: WorkspaceState['activeView']
-  composerProjectId: string
-  inboxComposerMode: 'chat' | 'code'
-  inboxProjectId: string | null
+  composerDirectoryId: string
+  inboxComposerProfile: 'general' | 'coding'
+  inboxDirectoryId: string | null
   inboxConversationId: string | null
   selectedConversationId: string | null
 }) {
   if (input.activeView === 'inbox') {
     return {
-      composerMode: input.inboxComposerMode,
-      projectId: input.inboxProjectId,
+      composerProfile: input.inboxComposerProfile,
+      directoryId: input.inboxDirectoryId,
       conversationId: input.inboxConversationId,
     }
   }
 
   const conversationId =
-    input.activeView === 'chat' || input.activeView === 'thread' || input.activeView === 'gitops'
+    input.activeView === 'chat' || input.activeView === 'gitops'
       ? input.selectedConversationId
       : null
 
   return {
-    composerMode: input.activeView === 'chat' ? ('chat' as const) : ('code' as const),
-    projectId: input.composerProjectId,
+    composerProfile: input.composerProfile,
+    directoryId: input.composerDirectoryId,
     conversationId,
   }
 }
 
 export function useComposerStateSync({
   workspaceState,
-  selectedInboxThread,
-  composerProjectId,
+  selectedInboxChat,
+  composerDirectoryId,
   shellComposerState,
   shellAppSettings,
   loadComposerState,
   setComposerState,
 }: UseComposerStateSyncInput) {
-  const inboxComposerMode = getInboxThreadComposerMode(selectedInboxThread)
-  const inboxProjectId = selectedInboxThread?.projectId ?? null
-  const inboxConversationId = selectedInboxThread?.conversationId ?? null
+  const inboxComposerProfile = getInboxChatComposerProfile(selectedInboxChat)
+  const inboxDirectoryId = selectedInboxChat?.directoryId ?? null
+  const inboxConversationId = selectedInboxChat?.conversationId ?? null
 
   useEffect(() => {
     if (!shellComposerState) {
@@ -75,14 +76,15 @@ export function useComposerStateSync({
 
     const target = getComposerStateSyncTarget({
       activeView: workspaceState.activeView,
-      composerProjectId,
-      inboxComposerMode,
-      inboxProjectId,
+      composerProfile: workspaceState.composerProfile,
+      composerDirectoryId,
+      inboxComposerProfile,
+      inboxDirectoryId,
       inboxConversationId,
       selectedConversationId: workspaceState.selectedConversationId,
     })
 
-    if (!target.projectId) {
+    if (!target.directoryId) {
       return
     }
 
@@ -90,9 +92,9 @@ export function useComposerStateSync({
 
     const syncComposerState = async () => {
       const nextComposerState = await loadComposerState({
-        projectId: target.projectId,
+        directoryId: target.directoryId,
         conversationId: target.conversationId,
-        composerMode: target.composerMode,
+        composerProfile: target.composerProfile,
       })
 
       if (!cancelled && nextComposerState) {
@@ -107,9 +109,9 @@ export function useComposerStateSync({
     }
   }, [
     loadComposerState,
-    composerProjectId,
-    inboxComposerMode,
-    inboxProjectId,
+    composerDirectoryId,
+    inboxComposerProfile,
+    inboxDirectoryId,
     inboxConversationId,
     setComposerState,
     shellAppSettings?.chatModel,
@@ -117,6 +119,7 @@ export function useComposerStateSync({
     shellAppSettings?.codeModel,
     shellAppSettings?.codeThinkingLevel,
     workspaceState.activeView,
+    workspaceState.composerProfile,
     workspaceState.selectedConversationId,
   ])
 }

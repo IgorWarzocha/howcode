@@ -10,7 +10,7 @@ const resources = createAgentResources(getComposerSkills)
 const Resources = resources.extension
 const ChatTools = createChatTools({
   artifactTools,
-  discoverSkills: () => getComposerSkills({ composerMode: 'chat' }),
+  discoverSkills: () => getComposerSkills({ composerProfile: 'general' }),
   skillsSection: resources.createSkillsSection('chat'),
 })
 
@@ -59,5 +59,5 @@ export function resolveDesktopExtensions(request: ComposerStateRequest, registry
 
 /** Default conversations follow live host packages. Explicit choices stay exact. */
 export function defaultExtensionExclusions(request: ComposerStateRequest): Extension[] {
-  return request.composerMode === 'chat' ? [CodingTools, CodeArtifactTools] : [ChatTools]
+  return request.composerProfile === 'general' ? [CodingTools, CodeArtifactTools] : [ChatTools]
 }

@@ -3,8 +3,8 @@ export type ComposerSendMode = 'enter' | 'cmd-enter'
 export type KeybindingCommandId =
   | 'app.commandPalette'
   | 'settings.open'
-  | 'thread.new'
-  | 'thread.find'
+  | 'chat.new'
+  | 'chat.find'
   | 'sidebar.find'
   | 'sidebar.toggle'
   | 'terminal.toggle'
@@ -12,8 +12,8 @@ export type KeybindingCommandId =
   | 'terminal.clear'
   | 'gitops.open'
   | 'gitops.toggleChangedFiles'
-  | 'thread.previousInProject'
-  | 'thread.nextInProject'
+  | 'chat.previousInDirectory'
+  | 'chat.nextInDirectory'
   | 'composer.submit'
   | 'composer.newline'
   | 'composer.focus'
@@ -38,11 +38,11 @@ export const bundledKeybindings: readonly KeybindingDefinition[] = [
   },
   { id: 'settings.open', label: 'Open settings', defaults: ['CmdOrCtrl+,'] },
   {
-    id: 'thread.new',
+    id: 'chat.new',
     label: 'New chat',
     defaults: ['CmdOrCtrl+N'],
   },
-  { id: 'thread.find', label: 'Find in current chat', defaults: ['CmdOrCtrl+F'] },
+  { id: 'chat.find', label: 'Find in current chat', defaults: ['CmdOrCtrl+F'] },
   {
     id: 'sidebar.find',
     label: 'Find in sidebar',
@@ -71,12 +71,12 @@ export const bundledKeybindings: readonly KeybindingDefinition[] = [
     defaults: ['CmdOrCtrl+Shift+G'],
   },
   {
-    id: 'thread.previousInProject',
+    id: 'chat.previousInDirectory',
     label: 'Previous chat in current workspace',
     defaults: ['CmdOrCtrl+Shift+['],
   },
   {
-    id: 'thread.nextInProject',
+    id: 'chat.nextInDirectory',
     label: 'Next chat in current workspace',
     defaults: ['CmdOrCtrl+Shift+]'],
   },

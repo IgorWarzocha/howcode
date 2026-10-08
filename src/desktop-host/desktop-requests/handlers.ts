@@ -6,7 +6,7 @@ import { createToolkitHostComponents } from './toolkit-components'
 
 export type DesktopPlatformRequestHandlers = Pick<
   DesktopRequestHandlerMap,
-  | 'listProjectDirectoryEntries'
+  | 'listDirectoryDirectoryEntries'
   | 'listComposerAttachmentEntries'
   | 'searchComposerAttachmentEntries'
 >
@@ -18,7 +18,7 @@ export function createDesktopRequestHandlers(input: {
 }): DesktopRequestHandlerMap {
   const components = createToolkitHostComponents(
     input.runtime,
-    input.platform.listProjectDirectoryEntries,
+    input.platform.listDirectoryDirectoryEntries,
   )
   return {
     ...createPackageUiHandlers(input.runtime.packages),

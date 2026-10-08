@@ -38,17 +38,19 @@ export type ComposerFileSearchEntry = ComposerFilePickerEntry & {
   relativePath: string
 }
 
+export type ComposerProfile = 'general' | 'coding'
+
 export type ComposerStateRequest = {
   /** Omitted uses compatibility defaults. An empty array selects no extensions. */
   composerExtensions?: ComposerExtensionSelection | undefined
-  projectId?: string | undefined | null | undefined
+  directoryId?: string | undefined | null | undefined
   conversationId?: string | undefined | null | undefined
-  composerMode?: 'chat' | 'code' | null | undefined
+  composerProfile?: ComposerProfile | null | undefined
   composerModelSelection?: { provider: string | undefined; id: string } | null
   composerUseDefaultModel?: boolean | undefined
   composerThinkingLevel?: ComposerThinkingLevel | null | undefined
   composerStreamingBehavior?: ComposerStreamingBehavior | null | undefined
-  chatGroupId?: string | undefined | null | undefined
+  workspaceId?: string | undefined | null | undefined
   branchName?: string | undefined | null | undefined
 }
 

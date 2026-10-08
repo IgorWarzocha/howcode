@@ -1,13 +1,13 @@
 import * as Effect from 'effect/Effect'
 import * as Schema from 'effect/Schema'
 import * as SqlClient from 'effect/sql/SqlClient'
-import { emitDesktopEvent } from '../../../desktop/runtime/desktop-events.ts'
-import { databaseOperation } from '../../../desktop/thread-state-db/db.ts'
+import { databaseOperation } from '../../../desktop/chat-repository/db.ts'
 import {
   decodePersistedRow,
   decodePersistedRows,
-} from '../../../desktop/thread-state-db/row-schema.ts'
-import { withDatabaseTransaction } from '../../../desktop/thread-state-db/write-transaction.ts'
+} from '../../../desktop/chat-repository/row-schema.ts'
+import { withDatabaseTransaction } from '../../../desktop/chat-repository/write-transaction.ts'
+import { emitDesktopEvent } from '../../../desktop/runtime/desktop-events.ts'
 import type { Artifact, ArtifactKind, ArtifactVersion } from '../../../shared/desktop-contracts.ts'
 
 const ArtifactRowSchema = Schema.Struct({

@@ -27,9 +27,9 @@ export {
 
 type UseComposerSlashCommandsOptions = {
   draft: string
-  projectId: string
+  directoryId: string
   conversationId: string | null
-  composerMode?: 'chat' | 'code'
+  composerProfile?: 'general' | 'coding'
   setDraft: (draft: string) => void
   send: () => void
   onOpenSettingsView: (target?: SettingsOpenTarget) => void
@@ -41,9 +41,9 @@ export type ComposerSlashCommands = ReturnType<typeof useComposerSlashCommands>
 
 export function useComposerSlashCommands({
   draft,
-  projectId,
+  directoryId,
   conversationId,
-  composerMode = 'code',
+  composerProfile = 'coding',
   setDraft,
   send,
   onOpenSettingsView,
@@ -57,7 +57,7 @@ export function useComposerSlashCommands({
   const candidateFilter = getSlashCommandFilter(draft)
   const filter = draft === dismissedDraft ? null : candidateFilter
   const open = filter !== null
-  const commandScopeKey = `${projectId}\0${conversationId ?? ''}\0${composerMode}`
+  const commandScopeKey = `${directoryId}\0${conversationId ?? ''}\0${composerProfile}`
   const draftRef = useLatestRef(draft)
   const commandScopeKeyRef = useLatestRef(commandScopeKey)
   const filteredCommands = useMemo(
@@ -145,13 +145,13 @@ export function useComposerSlashCommands({
         commandScopeKey,
         commandScopeKeyRef,
         commands,
-        composerMode,
+        composerProfile,
         dismiss,
         draft,
         draftCommand: getDraftCommand(),
         draftRef,
         loading,
-        projectId,
+        directoryId,
         send,
         conversationId,
       })
@@ -202,7 +202,7 @@ export function useComposerSlashCommands({
     setCommands([])
     setSelectedIndex(0)
     setLoading(true)
-    void getComposerSlashCommandsQuery({ projectId, conversationId, composerMode })
+    void getComposerSlashCommandsQuery({ directoryId, conversationId, composerProfile })
       .then((nextCommands) => {
         if (!cancelled) {
           setCommands(nextCommands)
@@ -222,7 +222,7 @@ export function useComposerSlashCommands({
     return () => {
       cancelled = true
     }
-  }, [composerMode, open, projectId, conversationId])
+  }, [composerProfile, open, directoryId, conversationId])
 
   useEffect(() => {
     void commandScopeKey

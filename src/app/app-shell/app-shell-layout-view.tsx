@@ -2,7 +2,7 @@ import { composeBuiltInWorkspaceViews } from '@howcode/component-system/built-in
 import { TerminalDrawerLayer } from '@howcode/components/terminal/ui'
 import type { RefObject } from 'react'
 import { isWorkspaceViewEnabled } from '../component-system/toolkit-components'
-import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
+import type { DirectoryDiffBaseline, DirectoryDiffRenderMode } from '../desktop/types'
 import { appToneTextClass, appTypeGroupTextClass } from '../ui/classes'
 import { cn } from '../utils/cn'
 import { AppShellSidebar } from './app-shell-sidebar'
@@ -13,10 +13,10 @@ import type { AppShellController } from './useAppShellController'
 type AppShellLayoutViewProps = {
   controller: AppShellController
   diff: {
-    baseline: ProjectDiffBaseline
-    onBaselineChange: (baseline: ProjectDiffBaseline) => void
-    onRenderModeChange: (renderMode: ProjectDiffRenderMode) => void
-    renderMode: ProjectDiffRenderMode
+    baseline: DirectoryDiffBaseline
+    onBaselineChange: (baseline: DirectoryDiffBaseline) => void
+    onRenderModeChange: (renderMode: DirectoryDiffRenderMode) => void
+    renderMode: DirectoryDiffRenderMode
   }
   mainSectionRef: RefObject<HTMLElement | null>
   sidebar: {
@@ -103,9 +103,9 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
             contributions={composeBuiltInWorkspaceViews({
               controller,
               activeComposerState: controller.composer.state,
-              activeThreadData: controller.thread.activeData,
-              composerProjectId: controller.composer.projectId,
-              currentProjectName: controller.projects.currentName,
+              activeChatData: controller.chat.activeData,
+              composerDirectoryId: controller.composer.directoryId,
+              currentDirectoryName: controller.directories.currentName,
               diffBaseline: props.diff.baseline,
               diffRenderMode: props.diff.renderMode,
               terminalDrawerVisible: props.terminal.drawerVisible,
@@ -124,7 +124,7 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
           drawerPresent={props.terminal.drawerPresent}
           drawerVisible={props.terminal.drawerVisible}
           compactMode={props.sidebar.compactMode}
-          projectId={controller.composer.projectId}
+          directoryId={controller.composer.directoryId}
           conversationId={props.terminal.conversationId}
           onClose={controller.terminal.closeDrawer}
           hoverToFocus={controller.desktop.shellState?.appSettings.hoverToFocus ?? true}

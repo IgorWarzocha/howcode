@@ -7,7 +7,7 @@ import { composerTextActionButtonClass } from '../../../../src/app/ui/classes'
 import { ComposerGitOpsFooter } from './composer-git-ops-footer'
 import { ComposerGitOpsMessageField } from './composer-git-ops-message-field'
 import { ComposerGitOpsTopBar } from './composer-git-ops-top-bar'
-import type { GitOpsComposerDiff, GitOpsComposerProject } from './git-ops-composer-contracts'
+import type { GitOpsComposerDiff, GitOpsComposerDirectory } from './git-ops-composer-contracts'
 import type { GitOpsReviewController } from './review/review-controller'
 import { UntrackedScopePopover } from './untracked-scope-popover'
 import { useComposerGitOpsState } from './useComposerGitOpsState'
@@ -22,7 +22,7 @@ type ComposerGitOpsSurfaceProps = {
   onLayoutChange: () => void
   onOpenSettingsView: (target?: SettingsOpenTarget) => void
   onReviewSent: () => void
-  project: GitOpsComposerProject
+  directory: GitOpsComposerDirectory
   review: GitOpsReviewController
 }
 
@@ -36,7 +36,7 @@ export function ComposerGitOpsSurface({
   onLayoutChange,
   onOpenSettingsView,
   onReviewSent,
-  project,
+  directory,
   review,
 }: ComposerGitOpsSurfaceProps) {
   const state = useComposerGitOpsState({
@@ -48,14 +48,14 @@ export function ComposerGitOpsSurface({
     onSendDiffComments: async (instruction) => {
       if (await review.send(instruction)) onReviewSent()
     },
-    projectGitState: project.gitState,
+    directoryGitState: directory.gitState,
   })
   const { message, options, primaryAction, repository, status } = state
   const hasDiffComments = state.review.hasComments
   const inputLocked = primaryAction.running || review.sending
   const hiddenUntrackedFileCount = diff.includeUntracked
     ? 0
-    : (project.gitState?.untrackedFileCount ?? 0)
+    : (directory.gitState?.untrackedFileCount ?? 0)
 
   useEffect(() => {
     onActionErrorMessageChange?.(status.errorMessage)
@@ -89,9 +89,9 @@ export function ComposerGitOpsSurface({
   return (
     <DraftInputContribution
       appSettings={appSettings}
-      projectId={project.id}
-      conversationId={project.conversationId}
-      draftThreadId={`gitops:${project.id}`}
+      directoryId={directory.id}
+      conversationId={directory.conversationId}
+      draftChatId={`gitops:${directory.id}`}
       activeView="gitops"
       inputLocked={inputLocked}
       setDraftValue={message.setValue}
@@ -145,7 +145,7 @@ export function ComposerGitOpsSurface({
               diff={diff}
               onBack={onBack}
               options={options}
-              project={project}
+              directory={directory}
               repository={repository}
               review={review}
             />

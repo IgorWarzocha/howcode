@@ -1,39 +1,39 @@
 import { getPersistedConversationId, isLocalConversationId } from '@howcode/shared/conversation-ids'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type {
+  ChatData,
   DesktopActionInvoker,
-  ProjectDiffBaseline,
-  ProjectDiffRenderMode,
+  DirectoryDiffBaseline,
+  DirectoryDiffRenderMode,
   ShellState,
-  ThreadData,
 } from '../../../../src/app/desktop/types'
 import { useLatestRef } from '../../../../src/app/hooks/useLatestRef'
 import { defaultDiffBaseline } from '../gitops/index'
 
 type DiffPreferencesHost = {
   desktop: { shellState: ShellState | null; handleAction: DesktopActionInvoker }
-  thread: { activeData: ThreadData | null }
+  chat: { activeData: ChatData | null }
 }
 
 type DiffPreferenceSource = 'init' | 'override' | 'default'
 
 type DiffPreferenceScope = {
-  projectId: string
-  threadId: string | null
+  directoryId: string
+  chatId: string | null
   conversationId: string | null
 }
 
 type DiffBaselineState = DiffPreferenceScope & {
-  baseline: ProjectDiffBaseline
+  baseline: DirectoryDiffBaseline
   source: DiffPreferenceSource
 }
 
 type DiffRenderModeState = DiffPreferenceScope & {
-  renderMode: ProjectDiffRenderMode
+  renderMode: DirectoryDiffRenderMode
   source: DiffPreferenceSource
 }
 
-export function areDiffBaselinesEqual(left: ProjectDiffBaseline, right: ProjectDiffBaseline) {
+export function areDiffBaselinesEqual(left: DirectoryDiffBaseline, right: DirectoryDiffBaseline) {
   if (left.kind !== right.kind) return false
   if (left.kind === 'commit' && right.kind === 'commit') return left.sha === right.sha
   if (left.kind === 'last-opened' && right.kind === 'last-opened') return left.rev === right.rev
@@ -45,22 +45,22 @@ export function areDiffBaselinesEqual(left: ProjectDiffBaseline, right: ProjectD
 }
 
 function isSameDraftPromotion({
-  activeThreadId,
+  activeChatId,
   messageCount,
   previousConversationId,
-  previousThreadId,
+  previousChatId,
   nextConversationId,
 }: {
-  activeThreadId: string | null
+  activeChatId: string | null
   messageCount: number | null
   previousConversationId: string | null
-  previousThreadId: string | null
+  previousChatId: string | null
   nextConversationId: string | null
 }) {
   return (
     isLocalConversationId(previousConversationId) &&
-    previousThreadId?.startsWith('local-thread-') &&
-    activeThreadId !== null &&
+    previousChatId?.startsWith('local-thread-') &&
+    activeChatId !== null &&
     getPersistedConversationId(nextConversationId) !== null &&
     (messageCount === null || messageCount <= 1)
   )
@@ -68,24 +68,27 @@ function isSameDraftPromotion({
 
 function getNextDiffBaseline(controller: DiffPreferencesHost) {
   return (
-    controller.thread.activeData?.diffPreferences?.baseline ??
+    controller.chat.activeData?.diffPreferences?.baseline ??
     controller.desktop.shellState?.appSettings.gitDiffBaselineDefault ??
     defaultDiffBaseline
   )
 }
 
 function getEffectiveDiffBaseline(input: {
-  baseline: ProjectDiffBaseline
+  baseline: DirectoryDiffBaseline
   parentBranchName: string | null
-}): ProjectDiffBaseline {
+}): DirectoryDiffBaseline {
   return input.baseline.kind === 'main-branch' && input.parentBranchName
-    ? ({ kind: 'parent-branch', branchName: input.parentBranchName } satisfies ProjectDiffBaseline)
+    ? ({
+        kind: 'parent-branch',
+        branchName: input.parentBranchName,
+      } satisfies DirectoryDiffBaseline)
     : input.baseline
 }
 
 function getNextDiffRenderMode(controller: DiffPreferencesHost) {
   return (
-    controller.thread.activeData?.diffPreferences?.renderMode ??
+    controller.chat.activeData?.diffPreferences?.renderMode ??
     controller.desktop.shellState?.appSettings.gitDiffRenderModeDefault ??
     'stacked'
   )
@@ -93,14 +96,14 @@ function getNextDiffRenderMode(controller: DiffPreferencesHost) {
 
 function scopeMatches(scope: DiffPreferenceScope, next: DiffPreferenceScope) {
   return (
-    scope.projectId === next.projectId &&
-    scope.threadId === next.threadId &&
+    scope.directoryId === next.directoryId &&
+    scope.chatId === next.chatId &&
     scope.conversationId === next.conversationId
   )
 }
 
 function promoteDiffBaselineDraft(options: {
-  activeThreadId: string | null
+  activeChatId: string | null
   controllerRef: React.RefObject<DiffPreferencesHost>
   current: DiffBaselineState
   parentBranchName: string | null
@@ -116,19 +119,19 @@ function promoteDiffBaselineDraft(options: {
     effectiveDefault && areDiffBaselinesEqual(options.current.baseline, effectiveDefault)
       ? null
       : options.current.baseline
-  void options.controllerRef.current.desktop.handleAction('workspace.diff-preferences', {
+  void options.controllerRef.current.desktop.handleAction('coding.diff-preferences', {
     diffBaseline: promotedBaseline,
   })
   return {
     ...options.current,
-    threadId: options.activeThreadId,
+    chatId: options.activeChatId,
     conversationId: options.terminalConversationId,
   }
 }
 
 function nextDiffBaselineState(options: {
-  activeThreadId: string | null
-  composerProjectId: string
+  activeChatId: string | null
+  composerDirectoryId: string
   controller: DiffPreferencesHost
   controllerRef: React.RefObject<DiffPreferencesHost>
   current: DiffBaselineState
@@ -140,13 +143,13 @@ function nextDiffBaselineState(options: {
     parentBranchName: options.parentBranchName,
   })
   if (
-    options.current.projectId === options.composerProjectId &&
+    options.current.directoryId === options.composerDirectoryId &&
     options.current.source === 'override' &&
     isSameDraftPromotion({
-      activeThreadId: options.activeThreadId,
-      messageCount: options.controller.thread.activeData?.messages.length ?? null,
+      activeChatId: options.activeChatId,
+      messageCount: options.controller.chat.activeData?.messages.length ?? null,
       previousConversationId: options.current.conversationId,
-      previousThreadId: options.current.threadId,
+      previousChatId: options.current.chatId,
       nextConversationId: options.terminalConversationId,
     })
   ) {
@@ -154,8 +157,8 @@ function nextDiffBaselineState(options: {
   }
 
   const nextScope = {
-    projectId: options.composerProjectId,
-    threadId: options.activeThreadId,
+    directoryId: options.composerDirectoryId,
+    chatId: options.activeChatId,
     conversationId: options.terminalConversationId,
   }
   if (
@@ -170,7 +173,7 @@ function nextDiffBaselineState(options: {
 }
 
 function promoteDiffRenderModeDraft(options: {
-  activeThreadId: string | null
+  activeChatId: string | null
   controllerRef: React.RefObject<DiffPreferencesHost>
   current: DiffRenderModeState
   terminalConversationId: string | null
@@ -179,19 +182,19 @@ function promoteDiffRenderModeDraft(options: {
     options.controllerRef.current.desktop.shellState?.appSettings.gitDiffRenderModeDefault
   const promotedRenderMode =
     appDefault === options.current.renderMode ? null : options.current.renderMode
-  void options.controllerRef.current.desktop.handleAction('workspace.diff-preferences', {
+  void options.controllerRef.current.desktop.handleAction('coding.diff-preferences', {
     diffRenderMode: promotedRenderMode,
   })
   return {
     ...options.current,
-    threadId: options.activeThreadId,
+    chatId: options.activeChatId,
     conversationId: options.terminalConversationId,
   }
 }
 
 function nextDiffRenderModeState(options: {
-  activeThreadId: string | null
-  composerProjectId: string
+  activeChatId: string | null
+  composerDirectoryId: string
   controller: DiffPreferencesHost
   controllerRef: React.RefObject<DiffPreferencesHost>
   current: DiffRenderModeState
@@ -199,13 +202,13 @@ function nextDiffRenderModeState(options: {
 }) {
   const nextRenderMode = getNextDiffRenderMode(options.controller)
   if (
-    options.current.projectId === options.composerProjectId &&
+    options.current.directoryId === options.composerDirectoryId &&
     options.current.source === 'override' &&
     isSameDraftPromotion({
-      activeThreadId: options.activeThreadId,
-      messageCount: options.controller.thread.activeData?.messages.length ?? null,
+      activeChatId: options.activeChatId,
+      messageCount: options.controller.chat.activeData?.messages.length ?? null,
       previousConversationId: options.current.conversationId,
-      previousThreadId: options.current.threadId,
+      previousChatId: options.current.chatId,
       nextConversationId: options.terminalConversationId,
     })
   ) {
@@ -213,8 +216,8 @@ function nextDiffRenderModeState(options: {
   }
 
   const nextScope = {
-    projectId: options.composerProjectId,
-    threadId: options.activeThreadId,
+    directoryId: options.composerDirectoryId,
+    chatId: options.activeChatId,
     conversationId: options.terminalConversationId,
   }
   if (
@@ -228,14 +231,14 @@ function nextDiffRenderModeState(options: {
 }
 
 export function useAppShellDiffPreferences({
-  activeThreadId,
-  composerProjectId,
+  activeChatId,
+  composerDirectoryId,
   controller,
   parentBranchName,
   terminalConversationId,
 }: {
-  activeThreadId: string | null
-  composerProjectId: string
+  activeChatId: string | null
+  composerDirectoryId: string
   controller: DiffPreferencesHost
   parentBranchName: string | null
   terminalConversationId: string | null
@@ -243,22 +246,22 @@ export function useAppShellDiffPreferences({
   const controllerRef = useLatestRef(controller)
   const scope = useMemo(
     () => ({
-      projectId: composerProjectId,
-      threadId: activeThreadId,
+      directoryId: composerDirectoryId,
+      chatId: activeChatId,
       conversationId: terminalConversationId,
     }),
-    [activeThreadId, composerProjectId, terminalConversationId],
+    [activeChatId, composerDirectoryId, terminalConversationId],
   )
   const [diffBaselineState, setDiffBaselineState] = useState<DiffBaselineState>({
-    projectId: '',
-    threadId: null,
+    directoryId: '',
+    chatId: null,
     conversationId: null,
     baseline: defaultDiffBaseline,
     source: 'init',
   })
   const [diffRenderModeState, setDiffRenderModeState] = useState<DiffRenderModeState>({
-    projectId: '',
-    threadId: null,
+    directoryId: '',
+    chatId: null,
     conversationId: null,
     renderMode: 'stacked',
     source: 'init',
@@ -267,8 +270,8 @@ export function useAppShellDiffPreferences({
   useEffect(() => {
     setDiffBaselineState((current) =>
       nextDiffBaselineState({
-        activeThreadId,
-        composerProjectId,
+        activeChatId,
+        composerDirectoryId,
         controller,
         controllerRef,
         current,
@@ -277,8 +280,8 @@ export function useAppShellDiffPreferences({
       }),
     )
   }, [
-    activeThreadId,
-    composerProjectId,
+    activeChatId,
+    composerDirectoryId,
     controller,
     controllerRef,
     parentBranchName,
@@ -288,15 +291,15 @@ export function useAppShellDiffPreferences({
   useEffect(() => {
     setDiffRenderModeState((current) =>
       nextDiffRenderModeState({
-        activeThreadId,
-        composerProjectId,
+        activeChatId,
+        composerDirectoryId,
         controller,
         controllerRef,
         current,
         terminalConversationId,
       }),
     )
-  }, [activeThreadId, composerProjectId, controller, controllerRef, terminalConversationId])
+  }, [activeChatId, composerDirectoryId, controller, controllerRef, terminalConversationId])
 
   const diffBaseline = scopeMatches(diffBaselineState, scope)
     ? diffBaselineState.baseline
@@ -306,7 +309,7 @@ export function useAppShellDiffPreferences({
     : getNextDiffRenderMode(controller)
 
   const handleSetDiffBaseline = useCallback(
-    (baseline: ProjectDiffBaseline) => {
+    (baseline: DirectoryDiffBaseline) => {
       const appDefault =
         controllerRef.current.desktop.shellState?.appSettings.gitDiffBaselineDefault
       const effectiveDefault = getEffectiveDiffBaseline({
@@ -316,7 +319,7 @@ export function useAppShellDiffPreferences({
       const nextBaseline =
         effectiveDefault && areDiffBaselinesEqual(baseline, effectiveDefault) ? null : baseline
       setDiffBaselineState({ ...scope, baseline, source: nextBaseline ? 'override' : 'default' })
-      void controllerRef.current.desktop.handleAction('workspace.diff-preferences', {
+      void controllerRef.current.desktop.handleAction('coding.diff-preferences', {
         diffBaseline: nextBaseline,
       })
     },
@@ -324,7 +327,7 @@ export function useAppShellDiffPreferences({
   )
 
   const handleSetDiffRenderMode = useCallback(
-    (renderMode: ProjectDiffRenderMode) => {
+    (renderMode: DirectoryDiffRenderMode) => {
       const appDefault =
         controllerRef.current.desktop.shellState?.appSettings.gitDiffRenderModeDefault
       const nextRenderMode = appDefault === renderMode ? null : renderMode
@@ -333,7 +336,7 @@ export function useAppShellDiffPreferences({
         renderMode,
         source: nextRenderMode ? 'override' : 'default',
       })
-      void controllerRef.current.desktop.handleAction('workspace.diff-preferences', {
+      void controllerRef.current.desktop.handleAction('coding.diff-preferences', {
         diffRenderMode: nextRenderMode,
       })
     },

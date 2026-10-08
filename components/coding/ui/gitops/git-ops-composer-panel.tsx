@@ -7,7 +7,7 @@ import { cn } from '../../../../src/app/utils/cn'
 import { ComposerGitOpsSurface } from './composer-git-ops-surface'
 import type {
   GitOpsComposerDiff,
-  GitOpsComposerProject,
+  GitOpsComposerDirectory,
   GitOpsFileTreeControl,
 } from './git-ops-composer-contracts'
 import { GitOpsErrorDetails } from './git-ops-error-details'
@@ -22,7 +22,7 @@ type GitOpsComposerPanelProps = {
   onLayoutChange: () => void
   onOpenSettingsView: (target?: SettingsOpenTarget) => void
   onReviewSent: () => void
-  project: GitOpsComposerProject
+  directory: GitOpsComposerDirectory
   review: GitOpsReviewController
 }
 
@@ -35,7 +35,7 @@ export function GitOpsComposerPanel({
   onLayoutChange,
   onOpenSettingsView,
   onReviewSent,
-  project,
+  directory,
   review,
 }: GitOpsComposerPanelProps) {
   const composerPanelRef = useRef<HTMLDivElement>(null)
@@ -67,7 +67,7 @@ export function GitOpsComposerPanel({
             onLayoutChange={onLayoutChange}
             onOpenSettingsView={onOpenSettingsView}
             onReviewSent={onReviewSent}
-            project={project}
+            directory={directory}
             review={review}
             onActionErrorMessageChange={(message) => {
               setGitActionErrorMessage(message)

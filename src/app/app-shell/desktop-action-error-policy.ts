@@ -12,12 +12,12 @@ export function shouldShowGlobalActionError(action: DesktopAction) {
   return !(
     action === 'composer.send' ||
     action === 'composer.stop' ||
-    action === 'workspace.commit' ||
-    action === 'workspace.commit-options' ||
-    action === 'workspace.diff-preferences' ||
-    action === 'workspace.switch-branch' ||
-    action === 'workspace.merge-worktree' ||
-    action === 'workspace.merge-completed-worktrees'
+    action === 'coding.commit' ||
+    action === 'coding.commit-options' ||
+    action === 'coding.diff-preferences' ||
+    action === 'coding.switch-branch' ||
+    action === 'coding.merge-worktree' ||
+    action === 'coding.merge-completed-worktrees'
   )
 }
 
@@ -32,12 +32,12 @@ export function getActionNoticeMessage(
       return 'This message is no longer queued.'
   }
   const supportsWorktreeNotice =
-    action === 'workspace.create-worktree' ||
-    action === 'workspace.remove-worktree' ||
-    action === 'workspace.merge-worktree' ||
-    action === 'workspace.merge-completed-worktrees' ||
-    action === 'workspace.remove-completed-worktrees' ||
-    action === 'workspace.prune-branch'
+    action === 'coding.create-worktree' ||
+    action === 'coding.remove-worktree' ||
+    action === 'coding.merge-worktree' ||
+    action === 'coding.merge-completed-worktrees' ||
+    action === 'coding.remove-completed-worktrees' ||
+    action === 'coding.prune-branch'
   if (!(supportsWorktreeNotice && actionResult?.ok) || actionResult.result?.error) {
     return null
   }

@@ -5,19 +5,19 @@ import type {
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
   DictationModelId,
+  DirectoryDeletionMode,
+  DirectoryDiffDefaultBaseline,
+  DirectoryDiffRenderMode,
   GitOpsMode,
   KeybindingOverrides,
   ModelSelection,
-  ProjectDeletionMode,
-  ProjectDiffDefaultBaseline,
-  ProjectDiffRenderMode,
 } from '../../shared/desktop-contracts.ts'
 import {
   DEFAULT_DICTATION_MAX_DURATION_SECONDS,
   normalizeDictationMaxDurationSeconds,
 } from '../../shared/dictation-settings.ts'
 import type { ToolkitComponentId } from '../../shared/toolkit-components.ts'
-import { databaseOperation } from '../thread-state-db/db.ts'
+import { databaseOperation } from '../chat-repository/db.ts'
 import {
   chatModelKey,
   chatThinkingLevelKey,
@@ -28,6 +28,9 @@ import {
   customPiDirectoryKey,
   dictationMaxDurationSecondsKey,
   dictationModelIdKey,
+  directoryDashboardEnabledKey,
+  directoryDeletionModeKey,
+  directoryImportStateKey,
   enabledToolkitComponentsKey,
   favoriteFoldersKey,
   gitCommitMessageModelKey,
@@ -40,14 +43,11 @@ import {
   hideSidebarSessionCountsKey,
   hoverToBlurKey,
   hoverToFocusKey,
-  initializeGitOnProjectCreateKey,
+  initializeGitOnDirectoryCreateKey,
   keybindingsKey,
-  preferredProjectLocationKey,
-  projectDashboardEnabledKey,
-  projectDeletionModeKey,
-  projectImportStateKey,
+  preferredDirectoryLocationKey,
   showDictationButtonKey,
-  sidebarVisibleProjectIdsKey,
+  sidebarVisibleDirectoryIdsKey,
   useAgentsSkillsPathsKey,
 } from './keys.ts'
 
@@ -182,35 +182,35 @@ export function setFavoriteFolders(favoriteFolders: string[]) {
   writeAppPreferenceSync(favoriteFoldersKey, JSON.stringify(normalizedFavoriteFolders))
 }
 
-export function setSidebarVisibleProjectIds(projectIds: string[]) {
-  const normalizedProjectIds = [
+export function setSidebarVisibleDirectoryIds(directoryIds: string[]) {
+  const normalizedDirectoryIds = [
     ...new Set(
-      projectIds.flatMap((projectId) => {
-        const trimmed = projectId.trim()
+      directoryIds.flatMap((directoryId) => {
+        const trimmed = directoryId.trim()
         return trimmed ? [trimmed] : []
       }),
     ),
   ]
-  writeAppPreferenceSync(sidebarVisibleProjectIdsKey, JSON.stringify(normalizedProjectIds))
+  writeAppPreferenceSync(sidebarVisibleDirectoryIdsKey, JSON.stringify(normalizedDirectoryIds))
 }
 
-export function setProjectImportState(projectImportState: boolean | null) {
-  if (projectImportState === null) {
-    deleteAppPreferenceSync(projectImportStateKey)
+export function setDirectoryImportState(directoryImportState: boolean | null) {
+  if (directoryImportState === null) {
+    deleteAppPreferenceSync(directoryImportStateKey)
     return
   }
 
-  writeAppPreferenceSync(projectImportStateKey, JSON.stringify(projectImportState))
+  writeAppPreferenceSync(directoryImportStateKey, JSON.stringify(directoryImportState))
 }
 
-export function setPreferredProjectLocation(preferredProjectLocation: string | null) {
-  const normalizedLocation = preferredProjectLocation?.trim() ?? ''
+export function setPreferredDirectoryLocation(preferredDirectoryLocation: string | null) {
+  const normalizedLocation = preferredDirectoryLocation?.trim() ?? ''
   if (normalizedLocation.length === 0) {
-    deleteAppPreferenceSync(preferredProjectLocationKey)
+    deleteAppPreferenceSync(preferredDirectoryLocationKey)
     return
   }
 
-  writeAppPreferenceSync(preferredProjectLocationKey, JSON.stringify(normalizedLocation))
+  writeAppPreferenceSync(preferredDirectoryLocationKey, JSON.stringify(normalizedLocation))
 }
 
 export function setCustomPiDirectory(customPiDirectory: string | null) {
@@ -223,17 +223,17 @@ export function setCustomPiDirectory(customPiDirectory: string | null) {
   writeAppPreferenceSync(customPiDirectoryKey, JSON.stringify(normalizedDirectory))
 }
 
-export function setInitializeGitOnProjectCreate(enabled: boolean) {
-  writeAppPreferenceSync(initializeGitOnProjectCreateKey, JSON.stringify(enabled))
+export function setInitializeGitOnDirectoryCreate(enabled: boolean) {
+  writeAppPreferenceSync(initializeGitOnDirectoryCreateKey, JSON.stringify(enabled))
 }
 
-export function setProjectDashboardEnabled(enabled: boolean) {
+export function setDirectoryDashboardEnabled(enabled: boolean) {
   if (enabled) {
-    deleteAppPreferenceSync(projectDashboardEnabledKey)
+    deleteAppPreferenceSync(directoryDashboardEnabledKey)
     return
   }
 
-  writeAppPreferenceSync(projectDashboardEnabledKey, JSON.stringify(false))
+  writeAppPreferenceSync(directoryDashboardEnabledKey, JSON.stringify(false))
 }
 
 export function setGitOpsDefaultMode(mode: GitOpsMode) {
@@ -245,7 +245,7 @@ export function setGitOpsDefaultMode(mode: GitOpsMode) {
   writeAppPreferenceSync(gitOpsDefaultModeKey, JSON.stringify(mode))
 }
 
-export function setGitDiffBaselineDefault(baseline: ProjectDiffDefaultBaseline) {
+export function setGitDiffBaselineDefault(baseline: DirectoryDiffDefaultBaseline) {
   if (baseline.kind === 'main-branch') {
     deleteAppPreferenceSync(gitDiffBaselineDefaultKey)
     return
@@ -254,7 +254,7 @@ export function setGitDiffBaselineDefault(baseline: ProjectDiffDefaultBaseline) 
   writeAppPreferenceSync(gitDiffBaselineDefaultKey, JSON.stringify(baseline))
 }
 
-export function setGitDiffRenderModeDefault(mode: ProjectDiffRenderMode) {
+export function setGitDiffRenderModeDefault(mode: DirectoryDiffRenderMode) {
   if (mode === 'stacked') {
     deleteAppPreferenceSync(gitDiffRenderModeDefaultKey)
     return
@@ -281,8 +281,8 @@ export function setGitDiffIncludeUntrackedDefault(enabled: boolean) {
   writeAppPreferenceSync(gitDiffIncludeUntrackedDefaultKey, JSON.stringify(true))
 }
 
-export function setProjectDeletionMode(mode: ProjectDeletionMode) {
-  writeAppPreferenceSync(projectDeletionModeKey, JSON.stringify(mode))
+export function setDirectoryDeletionMode(mode: DirectoryDeletionMode) {
+  writeAppPreferenceSync(directoryDeletionModeKey, JSON.stringify(mode))
 }
 
 export function setUseAgentsSkillsPaths(enabled: boolean) {

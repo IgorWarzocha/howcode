@@ -10,15 +10,15 @@ import {
   useDiffBaselinePopoverPosition,
 } from '../../../../src/app/composer/useDiffBaselinePopoverPosition'
 import type {
-  ProjectCommitEntry,
-  ProjectDiffBaseline,
-  ProjectDiffStatsResult,
-  ProjectGitState,
+  DirectoryCommitEntry,
+  DirectoryDiffBaseline,
+  DirectoryDiffStatsResult,
+  DirectoryGitState,
 } from '../../../../src/app/desktop/types'
 import { useDismissibleLayer } from '../../../../src/app/hooks/useDismissibleLayer'
 import { desktopQueryKeys } from '../../../../src/app/query/desktop-query'
 import { cn } from '../../../../src/app/utils/cn'
-import { getProjectDiffStatsQuery, listProjectCommitsQuery } from '../query'
+import { getDirectoryDiffStatsQuery, listDirectoryCommitsQuery } from '../query'
 import { getBaselineCounts, matchesCommitSearch } from './composer-diff-baseline-data'
 import { getDiffBaselineLabel, getDiffBaselinePrefix } from './diff-baseline'
 import { BaselineSelectorPortal } from './diff-baseline-selector/baseline-selector-popover'
@@ -28,13 +28,13 @@ const EMPTY_COMMITS: [] = []
 
 type ComposerDiffBaselineSelectorProps = {
   composerPanelRef: RefObject<HTMLDivElement | null>
-  projectId: string
-  projectGitState: ProjectGitState | null
+  directoryId: string
+  directoryGitState: DirectoryGitState | null
   branch?: string | null
   parentBranchName?: string | null | undefined
-  selectedBaseline: ProjectDiffBaseline
+  selectedBaseline: DirectoryDiffBaseline
   includeUntracked?: boolean
-  onSelectBaseline: (baseline: ProjectDiffBaseline) => void
+  onSelectBaseline: (baseline: DirectoryDiffBaseline) => void
 }
 
 function useComposerBaselinePopoverControls({
@@ -73,7 +73,7 @@ function useComposerBaselinePopoverControls({
   }
 }
 
-function getVisibleBaselineCommits(commits: ProjectCommitEntry[], searchQuery: string) {
+function getVisibleBaselineCommits(commits: DirectoryCommitEntry[], searchQuery: string) {
   const trimmedSearchQuery = searchQuery.trim()
   const nextCommits = trimmedSearchQuery
     ? commits.filter((commit) => matchesCommitSearch(commit, trimmedSearchQuery))
@@ -84,34 +84,34 @@ function getVisibleBaselineCommits(commits: ProjectCommitEntry[], searchQuery: s
 
 function useComposerBaselineData({
   open,
-  projectGitState,
-  projectId,
+  directoryGitState,
+  directoryId,
   searchQuery,
   selectedBaseline,
   includeUntracked = false,
 }: {
   open: boolean
-  projectGitState: ProjectGitState | null
-  projectId: string
+  directoryGitState: DirectoryGitState | null
+  directoryId: string
   searchQuery: string
-  selectedBaseline: ProjectDiffBaseline
+  selectedBaseline: DirectoryDiffBaseline
   includeUntracked?: boolean
 }) {
-  const commitsQuery = useQuery<ProjectCommitEntry[]>({
-    queryKey: desktopQueryKeys.projectCommits(projectId, 100),
-    queryFn: () => listProjectCommitsQuery(projectId, 100),
-    enabled: open && projectId.length > 0,
+  const commitsQuery = useQuery<DirectoryCommitEntry[]>({
+    queryKey: desktopQueryKeys.directoryCommits(directoryId, 100),
+    queryFn: () => listDirectoryCommitsQuery(directoryId, 100),
+    enabled: open && directoryId.length > 0,
     staleTime: Number.POSITIVE_INFINITY,
   })
-  const baselineStatsQuery = useQuery<ProjectDiffStatsResult | null, Error>({
-    queryKey: projectId
-      ? desktopQueryKeys.projectDiffStats(projectId, selectedBaseline, includeUntracked)
-      : ['desktop', 'projectDiffStats', null],
+  const baselineStatsQuery = useQuery<DirectoryDiffStatsResult | null, Error>({
+    queryKey: directoryId
+      ? desktopQueryKeys.directoryDiffStats(directoryId, selectedBaseline, includeUntracked)
+      : ['desktop', 'directoryDiffStats', null],
     queryFn: () =>
-      projectId
-        ? getProjectDiffStatsQuery(projectId, selectedBaseline, includeUntracked)
+      directoryId
+        ? getDirectoryDiffStatsQuery(directoryId, selectedBaseline, includeUntracked)
         : Promise.resolve(null),
-    enabled: projectId.length > 0 && (selectedBaseline.kind !== 'head' || includeUntracked),
+    enabled: directoryId.length > 0 && (selectedBaseline.kind !== 'head' || includeUntracked),
     staleTime: Number.POSITIVE_INFINITY,
   })
 
@@ -129,10 +129,10 @@ function useComposerBaselineData({
       getBaselineCounts({
         baselineStats: baselineStatsQuery.data,
         includeUntracked,
-        projectGitState,
+        directoryGitState,
         selectedBaseline,
       }),
-    [baselineStatsQuery.data, includeUntracked, projectGitState, selectedBaseline],
+    [baselineStatsQuery.data, includeUntracked, directoryGitState, selectedBaseline],
   )
 
   return {
@@ -264,8 +264,8 @@ function BaselineBranchButton({
 
 export function ComposerDiffBaselineSelector({
   composerPanelRef,
-  projectId,
-  projectGitState,
+  directoryId,
+  directoryGitState,
   branch,
   parentBranchName,
   selectedBaseline,
@@ -293,8 +293,8 @@ export function ComposerDiffBaselineSelector({
   const { baselineLabel, commitsQuery, counts, selectedCommitSha, visibleCommits } =
     useComposerBaselineData({
       open,
-      projectGitState,
-      projectId,
+      directoryGitState,
+      directoryId,
       searchQuery,
       selectedBaseline,
       includeUntracked,
@@ -380,9 +380,9 @@ export function ComposerDiffBaselineSelector({
           selectedBaseline={selectedBaseline}
           selectedCommitSha={selectedCommitSha}
           parentBranchName={parentBranchName}
-          defaultBranchName={projectGitState?.defaultBranchName}
-          devBranchName={projectGitState?.devBranchName}
-          mainBranchName={projectGitState?.mainBranchName}
+          defaultBranchName={directoryGitState?.defaultBranchName}
+          devBranchName={directoryGitState?.devBranchName}
+          mainBranchName={directoryGitState?.mainBranchName}
           setOpen={(nextOpen) => {
             if (nextOpen) setOpen(true)
             else closePopover()

@@ -3,11 +3,15 @@ import {
   handledAction,
   unhandledAction,
 } from '../../../../desktop/app-service/action-router-result.ts'
-import { setSidebarVisibleProjectIds } from '../../../../desktop/app-settings/writers.ts'
-import { setThreadDiffPreferences } from '../../../../desktop/thread-state-db.ts'
+import { setSidebarVisibleDirectoryIds } from '../../../../desktop/app-settings/writers.ts'
+import { setChatDiffPreferences } from '../../../../desktop/chat-repository.ts'
 import { getPersistedConversationId } from '../../../../shared/conversation-ids.ts'
 import {
   getComposerRequest,
+  getDirectoryDiffBaselinePreference,
+  getDirectoryDiffRenderModePreference,
+  getDirectoryId,
+  getDirectoryIds,
   getGitCommitMessage,
   getGitIncludeUnstaged,
   getGitIncludeUntracked,
@@ -15,46 +19,42 @@ import {
   getGitPreview,
   getGitPush,
   getGitRepoUrl,
-  getProjectDiffBaselinePreference,
-  getProjectDiffRenderModePreference,
-  getProjectId,
-  getProjectIds,
 } from '../../../../shared/desktop-action-payloads.ts'
 import type { DesktopAction } from '../../../../shared/desktop-actions.ts'
 import type { AnyDesktopActionPayload } from '../../../../shared/desktop-contracts.ts'
-import { generateGitCommitMessage } from '../git-commit-message.ts'
 import {
-  commitProjectChanges,
+  commitDirectoryChanges,
   getMainWorktreePath,
-  initializeProjectGit,
-  setProjectOrigin,
-  switchProjectBranch,
-} from '../project-git.ts'
-import { withRootGitMutation } from '../project-worktrees/root-git-mutation-gate.ts'
-import { setProjectGitOpsMode, setProjectRepoOrigin } from '../state.ts'
+  initializeDirectoryGit,
+  setDirectoryOrigin,
+  switchDirectoryBranch,
+} from '../directory-git.ts'
+import { withRootGitMutation } from '../directory-worktrees/root-git-mutation-gate.ts'
+import { generateGitCommitMessage } from '../git-commit-message.ts'
+import { setDirectoryGitOpsMode, setDirectoryRepoOrigin } from '../state.ts'
 import { handleWriteFileWorkspaceAction } from './workspace-file-actions.ts'
 
 async function handleCommitWorkspaceAction(payload: AnyDesktopActionPayload) {
-  const projectId = getProjectId(payload)
-  if (!projectId) return handledAction()
+  const directoryId = getDirectoryId(payload)
+  if (!directoryId) return handledAction()
 
   return handledAction(
-    await commitProjectChanges(projectId, {
+    await commitDirectoryChanges(directoryId, {
       includeUnstaged: getGitIncludeUnstaged(payload),
       includeUntracked: getGitIncludeUntracked(payload),
       message: getGitCommitMessage(payload),
       preview: getGitPreview(payload),
       push: getGitPush(payload),
       // AI commit messages are intentionally wired here: when Git Ops sends no explicit
-      // message, commitProjectChanges calls this generator before falling back to defaults.
+      // message, commitDirectoryChanges calls this generator before falling back to defaults.
       generateMessage: (context) => generateGitCommitMessage(getComposerRequest(payload), context),
     }),
   )
 }
 
 async function handleCommitOptionsWorkspaceAction(payload: AnyDesktopActionPayload) {
-  const projectId = getProjectId(payload)
-  if (!projectId) return handledAction()
+  const directoryId = getDirectoryId(payload)
+  if (!directoryId) return handledAction()
 
   const repoUrl = getGitRepoUrl(payload)
   const gitOpsMode = getGitOpsMode(payload)
@@ -64,17 +64,17 @@ async function handleCommitOptionsWorkspaceAction(payload: AnyDesktopActionPaylo
     return handledAction({ error: 'GitOps mode and repository URL must be saved separately.' })
   }
   if (gitOpsMode !== undefined) {
-    setProjectGitOpsMode(projectId, gitOpsMode)
+    setDirectoryGitOpsMode(directoryId, gitOpsMode)
     return handledAction()
   }
   if (repoUrl) {
-    await setProjectOrigin(projectId, repoUrl)
-    setProjectRepoOrigin(projectId, repoUrl)
+    await setDirectoryOrigin(directoryId, repoUrl)
+    setDirectoryRepoOrigin(directoryId, repoUrl)
     return handledAction()
   }
 
-  await initializeProjectGit(projectId)
-  setProjectRepoOrigin(projectId, null)
+  await initializeDirectoryGit(directoryId)
+  setDirectoryRepoOrigin(directoryId, null)
   return handledAction()
 }
 
@@ -86,12 +86,12 @@ function handleDiffPreferencesWorkspaceAction(payload: AnyDesktopActionPayload) 
     return handledAction({ error: 'Diff preferences can only be saved for persisted sessions.' })
   }
 
-  const baseline = getProjectDiffBaselinePreference(payload)
-  const renderMode = getProjectDiffRenderModePreference(payload)
+  const baseline = getDirectoryDiffBaselinePreference(payload)
+  const renderMode = getDirectoryDiffRenderModePreference(payload)
   if (baseline === 'invalid') return handledAction({ error: 'Invalid diff baseline.' })
   if (renderMode === 'invalid') return handledAction({ error: 'Invalid diff render mode.' })
 
-  const saved = setThreadDiffPreferences(conversationId, {
+  const saved = setChatDiffPreferences(conversationId, {
     ...(baseline === undefined ? {} : { baseline }),
     ...(renderMode === undefined ? {} : { renderMode }),
   })
@@ -105,24 +105,24 @@ export async function handleWorkspaceDesktopAction(
   payload: AnyDesktopActionPayload,
 ): Promise<ActionHandlerResult> {
   switch (action) {
-    case 'workspace.commit':
+    case 'coding.commit':
       return handleCommitWorkspaceAction(payload)
-    case 'workspace.commit-options':
+    case 'coding.commit-options':
       return handleCommitOptionsWorkspaceAction(payload)
-    case 'workspace.diff-preferences':
+    case 'coding.diff-preferences':
       return handleDiffPreferencesWorkspaceAction(payload)
-    case 'workspace.write-file':
+    case 'coding.write-file':
       return handleWriteFileWorkspaceAction(payload)
-    case 'workspace.sidebar-scope':
-      setSidebarVisibleProjectIds(getProjectIds(payload))
+    case 'coding.sidebar-scope':
+      setSidebarVisibleDirectoryIds(getDirectoryIds(payload))
       return handledAction()
-    case 'workspace.switch-branch': {
-      const projectId = getProjectId(payload)
-      if (!projectId) return handledAction()
-      const rootProjectId = await getMainWorktreePath(projectId)
+    case 'coding.switch-branch': {
+      const directoryId = getDirectoryId(payload)
+      if (!directoryId) return handledAction()
+      const rootDirectoryId = await getMainWorktreePath(directoryId)
       return handledAction(
-        await withRootGitMutation(rootProjectId, () =>
-          switchProjectBranch(projectId, String(payload.value ?? '')),
+        await withRootGitMutation(rootDirectoryId, () =>
+          switchDirectoryBranch(directoryId, String(payload.value ?? '')),
         ),
       )
     }

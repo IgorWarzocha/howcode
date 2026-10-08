@@ -12,6 +12,7 @@ import {
 } from '../../shared/desktop-action-payloads.ts'
 import type { DesktopAction } from '../../shared/desktop-actions.ts'
 import type { AnyDesktopActionPayload, ComposerAttachment } from '../../shared/desktop-contracts.ts'
+import { assignChatBranch, dismissInboxChatAfterReply } from '../chat-repository.ts'
 import {
   dequeueComposerPrompt,
   forkConversation,
@@ -20,7 +21,6 @@ import {
   setComposerThinkingLevel,
   stopComposerRun,
 } from '../conversation-runtime.ts'
-import { assignThreadBranch, dismissInboxThreadAfterReply } from '../thread-state-db.ts'
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
 import { normalizeComposerSendAttachments } from './composer-attachment-payload'
@@ -58,20 +58,20 @@ async function sendComposerPromptFromPayload(payload: AnyDesktopActionPayload) {
     payload.suppressInbox === true &&
     composerRequest.conversationId &&
     composerSendResult.conversationId &&
-    composerSendResult.threadId &&
+    composerSendResult.chatId &&
     composerSendResult.outcome === 'sent' &&
     !isCompactSlashCommand(text)
   ) {
-    dismissInboxThreadAfterReply(composerRequest.conversationId)
+    dismissInboxChatAfterReply(composerRequest.conversationId)
   }
   const branchName = getBranchName(payload) ?? composerRequest.branchName?.trim()
-  if (composerSendResult.threadId && branchName) {
-    assignThreadBranch(composerSendResult.threadId, branchName)
+  if (composerSendResult.chatId && branchName) {
+    assignChatBranch(composerSendResult.chatId, branchName)
   }
   return handledAction({
     composerSendOutcome: composerSendResult.outcome,
     composerSendConversationId: composerSendResult.conversationId,
-    composerSendThreadId: composerSendResult.threadId,
+    composerSendChatId: composerSendResult.chatId,
   })
 }
 

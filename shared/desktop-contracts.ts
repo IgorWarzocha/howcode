@@ -1,3 +1,4 @@
+export type { ChatSearchMatch, ChatSearchResult } from './chat-search'
 export type {
   AnyDesktopActionPayload,
   DesktopActionInvoker,
@@ -16,7 +17,26 @@ export type {
   ReactArtifactCompileResult,
 } from './desktop-artifact-contracts'
 export type { DesktopBridgeCapabilities } from './desktop-bridge-capabilities'
-export type { ChatGroup, ChatSidebarState, ChatThread } from './desktop-chat-contracts'
+export type {
+  ArchivedChat,
+  AssistantUsageSummary,
+  BashExecutionMessage,
+  Chat,
+  ChatCustomMessageRecord,
+  ChatData,
+  CustomChatMessage,
+  DirectoryImportCandidate,
+  DirectoryUsageSessionSummary,
+  DirectoryUsageSummary,
+  InboxChat,
+  Message,
+  ProseMessage,
+  SummaryChatMessage,
+  SystemChatMessage,
+  ToolResultImage,
+  ToolResultMessage,
+  WorkingDirectory,
+} from './desktop-chat-contracts'
 export type {
   ComposerAttachment,
   ComposerContextUsage,
@@ -42,6 +62,27 @@ export type {
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
 } from './desktop-dictation-contracts'
+export type {
+  DirectoryCommitEntry,
+  DirectoryDiffBaseline,
+  DirectoryDiffDefaultBaseline,
+  DirectoryDiffFileContentIssue,
+  DirectoryDiffFileContentsRequest,
+  DirectoryDiffFileContentsResult,
+  DirectoryDiffImagePreview,
+  DirectoryDiffImageSide,
+  DirectoryDiffPreferences,
+  DirectoryDiffRenderMode,
+  DirectoryDiffResolvedBaseline,
+  DirectoryDiffResult,
+  DirectoryDiffStatsResult,
+  DirectoryDiffStreamEvent,
+  DirectoryDiffStreamStartResult,
+  DirectoryDiffTextFile,
+  DirectoryFileWriteRequest,
+  DirectoryFileWriteResult,
+  DirectoryGitState,
+} from './desktop-directory-git-contracts'
 export type { DesktopEvent } from './desktop-event-contracts'
 export type {
   PiConfiguredSkill,
@@ -50,57 +91,21 @@ export type {
   PiSkillMutationResult,
 } from './desktop-package-contracts'
 export type {
-  ProjectCommitEntry,
-  ProjectDiffBaseline,
-  ProjectDiffDefaultBaseline,
-  ProjectDiffFileContentIssue,
-  ProjectDiffFileContentsRequest,
-  ProjectDiffFileContentsResult,
-  ProjectDiffImagePreview,
-  ProjectDiffImageSide,
-  ProjectDiffPreferences,
-  ProjectDiffRenderMode,
-  ProjectDiffResolvedBaseline,
-  ProjectDiffResult,
-  ProjectDiffStatsResult,
-  ProjectDiffStreamEvent,
-  ProjectDiffStreamStartResult,
-  ProjectDiffTextFile,
-  ProjectFileWriteRequest,
-  ProjectFileWriteResult,
-  ProjectGitState,
-} from './desktop-project-git-contracts'
-export type {
   AppSettings,
+  DirectoryDeletionMode,
   GitOpsMode,
   ModelSelection,
   PiQueueMode,
   PiSettings,
   PiThemeState,
   PiTransportMode,
-  ProjectDeletionMode,
   ShellState,
 } from './desktop-settings-contracts'
 export type {
-  ArchivedThread,
-  AssistantUsageSummary,
-  BashExecutionMessage,
-  CustomThreadMessage,
-  InboxThread,
-  Message,
-  Project,
-  ProjectImportCandidate,
-  ProjectUsageSessionSummary,
-  ProjectUsageSummary,
-  ProseMessage,
-  SummaryThreadMessage,
-  SystemThreadMessage,
-  Thread,
-  ThreadCustomMessageRecord,
-  ThreadData,
-  ToolResultImage,
-  ToolResultMessage,
-} from './desktop-thread-contracts'
+  Workspace,
+  WorkspaceChat,
+  WorkspaceNavigationState,
+} from './desktop-workspace-contracts'
 export type {
   ComposerSendMode,
   KeybindingCommandId,
@@ -116,4 +121,3 @@ export {
   isKeybindingCommandId,
   normalizeAccelerator,
 } from './keybindings'
-export type { ThreadSearchMatch, ThreadSearchResult } from './thread-search'

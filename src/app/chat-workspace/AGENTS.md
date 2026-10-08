@@ -1,3 +1,3 @@
 - `chat-workspace-contract.ts` owns the narrowed AppShell capability surface used by chat views.
 - Chat workspace owns chat layout, chat composer docking, and composition of the artifact component public drawer contract; do not widen its controller contract for unrelated shell state.
-- Preserve local-draft group selection, persisted-session detection, footer positioning, and artifact drawer behaviour during structural work.
+- Preserve local-draft workspace selection, persisted-session detection, footer positioning, and artifact drawer behaviour during structural work.

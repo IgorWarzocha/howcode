@@ -7,7 +7,7 @@ import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
 import { DEV_SERVER_START_PORT, resolveDevServerListenHost } from './shared/dev-server'
 
-const projectRoot = fileURLToPath(new URL('.', import.meta.url))
+const directoryRoot = fileURLToPath(new URL('.', import.meta.url))
 
 const howcodeAliasEntries = [
   ['@howcode/app-menu', 'src/app/app-menu'],
@@ -25,7 +25,7 @@ const howcodeAliasEntries = [
   ['@howcode/sessions', 'src/app/sessions'],
   ['@howcode/sidebar', 'src/app/components/sidebar'],
   ['@howcode/state', 'src/app/state'],
-  ['@howcode/thread', 'src/app/thread'],
+  ['@howcode/chat', 'src/app/chat'],
   ['@howcode/ui', 'src/app/ui'],
   ['@howcode/workspace-shell', 'src/app/workspace-shell'],
 ] as const
@@ -33,16 +33,16 @@ const howcodeAliasEntries = [
 const howcodeAliases = [
   {
     find: /^@howcode\/components\/(.+)$/u,
-    replacement: path.resolve(projectRoot, 'components', '$1'),
+    replacement: path.resolve(directoryRoot, 'components', '$1'),
   },
   ...howcodeAliasEntries.map(([alias, target]) => ({
     find: new RegExp(`^${alias.replace('/', '\\/')}/(.+)$`, 'u'),
-    replacement: path.resolve(projectRoot, target, '$1'),
+    replacement: path.resolve(directoryRoot, target, '$1'),
   })),
-  { find: /^@howcode\/shared\/(.+)$/u, replacement: path.resolve(projectRoot, 'shared', '$1') },
+  { find: /^@howcode\/shared\/(.+)$/u, replacement: path.resolve(directoryRoot, 'shared', '$1') },
   ...howcodeAliasEntries.map(([alias, target]) => ({
     find: alias,
-    replacement: path.resolve(projectRoot, target, 'index.ts'),
+    replacement: path.resolve(directoryRoot, target, 'index.ts'),
   })),
 ] as const
 

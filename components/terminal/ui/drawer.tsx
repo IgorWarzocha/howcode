@@ -31,7 +31,7 @@ export function useTerminalDrawerPresentation(input: {
   const enabled = useToolkitComponentEnabled('terminal')
   const drawerVisible =
     enabled &&
-    (input.activeView === 'thread' || input.activeView === 'project') &&
+    (input.activeView === 'chat' || input.activeView === 'directory') &&
     input.visible &&
     !(input.compactMode && input.hiddenByCompactResize)
   const animatedPresent = useAnimatedPresence(drawerVisible)

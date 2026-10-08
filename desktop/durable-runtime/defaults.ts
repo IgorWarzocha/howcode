@@ -3,7 +3,7 @@ import { loadAppSettings } from '../app-settings/readers.ts'
 
 export function getComposerDefaults(request: ComposerStateRequest) {
   const settings = loadAppSettings()
-  const savedModel = request.composerMode === 'chat' ? settings.chatModel : settings.codeModel
+  const savedModel = request.composerProfile === 'general' ? settings.chatModel : settings.codeModel
   const selection = request.composerUseDefaultModel
     ? null
     : (request.composerModelSelection ?? savedModel)
@@ -13,7 +13,9 @@ export function getComposerDefaults(request: ComposerStateRequest) {
       : undefined,
     thinkingLevel:
       request.composerThinkingLevel ??
-      (request.composerMode === 'chat' ? settings.chatThinkingLevel : settings.codeThinkingLevel) ??
+      (request.composerProfile === 'general'
+        ? settings.chatThinkingLevel
+        : settings.codeThinkingLevel) ??
       'off',
   }
 }

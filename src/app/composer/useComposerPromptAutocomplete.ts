@@ -8,12 +8,12 @@ import { useComposerSlashCommands } from './useComposerSlashCommands'
 
 export function useComposerPromptAutocomplete(input: {
   attachAttachments: (attachments: ComposerAttachment[]) => void
-  composerMode: 'chat' | 'code'
+  composerProfile: 'general' | 'coding'
   composerPanelRef: RefObject<HTMLDivElement | null>
   draft: string
   onOpenSettingsView: Parameters<typeof useComposerSlashCommands>[0]['onOpenSettingsView']
   onStartNewSession: () => void
-  projectId: string
+  directoryId: string
   send: () => Promise<void>
   conversationId: string | null
   setDraft: (value: string) => void
@@ -27,9 +27,9 @@ export function useComposerPromptAutocomplete(input: {
   const openConversationForkRef = useRef<() => void>(() => undefined)
   const slashCommands = useComposerSlashCommands({
     draft: input.draft,
-    projectId: input.projectId,
+    directoryId: input.directoryId,
     conversationId: input.conversationId,
-    composerMode: input.composerMode,
+    composerProfile: input.composerProfile,
     setDraft: input.setDraft,
     send: input.send,
     onOpenSettingsView: input.onOpenSettingsView,
@@ -46,14 +46,14 @@ export function useComposerPromptAutocomplete(input: {
   })
   const skillMentions = useComposerSkillMentions({
     draft: input.draft,
-    projectId: input.projectId,
+    directoryId: input.directoryId,
     conversationId: input.conversationId,
-    composerMode: input.composerMode,
+    composerProfile: input.composerProfile,
     setDraft: input.setDraft,
   })
   const fileMentions = useComposerFileMentions({
     draft: input.draft,
-    projectId: input.projectId,
+    directoryId: input.directoryId,
     setDraft: input.setDraft,
     attachAttachments: input.attachAttachments,
   })

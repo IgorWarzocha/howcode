@@ -1,23 +1,23 @@
 import type {
-  ProjectDiffBaseline,
-  ProjectDiffRenderMode,
-  ProjectGitState,
+  DirectoryDiffBaseline,
+  DirectoryDiffRenderMode,
+  DirectoryGitState,
 } from '../../../../src/app/desktop/types'
 
-export type GitOpsComposerProject = {
+export type GitOpsComposerDirectory = {
   id: string
-  gitState: ProjectGitState | null
+  gitState: DirectoryGitState | null
   parentBranchName?: string | null | undefined
   conversationId: string | null
 }
 
 export type GitOpsComposerDiff = {
-  baseline: ProjectDiffBaseline
-  renderMode: ProjectDiffRenderMode
+  baseline: DirectoryDiffBaseline
+  renderMode: DirectoryDiffRenderMode
   loadError: string | null
   includeUntracked: boolean
-  setBaseline: (baseline: ProjectDiffBaseline) => void
-  setRenderMode: (mode: ProjectDiffRenderMode) => void
+  setBaseline: (baseline: DirectoryDiffBaseline) => void
+  setRenderMode: (mode: DirectoryDiffRenderMode) => void
   toggleIncludeUntracked: () => void
 }
 

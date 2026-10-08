@@ -41,9 +41,9 @@ function CodeSidebarToggleButton(props: CodeWorkspaceContentProps) {
 function CodeGitOpsComposer(props: CodeWorkspaceContentProps) {
   const {
     shellState,
-    projectGitState,
+    directoryGitState,
     parentBranchName,
-    composerProjectId,
+    composerDirectoryId,
     terminalConversationId,
     diffBaseline,
     diffRenderMode,
@@ -65,9 +65,9 @@ function CodeGitOpsComposer(props: CodeWorkspaceContentProps) {
     <div>
       <GitOpsComposerPanel
         appSettings={appSettings}
-        project={{
-          id: composerProjectId,
-          gitState: projectGitState,
+        directory={{
+          id: composerDirectoryId,
+          gitState: directoryGitState,
           parentBranchName,
           conversationId: terminalConversationId,
         }}
@@ -114,14 +114,14 @@ function CodeQueuedPrompts(props: CodeWorkspaceContentProps) {
   )
 }
 
-function CodeThreadComposer(props: CodeWorkspaceContentProps) {
+function CodeChatComposer(props: CodeWorkspaceContentProps) {
   const {
     state,
     activeComposerState,
-    activeThreadData,
+    activeChatData,
     shellState,
-    composerProjectId,
-    projectGitState,
+    composerDirectoryId,
+    directoryGitState,
     parentBranchName,
     diffBaseline,
     terminalConversationId,
@@ -140,12 +140,12 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
     <Composer
       activeView={state.activeView}
       runtime={composerRuntime}
-      messages={activeThreadData?.messages}
-      isStreaming={activeThreadData?.isStreaming ?? false}
-      replyActivityKey={getReplyActivityKey(activeThreadData?.messages ?? [])}
+      messages={activeChatData?.messages}
+      isStreaming={activeChatData?.isStreaming ?? false}
+      replyActivityKey={getReplyActivityKey(activeChatData?.messages ?? [])}
       streamingBehaviorPreference={appSettings.composerStreamingBehavior}
-      projectId={composerProjectId}
-      projectGitState={projectGitState}
+      directoryId={composerDirectoryId}
+      directoryGitState={directoryGitState}
       parentBranchName={parentBranchName}
       diffBaseline={diffBaseline}
       conversationId={terminalConversationId}
@@ -164,21 +164,21 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
       onOpenSettingsView={(target) => controller.navigation.showView('settings', target)}
       onToggleTerminal={handleToggleTerminal}
       terminalVisible={state.terminalVisible}
-      preferPortalModelPopover={state.activeView === 'project'}
+      preferPortalModelPopover={state.activeView === 'directory'}
       onListAttachmentEntries={listComposerAttachmentEntries}
       onAction={handleAction}
     />
   )
 }
 
-function CodeThreadComposerCenter(props: CodeWorkspaceContentProps) {
+function CodeChatComposerCenter(props: CodeWorkspaceContentProps) {
   const { state } = props
   if (state.activeView === 'gitops') return <CodeGitOpsComposer {...props} />
   return (
     <div className="grid gap-0">
       <CodeQueuedPrompts {...props} />
       <div>
-        <CodeThreadComposer {...props} />
+        <CodeChatComposer {...props} />
       </div>
     </div>
   )
@@ -189,19 +189,19 @@ function CodeFooterRight(props: CodeWorkspaceContentProps) {
     state,
     showDesktopTerminalDrawer,
     activeComposerState,
-    composerProjectId,
+    composerDirectoryId,
     terminalConversationId,
     handleAction,
   } = props
-  if (state.activeView === 'thread' && !showDesktopTerminalDrawer)
+  if (state.activeView === 'chat' && !showDesktopTerminalDrawer)
     return (
       <DesktopComposerStatusModelPicker
         availableModels={activeComposerState?.availableModels ?? []}
         availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ['off']}
-        composerMode="code"
+        composerProfile="coding"
         contextUsage={activeComposerState?.contextUsage ?? null}
         model={activeComposerState?.currentModel ?? null}
-        projectId={composerProjectId}
+        directoryId={composerDirectoryId}
         conversationId={terminalConversationId}
         thinkingLevel={activeComposerState?.currentThinkingLevel ?? 'off'}
         onAction={handleAction}
@@ -210,12 +210,12 @@ function CodeFooterRight(props: CodeWorkspaceContentProps) {
   return null
 }
 
-function CodeWorkspaceThreadFooter(props: CodeWorkspaceContentProps) {
+function CodeWorkspaceChatFooter(props: CodeWorkspaceContentProps) {
   const {
     footerRef,
-    showThreadFooter,
-    centerThreadFooter,
-    threadFooterStyle,
+    showChatFooter,
+    centerChatFooter,
+    chatFooterStyle,
     sidebarAutoHidden,
     sidebarCollapsed,
     state,
@@ -226,19 +226,19 @@ function CodeWorkspaceThreadFooter(props: CodeWorkspaceContentProps) {
       className={cn(
         'motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-10 pb-4',
         WORKSPACE_EDGE_PADDING_CLASS,
-        centerThreadFooter || state.activeView === 'project'
+        centerChatFooter || state.activeView === 'directory'
           ? 'transition-[top,transform] duration-300 ease-out'
           : 'bottom-0',
-        (centerThreadFooter || state.activeView === 'project') && '-translate-y-1/2',
-        showThreadFooter && !centerThreadFooter && 'translate-y-0',
+        (centerChatFooter || state.activeView === 'directory') && '-translate-y-1/2',
+        showChatFooter && !centerChatFooter && 'translate-y-0',
       )}
-      style={threadFooterStyle}
+      style={chatFooterStyle}
     >
       <div className="pointer-events-auto grid gap-2.5">
         <WorkspaceComposerDock
           compactControls={sidebarAutoHidden || sidebarCollapsed}
           left={<CodeSidebarToggleButton {...props} />}
-          center={<CodeThreadComposerCenter {...props} />}
+          center={<CodeChatComposerCenter {...props} />}
           rightClassName={cn(
             state.activeView === 'gitops' ? 'opacity-100' : 'min-[1400px]:opacity-100 opacity-0',
           )}
@@ -261,7 +261,7 @@ function CodeSidebarFooter(props: CodeWorkspaceContentProps) {
 
 function CodeWorkspaceFooterArea(props: CodeWorkspaceContentProps) {
   const { showWorkspaceFooter, showCodeSidebarFooter } = props
-  if (showWorkspaceFooter) return <CodeWorkspaceThreadFooter {...props} />
+  if (showWorkspaceFooter) return <CodeWorkspaceChatFooter {...props} />
   if (showCodeSidebarFooter) return <CodeSidebarFooter {...props} />
   return null
 }

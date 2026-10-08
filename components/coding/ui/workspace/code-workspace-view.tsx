@@ -17,7 +17,7 @@ function shouldShowDesktopTerminalDrawer(
   terminalDrawerOverlay: boolean,
 ) {
   return (
-    (activeView === 'thread' || activeView === 'project') &&
+    (activeView === 'chat' || activeView === 'workspace' || activeView === 'directory') &&
     terminalDrawerVisible &&
     !terminalDrawerOverlay
   )
@@ -25,52 +25,56 @@ function shouldShowDesktopTerminalDrawer(
 
 function getFloatingFooterStyle(input: {
   centerDashboardFooter: boolean
-  centerThreadFooter: boolean
-  showThreadFooter: boolean
+  centerChatFooter: boolean
+  showChatFooter: boolean
   terminalDrawerInsetStyle: { right: string } | undefined
 }) {
   if (input.centerDashboardFooter) {
     return { ...input.terminalDrawerInsetStyle, top: EMPTY_COMPOSER_TOP }
   }
 
-  if (!input.showThreadFooter) {
+  if (!input.showChatFooter) {
     return input.terminalDrawerInsetStyle
   }
 
-  return input.centerThreadFooter
+  return input.centerChatFooter
     ? { ...input.terminalDrawerInsetStyle, top: EMPTY_COMPOSER_TOP }
     : { ...input.terminalDrawerInsetStyle, bottom: 0 }
 }
 
 function getFloatingFooterLayoutState(input: {
   activeView: View
-  activeThreadData: Message[] | undefined
-  activeThreadLoading: boolean
-  showThreadFooter: boolean
+  activeChatData: Message[] | undefined
+  activeChatLoading: boolean
+  showChatFooter: boolean
 }) {
-  const hasThreadConversation = input.showThreadFooter && (input.activeThreadData?.length ?? 0) > 0
-  const hasThreadConversationLayout = hasThreadConversation || input.activeThreadLoading
+  const hasChatConversation = input.showChatFooter && (input.activeChatData?.length ?? 0) > 0
+  const hasChatConversationLayout = hasChatConversation || input.activeChatLoading
   const centerDashboardFooter = false
-  const centerThreadFooter = input.showThreadFooter && !hasThreadConversationLayout
+  const centerChatFooter = input.showChatFooter && !hasChatConversationLayout
   return {
     centerDashboardFooter,
-    centerThreadFooter,
-    floatingWorkspaceFooter: centerThreadFooter || centerDashboardFooter,
+    centerChatFooter,
+    floatingWorkspaceFooter: centerChatFooter || centerDashboardFooter,
   }
 }
 
 function getCodeWorkspaceFlags(input: {
   activeView: View
-  hasSelectedProject: boolean
-  selectedProjectId: string
+  hasSelectedDirectory: boolean
+  selectedDirectoryId: string
 }) {
-  const selectedProjectIdForView =
-    input.activeView === 'project' && input.hasSelectedProject ? input.selectedProjectId : ''
+  const selectedDirectoryIdForView =
+    (input.activeView === 'workspace' || input.activeView === 'directory') &&
+    input.hasSelectedDirectory
+      ? input.selectedDirectoryId
+      : ''
   return {
-    showWorkspaceFooter: input.activeView === 'thread' || input.activeView === 'gitops',
-    showThreadFooter: input.activeView === 'thread',
+    showWorkspaceFooter: input.activeView === 'chat' || input.activeView === 'gitops',
+    showChatFooter: input.activeView === 'chat',
     showCodeSidebarFooter:
-      (input.activeView === 'code' || input.activeView === 'landing') && !selectedProjectIdForView,
+      (input.activeView === 'directories' || input.activeView === 'landing') &&
+      !selectedDirectoryIdForView,
     showDiffInMainView: input.activeView === 'gitops',
   }
 }
@@ -78,9 +82,9 @@ function getCodeWorkspaceFlags(input: {
 export function CodeWorkspaceView({
   controller,
   activeComposerState,
-  activeThreadData,
-  composerProjectId,
-  currentProjectName,
+  activeChatData,
+  composerDirectoryId,
+  currentDirectoryName,
   diffBaseline,
   diffRenderMode,
   terminalDrawerVisible,
@@ -95,63 +99,63 @@ export function CodeWorkspaceView({
   onToggleSidebar,
 }: CodeWorkspaceViewProps) {
   const {
-    gitOpsFileTreeVisibilityByThread,
-    setGitOpsFileTreeVisibilityByThread,
-    includeUntrackedDiffFilesByThread,
-    setIncludeUntrackedDiffFilesByThread,
+    gitOpsFileTreeVisibilityByChat,
+    setGitOpsFileTreeVisibilityByChat,
+    includeUntrackedDiffFilesByChat,
+    setIncludeUntrackedDiffFilesByChat,
   } = useCodingWorkspacePreferences()
   const [composerLayoutVersion, setComposerLayoutVersion] = useState(0)
   const [composerOverlayHeight, setComposerOverlayHeight] = useState(0)
   const footerRef = useRef<HTMLElement>(null)
   const mainViewRef = useRef<HTMLElement>(null)
   const handleAction = controller.desktop.handleAction
-  const handleLoadEarlierMessages = controller.thread.loadEarlierMessages
+  const handleLoadEarlierMessages = controller.chat.loadEarlierMessages
   const handleCloseGitOpsView = controller.gitOps.close
   const handleOpenGitOpsView = controller.gitOps.open
   const handleOpenWorktreeDiffFile = controller.gitOps.openWorktreeFile
   const handleToggleTerminal = controller.terminal.toggle
   const listComposerAttachmentEntries = controller.composer.listAttachmentEntries
-  const projectGitState = controller.projects.gitState
+  const directoryGitState = controller.directories.gitState
   const { shellState } = controller.desktop
   const { state } = controller.workspace
-  const { showWorkspaceFooter, showThreadFooter, showCodeSidebarFooter, showDiffInMainView } =
+  const { showWorkspaceFooter, showChatFooter, showCodeSidebarFooter, showDiffInMainView } =
     getCodeWorkspaceFlags({
       activeView: state.activeView,
-      hasSelectedProject: state.hasSelectedProject,
-      selectedProjectId: state.selectedProjectId,
+      hasSelectedDirectory: state.hasSelectedDirectory,
+      selectedDirectoryId: state.selectedDirectoryId,
     })
   const showDesktopTerminalDrawer = shouldShowDesktopTerminalDrawer(
     state.activeView,
     terminalDrawerVisible,
     terminalDrawerOverlay,
   )
-  const gitOpsFileTreeStateKey = `${composerProjectId}:${terminalConversationId ?? 'workspace'}`
+  const gitOpsFileTreeStateKey = `${composerDirectoryId}:${terminalConversationId ?? 'workspace'}`
   const gitOpsFileTreeVisible =
-    gitOpsFileTreeVisibilityByThread[gitOpsFileTreeStateKey] ??
+    gitOpsFileTreeVisibilityByChat[gitOpsFileTreeStateKey] ??
     shellState?.appSettings.gitDiffFileTreeDefaultVisible ??
     true
 
   const gitDiffIncludeUntrackedDefault =
     shellState?.appSettings.gitDiffIncludeUntrackedDefault ?? false
   const parentBranchName =
-    shellState?.projects.find((project) => project.id === composerProjectId)?.worktree
+    shellState?.directories.find((directory) => directory.id === composerDirectoryId)?.worktree
       ?.parentBranchName ?? null
   const includeUntrackedDiffFiles =
-    includeUntrackedDiffFilesByThread[gitOpsFileTreeStateKey] ?? gitDiffIncludeUntrackedDefault
+    includeUntrackedDiffFilesByChat[gitOpsFileTreeStateKey] ?? gitDiffIncludeUntrackedDefault
   const toggleGitOpsFileTree = useCallback(() => {
-    setGitOpsFileTreeVisibilityByThread((current) => ({
+    setGitOpsFileTreeVisibilityByChat((current) => ({
       ...current,
       [gitOpsFileTreeStateKey]: !(current[gitOpsFileTreeStateKey] ?? gitOpsFileTreeVisible),
     }))
-  }, [gitOpsFileTreeStateKey, gitOpsFileTreeVisible, setGitOpsFileTreeVisibilityByThread])
+  }, [gitOpsFileTreeStateKey, gitOpsFileTreeVisible, setGitOpsFileTreeVisibilityByChat])
   const toggleIncludeUntrackedDiffFiles = useCallback(() => {
-    setIncludeUntrackedDiffFilesByThread((current) => ({
+    setIncludeUntrackedDiffFilesByChat((current) => ({
       ...current,
       [gitOpsFileTreeStateKey]: !(
         current[gitOpsFileTreeStateKey] ?? gitDiffIncludeUntrackedDefault
       ),
     }))
-  }, [gitDiffIncludeUntrackedDefault, gitOpsFileTreeStateKey, setIncludeUntrackedDiffFilesByThread])
+  }, [gitDiffIncludeUntrackedDefault, gitOpsFileTreeStateKey, setIncludeUntrackedDiffFilesByChat])
   useHowcodeKeybindingCommand('gitops.toggleChangedFiles', (event) => {
     if (state.activeView !== 'gitops') return
     event.preventDefault()
@@ -162,17 +166,17 @@ export function CodeWorkspaceView({
     footerRef,
     visible: showWorkspaceFooter,
   })
-  const { centerDashboardFooter, centerThreadFooter, floatingWorkspaceFooter } =
+  const { centerDashboardFooter, centerChatFooter, floatingWorkspaceFooter } =
     getFloatingFooterLayoutState({
-      activeThreadData: activeThreadData?.messages,
-      activeThreadLoading: controller.thread.activeLoading,
+      activeChatData: activeChatData?.messages,
+      activeChatLoading: controller.chat.activeLoading,
       activeView: state.activeView,
-      showThreadFooter,
+      showChatFooter,
     })
   const footerInset = showWorkspaceFooter && !floatingWorkspaceFooter ? footerHeight : 0
   const gitOpsReview = useGitOpsReviewController({
     baseline: diffBaseline,
-    composerProjectId,
+    composerDirectoryId,
     handleAction,
     handleOpenWorktreeDiffFile,
     shellState,
@@ -180,7 +184,7 @@ export function CodeWorkspaceView({
   })
   const { handleRemoveQueuedPrompt, pendingQueuedPromptIdsForSession, queuedPromptError } =
     useQueuedPromptCancellation({
-      composerProjectId,
+      composerDirectoryId,
       handleAction,
       terminalConversationId,
     })
@@ -188,13 +192,13 @@ export function CodeWorkspaceView({
   const terminalDrawerInsetStyle = showDesktopTerminalDrawer
     ? { right: TERMINAL_DRAWER_OFFSET }
     : undefined
-  const threadFooterStyle = getFloatingFooterStyle({
+  const chatFooterStyle = getFloatingFooterStyle({
     centerDashboardFooter,
-    centerThreadFooter,
-    showThreadFooter,
+    centerChatFooter,
+    showChatFooter,
     terminalDrawerInsetStyle,
   })
-  const threadTimelineLoading = state.activeView === 'thread' && controller.thread.activeLoading
+  const chatTimelineLoading = state.activeView === 'chat' && controller.chat.activeLoading
 
   return (
     <CodeWorkspaceViewContent
@@ -204,8 +208,8 @@ export function CodeWorkspaceView({
       mainViewRef={mainViewRef}
       state={state}
       showDiffInMainView={showDiffInMainView}
-      composerProjectId={composerProjectId}
-      projectGitState={projectGitState}
+      composerDirectoryId={composerDirectoryId}
+      directoryGitState={directoryGitState}
       parentBranchName={parentBranchName}
       diffBaseline={diffBaseline}
       gitOpsReview={gitOpsReview}
@@ -215,10 +219,10 @@ export function CodeWorkspaceView({
       controller={controller}
       shellState={shellState}
       activeComposerState={activeComposerState}
-      currentProjectName={currentProjectName}
+      currentDirectoryName={currentDirectoryName}
       workspaceContentClass={workspaceContentClass}
-      activeThreadData={activeThreadData}
-      threadTimelineLoading={threadTimelineLoading}
+      activeChatData={activeChatData}
+      chatTimelineLoading={chatTimelineLoading}
       composerLayoutVersion={composerLayoutVersion}
       composerOverlayHeight={composerOverlayHeight}
       handleAction={handleAction}
@@ -229,9 +233,9 @@ export function CodeWorkspaceView({
       handleLoadEarlierMessages={handleLoadEarlierMessages}
       showWorkspaceFooter={showWorkspaceFooter}
       footerRef={footerRef}
-      showThreadFooter={showThreadFooter}
-      centerThreadFooter={centerThreadFooter}
-      threadFooterStyle={threadFooterStyle}
+      showChatFooter={showChatFooter}
+      centerChatFooter={centerChatFooter}
+      chatFooterStyle={chatFooterStyle}
       sidebarAutoHidden={sidebarAutoHidden}
       terminalConversationId={terminalConversationId}
       diffLoadError={diffLoadError}

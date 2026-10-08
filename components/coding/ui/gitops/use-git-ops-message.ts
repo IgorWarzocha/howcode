@@ -11,12 +11,12 @@ type GitOpsMessageStatus = {
 
 export function useGitOpsMessage({
   isTreeClean,
-  projectId,
+  directoryId,
   setPreviewPending,
   status,
 }: {
   isTreeClean: boolean
-  projectId: string | null
+  directoryId: string | null
   setPreviewPending: (pending: boolean) => void
   status: GitOpsMessageStatus
 }) {
@@ -24,18 +24,18 @@ export function useGitOpsMessage({
   const [value, setValue] = useState('')
   const [focused, setFocused] = useState(false)
   const [persistedCleanMessage, setPersistedCleanMessage] = useState<string | null>(null)
-  const previousProjectIdRef = useRef<string | null>(projectId)
+  const previousDirectoryIdRef = useRef<string | null>(directoryId)
   const valueRef = useLatestRef(value)
 
   useEffect(() => {
-    if (previousProjectIdRef.current === projectId) return
-    previousProjectIdRef.current = projectId
+    if (previousDirectoryIdRef.current === directoryId) return
+    previousDirectoryIdRef.current = directoryId
     setValue('')
     setFocused(false)
     setPersistedCleanMessage(null)
     setPreviewPending(false)
     setStatusMessage(null)
-  }, [projectId, setPreviewPending, setStatusMessage])
+  }, [directoryId, setPreviewPending, setStatusMessage])
 
   if (!isTreeClean && persistedCleanMessage && value === persistedCleanMessage) {
     setValue('')

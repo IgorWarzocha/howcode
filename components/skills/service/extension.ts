@@ -29,8 +29,8 @@ export async function getComposerSkills(
   request: ComposerStateRequest = {},
 ): Promise<ComposerSkillReference[]> {
   const installed = await listConfiguredPiSkills({
-    projectPath: request.projectId,
-    chat: request.composerMode === 'chat',
+    directoryPath: request.directoryId,
+    chat: request.composerProfile === 'general',
   })
   const bundled = (await Promise.all(getBundledSkillPaths().map(bundledSkills))).flat()
   const skills = new Map<string, ComposerSkillReference>()

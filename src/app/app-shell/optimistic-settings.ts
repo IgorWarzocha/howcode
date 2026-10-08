@@ -7,8 +7,8 @@ import {
 } from '@howcode/shared/keybindings'
 import type {
   ComposerThinkingLevel,
+  DirectoryDiffDefaultBaseline,
   ModelSelection,
-  ProjectDiffDefaultBaseline,
   ShellState,
 } from '../desktop/types'
 import type { ActionPayload } from './controller-action-utils'
@@ -26,17 +26,17 @@ const optimisticSettingKeys = new Set([
   'dictationMaxDurationSeconds',
   'showDictationButton',
   'favoriteFolders',
-  'projectImportState',
-  'preferredProjectLocation',
+  'directoryImportState',
+  'preferredDirectoryLocation',
   'customPiDirectory',
-  'initializeGitOnProjectCreate',
-  'projectDashboardEnabled',
+  'initializeGitOnDirectoryCreate',
+  'directoryDashboardEnabled',
   'gitOpsDefaultMode',
   'gitDiffBaselineDefault',
   'gitDiffRenderModeDefault',
   'gitDiffFileTreeDefaultVisible',
   'gitDiffIncludeUntrackedDefault',
-  'projectDeletionMode',
+  'directoryDeletionMode',
   'useAgentsSkillsPaths',
   'hideSidebarSessionCounts',
   'hoverToFocus',
@@ -71,7 +71,7 @@ function getOptimisticFavoriteFolders(payload: ActionPayload, fallback: string[]
 
 function getOptimisticDiffBaselineDefault(
   payload: ActionPayload,
-  fallback: ProjectDiffDefaultBaseline,
+  fallback: DirectoryDiffDefaultBaseline,
 ) {
   if (!(payload.value && typeof payload.value === 'object')) return fallback
   const baseline = payload.value as { kind?: unknown }
@@ -79,7 +79,7 @@ function getOptimisticDiffBaselineDefault(
     baseline.kind === 'previous' ||
     baseline.kind === 'main-branch' ||
     baseline.kind === 'dev-branch'
-    ? ({ kind: baseline.kind } as ProjectDiffDefaultBaseline)
+    ? ({ kind: baseline.kind } as DirectoryDiffDefaultBaseline)
     : fallback
 }
 
@@ -135,8 +135,8 @@ function applyOptimisticBooleanSetting(
   if (typeof payload.value !== 'boolean') return
   const directBooleanKeys = [
     'showDictationButton',
-    'initializeGitOnProjectCreate',
-    'projectDashboardEnabled',
+    'initializeGitOnDirectoryCreate',
+    'directoryDashboardEnabled',
     'gitDiffFileTreeDefaultVisible',
     'gitDiffIncludeUntrackedDefault',
     'useAgentsSkillsPaths',
@@ -218,12 +218,12 @@ function applyOptimisticScalarSetting(
       nextSettings.favoriteFolders,
     )
   if (
-    payload.key === 'projectImportState' &&
+    payload.key === 'directoryImportState' &&
     (payload.imported === null || typeof payload.imported === 'boolean')
   )
-    nextSettings.projectImportState = payload.imported
-  if (payload.key === 'preferredProjectLocation')
-    nextSettings.preferredProjectLocation =
+    nextSettings.directoryImportState = payload.imported
+  if (payload.key === 'preferredDirectoryLocation')
+    nextSettings.preferredDirectoryLocation =
       typeof payload.value === 'string' ? payload.value.trim() || null : null
   if (payload.key === 'customPiDirectory')
     nextSettings.customPiDirectory =
@@ -250,10 +250,10 @@ function applyOptimisticGitSetting(
   )
     nextSettings.gitDiffRenderModeDefault = payload.value
   if (
-    payload.key === 'projectDeletionMode' &&
+    payload.key === 'directoryDeletionMode' &&
     (payload.value === 'pi-only' || payload.value === 'full-clean')
   )
-    nextSettings.projectDeletionMode = payload.value
+    nextSettings.directoryDeletionMode = payload.value
 }
 
 export function getOptimisticallyUpdatedShellState(

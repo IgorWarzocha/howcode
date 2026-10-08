@@ -3,45 +3,46 @@ import type { CodingService } from '../../../shared/desktop-service-contracts'
 
 type CodingRequestHandlers = Pick<
   DesktopRequestHandlerMap,
-  | 'listProjectDirectoryEntries'
-  | 'getProjectGitState'
-  | 'getProjectUsageSummary'
-  | 'getProjectFavicon'
-  | 'startProjectDiffStream'
-  | 'cancelProjectDiffStream'
-  | 'getProjectDiffStats'
-  | 'getProjectDiffImagePreview'
-  | 'getProjectDiffFileContents'
-  | 'captureProjectDiffBaseline'
-  | 'listProjectCommits'
+  | 'listDirectoryDirectoryEntries'
+  | 'getDirectoryGitState'
+  | 'getDirectoryUsageSummary'
+  | 'getDirectoryFavicon'
+  | 'startDirectoryDiffStream'
+  | 'cancelDirectoryDiffStream'
+  | 'getDirectoryDiffStats'
+  | 'getDirectoryDiffImagePreview'
+  | 'getDirectoryDiffFileContents'
+  | 'captureDirectoryDiffBaseline'
+  | 'listDirectoryCommits'
 >
 
 export function createCodingHandlers(
   coding: CodingService,
-  listProjectDirectoryEntries: DesktopRequestHandlerMap['listProjectDirectoryEntries'],
+  listDirectoryDirectoryEntries: DesktopRequestHandlerMap['listDirectoryDirectoryEntries'],
 ): CodingRequestHandlers {
   return {
-    listProjectDirectoryEntries,
-    getProjectGitState: ({ projectId }) => coding.loadProjectGitState(projectId),
-    getProjectUsageSummary: ({ projectId }) => coding.loadProjectUsageSummary(projectId),
-    getProjectFavicon: ({ projectId }) => coding.loadProjectFavicon(projectId),
-    startProjectDiffStream: ({ projectId, baseline, streamId, includeUntracked }) =>
-      coding.startProjectDiffStream(
-        projectId,
+    listDirectoryDirectoryEntries,
+    getDirectoryGitState: ({ directoryId }) => coding.loadDirectoryGitState(directoryId),
+    getDirectoryUsageSummary: ({ directoryId }) => coding.loadDirectoryUsageSummary(directoryId),
+    getDirectoryFavicon: ({ directoryId }) => coding.loadDirectoryFavicon(directoryId),
+    startDirectoryDiffStream: ({ directoryId, baseline, streamId, includeUntracked }) =>
+      coding.startDirectoryDiffStream(
+        directoryId,
         baseline ?? null,
         streamId ?? null,
         includeUntracked ?? false,
       ),
-    cancelProjectDiffStream: async ({ streamId }) => {
-      await coding.cancelProjectDiffStream(streamId)
+    cancelDirectoryDiffStream: async ({ streamId }) => {
+      await coding.cancelDirectoryDiffStream(streamId)
       return undefined
     },
-    getProjectDiffStats: ({ projectId, baseline, includeUntracked }) =>
-      coding.loadProjectDiffStats(projectId, baseline ?? null, includeUntracked ?? false),
-    getProjectDiffImagePreview: (request) => coding.loadProjectDiffImagePreview(request),
-    getProjectDiffFileContents: (request) => coding.loadProjectDiffFileContents(request),
-    captureProjectDiffBaseline: ({ projectId }) => coding.captureProjectDiffBaseline(projectId),
-    listProjectCommits: ({ projectId, limit }) =>
-      coding.listProjectCommits(projectId, limit ?? null),
+    getDirectoryDiffStats: ({ directoryId, baseline, includeUntracked }) =>
+      coding.loadDirectoryDiffStats(directoryId, baseline ?? null, includeUntracked ?? false),
+    getDirectoryDiffImagePreview: (request) => coding.loadDirectoryDiffImagePreview(request),
+    getDirectoryDiffFileContents: (request) => coding.loadDirectoryDiffFileContents(request),
+    captureDirectoryDiffBaseline: ({ directoryId }) =>
+      coding.captureDirectoryDiffBaseline(directoryId),
+    listDirectoryCommits: ({ directoryId, limit }) =>
+      coding.listDirectoryCommits(directoryId, limit ?? null),
   }
 }

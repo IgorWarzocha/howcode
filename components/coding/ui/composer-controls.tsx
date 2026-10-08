@@ -12,16 +12,18 @@ export function CodingComposerControls({
 }: {
   selector: Omit<
     ComponentProps<typeof ComposerDiffBaselineSelector>,
-    'branch' | 'projectGitState'
+    'branch' | 'directoryGitState'
   > & {
-    projectGitState: ComponentProps<typeof ComposerDiffBaselineSelector>['projectGitState'] | null
+    directoryGitState:
+      | ComponentProps<typeof ComposerDiffBaselineSelector>['directoryGitState']
+      | null
   }
   showGitOps: boolean
   onOpenGitOps: () => void
 }) {
   const enabled = useToolkitComponentEnabled('coding')
   if (!enabled) return null
-  const gitState = selector.projectGitState
+  const gitState = selector.directoryGitState
   const gitVisualMode = gitState?.isGitRepo
     ? gitState.fileCount > 0
       ? 'dirty'
@@ -33,7 +35,7 @@ export function CodingComposerControls({
         <ComposerDiffBaselineSelector
           {...selector}
           branch={gitState.branch}
-          projectGitState={gitState}
+          directoryGitState={gitState}
         />
       ) : null}
       {showGitOps ? (

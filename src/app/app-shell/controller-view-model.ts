@@ -1,37 +1,34 @@
-import type { ThreadData } from '../desktop/types'
-import { getCurrentTitle, getProjectName, selectProject, selectThread } from '../state/workspace'
+import type { ChatData } from '../desktop/types'
+import { getCurrentTitle, getDirectoryName, selectChat, selectDirectory } from '../state/workspace'
 import type { WorkspaceState } from '../state/workspace-model'
-import type { Project, Thread } from '../types'
+import type { Chat, WorkingDirectory } from '../types'
 
 const pathSeparatorPattern = /[\\/]/
 
 type DeriveControllerViewModelInput = {
-  projects: Project[]
+  directories: WorkingDirectory[]
   workspaceState: WorkspaceState
-  threadData: ThreadData | null
+  chatData: ChatData | null
   shellCwd: string | null | undefined
   composerState: import('../desktop/types').ComposerState | null
   shellComposerState: import('../desktop/types').ComposerState | null | undefined
 }
 
 type ControllerViewModel = {
-  collapsedProjectIds: Record<string, boolean>
-  selectedProject: Project | undefined
-  selectedThread: Thread | undefined
-  activeThreadData: ThreadData | null
+  collapsedDirectoryIds: Record<string, boolean>
+  selectedDirectory: WorkingDirectory | undefined
+  selectedChat: Chat | undefined
+  activeChatData: ChatData | null
   currentTitle: string
-  currentProjectName: string
-  composerProjectId: string
+  currentDirectoryName: string
+  composerDirectoryId: string
   activeComposerState: import('../desktop/types').ComposerState | null
 }
 
-function buildFallbackThreadData(
-  conversationId: string,
-  selectedThread: Thread | undefined,
-): ThreadData {
+function buildFallbackChatData(conversationId: string, selectedChat: Chat | undefined): ChatData {
   return {
     conversationId,
-    title: selectedThread?.title ?? 'New chat',
+    title: selectedChat?.title ?? 'New chat',
     messages: [],
     previousMessageCount: 0,
     isStreaming: false,
@@ -39,61 +36,67 @@ function buildFallbackThreadData(
   }
 }
 
-function getSelectedProjectName(project: Project | undefined, selectedProjectId: string) {
-  if (project) return getProjectName(project)
-  const pathParts = selectedProjectId.split(pathSeparatorPattern).filter(Boolean)
-  return pathParts.at(-1) ?? getProjectName(undefined)
+function getSelectedDirectoryName(
+  directory: WorkingDirectory | undefined,
+  selectedDirectoryId: string,
+) {
+  if (directory) return getDirectoryName(directory)
+  const pathParts = selectedDirectoryId.split(pathSeparatorPattern).filter(Boolean)
+  return pathParts.at(-1) ?? getDirectoryName(undefined)
 }
 
-function getComposerProjectId(input: {
-  selectedProject: Project | undefined
-  selectedProjectId: string
-  hasSelectedProject: boolean
+function getComposerDirectoryId(input: {
+  selectedDirectory: WorkingDirectory | undefined
+  selectedDirectoryId: string
+  hasSelectedDirectory: boolean
   shellCwd: string | null | undefined
 }) {
-  if (input.selectedProject) return input.selectedProject.id
-  if (input.hasSelectedProject && input.selectedProjectId) return input.selectedProjectId
+  if (input.selectedDirectory) return input.selectedDirectory.id
+  if (input.hasSelectedDirectory && input.selectedDirectoryId) return input.selectedDirectoryId
   return input.shellCwd ?? ''
 }
 
 export function deriveControllerViewModel({
-  projects,
+  directories,
   workspaceState,
-  threadData,
+  chatData,
   shellCwd,
   composerState,
   shellComposerState,
 }: DeriveControllerViewModelInput): ControllerViewModel {
-  const collapsedProjectIds = Object.fromEntries(
-    projects.map((project) => [
-      project.id,
-      workspaceState.collapsedProjectIds[project.id] ?? project.collapsed ?? true,
+  const collapsedDirectoryIds = Object.fromEntries(
+    directories.map((directory) => [
+      directory.id,
+      workspaceState.collapsedDirectoryIds[directory.id] ?? directory.collapsed ?? true,
     ]),
   )
-  const selectedProject = selectProject(projects, workspaceState.selectedProjectId)
-  const selectedThread = selectThread(selectedProject, workspaceState.selectedThreadId)
-  const activeThreadData = workspaceState.selectedConversationId
-    ? (threadData ?? buildFallbackThreadData(workspaceState.selectedConversationId, selectedThread))
+  const selectedDirectory = selectDirectory(directories, workspaceState.selectedDirectoryId)
+  const selectedChat = selectChat(selectedDirectory, workspaceState.selectedChatId)
+  const activeChatData = workspaceState.selectedConversationId
+    ? (chatData ?? buildFallbackChatData(workspaceState.selectedConversationId, selectedChat))
     : null
 
   return {
-    collapsedProjectIds,
-    selectedProject,
-    selectedThread,
-    activeThreadData,
+    collapsedDirectoryIds,
+    selectedDirectory,
+    selectedChat,
+    activeChatData,
     currentTitle:
-      workspaceState.activeView === 'chat' || workspaceState.activeView === 'thread'
-        ? (activeThreadData?.title ?? selectedThread?.title ?? 'New chat')
-        : getCurrentTitle(workspaceState.activeView, selectedThread),
-    currentProjectName: getSelectedProjectName(selectedProject, workspaceState.selectedProjectId),
+      workspaceState.activeView === 'chat'
+        ? (activeChatData?.title ?? selectedChat?.title ?? 'New chat')
+        : getCurrentTitle(workspaceState.activeView, selectedChat),
+    currentDirectoryName: getSelectedDirectoryName(
+      selectedDirectory,
+      workspaceState.selectedDirectoryId,
+    ),
     // Keep sidebar selection strict, but never let composer/runtime actions fall back
-    // to the app shell cwd while the user has a selected project. The project list can
-    // be briefly stale around project creation/new-thread transitions; the workspace
+    // to the app shell cwd while the user has a selected directory. The directory list can
+    // be briefly stale around directory creation/new-chat transitions; the workspace
     // selection is still the intended runtime cwd.
-    composerProjectId: getComposerProjectId({
-      selectedProject,
-      selectedProjectId: workspaceState.selectedProjectId,
-      hasSelectedProject: workspaceState.hasSelectedProject,
+    composerDirectoryId: getComposerDirectoryId({
+      selectedDirectory,
+      selectedDirectoryId: workspaceState.selectedDirectoryId,
+      hasSelectedDirectory: workspaceState.hasSelectedDirectory,
       shellCwd,
     }),
     activeComposerState: composerState ?? shellComposerState ?? null,

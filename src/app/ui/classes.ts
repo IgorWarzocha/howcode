@@ -84,17 +84,17 @@ export const processLedgerRowExpandedClass =
 
 export const processLedgerDetailBlockClass = `grid min-w-0 max-w-full gap-1 overflow-hidden border-l border-[color:var(--border)]/70 bg-[color:var(--folded-row-bg)] px-2 py-1.5 ${appTypeCodeClass} text-[color:var(--muted-2)]/82`
 
-export const threadSessionSurfaceClass = 'thread-session-surface'
+export const chatSessionSurfaceClass = 'thread-session-surface'
 
-export const threadUserMessageClass = `thread-user-message ${threadSessionSurfaceClass}`
+export const chatUserMessageClass = `thread-user-message ${chatSessionSurfaceClass}`
 
-export const threadSessionStripClass = `grid min-w-0 gap-2 bg-[color:var(--folded-row-bg)] px-3 py-2.5 ${appTypeGroupTextClass} ${threadSessionSurfaceClass}`
+export const chatSessionStripClass = `grid min-w-0 gap-2 bg-[color:var(--folded-row-bg)] px-3 py-2.5 ${appTypeGroupTextClass} ${chatSessionSurfaceClass}`
 
-export const threadSessionErrorStripClass = `grid min-w-0 gap-2 bg-[color:color-mix(in_srgb,var(--danger-bg)_50%,transparent)] px-3 py-2.5 text-[color:var(--danger)] ${threadSessionSurfaceClass}`
+export const chatSessionErrorStripClass = `grid min-w-0 gap-2 bg-[color:color-mix(in_srgb,var(--danger-bg)_50%,transparent)] px-3 py-2.5 text-[color:var(--danger)] ${chatSessionSurfaceClass}`
 
-export const thinkingDisclosureClass = `overflow-visible bg-[color:var(--folded-row-bg)] ${threadSessionSurfaceClass}`
+export const thinkingDisclosureClass = `overflow-visible bg-[color:var(--folded-row-bg)] ${chatSessionSurfaceClass}`
 
-export const thinkingDisclosureTriggerClass = `px-2.5 py-2 hover:bg-[color:var(--folded-row-hover-bg)] ${threadSessionSurfaceClass}`
+export const thinkingDisclosureTriggerClass = `px-2.5 py-2 hover:bg-[color:var(--folded-row-hover-bg)] ${chatSessionSurfaceClass}`
 
 export const thinkingDisclosureBodyClass =
   '!border-0 border-l border-[color:var(--border)]/70 px-3 py-2.5'

@@ -27,31 +27,41 @@ export {
 } from './gitops/review/review-store'
 export { sendReviewCommentsToComposer } from './gitops/review/review-submission'
 export {
-  notifyProjectDiffInvalidated,
-  useProjectDiffInvalidationVersion,
-} from './hooks/project-diff-invalidation'
+  notifyDirectoryDiffInvalidated,
+  useDirectoryDiffInvalidationVersion,
+} from './hooks/directory-diff-invalidation'
 export {
-  cancelProjectDiffStreamQuery,
-  canStartProjectDiffStreamQuery,
-  getProjectDiffFileContentsQuery,
-  getProjectDiffImagePreviewQuery,
-  getProjectDiffStatsQuery,
-  getProjectFaviconQuery,
-  getProjectGitStateQuery,
-  getProjectUsageSummaryQuery,
-  listProjectCommitsQuery,
-  listProjectDirectoryEntriesQuery,
-  startProjectDiffStreamQuery,
+  cancelDirectoryDiffStreamQuery,
+  canStartDirectoryDiffStreamQuery,
+  getDirectoryDiffFileContentsQuery,
+  getDirectoryDiffImagePreviewQuery,
+  getDirectoryDiffStatsQuery,
+  getDirectoryFaviconQuery,
+  getDirectoryGitStateQuery,
+  getDirectoryUsageSummaryQuery,
+  listDirectoryCommitsQuery,
+  listDirectoryDirectoryEntriesQuery,
+  startDirectoryDiffStreamQuery,
 } from './query'
 export { useCodingWorkspaceCommands } from './shell/commands'
 export {
-  invalidateProjectWorktreeQueries,
+  invalidateDirectoryWorktreeQueries,
   useCodingDesktopEventContribution,
 } from './shell/desktop-events'
+export {
+  removeShellDirectoryFamily,
+  removeShellWorktreeDirectory,
+  setShellSidebarVisibleDirectoryIds,
+  setShellWorktreeCompleted,
+  setShellWorktreeDirectory,
+  updateShellDirectory,
+  upsertShellDirectory,
+  upsertShellWorktreeDirectory,
+} from './shell/directory-shell-cache'
 export type { DiffPreferencesPatch } from './shell/post-effects/diff-preferences'
 export {
   applyDiffPreferencesPostEffect,
-  applyDiffPreferencesToThread,
+  applyDiffPreferencesToChat,
   getDiffPreferencesPatch,
 } from './shell/post-effects/diff-preferences'
 export {
@@ -65,34 +75,24 @@ export {
 } from './shell/post-effects/workspace'
 export { workspacePostEffectHandlers } from './shell/post-effects/workspace-handlers'
 export {
-  removeShellProjectFamily,
-  removeShellWorktreeProject,
-  setShellSidebarVisibleProjectIds,
-  setShellWorktreeCompleted,
-  setShellWorktreeDirectory,
-  updateShellProject,
-  upsertShellProject,
-  upsertShellWorktreeProject,
-} from './shell/project-shell-cache'
-export {
   areDiffBaselinesEqual,
   useAppShellDiffPreferences,
 } from './shell/useAppShellDiffPreferences'
-export { useAppShellProjectState } from './shell/useAppShellProjectState'
+export { useAppShellDirectoryState } from './shell/useAppShellDirectoryState'
 export { useCodingGitStateSync } from './shell/useCodingGitStateSync'
-export { useProjectRepoOriginRefresh } from './shell/useProjectRepoOriginRefresh'
-export { useProjectShellSync } from './shell/useProjectShellSync'
+export { useDirectoryRepoOriginRefresh } from './shell/useDirectoryRepoOriginRefresh'
+export { useDirectoryShellSync } from './shell/useDirectoryShellSync'
 export { useTerminalGitStateSync } from './shell/useTerminalGitStateSync'
 export {
-  clearCodingThreadSelection,
+  clearCodingChatSelection,
   createCodingWorkspaceTransitions,
   createInitialCodingWorkspaceState,
-  getCodingStateForOpenedThread,
-  getCodingStateForPreviewedThread,
+  getCodingStateForOpenedChat,
+  getCodingStateForPreviewedChat,
   getCodingStateForShownView,
   getCodingUtilityReturnState,
-  getCurrentCodeThreadSelection,
-  resolveCodeThreadSelection,
+  getCurrentCodeChatSelection,
+  resolveCodeChatSelection,
 } from './shell/workspace-state'
-export { ProjectWorkSection } from './sidebar/project-work/project-work-section'
-export { WorkspaceFolderCreateButton } from './sidebar/projects/workspace-folder-create-button'
+export { WorkspaceFolderCreateButton } from './sidebar/directories/workspace-folder-create-button'
+export { DirectoryWorkSection } from './sidebar/directory-work/directory-work-section'

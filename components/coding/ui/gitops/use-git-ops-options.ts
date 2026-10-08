@@ -33,7 +33,7 @@ export function useGitOpsOptions({
     setPushEnabled(hasOrigin && effectiveMode === 'commit-push')
   }, [effectiveMode, hasOrigin])
 
-  const saveProjectMode = useCallback(
+  const saveDirectoryMode = useCallback(
     async (mode: GitOpsMode | null) => {
       if (!isGitRepo) return
 
@@ -44,7 +44,7 @@ export function useGitOpsOptions({
       status.setErrorMessage(null)
 
       try {
-        const result = await onAction('workspace.commit-options', { gitOpsMode: mode })
+        const result = await onAction('coding.commit-options', { gitOpsMode: mode })
         const errorMessage = getDesktopActionErrorMessage(
           result,
           'Could not update the workspace GitOps default.',
@@ -73,7 +73,7 @@ export function useGitOpsOptions({
 
     status.setErrorMessage(null)
     try {
-      const result = await onAction('workspace.commit-options', { repoUrl: nextRepoUrl })
+      const result = await onAction('coding.commit-options', { repoUrl: nextRepoUrl })
       const errorMessage = getDesktopActionErrorMessage(
         result,
         'Could not update the repository remote.',
@@ -112,7 +112,7 @@ export function useGitOpsOptions({
     pushEnabled,
     repoUrl,
     saveOrigin,
-    saveProjectMode,
+    saveDirectoryMode,
     setPreviewPending,
     setRepoUrl,
     toggleIncludeUnstaged,

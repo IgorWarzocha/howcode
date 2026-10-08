@@ -23,7 +23,7 @@ export const appSettingsSlashCommand: ComposerSlashCommand = {
 
 export const appNewSessionSlashCommand: ComposerSlashCommand = {
   name: 'new',
-  description: 'Start a new session in the current project',
+  description: 'Start a new chat in the current folder',
   source: 'app',
 }
 

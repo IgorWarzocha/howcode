@@ -10,8 +10,8 @@ describe('conversation extension selection', () => {
   const registry = createDesktopExtensionRegistry()
 
   it('keeps explicit empty selection empty through action decoding, regardless of UI mode', () => {
-    for (const composerMode of ['chat', 'code'] as const) {
-      const request = getComposerRequest({ composerMode, composerExtensions: [] })
+    for (const composerProfile of ['chat', 'code'] as const) {
+      const request = getComposerRequest({ composerProfile, composerExtensions: [] })
       expect(resolveDesktopExtensions(request, registry)).toEqual({ extensions: [] })
     }
   })
@@ -28,7 +28,7 @@ describe('conversation extension selection', () => {
   })
 
   it('preserves attachment-only chat permissions while code retains filesystem tools', () => {
-    const chat = resolveDesktopExtensions({ composerMode: 'chat' }, registry)
+    const chat = resolveDesktopExtensions({ composerProfile: 'general' }, registry)
     const code = resolveDesktopExtensions({}, registry)
     const tools = (selection: typeof chat) =>
       selection.extensions.flatMap((extension) => extension.tools?.map((tool) => tool.name) ?? [])
@@ -40,18 +40,21 @@ describe('conversation extension selection', () => {
 
   it('derives resource scope from selection instead of incoming mode or project attribution', () => {
     const selected = resolveDesktopExtensions(
-      { composerMode: 'code', composerExtensions: ['howcode.chat', 'howcode.resources'] },
+      { composerProfile: 'coding', composerExtensions: ['howcode.chat', 'howcode.resources'] },
       registry,
     )
     const agent = { ...selected, cwd: '/project' }
-    expect(getConversationResourceRequest(agent)).toEqual({ projectId: null, composerMode: 'chat' })
+    expect(getConversationResourceRequest(agent)).toEqual({
+      directoryId: null,
+      composerProfile: 'general',
+    })
     const workspace = resolveDesktopExtensions(
-      { composerMode: 'chat', composerExtensions: ['howcode.resources'] },
+      { composerProfile: 'general', composerExtensions: ['howcode.resources'] },
       registry,
     )
     expect(getConversationResourceRequest({ ...workspace, cwd: '/project' })).toEqual({
-      projectId: '/project',
-      composerMode: 'code',
+      directoryId: '/project',
+      composerProfile: 'coding',
     })
   })
 

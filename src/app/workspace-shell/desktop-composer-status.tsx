@@ -24,13 +24,13 @@ type DesktopComposerStatusProps = {
 }
 
 type DesktopComposerStatusModelPickerProps = {
-  composerMode: 'chat' | 'code'
+  composerProfile: 'general' | 'coding'
   availableModels: ComposerModel[]
   availableThinkingLevels: ComposerThinkingLevel[]
   className?: string | undefined
   contextUsage: ComposerContextUsage | null
   model: ComposerModel | null
-  projectId: string
+  directoryId: string
   conversationId: string | null
   thinkingLevel: ComposerThinkingLevel
   onAction: DesktopActionInvoker
@@ -131,10 +131,10 @@ export function DesktopComposerStatusModelPicker({
   availableModels,
   availableThinkingLevels,
   className,
-  composerMode,
+  composerProfile,
   contextUsage,
   model,
-  projectId,
+  directoryId,
   conversationId,
   thinkingLevel,
   onAction,
@@ -152,7 +152,7 @@ export function DesktopComposerStatusModelPicker({
       setOpen(false)
       if (!persistedConversationId) {
         void onAction('settings.update', {
-          key: composerMode === 'chat' ? 'chatModel' : 'codeModel',
+          key: composerProfile === 'general' ? 'chatModel' : 'codeModel',
           provider: availableModel.provider,
           modelId: availableModel.id,
         })
@@ -162,11 +162,11 @@ export function DesktopComposerStatusModelPicker({
       void onAction('composer.model', {
         provider: availableModel.provider,
         modelId: availableModel.id,
-        projectId,
+        directoryId,
         conversationId,
       })
     },
-    [composerMode, onAction, persistedConversationId, projectId, conversationId],
+    [composerProfile, onAction, persistedConversationId, directoryId, conversationId],
   )
 
   const selectThinkingLevel = useCallback(
@@ -174,7 +174,7 @@ export function DesktopComposerStatusModelPicker({
       setOpen(false)
       if (!persistedConversationId) {
         void onAction('settings.update', {
-          key: composerMode === 'chat' ? 'chatThinkingLevel' : 'codeThinkingLevel',
+          key: composerProfile === 'general' ? 'chatThinkingLevel' : 'codeThinkingLevel',
           value: level,
         })
         return
@@ -182,11 +182,11 @@ export function DesktopComposerStatusModelPicker({
 
       void onAction('composer.thinking', {
         level,
-        projectId,
+        directoryId,
         conversationId,
       })
     },
-    [composerMode, onAction, persistedConversationId, projectId, conversationId],
+    [composerProfile, onAction, persistedConversationId, directoryId, conversationId],
   )
 
   return (

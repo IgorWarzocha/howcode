@@ -9,13 +9,13 @@ import type {
   ComposerStreamingBehavior,
   DesktopActionPayloadInput,
   DictationModelId,
+  DirectoryDeletionMode,
+  DirectoryDiffBaseline,
+  DirectoryDiffDefaultBaseline,
+  DirectoryDiffRenderMode,
+  DirectoryFileWriteRequest,
   GitOpsMode,
   ModelSelection,
-  ProjectDeletionMode,
-  ProjectDiffBaseline,
-  ProjectDiffDefaultBaseline,
-  ProjectDiffRenderMode,
-  ProjectFileWriteRequest,
 } from './desktop-contracts'
 import { EnabledToolkitComponentsSchema } from './toolkit-components'
 
@@ -28,15 +28,15 @@ export function getComposerRequest(payload: DesktopActionPayloadInput): Composer
             payload.composerExtensions,
           ),
         }),
-    projectId: typeof payload.projectId === 'string' ? payload.projectId : null,
+    directoryId: typeof payload.directoryId === 'string' ? payload.directoryId : null,
     conversationId: getPersistedConversationId(
       typeof payload.conversationId === 'string' ? payload.conversationId : null,
     ),
-    composerMode:
-      payload.composerMode === 'chat' || payload.composerMode === 'code'
-        ? payload.composerMode
+    composerProfile:
+      payload.composerProfile === 'general' || payload.composerProfile === 'coding'
+        ? payload.composerProfile
         : null,
-    chatGroupId: typeof payload.chatGroupId === 'string' ? payload.chatGroupId : null,
+    workspaceId: typeof payload.workspaceId === 'string' ? payload.workspaceId : null,
     branchName:
       typeof payload.branchName === 'string'
         ? payload.branchName
@@ -46,23 +46,23 @@ export function getComposerRequest(payload: DesktopActionPayloadInput): Composer
   }
 }
 
-export function getProjectId(payload: DesktopActionPayloadInput) {
-  return typeof payload.projectId === 'string' ? payload.projectId : null
+export function getDirectoryId(payload: DesktopActionPayloadInput) {
+  return typeof payload.directoryId === 'string' ? payload.directoryId : null
 }
 
-export function getRootProjectId(payload: DesktopActionPayloadInput) {
-  return typeof payload.rootProjectId === 'string' ? payload.rootProjectId : null
+export function getRootDirectoryId(payload: DesktopActionPayloadInput) {
+  return typeof payload.rootDirectoryId === 'string' ? payload.rootDirectoryId : null
 }
 
-export function getProjectFileWriteRequest(
+export function getDirectoryFileWriteRequest(
   payload: DesktopActionPayloadInput,
-): ProjectFileWriteRequest | null {
+): DirectoryFileWriteRequest | null {
   if (
-    typeof payload.projectId !== 'string' ||
+    typeof payload.directoryId !== 'string' ||
     typeof payload.filePath !== 'string' ||
     typeof payload.fileContents !== 'string' ||
     typeof payload.expectedRevision !== 'string' ||
-    payload.projectId.length === 0 ||
+    payload.directoryId.length === 0 ||
     payload.filePath.length === 0 ||
     payload.expectedRevision.length === 0
   ) {
@@ -70,7 +70,7 @@ export function getProjectFileWriteRequest(
   }
 
   return {
-    projectId: payload.projectId,
+    directoryId: payload.directoryId,
     path: payload.filePath,
     contents: payload.fileContents,
     expectedRevision: payload.expectedRevision,
@@ -81,15 +81,13 @@ export function getConversationId(payload: DesktopActionPayloadInput) {
   return typeof payload.conversationId === 'string' ? payload.conversationId : null
 }
 
-export function getThreadId(payload: DesktopActionPayloadInput) {
-  return typeof payload.threadId === 'string' ? payload.threadId : null
+export function getChatId(payload: DesktopActionPayloadInput) {
+  return typeof payload.chatId === 'string' ? payload.chatId : null
 }
 
-export function getThreadIds(payload: DesktopActionPayloadInput) {
-  return Array.isArray(payload.threadIds)
-    ? payload.threadIds.filter(
-        (threadId: unknown): threadId is string => typeof threadId === 'string',
-      )
+export function getChatIds(payload: DesktopActionPayloadInput) {
+  return Array.isArray(payload.chatIds)
+    ? payload.chatIds.filter((chatId: unknown): chatId is string => typeof chatId === 'string')
     : []
 }
 
@@ -128,15 +126,16 @@ export function getWorktreeActionTargets(
   })
 }
 
-export function getProjectName(payload: DesktopActionPayloadInput) {
-  const projectName = typeof payload.projectName === 'string' ? payload.projectName.trim() : ''
-  return projectName.length > 0 ? projectName : null
+export function getDirectoryName(payload: DesktopActionPayloadInput) {
+  const directoryName =
+    typeof payload.directoryName === 'string' ? payload.directoryName.trim() : ''
+  return directoryName.length > 0 ? directoryName : null
 }
 
-export function getProjectIds(payload: DesktopActionPayloadInput) {
-  return Array.isArray(payload.projectIds)
-    ? payload.projectIds.filter(
-        (projectId: unknown): projectId is string => typeof projectId === 'string',
+export function getDirectoryIds(payload: DesktopActionPayloadInput) {
+  return Array.isArray(payload.directoryIds)
+    ? payload.directoryIds.filter(
+        (directoryId: unknown): directoryId is string => typeof directoryId === 'string',
       )
     : []
 }
@@ -250,7 +249,7 @@ export function getGitOpsMode(
     : 'invalid'
 }
 
-function isProjectDiffBaseline(value: unknown): value is ProjectDiffBaseline {
+function isDirectoryDiffBaseline(value: unknown): value is DirectoryDiffBaseline {
   if (!value || typeof value !== 'object') {
     return false
   }
@@ -274,9 +273,9 @@ function isProjectDiffBaseline(value: unknown): value is ProjectDiffBaseline {
   }
 }
 
-export function getProjectDiffBaselinePreference(
+export function getDirectoryDiffBaselinePreference(
   payload: DesktopActionPayloadInput,
-): ProjectDiffBaseline | null | undefined | 'invalid' {
+): DirectoryDiffBaseline | null | undefined | 'invalid' {
   if (!('diffBaseline' in payload) || payload.diffBaseline === undefined) {
     return undefined
   }
@@ -285,12 +284,12 @@ export function getProjectDiffBaselinePreference(
     return null
   }
 
-  return isProjectDiffBaseline(payload.diffBaseline) ? payload.diffBaseline : 'invalid'
+  return isDirectoryDiffBaseline(payload.diffBaseline) ? payload.diffBaseline : 'invalid'
 }
 
-export function getProjectDiffRenderModePreference(
+export function getDirectoryDiffRenderModePreference(
   payload: DesktopActionPayloadInput,
-): ProjectDiffRenderMode | null | undefined | 'invalid' {
+): DirectoryDiffRenderMode | null | undefined | 'invalid' {
   if (!('diffRenderMode' in payload) || payload.diffRenderMode === undefined) {
     return undefined
   }
@@ -304,10 +303,10 @@ export function getProjectDiffRenderModePreference(
     : 'invalid'
 }
 
-export function getSettingsProjectDiffBaselineDefault(
+export function getSettingsDirectoryDiffBaselineDefault(
   payload: DesktopActionPayloadInput,
-): ProjectDiffDefaultBaseline | null {
-  return isProjectDiffBaseline(payload.value) &&
+): DirectoryDiffDefaultBaseline | null {
+  return isDirectoryDiffBaseline(payload.value) &&
     (payload.value.kind === 'head' ||
       payload.value.kind === 'previous' ||
       payload.value.kind === 'main-branch' ||
@@ -316,9 +315,9 @@ export function getSettingsProjectDiffBaselineDefault(
     : null
 }
 
-export function getSettingsProjectDiffRenderModeDefault(
+export function getSettingsDirectoryDiffRenderModeDefault(
   payload: DesktopActionPayloadInput,
-): ProjectDiffRenderMode | null {
+): DirectoryDiffRenderMode | null {
   return payload.value === 'stacked' || payload.value === 'split' ? payload.value : null
 }
 
@@ -336,16 +335,16 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === 'showDictationButton' ||
     payload.key === 'favoriteFolders' ||
     payload.key === 'projectImportState' ||
-    payload.key === 'preferredProjectLocation' ||
+    payload.key === 'preferredDirectoryLocation' ||
     payload.key === 'customPiDirectory' ||
-    payload.key === 'initializeGitOnProjectCreate' ||
+    payload.key === 'initializeGitOnDirectoryCreate' ||
     payload.key === 'projectDashboardEnabled' ||
     payload.key === 'gitOpsDefaultMode' ||
     payload.key === 'gitDiffBaselineDefault' ||
     payload.key === 'gitDiffRenderModeDefault' ||
     payload.key === 'gitDiffFileTreeDefaultVisible' ||
     payload.key === 'gitDiffIncludeUntrackedDefault' ||
-    payload.key === 'projectDeletionMode' ||
+    payload.key === 'directoryDeletionMode' ||
     payload.key === 'useAgentsSkillsPaths' ||
     payload.key === 'hideSidebarSessionCounts' ||
     payload.key === 'hoverToFocus' ||
@@ -398,13 +397,13 @@ export function getSettingsFavoriteFolders(payload: DesktopActionPayloadInput): 
     : []
 }
 
-export function getSettingsProjectImportState(payload: DesktopActionPayloadInput) {
+export function getSettingsDirectoryImportState(payload: DesktopActionPayloadInput) {
   return payload.imported === null || typeof payload.imported === 'boolean'
     ? payload.imported
     : null
 }
 
-export function getSettingsPreferredProjectLocation(payload: DesktopActionPayloadInput) {
+export function getSettingsPreferredDirectoryLocation(payload: DesktopActionPayloadInput) {
   return typeof payload.value === 'string' ? payload.value.trim() : null
 }
 
@@ -428,9 +427,9 @@ export function getSettingsDictationModelId(
     : null
 }
 
-export function getSettingsProjectDeletionMode(
+export function getSettingsDirectoryDeletionMode(
   payload: DesktopActionPayloadInput,
-): ProjectDeletionMode | null {
+): DirectoryDeletionMode | null {
   return payload.value === 'pi-only' || payload.value === 'full-clean' ? payload.value : null
 }
 

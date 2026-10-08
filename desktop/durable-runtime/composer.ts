@@ -22,7 +22,7 @@ export async function getComposerSkills(request: ComposerStateRequest = {}) {
     ? await (await resolveConversation(conversationId)).agent(runtimeContext)
     : {
         ...(await resolveRuntimeExtensions(request)),
-        ...(request.projectId ? { cwd: request.projectId } : {}),
+        ...(request.directoryId ? { cwd: request.directoryId } : {}),
       }
   return discoverConversationSkills(agent)
 }

@@ -3,7 +3,10 @@ import { Search } from 'lucide-react'
 import type { RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { PopoverPanel } from '../../../../../src/app/common/popover'
-import type { ProjectCommitEntry, ProjectDiffBaseline } from '../../../../../src/app/desktop/types'
+import type {
+  DirectoryCommitEntry,
+  DirectoryDiffBaseline,
+} from '../../../../../src/app/desktop/types'
 import {
   appToneMutedClass,
   appTypeSmallClass,
@@ -23,7 +26,7 @@ type BaselineSelectorPanelPosition = {
   maxHeight: number
 }
 
-function getCommitMeta(commit: ProjectCommitEntry | undefined) {
+function getCommitMeta(commit: DirectoryCommitEntry | undefined) {
   if (!commit) return null
   return `${commit.shortSha} · ${commit.subject || '(no subject)'}`
 }
@@ -41,9 +44,9 @@ function BranchBaselineOptions({
   devBranchName?: string | null | undefined
   mainBranchName?: string | null | undefined
   parentBranchName?: string | null | undefined
-  selectedBaseline: ProjectDiffBaseline
+  selectedBaseline: DirectoryDiffBaseline
   setOpen: (open: boolean) => void
-  onSelectBaseline: (baseline: ProjectDiffBaseline) => void
+  onSelectBaseline: (baseline: DirectoryDiffBaseline) => void
 }) {
   const defaultIsDev = defaultBranchName === 'dev'
   const showDevBranch = Boolean(devBranchName && !defaultIsDev)
@@ -124,14 +127,14 @@ export function BaselineSelectorPortal({
   visibleCommits,
   onSelectBaseline,
 }: {
-  commitsQuery: ReturnType<typeof useQuery<ProjectCommitEntry[]>>
-  onSelectBaseline: (baseline: ProjectDiffBaseline) => void
+  commitsQuery: ReturnType<typeof useQuery<DirectoryCommitEntry[]>>
+  onSelectBaseline: (baseline: DirectoryDiffBaseline) => void
   panelId: string
   panelPosition: BaselineSelectorPanelPosition
   panelRef: RefObject<HTMLDivElement | null>
   positionReady: boolean
   searchQuery: string
-  selectedBaseline: ProjectDiffBaseline
+  selectedBaseline: DirectoryDiffBaseline
   selectedCommitSha: string | null
   parentBranchName?: string | null | undefined
   defaultBranchName?: string | null | undefined
@@ -139,7 +142,7 @@ export function BaselineSelectorPortal({
   mainBranchName?: string | null | undefined
   setOpen: (open: boolean) => void
   setSearchQuery: (query: string) => void
-  visibleCommits: ProjectCommitEntry[]
+  visibleCommits: DirectoryCommitEntry[]
 }) {
   if (typeof document === 'undefined') return null
   const panelLeft = `${panelPosition.left}px`

@@ -12,13 +12,13 @@ import { submitComposerDraft } from './submitComposerDraft'
 
 type UseComposerSubmissionProps = {
   composerScopeKey: string
-  draftThreadId: string | null
+  draftChatId: string | null
   isSending: boolean
   isStreaming: boolean
   isCompacting: boolean
   onAction: DesktopActionInvoker
-  projectId: string
-  chatGroupId?: string | null
+  directoryId: string
+  workspaceId?: string | null
   conversationId: string | null
   setAttachments: Dispatch<SetStateAction<ComposerAttachment[]>>
   setDraftValue: Dispatch<SetStateAction<string>>
@@ -31,7 +31,7 @@ type UseComposerSubmissionProps = {
   stopDictationAndFlush: () => Promise<void>
   streamingBehaviorPreference: ComposerStreamingBehavior
   activeComposerScopeKeyRef: MutableRefObject<string>
-  activeDraftThreadIdRef: MutableRefObject<string | null>
+  activeDraftChatIdRef: MutableRefObject<string | null>
   attachmentsRef: MutableRefObject<ComposerAttachment[]>
   draftValueRef: MutableRefObject<string>
   sendLockRef: MutableRefObject<boolean>
@@ -40,13 +40,13 @@ type UseComposerSubmissionProps = {
 
 export function useComposerSubmission({
   composerScopeKey,
-  draftThreadId,
+  draftChatId,
   isSending,
   isStreaming,
   isCompacting,
   onAction,
-  projectId,
-  chatGroupId = null,
+  directoryId,
+  workspaceId = null,
   conversationId,
   setAttachments,
   setDraftValue,
@@ -59,7 +59,7 @@ export function useComposerSubmission({
   stopDictationAndFlush,
   streamingBehaviorPreference,
   activeComposerScopeKeyRef,
-  activeDraftThreadIdRef,
+  activeDraftChatIdRef,
   attachmentsRef,
   draftValueRef,
   sendLockRef,
@@ -75,16 +75,16 @@ export function useComposerSubmission({
       try {
         await runComposerSendSubmission({
           activeComposerScopeKeyRef,
-          activeDraftThreadIdRef,
+          activeDraftChatIdRef,
           attachmentsRef,
-          chatGroupId,
+          workspaceId,
           composerScopeKey,
-          draftThreadId,
+          draftChatId,
           draftValueRef,
           isStreaming,
           onAction,
           pendingSubmittedReplyActivityKeyRef,
-          projectId,
+          directoryId,
           replyActivityKey,
           conversationId,
           setAttachments,
@@ -97,7 +97,7 @@ export function useComposerSubmission({
           streamingBehaviorPreference,
         })
       } catch (error) {
-        if (activeDraftThreadIdRef.current === draftThreadId)
+        if (activeDraftChatIdRef.current === draftChatId)
           clearPendingSubmitted({ pendingSubmittedReplyActivityKeyRef, setPendingSubmittedDraft })
         setErrorMessage(getErrorMessage(error, 'Could not send prompt.'))
       } finally {
@@ -106,18 +106,18 @@ export function useComposerSubmission({
     })
   }, [
     activeComposerScopeKeyRef,
-    activeDraftThreadIdRef,
+    activeDraftChatIdRef,
     attachmentsRef,
-    chatGroupId,
+    workspaceId,
     composerScopeKey,
-    draftThreadId,
+    draftChatId,
     draftValueRef,
     isCompacting,
     isSending,
     isStreaming,
     onAction,
     pendingSubmittedReplyActivityKeyRef,
-    projectId,
+    directoryId,
     replyActivityKey,
     sendLockRef,
     conversationId,
@@ -140,7 +140,7 @@ export function useComposerSubmission({
 
     try {
       const result = await onAction('composer.stop', {
-        projectId,
+        directoryId,
         conversationId,
       })
 
@@ -153,7 +153,7 @@ export function useComposerSubmission({
     } finally {
       setIsSending(false)
     }
-  }, [isSending, isStreaming, onAction, projectId, conversationId, setErrorMessage, setIsSending])
+  }, [isSending, isStreaming, onAction, directoryId, conversationId, setErrorMessage, setIsSending])
 
   const compact = useCallback(async () => {
     if (isSending || isStreaming || isCompacting || !conversationId || sendLockRef.current) {
@@ -171,8 +171,8 @@ export function useComposerSubmission({
           draft: '/compact',
           attachments: [],
           isSending: false,
-          projectId,
-          chatGroupId,
+          directoryId,
+          workspaceId,
           conversationId,
           streamingBehaviorPreference,
           onAction,
@@ -189,9 +189,9 @@ export function useComposerSubmission({
     isCompacting,
     isSending,
     isStreaming,
-    chatGroupId,
+    workspaceId,
     onAction,
-    projectId,
+    directoryId,
     sendLockRef,
     conversationId,
     setErrorMessage,

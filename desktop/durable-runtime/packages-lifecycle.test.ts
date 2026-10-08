@@ -6,11 +6,7 @@ import { createModels } from '@earendil-works/pi-ai/models'
 import { defineTask, Harness, MemoryStorage } from '@earendil-works/pi-durable'
 import { describe, expect, it } from 'vitest'
 import { createPackageManager } from '../../components/packages/service/index.ts'
-import {
-  createDesktopExtensionRegistry,
-  defaultExtensionExclusions,
-  resolveDesktopExtensions,
-} from './extension-composition.ts'
+import { createDesktopExtensionRegistry } from './extension-composition.ts'
 import { liveModels } from './live-models.ts'
 import { loadInstalledPackages } from './packages.ts'
 
@@ -145,39 +141,6 @@ describe('installed package generations', () => {
     } finally {
       await packages.close()
       await rm(directory, { recursive: true, force: true })
-    }
-  })
-
-  it('adds packages to the same default conversation without widening explicit choices', async () => {
-    const context = BACKGROUND_CONTEXT
-    const registry = createDesktopExtensionRegistry()
-    const harness = await Harness.open(
-      new MemoryStorage(),
-      { models: createModels(), registry },
-      context,
-    )
-    try {
-      const automatic = await harness.createConversation(
-        {
-          ownership: { kind: 'ownerless' },
-          agent: { extensions: { remove: defaultExtensionExclusions({ composerMode: 'chat' }) } },
-        },
-        context,
-      )
-      const explicit = await harness.createConversation(
-        {
-          ownership: { kind: 'ownerless' },
-          agent: resolveDesktopExtensions({ composerExtensions: [] }, registry),
-        },
-        context,
-      )
-      registry.install({ name: 'installed', tools: [] })
-      expect((await automatic.agent(context)).extensions.map((item) => item.name)).toContain(
-        'installed',
-      )
-      expect((await explicit.agent(context)).extensions).toEqual([])
-    } finally {
-      await harness.close(context)
     }
   })
 

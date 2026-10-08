@@ -1,11 +1,11 @@
 import { createInitialCodingWorkspaceState } from '@howcode/components/coding/ui'
 import { createInitialTerminalWorkspaceState } from '@howcode/components/terminal/ui'
-import type { Project, Thread, View } from '../types'
+import type { Chat, View, WorkingDirectory } from '../types'
 import { workspaceActionHandlers } from './workspace-action-handlers'
 import type { WorkspaceAction, WorkspaceState } from './workspace-model'
 
 export type {
-  CodeThreadSelection,
+  CodeChatSelection,
   NonGitOpsView,
   UtilityView,
   UtilityViewReturnState,
@@ -13,17 +13,19 @@ export type {
   WorkspaceState,
 } from './workspace-model'
 
-export function createInitialWorkspaceState(projects: Project[]): WorkspaceState {
+export function createInitialWorkspaceState(directories: WorkingDirectory[]): WorkspaceState {
   return {
     activeView: 'landing',
-    selectedProjectId: '',
-    hasSelectedProject: false,
+    selectedWorkspaceId: null,
+    composerProfile: 'general',
+    selectedDirectoryId: '',
+    hasSelectedDirectory: false,
     landingVisible: true,
     selectedInboxConversationId: null,
-    selectedThreadId: null,
+    selectedChatId: null,
     selectedConversationId: null,
     ...createInitialTerminalWorkspaceState(),
-    ...createInitialCodingWorkspaceState(projects),
+    ...createInitialCodingWorkspaceState(directories),
     utilityViewReturnState: null,
     settingsOpen: false,
     settingsPanelOpen: false,
@@ -40,28 +42,31 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
   return handler(state, action)
 }
 
-export function selectProject(projects: Project[], selectedProjectId: string): Project | undefined {
-  if (!selectedProjectId) return undefined
-  return projects.find((project) => project.id === selectedProjectId)
+export function selectDirectory(
+  directories: WorkingDirectory[],
+  selectedDirectoryId: string,
+): WorkingDirectory | undefined {
+  if (!selectedDirectoryId) return undefined
+  return directories.find((directory) => directory.id === selectedDirectoryId)
 }
 
-export function selectThread(
-  project: Project | undefined,
-  selectedThreadId: string | null,
-): Thread | undefined {
-  if (!(project && selectedThreadId)) {
+export function selectChat(
+  directory: WorkingDirectory | undefined,
+  selectedChatId: string | null,
+): Chat | undefined {
+  if (!(directory && selectedChatId)) {
     return undefined
   }
 
-  return project.threads.find((thread) => thread.id === selectedThreadId)
+  return directory.chats.find((chat) => chat.id === selectedChatId)
 }
 
-export function getCurrentTitle(activeView: View, selectedThread: Thread | undefined): string {
+export function getCurrentTitle(activeView: View, selectedChat: Chat | undefined): string {
   if (activeView === 'landing') {
     return 'About'
   }
 
-  if (activeView === 'project') {
+  if (activeView === 'directory') {
     return 'Workspace overview'
   }
 
@@ -73,15 +78,13 @@ export function getCurrentTitle(activeView: View, selectedThread: Thread | undef
     return 'Archived chats'
   }
 
-  if (activeView === 'sessions') {
+  if (activeView === 'history') {
     return 'Past chats'
   }
 
-  return (activeView === 'chat' || activeView === 'thread') && selectedThread
-    ? selectedThread.title
-    : 'New chat'
+  return activeView === 'chat' && selectedChat ? selectedChat.title : 'New chat'
 }
 
-export function getProjectName(project: Project | undefined): string {
-  return project?.name ?? 'Pi'
+export function getDirectoryName(directory: WorkingDirectory | undefined): string {
+  return directory?.name ?? 'Pi'
 }

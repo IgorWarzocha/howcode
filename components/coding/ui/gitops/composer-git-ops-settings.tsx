@@ -179,14 +179,14 @@ export function ComposerGitOpsSettings({
               onClick={() => {
                 const nextMode = options.pushEnabled ? 'commit' : 'commit-push'
                 options.togglePush()
-                void options.saveProjectMode(nextMode)
+                void options.saveDirectoryMode(nextMode)
               }}
               toggleSide="left"
             />
             <PlainToggle
               label="Use app default"
               checked={usesAppDefault}
-              onClick={() => void options.saveProjectMode(null)}
+              onClick={() => void options.saveDirectoryMode(null)}
               toggleSide="left"
             />
           </PopoverPanel>

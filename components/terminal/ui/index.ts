@@ -26,11 +26,11 @@ export { useRunningTerminalSessions } from './useRunningTerminalSessions'
 export {
   createInitialTerminalWorkspaceState,
   getTerminalStateForNextView,
-  getTerminalStateForOpenedThread,
+  getTerminalStateForOpenedChat,
   getTerminalUtilityReturnState,
   getTerminalVisibilityForSession,
   migrateTerminalVisibility,
   setTerminalVisibleState,
-  shouldMigrateTerminalVisibilityForOpenedThread,
+  shouldMigrateTerminalVisibilityForOpenedChat,
   shouldRestoreTerminalOnGitOpsClose,
 } from './workspace-terminal-state'

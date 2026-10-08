@@ -4,18 +4,18 @@ import { getErrorMessage } from '../desktop/error-messages'
 import type { ComposerQueuedPrompt, DesktopActionInvoker } from '../desktop/types'
 
 export function useQueuedPromptCancellation({
-  composerProjectId,
+  composerDirectoryId,
   handleAction,
   terminalConversationId,
 }: {
-  composerProjectId: string
+  composerDirectoryId: string
   handleAction: DesktopActionInvoker
   terminalConversationId: string | null
 }) {
   const [pendingIds, setPendingIds] = useState<string[]>([])
   const pendingRef = useRef(new Set<string>())
   const [failure, setFailure] = useState<{ scope: string; message: string } | null>(null)
-  const scopePrefix = `${composerProjectId}:${terminalConversationId ?? ''}:`
+  const scopePrefix = `${composerDirectoryId}:${terminalConversationId ?? ''}:`
   const pendingQueuedPromptIdsForSession = useMemo(
     () =>
       pendingIds.flatMap((key) =>
@@ -31,7 +31,7 @@ export function useQueuedPromptCancellation({
     setFailure(null)
     try {
       const result = await handleAction('composer.dequeue', {
-        projectId: composerProjectId,
+        directoryId: composerDirectoryId,
         conversationId: terminalConversationId,
         queueId: prompt.id,
       })

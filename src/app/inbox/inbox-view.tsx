@@ -1,6 +1,6 @@
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
-import { getInboxThreadComposerMode, getInboxThreadOpenView } from '../common/inbox-thread-scope'
+import { getInboxChatComposerProfile } from '../common/inbox-chat-scope'
 import type {
   AppSettings,
   ComposerContextUsage,
@@ -8,11 +8,11 @@ import type {
   ComposerModel,
   ComposerThinkingLevel,
   DesktopActionInvoker,
-  InboxThread,
+  InboxChat,
 } from '../desktop/types'
 import { WorkspaceComposerDock } from '../workspace-shell/workspace-composer-dock'
 import { InboxComposer } from './components/inbox-composer'
-import { InboxEmptyState, InboxThreadHeader, InboxThreadMessage } from './inbox-thread-content'
+import { InboxChatHeader, InboxChatMessage, InboxEmptyState } from './inbox-chat-content'
 import { useInboxReplyController } from './useInboxReplyController'
 
 type InboxViewProps = {
@@ -23,19 +23,19 @@ type InboxViewProps = {
   currentModel: ComposerModel | null
   currentThinkingLevel: ComposerThinkingLevel
   isCompacting: boolean
-  thread: InboxThread | null
+  chat: InboxChat | null
   onAction: DesktopActionInvoker
-  onDismissThread: (thread: InboxThread) => void
+  onDismissChat: (chat: InboxChat) => void
   onListAttachmentEntries: (request: {
-    projectId?: string | null
+    directoryId?: string | null
     path?: string | null
     rootPath?: string | null
   }) => Promise<ComposerFilePickerState | null>
-  onOpenThread: (
-    projectId: string,
-    threadId: string,
+  onOpenChat: (
+    directoryId: string,
+    chatId: string,
     conversationId: string,
-    view?: 'chat' | 'thread' | undefined,
+    composerProfile?: 'general' | 'coding' | undefined,
     branchName?: string | null | undefined,
   ) => void
   onOpenSettingsView: (target?: SettingsOpenTarget) => void
@@ -44,7 +44,7 @@ type InboxViewProps = {
   onToggleSidebar: () => void
 }
 
-type InboxThreadViewProps = Omit<InboxViewProps, 'thread'> & { thread: InboxThread }
+type InboxChatViewProps = Omit<InboxViewProps, 'chat'> & { chat: InboxChat }
 
 function InboxSidebarToggle({
   sidebarCollapsed,
@@ -71,7 +71,7 @@ function InboxSidebarToggle({
   )
 }
 
-function InboxThreadView({
+function InboxChatView({
   appSettings,
   availableModels,
   availableThinkingLevels,
@@ -79,28 +79,28 @@ function InboxThreadView({
   currentModel,
   currentThinkingLevel,
   isCompacting,
-  thread,
+  chat,
   onAction,
-  onDismissThread,
+  onDismissChat,
   onListAttachmentEntries,
-  onOpenThread,
+  onOpenChat,
   onOpenSettingsView,
   sidebarCollapsed,
   sidebarCompactMode,
   onToggleSidebar,
-}: InboxThreadViewProps) {
+}: InboxChatViewProps) {
   const reply = useInboxReplyController({
     isCompacting,
     onAction,
-    onDismissThread,
+    onDismissChat,
     streamingBehavior: appSettings.composerStreamingBehavior,
-    thread,
+    chat,
   })
 
   return (
     <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] pt-6 pb-4">
-      <InboxThreadHeader thread={thread} />
-      <InboxThreadMessage thread={thread} />
+      <InboxChatHeader chat={chat} />
+      <InboxChatMessage chat={chat} />
 
       <div>
         <WorkspaceComposerDock
@@ -124,25 +124,25 @@ function InboxThreadView({
                 currentThinkingLevel,
               }}
               reply={reply}
-              thread={thread}
+              chat={chat}
               onAction={onAction}
-              onDismiss={() => onDismissThread(thread)}
+              onDismiss={() => onDismissChat(chat)}
               onListAttachmentEntries={onListAttachmentEntries}
-              onOpenThread={() =>
-                onOpenThread(
-                  thread.projectId,
-                  thread.threadId,
-                  thread.conversationId,
-                  getInboxThreadOpenView(thread),
-                  thread.branchName,
+              onOpenChat={() =>
+                onOpenChat(
+                  chat.directoryId,
+                  chat.chatId,
+                  chat.conversationId,
+                  getInboxChatComposerProfile(chat),
+                  chat.branchName,
                 )
               }
               onOpenSettingsView={onOpenSettingsView}
               onStartNewSession={() =>
-                void onAction('thread.new', {
-                  projectId: thread.projectId,
-                  composerMode: getInboxThreadComposerMode(thread),
-                  branchName: thread.branchName,
+                void onAction('chat.new', {
+                  directoryId: chat.directoryId,
+                  composerProfile: getInboxChatComposerProfile(chat),
+                  branchName: chat.branchName,
                 })
               }
             />
@@ -154,6 +154,6 @@ function InboxThreadView({
 }
 
 export function InboxView(props: InboxViewProps) {
-  if (!props.thread) return <InboxEmptyState />
-  return <InboxThreadView {...props} thread={props.thread} />
+  if (!props.chat) return <InboxEmptyState />
+  return <InboxChatView {...props} chat={props.chat} />
 }

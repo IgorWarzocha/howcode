@@ -1,117 +1,124 @@
 import type {
-  CodeThreadSelection,
+  CodeChatSelection,
   WorkspaceAction,
   WorkspaceState,
 } from '../../../../src/app/state/workspace-model'
-import type { Project, View } from '../../../../src/app/types'
+import type { View, WorkingDirectory } from '../../../../src/app/types'
 
-export function getCurrentCodeThreadSelection(state: WorkspaceState): CodeThreadSelection | null {
+export function getCurrentCodeChatSelection(state: WorkspaceState): CodeChatSelection | null {
   if (
-    (state.activeView === 'thread' || state.activeView === 'project') &&
-    state.selectedProjectId &&
-    state.selectedThreadId &&
+    ((state.activeView === 'chat' && state.composerProfile === 'coding') ||
+      state.activeView === 'directory') &&
+    state.selectedDirectoryId &&
+    state.selectedChatId &&
     state.selectedConversationId
   ) {
     return {
-      projectId: state.selectedProjectId,
-      threadId: state.selectedThreadId,
+      directoryId: state.selectedDirectoryId,
+      chatId: state.selectedChatId,
       conversationId: state.selectedConversationId,
     }
   }
 
-  return state.lastCodeThreadSelection
+  return state.lastCodeChatSelection
 }
 
-function getScopedCodeThreadSelection(
+function getScopedCodeChatSelection(
   state: WorkspaceState,
-  projectId: string,
-): CodeThreadSelection | null {
-  return state.lastCodeThreadSelection?.projectId === projectId
-    ? state.lastCodeThreadSelection
+  directoryId: string,
+): CodeChatSelection | null {
+  return state.lastCodeChatSelection?.directoryId === directoryId
+    ? state.lastCodeChatSelection
     : null
 }
 
-function isProjectLoadedForCodeThreads(project: Project) {
-  return project.threadsLoaded === true && project.threadsScope !== 'chat'
+function isDirectoryLoadedForCodeChats(directory: WorkingDirectory) {
+  return directory.chatsLoaded === true
 }
 
-function getThreadCodeSelection(
-  project: Project,
-  thread: Project['threads'][number],
+function getChatCodeSelection(
+  directory: WorkingDirectory,
+  chat: WorkingDirectory['chats'][number],
   fallbackConversationId: string,
-): CodeThreadSelection {
+): CodeChatSelection {
   return {
-    projectId: project.id,
-    threadId: thread.id,
-    conversationId: thread.conversationId ?? fallbackConversationId,
+    directoryId: directory.id,
+    chatId: chat.id,
+    conversationId: chat.conversationId ?? fallbackConversationId,
   }
 }
 
-export function resolveCodeThreadSelection(
-  projects: Project[],
-  selection: CodeThreadSelection | null,
-): CodeThreadSelection | null {
+export function resolveCodeChatSelection(
+  directories: WorkingDirectory[],
+  selection: CodeChatSelection | null,
+): CodeChatSelection | null {
   if (!selection) return null
 
-  for (const project of projects) {
-    if (!isProjectLoadedForCodeThreads(project)) continue
-    const thread = project.threads.find(
+  for (const directory of directories) {
+    if (!isDirectoryLoadedForCodeChats(directory)) continue
+    const chat = directory.chats.find(
       (candidate) => candidate.conversationId === selection.conversationId,
     )
-    if (thread) return getThreadCodeSelection(project, thread, selection.conversationId)
+    if (chat) return getChatCodeSelection(directory, chat, selection.conversationId)
   }
 
-  for (const project of projects) {
-    if (!isProjectLoadedForCodeThreads(project)) continue
-    const thread = project.threads.find((candidate) => candidate.id === selection.threadId)
-    if (thread) return getThreadCodeSelection(project, thread, selection.conversationId)
+  for (const directory of directories) {
+    if (!isDirectoryLoadedForCodeChats(directory)) continue
+    const chat = directory.chats.find((candidate) => candidate.id === selection.chatId)
+    if (chat) return getChatCodeSelection(directory, chat, selection.conversationId)
   }
 
-  const rememberedProject = projects.find((project) => project.id === selection.projectId)
-  if (!rememberedProject) return null
-  return isProjectLoadedForCodeThreads(rememberedProject) ? null : selection
+  const rememberedDirectory = directories.find(
+    (directory) => directory.id === selection.directoryId,
+  )
+  if (!rememberedDirectory) return null
+  return isDirectoryLoadedForCodeChats(rememberedDirectory) ? null : selection
 }
 
-function findProjectContainingThread(projects: Project[], state: WorkspaceState) {
+function findDirectoryContainingChat(directories: WorkingDirectory[], state: WorkspaceState) {
   if (state.selectedConversationId) {
     return (
-      projects.find((project) =>
-        project.threads.some((thread) => thread.conversationId === state.selectedConversationId),
+      directories.find((directory) =>
+        directory.chats.some((chat) => chat.conversationId === state.selectedConversationId),
       ) ?? null
     )
   }
 
-  if (!state.selectedThreadId) {
+  if (!state.selectedChatId) {
     return null
   }
 
   return (
-    projects.find((project) =>
-      project.threads.some((thread) => thread.id === state.selectedThreadId),
+    directories.find((directory) =>
+      directory.chats.some((chat) => chat.id === state.selectedChatId),
     ) ?? null
   )
 }
 
 function getSyncedActiveView(input: {
-  actionProjectsLength: number
-  hasSelectedProject: boolean
-  selectedProjectId: string
-  shouldPreserveSelectedThread: boolean
+  actionDirectoriesLength: number
+  hasSelectedDirectory: boolean
+  selectedDirectoryId: string
+  shouldPreserveSelectedChat: boolean
   activeView: View
 }) {
-  if (input.shouldPreserveSelectedThread) return input.activeView === 'chat' ? 'chat' : 'thread'
-  if (input.activeView === 'project' && !input.hasSelectedProject) return 'code'
-  if (input.hasSelectedProject || !input.selectedProjectId || input.actionProjectsLength === 0)
+  if (input.shouldPreserveSelectedChat) return input.activeView === 'chat' ? 'chat' : 'chat'
+  if (input.activeView === 'directory' && !input.hasSelectedDirectory) return 'directories'
+  if (
+    input.hasSelectedDirectory ||
+    !input.selectedDirectoryId ||
+    input.actionDirectoriesLength === 0
+  )
     return input.activeView
-  return 'code'
+  return 'directories'
 }
 
-function getPreservedThreadValue<T>(
+function getPreservedChatValue<T>(
   state: WorkspaceState,
-  shouldPreserveProjectSelection: boolean,
+  shouldPreserveDirectorySelection: boolean,
   value: T,
 ) {
-  return shouldPreserveProjectSelection || !state.selectedProjectId ? value : null
+  return shouldPreserveDirectorySelection || !state.selectedDirectoryId ? value : null
 }
 
 export type TerminalWorkspaceTransitions = {
@@ -140,104 +147,104 @@ export function createCodingWorkspaceTransitions(terminal: TerminalWorkspaceTran
   } = terminal
   const getGitOpsReturnView = (activeView: View, fallback: WorkspaceState['gitOpsReturnView']) =>
     activeView === 'gitops' ? fallback : activeView
-  function withCodeThreadSelection(
+  function withCodeChatSelection(
     state: WorkspaceState,
-    selection: CodeThreadSelection,
+    selection: CodeChatSelection,
   ): WorkspaceState {
     return {
       ...state,
-      activeView: 'thread',
-      selectedProjectId: selection.projectId,
-      hasSelectedProject: true,
+      activeView: 'chat',
+      composerProfile: 'coding',
+      selectedDirectoryId: selection.directoryId,
+      hasSelectedDirectory: true,
       landingVisible: false,
-      selectedThreadId: selection.threadId,
+      selectedChatId: selection.chatId,
       selectedConversationId: selection.conversationId,
       terminalVisible: getTerminalVisibilityForSession(
         state.terminalVisibleBySession,
         selection.conversationId,
       ),
       selectedDiffFilePath: null,
-      gitOpsReturnView: 'thread',
+      gitOpsReturnView: 'chat',
       utilityViewReturnState: null,
-      collapsedProjectIds: { ...state.collapsedProjectIds, [selection.projectId]: false },
-      lastCodeThreadSelection: selection,
+      collapsedDirectoryIds: { ...state.collapsedDirectoryIds, [selection.directoryId]: false },
+      lastCodeChatSelection: selection,
     }
   }
 
-  function syncProjectsState(
+  function syncDirectoriesState(
     state: WorkspaceState,
-    action: Extract<WorkspaceAction, { type: 'sync-projects' }>,
+    action: Extract<WorkspaceAction, { type: 'sync-directories' }>,
   ): WorkspaceState {
-    const lastCodeThreadSelection = resolveCodeThreadSelection(
-      action.projects,
-      state.lastCodeThreadSelection,
+    const lastCodeChatSelection = resolveCodeChatSelection(
+      action.directories,
+      state.lastCodeChatSelection,
     )
-    const hasSelectedProject = action.projects.some(
-      (project) => project.id === state.selectedProjectId,
+    const hasSelectedDirectory = action.directories.some(
+      (directory) => directory.id === state.selectedDirectoryId,
     )
-    const selectedThreadProject = findProjectContainingThread(action.projects, state)
-    const shouldPreserveSelectedThread =
-      (state.activeView === 'chat' || state.activeView === 'thread') &&
-      Boolean(selectedThreadProject)
-    const shouldPreserveProjectSelection = hasSelectedProject || shouldPreserveSelectedThread
-    const nextHasSelectedProject = Boolean(selectedThreadProject) || hasSelectedProject
-    const collapsedProjectIds = Object.fromEntries(
-      action.projects.map((project) => [
-        project.id,
-        state.collapsedProjectIds[project.id] ?? project.collapsed ?? true,
+    const selectedChatDirectory = findDirectoryContainingChat(action.directories, state)
+    const shouldPreserveSelectedChat = state.activeView === 'chat' && Boolean(selectedChatDirectory)
+    const shouldPreserveDirectorySelection = hasSelectedDirectory || shouldPreserveSelectedChat
+    const nextHasSelectedDirectory = Boolean(selectedChatDirectory) || hasSelectedDirectory
+    const collapsedDirectoryIds = Object.fromEntries(
+      action.directories.map((directory) => [
+        directory.id,
+        state.collapsedDirectoryIds[directory.id] ?? directory.collapsed ?? true,
       ]),
     )
     const nextActiveView = getSyncedActiveView({
-      actionProjectsLength: action.projects.length,
+      actionDirectoriesLength: action.directories.length,
       activeView: state.activeView,
-      hasSelectedProject,
-      selectedProjectId: state.selectedProjectId,
-      shouldPreserveSelectedThread,
+      hasSelectedDirectory,
+      selectedDirectoryId: state.selectedDirectoryId,
+      shouldPreserveSelectedChat,
     })
     return {
       ...state,
       ...getTerminalStateForNextView(state, nextActiveView),
       activeView: nextActiveView,
-      selectedProjectId:
-        selectedThreadProject?.id ??
-        (shouldPreserveProjectSelection ? state.selectedProjectId : ''),
-      hasSelectedProject:
-        nextHasSelectedProject && (state.hasSelectedProject || shouldPreserveProjectSelection),
+      selectedDirectoryId:
+        selectedChatDirectory?.id ??
+        (shouldPreserveDirectorySelection ? state.selectedDirectoryId : ''),
+      hasSelectedDirectory:
+        nextHasSelectedDirectory &&
+        (state.hasSelectedDirectory || shouldPreserveDirectorySelection),
       landingVisible:
-        state.landingVisible && !selectedThreadProject && !state.hasSelectedProject
+        state.landingVisible && !selectedChatDirectory && !state.hasSelectedDirectory
           ? true
-          : state.landingVisible && shouldPreserveProjectSelection,
-      selectedThreadId: getPreservedThreadValue(
+          : state.landingVisible && shouldPreserveDirectorySelection,
+      selectedChatId: getPreservedChatValue(
         state,
-        shouldPreserveProjectSelection,
-        state.selectedThreadId,
+        shouldPreserveDirectorySelection,
+        state.selectedChatId,
       ),
-      selectedConversationId: getPreservedThreadValue(
+      selectedConversationId: getPreservedChatValue(
         state,
-        shouldPreserveProjectSelection,
+        shouldPreserveDirectorySelection,
         state.selectedConversationId,
       ),
-      selectedDiffFilePath: getPreservedThreadValue(
+      selectedDiffFilePath: getPreservedChatValue(
         state,
-        shouldPreserveProjectSelection,
+        shouldPreserveDirectorySelection,
         state.selectedDiffFilePath,
       ),
       gitOpsReturnView:
-        getPreservedThreadValue(state, shouldPreserveProjectSelection, state.gitOpsReturnView) ??
-        'code',
-      utilityViewReturnState: getPreservedThreadValue(
+        getPreservedChatValue(state, shouldPreserveDirectorySelection, state.gitOpsReturnView) ??
+        'directories',
+      utilityViewReturnState: getPreservedChatValue(
         state,
-        shouldPreserveProjectSelection,
+        shouldPreserveDirectorySelection,
         state.utilityViewReturnState,
       ),
-      lastCodeThreadSelection,
-      collapsedProjectIds,
+      lastCodeChatSelection,
+      collapsedDirectoryIds,
     }
   }
 
-  function startProjectThreadState(
+  function startDirectoryChatState(
     state: WorkspaceState,
-    action: Extract<WorkspaceAction, { type: 'start-project-thread' }>,
+    action: Extract<WorkspaceAction, { type: 'start-directory-chat' }>,
   ): WorkspaceState {
     const nextTerminalVisibleBySession = migrateTerminalVisibility(
       state.terminalVisibleBySession,
@@ -246,12 +253,13 @@ export function createCodingWorkspaceTransitions(terminal: TerminalWorkspaceTran
     )
     return {
       ...state,
-      ...getTerminalStateForNextView(state, 'project'),
-      activeView: 'project',
-      selectedProjectId: action.projectId,
-      hasSelectedProject: true,
+      ...getTerminalStateForNextView(state, 'directory'),
+      activeView: 'directory',
+      composerProfile: 'coding',
+      selectedDirectoryId: action.directoryId,
+      hasSelectedDirectory: true,
       landingVisible: false,
-      selectedThreadId: action.threadId,
+      selectedChatId: action.chatId,
       selectedConversationId: action.conversationId,
       terminalVisible: getTerminalVisibilityForSession(
         nextTerminalVisibleBySession,
@@ -259,12 +267,12 @@ export function createCodingWorkspaceTransitions(terminal: TerminalWorkspaceTran
       ),
       terminalVisibleBySession: nextTerminalVisibleBySession,
       selectedDiffFilePath: null,
-      gitOpsReturnView: 'project',
+      gitOpsReturnView: 'directory',
       utilityViewReturnState: null,
-      collapsedProjectIds: { ...state.collapsedProjectIds, [action.projectId]: false },
-      lastCodeThreadSelection: {
-        projectId: action.projectId,
-        threadId: action.threadId,
+      collapsedDirectoryIds: { ...state.collapsedDirectoryIds, [action.directoryId]: false },
+      lastCodeChatSelection: {
+        directoryId: action.directoryId,
+        chatId: action.chatId,
         conversationId: action.conversationId,
       },
     }
@@ -294,82 +302,80 @@ export function createCodingWorkspaceTransitions(terminal: TerminalWorkspaceTran
       ...state,
       ...getTerminalStateForNextView(state, state.gitOpsReturnView),
       activeView: state.gitOpsReturnView,
-      selectedThreadId:
-        state.gitOpsReturnView === 'chat' || state.gitOpsReturnView === 'thread'
-          ? state.selectedThreadId
-          : null,
+      selectedChatId: state.gitOpsReturnView === 'chat' ? state.selectedChatId : null,
       selectedConversationId:
-        state.gitOpsReturnView === 'chat' || state.gitOpsReturnView === 'thread'
-          ? state.selectedConversationId
-          : null,
+        state.gitOpsReturnView === 'chat' ? state.selectedConversationId : null,
       selectedDiffFilePath: null,
       utilityViewReturnState: null,
     }
   }
   const codingWorkspaceActionHandlers = {
-    'sync-projects': syncProjectsState,
+    'sync-directories': syncDirectoriesState,
     'show-landing': (state: WorkspaceState) => ({
       ...state,
       activeView: 'landing',
       terminalVisible: false,
-      selectedProjectId: '',
+      selectedDirectoryId: '',
       selectedInboxConversationId: null,
-      selectedThreadId: null,
+      selectedChatId: null,
       selectedConversationId: null,
       selectedDiffFilePath: null,
-      lastCodeThreadSelection: null,
+      lastCodeChatSelection: null,
       settingsOpen: false,
       settingsPanelOpen: false,
-      gitOpsReturnView: 'code',
+      gitOpsReturnView: 'directories',
       utilityViewReturnState: null,
-      hasSelectedProject: false,
+      hasSelectedDirectory: false,
       landingVisible: true,
     }),
-    'select-project': (
+    'select-directory': (
       state: WorkspaceState,
-      action: Extract<WorkspaceAction, { type: 'select-project' }>,
+      action: Extract<WorkspaceAction, { type: 'select-directory' }>,
     ) => ({
       ...state,
-      ...getTerminalStateForNextView(state, 'project'),
-      activeView: 'project',
-      selectedProjectId: action.projectId,
-      hasSelectedProject: true,
+      ...getTerminalStateForNextView(state, 'directory'),
+      activeView: 'directory',
+      composerProfile: 'coding',
+      selectedDirectoryId: action.directoryId,
+      selectedWorkspaceId: action.workspaceId ?? state.selectedWorkspaceId,
+      hasSelectedDirectory: true,
       landingVisible: false,
-      selectedThreadId: null,
+      selectedChatId: null,
       selectedConversationId: null,
-      terminalVisible: state.workspaceTerminalVisibleByWorkspace[action.projectId] ?? false,
+      terminalVisible: state.workspaceTerminalVisibleByWorkspace[action.directoryId] ?? false,
       selectedDiffFilePath: null,
-      gitOpsReturnView: 'project',
+      gitOpsReturnView: 'directory',
       utilityViewReturnState: null,
-      lastCodeThreadSelection: getScopedCodeThreadSelection(state, action.projectId),
+      lastCodeChatSelection: getScopedCodeChatSelection(state, action.directoryId),
     }),
-    'set-selected-project': (
+    'set-selected-directory': (
       state: WorkspaceState,
-      action: Extract<WorkspaceAction, { type: 'set-selected-project' }>,
+      action: Extract<WorkspaceAction, { type: 'set-selected-directory' }>,
     ) => ({
       ...state,
-      selectedProjectId: action.projectId,
-      hasSelectedProject: true,
+      selectedDirectoryId: action.directoryId,
+      selectedWorkspaceId: action.workspaceId ?? state.selectedWorkspaceId,
+      hasSelectedDirectory: true,
       landingVisible: false,
-      lastCodeThreadSelection: getScopedCodeThreadSelection(state, action.projectId),
+      lastCodeChatSelection: getScopedCodeChatSelection(state, action.directoryId),
     }),
-    'start-project-thread': startProjectThreadState,
+    'start-directory-chat': startDirectoryChatState,
     'open-gitops': openGitOpsState,
     'close-gitops': closeGitOpsState,
-    'toggle-project-collapse': (
+    'toggle-directory-collapse': (
       state: WorkspaceState,
-      action: Extract<WorkspaceAction, { type: 'toggle-project-collapse' }>,
+      action: Extract<WorkspaceAction, { type: 'toggle-directory-collapse' }>,
     ) => ({
       ...state,
-      collapsedProjectIds: {
-        ...state.collapsedProjectIds,
-        [action.projectId]: !state.collapsedProjectIds[action.projectId],
+      collapsedDirectoryIds: {
+        ...state.collapsedDirectoryIds,
+        [action.directoryId]: !state.collapsedDirectoryIds[action.directoryId],
       },
     }),
-    'collapse-all-projects': (state: WorkspaceState) => ({
+    'collapse-all-directories': (state: WorkspaceState) => ({
       ...state,
-      collapsedProjectIds: Object.fromEntries(
-        Object.keys(state.collapsedProjectIds).map((projectId) => [projectId, true]),
+      collapsedDirectoryIds: Object.fromEntries(
+        Object.keys(state.collapsedDirectoryIds).map((directoryId) => [directoryId, true]),
       ),
     }),
   } satisfies Partial<{
@@ -379,27 +385,27 @@ export function createCodingWorkspaceTransitions(terminal: TerminalWorkspaceTran
     ) => WorkspaceState
   }>
 
-  function restoreCodeThreadForView(state: WorkspaceState, view: View): WorkspaceState | null {
-    const selection = getCurrentCodeThreadSelection(state)
-    return view === 'code' && selection ? withCodeThreadSelection(state, selection) : null
+  function restoreCodeChatForView(state: WorkspaceState, view: View): WorkspaceState | null {
+    const selection = getCurrentCodeChatSelection(state)
+    return view === 'directories' && selection ? withCodeChatSelection(state, selection) : null
   }
 
-  return { codingWorkspaceActionHandlers, withCodeThreadSelection, restoreCodeThreadForView }
+  return { codingWorkspaceActionHandlers, withCodeChatSelection, restoreCodeChatForView }
 }
 
 export function createInitialCodingWorkspaceState(
-  projects: Project[],
+  directories: WorkingDirectory[],
 ): Pick<
   WorkspaceState,
-  'gitOpsReturnView' | 'selectedDiffFilePath' | 'collapsedProjectIds' | 'lastCodeThreadSelection'
+  'gitOpsReturnView' | 'selectedDiffFilePath' | 'collapsedDirectoryIds' | 'lastCodeChatSelection'
 > {
   return {
-    gitOpsReturnView: 'code',
+    gitOpsReturnView: 'directories',
     selectedDiffFilePath: null,
-    collapsedProjectIds: Object.fromEntries(
-      projects.map((project) => [project.id, project.collapsed ?? true]),
+    collapsedDirectoryIds: Object.fromEntries(
+      directories.map((directory) => [directory.id, directory.collapsed ?? true]),
     ),
-    lastCodeThreadSelection: null,
+    lastCodeChatSelection: null,
   }
 }
 
@@ -412,40 +418,39 @@ export function getCodingUtilityReturnState(state: WorkspaceState) {
 
 export function getCodingStateForShownView(state: WorkspaceState, view: View) {
   return {
-    landingVisible: view === 'code' ? state.landingVisible : false,
-    lastCodeThreadSelection: getCurrentCodeThreadSelection(state),
-    selectedDiffFilePath: view === 'thread' ? state.selectedDiffFilePath : null,
+    landingVisible: view === 'directories' ? state.landingVisible : false,
+    lastCodeChatSelection: getCurrentCodeChatSelection(state),
+    selectedDiffFilePath: view === 'chat' ? state.selectedDiffFilePath : null,
   }
 }
 
-export function clearCodingThreadSelection() {
-  return { selectedDiffFilePath: null, lastCodeThreadSelection: null }
+export function clearCodingChatSelection() {
+  return { selectedDiffFilePath: null, lastCodeChatSelection: null }
 }
 
-export function getCodingStateForPreviewedThread(
+export function getCodingStateForPreviewedChat(
   state: WorkspaceState,
-  action: Extract<WorkspaceAction, { type: 'preview-thread' | 'open-thread' }>,
-): Pick<WorkspaceState, 'selectedDiffFilePath' | 'gitOpsReturnView' | 'collapsedProjectIds'> {
+  action: Extract<WorkspaceAction, { type: 'preview-chat' | 'open-chat' }>,
+): Pick<WorkspaceState, 'selectedDiffFilePath' | 'gitOpsReturnView' | 'collapsedDirectoryIds'> {
   return {
     selectedDiffFilePath: null,
-    gitOpsReturnView: 'thread',
-    collapsedProjectIds: { ...state.collapsedProjectIds, [action.projectId]: false },
+    gitOpsReturnView: 'chat',
+    collapsedDirectoryIds: { ...state.collapsedDirectoryIds, [action.directoryId]: false },
   }
 }
 
-export function getCodingStateForOpenedThread(
+export function getCodingStateForOpenedChat(
   state: WorkspaceState,
-  action: Extract<WorkspaceAction, { type: 'open-thread' }>,
-  activeView: View,
+  action: Extract<WorkspaceAction, { type: 'open-chat' }>,
 ) {
   return {
-    ...getCodingStateForPreviewedThread(state, action),
-    lastCodeThreadSelection:
-      activeView === 'chat'
-        ? state.lastCodeThreadSelection
+    ...getCodingStateForPreviewedChat(state, action),
+    lastCodeChatSelection:
+      (action.composerProfile ?? state.composerProfile) === 'general'
+        ? state.lastCodeChatSelection
         : {
-            projectId: action.projectId,
-            threadId: action.threadId,
+            directoryId: action.directoryId,
+            chatId: action.chatId,
             conversationId: action.conversationId,
           },
   }

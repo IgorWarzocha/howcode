@@ -1,4 +1,4 @@
-import { getLocalDraftProjectId } from '@howcode/shared/conversation-ids'
+import { getLocalDraftDirectoryId } from '@howcode/shared/conversation-ids'
 
 import type { ComposerAttachment } from '../desktop/types'
 import {
@@ -80,13 +80,13 @@ function toDraft(value: unknown): ComposerDraft | null {
 }
 
 function serializeDrafts(
-  draftsByThreadId: Record<string, ComposerDraft>,
+  draftsByChatId: Record<string, ComposerDraft>,
 ): PersistedComposerDraftState {
   return {
     version: 1,
     draftsByThreadId: Object.fromEntries(
-      Object.entries(draftsByThreadId).map(([threadId, draft]) => [
-        threadId,
+      Object.entries(draftsByChatId).map(([chatId, draft]) => [
+        chatId,
         {
           prompt: draft.prompt,
           ...(draft.pickerOpen ? { pickerOpen: true } : {}),
@@ -99,20 +99,22 @@ function serializeDrafts(
   }
 }
 
-export function getComposerDraftThreadId({
-  composerMode = 'code',
-  projectId,
+export function getComposerDraftChatId({
+  composerProfile = 'coding',
+  directoryId,
   conversationId,
 }: {
-  composerMode?: 'chat' | 'code'
-  projectId: string
+  composerProfile?: 'general' | 'coding'
+  directoryId: string
   conversationId: string | null
 }) {
   if (typeof conversationId === 'string' && conversationId.length > 0) {
     return `session:${conversationId}`
   }
 
-  return projectId.length > 0 ? `project:${projectId}:${composerMode}:new-thread` : null
+  return directoryId.length > 0
+    ? `project:${directoryId}:${composerProfile === 'general' ? 'chat' : 'code'}:new-thread`
+    : null
 }
 
 export function createComposerDraftStore({
@@ -121,14 +123,14 @@ export function createComposerDraftStore({
   debounceMs = DEFAULT_DEBOUNCE_MS,
   beforeUnloadTarget = getBeforeUnloadTarget(),
 }: ComposerDraftStoreOptions = {}) {
-  let draftsByThreadId = hydratePersistedRecordMap({
+  let draftsByChatId = hydratePersistedRecordMap({
     storage,
     storageKey,
     version: 1,
     recordKey: 'draftsByThreadId',
     toEntry: toDraft,
   })
-  let draftCount = Object.keys(draftsByThreadId).length
+  let draftCount = Object.keys(draftsByChatId).length
 
   const persistence = createStoragePersistence({
     storage,
@@ -136,16 +138,16 @@ export function createComposerDraftStore({
     debounceMs,
     beforeUnloadTarget,
     hasEntries: () => draftCount > 0,
-    serialize: () => serializeDrafts(draftsByThreadId),
+    serialize: () => serializeDrafts(draftsByChatId),
   })
 
-  const getMirroredProjectDraftThreadId = (threadId: string) => {
-    if (!threadId.startsWith('session:')) {
+  const getMirroredDirectoryDraftChatId = (chatId: string) => {
+    if (!chatId.startsWith('session:')) {
       return null
     }
 
-    const projectId = getLocalDraftProjectId(threadId.slice('session:'.length))
-    return projectId ? `project:${projectId}:new-thread` : null
+    const directoryId = getLocalDraftDirectoryId(chatId.slice('session:'.length))
+    return directoryId ? `project:${directoryId}:new-thread` : null
   }
 
   const areDraftsEqual = (left: ComposerDraft | undefined, right: ComposerDraft | undefined) => {
@@ -175,96 +177,93 @@ export function createComposerDraftStore({
   const isEmptyDraft = (draft: ComposerDraft) =>
     draft.prompt.length === 0 && draft.attachments.length === 0 && !draft.pickerOpen
 
-  const deleteDraft = (threadId: string) => {
-    if (!(threadId in draftsByThreadId)) return false
-    delete draftsByThreadId[threadId]
+  const deleteDraft = (chatId: string) => {
+    if (!(chatId in draftsByChatId)) return false
+    delete draftsByChatId[chatId]
     draftCount -= 1
     return true
   }
 
   const clearDraftWithMirror = (
-    threadId: string,
-    mirroredThreadId: string | null,
+    chatId: string,
+    mirroredChatId: string | null,
     previousDraft: ComposerDraft | undefined,
   ) => {
-    deleteDraft(threadId)
-    if (mirroredThreadId && areDraftsEqual(draftsByThreadId[mirroredThreadId], previousDraft)) {
-      deleteDraft(mirroredThreadId)
+    deleteDraft(chatId)
+    if (mirroredChatId && areDraftsEqual(draftsByChatId[mirroredChatId], previousDraft)) {
+      deleteDraft(mirroredChatId)
     }
   }
 
   const upsertDraftWithMirror = (
-    threadId: string,
-    mirroredThreadId: string | null,
+    chatId: string,
+    mirroredChatId: string | null,
     nextDraft: ComposerDraft,
   ) => {
-    const addsThreadDraft = !(threadId in draftsByThreadId)
-    const addsMirroredDraft = Boolean(mirroredThreadId && !(mirroredThreadId in draftsByThreadId))
-    draftsByThreadId = {
-      ...draftsByThreadId,
-      [threadId]: cloneDraft(nextDraft),
-      ...(mirroredThreadId ? { [mirroredThreadId]: cloneDraft(nextDraft) } : {}),
+    const addsChatDraft = !(chatId in draftsByChatId)
+    const addsMirroredDraft = Boolean(mirroredChatId && !(mirroredChatId in draftsByChatId))
+    draftsByChatId = {
+      ...draftsByChatId,
+      [chatId]: cloneDraft(nextDraft),
+      ...(mirroredChatId ? { [mirroredChatId]: cloneDraft(nextDraft) } : {}),
     }
-    draftCount += (addsThreadDraft ? 1 : 0) + (addsMirroredDraft ? 1 : 0)
+    draftCount += (addsChatDraft ? 1 : 0) + (addsMirroredDraft ? 1 : 0)
   }
 
-  const writeDraft = (threadId: string, nextDraft: ComposerDraft) => {
-    const mirroredThreadId = getMirroredProjectDraftThreadId(threadId)
-    const previousDraft = draftsByThreadId[threadId]
-    if (isEmptyDraft(nextDraft)) clearDraftWithMirror(threadId, mirroredThreadId, previousDraft)
-    else upsertDraftWithMirror(threadId, mirroredThreadId, nextDraft)
+  const writeDraft = (chatId: string, nextDraft: ComposerDraft) => {
+    const mirroredChatId = getMirroredDirectoryDraftChatId(chatId)
+    const previousDraft = draftsByChatId[chatId]
+    if (isEmptyDraft(nextDraft)) clearDraftWithMirror(chatId, mirroredChatId, previousDraft)
+    else upsertDraftWithMirror(chatId, mirroredChatId, nextDraft)
     persistence.schedulePersist()
   }
 
-  const updateDraft = (
-    threadId: string,
-    updater: (currentDraft: ComposerDraft) => ComposerDraft,
-  ) => {
-    const currentDraft = draftsByThreadId[threadId] ?? {
+  const updateDraft = (chatId: string, updater: (currentDraft: ComposerDraft) => ComposerDraft) => {
+    const currentDraft = draftsByChatId[chatId] ?? {
       prompt: '',
       attachments: [],
       pickerOpen: false,
     }
-    writeDraft(threadId, updater(currentDraft))
+    writeDraft(chatId, updater(currentDraft))
   }
 
   return {
     storageKey,
-    getDraft(threadId: string) {
-      const draft = draftsByThreadId[threadId]
+    getDraft(chatId: string) {
+      const draft = draftsByChatId[chatId]
       return draft ? cloneDraft(draft) : null
     },
-    setDraft(threadId: string, draft: ComposerDraft) {
-      writeDraft(threadId, draft)
+    setDraft(chatId: string, draft: ComposerDraft) {
+      writeDraft(chatId, draft)
     },
-    setPrompt(threadId: string, prompt: string) {
-      updateDraft(threadId, (currentDraft) => ({
+    setPrompt(chatId: string, prompt: string) {
+      updateDraft(chatId, (currentDraft) => ({
         ...currentDraft,
         prompt,
       }))
     },
-    setAttachments(threadId: string, attachments: ComposerAttachment[]) {
-      updateDraft(threadId, (currentDraft) => ({
+    setAttachments(chatId: string, attachments: ComposerAttachment[]) {
+      updateDraft(chatId, (currentDraft) => ({
         ...currentDraft,
         attachments: cloneAttachments(attachments),
       }))
     },
-    clearComposerContent(threadId: string) {
-      writeDraft(threadId, { prompt: '', attachments: [], pickerOpen: false })
+    clearComposerContent(chatId: string) {
+      writeDraft(chatId, { prompt: '', attachments: [], pickerOpen: false })
     },
-    clearThreadDraft(threadId: string) {
-      if (!(threadId in draftsByThreadId)) {
+    clearChatDraft(chatId: string) {
+      if (!(chatId in draftsByChatId)) {
         return
       }
 
-      const mirroredThreadId = getMirroredProjectDraftThreadId(threadId)
-      const previousDraft = draftsByThreadId[threadId]
+      const mirroredChatId = getMirroredDirectoryDraftChatId(chatId)
+      const previousDraft = draftsByChatId[chatId]
 
-      delete draftsByThreadId[threadId]
+      delete draftsByChatId[chatId]
       draftCount -= 1
 
-      if (mirroredThreadId && areDraftsEqual(draftsByThreadId[mirroredThreadId], previousDraft)) {
-        delete draftsByThreadId[mirroredThreadId]
+      if (mirroredChatId && areDraftsEqual(draftsByChatId[mirroredChatId], previousDraft)) {
+        delete draftsByChatId[mirroredChatId]
         draftCount -= 1
       }
       persistence.schedulePersist()

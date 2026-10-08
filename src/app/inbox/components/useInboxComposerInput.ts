@@ -6,7 +6,7 @@ import type { InboxComposerOverlayState } from './useInboxComposerOverlayState'
 import { useInboxComposerStateRefs } from './useInboxComposerStateRefs'
 
 export function useInboxComposerInput(
-  props: Pick<InboxComposerProps, 'appSettings' | 'onListAttachmentEntries' | 'reply' | 'thread'>,
+  props: Pick<InboxComposerProps, 'appSettings' | 'onListAttachmentEntries' | 'reply' | 'chat'>,
   overlay: InboxComposerOverlayState,
 ) {
   const { attachmentsRef, draftValueRef, setAttachmentValue, setDraftValue } =
@@ -19,8 +19,8 @@ export function useInboxComposerInput(
 
   const attachmentPicker = useComposerAttachmentPicker({
     openMenu: overlay.openMenu,
-    pickerRootPath: props.thread.projectId,
-    pickerSessionKey: props.thread.conversationId,
+    pickerRootPath: props.chat.directoryId,
+    pickerSessionKey: props.chat.conversationId,
     setAttachments: setAttachmentValue,
     setErrorMessage: props.reply.setErrorMessage,
     setOpenMenu: overlay.setOpenMenu,
@@ -31,9 +31,9 @@ export function useInboxComposerInput(
     activeView: 'inbox',
     dictationModelId: props.appSettings.dictationModelId,
     dictationMaxDurationSeconds: props.appSettings.dictationMaxDurationSeconds,
-    draftThreadId: props.thread.threadId,
-    projectId: props.thread.projectId,
-    conversationId: props.thread.conversationId,
+    draftChatId: props.chat.chatId,
+    directoryId: props.chat.directoryId,
+    conversationId: props.chat.conversationId,
     setDraftValue,
     setErrorMessage: props.reply.setErrorMessage,
   })

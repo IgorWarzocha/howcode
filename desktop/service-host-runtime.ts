@@ -8,7 +8,7 @@ import {
   createCodingService,
 } from '../components/coding/service/index.ts'
 import { codingDatabaseSchema } from '../components/coding/service/schema.ts'
-import { codingThreadBranchFallbacks } from '../components/coding/service/state.ts'
+import { codingChatBranchFallbacks } from '../components/coding/service/state.ts'
 import { createDictationService } from '../components/dictation/service/index.ts'
 import { createPackageUiService } from '../components/packages/service/index.ts'
 import { createSkillsService } from '../components/skills/service/index.ts'
@@ -24,19 +24,19 @@ import { getDesktopWorkingDirectory } from '../shared/desktop-working-directory.
 import { makeShutdownCoordinator } from '../shared/effect-shutdown.ts'
 import type { TerminalRpcRequest } from '../shared/terminal-rpc.ts'
 import { isToolkitComponentEnabled } from '../shared/toolkit-components.ts'
-import { registerConversationCleanup } from './app-service/thread-actions.ts'
+import { registerConversationCleanup } from './app-service/chat-actions.ts'
 import * as coreApp from './app-service.ts'
 import { loadAppSettings } from './app-settings/readers.ts'
-import { syncWorkspaceOrganization } from './chat-state-db.ts'
-import { emitDesktopEvent } from './runtime/desktop-events.ts'
-import { getAgentDirectory } from './settings/paths.ts'
+import { registerChatBranchFallbacks } from './chat-repository/chat-branch-fallbacks.ts'
 import {
   configureDatabaseSchemas,
-  disposeThreadStateDatabase,
+  disposeChatStateDatabase,
   registerDatabaseStartupTask,
-} from './thread-state-db/db.ts'
-import { registerThreadBranchFallbacks } from './thread-state-db/thread-branch-fallbacks.ts'
+} from './chat-repository/db.ts'
+import { emitDesktopEvent } from './runtime/desktop-events.ts'
+import { getAgentDirectory } from './settings/paths.ts'
 import { getDesktopUserDataPath } from './user-data-path.ts'
+import { syncWorkspaceOrganization } from './workspace-repository.ts'
 
 const ServiceRequestSchema = Schema.Struct({
   type: Schema.Literal('request'),
@@ -85,23 +85,23 @@ const coding = codingComponent.service
 const unregisterArtifactCleanup = registerConversationCleanup(
   artifacts.deleteArtifactsForConversation,
 )
-const unregisterCodingBranchFallbacks = registerThreadBranchFallbacks(codingThreadBranchFallbacks)
+const unregisterCodingBranchFallbacks = registerChatBranchFallbacks(codingChatBranchFallbacks)
 const unregisterCodingMigration = registerDatabaseStartupTask(cleanupLegacyCheckpoints())
 const app = {
   ...coreApp,
   loadShellState: (cwd: string) => coreApp.loadShellState(cwd, codingComponent.loadShell),
-  async loadChatSidebarState(groupId?: string | null) {
+  async loadWorkspaceNavigationState(workspaceId?: string | null) {
     if (isToolkitComponentEnabled(loadAppSettings(), 'coding')) {
       const shell = await codingComponent.loadShell(getDesktopWorkingDirectory())
       syncWorkspaceOrganization(
-        shell.projects.map((project) => ({
-          id: project.id,
-          name: project.name,
-          rootId: project.worktree?.rootProjectId ?? project.id,
+        shell.directories.map((directory) => ({
+          id: directory.id,
+          name: directory.name,
+          rootId: directory.worktree?.rootDirectoryId ?? directory.id,
         })),
       )
     }
-    return coreApp.loadChatSidebarState(groupId)
+    return coreApp.loadWorkspaceNavigationState(workspaceId)
   },
   async handleDesktopAction(...args: Parameters<typeof coreApp.handleDesktopAction>) {
     const result = await codingComponent.handleAction(...args)
@@ -222,7 +222,7 @@ const shutdownCoordinatorPromise = Effect.runPromise(
       unregisterArtifactCleanup()
       unregisterCodingMigration()
       unregisterCodingBranchFallbacks()
-    }).pipe(Effect.ensuring(Effect.promise(disposeThreadStateDatabase))),
+    }).pipe(Effect.ensuring(Effect.promise(disposeChatStateDatabase))),
     { label: 'Desktop service', timeout: desktopShutdownTimeouts.desktopServiceCleanupMs },
   ),
 )

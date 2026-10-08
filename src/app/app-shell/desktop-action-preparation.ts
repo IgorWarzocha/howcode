@@ -3,37 +3,38 @@ import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch, SetStateAction } from 'react'
 import type { DesktopAction } from '../desktop/actions'
 import type {
-  ChatSidebarState,
+  ChatData,
   DesktopActionInvoker,
   DesktopActionResult,
-  ProjectGitState,
+  DirectoryGitState,
   ShellState,
-  ThreadData,
+  WorkspaceNavigationState,
 } from '../desktop/types'
-import type { WorkspaceAction } from '../state/workspace-model'
+import type { WorkspaceAction, WorkspaceState } from '../state/workspace-model'
 import type { View } from '../types'
 import { guardBranchResume } from './branch-resume-guard'
 import { buildContextualActionPayload } from './controller-action-helpers'
 import type { ActionPayload } from './controller-action-utils'
-import { applyOptimisticComposerThread } from './sidebar-thread-sync'
+import { applyOptimisticComposerChat } from './sidebar-chat-sync'
 
 export async function prepareDesktopAction(input: {
   action: DesktopAction
+  workspaceState: WorkspaceState
   activeView: View
-  composerProjectId: string
+  composerDirectoryId: string
   dispatch: Dispatch<WorkspaceAction>
   invokeDesktopAction: DesktopActionInvoker
-  loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
-  loadProjectThreads: (
-    projectId: string,
-    options?: { chat?: boolean; replaceLocalDraftConversationId?: string | null },
+  loadDirectoryGitState: (directoryId: string) => Promise<DirectoryGitState | null>
+  loadDirectoryChats: (
+    directoryId: string,
+    options?: { replaceLocalDraftConversationId?: string | null },
   ) => Promise<unknown>
   payload: ActionPayload
   queryClient: QueryClient
   selectedConversationId: string | null
-  setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>
-  setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>
-  setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>
+  setDirectoryGitState: Dispatch<SetStateAction<DirectoryGitState | null>>
+  setWorkspaceNavigationState: Dispatch<SetStateAction<WorkspaceNavigationState | null>>
+  setLiveChatData: Dispatch<SetStateAction<ChatData | null>>
   shellState: ShellState | null
 }): Promise<
   | { blockedResult: DesktopActionResult; contextualPayload?: never }
@@ -41,26 +42,28 @@ export async function prepareDesktopAction(input: {
 > {
   const contextualPayload = buildContextualActionPayload({
     action: input.action,
+    composerProfile: input.workspaceState.composerProfile,
+    workspaceId: input.workspaceState.selectedWorkspaceId,
     payload: input.payload,
-    composerProjectId: input.composerProjectId,
+    composerDirectoryId: input.composerDirectoryId,
     activeView: input.activeView,
     selectedConversationId: input.selectedConversationId,
   })
 
-  if (input.action === 'composer.send' || input.action === 'thread.open') {
+  if (input.action === 'composer.send' || input.action === 'chat.open') {
     const blockedResult = await guardBranchResume({
       action: input.action,
       invokeDesktopAction: input.invokeDesktopAction,
-      loadProjectGitState: input.loadProjectGitState,
+      loadDirectoryGitState: input.loadDirectoryGitState,
       payload: contextualPayload,
       shellState: input.shellState,
       onSwitchBranchSuccess: (switchPayload) =>
         applySwitchBranchPostEffect({
           contextualPayload: switchPayload,
           queryClient: input.queryClient,
-          loadProjectGitState: input.loadProjectGitState,
-          loadProjectThreads: input.loadProjectThreads,
-          setProjectGitState: input.setProjectGitState,
+          loadDirectoryGitState: input.loadDirectoryGitState,
+          loadDirectoryChats: input.loadDirectoryChats,
+          setDirectoryGitState: input.setDirectoryGitState,
         }),
     })
     if (blockedResult) return { blockedResult }
@@ -68,12 +71,12 @@ export async function prepareDesktopAction(input: {
 
   if (input.action !== 'composer.send') return { contextualPayload }
 
-  return applyOptimisticComposerThread({
+  return applyOptimisticComposerChat({
     activeView: input.activeView,
     contextualPayload,
     queryClient: input.queryClient,
     dispatch: input.dispatch,
-    setChatSidebarState: input.setChatSidebarState,
-    setLiveThreadData: input.setLiveThreadData,
+    setWorkspaceNavigationState: input.setWorkspaceNavigationState,
+    setLiveChatData: input.setLiveChatData,
   })
 }

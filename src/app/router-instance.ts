@@ -16,22 +16,30 @@ const appRoutes = [
   '/',
   '/archived',
   '/automations',
-  '/chat',
   '/chats',
   '/claw',
-  '/code',
   '/git',
   '/inbox',
-  '/project',
   '/settings',
-  '/sessions',
+  '/history',
   '/skills',
-  '/thread',
   '/work',
   '/workspaces',
 ].map((path) => createRoute({ getParentRoute: () => rootRoute, path }))
 
-export const router = createRouter({ history, routeTree: rootRoute.addChildren(appRoutes) })
+export const router = createRouter({
+  history,
+  routeTree: rootRoute.addChildren(appRoutes),
+  parseSearch: (search) => Object.fromEntries(new URLSearchParams(search)),
+  stringifySearch: (search) => {
+    const params = new URLSearchParams()
+    for (const [key, value] of Object.entries(search)) {
+      if (typeof value === 'string') params.set(key, value)
+    }
+    const query = params.toString()
+    return query ? `?${query}` : ''
+  },
+})
 
 declare module '@tanstack/react-router' {
   interface Register {

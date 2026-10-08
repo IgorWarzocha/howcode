@@ -13,13 +13,13 @@ export function findUnboundWorkspaceShellTerminal(
   request: TerminalOpenRequest,
 ) {
   if (!request.conversationId) return null
-  const cwd = request.cwd ?? request.projectId
+  const cwd = request.cwd ?? request.directoryId
   return (
     store
       .list()
       .find(
         (record) =>
-          record.snapshot.projectId === request.projectId &&
+          record.snapshot.directoryId === request.directoryId &&
           record.snapshot.conversationId === null &&
           record.snapshot.cwd === cwd,
       ) ?? null

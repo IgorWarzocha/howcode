@@ -11,10 +11,10 @@ import type { ToolkitComponentId } from '../../../shared/toolkit-components'
 // and Durable's persisted agent tool selection.
 export function createToolkitHostComponents(
   runtime: DesktopServiceRuntime,
-  listProjectDirectoryEntries: DesktopRequestHandlerMap['listProjectDirectoryEntries'],
+  listDirectoryDirectoryEntries: DesktopRequestHandlerMap['listDirectoryDirectoryEntries'],
 ) {
   return {
-    coding: createCodingHandlers(runtime.coding, listProjectDirectoryEntries),
+    coding: createCodingHandlers(runtime.coding, listDirectoryDirectoryEntries),
     terminal: createTerminalHandlers(runtime.terminalManager),
     artifacts: createArtifactsHandlers(runtime.artifacts),
     skills: createPiSkillsHandlers(runtime.skills),

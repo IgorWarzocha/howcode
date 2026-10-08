@@ -1,1 +1,1 @@
-export { ArchivedThreadsView } from './archived-threads-view'
+export { ArchivedChatsView } from './archived-chats-view'

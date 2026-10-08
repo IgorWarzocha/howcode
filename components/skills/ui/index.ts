@@ -6,5 +6,5 @@ export {
   searchPiSkillsQuery,
 } from './query'
 export { SkillsWorkspaceView } from './skills-workspace-view'
-export { useSkillsProjectScopeState } from './useSkillsProjectScopeState'
-export { useSkillsProjectScopeSync } from './useSkillsProjectScopeSync'
+export { useSkillsDirectoryScopeState } from './useSkillsDirectoryScopeState'
+export { useSkillsDirectoryScopeSync } from './useSkillsDirectoryScopeSync'

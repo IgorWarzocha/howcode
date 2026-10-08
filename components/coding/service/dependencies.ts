@@ -4,6 +4,6 @@ import type { TerminalSessionSnapshot } from '../../../shared/terminal-contracts
 export type CodingPeers = {
   deleteArtifactsForConversations: (conversationIds: string[]) => void
   listTerminals: () => Promise<TerminalSessionSnapshot[]>
-  closeWorkspaceTerminals: (projectId: string) => Promise<void>
-  hasActiveWorkspaceTerminal: (projectId: string) => Promise<boolean>
+  closeWorkspaceTerminals: (directoryId: string) => Promise<void>
+  hasActiveWorkspaceTerminal: (directoryId: string) => Promise<boolean>
 }

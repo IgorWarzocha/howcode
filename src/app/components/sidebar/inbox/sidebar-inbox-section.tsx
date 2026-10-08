@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
-import type { DesktopActionInvoker, InboxThread } from '../../../desktop/types'
+import type { DesktopActionInvoker, InboxChat } from '../../../desktop/types'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import {
   appToneMutedClass,
@@ -23,33 +23,33 @@ import {
   appTypeGroupTextClass,
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { InboxThreadRow } from './inbox-thread-row'
+import { InboxChatRow } from './inbox-chat-row'
 
 type InboxFilterMode = 'all' | 'terminal' | 'recent'
 
 type SidebarInboxSectionProps = {
   appLaunchedAtMs: number
   terminalRunningConversationIds: ReadonlySet<string>
-  threads: InboxThread[]
+  chats: InboxChat[]
   selectedConversationId: string | null
   onAction: DesktopActionInvoker
-  onDismissThread: (thread: InboxThread) => void
-  onSelectThread: (thread: InboxThread) => void
+  onDismissChat: (chat: InboxChat) => void
+  onSelectChat: (chat: InboxChat) => void
 }
 
 function matchesInboxFilter(
-  thread: InboxThread,
+  chat: InboxChat,
   filterMode: InboxFilterMode,
   terminalRunningConversationIds: ReadonlySet<string>,
   appLaunchedAtMs: number,
 ) {
-  if (filterMode === 'terminal') return terminalRunningConversationIds.has(thread.conversationId)
-  if (filterMode === 'recent') return (thread.lastActivityMs ?? 0) >= appLaunchedAtMs
+  if (filterMode === 'terminal') return terminalRunningConversationIds.has(chat.conversationId)
+  if (filterMode === 'recent') return (chat.lastActivityMs ?? 0) >= appLaunchedAtMs
   return true
 }
 
-function matchesInboxSearch(thread: InboxThread, normalizedQuery: string) {
-  return [thread.title, thread.projectName, thread.preview ?? '']
+function matchesInboxSearch(chat: InboxChat, normalizedQuery: string) {
+  return [chat.title, chat.directoryName, chat.preview ?? '']
     .join(' ')
     .toLowerCase()
     .includes(normalizedQuery)
@@ -167,11 +167,11 @@ function SidebarInboxClearMenu({
 export function SidebarInboxSection({
   appLaunchedAtMs,
   terminalRunningConversationIds,
-  threads,
+  chats,
   selectedConversationId,
   onAction,
-  onDismissThread,
-  onSelectThread,
+  onDismissChat,
+  onSelectChat,
 }: SidebarInboxSectionProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [showUnreadOnly, setShowUnreadOnly] = useState(false)
@@ -211,13 +211,13 @@ export function SidebarInboxSection({
     searchInputRef.current?.select()
   })
 
-  const visibleThreads = useMemo(() => {
+  const visibleChats = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
 
-    return threads.filter((thread) => {
-      if (showUnreadOnly && !thread.unread) return false
-      if (normalizedQuery && !matchesInboxSearch(thread, normalizedQuery)) return false
-      return matchesInboxFilter(thread, filterMode, terminalRunningConversationIds, appLaunchedAtMs)
+    return chats.filter((chat) => {
+      if (showUnreadOnly && !chat.unread) return false
+      if (normalizedQuery && !matchesInboxSearch(chat, normalizedQuery)) return false
+      return matchesInboxFilter(chat, filterMode, terminalRunningConversationIds, appLaunchedAtMs)
     })
   }, [
     appLaunchedAtMs,
@@ -225,7 +225,7 @@ export function SidebarInboxSection({
     searchQuery,
     showUnreadOnly,
     terminalRunningConversationIds,
-    threads,
+    chats,
   ])
 
   const filterIcon = getInboxFilterIcon(filterMode)
@@ -233,12 +233,12 @@ export function SidebarInboxSection({
 
   useEffect(() => {
     if (!selectedConversationId) return
-    if (!visibleThreads.some((thread) => thread.conversationId === selectedConversationId)) return
+    if (!visibleChats.some((chat) => chat.conversationId === selectedConversationId)) return
     const selectedRow = scrollRegionRef.current?.querySelector<HTMLElement>(
       '[data-inbox-thread-selected="true"]',
     )
     selectedRow?.scrollIntoView({ block: 'nearest' })
-  }, [selectedConversationId, visibleThreads])
+  }, [selectedConversationId, visibleChats])
 
   return (
     <section className="sidebar-section">
@@ -335,27 +335,27 @@ export function SidebarInboxSection({
         ) : null}
       </div>
 
-      {visibleThreads.length > 0 ? (
+      {visibleChats.length > 0 ? (
         <div ref={scrollRegionRef} className="sidebar-scroll-region">
           <div className="sidebar-list">
-            {visibleThreads.map((thread) => (
+            {visibleChats.map((chat) => (
               <div
-                key={thread.conversationId}
-                data-inbox-thread-selected={
-                  selectedConversationId === thread.conversationId ? 'true' : 'false'
+                key={chat.conversationId}
+                data-inbox-chat-selected={
+                  selectedConversationId === chat.conversationId ? 'true' : 'false'
                 }
               >
-                <InboxThreadRow
-                  age={thread.age}
-                  preview={thread.preview}
-                  projectName={thread.projectName}
-                  running={thread.running}
-                  terminalRunning={terminalRunningConversationIds.has(thread.conversationId)}
-                  selected={selectedConversationId === thread.conversationId}
-                  title={thread.title}
-                  unread={thread.unread}
-                  onDismiss={() => onDismissThread(thread)}
-                  onSelect={() => onSelectThread(thread)}
+                <InboxChatRow
+                  age={chat.age}
+                  preview={chat.preview}
+                  directoryName={chat.directoryName}
+                  running={chat.running}
+                  terminalRunning={terminalRunningConversationIds.has(chat.conversationId)}
+                  selected={selectedConversationId === chat.conversationId}
+                  title={chat.title}
+                  unread={chat.unread}
+                  onDismiss={() => onDismissChat(chat)}
+                  onSelect={() => onSelectChat(chat)}
                 />
               </div>
             ))}

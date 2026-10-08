@@ -5,13 +5,13 @@ import {
   getComposerState,
   subscribeDesktopEvents as subscribeRuntimeEvents,
 } from '../conversation-runtime.ts'
+import { disposeRuntimeWatches } from '../durable-runtime/chats.ts'
 import { disposeDurableRuntime } from '../durable-runtime/host.ts'
-import { disposeRuntimeWatches } from '../durable-runtime/threads.ts'
 import { disposeConversationProjection } from './conversation-projection.ts'
 
+export { loadInboxChatList } from './chat-loader.ts'
 export { refreshShellIndex } from './shell-index.ts'
 export { loadShellState } from './shell-state.ts'
-export { loadInboxThreadList } from './thread-loader.ts'
 
 export async function loadComposerState(
   request: ComposerStateRequest = {},

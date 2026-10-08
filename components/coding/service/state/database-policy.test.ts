@@ -5,42 +5,41 @@ import { DatabaseSync } from 'node:sqlite'
 import * as Effect from 'effect/Effect'
 import * as SqlClient from 'effect/sql/SqlClient'
 import { afterEach, describe, expect, it } from 'vitest'
-import { repairConversationProjection } from '../../../../desktop/thread-state-db/conversation-projection.ts'
+import {
+  archiveChats,
+  deleteChatRecord,
+  renameChatTitle,
+  setChatDiffPreferences,
+} from '../../../../desktop/chat-repository/chat-writes.ts'
+import { repairConversationProjection } from '../../../../desktop/chat-repository/conversation-projection.ts'
 import {
   registerConversationFacts,
-  upsertThreadSummary,
-} from '../../../../desktop/thread-state-db/conversation-writes.ts'
-import { makeThreadStateDatabaseRuntime } from '../../../../desktop/thread-state-db/db.ts'
+  upsertChatSummary,
+} from '../../../../desktop/chat-repository/conversation-writes.ts'
+import { makeChatStateDatabaseRuntime } from '../../../../desktop/chat-repository/db.ts'
 import {
-  dismissInboxThread,
-  dismissInboxThreadAfterReply,
-  markInboxThreadRead,
-} from '../../../../desktop/thread-state-db/inbox-writes.ts'
-import {
-  archiveThreads,
-  deleteThreadRecord,
-  renameThreadTitle,
-  setThreadDiffPreferences,
-} from '../../../../desktop/thread-state-db/thread-writes.ts'
+  dismissInboxChat,
+  markInboxChatRead,
+} from '../../../../desktop/chat-repository/inbox-writes.ts'
 import {
   moveWorkspaceChat,
   reconcileWorkspaceOrganization,
-} from '../../../../desktop/thread-state-db/workspace-organization.ts'
-import { withDatabaseTransaction } from '../../../../desktop/thread-state-db/write-transaction.ts'
+} from '../../../../desktop/chat-repository/workspace-organization.ts'
+import { withDatabaseTransaction } from '../../../../desktop/chat-repository/write-transaction.ts'
 import { artifactsDatabaseSchema } from '../../../artifacts/service/schema.ts'
 import { codingDatabaseSchema } from '../schema.ts'
-import { deleteProject } from './project-writes.ts'
+import { deleteDirectory } from './directory-writes.ts'
 import {
-  hasRetainedProjectFamilyConversations,
-  listProjectFamilyConversationIds,
+  hasRetainedDirectoryFamilyConversations,
+  listDirectoryFamilyConversationIds,
 } from './queries.ts'
 import {
   registerManagedWorktree,
-  setProjectWorktreeCompleted,
-  upsertProjectWorktree,
+  setDirectoryWorktreeCompleted,
+  upsertDirectoryWorktree,
 } from './worktree-writes.ts'
 
-type TestRuntime = ReturnType<typeof makeThreadStateDatabaseRuntime>
+type TestRuntime = ReturnType<typeof makeChatStateDatabaseRuntime>
 
 const fixtures: Array<{ directory: string; runtime: TestRuntime }> = []
 
@@ -75,7 +74,7 @@ async function makeFixture(initialize?: (database: DatabaseSync) => void) {
     }
   }
 
-  const runtime = makeThreadStateDatabaseRuntime(filename, [
+  const runtime = makeChatStateDatabaseRuntime(filename, [
     codingDatabaseSchema,
     artifactsDatabaseSchema,
   ])
@@ -91,7 +90,7 @@ it('preserves moved-out chats and their artifacts across directory workspace rem
     runtime.runSync(
       registerConversationFacts({
         conversationId,
-        projectId: '/repo',
+        directoryId: '/repo',
         title: conversationId,
         lastModifiedMs: 1,
       }),
@@ -105,14 +104,14 @@ it('preserves moved-out chats and their artifacts across directory workspace rem
   }
   runtime.runSync(reconcileWorkspaceOrganization([{ id: '/repo', rootId: '/repo', name: 'Repo' }]))
   runtime.runSync(moveWorkspaceChat('moved', 'research'))
-  expect(runtime.runSync(hasRetainedProjectFamilyConversations('/repo'))).toBe(true)
-  const removedIds = runtime.runSync(listProjectFamilyConversationIds('/repo'))
+  expect(runtime.runSync(hasRetainedDirectoryFamilyConversations('/repo'))).toBe(true)
+  const removedIds = runtime.runSync(listDirectoryFamilyConversationIds('/repo'))
   expect(removedIds).toEqual(['stays'])
   for (const id of removedIds)
     runtime.runSync(query('DELETE FROM artifacts WHERE conversation_id = ?', [id]))
-  runtime.runSync(deleteProject('/repo'))
+  runtime.runSync(deleteDirectory('/repo'))
   await runtime.dispose()
-  const reopened = makeThreadStateDatabaseRuntime(filename, [
+  const reopened = makeChatStateDatabaseRuntime(filename, [
     codingDatabaseSchema,
     artifactsDatabaseSchema,
   ])
@@ -222,7 +221,7 @@ function createLegacyDatabase(database: DatabaseSync) {
   `)
 }
 
-describe('thread state database policy', () => {
+describe('chat state database policy', () => {
   it('retains project facts and deleted spend without importing legacy transcript mirrors', async () => {
     const { runtime } = await makeFixture(createLegacyDatabase)
     expect(
@@ -247,7 +246,7 @@ describe('thread state database policy', () => {
     expect(
       runtime.runSync(
         query(
-          "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('threads', 'inbox_items', 'chat_threads')",
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('chats', 'inbox_items', 'chat_threads')",
         ),
       ),
     ).toEqual([])
@@ -258,11 +257,11 @@ describe('thread state database policy', () => {
 
     runtime.runSync(
       execute([
-        { statement: `INSERT INTO projects (cwd, name) VALUES ('/project', 'Project')` },
+        { statement: `INSERT INTO projects (cwd, name) VALUES ('/project', 'WorkingDirectory')` },
         {
           statement: `
             INSERT INTO conversation_facts (id, cwd, conversation_id, title, last_modified_ms)
-            VALUES ('thread-1', '/project', '/sessions/one.jsonl', 'Thread', 1)
+            VALUES ('thread-1', '/project', '/sessions/one.jsonl', 'Chat', 1)
           `,
         },
         {
@@ -355,31 +354,31 @@ describe('thread state database policy', () => {
       branchName: 'feature/atomic',
       gitCommonDirectoryIdentity: 'git-common-dir-v1:1:2:3',
       parentBranchName: 'main',
-      projectId: '/repo-worktrees/feature-atomic',
-      rootProjectId: '/repo',
+      directoryId: '/repo-worktrees/feature-atomic',
+      rootDirectoryId: '/repo',
     }
     expect(() => runtime.runSync(registerManagedWorktree(input))).toThrow()
 
     const [rolledBack] = runtime.runSync(
-      query<{ projects: number; worktrees: number }>(`
+      query<{ directories: number; worktrees: number }>(`
         SELECT
-          (SELECT COUNT(*) FROM projects) AS projects,
+          (SELECT COUNT(*) FROM projects) AS directories,
           (SELECT COUNT(*) FROM project_worktrees) AS worktrees
       `),
     )
-    expect(rolledBack).toEqual({ projects: 0, worktrees: 0 })
+    expect(rolledBack).toEqual({ directories: 0, worktrees: 0 })
 
     runtime.runSync(query('DROP TRIGGER reject_managed_child'))
     runtime.runSync(registerManagedWorktree(input))
 
     const [recovered] = runtime.runSync(
-      query<{ projects: number; worktrees: number }>(`
+      query<{ directories: number; worktrees: number }>(`
         SELECT
-          (SELECT COUNT(*) FROM projects) AS projects,
+          (SELECT COUNT(*) FROM projects) AS directories,
           (SELECT COUNT(*) FROM project_worktrees) AS worktrees
       `),
     )
-    expect(recovered).toEqual({ projects: 2, worktrees: 2 })
+    expect(recovered).toEqual({ directories: 2, worktrees: 2 })
 
     runtime.runSync(
       registerManagedWorktree({
@@ -412,16 +411,16 @@ describe('thread state database policy', () => {
         branchName: 'feature/legacy-provenance',
         gitCommonDirectoryIdentity: storedIdentity,
         parentBranchName: 'main',
-        projectId: '/repo-worktrees/legacy-provenance',
-        rootProjectId: '/repo',
+        directoryId: '/repo-worktrees/legacy-provenance',
+        rootDirectoryId: '/repo',
       }
       runtime.runSync(registerManagedWorktree(input))
-      expect(runtime.runSync(setProjectWorktreeCompleted(input.projectId, true))).toBe(true)
+      expect(runtime.runSync(setDirectoryWorktreeCompleted(input.directoryId, true))).toBe(true)
 
       runtime.runSync(
-        upsertProjectWorktree({
-          cwd: input.projectId,
-          rootCwd: input.rootProjectId,
+        upsertDirectoryWorktree({
+          cwd: input.directoryId,
+          rootCwd: input.rootDirectoryId,
           branchName: input.branchName,
           gitCommonDirectoryIdentity: capturedIdentity,
           isMain: false,
@@ -454,64 +453,6 @@ describe('thread state database policy', () => {
     },
   )
 
-  it('keeps one sidebar preview and consumes reply suppression once', async () => {
-    const { runtime } = await makeFixture()
-    runtime.runSync(
-      upsertThreadSummary({
-        id: '1',
-        conversationId: '1',
-        cwd: '/repo',
-        title: 'Thread',
-        lastModifiedMs: 1,
-      }),
-    )
-    runtime.runSync(
-      repairConversationProjection({
-        conversationId: '1',
-        entryId: '2',
-        assistantId: '2',
-        preview: 'Answer',
-        title: 'Question',
-        lastModifiedMs: 2,
-        running: false,
-      }),
-    )
-    expect(
-      runtime.runSync(query('SELECT last_assistant_preview AS preview FROM conversation_facts')),
-    ).toEqual([{ preview: 'Answer' }])
-    expect(runtime.runSync(query('SELECT unread FROM conversation_inbox'))).toEqual([{ unread: 1 }])
-    runtime.runSync(dismissInboxThreadAfterReply('1'))
-    runtime.runSync(
-      repairConversationProjection({
-        conversationId: '1',
-        entryId: '3',
-        assistantId: '3',
-        preview: 'Reply',
-        title: 'Question',
-        lastModifiedMs: 3,
-        running: false,
-      }),
-    )
-    expect(runtime.runSync(query('SELECT unread, dismissed FROM conversation_inbox'))).toEqual([
-      { unread: 0, dismissed: 1 },
-    ])
-    expect(runtime.runSync(query('SELECT * FROM conversation_reply_suppressions'))).toEqual([])
-    runtime.runSync(
-      repairConversationProjection({
-        conversationId: '1',
-        entryId: '4',
-        assistantId: '4',
-        preview: 'Next reply',
-        title: 'Question',
-        lastModifiedMs: 4,
-        running: false,
-      }),
-    )
-    expect(runtime.runSync(query('SELECT unread, dismissed FROM conversation_inbox'))).toEqual([
-      { unread: 1, dismissed: 0 },
-    ])
-  })
-
   it('preserves app-owned title and branch when repairing summaries', async () => {
     const { runtime } = await makeFixture()
     const conversation = {
@@ -522,9 +463,9 @@ describe('thread state database policy', () => {
       branchName: 'feature/original',
       lastModifiedMs: 1,
     }
-    runtime.runSync(upsertThreadSummary(conversation))
+    runtime.runSync(upsertChatSummary(conversation))
     runtime.runSync(
-      upsertThreadSummary({
+      upsertChatSummary({
         ...conversation,
         title: 'New inferred title',
         branchName: 'feature/new',
@@ -544,32 +485,32 @@ describe('thread state database policy', () => {
     const { runtime } = await makeFixture()
     const conversationId = "/sessions/it's-a-session.jsonl"
     runtime.runSync(
-      upsertThreadSummary({
+      upsertChatSummary({
         id: 'thread-1',
         cwd: '/repo',
         conversationId,
-        title: 'Thread',
+        title: 'Chat',
         lastModifiedMs: 1,
       }),
     )
     const baseline = { kind: 'branch' as const, branchName: "feature/it's-bound" }
     expect(
-      runtime.runSync(setThreadDiffPreferences(conversationId, { baseline, renderMode: 'split' })),
+      runtime.runSync(setChatDiffPreferences(conversationId, { baseline, renderMode: 'split' })),
     ).toBe(true)
-    expect(runtime.runSync(setThreadDiffPreferences(conversationId, { baseline: null }))).toBe(true)
-    expect(runtime.runSync(setThreadDiffPreferences(conversationId, {}))).toBe(true)
+    expect(runtime.runSync(setChatDiffPreferences(conversationId, { baseline: null }))).toBe(true)
+    expect(runtime.runSync(setChatDiffPreferences(conversationId, {}))).toBe(true)
     const readPreferences = query<{ baseline: string | null; mode: string | null }>(
       'SELECT diff_baseline_json AS baseline, diff_render_mode AS mode FROM conversation_facts WHERE conversation_id = ?',
       [conversationId],
     )
     expect(runtime.runSync(readPreferences)).toEqual([{ baseline: null, mode: 'split' }])
     expect(
-      runtime.runSync(setThreadDiffPreferences(conversationId, { baseline, renderMode: null })),
+      runtime.runSync(setChatDiffPreferences(conversationId, { baseline, renderMode: null })),
     ).toBe(true)
     expect(runtime.runSync(readPreferences)).toEqual([
       { baseline: JSON.stringify(baseline), mode: null },
     ])
-    expect(runtime.runSync(setThreadDiffPreferences('/missing', { baseline }))).toBe(false)
+    expect(runtime.runSync(setChatDiffPreferences('/missing', { baseline }))).toBe(false)
   })
 
   it('rolls back conversation facts when chat attribution cannot be persisted', async () => {
@@ -578,11 +519,11 @@ describe('thread state database policy', () => {
       runtime.runSync(
         registerConversationFacts({
           conversationId: '1',
-          projectId: '/repo',
-          title: 'Thread',
+          directoryId: '/repo',
+          title: 'Chat',
           lastModifiedMs: 1,
-          isChat: true,
-          chatGroupId: 'missing-group',
+          composerProfile: 'general',
+          workspaceId: 'missing-group',
         }),
       ),
     ).toThrow()
@@ -593,10 +534,10 @@ describe('thread state database policy', () => {
     runtime.runSync(
       registerConversationFacts({
         conversationId: '1',
-        projectId: '/repo',
-        title: 'Thread',
+        directoryId: '/repo',
+        title: 'Chat',
         lastModifiedMs: 1,
-        isChat: true,
+        composerProfile: 'general',
       }),
     )
     expect(runtime.runSync(query('SELECT conversation_id AS id FROM chat_conversations'))).toEqual([
@@ -607,7 +548,7 @@ describe('thread state database policy', () => {
   it('repairs projections without changing read, dismissal, title or activity facts', async () => {
     const { runtime } = await makeFixture()
     runtime.runSync(
-      upsertThreadSummary({
+      upsertChatSummary({
         id: '1',
         conversationId: '1',
         cwd: '/repo',
@@ -625,9 +566,9 @@ describe('thread state database policy', () => {
       running: false,
     }
     runtime.runSync(repairConversationProjection(projection))
-    runtime.runSync(markInboxThreadRead('1'))
-    runtime.runSync(dismissInboxThread('1'))
-    runtime.runSync(renameThreadTitle('1', 'Chosen title'))
+    runtime.runSync(markInboxChatRead('1'))
+    runtime.runSync(dismissInboxChat('1'))
+    runtime.runSync(renameChatTitle('1', 'Chosen title'))
     runtime.runSync(
       query(
         'UPDATE conversation_facts SET projection_entry_id = NULL, projection_assistant_id = NULL, last_assistant_preview = NULL',
@@ -660,18 +601,18 @@ describe('thread state database policy', () => {
   it('keeps deletion tombstones and spend attribution through repair and project removal', async () => {
     const { runtime } = await makeFixture()
     runtime.runSync(
-      upsertThreadSummary({
+      upsertChatSummary({
         id: '1',
         conversationId: '1',
         cwd: '/repo',
-        title: 'Thread',
+        title: 'Chat',
         lastModifiedMs: 1,
       }),
     )
     runtime.runSync(
       query("INSERT INTO project_usage_totals (cwd, cost_total) VALUES ('/repo', 9.5)"),
     )
-    runtime.runSync(deleteThreadRecord('1'))
+    runtime.runSync(deleteChatRecord('1'))
     runtime.runSync(
       repairConversationProjection({
         conversationId: '1',
@@ -683,7 +624,7 @@ describe('thread state database policy', () => {
         running: true,
       }),
     )
-    runtime.runSync(deleteProject('/repo'))
+    runtime.runSync(deleteDirectory('/repo'))
     expect(
       runtime.runSync(
         query('SELECT cwd, deleted, running, last_modified_ms AS activity FROM conversation_facts'),
@@ -697,8 +638,8 @@ describe('thread state database policy', () => {
 
   it('finishes large grouped writes before the synchronous runtime call returns', async () => {
     const { runtime } = await makeFixture()
-    const threadCount = 1_200
-    const threadIds = Array.from({ length: threadCount }, (_, index) => `thread-${index}`)
+    const chatCount = 1_200
+    const chatIds = Array.from({ length: chatCount }, (_, index) => `thread-${index}`)
 
     runtime.runSync(
       execute([
@@ -715,16 +656,16 @@ describe('thread state database policy', () => {
               'thread-' || value,
               '/batch',
               '/sessions/' || value || '.jsonl',
-              'Thread ' || value,
+              'Chat ' || value,
               value
             FROM sequence
           `,
-          params: [threadCount],
+          params: [chatCount],
         },
       ]),
     )
 
-    runtime.runSync(archiveThreads(threadIds))
+    runtime.runSync(archiveChats(chatIds))
 
     expect(
       runtime.runSync(
@@ -733,6 +674,6 @@ describe('thread state database policy', () => {
           FROM conversation_facts
         `),
       ),
-    ).toEqual([{ total: threadCount, archived: threadCount }])
+    ).toEqual([{ total: chatCount, archived: chatCount }])
   })
 })

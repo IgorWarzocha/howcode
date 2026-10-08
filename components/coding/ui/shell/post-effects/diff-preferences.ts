@@ -1,21 +1,21 @@
 import {
-  getProjectDiffBaselinePreference,
-  getProjectDiffRenderModePreference,
+  getDirectoryDiffBaselinePreference,
+  getDirectoryDiffRenderModePreference,
 } from '@howcode/shared/desktop-action-payloads'
 import type { QueryClient } from '@tanstack/react-query'
 import type { ActionPayload } from '../../../../../src/app/app-shell/controller-action-utils'
-import type { ThreadData } from '../../../../../src/app/desktop/types'
+import type { ChatData } from '../../../../../src/app/desktop/types'
 import { desktopQueryKeys } from '../../../../../src/app/query/desktop-query'
 
 export type DiffPreferencesPatch = {
   hasBaseline: boolean
   hasRenderMode: boolean
-  nextBaseline: NonNullable<ThreadData['diffPreferences']>['baseline']
-  nextRenderMode: NonNullable<ThreadData['diffPreferences']>['renderMode']
+  nextBaseline: NonNullable<ChatData['diffPreferences']>['baseline']
+  nextRenderMode: NonNullable<ChatData['diffPreferences']>['renderMode']
 }
 
-export function applyDiffPreferencesToThread(
-  current: ThreadData | null | undefined,
+export function applyDiffPreferencesToChat(
+  current: ChatData | null | undefined,
   input: DiffPreferencesPatch,
 ) {
   if (!current) return current
@@ -35,8 +35,8 @@ export function applyDiffPreferencesToThread(
 export function getDiffPreferencesPatch(payload: ActionPayload): DiffPreferencesPatch | null {
   if (typeof payload.conversationId !== 'string') return null
 
-  const baselinePreference = getProjectDiffBaselinePreference(payload)
-  const renderModePreference = getProjectDiffRenderModePreference(payload)
+  const baselinePreference = getDirectoryDiffBaselinePreference(payload)
+  const renderModePreference = getDirectoryDiffRenderModePreference(payload)
   if (baselinePreference === 'invalid' || renderModePreference === 'invalid') return null
 
   return {
@@ -50,7 +50,7 @@ export function getDiffPreferencesPatch(payload: ActionPayload): DiffPreferences
 export async function applyDiffPreferencesPostEffect(input: {
   contextualPayload: ActionPayload
   queryClient: QueryClient
-  setLiveThreadData: (updater: (state: ThreadData | null) => ThreadData | null) => void
+  setLiveChatData: (updater: (state: ChatData | null) => ChatData | null) => void
 }) {
   const conversationId =
     typeof input.contextualPayload.conversationId === 'string'
@@ -61,15 +61,15 @@ export async function applyDiffPreferencesPostEffect(input: {
   const patch = getDiffPreferencesPatch(input.contextualPayload)
   if (!patch) return
 
-  input.queryClient.setQueryData(desktopQueryKeys.thread(conversationId), (current: unknown) =>
-    applyDiffPreferencesToThread(current as ThreadData | null | undefined, patch),
+  input.queryClient.setQueryData(desktopQueryKeys.chat(conversationId), (current: unknown) =>
+    applyDiffPreferencesToChat(current as ChatData | null | undefined, patch),
   )
-  input.setLiveThreadData((current) =>
+  input.setLiveChatData((current) =>
     current?.conversationId === conversationId
-      ? (applyDiffPreferencesToThread(current, patch) ?? null)
+      ? (applyDiffPreferencesToChat(current, patch) ?? null)
       : current,
   )
   await input.queryClient.invalidateQueries({
-    queryKey: desktopQueryKeys.threadPrefix(conversationId),
+    queryKey: desktopQueryKeys.chatPrefix(conversationId),
   })
 }

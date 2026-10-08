@@ -20,47 +20,46 @@ function mutationFailedWithoutChanges(ctx: PostEffectsContext) {
 
 export const workspacePostEffectHandlers: PostEffectHandler[] = [
   {
-    matches: (ctx) => ctx.action === 'workspace.commit-options',
+    matches: (ctx) => ctx.action === 'coding.commit-options',
     run: (ctx) =>
       applyCommitOptionsPostEffect({
         contextualPayload: ctx.contextualPayload,
         refreshShellState: ctx.refreshShellState,
-        loadProjectGitState: ctx.loadProjectGitState,
-        setProjectGitState: ctx.setProjectGitState,
+        loadDirectoryGitState: ctx.loadDirectoryGitState,
+        setDirectoryGitState: ctx.setDirectoryGitState,
       }),
   },
   {
-    matches: (ctx) =>
-      ctx.action === 'workspace.switch-branch' || ctx.action === 'workspace.prune-branch',
+    matches: (ctx) => ctx.action === 'coding.switch-branch' || ctx.action === 'coding.prune-branch',
     run: (ctx) => {
       if (mutationFailedWithoutChanges(ctx)) return
       return applySwitchBranchPostEffect({
         contextualPayload: ctx.contextualPayload,
         actionResult: ctx.actionResult,
         queryClient: ctx.queryClient,
-        loadProjectGitState: ctx.loadProjectGitState,
-        loadProjectThreads: ctx.loadProjectThreads,
-        setProjectGitState: ctx.setProjectGitState,
+        loadDirectoryGitState: ctx.loadDirectoryGitState,
+        loadDirectoryChats: ctx.loadDirectoryChats,
+        setDirectoryGitState: ctx.setDirectoryGitState,
       })
     },
   },
   {
-    matches: (ctx) => ctx.action === 'workspace.create-worktree',
+    matches: (ctx) => ctx.action === 'coding.create-worktree',
     run: (ctx) => {
       if (mutationFailedWithoutChanges(ctx)) return
       return applyCreateWorktreePostEffect({
         actionResult: ctx.actionResult,
         queryClient: ctx.queryClient,
-        loadProjectGitState: ctx.loadProjectGitState,
-        setProjectGitState: ctx.setProjectGitState,
+        loadDirectoryGitState: ctx.loadDirectoryGitState,
+        setDirectoryGitState: ctx.setDirectoryGitState,
       })
     },
   },
   {
     matches: (ctx) =>
-      ctx.action === 'workspace.mark-worktree-complete' ||
-      ctx.action === 'workspace.mark-worktree-incomplete' ||
-      ctx.action === 'workspace.set-worktree-directory',
+      ctx.action === 'coding.mark-worktree-complete' ||
+      ctx.action === 'coding.mark-worktree-incomplete' ||
+      ctx.action === 'coding.set-worktree-directory',
     run: (ctx) => {
       if (mutationFailedWithoutChanges(ctx)) return
       return applyWorktreeMetadataPostEffect({
@@ -68,58 +67,58 @@ export const workspacePostEffectHandlers: PostEffectHandler[] = [
         contextualPayload: ctx.contextualPayload,
         actionResult: ctx.actionResult,
         queryClient: ctx.queryClient,
-        loadProjectGitState: ctx.loadProjectGitState,
-        setProjectGitState: ctx.setProjectGitState,
+        loadDirectoryGitState: ctx.loadDirectoryGitState,
+        setDirectoryGitState: ctx.setDirectoryGitState,
       })
     },
   },
   {
     matches: (ctx) =>
-      ctx.action === 'workspace.remove-worktree' ||
-      ctx.action === 'workspace.merge-worktree' ||
-      ctx.action === 'workspace.merge-completed-worktrees' ||
-      ctx.action === 'workspace.remove-completed-worktrees',
+      ctx.action === 'coding.remove-worktree' ||
+      ctx.action === 'coding.merge-worktree' ||
+      ctx.action === 'coding.merge-completed-worktrees' ||
+      ctx.action === 'coding.remove-completed-worktrees',
     run: (ctx) => {
       if (mutationFailedWithoutChanges(ctx)) return
       return applyRemoveWorktreePostEffect({
         actionResult: ctx.actionResult,
         queryClient: ctx.queryClient,
-        loadProjectGitState: ctx.loadProjectGitState,
-        setProjectGitState: ctx.setProjectGitState,
+        loadDirectoryGitState: ctx.loadDirectoryGitState,
+        setDirectoryGitState: ctx.setDirectoryGitState,
       })
     },
   },
   {
-    matches: (ctx) => ctx.action === 'workspace.diff-preferences',
+    matches: (ctx) => ctx.action === 'coding.diff-preferences',
     run: (ctx) => {
       if (hasActionError(ctx.actionResult)) return
       return applyDiffPreferencesPostEffect({
         contextualPayload: ctx.contextualPayload,
         queryClient: ctx.queryClient,
-        setLiveThreadData: ctx.setLiveThreadData,
+        setLiveChatData: ctx.setLiveChatData,
       })
     },
   },
   {
-    matches: (ctx) => ctx.action === 'workspace.write-file',
+    matches: (ctx) => ctx.action === 'coding.write-file',
     run: (ctx) =>
       applyWorkspaceFileWritePostEffect({
         contextualPayload: ctx.contextualPayload,
         written: ctx.actionResult?.result?.fileWrite?.kind === 'written',
         queryClient: ctx.queryClient,
-        loadProjectGitState: ctx.loadProjectGitState,
-        setProjectGitState: ctx.setProjectGitState,
+        loadDirectoryGitState: ctx.loadDirectoryGitState,
+        setDirectoryGitState: ctx.setDirectoryGitState,
       }),
   },
   {
-    matches: (ctx) => ctx.action === 'workspace.commit',
+    matches: (ctx) => ctx.action === 'coding.commit',
     run: (ctx) =>
       applyWorkspaceCommitPostEffect({
         contextualPayload: ctx.contextualPayload,
         committed: ctx.actionResult?.result?.committed === true,
         queryClient: ctx.queryClient,
-        loadProjectGitState: ctx.loadProjectGitState,
-        setProjectGitState: ctx.setProjectGitState,
+        loadDirectoryGitState: ctx.loadDirectoryGitState,
+        setDirectoryGitState: ctx.setDirectoryGitState,
       }),
   },
 ]

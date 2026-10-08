@@ -15,8 +15,9 @@ import { useComposerDraftState } from './useComposerDraftState'
 
 type UseComposerControllerProps = {
   activeView: View
-  projectId: string
-  chatGroupId?: string | null | undefined
+  composerProfile?: 'general' | 'coding'
+  directoryId: string
+  workspaceId?: string | null | undefined
   conversationId: string | null
   dictationModelId: string | null
   dictationMaxDurationSeconds: number
@@ -26,7 +27,7 @@ type UseComposerControllerProps = {
   streamingBehaviorPreference: ComposerStreamingBehavior
   onAction: DesktopActionInvoker
   onListAttachmentEntries: (request: {
-    projectId?: string | null
+    directoryId?: string | null
     path?: string | null
     rootPath?: string | null
   }) => Promise<ComposerFilePickerState | null>
@@ -34,8 +35,9 @@ type UseComposerControllerProps = {
 
 export function useComposerController({
   activeView,
-  projectId,
-  chatGroupId = null,
+  composerProfile = 'coding',
+  directoryId,
+  workspaceId = null,
   conversationId,
   dictationModelId,
   dictationMaxDurationSeconds,
@@ -52,7 +54,6 @@ export function useComposerController({
   const pendingSubmittedReplyActivityKeyRef = useRef<string | null>(null)
   const pendingSubmittedDraftScopeKeyRef = useRef<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const composerMode = activeView === 'chat' ? 'chat' : 'code'
   const pickerButtonRef = useRef<HTMLButtonElement>(null)
   const pickerPanelRef = useRef<HTMLDivElement>(null)
   const modelButtonRef = useRef<HTMLButtonElement>(null)
@@ -60,19 +61,19 @@ export function useComposerController({
   const sendLockRef = useRef(false)
   const {
     activeComposerScopeKeyRef,
-    activeDraftThreadIdRef,
+    activeDraftChatIdRef,
     attachments,
     attachmentsRef,
     composerScopeKey,
     draft,
-    draftThreadId,
+    draftChatId,
     draftValueRef,
     setAttachmentValue,
     setDraftValue,
     skipNextDraftPersistenceRef,
   } = useComposerDraftState({
-    composerMode,
-    projectId,
+    composerProfile,
+    directoryId,
     conversationId,
     openMenu,
     setOpenMenu,
@@ -156,8 +157,8 @@ export function useComposerController({
     activeView,
     dictationModelId,
     dictationMaxDurationSeconds,
-    draftThreadId,
-    projectId,
+    draftChatId,
+    directoryId,
     conversationId,
     setDraftValue,
     setErrorMessage,
@@ -175,8 +176,8 @@ export function useComposerController({
     togglePendingPickerAttachment,
   } = useComposerAttachmentPicker({
     openMenu,
-    pickerRootPath: projectId,
-    pickerSessionKey: draftThreadId,
+    pickerRootPath: directoryId,
+    pickerSessionKey: draftChatId,
     setAttachments: setAttachmentValue,
     setErrorMessage,
     setOpenMenu,
@@ -191,13 +192,13 @@ export function useComposerController({
 
   const { compact, send, stop } = useComposerSubmission({
     composerScopeKey,
-    draftThreadId,
+    draftChatId,
     isSending,
     isStreaming,
     isCompacting,
     onAction,
-    projectId,
-    chatGroupId,
+    directoryId,
+    workspaceId,
     conversationId,
     setAttachments: setAttachmentValue,
     setDraftValue,
@@ -210,7 +211,7 @@ export function useComposerController({
     stopDictationAndFlush,
     streamingBehaviorPreference,
     activeComposerScopeKeyRef,
-    activeDraftThreadIdRef,
+    activeDraftChatIdRef,
     attachmentsRef,
     draftValueRef,
     sendLockRef,

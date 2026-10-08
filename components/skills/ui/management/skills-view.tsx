@@ -62,16 +62,16 @@ function DesktopRequiredState({ onClose }: { onClose: () => void }) {
 
 export function SkillsView({
   appSettings,
-  projectPath,
-  onProjectTargetSelected,
-  onSetProjectScopeActive,
+  directoryPath,
+  onDirectoryTargetSelected,
+  onSetDirectoryScopeActive,
   onAction,
   onClose,
 }: SkillsViewProps) {
   const controller = useSkillsController({
-    projectPath,
-    onProjectTargetSelected,
-    onSetProjectScopeActive,
+    directoryPath,
+    onDirectoryTargetSelected,
+    onSetDirectoryScopeActive,
   })
 
   if (!controller.desktopSkillsAvailable) {
@@ -91,7 +91,7 @@ export function SkillsView({
             value={controller.installScope}
             counts={{
               global: controller.globalSkillCount,
-              project: controller.projectSkillCount,
+              directory: controller.directorySkillCount,
               chat: controller.chatSkillCount,
             }}
             onChange={controller.setInstallScope}

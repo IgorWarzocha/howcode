@@ -52,7 +52,7 @@ export function InboxComposerSurface({
               loading={input.pickerLoading}
               picker={input.pickerState}
               panelRef={overlay.pickerPanelRef}
-              projectRootPath={props.thread.projectId}
+              directoryRootPath={props.chat.directoryId}
               onAttachAttachments={input.attachPickerAttachments}
               onOpenRoot={input.openPickerRoot}
               onOpenDirectory={input.openPickerDirectory}
@@ -108,15 +108,15 @@ export function InboxComposerSurface({
             currentModel={props.modelState.currentModel}
             currentThinkingLevel={props.modelState.currentThinkingLevel}
             isCompacting={props.isCompacting}
-            isStreaming={props.thread.running}
+            isStreaming={props.chat.running}
             localActionPending={actions.localActionPending}
             modelButtonRef={overlay.modelButtonRef}
             modelMenuOpen={overlay.openMenu === 'model'}
             modelMenuRef={overlay.modelMenuRef}
-            conversationId={props.thread.conversationId}
+            conversationId={props.chat.conversationId}
             onCompact={() => void actions.compact()}
             onDismiss={props.onDismiss}
-            onOpenThread={props.onOpenThread}
+            onOpenChat={props.onOpenChat}
             onSelectModel={(model) => void actions.selectModel(model)}
             onSelectThinkingLevel={(level) => void actions.selectThinkingLevel(level)}
             onToggleModelMenu={() =>
@@ -126,7 +126,7 @@ export function InboxComposerSurface({
         </section>
       </div>
       <InboxStopRail
-        isStreaming={props.thread.running}
+        isStreaming={props.chat.running}
         isSending={props.reply.isSending}
         localActionPending={actions.localActionPending}
         onStop={props.reply.stop}

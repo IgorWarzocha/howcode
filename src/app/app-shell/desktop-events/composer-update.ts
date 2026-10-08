@@ -4,7 +4,7 @@ import type { DesktopEventSyncRuntime } from './runtime'
 
 function shouldApplyComposerUpdate(input: {
   event: Extract<DesktopEvent, { type: 'composer-update' }>
-  latestComposerProjectId: string
+  latestComposerDirectoryId: string
   latestWorkspaceState: DesktopEventSyncRuntime['desktopEventStateRef']['current']['workspaceState']
   localDraftConversationIdByPersistedConversationIdRef: React.RefObject<Map<string, string>>
   visibleConversationId: string | null
@@ -21,10 +21,9 @@ function shouldApplyComposerUpdate(input: {
     )
   }
   return (
-    input.event.projectId === input.latestComposerProjectId &&
-    ((input.latestWorkspaceState.activeView !== 'thread' &&
-      input.latestWorkspaceState.activeView !== 'gitops' &&
-      input.latestWorkspaceState.activeView !== 'chat') ||
+    input.event.directoryId === input.latestComposerDirectoryId &&
+    ((input.latestWorkspaceState.activeView !== 'chat' &&
+      input.latestWorkspaceState.activeView !== 'gitops') ||
       input.visibleConversationId === null)
   )
 }
@@ -33,13 +32,13 @@ export function handleComposerUpdateEvent(
   runtime: DesktopEventSyncRuntime,
   event: Extract<DesktopEvent, { type: 'composer-update' }>,
 ) {
-  const { composerProjectId: latestComposerProjectId, workspaceState: latestWorkspaceState } =
+  const { composerDirectoryId: latestComposerDirectoryId, workspaceState: latestWorkspaceState } =
     runtime.desktopEventStateRef.current
   const visibleConversationId = getVisibleDesktopConversationId(latestWorkspaceState)
   if (
     shouldApplyComposerUpdate({
       event,
-      latestComposerProjectId,
+      latestComposerDirectoryId,
       latestWorkspaceState,
       localDraftConversationIdByPersistedConversationIdRef:
         runtime.localDraftConversationIdByPersistedConversationIdRef,

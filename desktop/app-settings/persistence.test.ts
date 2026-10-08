@@ -12,17 +12,17 @@ async function openSettings() {
   const [
     { loadAppSettings },
     { setGitDiffBaselineDefault, setEnabledToolkitComponents },
-    { disposeThreadStateDatabase },
+    { disposeChatStateDatabase },
   ] = await Promise.all([
     import('./readers.ts'),
     import('./writers.ts'),
-    import('../thread-state-db/db.ts'),
+    import('../chat-repository/db.ts'),
   ])
   return {
     loadAppSettings,
     setGitDiffBaselineDefault,
     setEnabledToolkitComponents,
-    dispose: disposeThreadStateDatabase,
+    dispose: disposeChatStateDatabase,
   }
 }
 
@@ -64,7 +64,7 @@ it('preserves legacy component choices and explicit empty selections across reop
     expect(toolkitComponents.every(({ id }) => isToolkitComponentEnabled(defaults, id))).toBe(true)
     expect(() => getSettingsToolkitComponents({ value: ['unknown'] })).toThrow()
     expect(settings.loadAppSettings().enabledToolkitComponents).toBeUndefined()
-    const { databaseOperation } = await import('../thread-state-db/db.ts')
+    const { databaseOperation } = await import('../chat-repository/db.ts')
     databaseOperation(() =>
       Effect.gen(function* () {
         const sql = yield* SqlClient.SqlClient

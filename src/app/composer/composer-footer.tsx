@@ -8,8 +8,8 @@ import type {
   ComposerContextUsage,
   ComposerModel,
   ComposerThinkingLevel,
-  ProjectDiffBaseline,
-  ProjectGitState,
+  DirectoryDiffBaseline,
+  DirectoryGitState,
 } from '../desktop/types'
 import type { Message } from '../types'
 import { cn } from '../utils/cn'
@@ -29,7 +29,7 @@ type ComposerFooterProps = {
   availableModels: ComposerModel[]
   availableThinkingLevels: ComposerThinkingLevel[]
   composerPanelRef: RefObject<HTMLDivElement | null>
-  diffBaseline: ProjectDiffBaseline
+  diffBaseline: DirectoryDiffBaseline
   model: ComposerModel | null
   contextUsage: ComposerContextUsage | null
   messages?: Message[] | undefined
@@ -41,15 +41,15 @@ type ComposerFooterProps = {
   preferPortalModelPopover?: boolean | undefined
   onOpenGitOps: () => void
   onCompact: () => void
-  onSelectBaseline: (baseline: ProjectDiffBaseline) => void
+  onSelectBaseline: (baseline: DirectoryDiffBaseline) => void
   onSelectModel: (model: ComposerModel) => void
   onSelectThinkingLevel: (level: ComposerThinkingLevel) => void
   onSetOpenMenu: Dispatch<SetStateAction<'model' | 'picker' | null>>
   onToggleArtifacts?: (() => void) | undefined
   onToggleTerminal: () => void
-  projectGitState: ProjectGitState | null
+  directoryGitState: DirectoryGitState | null
   parentBranchName?: string | null | undefined
-  projectId: string
+  directoryId: string
   showTerminalControls?: boolean | undefined
   artifactsVisible?: boolean | undefined
   artifactsAvailable?: boolean | undefined
@@ -80,9 +80,9 @@ export function ComposerFooter({
   onSetOpenMenu,
   onToggleArtifacts,
   onToggleTerminal,
-  projectGitState,
+  directoryGitState,
   parentBranchName,
-  projectId,
+  directoryId,
   showTerminalControls = true,
   artifactsVisible = false,
   artifactsAvailable = Boolean(onToggleArtifacts),
@@ -149,8 +149,8 @@ export function ComposerFooter({
           selector={{
             composerPanelRef,
             parentBranchName,
-            projectId,
-            projectGitState,
+            directoryId,
+            directoryGitState,
             selectedBaseline: diffBaseline,
             onSelectBaseline,
           }}

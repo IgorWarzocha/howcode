@@ -5,18 +5,18 @@ import { browserDesktopBridgeCapabilities } from '@howcode/shared/desktop-bridge
 
 import { getSafeExternalUrl } from '@howcode/shared/external-url'
 import type {
-  ArchivedThread,
-  ChatSidebarState,
+  ArchivedChat,
+  Chat,
+  ChatData,
+  ChatSearchResult,
   ComposerAttachment,
   ComposerFilePickerState,
   ComposerSlashCommand,
   ComposerState,
   ComposerStateRequest,
-  InboxThread,
+  InboxChat,
   ShellState,
-  Thread,
-  ThreadData,
-  ThreadSearchResult,
+  WorkspaceNavigationState,
 } from '../desktop/types'
 
 export function hasDesktopBridgeQuery() {
@@ -50,26 +50,28 @@ export async function getShellStateQuery(): Promise<ShellState | null> {
   return (await window.piDesktop?.getShellState?.()) ?? null
 }
 
-export async function getProjectThreadsQuery(projectId: string, chat = false): Promise<Thread[]> {
-  return (await window.piDesktop?.getProjectThreads?.(projectId, { chat })) ?? []
+export async function getDirectoryChatsQuery(directoryId: string): Promise<Chat[]> {
+  return (await window.piDesktop?.getDirectoryChats?.(directoryId)) ?? []
 }
 
-export async function getChatSidebarStateQuery(
-  selectedGroupId?: string | null | undefined,
-): Promise<ChatSidebarState | null> {
-  return (await window.piDesktop?.getChatSidebarState?.(selectedGroupId ?? null)) ?? null
+export async function getWorkspaceNavigationStateQuery(
+  selectedWorkspaceId?: string | null | undefined,
+): Promise<WorkspaceNavigationState | null> {
+  return (
+    (await window.piDesktop?.getWorkspaceNavigationState?.(selectedWorkspaceId ?? null)) ?? null
+  )
 }
 
-export async function createChatGroupQuery(name: string): Promise<ChatSidebarState | null> {
-  return (await window.piDesktop?.createChatGroup?.(name)) ?? null
+export async function createWorkspaceQuery(name: string): Promise<WorkspaceNavigationState | null> {
+  return (await window.piDesktop?.createWorkspace?.(name)) ?? null
 }
 
-export async function getInboxThreadsQuery(): Promise<InboxThread[]> {
-  return (await window.piDesktop?.getInboxThreads?.()) ?? []
+export async function getInboxChatsQuery(): Promise<InboxChat[]> {
+  return (await window.piDesktop?.getInboxChats?.()) ?? []
 }
 
-export async function getArchivedThreadsQuery(): Promise<ArchivedThread[]> {
-  return (await window.piDesktop?.getArchivedThreads?.()) ?? []
+export async function getArchivedChatsQuery(): Promise<ArchivedChat[]> {
+  return (await window.piDesktop?.getArchivedChats?.()) ?? []
 }
 
 export async function getComposerStateQuery(
@@ -90,7 +92,7 @@ export async function getComposerSkillsQuery(request: ComposerStateRequest = {})
 
 export async function listComposerAttachmentEntriesQuery(
   request: {
-    projectId?: string | null | undefined
+    directoryId?: string | null | undefined
     path?: string | null | undefined
     rootPath?: string | null | undefined
   } = {},
@@ -100,7 +102,7 @@ export async function listComposerAttachmentEntriesQuery(
 
 export async function searchComposerAttachmentEntriesQuery(
   request: {
-    projectId?: string | null | undefined
+    directoryId?: string | null | undefined
     query?: string | null | undefined
     limit?: number | null | undefined
   } = {},
@@ -123,23 +125,23 @@ export function openExternalQuery(url: string): Promise<boolean> {
   return Promise.resolve(true)
 }
 
-export async function getThreadQuery(
+export async function getChatQuery(
   conversationId: string,
   historyCompactions = 0,
-): Promise<ThreadData | null> {
-  return (await window.piDesktop?.getThread?.(conversationId, historyCompactions)) ?? null
+): Promise<ChatData | null> {
+  return (await window.piDesktop?.getChat?.(conversationId, historyCompactions)) ?? null
 }
 
 export async function getConversationEntriesQuery(conversationId: string) {
   return (await window.piDesktop?.getConversationEntries?.(conversationId)) ?? null
 }
 
-export async function searchThreadQuery(
+export async function searchChatQuery(
   conversationId: string,
   query: string,
-): Promise<ThreadSearchResult> {
+): Promise<ChatSearchResult> {
   return (
-    (await window.piDesktop?.searchThread?.(conversationId, query)) ?? {
+    (await window.piDesktop?.searchChat?.(conversationId, query)) ?? {
       matches: [],
       searchedMessageCount: 0,
     }

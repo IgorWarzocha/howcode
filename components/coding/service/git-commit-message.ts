@@ -2,7 +2,7 @@ import { loadAppSettings } from '../../../desktop/app-settings/readers.ts'
 import { getDurableRuntime, runtimeContext } from '../../../desktop/durable-runtime/host.ts'
 import { getDurableModels } from '../../../desktop/settings/models.ts'
 import type { ComposerStateRequest } from '../../../shared/desktop-contracts.ts'
-import type { CommitMessageContext } from './project-git.ts'
+import type { CommitMessageContext } from './directory-git.ts'
 
 const MAX_FILE_SECTION_CHARS = 12_000
 const MAX_PATCH_CHARS = 48_000

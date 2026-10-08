@@ -5,3 +5,4 @@
 - `ComposerPromptInputPanel` owns the editor, mentions, and paste. Dictation owns its controls, capture lifecycle and commands in `components/dictation/ui`; hosts compose attachment, conversation-fork, and slash overlays around it.
 - Forks create a new conversation at an entry. Queued submissions may be canceled by ID, never edited or restored to the draft; placed submissions cannot be canceled.
 - Route fallible composer actions through `useComposerActionRunner` so backend and thrown failures reach the visible composer error state.
+- Composer draft version 1 stores `draftsByThreadId`; keep that persisted field and draft-key namespaces stable when renaming internal chat concepts.

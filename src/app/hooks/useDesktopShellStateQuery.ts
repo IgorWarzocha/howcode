@@ -3,13 +3,16 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo } from 'react'
 import type { ShellState } from '../desktop/types'
 import { desktopQueryKeys, getShellStateQuery } from '../query/desktop-query'
-import type { Project } from '../types'
+import type { WorkingDirectory } from '../types'
 
-function sameProjectWorktree(left: Project['worktree'], right: Project['worktree']) {
+function sameDirectoryWorktree(
+  left: WorkingDirectory['worktree'],
+  right: WorkingDirectory['worktree'],
+) {
   if (left === right) return true
   if (!(left && right)) return false
   return (
-    left.rootProjectId === right.rootProjectId &&
+    left.rootDirectoryId === right.rootDirectoryId &&
     left.branchName === right.branchName &&
     left.parentBranchName === right.parentBranchName &&
     left.isMain === right.isMain &&
@@ -18,66 +21,68 @@ function sameProjectWorktree(left: Project['worktree'], right: Project['worktree
   )
 }
 
-function sameProjectForShellRefresh(left: Project, right: Project) {
+function sameDirectoryForShellRefresh(left: WorkingDirectory, right: WorkingDirectory) {
   return (
     left.id === right.id &&
     left.resolvedId === right.resolvedId &&
     left.name === right.name &&
-    left.threads === right.threads &&
+    left.chats === right.chats &&
     left.latestModifiedMs === right.latestModifiedMs &&
     left.pinned === right.pinned &&
     left.collapsed === right.collapsed &&
-    left.threadsLoaded === right.threadsLoaded &&
-    left.threadsScope === right.threadsScope &&
-    left.threadCount === right.threadCount &&
+    left.chatsLoaded === right.chatsLoaded &&
+    left.chatCount === right.chatCount &&
     left.repoOriginUrl === right.repoOriginUrl &&
     left.repoOriginChecked === right.repoOriginChecked &&
     left.worktreeDirectory === right.worktreeDirectory &&
-    sameProjectWorktree(left.worktree, right.worktree)
+    sameDirectoryWorktree(left.worktree, right.worktree)
   )
 }
 
-function preserveProjectReference(currentProject: Project | undefined, nextProject: Project) {
-  return currentProject && sameProjectForShellRefresh(currentProject, nextProject)
-    ? currentProject
-    : nextProject
+function preserveDirectoryReference(
+  currentDirectory: WorkingDirectory | undefined,
+  nextDirectory: WorkingDirectory,
+) {
+  return currentDirectory && sameDirectoryForShellRefresh(currentDirectory, nextDirectory)
+    ? currentDirectory
+    : nextDirectory
 }
 
-export function mergeShellStateProjects(
+export function mergeShellStateDirectories(
   currentState: ShellState | null | undefined,
   nextState: ShellState | null,
 ): ShellState | null {
   if (!nextState) return null
   if (!currentState) return nextState
 
-  const currentProjectsById = new Map(
-    currentState.projects.map((project) => [project.id, project] as const),
+  const currentDirectoriesById = new Map(
+    currentState.directories.map((directory) => [directory.id, directory] as const),
   )
-  let reusedProjectCount = 0
-  const projects = nextState.projects.map((project) => {
-    const currentProject = currentProjectsById.get(project.id)
-    if (!currentProject?.threadsLoaded || project.threadsLoaded) {
-      const nextProject = preserveProjectReference(currentProject, project)
-      if (nextProject === currentProject) reusedProjectCount += 1
-      return nextProject
+  let reusedDirectoryCount = 0
+  const directories = nextState.directories.map((directory) => {
+    const currentDirectory = currentDirectoriesById.get(directory.id)
+    if (!currentDirectory?.chatsLoaded || directory.chatsLoaded) {
+      const nextDirectory = preserveDirectoryReference(currentDirectory, directory)
+      if (nextDirectory === currentDirectory) reusedDirectoryCount += 1
+      return nextDirectory
     }
-    const nextProject = preserveProjectReference(currentProject, {
-      ...project,
-      threads: currentProject.threads,
-      threadCount: Math.max(project.threadCount ?? 0, currentProject.threads.length),
+    const nextDirectory = preserveDirectoryReference(currentDirectory, {
+      ...directory,
+      chats: currentDirectory.chats,
+      chatCount: Math.max(directory.chatCount ?? 0, currentDirectory.chats.length),
       latestModifiedMs: Math.max(
-        project.latestModifiedMs ?? 0,
-        currentProject.latestModifiedMs ?? 0,
+        directory.latestModifiedMs ?? 0,
+        currentDirectory.latestModifiedMs ?? 0,
       ),
-      threadsLoaded: true,
-      threadsScope: currentProject.threadsScope,
+      chatsLoaded: true,
     })
-    if (nextProject === currentProject) reusedProjectCount += 1
-    return nextProject
+    if (nextDirectory === currentDirectory) reusedDirectoryCount += 1
+    return nextDirectory
   })
   return {
     ...nextState,
-    projects: reusedProjectCount === projects.length ? currentState.projects : projects,
+    directories:
+      reusedDirectoryCount === directories.length ? currentState.directories : directories,
   }
 }
 
@@ -86,7 +91,7 @@ export function useDesktopShellStateQuery() {
   const loadMergedShellState = useCallback(async () => {
     const nextState = await getShellStateQuery()
     const currentState = queryClient.getQueryData<ShellState | null>(desktopQueryKeys.shellState())
-    return mergeShellStateProjects(currentState, nextState)
+    return mergeShellStateDirectories(currentState, nextState)
   }, [queryClient])
   const shellStateQuery = useQuery<ShellState | null>({
     queryKey: desktopQueryKeys.shellState(),

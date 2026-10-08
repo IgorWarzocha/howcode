@@ -5,7 +5,7 @@ export const PiConfiguredSkillSchema = Schema.Struct({
   identityKey: Schema.String,
   displayName: Schema.String,
   description: Schema.NullOr(Schema.String),
-  scope: Schema.Literals(['user', 'project', 'chat']),
+  scope: Schema.Literals(['user', 'directory', 'chat']),
   provenance: Schema.Literals(['skills.sh', 'local']),
   installedPath: Schema.String,
   skillFilePath: Schema.String,

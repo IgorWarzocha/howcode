@@ -3,9 +3,9 @@ import type { PiResourceInstallScope } from '../../../../src/app/pi-resources/ty
 
 export type SkillsViewProps = {
   appSettings: AppSettings
-  projectPath: string | null
-  onSetProjectScopeActive: (active: boolean) => void
-  onProjectTargetSelected?: (() => void) | undefined
+  directoryPath: string | null
+  onSetDirectoryScopeActive: (active: boolean) => void
+  onDirectoryTargetSelected?: (() => void) | undefined
   onAction: DesktopActionInvoker
   onClose: () => void
 }

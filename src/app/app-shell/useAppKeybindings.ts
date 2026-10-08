@@ -120,16 +120,16 @@ export function useAppKeybindings(input: {
     const current = cycleSelectionRef.current
     if (!current) return
     if (
-      current.view !== (controller.workspace.state.activeView === 'chat' ? 'chat' : 'thread') ||
-      current.projectId !== controller.workspace.state.selectedProjectId ||
-      current.threadId !== controller.workspace.state.selectedThreadId
+      controller.workspace.state.activeView !== 'chat' ||
+      current.directoryId !== controller.workspace.state.selectedDirectoryId ||
+      current.chatId !== controller.workspace.state.selectedChatId
     ) {
       cycleSelectionRef.current = null
     }
   }, [
     controller.workspace.state.activeView,
-    controller.workspace.state.selectedProjectId,
-    controller.workspace.state.selectedThreadId,
+    controller.workspace.state.selectedDirectoryId,
+    controller.workspace.state.selectedChatId,
   ])
 
   useEffect(() => {

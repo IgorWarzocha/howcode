@@ -1,6 +1,6 @@
 import { isSelectedConversationView } from '@howcode/component-system/toolkit-components'
 import {
-  getLocalDraftProjectId,
+  getLocalDraftDirectoryId,
   getPersistedConversationId,
   isLocalConversationId,
 } from '@howcode/shared/conversation-ids'
@@ -16,8 +16,9 @@ type QueryClientLike = {
 export type DesktopEventSelectionState = Pick<
   WorkspaceState,
   | 'activeView'
-  | 'selectedProjectId'
-  | 'selectedThreadId'
+  | 'composerProfile'
+  | 'selectedDirectoryId'
+  | 'selectedChatId'
   | 'selectedConversationId'
   | 'selectedInboxConversationId'
 >
@@ -30,35 +31,35 @@ export function getVisibleDesktopConversationId(workspaceState: DesktopEventSele
       : null
 }
 
-export function shouldAutoOpenStartedThread({
+export function shouldAutoOpenStartedChat({
   reason,
-  projectId,
+  directoryId,
   workspaceState,
 }: {
-  reason: Extract<DesktopEvent, { type: 'thread-update' }>['reason']
-  projectId: string
-  isChat?: boolean | undefined
+  reason: Extract<DesktopEvent, { type: 'chat-update' }>['reason']
+  directoryId: string
+  composerProfile?: 'general' | 'coding' | undefined
   workspaceState: DesktopEventSelectionState
 }) {
-  if (reason !== 'start' || projectId !== workspaceState.selectedProjectId) {
+  if (reason !== 'start' || directoryId !== workspaceState.selectedDirectoryId) {
     return false
   }
 
   // Do not let background runtime starts steal focus. User-initiated sends and explicit
-  // thread creation open from their action result; ambient thread events should only update caches.
+  // chat creation open from their action result; ambient chat events should only update caches.
   return false
 }
 
-export function shouldDisplayStartedThreadForLocalDraft({
+export function shouldDisplayStartedChatForLocalDraft({
   reason,
-  projectId,
-  isChat,
+  directoryId,
+  composerProfile,
   replacesConversationId,
   workspaceState,
 }: {
-  reason: Extract<DesktopEvent, { type: 'thread-update' }>['reason']
-  projectId: string
-  isChat?: boolean | undefined
+  reason: Extract<DesktopEvent, { type: 'chat-update' }>['reason']
+  directoryId: string
+  composerProfile?: 'general' | 'coding' | undefined
   replacesConversationId?: string | null | undefined
   workspaceState: DesktopEventSelectionState
 }) {
@@ -69,34 +70,33 @@ export function shouldDisplayStartedThreadForLocalDraft({
     return false
   }
 
-  const localDraftProjectId = getLocalDraftProjectId(workspaceState.selectedConversationId)
-  if (localDraftProjectId !== projectId) {
+  const localDraftDirectoryId = getLocalDraftDirectoryId(workspaceState.selectedConversationId)
+  if (localDraftDirectoryId !== directoryId) {
     return false
   }
 
   return (
-    (workspaceState.activeView === 'chat' && isChat === true) ||
-    ((workspaceState.activeView === 'thread' || workspaceState.activeView === 'project') &&
-      isChat !== true)
+    (workspaceState.activeView === 'chat' || workspaceState.activeView === 'directory') &&
+    (composerProfile === undefined || composerProfile === workspaceState.composerProfile)
   )
 }
 
-export async function refreshVisibleInboxThread({
+export async function refreshVisibleInboxChat({
   event,
-  loadProjectThreads,
+  loadDirectoryChats,
   queryClient,
 }: {
-  event: Extract<DesktopEvent, { type: 'thread-update' }>
-  loadProjectThreads: (projectId: string) => Promise<unknown>
+  event: Extract<DesktopEvent, { type: 'chat-update' }>
+  loadDirectoryChats: (directoryId: string) => Promise<unknown>
   queryClient: QueryClientLike
 }) {
   await invokeDesktopActionQuery('inbox.mark-read', {
     conversationId: event.conversationId,
-    projectId: event.projectId,
+    directoryId: event.directoryId,
   })
 
   await Promise.all([
-    loadProjectThreads(event.projectId),
-    queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() }),
+    loadDirectoryChats(event.directoryId),
+    queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxChats() }),
   ])
 }

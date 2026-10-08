@@ -4,8 +4,8 @@ import type { PiConfiguredSkill } from '../../../shared/desktop-contracts.ts'
 import { parseSkillFrontmatter } from './frontmatter.ts'
 import {
   getChatSkillsDirs,
+  getDirectorySkillsDirs,
   getGlobalSkillsDirs,
-  getProjectSkillsDirs,
   pathExists,
 } from './paths.ts'
 
@@ -64,7 +64,7 @@ async function listSkillsInDirectory(
 function sortConfiguredSkills(skills: PiConfiguredSkill[]) {
   const scopeRank: Record<PiConfiguredSkill['scope'], number> = {
     user: 0,
-    project: 1,
+    directory: 1,
     chat: 2,
   }
 
@@ -80,17 +80,20 @@ function sortConfiguredSkills(skills: PiConfiguredSkill[]) {
 }
 
 export async function listConfiguredPiSkills(
-  request: { projectPath?: string | undefined | null | undefined; chat?: boolean | undefined } = {},
+  request: {
+    directoryPath?: string | undefined | null | undefined
+    chat?: boolean | undefined
+  } = {},
 ): Promise<PiConfiguredSkill[]> {
   const globalSkills = (
     await Promise.all(
       getGlobalSkillsDirs().map((skillsDirPath) => listSkillsInDirectory(skillsDirPath, 'user')),
     )
   ).flat()
-  const projectSkills = (
+  const directorySkills = (
     await Promise.all(
-      getProjectSkillsDirs(request.projectPath).map((skillsDirPath) =>
-        listSkillsInDirectory(skillsDirPath, 'project'),
+      getDirectorySkillsDirs(request.directoryPath).map((skillsDirPath) =>
+        listSkillsInDirectory(skillsDirPath, 'directory'),
       ),
     )
   ).flat()
@@ -102,5 +105,5 @@ export async function listConfiguredPiSkills(
       ).flat()
     : []
 
-  return sortConfiguredSkills([...globalSkills, ...projectSkills, ...chatSkills])
+  return sortConfiguredSkills([...globalSkills, ...directorySkills, ...chatSkills])
 }

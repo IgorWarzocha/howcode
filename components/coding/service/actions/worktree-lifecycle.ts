@@ -1,50 +1,54 @@
-import { deletePersistedThreads } from '../../../../desktop/app-service/thread-actions.ts'
-import { abortWorkspaceConversations } from '../../../../desktop/conversation-runtime.ts'
-import { withWorkspaceTeardown } from '../../../../desktop/runtime/workspace-activity.ts'
+import { deletePersistedChats } from '../../../../desktop/app-service/chat-actions.ts'
 import {
-  listProjectConversationIds,
-  listProjectThreadIds,
-  setThreadRunningState,
-} from '../../../../desktop/thread-state-db.ts'
+  listDirectoryChatIds,
+  listDirectoryConversationIds,
+  setChatRunningState,
+} from '../../../../desktop/chat-repository.ts'
+import { abortWorkspaceConversations } from '../../../../desktop/conversation-runtime.ts'
+import { withDirectoryTeardown } from '../../../../desktop/runtime/directory-activity.ts'
 import type { CodingPeers } from '../dependencies.ts'
-import { getActiveBranch } from '../project-git/project-state.ts'
-import { mergeProjectBranch, pruneProjectBranch, removeProjectWorktree } from '../project-git.ts'
-import type { RegisteredWorktree } from '../project-worktrees/registered-worktree.ts'
+import { getActiveBranch } from '../directory-git/directory-state.ts'
+import {
+  mergeDirectoryBranch,
+  pruneDirectoryBranch,
+  removeDirectoryWorktree,
+} from '../directory-git.ts'
+import type { RegisteredWorktree } from '../directory-worktrees/registered-worktree.ts'
 import {
   getWorktreeMergeTargetError,
   resolveRegisteredWorktree,
-} from '../project-worktrees/registered-worktree.ts'
-import { withRootGitMutation } from '../project-worktrees/root-git-mutation-gate.ts'
-import { deleteProject, setProjectWorktreeCompleted } from '../state.ts'
+} from '../directory-worktrees/registered-worktree.ts'
+import { withRootGitMutation } from '../directory-worktrees/root-git-mutation-gate.ts'
+import { deleteDirectory, setDirectoryWorktreeCompleted } from '../state.ts'
 
 export type WorktreeLifecycleResult = {
   didMutate: boolean
-  rootProjectId: string
-  projectId: string
+  rootDirectoryId: string
+  directoryId: string
   branchName: string | null
   worktreeCompleted?: boolean | undefined
   worktreeRemoved: boolean
   error?: string | undefined
   message?: string | undefined
-  failedThreadIds?: string[] | undefined
+  failedChatIds?: string[] | undefined
 }
 
 async function stopWorkspaceConversationsAndTerminals(
-  projectId: string,
+  directoryId: string,
   closeWorkspaceTerminals: CodingPeers['closeWorkspaceTerminals'],
 ) {
-  const conversationIds = listProjectConversationIds(projectId)
+  const conversationIds = listDirectoryConversationIds(directoryId)
   await abortWorkspaceConversations(conversationIds)
-  for (const conversationId of conversationIds) setThreadRunningState(conversationId, false)
-  await closeWorkspaceTerminals(projectId)
+  for (const conversationId of conversationIds) setChatRunningState(conversationId, false)
+  await closeWorkspaceTerminals(directoryId)
 }
 
-async function deleteWorkspaceThreads(threadIds: string[]) {
-  const result = await deletePersistedThreads(threadIds)
-  if (result.failedThreadIds.length === 0) return null
+async function deleteWorkspaceChats(chatIds: string[]) {
+  const result = await deletePersistedChats(chatIds)
+  if (result.failedChatIds.length === 0) return null
   return {
-    error: `Failed to delete ${result.failedThreadIds.length} thread(s).`,
-    failedThreadIds: result.failedThreadIds,
+    error: `Failed to delete ${result.failedChatIds.length} chat(s).`,
+    failedChatIds: result.failedChatIds,
   }
 }
 
@@ -52,12 +56,12 @@ function resultFor(
   worktree: RegisteredWorktree,
   details: Pick<WorktreeLifecycleResult, 'didMutate' | 'worktreeRemoved'> &
     Partial<
-      Pick<WorktreeLifecycleResult, 'error' | 'failedThreadIds' | 'message' | 'worktreeCompleted'>
+      Pick<WorktreeLifecycleResult, 'error' | 'failedChatIds' | 'message' | 'worktreeCompleted'>
     >,
 ): WorktreeLifecycleResult {
   return {
-    rootProjectId: worktree.rootProjectId,
-    projectId: worktree.projectId,
+    rootDirectoryId: worktree.rootDirectoryId,
+    directoryId: worktree.directoryId,
     branchName: worktree.branchName,
     ...details,
   }
@@ -67,7 +71,7 @@ async function mergeRegisteredWorktree(worktree: RegisteredWorktree, merge: bool
   if (!merge) return { didMutate: false, worktreeCompleted: false }
   const targetError = getWorktreeMergeTargetError({
     ...worktree,
-    currentRootBranchName: await getActiveBranch(worktree.rootProjectId),
+    currentRootBranchName: await getActiveBranch(worktree.rootDirectoryId),
   })
   if (targetError) {
     return {
@@ -78,7 +82,7 @@ async function mergeRegisteredWorktree(worktree: RegisteredWorktree, merge: bool
   }
 
   if (!worktree.branchName) throw new Error('Validated merge target has no branch.')
-  const mergeResult = await mergeProjectBranch(worktree.rootProjectId, worktree.branchName)
+  const mergeResult = await mergeDirectoryBranch(worktree.rootDirectoryId, worktree.branchName)
   if ('error' in mergeResult) {
     return {
       didMutate: mergeResult.didMutate === true,
@@ -89,12 +93,12 @@ async function mergeRegisteredWorktree(worktree: RegisteredWorktree, merge: bool
 
   return {
     didMutate: true,
-    worktreeCompleted: setProjectWorktreeCompleted(worktree.projectId, true),
+    worktreeCompleted: setDirectoryWorktreeCompleted(worktree.directoryId, true),
   }
 }
 
 async function refreshWorktreeAfterActivityStop(worktree: RegisteredWorktree) {
-  const refreshed = await resolveRegisteredWorktree(worktree.rootProjectId, worktree.worktreePath)
+  const refreshed = await resolveRegisteredWorktree(worktree.rootDirectoryId, worktree.worktreePath)
   if ('error' in refreshed) return refreshed
   if (refreshed.branchName !== worktree.branchName) {
     return { error: 'Worktree branch changed while its sessions were stopping.' }
@@ -108,9 +112,9 @@ async function finishWorktreeRemoval(input: {
   pruneBranch: boolean
 }) {
   const { worktree, mergeResult } = input
-  const threadIds = listProjectThreadIds(worktree.projectId)
-  const removeResult = await removeProjectWorktree(
-    worktree.rootProjectId,
+  const chatIds = listDirectoryChatIds(worktree.directoryId)
+  const removeResult = await removeDirectoryWorktree(
+    worktree.rootDirectoryId,
     worktree.worktreePath,
     worktree.branchName,
   )
@@ -125,15 +129,15 @@ async function finishWorktreeRemoval(input: {
 
   const branchResult =
     input.pruneBranch && worktree.branchName
-      ? await pruneProjectBranch(worktree.rootProjectId, worktree.branchName)
+      ? await pruneDirectoryBranch(worktree.rootDirectoryId, worktree.branchName)
       : null
-  const threadCleanup = await deleteWorkspaceThreads(threadIds)
-  if (!threadCleanup) deleteProject(worktree.projectId)
+  const chatCleanup = await deleteWorkspaceChats(chatIds)
+  if (!chatCleanup) deleteDirectory(worktree.directoryId)
 
   const warnings = [
     removeResult.warning,
     branchResult && 'error' in branchResult ? branchResult.error : null,
-    threadCleanup?.error,
+    chatCleanup?.error,
   ]
     .filter((error): error is string => Boolean(error))
     .join(' ')
@@ -143,7 +147,7 @@ async function finishWorktreeRemoval(input: {
     worktreeRemoved: true,
     ...(mergeResult.worktreeCompleted ? { worktreeCompleted: true } : {}),
     ...(warnings ? { message: warnings } : {}),
-    ...(threadCleanup?.failedThreadIds ? { failedThreadIds: threadCleanup.failedThreadIds } : {}),
+    ...(chatCleanup?.failedChatIds ? { failedChatIds: chatCleanup.failedChatIds } : {}),
   })
 }
 
@@ -165,9 +169,12 @@ async function removeRegisteredWorktree(
     })
   }
 
-  return withWorkspaceTeardown(worktree.projectId, async () => {
-    await stopWorkspaceConversationsAndTerminals(worktree.projectId, peers.closeWorkspaceTerminals)
-    return withRootGitMutation(worktree.rootProjectId, async () => {
+  return withDirectoryTeardown(worktree.directoryId, async () => {
+    await stopWorkspaceConversationsAndTerminals(
+      worktree.directoryId,
+      peers.closeWorkspaceTerminals,
+    )
+    return withRootGitMutation(worktree.rootDirectoryId, async () => {
       const refreshed = await refreshWorktreeAfterActivityStop(worktree)
       if ('error' in refreshed) {
         return resultFor(worktree, {
@@ -198,7 +205,7 @@ async function removeRegisteredWorktree(
 
 export function createWorktreeLifecycle(peers: CodingPeers) {
   return {
-    deleteWorkspaceThreads,
+    deleteWorkspaceChats,
     removeRegisteredWorktree: (input: Parameters<typeof removeRegisteredWorktree>[0]) =>
       removeRegisteredWorktree(input, peers),
   }

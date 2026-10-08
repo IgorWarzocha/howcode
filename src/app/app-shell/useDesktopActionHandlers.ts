@@ -4,14 +4,14 @@ import { useCallback } from 'react'
 import type { DesktopAction } from '../desktop/actions'
 import type {
   AnyDesktopActionPayload,
-  ArchivedThread,
-  ChatSidebarState,
+  ArchivedChat,
+  ChatData,
   ComposerState,
   DesktopActionInvoker,
   DesktopActionResult,
-  ProjectGitState,
+  DirectoryGitState,
   ShellState,
-  ThreadData,
+  WorkspaceNavigationState,
 } from '../desktop/types'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace-model'
 import type { View } from '../types'
@@ -23,7 +23,7 @@ import {
   shouldShowGlobalActionError,
 } from './desktop-action-error-policy'
 import { prepareDesktopAction } from './desktop-action-preparation'
-import { removeFailedOptimisticComposerThread } from './sidebar-thread-sync'
+import { removeFailedOptimisticComposerChat } from './sidebar-chat-sync'
 
 type ActionPayload = AnyDesktopActionPayload
 
@@ -43,49 +43,49 @@ function publishActionFeedback(input: {
 
 type UseDesktopActionHandlersArgs = {
   activeView: View
-  composerProjectId: string
+  composerDirectoryId: string
   dispatch: Dispatch<WorkspaceAction>
   invokeDesktopAction: DesktopActionInvoker
-  loadArchivedThreads: () => Promise<ArchivedThread[]>
+  loadArchivedChats: () => Promise<ArchivedChat[]>
   loadComposerState: (request?: {
-    projectId?: string | null
+    directoryId?: string | null
     conversationId?: string | null
-    composerMode?: 'chat' | 'code' | null
+    composerProfile?: 'general' | 'coding' | null
   }) => Promise<ComposerState | null>
-  loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
-  loadProjectThreads: (
-    projectId: string,
-    options?: { chat?: boolean; replaceLocalDraftConversationId?: string | null },
+  loadDirectoryGitState: (directoryId: string) => Promise<DirectoryGitState | null>
+  loadDirectoryChats: (
+    directoryId: string,
+    options?: { replaceLocalDraftConversationId?: string | null },
   ) => Promise<unknown>
   refreshShellState: () => Promise<unknown>
   selectedConversationId: string | null
   shellState: ShellState | null
-  setArchivedThreads: Dispatch<SetStateAction<ArchivedThread[]>>
+  setArchivedChats: Dispatch<SetStateAction<ArchivedChat[]>>
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>
-  setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>
-  setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>
-  setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>
+  setWorkspaceNavigationState: Dispatch<SetStateAction<WorkspaceNavigationState | null>>
+  setLiveChatData: Dispatch<SetStateAction<ChatData | null>>
+  setDirectoryGitState: Dispatch<SetStateAction<DirectoryGitState | null>>
   showToast: (message: string) => void
   workspaceState: WorkspaceState
 }
 
 export function useDesktopActionHandlers({
   activeView,
-  composerProjectId,
+  composerDirectoryId,
   dispatch,
   invokeDesktopAction,
-  loadArchivedThreads,
+  loadArchivedChats,
   loadComposerState,
-  loadProjectGitState,
-  loadProjectThreads,
+  loadDirectoryGitState,
+  loadDirectoryChats,
   refreshShellState,
   selectedConversationId,
   shellState,
-  setArchivedThreads,
+  setArchivedChats,
   setComposerState,
-  setChatSidebarState,
-  setLiveThreadData,
-  setProjectGitState,
+  setWorkspaceNavigationState,
+  setLiveChatData,
+  setDirectoryGitState,
   showToast,
   workspaceState,
 }: UseDesktopActionHandlersArgs) {
@@ -97,19 +97,20 @@ export function useDesktopActionHandlers({
       payload: ActionPayload = {},
     ): Promise<DesktopActionResult | null> => {
       const preparedPayload = await prepareDesktopAction({
+        workspaceState,
         action,
         activeView,
-        composerProjectId,
+        composerDirectoryId,
         dispatch,
         invokeDesktopAction,
-        loadProjectGitState,
-        loadProjectThreads,
+        loadDirectoryGitState,
+        loadDirectoryChats,
         payload,
         queryClient,
         selectedConversationId,
-        setProjectGitState,
-        setChatSidebarState,
-        setLiveThreadData,
+        setDirectoryGitState,
+        setWorkspaceNavigationState,
+        setLiveChatData,
         shellState,
       })
       if (preparedPayload.blockedResult) return preparedPayload.blockedResult
@@ -120,10 +121,10 @@ export function useDesktopActionHandlers({
         actionResult = await invokeDesktopAction(action, contextualPayload)
       } catch (error) {
         if (action === 'composer.send') {
-          removeFailedOptimisticComposerThread({
+          removeFailedOptimisticComposerChat({
             contextualPayload,
-            setChatSidebarState,
-            setLiveThreadData,
+            setWorkspaceNavigationState,
+            setLiveChatData,
             queryClient,
           })
         }
@@ -135,18 +136,18 @@ export function useDesktopActionHandlers({
         contextualPayload,
         actionResult,
         workspaceState,
-        composerProjectId,
+        composerDirectoryId,
         dispatch,
-        loadArchivedThreads,
+        loadArchivedChats,
         loadComposerState,
-        loadProjectGitState,
-        loadProjectThreads,
+        loadDirectoryGitState,
+        loadDirectoryChats,
         refreshShellState,
-        setArchivedThreads,
+        setArchivedChats,
         setComposerState,
-        setChatSidebarState,
-        setLiveThreadData,
-        setProjectGitState,
+        setWorkspaceNavigationState,
+        setLiveChatData,
+        setDirectoryGitState,
         queryClient,
       })
 
@@ -156,21 +157,21 @@ export function useDesktopActionHandlers({
     },
     [
       activeView,
-      composerProjectId,
+      composerDirectoryId,
       dispatch,
       invokeDesktopAction,
-      loadArchivedThreads,
+      loadArchivedChats,
       loadComposerState,
-      loadProjectGitState,
-      loadProjectThreads,
+      loadDirectoryGitState,
+      loadDirectoryChats,
       refreshShellState,
       selectedConversationId,
       shellState,
-      setArchivedThreads,
+      setArchivedChats,
       setComposerState,
-      setChatSidebarState,
-      setLiveThreadData,
-      setProjectGitState,
+      setWorkspaceNavigationState,
+      setLiveChatData,
+      setDirectoryGitState,
       showToast,
       workspaceState,
       queryClient,

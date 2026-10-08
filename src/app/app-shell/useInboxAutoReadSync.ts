@@ -1,55 +1,55 @@
 import type { QueryClient } from '@tanstack/react-query'
 import { type Dispatch, useEffect } from 'react'
-import type { DesktopActionInvoker, InboxThread } from '../desktop/types'
+import type { DesktopActionInvoker, InboxChat } from '../desktop/types'
 import { desktopQueryKeys } from '../query/desktop-query'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace-model'
 
 type UseInboxAutoReadSyncInput = {
   dispatch: Dispatch<WorkspaceAction>
   inboxQueryIsSuccess: boolean
-  inboxThreads: InboxThread[]
+  inboxChats: InboxChat[]
   invokeDesktopAction: DesktopActionInvoker
-  loadProjectThreads: (projectId: string) => Promise<unknown>
+  loadDirectoryChats: (directoryId: string) => Promise<unknown>
   queryClient: QueryClient
   workspaceState: WorkspaceState
 }
 
-async function refreshInboxThreadState({
-  loadProjectThreads,
-  projectId,
+async function refreshInboxChatState({
+  loadDirectoryChats,
+  directoryId,
   queryClient,
 }: {
-  loadProjectThreads: (projectId: string) => Promise<unknown>
-  projectId: string
+  loadDirectoryChats: (directoryId: string) => Promise<unknown>
+  directoryId: string
   queryClient: QueryClient
 }) {
   await Promise.all([
-    loadProjectThreads(projectId),
-    queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() }),
+    loadDirectoryChats(directoryId),
+    queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxChats() }),
   ])
 }
 
-function markInboxThreadRead({
+function markInboxChatRead({
   invokeDesktopAction,
-  loadProjectThreads,
+  loadDirectoryChats,
   queryClient,
-  thread,
+  chat,
   warningMessage,
 }: {
   invokeDesktopAction: DesktopActionInvoker
-  loadProjectThreads: (projectId: string) => Promise<unknown>
+  loadDirectoryChats: (directoryId: string) => Promise<unknown>
   queryClient: QueryClient
-  thread: InboxThread
+  chat: InboxChat
   warningMessage: string
 }) {
   void invokeDesktopAction('inbox.mark-read', {
-    projectId: thread.projectId,
-    conversationId: thread.conversationId,
+    directoryId: chat.directoryId,
+    conversationId: chat.conversationId,
   })
     .then(async () => {
-      await refreshInboxThreadState({
-        loadProjectThreads,
-        projectId: thread.projectId,
+      await refreshInboxChatState({
+        loadDirectoryChats,
+        directoryId: chat.directoryId,
         queryClient,
       })
     })
@@ -65,29 +65,29 @@ function syncInboxAutoReadSelection(
   },
 ) {
   if (!input.inboxQueryIsSuccess) return
-  if (input.inboxThreads.length === 0) {
+  if (input.inboxChats.length === 0) {
     if (input.selectedInboxConversationId !== null) {
-      input.dispatch({ type: 'select-inbox-thread', conversationId: null })
+      input.dispatch({ type: 'select-inbox-chat', conversationId: null })
     }
     return
   }
-  const selectedInboxThread = input.inboxThreads.find(
-    (thread) => thread.conversationId === input.selectedInboxConversationId,
+  const selectedInboxChat = input.inboxChats.find(
+    (chat) => chat.conversationId === input.selectedInboxConversationId,
   )
-  const visibleThread = selectedInboxThread ?? input.inboxThreads[0] ?? null
-  if (!selectedInboxThread) {
+  const visibleChat = selectedInboxChat ?? input.inboxChats[0] ?? null
+  if (!selectedInboxChat) {
     input.dispatch({
-      type: 'select-inbox-thread',
-      conversationId: visibleThread?.conversationId ?? null,
+      type: 'select-inbox-chat',
+      conversationId: visibleChat?.conversationId ?? null,
     })
   }
-  if (input.activeView !== 'inbox' || !visibleThread?.unread) return
-  markInboxThreadRead({
+  if (input.activeView !== 'inbox' || !visibleChat?.unread) return
+  markInboxChatRead({
     invokeDesktopAction: input.invokeDesktopAction,
-    loadProjectThreads: input.loadProjectThreads,
+    loadDirectoryChats: input.loadDirectoryChats,
     queryClient: input.queryClient,
-    thread: visibleThread,
-    warningMessage: selectedInboxThread
+    chat: visibleChat,
+    warningMessage: selectedInboxChat
       ? 'Failed to mark visible inbox chat read.'
       : 'Failed to auto-mark selected inbox chat read.',
   })
@@ -96,9 +96,9 @@ function syncInboxAutoReadSelection(
 export function useInboxAutoReadSync({
   dispatch,
   inboxQueryIsSuccess,
-  inboxThreads,
+  inboxChats,
   invokeDesktopAction,
-  loadProjectThreads,
+  loadDirectoryChats,
   queryClient,
   workspaceState,
 }: UseInboxAutoReadSyncInput) {
@@ -108,9 +108,9 @@ export function useInboxAutoReadSync({
     syncInboxAutoReadSelection({
       dispatch,
       inboxQueryIsSuccess,
-      inboxThreads,
+      inboxChats,
       invokeDesktopAction,
-      loadProjectThreads,
+      loadDirectoryChats,
       queryClient,
       activeView,
       selectedInboxConversationId,
@@ -118,9 +118,9 @@ export function useInboxAutoReadSync({
   }, [
     dispatch,
     inboxQueryIsSuccess,
-    inboxThreads,
+    inboxChats,
     invokeDesktopAction,
-    loadProjectThreads,
+    loadDirectoryChats,
     queryClient,
     activeView,
     selectedInboxConversationId,

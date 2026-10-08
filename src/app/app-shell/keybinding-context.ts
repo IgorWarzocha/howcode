@@ -8,7 +8,7 @@ import type { KeybindingRuntime } from './keybinding-runtime'
 
 export const rendererCommandIds = new Set<KeybindingCommandId>([
   'app.commandPalette',
-  'thread.find',
+  'chat.find',
   'sidebar.find',
   'composer.focus',
   ...componentRendererCommandIds,

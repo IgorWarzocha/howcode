@@ -5,17 +5,17 @@ import { shouldWaitForSlashCommands, whitespaceRunPattern } from './composer-sla
 export function resolveSlashCommandAfterLoad(input: {
   commandScopeKey: string
   commandScopeKeyRef: { current: string }
-  composerMode: 'chat' | 'code'
+  composerProfile: 'general' | 'coding'
   draft: string
   draftRef: { current: string }
-  projectId: string
+  directoryId: string
   send: () => void
   conversationId: string | null
 }) {
   void getComposerSlashCommandsQuery({
-    projectId: input.projectId,
+    directoryId: input.directoryId,
     conversationId: input.conversationId,
-    composerMode: input.composerMode,
+    composerProfile: input.composerProfile,
   })
     .then((nextCommands) => {
       if (
@@ -36,13 +36,13 @@ export function tryResolveSlashDraft(input: {
   commandScopeKey: string
   commandScopeKeyRef: { current: string }
   commands: ComposerSlashCommand[]
-  composerMode: 'chat' | 'code'
+  composerProfile: 'general' | 'coding'
   dismiss: () => void
   draft: string
   draftCommand: ComposerSlashCommand | null
   draftRef: { current: string }
   loading: boolean
-  projectId: string
+  directoryId: string
   send: () => void
   conversationId: string | null
 }) {

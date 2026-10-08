@@ -1,21 +1,21 @@
 import { workspacePostEffectHandlers } from '@howcode/components/coding/ui'
 import { desktopQueryKeys } from '../query/desktop-query'
+import { chatPostEffectHandlers } from './post-effects/chat-handlers'
 import type {
   PostEffectHandler,
   PostEffectsContext,
   RunPostDesktopActionEffectsInput,
 } from './post-effects/context'
 import { shellPostEffectHandlers } from './post-effects/shell-handlers'
-import { threadPostEffectHandlers } from './post-effects/thread-handlers'
 import { workspaceOrganizationPostEffect } from './post-effects/workspace-organization'
 
-export { applyDiffPreferencesToThread } from '@howcode/components/coding/ui'
+export { applyDiffPreferencesToChat } from '@howcode/components/coding/ui'
 export {
+  applyOptimisticChatRename,
+  applyOptimisticDirectoryRename,
   applyOptimisticPinUpdate,
   applyOptimisticPiSettingsUpdate,
-  applyOptimisticProjectRename,
   applyOptimisticSettingsUpdate,
-  applyOptimisticThreadRename,
   getOptimisticallyPinnedShellState,
   getOptimisticallyRenamedShellState,
   getOptimisticallyUpdatedPiSettingsState,
@@ -24,7 +24,7 @@ export {
 
 const postEffectHandlers: PostEffectHandler[] = [
   ...shellPostEffectHandlers,
-  ...threadPostEffectHandlers,
+  ...chatPostEffectHandlers,
   ...workspacePostEffectHandlers,
   workspaceOrganizationPostEffect,
 ]
@@ -32,8 +32,8 @@ const postEffectHandlers: PostEffectHandler[] = [
 export async function runPostDesktopActionEffects(input: RunPostDesktopActionEffectsInput) {
   const ctx: PostEffectsContext = {
     ...input,
-    invalidateInboxThreads: () =>
-      input.queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() }),
+    invalidateInboxChats: () =>
+      input.queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxChats() }),
   }
 
   await Promise.all(

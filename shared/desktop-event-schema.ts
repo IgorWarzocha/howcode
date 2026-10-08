@@ -1,17 +1,17 @@
 import * as Schema from 'effect/Schema'
+import { ChatDataSchema } from './desktop-chat-schema'
 import { ComposerStateSchema } from './desktop-composer-schema'
-import type { ProjectDiffStreamEvent } from './desktop-project-git-contracts'
-import { ThreadDataSchema } from './desktop-thread-schema'
+import type { DirectoryDiffStreamEvent } from './desktop-directory-git-contracts'
 import { isKeybindingCommandId, type KeybindingCommandId } from './keybindings'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function isProjectDiffStreamEvent(value: unknown): value is ProjectDiffStreamEvent {
+function isDirectoryDiffStreamEvent(value: unknown): value is DirectoryDiffStreamEvent {
   if (!isRecord(value)) return false
-  const { chunk, error, projectId, result, sequence, streamId, type } = value
-  if (typeof streamId !== 'string' || typeof projectId !== 'string') return false
+  const { chunk, error, directoryId, result, sequence, streamId, type } = value
+  if (typeof streamId !== 'string' || typeof directoryId !== 'string') return false
   if (type === 'chunk') return typeof sequence === 'number' && typeof chunk === 'string'
   if (type === 'complete') return result === null || isRecord(result)
   return type === 'error' && typeof error === 'string'
@@ -27,9 +27,9 @@ const ArtifactSchema = Schema.Struct({
   updatedAt: Schema.String,
 })
 
-const ProjectDiffStreamEventSchema = Schema.declare<ProjectDiffStreamEvent>(
-  isProjectDiffStreamEvent,
-  { identifier: 'ProjectDiffStreamEvent' },
+const DirectoryDiffStreamEventSchema = Schema.declare<DirectoryDiffStreamEvent>(
+  isDirectoryDiffStreamEvent,
+  { identifier: 'DirectoryDiffStreamEvent' },
 )
 const KeybindingCommandIdSchema = Schema.declare<KeybindingCommandId>(isKeybindingCommandId, {
   identifier: 'KeybindingCommandId',
@@ -52,8 +52,8 @@ export const DesktopEventSchema = Schema.Union([
     isError: Schema.Boolean,
   }),
   Schema.Struct({
-    type: Schema.Literal('project-diff-stream'),
-    event: ProjectDiffStreamEventSchema,
+    type: Schema.Literal('directory-diff-stream'),
+    event: DirectoryDiffStreamEventSchema,
   }),
   Schema.Struct({
     type: Schema.Literal('runtime-diagnostic'),
@@ -61,16 +61,16 @@ export const DesktopEventSchema = Schema.Union([
     message: Schema.String,
     details: Schema.optionalKey(Schema.Unknown),
     conversationId: Schema.optionalKey(Schema.NullOr(Schema.String)),
-    projectId: Schema.optionalKey(Schema.NullOr(Schema.String)),
+    directoryId: Schema.optionalKey(Schema.NullOr(Schema.String)),
   }),
-  Schema.Struct({ type: Schema.Literal('internal-thread-update'), conversationId: Schema.String }),
+  Schema.Struct({ type: Schema.Literal('internal-chat-update'), conversationId: Schema.String }),
   Schema.Struct({
     type: Schema.Literal('artifact-update'),
     conversationId: Schema.String,
     artifact: ArtifactSchema,
   }),
   Schema.Struct({
-    type: Schema.Literal('thread-update'),
+    type: Schema.Literal('chat-update'),
     reason: Schema.Literals([
       'start',
       'update',
@@ -79,19 +79,19 @@ export const DesktopEventSchema = Schema.Union([
       'compaction-start',
       'compaction',
     ]),
-    projectId: Schema.String,
-    threadId: Schema.String,
+    directoryId: Schema.String,
+    chatId: Schema.String,
     conversationId: Schema.String,
     branchName: Schema.optionalKey(Schema.NullOr(Schema.String)),
     replacesConversationId: Schema.optionalKey(Schema.NullOr(Schema.String)),
-    chatGroupId: Schema.optionalKey(Schema.NullOr(Schema.String)),
-    isChat: Schema.optionalKey(Schema.Boolean),
-    thread: ThreadDataSchema,
+    workspaceId: Schema.optionalKey(Schema.NullOr(Schema.String)),
+    composerProfile: Schema.optionalKey(Schema.Literals(['general', 'coding'])),
+    chat: ChatDataSchema,
     composer: Schema.NullOr(ComposerStateSchema),
   }),
   Schema.Struct({
     type: Schema.Literal('composer-update'),
-    projectId: Schema.NullOr(Schema.String),
+    directoryId: Schema.NullOr(Schema.String),
     conversationId: Schema.NullOr(Schema.String),
     composer: ComposerStateSchema,
   }),

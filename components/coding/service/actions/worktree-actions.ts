@@ -3,10 +3,10 @@ import {
   handledAction,
   unhandledAction,
 } from '../../../../desktop/app-service/action-router-result.ts'
-import { withWorkspaceTeardown } from '../../../../desktop/runtime/workspace-activity.ts'
+import { withDirectoryTeardown } from '../../../../desktop/runtime/directory-activity.ts'
 import {
   getBranchName,
-  getRootProjectId,
+  getRootDirectoryId,
   getWorktreeActionTargets,
   getWorktreeDirectory,
   getWorktreePath,
@@ -15,21 +15,21 @@ import {
 import type { DesktopAction } from '../../../../shared/desktop-actions.ts'
 import type { AnyDesktopActionPayload } from '../../../../shared/desktop-contracts.ts'
 import type { CodingPeers } from '../dependencies.ts'
-import { getActiveBranch } from '../project-git/project-state.ts'
-import { getMainWorktreePath, pruneProjectBranch } from '../project-git.ts'
+import { getActiveBranch } from '../directory-git/directory-state.ts'
+import { getMainWorktreePath, pruneDirectoryBranch } from '../directory-git.ts'
 import {
   type RegisteredWorktree,
   resolveRegisteredWorktree,
   resolveRegisteredWorktrees,
-} from '../project-worktrees/registered-worktree.ts'
-import { withRootGitMutation } from '../project-worktrees/root-git-mutation-gate.ts'
+} from '../directory-worktrees/registered-worktree.ts'
+import { withRootGitMutation } from '../directory-worktrees/root-git-mutation-gate.ts'
 import {
-  getProjectWorktreeDirectory,
-  hasRunningProjectThread,
-  listProjectFamilyBranchThreadIds,
-  listProjectWorktreePaths,
-  setProjectWorktreeCompleted,
-  setProjectWorktreeDirectory,
+  getDirectoryWorktreeDirectory,
+  hasRunningDirectoryChat,
+  listDirectoryFamilyBranchChatIds,
+  listDirectoryWorktreePaths,
+  setDirectoryWorktreeCompleted,
+  setDirectoryWorktreeDirectory,
 } from '../state.ts'
 import { createRegisteredWorktree } from './worktree-creation.ts'
 import { createWorktreeLifecycle } from './worktree-lifecycle.ts'
@@ -45,7 +45,7 @@ async function cleanupWorktrees(
   for (const worktree of worktrees) {
     const result = await removeRegisteredWorktree({ worktree, ...options })
     didMutate = didMutate || result.didMutate
-    if (result.worktreeRemoved) removedWorktreeIds.push(result.projectId)
+    if (result.worktreeRemoved) removedWorktreeIds.push(result.directoryId)
     if (result.message) messages.push(result.message)
     if (result.error) {
       return {
@@ -53,7 +53,7 @@ async function cleanupWorktrees(
         didMutate,
         ...(messages.length > 0 ? { message: messages.join(' ') } : {}),
         failedWorktreeBranchName: result.branchName,
-        failedWorktreePath: result.projectId,
+        failedWorktreePath: result.directoryId,
         removedWorktreeIds,
       }
     }
@@ -68,36 +68,36 @@ async function cleanupWorktrees(
 
 export function createWorktreeActionHandler(peers: CodingPeers) {
   const { hasActiveWorkspaceTerminal } = peers
-  const { deleteWorkspaceThreads, removeRegisteredWorktree } = createWorktreeLifecycle(peers)
+  const { deleteWorkspaceChats, removeRegisteredWorktree } = createWorktreeLifecycle(peers)
 
   function errorMessage(error: unknown) {
     return error instanceof Error ? error.message : String(error)
   }
 
-  function isMissingBranchPruneError(result: Awaited<ReturnType<typeof pruneProjectBranch>>) {
+  function isMissingBranchPruneError(result: Awaited<ReturnType<typeof pruneDirectoryBranch>>) {
     if (!('error' in result)) return false
     const normalizedError = String(result.error).toLowerCase()
     return normalizedError.includes('branch') && normalizedError.includes('not found')
   }
 
-  async function resolveWorktree(projectId: string, worktreePath: string) {
+  async function resolveWorktree(directoryId: string, worktreePath: string) {
     try {
-      return await resolveRegisteredWorktree(projectId, worktreePath)
+      return await resolveRegisteredWorktree(directoryId, worktreePath)
     } catch (error) {
       return { error: errorMessage(error) }
     }
   }
 
   async function handleCreateWorktree(payload: AnyDesktopActionPayload) {
-    const projectId = getRootProjectId(payload)
+    const directoryId = getRootDirectoryId(payload)
     const branchName = getBranchName(payload)
-    if (!(projectId && branchName)) return handledAction({ error: 'Branch name is required.' })
+    if (!(directoryId && branchName)) return handledAction({ error: 'Branch name is required.' })
 
-    const rootProjectId = await getMainWorktreePath(projectId)
+    const rootDirectoryId = await getMainWorktreePath(directoryId)
     const worktreeDirectory =
-      getWorktreeDirectory(payload) ?? getProjectWorktreeDirectory(rootProjectId)
-    return withRootGitMutation(rootProjectId, async () => {
-      const parentBranchName = await getActiveBranch(rootProjectId)
+      getWorktreeDirectory(payload) ?? getDirectoryWorktreeDirectory(rootDirectoryId)
+    return withRootGitMutation(rootDirectoryId, async () => {
+      const parentBranchName = await getActiveBranch(rootDirectoryId)
       if (!parentBranchName) {
         return handledAction({
           error: 'Switch the parent worktree to a branch before creating one.',
@@ -105,7 +105,7 @@ export function createWorktreeActionHandler(peers: CodingPeers) {
       }
       return handledAction(
         await createRegisteredWorktree({
-          rootProjectId,
+          rootDirectoryId,
           branchName,
           parentBranchName,
           worktreeDirectory,
@@ -115,36 +115,36 @@ export function createWorktreeActionHandler(peers: CodingPeers) {
   }
 
   async function handleSetWorktreeDirectory(payload: AnyDesktopActionPayload) {
-    const projectId = getRootProjectId(payload)
+    const directoryId = getRootDirectoryId(payload)
     const worktreeDirectory = getWorktreeDirectory(payload)
-    if (!(projectId && worktreeDirectory)) {
+    if (!(directoryId && worktreeDirectory)) {
       return handledAction({ error: 'Worktree directory is required.' })
     }
 
-    const rootProjectId = await getMainWorktreePath(projectId)
-    setProjectWorktreeDirectory(rootProjectId, worktreeDirectory)
-    return handledAction({ didMutate: true, rootProjectId })
+    const rootDirectoryId = await getMainWorktreePath(directoryId)
+    setDirectoryWorktreeDirectory(rootDirectoryId, worktreeDirectory)
+    return handledAction({ didMutate: true, rootDirectoryId })
   }
 
   async function handleMarkWorktree(payload: AnyDesktopActionPayload, completed: boolean) {
-    const projectId = getRootProjectId(payload)
+    const directoryId = getRootDirectoryId(payload)
     const worktreePath = getWorktreePath(payload)
-    if (!(projectId && worktreePath)) {
+    if (!(directoryId && worktreePath)) {
       return handledAction({ error: 'Worktree path is required.' })
     }
 
-    const worktree = await resolveWorktree(projectId, worktreePath)
+    const worktree = await resolveWorktree(directoryId, worktreePath)
     if ('error' in worktree) return handledAction(worktree)
     if (!worktree.metadata) {
       return handledAction({ error: 'Worktree metadata is not registered with Howcode.' })
     }
-    if (!setProjectWorktreeCompleted(worktree.projectId, completed)) {
+    if (!setDirectoryWorktreeCompleted(worktree.directoryId, completed)) {
       return handledAction({ error: 'Worktree metadata could not be updated.' })
     }
     return handledAction({
       didMutate: true,
-      rootProjectId: worktree.rootProjectId,
-      projectId: worktree.projectId,
+      rootDirectoryId: worktree.rootDirectoryId,
+      directoryId: worktree.directoryId,
     })
   }
 
@@ -152,13 +152,13 @@ export function createWorktreeActionHandler(peers: CodingPeers) {
     payload: AnyDesktopActionPayload,
     options: { merge: boolean },
   ) {
-    const projectId = getRootProjectId(payload)
+    const directoryId = getRootDirectoryId(payload)
     const worktreePath = getWorktreePath(payload)
-    if (!(projectId && worktreePath)) {
+    if (!(directoryId && worktreePath)) {
       return handledAction({ error: 'Worktree path is required.' })
     }
 
-    const worktree = await resolveWorktree(projectId, worktreePath)
+    const worktree = await resolveWorktree(directoryId, worktreePath)
     if ('error' in worktree) return handledAction(worktree)
     return handledAction(
       await removeRegisteredWorktree({ worktree, merge: options.merge, pruneBranch: true }),
@@ -170,12 +170,12 @@ export function createWorktreeActionHandler(peers: CodingPeers) {
   }
 
   async function resolveCleanupTargets(
-    projectId: string,
+    directoryId: string,
     targets: WorktreeActionTarget[],
     requirements: CleanupRequirements = {},
   ) {
     const worktrees = await resolveRegisteredWorktrees(
-      projectId,
+      directoryId,
       targets.map((target) => target.worktreePath),
     )
     if ('error' in worktrees) return worktrees
@@ -184,7 +184,7 @@ export function createWorktreeActionHandler(peers: CodingPeers) {
       if (requirements.completedOnly && worktree.metadata?.completed !== true) {
         return {
           error: 'Only worktrees currently marked complete can be handled in bulk.',
-          failedWorktreePath: worktree.projectId,
+          failedWorktreePath: worktree.directoryId,
         }
       }
     }
@@ -192,10 +192,10 @@ export function createWorktreeActionHandler(peers: CodingPeers) {
     return { worktrees }
   }
 
-  async function resolveBranchPruneWorktrees(rootProjectId: string, branchName: string) {
+  async function resolveBranchPruneWorktrees(rootDirectoryId: string, branchName: string) {
     const resolved = await resolveRegisteredWorktrees(
-      rootProjectId,
-      listProjectWorktreePaths(rootProjectId),
+      rootDirectoryId,
+      listDirectoryWorktreePaths(rootDirectoryId),
       { skipMissing: true },
     )
     if ('error' in resolved) return resolved
@@ -210,30 +210,30 @@ export function createWorktreeActionHandler(peers: CodingPeers) {
   }
 
   async function finishBranchPrune(
-    rootProjectId: string,
+    rootDirectoryId: string,
     branchName: string,
     worktreeCleanup: Awaited<ReturnType<typeof cleanupWorktrees>>,
   ) {
-    const threadIds = listProjectFamilyBranchThreadIds(rootProjectId, branchName)
-    const result = await withRootGitMutation(rootProjectId, async () => {
-      const remaining = await resolveBranchPruneWorktrees(rootProjectId, branchName)
+    const chatIds = listDirectoryFamilyBranchChatIds(rootDirectoryId, branchName)
+    const result = await withRootGitMutation(rootDirectoryId, async () => {
+      const remaining = await resolveBranchPruneWorktrees(rootDirectoryId, branchName)
       if ('error' in remaining) return remaining
       if (remaining.worktrees.length > 0) {
         return { error: 'Worktrees changed while this branch was being pruned. Try again.' }
       }
-      return pruneProjectBranch(rootProjectId, branchName)
+      return pruneDirectoryBranch(rootDirectoryId, branchName)
     })
     const didMutate =
       worktreeCleanup.didMutate || ('didMutate' in result && result.didMutate === true)
     if (!('error' in result) || isMissingBranchPruneError(result)) {
-      const cleanupError = await deleteWorkspaceThreads(threadIds)
+      const cleanupError = await deleteWorkspaceChats(chatIds)
       if (cleanupError) {
         return handledAction({
           ...cleanupError,
           didMutate: true,
           message: worktreeCleanup.message,
           removedWorktreeIds: worktreeCleanup.removedWorktreeIds,
-          rootProjectId,
+          rootDirectoryId,
         })
       }
     }
@@ -242,7 +242,7 @@ export function createWorktreeActionHandler(peers: CodingPeers) {
         didMutate: true,
         message: worktreeCleanup.message,
         removedWorktreeIds: worktreeCleanup.removedWorktreeIds,
-        rootProjectId,
+        rootDirectoryId,
       })
     }
     return handledAction({
@@ -250,7 +250,7 @@ export function createWorktreeActionHandler(peers: CodingPeers) {
       ...('error' in result ? { didMutate } : {}),
       message: worktreeCleanup.message,
       removedWorktreeIds: worktreeCleanup.removedWorktreeIds,
-      rootProjectId,
+      rootDirectoryId,
     })
   }
 
@@ -258,14 +258,14 @@ export function createWorktreeActionHandler(peers: CodingPeers) {
     payload: AnyDesktopActionPayload,
     options: { merge: boolean },
   ) {
-    const projectId = getRootProjectId(payload)
+    const directoryId = getRootDirectoryId(payload)
     const targets = getWorktreeActionTargets(payload)
-    if (!projectId) return handledAction({ error: 'Project is required.' })
+    if (!directoryId) return handledAction({ error: 'WorkingDirectory is required.' })
     if (targets.length === 0) return handledAction({ error: 'No completed worktrees selected.' })
 
-    const rootProjectId = await getMainWorktreePath(projectId)
-    const resolved = await resolveCleanupTargets(rootProjectId, targets, { completedOnly: true })
-    if ('error' in resolved) return handledAction({ ...resolved, rootProjectId })
+    const rootDirectoryId = await getMainWorktreePath(directoryId)
+    const resolved = await resolveCleanupTargets(rootDirectoryId, targets, { completedOnly: true })
+    if ('error' in resolved) return handledAction({ ...resolved, rootDirectoryId })
 
     return handledAction({
       ...(await cleanupWorktrees(
@@ -276,25 +276,25 @@ export function createWorktreeActionHandler(peers: CodingPeers) {
         },
         removeRegisteredWorktree,
       )),
-      rootProjectId,
+      rootDirectoryId,
     })
   }
 
   async function handlePruneBranch(payload: AnyDesktopActionPayload) {
-    const projectId = getRootProjectId(payload)
+    const directoryId = getRootDirectoryId(payload)
     const branchName = getBranchName(payload)
-    if (!(projectId && branchName)) return handledAction()
-    const rootProjectId = await getMainWorktreePath(projectId)
-    return withWorkspaceTeardown(rootProjectId, async () => {
+    if (!(directoryId && branchName)) return handledAction()
+    const rootDirectoryId = await getMainWorktreePath(directoryId)
+    return withDirectoryTeardown(rootDirectoryId, async () => {
       if (
-        hasRunningProjectThread(rootProjectId) ||
-        (await hasActiveWorkspaceTerminal(rootProjectId))
+        hasRunningDirectoryChat(rootDirectoryId) ||
+        (await hasActiveWorkspaceTerminal(rootDirectoryId))
       ) {
         return handledAction({ error: 'Stop running sessions before pruning this branch.' })
       }
 
-      const resolved = await resolveBranchPruneWorktrees(rootProjectId, branchName)
-      if ('error' in resolved) return handledAction({ ...resolved, rootProjectId })
+      const resolved = await resolveBranchPruneWorktrees(rootDirectoryId, branchName)
+      if ('error' in resolved) return handledAction({ ...resolved, rootDirectoryId })
       const worktreeCleanup = await cleanupWorktrees(
         resolved.worktrees,
         {
@@ -304,9 +304,9 @@ export function createWorktreeActionHandler(peers: CodingPeers) {
         removeRegisteredWorktree,
       )
       if ('error' in worktreeCleanup && worktreeCleanup.error) {
-        return handledAction({ ...worktreeCleanup, rootProjectId })
+        return handledAction({ ...worktreeCleanup, rootDirectoryId })
       }
-      return finishBranchPrune(rootProjectId, branchName, worktreeCleanup)
+      return finishBranchPrune(rootDirectoryId, branchName, worktreeCleanup)
     })
   }
 
@@ -315,23 +315,23 @@ export function createWorktreeActionHandler(peers: CodingPeers) {
     payload: AnyDesktopActionPayload,
   ): Promise<ActionHandlerResult> {
     switch (action) {
-      case 'workspace.create-worktree':
+      case 'coding.create-worktree':
         return handleCreateWorktree(payload)
-      case 'workspace.remove-worktree':
+      case 'coding.remove-worktree':
         return handleSingleWorktreeRemoval(payload, { merge: false })
-      case 'workspace.mark-worktree-complete':
+      case 'coding.mark-worktree-complete':
         return handleMarkWorktree(payload, true)
-      case 'workspace.mark-worktree-incomplete':
+      case 'coding.mark-worktree-incomplete':
         return handleMarkWorktree(payload, false)
-      case 'workspace.merge-worktree':
+      case 'coding.merge-worktree':
         return handleSingleWorktreeRemoval(payload, { merge: true })
-      case 'workspace.merge-completed-worktrees':
+      case 'coding.merge-completed-worktrees':
         return handleCompletedWorktrees(payload, { merge: true })
-      case 'workspace.remove-completed-worktrees':
+      case 'coding.remove-completed-worktrees':
         return handleCompletedWorktrees(payload, { merge: false })
-      case 'workspace.set-worktree-directory':
+      case 'coding.set-worktree-directory':
         return handleSetWorktreeDirectory(payload)
-      case 'workspace.prune-branch':
+      case 'coding.prune-branch':
         return handlePruneBranch(payload)
       default:
         return unhandledAction()

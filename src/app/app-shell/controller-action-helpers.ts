@@ -1,6 +1,6 @@
 import { getPersistedConversationId } from '@howcode/shared/conversation-ids'
 import type { DesktopAction } from '../desktop/actions'
-import type { AnyDesktopActionPayload, ArchivedThread } from '../desktop/types'
+import type { AnyDesktopActionPayload, ArchivedChat } from '../desktop/types'
 import type { WorkspaceState } from '../state/workspace-model'
 
 function getContextualConversationId({
@@ -12,47 +12,36 @@ function getContextualConversationId({
   payload: AnyDesktopActionPayload
   selectedConversationId: string | null
 }) {
-  if (
-    activeView === 'chat' ||
-    activeView === 'thread' ||
-    activeView === 'gitops' ||
-    activeView === 'project'
-  ) {
+  if (activeView === 'chat' || activeView === 'gitops' || activeView === 'directory') {
     return selectedConversationId
   }
 
   return typeof payload.conversationId === 'string' ? payload.conversationId : null
 }
 
-function isContextualThreadView(activeView: WorkspaceState['activeView']) {
-  return (
-    activeView === 'chat' ||
-    activeView === 'thread' ||
-    activeView === 'gitops' ||
-    activeView === 'project'
-  )
+function isContextualChatView(activeView: WorkspaceState['activeView']) {
+  return activeView === 'chat' || activeView === 'gitops' || activeView === 'directory'
 }
 
 function buildComposerSendPayload({
-  activeView,
-  composerProjectId,
+  composerProfile,
+  composerDirectoryId,
   payload,
   selectedConversationId,
 }: {
-  activeView: WorkspaceState['activeView']
-  composerProjectId: string
+  composerProfile: WorkspaceState['composerProfile']
+  composerDirectoryId: string
   payload: AnyDesktopActionPayload
   selectedConversationId: string | null
 }) {
-  const composerMode = activeView === 'chat' ? 'chat' : 'code'
   const explicitPersistedConversationId =
     typeof payload.conversationId === 'string'
       ? getPersistedConversationId(payload.conversationId)
       : null
   if (explicitPersistedConversationId) {
     return {
-      projectId: composerProjectId,
-      composerMode,
+      directoryId: composerDirectoryId,
+      composerProfile,
       ...payload,
       conversationId: explicitPersistedConversationId,
     }
@@ -60,29 +49,33 @@ function buildComposerSendPayload({
 
   return {
     ...payload,
-    projectId: composerProjectId,
+    directoryId: composerDirectoryId,
     conversationId: selectedConversationId,
-    composerMode,
+    composerProfile,
   }
 }
 
 export function buildContextualActionPayload({
   action,
   payload,
-  composerProjectId,
+  composerProfile,
+  workspaceId,
+  composerDirectoryId,
   activeView,
   selectedConversationId,
 }: {
   action: DesktopAction
+  composerProfile?: WorkspaceState['composerProfile']
+  workspaceId?: string | null
   payload: AnyDesktopActionPayload
-  composerProjectId: string
+  composerDirectoryId: string
   activeView: WorkspaceState['activeView']
   selectedConversationId: string | null
 }) {
-  if (action === 'composer.send' && isContextualThreadView(activeView)) {
+  if (action === 'composer.send' && isContextualChatView(activeView)) {
     return buildComposerSendPayload({
-      activeView,
-      composerProjectId,
+      composerProfile: composerProfile ?? 'general',
+      composerDirectoryId,
       payload,
       selectedConversationId,
     })
@@ -93,35 +86,36 @@ export function buildContextualActionPayload({
     action === 'composer.send' ||
     action === 'composer.stop' ||
     action === 'composer.thinking' ||
-    action === 'thread.new' ||
-    action === 'thread.open' ||
-    action === 'workspace.commit' ||
-    action === 'workspace.commit-options' ||
-    action === 'workspace.diff-preferences'
+    action === 'chat.new' ||
+    action === 'chat.open' ||
+    action === 'coding.commit' ||
+    action === 'coding.commit-options' ||
+    action === 'coding.diff-preferences'
     ? {
-        projectId: composerProjectId,
+        directoryId: composerDirectoryId,
         conversationId:
-          action === 'thread.new'
+          action === 'chat.new'
             ? null
             : getContextualConversationId({ activeView, payload, selectedConversationId }),
-        composerMode: activeView === 'chat' ? 'chat' : 'code',
+        composerProfile: composerProfile ?? 'general',
+        workspaceId,
         ...payload,
       }
     : payload
 }
 
-export async function refreshArchivedThreadsIfOpen({
-  archivedThreadsVisible,
-  loadArchivedThreads,
-  setArchivedThreads,
+export async function refreshArchivedChatsIfOpen({
+  archivedChatsVisible,
+  loadArchivedChats,
+  setArchivedChats,
 }: {
-  archivedThreadsVisible: boolean
-  loadArchivedThreads: () => Promise<ArchivedThread[]>
-  setArchivedThreads: (threads: ArchivedThread[]) => void
+  archivedChatsVisible: boolean
+  loadArchivedChats: () => Promise<ArchivedChat[]>
+  setArchivedChats: (chats: ArchivedChat[]) => void
 }) {
-  if (!archivedThreadsVisible) {
+  if (!archivedChatsVisible) {
     return
   }
 
-  setArchivedThreads(await loadArchivedThreads())
+  setArchivedChats(await loadArchivedChats())
 }

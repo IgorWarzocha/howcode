@@ -4,7 +4,7 @@ import * as Fiber from 'effect/Fiber'
 import * as FiberMap from 'effect/FiberMap'
 import * as Option from 'effect/Option'
 import * as Scope from 'effect/Scope'
-import { withWorkspaceActivity } from '../../../desktop/runtime/workspace-activity.ts'
+import { withDirectoryActivity } from '../../../desktop/runtime/directory-activity.ts'
 import type {
   TerminalCloseRequest,
   TerminalOpenRequest,
@@ -85,7 +85,7 @@ export function makeTerminalManager(
       // Workspace admission owns a Promise callback boundary outside the terminal runtime.
       return yield* Effect.tryPromise({
         try: () =>
-          withWorkspaceActivity(request.projectId, async () => {
+          withDirectoryActivity(request.directoryId, async () => {
             const sessionId = makeSessionId(request)
             return Effect.runPromise(
               Effect.gen(function* () {

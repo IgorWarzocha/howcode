@@ -109,7 +109,7 @@ export async function loadSherpaOnnxModule() {
   return sherpaOnnxModulePromise
 }
 
-function getRecognizerThreadCount() {
+function getRecognizerChatCount() {
   const configured = Number.parseInt(
     getProcessEnvironmentVariable('HOWCODE_SHERPA_ONNX_NUM_THREADS') ?? '',
     10,
@@ -142,7 +142,7 @@ function buildRecognizerConfig(modelFiles: DictationModelFiles, language: string
         tailPaddings: -1,
       },
       tokens: modelFiles.tokensPath,
-      numThreads: getRecognizerThreadCount(),
+      numChats: getRecognizerChatCount(),
       provider: getProcessEnvironmentVariable('HOWCODE_SHERPA_ONNX_PROVIDER')?.trim() || 'cpu',
       debug: false,
     },

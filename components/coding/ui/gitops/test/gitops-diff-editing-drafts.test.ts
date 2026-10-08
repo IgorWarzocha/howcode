@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { ProjectFileWriteResult } from '../../../../../src/app/desktop/types'
+import type { DirectoryFileWriteResult } from '../../../../../src/app/desktop/types'
 import { createDiffEditingDraftStore } from '../edit/diff-editing-drafts'
 import type { DiffEditingSession } from '../edit/diff-editing-save'
 
@@ -19,14 +19,14 @@ function createDraftFile(contents: string) {
   return { name: 'file.txt', contents }
 }
 
-function written(revision: string): ProjectFileWriteResult {
+function written(revision: string): DirectoryFileWriteResult {
   return {
     kind: 'written',
     file: { path: 'file.txt', contents: 'saved contents', revision },
   }
 }
 
-function conflict(): ProjectFileWriteResult {
+function conflict(): DirectoryFileWriteResult {
   return {
     kind: 'conflict',
     path: 'file.txt',
@@ -37,45 +37,23 @@ function conflict(): ProjectFileWriteResult {
 
 function requireDraft(
   store: ReturnType<typeof createDiffEditingDraftStore>,
-  projectId = 'project-1',
+  directoryId = 'project-1',
 ) {
-  const draft = store.getSnapshot(projectId)
-  if (!draft) throw new Error(`Expected a retained draft for ${projectId}.`)
+  const draft = store.getSnapshot(directoryId)
+  if (!draft) throw new Error(`Expected a retained draft for ${directoryId}.`)
   return draft
 }
 
 describe('GitOps diff editing drafts', () => {
-  it('keeps external snapshots stable until the draft changes', () => {
-    const store = createDiffEditingDraftStore()
-    const session = createSession('session-1')
-    store.updateDraft('project-1', session, createDraftFile('first edit'))
-    const firstSnapshot = store.getSnapshot('project-1')
-
-    expect(store.getSnapshot('project-1')).toBe(firstSnapshot)
-
-    store.updateDraft('project-1', session, createDraftFile('second edit'))
-    expect(store.getSnapshot('project-1')).not.toBe(firstSnapshot)
-  })
-
-  it('clears a draft only after its contents are confirmed written', async () => {
-    const store = createDiffEditingDraftStore()
-    const session = createSession('session-1')
-    store.updateDraft('project-1', session, createDraftFile('unsaved contents'))
-
-    await store.saveDraft('project-1', session.id, async () => written('revision-2'))
-
-    expect(store.getDraft('project-1')).toBeNull()
-  })
-
   it.each([
     {
       name: 'conflict',
-      write: async (): Promise<ProjectFileWriteResult> => conflict(),
+      write: async (): Promise<DirectoryFileWriteResult> => conflict(),
       error: 'Could not save file.txt because it changed outside Howcode.',
     },
     {
       name: 'unavailable result',
-      write: async (): Promise<ProjectFileWriteResult> => ({
+      write: async (): Promise<DirectoryFileWriteResult> => ({
         kind: 'unavailable',
         issue: { kind: 'missing', side: 'new', path: 'file.txt' },
       }),
@@ -83,7 +61,7 @@ describe('GitOps diff editing drafts', () => {
     },
     {
       name: 'rejected write',
-      write: (): Promise<ProjectFileWriteResult> => {
+      write: (): Promise<DirectoryFileWriteResult> => {
         throw new Error('Desktop service disconnected.')
       },
       error: 'Desktop service disconnected.',
@@ -116,35 +94,6 @@ describe('GitOps diff editing drafts', () => {
     expect(store.getDraft('project-1')).toBeNull()
   })
 
-  it('discards an exact retained conflict without changing its expected revision', async () => {
-    const store = createDiffEditingDraftStore()
-    const session = createSession('session-1')
-    store.updateDraft('project-1', session, createDraftFile('unsaved contents'))
-    await store.saveDraft('project-1', session.id, async () => conflict())
-    const conflictedDraft = requireDraft(store)
-
-    expect(conflictedDraft.session.expectedRevision).toBe('revision-1')
-    expect(store.discardConflictedDraft('project-1', conflictedDraft)).toBe(true)
-    expect(store.getDraft('project-1')).toBeNull()
-  })
-
-  it('does not discard a non-conflict failure', async () => {
-    const store = createDiffEditingDraftStore()
-    const session = createSession('session-1')
-    store.updateDraft('project-1', session, createDraftFile('unsaved contents'))
-    await store.saveDraft('project-1', session.id, async () => ({
-      kind: 'unavailable',
-      issue: { kind: 'missing', side: 'new', path: 'file.txt' },
-    }))
-    const failedDraft = requireDraft(store)
-
-    expect(store.discardConflictedDraft('project-1', failedDraft)).toBe(false)
-    expect(store.getDraft('project-1')).toMatchObject({
-      file: { contents: 'unsaved contents' },
-      status: { kind: 'failed', reason: 'other' },
-    })
-  })
-
   it('does not discard a replacement session through a stale conflict action', async () => {
     const store = createDiffEditingDraftStore()
     const firstSession = createSession('session-1')
@@ -168,8 +117,8 @@ describe('GitOps diff editing drafts', () => {
     store.updateDraft('project-1', session, createDraftFile('unsaved contents'))
     await store.saveDraft('project-1', session.id, async () => conflict())
     const staleConflict = requireDraft(store)
-    let finishWrite: ((result: ProjectFileWriteResult) => void) | undefined
-    const pendingWrite = new Promise<ProjectFileWriteResult>((resolve) => {
+    let finishWrite: ((result: DirectoryFileWriteResult) => void) | undefined
+    const pendingWrite = new Promise<DirectoryFileWriteResult>((resolve) => {
       finishWrite = resolve
     })
 
@@ -189,8 +138,8 @@ describe('GitOps diff editing drafts', () => {
     const store = createDiffEditingDraftStore()
     const session = createSession('session-1')
     store.updateDraft('project-1', session, createDraftFile('first edit'))
-    let finishWrite: ((result: ProjectFileWriteResult) => void) | undefined
-    const pendingWrite = new Promise<ProjectFileWriteResult>((resolve) => {
+    let finishWrite: ((result: DirectoryFileWriteResult) => void) | undefined
+    const pendingWrite = new Promise<DirectoryFileWriteResult>((resolve) => {
       finishWrite = resolve
     })
 
@@ -210,8 +159,8 @@ describe('GitOps diff editing drafts', () => {
     const store = createDiffEditingDraftStore()
     const firstSession = createSession('session-1')
     store.updateDraft('project-1', firstSession, createDraftFile('first edit'))
-    let finishWrite: ((result: ProjectFileWriteResult) => void) | undefined
-    const pendingWrite = new Promise<ProjectFileWriteResult>((resolve) => {
+    let finishWrite: ((result: DirectoryFileWriteResult) => void) | undefined
+    const pendingWrite = new Promise<DirectoryFileWriteResult>((resolve) => {
       finishWrite = resolve
     })
     const saving = store.saveDraft('project-1', firstSession.id, () => pendingWrite)

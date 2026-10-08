@@ -2,33 +2,33 @@ import { stat } from 'node:fs/promises'
 import * as Effect from 'effect/Effect'
 import * as SqlClient from 'effect/sql/SqlClient'
 import { runProcessProbe } from '../../../node-runtime/process-probe.ts'
-import { formatGitCommandError, getNonInteractiveGitEnv } from './project-git/git-runner.ts'
+import { formatGitCommandError, getNonInteractiveGitEnv } from './directory-git/git-runner.ts'
 
 const legacyCheckpointRefPrefix = 'refs/howcode/checkpoints'
-type ProjectPathRow = { readonly cwd: string }
+type DirectoryPathRow = { readonly cwd: string }
 function hasErrorCode(error: unknown, code: string) {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === code
 }
 
-function runMigrationGitProbe(projectId: string, args: string[], stdin?: string | undefined) {
+function runMigrationGitProbe(directoryId: string, args: string[], stdin?: string | undefined) {
   return runProcessProbe({
     executable: 'git',
     args,
-    cwd: projectId,
+    cwd: directoryId,
     env: getNonInteractiveGitEnv(),
     ...(stdin === undefined ? {} : { stdin }),
     timeout: 10_000,
-    timeoutMessage: `Timed out migrating legacy Git state for ${projectId}`,
+    timeoutMessage: `Timed out migrating legacy Git state for ${directoryId}`,
     maxOutputBytes: 1024 * 1024 * 4,
   })
 }
 
 const runMigrationGit = Effect.fnUntraced(function* (
-  projectId: string,
+  directoryId: string,
   args: string[],
   stdin?: string | undefined,
 ) {
-  const result = yield* runMigrationGitProbe(projectId, args, stdin)
+  const result = yield* runMigrationGitProbe(directoryId, args, stdin)
   if (result.exitCode !== 0) {
     return yield* Effect.fail(
       Object.assign(new Error(`Git exited with code ${result.exitCode ?? 'unknown'}.`), result),
@@ -37,8 +37,8 @@ const runMigrationGit = Effect.fnUntraced(function* (
   return result.stdout
 })
 
-const isGitRepository = Effect.fnUntraced(function* (projectId: string) {
-  const isDirectory = yield* Effect.tryPromise(() => stat(projectId)).pipe(
+const isGitRepository = Effect.fnUntraced(function* (directoryId: string) {
+  const isDirectory = yield* Effect.tryPromise(() => stat(directoryId)).pipe(
     Effect.map((metadata) => metadata.isDirectory()),
     Effect.catch((error) =>
       hasErrorCode(error.cause, 'ENOENT') ? Effect.succeed(false) : Effect.fail(error),
@@ -46,17 +46,17 @@ const isGitRepository = Effect.fnUntraced(function* (projectId: string) {
   )
   if (!isDirectory) return false
 
-  const result = yield* runMigrationGitProbe(projectId, ['rev-parse', '--is-inside-work-tree'])
+  const result = yield* runMigrationGitProbe(directoryId, ['rev-parse', '--is-inside-work-tree'])
   return result.exitCode === 0 && result.stdout.trim() === 'true'
 })
 
-const purgeLegacyCheckpointRefsForProject = Effect.fnUntraced(function* (projectId: string) {
-  if (!(yield* isGitRepository(projectId))) {
+const purgeLegacyCheckpointRefsForDirectory = Effect.fnUntraced(function* (directoryId: string) {
+  if (!(yield* isGitRepository(directoryId))) {
     return true
   }
 
   return yield* Effect.gen(function* () {
-    const stdout = yield* runMigrationGit(projectId, [
+    const stdout = yield* runMigrationGit(directoryId, [
       'for-each-ref',
       '--format=%(refname)',
       legacyCheckpointRefPrefix,
@@ -71,7 +71,7 @@ const purgeLegacyCheckpointRefsForProject = Effect.fnUntraced(function* (project
     }
 
     yield* runMigrationGit(
-      projectId,
+      directoryId,
       ['update-ref', '--stdin'],
       `start\n${refs.map((ref) => `delete ${ref}`).join('\n')}\ncommit\n`,
     )
@@ -80,7 +80,7 @@ const purgeLegacyCheckpointRefsForProject = Effect.fnUntraced(function* (project
     Effect.catch((error) =>
       Effect.sync(() => {
         console.warn(
-          `Failed to purge legacy checkpoint refs for ${projectId}: ${formatGitCommandError(error)}`,
+          `Failed to purge legacy checkpoint refs for ${directoryId}: ${formatGitCommandError(error)}`,
         )
         return false
       }),
@@ -88,21 +88,21 @@ const purgeLegacyCheckpointRefsForProject = Effect.fnUntraced(function* (project
   )
 })
 
-export const cleanupLegacyCheckpoints = Effect.fn('ThreadStateSchema.cleanupLegacyCheckpoints')(
+export const cleanupLegacyCheckpoints = Effect.fn('ChatStateSchema.cleanupLegacyCheckpoints')(
   function* () {
     const sql = yield* SqlClient.SqlClient
     const table = yield* sql.unsafe<{ readonly name?: string | undefined }>(
       `SELECT name
        FROM sqlite_master
        WHERE type = 'table' AND name = ?`,
-      ['thread_turn_diffs'],
+      ['chat_turn_diffs'],
     )
-    if (table[0]?.name !== 'thread_turn_diffs') {
+    if (table[0]?.name !== 'chat_turn_diffs') {
       return
     }
 
-    const rows = yield* sql.unsafe<ProjectPathRow>('SELECT cwd FROM projects')
-    const projectIds = [
+    const rows = yield* sql.unsafe<DirectoryPathRow>('SELECT cwd FROM projects')
+    const directoryIds = [
       ...new Set(
         rows.flatMap((row) => {
           const cwd = row.cwd.trim()
@@ -110,9 +110,13 @@ export const cleanupLegacyCheckpoints = Effect.fn('ThreadStateSchema.cleanupLega
         }),
       ),
     ]
-    const purgeResults = yield* Effect.forEach(projectIds, purgeLegacyCheckpointRefsForProject, {
-      concurrency: 2,
-    })
+    const purgeResults = yield* Effect.forEach(
+      directoryIds,
+      purgeLegacyCheckpointRefsForDirectory,
+      {
+        concurrency: 2,
+      },
+    )
     if (!purgeResults.every(Boolean)) {
       return
     }

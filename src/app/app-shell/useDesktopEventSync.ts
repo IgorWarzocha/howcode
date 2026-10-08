@@ -1,6 +1,11 @@
 import type { Dispatch, SetStateAction } from 'react'
 import { useEffect, useRef } from 'react'
-import type { ChatSidebarState, ComposerState, DesktopEvent, ThreadData } from '../desktop/types'
+import type {
+  ChatData,
+  ComposerState,
+  DesktopEvent,
+  WorkspaceNavigationState,
+} from '../desktop/types'
 import { subscribeDesktopEvents } from '../query/desktop-query'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace-model'
 import {
@@ -9,50 +14,50 @@ import {
   type QueryClientLike,
 } from './desktop-event-handlers'
 import type { DesktopEventSelectionState } from './desktop-event-sync'
-import type { DesktopThreadEndContribution } from './desktop-events/runtime'
+import type { DesktopChatEndContribution } from './desktop-events/runtime'
 
 type UseDesktopEventSyncInput = {
-  threadEndContribution?: DesktopThreadEndContribution | undefined
-  composerProjectId: string
+  chatEndContribution?: DesktopChatEndContribution | undefined
+  composerDirectoryId: string
   workspaceState: WorkspaceState
-  loadProjectThreads: (
-    projectId: string,
+  loadDirectoryChats: (
+    directoryId: string,
     options?: {
-      chat?: boolean | undefined
       replaceLocalDraftConversationId?: string | null | undefined
     },
   ) => Promise<unknown>
   scheduleShellStateRefresh: () => void
-  refreshChatSidebarState: () => Promise<unknown>
+  refreshWorkspaceNavigationState: () => Promise<unknown>
   queryClient: QueryClientLike
   dispatch: Dispatch<WorkspaceAction>
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>
-  setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>
-  setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>
-  setThreadHistoryCompactions: Dispatch<SetStateAction<number>>
+  setWorkspaceNavigationState: Dispatch<SetStateAction<WorkspaceNavigationState | null>>
+  setLiveChatData: Dispatch<SetStateAction<ChatData | null>>
+  setChatHistoryCompactions: Dispatch<SetStateAction<number>>
 }
 
 export function useDesktopEventSync({
-  threadEndContribution,
-  composerProjectId,
+  chatEndContribution,
+  composerDirectoryId,
   workspaceState,
-  loadProjectThreads,
+  loadDirectoryChats,
   scheduleShellStateRefresh,
-  refreshChatSidebarState,
+  refreshWorkspaceNavigationState,
   queryClient,
   dispatch,
   setComposerState,
-  setChatSidebarState,
-  setLiveThreadData,
-  setThreadHistoryCompactions,
+  setWorkspaceNavigationState,
+  setLiveChatData,
+  setChatHistoryCompactions,
 }: UseDesktopEventSyncInput) {
   const desktopEventStateRef = useRef({
-    threadEndContribution,
-    composerProjectId,
+    chatEndContribution,
+    composerDirectoryId,
     workspaceState: {
       activeView: workspaceState.activeView,
-      selectedProjectId: workspaceState.selectedProjectId,
-      selectedThreadId: workspaceState.selectedThreadId,
+      composerProfile: workspaceState.composerProfile,
+      selectedDirectoryId: workspaceState.selectedDirectoryId,
+      selectedChatId: workspaceState.selectedChatId,
       selectedConversationId: workspaceState.selectedConversationId,
       selectedInboxConversationId: workspaceState.selectedInboxConversationId,
     } satisfies DesktopEventSelectionState,
@@ -61,52 +66,54 @@ export function useDesktopEventSync({
 
   useEffect(() => {
     desktopEventStateRef.current = {
-      threadEndContribution,
-      composerProjectId,
+      chatEndContribution,
+      composerDirectoryId,
       workspaceState: {
         activeView: workspaceState.activeView,
-        selectedProjectId: workspaceState.selectedProjectId,
-        selectedThreadId: workspaceState.selectedThreadId,
+        composerProfile: workspaceState.composerProfile,
+        selectedDirectoryId: workspaceState.selectedDirectoryId,
+        selectedChatId: workspaceState.selectedChatId,
         selectedConversationId: workspaceState.selectedConversationId,
         selectedInboxConversationId: workspaceState.selectedInboxConversationId,
       },
     }
   }, [
-    threadEndContribution,
-    composerProjectId,
+    chatEndContribution,
+    composerDirectoryId,
     workspaceState.activeView,
-    workspaceState.selectedProjectId,
-    workspaceState.selectedThreadId,
+    workspaceState.composerProfile,
+    workspaceState.selectedDirectoryId,
+    workspaceState.selectedChatId,
     workspaceState.selectedInboxConversationId,
     workspaceState.selectedConversationId,
   ])
 
   useEffect(() => {
     // Keep the subscription stable. Re-subscribing on every selection change can drop in-flight
-    // thread updates when a GUI-started thread flips from local draft to persisted session path.
+    // chat updates when a GUI-started chat flips from local draft to persisted session path.
     const runtime: DesktopEventSyncRuntime = {
       dispatch,
-      loadProjectThreads,
+      loadDirectoryChats,
       queryClient,
-      refreshChatSidebarState,
+      refreshWorkspaceNavigationState,
       scheduleShellStateRefresh,
-      setChatSidebarState,
+      setWorkspaceNavigationState,
       setComposerState,
-      setLiveThreadData,
-      setThreadHistoryCompactions,
+      setLiveChatData,
+      setChatHistoryCompactions,
       desktopEventStateRef,
       localDraftConversationIdByPersistedConversationIdRef,
     }
     return subscribeDesktopEvents((event: DesktopEvent) => handleDesktopEvent(runtime, event))
   }, [
     dispatch,
-    loadProjectThreads,
+    loadDirectoryChats,
     queryClient,
-    refreshChatSidebarState,
+    refreshWorkspaceNavigationState,
     scheduleShellStateRefresh,
-    setChatSidebarState,
+    setWorkspaceNavigationState,
     setComposerState,
-    setLiveThreadData,
-    setThreadHistoryCompactions,
+    setLiveChatData,
+    setChatHistoryCompactions,
   ])
 }

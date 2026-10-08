@@ -21,15 +21,15 @@ async function readSettingsFile(filePath: string): Promise<SettingsFile> {
   }
 }
 
-function settingsPath(projectPath?: string | null) {
-  return projectPath
-    ? path.join(path.resolve(projectPath), '.pi', 'settings.json')
+function settingsPath(directoryPath?: string | null) {
+  return directoryPath
+    ? path.join(path.resolve(directoryPath), '.pi', 'settings.json')
     : path.join(getAgentDirectory(), 'settings.json')
 }
 
-export async function loadPiSettings(projectPath?: string | null): Promise<PiSettings> {
+export async function loadPiSettings(directoryPath?: string | null): Promise<PiSettings> {
   const global = await readSettingsFile(settingsPath())
-  const local = projectPath ? await readSettingsFile(settingsPath(projectPath)) : {}
+  const local = directoryPath ? await readSettingsFile(settingsPath(directoryPath)) : {}
   const source = { ...global, ...local }
   const result = {
     ...defaultPiSettings,
@@ -50,20 +50,20 @@ export async function loadPiSettings(projectPath?: string | null): Promise<PiSet
 export async function updatePiSetting(
   key: PiSettingsKey,
   value: unknown,
-  projectPath?: string | null,
+  directoryPath?: string | null,
 ): Promise<PiSettings> {
   const operation = writes.then(async () => {
-    const updated = decodeSettings({ ...(await loadPiSettings(projectPath)), [key]: value })
+    const updated = decodeSettings({ ...(await loadPiSettings(directoryPath)), [key]: value })
     if (key === 'theme') {
       const { loadThemeState } = await import('./themes.ts')
       if (
-        !(await loadThemeState(updated.theme, projectPath)).themes.some(
+        !(await loadThemeState(updated.theme, directoryPath)).themes.some(
           (theme) => theme.name === value,
         )
       )
         throw new Error(`Unknown theme: ${String(value)}`)
     }
-    const configuredPath = settingsPath(projectPath)
+    const configuredPath = settingsPath(directoryPath)
     // Preserve a user-managed settings symlink instead of replacing it with a regular file.
     const filePath = await realpath(configuredPath).catch((error: unknown) => {
       if (error instanceof Error && 'code' in error && error.code === 'ENOENT')

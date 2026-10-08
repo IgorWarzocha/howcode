@@ -2,33 +2,33 @@ import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch } from 'react'
 import { desktopQueryKeys } from '../../../../src/app/query/desktop-query-keys'
 import type { WorkspaceAction } from '../../../../src/app/state/workspace-model'
-import { notifyProjectDiffInvalidated } from '../hooks/project-diff-invalidation'
+import { notifyDirectoryDiffInvalidated } from '../hooks/directory-diff-invalidation'
 
-function resetProjectDiffCaches(queryClient: QueryClient, projectId: string) {
-  notifyProjectDiffInvalidated(projectId)
+function resetDirectoryDiffCaches(queryClient: QueryClient, directoryId: string) {
+  notifyDirectoryDiffInvalidated(directoryId)
   void queryClient.invalidateQueries({
-    queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
+    queryKey: desktopQueryKeys.directoryDiffStatsPrefix(directoryId),
   })
   void queryClient.invalidateQueries({
-    queryKey: desktopQueryKeys.projectDiffImagePreviewPrefix(projectId),
+    queryKey: desktopQueryKeys.directoryDiffImagePreviewPrefix(directoryId),
   })
   void queryClient.invalidateQueries({
-    queryKey: desktopQueryKeys.projectCommitsPrefix(projectId),
+    queryKey: desktopQueryKeys.directoryCommitsPrefix(directoryId),
   })
 }
 
 export function useCodingWorkspaceCommands({
-  composerProjectId,
+  composerDirectoryId,
   dispatch,
   queryClient,
 }: {
-  composerProjectId: string
+  composerDirectoryId: string
   dispatch: Dispatch<WorkspaceAction>
   queryClient: QueryClient
 }) {
   const handleOpenGitOpsView = (options: { filePath?: string | null } = {}) => {
-    if (composerProjectId) {
-      resetProjectDiffCaches(queryClient, composerProjectId)
+    if (composerDirectoryId) {
+      resetDirectoryDiffCaches(queryClient, composerDirectoryId)
     }
 
     dispatch({ type: 'open-gitops', filePath: options.filePath ?? null })

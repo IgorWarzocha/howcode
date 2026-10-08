@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react'
 import { useEffect, useRef } from 'react'
-import type { ProjectGitState, TerminalSessionSnapshot } from '../../../../src/app/desktop/types'
+import type { DirectoryGitState, TerminalSessionSnapshot } from '../../../../src/app/desktop/types'
 
 type UseTerminalGitStateSyncInput = {
   listDesktopTerminals: () => Promise<TerminalSessionSnapshot[]>
@@ -8,13 +8,13 @@ type UseTerminalGitStateSyncInput = {
     listener: (event: import('../../../../src/app/desktop/types').TerminalEvent) => void,
   ) => () => void
   enabled?: boolean
-  composerProjectId: string
-  loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
-  setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>
+  composerDirectoryId: string
+  loadDirectoryGitState: (directoryId: string) => Promise<DirectoryGitState | null>
+  setDirectoryGitState: Dispatch<SetStateAction<DirectoryGitState | null>>
 }
 
 type TrackedTerminalSession = {
-  projectId: string
+  directoryId: string
 }
 
 const gitRefreshDelayMs = 900
@@ -23,12 +23,12 @@ function shouldTrackTerminal(snapshot: TerminalSessionSnapshot) {
   return snapshot.status === 'starting' || snapshot.status === 'running'
 }
 
-function isSameProjectGitState(left: ProjectGitState | null, right: ProjectGitState | null) {
+function isSameDirectoryGitState(left: DirectoryGitState | null, right: DirectoryGitState | null) {
   if (left === right) return true
   if (!(left && right)) return false
 
   return (
-    left.projectId === right.projectId &&
+    left.directoryId === right.directoryId &&
     left.isGitRepo === right.isGitRepo &&
     left.branch === right.branch &&
     left.fileCount === right.fileCount &&
@@ -47,17 +47,17 @@ export function useTerminalGitStateSync({
   listDesktopTerminals,
   subscribeDesktopTerminal,
   enabled = true,
-  composerProjectId,
-  loadProjectGitState,
-  setProjectGitState,
+  composerDirectoryId,
+  loadDirectoryGitState,
+  setDirectoryGitState,
 }: UseTerminalGitStateSyncInput) {
-  const stateRef = useRef({ composerProjectId, loadProjectGitState, setProjectGitState })
+  const stateRef = useRef({ composerDirectoryId, loadDirectoryGitState, setDirectoryGitState })
   const terminalSessionsByIdRef = useRef(new Map<string, TrackedTerminalSession>())
-  const refreshTimersByProjectIdRef = useRef(new Map<string, ReturnType<typeof setTimeout>>())
+  const refreshTimersByDirectoryIdRef = useRef(new Map<string, ReturnType<typeof setTimeout>>())
 
   useEffect(() => {
-    stateRef.current = { composerProjectId, loadProjectGitState, setProjectGitState }
-  }, [composerProjectId, loadProjectGitState, setProjectGitState])
+    stateRef.current = { composerDirectoryId, loadDirectoryGitState, setDirectoryGitState }
+  }, [composerDirectoryId, loadDirectoryGitState, setDirectoryGitState])
 
   useEffect(() => {
     if (!enabled) return
@@ -69,32 +69,34 @@ export function useTerminalGitStateSync({
       }
 
       terminalSessionsByIdRef.current.set(snapshot.sessionId, {
-        projectId: snapshot.projectId,
+        directoryId: snapshot.directoryId,
       })
     }
 
-    const scheduleRefresh = (projectId: string | null | undefined) => {
-      if (!projectId || projectId !== stateRef.current.composerProjectId) {
+    const scheduleRefresh = (directoryId: string | null | undefined) => {
+      if (!directoryId || directoryId !== stateRef.current.composerDirectoryId) {
         return
       }
 
-      const existingTimer = refreshTimersByProjectIdRef.current.get(projectId)
+      const existingTimer = refreshTimersByDirectoryIdRef.current.get(directoryId)
       if (existingTimer) {
         clearTimeout(existingTimer)
       }
 
       const timer = setTimeout(() => {
-        refreshTimersByProjectIdRef.current.delete(projectId)
-        void stateRef.current.loadProjectGitState(projectId).then((nextProjectGitState) => {
-          if (projectId === stateRef.current.composerProjectId) {
-            stateRef.current.setProjectGitState((current) =>
-              isSameProjectGitState(current, nextProjectGitState) ? current : nextProjectGitState,
+        refreshTimersByDirectoryIdRef.current.delete(directoryId)
+        void stateRef.current.loadDirectoryGitState(directoryId).then((nextDirectoryGitState) => {
+          if (directoryId === stateRef.current.composerDirectoryId) {
+            stateRef.current.setDirectoryGitState((current) =>
+              isSameDirectoryGitState(current, nextDirectoryGitState)
+                ? current
+                : nextDirectoryGitState,
             )
           }
         })
       }, gitRefreshDelayMs)
 
-      refreshTimersByProjectIdRef.current.set(projectId, timer)
+      refreshTimersByDirectoryIdRef.current.set(directoryId, timer)
     }
 
     void listDesktopTerminals().then((snapshots) => {
@@ -107,7 +109,7 @@ export function useTerminalGitStateSync({
     const unsubscribe = subscribeDesktopTerminal((event) => {
       if (event.type === 'started' || event.type === 'restarted' || event.type === 'updated') {
         rememberSnapshot(event.snapshot)
-        scheduleRefresh(event.snapshot.projectId)
+        scheduleRefresh(event.snapshot.directoryId)
         return
       }
 
@@ -118,25 +120,25 @@ export function useTerminalGitStateSync({
 
       if (event.type === 'output') {
         // TUI-driven agent sessions and shell commands can change branches without producing a
-        // desktop thread end event. Debounce output-driven refreshes so the footer branch chip and
+        // desktop chat end event. Debounce output-driven refreshes so the footer branch chip and
         // git-ops state converge while the terminal remains open.
-        scheduleRefresh(trackedSession.projectId)
+        scheduleRefresh(trackedSession.directoryId)
         return
       }
 
       if (event.type === 'exited' || event.type === 'error' || event.type === 'cleared') {
         terminalSessionsByIdRef.current.delete(event.sessionId)
-        scheduleRefresh(trackedSession.projectId)
+        scheduleRefresh(trackedSession.directoryId)
       }
     })
 
     return () => {
       disposed = true
       unsubscribe()
-      for (const timer of refreshTimersByProjectIdRef.current.values()) {
+      for (const timer of refreshTimersByDirectoryIdRef.current.values()) {
         clearTimeout(timer)
       }
-      refreshTimersByProjectIdRef.current.clear()
+      refreshTimersByDirectoryIdRef.current.clear()
       terminalSessionsByIdRef.current.clear()
     }
   }, [enabled, listDesktopTerminals, subscribeDesktopTerminal])

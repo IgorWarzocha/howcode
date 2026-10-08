@@ -7,7 +7,7 @@ const roots = vi.hoisted(() => ({ directories: [] as string[] }))
 vi.mock('./paths.ts', async (original) => ({
   ...(await original<typeof import('./paths.ts')>()),
   getGlobalSkillsDirs: () => roots.directories,
-  getProjectSkillsDirs: () => [],
+  getDirectorySkillsDirs: () => [],
   getChatSkillsDirs: () => [],
 }))
 

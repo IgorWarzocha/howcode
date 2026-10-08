@@ -2,19 +2,19 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { cleanUserErrorMessage } from '../../../../src/app/desktop/error-messages'
 import type {
   DesktopEvent,
-  ProjectDiffBaseline,
-  ProjectDiffResult,
+  DirectoryDiffBaseline,
+  DirectoryDiffResult,
 } from '../../../../src/app/desktop/types'
 import { subscribeDesktopEvents } from '../../../../src/app/query/desktop-query'
 import {
-  cancelProjectDiffStreamQuery,
-  canStartProjectDiffStreamQuery,
-  startProjectDiffStreamQuery,
+  cancelDirectoryDiffStreamQuery,
+  canStartDirectoryDiffStreamQuery,
+  startDirectoryDiffStreamQuery,
 } from '../query'
-import { useProjectDiffInvalidationVersion } from './project-diff-invalidation'
+import { useDirectoryDiffInvalidationVersion } from './directory-diff-invalidation'
 
 type DiffState = {
-  diff: ProjectDiffResult | null
+  diff: DirectoryDiffResult | null
   streamedPatch: string | null
   isLoading: boolean
   error: string | null
@@ -24,31 +24,31 @@ export function getReadableDesktopDiffError(error: string | null) {
   return error ? cleanUserErrorMessage(error, 'Could not load diff.') : null
 }
 
-function isProjectDiffStreamEvent(
+function isDirectoryDiffStreamEvent(
   event: DesktopEvent,
-): event is Extract<DesktopEvent, { type: 'project-diff-stream' }> {
-  return event.type === 'project-diff-stream'
+): event is Extract<DesktopEvent, { type: 'directory-diff-stream' }> {
+  return event.type === 'directory-diff-stream'
 }
 
-function createProjectDiffStreamId() {
+function createDirectoryDiffStreamId() {
   return window.crypto?.randomUUID?.() ?? `project-diff-${Date.now()}-${Math.random()}`
 }
 
-function useProjectDiffStream(
-  projectId: string | null,
-  baseline: ProjectDiffBaseline | null,
+function useDirectoryDiffStream(
+  directoryId: string | null,
+  baseline: DirectoryDiffBaseline | null,
   enabled: boolean,
   includeUntracked: boolean,
   refreshVersion: number,
 ) {
   const [streamedPatch, setStreamedPatch] = useState<string | null>(null)
-  const [diff, setDiff] = useState<ProjectDiffResult | null>(null)
+  const [diff, setDiff] = useState<DirectoryDiffResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const pendingChunksRef = useRef(new Map<number, string>())
   const nextSequenceRef = useRef(0)
   const flushFrameRef = useRef<number | null>(null)
-  const canStream = enabled && Boolean(projectId) && canStartProjectDiffStreamQuery()
+  const canStream = enabled && Boolean(directoryId) && canStartDirectoryDiffStreamQuery()
 
   useEffect(() => {
     void refreshVersion
@@ -68,13 +68,13 @@ function useProjectDiffStream(
       cancelChunkFlush()
     }
 
-    if (!(canStream && projectId)) {
+    if (!(canStream && directoryId)) {
       resetStreamState()
       return
     }
 
     let active = true
-    const streamId = createProjectDiffStreamId()
+    const streamId = createDirectoryDiffStreamId()
     setStreamedPatch('')
     setDiff(null)
     setError(null)
@@ -120,7 +120,7 @@ function useProjectDiffStream(
     }
 
     const unsubscribe = subscribeDesktopEvents((event) => {
-      if (!(active && isProjectDiffStreamEvent(event))) return
+      if (!(active && isDirectoryDiffStreamEvent(event))) return
       const streamEvent = event.event
       if (streamEvent.streamId !== streamId) return
 
@@ -143,7 +143,7 @@ function useProjectDiffStream(
       setIsLoading(false)
     })
 
-    startProjectDiffStreamQuery(projectId, baseline, streamId, includeUntracked).then(
+    startDirectoryDiffStreamQuery(directoryId, baseline, streamId, includeUntracked).then(
       (result) => {
         if (!active) return
         if (!result || result.streamId !== streamId) {
@@ -163,9 +163,9 @@ function useProjectDiffStream(
       cancelChunkFlush()
       pendingChunksRef.current.clear()
       unsubscribe()
-      void cancelProjectDiffStreamQuery(streamId)
+      void cancelDirectoryDiffStreamQuery(streamId)
     }
-  }, [baseline, canStream, includeUntracked, projectId, refreshVersion])
+  }, [baseline, canStream, includeUntracked, directoryId, refreshVersion])
 
   return useMemo(
     () => ({ canStream, diff, error, isLoading, streamedPatch }),
@@ -174,26 +174,26 @@ function useProjectDiffStream(
 }
 
 export function useDesktopDiff(
-  projectId: string | null,
-  baseline: ProjectDiffBaseline | null = null,
+  directoryId: string | null,
+  baseline: DirectoryDiffBaseline | null = null,
   enabled = true,
   includeUntracked = false,
 ) {
-  const streamRefreshVersion = useProjectDiffInvalidationVersion(projectId)
-  const stream = useProjectDiffStream(
-    projectId,
+  const streamRefreshVersion = useDirectoryDiffInvalidationVersion(directoryId)
+  const stream = useDirectoryDiffStream(
+    directoryId,
     baseline,
     enabled,
     includeUntracked,
     streamRefreshVersion,
   )
-  const streamUnavailable = enabled && Boolean(projectId) && !stream.canStream
+  const streamUnavailable = enabled && Boolean(directoryId) && !stream.canStream
   const rawError = streamUnavailable ? 'Diff streaming is unavailable.' : stream.error
 
   return {
     diff: stream.diff,
     streamedPatch: stream.streamedPatch,
     isLoading: stream.isLoading,
-    error: enabled && projectId ? getReadableDesktopDiffError(rawError) : null,
+    error: enabled && directoryId ? getReadableDesktopDiffError(rawError) : null,
   } satisfies DiffState
 }

@@ -8,15 +8,15 @@ type AppRequestHandlers = Pick<
   | 'getComposerState'
   | 'getComposerSkills'
   | 'getComposerSlashCommands'
-  | 'getProjectThreads'
-  | 'getChatSidebarState'
-  | 'createChatGroup'
-  | 'getInboxThreads'
-  | 'getArchivedThreads'
-  | 'getThread'
+  | 'getDirectoryChats'
+  | 'getWorkspaceNavigationState'
+  | 'createWorkspace'
+  | 'getInboxChats'
+  | 'getArchivedChats'
+  | 'getChat'
   | 'getConversationEntries'
-  | 'getThreadPreviewAtEntry'
-  | 'searchThread'
+  | 'getChatPreviewAtEntry'
+  | 'searchChat'
   | 'watchConversation'
   | 'invokeAction'
 >
@@ -30,21 +30,18 @@ export function createAppHandlers(
     getComposerState: (request) => app.loadComposerState(request),
     getComposerSkills: (request) => app.loadComposerSkills(request),
     getComposerSlashCommands: (request) => app.loadComposerSlashCommands(request),
-    getProjectThreads: (request) =>
-      app.loadProjectThreads(
-        request?.projectId ?? '',
-        request?.chat === undefined ? {} : { chat: request.chat },
-      ),
-    getChatSidebarState: (request) => app.loadChatSidebarState(request?.selectedGroupId ?? null),
-    createChatGroup: ({ name }) => app.createChatGroup(name),
-    getInboxThreads: () => app.loadInboxThreadList(),
-    getArchivedThreads: () => app.loadArchivedThreadList(),
-    getThread: ({ conversationId, historyCompactions = 0 }) =>
-      app.loadThread(conversationId, { historyCompactions }),
+    getDirectoryChats: (request) => app.loadDirectoryChats(request?.directoryId ?? ''),
+    getWorkspaceNavigationState: (request) =>
+      app.loadWorkspaceNavigationState(request?.selectedWorkspaceId ?? null),
+    createWorkspace: ({ name }) => app.createWorkspace(name),
+    getInboxChats: () => app.loadInboxChatList(),
+    getArchivedChats: () => app.loadArchivedChatList(),
+    getChat: ({ conversationId, historyCompactions = 0 }) =>
+      app.loadChat(conversationId, { historyCompactions }),
     getConversationEntries: ({ conversationId }) => app.loadConversationEntries(conversationId),
-    getThreadPreviewAtEntry: ({ conversationId, targetEntryId, historyCompactions = 0 }) =>
-      app.loadThreadPreviewAtEntry(conversationId, targetEntryId, { historyCompactions }),
-    searchThread: ({ conversationId, query }) => app.searchThread(conversationId, query),
+    getChatPreviewAtEntry: ({ conversationId, targetEntryId, historyCompactions = 0 }) =>
+      app.loadChatPreviewAtEntry(conversationId, targetEntryId, { historyCompactions }),
+    searchChat: ({ conversationId, query }) => app.searchChat(conversationId, query),
     watchConversation: async ({ conversationId }) => {
       await app.watchConversation(conversationId)
       return { ok: true }

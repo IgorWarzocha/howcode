@@ -10,10 +10,10 @@ import {
 import type { View } from '../../../../src/app/types'
 
 type WorkspacePreferences = {
-  gitOpsFileTreeVisibilityByThread: Record<string, boolean>
-  setGitOpsFileTreeVisibilityByThread: Dispatch<SetStateAction<Record<string, boolean>>>
-  includeUntrackedDiffFilesByThread: Record<string, boolean>
-  setIncludeUntrackedDiffFilesByThread: Dispatch<SetStateAction<Record<string, boolean>>>
+  gitOpsFileTreeVisibilityByChat: Record<string, boolean>
+  setGitOpsFileTreeVisibilityByChat: Dispatch<SetStateAction<Record<string, boolean>>>
+  includeUntrackedDiffFilesByChat: Record<string, boolean>
+  setIncludeUntrackedDiffFilesByChat: Dispatch<SetStateAction<Record<string, boolean>>>
 }
 
 const WorkspacePreferencesContext = createContext<WorkspacePreferences | null>(null)
@@ -31,28 +31,28 @@ export function CodingWorkspacePreferencesProvider({
     activeView !== 'claw' &&
     activeView !== 'work' &&
     activeView !== 'automations'
-  const [gitOpsFileTreeVisibilityByThread, setGitOpsFileTreeVisibilityByThread] = useState<
+  const [gitOpsFileTreeVisibilityByChat, setGitOpsFileTreeVisibilityByChat] = useState<
     Record<string, boolean>
   >({})
-  const [includeUntrackedDiffFilesByThread, setIncludeUntrackedDiffFilesByThread] = useState<
+  const [includeUntrackedDiffFilesByChat, setIncludeUntrackedDiffFilesByChat] = useState<
     Record<string, boolean>
   >({})
   const [previousRetain, setPreviousRetain] = useState(retain)
   if (previousRetain !== retain) {
     setPreviousRetain(retain)
     if (!retain) {
-      setGitOpsFileTreeVisibilityByThread({})
-      setIncludeUntrackedDiffFilesByThread({})
+      setGitOpsFileTreeVisibilityByChat({})
+      setIncludeUntrackedDiffFilesByChat({})
     }
   }
   const value = useMemo(
     () => ({
-      gitOpsFileTreeVisibilityByThread,
-      setGitOpsFileTreeVisibilityByThread,
-      includeUntrackedDiffFilesByThread,
-      setIncludeUntrackedDiffFilesByThread,
+      gitOpsFileTreeVisibilityByChat,
+      setGitOpsFileTreeVisibilityByChat,
+      includeUntrackedDiffFilesByChat,
+      setIncludeUntrackedDiffFilesByChat,
     }),
-    [gitOpsFileTreeVisibilityByThread, includeUntrackedDiffFilesByThread],
+    [gitOpsFileTreeVisibilityByChat, includeUntrackedDiffFilesByChat],
   )
   return <WorkspacePreferencesContext value={value}>{children}</WorkspacePreferencesContext>
 }

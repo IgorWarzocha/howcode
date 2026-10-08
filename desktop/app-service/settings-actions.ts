@@ -2,15 +2,15 @@ import {
   getSettingsBooleanValue,
   getSettingsComposerStreamingBehavior,
   getSettingsDictationModelId,
+  getSettingsDirectoryDeletionMode,
+  getSettingsDirectoryDiffBaselineDefault,
+  getSettingsDirectoryDiffRenderModeDefault,
+  getSettingsDirectoryImportState,
   getSettingsFavoriteFolders,
   getSettingsKey,
   getSettingsModelSelection,
   getSettingsNumberValue,
-  getSettingsPreferredProjectLocation,
-  getSettingsProjectDeletionMode,
-  getSettingsProjectDiffBaselineDefault,
-  getSettingsProjectDiffRenderModeDefault,
-  getSettingsProjectImportState,
+  getSettingsPreferredDirectoryLocation,
   getSettingsReset,
   getSettingsThinkingLevel,
   getSettingsToolkitComponents,
@@ -30,6 +30,9 @@ import {
   setCustomPiDirectory,
   setDictationMaxDurationSeconds,
   setDictationModelId,
+  setDirectoryDashboardEnabled,
+  setDirectoryDeletionMode,
+  setDirectoryImportState,
   setEnabledToolkitComponents,
   setFavoriteFolders,
   setGitCommitMessageModelSelection,
@@ -42,12 +45,9 @@ import {
   setHideSidebarSessionCounts,
   setHoverToBlur,
   setHoverToFocus,
-  setInitializeGitOnProjectCreate,
+  setInitializeGitOnDirectoryCreate,
   setKeybindings,
-  setPreferredProjectLocation,
-  setProjectDashboardEnabled,
-  setProjectDeletionMode,
-  setProjectImportState,
+  setPreferredDirectoryLocation,
   setShowDictationButton,
   setUseAgentsSkillsPaths,
 } from '../app-settings/writers.ts'
@@ -118,7 +118,8 @@ const settingsUpdateHandlers = {
   },
   showDictationButton: (payload) =>
     setShowDictationButton(getSettingsBooleanValue(payload) ?? true),
-  projectImportState: (payload) => setProjectImportState(getSettingsProjectImportState(payload)),
+  directoryImportState: (payload) =>
+    setDirectoryImportState(getSettingsDirectoryImportState(payload)),
   useAgentsSkillsPaths: (payload) =>
     setUseAgentsSkillsPaths(getSettingsBooleanValue(payload) ?? false),
 
@@ -136,14 +137,14 @@ const settingsUpdateHandlers = {
     if (payload.value === 'enter' || payload.value === 'cmd-enter')
       setComposerSendMode(payload.value)
   },
-  preferredProjectLocation: (payload) =>
-    setPreferredProjectLocation(getSettingsPreferredProjectLocation(payload)),
+  preferredDirectoryLocation: (payload) =>
+    setPreferredDirectoryLocation(getSettingsPreferredDirectoryLocation(payload)),
   customPiDirectory: async (payload) => {
     const currentCustomPiDirectory = normalizeOptionalSettingsPath(
       loadAppSettings().customPiDirectory,
     )
     const nextCustomPiDirectory = normalizeOptionalSettingsPath(
-      getSettingsPreferredProjectLocation(payload),
+      getSettingsPreferredDirectoryLocation(payload),
     )
     if (currentCustomPiDirectory === nextCustomPiDirectory) return { didMutate: false }
 
@@ -151,16 +152,16 @@ const settingsUpdateHandlers = {
     await refreshDurableSettings()
     return { didMutate: true }
   },
-  initializeGitOnProjectCreate: (payload) =>
-    setOptionalBooleanSetting(payload, setInitializeGitOnProjectCreate),
-  projectDashboardEnabled: (payload) =>
-    setOptionalBooleanSetting(payload, setProjectDashboardEnabled),
+  initializeGitOnDirectoryCreate: (payload) =>
+    setOptionalBooleanSetting(payload, setInitializeGitOnDirectoryCreate),
+  directoryDashboardEnabled: (payload) =>
+    setOptionalBooleanSetting(payload, setDirectoryDashboardEnabled),
   gitOpsDefaultMode: (payload) => {
     const value = payload.value
     if (value === 'commit' || value === 'commit-push') setGitOpsDefaultMode(value)
   },
   gitDiffBaselineDefault: (payload) => {
-    const value = getSettingsProjectDiffBaselineDefault(payload)
+    const value = getSettingsDirectoryDiffBaselineDefault(payload)
     if (value) setGitDiffBaselineDefault(value)
   },
   gitDiffFileTreeDefaultVisible: (payload) =>
@@ -168,12 +169,12 @@ const settingsUpdateHandlers = {
   gitDiffIncludeUntrackedDefault: (payload) =>
     setOptionalBooleanSetting(payload, setGitDiffIncludeUntrackedDefault),
   gitDiffRenderModeDefault: (payload) => {
-    const value = getSettingsProjectDiffRenderModeDefault(payload)
+    const value = getSettingsDirectoryDiffRenderModeDefault(payload)
     if (value) setGitDiffRenderModeDefault(value)
   },
-  projectDeletionMode: (payload) => {
-    const value = getSettingsProjectDeletionMode(payload)
-    if (value) setProjectDeletionMode(value)
+  directoryDeletionMode: (payload) => {
+    const value = getSettingsDirectoryDeletionMode(payload)
+    if (value) setDirectoryDeletionMode(value)
   },
   chatModel: (payload) => setResettableModelSelection(payload, setChatModelSelection),
   codeModel: (payload) => setResettableModelSelection(payload, setCodeModelSelection),

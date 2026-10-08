@@ -1,28 +1,28 @@
-import { getProjectGitStateQuery } from '@howcode/components/coding/ui'
+import { getDirectoryGitStateQuery } from '@howcode/components/coding/ui'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import type {
-  ArchivedThread,
+  ArchivedChat,
   ComposerState,
   ComposerStateRequest,
-  ProjectGitState,
+  DirectoryGitState,
 } from '../desktop/types'
 import {
   desktopQueryKeys,
-  getArchivedThreadsQuery,
+  getArchivedChatsQuery,
   getComposerStateQuery,
   listComposerAttachmentEntriesQuery,
 } from '../query/desktop-query'
-import { useDesktopProjectThreads } from './useDesktopProjectThreads'
+import { useDesktopDirectoryChats } from './useDesktopDirectoryChats'
 
 export function useDesktopShellQueries() {
   const queryClient = useQueryClient()
-  const loadProjectThreads = useDesktopProjectThreads()
-  const loadArchivedThreads = useCallback(
+  const loadDirectoryChats = useDesktopDirectoryChats()
+  const loadArchivedChats = useCallback(
     () =>
-      queryClient.fetchQuery<ArchivedThread[]>({
-        queryKey: desktopQueryKeys.archivedThreads(),
-        queryFn: getArchivedThreadsQuery,
+      queryClient.fetchQuery<ArchivedChat[]>({
+        queryKey: desktopQueryKeys.archivedChats(),
+        queryFn: getArchivedChatsQuery,
         staleTime: 0,
       }),
     [queryClient],
@@ -36,28 +36,28 @@ export function useDesktopShellQueries() {
       }),
     [queryClient],
   )
-  const loadProjectGitState = useCallback(
-    (projectId: string) =>
-      queryClient.fetchQuery<ProjectGitState | null>({
-        queryKey: desktopQueryKeys.projectGitState(projectId),
-        queryFn: () => getProjectGitStateQuery(projectId),
+  const loadDirectoryGitState = useCallback(
+    (directoryId: string) =>
+      queryClient.fetchQuery<DirectoryGitState | null>({
+        queryKey: desktopQueryKeys.directoryGitState(directoryId),
+        queryFn: () => getDirectoryGitStateQuery(directoryId),
         staleTime: 0,
       }),
     [queryClient],
   )
   const listComposerAttachmentEntries = useCallback(
     async (request: {
-      projectId?: string | null
+      directoryId?: string | null
       path?: string | null
       rootPath?: string | null
     }) => listComposerAttachmentEntriesQuery(request),
     [],
   )
   return {
-    loadArchivedThreads,
+    loadArchivedChats,
     loadComposerState,
     listComposerAttachmentEntries,
-    loadProjectGitState,
-    loadProjectThreads,
+    loadDirectoryGitState,
+    loadDirectoryChats,
   }
 }

@@ -1,20 +1,20 @@
 import type { KeybindingCommandId } from '@howcode/shared/keybindings'
+import { handleChatCycleCommand } from './keybinding-chat-cycle'
 import { appLevelShortcutsAreBlocked, rendererCommandIds } from './keybinding-context'
 import {
   dispatchHowcodeDismissTransientUi,
   dispatchHowcodeKeybindingCommand,
 } from './keybinding-events'
 import type { KeybindingRuntime } from './keybinding-runtime'
-import { handleThreadCycleCommand } from './keybinding-thread-cycle'
 
 export function stopActiveRun(runtime: KeybindingRuntime) {
-  const activeThreadData = runtime.appController.thread.activeData
-  const composerProjectId = runtime.appController.composer.projectId
+  const activeChatData = runtime.appController.chat.activeData
+  const composerDirectoryId = runtime.appController.composer.directoryId
   const { state } = runtime.appController.workspace
-  if (!(activeThreadData?.isStreaming && state.selectedConversationId)) return false
+  if (!(activeChatData?.isStreaming && state.selectedConversationId)) return false
   if (appLevelShortcutsAreBlocked('agent.interrupt', runtime)) return false
   void runtime.appController.desktop.handleAction('composer.stop', {
-    projectId: composerProjectId,
+    directoryId: composerDirectoryId,
     conversationId: state.selectedConversationId,
   })
   return true
@@ -39,22 +39,22 @@ function handleGitOpsCommand(runtime: KeybindingRuntime) {
     controller.gitOps.close()
     return true
   }
-  if (activeView !== 'thread' || !selectedConversationId) return false
+  if (activeView !== 'chat' || !selectedConversationId) return false
   controller.gitOps.open()
   return true
 }
 
 function handleTerminalToggleCommand(runtime: KeybindingRuntime) {
-  const { selectedProjectId, selectedConversationId } = runtime.appController.workspace.state
-  if (!(selectedProjectId || selectedConversationId)) return false
+  const { selectedDirectoryId, selectedConversationId } = runtime.appController.workspace.state
+  if (!(selectedDirectoryId || selectedConversationId)) return false
   runtime.appController.terminal.toggle()
   return true
 }
 
 function handleTerminalFocusCommand(runtime: KeybindingRuntime) {
-  const { selectedProjectId, selectedConversationId, terminalVisible } =
+  const { selectedDirectoryId, selectedConversationId, terminalVisible } =
     runtime.appController.workspace.state
-  if (!(selectedProjectId || selectedConversationId)) return false
+  if (!(selectedDirectoryId || selectedConversationId)) return false
   dispatchHowcodeDismissTransientUi()
   runtime.onFocusTerminal()
   if (!terminalVisible) runtime.appController.terminal.toggle()
@@ -71,31 +71,33 @@ function handleComposerFocusCommand(runtime: KeybindingRuntime) {
   return true
 }
 
-function handleNewThreadCommand(runtime: KeybindingRuntime) {
+function handleNewChatCommand(runtime: KeybindingRuntime) {
   const controller = runtime.appController
   if (controller.workspace.state.activeView === 'chat') {
-    if (!controller.composer.projectId) return false
-    void controller.desktop.handleAction('thread.new', {
-      projectId: controller.composer.projectId,
-      composerMode: 'chat',
-      chatGroupId: controller.chat.selectedGroupId,
+    if (!controller.composer.directoryId) return false
+    void controller.desktop.handleAction('chat.new', {
+      directoryId: controller.composer.directoryId,
+      composerProfile: controller.workspace.state.composerProfile,
+      workspaceId: controller.workspaces.selectedWorkspaceId,
     })
     return true
   }
-  const projectId = controller.workspace.state.selectedProjectId
-  if (!(projectId && controller.projects.items.some((project) => project.id === projectId)))
+  const directoryId = controller.workspace.state.selectedDirectoryId
+  if (
+    !(directoryId && controller.directories.items.some((directory) => directory.id === directoryId))
+  )
     return false
-  void controller.desktop.handleAction('thread.new', {
-    projectId,
-    composerMode: 'code',
-    chatGroupId: controller.chat.selectedGroupId,
+  void controller.desktop.handleAction('chat.new', {
+    directoryId,
+    composerProfile: 'coding',
+    workspaceId: controller.workspaces.selectedWorkspaceId,
   })
   return true
 }
 
 export function runAppCommand(commandId: KeybindingCommandId, runtime: KeybindingRuntime) {
-  if (commandId === 'thread.previousInProject') return handleThreadCycleCommand(runtime, -1)
-  if (commandId === 'thread.nextInProject') return handleThreadCycleCommand(runtime, 1)
+  if (commandId === 'chat.previousInDirectory') return handleChatCycleCommand(runtime, -1)
+  if (commandId === 'chat.nextInDirectory') return handleChatCycleCommand(runtime, 1)
   if (commandId === 'settings.open') return handleSettingsCommand(runtime)
   if (commandId === 'sidebar.toggle') runtime.onToggleSidebar()
   else if (commandId === 'sidebar.find') {
@@ -104,7 +106,7 @@ export function runAppCommand(commandId: KeybindingCommandId, runtime: Keybindin
   } else if (commandId === 'terminal.toggle') return handleTerminalToggleCommand(runtime)
   else if (commandId === 'terminal.focus') return handleTerminalFocusCommand(runtime)
   else if (commandId === 'gitops.open') return handleGitOpsCommand(runtime)
-  else if (commandId === 'thread.new') return handleNewThreadCommand(runtime)
+  else if (commandId === 'chat.new') return handleNewChatCommand(runtime)
   else if (commandId === 'agent.interrupt') return stopActiveRun(runtime)
   else if (commandId === 'composer.focus') return handleComposerFocusCommand(runtime)
   else if (handleRendererCommand(commandId)) return true

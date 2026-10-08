@@ -157,9 +157,9 @@ export async function createTerminalRecord(input: {
   const history = await readTranscript(getTranscriptPath(input.sessionId))
   const snapshot: TerminalSessionSnapshot = {
     sessionId: input.sessionId,
-    projectId: input.request.projectId,
+    directoryId: input.request.directoryId,
     conversationId: input.request.conversationId ?? null,
-    cwd: input.request.cwd ?? input.request.projectId,
+    cwd: input.request.cwd ?? input.request.directoryId,
     status: 'starting',
     pid: null,
     cols: input.request.cols,

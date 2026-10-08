@@ -32,7 +32,7 @@ export function withExtensionIngress<T extends Extension>(
 }
 
 export function getConversationResourceRequest(agent: SelectedAgent): ComposerStateRequest {
-  let request: ComposerStateRequest = { projectId: agent.cwd, composerMode: 'code' }
+  let request: ComposerStateRequest = { directoryId: agent.cwd, composerProfile: 'coding' }
   for (const extension of agent.extensions) {
     const resolve = ingress.get(extension)?.resourceRequest
     if (resolve) request = resolve(agent)

@@ -1,6 +1,6 @@
 import type { DiffLineAnnotation } from '@pierre/diffs/react'
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
-import type { ProjectDiffBaseline } from '../../../../../src/app/desktop/types'
+import type { DirectoryDiffBaseline } from '../../../../../src/app/desktop/types'
 import {
   type GitOpsAnnotationMetadata,
   reanchorReviewTargetFromPierreAnnotation,
@@ -32,11 +32,11 @@ function getReanchoredReview(annotation: DiffLineAnnotation<GitOpsAnnotationMeta
 export function useDiffReviewState({
   baseline,
   includeUntracked,
-  projectId,
+  directoryId,
 }: {
-  baseline: ProjectDiffBaseline | null
+  baseline: DirectoryDiffBaseline | null
   includeUntracked: boolean
-  projectId: string
+  directoryId: string
 }) {
   const [savedComments, setSavedComments] = useState<SavedReviewComment[]>([])
   const [interaction, dispatchInteraction] = useReducer(
@@ -48,8 +48,8 @@ export function useDiffReviewState({
   const draftComment = getReviewInteractionDraft(interaction)
 
   const reviewContextId = useMemo(
-    () => getReviewContextId({ baseline, includeUntracked, projectId }),
-    [baseline, includeUntracked, projectId],
+    () => getReviewContextId({ baseline, includeUntracked, directoryId }),
+    [baseline, includeUntracked, directoryId],
   )
 
   useEffect(() => {

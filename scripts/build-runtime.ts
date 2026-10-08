@@ -2,9 +2,9 @@ import { cp, mkdir, rm, watch } from 'node:fs/promises'
 import path from 'node:path'
 
 const isWatchMode = process.argv.includes('--watch')
-const projectRoot = process.cwd()
+const directoryRoot = process.cwd()
 const buildRoot = path.resolve(
-  getEnvironmentVariable('HOWCODE_BUILD_ROOT') || path.join(projectRoot, 'build'),
+  getEnvironmentVariable('HOWCODE_BUILD_ROOT') || path.join(directoryRoot, 'build'),
 )
 
 function getEnvironmentVariable(name: string) {
@@ -16,21 +16,21 @@ let shutdownRequested = false
 const buildTargets = [
   {
     label: 'server-runtime',
-    entrypoints: [path.join(projectRoot, 'src', 'server', 'index.ts')],
+    entrypoints: [path.join(directoryRoot, 'src', 'server', 'index.ts')],
     outdir: path.join(buildRoot, 'server'),
-    root: path.join(projectRoot, 'src', 'server'),
+    root: path.join(directoryRoot, 'src', 'server'),
     naming: { entry: '[name].mjs' },
     format: 'esm',
   },
   {
     label: 'desktop-runtime',
     entrypoints: [
-      path.join(projectRoot, 'desktop', 'service-host.ts'),
-      path.join(projectRoot, 'desktop', 'service-host-runtime.ts'),
-      path.join(projectRoot, 'desktop', 'package-cli.ts'),
+      path.join(directoryRoot, 'desktop', 'service-host.ts'),
+      path.join(directoryRoot, 'desktop', 'service-host-runtime.ts'),
+      path.join(directoryRoot, 'desktop', 'package-cli.ts'),
     ],
     outdir: path.join(buildRoot, 'desktop'),
-    root: path.join(projectRoot, 'desktop'),
+    root: path.join(directoryRoot, 'desktop'),
     naming: {
       entry: '[name].mjs',
     },
@@ -54,7 +54,7 @@ async function prepareBuildDirectories() {
 async function copyResources(target: (typeof resourceTargets)[number]) {
   const outputPath = path.join(buildRoot, 'resources', target.name)
   await rm(outputPath, { recursive: true, force: true })
-  await cp(path.join(projectRoot, target.source), outputPath, {
+  await cp(path.join(directoryRoot, target.source), outputPath, {
     recursive: true,
   })
 }
@@ -75,7 +75,7 @@ async function buildTarget(target: (typeof buildTargets)[number]) {
       `--entry-naming=${target.naming.entry}`,
       ...(isWatchMode ? ['--watch', '--no-clear-screen'] : []),
     ],
-    { cwd: projectRoot, stdio: ['ignore', 'inherit', 'inherit'], signal: buildLifetime.signal },
+    { cwd: directoryRoot, stdio: ['ignore', 'inherit', 'inherit'], signal: buildLifetime.signal },
   )
   const exitCode = await child.exited
   if (buildLifetime.signal.aborted) return
@@ -86,7 +86,7 @@ async function buildTarget(target: (typeof buildTargets)[number]) {
 }
 
 async function watchResources(target: (typeof resourceTargets)[number]) {
-  for await (const _event of watch(path.join(projectRoot, target.source), {
+  for await (const _event of watch(path.join(directoryRoot, target.source), {
     recursive: true,
     signal: buildLifetime.signal,
   })) {

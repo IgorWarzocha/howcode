@@ -79,8 +79,8 @@ export function createAgentResources(
   function createSkillsSection(scope: 'chat' | 'workspace') {
     return section('skills', async ({ agent }) => {
       const skills = await getComposerSkills({
-        projectId: scope === 'chat' ? null : agent.cwd,
-        composerMode: scope === 'chat' ? 'chat' : 'code',
+        directoryId: scope === 'chat' ? null : agent.cwd,
+        composerProfile: scope === 'chat' ? 'general' : 'coding',
       })
       if (skills.length === 0) return undefined
       return [

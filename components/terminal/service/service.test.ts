@@ -75,7 +75,7 @@ describe('Terminal service', () => {
           const terminal = yield* Service
           for (const suffix of ['failed', 'healthy']) {
             const snapshot = yield* terminal.open({
-              projectId: `/tmp/howcode-terminal-close-all-${suffix}`,
+              directoryId: `/tmp/howcode-terminal-close-all-${suffix}`,
               cwd: '/tmp',
               cols: 80,
               rows: 24,
@@ -115,7 +115,7 @@ describe('Terminal service', () => {
       Effect.gen(function* () {
         const terminal = yield* Service
         const snapshot = yield* terminal.open({
-          projectId: '/tmp/howcode-terminal-late-kill-failure',
+          directoryId: '/tmp/howcode-terminal-late-kill-failure',
           cwd: '/tmp',
           cols: 80,
           rows: 24,
@@ -148,7 +148,7 @@ describe('Terminal service', () => {
       Effect.gen(function* () {
         const terminal = yield* Service
         const opened = yield* terminal.open({
-          projectId: '/tmp/howcode-effect-terminal-close-test',
+          directoryId: '/tmp/howcode-effect-terminal-close-test',
           cwd: '/tmp',
           cols: 80,
           rows: 24,
@@ -182,7 +182,7 @@ describe('Terminal service', () => {
     const running = Effect.runPromise(
       Effect.flatMap(Service, (terminal) =>
         terminal.open({
-          projectId: '/tmp/howcode-effect-terminal-spawn-race-test',
+          directoryId: '/tmp/howcode-effect-terminal-spawn-race-test',
           cwd: '/tmp',
           cols: 80,
           rows: 24,
@@ -216,13 +216,13 @@ describe('Terminal service', () => {
         return yield* Effect.all(
           [
             terminal.open({
-              projectId: '/tmp/howcode-effect-terminal-concurrent-open-test',
+              directoryId: '/tmp/howcode-effect-terminal-concurrent-open-test',
               cwd: '/tmp',
               cols: 80,
               rows: 24,
             }),
             terminal.open({
-              projectId: '/tmp/howcode-effect-terminal-concurrent-open-test',
+              directoryId: '/tmp/howcode-effect-terminal-concurrent-open-test',
               cwd: '/tmp',
               cols: 80,
               rows: 24,

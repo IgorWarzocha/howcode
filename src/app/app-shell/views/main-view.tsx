@@ -7,30 +7,33 @@ import { appTypeReadableClass } from '../../ui/classes'
 
 type MainViewProps = {
   activeView: View
-  projectName?: string
+  directoryName?: string
 }
 
-function AutomationsStubView({ projectName }: { projectName: string }) {
+function AutomationsStubView({ directoryName }: { directoryName: string }) {
   return (
     <ViewShell maxWidthClassName="max-w-[760px]">
-      <ViewHeader title="Automations" subtitle={`${projectName} · workspace automation surface`} />
+      <ViewHeader
+        title="Automations"
+        subtitle={`${directoryName} · workspace automation surface`}
+      />
 
       <div className={`grid gap-3 ${appTypeReadableClass}`}>
         <p>
-          Automations will live here for this workspace. For now this is a project-scoped stub so
+          Automations will live here for this workspace. For now this is a directory-scoped stub so
           the new sidebar can route to the right surface without pretending the feature is ready.
         </p>
         <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--panel)] p-4 text-[color:var(--muted)]">
-          Coming next: recurring checks, branch/worktree tasks, and project-local automation runs.
+          Coming next: recurring checks, branch/worktree tasks, and directory-local automation runs.
         </div>
       </div>
     </ViewShell>
   )
 }
 
-export function MainView({ activeView, projectName = 'Current workspace' }: MainViewProps) {
+export function MainView({ activeView, directoryName = 'Current workspace' }: MainViewProps) {
   if (activeView === 'automations') {
-    return <AutomationsStubView projectName={projectName} />
+    return <AutomationsStubView directoryName={directoryName} />
   }
 
   if (activeView !== 'chat' && activeView !== 'claw' && activeView !== 'work') {

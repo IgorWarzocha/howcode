@@ -5,6 +5,22 @@ export type {
   ReactArtifactCompileResult,
 } from './desktop-artifact-contracts'
 export type {
+  ArchivedChat,
+  BashExecutionMessage,
+  Chat,
+  ChatData,
+  CustomChatMessage,
+  DirectoryImportCandidate,
+  InboxChat,
+  Message,
+  ProseMessage,
+  SummaryChatMessage,
+  SystemChatMessage,
+  ToolResultImage,
+  ToolResultMessage,
+  WorkingDirectory,
+} from './desktop-chat-contracts'
+export type {
   ComposerAttachment,
   ComposerContextUsage,
   ComposerFilePickerEntry,
@@ -29,6 +45,25 @@ export type {
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
 } from './desktop-dictation-contracts'
+export type {
+  DirectoryCommitEntry,
+  DirectoryDiffBaseline,
+  DirectoryDiffDefaultBaseline,
+  DirectoryDiffFileContentIssue,
+  DirectoryDiffFileContentsRequest,
+  DirectoryDiffFileContentsResult,
+  DirectoryDiffImagePreview,
+  DirectoryDiffImageSide,
+  DirectoryDiffPreferences,
+  DirectoryDiffRenderMode,
+  DirectoryDiffResolvedBaseline,
+  DirectoryDiffResult,
+  DirectoryDiffStatsResult,
+  DirectoryDiffTextFile,
+  DirectoryFileWriteRequest,
+  DirectoryFileWriteResult,
+  DirectoryGitState,
+} from './desktop-directory-git-contracts'
 export type { DesktopEvent } from './desktop-event-contracts'
 export type {
   PiConfiguredSkill,
@@ -37,48 +72,13 @@ export type {
   PiSkillMutationResult,
 } from './desktop-package-contracts'
 export type {
-  ProjectCommitEntry,
-  ProjectDiffBaseline,
-  ProjectDiffDefaultBaseline,
-  ProjectDiffFileContentIssue,
-  ProjectDiffFileContentsRequest,
-  ProjectDiffFileContentsResult,
-  ProjectDiffImagePreview,
-  ProjectDiffImageSide,
-  ProjectDiffPreferences,
-  ProjectDiffRenderMode,
-  ProjectDiffResolvedBaseline,
-  ProjectDiffResult,
-  ProjectDiffStatsResult,
-  ProjectDiffTextFile,
-  ProjectFileWriteRequest,
-  ProjectFileWriteResult,
-  ProjectGitState,
-} from './desktop-project-git-contracts'
-export type {
   AppSettings,
+  DirectoryDeletionMode,
   GitOpsMode,
   ModelSelection,
   PiQueueMode,
   PiSettings,
   PiThemeState,
   PiTransportMode,
-  ProjectDeletionMode,
   ShellState,
 } from './desktop-settings-contracts'
-export type {
-  ArchivedThread,
-  BashExecutionMessage,
-  CustomThreadMessage,
-  InboxThread,
-  Message,
-  Project,
-  ProjectImportCandidate,
-  ProseMessage,
-  SummaryThreadMessage,
-  SystemThreadMessage,
-  Thread,
-  ThreadData,
-  ToolResultImage,
-  ToolResultMessage,
-} from './desktop-thread-contracts'

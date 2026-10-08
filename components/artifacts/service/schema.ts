@@ -1,5 +1,5 @@
 import type * as SqlClient from 'effect/sql/SqlClient'
-import type { DatabaseSchema } from '../../../desktop/thread-state-db/schema.ts'
+import type { DatabaseSchema } from '../../../desktop/chat-repository/schema.ts'
 
 export function artifactsSchemaStatements(sql: SqlClient.SqlClient) {
   return [

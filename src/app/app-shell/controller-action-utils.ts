@@ -1,36 +1,38 @@
-import type { AnyDesktopActionPayload, DesktopActionResult, Thread } from '../desktop/types'
+import type { AnyDesktopActionPayload, Chat, DesktopActionResult } from '../desktop/types'
 import { hasDesktopBridgeQuery } from '../query/desktop-query'
 
 export type ActionPayload = AnyDesktopActionPayload
 
-export function getPayloadProjectId(payload: ActionPayload) {
-  if (typeof payload.projectId === 'string') return payload.projectId
-  return typeof payload.rootProjectId === 'string' ? payload.rootProjectId : null
+export function getPayloadDirectoryId(payload: ActionPayload) {
+  if (typeof payload.directoryId === 'string') return payload.directoryId
+  return typeof payload.rootDirectoryId === 'string' ? payload.rootDirectoryId : null
 }
 
-export function getPayloadThreadId(payload: ActionPayload) {
-  return typeof payload.threadId === 'string' ? payload.threadId : null
+export function getPayloadChatId(payload: ActionPayload) {
+  return typeof payload.chatId === 'string' ? payload.chatId : null
 }
 
-export function getPayloadThreadIds(payload: ActionPayload) {
-  return Array.isArray(payload.threadIds)
-    ? payload.threadIds.filter((threadId): threadId is string => typeof threadId === 'string')
+export function getPayloadChatIds(payload: ActionPayload) {
+  return Array.isArray(payload.chatIds)
+    ? payload.chatIds.filter((chatId): chatId is string => typeof chatId === 'string')
     : []
 }
 
-export function getPayloadProjectIds(payload: ActionPayload) {
-  return Array.isArray(payload.projectIds)
-    ? payload.projectIds.filter((projectId): projectId is string => typeof projectId === 'string')
+export function getPayloadDirectoryIds(payload: ActionPayload) {
+  return Array.isArray(payload.directoryIds)
+    ? payload.directoryIds.filter(
+        (directoryId): directoryId is string => typeof directoryId === 'string',
+      )
     : []
 }
 
-export function getResultThreadIds(threadIds: unknown) {
-  return Array.isArray(threadIds)
-    ? threadIds.filter((threadId): threadId is string => typeof threadId === 'string')
+export function getResultChatIds(chatIds: unknown) {
+  return Array.isArray(chatIds)
+    ? chatIds.filter((chatId): chatId is string => typeof chatId === 'string')
     : []
 }
 
-export function isThreadList(value: unknown): value is Thread[] {
+export function isChatList(value: unknown): value is Chat[] {
   return Array.isArray(value)
 }
 
@@ -38,10 +40,10 @@ export function hasActionError(actionResult: DesktopActionResult | null | undefi
   return actionResult?.ok === false || typeof actionResult?.result?.error === 'string'
 }
 
-export function sortPinnedThreads<T extends { id: string; pinned?: boolean | undefined }>(
-  threads: T[],
+export function sortPinnedChats<T extends { id: string; pinned?: boolean | undefined }>(
+  chats: T[],
 ) {
-  return threads.toSorted((left, right) => {
+  return chats.toSorted((left, right) => {
     const leftPinned = Boolean(left.pinned)
     const rightPinned = Boolean(right.pinned)
 
@@ -53,10 +55,10 @@ export function sortPinnedThreads<T extends { id: string; pinned?: boolean | und
   })
 }
 
-export function sortPinnedProjects<T extends { id: string; pinned?: boolean | undefined }>(
-  projects: T[],
+export function sortPinnedDirectories<T extends { id: string; pinned?: boolean | undefined }>(
+  directories: T[],
 ) {
-  return projects.toSorted((left, right) => {
+  return directories.toSorted((left, right) => {
     const leftPinned = Boolean(left.pinned)
     const rightPinned = Boolean(right.pinned)
 

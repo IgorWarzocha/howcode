@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { getDesktopActionErrorMessage } from '../desktop/action-results'
 import { getErrorMessage } from '../desktop/error-messages'
-import type { ComposerAttachment, DesktopActionInvoker, InboxThread } from '../desktop/types'
+import type { ComposerAttachment, DesktopActionInvoker, InboxChat } from '../desktop/types'
 import { createInboxReplySubmission, getInboxReplyOutcome } from './inbox-reply'
 
 export function useInboxReplyController(input: {
   isCompacting: boolean
   onAction: DesktopActionInvoker
-  onDismissThread: (thread: InboxThread) => void
+  onDismissChat: (chat: InboxChat) => void
   streamingBehavior: Parameters<typeof createInboxReplySubmission>[0]['streamingBehavior']
-  thread: InboxThread
+  chat: InboxChat
 }) {
   const [draft, setDraft] = useState('')
   const [attachments, setAttachments] = useState<ComposerAttachment[]>([])
@@ -26,7 +26,7 @@ export function useInboxReplyController(input: {
       isCompacting: input.isCompacting,
       isSending,
       streamingBehavior: input.streamingBehavior,
-      thread: input.thread,
+      chat: input.chat,
     })
     if (!submission) return
 
@@ -52,20 +52,20 @@ export function useInboxReplyController(input: {
       setDraft('')
       if (outcome.kind === 'reply-sent') {
         setAttachments([])
-        input.onDismissThread(input.thread)
+        input.onDismissChat(input.chat)
       }
     }
   }
 
   const stop = async () => {
-    if (!input.thread.running || isSending) return
+    if (!input.chat.running || isSending) return
 
     setIsSending(true)
     setErrorMessage(null)
     try {
       const result = await input.onAction('composer.stop', {
-        projectId: input.thread.projectId,
-        conversationId: input.thread.conversationId,
+        directoryId: input.chat.directoryId,
+        conversationId: input.chat.conversationId,
       })
       const actionErrorMessage = getDesktopActionErrorMessage(result, 'Could not stop Pi.')
       if (actionErrorMessage) setErrorMessage(actionErrorMessage)

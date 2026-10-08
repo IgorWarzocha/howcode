@@ -9,8 +9,8 @@ import { CodeWorkspaceMainView } from './code-workspace-main-view'
 import { useGitOpsFileActions } from './use-gitops-file-actions'
 
 function getMainPanelClass(activeView: View, showDiffInMainView: boolean) {
-  return activeView === 'thread' ||
-    activeView === 'code' ||
+  return activeView === 'chat' ||
+    activeView === 'directories' ||
     activeView === 'inbox' ||
     showDiffInMainView
     ? 'min-h-0 overflow-hidden'
@@ -22,8 +22,8 @@ function CodeWorkspaceDiffMain(props: CodeWorkspaceContentProps) {
   return (
     <DiffPanel
       fileActions={fileActions}
-      projectId={props.composerProjectId}
-      isGitRepo={props.projectGitState?.isGitRepo ?? false}
+      directoryId={props.composerDirectoryId}
+      isGitRepo={props.directoryGitState?.isGitRepo ?? false}
       baseline={props.diffBaseline}
       selectedFilePath={props.state.selectedDiffFilePath}
       selectedCommentId={props.gitOpsReview.selection.commentId}
@@ -32,44 +32,45 @@ function CodeWorkspaceDiffMain(props: CodeWorkspaceContentProps) {
       layoutMode="main"
       showFileTree={props.gitOpsFileTreeVisible}
       includeUntracked={props.includeUntrackedDiffFiles}
-      loading={props.controller.projects.gitLoading && !props.projectGitState}
+      loading={props.controller.directories.gitLoading && !props.directoryGitState}
       onLoadErrorChange={props.setDiffLoadError}
     />
   )
 }
 
-function getSelectedMainProjectId(
+function getSelectedMainDirectoryId(
   state: CodeWorkspaceContentProps['controller']['workspace']['state'],
 ) {
-  return (state.activeView === 'project' ||
-    state.activeView === 'sessions' ||
+  return (state.activeView === 'workspace' ||
+    state.activeView === 'directory' ||
+    state.activeView === 'history' ||
     state.activeView === 'skills') &&
-    state.hasSelectedProject
-    ? state.selectedProjectId
+    state.hasSelectedDirectory
+    ? state.selectedDirectoryId
     : ''
 }
 
 function CodeWorkspaceDefaultMain(props: CodeWorkspaceContentProps) {
   const appSettings = props.shellState?.appSettings ?? FALLBACK_APP_SETTINGS
-  const selectedProjectId = getSelectedMainProjectId(props.controller.workspace.state)
+  const selectedDirectoryId = getSelectedMainDirectoryId(props.controller.workspace.state)
   return (
     <CodeWorkspaceMainView
       activeView={props.state.activeView}
       appSettings={appSettings}
-      currentProjectName={props.currentProjectName}
-      projects={props.controller.projects.items}
-      projectGitState={props.projectGitState}
-      selectedProjectId={selectedProjectId}
+      currentDirectoryName={props.currentDirectoryName}
+      directories={props.controller.directories.items}
+      directoryGitState={props.directoryGitState}
+      selectedDirectoryId={selectedDirectoryId}
       workspaceContentClass={props.workspaceContentClass}
-      threadData={props.activeThreadData}
-      threadLoading={props.threadTimelineLoading}
+      chatData={props.activeChatData}
+      chatLoading={props.chatTimelineLoading}
       composerLayoutVersion={props.composerLayoutVersion}
       composerOverlayHeight={props.composerOverlayHeight}
       onAction={props.handleAction}
-      onOpenThread={props.controller.thread.open}
+      onOpenChat={props.controller.chat.open}
       onCloseUtilityView={props.controller.navigation.closeUtilityView}
       onLoadEarlierMessages={props.handleLoadEarlierMessages}
-      onSelectProject={props.controller.projects.select}
+      onSelectDirectory={props.controller.directories.select}
     />
   )
 }

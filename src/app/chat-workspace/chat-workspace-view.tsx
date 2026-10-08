@@ -1,14 +1,14 @@
+import { ChatView } from '@howcode/chat'
 import { ArtifactDrawerViews, useChatArtifactDrawerState } from '@howcode/components/artifacts/ui'
 import { useQueuedPromptCancellation } from '@howcode/composer/useQueuedPromptCancellation'
 import {
-  getLocalDraftChatGroupId,
+  getLocalDraftWorkspaceId,
   getPersistedConversationId,
 } from '@howcode/shared/conversation-ids'
-import { ThreadView } from '@howcode/thread'
 import { useWorkspaceFooterHeight } from '@howcode/workspace-shell/useWorkspaceFooterHeight'
 import { type RefObject, useRef, useState } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
-import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
+import type { DirectoryDiffBaseline, DirectoryDiffRenderMode } from '../desktop/types'
 import { WORKSPACE_EDGE_PADDING_CLASS } from '../ui/layout'
 import { cn } from '../utils/cn'
 import { ChatComposerDock, type ChatWorkspaceComposerProps } from './chat-workspace-composer'
@@ -17,13 +17,13 @@ import type { ChatWorkspaceController } from './chat-workspace-contract'
 type ChatWorkspaceViewProps = {
   controller: ChatWorkspaceController
   activeComposerState: AppShellController['composer']['state']
-  activeThreadData: AppShellController['thread']['activeData']
-  composerProjectId: string
-  diffBaseline: ProjectDiffBaseline
-  diffRenderMode: ProjectDiffRenderMode
+  activeChatData: AppShellController['chat']['activeData']
+  composerDirectoryId: string
+  diffBaseline: DirectoryDiffBaseline
+  diffRenderMode: DirectoryDiffRenderMode
   terminalConversationId: string | null
-  onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
-  onSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void
+  onSetDiffBaseline: (baseline: DirectoryDiffBaseline) => void
+  onSetDiffRenderMode: (renderMode: DirectoryDiffRenderMode) => void
   sidebarCollapsed: boolean
   sidebarAutoHidden: boolean
   sidebarCompactMode: boolean
@@ -38,13 +38,13 @@ type ChatWorkspaceContentProps = ChatWorkspaceViewProps &
     shouldShowConversationContent: boolean
     composerLayoutVersion: number
     composerOverlayHeight: number
-    handleLoadEarlierMessages: AppShellController['thread']['loadEarlierMessages']
+    handleLoadEarlierMessages: AppShellController['chat']['loadEarlierMessages']
     conversationId: string | null | undefined
   }
 
 function ChatWorkspaceMain({
   mainViewRef,
-  activeThreadData,
+  activeChatData,
   shouldShowConversationContent,
   composerLayoutVersion,
   composerOverlayHeight,
@@ -54,17 +54,17 @@ function ChatWorkspaceMain({
 }: ChatWorkspaceContentProps) {
   return (
     <main ref={mainViewRef} className="h-full min-h-0 overflow-hidden">
-      <ThreadView
-        key={activeThreadData?.conversationId ?? 'new-chat'}
-        messages={shouldShowConversationContent ? (activeThreadData?.messages ?? []) : []}
-        previousMessageCount={activeThreadData?.previousMessageCount ?? 0}
-        isStreaming={activeThreadData?.isStreaming ?? false}
-        isCompacting={activeThreadData?.isCompacting ?? false}
+      <ChatView
+        key={activeChatData?.conversationId ?? 'new-chat'}
+        messages={shouldShowConversationContent ? (activeChatData?.messages ?? []) : []}
+        previousMessageCount={activeChatData?.previousMessageCount ?? 0}
+        isStreaming={activeChatData?.isStreaming ?? false}
+        isCompacting={activeChatData?.isCompacting ?? false}
         composerLayoutVersion={composerLayoutVersion}
         composerOverlayHeight={composerOverlayHeight}
-        conversationId={activeThreadData?.conversationId ?? null}
+        conversationId={activeChatData?.conversationId ?? null}
         loading={
-          controller.thread.activeLoading || (hasConversation && !shouldShowConversationContent)
+          controller.chat.activeLoading || (hasConversation && !shouldShowConversationContent)
         }
         onLoadEarlierMessages={handleLoadEarlierMessages}
         onLoadAroundMessage={handleLoadEarlierMessages}
@@ -127,8 +127,8 @@ function ChatWorkspaceViewContent(props: ChatWorkspaceContentProps) {
 export function ChatWorkspaceView({
   controller,
   activeComposerState,
-  activeThreadData,
-  composerProjectId,
+  activeChatData,
+  composerDirectoryId,
   diffBaseline,
   diffRenderMode,
   terminalConversationId,
@@ -144,17 +144,17 @@ export function ChatWorkspaceView({
   const footerRef = useRef<HTMLElement>(null)
   const mainViewRef = useRef<HTMLElement>(null)
   const handleAction = controller.desktop.handleAction
-  const handleLoadEarlierMessages = controller.thread.loadEarlierMessages
+  const handleLoadEarlierMessages = controller.chat.loadEarlierMessages
   const handleToggleTerminal = controller.terminal.toggle
   const listComposerAttachmentEntries = controller.composer.listAttachmentEntries
   const { shellState } = controller.desktop
   const { state } = controller.workspace
   const footerHeight = useWorkspaceFooterHeight({ footerRef, visible: true })
-  const conversationId = activeThreadData?.conversationId ?? terminalConversationId
-  const hasConversation = (activeThreadData?.messages.length ?? 0) > 0
+  const conversationId = activeChatData?.conversationId ?? terminalConversationId
+  const hasConversation = (activeChatData?.messages.length ?? 0) > 0
   const hasConversationLayout = hasConversation
   const hasPersistedChatSession = getPersistedConversationId(terminalConversationId) !== null
-  const draftChatGroupId = getLocalDraftChatGroupId(terminalConversationId)
+  const draftWorkspaceId = getLocalDraftWorkspaceId(terminalConversationId)
   const shouldShowConversationContent = hasConversation
   const artifactDrawer = useChatArtifactDrawerState({
     conversationId,
@@ -163,7 +163,7 @@ export function ChatWorkspaceView({
   })
   const { handleRemoveQueuedPrompt, pendingQueuedPromptIdsForSession, queuedPromptError } =
     useQueuedPromptCancellation({
-      composerProjectId,
+      composerDirectoryId,
       handleAction,
       terminalConversationId,
     })
@@ -175,7 +175,7 @@ export function ChatWorkspaceView({
       hasConversationLayout={hasConversationLayout}
       footerHeight={footerHeight}
       mainViewRef={mainViewRef}
-      activeThreadData={activeThreadData}
+      activeChatData={activeChatData}
       shouldShowConversationContent={shouldShowConversationContent}
       composerLayoutVersion={0}
       composerOverlayHeight={composerOverlayHeight}
@@ -193,9 +193,9 @@ export function ChatWorkspaceView({
       handleRemoveQueuedPrompt={handleRemoveQueuedPrompt}
       state={state}
       shellState={shellState}
-      composerProjectId={composerProjectId}
+      composerDirectoryId={composerDirectoryId}
       hasPersistedChatSession={hasPersistedChatSession}
-      draftChatGroupId={draftChatGroupId}
+      draftWorkspaceId={draftWorkspaceId}
       terminalConversationId={terminalConversationId}
       diffBaseline={diffBaseline}
       diffRenderMode={diffRenderMode}

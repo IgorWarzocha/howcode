@@ -1,24 +1,24 @@
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type { useQueuedPromptCancellation } from '../../../../src/app/composer/useQueuedPromptCancellation'
 import type {
+  ChatData,
   ComposerFilePickerState,
   ComposerState,
   DesktopActionInvoker,
-  ProjectDiffBaseline,
-  ProjectDiffRenderMode,
-  ProjectGitState,
+  DirectoryDiffBaseline,
+  DirectoryDiffRenderMode,
+  DirectoryGitState,
   ShellState,
-  ThreadData,
 } from '../../../../src/app/desktop/types'
 import type { SettingsOpenTarget } from '../../../../src/app/settings/settings/settingsTypes'
 import type { WorkspaceState } from '../../../../src/app/state/workspace-model'
-import type { Project, View } from '../../../../src/app/types'
+import type { View, WorkingDirectory } from '../../../../src/app/types'
 import type { useGitOpsReviewController } from './useGitOpsReviewController'
 
 export type CodeWorkspaceController = {
   composer: {
     listAttachmentEntries: (request: {
-      projectId?: string | null
+      directoryId?: string | null
       path?: string | null
       rootPath?: string | null
     }) => Promise<ComposerFilePickerState | null>
@@ -33,16 +33,16 @@ export type CodeWorkspaceController = {
     closeUtilityView: () => void
     showView: (view: Exclude<View, 'gitops'>, target?: SettingsOpenTarget) => void
   }
-  projects: {
+  directories: {
     gitLoading: boolean
-    items: Project[]
-    select: (projectId: string) => void
-    gitState: ProjectGitState | null
+    items: WorkingDirectory[]
+    select: (directoryId: string) => void
+    gitState: DirectoryGitState | null
   }
   terminal: { toggle: () => void }
-  thread: {
+  chat: {
     activeLoading: boolean
-    open: (projectId: string, threadId: string, conversationId: string) => void
+    open: (directoryId: string, chatId: string, conversationId: string) => void
     loadEarlierMessages: () => void
   }
   workspace: { state: WorkspaceState }
@@ -51,17 +51,17 @@ export type CodeWorkspaceController = {
 export type CodeWorkspaceViewProps = {
   controller: CodeWorkspaceController
   activeComposerState: ComposerState | null
-  activeThreadData: ThreadData | null
-  composerProjectId: string
-  currentProjectName: string
-  diffBaseline: ProjectDiffBaseline
-  diffRenderMode: ProjectDiffRenderMode
+  activeChatData: ChatData | null
+  composerDirectoryId: string
+  currentDirectoryName: string
+  diffBaseline: DirectoryDiffBaseline
+  diffRenderMode: DirectoryDiffRenderMode
   terminalDrawerVisible: boolean
   terminalDrawerOverlay?: boolean
   terminalConversationId: string | null
   workspaceContentClass: string
-  onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
-  onSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void
+  onSetDiffBaseline: (baseline: DirectoryDiffBaseline) => void
+  onSetDiffRenderMode: (renderMode: DirectoryDiffRenderMode) => void
   sidebarCollapsed: boolean
   sidebarAutoHidden: boolean
   sidebarCompactMode: boolean
@@ -75,20 +75,20 @@ export type CodeWorkspaceContentProps = CodeWorkspaceViewProps &
     mainViewRef: RefObject<HTMLElement | null>
     terminalDrawerInsetStyle: { right: string } | undefined
     footerInset: number
-    threadFooterStyle: { right?: string; top?: string } | undefined
+    chatFooterStyle: { right?: string; top?: string } | undefined
     showWorkspaceFooter: boolean
-    showThreadFooter: boolean
+    showChatFooter: boolean
     showCodeSidebarFooter: boolean
     showDiffInMainView: boolean
     showDesktopTerminalDrawer: boolean
-    centerThreadFooter: boolean
+    centerChatFooter: boolean
     gitOpsFileTreeVisible: boolean
     includeUntrackedDiffFiles: boolean
     toggleGitOpsFileTree: () => void
     toggleIncludeUntrackedDiffFiles: () => void
     diffLoadError: string | null
     setDiffLoadError: Dispatch<SetStateAction<string | null>>
-    threadTimelineLoading: boolean
+    chatTimelineLoading: boolean
     composerLayoutVersion: number
     setComposerLayoutVersion: Dispatch<SetStateAction<number>>
     composerOverlayHeight: number
@@ -101,6 +101,6 @@ export type CodeWorkspaceContentProps = CodeWorkspaceViewProps &
     listComposerAttachmentEntries: CodeWorkspaceController['composer']['listAttachmentEntries']
     shellState: ShellState | null
     state: WorkspaceState
-    projectGitState: ProjectGitState | null
+    directoryGitState: DirectoryGitState | null
     parentBranchName: string | null
   }

@@ -1,5 +1,10 @@
 import type { Dispatch, SetStateAction } from 'react'
-import type { ChatSidebarState, ComposerState, DesktopEvent, ThreadData } from '../../desktop/types'
+import type {
+  ChatData,
+  ComposerState,
+  DesktopEvent,
+  WorkspaceNavigationState,
+} from '../../desktop/types'
 import type { WorkspaceAction } from '../../state/workspace-model'
 import type { DesktopEventSelectionState } from '../desktop-event-sync'
 
@@ -8,36 +13,35 @@ export type DesktopEventQueryClient = {
   invalidateQueries: (filters: { queryKey: readonly unknown[] }) => Promise<unknown> | unknown
 }
 
-type ThreadEndEffect = (
-  event: Extract<DesktopEvent, { type: 'thread-update' }>,
+type ChatEndEffect = (
+  event: Extract<DesktopEvent, { type: 'chat-update' }>,
   activeView: DesktopEventSelectionState['activeView'],
 ) => void
 
-export type DesktopThreadEndContribution = {
-  refreshThreadList: ThreadEndEffect
-  refreshProjectState: ThreadEndEffect
+export type DesktopChatEndContribution = {
+  refreshChatList: ChatEndEffect
+  refreshDirectoryState: ChatEndEffect
 }
 
 export type DesktopEventSyncRuntime = {
   desktopEventStateRef: React.RefObject<{
-    threadEndContribution: DesktopThreadEndContribution | undefined
-    composerProjectId: string
+    chatEndContribution: DesktopChatEndContribution | undefined
+    composerDirectoryId: string
     workspaceState: DesktopEventSelectionState
   }>
   dispatch: Dispatch<WorkspaceAction>
-  loadProjectThreads: (
-    projectId: string,
+  loadDirectoryChats: (
+    directoryId: string,
     options?: {
-      chat?: boolean | undefined
       replaceLocalDraftConversationId?: string | null | undefined
     },
   ) => Promise<unknown>
   localDraftConversationIdByPersistedConversationIdRef: React.RefObject<Map<string, string>>
   queryClient: DesktopEventQueryClient
-  refreshChatSidebarState: () => Promise<unknown>
+  refreshWorkspaceNavigationState: () => Promise<unknown>
   scheduleShellStateRefresh: () => void
-  setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>
+  setWorkspaceNavigationState: Dispatch<SetStateAction<WorkspaceNavigationState | null>>
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>
-  setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>
-  setThreadHistoryCompactions: Dispatch<SetStateAction<number>>
+  setLiveChatData: Dispatch<SetStateAction<ChatData | null>>
+  setChatHistoryCompactions: Dispatch<SetStateAction<number>>
 }

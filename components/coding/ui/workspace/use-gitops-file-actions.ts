@@ -1,15 +1,15 @@
 import { useCallback, useMemo } from 'react'
 import type {
   DesktopActionInvoker,
-  ProjectFileWriteRequest,
+  DirectoryFileWriteRequest,
 } from '../../../../src/app/desktop/types'
 import type { GitOpsFileActions } from '../gitops/index'
 
 export function useGitOpsFileActions(handleAction: DesktopActionInvoker): GitOpsFileActions {
   const write = useCallback(
-    async (request: ProjectFileWriteRequest) => {
-      const actionResult = await handleAction('workspace.write-file', {
-        projectId: request.projectId,
+    async (request: DirectoryFileWriteRequest) => {
+      const actionResult = await handleAction('coding.write-file', {
+        directoryId: request.directoryId,
         filePath: request.path,
         fileContents: request.contents,
         expectedRevision: request.expectedRevision,

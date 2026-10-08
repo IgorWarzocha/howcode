@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
-import type { InboxThread } from '../desktop/types'
-import { desktopQueryKeys, getInboxThreadsQuery } from '../query/desktop-query'
+import type { InboxChat } from '../desktop/types'
+import { desktopQueryKeys, getInboxChatsQuery } from '../query/desktop-query'
 
 export function useDesktopInbox() {
-  return useQuery<InboxThread[]>({
-    queryKey: desktopQueryKeys.inboxThreads(),
-    queryFn: getInboxThreadsQuery,
+  return useQuery<InboxChat[]>({
+    queryKey: desktopQueryKeys.inboxChats(),
+    queryFn: getInboxChatsQuery,
     staleTime: Number.POSITIVE_INFINITY,
   })
 }

@@ -2,7 +2,7 @@ const trailingSlashPattern = /\/+$/
 
 import type { CodeViewHandle } from '@pierre/diffs/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { ProjectDiffBaseline } from '../../../../../src/app/desktop/types'
+import type { DirectoryDiffBaseline } from '../../../../../src/app/desktop/types'
 import { getFeatureStatusDataAttributes } from '../../../../../src/app/features/feature-status'
 import {
   diffPanelMainSurfaceClass,
@@ -28,9 +28,9 @@ import { useWorkerRenderablePatch } from './useWorkerRenderablePatch'
 
 type DiffPanelContentProps = {
   fileActions: GitOpsFileActions
-  projectId: string
+  directoryId: string
   isGitRepo: boolean
-  baseline: ProjectDiffBaseline | null
+  baseline: DirectoryDiffBaseline | null
   selectedFilePath: string | null
   selectedCommentId: string | null
   selectedCommentJumpKey: number
@@ -44,7 +44,7 @@ type DiffPanelContentProps = {
 
 export function DiffPanelContent({
   fileActions,
-  projectId,
+  directoryId,
   isGitRepo,
   baseline,
   selectedFilePath,
@@ -64,21 +64,21 @@ export function DiffPanelContent({
   const codeViewRef = useRef<CodeViewHandle<GitOpsAnnotationMetadata, undefined> | null>(null)
   const draftCardRef = useRef<HTMLDivElement | null>(null)
   const { diff, streamedPatch, isLoading, error } = useDesktopDiff(
-    projectId,
+    directoryId,
     baseline,
     isGitRepo,
     includeUntracked,
   )
   const fileContent = useDiffFileContent({
-    projectId,
+    directoryId,
     resolvedBaseline: diff?.resolvedBaseline ?? null,
   })
-  const reviewState = useDiffReviewState({ baseline, includeUntracked, projectId })
+  const reviewState = useDiffReviewState({ baseline, includeUntracked, directoryId })
   const editing = useDiffEditing({
     fileActions,
     fileContent: fileContent.controller,
     onAnnotationsChange: reviewState.reanchorAnnotations,
-    projectId,
+    directoryId,
   })
   const editingError =
     editing.state.kind === 'idle' || editing.state.kind === 'editing' ? editing.state.error : null
@@ -209,7 +209,7 @@ export function DiffPanelContent({
       {...getFeatureStatusDataAttributes('feature:diff.panel')}
     >
       <DiffPanelContentBody
-        projectId={projectId}
+        directoryId={directoryId}
         diff={{
           baseline,
           error: loadError,

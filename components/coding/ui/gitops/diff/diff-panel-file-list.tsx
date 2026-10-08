@@ -6,7 +6,7 @@ import {
   type FileDiffMetadata,
 } from '@pierre/diffs/react'
 import { useCallback, useMemo } from 'react'
-import type { ProjectDiffBaseline } from '../../../../../src/app/desktop/types'
+import type { DirectoryDiffBaseline } from '../../../../../src/app/desktop/types'
 import { diffFileShellClass } from '../../../../../src/app/ui/classes'
 import { cn } from '../../../../../src/app/utils/cn'
 import { pierreEditorOptions } from '../edit/pierre-editor'
@@ -32,7 +32,7 @@ import type { DiffFileContentController } from './use-diff-file-content'
 import { useTrailingContextExpansion } from './use-trailing-context-expansion'
 
 type DiffPanelFileListProps = {
-  baseline: ProjectDiffBaseline | null
+  baseline: DirectoryDiffBaseline | null
   codeViewRef: React.RefObject<CodeViewHandle<GitOpsAnnotationMetadata, undefined> | null>
   scrollContainerRef: React.RefObject<HTMLDivElement | null>
   collapsedFiles: Record<string, boolean>
@@ -41,7 +41,7 @@ type DiffPanelFileListProps = {
   fileContent: DiffFileContentController
   focusedImageFileKeys: ReadonlySet<string>
   onToggleFileCollapsed: (fileKey: string) => void
-  projectId: string
+  directoryId: string
   review: ReviewCodeViewController
   renderableFiles: FileDiffMetadata[]
 }
@@ -60,7 +60,7 @@ export function DiffPanelFileList({
   fileContent,
   focusedImageFileKeys,
   onToggleFileCollapsed,
-  projectId,
+  directoryId,
   review,
   renderableFiles,
 }: DiffPanelFileListProps) {
@@ -113,7 +113,7 @@ export function DiffPanelFileList({
             onToggleFileCollapsed={onToggleFileCollapsed}
           />
           {isImageFile && !isCollapsed ? (
-            <DiffImagePreview baseline={baseline} fileDiff={fileDiff} projectId={projectId} />
+            <DiffImagePreview baseline={baseline} fileDiff={fileDiff} directoryId={directoryId} />
           ) : null}
         </div>
       )
@@ -124,7 +124,7 @@ export function DiffPanelFileList({
       changeReview.reviewedFileKeys,
       editing,
       onToggleFileCollapsed,
-      projectId,
+      directoryId,
     ],
   )
 

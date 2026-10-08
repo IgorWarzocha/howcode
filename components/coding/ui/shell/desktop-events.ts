@@ -1,78 +1,78 @@
-import type { DesktopThreadEndContribution } from '@howcode/app-shell'
+import type { DesktopChatEndContribution } from '@howcode/app-shell'
 import type { Dispatch, SetStateAction } from 'react'
 import { useMemo } from 'react'
-import type { ProjectGitState } from '../../../../src/app/desktop/types'
+import type { DirectoryGitState } from '../../../../src/app/desktop/types'
 import { desktopQueryKeys } from '../../../../src/app/query/desktop-query'
 import type { View } from '../../../../src/app/types'
-import { notifyProjectDiffInvalidated } from '../hooks/project-diff-invalidation'
+import { notifyDirectoryDiffInvalidated } from '../hooks/directory-diff-invalidation'
 
 type QueryClientLike = {
   invalidateQueries: (filters: { queryKey: readonly unknown[] }) => Promise<unknown> | unknown
 }
 
-export function invalidateProjectWorktreeQueries({
+export function invalidateDirectoryWorktreeQueries({
   activeView,
-  projectId,
+  directoryId,
   queryClient,
 }: {
   activeView: View
-  projectId: string
+  directoryId: string
   queryClient: QueryClientLike
 }) {
-  if (activeView === 'gitops') notifyProjectDiffInvalidated(projectId)
+  if (activeView === 'gitops') notifyDirectoryDiffInvalidated(directoryId)
   void queryClient.invalidateQueries({
-    queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
+    queryKey: desktopQueryKeys.directoryDiffStatsPrefix(directoryId),
   })
   void queryClient.invalidateQueries({
-    queryKey: desktopQueryKeys.projectDiffImagePreviewPrefix(projectId),
+    queryKey: desktopQueryKeys.directoryDiffImagePreviewPrefix(directoryId),
   })
   void queryClient.invalidateQueries({
-    queryKey: desktopQueryKeys.projectCommitsPrefix(projectId),
+    queryKey: desktopQueryKeys.directoryCommitsPrefix(directoryId),
   })
 }
 
 export function useCodingDesktopEventContribution({
   enabled,
-  composerProjectId,
-  loadProjectThreads,
-  loadProjectGitState,
-  setProjectGitState,
+  composerDirectoryId,
+  loadDirectoryChats,
+  loadDirectoryGitState,
+  setDirectoryGitState,
   queryClient,
 }: {
   enabled: boolean
-  composerProjectId: string
-  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
-  loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
-  setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>
+  composerDirectoryId: string
+  loadDirectoryChats: (directoryId: string) => Promise<unknown>
+  loadDirectoryGitState: (directoryId: string) => Promise<DirectoryGitState | null>
+  setDirectoryGitState: Dispatch<SetStateAction<DirectoryGitState | null>>
   queryClient: QueryClientLike
-}): DesktopThreadEndContribution {
+}): DesktopChatEndContribution {
   return useMemo(
     () => ({
-      refreshThreadList(event, activeView) {
+      refreshChatList(event) {
         if (!enabled) return
-        if (event.isChat === true) {
-          if (activeView === 'chat') void loadProjectThreads(event.projectId, { chat: true })
-        } else if (activeView !== 'chat') {
-          void loadProjectThreads(event.projectId)
-        }
+        void loadDirectoryChats(event.directoryId)
       },
-      refreshProjectState(event, activeView) {
+      refreshDirectoryState(event, activeView) {
         // Cache invalidation also ran with coding disabled before this policy moved here.
-        invalidateProjectWorktreeQueries({ activeView, projectId: event.projectId, queryClient })
-        void queryClient.invalidateQueries({
-          queryKey: desktopQueryKeys.projectUsageSummary(event.projectId),
+        invalidateDirectoryWorktreeQueries({
+          activeView,
+          directoryId: event.directoryId,
+          queryClient,
         })
-        if (enabled && event.projectId === composerProjectId) {
-          void loadProjectGitState(event.projectId).then(setProjectGitState)
+        void queryClient.invalidateQueries({
+          queryKey: desktopQueryKeys.directoryUsageSummary(event.directoryId),
+        })
+        if (enabled && event.directoryId === composerDirectoryId) {
+          void loadDirectoryGitState(event.directoryId).then(setDirectoryGitState)
         }
       },
     }),
     [
       enabled,
-      composerProjectId,
-      loadProjectThreads,
-      loadProjectGitState,
-      setProjectGitState,
+      composerDirectoryId,
+      loadDirectoryChats,
+      loadDirectoryGitState,
+      setDirectoryGitState,
       queryClient,
     ],
   )

@@ -1,16 +1,16 @@
 import type { Message, ProseMessage } from '../../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
-import { mapDurableEntriesToThread } from '../../shared/durable-message-mapper.ts'
-import { normalizeThreadTitle } from '../../shared/pi-message-mapper.ts'
+import { mapDurableEntriesToChat } from '../../shared/durable-message-mapper.ts'
+import { normalizeChatTitle } from '../../shared/pi-message-mapper.ts'
+import { repairConversationProjection } from '../chat-repository.ts'
+import { readRuntimeChat } from '../durable-runtime/chats.ts'
 import {
   listRuntimeConversations,
   readRuntimeConversationOrigin,
   readRuntimeEntries,
   subscribeRuntimeConversationChanges,
 } from '../durable-runtime/host.ts'
-import { readRuntimeThread } from '../durable-runtime/threads.ts'
 import { emitDesktopEvent } from '../runtime/desktop-events.ts'
-import { repairConversationProjection } from '../thread-state-db.ts'
 import {
   getRuntimeConversationMetadata,
   registerRuntimeConversation,
@@ -43,25 +43,25 @@ async function repair(conversationId: string) {
     if (!origin?.appOwned) return
     registerRuntimeConversation({
       conversationId,
-      projectId: origin.projectId ?? getDesktopWorkingDirectory(),
+      directoryId: origin.directoryId ?? getDesktopWorkingDirectory(),
       branchName: origin.branchName,
-      chatGroupId: origin.chatGroupId,
-      isChat: origin.composerMode === 'chat',
+      workspaceId: origin.workspaceId,
+      composerProfile: origin.composerProfile ?? undefined,
       lastModifiedMs,
     })
   }
-  const thread = await readRuntimeThread(conversationId)
-  const persisted = mapDurableEntriesToThread({ conversationId, entries })
+  const chat = await readRuntimeChat(conversationId)
+  const persisted = mapDurableEntriesToChat({ conversationId, entries })
   const firstUser = persisted.messages.find(isUser)
   const assistant = persisted.messages.findLast(isAssistant)
   repairConversationProjection({
     conversationId,
-    title: normalizeThreadTitle(firstUser?.content.join('\n\n')),
+    title: normalizeChatTitle(firstUser?.content.join('\n\n')),
     lastModifiedMs,
     entryId: persisted.messages.at(-1)?.id ?? null,
     assistantId: assistant?.id ?? null,
     preview: assistant?.content.join('\n\n').slice(0, 240) ?? null,
-    running: thread.isStreaming || thread.isCompacting,
+    running: chat.isStreaming || chat.isCompacting,
   })
 }
 

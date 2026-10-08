@@ -112,7 +112,7 @@ export function createChatTools({
       ],
     }),
     {
-      resourceRequest: () => ({ projectId: null, composerMode: 'chat' }),
+      resourceRequest: () => ({ directoryId: null, composerProfile: 'general' }),
       async prepareInput({ conversation, request, context }) {
         const grants = await resolveAttachmentGrants(request.attachments ?? [])
         await conversation.commit(async (tx) => {

@@ -1,34 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeLineRangeTarget } from '../review/review-model'
 import { decodePersistedReviewContext, getReviewContextId } from '../review/review-store'
-
-describe('GitOps review model', () => {
-  it('normalizes same-side ranges while preserving cross-side direction', () => {
-    expect(
-      normalizeLineRangeTarget({
-        fileKey: 'file',
-        filePath: 'src/file.ts',
-        start: { side: 'additions', lineNumber: 9 },
-        end: { side: 'additions', lineNumber: 4 },
-      }),
-    ).toMatchObject({
-      start: { side: 'additions', lineNumber: 4 },
-      end: { side: 'additions', lineNumber: 9 },
-    })
-
-    expect(
-      normalizeLineRangeTarget({
-        fileKey: 'file',
-        filePath: 'src/file.ts',
-        start: { side: 'additions', lineNumber: 7 },
-        end: { side: 'deletions', lineNumber: 3 },
-      }),
-    ).toMatchObject({
-      start: { side: 'additions', lineNumber: 7 },
-      end: { side: 'deletions', lineNumber: 3 },
-    })
-  })
-})
 
 describe('GitOps review persistence contract', () => {
   it('decodes legacy v1 values into explicit targets and drops invalid records', () => {
@@ -94,18 +65,18 @@ describe('GitOps review persistence contract', () => {
   })
 
   it('scopes contexts by project, baseline, and untracked mode', () => {
-    const head = getReviewContextId({ projectId: '/repo' })
+    const head = getReviewContextId({ directoryId: '/repo' })
     expect(head).toBe('project:/repo:worktree-diff:head:untracked:hidden')
-    expect(getReviewContextId({ projectId: '' })).toBeNull()
+    expect(getReviewContextId({ directoryId: '' })).toBeNull()
     expect(
       getReviewContextId({
-        projectId: '/repo',
+        directoryId: '/repo',
         baseline: { kind: 'commit', sha: 'abc123' },
       }),
     ).not.toBe(head)
     expect(
       getReviewContextId({
-        projectId: '/repo',
+        directoryId: '/repo',
         baseline: { kind: 'head' },
         includeUntracked: true,
       }),

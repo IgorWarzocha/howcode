@@ -9,54 +9,59 @@ import {
 import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch, SetStateAction } from 'react'
 import { isWorkspaceViewEnabled } from '../component-system/toolkit-components'
-import type { DesktopActionResult, InboxThread } from '../desktop/types'
-import { forgetLocalDraftThread } from '../hooks/useDesktopProjectThreads'
+import type { DesktopActionResult, InboxChat, WorkspaceNavigationState } from '../desktop/types'
+import { forgetLocalDraftChat } from '../hooks/useDesktopDirectoryChats'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace-model'
-import type { View } from '../types'
-import { removeProjectThreadFromShellState } from './project-thread-cache'
-import { getProjectSelectionAction } from './scoped-project-view'
-import { THREAD_CYCLE_OPEN_ACTION_DELAY_MS, useScheduledThreadOpen } from './useScheduledThreadOpen'
+import type { View, WorkingDirectory } from '../types'
+import { findWorkspaceForDirectory } from './app-routes'
+import { removeDirectoryChatFromShellState } from './directory-chat-cache'
+import { getDirectorySelectionAction } from './scoped-directory-view'
+import { CHAT_CYCLE_OPEN_ACTION_DELAY_MS, useScheduledChatOpen } from './useScheduledChatOpen'
 
 type HandleAction = (
   action:
-    | 'threads.collapse-all'
-    | 'project.collapse'
-    | 'project.expand'
-    | 'thread.open'
+    | 'chats.collapse-all'
+    | 'directory.collapse'
+    | 'directory.expand'
+    | 'chat.open'
     | 'inbox.mark-read'
     | 'inbox.dismiss',
   payload?: Record<string, unknown>,
 ) => Promise<DesktopActionResult | null>
 
 type UseAppShellCommandsInput = {
+  navigation: WorkspaceNavigationState | null
+  directories: WorkingDirectory[]
   toolkitSettings: ToolkitComponentSettings | undefined
-  collapsedProjectIds: Record<string, boolean>
-  composerProjectId: string
+  collapsedDirectoryIds: Record<string, boolean>
+  composerDirectoryId: string
   dispatch: Dispatch<WorkspaceAction>
   handleAction: HandleAction
   queryClient: QueryClient
-  setThreadHistoryCompactions: Dispatch<SetStateAction<number>>
-  setThreadQueryDeferred: Dispatch<SetStateAction<boolean>>
+  setChatHistoryCompactions: Dispatch<SetStateAction<number>>
+  setChatQueryDeferred: Dispatch<SetStateAction<boolean>>
   setSettingsOpenTarget: Dispatch<SetStateAction<SettingsOpenTarget | null>>
   workspaceState: WorkspaceState
 }
 
 export function useAppShellCommands({
+  navigation,
+  directories,
   toolkitSettings,
-  collapsedProjectIds,
-  composerProjectId,
+  collapsedDirectoryIds,
+  composerDirectoryId,
   dispatch,
   handleAction,
   queryClient,
   setSettingsOpenTarget,
-  setThreadHistoryCompactions,
-  setThreadQueryDeferred,
+  setChatHistoryCompactions,
+  setChatQueryDeferred,
   workspaceState,
 }: UseAppShellCommandsInput) {
-  const scheduleThreadOpenAction = useScheduledThreadOpen({
+  const scheduleChatOpenAction = useScheduledChatOpen({
     dispatch,
     handleAction,
-    setThreadQueryDeferred,
+    setChatQueryDeferred,
     workspaceState,
   })
 
@@ -65,7 +70,7 @@ export function useAppShellCommands({
     toolkitSettings,
   })
   const { handleOpenGitOpsView, handleCloseGitOpsView, handleOpenWorktreeDiffFile } =
-    useCodingWorkspaceCommands({ composerProjectId, dispatch, queryClient })
+    useCodingWorkspaceCommands({ composerDirectoryId, dispatch, queryClient })
 
   const handleShowView = (view: Exclude<View, 'gitops'>, target?: SettingsOpenTarget) => {
     const enabledView = isWorkspaceViewEnabled(toolkitSettings, view) ? view : 'chat'
@@ -88,110 +93,146 @@ export function useAppShellCommands({
   }
 
   const handleShowWorkspace = () => {
-    dispatch({ type: 'show-view', view: 'chat' })
-    dispatch({ type: 'clear-thread-selection' })
+    dispatch({
+      type: 'select-workspace',
+      workspaceId: workspaceState.selectedWorkspaceId,
+      directoryId: workspaceState.hasSelectedDirectory ? workspaceState.selectedDirectoryId : null,
+    })
   }
 
   const handleCollapseAll = () => {
-    dispatch({ type: 'collapse-all-projects' })
-    void handleAction('threads.collapse-all')
+    dispatch({ type: 'collapse-all-directories' })
+    void handleAction('chats.collapse-all')
   }
 
-  const handleToggleProjectCollapse = (projectId: string) => {
-    const nextCollapsed = !collapsedProjectIds[projectId]
-    dispatch({ type: 'toggle-project-collapse', projectId })
-    void handleAction(nextCollapsed ? 'project.collapse' : 'project.expand', { projectId })
+  const handleToggleDirectoryCollapse = (directoryId: string) => {
+    const nextCollapsed = !collapsedDirectoryIds[directoryId]
+    dispatch({ type: 'toggle-directory-collapse', directoryId })
+    void handleAction(nextCollapsed ? 'directory.collapse' : 'directory.expand', { directoryId })
   }
 
   const clearSelectedUnstartedDraft = () => {
     const selectedConversationId = workspaceState.selectedConversationId
-    const selectedProjectId = workspaceState.selectedProjectId
-    if (!(selectedProjectId && isLocalConversationId(selectedConversationId))) return
+    const selectedDirectoryId = workspaceState.selectedDirectoryId
+    if (!(selectedDirectoryId && isLocalConversationId(selectedConversationId))) return
 
     const localConversationId = selectedConversationId ?? ''
-    forgetLocalDraftThread(selectedProjectId, localConversationId)
-    removeProjectThreadFromShellState(queryClient, selectedProjectId, localConversationId)
+    forgetLocalDraftChat(selectedDirectoryId, localConversationId)
+    removeDirectoryChatFromShellState(queryClient, selectedDirectoryId, localConversationId)
   }
 
-  const handleThreadOpen = (
-    projectId: string,
-    threadId: string,
+  const handleChatOpen = (
+    directoryId: string,
+    chatId: string,
     conversationId: string,
-    view?: 'chat' | 'thread' | undefined,
+    composerProfile?: 'general' | 'coding' | undefined,
     branchName?: string | null | undefined,
   ) => {
     clearSelectedUnstartedDraft()
-    setThreadHistoryCompactions(0)
-    dispatch({ type: 'open-thread', projectId, threadId, conversationId, view })
-    scheduleThreadOpenAction({ projectId, threadId, conversationId, view, branchName })
+    setChatHistoryCompactions(0)
+    const workspace = navigation?.workspaces.find((item) =>
+      item.chats.some(
+        (candidate) => candidate.id === chatId || candidate.conversationId === conversationId,
+      ),
+    )
+    const chat = workspace?.chats.find((item) => item.id === chatId)
+    const profile = chat?.composerProfile ?? composerProfile ?? workspaceState.composerProfile
+    dispatch({
+      type: 'open-chat',
+      directoryId,
+      chatId,
+      conversationId,
+      composerProfile: profile,
+      workspaceId: workspace?.id,
+    })
+    scheduleChatOpenAction({
+      directoryId,
+      chatId,
+      conversationId,
+      composerProfile: profile,
+      branchName,
+    })
   }
 
-  const handleThreadCycle = (
-    projectId: string,
-    threadId: string,
+  const handleChatCycle = (
+    directoryId: string,
+    chatId: string,
     conversationId: string,
-    view?: 'chat' | 'thread' | undefined,
+    composerProfile?: 'general' | 'coding' | undefined,
   ) => {
-    setThreadHistoryCompactions(0)
-    dispatch({ type: 'preview-thread', projectId, threadId, view })
-    scheduleThreadOpenAction({
-      projectId,
-      threadId,
+    setChatHistoryCompactions(0)
+    const workspace = navigation?.workspaces.find((item) =>
+      item.chats.some((chat) => chat.id === chatId),
+    )
+    dispatch({
+      type: 'preview-chat',
+      directoryId,
+      chatId,
+      composerProfile,
+      workspaceId: workspace?.id,
+    })
+    scheduleChatOpenAction({
+      directoryId,
+      chatId,
       conversationId,
-      view,
-      delayMs: THREAD_CYCLE_OPEN_ACTION_DELAY_MS,
-      deferThreadQuery: true,
+      composerProfile,
+      delayMs: CHAT_CYCLE_OPEN_ACTION_DELAY_MS,
+      deferChatQuery: true,
       commitLocally: true,
     })
   }
 
-  const handleSelectInboxThread = (thread: InboxThread) => {
-    dispatch({ type: 'select-inbox-thread', conversationId: thread.conversationId })
+  const handleSelectInboxChat = (chat: InboxChat) => {
+    dispatch({ type: 'select-inbox-chat', conversationId: chat.conversationId })
 
-    if (thread.unread) {
+    if (chat.unread) {
       void handleAction('inbox.mark-read', {
-        projectId: thread.projectId,
-        conversationId: thread.conversationId,
+        directoryId: chat.directoryId,
+        conversationId: chat.conversationId,
       })
     }
   }
 
-  const handleDismissInboxThread = (thread: InboxThread) => {
+  const handleDismissInboxChat = (chat: InboxChat) => {
     void handleAction('inbox.dismiss', {
-      projectId: thread.projectId,
-      conversationId: thread.conversationId,
+      directoryId: chat.directoryId,
+      conversationId: chat.conversationId,
     })
   }
 
   const handleLoadEarlierMessages = (targetHistoryCompactions?: number | undefined) => {
     if (typeof targetHistoryCompactions === 'number' && Number.isFinite(targetHistoryCompactions)) {
-      setThreadHistoryCompactions(Math.max(0, Math.floor(targetHistoryCompactions)))
+      setChatHistoryCompactions(Math.max(0, Math.floor(targetHistoryCompactions)))
       return
     }
 
-    setThreadHistoryCompactions((current) => current + 1)
+    setChatHistoryCompactions((current) => current + 1)
   }
 
   return {
     handleCloseGitOpsView,
     handleCloseUtilityView,
     handleCollapseAll,
-    handleDismissInboxThread,
+    handleDismissInboxChat,
     handleLoadEarlierMessages,
     handleOpenGitOpsView,
     handleOpenSettingsPanel: () => dispatch({ type: 'set-settings-panel-open', open: true }),
     handleOpenWorktreeDiffFile,
-    handleProjectSelect: (projectId: string) =>
-      dispatch({ type: getProjectSelectionAction(workspaceState.activeView), projectId }),
-    handleSetSelectedProject: (projectId: string) =>
-      dispatch({ type: 'set-selected-project', projectId }),
-    handleSelectInboxThread,
+    handleDirectorySelect: (directoryId: string) =>
+      dispatch({
+        type: getDirectorySelectionAction(workspaceState.activeView),
+        directoryId,
+        workspaceId: findWorkspaceForDirectory(navigation, directories, directoryId)?.id,
+      }),
+    handleSetSelectedDirectory: (directoryId: string) =>
+      dispatch({ type: 'set-selected-directory', directoryId }),
+    handleSelectInboxChat,
     handleShowView,
     handleShowWorkspace,
     handleShowLanding,
-    handleThreadOpen,
-    handleThreadCycle,
-    handleToggleProjectCollapse,
+    handleChatOpen,
+    handleChatCycle,
+    handleToggleDirectoryCollapse,
     handleToggleSettings: () => dispatch({ type: 'toggle-settings' }),
     handleToggleTerminal,
     handleCloseTerminalDrawer,

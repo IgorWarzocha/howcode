@@ -6,7 +6,7 @@ import type {
   ComposerModel,
   ComposerThinkingLevel,
   DesktopActionInvoker,
-  InboxThread,
+  InboxChat,
 } from '../../desktop/types'
 import type { InboxReplyController } from '../useInboxReplyController'
 
@@ -25,15 +25,15 @@ export type InboxComposerProps = {
   isCompacting: boolean
   modelState: InboxComposerModelState
   reply: InboxReplyController
-  thread: InboxThread
+  chat: InboxChat
   onAction: DesktopActionInvoker
   onDismiss: () => void
   onListAttachmentEntries: (request: {
-    projectId?: string | null
+    directoryId?: string | null
     path?: string | null
     rootPath?: string | null
   }) => Promise<ComposerFilePickerState | null>
-  onOpenThread: () => void
+  onOpenChat: () => void
   onOpenSettingsView: (target?: SettingsOpenTarget) => void
   onStartNewSession: () => void
 }

@@ -94,7 +94,7 @@ export function useWorkerRenderablePatch(selectedPatch: string | undefined, done
 
     let active = true
     let worker: DiffParseWorker
-    const parseOnMainThread = () => {
+    const parseOnMainChat = () => {
       if (!active || chunkState.requestId !== requestIdRef.current) return
       setRenderablePatch(getRenderablePatch(selectedPatch, 'diff-panel:dark'))
     }
@@ -104,14 +104,14 @@ export function useWorkerRenderablePatch(selectedPatch: string | undefined, done
         worker.terminate()
         workerRef.current = null
       }
-      parseOnMainThread()
+      parseOnMainChat()
     }
 
     try {
       worker = workerRef.current ?? createDiffParseWorker()
     } catch {
       workerRef.current = null
-      parseOnMainThread()
+      parseOnMainChat()
       return
     }
 

@@ -282,7 +282,7 @@ function extractAssistantThinking(message: RuntimeMessage) {
   }
 }
 
-export function normalizeThreadTitle(value: unknown) {
+export function normalizeChatTitle(value: unknown) {
   const text = String(value || '')
     .replace(/\s+/g, ' ')
     .trim()
@@ -453,5 +453,5 @@ export function getFirstUserTurnTitle(messages: Message[]) {
   const firstUserMessage = messages.find((uiMessage) => uiMessage.role === 'user') as
     | Extract<Message, { role: 'assistant' | 'user' }>
     | undefined
-  return normalizeThreadTitle(firstUserMessage?.content[0])
+  return normalizeChatTitle(firstUserMessage?.content[0])
 }

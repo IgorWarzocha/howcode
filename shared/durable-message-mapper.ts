@@ -1,11 +1,11 @@
 import type { Message as ModelMessage, ToolCall } from '@earendil-works/pi-ai'
 import { CompactionEntry, type EntryRecord, type LiveState } from '@earendil-works/pi-durable'
 import type { ConversationEntryList, ConversationEntryPreview } from './conversation-entries'
-import type { Message, ThreadData } from './desktop-thread-contracts'
+import type { ChatData, Message } from './desktop-chat-contracts'
 import {
   getFirstUserTurnTitle,
   mapAgentMessageToUiMessage,
-  normalizeThreadTitle,
+  normalizeChatTitle,
 } from './pi-message-mapper'
 
 function entryMessageId(entry: EntryRecord, index: number) {
@@ -67,13 +67,13 @@ function mapEntries(
   })
 }
 
-export function mapDurableEntriesToThread(input: {
+export function mapDurableEntriesToChat(input: {
   conversationId: string
   title?: string | undefined
   entries: readonly EntryRecord[]
   live?: LiveState | undefined
   previousMessageCount?: number | undefined
-}): ThreadData {
+}): ChatData {
   const calls = collectToolCalls(input.entries)
   const messages = mapEntries(input.entries, calls)
   const partial = input.live?.generation?.message
@@ -103,9 +103,7 @@ export function mapDurableEntriesToThread(input: {
   }
   return {
     conversationId: input.conversationId,
-    title: input.title?.trim()
-      ? normalizeThreadTitle(input.title)
-      : getFirstUserTurnTitle(messages),
+    title: input.title?.trim() ? normalizeChatTitle(input.title) : getFirstUserTurnTitle(messages),
     messages,
     previousMessageCount: input.previousMessageCount ?? 0,
     isStreaming: Boolean(input.live?.run),

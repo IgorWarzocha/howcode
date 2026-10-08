@@ -1,19 +1,19 @@
 import type {
   AnyDesktopActionPayload,
+  Chat,
   DesktopActionInvoker,
   DesktopActionResult,
-  ProjectGitState,
+  DirectoryGitState,
   ShellState,
-  Thread,
 } from '../desktop/types'
 
-type ShellProject = ShellState['projects'][number]
+type ShellDirectory = ShellState['directories'][number]
 
 export type BranchResumeGuardCheck =
   | { shouldSwitch: false }
   | {
       currentBranch: string | null
-      projectId: string
+      directoryId: string
       shouldSwitch: true
       targetBranch: string
     }
@@ -23,44 +23,47 @@ function normalizeBranchName(branchName: string | null | undefined) {
   return normalized.length > 0 ? normalized : null
 }
 
-function findProject(projects: readonly ShellProject[], projectId: string | null | undefined) {
-  if (!projectId) return null
-  return projects.find((project) => project.id === projectId) ?? null
+function findDirectory(
+  directories: readonly ShellDirectory[],
+  directoryId: string | null | undefined,
+) {
+  if (!directoryId) return null
+  return directories.find((directory) => directory.id === directoryId) ?? null
 }
 
-function findThreadByConversationId(
-  project: ShellProject | null,
+function findChatByConversationId(
+  directory: ShellDirectory | null,
   conversationId: string | null | undefined,
 ) {
-  if (!(project && conversationId)) return null
-  return project.threads.find((thread) => thread.conversationId === conversationId) ?? null
+  if (!(directory && conversationId)) return null
+  return directory.chats.find((chat) => chat.conversationId === conversationId) ?? null
 }
 
 function getPayloadConversationId(payload: AnyDesktopActionPayload) {
   return typeof payload.conversationId === 'string' ? payload.conversationId : null
 }
 
-function getPayloadProjectId(payload: AnyDesktopActionPayload) {
-  return typeof payload.projectId === 'string' ? payload.projectId : null
+function getPayloadDirectoryId(payload: AnyDesktopActionPayload) {
+  return typeof payload.directoryId === 'string' ? payload.directoryId : null
 }
 
-function getTargetThreadBranch(thread: Thread | null, payload: AnyDesktopActionPayload) {
+function getTargetChatBranch(chat: Chat | null, payload: AnyDesktopActionPayload) {
   return normalizeBranchName(
-    typeof payload.branchName === 'string' ? payload.branchName : thread?.branchName,
+    typeof payload.branchName === 'string' ? payload.branchName : chat?.branchName,
   )
 }
 
 export function getBranchResumeGuardCheck(input: {
-  gitState: ProjectGitState | null
+  gitState: DirectoryGitState | null
   payload: AnyDesktopActionPayload
   shellState: ShellState | null
 }): BranchResumeGuardCheck {
-  const projectId = getPayloadProjectId(input.payload)
-  const project = findProject(input.shellState?.projects ?? [], projectId)
-  if (!project || project.worktree?.isMain === false) return { shouldSwitch: false }
+  const directoryId = getPayloadDirectoryId(input.payload)
+  const directory = findDirectory(input.shellState?.directories ?? [], directoryId)
+  if (!directory || directory.worktree?.isMain === false) return { shouldSwitch: false }
 
-  const thread = findThreadByConversationId(project, getPayloadConversationId(input.payload))
-  const targetBranch = getTargetThreadBranch(thread, input.payload)
+  const chat = findChatByConversationId(directory, getPayloadConversationId(input.payload))
+  const targetBranch = getTargetChatBranch(chat, input.payload)
   if (!targetBranch) return { shouldSwitch: false }
 
   const currentBranch = normalizeBranchName(input.gitState?.branch)
@@ -68,7 +71,7 @@ export function getBranchResumeGuardCheck(input: {
 
   return {
     currentBranch,
-    projectId: project.id,
+    directoryId: directory.id,
     shouldSwitch: true,
     targetBranch,
   }
@@ -83,7 +86,7 @@ function formatBranchResumeGuardError(input: {
 }
 
 export function createBlockedBranchResumeResult(input: {
-  action: 'composer.send' | 'thread.open'
+  action: 'composer.send' | 'chat.open'
   currentBranch: string | null
   payload: AnyDesktopActionPayload
   targetBranch: string
@@ -102,17 +105,17 @@ export function createBlockedBranchResumeResult(input: {
 }
 
 export async function guardBranchResume(input: {
-  action: 'composer.send' | 'thread.open'
+  action: 'composer.send' | 'chat.open'
   invokeDesktopAction: DesktopActionInvoker
-  loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
+  loadDirectoryGitState: (directoryId: string) => Promise<DirectoryGitState | null>
   payload: AnyDesktopActionPayload
   shellState: ShellState | null
   onSwitchBranchSuccess?: (payload: AnyDesktopActionPayload) => Promise<void> | void
 }): Promise<DesktopActionResult | null> {
-  const projectId = getPayloadProjectId(input.payload)
-  if (!projectId) return null
+  const directoryId = getPayloadDirectoryId(input.payload)
+  if (!directoryId) return null
 
-  const gitState = await input.loadProjectGitState(projectId)
+  const gitState = await input.loadDirectoryGitState(directoryId)
   const guard = getBranchResumeGuardCheck({
     gitState,
     payload: input.payload,
@@ -121,10 +124,10 @@ export async function guardBranchResume(input: {
   if (!guard.shouldSwitch) return null
 
   const switchPayload = {
-    projectId: guard.projectId,
+    directoryId: guard.directoryId,
     value: guard.targetBranch,
   }
-  const switchResult = await input.invokeDesktopAction('workspace.switch-branch', switchPayload)
+  const switchResult = await input.invokeDesktopAction('coding.switch-branch', switchPayload)
   if (!switchResult?.result?.error && switchResult?.ok !== false) {
     await input.onSwitchBranchSuccess?.(switchPayload)
     return null

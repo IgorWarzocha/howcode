@@ -33,7 +33,7 @@ export async function startProcess(
 ) {
   clearSessionBindings(record)
   const request = {
-    projectId: record.snapshot.projectId,
+    directoryId: record.snapshot.directoryId,
     conversationId: record.snapshot.conversationId,
     cwd: record.snapshot.cwd,
     cols: record.snapshot.cols,

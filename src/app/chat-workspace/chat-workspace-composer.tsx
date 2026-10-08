@@ -6,7 +6,7 @@ import { DesktopComposerStatusModelPicker } from '@howcode/workspace-shell/deskt
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
-import type { AppSettings, ProjectDiffBaseline } from '../desktop/types'
+import type { AppSettings, DirectoryDiffBaseline } from '../desktop/types'
 import type { Message } from '../types'
 import { cn } from '../utils/cn'
 import { WorkspaceComposerDock } from '../workspace-shell/workspace-composer-dock'
@@ -24,17 +24,17 @@ const FALLBACK_APP_SETTINGS = {
   dictationMaxDurationSeconds: 180,
   showDictationButton: true,
   favoriteFolders: [],
-  projectImportState: null,
-  preferredProjectLocation: null,
+  directoryImportState: null,
+  preferredDirectoryLocation: null,
   customPiDirectory: null,
-  initializeGitOnProjectCreate: false,
-  projectDashboardEnabled: true,
+  initializeGitOnDirectoryCreate: false,
+  directoryDashboardEnabled: true,
   gitOpsDefaultMode: 'commit',
   gitDiffBaselineDefault: { kind: 'main-branch' },
   gitDiffRenderModeDefault: 'stacked',
   gitDiffFileTreeDefaultVisible: true,
   gitDiffIncludeUntrackedDefault: false,
-  projectDeletionMode: 'pi-only',
+  directoryDeletionMode: 'pi-only',
   useAgentsSkillsPaths: false,
   hideSidebarSessionCounts: false,
   hoverToFocus: true,
@@ -45,11 +45,11 @@ const FALLBACK_APP_SETTINGS = {
 
 export type ChatWorkspaceComposerProps = {
   activeComposerState: AppShellController['composer']['state']
-  activeThreadData: AppShellController['thread']['activeData']
+  activeChatData: AppShellController['chat']['activeData']
   artifactDrawer: ChatArtifactDrawerState
-  composerProjectId: string
-  diffBaseline: ProjectDiffBaseline
-  draftChatGroupId: string | null
+  composerDirectoryId: string
+  diffBaseline: DirectoryDiffBaseline
+  draftWorkspaceId: string | null
   footerRef: RefObject<HTMLElement | null>
   handleAction: AppShellController['desktop']['handleAction']
   handleToggleTerminal: AppShellController['terminal']['toggle']
@@ -58,7 +58,7 @@ export type ChatWorkspaceComposerProps = {
   hasPersistedChatSession: boolean
   listComposerAttachmentEntries: AppShellController['composer']['listAttachmentEntries']
   mainViewRef: RefObject<HTMLElement | null>
-  onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
+  onSetDiffBaseline: (baseline: DirectoryDiffBaseline) => void
   pendingQueuedPromptIdsForSession: ReturnType<
     typeof useQueuedPromptCancellation
   >['pendingQueuedPromptIdsForSession']
@@ -110,13 +110,13 @@ function SidebarToggleButton({
   )
 }
 
-function getChatGroupId({
+function getWorkspaceId({
   hasPersistedChatSession,
-  draftChatGroupId,
+  draftWorkspaceId,
   controller,
 }: ChatWorkspaceComposerProps) {
   if (hasPersistedChatSession) return null
-  return draftChatGroupId ?? controller.chat.selectedGroupId
+  return draftWorkspaceId ?? controller.workspaces.selectedWorkspaceId
 }
 
 function getToggleArtifacts({ hasConversationLayout, artifactDrawer }: ChatWorkspaceComposerProps) {
@@ -146,9 +146,9 @@ function ChatComposer(props: ChatWorkspaceComposerProps) {
   const {
     activeComposerState,
     state,
-    activeThreadData,
+    activeChatData,
     shellState,
-    composerProjectId,
+    composerDirectoryId,
     diffBaseline,
     terminalConversationId,
     onSetDiffBaseline,
@@ -166,15 +166,16 @@ function ChatComposer(props: ChatWorkspaceComposerProps) {
   const composerRuntime = getComposerRuntimeModel(activeComposerState)
   return (
     <Composer
+      composerProfile="general"
       activeView={state.activeView}
       runtime={composerRuntime}
-      messages={activeThreadData?.messages}
-      isStreaming={activeThreadData?.isStreaming ?? false}
-      replyActivityKey={getReplyActivityKey(activeThreadData?.messages ?? [])}
+      messages={activeChatData?.messages}
+      isStreaming={activeChatData?.isStreaming ?? false}
+      replyActivityKey={getReplyActivityKey(activeChatData?.messages ?? [])}
       streamingBehaviorPreference={appSettings.composerStreamingBehavior}
-      projectId={composerProjectId}
-      chatGroupId={getChatGroupId(props)}
-      projectGitState={null}
+      directoryId={composerDirectoryId}
+      workspaceId={getWorkspaceId(props)}
+      directoryGitState={null}
       diffBaseline={diffBaseline}
       conversationId={terminalConversationId}
       dictationModelId={appSettings.dictationModelId}
@@ -220,7 +221,7 @@ export function ChatComposerDock(props: ChatWorkspaceComposerProps) {
     sidebarCollapsed,
     artifactDrawer,
     activeComposerState,
-    composerProjectId,
+    composerDirectoryId,
     terminalConversationId,
     handleAction,
   } = props
@@ -237,10 +238,10 @@ export function ChatComposerDock(props: ChatWorkspaceComposerProps) {
         <DesktopComposerStatusModelPicker
           availableModels={activeComposerState?.availableModels ?? []}
           availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ['off']}
-          composerMode="chat"
+          composerProfile="general"
           contextUsage={activeComposerState?.contextUsage ?? null}
           model={activeComposerState?.currentModel ?? null}
-          projectId={composerProjectId}
+          directoryId={composerDirectoryId}
           conversationId={terminalConversationId}
           thinkingLevel={activeComposerState?.currentThinkingLevel ?? 'off'}
           onAction={handleAction}

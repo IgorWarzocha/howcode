@@ -1,8 +1,8 @@
 import type { Artifact } from './desktop-artifact-contracts'
+import type { ChatData } from './desktop-chat-contracts'
 import type { ComposerState } from './desktop-composer-contracts'
 import type { DictationModelId } from './desktop-dictation-contracts'
-import type { ProjectDiffStreamEvent } from './desktop-project-git-contracts'
-import type { ThreadData } from './desktop-thread-contracts'
+import type { DirectoryDiffStreamEvent } from './desktop-directory-git-contracts'
 import type { KeybindingCommandId } from './keybindings'
 
 export type DesktopEvent =
@@ -17,37 +17,37 @@ export type DesktopEvent =
       done: boolean
       isError: boolean
     }
-  | { type: 'project-diff-stream'; event: ProjectDiffStreamEvent }
+  | { type: 'directory-diff-stream'; event: DirectoryDiffStreamEvent }
   | {
       type: 'runtime-diagnostic'
       severity: 'info' | 'warning' | 'error'
       message: string
       details?: unknown
       conversationId?: string | null | undefined
-      projectId?: string | null | undefined
+      directoryId?: string | null | undefined
     }
-  | { type: 'internal-thread-update'; conversationId: string }
+  | { type: 'internal-chat-update'; conversationId: string }
   | {
       type: 'artifact-update'
       conversationId: string
       artifact: Artifact
     }
   | {
-      type: 'thread-update'
+      type: 'chat-update'
       reason: 'start' | 'update' | 'end' | 'external' | 'compaction-start' | 'compaction'
-      projectId: string
-      threadId: string
+      directoryId: string
+      chatId: string
       conversationId: string
       branchName?: string | null | undefined
       replacesConversationId?: string | null | undefined
-      chatGroupId?: string | null | undefined
-      isChat?: boolean | undefined
-      thread: ThreadData
+      workspaceId?: string | null | undefined
+      composerProfile?: 'general' | 'coding' | undefined
+      chat: ChatData
       composer: ComposerState | null
     }
   | {
       type: 'composer-update'
-      projectId: string | null
+      directoryId: string | null
       conversationId: string | null
       composer: ComposerState
     }

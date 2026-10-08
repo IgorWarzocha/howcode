@@ -7,7 +7,7 @@ const installScopeOptions: ReadonlyArray<{
   label: string
 }> = [
   { value: 'global', label: 'Global' },
-  { value: 'project', label: 'Workspace' },
+  { value: 'directory', label: 'Workspace' },
   { value: 'chat', label: 'Chat' },
 ]
 

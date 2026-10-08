@@ -19,7 +19,7 @@ import { useTerminalSessionLifecycle } from './useTerminalSessionLifecycle'
 import { useTerminalXtermInstance } from './useTerminalXtermInstance'
 
 type SharedTerminalViewportProps = {
-  projectId: string
+  directoryId: string
   conversationId: string | null
   backgroundCssVar: TerminalBackgroundCssVar
   className?: string
@@ -31,7 +31,7 @@ type TerminalViewportBaseProps = SharedTerminalViewportProps & {
 }
 
 export function TerminalViewportBase(props: TerminalViewportBaseProps) {
-  const { projectId, conversationId, backgroundCssVar, className } = props
+  const { directoryId, conversationId, backgroundCssVar, className } = props
   const viewportRef = useRef<HTMLDivElement | null>(null)
   const terminalMountRef = useRef<HTMLDivElement | null>(null)
   const terminalInstanceRef = useRef<XTerm | null>(null)
@@ -133,7 +133,7 @@ export function TerminalViewportBase(props: TerminalViewportBaseProps) {
       getCurrentSize: getCurrentTerminalSize,
       handleTerminalResize,
       lastSentSizeRef,
-      projectId,
+      directoryId,
       resetTerminal,
       scheduleTerminalResizeSettlingPasses,
       scheduleXtermBottomAlign,
@@ -149,7 +149,7 @@ export function TerminalViewportBase(props: TerminalViewportBaseProps) {
       getCurrentTerminalSize,
       handleTerminalResize,
       lastSentSizeRef,
-      projectId,
+      directoryId,
       resetTerminal,
       scheduleTerminalResizeSettlingPasses,
       scheduleXtermBottomAlign,

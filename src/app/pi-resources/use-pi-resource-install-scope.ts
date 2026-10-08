@@ -2,43 +2,43 @@ import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import type { PiResourceInstallScope } from './types'
 
 export function usePiResourceInstallScope({
-  projectPath,
-  onProjectTargetSelected,
-  onSetProjectScopeActive,
+  directoryPath,
+  onDirectoryTargetSelected,
+  onSetDirectoryScopeActive,
 }: {
-  projectPath: string | null
-  onProjectTargetSelected?: (() => void) | undefined
-  onSetProjectScopeActive: (active: boolean) => void
+  directoryPath: string | null
+  onDirectoryTargetSelected?: (() => void) | undefined
+  onSetDirectoryScopeActive: (active: boolean) => void
 }) {
   const [installScope, setInstallScope] = useState<PiResourceInstallScope>('global')
-  const normalizedProjectPath = projectPath?.trim() ? projectPath : null
-  const previousProjectPathRef = useRef(normalizedProjectPath)
-  const notifyProjectScopeActive = useEffectEvent(onSetProjectScopeActive)
+  const normalizedDirectoryPath = directoryPath?.trim() ? directoryPath : null
+  const previousDirectoryPathRef = useRef(normalizedDirectoryPath)
+  const notifyDirectoryScopeActive = useEffectEvent(onSetDirectoryScopeActive)
 
   // Target selection is intentionally reinforced at three points: the sidebar click keeps
-  // target mode highlighted, its event selects Project scope, and this path-change callback
-  // keeps target mode active after the asynchronous project selection reconciles.
+  // target mode highlighted, its event selects WorkingDirectory scope, and this path-change callback
+  // keeps target mode active after the asynchronous directory selection reconciles.
   useEffect(() => {
-    if (previousProjectPathRef.current === normalizedProjectPath) return
-    previousProjectPathRef.current = normalizedProjectPath
-    onProjectTargetSelected?.()
-  }, [normalizedProjectPath, onProjectTargetSelected])
+    if (previousDirectoryPathRef.current === normalizedDirectoryPath) return
+    previousDirectoryPathRef.current = normalizedDirectoryPath
+    onDirectoryTargetSelected?.()
+  }, [normalizedDirectoryPath, onDirectoryTargetSelected])
 
   useEffect(() => {
-    const selectProjectScope = () => setInstallScope('project')
-    window.addEventListener('howcode:project-target-selected', selectProjectScope)
-    return () => window.removeEventListener('howcode:project-target-selected', selectProjectScope)
+    const selectDirectoryScope = () => setInstallScope('directory')
+    window.addEventListener('howcode:project-target-selected', selectDirectoryScope)
+    return () => window.removeEventListener('howcode:project-target-selected', selectDirectoryScope)
   }, [])
 
   useEffect(() => {
-    notifyProjectScopeActive(installScope === 'project' || installScope === 'chat')
-    return () => notifyProjectScopeActive(false)
+    notifyDirectoryScopeActive(installScope === 'directory' || installScope === 'chat')
+    return () => notifyDirectoryScopeActive(false)
   }, [installScope])
 
   return {
     installScope,
-    normalizedProjectPath,
-    projectScopeAvailable: normalizedProjectPath !== null,
+    normalizedDirectoryPath,
+    directoryScopeAvailable: normalizedDirectoryPath !== null,
     setInstallScope,
   }
 }

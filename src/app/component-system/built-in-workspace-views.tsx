@@ -19,11 +19,11 @@ export type BuiltInWorkspaceViewProps = CodeProps & {
   controller: AppShellController
 }
 
-function roadmapView(activeView: 'claw' | 'work' | 'automations', projectName: string) {
+function roadmapView(activeView: 'claw' | 'work' | 'automations', directoryName: string) {
   return (
     <div className="relative min-h-0 flex-1 px-5 pt-1.5">
       <main className={mainPanelClass}>
-        <MainView activeView={activeView} projectName={projectName} />
+        <MainView activeView={activeView} directoryName={directoryName} />
       </main>
     </div>
   )
@@ -36,17 +36,17 @@ export function composeBuiltInWorkspaceViews(props: BuiltInWorkspaceViewProps) {
   const chat = (
     <ChatWorkspaceView
       controller={{
-        chat: controller.chat,
+        workspaces: controller.workspaces,
         composer: controller.composer,
         desktop: controller.desktop,
         navigation: controller.navigation,
         terminal: controller.terminal,
-        thread: controller.thread,
+        chat: controller.chat,
         workspace: controller.workspace,
       }}
       activeComposerState={props.activeComposerState}
-      activeThreadData={props.activeThreadData}
-      composerProjectId={props.composerProjectId}
+      activeChatData={props.activeChatData}
+      composerDirectoryId={props.composerDirectoryId}
       diffBaseline={props.diffBaseline}
       diffRenderMode={props.diffRenderMode}
       terminalConversationId={props.terminalConversationId}
@@ -66,9 +66,9 @@ export function composeBuiltInWorkspaceViews(props: BuiltInWorkspaceViewProps) {
         desktop: controller.desktop,
         gitOps: controller.gitOps,
         navigation: controller.navigation,
-        projects: controller.projects,
+        directories: controller.directories,
         terminal: controller.terminal,
-        thread: controller.thread,
+        chat: controller.chat,
         workspace: controller.workspace,
       }}
     />
@@ -83,12 +83,16 @@ export function composeBuiltInWorkspaceViews(props: BuiltInWorkspaceViewProps) {
     archived: utility,
     settings: utility,
     chat,
-    claw: roadmapView('claw', props.currentProjectName),
-    work: roadmapView('work', props.currentProjectName),
-    automations: roadmapView('automations', props.currentProjectName),
+    workspace: chat,
+    claw: roadmapView('claw', props.currentDirectoryName),
+    work: roadmapView('work', props.currentDirectoryName),
+    automations: roadmapView('automations', props.currentDirectoryName),
   }
   if (isToolkitComponentEnabled(settings, codingComponent.id)) {
     Object.assign(contributions, codingComponent.contribute(code))
+    if (controller.workspace.state.composerProfile === 'coding') {
+      Object.assign(contributions, { chat: code, workspace: code })
+    }
   }
   if (isToolkitComponentEnabled(settings, skillsComponent.id)) {
     Object.assign(
@@ -97,13 +101,13 @@ export function composeBuiltInWorkspaceViews(props: BuiltInWorkspaceViewProps) {
         <WorkspacePresentation>
           <SkillsWorkspaceView
             appSettings={settings ?? FALLBACK_APP_SETTINGS}
-            projectPath={
-              controller.workspace.state.hasSelectedProject
-                ? controller.workspace.state.selectedProjectId || null
+            directoryPath={
+              controller.workspace.state.hasSelectedDirectory
+                ? controller.workspace.state.selectedDirectoryId || null
                 : null
             }
-            onSetProjectScopeActive={controller.resourceScope.setSkillsActive}
-            onProjectTargetSelected={() => controller.resourceScope.setSkillsActive(true)}
+            onSetDirectoryScopeActive={controller.resourceScope.setSkillsActive}
+            onDirectoryTargetSelected={() => controller.resourceScope.setSkillsActive(true)}
             onAction={controller.desktop.handleAction}
             onClose={controller.navigation.closeUtilityView}
           />

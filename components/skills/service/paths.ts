@@ -28,24 +28,26 @@ export function getGlobalInteropSkillsDir() {
   return path.join(os.homedir(), '.agents', 'skills')
 }
 
-export function getProjectNativeSkillsDir(projectPath?: string | undefined | null | undefined) {
-  if (!projectPath?.trim()) {
+export function getDirectoryNativeSkillsDir(directoryPath?: string | undefined | null | undefined) {
+  if (!directoryPath?.trim()) {
     return null
   }
 
-  return path.join(path.resolve(projectPath), '.pi', 'skills')
+  return path.join(path.resolve(directoryPath), '.pi', 'skills')
 }
 
 export function getChatNativeSkillsDir() {
   return path.join(getDesktopUserDataPath(), 'chat', '.pi', 'skills')
 }
 
-export function getProjectInteropSkillsDir(projectPath?: string | undefined | null | undefined) {
-  if (!projectPath?.trim()) {
+export function getDirectoryInteropSkillsDir(
+  directoryPath?: string | undefined | null | undefined,
+) {
+  if (!directoryPath?.trim()) {
     return null
   }
 
-  return path.join(path.resolve(projectPath), '.agents', 'skills')
+  return path.join(path.resolve(directoryPath), '.agents', 'skills')
 }
 
 export function getChatInteropSkillsDir() {
@@ -56,10 +58,11 @@ export function getGlobalSkillsDirs() {
   return [getGlobalNativeSkillsDir(), getGlobalInteropSkillsDir()]
 }
 
-export function getProjectSkillsDirs(projectPath?: string | undefined | null | undefined) {
-  return [getProjectNativeSkillsDir(projectPath), getProjectInteropSkillsDir(projectPath)].filter(
-    (skillsDirPath): skillsDirPath is string => Boolean(skillsDirPath),
-  )
+export function getDirectorySkillsDirs(directoryPath?: string | undefined | null | undefined) {
+  return [
+    getDirectoryNativeSkillsDir(directoryPath),
+    getDirectoryInteropSkillsDir(directoryPath),
+  ].filter((skillsDirPath): skillsDirPath is string => Boolean(skillsDirPath))
 }
 
 export function getChatSkillsDirs() {
@@ -74,10 +77,12 @@ export function getActiveGlobalSkillsRoot() {
     : getGlobalNativeSkillsDir()
 }
 
-export function getActiveProjectSkillsRoot(projectPath?: string | undefined | null | undefined) {
+export function getActiveDirectorySkillsRoot(
+  directoryPath?: string | undefined | null | undefined,
+) {
   return loadAppSettings().useAgentsSkillsPaths
-    ? getProjectInteropSkillsDir(projectPath)
-    : getProjectNativeSkillsDir(projectPath)
+    ? getDirectoryInteropSkillsDir(directoryPath)
+    : getDirectoryNativeSkillsDir(directoryPath)
 }
 
 export function getActiveChatSkillsRoot() {

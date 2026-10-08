@@ -6,11 +6,11 @@ import type { SkillDownloadApiFile } from './api-schema.ts'
 import { listConfiguredPiSkills } from './configured-skills.ts'
 import {
   getActiveChatSkillsRoot,
+  getActiveDirectorySkillsRoot,
   getActiveGlobalSkillsRoot,
-  getActiveProjectSkillsRoot,
   getChatSkillsDirs,
+  getDirectorySkillsDirs,
   getGlobalSkillsDirs,
-  getProjectSkillsDirs,
   isPathWithinRoot,
   isPathWithinRootDescendant,
   isValidSkillSlug,
@@ -56,12 +56,12 @@ async function writeDownloadedSkill(targetDirPath: string, targets: DownloadedSk
 
 function getInstallTargetRootPath(request: {
   local?: boolean | undefined
-  projectPath?: string | undefined | null | undefined
+  directoryPath?: string | undefined | null | undefined
   chat?: boolean | undefined
 }) {
   if (request.chat) return getActiveChatSkillsRoot()
   return request.local
-    ? getActiveProjectSkillsRoot(request.projectPath)
+    ? getActiveDirectorySkillsRoot(request.directoryPath)
     : getActiveGlobalSkillsRoot()
 }
 
@@ -99,7 +99,7 @@ async function replaceSkillDirectoryWithDownload(
 export async function installPiSkill(request: {
   source: string
   local?: boolean | undefined
-  projectPath?: string | undefined | null | undefined
+  directoryPath?: string | undefined | null | undefined
   chat?: boolean | undefined
 }): Promise<PiSkillMutationResult> {
   const parsedSource = parseSkillSource(request.source)
@@ -118,7 +118,7 @@ export async function installPiSkill(request: {
 
   const targetRootPath = getInstallTargetRootPath(request)
   if (!targetRootPath) {
-    throw new Error('Select a project before installing a project-scoped skill.')
+    throw new Error('Select a folder before installing a folder-scoped skill.')
   }
 
   if (!isValidSkillSlug(parsedSource.slug)) {
@@ -131,7 +131,7 @@ export async function installPiSkill(request: {
     source: request.source,
     normalizedSource: parsedSource.normalizedSource,
     configuredSkills: await listConfiguredPiSkills({
-      projectPath: request.projectPath ?? null,
+      directoryPath: request.directoryPath ?? null,
       chat: request.chat,
     }),
   }
@@ -139,29 +139,29 @@ export async function installPiSkill(request: {
 
 export async function removePiSkill(request: {
   installedPath: string
-  projectPath?: string | undefined | null | undefined
+  directoryPath?: string | undefined | null | undefined
   chat?: boolean | undefined
 }): Promise<PiSkillMutationResult> {
   const globalRootPaths = getGlobalSkillsDirs()
-  const projectRootPaths = getProjectSkillsDirs(request.projectPath)
+  const directoryRootPaths = getDirectorySkillsDirs(request.directoryPath)
   const chatRootPaths = getChatSkillsDirs()
   const installedPath = resolveRemovableSkillPath(request.installedPath, [
     ...globalRootPaths,
-    ...projectRootPaths,
+    ...directoryRootPaths,
     ...chatRootPaths,
   ])
 
   const isGlobalSkill = globalRootPaths.some((rootPath) =>
     isPathWithinRootDescendant(installedPath, rootPath),
   )
-  const isProjectSkill = projectRootPaths.some((rootPath) =>
+  const isDirectorySkill = directoryRootPaths.some((rootPath) =>
     isPathWithinRootDescendant(installedPath, rootPath),
   )
   const isChatSkill = chatRootPaths.some((rootPath) =>
     isPathWithinRootDescendant(installedPath, rootPath),
   )
 
-  if (!(isGlobalSkill || isProjectSkill || isChatSkill)) {
+  if (!(isGlobalSkill || isDirectorySkill || isChatSkill)) {
     throw new Error('That skill cannot be removed from here.')
   }
 
@@ -171,7 +171,7 @@ export async function removePiSkill(request: {
     source: installedPath,
     normalizedSource: installedPath,
     configuredSkills: await listConfiguredPiSkills({
-      projectPath: request.projectPath ?? null,
+      directoryPath: request.directoryPath ?? null,
       chat: request.chat,
     }),
   }

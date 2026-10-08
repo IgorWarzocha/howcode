@@ -59,23 +59,23 @@ export type ComposerPostSendCleanup = {
 }
 
 export function getComposerPostSendCleanup({
-  activeDraftThreadId,
-  submittedDraftThreadId,
+  activeDraftChatId,
+  submittedDraftChatId,
   preserveAttachments,
   currentDraft,
   submittedRawDraft,
   currentAttachments,
   submittedAttachments,
 }: {
-  activeDraftThreadId: string | null
-  submittedDraftThreadId: string | null
+  activeDraftChatId: string | null
+  submittedDraftChatId: string | null
   preserveAttachments: boolean
   currentDraft: string
   submittedRawDraft: string
   currentAttachments: ComposerAttachment[]
   submittedAttachments: ComposerAttachment[]
 }): ComposerPostSendCleanup {
-  const isActiveSubmittedDraft = activeDraftThreadId === submittedDraftThreadId
+  const isActiveSubmittedDraft = activeDraftChatId === submittedDraftChatId
   const draftUnchanged = currentDraft === submittedRawDraft
   const attachmentsUnchanged = areSameAttachments(currentAttachments, submittedAttachments)
   const nextAttachments =
@@ -83,12 +83,12 @@ export function getComposerPostSendCleanup({
       ? removeSubmittedAttachments(currentAttachments, submittedAttachments)
       : null
   const shouldClearStoredDraft = Boolean(
-    submittedDraftThreadId &&
+    submittedDraftChatId &&
       !preserveAttachments &&
       (!isActiveSubmittedDraft || (draftUnchanged && attachmentsUnchanged)),
   )
   const shouldClearStoredPrompt = Boolean(
-    submittedDraftThreadId && preserveAttachments && (!isActiveSubmittedDraft || draftUnchanged),
+    submittedDraftChatId && preserveAttachments && (!isActiveSubmittedDraft || draftUnchanged),
   )
   const clearDraft = isActiveSubmittedDraft && draftUnchanged
 

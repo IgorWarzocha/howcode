@@ -3,8 +3,8 @@ const gitDiffPrefixPattern = /^[ab]\//
 import type { FileDiffMetadata } from '@pierre/diffs/react'
 import { useQuery } from '@tanstack/react-query'
 import type {
-  ProjectDiffBaseline,
-  ProjectDiffImageSide,
+  DirectoryDiffBaseline,
+  DirectoryDiffImageSide,
 } from '../../../../../src/app/desktop/types'
 import { desktopQueryKeys } from '../../../../../src/app/query/desktop-query-keys'
 import {
@@ -16,9 +16,9 @@ import {
   diffImagePreviewPanelClass,
 } from '../../../../../src/app/ui/classes'
 import { cn } from '../../../../../src/app/utils/cn'
-import { getProjectDiffImagePreviewQuery } from '../../query'
+import { getDirectoryDiffImagePreviewQuery } from '../../query'
 
-function getImageSidePath(fileDiff: FileDiffMetadata, side: ProjectDiffImageSide) {
+function getImageSidePath(fileDiff: FileDiffMetadata, side: DirectoryDiffImageSide) {
   const path = side === 'old' ? (fileDiff.prevName ?? fileDiff.name) : fileDiff.name
   return path?.replace(gitDiffPrefixPattern, '') ?? ''
 }
@@ -26,17 +26,18 @@ function getImageSidePath(fileDiff: FileDiffMetadata, side: ProjectDiffImageSide
 function DiffImagePreviewPane({
   baseline,
   filePath,
-  projectId,
+  directoryId,
   side,
 }: {
-  baseline: ProjectDiffBaseline | null
+  baseline: DirectoryDiffBaseline | null
   filePath: string
-  projectId: string
-  side: ProjectDiffImageSide
+  directoryId: string
+  side: DirectoryDiffImageSide
 }) {
   const previewQuery = useQuery({
-    queryKey: desktopQueryKeys.projectDiffImagePreview(projectId, filePath, side, baseline),
-    queryFn: () => getProjectDiffImagePreviewQuery({ projectId, baseline, path: filePath, side }),
+    queryKey: desktopQueryKeys.directoryDiffImagePreview(directoryId, filePath, side, baseline),
+    queryFn: () =>
+      getDirectoryDiffImagePreviewQuery({ directoryId, baseline, path: filePath, side }),
     staleTime: 5 * 60_000,
     gcTime: 10 * 60_000,
   })
@@ -65,13 +66,13 @@ function DiffImagePreviewPane({
 export function DiffImagePreview({
   baseline,
   fileDiff,
-  projectId,
+  directoryId,
 }: {
-  baseline: ProjectDiffBaseline | null
+  baseline: DirectoryDiffBaseline | null
   fileDiff: FileDiffMetadata
-  projectId: string
+  directoryId: string
 }) {
-  const sides: ProjectDiffImageSide[] =
+  const sides: DirectoryDiffImageSide[] =
     fileDiff.type === 'new' ? ['new'] : fileDiff.type === 'deleted' ? ['old'] : ['old', 'new']
 
   return (
@@ -81,7 +82,7 @@ export function DiffImagePreview({
           key={side}
           baseline={baseline}
           filePath={getImageSidePath(fileDiff, side)}
-          projectId={projectId}
+          directoryId={directoryId}
           side={side}
         />
       ))}

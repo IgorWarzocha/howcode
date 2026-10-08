@@ -10,9 +10,9 @@ const SkillsView = lazy(async () => {
 
 export function SkillsWorkspaceView(props: {
   appSettings: AppSettings
-  projectPath: string | null
-  onSetProjectScopeActive: (active: boolean) => void
-  onProjectTargetSelected: () => void
+  directoryPath: string | null
+  onSetDirectoryScopeActive: (active: boolean) => void
+  onDirectoryTargetSelected: () => void
   onAction: DesktopActionInvoker
   onClose: () => void
 }) {

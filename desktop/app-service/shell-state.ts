@@ -1,15 +1,15 @@
 import type { ShellState } from '../../shared/desktop-contracts.ts'
 import { isToolkitComponentEnabled } from '../../shared/toolkit-components.ts'
-import { loadAppSettings, loadSidebarVisibleProjectIds } from '../app-settings/readers.ts'
-import { syncWorkspaceOrganization } from '../chat-state-db.ts'
+import { loadAppSettings, loadSidebarVisibleDirectoryIds } from '../app-settings/readers.ts'
 import { getComposerState } from '../conversation-runtime.ts'
 import { loadPiSettings, loadPiThemeState } from '../pi-settings.ts'
 import { getAgentDirectory } from '../settings/paths.ts'
+import { syncWorkspaceOrganization } from '../workspace-repository.ts'
 import { ensureConversationProjection } from './conversation-projection.ts'
 
 export async function loadShellState(
   cwd: string,
-  loadDirectories?: (cwd: string) => Promise<Pick<ShellState, 'resolvedCwd' | 'projects'>>,
+  loadDirectories?: (cwd: string) => Promise<Pick<ShellState, 'resolvedCwd' | 'directories'>>,
 ): Promise<ShellState> {
   const agentDir = getAgentDirectory()
   await ensureConversationProjection()
@@ -17,17 +17,17 @@ export async function loadShellState(
   const appSettings = loadAppSettings()
   const codingEnabled = Boolean(loadDirectories) && isToolkitComponentEnabled(appSettings, 'coding')
   const [composer, piSettings, piTheme, directories] = await Promise.all([
-    getComposerState(codingEnabled ? { projectId: cwd } : { composerMode: 'chat' }),
+    getComposerState(codingEnabled ? { directoryId: cwd } : { composerProfile: 'general' }),
     loadPiSettings(codingEnabled ? cwd : null),
     loadPiThemeState(codingEnabled ? cwd : null),
-    codingEnabled && loadDirectories ? loadDirectories(cwd) : { resolvedCwd: cwd, projects: [] },
+    codingEnabled && loadDirectories ? loadDirectories(cwd) : { resolvedCwd: cwd, directories: [] },
   ])
 
   syncWorkspaceOrganization(
-    directories.projects.map((project) => ({
-      id: project.id,
-      name: project.name,
-      rootId: project.worktree?.rootProjectId ?? project.id,
+    directories.directories.map((directory) => ({
+      id: directory.id,
+      name: directory.name,
+      rootId: directory.worktree?.rootDirectoryId ?? directory.id,
     })),
   )
 
@@ -39,7 +39,7 @@ export async function loadShellState(
     ...directories,
     agentDir,
     appSettings,
-    sidebarVisibleProjectIds: loadSidebarVisibleProjectIds(),
+    sidebarVisibleDirectoryIds: loadSidebarVisibleDirectoryIds(),
     piSettings,
     piTheme,
     composer,

@@ -1,6 +1,6 @@
 import { type FileContents, parseDiffFromFile } from '@pierre/diffs'
 import { getErrorMessage } from '../../../../../src/app/desktop/error-messages'
-import type { ProjectFileWriteResult } from '../../../../../src/app/desktop/types'
+import type { DirectoryFileWriteResult } from '../../../../../src/app/desktop/types'
 import { getFileWriteFailure } from './diff-editing-model'
 import type { DiffEditingSession } from './diff-editing-save'
 
@@ -21,7 +21,7 @@ export function createDiffEditingFileDiff(baselineFile: FileContents | null, fil
   return parseDiffFromFile(baselineFile, file)
 }
 
-type DraftWriter = (draft: DiffEditingDraft) => Promise<ProjectFileWriteResult>
+type DraftWriter = (draft: DiffEditingDraft) => Promise<DirectoryFileWriteResult>
 type DraftListener = () => void
 
 function cloneSession(session: DiffEditingSession): DiffEditingSession {
@@ -47,58 +47,58 @@ function cloneDraft(draft: DiffEditingDraft): DiffEditingDraft {
 }
 
 export function createDiffEditingDraftStore() {
-  const draftsByProjectId = new Map<string, DiffEditingDraft>()
-  const listenersByProjectId = new Map<string, Set<DraftListener>>()
-  const savesByProjectId = new Map<string, { sessionId: string; promise: Promise<void> }>()
+  const draftsByDirectoryId = new Map<string, DiffEditingDraft>()
+  const listenersByDirectoryId = new Map<string, Set<DraftListener>>()
+  const savesByDirectoryId = new Map<string, { sessionId: string; promise: Promise<void> }>()
 
-  const notify = (projectId: string) => {
-    for (const listener of listenersByProjectId.get(projectId) ?? []) listener()
+  const notify = (directoryId: string) => {
+    for (const listener of listenersByDirectoryId.get(directoryId) ?? []) listener()
   }
 
   const retainFailure = (
-    projectId: string,
+    directoryId: string,
     sessionId: string,
     error: string,
     reason: 'conflict' | 'other',
   ) => {
-    const current = draftsByProjectId.get(projectId)
+    const current = draftsByDirectoryId.get(directoryId)
     if (current?.session.id !== sessionId) return
-    draftsByProjectId.set(projectId, {
+    draftsByDirectoryId.set(directoryId, {
       ...current,
       status: { kind: 'failed', error, reason },
     })
-    notify(projectId)
+    notify(directoryId)
   }
 
   const applyWrittenResult = (
-    projectId: string,
+    directoryId: string,
     savedDraft: DiffEditingDraft,
-    result: Extract<ProjectFileWriteResult, { kind: 'written' }>,
+    result: Extract<DirectoryFileWriteResult, { kind: 'written' }>,
   ) => {
-    const current = draftsByProjectId.get(projectId)
+    const current = draftsByDirectoryId.get(directoryId)
     if (current?.session.id !== savedDraft.session.id) return
     if (current.version === savedDraft.version) {
-      draftsByProjectId.delete(projectId)
+      draftsByDirectoryId.delete(directoryId)
     } else {
-      draftsByProjectId.set(projectId, {
+      draftsByDirectoryId.set(directoryId, {
         ...current,
         session: { ...current.session, expectedRevision: result.file.revision },
         status: { kind: 'ready' },
       })
     }
-    notify(projectId)
+    notify(directoryId)
   }
 
   return {
-    getSnapshot(projectId: string) {
-      return draftsByProjectId.get(projectId) ?? null
+    getSnapshot(directoryId: string) {
+      return draftsByDirectoryId.get(directoryId) ?? null
     },
-    getDraft(projectId: string) {
-      const draft = draftsByProjectId.get(projectId)
+    getDraft(directoryId: string) {
+      const draft = draftsByDirectoryId.get(directoryId)
       return draft ? cloneDraft(draft) : null
     },
-    updateDraft(projectId: string, session: DiffEditingSession, file: FileContents) {
-      const current = draftsByProjectId.get(projectId)
+    updateDraft(directoryId: string, session: DiffEditingSession, file: FileContents) {
+      const current = draftsByDirectoryId.get(directoryId)
       const continuesSession = current?.session.id === session.id
       const next: DiffEditingDraft = {
         session: continuesSession ? current.session : cloneSession(session),
@@ -107,72 +107,72 @@ export function createDiffEditingDraftStore() {
         version: continuesSession ? current.version + 1 : 1,
         status: continuesSession ? current.status : { kind: 'ready' },
       }
-      draftsByProjectId.set(projectId, next)
-      notify(projectId)
+      draftsByDirectoryId.set(directoryId, next)
+      notify(directoryId)
       return cloneDraft(next)
     },
-    discardConflictedDraft(projectId: string, expectedDraft: DiffEditingDraft) {
-      const current = draftsByProjectId.get(projectId)
+    discardConflictedDraft(directoryId: string, expectedDraft: DiffEditingDraft) {
+      const current = draftsByDirectoryId.get(directoryId)
       // Snapshot identity invalidates an open confirmation after any edit, save, or replacement.
       if (
         current !== expectedDraft ||
         current.status.kind !== 'failed' ||
         current.status.reason !== 'conflict' ||
-        savesByProjectId.has(projectId)
+        savesByDirectoryId.has(directoryId)
       ) {
         return false
       }
-      draftsByProjectId.delete(projectId)
-      notify(projectId)
+      draftsByDirectoryId.delete(directoryId)
+      notify(directoryId)
       return true
     },
-    saveDraft(projectId: string, sessionId: string, write: DraftWriter): Promise<void> {
-      const activeSave = savesByProjectId.get(projectId)
+    saveDraft(directoryId: string, sessionId: string, write: DraftWriter): Promise<void> {
+      const activeSave = savesByDirectoryId.get(directoryId)
       if (activeSave?.sessionId === sessionId) return activeSave.promise
 
-      const current = draftsByProjectId.get(projectId)
+      const current = draftsByDirectoryId.get(directoryId)
       if (current?.session.id !== sessionId) return Promise.resolve()
 
       const savedDraft = cloneDraft(current)
-      draftsByProjectId.set(projectId, { ...current, status: { kind: 'saving' } })
-      notify(projectId)
+      draftsByDirectoryId.set(directoryId, { ...current, status: { kind: 'saving' } })
+      notify(directoryId)
 
       const promise = Promise.resolve().then(async () => {
         try {
           const result = await write(savedDraft)
           if (result.kind === 'written') {
-            applyWrittenResult(projectId, savedDraft, result)
+            applyWrittenResult(directoryId, savedDraft, result)
             return
           }
           retainFailure(
-            projectId,
+            directoryId,
             sessionId,
             getFileWriteFailure(result),
             result.kind === 'conflict' ? 'conflict' : 'other',
           )
         } catch (error) {
           retainFailure(
-            projectId,
+            directoryId,
             sessionId,
             getErrorMessage(error, `Could not save ${savedDraft.session.path}.`),
             'other',
           )
         } finally {
-          const active = savesByProjectId.get(projectId)
-          if (active?.sessionId === sessionId) savesByProjectId.delete(projectId)
+          const active = savesByDirectoryId.get(directoryId)
+          if (active?.sessionId === sessionId) savesByDirectoryId.delete(directoryId)
         }
       })
 
-      savesByProjectId.set(projectId, { sessionId, promise })
+      savesByDirectoryId.set(directoryId, { sessionId, promise })
       return promise
     },
-    subscribe(projectId: string, listener: DraftListener) {
-      const listeners = listenersByProjectId.get(projectId) ?? new Set<DraftListener>()
+    subscribe(directoryId: string, listener: DraftListener) {
+      const listeners = listenersByDirectoryId.get(directoryId) ?? new Set<DraftListener>()
       listeners.add(listener)
-      listenersByProjectId.set(projectId, listeners)
+      listenersByDirectoryId.set(directoryId, listeners)
       return () => {
         listeners.delete(listener)
-        if (listeners.size === 0) listenersByProjectId.delete(projectId)
+        if (listeners.size === 0) listenersByDirectoryId.delete(directoryId)
       }
     },
   }

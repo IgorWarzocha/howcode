@@ -14,16 +14,16 @@ export type DiffEditingSession = {
 export function writeDiffEditingSession({
   fileActions,
   file,
-  projectId,
+  directoryId,
   session,
 }: {
   fileActions: GitOpsFileActions
   file: FileContents
-  projectId: string
+  directoryId: string
   session: DiffEditingSession
 }) {
   return fileActions.write({
-    projectId,
+    directoryId,
     path: session.path,
     contents: file.contents,
     expectedRevision: session.expectedRevision,

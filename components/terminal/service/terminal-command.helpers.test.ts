@@ -23,7 +23,7 @@ describe('terminal command helpers', () => {
   it('supports the legacy wsl$ UNC prefix', () => {
     const command = resolveTerminalCommand(
       {
-        projectId: '\\\\wsl$\\Ubuntu\\home\\me\\repo',
+        directoryId: '\\\\wsl$\\Ubuntu\\home\\me\\repo',
         cwd: '\\\\wsl$\\Ubuntu\\home\\me\\repo',
         cols: 80,
         rows: 24,
@@ -41,8 +41,8 @@ describe('terminal command helpers', () => {
   it('keeps native Windows projects on the normal Windows shell', () => {
     const command = resolveTerminalCommand(
       {
-        projectId: 'C:\\Projects\\app',
-        cwd: 'C:\\Projects\\app',
+        directoryId: 'C:\\Directories\\app',
+        cwd: 'C:\\Directories\\app',
         cols: 80,
         rows: 24,
       },

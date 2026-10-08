@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useHowcodeKeybindingCommand } from '../../app-shell/keybinding-events'
-import { getInboxThreadComposerMode } from '../../common/inbox-thread-scope'
+import { getInboxChatComposerProfile } from '../../common/inbox-chat-scope'
 import { withComposerSendLock } from '../../composer/composerSendLock'
 import { getDesktopActionErrorMessage } from '../../desktop/action-results'
 import { getErrorMessage } from '../../desktop/error-messages'
@@ -10,7 +10,7 @@ import type { InboxComposerInput } from './useInboxComposerInput'
 import type { InboxComposerOverlayState } from './useInboxComposerOverlayState'
 
 export function useInboxComposerActions(
-  props: Pick<InboxComposerProps, 'appSettings' | 'isCompacting' | 'onAction' | 'reply' | 'thread'>,
+  props: Pick<InboxComposerProps, 'appSettings' | 'isCompacting' | 'onAction' | 'reply' | 'chat'>,
   input: Pick<
     InboxComposerInput,
     'attachmentsRef' | 'draftValueRef' | 'stopDictationAndFlush' | 'toggleDictation'
@@ -19,7 +19,7 @@ export function useInboxComposerActions(
 ) {
   const sendLockRef = useRef(false)
   const [localActionPending, setLocalActionPending] = useState(false)
-  const composerMode = getInboxThreadComposerMode(props.thread)
+  const composerProfile = getInboxChatComposerProfile(props.chat)
   const inputLocked = props.reply.isSending || localActionPending
 
   useHowcodeKeybindingCommand('dictation.toggle', (event) => {
@@ -49,10 +49,10 @@ export function useInboxComposerActions(
   const compact = async () => {
     if (
       props.reply.isSending ||
-      props.thread.running ||
+      props.chat.running ||
       props.isCompacting ||
       localActionPending ||
-      !props.thread.conversationId ||
+      !props.chat.conversationId ||
       sendLockRef.current
     ) {
       return
@@ -64,13 +64,13 @@ export function useInboxComposerActions(
       await withComposerSendLock(sendLockRef, async () => {
         await input.stopDictationAndFlush()
         const result = await props.onAction('composer.send', {
-          projectId: props.thread.projectId,
-          conversationId: props.thread.conversationId,
+          directoryId: props.chat.directoryId,
+          conversationId: props.chat.conversationId,
           text: '/compact',
           attachments: [],
           streamingBehavior: props.appSettings.composerStreamingBehavior,
-          composerMode,
-          branchName: props.thread.branchName,
+          composerProfile,
+          branchName: props.chat.branchName,
         })
         const actionErrorMessage = getDesktopActionErrorMessage(
           result,
@@ -110,22 +110,22 @@ export function useInboxComposerActions(
     updateComposerOption('composer.model', {
       provider: model.provider,
       modelId: model.id,
-      projectId: props.thread.projectId,
-      conversationId: props.thread.conversationId,
-      composerMode,
+      directoryId: props.chat.directoryId,
+      conversationId: props.chat.conversationId,
+      composerProfile,
     })
 
   const selectThinkingLevel = (level: ComposerThinkingLevel) =>
     updateComposerOption('composer.thinking', {
       level,
-      projectId: props.thread.projectId,
-      conversationId: props.thread.conversationId,
-      composerMode,
+      directoryId: props.chat.directoryId,
+      conversationId: props.chat.conversationId,
+      composerProfile,
     })
 
   return {
     compact,
-    composerMode,
+    composerProfile,
     inputLocked,
     localActionPending,
     selectModel,

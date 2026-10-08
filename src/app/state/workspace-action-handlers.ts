@@ -1,14 +1,14 @@
 import {
-  clearCodingThreadSelection,
+  clearCodingChatSelection,
   createCodingWorkspaceTransitions,
-  getCodingStateForOpenedThread,
-  getCodingStateForPreviewedThread,
+  getCodingStateForOpenedChat,
+  getCodingStateForPreviewedChat,
   getCodingStateForShownView,
   getCodingUtilityReturnState,
 } from '@howcode/components/coding/ui'
 import {
   getTerminalStateForNextView,
-  getTerminalStateForOpenedThread,
+  getTerminalStateForOpenedChat,
   getTerminalUtilityReturnState,
   getTerminalVisibilityForSession,
   migrateTerminalVisibility,
@@ -24,13 +24,12 @@ import type {
   WorkspaceState,
 } from './workspace-model'
 
-const { codingWorkspaceActionHandlers, restoreCodeThreadForView } =
-  createCodingWorkspaceTransitions({
-    getTerminalStateForNextView,
-    getTerminalVisibilityForSession,
-    migrateTerminalVisibility,
-    shouldRestoreTerminalOnGitOpsClose,
-  })
+const { codingWorkspaceActionHandlers, restoreCodeChatForView } = createCodingWorkspaceTransitions({
+  getTerminalStateForNextView,
+  getTerminalVisibilityForSession,
+  migrateTerminalVisibility,
+  shouldRestoreTerminalOnGitOpsClose,
+})
 
 export function isUtilityView(view: View): view is UtilityView {
   return isWorkspaceUtilityView(view)
@@ -39,11 +38,13 @@ export function isUtilityView(view: View): view is UtilityView {
 function createUtilityViewReturnState(state: WorkspaceState): UtilityViewReturnState {
   return {
     activeView: state.activeView,
-    selectedProjectId: state.selectedProjectId,
-    hasSelectedProject: state.hasSelectedProject,
+    selectedWorkspaceId: state.selectedWorkspaceId,
+    composerProfile: state.composerProfile,
+    selectedDirectoryId: state.selectedDirectoryId,
+    hasSelectedDirectory: state.hasSelectedDirectory,
     landingVisible: state.landingVisible,
     selectedInboxConversationId: state.selectedInboxConversationId,
-    selectedThreadId: state.selectedThreadId,
+    selectedChatId: state.selectedChatId,
     selectedConversationId: state.selectedConversationId,
     ...getTerminalUtilityReturnState(state),
     ...getCodingUtilityReturnState(state),
@@ -54,8 +55,8 @@ function showViewState(
   state: WorkspaceState,
   action: Extract<WorkspaceAction, { type: 'show-view' }>,
 ): WorkspaceState {
-  const restoredCodeThread = restoreCodeThreadForView(state, action.view)
-  if (restoredCodeThread) return restoredCodeThread
+  const restoredCodeChat = restoreCodeChatForView(state, action.view)
+  if (restoredCodeChat) return restoredCodeChat
 
   const utilityViewReturnState = isUtilityView(action.view)
     ? isUtilityView(state.activeView)
@@ -69,55 +70,70 @@ function showViewState(
     settingsOpen: false,
     settingsPanelOpen: false,
     ...getCodingStateForShownView(state, action.view),
-    selectedThreadId:
-      action.view === 'thread' || (action.view === 'chat' && state.activeView === 'chat')
-        ? state.selectedThreadId
-        : null,
-    selectedConversationId:
-      action.view === 'thread' || (action.view === 'chat' && state.activeView === 'chat')
-        ? state.selectedConversationId
-        : null,
+    selectedChatId: action.view === 'chat' ? state.selectedChatId : null,
+    selectedConversationId: action.view === 'chat' ? state.selectedConversationId : null,
     utilityViewReturnState,
   }
 }
 
-function openThreadState(
+function openChatState(
   state: WorkspaceState,
-  action: Extract<WorkspaceAction, { type: 'open-thread' }>,
+  action: Extract<WorkspaceAction, { type: 'open-chat' }>,
 ): WorkspaceState {
-  const activeView = action.view ?? (state.activeView === 'chat' ? 'chat' : 'thread')
+  const activeView = 'chat'
   return {
     ...state,
     activeView,
-    selectedProjectId: action.projectId,
-    hasSelectedProject: true,
+    selectedWorkspaceId: action.workspaceId ?? state.selectedWorkspaceId,
+    composerProfile: action.composerProfile ?? state.composerProfile,
+    selectedDirectoryId: action.directoryId,
+    hasSelectedDirectory: true,
     landingVisible: false,
-    selectedThreadId: action.threadId,
+    selectedChatId: action.chatId,
     selectedConversationId: action.conversationId,
-    ...getTerminalStateForOpenedThread(state, action),
+    ...getTerminalStateForOpenedChat(state, action),
     utilityViewReturnState: null,
-    ...getCodingStateForOpenedThread(state, action, activeView),
+    ...getCodingStateForOpenedChat(state, action),
   }
 }
 
-function previewThreadState(
+function previewChatState(
   state: WorkspaceState,
-  action: Extract<WorkspaceAction, { type: 'preview-thread' }>,
+  action: Extract<WorkspaceAction, { type: 'preview-chat' }>,
 ): WorkspaceState {
   return {
     ...state,
-    activeView: action.view ?? (state.activeView === 'chat' ? 'chat' : 'thread'),
-    selectedProjectId: action.projectId,
-    hasSelectedProject: true,
+    activeView: 'chat',
+    selectedWorkspaceId: action.workspaceId ?? state.selectedWorkspaceId,
+    composerProfile: action.composerProfile ?? state.composerProfile,
+    selectedDirectoryId: action.directoryId,
+    hasSelectedDirectory: true,
     landingVisible: false,
-    selectedThreadId: action.threadId,
+    selectedChatId: action.chatId,
     utilityViewReturnState: null,
-    ...getCodingStateForPreviewedThread(state, action),
+    ...getCodingStateForPreviewedChat(state, action),
   }
 }
 
 export const workspaceActionHandlers = {
   ...codingWorkspaceActionHandlers,
+  'select-workspace': (
+    state: WorkspaceState,
+    action: Extract<WorkspaceAction, { type: 'select-workspace' }>,
+  ): WorkspaceState => ({
+    ...state,
+    activeView: 'workspace',
+    selectedWorkspaceId: action.workspaceId,
+    selectedDirectoryId: action.directoryId ?? '',
+    hasSelectedDirectory: Boolean(action.directoryId),
+    composerProfile: action.directoryId ? 'coding' : 'general',
+    selectedChatId: null,
+    selectedConversationId: null,
+    selectedDiffFilePath: null,
+    landingVisible: false,
+    utilityViewReturnState: null,
+    terminalVisible: false,
+  }),
   'show-view': showViewState,
   'close-utility-view': (state: WorkspaceState) =>
     state.utilityViewReturnState
@@ -129,18 +145,18 @@ export const workspaceActionHandlers = {
           utilityViewReturnState: null,
         }
       : state,
-  'clear-thread-selection': (state: WorkspaceState) => ({
+  'clear-chat-selection': (state: WorkspaceState) => ({
     ...state,
-    selectedThreadId: null,
+    selectedChatId: null,
     selectedConversationId: null,
-    ...clearCodingThreadSelection(),
+    ...clearCodingChatSelection(),
   }),
-  'select-inbox-thread': (
+  'select-inbox-chat': (
     state: WorkspaceState,
-    action: Extract<WorkspaceAction, { type: 'select-inbox-thread' }>,
+    action: Extract<WorkspaceAction, { type: 'select-inbox-chat' }>,
   ) => ({ ...state, selectedInboxConversationId: action.conversationId }),
-  'preview-thread': previewThreadState,
-  'open-thread': openThreadState,
+  'preview-chat': previewChatState,
+  'open-chat': openChatState,
   'toggle-terminal': (state: WorkspaceState) =>
     setTerminalVisibleState(state, !state.terminalVisible),
   'set-terminal-visible': (

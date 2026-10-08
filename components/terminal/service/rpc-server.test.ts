@@ -36,7 +36,7 @@ describe('terminal IPC protocol', () => {
           id: 'invalid-open',
           tag: 'terminal.open',
           headers: [],
-          payload: { projectId: '/workspace/project', cols: 0, rows: 24 },
+          payload: { directoryId: '/workspace/project', cols: 0, rows: 24 },
         })
         const rejected: unknown = JSON.parse(await Effect.runPromise(Queue.take(replies)))
         expect(rejected).toMatchObject({

@@ -2,12 +2,12 @@ import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch } from 'react'
 import type { DesktopAction } from '../../desktop/actions'
 import type {
-  ArchivedThread,
-  ChatSidebarState,
+  ArchivedChat,
+  ChatData,
   ComposerState,
   DesktopActionResult,
-  ProjectGitState,
-  ThreadData,
+  DirectoryGitState,
+  WorkspaceNavigationState,
 } from '../../desktop/types'
 import type { WorkspaceAction, WorkspaceState } from '../../state/workspace-model'
 import type { ActionPayload } from '../controller-action-utils'
@@ -17,31 +17,31 @@ export type RunPostDesktopActionEffectsInput = {
   contextualPayload: ActionPayload
   actionResult: DesktopActionResult | null
   workspaceState: WorkspaceState
-  composerProjectId: string
+  composerDirectoryId: string
   dispatch: Dispatch<WorkspaceAction>
-  loadArchivedThreads: () => Promise<ArchivedThread[]>
+  loadArchivedChats: () => Promise<ArchivedChat[]>
   loadComposerState: (request?: {
-    projectId?: string | null
-    composerMode?: 'chat' | 'code' | null
+    directoryId?: string | null
+    composerProfile?: 'general' | 'coding' | null
   }) => Promise<ComposerState | null>
-  loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
-  loadProjectThreads: (
-    projectId: string,
-    options?: { chat?: boolean; replaceLocalDraftConversationId?: string | null },
+  loadDirectoryGitState: (directoryId: string) => Promise<DirectoryGitState | null>
+  loadDirectoryChats: (
+    directoryId: string,
+    options?: { replaceLocalDraftConversationId?: string | null },
   ) => Promise<unknown>
   refreshShellState: () => Promise<unknown>
-  setArchivedThreads: (threads: ArchivedThread[]) => void
-  setChatSidebarState: (
-    updater: (state: ChatSidebarState | null) => ChatSidebarState | null,
+  setArchivedChats: (chats: ArchivedChat[]) => void
+  setWorkspaceNavigationState: (
+    updater: (state: WorkspaceNavigationState | null) => WorkspaceNavigationState | null,
   ) => void
   setComposerState: (state: ComposerState | null) => void
-  setLiveThreadData: (updater: (state: ThreadData | null) => ThreadData | null) => void
-  setProjectGitState: (state: ProjectGitState | null) => void
+  setLiveChatData: (updater: (state: ChatData | null) => ChatData | null) => void
+  setDirectoryGitState: (state: DirectoryGitState | null) => void
   queryClient: QueryClient
 }
 
 export type PostEffectsContext = RunPostDesktopActionEffectsInput & {
-  invalidateInboxThreads: () => Promise<unknown>
+  invalidateInboxChats: () => Promise<unknown>
 }
 
 export type PostEffectHandler = {

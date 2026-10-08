@@ -4,7 +4,7 @@ import {
   desktopBridgeUnavailableMessage,
   useDesktopBridgeAvailable,
 } from '../../hooks/useDesktopBridge'
-import { getActionError, getProjectImportSummaryMessage } from './helpers'
+import { getActionError, getDirectoryImportSummaryMessage } from './helpers'
 
 export function useSettingsMaintenanceController(input: { onAction: DesktopActionInvoker }) {
   const [importBusy, setImportBusy] = useState(false)
@@ -12,7 +12,7 @@ export function useSettingsMaintenanceController(input: { onAction: DesktopActio
   const [importErrorMessage, setImportErrorMessage] = useState<string | null>(null)
   const desktopBridgeAvailable = useDesktopBridgeAvailable()
 
-  const handleImportProjectUi = async () => {
+  const handleImportDirectoryUi = async () => {
     if (!desktopBridgeAvailable) {
       setImportStatusMessage(null)
       setImportErrorMessage(desktopBridgeUnavailableMessage)
@@ -22,14 +22,14 @@ export function useSettingsMaintenanceController(input: { onAction: DesktopActio
     setImportStatusMessage('Scanning workspaces for UI info…')
     setImportErrorMessage(null)
     try {
-      const result = await input.onAction('projects.import.apply', { projectIds: [] })
+      const result = await input.onAction('directories.import.apply', { directoryIds: [] })
       const error = getActionError(result)
       if (error) {
         setImportErrorMessage(error)
         setImportStatusMessage(null)
         return
       }
-      setImportStatusMessage(getProjectImportSummaryMessage(result))
+      setImportStatusMessage(getDirectoryImportSummaryMessage(result))
     } finally {
       setImportBusy(false)
     }
@@ -37,12 +37,12 @@ export function useSettingsMaintenanceController(input: { onAction: DesktopActio
 
   return {
     desktopBridgeAvailable,
-    handleImportProjectUi,
+    handleImportDirectoryUi,
     importBusy,
     importErrorMessage,
     importStatusMessage,
     showFirstLaunchReminderAgain: () =>
-      void input.onAction('settings.update', { key: 'projectImportState', imported: null }),
+      void input.onAction('settings.update', { key: 'directoryImportState', imported: null }),
   }
 }
 

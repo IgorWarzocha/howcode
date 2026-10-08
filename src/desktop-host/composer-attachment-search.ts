@@ -192,7 +192,7 @@ function compareSearchIndexEntries(left: SearchIndexEntry, right: SearchIndexEnt
 }
 
 type SearchRequest = {
-  projectId?: string | null | undefined
+  directoryId?: string | null | undefined
   query?: string | null | undefined
   limit?: number | null | undefined
 }
@@ -207,7 +207,7 @@ export const makeComposerAttachmentSearch = Effect.gen(function* () {
 
   return Effect.fn('ComposerAttachments.search')(function* (input: SearchRequest) {
     const rootPath = yield* Effect.tryPromise({
-      try: () => realpath(input.projectId ?? getDesktopWorkingDirectory()),
+      try: () => realpath(input.directoryId ?? getDesktopWorkingDirectory()),
       catch: (error) => error,
     })
     const index = yield* Cache.get(indexes, rootPath)

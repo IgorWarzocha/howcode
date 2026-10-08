@@ -3,20 +3,20 @@ import type { DesktopAction } from '../desktop/actions'
 import type { ShellState } from '../desktop/types'
 import { desktopQueryKeys } from '../query/desktop-query'
 import type { ActionPayload } from './controller-action-utils'
-import { getOptimisticallyUpdatedPiSettingsState } from './optimistic-pi-settings'
 import {
   getOptimisticallyPinnedShellState,
+  getOptimisticallyRenamedChatShellState,
   getOptimisticallyRenamedShellState,
-  getOptimisticallyRenamedThreadShellState,
-} from './optimistic-projects'
+} from './optimistic-directories'
+import { getOptimisticallyUpdatedPiSettingsState } from './optimistic-pi-settings'
 import { getOptimisticallyUpdatedShellState } from './optimistic-settings'
 
-export { getOptimisticallyUpdatedPiSettingsState } from './optimistic-pi-settings'
 export {
   getOptimisticallyPinnedShellState,
+  getOptimisticallyRenamedChatShellState,
   getOptimisticallyRenamedShellState,
-  getOptimisticallyRenamedThreadShellState,
-} from './optimistic-projects'
+} from './optimistic-directories'
+export { getOptimisticallyUpdatedPiSettingsState } from './optimistic-pi-settings'
 export { getOptimisticallyUpdatedShellState } from './optimistic-settings'
 
 export function applyOptimisticSettingsUpdate(queryClient: QueryClient, payload: ActionPayload) {
@@ -31,15 +31,15 @@ export function applyOptimisticPiSettingsUpdate(queryClient: QueryClient, payloa
   )
 }
 
-export function applyOptimisticProjectRename(queryClient: QueryClient, payload: ActionPayload) {
+export function applyOptimisticDirectoryRename(queryClient: QueryClient, payload: ActionPayload) {
   queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) =>
     getOptimisticallyRenamedShellState(currentState ?? null, payload),
   )
 }
 
-export function applyOptimisticThreadRename(queryClient: QueryClient, payload: ActionPayload) {
+export function applyOptimisticChatRename(queryClient: QueryClient, payload: ActionPayload) {
   queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) =>
-    getOptimisticallyRenamedThreadShellState(currentState ?? null, payload),
+    getOptimisticallyRenamedChatShellState(currentState ?? null, payload),
   )
 }
 
@@ -63,12 +63,12 @@ export function applyOptimisticDesktopAction(
       return applyOptimisticSettingsUpdate(queryClient, payload)
     case 'pi-settings.update':
       return applyOptimisticPiSettingsUpdate(queryClient, payload)
-    case 'project.edit-name':
-      return applyOptimisticProjectRename(queryClient, payload)
-    case 'thread.rename':
-      return applyOptimisticThreadRename(queryClient, payload)
-    case 'thread.pin':
-    case 'project.pin':
+    case 'directory.edit-name':
+      return applyOptimisticDirectoryRename(queryClient, payload)
+    case 'chat.rename':
+      return applyOptimisticChatRename(queryClient, payload)
+    case 'chat.pin':
+    case 'directory.pin':
       return applyOptimisticPinUpdate(queryClient, action, payload)
     default:
       return undefined

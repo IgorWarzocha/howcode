@@ -56,12 +56,12 @@ async function loadPalette(filePath: string) {
 
 export async function loadThemeState(
   selected: string,
-  projectPath?: string | null,
+  directoryPath?: string | null,
 ): Promise<PiThemeState> {
   const bundled = getBundledThemes()
   const files = [
     ...(await themeFiles(path.join(getAgentDirectory(), 'themes'))),
-    ...(projectPath ? await themeFiles(path.join(projectPath, '.pi', 'themes')) : []),
+    ...(directoryPath ? await themeFiles(path.join(directoryPath, '.pi', 'themes')) : []),
   ]
   const themes: PiThemeState['themes'] = []
   const palettes = new Map<

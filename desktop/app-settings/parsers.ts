@@ -4,12 +4,12 @@ import type {
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
   DictationModelId,
+  DirectoryDeletionMode,
+  DirectoryDiffDefaultBaseline,
+  DirectoryDiffRenderMode,
   GitOpsMode,
   KeybindingOverrides,
   ModelSelection,
-  ProjectDeletionMode,
-  ProjectDiffDefaultBaseline,
-  ProjectDiffRenderMode,
 } from '../../shared/desktop-contracts.ts'
 import {
   isKeybindingCommandId,
@@ -113,9 +113,9 @@ export function parseThinkingLevelPreference(
   }
 }
 
-export function parseProjectDeletionModePreference(
+export function parseDirectoryDeletionModePreference(
   valueJson: string | null | undefined,
-): ProjectDeletionMode | null {
+): DirectoryDeletionMode | null {
   if (!valueJson) {
     return null
   }
@@ -143,7 +143,7 @@ export function parseGitOpsModePreference(valueJson: string | null | undefined):
 
 export function parseGitDiffBaselineDefaultPreference(
   valueJson: string | null | undefined,
-): ProjectDiffDefaultBaseline | null {
+): DirectoryDiffDefaultBaseline | null {
   if (!valueJson) {
     return null
   }
@@ -158,7 +158,7 @@ export function parseGitDiffBaselineDefaultPreference(
       baseline.kind === 'previous' ||
       baseline.kind === 'main-branch' ||
       baseline.kind === 'dev-branch'
-      ? ({ kind: baseline.kind } as ProjectDiffDefaultBaseline)
+      ? ({ kind: baseline.kind } as DirectoryDiffDefaultBaseline)
       : null
   } catch {
     return null
@@ -167,7 +167,7 @@ export function parseGitDiffBaselineDefaultPreference(
 
 export function parseGitDiffRenderModePreference(
   valueJson: string | null | undefined,
-): ProjectDiffRenderMode | null {
+): DirectoryDiffRenderMode | null {
   if (!valueJson) {
     return null
   }
@@ -230,8 +230,19 @@ export function parseKeybindingOverrides(
     const parsed = JSON.parse(valueJson) as unknown
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
     const overrides: KeybindingOverrides = {}
-    for (const [key, value] of Object.entries(parsed)) {
+    const legacyCommands: Record<string, string> = {
+      'thread.new': 'chat.new',
+      'thread.find': 'chat.find',
+      'thread.previousInProject': 'chat.previousInDirectory',
+      'thread.nextInProject': 'chat.nextInDirectory',
+    }
+    for (const [storedKey, value] of Object.entries(parsed).sort(
+      ([left], [right]) =>
+        Number(Boolean(legacyCommands[left])) - Number(Boolean(legacyCommands[right])),
+    )) {
+      const key = legacyCommands[storedKey] ?? storedKey
       if (!isKeybindingCommandId(key)) continue
+      if (Object.hasOwn(overrides, key)) continue
       if (value === null) overrides[key] = null
       else if (typeof value === 'string' && isValidAccelerator(value)) {
         overrides[key] = normalizeAccelerator(value)

@@ -331,33 +331,42 @@ export async function installDevWebDesktopBridge() {
     listPackageUis: () => invokeRequest('listPackageUis', {}),
     loadPackageUi: (reference) => invokeRequest('loadPackageUi', reference),
     invokePackageUiRpc: (request) => invokeRequest('invokePackageUiRpc', request),
-    getProjectGitState: (projectId: string) => invokeRequest('getProjectGitState', { projectId }),
-    getProjectUsageSummary: (projectId: string) =>
-      invokeRequest('getProjectUsageSummary', { projectId }),
-    getProjectFavicon: (projectId: string) => invokeRequest('getProjectFavicon', { projectId }),
-    startProjectDiffStream: (
-      projectId: string,
+    getDirectoryGitState: (directoryId: string) =>
+      invokeRequest('getDirectoryGitState', { directoryId }),
+    getDirectoryUsageSummary: (directoryId: string) =>
+      invokeRequest('getDirectoryUsageSummary', { directoryId }),
+    getDirectoryFavicon: (directoryId: string) =>
+      invokeRequest('getDirectoryFavicon', { directoryId }),
+    startDirectoryDiffStream: (
+      directoryId: string,
       baseline = null,
       streamId: string | null = null,
       includeUntracked = false,
     ) =>
-      invokeRequest('startProjectDiffStream', { projectId, baseline, streamId, includeUntracked }),
-    cancelProjectDiffStream: (streamId: string) =>
-      invokeRequest('cancelProjectDiffStream', { streamId }),
-    getProjectDiffStats: (projectId: string, baseline = null, includeUntracked = false) =>
-      invokeRequest('getProjectDiffStats', { projectId, baseline, includeUntracked }),
-    getProjectDiffImagePreview: (request) => invokeRequest('getProjectDiffImagePreview', request),
-    getProjectDiffFileContents: (request) => invokeRequest('getProjectDiffFileContents', request),
-    captureProjectDiffBaseline: (projectId: string) =>
-      invokeRequest('captureProjectDiffBaseline', { projectId }),
-    listProjectCommits: (projectId: string, limit: number | null = null) =>
-      invokeRequest('listProjectCommits', { projectId, limit }),
+      invokeRequest('startDirectoryDiffStream', {
+        directoryId,
+        baseline,
+        streamId,
+        includeUntracked,
+      }),
+    cancelDirectoryDiffStream: (streamId: string) =>
+      invokeRequest('cancelDirectoryDiffStream', { streamId }),
+    getDirectoryDiffStats: (directoryId: string, baseline = null, includeUntracked = false) =>
+      invokeRequest('getDirectoryDiffStats', { directoryId, baseline, includeUntracked }),
+    getDirectoryDiffImagePreview: (request) =>
+      invokeRequest('getDirectoryDiffImagePreview', request),
+    getDirectoryDiffFileContents: (request) =>
+      invokeRequest('getDirectoryDiffFileContents', request),
+    captureDirectoryDiffBaseline: (directoryId: string) =>
+      invokeRequest('captureDirectoryDiffBaseline', { directoryId }),
+    listDirectoryCommits: (directoryId: string, limit: number | null = null) =>
+      invokeRequest('listDirectoryCommits', { directoryId, limit }),
     searchPiSkills: (request = {}) => invokeRequest('searchPiSkills', request),
     getConfiguredPiSkills: (request = {}) => invokeRequest('getConfiguredPiSkills', request),
     installPiSkill: (request) => invokeRequest('installPiSkill', request),
     removePiSkill: (request) => invokeRequest('removePiSkill', request),
-    listProjectDirectoryEntries: (request = {}) =>
-      invokeRequest('listProjectDirectoryEntries', request),
+    listDirectoryDirectoryEntries: (request = {}) =>
+      invokeRequest('listDirectoryDirectoryEntries', request),
     uploadComposerFiles: (files: File[]) => uploadComposerFiles(files),
     listComposerAttachmentEntries: (request = {}) =>
       invokeRequest('listComposerAttachmentEntries', request),
@@ -373,11 +382,10 @@ export async function installDevWebDesktopBridge() {
     removeDictationModel: (modelId: 'tiny.en' | 'base.en' | 'small.en') =>
       invokeRequest('removeDictationModel', { modelId }),
     transcribeDictation: (request) => invokeRequest('transcribeDictation', request),
-    getProjectThreads: (projectId: string, request: { chat?: boolean | undefined } = {}) =>
-      invokeRequest('getProjectThreads', { projectId, chat: request.chat }),
-    getChatSidebarState: (selectedGroupId: string | null = null) =>
-      invokeRequest('getChatSidebarState', { selectedGroupId }),
-    createChatGroup: (name: string) => invokeRequest('createChatGroup', { name }),
+    getDirectoryChats: (directoryId: string) => invokeRequest('getDirectoryChats', { directoryId }),
+    getWorkspaceNavigationState: (selectedWorkspaceId: string | null = null) =>
+      invokeRequest('getWorkspaceNavigationState', { selectedWorkspaceId }),
+    createWorkspace: (name: string) => invokeRequest('createWorkspace', { name }),
     listArtifacts: (conversationId: string | null = null) =>
       invokeRequest('listArtifacts', { conversationId }),
     getArtifact: (artifactSlug: string, conversationId: string | null = null) =>
@@ -392,14 +400,14 @@ export async function installDevWebDesktopBridge() {
     listArtifactVersions: (artifactSlug: string) =>
       invokeRequest('listArtifactVersions', { artifactSlug }),
     compileReactArtifact: (source: string) => invokeRequest('compileReactArtifact', { source }),
-    getInboxThreads: () => invokeRequest('getInboxThreads', {}),
-    getArchivedThreads: () => invokeRequest('getArchivedThreads', {}),
-    getThread: (conversationId: string, historyCompactions = 0) =>
-      invokeRequest('getThread', { conversationId, historyCompactions }),
+    getInboxChats: () => invokeRequest('getInboxChats', {}),
+    getArchivedChats: () => invokeRequest('getArchivedChats', {}),
+    getChat: (conversationId: string, historyCompactions = 0) =>
+      invokeRequest('getChat', { conversationId, historyCompactions }),
     getConversationEntries: (conversationId: string) =>
       invokeRequest('getConversationEntries', { conversationId }),
-    searchThread: (conversationId: string, query: string) =>
-      invokeRequest('searchThread', { conversationId, query }),
+    searchChat: (conversationId: string, query: string) =>
+      invokeRequest('searchChat', { conversationId, query }),
     watchConversation: async (conversationId: string | null) => {
       await invokeRequest('watchConversation', { conversationId })
     },

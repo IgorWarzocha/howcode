@@ -6,48 +6,48 @@ import { Inbox, MessageSquare, PanelLeftClose, Settings } from 'lucide-react'
 import { useCallback, useRef } from 'react'
 import type {
   AppSettings,
-  ChatSidebarState,
   DesktopActionInvoker,
-  InboxThread,
-  ProjectGitState,
+  DirectoryGitState,
+  InboxChat,
+  WorkspaceNavigationState,
 } from '../../desktop/types'
 import { useAnimatedPresence } from '../../hooks/useAnimatedPresence'
 import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
-import type { Project, View } from '../../types'
+import type { View, WorkingDirectory } from '../../types'
 
 type SidebarNavigableView = Exclude<View, 'gitops'>
 
 import { AppMenu } from '@howcode/app-menu'
 import { NavButton } from '@howcode/common/nav-button'
-import { ProjectWorkSection, WorkspaceFolderCreateButton } from '@howcode/components/coding/ui'
+import { DirectoryWorkSection, WorkspaceFolderCreateButton } from '@howcode/components/coding/ui'
 import { iconButtonClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
-import { SidebarChatSection } from './chat/sidebar-chat-section'
 import { SidebarInboxSection } from './inbox/sidebar-inbox-section'
 import { SidebarChatSkeleton, SidebarInboxSkeleton } from './sidebar-skeletons'
+import { WorkspaceNavigationSection } from './workspaces/workspace-navigation-section'
 
 type SidebarProps = {
-  projects: Project[]
-  inboxThreads: InboxThread[]
+  directories: WorkingDirectory[]
+  inboxChats: InboxChat[]
   inboxLoading?: boolean
-  chatSidebarState: ChatSidebarState | null
-  chatSidebarLoading?: boolean
-  projectsLoading?: boolean
+  workspaceNavigationState: WorkspaceNavigationState | null
+  workspaceNavigationLoading?: boolean
+  directoriesLoading?: boolean
   appLaunchedAtMs: number
   appSettings: AppSettings
-  projectGitState: ProjectGitState | null
-  sidebarVisibleProjectIds: string[] | null | undefined
-  protectedProjectId?: string | null
+  directoryGitState: DirectoryGitState | null
+  sidebarVisibleDirectoryIds: string[] | null | undefined
+  protectedDirectoryId?: string | null
   activeView: View
   selectedInboxConversationId: string | null
-  selectedProjectId: string
-  selectedThreadId: string | null
-  selectedChatGroupId: string | null
+  selectedDirectoryId: string
+  selectedChatId: string | null
+  selectedWorkspaceId: string | null
   settingsOpen: boolean
-  projectScopeLockActive: boolean
+  directoryScopeLockActive: boolean
   terminalRunningWorkspaceIds: ReadonlySet<string>
   terminalRunningConversationIds: ReadonlySet<string>
-  collapsedProjectIds: Record<string, boolean>
+  collapsedDirectoryIds: Record<string, boolean>
   onAction: DesktopActionInvoker
   onShowView: (view: SidebarNavigableView) => void
   onShowWorkspace: () => void
@@ -56,23 +56,26 @@ type SidebarProps = {
   onOpenAbout: () => void
   onOpenSkillsView: () => void
   onOpenSettingsPanel: (target?: SettingsOpenTarget) => void
-  onOpenArchivedThreads: () => void
-  onDismissInboxThread: (thread: InboxThread) => void
-  onCreateChatGroup: (name: string) => Promise<unknown>
-  onSelectChatGroup: (groupId: string | null) => void
-  onNewChat: (groupId: string | null) => void
-  onProjectSelect: (projectId: string) => void
-  onProjectPrimeSelection: (projectId: string) => void
-  onProjectTargetSelected?: (() => void) | undefined
-  onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
-  onSelectInboxThread: (thread: InboxThread) => void
-  onThreadOpen: (
-    projectId: string,
-    threadId: string,
+  onOpenArchivedChats: () => void
+  onDismissInboxChat: (chat: InboxChat) => void
+  onCreateWorkspace: (name: string) => Promise<unknown>
+  onSelectWorkspace: (workspaceId: string | null) => void
+  onNewChat: (workspaceId: string | null) => void
+  onDirectorySelect: (directoryId: string) => void
+  onDirectoryPrimeSelection: (directoryId: string) => void
+  onDirectoryTargetSelected?: (() => void) | undefined
+  onLoadDirectoryChats: (
+    directoryId: string,
+    options?: { replaceLocalDraftConversationId?: string | null | undefined },
+  ) => Promise<unknown>
+  onSelectInboxChat: (chat: InboxChat) => void
+  onChatOpen: (
+    directoryId: string,
+    chatId: string,
     conversationId: string,
-    view?: 'chat' | 'thread',
+    composerProfile?: 'general' | 'coding',
   ) => void
-  onToggleProjectCollapse: (projectId: string) => void
+  onToggleDirectoryCollapse: (directoryId: string) => void
   compactMode?: boolean
 }
 
@@ -104,39 +107,38 @@ function SidebarNavigation({
 }
 
 function SidebarContent(props: SidebarProps) {
-  if (props.activeView === 'inbox' && props.inboxLoading && props.inboxThreads.length === 0)
+  if (props.activeView === 'inbox' && props.inboxLoading && props.inboxChats.length === 0)
     return <SidebarInboxSkeleton />
   if (props.activeView === 'inbox') {
     return (
       <SidebarInboxSection
         appLaunchedAtMs={props.appLaunchedAtMs}
         terminalRunningConversationIds={props.terminalRunningConversationIds}
-        threads={props.inboxThreads}
+        chats={props.inboxChats}
         selectedConversationId={props.selectedInboxConversationId}
         onAction={props.onAction}
-        onDismissThread={props.onDismissInboxThread}
-        onSelectThread={props.onSelectInboxThread}
+        onDismissChat={props.onDismissInboxChat}
+        onSelectChat={props.onSelectInboxChat}
       />
     )
   }
-  if (props.activeView !== 'skills' && props.chatSidebarLoading && !props.chatSidebarState)
+  if (
+    props.activeView !== 'skills' &&
+    props.workspaceNavigationLoading &&
+    !props.workspaceNavigationState
+  )
     return <SidebarChatSkeleton />
   if (props.activeView !== 'skills') {
     return (
-      <SidebarChatSection
-        chatState={props.chatSidebarState}
-        selectedGroupId={props.selectedChatGroupId}
-        selectedThreadId={props.selectedThreadId}
+      <WorkspaceNavigationSection
+        chatState={props.workspaceNavigationState}
+        selectedWorkspaceId={props.selectedWorkspaceId}
+        selectedChatId={props.selectedChatId}
         onAction={props.onAction}
-        onCreateGroup={async (name) => {
-          await props.onCreateChatGroup(name)
-          props.onShowWorkspace()
-        }}
-        onSelectGroup={props.onSelectChatGroup}
+        onCreateWorkspace={props.onCreateWorkspace}
+        onSelectWorkspace={props.onSelectWorkspace}
         onNewChat={props.onNewChat}
-        onThreadOpen={props.onThreadOpen}
-        onSelectDirectory={props.onProjectSelect}
-        onShowWorkspace={props.onShowWorkspace}
+        onChatOpen={props.onChatOpen}
         folderCreation={
           isToolkitComponentEnabled(props.appSettings, 'coding') ? (
             <WorkspaceFolderCreateButton
@@ -153,33 +155,34 @@ function SidebarContent(props: SidebarProps) {
                 <summary className="sidebar-project-work-project-kicker cursor-pointer">
                   Git and worktrees
                 </summary>
-                <ProjectWorkSection
+                <DirectoryWorkSection
                   key={directoryId}
                   embedded
                   activeView={props.activeView}
-                  loading={props.projectsLoading ?? false}
-                  projects={props.projects.filter(
-                    (project) =>
-                      project.id === directoryId || project.worktree?.rootProjectId === directoryId,
+                  loading={props.directoriesLoading ?? false}
+                  directories={props.directories.filter(
+                    (directory) =>
+                      directory.id === directoryId ||
+                      directory.worktree?.rootDirectoryId === directoryId,
                   )}
-                  projectGitState={props.projectGitState}
-                  collapsedProjectIds={props.collapsedProjectIds}
-                  initialVisibleProjectIds={[directoryId]}
-                  selectedProjectId={directoryId}
-                  selectedThreadId={props.selectedThreadId}
+                  directoryGitState={props.directoryGitState}
+                  collapsedDirectoryIds={props.collapsedDirectoryIds}
+                  initialVisibleDirectoryIds={[directoryId]}
+                  selectedDirectoryId={directoryId}
+                  selectedChatId={props.selectedChatId}
                   terminalRunningWorkspaceIds={props.terminalRunningWorkspaceIds}
                   terminalRunningConversationIds={props.terminalRunningConversationIds}
                   onAction={props.onAction}
                   appSettings={props.appSettings}
-                  onLoadProjectThreads={props.onLoadProjectThreads}
+                  onLoadDirectoryChats={props.onLoadDirectoryChats}
                   onOpenSettingsPanel={props.onOpenSettingsPanel}
-                  onProjectSelect={props.onProjectSelect}
-                  onProjectPrimeSelection={props.onProjectPrimeSelection}
-                  onThreadOpen={(projectId, threadId, conversationId) =>
-                    props.onThreadOpen(projectId, threadId, conversationId, 'thread')
+                  onDirectorySelect={props.onDirectorySelect}
+                  onDirectoryPrimeSelection={props.onDirectoryPrimeSelection}
+                  onChatOpen={(chatDirectoryId, chatId, conversationId) =>
+                    props.onChatOpen(chatDirectoryId, chatId, conversationId, 'coding')
                   }
                   onShowView={props.onShowView}
-                  onToggleProjectCollapse={props.onToggleProjectCollapse}
+                  onToggleDirectoryCollapse={props.onToggleDirectoryCollapse}
                 />
               </details>
             </li>
@@ -189,55 +192,55 @@ function SidebarContent(props: SidebarProps) {
     )
   }
   return (
-    <ProjectWorkSection
+    <DirectoryWorkSection
       activeView={props.activeView}
-      loading={props.projectsLoading ?? false}
-      projects={props.projects}
-      projectGitState={props.projectGitState}
-      collapsedProjectIds={props.collapsedProjectIds}
-      initialVisibleProjectIds={props.sidebarVisibleProjectIds}
-      projectTargetMode={true}
-      projectScopeLockActive={props.projectScopeLockActive}
-      selectedProjectId={props.selectedProjectId}
-      selectedThreadId={props.selectedThreadId}
+      loading={props.directoriesLoading ?? false}
+      directories={props.directories}
+      directoryGitState={props.directoryGitState}
+      collapsedDirectoryIds={props.collapsedDirectoryIds}
+      initialVisibleDirectoryIds={props.sidebarVisibleDirectoryIds}
+      directoryTargetMode={true}
+      directoryScopeLockActive={props.directoryScopeLockActive}
+      selectedDirectoryId={props.selectedDirectoryId}
+      selectedChatId={props.selectedChatId}
       terminalRunningWorkspaceIds={props.terminalRunningWorkspaceIds}
       terminalRunningConversationIds={props.terminalRunningConversationIds}
       onAction={props.onAction}
       appSettings={props.appSettings}
-      onLoadProjectThreads={props.onLoadProjectThreads}
+      onLoadDirectoryChats={props.onLoadDirectoryChats}
       onOpenSettingsPanel={props.onOpenSettingsPanel}
-      onProjectSelect={props.onProjectSelect}
-      onProjectPrimeSelection={props.onProjectPrimeSelection}
-      onProjectTargetSelected={props.onProjectTargetSelected}
-      onThreadOpen={props.onThreadOpen}
+      onDirectorySelect={props.onDirectorySelect}
+      onDirectoryPrimeSelection={props.onDirectoryPrimeSelection}
+      onDirectoryTargetSelected={props.onDirectoryTargetSelected}
+      onChatOpen={props.onChatOpen}
       onShowView={props.onShowView}
-      onToggleProjectCollapse={props.onToggleProjectCollapse}
+      onToggleDirectoryCollapse={props.onToggleDirectoryCollapse}
     />
   )
 }
 
 export function Sidebar({
-  projects,
-  inboxThreads,
+  directories,
+  inboxChats,
   inboxLoading = false,
-  chatSidebarState,
-  chatSidebarLoading = false,
-  projectsLoading = false,
+  workspaceNavigationState,
+  workspaceNavigationLoading = false,
+  directoriesLoading = false,
   appLaunchedAtMs,
   appSettings,
-  projectGitState,
-  sidebarVisibleProjectIds,
-  protectedProjectId = null,
+  directoryGitState,
+  sidebarVisibleDirectoryIds,
+  protectedDirectoryId = null,
   activeView,
   selectedInboxConversationId,
-  selectedProjectId,
-  selectedThreadId,
-  selectedChatGroupId,
+  selectedDirectoryId,
+  selectedChatId,
+  selectedWorkspaceId,
   settingsOpen,
-  projectScopeLockActive,
+  directoryScopeLockActive,
   terminalRunningWorkspaceIds,
   terminalRunningConversationIds,
-  collapsedProjectIds,
+  collapsedDirectoryIds,
   onAction,
   onShowView,
   onToggleSettings,
@@ -246,18 +249,18 @@ export function Sidebar({
   onOpenAbout,
   onOpenSkillsView,
   onOpenSettingsPanel,
-  onOpenArchivedThreads,
-  onDismissInboxThread,
-  onCreateChatGroup,
-  onSelectChatGroup,
+  onOpenArchivedChats,
+  onDismissInboxChat,
+  onCreateWorkspace,
+  onSelectWorkspace,
   onNewChat,
-  onProjectSelect,
-  onProjectPrimeSelection,
-  onProjectTargetSelected,
-  onLoadProjectThreads,
-  onSelectInboxThread,
-  onThreadOpen,
-  onToggleProjectCollapse,
+  onDirectorySelect,
+  onDirectoryPrimeSelection,
+  onDirectoryTargetSelected,
+  onLoadDirectoryChats,
+  onSelectInboxChat,
+  onChatOpen,
+  onToggleDirectoryCollapse,
   compactMode = false,
 }: SidebarProps) {
   const settingsButtonRef = useRef<HTMLButtonElement>(null)
@@ -278,27 +281,27 @@ export function Sidebar({
   })
 
   const sidebarContentProps: SidebarProps = {
-    projects,
-    inboxThreads,
+    directories,
+    inboxChats,
     inboxLoading,
-    chatSidebarState,
-    chatSidebarLoading,
-    projectsLoading,
+    workspaceNavigationState,
+    workspaceNavigationLoading,
+    directoriesLoading,
     appLaunchedAtMs,
     appSettings,
-    projectGitState,
-    sidebarVisibleProjectIds,
-    protectedProjectId,
+    directoryGitState,
+    sidebarVisibleDirectoryIds,
+    protectedDirectoryId,
     activeView,
     selectedInboxConversationId,
-    selectedProjectId,
-    selectedThreadId,
-    selectedChatGroupId,
+    selectedDirectoryId,
+    selectedChatId,
+    selectedWorkspaceId,
     settingsOpen,
-    projectScopeLockActive,
+    directoryScopeLockActive,
     terminalRunningWorkspaceIds,
     terminalRunningConversationIds,
-    collapsedProjectIds,
+    collapsedDirectoryIds,
     onAction,
     onShowView,
     onShowWorkspace,
@@ -307,26 +310,26 @@ export function Sidebar({
     onOpenAbout,
     onOpenSkillsView,
     onOpenSettingsPanel,
-    onOpenArchivedThreads,
-    onDismissInboxThread,
-    onCreateChatGroup,
-    onSelectChatGroup,
+    onOpenArchivedChats,
+    onDismissInboxChat,
+    onCreateWorkspace,
+    onSelectWorkspace,
     onNewChat,
-    onProjectSelect,
-    onProjectPrimeSelection,
-    ...(onProjectTargetSelected ? { onProjectTargetSelected } : {}),
-    onLoadProjectThreads,
-    onSelectInboxThread,
-    onThreadOpen,
-    onToggleProjectCollapse,
+    onDirectorySelect,
+    onDirectoryPrimeSelection,
+    ...(onDirectoryTargetSelected ? { onDirectoryTargetSelected } : {}),
+    onLoadDirectoryChats,
+    onSelectInboxChat,
+    onChatOpen,
+    onToggleDirectoryCollapse,
     compactMode,
   }
 
   return (
     <aside
       aria-label="Workspace sidebar"
-      data-pulse-active={projectScopeLockActive ? 'true' : 'false'}
-      data-project-target-mode={activeView === 'skills' ? 'true' : 'false'}
+      data-pulse-active={directoryScopeLockActive ? 'true' : 'false'}
+      data-directory-target-mode={activeView === 'skills' ? 'true' : 'false'}
       className="sidebar-shell motion-surface-pulse motion-sidebar-selection-pulse relative"
     >
       <div className="sidebar-shell-row sidebar-shell-row--top">
@@ -385,7 +388,7 @@ export function Sidebar({
             skillsEnabled={isToolkitComponentEnabled(appSettings, skillsComponent.id)}
             onOpenSkillsView={onOpenSkillsView}
             onOpenSettingsPanel={onOpenSettingsPanel}
-            onOpenArchivedThreads={onOpenArchivedThreads}
+            onOpenArchivedChats={onOpenArchivedChats}
           />
         ) : null}
       </div>

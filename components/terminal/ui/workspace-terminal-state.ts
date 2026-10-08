@@ -29,30 +29,30 @@ export function migrateTerminalVisibility(
 }
 
 export function shouldRestoreTerminalOnGitOpsClose(state: WorkspaceState) {
-  return state.terminalVisible && (state.activeView === 'thread' || state.activeView === 'project')
+  return state.terminalVisible && (state.activeView === 'chat' || state.activeView === 'directory')
 }
 
-export function shouldMigrateTerminalVisibilityForOpenedThread(
+export function shouldMigrateTerminalVisibilityForOpenedChat(
   state: WorkspaceState,
-  action: Extract<WorkspaceAction, { type: 'open-thread' }>,
+  action: Extract<WorkspaceAction, { type: 'open-chat' }>,
 ) {
   if (
-    state.activeView === 'project' &&
-    state.selectedProjectId === action.projectId &&
-    (state.workspaceTerminalVisibleByWorkspace[action.projectId] ?? false)
+    state.activeView === 'directory' &&
+    state.selectedDirectoryId === action.directoryId &&
+    (state.workspaceTerminalVisibleByWorkspace[action.directoryId] ?? false)
   ) {
     return true
   }
 
   if (
-    state.activeView !== 'thread' ||
+    state.activeView !== 'chat' ||
     !state.selectedConversationId ||
     state.selectedConversationId === action.conversationId
   ) {
     return false
   }
 
-  if (state.selectedThreadId === action.threadId) {
+  if (state.selectedChatId === action.chatId) {
     return !Object.hasOwn(state.terminalVisibleBySession, action.conversationId)
   }
 
@@ -67,20 +67,20 @@ export function getTerminalStateForNextView(state: WorkspaceState, nextView: Vie
         state.selectedConversationId,
       )
     }
-    return state.selectedProjectId
-      ? (state.workspaceTerminalVisibleByWorkspace[state.selectedProjectId] ?? false)
+    return state.selectedDirectoryId
+      ? (state.workspaceTerminalVisibleByWorkspace[state.selectedDirectoryId] ?? false)
       : false
   }
 
   if (state.activeView !== 'gitops') {
     return {
       terminalVisible:
-        nextView === 'thread'
+        nextView === 'chat'
           ? getTerminalVisibilityForSession(
               state.terminalVisibleBySession,
               state.selectedConversationId,
             )
-          : nextView === 'project'
+          : nextView === 'directory'
             ? getWorkspaceTerminalVisible()
             : state.terminalVisible,
       restoreTerminalVisibleOnGitOpsClose: state.restoreTerminalVisibleOnGitOpsClose,
@@ -96,7 +96,7 @@ export function getTerminalStateForNextView(state: WorkspaceState, nextView: Vie
 
   return {
     terminalVisible:
-      (nextView === 'thread' || nextView === 'project') &&
+      (nextView === 'chat' || nextView === 'directory') &&
       state.restoreTerminalVisibleOnGitOpsClose,
     restoreTerminalVisibleOnGitOpsClose: false,
   }
@@ -104,13 +104,13 @@ export function getTerminalStateForNextView(state: WorkspaceState, nextView: Vie
 
 export function setTerminalVisibleState(state: WorkspaceState, visible: boolean): WorkspaceState {
   if (!state.selectedConversationId) {
-    if (!state.selectedProjectId) return { ...state, terminalVisible: visible }
+    if (!state.selectedDirectoryId) return { ...state, terminalVisible: visible }
     return {
       ...state,
       terminalVisible: visible,
       workspaceTerminalVisibleByWorkspace: {
         ...state.workspaceTerminalVisibleByWorkspace,
-        [state.selectedProjectId]: visible,
+        [state.selectedDirectoryId]: visible,
       },
     }
   }
@@ -141,16 +141,16 @@ export function getTerminalUtilityReturnState(state: WorkspaceState) {
   }
 }
 
-export function getTerminalStateForOpenedThread(
+export function getTerminalStateForOpenedChat(
   state: WorkspaceState,
-  action: Extract<WorkspaceAction, { type: 'open-thread' }>,
+  action: Extract<WorkspaceAction, { type: 'open-chat' }>,
 ) {
-  const nextTerminalVisibleBySession = shouldMigrateTerminalVisibilityForOpenedThread(state, action)
+  const nextTerminalVisibleBySession = shouldMigrateTerminalVisibilityForOpenedChat(state, action)
     ? {
         ...state.terminalVisibleBySession,
         [action.conversationId]:
-          state.activeView === 'project'
-            ? (state.workspaceTerminalVisibleByWorkspace[action.projectId] ?? false)
+          state.activeView === 'directory'
+            ? (state.workspaceTerminalVisibleByWorkspace[action.directoryId] ?? false)
             : getTerminalVisibilityForSession(
                 state.terminalVisibleBySession,
                 state.selectedConversationId,

@@ -17,8 +17,8 @@ type SubmitComposerDraftOptions = {
   draft: string
   attachments: ComposerAttachment[]
   isSending: boolean
-  projectId: string
-  chatGroupId?: string | null
+  directoryId: string
+  workspaceId?: string | null
   conversationId: string | null
   streamingBehaviorPreference: ComposerStreamingBehavior
   onAction: DesktopActionInvoker
@@ -28,8 +28,8 @@ export async function submitComposerDraft({
   draft,
   attachments,
   isSending,
-  projectId,
-  chatGroupId = null,
+  directoryId,
+  workspaceId = null,
   conversationId,
   streamingBehaviorPreference,
   onAction,
@@ -44,8 +44,8 @@ export async function submitComposerDraft({
     const actionResult = await onAction('composer.send', {
       text,
       attachments: sendAttachments,
-      projectId,
-      chatGroupId,
+      directoryId,
+      workspaceId,
       conversationId,
       streamingBehavior: streamingBehaviorPreference,
     })

@@ -3,10 +3,10 @@ import type { TerminalOpenRequest } from '../../../shared/terminal-contracts.ts'
 
 export function makeSessionId(request: TerminalOpenRequest) {
   const sessionKey = JSON.stringify({
-    projectId: request.projectId,
+    projectId: request.directoryId,
     // Preserve existing workspace-shell transcript keys. The value is now a Durable ID.
     sessionPath: request.conversationId ?? null,
-    cwd: request.cwd ?? request.projectId,
+    cwd: request.cwd ?? request.directoryId,
     launchMode: 'shell',
   })
 

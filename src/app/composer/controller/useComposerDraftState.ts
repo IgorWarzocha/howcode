@@ -9,35 +9,35 @@ import {
 } from 'react'
 import type { ComposerAttachment } from '../../desktop/types'
 import { useLatestRef } from '../../hooks/useLatestRef'
-import { composerDraftStore, getComposerDraftThreadId } from '../composerDraftStore'
+import { composerDraftStore, getComposerDraftChatId } from '../composerDraftStore'
 
 export function useComposerDraftState({
-  composerMode,
-  projectId,
+  composerProfile,
+  directoryId,
   conversationId,
   openMenu,
   setOpenMenu,
   setErrorMessage,
 }: {
-  composerMode: 'chat' | 'code'
-  projectId: string
+  composerProfile: 'general' | 'coding'
+  directoryId: string
   conversationId: string | null
   openMenu: 'model' | 'picker' | null
   setOpenMenu: (value: SetStateAction<'model' | 'picker' | null>) => void
   setErrorMessage: (value: SetStateAction<string | null>) => void
 }) {
-  const draftThreadId = useMemo(
-    () => getComposerDraftThreadId({ composerMode, projectId, conversationId }),
-    [composerMode, projectId, conversationId],
+  const draftChatId = useMemo(
+    () => getComposerDraftChatId({ composerProfile, directoryId, conversationId }),
+    [composerProfile, directoryId, conversationId],
   )
   const [draft, setDraft] = useState('')
   const [attachments, setAttachments] = useState<ComposerAttachment[]>([])
   const composerScopeKey = useMemo(
-    () => `${composerMode}::${projectId}::${conversationId ?? ''}::${draftThreadId ?? ''}`,
-    [composerMode, draftThreadId, projectId, conversationId],
+    () => `${composerProfile}::${directoryId}::${conversationId ?? ''}::${draftChatId ?? ''}`,
+    [composerProfile, draftChatId, directoryId, conversationId],
   )
   const activeComposerScopeKeyRef = useLatestRef(composerScopeKey)
-  const activeDraftThreadIdRef = useLatestRef(draftThreadId)
+  const activeDraftChatIdRef = useLatestRef(draftChatId)
   const skipNextDraftPersistenceRef = useRef<string | null>(null)
   const attachmentsRef = useRef<ComposerAttachment[]>([])
   const draftValueRef = useRef('')
@@ -65,39 +65,39 @@ export function useComposerDraftState({
   }, [])
 
   useEffect(() => {
-    skipNextDraftPersistenceRef.current = draftThreadId
+    skipNextDraftPersistenceRef.current = draftChatId
 
-    const persistedDraft = draftThreadId ? composerDraftStore.getDraft(draftThreadId) : null
+    const persistedDraft = draftChatId ? composerDraftStore.getDraft(draftChatId) : null
     setDraftValue(persistedDraft?.prompt ?? '')
     setAttachmentValue(persistedDraft?.attachments ?? [])
     resetParentComposerState(persistedDraft?.pickerOpen === true)
-  }, [draftThreadId, setAttachmentValue, setDraftValue])
+  }, [draftChatId, setAttachmentValue, setDraftValue])
 
   useEffect(() => {
-    if (!draftThreadId) {
+    if (!draftChatId) {
       return
     }
 
-    if (skipNextDraftPersistenceRef.current === draftThreadId) {
+    if (skipNextDraftPersistenceRef.current === draftChatId) {
       skipNextDraftPersistenceRef.current = null
       return
     }
 
-    composerDraftStore.setDraft(draftThreadId, {
+    composerDraftStore.setDraft(draftChatId, {
       prompt: draft,
       attachments,
       pickerOpen: openMenu === 'picker',
     })
-  }, [attachments, draft, draftThreadId, openMenu])
+  }, [attachments, draft, draftChatId, openMenu])
 
   return {
     activeComposerScopeKeyRef,
-    activeDraftThreadIdRef,
+    activeDraftChatIdRef,
     attachments,
     attachmentsRef,
     composerScopeKey,
     draft,
-    draftThreadId,
+    draftChatId,
     draftValueRef,
     setAttachmentValue,
     setDraftValue,

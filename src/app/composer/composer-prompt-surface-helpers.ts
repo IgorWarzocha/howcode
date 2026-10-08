@@ -26,12 +26,12 @@ export function getComposerPlaceholderText(input: {
     return `Type Other · ${submitHint} · ${emptySubmitHint} · ←/→ questions · Esc dismisses`
   }
   const submitHint = getComposerSubmitHint(input.composerSendMode)
-  if (input.activeView === 'chat' || input.activeView === 'thread') {
+  if (input.activeView === 'chat') {
     return `Hover to type · ${submitHint} · ${getComposerNewlineHint(input.composerSendMode)}`
   }
   return `Hover to type · / commands · @ files · ${submitHint}`
 }
 
 export function isConversationComposerView(activeView: ComposerProps['activeView']) {
-  return activeView === 'chat' || activeView === 'thread'
+  return activeView === 'chat' || activeView === 'workspace'
 }

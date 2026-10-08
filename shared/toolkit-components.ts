@@ -2,7 +2,7 @@ import * as Schema from 'effect/Schema'
 
 /** Built-in application capabilities. These IDs do not select Durable agent tools. */
 export const toolkitComponents = [
-  { id: 'coding', label: 'Coding', description: 'Projects, workspaces, and Git operations.' },
+  { id: 'coding', label: 'Coding', description: 'Directories, workspaces, and Git operations.' },
   { id: 'terminal', label: 'Terminal', description: 'Interactive workspace terminals.' },
   {
     id: 'artifacts',

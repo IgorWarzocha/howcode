@@ -1,7 +1,11 @@
 import { getPersistedConversationId } from '@howcode/shared/conversation-ids'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type { DesktopAction } from '../desktop/actions'
-import type { DesktopActionInvoker, ProjectDiffBaseline, ProjectGitState } from '../desktop/types'
+import type {
+  DesktopActionInvoker,
+  DirectoryDiffBaseline,
+  DirectoryGitState,
+} from '../desktop/types'
 import type { Message, View } from '../types'
 import { ComposerFooter } from './composer-footer'
 import { isConversationComposerView } from './composer-prompt-surface-helpers'
@@ -25,6 +29,7 @@ type RunComposerAction = (
 
 export function ComposerPromptFooter({
   activeView,
+  composerProfile = 'coding',
   artifactsAvailable,
   artifactsVisible,
   compact,
@@ -41,8 +46,8 @@ export function ComposerPromptFooter({
   onToggleTerminal,
   parentBranchName,
   preferPortalModelPopover,
-  projectGitState,
-  projectId,
+  directoryGitState,
+  directoryId,
   runComposerAction,
   runtime,
   conversationId,
@@ -51,24 +56,25 @@ export function ComposerPromptFooter({
   terminalVisible,
 }: {
   activeView: View
+  composerProfile?: 'general' | 'coding'
   artifactsAvailable?: boolean | undefined
   artifactsVisible?: boolean | undefined
   compact: () => Promise<void>
   composerPanelRef: RefObject<HTMLDivElement | null>
-  diffBaseline: ProjectDiffBaseline
+  diffBaseline: DirectoryDiffBaseline
   isStreaming: boolean
   messages?: Message[] | undefined
   modelButtonRef: RefObject<HTMLButtonElement | null>
   modelMenuOpen: boolean
   modelMenuRef: RefObject<HTMLDivElement | null>
   onOpenGitOps: () => void
-  onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
+  onSetDiffBaseline: (baseline: DirectoryDiffBaseline) => void
   onToggleArtifacts?: (() => void) | undefined
   onToggleTerminal: () => void
   parentBranchName?: string | null | undefined
   preferPortalModelPopover: boolean
-  projectGitState: ProjectGitState | null
-  projectId: string
+  directoryGitState: DirectoryGitState | null
+  directoryId: string
   runComposerAction: RunComposerAction
   runtime: ComposerRuntimeModel
   conversationId: string | null
@@ -76,7 +82,6 @@ export function ComposerPromptFooter({
   showTerminalControls: boolean
   terminalVisible: boolean
 }) {
-  const composerMode = activeView === 'chat' ? 'chat' : 'code'
   const persistedConversationId = getPersistedConversationId(conversationId)
 
   return (
@@ -101,7 +106,7 @@ export function ComposerPromptFooter({
           return runComposerAction(
             'settings.update',
             {
-              key: composerMode === 'chat' ? 'chatModel' : 'codeModel',
+              key: composerProfile === 'general' ? 'chatModel' : 'codeModel',
               provider: availableModel.provider,
               modelId: availableModel.id,
             },
@@ -114,7 +119,7 @@ export function ComposerPromptFooter({
           {
             provider: availableModel.provider,
             modelId: availableModel.id,
-            projectId,
+            directoryId,
             conversationId,
           },
           { closeMenu: false },
@@ -123,14 +128,14 @@ export function ComposerPromptFooter({
       onSelectThinkingLevel={(level) => {
         if (isConversationComposerView(activeView) && !persistedConversationId) {
           return runComposerAction('settings.update', {
-            key: composerMode === 'chat' ? 'chatThinkingLevel' : 'codeThinkingLevel',
+            key: composerProfile === 'general' ? 'chatThinkingLevel' : 'codeThinkingLevel',
             value: level,
           })
         }
 
         return runComposerAction('composer.thinking', {
           level,
-          projectId,
+          directoryId,
           conversationId,
         })
       }}
@@ -138,9 +143,9 @@ export function ComposerPromptFooter({
       onSetOpenMenu={setOpenMenu}
       onToggleTerminal={onToggleTerminal}
       onToggleArtifacts={onToggleArtifacts}
-      projectGitState={projectGitState}
+      directoryGitState={directoryGitState}
       parentBranchName={parentBranchName}
-      projectId={projectId}
+      directoryId={directoryId}
       showTerminalControls={showTerminalControls}
       terminalVisible={terminalVisible}
       artifactsVisible={artifactsVisible}

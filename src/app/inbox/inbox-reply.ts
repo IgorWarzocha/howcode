@@ -1,11 +1,11 @@
 import { isCompactSlashCommand } from '@howcode/shared/composer-slash-commands'
-import { getInboxThreadComposerMode } from '../common/inbox-thread-scope'
+import { getInboxChatComposerProfile } from '../common/inbox-chat-scope'
 import { getDesktopActionErrorMessage } from '../desktop/action-results'
 import type {
   ComposerAttachment,
   ComposerStreamingBehavior,
   DesktopActionResult,
-  InboxThread,
+  InboxChat,
 } from '../desktop/types'
 
 export function createInboxReplySubmission(input: {
@@ -14,7 +14,7 @@ export function createInboxReplySubmission(input: {
   isCompacting: boolean
   isSending: boolean
   streamingBehavior: ComposerStreamingBehavior
-  thread: InboxThread
+  chat: InboxChat
 }) {
   const text = input.draft.trim()
   if (
@@ -29,14 +29,14 @@ export function createInboxReplySubmission(input: {
   return {
     isCompactCommand,
     payload: {
-      projectId: input.thread.projectId,
-      conversationId: input.thread.conversationId,
+      directoryId: input.chat.directoryId,
+      conversationId: input.chat.conversationId,
       text,
       attachments: isCompactCommand ? [] : input.attachments,
       suppressInbox: true,
       streamingBehavior: input.streamingBehavior,
-      composerMode: getInboxThreadComposerMode(input.thread),
-      branchName: input.thread.branchName,
+      composerProfile: getInboxChatComposerProfile(input.chat),
+      branchName: input.chat.branchName,
     },
   }
 }

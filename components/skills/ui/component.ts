@@ -6,7 +6,7 @@ export const skillsComponent = {
   views: ['skills'],
   utility: { view: 'skills', label: 'Skills', icon: Sparkles },
   utilityViews: ['skills'],
-  projectSelectionAction: 'set-selected-project',
+  directorySelectionAction: 'set-selected-directory',
   contribute(view: ReactElement) {
     return { skills: view }
   },

@@ -1,7 +1,7 @@
 import type { DesktopEvent } from '../desktop/types'
+import { handleChatUpdateEvent } from './desktop-events/chat-update'
 import { handleComposerUpdateEvent } from './desktop-events/composer-update'
 import type { DesktopEventQueryClient, DesktopEventSyncRuntime } from './desktop-events/runtime'
-import { handleThreadUpdateEvent } from './desktop-events/thread-update'
 import { dispatchHowcodeKeybindingCommand } from './keybinding-events'
 
 export type { DesktopEventSyncRuntime }
@@ -31,8 +31,8 @@ export function handleDesktopEvent(runtime: DesktopEventSyncRuntime, event: Desk
     case 'composer-update':
       handleComposerUpdateEvent(runtime, event)
       return
-    case 'thread-update':
-      handleThreadUpdateEvent(runtime, event)
+    case 'chat-update':
+      handleChatUpdateEvent(runtime, event)
       return
     default:
       // Update, dictation, diff, and artifact events have feature-owned subscriptions.

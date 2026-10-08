@@ -42,7 +42,7 @@ function restoreSubmittedDraft(input: {
 }
 
 function handleSentComposerResult(input: {
-  activeDraftThreadIdRef: MutableRefObject<string | null>
+  activeDraftChatIdRef: MutableRefObject<string | null>
   attachmentsRef: MutableRefObject<ComposerAttachment[]>
   draftValueRef: MutableRefObject<string>
   pendingSubmittedReplyActivityKeyRef: MutableRefObject<string | null>
@@ -52,32 +52,32 @@ function handleSentComposerResult(input: {
   setPendingSubmittedDraft: Dispatch<SetStateAction<string | null>>
   skipNextDraftPersistenceRef: MutableRefObject<string | null>
   submittedAttachments: ComposerAttachment[]
-  submittedDraftThreadId: string | null
+  submittedDraftChatId: string | null
   submittedRawDraft: string
   submittedWhileStreaming: boolean
 }) {
   const cleanup = getComposerPostSendCleanup({
-    activeDraftThreadId: input.activeDraftThreadIdRef.current,
-    submittedDraftThreadId: input.submittedDraftThreadId,
+    activeDraftChatId: input.activeDraftChatIdRef.current,
+    submittedDraftChatId: input.submittedDraftChatId,
     preserveAttachments: input.preserveAttachments,
     currentDraft: input.draftValueRef.current,
     submittedRawDraft: input.submittedRawDraft,
     currentAttachments: input.attachmentsRef.current,
     submittedAttachments: input.submittedAttachments,
   })
-  if (cleanup.clearStoredDraft && input.submittedDraftThreadId) {
+  if (cleanup.clearStoredDraft && input.submittedDraftChatId) {
     if (cleanup.skipNextDraftPersistence) {
-      input.skipNextDraftPersistenceRef.current = input.submittedDraftThreadId
+      input.skipNextDraftPersistenceRef.current = input.submittedDraftChatId
     }
-    composerDraftStore.clearThreadDraft(input.submittedDraftThreadId)
+    composerDraftStore.clearChatDraft(input.submittedDraftChatId)
   }
-  if (cleanup.clearStoredPrompt && input.submittedDraftThreadId) {
-    composerDraftStore.setPrompt(input.submittedDraftThreadId, '')
+  if (cleanup.clearStoredPrompt && input.submittedDraftChatId) {
+    composerDraftStore.setPrompt(input.submittedDraftChatId, '')
   }
   if (cleanup.nextAttachments !== null) input.setAttachments(cleanup.nextAttachments)
   if (
     input.submittedWhileStreaming &&
-    input.activeDraftThreadIdRef.current === input.submittedDraftThreadId
+    input.activeDraftChatIdRef.current === input.submittedDraftChatId
   ) {
     clearPendingSubmitted(input)
     if (isSameSubmittedDraft(input.draftValueRef.current, input.submittedRawDraft)) {
@@ -87,7 +87,7 @@ function handleSentComposerResult(input: {
 }
 
 function handleRestorableComposerResult(input: {
-  activeDraftThreadIdRef: MutableRefObject<string | null>
+  activeDraftChatIdRef: MutableRefObject<string | null>
   attachmentsRef: MutableRefObject<ComposerAttachment[]>
   draftValueRef: MutableRefObject<string>
   pendingSubmittedReplyActivityKeyRef: MutableRefObject<string | null>
@@ -97,10 +97,10 @@ function handleRestorableComposerResult(input: {
   setErrorMessage: Dispatch<SetStateAction<string | null>>
   setPendingSubmittedDraft: Dispatch<SetStateAction<string | null>>
   submittedAttachments: ComposerAttachment[]
-  submittedDraftThreadId: string | null
+  submittedDraftChatId: string | null
   submittedRawDraft: string
 }) {
-  if (input.activeDraftThreadIdRef.current !== input.submittedDraftThreadId) return
+  if (input.activeDraftChatIdRef.current !== input.submittedDraftChatId) return
   clearPendingSubmitted(input)
   restoreSubmittedDraft(input)
   if (input.result.status === 'error') input.setErrorMessage(input.result.errorMessage)
@@ -108,16 +108,16 @@ function handleRestorableComposerResult(input: {
 
 export async function runComposerSendSubmission(input: {
   activeComposerScopeKeyRef: MutableRefObject<string>
-  activeDraftThreadIdRef: MutableRefObject<string | null>
+  activeDraftChatIdRef: MutableRefObject<string | null>
   attachmentsRef: MutableRefObject<ComposerAttachment[]>
-  chatGroupId: string | null
+  workspaceId: string | null
   composerScopeKey: string
-  draftThreadId: string | null
+  draftChatId: string | null
   draftValueRef: MutableRefObject<string>
   isStreaming: boolean
   onAction: DesktopActionInvoker
   pendingSubmittedReplyActivityKeyRef: MutableRefObject<string | null>
-  projectId: string
+  directoryId: string
   replyActivityKey: string
   conversationId: string | null
   setAttachments: Dispatch<SetStateAction<ComposerAttachment[]>>
@@ -129,7 +129,7 @@ export async function runComposerSendSubmission(input: {
   stopDictationAndFlush: () => Promise<void>
   streamingBehaviorPreference: ComposerStreamingBehavior
 }) {
-  const submittedDraftThreadId = input.draftThreadId
+  const submittedDraftChatId = input.draftChatId
   await input.stopDictationAndFlush()
   if (input.activeComposerScopeKeyRef.current !== input.composerScopeKey) return
   const submittedRawDraft = input.draftValueRef.current
@@ -144,8 +144,8 @@ export async function runComposerSendSubmission(input: {
     draft: submittedDraft,
     attachments: submittedAttachments,
     isSending: false,
-    projectId: input.projectId,
-    chatGroupId: input.chatGroupId,
+    directoryId: input.directoryId,
+    workspaceId: input.workspaceId,
     conversationId: input.conversationId,
     streamingBehaviorPreference: input.streamingBehaviorPreference,
     onAction: input.onAction,
@@ -155,7 +155,7 @@ export async function runComposerSendSubmission(input: {
       ...input,
       preserveAttachments: isCompactSlashCommand(submittedDraft),
       submittedAttachments,
-      submittedDraftThreadId,
+      submittedDraftChatId,
       submittedRawDraft,
       submittedWhileStreaming: input.isStreaming,
     })
@@ -164,7 +164,7 @@ export async function runComposerSendSubmission(input: {
       ...input,
       result,
       submittedAttachments,
-      submittedDraftThreadId,
+      submittedDraftChatId,
       submittedRawDraft,
     })
   }

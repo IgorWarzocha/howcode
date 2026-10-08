@@ -10,7 +10,7 @@ function shellCleanup(history: string) {
 }
 
 const terminalIdentity = getTerminalViewportIdentity({
-  projectId: '/project',
+  directoryId: '/project',
   conversationId: null,
 })
 

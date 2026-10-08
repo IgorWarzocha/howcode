@@ -8,12 +8,12 @@ import {
 import { useCallback, useMemo, useState } from 'react'
 import { getErrorMessage } from '../../../../../src/app/desktop/error-messages'
 import type {
-  ProjectDiffFileContentIssue,
-  ProjectDiffResolvedBaseline,
-  ProjectDiffTextFile,
+  DirectoryDiffFileContentIssue,
+  DirectoryDiffResolvedBaseline,
+  DirectoryDiffTextFile,
 } from '../../../../../src/app/desktop/types'
 
-import { getProjectDiffFileContentsQuery } from '../../query'
+import { getDirectoryDiffFileContentsQuery } from '../../query'
 import { resolveDiffFilePath, resolveFileDiffPath } from './diff-panel-content.helpers'
 
 export type DiffFileContentController = {
@@ -32,7 +32,7 @@ function formatBytes(bytes: number) {
     : `${Math.ceil(bytes / 1024)} KB`
 }
 
-function describeIssue(issue: ProjectDiffFileContentIssue) {
+function describeIssue(issue: DirectoryDiffFileContentIssue) {
   const side = issue.side === 'old' ? 'baseline' : 'worktree'
   switch (issue.kind) {
     case 'invalid-path':
@@ -52,11 +52,11 @@ function describeIssue(issue: ProjectDiffFileContentIssue) {
   }
 }
 
-function toPierreFile(projectId: string, file: ProjectDiffTextFile): FileContents {
+function toPierreFile(directoryId: string, file: DirectoryDiffTextFile): FileContents {
   return {
     name: file.path,
     contents: file.contents,
-    cacheKey: `howcode:${projectId}:${file.path}:${file.revision}`,
+    cacheKey: `howcode:${directoryId}:${file.path}:${file.revision}`,
   }
 }
 
@@ -67,13 +67,13 @@ export function hydrateDiffForEditing(fileDiff: FileDiffMetadata, files: FileDif
 }
 
 export function useDiffFileContent({
-  projectId,
+  directoryId,
   resolvedBaseline,
 }: {
-  projectId: string
-  resolvedBaseline: ProjectDiffResolvedBaseline | null
+  directoryId: string
+  resolvedBaseline: DirectoryDiffResolvedBaseline | null
 }) {
-  const scopeKey = `${projectId}:${resolvedBaseline?.rev ?? ''}`
+  const scopeKey = `${directoryId}:${resolvedBaseline?.rev ?? ''}`
   const [failure, setFailure] = useState<{ scopeKey: string; message: string } | null>(null)
 
   const loadContent = useCallback(
@@ -90,8 +90,8 @@ export function useDiffFileContent({
           fileDiff.type === 'new' || fileDiff.type === 'rename-pure'
             ? null
             : resolveDiffFilePath(fileDiff.prevName ?? fileDiff.name)
-        const result = await getProjectDiffFileContentsQuery({
-          projectId,
+        const result = await getDirectoryDiffFileContentsQuery({
+          directoryId,
           baselineRevision: resolvedBaseline.rev,
           oldPath,
           newPath,
@@ -107,18 +107,18 @@ export function useDiffFileContent({
         throw new Error(message)
       }
     },
-    [projectId, resolvedBaseline, scopeKey],
+    [directoryId, resolvedBaseline, scopeKey],
   )
 
   const loadFiles = useCallback<FileDiffContentsLoader>(
     async (fileDiff): Promise<FileDiffLoadedFiles> => {
       const result = await loadContent(fileDiff)
       return {
-        oldFile: result.oldFile ? toPierreFile(projectId, result.oldFile) : null,
-        newFile: toPierreFile(projectId, result.newFile),
+        oldFile: result.oldFile ? toPierreFile(directoryId, result.oldFile) : null,
+        newFile: toPierreFile(directoryId, result.newFile),
       }
     },
-    [loadContent, projectId],
+    [loadContent, directoryId],
   )
 
   const prepareEdit = useCallback(
@@ -126,8 +126,8 @@ export function useDiffFileContent({
       if (fileDiff.type === 'deleted') throw new Error('Deleted files cannot be edited.')
       const result = await loadContent(fileDiff)
       const files = {
-        oldFile: result.oldFile ? toPierreFile(projectId, result.oldFile) : null,
-        newFile: toPierreFile(projectId, result.newFile),
+        oldFile: result.oldFile ? toPierreFile(directoryId, result.oldFile) : null,
+        newFile: toPierreFile(directoryId, result.newFile),
       }
       hydrateDiffForEditing(fileDiff, files)
       const baselineFile =
@@ -146,7 +146,7 @@ export function useDiffFileContent({
         revision: result.newFile.revision,
       }
     },
-    [loadContent, projectId],
+    [loadContent, directoryId],
   )
 
   const controller = useMemo(

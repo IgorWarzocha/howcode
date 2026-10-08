@@ -5,24 +5,25 @@ import type {
   ComposerFilePickerState,
   ComposerStreamingBehavior,
   DesktopActionInvoker,
-  ProjectDiffBaseline,
-  ProjectGitState,
+  DirectoryDiffBaseline,
+  DirectoryGitState,
 } from '../desktop/types'
 import type { Message, View } from '../types'
 import type { ComposerRuntimeModel } from './composer-runtime-model'
 
 export type ComposerProps = {
   activeView: View
+  composerProfile?: 'general' | 'coding'
   runtime: ComposerRuntimeModel
   messages?: Message[] | undefined
   isStreaming: boolean
   replyActivityKey: string
   streamingBehaviorPreference: ComposerStreamingBehavior
-  projectId: string
-  chatGroupId?: string | null
-  projectGitState: ProjectGitState | null
+  directoryId: string
+  workspaceId?: string | null
+  directoryGitState: DirectoryGitState | null
   parentBranchName?: string | null | undefined
-  diffBaseline: ProjectDiffBaseline
+  diffBaseline: DirectoryDiffBaseline
   conversationId: string | null
   dictationModelId: string | null
   dictationMaxDurationSeconds: number
@@ -32,7 +33,7 @@ export type ComposerProps = {
   hoverToBlur: boolean
   composerSendMode: ComposerSendMode
   keybindings: KeybindingOverrides
-  onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
+  onSetDiffBaseline: (baseline: DirectoryDiffBaseline) => void
   onOpenGitOpsView: () => void
   onOpenSettingsView: (target?: SettingsOpenTarget) => void
   onToggleTerminal: () => void
@@ -45,7 +46,7 @@ export type ComposerProps = {
   preferPortalModelPopover?: boolean
   workspaceFooterRef: RefObject<HTMLElement | null>
   onListAttachmentEntries: (request: {
-    projectId?: string | null
+    directoryId?: string | null
     path?: string | null
     rootPath?: string | null
   }) => Promise<ComposerFilePickerState | null>

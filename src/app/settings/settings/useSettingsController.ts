@@ -1,16 +1,16 @@
 import { useSettingsDictationController } from '@howcode/components/dictation/ui'
 import type { AppSettings, DesktopActionInvoker } from '../../desktop/types'
 import { buildModelSelectionPayload } from './helpers'
+import { useSettingsDirectoryController } from './useSettingsDirectoryController'
 import { useSettingsMaintenanceController } from './useSettingsMaintenanceController'
-import { useSettingsProjectController } from './useSettingsProjectController'
 
 export function useSettingsController(input: {
   appSettings: AppSettings
   resolvedPiDirectory?: string | null | undefined
   onAction: DesktopActionInvoker
 }) {
-  const projects = {
-    ...useSettingsProjectController(input),
+  const directories = {
+    ...useSettingsDirectoryController(input),
     ...useSettingsMaintenanceController(input),
   }
   const dictation = useSettingsDictationController(input)
@@ -46,6 +46,6 @@ export function useSettingsController(input: {
       selectCodeModel: (id: string) => selectModel('codeModel', id),
       selectGitCommitModel: (id: string) => selectModel('gitCommitMessageModel', id),
     },
-    projects,
+    directories,
   }
 }

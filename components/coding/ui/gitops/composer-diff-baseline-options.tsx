@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react'
-import type { ProjectCommitEntry } from '../../../../src/app/desktop/types'
+import type { DirectoryCommitEntry } from '../../../../src/app/desktop/types'
 import {
   appToneMutedClass,
   appToneTextClass,
@@ -15,7 +15,7 @@ export function CommitOption({
   selected,
   onSelect,
 }: {
-  commit: ProjectCommitEntry
+  commit: DirectoryCommitEntry
   selected: boolean
   onSelect: () => void
 }) {

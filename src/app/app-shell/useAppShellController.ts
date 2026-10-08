@@ -1,5 +1,5 @@
-import { useProjectRepoOriginRefresh } from '@howcode/components/coding/ui'
-import { useSkillsProjectScopeSync } from '@howcode/components/skills/ui'
+import { useDirectoryRepoOriginRefresh } from '@howcode/components/coding/ui'
+import { useSkillsDirectoryScopeSync } from '@howcode/components/skills/ui'
 import { useRunningTerminalSessions } from '@howcode/components/terminal/ui'
 import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
 import { useQueryClient } from '@tanstack/react-query'
@@ -9,50 +9,51 @@ import { useDesktopInbox } from '../hooks/useDesktopInbox'
 import { useDesktopShell } from '../hooks/useDesktopShell'
 import { useToast } from '../hooks/useToast'
 import { deriveControllerViewModel } from './controller-view-model'
-import { useAppShellChatSidebar } from './useAppShellChatSidebar'
 import { useAppShellCommands } from './useAppShellCommands'
 import { useAppShellEffects } from './useAppShellEffects'
 import { useAppShellStateBundle } from './useAppShellStateBundle'
 import { useAppShellUrlSync } from './useAppShellUrlSync'
 import { useDesktopActionHandlers } from './useDesktopActionHandlers'
 import { useInboxAutoReadSync } from './useInboxAutoReadSync'
-import { useSelectedThreadData } from './useSelectedThreadData'
+import { useSelectedChatData } from './useSelectedChatData'
+import { useAppShellWorkspaceNavigation } from './useWorkspaceNavigation'
 
 const EMPTY_LIST: [] = []
 
 export function useAppShellController() {
   const queryClient = useQueryClient()
   const bundle = useAppShellStateBundle()
-  const chatSidebar = useAppShellChatSidebar()
+  const workspaceNavigation = useAppShellWorkspaceNavigation({
+    dispatch: bundle.workspace.dispatch,
+    selectedWorkspaceId: bundle.workspace.state.selectedWorkspaceId,
+  })
   const { toast, showToast } = useToast()
   const desktopShell = useDesktopShell()
   const invokeDesktopAction = useDesktopBridge()
-  const projects = desktopShell.shellState?.projects ?? EMPTY_LIST
+  const directories = desktopShell.shellState?.directories ?? EMPTY_LIST
   useAppShellUrlSync({
     toolkitSettings: desktopShell.shellState?.appSettings,
     dispatch: bundle.workspace.dispatch,
-    loadProjectThreads: desktopShell.loadProjectThreads,
-    projects,
-    shellLoading: desktopShell.shellLoading,
+    directories,
+    navigation: workspaceNavigation.workspaceNavigationState,
+    loading: desktopShell.shellLoading || workspaceNavigation.workspaceNavigationLoading,
     state: bundle.workspace.state,
-    selectedWorkspaceId: chatSidebar.selectedChatGroupId,
-    onSelectWorkspace: chatSidebar.setSelectedChatGroupId,
   })
-  const selectedThread = useSelectedThreadData({
-    liveThreadData: bundle.thread.liveThreadData,
+  const selectedChat = useSelectedChatData({
+    liveChatData: bundle.chat.liveChatData,
     selectedConversationId: bundle.workspace.state.selectedConversationId,
-    threadHistoryCompactions: bundle.thread.historyCompactions,
-    threadQueryDeferred: bundle.thread.queryDeferred,
-    threadRefreshKey: bundle.thread.refreshKey,
+    chatHistoryCompactions: bundle.chat.historyCompactions,
+    chatQueryDeferred: bundle.chat.queryDeferred,
+    chatRefreshKey: bundle.chat.refreshKey,
   })
   const inboxQuery = useDesktopInbox()
-  const inboxThreads = inboxQuery.data ?? EMPTY_LIST
-  const selectedInboxThread = useMemo(
+  const inboxChats = inboxQuery.data ?? EMPTY_LIST
+  const selectedInboxChat = useMemo(
     () =>
-      inboxThreads.find(
-        (thread) => thread.conversationId === bundle.workspace.state.selectedInboxConversationId,
+      inboxChats.find(
+        (chat) => chat.conversationId === bundle.workspace.state.selectedInboxConversationId,
       ) ?? null,
-    [inboxThreads, bundle.workspace.state.selectedInboxConversationId],
+    [inboxChats, bundle.workspace.state.selectedInboxConversationId],
   )
   const terminals = useRunningTerminalSessions(
     desktopShell.shellState !== null &&
@@ -61,9 +62,9 @@ export function useAppShellController() {
   const viewModel = useMemo(
     () =>
       deriveControllerViewModel({
-        projects,
+        directories,
         workspaceState: bundle.workspace.state,
-        threadData: selectedThread.effectiveThreadData,
+        chatData: selectedChat.effectiveChatData,
         shellCwd: desktopShell.shellState?.cwd,
         composerState: bundle.composer.state,
         shellComposerState: desktopShell.shellState?.composer,
@@ -72,86 +73,88 @@ export function useAppShellController() {
       bundle.composer.state,
       bundle.workspace.state,
       desktopShell.shellState,
-      projects,
-      selectedThread.effectiveThreadData,
+      directories,
+      selectedChat.effectiveChatData,
     ],
   )
   useAppShellEffects({
-    projects,
-    collapsedProjectIds: viewModel.collapsedProjectIds,
+    directories,
+    collapsedDirectoryIds: viewModel.collapsedDirectoryIds,
     workspaceState: bundle.workspace.state,
-    selectedInboxThread,
-    composerProjectId: viewModel.composerProjectId,
+    selectedInboxChat,
+    composerDirectoryId: viewModel.composerDirectoryId,
     shellComposerState: desktopShell.shellState?.composer,
     shellAppSettings: desktopShell.shellState?.appSettings,
-    loadProjectThreads: desktopShell.loadProjectThreads,
-    loadArchivedThreads: desktopShell.loadArchivedThreads,
+    loadDirectoryChats: desktopShell.loadDirectoryChats,
+    loadArchivedChats: desktopShell.loadArchivedChats,
     loadComposerState: desktopShell.loadComposerState,
-    loadProjectGitState: desktopShell.loadProjectGitState,
+    loadDirectoryGitState: desktopShell.loadDirectoryGitState,
     scheduleShellStateRefresh: desktopShell.scheduleShellStateRefresh,
-    refreshChatSidebarState: chatSidebar.refreshChatSidebarState,
+    refreshWorkspaceNavigationState: workspaceNavigation.refreshWorkspaceNavigationState,
     queryClient,
     dispatch: bundle.workspace.dispatch,
-    setArchivedThreads: bundle.thread.setArchivedThreads,
+    setArchivedChats: bundle.chat.setArchivedChats,
     setComposerState: bundle.composer.setState,
-    setChatSidebarState: chatSidebar.setChatSidebarState,
-    setLiveThreadData: bundle.thread.setLiveThreadData,
-    setProjectGitState: bundle.projects.setGitState,
-    setProjectGitLoading: bundle.projects.setGitLoading,
-    setThreadHistoryCompactions: bundle.thread.setHistoryCompactions,
+    setWorkspaceNavigationState: workspaceNavigation.setWorkspaceNavigationState,
+    setLiveChatData: bundle.chat.setLiveChatData,
+    setDirectoryGitState: bundle.directories.setGitState,
+    setDirectoryGitLoading: bundle.directories.setGitLoading,
+    setChatHistoryCompactions: bundle.chat.setHistoryCompactions,
   })
   const actions = useDesktopActionHandlers({
     activeView: bundle.workspace.state.activeView,
-    composerProjectId: viewModel.composerProjectId,
+    composerDirectoryId: viewModel.composerDirectoryId,
     dispatch: bundle.workspace.dispatch,
     invokeDesktopAction,
-    loadArchivedThreads: desktopShell.loadArchivedThreads,
+    loadArchivedChats: desktopShell.loadArchivedChats,
     loadComposerState: desktopShell.loadComposerState,
-    loadProjectGitState: desktopShell.loadProjectGitState,
-    loadProjectThreads: desktopShell.loadProjectThreads,
+    loadDirectoryGitState: desktopShell.loadDirectoryGitState,
+    loadDirectoryChats: desktopShell.loadDirectoryChats,
     refreshShellState: desktopShell.refreshShellState,
     selectedConversationId: bundle.workspace.state.selectedConversationId,
     shellState: desktopShell.shellState,
-    setArchivedThreads: bundle.thread.setArchivedThreads,
-    setChatSidebarState: chatSidebar.setChatSidebarState,
+    setArchivedChats: bundle.chat.setArchivedChats,
+    setWorkspaceNavigationState: workspaceNavigation.setWorkspaceNavigationState,
     setComposerState: bundle.composer.setState,
-    setLiveThreadData: bundle.thread.setLiveThreadData,
-    setProjectGitState: bundle.projects.setGitState,
+    setLiveChatData: bundle.chat.setLiveChatData,
+    setDirectoryGitState: bundle.directories.setGitState,
     showToast,
     workspaceState: bundle.workspace.state,
   })
-  useProjectRepoOriginRefresh({
+  useDirectoryRepoOriginRefresh({
     enabled:
       desktopShell.shellState !== null &&
       isToolkitComponentEnabled(desktopShell.shellState.appSettings, 'coding'),
-    projects,
-    selectedProjectId: bundle.workspace.state.selectedProjectId,
+    directories,
+    selectedDirectoryId: bundle.workspace.state.selectedDirectoryId,
     runDesktopAction: actions.runDesktopAction,
   })
-  useSkillsProjectScopeSync({
+  useSkillsDirectoryScopeSync({
     activeView: bundle.workspace.state.activeView,
-    setSkillsProjectScopeActive: bundle.resourceScope.setSkillsActive,
-    skillsProjectScopeActive: bundle.resourceScope.skillsActive,
+    setSkillsDirectoryScopeActive: bundle.resourceScope.setSkillsActive,
+    skillsDirectoryScopeActive: bundle.resourceScope.skillsActive,
   })
   useInboxAutoReadSync({
     dispatch: bundle.workspace.dispatch,
     inboxQueryIsSuccess: inboxQuery.isSuccess,
-    inboxThreads,
+    inboxChats,
     invokeDesktopAction,
-    loadProjectThreads: desktopShell.loadProjectThreads,
+    loadDirectoryChats: desktopShell.loadDirectoryChats,
     queryClient,
     workspaceState: bundle.workspace.state,
   })
   const commands = useAppShellCommands({
+    navigation: workspaceNavigation.workspaceNavigationState,
+    directories,
     toolkitSettings: desktopShell.shellState?.appSettings,
-    collapsedProjectIds: viewModel.collapsedProjectIds,
-    composerProjectId: viewModel.composerProjectId,
+    collapsedDirectoryIds: viewModel.collapsedDirectoryIds,
+    composerDirectoryId: viewModel.composerDirectoryId,
     dispatch: bundle.workspace.dispatch,
     handleAction: actions.handleAction,
     queryClient,
     setSettingsOpenTarget: bundle.settings.setOpenTarget,
-    setThreadHistoryCompactions: bundle.thread.setHistoryCompactions,
-    setThreadQueryDeferred: bundle.thread.setQueryDeferred,
+    setChatHistoryCompactions: bundle.chat.setHistoryCompactions,
+    setChatQueryDeferred: bundle.chat.setQueryDeferred,
     workspaceState: bundle.workspace.state,
   })
 
@@ -165,44 +168,44 @@ export function useAppShellController() {
     workspace: {
       state: bundle.workspace.state,
     },
-    projects: {
-      collapsedIds: viewModel.collapsedProjectIds,
-      currentName: viewModel.currentProjectName,
-      gitLoading: bundle.projects.gitLoading,
-      gitState: bundle.projects.gitState,
-      items: projects,
-      loadThreads: desktopShell.loadProjectThreads,
-      primeSelection: commands.handleSetSelectedProject,
-      select: commands.handleProjectSelect,
-      toggleCollapse: commands.handleToggleProjectCollapse,
+    directories: {
+      collapsedIds: viewModel.collapsedDirectoryIds,
+      currentName: viewModel.currentDirectoryName,
+      gitLoading: bundle.directories.gitLoading,
+      gitState: bundle.directories.gitState,
+      items: directories,
+      loadChats: desktopShell.loadDirectoryChats,
+      primeSelection: commands.handleSetSelectedDirectory,
+      select: commands.handleDirectorySelect,
+      toggleCollapse: commands.handleToggleDirectoryCollapse,
     },
-    thread: {
-      activeData: viewModel.activeThreadData,
-      activeLoading: selectedThread.activeThreadLoading,
-      archived: bundle.thread.archivedThreads,
-      cycle: commands.handleThreadCycle,
+    chat: {
+      activeData: viewModel.activeChatData,
+      activeLoading: selectedChat.activeChatLoading,
+      archived: bundle.chat.archivedChats,
+      cycle: commands.handleChatCycle,
       loadEarlierMessages: commands.handleLoadEarlierMessages,
-      open: commands.handleThreadOpen,
+      open: commands.handleChatOpen,
     },
     composer: {
       listAttachmentEntries: desktopShell.listComposerAttachmentEntries,
-      projectId: viewModel.composerProjectId,
+      directoryId: viewModel.composerDirectoryId,
       state: viewModel.activeComposerState,
     },
     inbox: {
-      dismiss: commands.handleDismissInboxThread,
+      dismiss: commands.handleDismissInboxChat,
       loading: inboxQuery.isLoading,
-      select: commands.handleSelectInboxThread,
-      selectedThread: selectedInboxThread,
-      threads: inboxThreads,
+      select: commands.handleSelectInboxChat,
+      selectedChat: selectedInboxChat,
+      chats: inboxChats,
     },
-    chat: {
-      createGroup: chatSidebar.handleCreateChatGroup,
-      loading: chatSidebar.chatSidebarLoading,
-      refresh: chatSidebar.refreshChatSidebarState,
-      selectGroup: chatSidebar.setSelectedChatGroupId,
-      selectedGroupId: chatSidebar.selectedChatGroupId,
-      state: chatSidebar.chatSidebarState,
+    workspaces: {
+      create: workspaceNavigation.handleCreateWorkspace,
+      loading: workspaceNavigation.workspaceNavigationLoading,
+      refresh: workspaceNavigation.refreshWorkspaceNavigationState,
+      select: workspaceNavigation.setSelectedWorkspaceId,
+      selectedWorkspaceId: workspaceNavigation.selectedWorkspaceId,
+      state: workspaceNavigation.workspaceNavigationState,
     },
     terminal: {
       closeDrawer: commands.handleCloseTerminalDrawer,

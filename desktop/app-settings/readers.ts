@@ -7,7 +7,7 @@ import {
   normalizeDictationMaxDurationSeconds,
 } from '../../shared/dictation-settings.ts'
 import { EnabledToolkitComponentsSchema } from '../../shared/toolkit-components.ts'
-import { databaseOperation } from '../thread-state-db/db.ts'
+import { databaseOperation } from '../chat-repository/db.ts'
 import {
   chatModelKey,
   chatThinkingLevelKey,
@@ -18,6 +18,9 @@ import {
   customPiDirectoryKey,
   dictationMaxDurationSecondsKey,
   dictationModelIdKey,
+  directoryDashboardEnabledKey,
+  directoryDeletionModeKey,
+  directoryImportStateKey,
   enabledToolkitComponentsKey,
   favoriteFoldersKey,
   gitCommitMessageModelKey,
@@ -30,14 +33,11 @@ import {
   hideSidebarSessionCountsKey,
   hoverToBlurKey,
   hoverToFocusKey,
-  initializeGitOnProjectCreateKey,
+  initializeGitOnDirectoryCreateKey,
   keybindingsKey,
-  preferredProjectLocationKey,
-  projectDashboardEnabledKey,
-  projectDeletionModeKey,
-  projectImportStateKey,
+  preferredDirectoryLocationKey,
   showDictationButtonKey,
-  sidebarVisibleProjectIdsKey,
+  sidebarVisibleDirectoryIdsKey,
   useAgentsSkillsPathsKey,
 } from './keys.ts'
 import {
@@ -46,6 +46,7 @@ import {
   parseComposerSendModePreference,
   parseComposerStreamingBehaviorPreference,
   parseDictationModelIdPreference,
+  parseDirectoryDeletionModePreference,
   parseFavoriteFolders,
   parseGitDiffBaselineDefaultPreference,
   parseGitDiffRenderModePreference,
@@ -53,7 +54,6 @@ import {
   parseKeybindingOverrides,
   parseModelSelection,
   parseNumberPreference,
-  parseProjectDeletionModePreference,
   parseStringPreference,
   parseThinkingLevelPreference,
 } from './parsers.ts'
@@ -84,23 +84,23 @@ function loadKeybindingSettings(value: (key: string) => string | undefined) {
   }
 }
 
-const loadSidebarVisibleProjectIdsOperation = Effect.fn('AppSettings.loadSidebarVisibleProjectIds')(
-  function* () {
-    const rows = yield* loadPreferenceRows()
-    const valueJson = rows.get(sidebarVisibleProjectIdsKey)?.valueJson
-    return valueJson === undefined ? null : parseFavoriteFolders(valueJson)
-  },
+const loadSidebarVisibleDirectoryIdsOperation = Effect.fn(
+  'AppSettings.loadSidebarVisibleDirectoryIds',
+)(function* () {
+  const rows = yield* loadPreferenceRows()
+  const valueJson = rows.get(sidebarVisibleDirectoryIdsKey)?.valueJson
+  return valueJson === undefined ? null : parseFavoriteFolders(valueJson)
+})
+
+export const loadSidebarVisibleDirectoryIds: () => string[] | null = databaseOperation(
+  loadSidebarVisibleDirectoryIdsOperation,
 )
 
-export const loadSidebarVisibleProjectIds: () => string[] | null = databaseOperation(
-  loadSidebarVisibleProjectIdsOperation,
-)
-
-function loadProjectUiSettings(value: (key: string) => string | undefined) {
+function loadDirectoryUiSettings(value: (key: string) => string | undefined) {
   return {
-    initializeGitOnProjectCreate:
-      parseBooleanPreference(value(initializeGitOnProjectCreateKey)) ?? false,
-    projectDashboardEnabled: parseBooleanPreference(value(projectDashboardEnabledKey)) ?? true,
+    initializeGitOnDirectoryCreate:
+      parseBooleanPreference(value(initializeGitOnDirectoryCreateKey)) ?? false,
+    directoryDashboardEnabled: parseBooleanPreference(value(directoryDashboardEnabledKey)) ?? true,
     hideSidebarSessionCounts: parseBooleanPreference(value(hideSidebarSessionCountsKey)) ?? false,
   }
 }
@@ -132,10 +132,10 @@ const loadAppSettingsOperation = Effect.fn('AppSettings.load')(function* () {
     ),
     showDictationButton: parseBooleanPreference(value(showDictationButtonKey)) ?? true,
     favoriteFolders: parseFavoriteFolders(value(favoriteFoldersKey)),
-    projectImportState: parseBooleanPreference(value(projectImportStateKey)),
-    preferredProjectLocation: parseStringPreference(value(preferredProjectLocationKey)),
+    directoryImportState: parseBooleanPreference(value(directoryImportStateKey)),
+    preferredDirectoryLocation: parseStringPreference(value(preferredDirectoryLocationKey)),
     customPiDirectory: parseStringPreference(value(customPiDirectoryKey)),
-    ...loadProjectUiSettings(value),
+    ...loadDirectoryUiSettings(value),
     gitOpsDefaultMode: parseGitOpsModePreference(value(gitOpsDefaultModeKey)) ?? 'commit',
     gitDiffBaselineDefault: parseGitDiffBaselineDefaultPreference(
       value(gitDiffBaselineDefaultKey),
@@ -146,8 +146,8 @@ const loadAppSettingsOperation = Effect.fn('AppSettings.load')(function* () {
       parseBooleanPreference(value(gitDiffFileTreeDefaultVisibleKey)) ?? true,
     gitDiffIncludeUntrackedDefault:
       parseBooleanPreference(value(gitDiffIncludeUntrackedDefaultKey)) ?? false,
-    projectDeletionMode:
-      parseProjectDeletionModePreference(value(projectDeletionModeKey)) ?? 'pi-only',
+    directoryDeletionMode:
+      parseDirectoryDeletionModePreference(value(directoryDeletionModeKey)) ?? 'pi-only',
     useAgentsSkillsPaths: parseBooleanPreference(value(useAgentsSkillsPathsKey)) ?? false,
     hoverToFocus: parseBooleanPreference(value(hoverToFocusKey)) ?? true,
     hoverToBlur: parseBooleanPreference(value(hoverToBlurKey)) ?? false,

@@ -11,10 +11,10 @@ export function useDesktopShell() {
     shellLoading: shellStateQuery.isLoading,
     refreshShellState,
     scheduleShellStateRefresh,
-    loadProjectThreads: shellQueries.loadProjectThreads,
-    loadArchivedThreads: shellQueries.loadArchivedThreads,
+    loadDirectoryChats: shellQueries.loadDirectoryChats,
+    loadArchivedChats: shellQueries.loadArchivedChats,
     loadComposerState: shellQueries.loadComposerState,
     listComposerAttachmentEntries: shellQueries.listComposerAttachmentEntries,
-    loadProjectGitState: shellQueries.loadProjectGitState,
+    loadDirectoryGitState: shellQueries.loadDirectoryGitState,
   }
 }

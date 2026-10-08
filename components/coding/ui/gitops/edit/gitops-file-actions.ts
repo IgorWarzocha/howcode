@@ -1,8 +1,8 @@
 import type {
-  ProjectFileWriteRequest,
-  ProjectFileWriteResult,
+  DirectoryFileWriteRequest,
+  DirectoryFileWriteResult,
 } from '../../../../../src/app/desktop/types'
 
 export type GitOpsFileActions = {
-  write: (request: ProjectFileWriteRequest) => Promise<ProjectFileWriteResult>
+  write: (request: DirectoryFileWriteRequest) => Promise<DirectoryFileWriteResult>
 }

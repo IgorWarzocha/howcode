@@ -8,15 +8,15 @@ import { handleChatDesktopAction } from './chat-actions.ts'
 import { handleComposerDesktopAction } from './composer-actions.ts'
 import { handlePiSettingsDesktopAction } from './pi-settings-actions.ts'
 import { handleSettingsDesktopAction } from './settings-actions.ts'
-import { handleThreadDesktopAction } from './thread-actions.ts'
+import { handleWorkspaceDesktopAction } from './workspace-actions.ts'
 
 export async function handleDesktopAction(
   action: DesktopAction,
   payload: AnyDesktopActionPayload,
 ): Promise<DesktopActionResultData | null | undefined> {
   const handlers = [
+    handleWorkspaceDesktopAction,
     handleChatDesktopAction,
-    handleThreadDesktopAction,
     handleComposerDesktopAction,
     handleSettingsDesktopAction,
     handlePiSettingsDesktopAction,

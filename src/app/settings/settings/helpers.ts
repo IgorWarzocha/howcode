@@ -50,13 +50,17 @@ export function buildModelSelectionPayload(
   }
 }
 
-export function getProjectImportSummaryMessage(result: DesktopActionResult | null) {
-  const checkedProjectCount =
-    typeof result?.result?.checkedProjectCount === 'number' ? result.result.checkedProjectCount : 0
-  const originProjectCount =
-    typeof result?.result?.originProjectCount === 'number' ? result.result.originProjectCount : 0
+export function getDirectoryImportSummaryMessage(result: DesktopActionResult | null) {
+  const checkedDirectoryCount =
+    typeof result?.result?.checkedDirectoryCount === 'number'
+      ? result.result.checkedDirectoryCount
+      : 0
+  const originDirectoryCount =
+    typeof result?.result?.originDirectoryCount === 'number'
+      ? result.result.originDirectoryCount
+      : 0
 
-  return checkedProjectCount > 0
-    ? `Scanned ${checkedProjectCount} · Found ${originProjectCount} origins`
+  return checkedDirectoryCount > 0
+    ? `Scanned ${checkedDirectoryCount} · Found ${originDirectoryCount} origins`
     : 'Nothing to scan'
 }

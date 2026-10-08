@@ -23,15 +23,15 @@ export function getFolderLabel(folderPath: string) {
 export function buildFilePickerRootOptions({
   favoriteFolders,
   picker,
-  projectRootPath,
+  directoryRootPath,
 }: {
   favoriteFolders: string[]
   picker: ComposerFilePickerState | null
-  projectRootPath: string
+  directoryRootPath: string
 }) {
   return [
     ...(picker?.homePath ? [{ path: picker.homePath, label: 'Home', iconOnly: true }] : []),
-    { path: projectRootPath, label: 'Workspace', iconOnly: false },
+    { path: directoryRootPath, label: 'Workspace', iconOnly: false },
     ...favoriteFolders.map((folderPath) => ({
       path: folderPath,
       label: getFolderLabel(folderPath),

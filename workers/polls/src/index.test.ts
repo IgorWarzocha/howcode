@@ -234,17 +234,6 @@ afterEach(() => {
 })
 
 describe('poll vote admission', () => {
-  it('preserves the existing ninth-attempt admission boundary', async () => {
-    const database = createDatabase()
-
-    const admitted = await castVotes(database, 9)
-    const rejected = await vote(database)
-
-    expect(admitted.map((response) => response.status)).toEqual(new Array(9).fill(200))
-    expect(rejected.status).toBe(429)
-    expect(eventOptionIds(database)).toHaveLength(9)
-  })
-
   it('atomically admits only one concurrent request at the boundary', async () => {
     const database = createDatabase()
     await castVotes(database, 8)

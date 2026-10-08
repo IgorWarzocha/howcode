@@ -17,13 +17,13 @@ export function searchComposerAttachmentEntries(input: Parameters<typeof searchA
 }
 
 export async function listComposerAttachmentEntries(request: {
-  projectId?: string | null | undefined
+  directoryId?: string | null | undefined
   path?: string | null | undefined
   rootPath?: string | null | undefined
 }): Promise<ComposerFilePickerState> {
   const homePath = os.homedir()
   const rootPath = await realpath(
-    path.resolve(request.rootPath ?? request.projectId ?? getDesktopWorkingDirectory()),
+    path.resolve(request.rootPath ?? request.directoryId ?? getDesktopWorkingDirectory()),
   )
   const requestedPath = await realpath(path.resolve(request.path ?? rootPath)).catch(() => rootPath)
   const currentPath = isPathWithinRoot(requestedPath, rootPath) ? requestedPath : rootPath

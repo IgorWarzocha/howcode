@@ -15,7 +15,7 @@ import { skillsListClass, skillsPreviewListClass } from '../../../../../src/app/
 import { cn } from '../../../../../src/app/utils/cn'
 
 type InstalledSkillsSectionProps = {
-  installScope: 'global' | 'project' | 'chat'
+  installScope: 'global' | 'directory' | 'chat'
   expanded: boolean
   skills: PiConfiguredSkill[]
   isPendingRemove: (installedPath: string) => boolean

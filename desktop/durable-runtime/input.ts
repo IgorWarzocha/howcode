@@ -67,7 +67,7 @@ export async function prepareRuntimeInput(
 ) {
   const agent = await conversation.agent(runtimeContext)
   const resourceRequest = getConversationResourceRequest(agent)
-  const preferences = await loadPiSettings(resourceRequest.projectId)
+  const preferences = await loadPiSettings(resourceRequest.directoryId)
   if (
     preferences.blockImages &&
     request.attachments?.some((attachment) => attachment.kind === 'image')

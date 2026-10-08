@@ -9,31 +9,31 @@ import { useInboxComposerMentionDismiss } from './useInboxComposerMentionDismiss
 import type { InboxComposerOverlayState } from './useInboxComposerOverlayState'
 
 export function useInboxComposerAutocomplete(
-  props: Pick<InboxComposerProps, 'onOpenSettingsView' | 'onStartNewSession' | 'reply' | 'thread'>,
+  props: Pick<InboxComposerProps, 'onOpenSettingsView' | 'onStartNewSession' | 'reply' | 'chat'>,
   input: Pick<InboxComposerInput, 'attachPickerAttachments' | 'setDraftValue'>,
-  actions: Pick<InboxComposerActions, 'composerMode' | 'send'>,
+  actions: Pick<InboxComposerActions, 'composerProfile' | 'send'>,
   overlay: InboxComposerOverlayState,
 ) {
   const slashCommands = useComposerSlashCommands({
     draft: props.reply.draft,
-    projectId: props.thread.projectId,
-    conversationId: props.thread.conversationId,
+    directoryId: props.chat.directoryId,
+    conversationId: props.chat.conversationId,
     setDraft: input.setDraftValue,
     send: () => void actions.send(),
-    composerMode: actions.composerMode,
+    composerProfile: actions.composerProfile,
     onOpenSettingsView: props.onOpenSettingsView,
     onStartNewSession: props.onStartNewSession,
   })
   const skillMentions = useComposerSkillMentions({
     draft: props.reply.draft,
-    projectId: props.thread.projectId,
-    conversationId: props.thread.conversationId,
-    composerMode: actions.composerMode,
+    directoryId: props.chat.directoryId,
+    conversationId: props.chat.conversationId,
+    composerProfile: actions.composerProfile,
     setDraft: input.setDraftValue,
   })
   const fileMentions = useComposerFileMentions({
     draft: props.reply.draft,
-    projectId: props.thread.projectId,
+    directoryId: props.chat.directoryId,
     setDraft: input.setDraftValue,
     attachAttachments: input.attachPickerAttachments,
   })

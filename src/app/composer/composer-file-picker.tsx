@@ -41,7 +41,7 @@ type ComposerFilePickerProps = {
   embedded?: boolean
   embeddedTopRounded?: boolean | undefined
   preferPortalPlacement?: boolean
-  projectRootPath: string
+  directoryRootPath: string
   onAttachAttachments: (
     attachments: ComposerAttachment[],
     options?: { closeMenu?: boolean } | undefined,
@@ -63,7 +63,7 @@ export function ComposerFilePicker({
   embedded = false,
   embeddedTopRounded = true,
   preferPortalPlacement = false,
-  projectRootPath,
+  directoryRootPath,
   onAttachAttachments,
   onOpenRoot,
   onOpenDirectory,
@@ -109,8 +109,8 @@ export function ComposerFilePicker({
     [attachments],
   )
   const rootOptions = useMemo(
-    () => buildFilePickerRootOptions({ favoriteFolders, picker, projectRootPath }),
-    [favoriteFolders, picker, projectRootPath],
+    () => buildFilePickerRootOptions({ favoriteFolders, picker, directoryRootPath }),
+    [favoriteFolders, picker, directoryRootPath],
   )
   const filteredEntries = useMemo(
     () => filterFilePickerEntries(picker?.entries ?? [], searchQuery),
@@ -198,7 +198,7 @@ export function ComposerFilePicker({
       ) : null}
       <ComposerFilePickerHeader
         picker={picker}
-        projectRootPath={projectRootPath}
+        directoryRootPath={directoryRootPath}
         rootOptions={rootOptions}
         searchExpanded={searchExpanded}
         searchInputRef={searchInputRef}

@@ -1,0 +1,4 @@
+- Chat owns timeline layout, folded rows, message grouping, find-in-chat, and tool-call ledger presentation.
+- Preserve message/tool semantics when changing presentation; reusable non-timeline rendering belongs in `@howcode/common`.
+- General and coding profiles share `ChatView`; do not fork transcript loading or empty-state policy.
+- Find navigation reveals rows through `useTimelineRowReveal`; do not add parallel DOM scroll implementations.

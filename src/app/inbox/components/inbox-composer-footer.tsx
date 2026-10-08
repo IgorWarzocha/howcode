@@ -42,7 +42,7 @@ type InboxComposerFooterProps = {
   conversationId: string | null
   onCompact: () => void
   onDismiss: () => void
-  onOpenThread: () => void
+  onOpenChat: () => void
   onSelectModel: (model: ComposerModel) => void
   onSelectThinkingLevel: (level: ComposerThinkingLevel) => void
   onToggleModelMenu: () => void
@@ -63,7 +63,7 @@ export function InboxComposerFooter({
   conversationId,
   onCompact,
   onDismiss,
-  onOpenThread,
+  onOpenChat,
   onSelectModel,
   onSelectThinkingLevel,
   onToggleModelMenu,
@@ -113,7 +113,7 @@ export function InboxComposerFooter({
             tooltip={null}
             label="Open chat"
             icon={<ArrowUpRight size={14} />}
-            onClick={onOpenThread}
+            onClick={onOpenChat}
           />
         </Tooltip>
       </div>

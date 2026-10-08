@@ -11,7 +11,7 @@ type UseComposerAttachmentPickerProps = {
   setErrorMessage: Dispatch<SetStateAction<string | null>>
   setOpenMenu: Dispatch<SetStateAction<'model' | 'picker' | null>>
   onListAttachmentEntries: (request: {
-    projectId?: string | null
+    directoryId?: string | null
     path?: string | null
     rootPath?: string | null
   }) => Promise<ComposerFilePickerState | null>
@@ -40,7 +40,7 @@ export function useComposerAttachmentPicker({
   const fetchPickerEntries = useCallback(
     async (path?: string | null | undefined, rootPath?: string | null) => {
       return await onListAttachmentEntries({
-        projectId: pickerRootPath,
+        directoryId: pickerRootPath,
         path: path ?? null,
         rootPath: rootPath ?? pickerState?.rootPath ?? pickerRootPath ?? null,
       })

@@ -11,7 +11,7 @@ import type { ComposerFilePickerRootOption } from './composer-file-picker-utils'
 
 type ComposerFilePickerHeaderProps = {
   picker: ComposerFilePickerState | null
-  projectRootPath: string
+  directoryRootPath: string
   rootOptions: ComposerFilePickerRootOption[]
   searchExpanded: boolean
   searchInputRef: RefObject<HTMLInputElement | null>
@@ -24,7 +24,7 @@ type ComposerFilePickerHeaderProps = {
 
 export function ComposerFilePickerHeader({
   picker,
-  projectRootPath,
+  directoryRootPath,
   rootOptions,
   searchExpanded,
   searchInputRef,
@@ -41,7 +41,7 @@ export function ComposerFilePickerHeader({
           <button
             type="button"
             className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
-            onClick={() => onOpenDirectory(picker.parentPath ?? projectRootPath)}
+            onClick={() => onOpenDirectory(picker.parentPath ?? directoryRootPath)}
             aria-label="Go up"
             data-tooltip="Go up"
           >

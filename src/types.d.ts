@@ -3,10 +3,12 @@ import type { DesktopRequestMap } from '../shared/desktop-ipc'
 import type { DesktopAction } from './app/desktop/actions'
 import type {
   AnyDesktopActionPayload,
-  ArchivedThread,
+  ArchivedChat,
   Artifact,
   ArtifactVersion,
-  ChatSidebarState,
+  Chat,
+  ChatData,
+  ChatSearchResult,
   ComposerAttachment,
   ComposerFilePickerState,
   ComposerFileSearchEntry,
@@ -22,21 +24,21 @@ import type {
   DictationState,
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
-  InboxThread,
+  DirectoryCommitEntry,
+  DirectoryDiffBaseline,
+  DirectoryDiffFileContentsRequest,
+  DirectoryDiffFileContentsResult,
+  DirectoryDiffImagePreview,
+  DirectoryDiffImageSide,
+  DirectoryDiffResolvedBaseline,
+  DirectoryDiffStatsResult,
+  DirectoryDiffStreamStartResult,
+  DirectoryGitState,
+  DirectoryUsageSummary,
+  InboxChat,
   PiConfiguredSkill,
   PiSkillCatalogPage,
   PiSkillMutationResult,
-  ProjectCommitEntry,
-  ProjectDiffBaseline,
-  ProjectDiffFileContentsRequest,
-  ProjectDiffFileContentsResult,
-  ProjectDiffImagePreview,
-  ProjectDiffImageSide,
-  ProjectDiffResolvedBaseline,
-  ProjectDiffStatsResult,
-  ProjectDiffStreamStartResult,
-  ProjectGitState,
-  ProjectUsageSummary,
   ReactArtifactCompileResult,
   ShellState,
   TerminalCloseRequest,
@@ -45,9 +47,7 @@ import type {
   TerminalResizeRequest,
   TerminalSessionSnapshot,
   TerminalStatusSnapshot,
-  Thread,
-  ThreadData,
-  ThreadSearchResult,
+  WorkspaceNavigationState,
 } from './app/desktop/types'
 
 declare global {
@@ -60,67 +60,67 @@ declare global {
       platform?: string
       capabilities?: DesktopBridgeCapabilities
       getShellState: () => Promise<ShellState>
-      getProjectGitState?: (projectId: string) => Promise<ProjectGitState | null>
-      getProjectUsageSummary?: (projectId: string) => Promise<ProjectUsageSummary>
-      getProjectFavicon?: (projectId: string) => Promise<string | null>
-      startProjectDiffStream?: (
-        projectId: string,
-        baseline?: ProjectDiffBaseline | null,
+      getDirectoryGitState?: (directoryId: string) => Promise<DirectoryGitState | null>
+      getDirectoryUsageSummary?: (directoryId: string) => Promise<DirectoryUsageSummary>
+      getDirectoryFavicon?: (directoryId: string) => Promise<string | null>
+      startDirectoryDiffStream?: (
+        directoryId: string,
+        baseline?: DirectoryDiffBaseline | null,
         streamId?: string | null,
         includeUntracked?: boolean | null,
-      ) => Promise<ProjectDiffStreamStartResult>
-      cancelProjectDiffStream?: (streamId: string) => Promise<void>
-      getProjectDiffStats?: (
-        projectId: string,
-        baseline?: ProjectDiffBaseline | null,
+      ) => Promise<DirectoryDiffStreamStartResult>
+      cancelDirectoryDiffStream?: (streamId: string) => Promise<void>
+      getDirectoryDiffStats?: (
+        directoryId: string,
+        baseline?: DirectoryDiffBaseline | null,
         includeUntracked?: boolean | null,
-      ) => Promise<ProjectDiffStatsResult | null>
-      getProjectDiffImagePreview?: (request: {
-        projectId: string
-        baseline?: ProjectDiffBaseline | null | undefined
+      ) => Promise<DirectoryDiffStatsResult | null>
+      getDirectoryDiffImagePreview?: (request: {
+        directoryId: string
+        baseline?: DirectoryDiffBaseline | null | undefined
         path: string
-        side: ProjectDiffImageSide
-      }) => Promise<ProjectDiffImagePreview>
-      getProjectDiffFileContents?: (
-        request: ProjectDiffFileContentsRequest,
-      ) => Promise<ProjectDiffFileContentsResult>
-      captureProjectDiffBaseline?: (
-        projectId: string,
-      ) => Promise<ProjectDiffResolvedBaseline | null>
-      listProjectCommits?: (
-        projectId: string,
+        side: DirectoryDiffImageSide
+      }) => Promise<DirectoryDiffImagePreview>
+      getDirectoryDiffFileContents?: (
+        request: DirectoryDiffFileContentsRequest,
+      ) => Promise<DirectoryDiffFileContentsResult>
+      captureDirectoryDiffBaseline?: (
+        directoryId: string,
+      ) => Promise<DirectoryDiffResolvedBaseline | null>
+      listDirectoryCommits?: (
+        directoryId: string,
         limit?: number | null | undefined,
-      ) => Promise<ProjectCommitEntry[]>
+      ) => Promise<DirectoryCommitEntry[]>
       searchPiSkills?: (request?: {
         query?: string | null | undefined
         limit?: number | null | undefined
       }) => Promise<PiSkillCatalogPage>
       getConfiguredPiSkills?: (request?: {
-        projectPath?: string | null | undefined
+        directoryPath?: string | null | undefined
         chat?: boolean | undefined
       }) => Promise<PiConfiguredSkill[]>
       installPiSkill?: (request: {
         source: string
         local?: boolean | undefined
-        projectPath?: string | null | undefined
+        directoryPath?: string | null | undefined
         chat?: boolean | undefined
       }) => Promise<PiSkillMutationResult>
       removePiSkill?: (request: {
         installedPath: string
-        projectPath?: string | null | undefined
+        directoryPath?: string | null | undefined
         chat?: boolean | undefined
       }) => Promise<PiSkillMutationResult>
-      listProjectDirectoryEntries?: (
-        request?: DesktopRequestMap['listProjectDirectoryEntries']['params'],
-      ) => Promise<DesktopRequestMap['listProjectDirectoryEntries']['response']>
+      listDirectoryDirectoryEntries?: (
+        request?: DesktopRequestMap['listDirectoryDirectoryEntries']['params'],
+      ) => Promise<DesktopRequestMap['listDirectoryDirectoryEntries']['response']>
       uploadComposerFiles?: (files: File[]) => Promise<ComposerAttachment[]>
       listComposerAttachmentEntries?: (request?: {
-        projectId?: string | null | undefined
+        directoryId?: string | null | undefined
         path?: string | null | undefined
         rootPath?: string | null | undefined
       }) => Promise<ComposerFilePickerState>
       searchComposerAttachmentEntries?: (request?: {
-        projectId?: string | null | undefined
+        directoryId?: string | null | undefined
         query?: string | null | undefined
         limit?: number | null | undefined
       }) => Promise<ComposerFileSearchEntry[]>
@@ -138,12 +138,11 @@ declare global {
       transcribeDictation?: (
         request: DictationTranscriptionRequest,
       ) => Promise<DictationTranscriptionResult>
-      getProjectThreads?: (
-        projectId: string,
-        request?: { chat?: boolean | undefined },
-      ) => Promise<Thread[]>
-      getChatSidebarState?: (selectedGroupId?: string | null) => Promise<ChatSidebarState>
-      createChatGroup?: (name: string) => Promise<ChatSidebarState>
+      getDirectoryChats?: (directoryId: string) => Promise<Chat[]>
+      getWorkspaceNavigationState?: (
+        selectedWorkspaceId?: string | null,
+      ) => Promise<WorkspaceNavigationState>
+      createWorkspace?: (name: string) => Promise<WorkspaceNavigationState>
       listArtifacts?: (conversationId?: string | null) => Promise<Artifact[]>
       getArtifact?: (
         artifactSlug: string,
@@ -168,21 +167,18 @@ declare global {
       invokePackageUiRpc?: (
         request: DesktopRequestMap['invokePackageUiRpc']['params'],
       ) => Promise<DesktopRequestMap['invokePackageUiRpc']['response']>
-      getInboxThreads?: () => Promise<InboxThread[]>
-      getArchivedThreads?: () => Promise<ArchivedThread[]>
-      getThread?: (
-        conversationId: string,
-        historyCompactions?: number,
-      ) => Promise<ThreadData | null>
+      getInboxChats?: () => Promise<InboxChat[]>
+      getArchivedChats?: () => Promise<ArchivedChat[]>
+      getChat?: (conversationId: string, historyCompactions?: number) => Promise<ChatData | null>
       getConversationEntries?: (
         conversationId: string,
       ) => Promise<import('@howcode/shared/conversation-entries').ConversationEntryList | null>
-      getThreadPreviewAtEntry?: (
+      getChatPreviewAtEntry?: (
         conversationId: string,
         targetEntryId: string,
         historyCompactions?: number,
-      ) => Promise<ThreadData | null>
-      searchThread?: (conversationId: string, query: string) => Promise<ThreadSearchResult>
+      ) => Promise<ChatData | null>
+      searchChat?: (conversationId: string, query: string) => Promise<ChatSearchResult>
       watchConversation?: (conversationId: string | null) => Promise<void>
       listTerminals?: () => Promise<TerminalSessionSnapshot[]>
       openTerminal?: (request: TerminalOpenRequest) => Promise<TerminalSessionSnapshot>

@@ -4,7 +4,7 @@ import { getErrorMessage } from '../../../../src/app/desktop/error-messages'
 import type {
   AppSettings,
   DesktopActionInvoker,
-  ProjectGitState,
+  DirectoryGitState,
 } from '../../../../src/app/desktop/types'
 import {
   canCommitGitOps,
@@ -21,7 +21,7 @@ async function initializeGitRepository(input: {
   setErrorMessage: (message: string | null) => void
 }) {
   try {
-    const result = await input.onAction('workspace.commit-options')
+    const result = await input.onAction('coding.commit-options')
     input.setErrorMessage(getDesktopActionErrorMessage(result, 'Could not initialize git.'))
   } catch (error) {
     input.setErrorMessage(getErrorMessage(error, 'Could not initialize git.'))
@@ -35,7 +35,7 @@ export function useComposerGitOpsState({
   onSendDiffComments,
   appSettings,
   includeUntracked,
-  projectGitState,
+  directoryGitState,
 }: {
   diffComments: readonly SavedReviewComment[]
   diffCommentsSending: boolean
@@ -43,13 +43,13 @@ export function useComposerGitOpsState({
   onSendDiffComments: (message?: string | null) => Promise<void>
   appSettings: AppSettings
   includeUntracked: boolean
-  projectGitState: ProjectGitState | null
+  directoryGitState: DirectoryGitState | null
 }) {
   const [runningPrimaryAction, setRunningPrimaryAction] = useState(false)
   const [actionErrorMessage, setActionErrorMessage] = useState<string | null>(null)
   const [actionStatusMessage, setActionStatusMessage] = useState<string | null>(null)
-  const isGitRepo = projectGitState?.isGitRepo ?? false
-  const hasOrigin = projectGitState?.hasOrigin ?? false
+  const isGitRepo = directoryGitState?.isGitRepo ?? false
+  const hasOrigin = directoryGitState?.hasOrigin ?? false
   const hasDiffComments = diffComments.length > 0
 
   const statusSink = useMemo(
@@ -61,15 +61,15 @@ export function useComposerGitOpsState({
   )
   const options = useGitOpsOptions({
     appDefaultMode: appSettings.gitOpsDefaultMode,
-    effectiveMode: projectGitState?.gitOpsModeOverride ?? appSettings.gitOpsDefaultMode,
+    effectiveMode: directoryGitState?.gitOpsModeOverride ?? appSettings.gitOpsDefaultMode,
     hasOrigin,
     isGitRepo,
     onAction,
     status: statusSink,
   })
   const message = useGitOpsMessage({
-    isTreeClean: isGitRepo && (projectGitState?.fileCount ?? 0) === 0,
-    projectId: projectGitState?.projectId ?? null,
+    isTreeClean: isGitRepo && (directoryGitState?.fileCount ?? 0) === 0,
+    directoryId: directoryGitState?.directoryId ?? null,
     setPreviewPending: options.setPreviewPending,
     status: {
       ...statusSink,
@@ -80,12 +80,12 @@ export function useComposerGitOpsState({
   const { applyCommitOutcome, field: messageField, trimmedValue } = message
   const { includeUnstaged, previewEnabled, previewPendingCommit, pushEnabled } = options
   const canCommit = canCommitGitOps({
-    fileCount: projectGitState?.fileCount ?? 0,
+    fileCount: directoryGitState?.fileCount ?? 0,
     includeUnstaged,
     includeUntracked,
     isGitRepo,
-    stagedFileCount: projectGitState?.stagedFileCount ?? 0,
-    untrackedFileCount: projectGitState?.untrackedFileCount ?? 0,
+    stagedFileCount: directoryGitState?.stagedFileCount ?? 0,
+    untrackedFileCount: directoryGitState?.untrackedFileCount ?? 0,
   })
   const primaryActionLabel = getPrimaryGitOpsActionLabel({
     canCommit,
@@ -105,7 +105,7 @@ export function useComposerGitOpsState({
     try {
       setActionErrorMessage(null)
       setActionStatusMessage(null)
-      const result = await onAction('workspace.commit', {
+      const result = await onAction('coding.commit', {
         includeUnstaged,
         includeUntracked,
         message: trimmedValue.length > 0 ? trimmedValue : null,
@@ -161,7 +161,7 @@ export function useComposerGitOpsState({
       pushEnabled: options.pushEnabled,
       repoUrl: options.repoUrl,
       saveOrigin: options.saveOrigin,
-      saveProjectMode: options.saveProjectMode,
+      saveDirectoryMode: options.saveDirectoryMode,
       setRepoUrl: options.setRepoUrl,
       toggleIncludeUnstaged: options.toggleIncludeUnstaged,
       togglePreview: options.togglePreview,

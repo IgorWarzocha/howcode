@@ -14,7 +14,7 @@ export type AppMenuProps = {
   onOpenAbout: () => void
   onOpenSkillsView: () => void
   onOpenSettingsPanel: (target?: SettingsOpenTarget) => void
-  onOpenArchivedThreads: () => void
+  onOpenArchivedChats: () => void
   panelRef?: RefObject<HTMLDivElement | null>
 }
 
@@ -25,7 +25,7 @@ export function AppMenu({
   onOpenAbout,
   onOpenSkillsView,
   onOpenSettingsPanel,
-  onOpenArchivedThreads,
+  onOpenArchivedChats,
   panelRef,
 }: AppMenuProps) {
   const items: Array<{
@@ -45,7 +45,7 @@ export function AppMenu({
           },
         ]
       : []),
-    { icon: <Archive size={15} />, title: 'Archived chats', onClick: onOpenArchivedThreads },
+    { icon: <Archive size={15} />, title: 'Archived chats', onClick: onOpenArchivedChats },
     { icon: <Settings size={15} />, title: 'App settings', onClick: onOpenSettingsPanel },
   ]
 

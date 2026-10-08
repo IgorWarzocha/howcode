@@ -1,4 +1,4 @@
-import type { ProjectFileWriteResult } from '../../../../../src/app/desktop/types'
+import type { DirectoryFileWriteResult } from '../../../../../src/app/desktop/types'
 
 export type DiffEditingState =
   | { kind: 'idle'; error: string | null }
@@ -51,7 +51,9 @@ export function getDiffEditButtonPresentation(
   }
 }
 
-export function getFileWriteFailure(result: Exclude<ProjectFileWriteResult, { kind: 'written' }>) {
+export function getFileWriteFailure(
+  result: Exclude<DirectoryFileWriteResult, { kind: 'written' }>,
+) {
   if (result.kind === 'conflict') {
     return `Could not save ${result.path} because it changed outside Howcode.`
   }

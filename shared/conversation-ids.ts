@@ -22,17 +22,17 @@ function getLocalDraftParts(conversationId: string | null | undefined) {
     return null
   }
 
-  const [, encodedProjectId = '', query = ''] =
+  const [, encodedDirectoryId = '', query = ''] =
     conversationId.match(localConversationIdPattern) ?? []
-  if (encodedProjectId.length === 0) {
+  if (encodedDirectoryId.length === 0) {
     return null
   }
 
   try {
     const params = new URLSearchParams(query)
     return {
-      projectId: decodeURIComponent(encodedProjectId),
-      chatGroupId: params.get('chatGroupId'),
+      directoryId: decodeURIComponent(encodedDirectoryId),
+      workspaceId: params.get('workspaceId') ?? params.get('chatGroupId'),
       branchName: params.get('branchName'),
     }
   } catch {
@@ -40,35 +40,35 @@ function getLocalDraftParts(conversationId: string | null | undefined) {
   }
 }
 
-export function getLocalDraftProjectId(conversationId: string | null | undefined) {
-  return getLocalDraftParts(conversationId)?.projectId ?? null
+export function getLocalDraftDirectoryId(conversationId: string | null | undefined) {
+  return getLocalDraftParts(conversationId)?.directoryId ?? null
 }
 
-export function getLocalDraftChatGroupId(conversationId: string | null | undefined) {
-  return getLocalDraftParts(conversationId)?.chatGroupId ?? null
+export function getLocalDraftWorkspaceId(conversationId: string | null | undefined) {
+  return getLocalDraftParts(conversationId)?.workspaceId ?? null
 }
 
 export function getLocalDraftBranchName(conversationId: string | null | undefined) {
   return getLocalDraftParts(conversationId)?.branchName ?? null
 }
 
-export function createLocalThreadDraft(
-  projectId: string,
+export function createLocalChatDraft(
+  directoryId: string,
   token = buildLocalConversationToken(),
   options: {
-    chatGroupId?: string | undefined | null | undefined
+    workspaceId?: string | undefined | null | undefined
     branchName?: string | undefined | null | undefined
   } = {},
 ) {
-  const encodedProjectId = encodeURIComponent(projectId)
+  const encodedDirectoryId = encodeURIComponent(directoryId)
   const params = new URLSearchParams()
-  if (options.chatGroupId) params.set('chatGroupId', options.chatGroupId)
+  if (options.workspaceId) params.set('workspaceId', options.workspaceId)
   if (options.branchName) params.set('branchName', options.branchName)
   const suffix = params.size > 0 ? `?${params.toString()}` : ''
 
   return {
-    projectId,
-    threadId: `local-thread-${token}`,
-    conversationId: `${LOCAL_CONVERSATION_PREFIX}${encodedProjectId}/${token}${suffix}`,
+    directoryId,
+    chatId: `local-thread-${token}`,
+    conversationId: `${LOCAL_CONVERSATION_PREFIX}${encodedDirectoryId}/${token}${suffix}`,
   }
 }

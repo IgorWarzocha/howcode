@@ -1,60 +1,65 @@
 import path from 'node:path'
+import { ensureDirectory } from '../../../desktop/chat-repository.ts'
 import { emitDesktopEvent } from '../../../desktop/runtime/desktop-events.ts'
-import { ensureProject } from '../../../desktop/thread-state-db.ts'
 import {
-  enrichProjectsWithResolvedIds,
-  resolveProjectPathForComparison,
-} from './actions/project-paths.ts'
-import { importProjects } from './project-import.ts'
-import { listProjects } from './state.ts'
+  enrichDirectoriesWithResolvedIds,
+  resolveDirectoryPathForComparison,
+} from './actions/directory-paths.ts'
+import { importDirectories } from './directory-import.ts'
+import { listDirectories } from './state.ts'
 
-let startupProjectMetadataRefresh: Promise<unknown> | null = null
+let startupDirectoryMetadataRefresh: Promise<unknown> | null = null
 
 export async function disposeCodingShell() {
-  await startupProjectMetadataRefresh
-  startupProjectMetadataRefresh = null
+  await startupDirectoryMetadataRefresh
+  startupDirectoryMetadataRefresh = null
 }
 
-function getProjectNameQualifier(projectId: string) {
-  const parentName = path.basename(path.dirname(projectId))
-  return parentName || path.dirname(projectId) || projectId
+function getDirectoryNameQualifier(directoryId: string) {
+  const parentName = path.basename(path.dirname(directoryId))
+  return parentName || path.dirname(directoryId) || directoryId
 }
 
-function disambiguateDuplicateProjectNames<Project extends { id: string; name: string }>(
-  projects: Project[],
+function disambiguateDuplicateDirectoryNames<WorkingDirectory extends { id: string; name: string }>(
+  directories: WorkingDirectory[],
 ) {
-  const projectsByName = new Map<string, Project[]>()
-  for (const project of projects) {
-    const normalizedName = project.name.trim().toLowerCase()
-    projectsByName.set(normalizedName, [...(projectsByName.get(normalizedName) ?? []), project])
+  const directoriesByName = new Map<string, WorkingDirectory[]>()
+  for (const directory of directories) {
+    const normalizedName = directory.name.trim().toLowerCase()
+    directoriesByName.set(normalizedName, [
+      ...(directoriesByName.get(normalizedName) ?? []),
+      directory,
+    ])
   }
-  return projects.map((project) => {
-    const duplicates = projectsByName.get(project.name.trim().toLowerCase())
+  return directories.map((directory) => {
+    const duplicates = directoriesByName.get(directory.name.trim().toLowerCase())
     return !duplicates || duplicates.length <= 1
-      ? project
-      : { ...project, name: `${project.name} · ${getProjectNameQualifier(project.id)}` }
+      ? directory
+      : { ...directory, name: `${directory.name} · ${getDirectoryNameQualifier(directory.id)}` }
   })
 }
 
-/** Coding owns project discovery. Merely loading the chat shell must not start it. */
+/** Coding owns directory discovery. Merely loading the chat shell must not start it. */
 export async function loadCodingShell(cwd: string) {
-  ensureProject(cwd)
-  if (!startupProjectMetadataRefresh) {
-    startupProjectMetadataRefresh = importProjects([])
+  ensureDirectory(cwd)
+  if (!startupDirectoryMetadataRefresh) {
+    startupDirectoryMetadataRefresh = importDirectories([])
       .then(() => emitDesktopEvent({ type: 'shell-state-refresh' }))
       .catch((error) => {
-        startupProjectMetadataRefresh = null
+        startupDirectoryMetadataRefresh = null
         console.warn('Failed to refresh project metadata.', error)
       })
   }
-  const [resolvedCwd, projects] = await Promise.all([
-    resolveProjectPathForComparison(cwd),
-    enrichProjectsWithResolvedIds(listProjects(cwd)),
+  const [resolvedCwd, directories] = await Promise.all([
+    resolveDirectoryPathForComparison(cwd),
+    enrichDirectoriesWithResolvedIds(listDirectories(cwd)),
   ])
   return {
     resolvedCwd,
-    projects: disambiguateDuplicateProjectNames(
-      projects.filter((project) => project.id.trim().length > 0 && project.name.trim().length > 0),
+    directories: disambiguateDuplicateDirectoryNames(
+      directories.filter(
+        (directory) => directory.id.trim().length > 0 && directory.name.trim().length > 0,
+      ),
     ),
   }
 }

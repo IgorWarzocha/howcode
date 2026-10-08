@@ -1,12 +1,12 @@
 import type {
-  ProjectCommitEntry,
-  ProjectDiffBaseline,
-  ProjectDiffResolvedBaseline,
+  DirectoryCommitEntry,
+  DirectoryDiffBaseline,
+  DirectoryDiffResolvedBaseline,
 } from '../../../../src/app/desktop/types'
 
-export const defaultDiffBaseline = { kind: 'main-branch' } as const satisfies ProjectDiffBaseline
+export const defaultDiffBaseline = { kind: 'main-branch' } as const satisfies DirectoryDiffBaseline
 
-export function getDiffBaselinePrefix(baseline: ProjectDiffBaseline | null | undefined) {
+export function getDiffBaselinePrefix(baseline: DirectoryDiffBaseline | null | undefined) {
   return baseline?.kind === 'main-branch' ||
     baseline?.kind === 'dev-branch' ||
     baseline?.kind === 'branch'
@@ -15,8 +15,8 @@ export function getDiffBaselinePrefix(baseline: ProjectDiffBaseline | null | und
 }
 
 export function getDiffBaselineLabel(
-  baseline: ProjectDiffBaseline | null | undefined,
-  commits: ProjectCommitEntry[] = [],
+  baseline: DirectoryDiffBaseline | null | undefined,
+  commits: DirectoryCommitEntry[] = [],
 ) {
   if (baseline?.kind === 'previous') {
     return 'prev commit'
@@ -51,8 +51,8 @@ export function getDiffBaselineLabel(
 }
 
 export function getResolvedDiffBaselineLabel(
-  baseline: ProjectDiffBaseline | null | undefined,
-  resolvedBaseline: ProjectDiffResolvedBaseline | null | undefined,
+  baseline: DirectoryDiffBaseline | null | undefined,
+  resolvedBaseline: DirectoryDiffResolvedBaseline | null | undefined,
 ) {
   switch (baseline?.kind ?? 'head') {
     case 'previous':

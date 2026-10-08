@@ -163,8 +163,8 @@ type UseComposerDictationProps = {
   activeView: string
   dictationModelId: string | null
   dictationMaxDurationSeconds: number
-  draftThreadId: string | null
-  projectId: string
+  draftChatId: string | null
+  directoryId: string
   conversationId: string | null
   setDraftValue: Dispatch<SetStateAction<string>>
   setErrorMessage: Dispatch<SetStateAction<string | null>>
@@ -174,8 +174,8 @@ export function useComposerDictation({
   activeView,
   dictationModelId,
   dictationMaxDurationSeconds,
-  draftThreadId,
-  projectId,
+  draftChatId,
+  directoryId,
   conversationId,
   setDraftValue,
   setErrorMessage,
@@ -191,8 +191,8 @@ export function useComposerDictation({
     'started' | 'setup-required' | 'unavailable'
   > | null>(null)
   const dictationScopeKey = useMemo(
-    () => `${activeView}::${projectId}::${conversationId ?? ''}::${draftThreadId ?? ''}`,
-    [activeView, draftThreadId, projectId, conversationId],
+    () => `${activeView}::${directoryId}::${conversationId ?? ''}::${draftChatId ?? ''}`,
+    [activeView, draftChatId, directoryId, conversationId],
   )
   const activeDictationScopeKeyRef = useLatestRef(dictationScopeKey)
 

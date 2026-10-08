@@ -12,9 +12,9 @@ import type { View } from '../types'
 
 export type DraftInputContributionProps = {
   appSettings: AppSettings
-  projectId: string
+  directoryId: string
   conversationId: string | null
-  draftThreadId: string
+  draftChatId: string
   activeView: View
   inputLocked: boolean
   setDraftValue: Dispatch<SetStateAction<string>>

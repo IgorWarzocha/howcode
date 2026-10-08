@@ -1,15 +1,20 @@
-export type { ArchivedThread, Message, Project, Thread } from '@howcode/shared/desktop-contracts.js'
+export type {
+  ArchivedChat,
+  Chat,
+  Message,
+  WorkingDirectory,
+} from '@howcode/shared/desktop-contracts.js'
 
 export type View =
   | 'landing'
+  | 'workspace'
   | 'inbox'
-  | 'code'
-  | 'project'
-  | 'thread'
+  | 'directories'
+  | 'directory'
+  | 'chat'
   | 'gitops'
   | 'archived'
-  | 'sessions'
-  | 'chat'
+  | 'history'
   | 'claw'
   | 'work'
   | 'automations'

@@ -3,7 +3,6 @@ import { BACKGROUND_CONTEXT } from '@earendil-works/chord/context'
 import type { Models } from '@earendil-works/pi-ai'
 import {
   type Cursor,
-  defineDoc,
   type EntryRecord,
   Harness,
   type Storage,
@@ -16,7 +15,15 @@ import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directo
 import { getDurableModels } from '../settings/models.ts'
 import { loadPiSettings } from '../settings/preferences.ts'
 import { getDesktopUserDataPath } from '../user-data-path.ts'
+import {
+  decodeConversationOrigin,
+  encodeConversationOrigin,
+  RuntimeOriginDoc,
+} from './conversation-origin.ts'
 import { getComposerDefaults } from './defaults.ts'
+
+export { RuntimeOriginDoc } from './conversation-origin.ts'
+
 import { defaultExtensionExclusions, resolveDesktopExtensions } from './extension-composition.ts'
 import { decodeConversationId, decodeEntryId } from './identity.ts'
 import { openLiveExtensions } from './live-extensions.ts'
@@ -25,26 +32,6 @@ import { liveModels } from './live-models.ts'
 export { decodeConversationId, decodeEntryId, decodeSubmissionId } from './identity.ts'
 
 export const runtimeContext = BACKGROUND_CONTEXT
-export const RuntimeOriginDoc = defineDoc<{
-  appOwned: boolean
-  projectId: string | null
-  composerMode: 'chat' | 'code' | null
-  chatGroupId: string | null
-  branchName: string | null
-}>({
-  kind: 'howcode.origin',
-  version: 1,
-  scope: 'conversation',
-  history: 'latest',
-  fork: 'current',
-  initial: () => ({
-    appOwned: false,
-    projectId: null,
-    composerMode: null,
-    chatGroupId: null,
-    branchName: null,
-  }),
-})
 let runtime: Promise<Harness> | undefined
 let closing = false
 let runtimeStorage: Storage | undefined
@@ -151,7 +138,7 @@ export async function createRuntimeConversation(request: ComposerStateRequest = 
     {
       ownership: { kind: 'ownerless' },
       agent: {
-        cwd: request.projectId ?? getDesktopWorkingDirectory(),
+        cwd: request.directoryId ?? getDesktopWorkingDirectory(),
         ...(model ? { model } : {}),
         thinkingLevel: defaults.thinkingLevel,
         ...(request.composerExtensions === undefined
@@ -160,13 +147,16 @@ export async function createRuntimeConversation(request: ComposerStateRequest = 
       },
       init: async (tx, conversationId) => {
         const origin = await tx.doc(RuntimeOriginDoc, conversationId)
-        Object.assign(origin, {
-          appOwned: true,
-          projectId: request.projectId ?? null,
-          composerMode: request.composerMode ?? 'code',
-          chatGroupId: request.chatGroupId ?? null,
-          branchName: request.branchName ?? null,
-        })
+        Object.assign(
+          origin,
+          encodeConversationOrigin({
+            appOwned: true,
+            directoryId: request.directoryId ?? null,
+            composerProfile: request.composerProfile ?? 'coding',
+            workspaceId: request.workspaceId ?? null,
+            branchName: request.branchName ?? null,
+          }),
+        )
       },
     },
     runtimeContext,
@@ -197,11 +187,12 @@ export async function readRuntimeConversationContext(conversationId: string) {
 }
 
 export async function readRuntimeConversationOrigin(conversationId: string) {
-  return (await getDurableRuntime()).snapshot(
+  const origin = await (await getDurableRuntime()).snapshot(
     RuntimeOriginDoc,
     decodeConversationId(conversationId),
     runtimeContext,
   )
+  return origin ? decodeConversationOrigin(origin) : null
 }
 
 export async function readRuntimeEntries(conversationId: string, atEntryId?: string) {

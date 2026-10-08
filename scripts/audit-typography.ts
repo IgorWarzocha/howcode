@@ -14,7 +14,7 @@ type Pattern = {
   regex: RegExp
 }
 
-const projectRoot = process.cwd()
+const directoryRoot = process.cwd()
 
 const patterns: Pattern[] = [
   { label: 'raw text size', regex: /\btext-\[(?!color:)[^\]\s]+\]/g },
@@ -135,7 +135,7 @@ async function main() {
   const glob = new Bun.Glob('**/*.{tsx,jsx}')
   const files: string[] = []
 
-  for await (const file of glob.scan({ cwd: path.join(projectRoot, scope), onlyFiles: true })) {
+  for await (const file of glob.scan({ cwd: path.join(directoryRoot, scope), onlyFiles: true })) {
     files.push(path.join(scope, file).replaceAll(path.sep, '/'))
   }
 
@@ -145,7 +145,7 @@ async function main() {
   const results: Array<{ file: string; score: number; findings: Finding[] }> = []
 
   for (const file of selected) {
-    const fileText = await readFile(path.join(projectRoot, file), 'utf8')
+    const fileText = await readFile(path.join(directoryRoot, file), 'utf8')
     const findings = findTypography(fileText)
     if (findings.length === 0 && !showClean) continue
     results.push({ file, score: scoreFindings(findings), findings })

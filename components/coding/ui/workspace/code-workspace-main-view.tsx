@@ -1,111 +1,112 @@
+import { ChatView } from '@howcode/chat'
 import type {
   AppSettings,
+  ChatData,
   DesktopActionInvoker,
-  ProjectGitState,
-  ThreadData,
+  DirectoryGitState,
 } from '../../../../src/app/desktop/types'
-import { SessionsView } from '../../../../src/app/sessions/index'
-import { ThreadView } from '../../../../src/app/thread/index'
-import type { Project, View } from '../../../../src/app/types'
-import { LandingView, ProjectOverviewView } from '../projects/index'
+import type { View, WorkingDirectory } from '../../../../src/app/types'
+import { DirectoryChatHistoryView } from '../chat-history'
+import { DirectoryOverviewView, LandingView } from '../directories/index'
 
 type CodeWorkspaceMainViewProps = {
   activeView: View
   appSettings: AppSettings
-  currentProjectName: string
-  projects: Project[]
-  projectGitState: ProjectGitState | null
-  selectedProjectId: string
+  currentDirectoryName: string
+  directories: WorkingDirectory[]
+  directoryGitState: DirectoryGitState | null
+  selectedDirectoryId: string
   workspaceContentClass: string
-  threadData: ThreadData | null
-  threadLoading?: boolean
+  chatData: ChatData | null
+  chatLoading?: boolean
   composerLayoutVersion: number
   composerOverlayHeight: number
   onAction: DesktopActionInvoker
   onCloseUtilityView: () => void
-  onOpenThread: (projectId: string, threadId: string, conversationId: string) => void
+  onOpenChat: (directoryId: string, chatId: string, conversationId: string) => void
   onLoadEarlierMessages: () => void
-  onSelectProject: (projectId: string) => void
+  onSelectDirectory: (directoryId: string) => void
 }
 
-function CodeThreadMainView({
+function CodeChatMainView({
   composerLayoutVersion,
   composerOverlayHeight,
   onLoadEarlierMessages,
-  threadData,
-  threadLoading,
+  chatData,
+  chatLoading,
 }: Pick<
   CodeWorkspaceMainViewProps,
   | 'composerLayoutVersion'
   | 'composerOverlayHeight'
   | 'onLoadEarlierMessages'
-  | 'threadData'
-  | 'threadLoading'
+  | 'chatData'
+  | 'chatLoading'
 >) {
   return (
-    <ThreadView
-      key={threadData?.conversationId ?? 'new-thread'}
-      messages={threadData?.messages ?? []}
-      previousMessageCount={threadData?.previousMessageCount ?? 0}
-      isStreaming={threadData?.isStreaming ?? false}
-      isCompacting={threadData?.isCompacting ?? false}
+    <ChatView
+      key={chatData?.conversationId ?? 'new-thread'}
+      messages={chatData?.messages ?? []}
+      previousMessageCount={chatData?.previousMessageCount ?? 0}
+      isStreaming={chatData?.isStreaming ?? false}
+      isCompacting={chatData?.isCompacting ?? false}
       composerLayoutVersion={composerLayoutVersion}
       composerOverlayHeight={composerOverlayHeight}
-      conversationId={threadData?.conversationId ?? null}
-      loading={threadLoading ?? false}
+      conversationId={chatData?.conversationId ?? null}
+      loading={chatLoading ?? false}
       onLoadEarlierMessages={onLoadEarlierMessages}
       onLoadAroundMessage={onLoadEarlierMessages}
     />
   )
 }
 
-function CodeWorkspaceProjectOrEmptyView({
+function CodeWorkspaceDirectoryOrEmptyView({
   appSettings,
   composerOverlayHeight,
-  currentProjectName,
+  currentDirectoryName,
   onAction,
-  onOpenThread,
-  onSelectProject,
-  projects,
-  selectedProjectId,
+  onOpenChat,
+  onSelectDirectory,
+  directories,
+  selectedDirectoryId,
   workspaceContentClass,
 }: Pick<
   CodeWorkspaceMainViewProps,
   | 'appSettings'
   | 'composerOverlayHeight'
-  | 'currentProjectName'
+  | 'currentDirectoryName'
   | 'onAction'
-  | 'onOpenThread'
-  | 'onSelectProject'
-  | 'projects'
-  | 'selectedProjectId'
+  | 'onOpenChat'
+  | 'onSelectDirectory'
+  | 'directories'
+  | 'selectedDirectoryId'
   | 'workspaceContentClass'
 >) {
-  const selectedProject = projects.find((project) => project.id === selectedProjectId) ?? null
-  const showProjectDashboard = Boolean(selectedProject && appSettings.projectDashboardEnabled)
-  const showLandingPage = !selectedProject
+  const selectedDirectory =
+    directories.find((directory) => directory.id === selectedDirectoryId) ?? null
+  const showDirectoryDashboard = Boolean(selectedDirectory && appSettings.directoryDashboardEnabled)
+  const showLandingPage = !selectedDirectory
 
   return (
     <div
-      className={`relative grid h-full min-h-0 w-full justify-items-center overflow-hidden ${selectedProjectId ? 'px-0' : 'px-4'}`}
+      className={`relative grid h-full min-h-0 w-full justify-items-center overflow-hidden ${selectedDirectoryId ? 'px-0' : 'px-4'}`}
     >
       {showLandingPage ? (
         <LandingView
           appSettings={appSettings}
           className={workspaceContentClass}
-          projectName={currentProjectName}
-          projects={projects}
-          selectedProjectId=""
+          directoryName={currentDirectoryName}
+          directories={directories}
+          selectedDirectoryId=""
           composerOverlayHeight={composerOverlayHeight}
           onAction={onAction}
-          onOpenThread={onOpenThread}
-          onSelectProject={onSelectProject}
+          onOpenChat={onOpenChat}
+          onSelectDirectory={onSelectDirectory}
         />
-      ) : showProjectDashboard && selectedProject ? (
-        <ProjectOverviewView
+      ) : showDirectoryDashboard && selectedDirectory ? (
+        <DirectoryOverviewView
           composerOverlayHeight={composerOverlayHeight}
-          project={selectedProject}
-          onOpenThread={onOpenThread}
+          directory={selectedDirectory}
+          onOpenChat={onOpenChat}
           onAction={onAction}
         />
       ) : null}
@@ -116,61 +117,62 @@ function CodeWorkspaceProjectOrEmptyView({
 export function CodeWorkspaceMainView({
   activeView,
   appSettings,
-  currentProjectName,
-  projects,
-  projectGitState,
-  selectedProjectId,
+  currentDirectoryName,
+  directories,
+  directoryGitState,
+  selectedDirectoryId,
   workspaceContentClass,
-  threadData,
-  threadLoading = false,
+  chatData,
+  chatLoading = false,
   composerLayoutVersion,
   composerOverlayHeight,
   onAction,
   onCloseUtilityView,
-  onOpenThread,
+  onOpenChat,
   onLoadEarlierMessages,
-  onSelectProject,
+  onSelectDirectory,
 }: CodeWorkspaceMainViewProps) {
-  if (activeView === 'thread') {
+  if (activeView === 'chat') {
     return (
-      <CodeThreadMainView
+      <CodeChatMainView
         composerLayoutVersion={composerLayoutVersion}
         composerOverlayHeight={composerOverlayHeight}
-        threadData={threadData}
-        threadLoading={threadLoading}
+        chatData={chatData}
+        chatLoading={chatLoading}
         onLoadEarlierMessages={onLoadEarlierMessages}
       />
     )
   }
 
-  if (activeView === 'sessions') {
-    const selectedProject = projects.find((project) => project.id === selectedProjectId) ?? null
+  if (activeView === 'history') {
+    const selectedDirectory =
+      directories.find((directory) => directory.id === selectedDirectoryId) ?? null
     const currentBranch =
-      projectGitState?.projectId === selectedProjectId && projectGitState.isGitRepo
-        ? projectGitState.branch
+      directoryGitState?.directoryId === selectedDirectoryId && directoryGitState.isGitRepo
+        ? directoryGitState.branch
         : null
     return (
-      <SessionsView
+      <DirectoryChatHistoryView
         currentBranch={currentBranch}
-        project={selectedProject}
-        projects={projects}
+        directory={selectedDirectory}
+        directories={directories}
         onAction={onAction}
         onClose={onCloseUtilityView}
-        onOpenThread={onOpenThread}
+        onOpenChat={onOpenChat}
       />
     )
   }
 
   return (
-    <CodeWorkspaceProjectOrEmptyView
+    <CodeWorkspaceDirectoryOrEmptyView
       appSettings={appSettings}
       composerOverlayHeight={composerOverlayHeight}
-      currentProjectName={currentProjectName}
+      currentDirectoryName={currentDirectoryName}
       onAction={onAction}
-      onOpenThread={onOpenThread}
-      onSelectProject={onSelectProject}
-      projects={projects}
-      selectedProjectId={selectedProjectId}
+      onOpenChat={onOpenChat}
+      onSelectDirectory={onSelectDirectory}
+      directories={directories}
+      selectedDirectoryId={selectedDirectoryId}
       workspaceContentClass={workspaceContentClass}
     />
   )

@@ -2,10 +2,12 @@ import type { ConversationEntryList } from './conversation-entries'
 import type { DesktopAction } from './desktop-actions'
 import type {
   AnyDesktopActionPayload,
-  ArchivedThread,
+  ArchivedChat,
   Artifact,
   ArtifactVersion,
-  ChatSidebarState,
+  Chat,
+  ChatData,
+  ChatSearchResult,
   ComposerFilePickerState,
   ComposerFileSearchEntry,
   ComposerSkillReference,
@@ -20,26 +22,24 @@ import type {
   DictationState,
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
-  InboxThread,
+  DirectoryCommitEntry,
+  DirectoryDiffBaseline,
+  DirectoryDiffFileContentsRequest,
+  DirectoryDiffFileContentsResult,
+  DirectoryDiffImagePreview,
+  DirectoryDiffImageSide,
+  DirectoryDiffResolvedBaseline,
+  DirectoryDiffStatsResult,
+  DirectoryDiffStreamStartResult,
+  DirectoryGitState,
+  DirectoryUsageSummary,
+  InboxChat,
   PiConfiguredSkill,
   PiSkillCatalogPage,
   PiSkillMutationResult,
-  ProjectCommitEntry,
-  ProjectDiffBaseline,
-  ProjectDiffFileContentsRequest,
-  ProjectDiffFileContentsResult,
-  ProjectDiffImagePreview,
-  ProjectDiffImageSide,
-  ProjectDiffResolvedBaseline,
-  ProjectDiffStatsResult,
-  ProjectDiffStreamStartResult,
-  ProjectGitState,
-  ProjectUsageSummary,
   ReactArtifactCompileResult,
   ShellState,
-  Thread,
-  ThreadData,
-  ThreadSearchResult,
+  WorkspaceNavigationState,
 } from './desktop-contracts'
 import type {
   PackageUiDescriptor,
@@ -63,50 +63,50 @@ export type DesktopRequestMap = {
   loadPackageUi: { params: PackageUiReference; response: { js: string } }
   invokePackageUiRpc: { params: PackageUiRpcRequest; response: PackageUiJson }
   getShellState: { params: Record<string, never>; response: ShellState }
-  getProjectGitState: { params: { projectId: string }; response: ProjectGitState | null }
-  getProjectUsageSummary: { params: { projectId: string }; response: ProjectUsageSummary }
-  getProjectFavicon: { params: { projectId: string }; response: string | null }
-  startProjectDiffStream: {
+  getDirectoryGitState: { params: { directoryId: string }; response: DirectoryGitState | null }
+  getDirectoryUsageSummary: { params: { directoryId: string }; response: DirectoryUsageSummary }
+  getDirectoryFavicon: { params: { directoryId: string }; response: string | null }
+  startDirectoryDiffStream: {
     params: {
-      projectId: string
-      baseline?: ProjectDiffBaseline | null
+      directoryId: string
+      baseline?: DirectoryDiffBaseline | null
       streamId?: string | null
       includeUntracked?: boolean | null
     }
-    response: ProjectDiffStreamStartResult
+    response: DirectoryDiffStreamStartResult
   }
-  cancelProjectDiffStream: {
+  cancelDirectoryDiffStream: {
     params: { streamId: string }
     response: undefined
   }
-  getProjectDiffStats: {
+  getDirectoryDiffStats: {
     params: {
-      projectId: string
-      baseline?: ProjectDiffBaseline | null
+      directoryId: string
+      baseline?: DirectoryDiffBaseline | null
       includeUntracked?: boolean | null
     }
-    response: ProjectDiffStatsResult | null
+    response: DirectoryDiffStatsResult | null
   }
-  getProjectDiffImagePreview: {
+  getDirectoryDiffImagePreview: {
     params: {
-      projectId: string
-      baseline?: ProjectDiffBaseline | null | undefined
+      directoryId: string
+      baseline?: DirectoryDiffBaseline | null | undefined
       path: string
-      side: ProjectDiffImageSide
+      side: DirectoryDiffImageSide
     }
-    response: ProjectDiffImagePreview
+    response: DirectoryDiffImagePreview
   }
-  getProjectDiffFileContents: {
-    params: ProjectDiffFileContentsRequest
-    response: ProjectDiffFileContentsResult
+  getDirectoryDiffFileContents: {
+    params: DirectoryDiffFileContentsRequest
+    response: DirectoryDiffFileContentsResult
   }
-  captureProjectDiffBaseline: {
-    params: { projectId: string }
-    response: ProjectDiffResolvedBaseline | null
+  captureDirectoryDiffBaseline: {
+    params: { directoryId: string }
+    response: DirectoryDiffResolvedBaseline | null
   }
-  listProjectCommits: {
-    params: { projectId: string; limit?: number | undefined | null | undefined }
-    response: ProjectCommitEntry[]
+  listDirectoryCommits: {
+    params: { directoryId: string; limit?: number | undefined | null | undefined }
+    response: DirectoryCommitEntry[]
   }
   searchPiSkills: {
     params: {
@@ -116,14 +116,14 @@ export type DesktopRequestMap = {
     response: PiSkillCatalogPage
   }
   getConfiguredPiSkills: {
-    params: { projectPath?: string | undefined | null | undefined; chat?: boolean | undefined }
+    params: { directoryPath?: string | undefined | null | undefined; chat?: boolean | undefined }
     response: PiConfiguredSkill[]
   }
   installPiSkill: {
     params: {
       source: string
       local?: boolean | undefined
-      projectPath?: string | undefined | null | undefined
+      directoryPath?: string | undefined | null | undefined
       chat?: boolean | undefined
     }
     response: PiSkillMutationResult
@@ -131,12 +131,12 @@ export type DesktopRequestMap = {
   removePiSkill: {
     params: {
       installedPath: string
-      projectPath?: string | undefined | null | undefined
+      directoryPath?: string | undefined | null | undefined
       chat?: boolean | undefined
     }
     response: PiSkillMutationResult
   }
-  listProjectDirectoryEntries: {
+  listDirectoryDirectoryEntries: {
     params: { path?: string | undefined | null | undefined }
     response: {
       homePath: string
@@ -147,7 +147,7 @@ export type DesktopRequestMap = {
   }
   listComposerAttachmentEntries: {
     params: {
-      projectId?: string | undefined | null | undefined
+      directoryId?: string | undefined | null | undefined
       path?: string | undefined | null | undefined
       rootPath?: string | undefined | null | undefined
     }
@@ -155,7 +155,7 @@ export type DesktopRequestMap = {
   }
   searchComposerAttachmentEntries: {
     params: {
-      projectId?: string | undefined | null | undefined
+      directoryId?: string | undefined | null | undefined
       query?: string | undefined | null | undefined
       limit?: number | undefined | null | undefined
     }
@@ -178,15 +178,15 @@ export type DesktopRequestMap = {
     params: DictationTranscriptionRequest
     response: DictationTranscriptionResult
   }
-  getProjectThreads: {
-    params: { projectId: string; chat?: boolean | undefined } | undefined
-    response: Thread[]
+  getDirectoryChats: {
+    params: { directoryId: string } | undefined
+    response: Chat[]
   }
-  getChatSidebarState: {
-    params: { selectedGroupId?: string | undefined | null | undefined } | undefined
-    response: ChatSidebarState
+  getWorkspaceNavigationState: {
+    params: { selectedWorkspaceId?: string | undefined | null | undefined } | undefined
+    response: WorkspaceNavigationState
   }
-  createChatGroup: { params: { name: string }; response: ChatSidebarState }
+  createWorkspace: { params: { name: string }; response: WorkspaceNavigationState }
   listArtifacts: {
     params: { conversationId?: string | undefined | null | undefined } | undefined
     response: Artifact[]
@@ -213,27 +213,27 @@ export type DesktopRequestMap = {
   }
   listArtifactVersions: { params: { artifactSlug: string }; response: ArtifactVersion[] }
   compileReactArtifact: { params: { source: string }; response: ReactArtifactCompileResult }
-  getInboxThreads: { params: Record<string, never>; response: InboxThread[] }
-  getArchivedThreads: { params: Record<string, never>; response: ArchivedThread[] }
-  getThread: {
+  getInboxChats: { params: Record<string, never>; response: InboxChat[] }
+  getArchivedChats: { params: Record<string, never>; response: ArchivedChat[] }
+  getChat: {
     params: { conversationId: string; historyCompactions?: number | undefined }
-    response: ThreadData | null
+    response: ChatData | null
   }
   getConversationEntries: {
     params: { conversationId: string }
     response: ConversationEntryList | null
   }
-  getThreadPreviewAtEntry: {
+  getChatPreviewAtEntry: {
     params: {
       conversationId: string
       targetEntryId: string
       historyCompactions?: number | undefined
     }
-    response: ThreadData | null
+    response: ChatData | null
   }
-  searchThread: {
+  searchChat: {
     params: { conversationId: string; query: string }
-    response: ThreadSearchResult
+    response: ChatSearchResult
   }
   watchConversation: { params: { conversationId: string | null }; response: { ok: boolean } }
   invokeAction: {

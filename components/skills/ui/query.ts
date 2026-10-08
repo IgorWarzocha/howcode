@@ -21,7 +21,7 @@ export async function searchPiSkillsQuery(
 }
 
 export async function getConfiguredPiSkillsQuery(
-  request: { projectPath?: string | null | undefined; chat?: boolean | undefined } = {},
+  request: { directoryPath?: string | null | undefined; chat?: boolean | undefined } = {},
 ): Promise<PiConfiguredSkill[]> {
   return (await window.piDesktop?.getConfiguredPiSkills?.(request)) ?? []
 }
@@ -29,7 +29,7 @@ export async function getConfiguredPiSkillsQuery(
 export async function installPiSkillQuery(request: {
   source: string
   local?: boolean | undefined
-  projectPath?: string | null
+  directoryPath?: string | null
   chat?: boolean | undefined
 }): Promise<PiSkillMutationResult | null> {
   return (await window.piDesktop?.installPiSkill?.(request)) ?? null
@@ -37,7 +37,7 @@ export async function installPiSkillQuery(request: {
 
 export async function removePiSkillQuery(request: {
   installedPath: string
-  projectPath?: string | null
+  directoryPath?: string | null
   chat?: boolean | undefined
 }): Promise<PiSkillMutationResult | null> {
   return (await window.piDesktop?.removePiSkill?.(request)) ?? null

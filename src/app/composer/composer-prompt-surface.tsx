@@ -10,10 +10,10 @@ import { ComposerPromptOverlays } from './composer-prompt-overlays'
 import { getComposerPlaceholderText } from './composer-prompt-surface-helpers'
 import { ComposerAttachmentRail, ComposerStopRail } from './composer-side-controls'
 import { useComposerController } from './controller/useComposerController'
+import { useComposerChatOverlayHeight } from './useComposerChatOverlayHeight'
 import { useComposerGlobalCommands } from './useComposerGlobalCommands'
 import { useComposerPromptAutocomplete } from './useComposerPromptAutocomplete'
 import { useComposerEscapeEffects } from './useComposerPromptSurfaceEffects'
-import { useComposerThreadOverlayHeight } from './useComposerThreadOverlayHeight'
 import { useGlobalComposerFileDrop } from './useGlobalComposerFileDrop'
 
 type ComposerPromptSurfaceProps = ComposerProps & {
@@ -27,15 +27,16 @@ function hasComposerOverlayAbove(...visibleFlags: boolean[]) {
 
 export function ComposerPromptSurface({
   activeView,
+  composerProfile = 'coding',
   composerPanelRef,
   runtime,
   messages,
   isStreaming,
   replyActivityKey,
   streamingBehaviorPreference,
-  projectId,
-  chatGroupId,
-  projectGitState,
+  directoryId,
+  workspaceId,
+  directoryGitState,
   parentBranchName,
   diffBaseline,
   conversationId,
@@ -101,8 +102,9 @@ export function ComposerPromptSurface({
     handlePaste,
   } = useComposerController({
     activeView,
-    projectId,
-    chatGroupId,
+    composerProfile,
+    directoryId,
+    workspaceId,
     conversationId,
     dictationModelId,
     dictationMaxDurationSeconds,
@@ -114,13 +116,12 @@ export function ComposerPromptSurface({
     onListAttachmentEntries,
   })
   const dictationTranscribing = dictationInterimText.length > 0
-  const composerMode = activeView === 'chat' ? 'chat' : 'code'
   const stopButtonBoundaryRef = useRef<HTMLDivElement>(null)
   const composerOverlayStackRef = useRef<HTMLDivElement>(null)
   const attachmentsTopRounded = true
   const inputPopoversTopRounded = !pickerOpen
   const startNewSession = () => {
-    void runComposerAction('thread.new', { projectId, chatGroupId, composerMode })
+    void runComposerAction('chat.new', { directoryId, workspaceId, composerProfile })
   }
   const {
     composerPopoverStackRef,
@@ -136,12 +137,12 @@ export function ComposerPromptSurface({
     slashCommands,
   } = useComposerPromptAutocomplete({
     attachAttachments: attachPickerAttachments,
-    composerMode,
+    composerProfile,
     composerPanelRef,
     draft,
     onOpenSettingsView,
     onStartNewSession: startNewSession,
-    projectId,
+    directoryId,
     send,
     conversationId,
     setDraft,
@@ -173,14 +174,14 @@ export function ComposerPromptSurface({
   const handleFork = async (targetEntryId: string) => {
     const ok = await runComposerAction(
       'composer.conversation.fork',
-      { projectId, conversationId: conversationId, composerMode, chatGroupId, targetEntryId },
+      { directoryId, conversationId: conversationId, composerProfile, workspaceId, targetEntryId },
       { closeMenu: false },
     )
     if (ok) closeConversationFork()
     return ok
   }
   const showPromptOverlays = conversationForkOpen || slashCommands.open
-  useComposerThreadOverlayHeight({
+  useComposerChatOverlayHeight({
     overlayRef: composerOverlayStackRef,
     overlayVisible: hasComposerOverlayAbove(pickerOpen, showPromptOverlays),
     popoverStackRef: composerPopoverStackRef,
@@ -236,7 +237,7 @@ export function ComposerPromptSurface({
             loading: pickerLoading,
             picker: pickerState,
             panelRef: pickerPanelRef,
-            projectRootPath: projectId,
+            directoryRootPath: directoryId,
             onAttachAttachments: attachPickerAttachments,
             onOpenRoot: openPickerRoot,
             onOpenDirectory: openPickerDirectory,
@@ -310,6 +311,7 @@ export function ComposerPromptSurface({
           ) : null}
           <ComposerPromptFooter
             activeView={activeView}
+            composerProfile={composerProfile}
             artifactsAvailable={artifactsAvailable}
             artifactsVisible={artifactsVisible}
             compact={compact}
@@ -326,8 +328,8 @@ export function ComposerPromptSurface({
             onToggleTerminal={onToggleTerminal}
             parentBranchName={parentBranchName}
             preferPortalModelPopover={preferPortalModelPopover}
-            projectGitState={projectGitState}
-            projectId={projectId}
+            directoryGitState={directoryGitState}
+            directoryId={directoryId}
             runComposerAction={runComposerAction}
             runtime={runtime}
             conversationId={conversationId}

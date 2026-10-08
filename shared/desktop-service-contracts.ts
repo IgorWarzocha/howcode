@@ -3,10 +3,12 @@ import type { DesktopAction } from './desktop-actions'
 import type {
   AnyDesktopActionPayload,
   AppSettings,
-  ArchivedThread,
+  ArchivedChat,
   Artifact,
   ArtifactVersion,
-  ChatSidebarState,
+  Chat,
+  ChatData,
+  ChatSearchResult,
   ComposerSkillReference,
   ComposerSlashCommand,
   ComposerState,
@@ -19,26 +21,24 @@ import type {
   DictationState,
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
-  InboxThread,
+  DirectoryCommitEntry,
+  DirectoryDiffBaseline,
+  DirectoryDiffFileContentsRequest,
+  DirectoryDiffFileContentsResult,
+  DirectoryDiffImagePreview,
+  DirectoryDiffImageSide,
+  DirectoryDiffResolvedBaseline,
+  DirectoryDiffStatsResult,
+  DirectoryDiffStreamStartResult,
+  DirectoryGitState,
+  DirectoryUsageSummary,
+  InboxChat,
   PiConfiguredSkill,
   PiSkillCatalogPage,
   PiSkillMutationResult,
-  ProjectCommitEntry,
-  ProjectDiffBaseline,
-  ProjectDiffFileContentsRequest,
-  ProjectDiffFileContentsResult,
-  ProjectDiffImagePreview,
-  ProjectDiffImageSide,
-  ProjectDiffResolvedBaseline,
-  ProjectDiffStatsResult,
-  ProjectDiffStreamStartResult,
-  ProjectGitState,
-  ProjectUsageSummary,
   ReactArtifactCompileResult,
   ShellState,
-  Thread,
-  ThreadData,
-  ThreadSearchResult,
+  WorkspaceNavigationState,
 } from './desktop-contracts'
 import type { PackageUiService } from './package-ui-contracts'
 import type {
@@ -50,35 +50,37 @@ import type {
 } from './terminal-contracts'
 
 export type CodingService = {
-  loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
-  loadProjectUsageSummary: (projectId: string) => Promise<ProjectUsageSummary>
-  loadProjectFavicon: (projectId: string) => Promise<string | null>
-  startProjectDiffStream: (
-    projectId: string,
-    baseline?: ProjectDiffBaseline | null,
+  loadDirectoryGitState: (directoryId: string) => Promise<DirectoryGitState | null>
+  loadDirectoryUsageSummary: (directoryId: string) => Promise<DirectoryUsageSummary>
+  loadDirectoryFavicon: (directoryId: string) => Promise<string | null>
+  startDirectoryDiffStream: (
+    directoryId: string,
+    baseline?: DirectoryDiffBaseline | null,
     streamId?: string | null,
     includeUntracked?: boolean | null,
-  ) => Promise<ProjectDiffStreamStartResult>
-  cancelProjectDiffStream: (streamId: string) => Promise<void>
-  loadProjectDiffStats: (
-    projectId: string,
-    baseline?: ProjectDiffBaseline | null,
+  ) => Promise<DirectoryDiffStreamStartResult>
+  cancelDirectoryDiffStream: (streamId: string) => Promise<void>
+  loadDirectoryDiffStats: (
+    directoryId: string,
+    baseline?: DirectoryDiffBaseline | null,
     includeUntracked?: boolean | null,
-  ) => Promise<ProjectDiffStatsResult | null>
-  loadProjectDiffImagePreview: (request: {
-    projectId: string
-    baseline?: ProjectDiffBaseline | null | undefined
+  ) => Promise<DirectoryDiffStatsResult | null>
+  loadDirectoryDiffImagePreview: (request: {
+    directoryId: string
+    baseline?: DirectoryDiffBaseline | null | undefined
     path: string
-    side: ProjectDiffImageSide
-  }) => Promise<ProjectDiffImagePreview>
-  loadProjectDiffFileContents: (
-    request: ProjectDiffFileContentsRequest,
-  ) => Promise<ProjectDiffFileContentsResult>
-  captureProjectDiffBaseline: (projectId: string) => Promise<ProjectDiffResolvedBaseline | null>
-  listProjectCommits: (
-    projectId: string,
+    side: DirectoryDiffImageSide
+  }) => Promise<DirectoryDiffImagePreview>
+  loadDirectoryDiffFileContents: (
+    request: DirectoryDiffFileContentsRequest,
+  ) => Promise<DirectoryDiffFileContentsResult>
+  captureDirectoryDiffBaseline: (
+    directoryId: string,
+  ) => Promise<DirectoryDiffResolvedBaseline | null>
+  listDirectoryCommits: (
+    directoryId: string,
     limit?: number | null | undefined,
-  ) => Promise<ProjectCommitEntry[]>
+  ) => Promise<DirectoryCommitEntry[]>
 }
 
 export type ArtifactsService = {
@@ -121,32 +123,29 @@ export type AppService = {
     action: DesktopAction,
     payload: AnyDesktopActionPayload,
   ) => Promise<DesktopActionResultData | null | undefined>
-  loadArchivedThreadList: () => Promise<ArchivedThread[]>
-  loadInboxThreadList: () => Promise<InboxThread[]>
+  loadArchivedChatList: () => Promise<ArchivedChat[]>
+  loadInboxChatList: () => Promise<InboxChat[]>
   loadComposerState: (request: ComposerStateRequest) => Promise<ComposerState>
   loadComposerSlashCommands: (request: ComposerStateRequest) => Promise<ComposerSlashCommand[]>
   loadComposerSkills: (request: ComposerStateRequest) => Promise<ComposerSkillReference[]>
-  loadProjectThreads: (
-    projectId: string,
-    options?: { chat?: boolean | undefined },
-  ) => Promise<Thread[]>
-  loadChatSidebarState: (
-    selectedGroupId?: string | null,
-  ) => Promise<ChatSidebarState> | ChatSidebarState
-  createChatGroup: (name: string) => Promise<ChatSidebarState> | ChatSidebarState
+  loadDirectoryChats: (directoryId: string) => Promise<Chat[]>
+  loadWorkspaceNavigationState: (
+    selectedWorkspaceId?: string | null,
+  ) => Promise<WorkspaceNavigationState> | WorkspaceNavigationState
+  createWorkspace: (name: string) => Promise<WorkspaceNavigationState> | WorkspaceNavigationState
   loadShellState: (cwd: string) => Promise<ShellState>
   loadAppSettings: () => Promise<AppSettings> | AppSettings
   loadConversationEntries: (conversationId: string) => Promise<ConversationEntryList | null>
-  loadThreadPreviewAtEntry: (
+  loadChatPreviewAtEntry: (
     conversationId: string,
     targetEntryId: string,
     options?: { historyCompactions?: number },
-  ) => Promise<ThreadData | null>
-  loadThread: (
+  ) => Promise<ChatData | null>
+  loadChat: (
     conversationId: string,
     options?: { historyCompactions?: number },
-  ) => Promise<ThreadData | null>
-  searchThread: (conversationId: string, query: string) => Promise<ThreadSearchResult>
+  ) => Promise<ChatData | null>
+  searchChat: (conversationId: string, query: string) => Promise<ChatSearchResult>
   watchConversation: (conversationId: string | null) => Promise<void>
   subscribeDesktopEvents: (listener: (event: DesktopEvent) => void) => () => void
 }
@@ -167,18 +166,18 @@ export type PiSkillsService = {
     limit?: number | null | undefined
   }) => Promise<PiSkillCatalogPage>
   listConfiguredPiSkills: (request?: {
-    projectPath?: string | null | undefined
+    directoryPath?: string | null | undefined
     chat?: boolean | undefined
   }) => Promise<PiConfiguredSkill[]>
   installPiSkill: (request: {
     source: string
     local?: boolean | undefined
-    projectPath?: string | null | undefined
+    directoryPath?: string | null | undefined
     chat?: boolean | undefined
   }) => Promise<PiSkillMutationResult>
   removePiSkill: (request: {
     installedPath: string
-    projectPath?: string | null | undefined
+    directoryPath?: string | null | undefined
     chat?: boolean | undefined
   }) => Promise<PiSkillMutationResult>
 }

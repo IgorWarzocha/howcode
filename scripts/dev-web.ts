@@ -21,11 +21,11 @@ import { getSystemNodeExecutable } from '../src/desktop-host/node-discovery'
 import { getDevUserDataPath } from './dev-user-data-path'
 import { createDevWebAccess } from './dev-web-access'
 
-const projectRoot = process.cwd()
-const devRepoRoot = projectRoot
-const devServerMetadataPath = path.join(projectRoot, DEV_SERVER_METADATA_RELATIVE_PATH)
-const bridgeBuildPath = path.join(projectRoot, 'build', 'dev-web-bridge.mjs')
-const serviceHostBuildPath = path.join(projectRoot, 'build', 'desktop', 'service-host.mjs')
+const directoryRoot = process.cwd()
+const devRepoRoot = directoryRoot
+const devServerMetadataPath = path.join(directoryRoot, DEV_SERVER_METADATA_RELATIVE_PATH)
+const bridgeBuildPath = path.join(directoryRoot, 'build', 'dev-web-bridge.mjs')
+const serviceHostBuildPath = path.join(directoryRoot, 'build', 'desktop', 'service-host.mjs')
 const devServerListenHost = resolveDevServerListenHost()
 const devServerPublicHost = resolveDevServerPublicHost(devServerListenHost)
 const allowRemoteRendererHosts =
@@ -50,7 +50,7 @@ let isShuttingDown = false
 async function buildDevWebBridge() {
   await mkdir(path.dirname(bridgeBuildPath), { recursive: true })
   const result = await Bun.build({
-    entrypoints: [path.join(projectRoot, 'scripts', 'dev-web-bridge-node.ts')],
+    entrypoints: [path.join(directoryRoot, 'scripts', 'dev-web-bridge-node.ts')],
     outdir: path.dirname(bridgeBuildPath),
     naming: path.basename(bridgeBuildPath),
     target: 'node',
@@ -100,7 +100,7 @@ async function startDevWebBridge() {
   while (!existsSync(serviceHostBuildPath)) {
     if (Date.now() - serviceHostWaitStartedAt > serviceHostWaitTimeoutMs) {
       throw new Error(
-        `Timed out waiting for ${path.relative(projectRoot, serviceHostBuildPath)}. Is dev:runtime running?`,
+        `Timed out waiting for ${path.relative(directoryRoot, serviceHostBuildPath)}. Is dev:runtime running?`,
       )
     }
     await delay(150)
@@ -108,7 +108,7 @@ async function startDevWebBridge() {
 
   const nodeExecutable = await getSystemNodeExecutable()
   const child = spawn(nodeExecutable, [bridgeBuildPath], {
-    cwd: projectRoot,
+    cwd: directoryRoot,
     env: {
       ...process.env,
       HOWCODE_REPO_ROOT: devRepoRoot,
@@ -260,7 +260,7 @@ try {
   bridge = await startDevWebBridge()
 
   server = await createServer({
-    configFile: path.join(projectRoot, 'vite.config.ts'),
+    configFile: path.join(directoryRoot, 'vite.config.ts'),
     configLoader: 'runner',
     server: {
       host: devServerListenHost,

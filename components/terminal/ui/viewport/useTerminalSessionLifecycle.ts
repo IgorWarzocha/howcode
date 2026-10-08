@@ -36,7 +36,7 @@ type TerminalSessionLifecycleInput = {
   getCurrentSize: () => TerminalSize
   handleTerminalResize: (cols: number, rows: number) => void
   lastSentSizeRef: MutableRefObject<{ sessionId: string; cols: number; rows: number } | null>
-  projectId: string
+  directoryId: string
   resetTerminal: (history?: string) => void
   scheduleTerminalResizeSettlingPasses: () => void
   scheduleXtermBottomAlign: () => void
@@ -118,7 +118,7 @@ export function useTerminalSessionLifecycle(input: TerminalSessionLifecycleInput
     input.terminalHistoryRef.current = ''
     input.resetTerminal()
     const viewportIdentity = getTerminalViewportIdentity({
-      projectId: input.projectId,
+      directoryId: input.directoryId,
       conversationId: input.terminalConversationId,
     })
     const releaseReadyTerminalSessions = () => {
@@ -175,7 +175,7 @@ export function useTerminalSessionLifecycle(input: TerminalSessionLifecycleInput
         rows: Math.max(initialSize.rows, MIN_INITIAL_TERMINAL_ROWS),
       }
       const snapshot = await openDesktopTerminal({
-        projectId: input.projectId,
+        directoryId: input.directoryId,
         conversationId: input.terminalConversationId,
         cols: size.cols,
         rows: size.rows,

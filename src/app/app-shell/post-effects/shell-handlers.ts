@@ -1,12 +1,12 @@
 import {
-  setShellSidebarVisibleProjectIds,
-  updateShellProject,
-  upsertShellProject,
+  setShellSidebarVisibleDirectoryIds,
+  updateShellDirectory,
+  upsertShellDirectory,
 } from '@howcode/components/coding/ui'
 import type { ShellState } from '../../desktop/types'
 import { desktopQueryKeys } from '../../query/desktop-query'
 import type { PostEffectHandler } from './context'
-import { applyNewThreadPostEffect } from './new-thread'
+import { applyNewChatPostEffect } from './new-chat'
 
 export const shellPostEffectHandlers: PostEffectHandler[] = [
   {
@@ -16,15 +16,15 @@ export const shellPostEffectHandlers: PostEffectHandler[] = [
     },
   },
   {
-    matches: (ctx) => ctx.action === 'project.refresh-repo-origin',
+    matches: (ctx) => ctx.action === 'directory.refresh-repo-origin',
     run: (ctx) => {
-      const projectId = ctx.actionResult?.result?.projectId ?? ctx.contextualPayload.projectId
+      const directoryId = ctx.actionResult?.result?.directoryId ?? ctx.contextualPayload.directoryId
       const originUrl = ctx.actionResult?.result?.originUrl
-      if (typeof projectId !== 'string') return
-      updateShellProject(ctx.queryClient, projectId, (project) =>
-        project.repoOriginUrl === originUrl && project.repoOriginChecked === true
-          ? project
-          : { ...project, repoOriginUrl: originUrl ?? null, repoOriginChecked: true },
+      if (typeof directoryId !== 'string') return
+      updateShellDirectory(ctx.queryClient, directoryId, (directory) =>
+        directory.repoOriginUrl === originUrl && directory.repoOriginChecked === true
+          ? directory
+          : { ...directory, repoOriginUrl: originUrl ?? null, repoOriginChecked: true },
       )
     },
   },
@@ -41,56 +41,58 @@ export const shellPostEffectHandlers: PostEffectHandler[] = [
     },
   },
   {
-    matches: (ctx) => ctx.action === 'project.pin',
+    matches: (ctx) => ctx.action === 'directory.pin',
     run: (ctx) => {
-      const projectId =
-        typeof ctx.contextualPayload.projectId === 'string' ? ctx.contextualPayload.projectId : null
-      if (!projectId) return
-      updateShellProject(ctx.queryClient, projectId, (project) => ({
-        ...project,
-        pinned: !project.pinned,
+      const directoryId =
+        typeof ctx.contextualPayload.directoryId === 'string'
+          ? ctx.contextualPayload.directoryId
+          : null
+      if (!directoryId) return
+      updateShellDirectory(ctx.queryClient, directoryId, (directory) => ({
+        ...directory,
+        pinned: !directory.pinned,
       }))
     },
   },
   {
-    matches: (ctx) => ctx.action === 'thread.new' || ctx.action === 'project.add',
+    matches: (ctx) => ctx.action === 'chat.new' || ctx.action === 'directory.add',
     run: (ctx) => {
-      if (ctx.action !== 'thread.new' && ctx.action !== 'project.add') return
-      return applyNewThreadPostEffect({
+      if (ctx.action !== 'chat.new' && ctx.action !== 'directory.add') return
+      return applyNewChatPostEffect({
         action: ctx.action,
         contextualPayload: ctx.contextualPayload,
         actionResult: ctx.actionResult,
         workspaceState: ctx.workspaceState,
-        composerProjectId: ctx.composerProjectId,
+        composerDirectoryId: ctx.composerDirectoryId,
         queryClient: ctx.queryClient,
         dispatch: ctx.dispatch,
         refreshShellState: ctx.refreshShellState,
-        loadProjectThreads: ctx.loadProjectThreads,
+        loadDirectoryChats: ctx.loadDirectoryChats,
         loadComposerState: ctx.loadComposerState,
         setComposerState: ctx.setComposerState,
       })
     },
   },
   {
-    matches: (ctx) => ctx.action === 'workspace.sidebar-scope',
+    matches: (ctx) => ctx.action === 'coding.sidebar-scope',
     run: (ctx) => {
-      const projectIds = Array.isArray(ctx.contextualPayload.projectIds)
-        ? ctx.contextualPayload.projectIds.filter(
-            (projectId): projectId is string => typeof projectId === 'string',
+      const directoryIds = Array.isArray(ctx.contextualPayload.directoryIds)
+        ? ctx.contextualPayload.directoryIds.filter(
+            (directoryId): directoryId is string => typeof directoryId === 'string',
           )
         : []
-      setShellSidebarVisibleProjectIds(ctx.queryClient, projectIds)
+      setShellSidebarVisibleDirectoryIds(ctx.queryClient, directoryIds)
     },
   },
   {
-    matches: (ctx) => ctx.action === 'projects.import.apply',
+    matches: (ctx) => ctx.action === 'directories.import.apply',
     run: async (ctx) => {
-      const importedProjects = ctx.actionResult?.result?.importedProjects
-      if (!Array.isArray(importedProjects)) {
+      const importedDirectories = ctx.actionResult?.result?.importedDirectories
+      if (!Array.isArray(importedDirectories)) {
         await ctx.refreshShellState()
         return
       }
-      for (const project of importedProjects) upsertShellProject(ctx.queryClient, project)
+      for (const directory of importedDirectories) upsertShellDirectory(ctx.queryClient, directory)
     },
   },
 ]

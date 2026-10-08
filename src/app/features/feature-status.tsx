@@ -4,7 +4,7 @@ import { cn } from '../utils/cn'
 export type FeatureStatus = 'mock' | 'partial'
 
 export const featureStatusById = {
-  'feature:sidebar.project.add': { status: 'partial', label: 'Partial' },
+  'feature:sidebar.directory.add': { status: 'partial', label: 'Partial' },
   'feature:header.project-switch': { status: 'mock', label: 'Mock' },
   'feature:header.commit': { status: 'partial', label: 'Partial' },
   'feature:header.commit-options': { status: 'partial', label: 'Partial' },

@@ -1,0 +1,3 @@
+- Keep create/add-directory popovers compact; avoid adding explanatory blocks that increase popover height.
+- Prefer placeholder text, tooltip text, or existing inline error styles over new helper text rows.
+- If an add/create action may take time, show a lightweight pending directory row in the list instead of expanding the popover.

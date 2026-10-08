@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useToolkitComponentEnabled } from '../../../../src/app/component-system/component-context'
 import type {
   DesktopActionInvoker,
-  ProjectDiffBaseline,
+  DirectoryDiffBaseline,
   ShellState,
 } from '../../../../src/app/desktop/types'
 import {
@@ -20,14 +20,14 @@ function hasSavedComments(context: ReviewContext | null): context is ReviewConte
 
 export function useGitOpsReviewController({
   baseline,
-  composerProjectId,
+  composerDirectoryId,
   handleAction,
   handleOpenWorktreeDiffFile,
   includeUntracked,
   shellState,
 }: {
-  baseline: ProjectDiffBaseline | null
-  composerProjectId: string
+  baseline: DirectoryDiffBaseline | null
+  composerDirectoryId: string
   handleAction: DesktopActionInvoker
   handleOpenWorktreeDiffFile: (filePath: string) => void
   shellState: ShellState | null
@@ -41,8 +41,8 @@ export function useGitOpsReviewController({
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const contextId = useMemo(
-    () => getReviewContextId({ baseline, includeUntracked, projectId: composerProjectId }),
-    [baseline, composerProjectId, includeUntracked],
+    () => getReviewContextId({ baseline, includeUntracked, directoryId: composerDirectoryId }),
+    [baseline, composerDirectoryId, includeUntracked],
   )
 
   useEffect(() => {

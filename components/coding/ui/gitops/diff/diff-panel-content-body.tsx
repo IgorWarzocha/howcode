@@ -1,6 +1,6 @@
 import type { CodeViewHandle, FileDiffMetadata } from '@pierre/diffs/react'
 import type { RefObject } from 'react'
-import type { ProjectDiffBaseline } from '../../../../../src/app/desktop/types'
+import type { DirectoryDiffBaseline } from '../../../../../src/app/desktop/types'
 import {
   appToneMutedClass,
   appTypeCodeClass,
@@ -20,9 +20,9 @@ import { DiffPanelFileList } from './diff-panel-file-list'
 import type { DiffFileContentController } from './use-diff-file-content'
 
 type DiffPanelContentBodyProps = {
-  projectId: string
+  directoryId: string
   diff: {
-    baseline: ProjectDiffBaseline | null
+    baseline: DirectoryDiffBaseline | null
     error: string | null
     hasNoNetChanges: boolean
     hasResolvedPatch: boolean
@@ -62,7 +62,7 @@ function DiffPanelUnavailable({
   error,
   hasNoNetChanges,
 }: {
-  baseline: ProjectDiffBaseline | null
+  baseline: DirectoryDiffBaseline | null
   diff: ReturnType<typeof useDesktopDiff>['diff']
   error: string | null
   hasNoNetChanges: boolean
@@ -122,7 +122,7 @@ function DiffFilesView(input: DiffPanelContentBodyProps) {
             diffRenderMode={input.codeView.renderMode}
             focusedImageFileKeys={input.files.focusedImageKeys}
             onToggleFileCollapsed={input.files.toggleCollapsed}
-            projectId={input.projectId}
+            directoryId={input.directoryId}
             review={input.codeView.review}
             renderableFiles={input.files.visible}
           />

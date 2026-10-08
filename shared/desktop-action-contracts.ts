@@ -7,16 +7,16 @@ import type {
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
   DictationModelId,
+  DirectoryDeletionMode,
+  DirectoryDiffBaseline,
+  DirectoryDiffDefaultBaseline,
+  DirectoryDiffRenderMode,
+  DirectoryFileWriteResult,
+  DirectoryImportCandidate,
   GitOpsMode,
   PiSettings,
   PiThemeState,
-  Project,
-  ProjectDeletionMode,
-  ProjectDiffBaseline,
-  ProjectDiffDefaultBaseline,
-  ProjectDiffRenderMode,
-  ProjectFileWriteResult,
-  ProjectImportCandidate,
+  WorkingDirectory,
 } from './desktop-data-contracts'
 import type { ToolkitComponentId } from './toolkit-components'
 
@@ -25,14 +25,14 @@ type EmptyActionPayload = Record<string, never>
 export type DesktopActionPayloadFields = {
   composerExtensions?: ComposerExtensionSelection
   attachments?: ComposerAttachment[]
-  composerMode?: 'chat' | 'code' | null
-  chatGroupId?: string | undefined | null | undefined
-  chatGroupIds?: string[] | undefined
+  composerProfile?: 'general' | 'coding' | null
+  workspaceId?: string | undefined | null | undefined
+  workspaceIds?: string[] | undefined
   folders?: string[] | undefined
   imported?: boolean | undefined | null
   gitOpsMode?: GitOpsMode | null
-  diffBaseline?: ProjectDiffBaseline | null
-  diffRenderMode?: ProjectDiffRenderMode | null
+  diffBaseline?: DirectoryDiffBaseline | null
+  diffRenderMode?: DirectoryDiffRenderMode | null
   includeUnstaged?: boolean | undefined
   includeUntracked?: boolean | undefined
   key?: keyof AppSettings
@@ -42,11 +42,11 @@ export type DesktopActionPayloadFields = {
   modelId?: string | undefined
   olderThanDays?: number | undefined | null | undefined
   preview?: boolean | undefined
-  projectId?: string | undefined | null | undefined
-  projectIds?: string[] | undefined
-  projectName?: string | undefined
-  projectPath?: string | undefined
-  rootProjectId?: string | undefined
+  directoryId?: string | undefined | null | undefined
+  directoryIds?: string[] | undefined
+  directoryName?: string | undefined
+  directoryPath?: string | undefined
+  rootDirectoryId?: string | undefined
   parentPath?: string | undefined
   worktreeDirectory?: string | undefined | null | undefined
   worktreePath?: string | undefined | null | undefined
@@ -79,8 +79,8 @@ export type DesktopActionPayloadFields = {
   targetEntryId?: string | undefined
   text?: string | undefined
   trusted?: boolean | undefined
-  threadId?: string | undefined
-  threadIds?: string[] | undefined
+  chatId?: string | undefined
+  chatIds?: string[] | undefined
   branchName?: string | undefined | null | undefined
   label?: string | undefined | null | undefined
   value?:
@@ -88,7 +88,7 @@ export type DesktopActionPayloadFields = {
     | undefined
     | number
     | boolean
-    | ProjectDiffDefaultBaseline
+    | DirectoryDiffDefaultBaseline
     | AppSettings['keybindings']
     | string[]
     | null
@@ -116,17 +116,17 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'showDictationButton'; value: boolean }
   | { key: 'enabledToolkitComponents'; value: readonly ToolkitComponentId[] }
   | { key: 'favoriteFolders'; folders: string[] }
-  | { key: 'projectImportState'; imported: boolean | null }
-  | { key: 'preferredProjectLocation'; value: string | null }
+  | { key: 'directoryImportState'; imported: boolean | null }
+  | { key: 'preferredDirectoryLocation'; value: string | null }
   | { key: 'customPiDirectory'; value: string | null }
-  | { key: 'initializeGitOnProjectCreate'; value: boolean }
-  | { key: 'projectDashboardEnabled'; value: boolean }
+  | { key: 'initializeGitOnDirectoryCreate'; value: boolean }
+  | { key: 'directoryDashboardEnabled'; value: boolean }
   | { key: 'gitOpsDefaultMode'; value: GitOpsMode }
-  | { key: 'gitDiffBaselineDefault'; value: ProjectDiffDefaultBaseline }
-  | { key: 'gitDiffRenderModeDefault'; value: ProjectDiffRenderMode }
+  | { key: 'gitDiffBaselineDefault'; value: DirectoryDiffDefaultBaseline }
+  | { key: 'gitDiffRenderModeDefault'; value: DirectoryDiffRenderMode }
   | { key: 'gitDiffFileTreeDefaultVisible'; value: boolean }
   | { key: 'gitDiffIncludeUntrackedDefault'; value: boolean }
-  | { key: 'projectDeletionMode'; value: ProjectDeletionMode }
+  | { key: 'directoryDeletionMode'; value: DirectoryDeletionMode }
   | { key: 'useAgentsSkillsPaths'; value: boolean }
   | { key: 'hideSidebarSessionCounts'; value: boolean }
   | { key: 'hoverToFocus'; value: boolean }
@@ -135,71 +135,71 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'composerSendMode'; value: AppSettings['composerSendMode'] }
 
 export type DesktopActionPayloadMap = {
-  'threads.collapse-all': EmptyActionPayload
-  'project.add': {
-    projectName?: string | undefined
-    projectPath?: string | undefined
+  'chats.collapse-all': EmptyActionPayload
+  'directory.add': {
+    directoryName?: string | undefined
+    directoryPath?: string | undefined
     parentPath?: string | undefined
     createIfMissing?: boolean | undefined
     repoUrl?: string | undefined | null | undefined
   }
-  'project.select': {
-    projectId?: string | undefined | null | undefined
+  'directory.select': {
+    directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
   }
-  'project.expand': { projectId: string }
-  'project.collapse': { projectId: string }
-  'project.pin': { projectId: string }
-  'project.edit-name': { projectId: string; projectName: string }
-  'project.refresh-repo-origin': { projectId: string }
-  'project.archive-threads': { projectId: string; projectName?: string | undefined }
-  'project.remove-project': { projectId: string; projectName?: string | undefined }
-  'chat.group.create': {
-    chatGroupId?: string | undefined | null | undefined
+  'directory.expand': { directoryId: string }
+  'directory.collapse': { directoryId: string }
+  'directory.pin': { directoryId: string }
+  'directory.edit-name': { directoryId: string; directoryName: string }
+  'directory.refresh-repo-origin': { directoryId: string }
+  'directory.archive-chats': { directoryId: string; directoryName?: string | undefined }
+  'directory.remove': { directoryId: string; directoryName?: string | undefined }
+  'workspace.create': {
+    workspaceId?: string | undefined | null | undefined
     value?: string | undefined | null | undefined
   }
-  'chat.group.rename': { chatGroupId: string; value: string }
-  'chat.group.reorder': { chatGroupIds: string[] }
-  'chat.group.collapse': { chatGroupId: string; value: boolean }
-  'chat.thread.move': {
-    threadId: string
+  'workspace.rename': { workspaceId: string; value: string }
+  'workspace.reorder': { workspaceIds: string[] }
+  'workspace.collapse': { workspaceId: string; value: boolean }
+  'chat.move': {
+    chatId: string
     conversationId?: string | undefined | null | undefined
-    chatGroupId?: string | undefined | null | undefined
+    workspaceId?: string | undefined | null | undefined
   }
-  'thread.new': {
+  'chat.new': {
     composerExtensions?: ComposerExtensionSelection
-    projectId?: string | undefined | null | undefined
+    directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
-    chatGroupId?: string | undefined | null | undefined
+    workspaceId?: string | undefined | null | undefined
     branchName?: string | undefined | null | undefined
   }
-  'thread.open': {
-    projectId?: string | undefined | null | undefined
+  'chat.open': {
+    directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
-    threadId?: string | undefined
-    composerMode?: 'chat' | 'code' | null
+    chatId?: string | undefined
+    composerProfile?: 'general' | 'coding' | null
     branchName?: string | undefined | null | undefined
   }
-  'thread.archive': { threadId: string }
-  'thread.archive-many': { projectId?: string | undefined | null | undefined; threadIds: string[] }
-  'thread.assign-branch': {
-    threadId: string
-    projectId?: string | undefined | null | undefined
+  'chat.archive': { chatId: string }
+  'chat.archive-many': { directoryId?: string | undefined | null | undefined; chatIds: string[] }
+  'chat.assign-branch': {
+    chatId: string
+    directoryId?: string | undefined | null | undefined
     branchName?: string | undefined | null | undefined
   }
-  'thread.restore': { threadId: string }
-  'thread.restore-many': { threadIds: string[]; projectIds?: string[] | undefined }
-  'thread.delete': { threadId: string }
-  'thread.delete-many': { threadIds: string[]; projectIds?: string[] | undefined }
-  'thread.pin': { threadId: string; projectId?: string | undefined | null | undefined }
-  'thread.rename': {
-    threadId: string
-    projectId?: string | undefined | null | undefined
+  'chat.restore': { chatId: string }
+  'chat.restore-many': { chatIds: string[]; directoryIds?: string[] | undefined }
+  'chat.delete': { chatId: string }
+  'chat.delete-many': { chatIds: string[]; directoryIds?: string[] | undefined }
+  'chat.pin': { chatId: string; directoryId?: string | undefined | null | undefined }
+  'chat.rename': {
+    chatId: string
+    directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
     value: string
   }
-  'workspace.commit': {
-    projectId?: string | undefined | null | undefined
+  'coding.commit': {
+    directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
     includeUnstaged?: boolean | undefined
     includeUntracked?: boolean | undefined
@@ -207,114 +207,114 @@ export type DesktopActionPayloadMap = {
     preview?: boolean | undefined
     push?: boolean | undefined
   }
-  'workspace.commit-options': {
-    projectId?: string | undefined | null | undefined
+  'coding.commit-options': {
+    directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
     repoUrl?: string | undefined | null | undefined
     gitOpsMode?: GitOpsMode | null
   }
-  'workspace.diff-preferences': {
-    projectId?: string | undefined | null | undefined
+  'coding.diff-preferences': {
+    directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
-    diffBaseline?: ProjectDiffBaseline | null
-    diffRenderMode?: ProjectDiffRenderMode | null
+    diffBaseline?: DirectoryDiffBaseline | null
+    diffRenderMode?: DirectoryDiffRenderMode | null
   }
-  'workspace.write-file': {
-    projectId: string
+  'coding.write-file': {
+    directoryId: string
     filePath: string
     fileContents: string
     expectedRevision: string
   }
-  'workspace.sidebar-scope': { projectIds: string[] }
-  'workspace.switch-branch': { projectId?: string | undefined | null | undefined; value: string }
-  'workspace.prune-branch': {
-    rootProjectId: string
+  'coding.sidebar-scope': { directoryIds: string[] }
+  'coding.switch-branch': { directoryId?: string | undefined | null | undefined; value: string }
+  'coding.prune-branch': {
+    rootDirectoryId: string
     branchName: string
   }
-  'workspace.create-worktree': {
-    rootProjectId: string
+  'coding.create-worktree': {
+    rootDirectoryId: string
     branchName: string
     worktreeDirectory?: string | undefined | null | undefined
   }
-  'workspace.remove-worktree': {
-    rootProjectId: string
+  'coding.remove-worktree': {
+    rootDirectoryId: string
     worktreePath: string
   }
-  'workspace.mark-worktree-complete': {
-    rootProjectId: string
+  'coding.mark-worktree-complete': {
+    rootDirectoryId: string
     worktreePath: string
   }
-  'workspace.mark-worktree-incomplete': {
-    rootProjectId: string
+  'coding.mark-worktree-incomplete': {
+    rootDirectoryId: string
     worktreePath: string
   }
-  'workspace.merge-worktree': {
-    rootProjectId: string
+  'coding.merge-worktree': {
+    rootDirectoryId: string
     worktreePath: string
   }
-  'workspace.merge-completed-worktrees': {
-    rootProjectId: string
+  'coding.merge-completed-worktrees': {
+    rootDirectoryId: string
     worktrees: { worktreePath: string }[]
   }
-  'workspace.remove-completed-worktrees': {
-    rootProjectId: string
+  'coding.remove-completed-worktrees': {
+    rootDirectoryId: string
     worktrees: { worktreePath: string }[]
   }
-  'workspace.set-worktree-directory': {
-    rootProjectId: string
+  'coding.set-worktree-directory': {
+    rootDirectoryId: string
     worktreeDirectory: string
   }
   'composer.model': {
-    projectId?: string | undefined | null | undefined
+    directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
     provider: string
     modelId: string
   }
   'composer.thinking': {
-    projectId?: string | undefined | null | undefined
+    directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
     level: ComposerThinkingLevel
   }
   'composer.send': {
     composerExtensions?: ComposerExtensionSelection
-    projectId?: string | undefined | null | undefined
+    directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
-    chatGroupId?: string | undefined | null | undefined
+    workspaceId?: string | undefined | null | undefined
     suppressInbox?: boolean | undefined | null | undefined
     text: string
     attachments?: ComposerAttachment[]
     streamingBehavior?: ComposerStreamingBehavior
   }
   'composer.stop': {
-    projectId?: string | undefined | null | undefined
+    directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
   }
   'composer.dequeue': {
-    projectId?: string | undefined | null | undefined
+    directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
     queueId: string
   }
   'composer.reload-settings': {
-    projectId?: string | undefined | null | undefined
+    directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
   }
   'composer.conversation.fork': {
-    projectId?: string | undefined | null | undefined
+    directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
-    composerMode?: 'chat' | 'code' | null
-    chatGroupId?: string | undefined | null | undefined
+    composerProfile?: 'general' | 'coding' | null
+    workspaceId?: string | undefined | null | undefined
     targetEntryId: string
   }
-  'inbox.mark-read': { conversationId: string; projectId?: string | undefined | null | undefined }
-  'inbox.dismiss': { conversationId: string; projectId?: string | undefined | null | undefined }
+  'inbox.mark-read': { conversationId: string; directoryId?: string | undefined | null | undefined }
+  'inbox.dismiss': { conversationId: string; directoryId?: string | undefined | null | undefined }
   'inbox.clear-read': { olderThanDays?: number | undefined | null | undefined }
   'settings.update': DesktopSettingsUpdatePayload
   'pi-settings.update': {
     piSettingsKey: keyof PiSettings
     value: string | number | boolean | string[]
   }
-  'projects.import.scan': { projectIds: string[] }
-  'projects.import.apply': { projectIds: string[] }
+  'directories.import.scan': { directoryIds: string[] }
+  'directories.import.apply': { directoryIds: string[] }
 }
 
 export type AnyDesktopActionPayload = DesktopActionPayloadInput
@@ -325,16 +325,16 @@ export type DesktopActionPayload<A extends DesktopAction = DesktopAction> =
 export type DesktopActionResultData = {
   branchName?: string | undefined | null | undefined
   parentBranchName?: string | undefined | null | undefined
-  checkedProjectCount?: number | undefined
+  checkedDirectoryCount?: number | undefined
   clearedCount?: number | undefined
   clearFailedCount?: number | undefined
   committed?: boolean | undefined
   composer?: ComposerState
   composerSendOutcome?: 'sent' | 'stopped'
   composerSendConversationId?: string | undefined | null | undefined
-  composerSendThreadId?: string | undefined | null | undefined
+  composerSendChatId?: string | undefined | null | undefined
   queueCancelOutcome?: 'aborted' | 'already_placed' | 'already_settled'
-  deletedThreadIds?: string[] | undefined
+  deletedChatIds?: string[] | undefined
   didMutate?: boolean | undefined
   error?: string | undefined
   editorSelectionEnd?: number | undefined
@@ -342,27 +342,27 @@ export type DesktopActionResultData = {
   editorText?: string | undefined
   failedWorktreeBranchName?: string | undefined | null | undefined
   failedWorktreePath?: string | undefined
-  failedThreadIds?: string[] | undefined
-  fileWrite?: ProjectFileWriteResult | undefined
-  importedProjectIds?: string[] | undefined
-  importedProjects?: Project[] | undefined
+  failedChatIds?: string[] | undefined
+  fileWrite?: DirectoryFileWriteResult | undefined
+  importedDirectoryIds?: string[] | undefined
+  importedDirectories?: WorkingDirectory[] | undefined
   message?: string | undefined | null | undefined
-  originProjectCount?: number | undefined
+  originDirectoryCount?: number | undefined
   originUrl?: string | undefined | null | undefined
   piSettings?: PiSettings
   piTheme?: PiThemeState
   previewed?: boolean | undefined
-  affectedProjectIds?: string[] | undefined
-  projectId?: string | undefined
+  affectedDirectoryIds?: string[] | undefined
+  directoryId?: string | undefined
   removedWorktreeIds?: string[] | undefined
-  rootProjectId?: string | undefined
-  projects?: ProjectImportCandidate[]
+  rootDirectoryId?: string | undefined
+  directories?: DirectoryImportCandidate[]
   pushed?: boolean | undefined
   pushFailed?: boolean | undefined
-  repoProjectCount?: number | undefined
+  repoDirectoryCount?: number | undefined
   conversationId?: string | undefined | null | undefined
   title?: string | undefined
-  threadId?: string | undefined
+  chatId?: string | undefined
   worktreeRemoved?: boolean | undefined
   worktreeCompleted?: boolean | undefined
 }

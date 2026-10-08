@@ -23,11 +23,11 @@ type Viewport = object
 type DeferredRelease = TerminalSessionRelease & { identity: string }
 
 export function getTerminalViewportIdentity(input: {
-  projectId: string
+  directoryId: string
   conversationId: string | null
 }) {
   return JSON.stringify({
-    projectId: input.projectId,
+    directoryId: input.directoryId,
     conversationId: input.conversationId,
   })
 }

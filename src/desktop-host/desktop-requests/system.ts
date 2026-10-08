@@ -9,12 +9,12 @@ import {
 
 type SystemRequestHandlers = Pick<
   DesktopRequestHandlerMap,
-  | 'listProjectDirectoryEntries'
+  | 'listDirectoryDirectoryEntries'
   | 'listComposerAttachmentEntries'
   | 'searchComposerAttachmentEntries'
 >
 
-async function listProjectDirectoryEntries(request: { path?: string | null | undefined }) {
+async function listDirectoryDirectoryEntries(request: { path?: string | null | undefined }) {
   const homePath = homedir()
   const trimmedRequestPath = request.path?.trim() ?? ''
   const requestedPath = trimmedRequestPath || homePath
@@ -58,7 +58,7 @@ async function listProjectDirectoryEntries(request: { path?: string | null | und
 
 export function createSystemRequestHandlers(): SystemRequestHandlers {
   return {
-    listProjectDirectoryEntries,
+    listDirectoryDirectoryEntries,
     listComposerAttachmentEntries: (request) => listComposerAttachmentEntries(request),
     searchComposerAttachmentEntries: (request) => searchComposerAttachmentEntries(request),
   }

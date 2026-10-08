@@ -1,21 +1,24 @@
-import type { Project, View } from '../types'
+import type { ComposerProfile } from '@howcode/shared/desktop-composer-contracts'
+import type { View, WorkingDirectory } from '../types'
 
 export type NonGitOpsView = Exclude<View, 'gitops'>
-export type UtilityView = Extract<View, 'settings' | 'skills' | 'sessions'>
+export type UtilityView = Extract<View, 'settings' | 'skills' | 'history'>
 
-export type CodeThreadSelection = {
-  projectId: string
-  threadId: string
+export type CodeChatSelection = {
+  directoryId: string
+  chatId: string
   conversationId: string
 }
 
 export type UtilityViewReturnState = {
   activeView: View
-  selectedProjectId: string
-  hasSelectedProject: boolean
+  selectedWorkspaceId: string | null
+  composerProfile: ComposerProfile
+  selectedDirectoryId: string
+  hasSelectedDirectory: boolean
   landingVisible: boolean
   selectedInboxConversationId: string | null
-  selectedThreadId: string | null
+  selectedChatId: string | null
   selectedConversationId: string | null
   terminalVisible: boolean
   workspaceTerminalVisibleByWorkspace: Record<string, boolean>
@@ -26,11 +29,13 @@ export type UtilityViewReturnState = {
 
 export type WorkspaceState = {
   activeView: View
-  selectedProjectId: string
-  hasSelectedProject: boolean
+  selectedWorkspaceId: string | null
+  composerProfile: ComposerProfile
+  selectedDirectoryId: string
+  hasSelectedDirectory: boolean
   landingVisible: boolean
   selectedInboxConversationId: string | null
-  selectedThreadId: string | null
+  selectedChatId: string | null
   selectedConversationId: string | null
   terminalVisible: boolean
   workspaceTerminalVisibleByWorkspace: Record<string, boolean>
@@ -41,37 +46,44 @@ export type WorkspaceState = {
   utilityViewReturnState: UtilityViewReturnState | null
   settingsOpen: boolean
   settingsPanelOpen: boolean
-  collapsedProjectIds: Record<string, boolean>
-  lastCodeThreadSelection: CodeThreadSelection | null
+  collapsedDirectoryIds: Record<string, boolean>
+  lastCodeChatSelection: CodeChatSelection | null
 }
 
 export type WorkspaceAction =
-  | { type: 'sync-projects'; projects: Project[] }
+  | { type: 'sync-directories'; directories: WorkingDirectory[] }
+  | {
+      type: 'select-workspace'
+      workspaceId: string | null
+      directoryId?: string | null | undefined
+    }
   | { type: 'show-view'; view: NonGitOpsView }
   | { type: 'show-landing' }
   | { type: 'close-utility-view' }
-  | { type: 'select-inbox-thread'; conversationId: string | null }
-  | { type: 'clear-thread-selection' }
-  | { type: 'select-project'; projectId: string }
+  | { type: 'select-inbox-chat'; conversationId: string | null }
+  | { type: 'clear-chat-selection' }
+  | { type: 'select-directory'; directoryId: string; workspaceId?: string | undefined }
   | {
-      type: 'start-project-thread'
-      projectId: string
-      threadId: string
+      type: 'start-directory-chat'
+      directoryId: string
+      chatId: string
       conversationId: string
     }
-  | { type: 'set-selected-project'; projectId: string }
+  | { type: 'set-selected-directory'; directoryId: string; workspaceId?: string | undefined }
   | {
-      type: 'open-thread'
-      projectId: string
-      threadId: string
+      type: 'open-chat'
+      directoryId: string
+      chatId: string
       conversationId: string
-      view?: 'chat' | 'thread' | undefined
+      composerProfile?: ComposerProfile | undefined
+      workspaceId?: string | null | undefined
     }
   | {
-      type: 'preview-thread'
-      projectId: string
-      threadId: string
-      view?: 'chat' | 'thread' | undefined
+      type: 'preview-chat'
+      directoryId: string
+      chatId: string
+      composerProfile?: ComposerProfile | undefined
+      workspaceId?: string | null | undefined
     }
   | {
       type: 'open-gitops'
@@ -83,5 +95,5 @@ export type WorkspaceAction =
   | { type: 'set-terminal-visible'; visible: boolean }
   | { type: 'toggle-settings' }
   | { type: 'set-settings-panel-open'; open: boolean }
-  | { type: 'toggle-project-collapse'; projectId: string }
-  | { type: 'collapse-all-projects' }
+  | { type: 'toggle-directory-collapse'; directoryId: string }
+  | { type: 'collapse-all-directories' }

@@ -8,7 +8,7 @@ export const TerminalStatus = Schema.Literals(['starting', 'running', 'exited', 
 export type TerminalStatus = typeof TerminalStatus.Type
 
 export const TerminalOpenRequest = Schema.Struct({
-  projectId: TerminalIdentifier,
+  directoryId: TerminalIdentifier,
   conversationId: Schema.optionalKey(Schema.NullOr(Schema.String)),
   cwd: Schema.optionalKey(Schema.NullOr(Schema.String)),
   cols: TerminalColumns,
@@ -52,7 +52,7 @@ export type TerminalStatusSnapshot = typeof TerminalStatusSnapshot.Type
 
 export const TerminalSessionSnapshot = Schema.Struct({
   sessionId: TerminalIdentifier,
-  projectId: TerminalIdentifier,
+  directoryId: TerminalIdentifier,
   conversationId: Schema.NullOr(Schema.String),
   cwd: Schema.String,
   status: TerminalStatus,

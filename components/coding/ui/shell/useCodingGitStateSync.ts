@@ -1,75 +1,75 @@
 import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
 import { type Dispatch, type SetStateAction, useEffect } from 'react'
-import type { AppSettings, ProjectGitState } from '../../../../src/app/desktop/types'
+import type { AppSettings, DirectoryGitState } from '../../../../src/app/desktop/types'
 import type { View } from '../../../../src/app/types'
 
 export function useCodingGitStateSync({
   activeView,
-  composerProjectId,
+  composerDirectoryId,
   shellAppSettings,
-  loadProjectGitState,
-  setProjectGitState,
-  setProjectGitLoading,
+  loadDirectoryGitState,
+  setDirectoryGitState,
+  setDirectoryGitLoading,
 }: {
   activeView: View
-  composerProjectId: string
+  composerDirectoryId: string
   shellAppSettings: AppSettings | null | undefined
-  loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
-  setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>
-  setProjectGitLoading: Dispatch<SetStateAction<boolean>>
+  loadDirectoryGitState: (directoryId: string) => Promise<DirectoryGitState | null>
+  setDirectoryGitState: Dispatch<SetStateAction<DirectoryGitState | null>>
+  setDirectoryGitLoading: Dispatch<SetStateAction<boolean>>
 }) {
   const codingEnabled =
     shellAppSettings != null && isToolkitComponentEnabled(shellAppSettings, 'coding')
   useEffect(() => {
-    if (!(codingEnabled && composerProjectId)) {
-      setProjectGitState(null)
-      setProjectGitLoading(false)
+    if (!(codingEnabled && composerDirectoryId)) {
+      setDirectoryGitState(null)
+      setDirectoryGitLoading(false)
       return
     }
 
-    setProjectGitState(null)
-    setProjectGitLoading(true)
+    setDirectoryGitState(null)
+    setDirectoryGitLoading(true)
 
     let cancelled = false
 
-    const syncProjectGitState = async () => {
+    const syncDirectoryGitState = async () => {
       try {
-        const nextProjectGitState = await loadProjectGitState(composerProjectId)
+        const nextDirectoryGitState = await loadDirectoryGitState(composerDirectoryId)
         if (!cancelled) {
-          setProjectGitState(nextProjectGitState)
+          setDirectoryGitState(nextDirectoryGitState)
         }
       } finally {
         if (!cancelled) {
-          setProjectGitLoading(false)
+          setDirectoryGitLoading(false)
         }
       }
     }
 
-    void syncProjectGitState()
+    void syncDirectoryGitState()
 
     return () => {
       cancelled = true
     }
   }, [
     codingEnabled,
-    composerProjectId,
-    loadProjectGitState,
-    setProjectGitLoading,
-    setProjectGitState,
+    composerDirectoryId,
+    loadDirectoryGitState,
+    setDirectoryGitLoading,
+    setDirectoryGitState,
   ])
 
   useEffect(() => {
-    if (!codingEnabled || activeView !== 'gitops' || !composerProjectId) {
+    if (!codingEnabled || activeView !== 'gitops' || !composerDirectoryId) {
       return
     }
 
     let cancelled = false
-    setProjectGitLoading(true)
+    setDirectoryGitLoading(true)
 
-    void loadProjectGitState(composerProjectId)
-      .then((nextProjectGitState) => {
+    void loadDirectoryGitState(composerDirectoryId)
+      .then((nextDirectoryGitState) => {
         if (!cancelled) {
-          setProjectGitState(nextProjectGitState)
+          setDirectoryGitState(nextDirectoryGitState)
         }
       })
       .catch((error) => {
@@ -77,7 +77,7 @@ export function useCodingGitStateSync({
       })
       .finally(() => {
         if (!cancelled) {
-          setProjectGitLoading(false)
+          setDirectoryGitLoading(false)
         }
       })
 
@@ -86,10 +86,10 @@ export function useCodingGitStateSync({
     }
   }, [
     codingEnabled,
-    composerProjectId,
-    loadProjectGitState,
-    setProjectGitLoading,
-    setProjectGitState,
+    composerDirectoryId,
+    loadDirectoryGitState,
+    setDirectoryGitLoading,
+    setDirectoryGitState,
     activeView,
   ])
 }

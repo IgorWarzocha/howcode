@@ -5,7 +5,7 @@ import {
 } from '@howcode/components/terminal/ui'
 import { useRef } from 'react'
 import { WORKSPACE_CONTENT_MAX_WIDTH_CLASS } from '../ui/layout'
-import { getLayoutThreadSelection } from './app-shell-layout-model'
+import { getLayoutChatSelection } from './app-shell-layout-model'
 import { AppShellLayoutView } from './app-shell-layout-view'
 import { useAppKeybindings } from './useAppKeybindings'
 import type { AppShellController } from './useAppShellController'
@@ -16,7 +16,7 @@ type AppShellLayoutProps = {
 }
 
 export function AppShellLayout({ controller }: AppShellLayoutProps) {
-  const composerProjectId = controller.composer.projectId
+  const composerDirectoryId = controller.composer.directoryId
   const { state } = controller.workspace
   const terminalResponsive = useTerminalResponsiveState(
     state.terminalVisible,
@@ -32,8 +32,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     sidebarCompactMode,
     sidebarOverlayOpen,
   } = useAppShellResponsiveLayout(controller, terminalResponsive)
-  const { conversationId: terminalConversationId, threadId: activeThreadId } =
-    getLayoutThreadSelection(state)
+  const { conversationId: terminalConversationId, chatId: activeChatId } =
+    getLayoutChatSelection(state)
   const { drawerVisible: terminalDrawerVisible, drawerPresent: terminalDrawerPresent } =
     useTerminalDrawerPresentation({
       activeView: state.activeView,
@@ -42,12 +42,13 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
       hiddenByCompactResize: terminalResponsive.hiddenByCompactResize,
     })
   const parentBranchName =
-    controller.desktop.shellState?.projects.find((project) => project.id === composerProjectId)
-      ?.worktree?.parentBranchName ?? null
+    controller.desktop.shellState?.directories.find(
+      (directory) => directory.id === composerDirectoryId,
+    )?.worktree?.parentBranchName ?? null
   const { diffBaseline, diffRenderMode, handleSetDiffBaseline, handleSetDiffRenderMode } =
     useAppShellDiffPreferences({
-      activeThreadId,
-      composerProjectId,
+      activeChatId,
+      composerDirectoryId,
       controller,
       parentBranchName,
       terminalConversationId,

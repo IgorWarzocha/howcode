@@ -1,3 +1,4 @@
+import type { WorkingDirectory } from './desktop-chat-contracts'
 import type {
   ComposerState,
   ComposerStreamingBehavior,
@@ -5,12 +6,11 @@ import type {
 } from './desktop-composer-contracts'
 import type { DictationModelId } from './desktop-dictation-contracts'
 import type {
+  DirectoryDiffDefaultBaseline,
+  DirectoryDiffRenderMode,
   GitOpsMode,
-  ProjectDiffDefaultBaseline,
-  ProjectDiffRenderMode,
-} from './desktop-project-git-contracts'
+} from './desktop-directory-git-contracts'
 import type { PiSettingsSchema, PiThemeStateSchema } from './desktop-settings-schema'
-import type { Project } from './desktop-thread-contracts'
 import type { ComposerSendMode, KeybindingOverrides } from './keybindings'
 import type { ToolkitComponentId } from './toolkit-components'
 
@@ -19,8 +19,8 @@ export type ModelSelection = {
   id: string
 }
 
-export type ProjectDeletionMode = 'pi-only' | 'full-clean'
-export type { GitOpsMode } from './desktop-project-git-contracts'
+export type DirectoryDeletionMode = 'pi-only' | 'full-clean'
+export type { GitOpsMode } from './desktop-directory-git-contracts'
 
 export type AppSettings = {
   enabledToolkitComponents?: readonly ToolkitComponentId[]
@@ -35,17 +35,17 @@ export type AppSettings = {
   dictationMaxDurationSeconds: number
   showDictationButton: boolean
   favoriteFolders: string[]
-  projectImportState: boolean | null
-  preferredProjectLocation: string | null
+  directoryImportState: boolean | null
+  preferredDirectoryLocation: string | null
   customPiDirectory: string | null
-  initializeGitOnProjectCreate: boolean
-  projectDashboardEnabled: boolean
+  initializeGitOnDirectoryCreate: boolean
+  directoryDashboardEnabled: boolean
   gitOpsDefaultMode: GitOpsMode
-  gitDiffBaselineDefault: ProjectDiffDefaultBaseline
-  gitDiffRenderModeDefault: ProjectDiffRenderMode
+  gitDiffBaselineDefault: DirectoryDiffDefaultBaseline
+  gitDiffRenderModeDefault: DirectoryDiffRenderMode
   gitDiffFileTreeDefaultVisible: boolean
   gitDiffIncludeUntrackedDefault: boolean
-  projectDeletionMode: ProjectDeletionMode
+  directoryDeletionMode: DirectoryDeletionMode
   useAgentsSkillsPaths: boolean
   hideSidebarSessionCounts: boolean
   hoverToFocus: boolean
@@ -68,8 +68,8 @@ export type ShellState = {
   cwd: string
   resolvedCwd?: string | undefined
   agentDir: string
-  projects: Project[]
-  sidebarVisibleProjectIds: string[] | null
+  directories: WorkingDirectory[]
+  sidebarVisibleDirectoryIds: string[] | null
   appSettings: AppSettings
   piSettings: PiSettings
   piTheme: PiThemeState

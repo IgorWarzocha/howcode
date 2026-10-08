@@ -1,7 +1,7 @@
 import {
   useCodingDesktopEventContribution,
   useCodingGitStateSync,
-  useProjectShellSync,
+  useDirectoryShellSync,
   useTerminalGitStateSync,
 } from '@howcode/components/coding/ui'
 import { listDesktopTerminals, subscribeDesktopTerminal } from '@howcode/components/terminal/ui'
@@ -9,15 +9,15 @@ import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
 import type { Dispatch, SetStateAction } from 'react'
 import type {
   AppSettings,
-  ArchivedThread,
-  ChatSidebarState,
+  ArchivedChat,
+  ChatData,
   ComposerState,
-  InboxThread,
-  ProjectGitState,
-  ThreadData,
+  DirectoryGitState,
+  InboxChat,
+  WorkspaceNavigationState,
 } from '../desktop/types'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace-model'
-import type { Project } from '../types'
+import type { WorkingDirectory } from '../types'
 import { useComposerStateSync } from './useComposerStateSync'
 import { useDesktopEventSync } from './useDesktopEventSync'
 import { useUtilityViewEscape, useWatchedConversationSync } from './useWindowShellSync'
@@ -29,81 +29,80 @@ type QueryClientLike = {
 }
 
 export function useAppShellEffects({
-  projects,
-  collapsedProjectIds,
+  directories,
+  collapsedDirectoryIds,
   workspaceState,
-  selectedInboxThread,
-  composerProjectId,
+  selectedInboxChat,
+  composerDirectoryId,
   shellComposerState,
   shellAppSettings,
-  loadProjectThreads,
-  loadArchivedThreads,
+  loadDirectoryChats,
+  loadArchivedChats,
   loadComposerState,
-  loadProjectGitState,
+  loadDirectoryGitState,
   scheduleShellStateRefresh,
-  refreshChatSidebarState,
+  refreshWorkspaceNavigationState,
   queryClient,
   dispatch,
-  setArchivedThreads,
+  setArchivedChats,
   setComposerState,
-  setChatSidebarState,
-  setLiveThreadData,
-  setProjectGitState,
-  setProjectGitLoading,
-  setThreadHistoryCompactions,
+  setWorkspaceNavigationState,
+  setLiveChatData,
+  setDirectoryGitState,
+  setDirectoryGitLoading,
+  setChatHistoryCompactions,
 }: {
-  projects: Project[]
-  collapsedProjectIds: Record<string, boolean>
+  directories: WorkingDirectory[]
+  collapsedDirectoryIds: Record<string, boolean>
   workspaceState: WorkspaceState
-  selectedInboxThread: InboxThread | null
-  composerProjectId: string
+  selectedInboxChat: InboxChat | null
+  composerDirectoryId: string
   shellComposerState: ComposerState | null | undefined
   shellAppSettings: AppSettings | null | undefined
-  loadProjectThreads: (
-    projectId: string,
+  loadDirectoryChats: (
+    directoryId: string,
     options?: {
-      chat?: boolean | undefined
       replaceLocalDraftConversationId?: string | null | undefined
     },
   ) => Promise<unknown>
-  loadArchivedThreads: () => Promise<ArchivedThread[]>
+  loadArchivedChats: () => Promise<ArchivedChat[]>
   loadComposerState: (request?: {
-    projectId?: string | null
+    directoryId?: string | null
     conversationId?: string | null
-    composerMode?: 'chat' | 'code' | null
+    composerProfile?: 'general' | 'coding' | null
   }) => Promise<ComposerState | null>
-  loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
+  loadDirectoryGitState: (directoryId: string) => Promise<DirectoryGitState | null>
   scheduleShellStateRefresh: () => void
-  refreshChatSidebarState: () => Promise<unknown>
+  refreshWorkspaceNavigationState: () => Promise<unknown>
   queryClient: QueryClientLike
   dispatch: Dispatch<WorkspaceAction>
-  setArchivedThreads: Dispatch<SetStateAction<ArchivedThread[]>>
+  setArchivedChats: Dispatch<SetStateAction<ArchivedChat[]>>
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>
-  setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>
-  setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>
-  setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>
-  setProjectGitLoading: Dispatch<SetStateAction<boolean>>
-  setThreadHistoryCompactions: Dispatch<SetStateAction<number>>
+  setWorkspaceNavigationState: Dispatch<SetStateAction<WorkspaceNavigationState | null>>
+  setLiveChatData: Dispatch<SetStateAction<ChatData | null>>
+  setDirectoryGitState: Dispatch<SetStateAction<DirectoryGitState | null>>
+  setDirectoryGitLoading: Dispatch<SetStateAction<boolean>>
+  setChatHistoryCompactions: Dispatch<SetStateAction<number>>
 }) {
-  useProjectShellSync({
+  useDirectoryShellSync({
     enabled: shellAppSettings != null && isToolkitComponentEnabled(shellAppSettings, 'coding'),
-    projects,
-    collapsedProjectIds,
+    directories,
+    collapsedDirectoryIds,
     activeView: workspaceState.activeView,
-    selectedProjectId: workspaceState.selectedProjectId,
-    selectedThreadId: workspaceState.selectedThreadId,
+    selectedDirectoryId: workspaceState.selectedDirectoryId,
+    selectedChatId: workspaceState.selectedChatId,
     selectedConversationId: workspaceState.selectedConversationId,
-    lastCodeThreadSelection: workspaceState.lastCodeThreadSelection,
-    loadProjectThreads,
-    loadArchivedThreads,
+    lastCodeChatSelection: workspaceState.lastCodeChatSelection,
+    loadDirectoryChats,
+    loadArchivedChats,
     dispatch,
-    setArchivedThreads,
+    setArchivedChats,
   })
 
   useComposerStateSync({
     workspaceState,
-    selectedInboxThread,
-    composerProjectId,
+    selectedInboxChat,
+    composerDirectoryId,
     shellComposerState,
     shellAppSettings,
     loadComposerState,
@@ -111,11 +110,11 @@ export function useAppShellEffects({
   })
   useCodingGitStateSync({
     activeView: workspaceState.activeView,
-    composerProjectId,
+    composerDirectoryId,
     shellAppSettings,
-    loadProjectGitState,
-    setProjectGitState,
-    setProjectGitLoading,
+    loadDirectoryGitState,
+    setDirectoryGitState,
+    setDirectoryGitLoading,
   })
 
   useWatchedConversationSync(workspaceState)
@@ -127,32 +126,32 @@ export function useAppShellEffects({
       shellAppSettings != null &&
       isToolkitComponentEnabled(shellAppSettings, 'terminal') &&
       isToolkitComponentEnabled(shellAppSettings, 'coding'),
-    composerProjectId,
-    loadProjectGitState,
-    setProjectGitState,
+    composerDirectoryId,
+    loadDirectoryGitState,
+    setDirectoryGitState,
   })
 
-  const threadEndContribution = useCodingDesktopEventContribution({
+  const chatEndContribution = useCodingDesktopEventContribution({
     enabled: shellAppSettings != null && isToolkitComponentEnabled(shellAppSettings, 'coding'),
-    composerProjectId,
-    loadProjectThreads,
-    loadProjectGitState,
-    setProjectGitState,
+    composerDirectoryId,
+    loadDirectoryChats,
+    loadDirectoryGitState,
+    setDirectoryGitState,
     queryClient,
   })
 
   useDesktopEventSync({
-    threadEndContribution,
-    composerProjectId,
+    chatEndContribution,
+    composerDirectoryId,
     workspaceState,
-    loadProjectThreads,
+    loadDirectoryChats,
     scheduleShellStateRefresh,
-    refreshChatSidebarState,
+    refreshWorkspaceNavigationState,
     queryClient,
     dispatch,
     setComposerState,
-    setChatSidebarState,
-    setLiveThreadData,
-    setThreadHistoryCompactions,
+    setWorkspaceNavigationState,
+    setLiveChatData,
+    setChatHistoryCompactions,
   })
 }

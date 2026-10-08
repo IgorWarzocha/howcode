@@ -1,13 +1,13 @@
 import { createServiceWork } from '../../../desktop/runtime/service-work.ts'
 import type { CodingService } from '../../../shared/desktop-service-contracts.ts'
-import { loadProjectUsageSummary } from './actions/project-usage-summary.ts'
+import { loadDirectoryUsageSummary } from './actions/directory-usage-summary.ts'
 import { createCodingActionHandler } from './coding-actions.ts'
 import { disposeCodingShell, loadCodingShell } from './coding-shell.ts'
 import type { CodingPeers } from './dependencies.ts'
+import { loadDirectoryFavicon } from './directory-favicon.ts'
+import { disposeDirectoryDiffStreams } from './directory-git/commit-context.ts'
+import * as git from './directory-git.ts'
 import { disposeWorkspaceOperations } from './keyed-workspace-operations.ts'
-import { loadProjectFavicon } from './project-favicon.ts'
-import { disposeProjectDiffStreams } from './project-git/commit-context.ts'
-import * as git from './project-git.ts'
 
 export { cleanupLegacyCheckpoints } from './legacy-checkpoints.ts'
 
@@ -18,16 +18,19 @@ export function createCodingService(peers: CodingPeers) {
   let disposal: Promise<void> | undefined
 
   const service: CodingService = {
-    loadProjectGitState: (projectId) => run(() => git.loadProjectGitState(projectId)),
-    loadProjectUsageSummary: (projectId) => run(() => loadProjectUsageSummary(projectId)),
-    loadProjectFavicon: (projectId) => run(() => loadProjectFavicon(projectId)),
-    startProjectDiffStream: (...args) => run(() => git.startProjectDiffStream(...args)),
-    cancelProjectDiffStream: (streamId) => run(() => git.cancelProjectDiffStream(streamId)),
-    loadProjectDiffStats: (...args) => run(() => git.loadProjectDiffStats(...args)),
-    loadProjectDiffImagePreview: (request) => run(() => git.loadProjectDiffImagePreview(request)),
-    loadProjectDiffFileContents: (request) => run(() => git.loadProjectDiffFileContents(request)),
-    captureProjectDiffBaseline: (projectId) => run(() => git.captureProjectDiffBaseline(projectId)),
-    listProjectCommits: (...args) => run(() => git.listProjectCommits(...args)),
+    loadDirectoryGitState: (directoryId) => run(() => git.loadDirectoryGitState(directoryId)),
+    loadDirectoryUsageSummary: (directoryId) => run(() => loadDirectoryUsageSummary(directoryId)),
+    loadDirectoryFavicon: (directoryId) => run(() => loadDirectoryFavicon(directoryId)),
+    startDirectoryDiffStream: (...args) => run(() => git.startDirectoryDiffStream(...args)),
+    cancelDirectoryDiffStream: (streamId) => run(() => git.cancelDirectoryDiffStream(streamId)),
+    loadDirectoryDiffStats: (...args) => run(() => git.loadDirectoryDiffStats(...args)),
+    loadDirectoryDiffImagePreview: (request) =>
+      run(() => git.loadDirectoryDiffImagePreview(request)),
+    loadDirectoryDiffFileContents: (request) =>
+      run(() => git.loadDirectoryDiffFileContents(request)),
+    captureDirectoryDiffBaseline: (directoryId) =>
+      run(() => git.captureDirectoryDiffBaseline(directoryId)),
+    listDirectoryCommits: (...args) => run(() => git.listDirectoryCommits(...args)),
   }
 
   return {
@@ -39,7 +42,7 @@ export function createCodingService(peers: CodingPeers) {
       disposal ??= (async () => {
         await work.stop()
         await Promise.all([
-          disposeProjectDiffStreams(),
+          disposeDirectoryDiffStreams(),
           disposeCodingShell(),
           disposeWorkspaceOperations(),
         ])

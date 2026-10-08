@@ -3,7 +3,6 @@ export { desktopActions } from '../../../shared/desktop-actions.js'
 export { getDesktopActionErrorMessage } from './action-results'
 export type {
   AppSettings,
-  ChatSidebarState,
   ComposerContextUsage,
   ComposerFilePickerState,
   ComposerModel,
@@ -11,9 +10,10 @@ export type {
   ComposerThinkingLevel,
   DesktopActionInvoker,
   DesktopActionResult,
-  InboxThread,
-  ProjectDiffBaseline,
-  ProjectDiffRenderMode,
-  ProjectGitState,
+  DirectoryDiffBaseline,
+  DirectoryDiffRenderMode,
+  DirectoryGitState,
+  InboxChat,
   TerminalEvent,
+  WorkspaceNavigationState,
 } from './types'

@@ -10,38 +10,38 @@ import { getActionError, getInstalledSkillSlugs, isDesktopSkillsAvailable } from
 const EMPTY_CONFIGURED_SKILLS: [] = []
 
 export function useSkillsController({
-  projectPath,
-  onProjectTargetSelected,
-  onSetProjectScopeActive,
+  directoryPath,
+  onDirectoryTargetSelected,
+  onSetDirectoryScopeActive,
 }: {
-  projectPath: string | null
-  onProjectTargetSelected?: (() => void) | undefined
-  onSetProjectScopeActive: (active: boolean) => void
+  directoryPath: string | null
+  onDirectoryTargetSelected?: (() => void) | undefined
+  onSetDirectoryScopeActive: (active: boolean) => void
 }) {
   const queryClient = useQueryClient()
   const [installedOpen, setInstalledOpen] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
   const desktopSkillsAvailable = isDesktopSkillsAvailable()
-  const { installScope, normalizedProjectPath, setInstallScope } = usePiResourceInstallScope({
-    projectPath,
-    onProjectTargetSelected,
-    onSetProjectScopeActive,
+  const { installScope, normalizedDirectoryPath, setInstallScope } = usePiResourceInstallScope({
+    directoryPath,
+    onDirectoryTargetSelected,
+    onSetDirectoryScopeActive,
   })
   const { finishPendingAction, hasPendingInstall, isPendingAction, startPendingAction } =
     usePiResourcePendingActions()
 
   const configuredSkillsQuery = useQuery({
-    queryKey: desktopQueryKeys.configuredPiSkills(projectPath, true),
-    queryFn: () => getConfiguredPiSkillsQuery({ projectPath, chat: true }),
+    queryKey: desktopQueryKeys.configuredPiSkills(directoryPath, true),
+    queryFn: () => getConfiguredPiSkillsQuery({ directoryPath, chat: true }),
     staleTime: 30_000,
     enabled: desktopSkillsAvailable,
   })
 
   const configuredSkills = configuredSkillsQuery.data ?? EMPTY_CONFIGURED_SKILLS
   const activeScope =
-    installScope === 'chat' ? 'chat' : installScope === 'project' ? 'project' : 'user'
+    installScope === 'chat' ? 'chat' : installScope === 'directory' ? 'directory' : 'user'
   const globalSkillCount = configuredSkills.filter((skill) => skill.scope === 'user').length
-  const projectSkillCount = configuredSkills.filter((skill) => skill.scope === 'project').length
+  const directorySkillCount = configuredSkills.filter((skill) => skill.scope === 'directory').length
   const chatSkillCount = configuredSkills.filter((skill) => skill.scope === 'chat').length
   const visibleConfiguredSkills = useMemo(
     () => configuredSkills.filter((skill) => skill.scope === activeScope),
@@ -53,7 +53,7 @@ export function useSkillsController({
   )
   const invalidateConfiguredSkillsCaches = (skills?: PiConfiguredSkill[]) => {
     if (skills) {
-      queryClient.setQueryData(desktopQueryKeys.configuredPiSkills(projectPath, true), skills)
+      queryClient.setQueryData(desktopQueryKeys.configuredPiSkills(directoryPath, true), skills)
     }
 
     void queryClient.invalidateQueries({
@@ -62,8 +62,8 @@ export function useSkillsController({
   }
 
   const handleInstall = async (source: string) => {
-    if (installScope === 'project' && !normalizedProjectPath) {
-      setActionError('Select a project first.')
+    if (installScope === 'directory' && !normalizedDirectoryPath) {
+      setActionError('Select a folder first.')
       return false
     }
 
@@ -76,8 +76,8 @@ export function useSkillsController({
     try {
       const result = await installPiSkillQuery({
         source: normalizedSource,
-        local: installScope === 'project' || installScope === 'chat',
-        projectPath: normalizedProjectPath,
+        local: installScope === 'directory' || installScope === 'chat',
+        directoryPath: normalizedDirectoryPath,
         chat: installScope === 'chat',
       })
 
@@ -105,7 +105,7 @@ export function useSkillsController({
     try {
       const result = await removePiSkillQuery({
         installedPath: configuredSkill.installedPath,
-        projectPath,
+        directoryPath,
         chat: configuredSkill.scope === 'chat',
       })
 
@@ -134,7 +134,7 @@ export function useSkillsController({
     installedSkillSlugs,
     isPendingInstall: (source: string) => isPendingAction('install', source),
     isPendingRemove: (installedPath: string) => isPendingAction('remove', installedPath),
-    projectSkillCount,
+    directorySkillCount,
     setInstallScope,
     setInstalledOpen,
     visibleConfiguredSkills,

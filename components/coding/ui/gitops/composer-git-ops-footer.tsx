@@ -9,7 +9,7 @@ import {
 import { ComposerDiffBaselineSelector } from './composer-diff-baseline-selector'
 import { ComposerGitOpsBackButton } from './composer-git-ops-back-button'
 import { ComposerGitOpsSettings } from './composer-git-ops-settings'
-import type { GitOpsComposerDiff, GitOpsComposerProject } from './git-ops-composer-contracts'
+import type { GitOpsComposerDiff, GitOpsComposerDirectory } from './git-ops-composer-contracts'
 import type { GitOpsReviewController } from './review/review-controller'
 import type { ComposerGitOpsState } from './useComposerGitOpsState'
 
@@ -18,7 +18,7 @@ type ComposerGitOpsFooterProps = {
   diff: GitOpsComposerDiff
   onBack: () => void
   options: ComposerGitOpsState['options']
-  project: GitOpsComposerProject
+  directory: GitOpsComposerDirectory
   repository: ComposerGitOpsState['repository']
   review: Pick<GitOpsReviewController, 'discard' | 'hasPendingReview'>
 }
@@ -62,7 +62,7 @@ export function ComposerGitOpsFooter({
   diff,
   onBack,
   options,
-  project,
+  directory,
   repository,
   review,
 }: ComposerGitOpsFooterProps) {
@@ -76,7 +76,7 @@ export function ComposerGitOpsFooter({
             includeUntracked={diff.includeUntracked}
             onToggleIncludeUntracked={diff.toggleIncludeUntracked}
             options={options}
-            usesAppDefault={project.gitState?.gitOpsModeOverride === null}
+            usesAppDefault={directory.gitState?.gitOpsModeOverride === null}
           />
           <DiffLayoutControls diff={diff} />
         </div>
@@ -86,10 +86,10 @@ export function ComposerGitOpsFooter({
         {repository.isGitRepo ? (
           <ComposerDiffBaselineSelector
             composerPanelRef={composerPanelRef}
-            branch={project.gitState?.branch ?? null}
-            parentBranchName={project.parentBranchName}
-            projectId={project.gitState?.projectId ?? ''}
-            projectGitState={project.gitState}
+            branch={directory.gitState?.branch ?? null}
+            parentBranchName={directory.parentBranchName}
+            directoryId={directory.gitState?.directoryId ?? ''}
+            directoryGitState={directory.gitState}
             selectedBaseline={diff.baseline}
             onSelectBaseline={diff.setBaseline}
             includeUntracked={diff.includeUntracked}

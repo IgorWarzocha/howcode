@@ -23,7 +23,7 @@ function getFileMentionMatch(draft: string) {
 
 type UseComposerFileMentionsOptions = {
   draft: string
-  projectId: string
+  directoryId: string
   setDraft: (draft: string) => void
   attachAttachments: (attachments: ComposerAttachment[], options?: { closeMenu?: boolean }) => void
 }
@@ -38,7 +38,7 @@ function toAttachment(entry: ComposerFileSearchEntry): ComposerAttachment {
 
 export function useComposerFileMentions({
   draft,
-  projectId,
+  directoryId,
   setDraft,
   attachAttachments,
 }: UseComposerFileMentionsOptions) {
@@ -105,7 +105,7 @@ export function useComposerFileMentions({
 
     let cancelled = false
     setLoading(true)
-    void searchComposerAttachmentEntriesQuery({ projectId, query: filter, limit: 60 })
+    void searchComposerAttachmentEntriesQuery({ directoryId, query: filter, limit: 60 })
       .then((nextFiles) => {
         if (!cancelled) setFiles(nextFiles)
       })
@@ -119,7 +119,7 @@ export function useComposerFileMentions({
     return () => {
       cancelled = true
     }
-  }, [filter, open, projectId])
+  }, [filter, open, directoryId])
 
   useEffect(() => {
     if (selectedIndex >= visibleFiles.length) {

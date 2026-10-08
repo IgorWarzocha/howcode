@@ -1,21 +1,21 @@
 import { Effect } from 'effect'
 import * as SqlClient from 'effect/sql/SqlClient'
-import { ensureProject } from '../../../../desktop/thread-state-db/conversation-scopes.ts'
-import { withDatabaseTransaction } from '../../../../desktop/thread-state-db/write-transaction.ts'
+import { ensureDirectory } from '../../../../desktop/chat-repository/conversation-scopes.ts'
+import { withDatabaseTransaction } from '../../../../desktop/chat-repository/write-transaction.ts'
 
-export type ProjectWorktreeSource = 'howcode' | 'imported'
+export type DirectoryWorktreeSource = 'howcode' | 'imported'
 
-export type ProjectWorktreeMetadata = {
+export type DirectoryWorktreeMetadata = {
   cwd: string
   rootCwd: string
   branchName: string | null
   parentBranchName?: string | null | undefined
   gitCommonDirectoryIdentity: string | null
   isMain: boolean
-  source: ProjectWorktreeSource
+  source: DirectoryWorktreeSource
 }
 
-export type StoredProjectWorktree = ProjectWorktreeMetadata & {
+export type StoredDirectoryWorktree = DirectoryWorktreeMetadata & {
   completed: boolean
 }
 
@@ -23,11 +23,11 @@ export type RegisterManagedWorktreeInput = {
   branchName: string
   gitCommonDirectoryIdentity: string | null
   parentBranchName: string
-  projectId: string
-  rootProjectId: string
+  directoryId: string
+  rootDirectoryId: string
 }
 
-export const getProjectWorktree = Effect.fn('threadStateDb.getProjectWorktree')(function* (
+export const getDirectoryWorktree = Effect.fn('chatRepository.getDirectoryWorktree')(function* (
   cwd: string,
 ) {
   const sql = yield* SqlClient.SqlClient
@@ -73,7 +73,7 @@ export const getProjectWorktree = Effect.fn('threadStateDb.getProjectWorktree')(
     throw new Error(`Invalid persisted worktree metadata for ${cwd}.`)
   }
 
-  const worktree: StoredProjectWorktree = {
+  const worktree: StoredDirectoryWorktree = {
     cwd: row.cwd,
     rootCwd: row.rootCwd,
     branchName: row.branchName,
@@ -86,45 +86,44 @@ export const getProjectWorktree = Effect.fn('threadStateDb.getProjectWorktree')(
   return worktree
 })
 
-export const getProjectWorktreeDirectory = Effect.fn('threadStateDb.getProjectWorktreeDirectory')(
-  function* (rootCwd: string) {
-    const sql = yield* SqlClient.SqlClient
-    const row = (yield* sql.unsafe<{ worktreeDir?: string | undefined }>(
-      `
+export const getDirectoryWorktreeDirectory = Effect.fn(
+  'chatRepository.getDirectoryWorktreeDirectory',
+)(function* (rootCwd: string) {
+  const sql = yield* SqlClient.SqlClient
+  const row = (yield* sql.unsafe<{ worktreeDir?: string | undefined }>(
+    `
         SELECT worktree_dir AS worktreeDir
         FROM project_worktree_settings
         WHERE root_cwd = ?
       `,
-      [rootCwd],
-    ))[0]
+    [rootCwd],
+  ))[0]
 
-    return row?.worktreeDir?.trim() || './.worktrees'
-  },
-)
+  return row?.worktreeDir?.trim() || './.worktrees'
+})
 
-export const setProjectWorktreeDirectory = Effect.fn('threadStateDb.setProjectWorktreeDirectory')(
-  function* (rootCwd: string, worktreeDirectory: string) {
-    const normalizedWorktreeDirectory = worktreeDirectory.trim() || './.worktrees'
-    const sql = yield* SqlClient.SqlClient
-    yield* sql.unsafe(
-      `
+export const setDirectoryWorktreeDirectory = Effect.fn(
+  'chatRepository.setDirectoryWorktreeDirectory',
+)(function* (rootCwd: string, worktreeDirectory: string) {
+  const normalizedWorktreeDirectory = worktreeDirectory.trim() || './.worktrees'
+  const sql = yield* SqlClient.SqlClient
+  yield* sql.unsafe(
+    `
       INSERT INTO project_worktree_settings (root_cwd, worktree_dir)
       VALUES (?, ?)
       ON CONFLICT(root_cwd) DO UPDATE SET
         worktree_dir = excluded.worktree_dir,
         updated_at = CURRENT_TIMESTAMP
     `,
-      [rootCwd, normalizedWorktreeDirectory],
-    )
-  },
-)
+    [rootCwd, normalizedWorktreeDirectory],
+  )
+})
 
-export const upsertProjectWorktree = Effect.fn('threadStateDb.upsertProjectWorktree')(function* (
-  metadata: ProjectWorktreeMetadata,
-) {
-  const sql = yield* SqlClient.SqlClient
-  yield* sql.unsafe(
-    `
+export const upsertDirectoryWorktree = Effect.fn('chatRepository.upsertDirectoryWorktree')(
+  function* (metadata: DirectoryWorktreeMetadata) {
+    const sql = yield* SqlClient.SqlClient
+    yield* sql.unsafe(
+      `
       INSERT INTO project_worktrees (
         cwd,
         root_cwd,
@@ -176,54 +175,55 @@ export const upsertProjectWorktree = Effect.fn('threadStateDb.upsertProjectWorkt
         END,
         updated_at = CURRENT_TIMESTAMP
     `,
-    [
-      metadata.cwd,
-      metadata.rootCwd,
-      metadata.branchName,
-      metadata.parentBranchName ?? null,
-      metadata.gitCommonDirectoryIdentity,
-      metadata.isMain ? 1 : 0,
-      metadata.source,
-    ],
-  )
+      [
+        metadata.cwd,
+        metadata.rootCwd,
+        metadata.branchName,
+        metadata.parentBranchName ?? null,
+        metadata.gitCommonDirectoryIdentity,
+        metadata.isMain ? 1 : 0,
+        metadata.source,
+      ],
+    )
 
-  if (!metadata.isMain && metadata.branchName) {
-    yield* sql.unsafe(
-      `
+    if (!metadata.isMain && metadata.branchName) {
+      yield* sql.unsafe(
+        `
         UPDATE conversation_facts
         SET branch_name = COALESCE(branch_name, ?),
           updated_at = CURRENT_TIMESTAMP
         WHERE cwd = ?
       `,
-      [metadata.branchName, metadata.cwd],
-    )
-  }
-})
+        [metadata.branchName, metadata.cwd],
+      )
+    }
+  },
+)
 
-export const setProjectWorktreeCompleted = Effect.fn('threadStateDb.setProjectWorktreeCompleted')(
-  function* (cwd: string, completed: boolean) {
-    const sql = yield* SqlClient.SqlClient
-    const result = yield* sql.unsafe(
-      `
+export const setDirectoryWorktreeCompleted = Effect.fn(
+  'chatRepository.setDirectoryWorktreeCompleted',
+)(function* (cwd: string, completed: boolean) {
+  const sql = yield* SqlClient.SqlClient
+  const result = yield* sql.unsafe(
+    `
       UPDATE project_worktrees
       SET completed = ?, updated_at = CURRENT_TIMESTAMP
       WHERE cwd = ? AND is_main = 0
     `,
-      [completed ? 1 : 0, cwd],
-    ).raw
-    if (
-      typeof result !== 'object' ||
-      result === null ||
-      !('changes' in result) ||
-      typeof result.changes !== 'number'
-    ) {
-      throw new Error(`Invalid worktree completion update result for ${cwd}.`)
-    }
-    return result.changes > 0
-  },
-)
+    [completed ? 1 : 0, cwd],
+  ).raw
+  if (
+    typeof result !== 'object' ||
+    result === null ||
+    !('changes' in result) ||
+    typeof result.changes !== 'number'
+  ) {
+    throw new Error(`Invalid worktree completion update result for ${cwd}.`)
+  }
+  return result.changes > 0
+})
 
-export const listProjectWorktreePaths = Effect.fn('threadStateDb.listProjectWorktreePaths')(
+export const listDirectoryWorktreePaths = Effect.fn('chatRepository.listDirectoryWorktreePaths')(
   function* (rootCwd: string) {
     const sql = yield* SqlClient.SqlClient
     const rows = yield* sql.unsafe<{ cwd?: unknown }>(
@@ -245,8 +245,8 @@ export const listProjectWorktreePaths = Effect.fn('threadStateDb.listProjectWork
   },
 )
 
-export const deleteProjectWorktreeMetadata = Effect.fn(
-  'threadStateDb.deleteProjectWorktreeMetadata',
+export const deleteDirectoryWorktreeMetadata = Effect.fn(
+  'chatRepository.deleteDirectoryWorktreeMetadata',
 )(function* (cwd: string) {
   const sql = yield* SqlClient.SqlClient
   yield* sql.unsafe(
@@ -258,23 +258,23 @@ export const deleteProjectWorktreeMetadata = Effect.fn(
   )
 })
 
-export const registerManagedWorktree = Effect.fn('threadStateDb.registerManagedWorktree')(
+export const registerManagedWorktree = Effect.fn('chatRepository.registerManagedWorktree')(
   function* (input: RegisterManagedWorktreeInput) {
     yield* withDatabaseTransaction(
       Effect.gen(function* () {
-        yield* ensureProject(input.rootProjectId)
-        yield* ensureProject(input.projectId)
-        yield* upsertProjectWorktree({
-          cwd: input.rootProjectId,
-          rootCwd: input.rootProjectId,
+        yield* ensureDirectory(input.rootDirectoryId)
+        yield* ensureDirectory(input.directoryId)
+        yield* upsertDirectoryWorktree({
+          cwd: input.rootDirectoryId,
+          rootCwd: input.rootDirectoryId,
           branchName: null,
           gitCommonDirectoryIdentity: input.gitCommonDirectoryIdentity,
           isMain: true,
           source: 'howcode',
         })
-        yield* upsertProjectWorktree({
-          cwd: input.projectId,
-          rootCwd: input.rootProjectId,
+        yield* upsertDirectoryWorktree({
+          cwd: input.directoryId,
+          rootCwd: input.rootDirectoryId,
           branchName: input.branchName,
           parentBranchName: input.parentBranchName,
           gitCommonDirectoryIdentity: input.gitCommonDirectoryIdentity,
