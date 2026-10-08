@@ -21,6 +21,7 @@ import {
   type ReactNode,
   useContext,
   useEffect,
+  useEffectEvent,
   useMemo,
   useState,
   useSyncExternalStore,
@@ -229,22 +230,23 @@ const getEmptySnapshot = () => null
 function useGitPresentation<Model>(descriptor: UiPresentation<GitDiffPresentationState, Model>) {
   const owner = useDiffPresentationOwner()
   const { instance, openDetail } = owner
+  const requestDetail = useEffectEvent(openDetail)
   const [view, setView] = useState<{
     instance: UiCapabilityInstance<GitDiffPresentationState>
     session: UiPresentationSession<Model>
   } | null>(null)
   useEffect(() => {
-    if (!instance) return
+    if (!instance || instance.context.signal.aborted) return
     const controller = new AbortController()
     const child = instance.present(descriptor, {
       signal: controller.signal,
-      onRequestPresentation: () => openDetail(),
+      onRequestPresentation: () => requestDetail(),
     })
     setView({ instance, session: child })
     return () => {
       controller.abort()
     }
-  }, [descriptor, instance, openDetail])
+  }, [descriptor, instance])
   const context =
     view?.instance === instance && !view.session.context.signal.aborted
       ? view.session.context
