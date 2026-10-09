@@ -16,8 +16,8 @@
         "@fontsource-variable/geist-mono": "^5.3.0",
         "@fontsource-variable/inter": "^5.3.0",
         "@howaboua/howcode-git": "file:../howcode-components/dist/howaboua-howcode-git-0.1.0-43516ee7.tgz",
-        "@howaboua/howcode-intelligent-ui": "file:../howcode-components/dist/howaboua-howcode-intelligent-ui-0.1.0-1278426b.tgz",
-        "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-22bd1c15.tgz",
+        "@howaboua/howcode-intelligent-ui": "file:../howcode-components/dist/howaboua-howcode-intelligent-ui-0.1.0-9901fef0.tgz",
+        "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-1c15cecc.tgz",
         "@howaboua/pi-durable-git": "file:../pi-durable-components/dist/howaboua-pi-durable-git-0.1.0-33d23824.tgz",
         "@howaboua/pi-durable-ui": "file:../pi-durable-components/dist/howaboua-pi-durable-ui-0.1.0-7f88e772.tgz",
         "@mdxeditor/editor": "4.2.5",
@@ -71,8 +71,8 @@
   "overrides": {
     "@aws-sdk/client-bedrock-runtime": "3.1136.0",
     "@howaboua/howcode-git": "file:../howcode-components/dist/howaboua-howcode-git-0.1.0-43516ee7.tgz",
-    "@howaboua/howcode-intelligent-ui": "file:../howcode-components/dist/howaboua-howcode-intelligent-ui-0.1.0-1278426b.tgz",
-    "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-22bd1c15.tgz",
+    "@howaboua/howcode-intelligent-ui": "file:../howcode-components/dist/howaboua-howcode-intelligent-ui-0.1.0-9901fef0.tgz",
+    "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-1c15cecc.tgz",
     "@howaboua/pi-durable-git": "file:../pi-durable-components/dist/howaboua-pi-durable-git-0.1.0-33d23824.tgz",
     "@howaboua/pi-durable-ui": "file:../pi-durable-components/dist/howaboua-pi-durable-ui-0.1.0-7f88e772.tgz",
     "lightningcss": "1.33.0",
@@ -350,9 +350,9 @@
 
     "@howaboua/howcode-git": ["@howaboua/howcode-git@../howcode-components/dist/howaboua-howcode-git-0.1.0-43516ee7.tgz", { "dependencies": { "@howaboua/howcode-sdk": "0.1.0", "@howaboua/pi-durable-git": "0.1.0", "@howaboua/pi-durable-ui": "0.1.0", "@pierre/diffs": "1.4.3", "@pierre/trees": "1.0.0-beta.6", "@tanstack/react-query": "5.103.1", "effect": "4.0.1", "lucide-react": "1.47.0" }, "peerDependencies": { "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-pcGkyguKKhRWbm2QwiHSNWrfxqt3FmQTLC5ryFmhTWNsn1pVfRmnIW7zl+QaSe058Ly2ljPgxUzuWj75q9TCpQ=="],
 
-    "@howaboua/howcode-intelligent-ui": ["@howaboua/howcode-intelligent-ui@../howcode-components/dist/howaboua-howcode-intelligent-ui-0.1.0-1278426b.tgz", { "dependencies": { "@howaboua/howcode-sdk": "0.1.0", "playwright-core": "1.63.0" }, "peerDependencies": { "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-dVYThNyNu97kIALI/nOkRpWzrnJM1AJ8naHKaFV9nzJ+EhFgi9fqA9wm9cbJQ7PX3pxfYZCOvv0/K8nX9gOfNg=="],
+    "@howaboua/howcode-intelligent-ui": ["@howaboua/howcode-intelligent-ui@../howcode-components/dist/howaboua-howcode-intelligent-ui-0.1.0-9901fef0.tgz", { "dependencies": { "@howaboua/howcode-sdk": "0.1.0", "lucide-react": "1.47.0", "playwright-core": "1.63.0" }, "peerDependencies": { "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-WOllqgniRRvJJzRu1lRx6v1gKYUHKyFrQDEXMtAuLucdhRJwvYoFvpj1F9tj5gQ5SrmWSBTLOVmHMYp9Bc6KDw=="],
 
-    "@howaboua/howcode-sdk": ["@howaboua/howcode-sdk@../howcode-components/dist/howaboua-howcode-sdk-0.1.0-22bd1c15.tgz", { "dependencies": { "effect": "4.0.1", "lucide-react": "1.47.0" }, "peerDependencies": { "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-g1P8HO2PK1Kx209ap7Zek4fYZ7Mt44JYUhryEh00J9favlA91gSz+l4MKLdhnbvFrwQllCWInLX7u62YcCQQjg=="],
+    "@howaboua/howcode-sdk": ["@howaboua/howcode-sdk@../howcode-components/dist/howaboua-howcode-sdk-0.1.0-1c15cecc.tgz", { "dependencies": { "effect": "4.0.1", "lucide-react": "1.47.0" }, "peerDependencies": { "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-D80OLgQTMXJL/H8b4zY7XrRQsAr8VVrbl/BVY77ZcUuu3Q2JKf2w89hlurRjEI9zDZGtXoPlizbvFx+IPdDfjQ=="],
 
     "@howaboua/pi-durable-git": ["@howaboua/pi-durable-git@../pi-durable-components/dist/howaboua-pi-durable-git-0.1.0-33d23824.tgz", { "dependencies": { "typebox": "1.3.27" }, "peerDependencies": { "@earendil-works/chord": "1.1.0", "@earendil-works/pi-ai": "1.1.0", "@earendil-works/pi-durable": "1.1.0" }, "optionalPeers": ["@earendil-works/chord", "@earendil-works/pi-ai", "@earendil-works/pi-durable"] }, "sha512-CW7hJ1OsV3tETJcVcgX+Q0dt/RehwCmajOvAX7oGmIuIjlQut6jORZePUrdaGdJiDqE/CRXakPO4k1GTz0HNHA=="],
 
