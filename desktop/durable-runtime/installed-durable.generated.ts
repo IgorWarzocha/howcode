@@ -1,2 +1,5 @@
 // Generated from installed Howcode metadata. Dependency roots are resolved at runtime.
-export const installedHowcodePackages = ['@howaboua/howcode-git'] as const
+export const installedHowcodePackages = [
+  '@howaboua/howcode-git',
+  '@howaboua/howcode-intelligent-ui',
+] as const

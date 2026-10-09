@@ -24,9 +24,11 @@ import {
 import { desktopShutdownTimeouts } from '../shared/desktop-shutdown-deadlines.ts'
 import { getDesktopWorkingDirectory } from '../shared/desktop-working-directory.ts'
 import { makeShutdownCoordinator } from '../shared/effect-shutdown.ts'
+import { getThemeValues } from '../shared/gui-theme.ts'
 import type { TerminalRpcRequest } from '../shared/terminal-rpc.ts'
 import { isToolkitComponentEnabled } from '../shared/toolkit-components.ts'
 import { registerConversationCleanup } from './app-service/chat-actions.ts'
+import { getRuntimeConversationMetadata } from './app-service/conversation-state.ts'
 import * as coreApp from './app-service.ts'
 import { loadAppSettings } from './app-settings/readers.ts'
 import { registerChatBranchFallbacks } from './chat-repository/chat-branch-fallbacks.ts'
@@ -40,6 +42,8 @@ import { cleanupLegacyCheckpoints } from './git-integration/legacy-checkpoints.t
 import { createInstalledPluginServices } from './plugins/runtime.ts'
 import { emitDesktopEvent } from './runtime/desktop-events.ts'
 import { getAgentDirectory } from './settings/paths.ts'
+import { loadPiSettings } from './settings/preferences.ts'
+import { loadThemeState } from './settings/themes.ts'
 import { getDesktopUserDataPath } from './user-data-path.ts'
 import { syncWorkspaceOrganization } from './workspace-repository.ts'
 
@@ -97,7 +101,21 @@ const workingDirectoriesComponent = createWorkingDirectoriesService({
 const workingDirectories = workingDirectoriesComponent.service
 let gitComponent: ReturnType<typeof createGitIntegration> | undefined
 const pluginsComponent = await createInstalledPluginServices(
-  { publishEvent: (event) => emitDesktopEvent(event as DesktopEvent) },
+  {
+    publishEvent: (event) => emitDesktopEvent(event as DesktopEvent),
+    agent: {
+      dataDirectory: getDesktopUserDataPath(),
+      async theme(conversationId) {
+        const directory =
+          getRuntimeConversationMetadata(conversationId)?.directoryId ??
+          getDesktopWorkingDirectory()
+        const settings = await loadPiSettings(directory)
+        const theme = await loadThemeState(settings.theme, directory)
+        const { colorScheme, ...cssVars } = getThemeValues(theme)
+        return { name: theme.selectedTheme, colors: theme.colors, cssVars, colorScheme }
+      },
+    },
+  },
   {
     '@howaboua/howcode-git': (contribution, host) => {
       gitComponent = createGitIntegration(contribution, host, {

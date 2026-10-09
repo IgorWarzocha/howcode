@@ -8,6 +8,7 @@ import type { ChatData, ComposerStateRequest } from '../../shared/desktop-contra
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
 import { mapDurableEntriesToChat } from '../../shared/durable-message-mapper.ts'
 import { getRuntimeConversationMetadata } from '../app-service/conversation-state.ts'
+import { freezePluginTurn } from '../plugins/runtime.ts'
 import { emitDesktopEvent } from '../runtime/desktop-events.ts'
 import { getComposerState } from './composer.ts'
 import { readRuntimeEntries, resolveConversation, runtimeContext } from './host.ts'
@@ -127,6 +128,7 @@ async function attachConversationWatch(request: ComposerStateRequest & { convers
       composer: await getComposerState(request),
     })
     if (reason === 'end') {
+      await freezePluginTurn(conversationId)
       if (selectedConversationId !== conversationId) await watch.stop()
     }
   }

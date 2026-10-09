@@ -6,6 +6,18 @@ import {
 } from '@howaboua/howcode-sdk/plugins'
 import { installedServiceContributions } from './installed-services.generated.ts'
 
+let installedInstances: ReadonlyMap<string, PluginServiceInstance> = new Map()
+export function installedAgentTools() {
+  return [...installedInstances].flatMap(([plugin, instance]) =>
+    (instance.tools ?? []).map((tool) => ({ plugin, tool })),
+  )
+}
+export async function freezePluginTurn(conversationId: string) {
+  await Promise.all(
+    [...installedInstances.values()].map((instance) => instance.freezeTurn?.(conversationId)),
+  )
+}
+
 export async function createInstalledPluginServices(
   host: PluginServiceHost,
   adapters: Record<
@@ -21,6 +33,7 @@ export async function createInstalledPluginServices(
   try {
     for (const [name, contribution] of Object.entries(installedServiceContributions)) {
       const pluginHost = {
+        ...(host.agent ? { agent: host.agent } : {}),
         publishEvent: (event: unknown) =>
           host.publishEvent({ type: 'plugin-event', plugin: name, event }),
       }
@@ -39,6 +52,7 @@ export async function createInstalledPluginServices(
     throw error
   }
   let closed = false
+  installedInstances = instances
   let disposal: Promise<void> | undefined
   return {
     service: {
@@ -51,6 +65,7 @@ export async function createInstalledPluginServices(
     },
     dispose() {
       closed = true
+      installedInstances = new Map()
       disposal ??= (async () => {
         const results = await closeInstances()
         const errors = results

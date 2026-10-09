@@ -1,4 +1,5 @@
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { useWorkspaceSurface } from '@howaboua/howcode-sdk/workspace-surfaces'
 import { ChatView } from '@howcode/chat'
 import { ArtifactDrawerViews, useChatArtifactDrawerState } from '@howcode/components/artifacts/ui'
 import { useQueuedPromptCancellation } from '@howcode/composer/useQueuedPromptCancellation'
@@ -11,6 +12,7 @@ import { type RefObject, useRef, useState } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
 import type { DirectoryDiffBaseline, DirectoryDiffRenderMode } from '../desktop/types'
 import { WORKSPACE_EDGE_PADDING_CLASS } from '../ui/layout'
+import { WorkspaceSurfaceDock } from '../workspace-shell/workspace-surface-dock'
 import { ChatComposerDock, type ChatWorkspaceComposerProps } from './chat-workspace-composer'
 import type { ChatWorkspaceController } from './chat-workspace-contract'
 
@@ -52,8 +54,13 @@ function ChatWorkspaceMain({
   hasConversation,
   handleLoadEarlierMessages,
 }: ChatWorkspaceContentProps) {
+  const surface = useWorkspaceSurface()
   return (
-    <main ref={mainViewRef} className="h-full min-h-0 overflow-hidden">
+    <main
+      ref={mainViewRef}
+      hidden={surface?.placement === 'main'}
+      className="h-full min-h-0 overflow-hidden"
+    >
       <ChatView
         key={activeChatData?.conversationId ?? 'new-chat'}
         messages={shouldShowConversationContent ? (activeChatData?.messages ?? []) : []}
@@ -80,33 +87,35 @@ function ChatDesktopContent(props: ChatWorkspaceContentProps) {
       ref={artifactDrawer.desktopContentRef}
       className={cn(
         'motion-terminal-drawer-offset absolute inset-0 min-h-0 overflow-hidden',
+        WORKSPACE_EDGE_PADDING_CLASS,
         artifactDrawer.artifactsFullscreen && 'hidden',
       )}
       style={
         artifactDrawer.artifactsFullscreen ? undefined : artifactDrawer.artifactDrawerInsetStyle
       }
     >
-      <div
-        className={cn('absolute inset-x-0 top-0 overflow-hidden', WORKSPACE_EDGE_PADDING_CLASS)}
-        style={{ bottom: hasConversationLayout ? `${footerHeight}px` : '0px' }}
-      >
-        <ChatWorkspaceMain {...props} />
-      </div>
-      <footer
-        ref={footerRef}
-        className={cn(
-          'motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-10 pb-4',
-          WORKSPACE_EDGE_PADDING_CLASS,
-          hasConversationLayout
-            ? 'bottom-0 translate-y-0'
-            : '-translate-y-1/2 transition-[top,transform] duration-300 ease-out',
-        )}
-        style={hasConversationLayout ? undefined : { top: NEW_CHAT_COMPOSER_TOP }}
-      >
-        <div className="pointer-events-auto grid gap-2.5">
-          <ChatComposerDock {...props} />
+      <WorkspaceSurfaceDock footerInset={hasConversationLayout ? footerHeight : 0}>
+        <div
+          className="absolute inset-x-0 top-0 overflow-hidden"
+          style={{ bottom: hasConversationLayout ? `${footerHeight}px` : '0px' }}
+        >
+          <ChatWorkspaceMain {...props} />
         </div>
-      </footer>
+        <footer
+          ref={footerRef}
+          className={cn(
+            'motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-10 pb-4',
+            hasConversationLayout
+              ? 'bottom-0 translate-y-0'
+              : '-translate-y-1/2 transition-[top,transform] duration-300 ease-out',
+          )}
+          style={hasConversationLayout ? undefined : { top: NEW_CHAT_COMPOSER_TOP }}
+        >
+          <div className="pointer-events-auto grid gap-2.5">
+            <ChatComposerDock {...props} />
+          </div>
+        </footer>
+      </WorkspaceSurfaceDock>
     </div>
   )
 }

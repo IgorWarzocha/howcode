@@ -15,8 +15,9 @@
         "@effect/sql-sqlite-node": "4.0.1",
         "@fontsource-variable/geist-mono": "^5.3.0",
         "@fontsource-variable/inter": "^5.3.0",
-        "@howaboua/howcode-git": "file:../howcode-components/dist/howaboua-howcode-git-0.1.0-f827c0d0.tgz",
-        "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-e09ac822.tgz",
+        "@howaboua/howcode-git": "file:../howcode-components/dist/howaboua-howcode-git-0.1.0-eebc74f2.tgz",
+        "@howaboua/howcode-intelligent-ui": "file:../howcode-components/dist/howaboua-howcode-intelligent-ui-0.1.0-0ee8f0c9.tgz",
+        "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-f8294560.tgz",
         "@howaboua/pi-durable-git": "file:../pi-durable-components/dist/howaboua-pi-durable-git-0.1.0-33d23824.tgz",
         "@howaboua/pi-durable-ui": "file:../pi-durable-components/dist/howaboua-pi-durable-ui-0.1.0-7f88e772.tgz",
         "@mdxeditor/editor": "4.2.5",
@@ -69,8 +70,9 @@
   },
   "overrides": {
     "@aws-sdk/client-bedrock-runtime": "3.1136.0",
-    "@howaboua/howcode-git": "file:../howcode-components/dist/howaboua-howcode-git-0.1.0-f827c0d0.tgz",
-    "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-e09ac822.tgz",
+    "@howaboua/howcode-git": "file:../howcode-components/dist/howaboua-howcode-git-0.1.0-eebc74f2.tgz",
+    "@howaboua/howcode-intelligent-ui": "file:../howcode-components/dist/howaboua-howcode-intelligent-ui-0.1.0-0ee8f0c9.tgz",
+    "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-f8294560.tgz",
     "@howaboua/pi-durable-git": "file:../pi-durable-components/dist/howaboua-pi-durable-git-0.1.0-33d23824.tgz",
     "@howaboua/pi-durable-ui": "file:../pi-durable-components/dist/howaboua-pi-durable-ui-0.1.0-7f88e772.tgz",
     "lightningcss": "1.33.0",
@@ -346,9 +348,11 @@
 
     "@google/genai": ["@google/genai@2.21.0", "", { "dependencies": { "google-auth-library": "^10.3.0", "p-retry": "^4.6.2", "protobufjs": "^7.5.4", "ws": "^8.18.0" }, "peerDependencies": { "@modelcontextprotocol/sdk": "^1.25.2" }, "optionalPeers": ["@modelcontextprotocol/sdk"] }, "sha512-+PDtco2/Z0ONdzCGekCoCT+O1VJS9xJQNN4XzQpXG/t3El/SWWMkCWlFRO1KmivOHPa4Q0VjUYu1HBKCZ/v33Q=="],
 
-    "@howaboua/howcode-git": ["@howaboua/howcode-git@../howcode-components/dist/howaboua-howcode-git-0.1.0-f827c0d0.tgz", { "dependencies": { "@howaboua/howcode-sdk": "0.1.0", "@howaboua/pi-durable-git": "0.1.0", "@howaboua/pi-durable-ui": "0.1.0", "@pierre/diffs": "1.4.3", "@pierre/trees": "1.0.0-beta.6", "@tanstack/react-query": "5.103.1", "effect": "4.0.1", "lucide-react": "1.47.0" }, "peerDependencies": { "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-cctKtvz8F1x5N5gvXNeFrj/RgZDTOwGgkMiZWaBKETORf00ZlaaugUYuqo6Fdql5xbfhSwbA3Jmd0jwjtAFiRg=="],
+    "@howaboua/howcode-git": ["@howaboua/howcode-git@../howcode-components/dist/howaboua-howcode-git-0.1.0-eebc74f2.tgz", { "dependencies": { "@howaboua/howcode-sdk": "0.1.0", "@howaboua/pi-durable-git": "0.1.0", "@howaboua/pi-durable-ui": "0.1.0", "@pierre/diffs": "1.4.3", "@pierre/trees": "1.0.0-beta.6", "@tanstack/react-query": "5.103.1", "effect": "4.0.1", "lucide-react": "1.47.0" }, "peerDependencies": { "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-rf2q/EhL9k1ejKX2cIPf2oxMIP3szYXRTsn4pDrrifUNBxBsr4Gm+bh9eDKMZVHUQrWcMWKL78K8z2XW3j596g=="],
 
-    "@howaboua/howcode-sdk": ["@howaboua/howcode-sdk@../howcode-components/dist/howaboua-howcode-sdk-0.1.0-e09ac822.tgz", { "dependencies": { "effect": "4.0.1", "lucide-react": "1.47.0" }, "peerDependencies": { "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-fSSYdvcKuB+dItx7i/iegjJn5WipAG1Hr3pKqY1+zFVkWbLsORufqiRHi6vRo81YC9TOUM0/h0KeaS+EtoKjQQ=="],
+    "@howaboua/howcode-intelligent-ui": ["@howaboua/howcode-intelligent-ui@../howcode-components/dist/howaboua-howcode-intelligent-ui-0.1.0-0ee8f0c9.tgz", { "dependencies": { "@howaboua/howcode-sdk": "0.1.0", "playwright-core": "1.63.0" }, "peerDependencies": { "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-muHXIXuEi7ZrDtt4cYMU3lYWAf86ANd6iJVlzx8z7dKHUT1vhr5LlRh2AJfuNx1tNs4fgCLJMWdXe2lLbtXs6Q=="],
+
+    "@howaboua/howcode-sdk": ["@howaboua/howcode-sdk@../howcode-components/dist/howaboua-howcode-sdk-0.1.0-f8294560.tgz", { "dependencies": { "effect": "4.0.1", "lucide-react": "1.47.0" }, "peerDependencies": { "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-vdBW18i29QVjAlVD4HE/wWHBEr0Xo62QYExzAwcxE62dnSCEoV8Vzzel1me3wY5pbOWfIO0Jvk7Ab8AkKO9ZdA=="],
 
     "@howaboua/pi-durable-git": ["@howaboua/pi-durable-git@../pi-durable-components/dist/howaboua-pi-durable-git-0.1.0-33d23824.tgz", { "dependencies": { "typebox": "1.3.27" }, "peerDependencies": { "@earendil-works/chord": "1.1.0", "@earendil-works/pi-ai": "1.1.0", "@earendil-works/pi-durable": "1.1.0" }, "optionalPeers": ["@earendil-works/chord", "@earendil-works/pi-ai", "@earendil-works/pi-durable"] }, "sha512-CW7hJ1OsV3tETJcVcgX+Q0dt/RehwCmajOvAX7oGmIuIjlQut6jORZePUrdaGdJiDqE/CRXakPO4k1GTz0HNHA=="],
 

@@ -23,6 +23,15 @@ export function hasDesktopBridgeQuery() {
   return typeof window !== 'undefined' && typeof window.piDesktop?.invokeAction === 'function'
 }
 
+export async function requestInstalledPluginQuery<Result>(
+  plugin: string,
+  method: string,
+  payload: unknown,
+): Promise<Result> {
+  if (!window.piDesktop) throw new Error('Desktop bridge is unavailable.')
+  return (await window.piDesktop.pluginRequest(plugin, method, payload)) as Result
+}
+
 export function getDesktopBridgeCapabilitiesQuery() {
   if (typeof window === 'undefined') {
     return browserDesktopBridgeCapabilities

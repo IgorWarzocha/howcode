@@ -4,6 +4,7 @@ import {
 } from '@howaboua/howcode-sdk/ui/typography-scale'
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { ChatMessage } from '../common/chat-message'
+import { TurnAttachments } from '../component-system/turn-attachments'
 import { getCollapsedTurnPreview } from './chat-timeline-previews'
 import {
   FoldedTimelineRow,
@@ -14,6 +15,7 @@ import { isTurnRowCollapsible, type TimelineRow, type TimelineTurnItem } from '.
 import { ToolCallsCard } from './tool-calls-card'
 
 type ChatTimelineRowProps = {
+  conversationId: string | null | undefined
   row: TimelineRow
   collapsed: boolean
   activeFindMessageId: string | null
@@ -56,6 +58,7 @@ function HistoryDividerRow({
 }
 
 function TurnRow({
+  conversationId,
   collapsed,
   onToggleRowCollapse,
   renderTurnItem,
@@ -64,6 +67,7 @@ function TurnRow({
   activeFindMessageId,
   findQuery,
 }: {
+  conversationId: string | null | undefined
   collapsed: boolean
   onToggleRowCollapse: (rowId: string) => void
   renderTurnItem: RenderTurnItem
@@ -79,46 +83,46 @@ function TurnRow({
   const isCollapsed = collapsed && !isStreamingTurn
   const onToggleTurnCollapse =
     !canCollapseTurn || isStreamingTurn ? undefined : () => onToggleRowCollapse(row.id)
-  if (isCollapsed) {
-    const preview = getCollapsedTurnPreview(row)
-    return (
-      <TimelineRowShell
-        expanded={false}
-        ariaLabel="Expand turn"
-        onToggle={onToggleTurnCollapse}
-        toggleClassName="mt-2"
-      >
-        <FoldedTimelineRow
-          label={preview.label}
-          secondary={preview.secondary}
-          italicLabel={preview.italicLabel}
-          mutedLabel={preview.mutedLabel ?? preview.italicLabel}
-          tone={row.userMessage?.role === 'user' ? 'user' : 'default'}
-          onToggle={() => onToggleTurnCollapse?.()}
-        />
-      </TimelineRowShell>
-    )
-  }
+  const preview = isCollapsed ? getCollapsedTurnPreview(row) : null
   return (
     <TimelineRowShell
-      expanded
-      ariaLabel="Collapse turn"
+      expanded={!isCollapsed}
+      ariaLabel={isCollapsed ? 'Expand turn' : 'Collapse turn'}
       onToggle={onToggleTurnCollapse}
       toggleClassName="mt-2"
     >
       <div className="grid min-w-0 gap-2">
-        {row.userMessage ? (
-          <RowLeadToggleSurface onToggle={onToggleTurnCollapse}>
-            <div data-message-id={row.userMessage.id}>
-              <ChatMessage
-                message={row.userMessage}
-                findActive={row.userMessage.id === activeFindMessageId}
-                findQuery={findQuery}
-              />
-            </div>
-          </RowLeadToggleSurface>
-        ) : null}
-        {row.items.map(renderTurnItem)}
+        {preview ? (
+          <FoldedTimelineRow
+            label={preview.label}
+            secondary={preview.secondary}
+            italicLabel={preview.italicLabel}
+            mutedLabel={preview.mutedLabel ?? preview.italicLabel}
+            tone={row.userMessage?.role === 'user' ? 'user' : 'default'}
+            onToggle={() => onToggleTurnCollapse?.()}
+          />
+        ) : (
+          <div className="grid min-w-0 gap-2">
+            {row.userMessage ? (
+              <RowLeadToggleSurface onToggle={onToggleTurnCollapse}>
+                <div data-message-id={row.userMessage.id}>
+                  <ChatMessage
+                    message={row.userMessage}
+                    findActive={row.userMessage.id === activeFindMessageId}
+                    findQuery={findQuery}
+                  />
+                </div>
+              </RowLeadToggleSurface>
+            ) : null}
+            {row.items.map(renderTurnItem)}
+          </div>
+        )}
+        {/* Hide only the inline anchors. Portaled docked surfaces keep this stable lifetime. */}
+        <div hidden={isCollapsed} className="empty:hidden">
+          {conversationId && row.userMessage ? (
+            <TurnAttachments conversationId={conversationId} turnId={row.userMessage.id} />
+          ) : null}
+        </div>
       </div>
     </TimelineRowShell>
   )
@@ -178,6 +182,7 @@ function SummaryRow({
 }
 
 export function ChatTimelineRow({
+  conversationId,
   row,
   collapsed,
   streamingAssistantMessageId,
@@ -231,6 +236,7 @@ export function ChatTimelineRow({
   if (row.kind === 'turn') {
     return (
       <TurnRow
+        conversationId={conversationId}
         collapsed={collapsed}
         onToggleRowCollapse={onToggleRowCollapse}
         renderTurnItem={renderTurnItem}

@@ -198,6 +198,7 @@ export function ChatTimeline({
         data-message-ids={getTimelineRowMessageIds(row).join(' ')}
       >
         <ChatTimelineRow
+          conversationId={conversationId}
           row={row}
           collapsed={Boolean(effectiveCollapsedRowIds[row.id])}
           activeFindMessageId={activeFindMessageId}
@@ -213,6 +214,7 @@ export function ChatTimeline({
       </div>
     ),
     [
+      conversationId,
       activeFindMessageId,
       effectiveCollapsedRowIds,
       expandedToolWorkspaceIds,

@@ -4,13 +4,14 @@ import type {
   PluginRendererHost,
   PluginRequest,
 } from '@howaboua/howcode-sdk/plugins'
+import { WorkspaceSurfacesProvider } from '@howaboua/howcode-sdk/workspace-surfaces'
 import type { ReactNode } from 'react'
 import { useMemo } from 'react'
 import {
   type HowcodeKeybindingCommandDetail,
   howcodeKeybindingCommandEvent,
 } from '../app-shell/keybinding-events'
-import { subscribeDesktopEvents } from '../query/desktop-query'
+import { requestInstalledPluginQuery, subscribeDesktopEvents } from '../query/desktop-query'
 import { installedRendererContributions } from './installed-renderers.generated'
 
 const installedPluginNames = Object.keys(installedRendererContributions)
@@ -31,8 +32,7 @@ export function InstalledComponentProviders({
           method: string,
           payload: unknown,
         ): Promise<Result> => {
-          if (!window.piDesktop) throw new Error('Desktop bridge is unavailable.')
-          return (await window.piDesktop.pluginRequest(name, method, payload)) as Result
+          return requestInstalledPluginQuery<Result>(name, method, payload)
         }
         const host: PluginRendererHost = {
           enabled: name === '@howaboua/howcode-git' ? enabled : true,
@@ -67,5 +67,9 @@ export function InstalledComponentProviders({
       nested
     )
   }, children)
-  return <InstalledPluginsProvider names={installedPluginNames}>{content}</InstalledPluginsProvider>
+  return (
+    <WorkspaceSurfacesProvider>
+      <InstalledPluginsProvider names={installedPluginNames}>{content}</InstalledPluginsProvider>
+    </WorkspaceSurfacesProvider>
+  )
 }

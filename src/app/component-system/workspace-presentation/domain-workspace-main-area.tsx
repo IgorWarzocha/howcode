@@ -1,10 +1,12 @@
 import { DiffPanel, GitDetailLayoutControls, useGitOpsFileActions } from '@howaboua/howcode-git/ui'
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { useWorkspaceSurface } from '@howaboua/howcode-sdk/workspace-surfaces'
 import { mainPanelClass } from '@howcode/ui/classes'
-import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import type { View } from '../../types'
 import { WORKSPACE_EDGE_PADDING_CLASS } from '../../ui/layout'
 import { FALLBACK_APP_SETTINGS } from '../../workspace-shell/default-app-settings'
+import { WorkspaceSurfaceDock } from '../../workspace-shell/workspace-surface-dock'
 import type { DomainWorkspaceContentProps } from './domain-workspace-contract'
 import { DomainWorkspaceGitReview } from './domain-workspace-git-review'
 import { DomainWorkspaceMainView } from './domain-workspace-main-view'
@@ -91,6 +93,7 @@ function DomainWorkspaceDefaultMain(props: DomainWorkspaceContentProps) {
 }
 
 export function DomainWorkspaceMainArea(props: DomainWorkspaceContentProps) {
+  const surface = useWorkspaceSurface()
   return (
     <div
       className="absolute inset-x-0 top-0 overflow-hidden"
@@ -98,7 +101,10 @@ export function DomainWorkspaceMainArea(props: DomainWorkspaceContentProps) {
     >
       <main
         ref={props.mainViewRef}
-        hidden={props.gitDetailOpen && props.gitDetailLayout.layout.placement === 'main'}
+        hidden={
+          surface?.placement === 'main' ||
+          (props.gitDetailOpen && props.gitDetailLayout.layout.placement === 'main' && !surface)
+        }
         className={cn(
           'h-full min-w-0',
           getMainPanelClass(props.state.activeView, props.gitDetailOpen),
@@ -115,18 +121,15 @@ export function DomainWorkspaceLayout({
   ...props
 }: DomainWorkspaceContentProps & { children: ReactNode }) {
   const detailLayout = props.gitDetailLayout
-  const { layout } = detailLayout
-  const open = props.gitDetailOpen
-  const placement = open ? layout.placement : 'main'
-  const gridStyle = {
-    '--workspace-footer-inset': `${props.footerInset}px`,
-    gridTemplateColumns:
-      placement === 'left'
-        ? `min(${layout.sidebarWidth}px, 65%) minmax(0, 1fr)`
-        : placement === 'right'
-          ? `minmax(0, 1fr) min(${layout.sidebarWidth}px, 65%)`
-          : 'minmax(0, 1fr)',
-  } satisfies CSSProperties & { '--workspace-footer-inset': string }
+  const detail = props.gitDetailOpen ? (
+    <>
+      <GitDetailLayoutControls {...detailLayout} />
+      <DomainWorkspaceGitDetail {...props} />
+      <div className="git-detail-review shrink-0 border-t border-[color:var(--border)] p-2">
+        <DomainWorkspaceGitReview {...props} />
+      </div>
+    </>
+  ) : null
   return (
     <div
       className={cn(
@@ -135,47 +138,14 @@ export function DomainWorkspaceLayout({
       )}
       style={{ ...props.terminalDrawerInsetStyle, bottom: 0 }}
     >
-      <div
-        className="git-workspace-layout relative grid h-full min-h-0 min-w-0 gap-3 overflow-clip"
-        data-git-placement={placement}
-        style={gridStyle}
+      <WorkspaceSurfaceDock
+        layout={detailLayout.layout}
+        detail={detail}
+        footerInset={props.footerInset}
+        detailLabel="Git diff"
       >
-        <div
-          className="domain-workspace-content-column relative min-h-0 min-w-0"
-          style={{ gridRow: 1 }}
-        >
-          {children}
-        </div>
-        {open ? (
-          <section
-            aria-label="Git diff"
-            className="git-detail-host flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--panel)]"
-            style={{
-              gridRow: 1,
-              ...(placement === 'main'
-                ? { position: 'absolute', insetInline: 0, top: 0, bottom: props.footerInset }
-                : {}),
-              ...(placement === 'floating'
-                ? {
-                    position: 'absolute',
-                    left: `calc((100% - min(${layout.floatingWidth}px, 100%)) * ${layout.floatingX / 100})`,
-                    top: `calc((100% - min(${layout.floatingHeight}px, 100%)) * ${layout.floatingY / 100})`,
-                    zIndex: 20,
-                    width: `min(${layout.floatingWidth}px, 100%)`,
-                    height: `min(${layout.floatingHeight}px, 100%)`,
-                    boxShadow: 'var(--shadow)',
-                  }
-                : {}),
-            }}
-          >
-            <GitDetailLayoutControls {...detailLayout} />
-            <DomainWorkspaceGitDetail {...props} />
-            <div className="git-detail-review shrink-0 border-t border-[color:var(--border)] p-2">
-              <DomainWorkspaceGitReview {...props} />
-            </div>
-          </section>
-        ) : null}
-      </div>
+        {children}
+      </WorkspaceSurfaceDock>
     </div>
   )
 }
