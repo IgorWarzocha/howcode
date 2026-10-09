@@ -1,5 +1,4 @@
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
-import { useWorkspaceSurface } from '@howaboua/howcode-sdk/workspace-surfaces'
 import { ChatView } from '@howcode/chat'
 import { ArtifactDrawerViews, useChatArtifactDrawerState } from '@howcode/components/artifacts/ui'
 import { useQueuedPromptCancellation } from '@howcode/composer/useQueuedPromptCancellation'
@@ -54,13 +53,8 @@ function ChatWorkspaceMain({
   hasConversation,
   handleLoadEarlierMessages,
 }: ChatWorkspaceContentProps) {
-  const surface = useWorkspaceSurface()
   return (
-    <main
-      ref={mainViewRef}
-      hidden={surface?.placement === 'main'}
-      className="h-full min-h-0 overflow-hidden"
-    >
+    <main ref={mainViewRef} className="h-full min-h-0 overflow-hidden">
       <ChatView
         key={activeChatData?.conversationId ?? 'new-chat'}
         messages={shouldShowConversationContent ? (activeChatData?.messages ?? []) : []}

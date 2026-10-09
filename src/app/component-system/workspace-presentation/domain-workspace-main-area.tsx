@@ -1,6 +1,5 @@
 import { DiffPanel, GitDetailLayoutControls, useGitOpsFileActions } from '@howaboua/howcode-git/ui'
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
-import { useWorkspaceSurface } from '@howaboua/howcode-sdk/workspace-surfaces'
 import { mainPanelClass } from '@howcode/ui/classes'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import type { View } from '../../types'
@@ -93,7 +92,6 @@ function DomainWorkspaceDefaultMain(props: DomainWorkspaceContentProps) {
 }
 
 export function DomainWorkspaceMainArea(props: DomainWorkspaceContentProps) {
-  const surface = useWorkspaceSurface()
   return (
     <div
       className="absolute inset-x-0 top-0 overflow-hidden"
@@ -101,10 +99,6 @@ export function DomainWorkspaceMainArea(props: DomainWorkspaceContentProps) {
     >
       <main
         ref={props.mainViewRef}
-        hidden={
-          surface?.placement === 'main' ||
-          (props.gitDetailOpen && props.gitDetailLayout.layout.placement === 'main' && !surface)
-        }
         className={cn(
           'h-full min-w-0',
           getMainPanelClass(props.state.activeView, props.gitDetailOpen),
@@ -140,6 +134,7 @@ export function DomainWorkspaceLayout({
     >
       <WorkspaceSurfaceDock
         layout={detailLayout.layout}
+        onLayoutChange={detailLayout.updateLayout}
         detail={detail}
         footerInset={props.footerInset}
         detailLabel="Git diff"

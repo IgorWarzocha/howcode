@@ -1,8 +1,4 @@
 import { type DockLayout, WorkspaceDock } from '@howaboua/howcode-sdk/workspace-dock'
-import {
-  useWorkspaceSurface,
-  WorkspaceSurfaceAnchor,
-} from '@howaboua/howcode-sdk/workspace-surfaces'
 import type { ReactNode } from 'react'
 
 const DEFAULT_LAYOUT: DockLayout = {
@@ -21,43 +17,22 @@ export function WorkspaceSurfaceDock({
   detail,
   layout = DEFAULT_LAYOUT,
   detailLabel,
+  onLayoutChange,
 }: {
   children: ReactNode
   footerInset: number
   detail?: ReactNode
   layout?: DockLayout
   detailLabel?: string
+  onLayoutChange?: ((patch: Partial<DockLayout>) => void) | undefined
 }) {
-  const surface = useWorkspaceSurface()
   return (
     <WorkspaceDock
-      layout={
-        surface
-          ? {
-              ...DEFAULT_LAYOUT,
-              placement: surface.placement === 'inline' ? 'main' : surface.placement,
-              floatingX: surface.floatingX,
-              floatingY: surface.floatingY,
-            }
-          : layout
-      }
+      layout={layout}
       footerInset={footerInset}
-      detailLabel={surface?.title ?? detailLabel ?? 'Workspace detail'}
-      detail={
-        detail || surface ? (
-          <>
-            {detail ? (
-              <div
-                className="flex h-full min-h-0 flex-col"
-                style={surface ? { display: 'none' } : undefined}
-              >
-                {detail}
-              </div>
-            ) : null}
-            {surface ? <WorkspaceSurfaceAnchor /> : null}
-          </>
-        ) : null
-      }
+      detailLabel={detailLabel ?? 'Workspace detail'}
+      detail={detail}
+      onLayoutChange={onLayoutChange}
     >
       {children}
     </WorkspaceDock>
