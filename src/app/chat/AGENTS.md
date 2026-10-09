@@ -2,4 +2,4 @@
 - Preserve message/tool semantics when changing presentation; reusable non-timeline rendering belongs in `@howcode/common`.
 - General and coding profiles share `ChatView`; do not fork transcript loading or empty-state policy.
 - Find navigation reveals rows through `useTimelineRowReveal`; do not add parallel DOM scroll implementations.
-- Timeline content exposes `data-workspace-chat-content` for shared docking; keep it on the padded content owner so inline snap follows actual transcript width and vanishes when Chat is hidden.
+- Timeline content exposes `data-workspace-chat-content` for shared docking; keep it on the padded content owner. Hidden Chat retains its layout so return-to-chat targets keep the actual transcript width while another main panel is active.
