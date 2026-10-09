@@ -4,6 +4,7 @@ import { getDesktopWorkingDirectory } from '../../../shared/desktop-working-dire
 
 type AppRequestHandlers = Pick<
   DesktopRequestHandlerMap,
+  | 'workspaceLayout'
   | 'getShellState'
   | 'getComposerState'
   | 'getComposerSkills'
@@ -26,6 +27,7 @@ export function createAppHandlers(
   onSettingsChanged?: (() => Promise<void> | void) | undefined,
 ): AppRequestHandlers {
   return {
+    workspaceLayout: (request) => app.workspaceLayout(request),
     getShellState: async () => app.loadShellState(getDesktopWorkingDirectory()),
     getComposerState: (request) => app.loadComposerState(request),
     getComposerSkills: (request) => app.loadComposerSkills(request),

@@ -48,8 +48,10 @@ import type {
   TerminalStatusSnapshot,
   TerminalWriteRequest,
 } from './terminal-contracts'
+import type { WorkspaceLayoutRequest, WorkspaceLayoutResponse } from './workspace-layout-contracts'
 
 export type DesktopRequestMap = GitRequestMap & {
+  workspaceLayout: { params: WorkspaceLayoutRequest; response: WorkspaceLayoutResponse }
   pluginRequest: { params: { plugin: string; method: string; payload: unknown }; response: unknown }
   listPackageUis: { params: Record<string, never>; response: PackageUiDescriptor[] }
   loadPackageUi: { params: PackageUiReference; response: { js: string } }

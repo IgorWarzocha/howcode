@@ -1,5 +1,6 @@
 import { type DockLayout, WorkspaceDock } from '@howaboua/howcode-sdk/workspace-dock'
 import type { ReactNode } from 'react'
+import { WorkspaceLayoutControls } from './workspace-layout-controls'
 
 const DEFAULT_LAYOUT: DockLayout = {
   placement: 'main',
@@ -18,6 +19,7 @@ export function WorkspaceSurfaceDock({
   layout = DEFAULT_LAYOUT,
   detailLabel,
   onLayoutChange,
+  conversationId,
 }: {
   children: ReactNode
   footerInset: number
@@ -25,6 +27,7 @@ export function WorkspaceSurfaceDock({
   layout?: DockLayout
   detailLabel?: string
   onLayoutChange?: ((patch: Partial<DockLayout>) => void) | undefined
+  conversationId?: string | null | undefined
 }) {
   return (
     <WorkspaceDock
@@ -33,6 +36,11 @@ export function WorkspaceSurfaceDock({
       detailLabel={detailLabel ?? 'Workspace detail'}
       detail={detail}
       onLayoutChange={onLayoutChange}
+      toolbar={
+        conversationId ? (
+          <WorkspaceLayoutControls key={conversationId} conversationId={conversationId} />
+        ) : null
+      }
     >
       {children}
     </WorkspaceDock>

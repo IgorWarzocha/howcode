@@ -133,6 +133,9 @@ export function DomainWorkspaceLayout({
       style={{ ...props.terminalDrawerInsetStyle, bottom: 0 }}
     >
       <WorkspaceSurfaceDock
+        conversationId={
+          props.state.activeView === 'chat' ? props.state.selectedConversationId : null
+        }
         layout={detailLayout.layout}
         onLayoutChange={detailLayout.updateLayout}
         detail={detail}

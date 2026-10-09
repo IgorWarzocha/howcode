@@ -6,6 +6,7 @@ import { createChatTools } from '../../components/chat-tools/service/index.ts'
 import { getComposerSkills } from '../../components/skills/service/extension.ts'
 import type { ComposerStateRequest } from '../../shared/desktop-contracts.ts'
 import { installedAgentExtensions } from './plugin-agent-tools.ts'
+import { WorkspaceLayoutTools } from './workspace-layout-tool.ts'
 
 const resources = createAgentResources(getComposerSkills)
 const Resources = resources.extension
@@ -26,6 +27,7 @@ export function createDesktopExtensionRegistry(
     ChatTools,
     CodeArtifactTools,
     Resources,
+    WorkspaceLayoutTools,
     ...installedAgentExtensions(),
     ...host,
     ...packages,

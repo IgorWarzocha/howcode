@@ -2,6 +2,7 @@ import { Effect } from 'effect'
 import * as SqlClient from 'effect/sql/SqlClient'
 import { ensureDirectory } from './conversation-scopes.ts'
 import type { ConversationSummaryRecord } from './types.ts'
+import { seedWorkspaceLayouts } from './workspace-layout.ts'
 import { ensureDefaultWorkspace } from './workspace-organization.ts'
 import { withDatabaseTransaction } from './write-transaction.ts'
 
@@ -48,6 +49,7 @@ export const registerConversationFacts = Effect.fn('ConversationState.register')
         yield* sql`UPDATE conversation_facts SET workspace_id = ${workspaceId}
           WHERE conversation_id = ${input.conversationId} AND workspace_id IS NULL`
       }
+      yield* seedWorkspaceLayouts(input.conversationId)
       return chatId
     }),
   )

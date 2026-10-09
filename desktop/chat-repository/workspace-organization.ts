@@ -1,5 +1,6 @@
 import * as Effect from 'effect/Effect'
 import * as SqlClient from 'effect/sql/SqlClient'
+import { seedWorkspaceLayouts } from './workspace-layout.ts'
 import { withDatabaseTransaction } from './write-transaction.ts'
 
 // Persisted chat_groups are now universal workspaces. The old table and chat
@@ -38,6 +39,7 @@ export const moveWorkspaceChat = Effect.fn('Workspace.moveChat')(function* (
       const id = workspaceId ?? (yield* ensureDefaultWorkspace())
       const workspace = yield* sql`SELECT id FROM chat_groups WHERE id = ${id}`
       if (workspace.length === 0) throw new Error('Workspace not found.')
+      yield* seedWorkspaceLayouts(conversationId)
       yield* sql`UPDATE conversation_facts SET workspace_id = ${id} WHERE conversation_id = ${conversationId}`
       // Update legacy group context only for legacy chat-mode conversations.
       // A move must never turn directory/coding conversations into chat-mode ones.
@@ -72,6 +74,7 @@ export const reconcileWorkspaceOrganization = Effect.fn('Workspace.reconcile')(f
         WHERE cwd = ${directory.id} AND workspace_id IS NULL
         AND EXISTS (SELECT 1 FROM chat_groups WHERE id = ${id})`
       }
+      yield* seedWorkspaceLayouts(null)
     }),
   )
 })

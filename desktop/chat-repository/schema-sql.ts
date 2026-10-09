@@ -95,6 +95,17 @@ export function chatStateSchemaStatements(sql: SqlClient.SqlClient) {
 
 export const columnMigrations = [
   { table: 'chat_groups', column: 'directory_id', definition: 'directory_id TEXT' },
+  { table: 'chat_groups', column: 'layout_default_json', definition: 'layout_default_json TEXT' },
+  {
+    table: 'conversation_facts',
+    column: 'workspace_layout_json',
+    definition: 'workspace_layout_json TEXT',
+  },
+  {
+    table: 'conversation_facts',
+    column: 'workspace_layout_revision',
+    definition: 'workspace_layout_revision INTEGER NOT NULL DEFAULT 0',
+  },
   {
     table: 'conversation_facts',
     column: 'workspace_id',

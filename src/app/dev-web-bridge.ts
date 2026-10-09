@@ -399,6 +399,7 @@ export async function installDevWebDesktopBridge() {
     getDirectoryChats: (directoryId: string) => invokeRequest('getDirectoryChats', { directoryId }),
     getWorkspaceNavigationState: (selectedWorkspaceId: string | null = null) =>
       invokeRequest('getWorkspaceNavigationState', { selectedWorkspaceId }),
+    workspaceLayout: (request) => invokeRequest('workspaceLayout', request),
     createWorkspace: (name: string) => invokeRequest('createWorkspace', { name }),
     listArtifacts: (conversationId: string | null = null) =>
       invokeRequest('listArtifacts', { conversationId }),

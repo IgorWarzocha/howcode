@@ -38,6 +38,7 @@ import type {
   TerminalSessionSnapshot,
   TerminalStatusSnapshot,
 } from './terminal-contracts'
+import type { WorkspaceLayoutRequest, WorkspaceLayoutResponse } from './workspace-layout-contracts'
 
 export type WorkingDirectoriesService = {
   loadDirectoryUsageSummary: (directoryId: string) => Promise<DirectoryUsageSummary>
@@ -83,6 +84,9 @@ export type DictationService = {
 }
 
 export type AppService = {
+  workspaceLayout: (
+    request: WorkspaceLayoutRequest,
+  ) => Promise<WorkspaceLayoutResponse> | WorkspaceLayoutResponse
   disposeDesktopRuntime?: () => Promise<void> | void
   handleDesktopAction: (
     action: DesktopAction,

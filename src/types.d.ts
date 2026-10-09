@@ -143,6 +143,9 @@ declare global {
       getWorkspaceNavigationState?: (
         selectedWorkspaceId?: string | null,
       ) => Promise<WorkspaceNavigationState>
+      workspaceLayout: (
+        request: DesktopRequestMap['workspaceLayout']['params'],
+      ) => Promise<DesktopRequestMap['workspaceLayout']['response']>
       createWorkspace?: (name: string) => Promise<WorkspaceNavigationState>
       listArtifacts?: (conversationId?: string | null) => Promise<Artifact[]>
       getArtifact?: (

@@ -6,6 +6,7 @@ import type { DictationModelId } from './desktop-dictation-contracts'
 import type { KeybindingCommandId } from './keybindings'
 
 export type DesktopEvent =
+  | { type: 'workspace-layout-changed'; conversationId: string; revision: number }
   | { type: 'plugin-event'; plugin: string; event: unknown }
   | { type: 'package-ui-invalidation' }
   | { type: 'shell-state-refresh' }
