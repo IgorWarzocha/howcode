@@ -37,6 +37,7 @@ import {
   disposeChatStateDatabase,
   registerDatabaseStartupTask,
 } from './chat-repository/db.ts'
+import { inspectDurableActivity } from './durable-runtime/host.ts'
 import { createGitIntegration } from './git-integration/index.ts'
 import { cleanupLegacyCheckpoints } from './git-integration/legacy-checkpoints.ts'
 import { createInstalledPluginServices } from './plugins/runtime.ts'
@@ -51,6 +52,7 @@ const ServiceRequestSchema = Schema.Struct({
   type: Schema.Literal('request'),
   id: Schema.String,
   module: Schema.Literals([
+    'dev',
     'app',
     'skills',
     'plugins',
@@ -159,7 +161,27 @@ const app = {
   },
 }
 
+let activeRequests = 0
+const { HOWCODE_DEV_RUNTIME: devRuntime } = process.env
+
 const modules = {
+  dev: {
+    async inspectActivity() {
+      if (devRuntime !== '1') {
+        throw new Error('Runtime inspection is only available in dev:web.')
+      }
+      const [activity, terminals] = await Promise.all([
+        inspectDurableActivity(),
+        terminalManager.listTerminals(),
+      ])
+      return {
+        ...activity,
+        requests: activeRequests,
+        terminals: terminals.filter(({ status }) => status === 'starting' || status === 'running')
+          .length,
+      }
+    },
+  },
   packages,
   app,
   skills,
@@ -216,8 +238,14 @@ async function handleRequest(message: ServiceRequest): Promise<ServiceResponse> 
       throw new Error(`Unknown desktop service method: ${message.module}.${message.method}`)
     }
 
-    const result = await target(...message.args)
-    return { type: 'response', id: message.id, ok: true, result }
+    const tracked = message.module !== 'dev'
+    if (tracked) activeRequests += 1
+    try {
+      const result = await target(...message.args)
+      return { type: 'response', id: message.id, ok: true, result }
+    } finally {
+      if (tracked) activeRequests -= 1
+    }
   } catch (error) {
     const stack = error instanceof Error ? error.stack : undefined
     return {

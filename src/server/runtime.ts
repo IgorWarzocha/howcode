@@ -12,6 +12,7 @@ import {
   type DesktopServiceRemoteModuleName,
   desktopServiceRemoteMethods,
 } from '../../shared/desktop-service-rpc'
+import type { DevRuntimeService } from '../../shared/dev-runtime'
 import type { PackageUiService } from '../../shared/package-ui-contracts'
 import { DesktopServiceClient } from '../desktop-host/desktop-service-client'
 
@@ -40,7 +41,7 @@ function proxyModule<T extends Record<string, unknown>>(
 export function createServerRuntime(
   root: string,
   buildRoot = path.join(root, 'build'),
-): DesktopServiceRuntime & { dispose: () => Promise<void> } {
+): DesktopServiceRuntime & { dispose: () => Promise<void>; dev: DevRuntimeService } {
   const service = new DesktopServiceClient({
     nodeExecutable: process.execPath,
     serviceHostPath: path.join(buildRoot, 'desktop', 'service-host.mjs'),
@@ -51,6 +52,7 @@ export function createServerRuntime(
     },
   })
   return {
+    dev: proxyModule<DevRuntimeService>(service, 'dev'),
     dispose: () => service.dispose(),
     app: proxyModule<AppService>(service, 'app'),
     packages: proxyModule<PackageUiService>(service, 'packages'),

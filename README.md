@@ -121,6 +121,8 @@ bun run dev
 
 Development serves the browser app through Vite and runs the backend under stock Node. Open the URL printed at startup.
 
+Backend edits rebuild and reload automatically once agent work finishes and terminals are closed. The web address and login stay the same. Failed builds leave the running backend alone. Changes to the dev supervisor or installed dependencies still need a manual restart. This reload behavior is only enabled in development.
+
 To try dev mode from another device on your network:
 
 ```bash

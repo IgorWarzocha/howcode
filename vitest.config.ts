@@ -7,6 +7,7 @@ export default mergeConfig(viteConfig, {
       'src/**/*.test.ts',
       'src/**/*.test.tsx',
       'desktop/**/*.test.ts',
+      'scripts/**/*.test.ts',
       'components/**/*.test.ts',
       'components/**/*.test.tsx',
       'packages/howcode/test/**/*.test.ts',

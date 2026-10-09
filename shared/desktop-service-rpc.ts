@@ -6,9 +6,11 @@ import type {
   PluginService,
   WorkingDirectoriesService,
 } from './desktop-service-contracts'
+import type { DevRuntimeService } from './dev-runtime'
 import type { PackageUiService } from './package-ui-contracts'
 
 export type DesktopServiceRemoteRuntime = {
+  dev: DevRuntimeService
   packages: PackageUiService
   app: Omit<AppService, 'disposeDesktopRuntime' | 'subscribeDesktopEvents'>
   skills: PiSkillsService
@@ -23,6 +25,7 @@ export type DesktopServiceRemoteModuleName = keyof DesktopServiceRemoteRuntime
 type MethodAllowlist<T> = { readonly [K in keyof T]-?: true }
 
 export const desktopServiceRemoteMethods = {
+  dev: { inspectActivity: true },
   packages: {
     listPackageUis: true,
     loadPackageUi: true,

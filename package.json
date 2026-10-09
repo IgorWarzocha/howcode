@@ -14,7 +14,7 @@
   "scripts": {
     "dev": "concurrently -k \"bun run dev:web\" \"bun run dev:runtime\"",
     "dev:app-data": "HOWCODE_DEV_USER_DATA_PROFILE=app bun run dev",
-    "dev:clean": "rm -rf build/server build/desktop build/resources build/dev-server.json build/dev-web-bridge.mjs build/dev-web-bridge.mjs.map",
+    "dev:clean": "rm -rf build/server build/desktop build/resources build/dev-server.json build/dev-web-bridge.mjs build/dev-web-bridge.mjs.map build/dev-runtime build/dev-runtime-ready.json",
     "prepush:clean": "rm -rf artifacts dist build",
     "dev:web": "bun run generate:components && bun ./scripts/dev-web.ts",
     "dev:runtime": "bun ./scripts/build-runtime.ts --watch",

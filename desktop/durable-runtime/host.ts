@@ -110,6 +110,17 @@ export async function getDurableRuntime() {
   return runtime
 }
 
+export async function inspectDurableActivity() {
+  // Do not open/resume an unused harness merely to decide whether dev can reload.
+  if (!runtime) return { tasks: 0, blockedTasks: 0, submissions: 0 }
+  const inspection = await (await runtime).inspect(runtimeContext)
+  return {
+    tasks: inspection.tasks.length,
+    blockedTasks: inspection.tasks.filter((task) => task.state.kind === 'blocked').length,
+    submissions: inspection.submissions.length,
+  }
+}
+
 /** Refresh only execution admission, never reads or cancellation paths. */
 export async function refreshRuntimePackages() {
   await (await getExtensions()).refresh()

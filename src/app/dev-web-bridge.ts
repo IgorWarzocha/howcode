@@ -20,6 +20,7 @@ import {
 
 let bridgeTokenPromise: Promise<string> | null = null
 let authPromise: Promise<void> | null = null
+let watchedConversationId: string | null = null
 const leadingHashPattern = /^#/
 
 async function decodeJsonResponse<A>(
@@ -279,6 +280,14 @@ function getEventSubscription(channel: DesktopEventChannel) {
     eventSource: new EventSource(`/__howcode/events/${channel}`),
     listeners: new Set(),
   }
+  if (import.meta.env.DEV && channel === 'desktopEvent') {
+    subscription.eventSource.addEventListener('open', () => {
+      // The replacement dev service has no in-memory conversation subscriptions.
+      void invokeRequest('watchConversation', { conversationId: watchedConversationId }).catch(
+        (error: unknown) => console.warn('Failed to restore dev conversation watch.', error),
+      )
+    })
+  }
   eventSubscriptions.set(channel, subscription)
   return subscription
 }
@@ -414,6 +423,7 @@ export async function installDevWebDesktopBridge() {
     searchChat: (conversationId: string, query: string) =>
       invokeRequest('searchChat', { conversationId, query }),
     watchConversation: async (conversationId: string | null) => {
+      watchedConversationId = conversationId
       await invokeRequest('watchConversation', { conversationId })
     },
     invokeAction: (action: DesktopAction, payload: AnyDesktopActionPayload = {}) =>
@@ -438,7 +448,10 @@ export async function installDevWebDesktopBridge() {
       )
       const source = getEventSubscription('desktopEvent').eventSource
       // SSE does not replay inventory invalidations lost while disconnected.
-      const refreshPackageUis = () => listener({ type: 'package-ui-invalidation' })
+      const refreshPackageUis = () => {
+        listener({ type: 'package-ui-invalidation' })
+        if (import.meta.env.DEV) listener({ type: 'shell-state-refresh' })
+      }
       source.addEventListener('open', refreshPackageUis)
       return () => {
         source.removeEventListener('open', refreshPackageUis)
