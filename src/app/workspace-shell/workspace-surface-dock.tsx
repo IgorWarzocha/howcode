@@ -30,19 +30,19 @@ export function WorkspaceSurfaceDock({
   conversationId: string | null
 }) {
   return (
-    <WorkspaceDock
-      layout={layout}
-      footerInset={footerInset}
-      detailLabel={detailLabel ?? 'Workspace detail'}
-      detail={detail}
-      onLayoutChange={onLayoutChange}
-      toolbar={
-        conversationId ? (
-          <WorkspaceLayoutControls key={conversationId} conversationId={conversationId} />
-        ) : null
-      }
-    >
-      {children}
-    </WorkspaceDock>
+    <>
+      <WorkspaceDock
+        layout={layout}
+        footerInset={footerInset}
+        detailLabel={detailLabel ?? 'Workspace detail'}
+        detail={detail}
+        onLayoutChange={onLayoutChange}
+      >
+        {children}
+      </WorkspaceDock>
+      {conversationId ? (
+        <WorkspaceLayoutControls key={conversationId} conversationId={conversationId} />
+      ) : null}
+    </>
   )
 }

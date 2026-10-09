@@ -3,7 +3,7 @@ import { restrictToParentElement, restrictToVerticalAxis } from '@dnd-kit/modifi
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { PopoverPanel } from '@howaboua/howcode-sdk/common/popover'
 import { IconButton } from '@howcode/common/icon-button'
-import { Edit2, FolderPlus, Plus, Search } from 'lucide-react'
+import { Edit2, FolderPlus, Plus, Save, Search } from 'lucide-react'
 import { type ReactNode, useRef } from 'react'
 import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
 import type {
@@ -12,6 +12,7 @@ import type {
   WorkspaceChat,
   WorkspaceNavigationState,
 } from '../../../desktop/types'
+import { useWorkspaceLayoutActions } from '../../../workspace-shell/workspace-layout-actions'
 import { SortableWorkspaceItem } from './sortable-workspace-item'
 import { useWorkspaceNavigationController } from './useWorkspaceNavigationController'
 import { WorkspaceChatItem } from './workspace-chat-item'
@@ -43,6 +44,7 @@ export function WorkspaceNavigationSection({
   renderDirectoryTools,
 }: WorkspaceNavigationSectionProps) {
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const layoutActions = useWorkspaceLayoutActions()
   const {
     containerRef,
     creating,
@@ -180,6 +182,13 @@ export function WorkspaceNavigationSection({
             const workspaceMenuOpen = openWorkspaceMenuId === workspace.id
             const workspaceId = `chat-workspace-threads-${workspace.id}`
             const actionMenuId = `chat-workspace-actions-${workspace.id}`
+            const canSaveLayout = workspace.chats.some(
+              (chat) =>
+                chat.id === selectedChatId && chat.conversationId === layoutActions?.conversationId,
+            )
+            const saveLayoutHint = canSaveLayout
+              ? undefined
+              : 'Open a chat in this workspace first.'
 
             return (
               <SortableWorkspaceItem key={workspace.id} workspaceId={workspace.id}>
@@ -235,6 +244,22 @@ export function WorkspaceNavigationSection({
                           className="sidebar-popover-panel sidebar-project-action-menu"
                         >
                           <div className="sidebar-project-menu-list">
+                            <button
+                              className="sidebar-project-menu-item disabled:opacity-50"
+                              disabled={!canSaveLayout}
+                              onClick={() => {
+                                layoutActions?.saveDefault()
+                                setOpenWorkspaceMenuId(null)
+                              }}
+                              role="menuitem"
+                              type="button"
+                              title={saveLayoutHint}
+                            >
+                              <span className="sidebar-project-menu-item__icon">
+                                <Save size={14} />
+                              </span>
+                              <span className="truncate text-left">Save as workspace default</span>
+                            </button>
                             <button
                               className="sidebar-project-menu-item"
                               onClick={() => handleStartEdit(workspace.id, workspace.name)}

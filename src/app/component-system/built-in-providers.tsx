@@ -4,6 +4,7 @@ import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
 import type { ReactNode } from 'react'
 import { DraftInputContributionContext } from '../composer/draft-input-context'
 import type { View } from '../types'
+import { WorkspaceLayoutActionsProvider } from '../workspace-shell/workspace-layout-actions'
 import { ComponentSettingsContext } from './component-context'
 import { InstalledComponentProviders } from './installed-providers'
 import { isWorkspaceViewEnabled } from './toolkit-components'
@@ -28,7 +29,7 @@ export function BuiltInComponentProviders({
     <ComponentSettingsContext value={settings ?? { enabledToolkitComponents: [] }}>
       <DraftInputContributionContext value={DictationDraftInput}>
         <InstalledComponentProviders enabled={enabled} retain={retainGitPreferences}>
-          {children}
+          <WorkspaceLayoutActionsProvider>{children}</WorkspaceLayoutActionsProvider>
         </InstalledComponentProviders>
       </DraftInputContributionContext>
     </ComponentSettingsContext>
