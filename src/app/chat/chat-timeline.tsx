@@ -251,6 +251,7 @@ export function ChatTimeline({
         >
           <div
             ref={contentRef}
+            data-workspace-chat-content
             className="flex min-h-full w-full flex-col justify-end overflow-x-visible pt-0 pr-2 pb-4 pl-8"
             style={
               composerOverlayHeight > 0
