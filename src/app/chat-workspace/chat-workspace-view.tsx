@@ -88,7 +88,10 @@ function ChatDesktopContent(props: ChatWorkspaceContentProps) {
         artifactDrawer.artifactsFullscreen ? undefined : artifactDrawer.artifactDrawerInsetStyle
       }
     >
-      <WorkspaceSurfaceDock footerInset={hasConversationLayout ? footerHeight : 0}>
+      <WorkspaceSurfaceDock
+        conversationId={getPersistedConversationId(props.conversationId)}
+        footerInset={hasConversationLayout ? footerHeight : 0}
+      >
         <div
           className="absolute inset-x-0 top-0 overflow-hidden"
           style={{ bottom: hasConversationLayout ? `${footerHeight}px` : '0px' }}

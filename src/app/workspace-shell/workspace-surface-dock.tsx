@@ -27,7 +27,7 @@ export function WorkspaceSurfaceDock({
   layout?: DockLayout
   detailLabel?: string
   onLayoutChange?: ((patch: Partial<DockLayout>) => void) | undefined
-  conversationId?: string | null | undefined
+  conversationId: string | null
 }) {
   return (
     <WorkspaceDock
