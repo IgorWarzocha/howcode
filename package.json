@@ -92,7 +92,7 @@
     "remark-gfm": "^4.0.1",
     "semver": "7.8.5",
     "sherpa-onnx-node": "^1.13.8",
-    "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-ac768bd2.tgz",
+    "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-f49df050.tgz",
     "@howaboua/howcode-git": "file:../howcode-components/dist/howaboua-howcode-git-0.1.0-43516ee7.tgz",
     "@howaboua/howcode-intelligent-ui": "file:../howcode-components/dist/howaboua-howcode-intelligent-ui-0.1.0-9901fef0.tgz"
   },
@@ -121,7 +121,7 @@
     "@howaboua/pi-durable-git": "file:../pi-durable-components/dist/howaboua-pi-durable-git-0.1.0-33d23824.tgz",
     "@aws-sdk/client-bedrock-runtime": "3.1136.0",
     "lightningcss": "1.33.0",
-    "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-ac768bd2.tgz",
+    "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-f49df050.tgz",
     "@howaboua/howcode-git": "file:../howcode-components/dist/howaboua-howcode-git-0.1.0-43516ee7.tgz",
     "@howaboua/pi-durable-ui": "file:../pi-durable-components/dist/howaboua-pi-durable-ui-0.1.0-7f88e772.tgz",
     "@howaboua/howcode-intelligent-ui": "file:../howcode-components/dist/howaboua-howcode-intelligent-ui-0.1.0-9901fef0.tgz"
