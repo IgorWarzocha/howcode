@@ -7,24 +7,18 @@ import type { View } from '../types'
 import { WorkspaceLayoutActionsProvider } from '../workspace-shell/workspace-layout-actions'
 import { ComponentSettingsContext } from './component-context'
 import { InstalledComponentProviders } from './installed-providers'
-import { isWorkspaceViewEnabled } from './toolkit-components'
 
 export function BuiltInComponentProviders({
   settings,
-  selectedView,
+  workView,
   children,
 }: {
   settings: ToolkitComponentSettings | undefined
-  selectedView: View
+  workView: View
   children: ReactNode
 }) {
-  const activeView = isWorkspaceViewEnabled(settings, selectedView) ? selectedView : 'chat'
   const enabled = isToolkitComponentEnabled(settings, 'coding')
-  const retainGitPreferences =
-    activeView !== 'chat' &&
-    activeView !== 'claw' &&
-    activeView !== 'work' &&
-    activeView !== 'automations'
+  const retainGitPreferences = workView !== 'chat'
   return (
     <ComponentSettingsContext value={settings ?? { enabledToolkitComponents: [] }}>
       <DraftInputContributionContext value={DictationDraftInput}>

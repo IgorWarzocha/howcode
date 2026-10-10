@@ -11,25 +11,32 @@ import {
   type ToolkitComponentSettings,
 } from '@howcode/shared/toolkit-components'
 import type { UtilityView } from '../state/workspace-model'
-import type { View } from '../types'
+import { builtInPagePaths, isBuiltInView, type View } from '../types'
+import { getInstalledRendererContributions } from './installed-component-catalog'
 import { installedRendererContributions } from './installed-renderers.generated'
 import type { ComponentKeybindingPolicy } from './keybinding-policy'
 
-const installedComponents = Object.values(
-  installedRendererContributions as Record<string, PluginRendererContribution>,
-).flatMap((contribution) => (contribution.component ? [contribution.component] : []))
+const shellGitComponent = installedRendererContributions['@howaboua/howcode-git'].component
 
-export const workspaceComponents = [
-  workingDirectoriesComponent,
-  ...installedComponents,
-  chatHistoryComponent,
-  skillsComponent,
-]
+function installedComponents() {
+  return Object.values(
+    getInstalledRendererContributions() as Record<string, PluginRendererContribution>,
+  ).flatMap((contribution) => (contribution.component ? [contribution.component] : []))
+}
+
+function workspaceComponents() {
+  return [
+    workingDirectoriesComponent,
+    ...installedComponents(),
+    chatHistoryComponent,
+    skillsComponent,
+  ]
+}
 
 export function isSelectedConversationView(view: View) {
   return (
     view === 'chat' ||
-    [workingDirectoriesComponent, ...installedComponents].some((component) =>
+    [workingDirectoriesComponent, ...installedComponents()].some((component) =>
       component.selectedConversationViews.some((route) => route === view),
     )
   )
@@ -38,44 +45,73 @@ export function isSelectedConversationView(view: View) {
 export function isWorkspaceUtilityView(view: View): view is UtilityView {
   return (
     view === 'settings' ||
-    workspaceComponents.some((component) => component.utilityViews.some((route) => route === view))
+    workspaceComponents().some((component) =>
+      component.utilityViews.some((route) => route === view),
+    )
   )
 }
 
-const keybindingComponents = [...installedComponents, terminalComponent, dictationComponent]
+function keybindingComponents() {
+  return [...installedComponents(), terminalComponent, dictationComponent]
+}
 
 export function getComponentKeybindingPolicy(commandId: KeybindingCommandId) {
-  for (const component of keybindingComponents) {
+  for (const component of keybindingComponents()) {
     const binding = component.keybindings.find((candidate) => candidate.id === commandId)
     if (binding) {
       const policy: ComponentKeybindingPolicy = { ...binding, id: commandId }
-      const componentId: ToolkitComponentId =
-        component.id === 'terminal'
+      const componentId: ToolkitComponentId | null =
+        component === terminalComponent
           ? 'terminal'
-          : component.id === 'dictation'
+          : component === dictationComponent
             ? 'dictation'
-            : 'coding'
+            : component === shellGitComponent
+              ? 'coding'
+              : null
       return { componentId, policy }
     }
   }
   return undefined
 }
 
-export const componentRendererCommandIds = keybindingComponents
-  .flatMap((component) =>
-    component.keybindings
-      .filter((binding) => 'renderer' in binding && binding.renderer)
-      .map((binding) => binding.id),
-  )
-  .filter(isKeybindingCommandId)
+export function componentRendererCommandIds() {
+  return keybindingComponents()
+    .flatMap((component) =>
+      component.keybindings
+        .filter((binding) => 'renderer' in binding && binding.renderer)
+        .map((binding) => binding.id),
+    )
+    .filter(isKeybindingCommandId)
+}
+
+// Full-page destinations share the workspace reducer and URL authority. Installed
+// page IDs are package-qualified, independent of labels and transient generations.
+export function getWorkspacePageViews(contributions = getInstalledRendererContributions()): View[] {
+  return [
+    ...Object.keys(builtInPagePaths).filter(isBuiltInView),
+    ...Object.entries(contributions).flatMap(([name, contribution]) =>
+      contribution.sidebarView ? [`component:${name}` as const] : [],
+    ),
+  ]
+}
 
 export function isWorkspaceViewEnabled(
   settings: ToolkitComponentSettings | null | undefined,
   view: View,
+  contributions = getInstalledRendererContributions(),
 ) {
-  return workspaceComponents.every(
-    (component) =>
-      !component.views.some((route) => route === view) ||
-      isToolkitComponentEnabled(settings, component.id === 'skills' ? 'skills' : 'coding'),
+  return (
+    getWorkspacePageViews(contributions).includes(view) &&
+    workspaceComponents().every(
+      (component) =>
+        !component.views.some((route) => route === view) ||
+        (component === skillsComponent
+          ? isToolkitComponentEnabled(settings, 'skills')
+          : component === workingDirectoriesComponent ||
+              component === shellGitComponent ||
+              component === chatHistoryComponent
+            ? isToolkitComponentEnabled(settings, 'coding')
+            : true),
+    )
   )
 }

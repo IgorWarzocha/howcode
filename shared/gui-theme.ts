@@ -1,5 +1,7 @@
 import type { PiThemeState } from './desktop-contracts'
 
+export const piGuiThemeUpdatedEvent = 'howcode:pi-gui-theme-updated'
+
 const hexColorPattern = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i
 
 export const managedVars = [

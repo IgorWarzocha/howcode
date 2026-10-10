@@ -26,20 +26,8 @@
   gap: 0.125rem;
 }
 
-.sidebar-project-work-action-row > svg:first-child,
 .sidebar-project-work-history-row > svg:first-child {
   justify-self: center;
-}
-
-.sidebar-project-work-pill {
-  border: 1px solid var(--border);
-  border-radius: 0.25rem;
-  padding: 0.0625rem 0.375rem;
-  color: var(--muted-2);
-  font-size: var(--app-type-kicker-size);
-  font-weight: 650;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .sidebar-project-work-history-count {

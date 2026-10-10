@@ -39,6 +39,7 @@ export function isUtilityView(view: View): view is UtilityView {
 
 function createUtilityViewReturnState(state: WorkspaceState): UtilityViewReturnState {
   return {
+    utilityViewReturnState: state.utilityViewReturnState,
     activeView: state.activeView,
     selectedWorkspaceId: state.selectedWorkspaceId,
     composerProfile: state.composerProfile,
@@ -57,6 +58,18 @@ function showViewState(
   state: WorkspaceState,
   action: Extract<WorkspaceAction, { type: 'show-view' }>,
 ): WorkspaceState {
+  // Component pages retain the active work selection; page navigation is not a chat reset.
+  if (action.view.startsWith('component:'))
+    return {
+      ...state,
+      activeView: action.view,
+      utilityViewReturnState: state.activeView.startsWith('component:')
+        ? state.utilityViewReturnState
+        : createUtilityViewReturnState(state),
+      settingsOpen: false,
+      settingsPanelOpen: false,
+    }
+
   const restoredCodeChat = restoreCodeChatForView(state, action.view)
   if (restoredCodeChat) return restoredCodeChat
 
@@ -145,7 +158,7 @@ export const workspaceActionHandlers = {
           ...state.utilityViewReturnState,
           settingsOpen: false,
           settingsPanelOpen: false,
-          utilityViewReturnState: null,
+          utilityViewReturnState: state.utilityViewReturnState.utilityViewReturnState,
         }
       : state,
   'clear-chat-selection': (state: WorkspaceState) => ({

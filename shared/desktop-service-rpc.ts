@@ -27,6 +27,9 @@ type MethodAllowlist<T> = { readonly [K in keyof T]-?: true }
 export const desktopServiceRemoteMethods = {
   dev: { inspectActivity: true },
   packages: {
+    listInstalledComponents: true,
+    admitInstalledComponent: true,
+    loadInstalledComponent: true,
     listPackageUis: true,
     loadPackageUi: true,
     openPackageUiBinding: true,
@@ -57,7 +60,7 @@ export const desktopServiceRemoteMethods = {
     loadDirectoryUsageSummary: true,
     loadDirectoryFavicon: true,
   },
-  plugins: { request: true },
+  plugins: { request: true, hostRequest: true },
   artifacts: {
     listArtifacts: true,
     getArtifact: true,

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { homedir } from 'node:os'
 import { resolve } from 'node:path'
 
@@ -5,6 +6,10 @@ const npmSpecification = /^(@[\w.-]+\/[\w.-]+|[\w.-]+)(?:@([^\s/:]+))?$/
 const protocol = /^[a-z][a-z0-9+.-]*:/i
 const trailingSlash = /\/$/
 const gitSuffix = /\.git$/
+
+export function packageSourceId(source: string, cwd: string) {
+  return createHash('sha256').update(parsePackageSource(source, cwd).identity).digest('hex')
+}
 
 export type PackageSource =
   | { kind: 'npm'; source: string; identity: string; spec: string; name: string }

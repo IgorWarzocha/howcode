@@ -17,7 +17,7 @@
 ## Workflow
 
 - Git/UI SDK dependencies currently use unpublished sibling tarballs. Build/pack them in `../pi-durable-components`, copy each canonical `dist/howaboua-pi-durable-{git,ui}-0.1.0.tgz` to a filename suffixed with its first eight SHA-256 characters, then update root dependency/override references and run `bun install`. New filenames prevent Bun reusing stale same-version tarball contents. These local references are not distributable release dependencies.
-- Apply the same content-hashed tarball workflow to `../howcode-components`. `package.json`'s `howcodeComponents` list and installed package metadata own plugin registration; regenerate with `bun run generate:components`, never edit `*.generated.ts`. Installing a renderer plugin requires rebuilding/restarting the app, not a second Durable package install.
+- Apply the same content-hashed tarball workflow to `../howcode-components` for bundled shell composition. Regenerate `package.json`'s `howcodeComponents` registration with `bun run generate:components`, never edit `*.generated.ts`. Ordinary profile components use `howcode install` and the live package generation lifecycle. Only shell-integrated adapter changes require a shell build and supported handoff, never a second Durable package install.
 - Assume the dev server is already running; do not start or restart it. Read `build/dev-server.json` for its address and exercise the app in a browser.
 - Commits run `bun run ai:check`, including blocking React Doctor; keep its score at 100. Run the gate manually only when asked, when not committing, or while diagnosing a failed hook.
 - Do not relax Biome or TypeScript rules merely to make checks pass; fix the code or use a narrow, justified override.
@@ -26,8 +26,7 @@
 
 ## Tests
 
-- Do not add tests whose oracle is that a feature, action, route, bridge method, or component exists.
+- Do not autonomously add unit or regression tests, including after bug fixes. Test exceptions require Igor's explicit request and expected behavior established independently of the implementation; a security, persistence, or lifecycle label is not justification.
+- Verify changes with types, lint, builds, and practical use of the running app. Report concrete observed results, not test counts or self-confirming assertions.
 - Do not programmatically test UI/UX, rendered markup, layout, styling, copy, or interaction flows; exercise those in the running app with disposable workspaces.
-- Do not add or retain bug-specific regression tests. Record consequential failure boundaries in the nearest owning `AGENTS.md`, explaining what needs attention when that code changes, not recounting the bug.
-- Retain deterministic tests only for independently justified security, persistence, concurrency, protocol, parsing, or lifecycle contracts with a validation gap not already covered by types, another check, or practical use. Adding or changing code is not itself a reason to add tests.
-- Do not test Pi SDK API shape or upstream behaviour; TypeScript is the Pi compatibility check. Test only Howcode-owned policy around Pi when it has an independent oracle.
+- Record consequential failure boundaries in the nearest owning `AGENTS.md`, explaining what needs attention when that code changes, not recounting the bug or recreating a test suite in prose.

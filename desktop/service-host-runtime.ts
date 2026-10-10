@@ -86,11 +86,8 @@ const decodeServiceInboundMessage = Schema.decodeUnknownResult(ServiceInboundMes
 configureDatabaseSchemas([workingDirectoriesDatabaseSchema, artifactsDatabaseSchema])
 
 const skillsComponent = createSkillsService()
-const packagesComponent = await createPackageUiService(
-  { directory: getDesktopUserDataPath(), cwd: process.cwd() },
-  () => emitDesktopEvent({ type: 'package-ui-invalidation' }),
-)
-const packages = packagesComponent.service
+let activeRequests = 0
+let componentAdmission = true
 const skills = skillsComponent.service
 const dictationComponent = createDictationService()
 const dictation = dictationComponent.service
@@ -127,8 +124,27 @@ const pluginsComponent = await createInstalledPluginServices(
       return gitComponent
     },
   },
+  async (operation) => {
+    // Close admission before live inspection so a new submission cannot race retirement.
+    if (activeRequests > 0 || !componentAdmission) return false
+    componentAdmission = false
+    try {
+      const activity = await inspectDurableActivity()
+      if (activity.tasks > 0 || activity.submissions > 0) return false
+      await operation()
+      return true
+    } finally {
+      componentAdmission = true
+    }
+  },
 )
 const plugins = pluginsComponent.service
+const packagesComponent = await createPackageUiService(
+  { directory: getDesktopUserDataPath(), cwd: process.cwd() },
+  () => emitDesktopEvent({ type: 'package-ui-invalidation' }),
+  pluginsComponent,
+)
+const packages = packagesComponent.service
 const unregisterArtifactCleanup = registerConversationCleanup(
   artifacts.deleteArtifactsForConversation,
 )
@@ -161,7 +177,6 @@ const app = {
   },
 }
 
-let activeRequests = 0
 const { HOWCODE_DEV_RUNTIME: devRuntime } = process.env
 
 const modules = {
@@ -229,6 +244,10 @@ let acceptingRequests = true
 async function handleRequest(message: ServiceRequest): Promise<ServiceResponse> {
   try {
     if (!acceptingRequests) throw new Error('Desktop service is shutting down.')
+    if (!componentAdmission)
+      throw new Error(
+        'Component activation is in progress. Retry after it finishes; no action has been replayed.',
+      )
     if (!isServiceModuleName(message.module)) {
       throw new Error(`Unknown desktop service module: ${message.module}`)
     }
@@ -238,7 +257,8 @@ async function handleRequest(message: ServiceRequest): Promise<ServiceResponse> 
       throw new Error(`Unknown desktop service method: ${message.module}.${message.method}`)
     }
 
-    const tracked = message.module !== 'dev'
+    // Catalog/renderer reads drive activation, but cannot submit agent work.
+    const tracked = message.module !== 'dev' && message.module !== 'packages'
     if (tracked) activeRequests += 1
     try {
       const result = await target(...message.args)
@@ -282,12 +302,13 @@ function settledTask<A>(evaluate: () => A) {
 const shutdownCoordinatorPromise = Effect.runPromise(
   makeShutdownCoordinator(
     Effect.gen(function* () {
+      // Stop inventory admission and join any component publication before native disposal.
+      yield* settledTask(() => packagesComponent.dispose())
       yield* Effect.all(
         [
           settledTask(() =>
             workingDirectoriesComponent.dispose().then(() => pluginsComponent.dispose()),
           ),
-          settledTask(() => packagesComponent.dispose()),
           settledTask(() => skillsComponent.dispose()),
           settledTask(() => dictationComponent.dispose()),
         ],

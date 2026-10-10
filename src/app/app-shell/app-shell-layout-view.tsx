@@ -1,9 +1,11 @@
+import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
 import { appToneTextClass, appTypeGroupTextClass } from '@howaboua/howcode-sdk/ui/typography-scale'
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { composeBuiltInWorkspaceViews } from '@howcode/component-system/built-in-workspace-views'
 import { TerminalDrawerLayer } from '@howcode/components/terminal/ui'
+import { PanelLeftOpen } from 'lucide-react'
 import type { RefObject } from 'react'
-import { isWorkspaceViewEnabled } from '../component-system/toolkit-components'
+import { InstalledPageViews } from '../component-system/installed-providers'
 import type { DirectoryDiffBaseline, DirectoryDiffRenderMode } from '../desktop/types'
 import { AppShellSidebar } from './app-shell-sidebar'
 import { AppShellWorkspace } from './app-shell-workspace'
@@ -84,24 +86,52 @@ function CompactSidebarPanel(props: AppShellLayoutViewProps) {
 
 function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
   const { mainSectionRef, controller, workspaceContentClass } = props
+  const activeView = controller.workspace.state.activeView
+  const installedPage = activeView.startsWith('component:')
+  const retainedView = installedPage
+    ? (controller.workspace.state.utilityViewReturnState?.activeView ?? 'chat')
+    : activeView
+  const presentationController = installedPage
+    ? {
+        ...controller,
+        workspace: {
+          ...controller.workspace,
+          state: { ...controller.workspace.state, activeView: retainedView },
+        },
+      }
+    : controller
   return (
     <section
       ref={mainSectionRef}
       className="flex min-w-0 min-h-0 h-full flex-1 flex-col overflow-hidden bg-[color:var(--workspace)]"
     >
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {installedPage && (props.sidebar.collapsed || props.sidebar.compactMode) ? (
+          <div className="flex shrink-0 px-2 py-1">
+            <Tooltip content="Show sidebar" placement="right">
+              <button
+                type="button"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
+                aria-label="Show sidebar"
+                onClick={props.sidebar.onToggle}
+              >
+                <PanelLeftOpen size={15} />
+              </button>
+            </Tooltip>
+          </div>
+        ) : null}
+        <InstalledPageViews
+          activeView={activeView}
+          onOpenWorkspace={controller.navigation.showWorkspace}
+        />
+        <div
+          className="min-h-0 flex-1 flex-col overflow-hidden"
+          style={{ display: installedPage ? 'none' : 'flex' }}
+        >
           <AppShellWorkspace
-            activeView={
-              isWorkspaceViewEnabled(
-                controller.desktop.shellState?.appSettings,
-                controller.workspace.state.activeView,
-              )
-                ? controller.workspace.state.activeView
-                : 'chat'
-            }
+            activeView={retainedView}
             contributions={composeBuiltInWorkspaceViews({
-              controller,
+              controller: presentationController,
               activeComposerState: controller.composer.state,
               activeChatData: controller.chat.activeData,
               composerDirectoryId: controller.composer.directoryId,
@@ -122,7 +152,7 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
         </div>
         <TerminalDrawerLayer
           drawerPresent={props.terminal.drawerPresent}
-          drawerVisible={props.terminal.drawerVisible}
+          drawerVisible={props.terminal.drawerVisible && !installedPage}
           compactMode={props.sidebar.compactMode}
           directoryId={controller.composer.directoryId}
           conversationId={props.terminal.conversationId}

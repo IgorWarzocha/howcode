@@ -2,4 +2,5 @@
 export const installedHowcodePackages = [
   '@howaboua/howcode-git',
   '@howaboua/howcode-intelligent-ui',
+  '@howaboua/howcode-spaces',
 ] as const

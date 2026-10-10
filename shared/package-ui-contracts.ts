@@ -1,5 +1,10 @@
 import type { JsonValue, UiBinding, UiComponent } from '@howaboua/pi-durable-ui'
 import type {
+  InstalledComponentAdmission,
+  InstalledComponentDescriptor,
+  InstalledComponentSource,
+} from './installed-component-contracts'
+import type {
   PackageUiBindingEventSchema,
   PackageUiDescriptorSchema,
   PackageUiOpenSchema,
@@ -20,6 +25,9 @@ export type PackageUiBindingFactory = (
 ) => UiBinding | Promise<UiBinding>
 
 export type PackageUiService = {
+  listInstalledComponents(): Promise<InstalledComponentDescriptor[]>
+  admitInstalledComponent(request: InstalledComponentAdmission): Promise<undefined>
+  loadInstalledComponent(reference: PackageUiReference): Promise<InstalledComponentSource>
   listPackageUis(): Promise<PackageUiDescriptor[]>
   loadPackageUi(reference: PackageUiReference): Promise<{ js: string }>
   openPackageUiBinding(request: PackageUiOpen): Promise<undefined>

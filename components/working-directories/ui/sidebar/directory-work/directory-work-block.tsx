@@ -1,6 +1,6 @@
 import { appToneSubtleClass } from '@howaboua/howcode-sdk/ui/typography-scale'
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
-import { Archive, ChevronRight } from 'lucide-react'
+import { Archive } from 'lucide-react'
 import { useState } from 'react'
 import type { DesktopActionInvoker } from '../../../../../src/app/desktop/types'
 import type { Chat, View, WorkingDirectory } from '../../../../../src/app/types'
@@ -148,7 +148,6 @@ function DirectoryWorkBlockActions({
   olderChatCount,
   selectedChatId,
   onOpenDirectorySessions,
-  onOpenAutomations,
 }: {
   activeView: View
   expanded: boolean
@@ -157,20 +156,9 @@ function DirectoryWorkBlockActions({
   olderChatCount: number
   selectedChatId: string | null
   onOpenDirectorySessions: () => void
-  onOpenAutomations: () => void
 }) {
   return (
     <div className="sidebar-project-work-project-block-actions">
-      <button
-        type="button"
-        className="sidebar-compact-row sidebar-compact-row--action sidebar-project-work-action-row"
-        data-active={activeView === 'automations' && isDirectoryActive ? 'true' : 'false'}
-        onClick={onOpenAutomations}
-      >
-        <ChevronRight size={13} aria-hidden="true" />
-        <span>Automations</span>
-        <span className="sidebar-project-work-pill">Soon</span>
-      </button>
       {expanded ? (
         <button
           type="button"
@@ -254,10 +242,6 @@ export function DirectoryWorkSummaryBlock({
     onShowView('history')
     void onAction('directory.select', { directoryId: directory.id })
   }
-  const openDirectoryAutomations = () => {
-    onFocusDirectory(directory.id)
-    onShowView('automations')
-  }
   const normalizedSearchQuery = searchQuery.trim().toLowerCase()
   const branchChats = filterChatsBySearch(
     filterChatsForCurrentBranch(chats, currentBranch),
@@ -301,7 +285,6 @@ export function DirectoryWorkSummaryBlock({
         isDirectoryActive={isDirectoryActive}
         olderChatCount={olderChatCount}
         selectedChatId={selectedChatId}
-        onOpenAutomations={openDirectoryAutomations}
         onOpenDirectorySessions={openDirectorySessions}
       />
 

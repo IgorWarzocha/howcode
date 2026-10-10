@@ -6,6 +6,9 @@ export function createPackageUiHandlers(
 ): Pick<
   DesktopRequestHandlerMap,
   | 'listPackageUis'
+  | 'listInstalledComponents'
+  | 'admitInstalledComponent'
+  | 'loadInstalledComponent'
   | 'loadPackageUi'
   | 'openPackageUiBinding'
   | 'readPackageUiBindingEvents'
@@ -13,6 +16,9 @@ export function createPackageUiHandlers(
   | 'closePackageUiBinding'
 > {
   return {
+    listInstalledComponents: () => service.listInstalledComponents(),
+    admitInstalledComponent: (request) => service.admitInstalledComponent(request),
+    loadInstalledComponent: (reference) => service.loadInstalledComponent(reference),
     listPackageUis: () => service.listPackageUis(),
     loadPackageUi: (reference) => service.loadPackageUi(reference),
     openPackageUiBinding: (request) => service.openPackageUiBinding(request),

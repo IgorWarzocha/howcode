@@ -165,6 +165,15 @@ declare global {
       listArtifactVersions?: (artifactSlug: string) => Promise<ArtifactVersion[]>
       compileReactArtifact?: (source: string) => Promise<ReactArtifactCompileResult>
       listPackageUis?: () => Promise<DesktopRequestMap['listPackageUis']['response']>
+      listInstalledComponents?: () => Promise<
+        DesktopRequestMap['listInstalledComponents']['response']
+      >
+      admitInstalledComponent?: (
+        request: DesktopRequestMap['admitInstalledComponent']['params'],
+      ) => Promise<undefined>
+      loadInstalledComponent?: (
+        reference: DesktopRequestMap['loadInstalledComponent']['params'],
+      ) => Promise<DesktopRequestMap['loadInstalledComponent']['response']>
       openPackageUiBinding?: (
         request: DesktopRequestMap['openPackageUiBinding']['params'],
       ) => Promise<void>

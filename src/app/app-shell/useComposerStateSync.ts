@@ -72,7 +72,9 @@ export function useComposerStateSync({
     void shellAppSettings?.codeThinkingLevel
 
     const target = getComposerStateSyncTarget({
-      activeView: workspaceState.activeView,
+      activeView: workspaceState.activeView.startsWith('component:')
+        ? (workspaceState.utilityViewReturnState?.activeView ?? 'chat')
+        : workspaceState.activeView,
       composerProfile: workspaceState.composerProfile,
       composerDirectoryId,
       inboxComposerProfile,
@@ -116,6 +118,7 @@ export function useComposerStateSync({
     shellAppSettings?.codeModel,
     shellAppSettings?.codeThinkingLevel,
     workspaceState.activeView,
+    workspaceState.utilityViewReturnState,
     workspaceState.composerProfile,
     workspaceState.selectedConversationId,
   ])

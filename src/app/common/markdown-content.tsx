@@ -12,6 +12,7 @@ import {
 } from '@howaboua/howcode-sdk/ui/typography-scale'
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { inlineCodeClass } from '@howcode/ui/classes'
+import type { Element } from 'hast'
 import { Check, Clipboard } from 'lucide-react'
 import {
   type AnchorHTMLAttributes,
@@ -24,6 +25,10 @@ import {
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { openExternalQuery } from '../query/desktop-query'
+import { isClosedAnswerFence, supportsInlineAnswer } from './answer-fence'
+import { AnswerImage } from './answer-icon'
+import { isAnswerIconRow } from './answer-icon-source'
+import { InlineAnswerBlock } from './inline-answer-block'
 import { markdownHtmlRehypePlugins } from './markdown-html'
 
 type MarkdownTone = 'default' | 'thinking' | 'system' | 'user'
@@ -93,7 +98,17 @@ function getCodeBlockLanguage(children: ReactNode) {
   return language ? language.replaceAll('-', ' ') : null
 }
 
-function MarkdownPre({ children, ...props }: HTMLAttributes<HTMLPreElement>) {
+function MarkdownPre({
+  children,
+  node,
+  markdown,
+  enableInline,
+  ...props
+}: HTMLAttributes<HTMLPreElement> & {
+  node?: Element | undefined
+  markdown: string
+  enableInline: boolean
+}) {
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle')
   const text = getNodeText(children).replace(trailingLineBreakPattern, '')
   const language = getCodeBlockLanguage(children)
@@ -116,7 +131,7 @@ function MarkdownPre({ children, ...props }: HTMLAttributes<HTMLPreElement>) {
     }
   }
 
-  return (
+  const codeBlock = (
     <div className="group relative min-w-0 overflow-hidden rounded-lg bg-[color:var(--code-block-bg)]">
       <div className="flex h-8 items-center justify-between bg-[color:var(--code-block-header-bg)] px-3">
         <span
@@ -152,6 +167,23 @@ function MarkdownPre({ children, ...props }: HTMLAttributes<HTMLPreElement>) {
       </button>
     </div>
   )
+  if (
+    enableInline &&
+    language &&
+    supportsInlineAnswer(language) &&
+    isClosedAnswerFence(markdown, node)
+  ) {
+    return (
+      <div className="grid min-w-0 gap-2">
+        <InlineAnswerBlock language={language} source={text} />
+        <details className={appToneMutedClass}>
+          <summary className="cursor-pointer">Source</summary>
+          {codeBlock}
+        </details>
+      </div>
+    )
+  }
+  return codeBlock
 }
 
 function getNodeText(node: ReactNode): string {
@@ -282,11 +314,14 @@ export function MarkdownContent({ markdown, tone = 'default', className }: Markd
               {children}
             </ol>
           ),
-          li: ({ children }) => (
+          li: ({ children, node }) => (
             <li
               className={cn(
                 'min-w-0 break-words [overflow-wrap:anywhere]',
                 getMarkdownToneClass(tone),
+                tone === 'default' &&
+                  isAnswerIconRow(node) &&
+                  'relative list-none whitespace-pre-wrap border-b border-[color:var(--border)] py-2 pl-7 last:border-b-0 [&_svg]:absolute [&_svg]:left-0 [&_svg]:top-3',
               )}
             >
               {children}
@@ -299,6 +334,7 @@ export function MarkdownContent({ markdown, tone = 'default', className }: Markd
           ),
           em: ({ children }) => <em className={cn('italic', appToneMutedClass)}>{children}</em>,
           a: MarkdownLink,
+          img: AnswerImage,
           hr: () => <hr className="my-0.5 border-0 border-t border-[color:var(--border-strong)]" />,
           blockquote: ({ children }) => (
             <blockquote className="m-0 border-l border-[color:var(--border-strong)] pl-3 text-[color:var(--markdown-quote)]">
@@ -347,7 +383,9 @@ export function MarkdownContent({ markdown, tone = 'default', className }: Markd
 
             return <MarkdownInlineCode>{children}</MarkdownInlineCode>
           },
-          pre: MarkdownPre,
+          pre: (props) => (
+            <MarkdownPre {...props} markdown={markdown} enableInline={tone === 'default'} />
+          ),
         }}
       >
         {markdown}

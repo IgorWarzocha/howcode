@@ -6,6 +6,7 @@ import {
 } from '@howaboua/howcode-sdk/composer/composer-popover-coordination'
 import { useDismissibleLayer } from '@howaboua/howcode-sdk/hooks/useDismissibleLayer'
 import { composerPopoverPanelClass } from '@howaboua/howcode-sdk/ui/classes'
+import { appTypeSmallClass } from '@howaboua/howcode-sdk/ui/typography-scale'
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { type RefObject, useEffect, useRef, useState } from 'react'
 import type { DesktopActionInvoker, DirectoryGitState } from '../../../../../src/app/desktop/types'
@@ -111,7 +112,8 @@ export function DashboardBranchSwitcher({
         ref={buttonRef}
         type="button"
         className={cn(
-          'composer-footer-text pointer-events-auto relative z-20 inline-flex min-w-0 max-w-[14rem] shrink cursor-pointer items-center truncate rounded-md px-2 py-0.5 text-left transition-colors hover:bg-[color:var(--surface-hover)]',
+          'pointer-events-auto relative z-20 inline-flex min-w-0 max-w-[14rem] shrink cursor-pointer items-center truncate rounded-md px-2 py-0.5 text-left transition-colors hover:bg-[color:var(--surface-hover)]',
+          appTypeSmallClass,
           branchSwitchOpen && 'bg-[color:var(--surface-hover)]',
         )}
         onPointerDownCapture={(event) => {

@@ -1,6 +1,6 @@
 import { appToneSubtleClass } from '@howaboua/howcode-sdk/ui/typography-scale'
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
-import { Archive, ChevronRight, Home } from 'lucide-react'
+import { Archive, Home } from 'lucide-react'
 import type { RefObject } from 'react'
 import { IconButton } from '../../../../../src/app/common/icon-button'
 import type { DesktopActionInvoker, DirectoryGitState } from '../../../../../src/app/desktop/types'
@@ -291,18 +291,6 @@ export function SingleDirectoryWorkContent({
       </div>
 
       <div className="sidebar-project-work-actions">
-        {controlsOnly ? null : (
-          <button
-            type="button"
-            className="sidebar-compact-row sidebar-compact-row--action sidebar-project-work-action-row"
-            data-active={activeView === 'automations' ? 'true' : 'false'}
-            onClick={() => openDirectoryView('automations')}
-          >
-            <ChevronRight size={13} aria-hidden="true" />
-            <span>Automations</span>
-            <span className="sidebar-project-work-pill">Soon</span>
-          </button>
-        )}
         <button
           type="button"
           className="sidebar-compact-row sidebar-compact-row--action sidebar-project-work-history-row"

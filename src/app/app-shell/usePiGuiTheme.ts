@@ -1,9 +1,13 @@
 import { useEffect } from 'react'
-import { type GuiThemeValues, getThemeValues, managedVars } from '../../../shared/gui-theme'
+import {
+  type GuiThemeValues,
+  getThemeValues,
+  managedVars,
+  piGuiThemeUpdatedEvent,
+} from '../../../shared/gui-theme'
 import type { PiThemeState } from '../desktop/types'
 
 const storageKey = 'howcode:pi-gui-theme:v1'
-export const piGuiThemeUpdatedEvent = 'howcode:pi-gui-theme-updated'
 
 function applyValues(values: GuiThemeValues) {
   const root = document.documentElement

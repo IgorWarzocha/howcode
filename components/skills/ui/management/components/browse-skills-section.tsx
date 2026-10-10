@@ -1,4 +1,5 @@
 import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
+import { Checkbox, Field, Input } from '@howaboua/howcode-sdk/ui/controls'
 import {
   appToneDangerClass,
   appTypeGroupTextClass,
@@ -7,13 +8,10 @@ import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import {
   iconActionButtonDisabledClass,
   inlineEmptyNoteClass,
-  quietCheckboxCheckedClass,
-  quietCheckboxClass,
-  quietSearchInputClass,
   viewCloseButtonClass,
 } from '@howcode/ui/classes'
 import { useQuery } from '@tanstack/react-query'
-import { Check, CornerDownLeft, PackagePlus, Search, Sparkles } from 'lucide-react'
+import { CornerDownLeft, PackagePlus, Search, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { DisclosureSection } from '../../../../../src/app/common/disclosure-section'
 import type { AppSettings, DesktopActionInvoker } from '../../../../../src/app/desktop/types'
@@ -161,28 +159,18 @@ export function BrowseSkillsSection({
       chevronPosition="right"
       actionsClassName={skillsHeaderActionRailClass}
       actions={
-        <button
-          type="button"
-          className={skillsBrowsePreferenceButtonClass}
-          onClick={() => {
-            void onAction('settings.update', {
-              key: 'useAgentsSkillsPaths',
-              value: !appSettings.useAgentsSkillsPaths,
-            })
-          }}
-          aria-pressed={appSettings.useAgentsSkillsPaths}
-        >
+        <Field className={skillsBrowsePreferenceButtonClass}>
           <span>Use .agents instead of .pi?</span>
-          <span
-            className={cn(
-              quietCheckboxClass,
-              'justify-self-center',
-              appSettings.useAgentsSkillsPaths && quietCheckboxCheckedClass,
-            )}
-          >
-            {appSettings.useAgentsSkillsPaths ? <Check size={11} strokeWidth={2.6} /> : null}
-          </span>
-        </button>
+          <Checkbox
+            checked={appSettings.useAgentsSkillsPaths}
+            onChange={(event) => {
+              void onAction('settings.update', {
+                key: 'useAgentsSkillsPaths',
+                value: event.currentTarget.checked,
+              })
+            }}
+          />
+        </Field>
       }
     >
       <div className={skillsSearchControlRowClass}>
@@ -197,11 +185,11 @@ export function BrowseSkillsSection({
             <div className="pointer-events-none absolute inset-y-0 left-3 z-10 inline-flex items-center text-[color:var(--muted)]">
               <Search size={14} />
             </div>
-            <input
+            <Input
               type="text"
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
-              className={cn(quietSearchInputClass, 'w-full pl-8 pr-9')}
+              className="w-full pl-8 pr-9"
               placeholder="Search skills"
               aria-label="Search skills"
             />

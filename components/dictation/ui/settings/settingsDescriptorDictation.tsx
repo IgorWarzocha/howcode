@@ -1,11 +1,12 @@
 import { composerTextActionButtonClass } from '@howaboua/howcode-sdk/ui/classes'
+import { Checkbox, Select } from '@howaboua/howcode-sdk/ui/controls'
+import { InlineSelect } from '@howaboua/howcode-sdk/ui/inline-select'
 import { appToneDangerClass, appTypeSmallClass } from '@howaboua/howcode-sdk/ui/typography-scale'
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import {
   DEFAULT_DICTATION_MAX_DURATION_SECONDS,
   DICTATION_MAX_DURATION_OPTIONS,
 } from '@howcode/shared/dictation-settings'
-import { settingsInputClass } from '@howcode/ui/classes'
 import { Download, Trash2 } from 'lucide-react'
 import type { Dispatch, SetStateAction } from 'react'
 import { ActivitySpinner } from '../../../../src/app/common/activity-spinner'
@@ -15,7 +16,6 @@ import type { useSettingsDictationController } from './useSettingsDictationContr
 type SettingsController = { dictation: ReturnType<typeof useSettingsDictationController> }
 
 import type { SettingDescriptor } from '../../../../src/app/settings/settings/settingsTypes'
-import { InlineSelect, ToggleBox } from '../../../../src/app/settings/settings/settingsUi'
 import { normalizeManagedDictationModelId } from './settingsDictationHelpers'
 
 function DictationModelSettingControl({
@@ -175,8 +175,8 @@ export function buildDictationSettingsDescriptors({
       description: `Safety net in case you forget. Default is ${DEFAULT_DICTATION_MAX_DURATION_SECONDS / 60} minutes.`,
       keywords: 'dictation duration length capture minutes seconds',
       render: () => (
-        <select
-          className={cn(settingsInputClass, 'w-36')}
+        <Select
+          className="w-36"
           value={String(appSettings.dictationMaxDurationSeconds)}
           onChange={(event) =>
             controller.dictation.setDictationMaxDurationSeconds(
@@ -190,7 +190,7 @@ export function buildDictationSettingsDescriptors({
               {seconds < 60 ? `${seconds} seconds` : `${seconds / 60} minutes`}
             </option>
           ))}
-        </select>
+        </Select>
       ),
     },
     {
@@ -200,10 +200,10 @@ export function buildDictationSettingsDescriptors({
       description: 'Hide if you have a preferred dictation system.',
       keywords: 'dictation button composer microphone show hide',
       render: () => (
-        <ToggleBox
+        <Checkbox
           checked={appSettings.showDictationButton}
-          label="Toggle dictation"
-          onClick={() =>
+          aria-label="Toggle dictation"
+          onChange={() =>
             controller.dictation.setShowDictationButton(!appSettings.showDictationButton)
           }
         />

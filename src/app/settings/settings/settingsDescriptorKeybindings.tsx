@@ -1,9 +1,9 @@
+import { InlineSelect } from '@howaboua/howcode-sdk/ui/inline-select'
 import { bundledKeybindings } from '@howcode/shared/keybindings'
 import type { AppSettings, DesktopActionInvoker, KeybindingCommandId } from '../../desktop/types'
 import { keybindingCommandHelp, keybindingOrder, readSettingsPlatform } from './settingsKeybindings'
 import { SettingsShortcutRecorder } from './settingsShortcutRecorder'
 import type { SettingDescriptor } from './settingsTypes'
-import { InlineSelect } from './settingsUi'
 
 function buildShortcutSetting(input: {
   commandId: KeybindingCommandId

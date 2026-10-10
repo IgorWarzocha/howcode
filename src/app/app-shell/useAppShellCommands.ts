@@ -93,6 +93,16 @@ export function useAppShellCommands({
   }
 
   const handleShowWorkspace = () => {
+    if (
+      workspaceState.activeView.startsWith('component:') &&
+      workspaceState.utilityViewReturnState &&
+      ['chat', 'workspace', 'directory', 'directories'].includes(
+        workspaceState.utilityViewReturnState.activeView,
+      )
+    ) {
+      dispatch({ type: 'close-utility-view' })
+      return
+    }
     dispatch({
       type: 'select-workspace',
       workspaceId: workspaceState.selectedWorkspaceId,

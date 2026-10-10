@@ -9,7 +9,11 @@ export function AppShell() {
   return (
     <BuiltInComponentProviders
       settings={controller.desktop.shellState?.appSettings}
-      selectedView={controller.workspace.state.activeView}
+      workView={
+        controller.workspace.state.activeView.startsWith('component:')
+          ? (controller.workspace.state.utilityViewReturnState?.activeView ?? 'chat')
+          : controller.workspace.state.activeView
+      }
     >
       <AppShellLayout controller={controller} />
     </BuiltInComponentProviders>

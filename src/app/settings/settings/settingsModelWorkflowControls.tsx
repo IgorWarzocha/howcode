@@ -1,6 +1,6 @@
+import { InlineSelect } from '@howaboua/howcode-sdk/ui/inline-select'
 import { composerThinkingLevels } from '@howcode/shared/composer-thinking-level'
 import type { AppSettings, ComposerModel, ComposerThinkingLevel } from '../../desktop/types'
-import { InlineSelect } from './settingsUi'
 
 type ModelSettingsSelection = AppSettings['chatModel']
 
@@ -68,75 +68,66 @@ export function SettingsModelWorkflowControls({
 
   return (
     <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_7.75rem] gap-1.5 sm:w-auto sm:[--settings-model-select-width:10.4rem]">
-      <div className="min-w-0">
-        <div className="[&_[data-inline-select-root]]:w-full sm:[&_[data-inline-select-root]]:w-[var(--settings-model-select-width)]">
-          <InlineSelect
-            id={`${idPrefix}-provider`}
-            value={selection?.provider ?? 'composer-default'}
-            open={openSelectId === `${idPrefix}-provider`}
-            options={[
-              { value: 'composer-default', label: 'Composer default' },
-              ...providers.map((provider) => ({ value: provider, label: provider })),
-            ]}
-            onOpenChange={(open) => setOpenSelectId(open ? `${idPrefix}-provider` : null)}
-            onChange={selectProvider}
-          />
-        </div>
-      </div>
-      <div className="min-w-0">
-        <div className="[&_[data-inline-select-root]]:w-full sm:[&_[data-inline-select-root]]:w-[var(--settings-model-select-width)]">
-          <InlineSelect
-            id={`${idPrefix}-model`}
-            value={selection ? `${selection.provider}/${selection.id}` : 'composer-default'}
-            open={openSelectId === `${idPrefix}-model`}
-            options={[
-              {
-                value: 'composer-default',
-                label: 'Composer default',
-                description: currentModel?.name,
-              },
-              ...providerModels.map((model) => ({
-                value: `${model.provider}/${model.id}`,
-                label: model.name,
-                description: `${model.provider}/${model.id}`,
-              })),
-            ]}
-            onOpenChange={(open) => setOpenSelectId(open ? `${idPrefix}-model` : null)}
-            onChange={onSelectModel}
-            menuAlign="right"
-          />
-        </div>
-      </div>
-      <div className="min-w-0">
-        <div className="[&_[data-inline-select-root]]:w-full sm:[&_[data-inline-select-root]]:w-[7.75rem]">
-          <InlineSelect
-            id={`${idPrefix}-thinking`}
-            value={
-              thinkingLevel && thinkingLevels.includes(thinkingLevel)
-                ? thinkingLevel
-                : allowDefaultThinking
-                  ? 'composer-default'
-                  : (thinkingLevels[0] ?? 'off')
-            }
-            open={openSelectId === `${idPrefix}-thinking`}
-            options={[
-              ...(allowDefaultThinking
-                ? [{ value: 'composer-default', label: 'Composer default' }]
-                : []),
-              ...thinkingLevels.map((level) => ({
-                value: level,
-                label: thinkingLevelLabels[level],
-              })),
-            ]}
-            onOpenChange={(open) => setOpenSelectId(open ? `${idPrefix}-thinking` : null)}
-            onChange={(value) =>
-              onSelectThinkingLevel(
-                value === 'composer-default' ? null : (value as ComposerThinkingLevel),
-              )
-            }
-          />
-        </div>
-      </div>
+      <InlineSelect
+        className="w-full sm:w-[var(--settings-model-select-width)]"
+        id={`${idPrefix}-provider`}
+        value={selection?.provider ?? 'composer-default'}
+        open={openSelectId === `${idPrefix}-provider`}
+        options={[
+          { value: 'composer-default', label: 'Composer default' },
+          ...providers.map((provider) => ({ value: provider, label: provider })),
+        ]}
+        onOpenChange={(open) => setOpenSelectId(open ? `${idPrefix}-provider` : null)}
+        onChange={selectProvider}
+      />
+      <InlineSelect
+        className="w-full sm:w-[var(--settings-model-select-width)]"
+        id={`${idPrefix}-model`}
+        value={selection ? `${selection.provider}/${selection.id}` : 'composer-default'}
+        open={openSelectId === `${idPrefix}-model`}
+        options={[
+          {
+            value: 'composer-default',
+            label: 'Composer default',
+            description: currentModel?.name,
+          },
+          ...providerModels.map((model) => ({
+            value: `${model.provider}/${model.id}`,
+            label: model.name,
+            description: `${model.provider}/${model.id}`,
+          })),
+        ]}
+        onOpenChange={(open) => setOpenSelectId(open ? `${idPrefix}-model` : null)}
+        onChange={onSelectModel}
+        menuAlign="right"
+      />
+      <InlineSelect
+        className="w-full sm:w-[7.75rem]"
+        id={`${idPrefix}-thinking`}
+        value={
+          thinkingLevel && thinkingLevels.includes(thinkingLevel)
+            ? thinkingLevel
+            : allowDefaultThinking
+              ? 'composer-default'
+              : (thinkingLevels[0] ?? 'off')
+        }
+        open={openSelectId === `${idPrefix}-thinking`}
+        options={[
+          ...(allowDefaultThinking
+            ? [{ value: 'composer-default', label: 'Composer default' }]
+            : []),
+          ...thinkingLevels.map((level) => ({
+            value: level,
+            label: thinkingLevelLabels[level],
+          })),
+        ]}
+        onOpenChange={(open) => setOpenSelectId(open ? `${idPrefix}-thinking` : null)}
+        onChange={(value) =>
+          onSelectThinkingLevel(
+            value === 'composer-default' ? null : (value as ComposerThinkingLevel),
+          )
+        }
+      />
     </div>
   )
 }

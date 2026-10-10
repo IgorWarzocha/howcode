@@ -93,12 +93,6 @@ export const quietListFrameClass = 'grid min-w-0 divide-y divide-[color:var(--bo
 export const quietListRowClass =
   'grid min-w-0 gap-1 px-2 py-2 text-left transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)]'
 
-export const quietCheckboxClass =
-  'inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[4px] border border-[color:var(--border)] bg-transparent text-[color:var(--muted)] transition-colors'
-
-export const quietCheckboxCheckedClass =
-  'border-[color:var(--border-strong)] bg-[color:var(--surface-hover)] text-[color:var(--muted)]'
-
 const quietMetaRowBaseClass =
   'grid grid-cols-[minmax(0,1fr)_auto] items-center bg-transparent text-left transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)]'
 
@@ -107,9 +101,6 @@ export const quietMetaRowClass = `${quietMetaRowBaseClass} min-h-8 gap-1.5 round
 export const quietMetaRowDenseClass = `${quietMetaRowBaseClass} min-h-7 gap-1 rounded-md px-1.5 py-0.5`
 
 export const quietMetaRowSelectedClass = 'bg-[color:var(--folded-row-bg)]'
-
-export const quietSearchInputClass =
-  'settings-control-text min-w-0 flex-1 rounded-lg border-0 bg-[color:var(--surface-hover)] px-3 py-2 text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]'
 
 export const inlineEmptyNoteClass = `px-2 py-1.5 ${appTypeSmallClass} ${appToneSubtleClass}`
 
@@ -135,9 +126,6 @@ export const composerInlineStatusPillClass = `inline-flex h-6 max-w-[min(10.75re
 
 export const composerPopoverContextLayerClass = 'z-[180]'
 
-export const settingsPopoverPanelClass =
-  'pointer-events-auto scroll-py-1.5 rounded-xl border-0 bg-[color:var(--panel)] p-1.5 shadow-[0_18px_42px_rgba(0,0,0,0.34)]'
-
 export const composerAttachmentPickerTextClass = appTypeMetaClass
 
 export const composerOverlayPanelInsetClass = 'px-4'
@@ -148,6 +136,3 @@ export const terminalDrawerFooterClass =
   'flex h-[3.75rem] shrink-0 items-start justify-end gap-3 bg-[color:var(--workspace)] px-3 pt-1.5'
 
 export const inlineCodeClass = `rounded-md bg-[rgba(114,120,152,0.18)] px-1.5 py-0.5 ${appTypeCodeClass} break-all ${appToneTextClass}`
-
-export const settingsInputClass =
-  'settings-control-text min-w-0 flex-1 rounded-lg border-0 bg-[color:var(--surface-hover)] px-3 py-2 text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)] focus:bg-[color:var(--folded-row-hover-bg)]'

@@ -3,7 +3,7 @@ import { WebLinksAddon } from '@xterm/addon-web-links'
 import { Terminal as XTerm } from '@xterm/xterm'
 import type { RefObject } from 'react'
 import { useEffect } from 'react'
-import { piGuiThemeUpdatedEvent } from '../../../../src/app/app-shell/usePiGuiTheme'
+import { piGuiThemeUpdatedEvent } from '../../../../shared/gui-theme'
 import { openExternalQuery } from '../../../../src/app/query/desktop-query'
 import { buildXtermTheme } from './terminal-xterm-theme'
 import {

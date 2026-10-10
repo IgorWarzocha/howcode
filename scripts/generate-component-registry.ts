@@ -47,6 +47,7 @@ for (const [kind, path, contract] of [
     'PluginHostContribution',
   ],
   ['service', 'desktop/plugins/installed-services.generated.ts', 'PluginServiceContribution'],
+  ['host', 'desktop/plugins/installed-hosts.generated.ts', 'PluginHostContribution'],
 ] as const) {
   const selected = components.filter((component) => component.metadata[kind])
   const imports = selected.map(
@@ -95,6 +96,7 @@ execFileSync(
     'src/app/component-system/installed-renderers.generated.ts',
     'src/desktop-host/desktop-requests/installed-hosts.generated.ts',
     'desktop/plugins/installed-services.generated.ts',
+    'desktop/plugins/installed-hosts.generated.ts',
     'desktop/durable-runtime/installed-durable.generated.ts',
     'src/installed-plugin-sources.generated.css',
   ],

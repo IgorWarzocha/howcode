@@ -23,6 +23,28 @@ export function hasDesktopBridgeQuery() {
   return typeof window !== 'undefined' && typeof window.piDesktop?.invokeAction === 'function'
 }
 
+export async function listInstalledComponentsQuery() {
+  if (!window.piDesktop?.listInstalledComponents)
+    throw new Error('The running shell does not yet support live component activation.')
+  return window.piDesktop.listInstalledComponents()
+}
+
+export async function admitInstalledComponentQuery(
+  request: import('../../../shared/installed-component-contracts').InstalledComponentAdmission,
+) {
+  if (!window.piDesktop?.admitInstalledComponent)
+    throw new Error('Component renderer admission bridge is unavailable.')
+  return window.piDesktop.admitInstalledComponent(request)
+}
+
+export async function loadInstalledComponentQuery(
+  reference: import('../../../shared/package-ui-contracts').PackageUiReference,
+) {
+  if (!window.piDesktop?.loadInstalledComponent)
+    throw new Error('Component renderer bridge is unavailable.')
+  return window.piDesktop.loadInstalledComponent(reference)
+}
+
 export async function requestInstalledPluginQuery<Result>(
   plugin: string,
   method: string,

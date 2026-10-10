@@ -46,6 +46,7 @@ export type WorkingDirectoriesService = {
 }
 
 export type PluginService = {
+  hostRequest: (plugin: string, method: string, payload: unknown) => Promise<unknown>
   request: (plugin: string, method: string, payload: unknown) => Promise<unknown>
 }
 

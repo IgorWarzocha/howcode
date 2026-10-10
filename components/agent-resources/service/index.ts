@@ -8,6 +8,7 @@ import type {
   ComposerSkillReference,
   ComposerStateRequest,
 } from '../../../shared/desktop-contracts.ts'
+import { inlineAnswerPrompt } from './answer-prompt.ts'
 
 async function optionalInstructions(filePath: string) {
   try {
@@ -42,6 +43,7 @@ export function createAgentResources(
     defineExtension({
       name: 'howcode.resources',
       sections: [
+        section('howcode-answer-presentation', () => inlineAnswerPrompt, { tag: false }),
         section('howcode-instructions', async ({ agent }) => {
           const global =
             (await optionalInstructions(path.join(getAgentDirectory(), 'AGENTS.md'))) ??

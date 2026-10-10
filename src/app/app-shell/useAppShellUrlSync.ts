@@ -5,6 +5,10 @@ import {
 } from '@howcode/shared/toolkit-components'
 import { useRouter, useRouterState } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef } from 'react'
+import {
+  useInstalledComponentReadiness,
+  useInstalledRendererContributions,
+} from '../component-system/installed-component-catalog'
 import { isWorkspaceViewEnabled } from '../component-system/toolkit-components'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace-model'
 import type { View, WorkingDirectory } from '../types'
@@ -56,6 +60,12 @@ export function useAppShellUrlSync(input: {
   state: WorkspaceState
 }) {
   const router = useRouter()
+  const componentLoading = useInstalledComponentReadiness()
+  const contributions = useInstalledRendererContributions()
+  const activeViewEnabled = useMemo(
+    () => isWorkspaceViewEnabled(input.toolkitSettings, input.state.activeView, contributions),
+    [contributions, input.toolkitSettings, input.state.activeView],
+  )
   const snapshot = useRouterState({
     select: (routerState) => ({
       pathname: routerState.location.pathname,
@@ -69,23 +79,23 @@ export function useAppShellUrlSync(input: {
   const cursor = useRef<Cursor>({ routeKey: null, stateKey: null })
 
   useEffect(() => {
+    if (!(input.loading || componentLoading || activeViewEnabled)) {
+      input.dispatch(unavailablePageAction(input.state.utilityViewReturnState))
+      return
+    }
     const decision = getAppShellUrlSyncDecision({
       previous: cursor.current,
       routeSnapshot: snapshot,
       stateRoute,
       navigation: input.navigation,
       directories: input.directories,
-      loading: input.loading,
+      loading: input.loading || componentLoading,
     })
     if (decision.type === 'defer') return
     cursor.current = decision.next
     if (decision.type === 'synchronized') return
     if (decision.type === 'dispatch-route') {
-      const routeView = normalizeAppRoute(snapshot).routeName
-      const enabled =
-        routeView === 'git'
-          ? isToolkitComponentEnabled(input.toolkitSettings, 'coding')
-          : isWorkspaceViewEnabled(input.toolkitSettings, routeView as View)
+      const enabled = isRouteEnabled(snapshot, input.toolkitSettings)
       if (!enabled) {
         input.dispatch({ type: 'select-workspace', workspaceId: null })
         const fallback: AppRouteSnapshot = { pathname: '/workspaces', search: {} }
@@ -103,6 +113,9 @@ export function useAppShellUrlSync(input: {
         JSON.stringify(getRouteAction(stateRoute, input.navigation)),
     })
   }, [
+    componentLoading,
+    activeViewEnabled,
+    input.state.utilityViewReturnState,
     input.directories,
     input.dispatch,
     input.loading,
@@ -119,4 +132,20 @@ function dispatchRouteActions(
   action: WorkspaceAction | WorkspaceAction[],
 ) {
   for (const item of Array.isArray(action) ? action : [action]) dispatch(item)
+}
+
+function isRouteEnabled(
+  snapshot: AppRouteSnapshot,
+  settings: ToolkitComponentSettings | undefined,
+) {
+  const routeView = normalizeAppRoute(snapshot).routeName
+  return routeView === 'git'
+    ? isToolkitComponentEnabled(settings, 'coding')
+    : isWorkspaceViewEnabled(settings, routeView as View)
+}
+
+function unavailablePageAction(
+  returnState: WorkspaceState['utilityViewReturnState'],
+): WorkspaceAction {
+  return returnState ? { type: 'close-utility-view' } : { type: 'show-view', view: 'chat' }
 }

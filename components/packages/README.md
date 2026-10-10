@@ -1,5 +1,17 @@
 # Live package UI
 
+## Full Howcode components
+
+Packages with `howcode` metadata use the same install, update and remove commands as standalone UI packages. Declare public `renderer`, `host` and `service` exports using the Howcode SDK contribution contracts. The host prepares them as one generation. Services become available before the browser admits the renderer. No manual rebuild or restart is needed for an ordinary profile component.
+
+The CLI reports ready, error or bounded pending status. Pending can mean the host is offline, agent work is still active, or no browser has admitted the prepared renderer. Updates and removals wait for active agent work and component requests. They do not replay actions or delete producer-owned stored data.
+
+Full renderers share Howcode's React and SDK contexts. Their Providers own feature state and workspace surfaces. Attachments and output previews render beneath that Provider without replacing the application tree. Imported CSS belongs to the generation and is removed with it. Other emitted assets must be inlined or served by the component.
+
+The contribution contract accepts the shell's existing routes and commands. Use workspace surfaces for new presentations. Bundled components with shell-owned adapters, currently Git, must be changed through a supported shell build and handoff rather than a profile override.
+
+## Standalone UI
+
 An installed package directory can contain `ui.tsx`. Howcode publishes its UI to the browser without restarting the server or resetting the conversation. Installation uses the existing commands:
 
 ```sh

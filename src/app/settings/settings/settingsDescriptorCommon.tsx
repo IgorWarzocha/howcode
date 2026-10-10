@@ -1,8 +1,8 @@
+import { Checkbox } from '@howaboua/howcode-sdk/ui/controls'
+import { SegmentedControl } from '@howaboua/howcode-sdk/ui/inline-select'
 import type { AppSettings } from '../../desktop/types'
 import type { SettingsController } from './settingsDescriptorTypes'
-import { SettingsSegmentedControl } from './settingsSegmentedControl'
 import type { SettingDescriptor } from './settingsTypes'
-import { ToggleBox } from './settingsUi'
 
 export function buildCommonSettingsDescriptors({
   appSettings,
@@ -20,7 +20,7 @@ export function buildCommonSettingsDescriptors({
       keywords: 'queue steer stop streaming responding send composer',
       render: () => (
         <div className="min-w-0 sm:min-w-[13rem]">
-          <SettingsSegmentedControl
+          <SegmentedControl
             columnsClassName="grid-cols-3"
             value={appSettings.composerStreamingBehavior}
             options={[
@@ -40,10 +40,10 @@ export function buildCommonSettingsDescriptors({
       description: 'Hide branch and chat count badges in the sidebar.',
       keywords: 'sidebar counts chats branch numbers badges hide',
       render: () => (
-        <ToggleBox
+        <Checkbox
           checked={appSettings.hideSidebarSessionCounts}
-          label="Hide sidebar counts"
-          onClick={controller.app.toggleHideSidebarSessionCounts}
+          aria-label="Hide sidebar counts"
+          onChange={controller.app.toggleHideSidebarSessionCounts}
         />
       ),
     },
@@ -54,10 +54,10 @@ export function buildCommonSettingsDescriptors({
       description: 'Hover to input for composer and terminal.',
       keywords: 'hover focus type composer terminal drawer input',
       render: () => (
-        <ToggleBox
+        <Checkbox
           checked={appSettings.hoverToFocus}
-          label="Hover to type"
-          onClick={controller.app.toggleHoverToFocus}
+          aria-label="Hover to type"
+          onChange={controller.app.toggleHoverToFocus}
         />
       ),
     },
@@ -68,10 +68,10 @@ export function buildCommonSettingsDescriptors({
       description: 'Instantly leave input when not in hover area.',
       keywords: 'hover blur leave stop typing composer terminal drawer input',
       render: () => (
-        <ToggleBox
+        <Checkbox
           checked={appSettings.hoverToBlur}
-          label="Stop typing on hover leave"
-          onClick={controller.app.toggleHoverToBlur}
+          aria-label="Stop typing on hover leave"
+          onChange={controller.app.toggleHoverToBlur}
         />
       ),
     },

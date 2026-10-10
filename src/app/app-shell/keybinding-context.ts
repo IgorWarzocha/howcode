@@ -6,13 +6,17 @@ import {
 } from '../component-system/toolkit-components'
 import type { KeybindingRuntime } from './keybinding-runtime'
 
-export const rendererCommandIds = new Set<KeybindingCommandId>([
-  'app.commandPalette',
-  'chat.find',
-  'sidebar.find',
-  'composer.focus',
-  ...componentRendererCommandIds,
-])
+export const rendererCommandIds = {
+  has(commandId: KeybindingCommandId) {
+    return new Set<KeybindingCommandId>([
+      'app.commandPalette',
+      'chat.find',
+      'sidebar.find',
+      'composer.focus',
+      ...componentRendererCommandIds(),
+    ]).has(commandId)
+  },
+}
 
 export function eventTargetIsEditable(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false
@@ -59,7 +63,9 @@ function modalOrSettingsLayerIsOpen() {
 function toolkitShortcutIsDisabled(commandId: KeybindingCommandId, runtime: KeybindingRuntime) {
   const settings = runtime.appController.desktop.shellState?.appSettings
   const contribution = getComponentKeybindingPolicy(commandId)
-  return contribution ? !isToolkitComponentEnabled(settings, contribution.componentId) : false
+  return contribution?.componentId
+    ? !isToolkitComponentEnabled(settings, contribution.componentId)
+    : false
 }
 
 export function appLevelShortcutsAreBlocked(

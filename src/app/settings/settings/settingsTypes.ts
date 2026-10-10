@@ -25,12 +25,6 @@ export type SettingDescriptor = {
   render: () => ReactNode
 }
 
-export type InlineSelectOption = {
-  value: string
-  label: string
-  description?: string | undefined
-}
-
 export type SettingsCategory = {
   id: SettingsCategoryId
   label: string

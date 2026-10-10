@@ -1,4 +1,5 @@
 import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
+import { Input } from '@howaboua/howcode-sdk/ui/controls'
 import {
   appToneMutedClass,
   appToneTextClass,
@@ -6,7 +7,7 @@ import {
   appTypeSmallClass,
 } from '@howaboua/howcode-sdk/ui/typography-scale'
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
-import { quietSearchInputClass, viewCloseButtonClass } from '@howcode/ui/classes'
+import { viewCloseButtonClass } from '@howcode/ui/classes'
 import { Info, Search, X } from 'lucide-react'
 import { settingsCategories } from './settingsGroups'
 import type { SettingsCategoryId } from './settingsTypes'
@@ -21,20 +22,20 @@ export function SettingsSearchField({
   className?: string
 }) {
   return (
-    <label className={cn('relative block', className)}>
+    <div className={cn('relative block', className)}>
       <Search
         size={15}
         className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[color:var(--muted)]"
       />
-      <input
+      <Input
         type="search"
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
-        className={cn(quietSearchInputClass, `h-9 pl-9 ${appTypeControlClass} ${appToneTextClass}`)}
+        className={cn(`h-9 pl-9 ${appTypeControlClass} ${appToneTextClass}`)}
         placeholder="Search…"
         aria-label="Search settings"
       />
-    </label>
+    </div>
   )
 }
 

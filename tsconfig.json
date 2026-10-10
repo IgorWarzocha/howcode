@@ -31,8 +31,6 @@
       "@howcode/git-integration": ["./src/app/git-integration/index.ts"],
       "@howcode/git-integration/*": ["./src/app/git-integration/*"],
       "@howcode/query/*": ["./src/app/query/*"],
-      "@howcode/roadmaps": ["./src/app/roadmaps/index.ts"],
-      "@howcode/roadmaps/*": ["./src/app/roadmaps/*"],
       "@howcode/settings/*": ["./src/app/settings/settings/*"],
       "@howcode/shared/*": ["./shared/*"],
       "@howcode/sidebar": ["./src/app/components/sidebar/index.ts"],
@@ -64,12 +62,6 @@
     "stableTypeOrdering": true,
     "libReplacement": false
   },
-  "include": [
-    "src",
-    "vite.config.ts",
-    "vitest.config.ts",
-    "components/*/ui/**/*.ts",
-    "components/*/ui/**/*.tsx"
-  ],
+  "include": ["src", "vite.config.ts", "components/*/ui/**/*.ts", "components/*/ui/**/*.tsx"],
   "exclude": ["src/server/**/*"]
 }

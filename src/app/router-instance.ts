@@ -6,6 +6,7 @@ import {
   createRouter,
 } from '@tanstack/react-router'
 import { AppShell } from './app-shell'
+import { builtInPagePaths } from './types'
 
 const history =
   typeof window !== 'undefined' && window.location.protocol === 'file:'
@@ -13,18 +14,7 @@ const history =
     : createBrowserHistory()
 const rootRoute = createRootRoute({ component: AppShell })
 const appRoutes = [
-  '/',
-  '/archived',
-  '/automations',
-  '/chats',
-  '/claw',
-  '/git',
-  '/inbox',
-  '/settings',
-  '/history',
-  '/skills',
-  '/work',
-  '/workspaces',
+  ...new Set([...Object.values(builtInPagePaths), '/git', '/components/$component']),
 ].map((path) => createRoute({ getParentRoute: () => rootRoute, path }))
 
 export const router = createRouter({

@@ -7,6 +7,7 @@ import {
 } from '@dnd-kit/core'
 import { arrayMove } from '@dnd-kit/sortable'
 import { type DragEvent, useMemo, useState } from 'react'
+import { DEFAULT_WORKSPACE_ID } from '../../../../../shared/desktop-workspace-contracts'
 import type {
   DesktopActionInvoker,
   WorkspaceChat,
@@ -14,6 +15,7 @@ import type {
 } from '../../../desktop/types'
 import { useDirectoryMenuDismiss } from '../directory-tree/useDirectoryMenuDismiss'
 import { workspaceChatDragType } from './workspace-chat-item'
+import { workspaceDisplayName } from './workspace-name'
 
 type UseWorkspaceNavigationControllerInput = {
   chatState: WorkspaceNavigationState | null
@@ -44,7 +46,9 @@ export function useWorkspaceNavigationController({
   const workspaces = useMemo(() => {
     if (!normalizedSearchQuery) return sourceWorkspaces
     return sourceWorkspaces.flatMap((workspace) => {
-      const workspaceMatches = workspace.name.toLowerCase().includes(normalizedSearchQuery)
+      const workspaceMatches = workspaceDisplayName(workspace)
+        .toLowerCase()
+        .includes(normalizedSearchQuery)
       const matchingChats = workspace.chats.filter((chat) =>
         chat.title.toLowerCase().includes(normalizedSearchQuery),
       )
@@ -57,7 +61,13 @@ export function useWorkspaceNavigationController({
     if (!normalizedSearchQuery) return chats
     return chats.filter((chat) => chat.title.toLowerCase().includes(normalizedSearchQuery))
   }, [chatState?.unassignedChats, normalizedSearchQuery])
-  const workspaceIds = useMemo(() => workspaces.map((workspace) => workspace.id), [workspaces])
+  const workspaceIds = useMemo(
+    () =>
+      workspaces
+        .filter((workspace) => workspace.id !== DEFAULT_WORKSPACE_ID)
+        .map((workspace) => workspace.id),
+    [workspaces],
+  )
 
   const submitWorkspace = async () => {
     const name = draft.trim()
@@ -77,9 +87,11 @@ export function useWorkspaceNavigationController({
     setDraggingWorkspaceId(null)
     if (normalizedSearchQuery) return
     const { active, over } = event
-    if (!over || active.id === over.id) return
+    if (!over || active.id === over.id || active.id === DEFAULT_WORKSPACE_ID) return
     const oldIndex = sourceWorkspaces.findIndex((workspace) => workspace.id === active.id)
-    const newIndex = sourceWorkspaces.findIndex((workspace) => workspace.id === over.id)
+    const targetIndex = sourceWorkspaces.findIndex((workspace) => workspace.id === over.id)
+    const newIndex =
+      targetIndex === 0 && sourceWorkspaces[0]?.id === DEFAULT_WORKSPACE_ID ? 1 : targetIndex
     if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return
     const nextWorkspaces = arrayMove(sourceWorkspaces, oldIndex, newIndex)
     void onAction('workspace.reorder', {

@@ -1,5 +1,6 @@
 import type { PluginRendererContribution } from '@howaboua/howcode-sdk/plugins'
-import { installedRendererContributions } from './installed-renderers.generated'
+import { useInstalledRendererContributions } from './installed-component-catalog'
+import { RendererSlot } from './renderer-slots'
 
 /** Installed components resolve their durable attachments independently of tool presentation. */
 export function TurnAttachments({
@@ -9,11 +10,14 @@ export function TurnAttachments({
   conversationId: string
   turnId: string
 }) {
+  const installedRendererContributions = useInstalledRendererContributions()
   return Object.entries(installedRendererContributions).map(([name, installed]) => {
     const contribution: PluginRendererContribution = installed
     const Attachments = contribution.TurnAttachments
     return Attachments ? (
-      <Attachments key={name} conversationId={conversationId} turnId={turnId} />
+      <RendererSlot key={name} name={name}>
+        <Attachments conversationId={conversationId} turnId={turnId} />
+      </RendererSlot>
     ) : null
   })
 }

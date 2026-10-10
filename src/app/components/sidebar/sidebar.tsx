@@ -1,10 +1,11 @@
 import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
 import { useAnimatedPresence } from '@howaboua/howcode-sdk/hooks/useAnimatedPresence'
 import { useDismissibleLayer } from '@howaboua/howcode-sdk/hooks/useDismissibleLayer'
+import { useWorkspaceSurfaceHost } from '@howaboua/howcode-sdk/workspace-surfaces'
 import { skillsComponent } from '@howcode/components/skills/ui/component'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
-import { Inbox, MessageSquare, PanelLeftClose, Settings } from 'lucide-react'
+import { Inbox, MessageSquare, PanelLeftClose, PanelsTopLeft, Settings } from 'lucide-react'
 import { useCallback, useRef } from 'react'
 import type {
   AppSettings,
@@ -25,6 +26,7 @@ import {
   WorkspaceFolderCreateButton,
 } from '@howcode/components/working-directories/ui'
 import { iconButtonClass } from '@howcode/ui/classes'
+import { useInstalledPageViews } from '../../component-system/installed-renderer-context'
 import { SidebarInboxSection } from './inbox/sidebar-inbox-section'
 import { SidebarChatSkeleton, SidebarInboxSkeleton } from './sidebar-skeletons'
 import { WorkspaceNavigationSection } from './workspaces/workspace-navigation-section'
@@ -91,20 +93,36 @@ function SidebarNavigation({
   onShowView: (view: SidebarNavigableView) => void
   onShowWorkspace: () => void
 }) {
+  const views = useInstalledPageViews()
+  const { host } = useWorkspaceSurfaceHost()
   return (
     <nav className="sidebar-mode-nav" aria-label="Primary navigation">
       <NavButton
         icon={<Inbox size={16} />}
         label="Inbox"
         active={activeView === 'inbox'}
-        onClick={() => onShowView('inbox')}
+        onClick={() => {
+          onShowView('inbox')
+        }}
       />
       <NavButton
         icon={<MessageSquare size={16} />}
-        label="Workspaces"
-        active={activeView !== 'inbox'}
-        onClick={onShowWorkspace}
+        label="Chats"
+        active={activeView !== 'inbox' && !activeView.startsWith('component:')}
+        onClick={() => {
+          onShowWorkspace()
+          host.selectMain('chat')
+        }}
       />
+      {views.map(({ name, id, view }) => (
+        <NavButton
+          key={name}
+          icon={<PanelsTopLeft size={16} />}
+          label={view.label}
+          active={activeView === id}
+          onClick={() => onShowView(id)}
+        />
+      ))}
     </nav>
   )
 }

@@ -33,6 +33,11 @@ import type {
   WorkspaceNavigationState,
 } from './desktop-contracts'
 import type {
+  InstalledComponentAdmission,
+  InstalledComponentDescriptor,
+  InstalledComponentSource,
+} from './installed-component-contracts'
+import type {
   PackageUiDescriptor,
   PackageUiJson,
   PackageUiReference,
@@ -54,6 +59,12 @@ export type DesktopRequestMap = GitRequestMap & {
   workspaceLayout: { params: WorkspaceLayoutRequest; response: WorkspaceLayoutResponse }
   pluginRequest: { params: { plugin: string; method: string; payload: unknown }; response: unknown }
   listPackageUis: { params: Record<string, never>; response: PackageUiDescriptor[] }
+  listInstalledComponents: {
+    params: Record<string, never>
+    response: InstalledComponentDescriptor[]
+  }
+  admitInstalledComponent: { params: InstalledComponentAdmission; response: undefined }
+  loadInstalledComponent: { params: PackageUiReference; response: InstalledComponentSource }
   loadPackageUi: { params: PackageUiReference; response: { js: string } }
   openPackageUiBinding: {
     params: Parameters<PackageUiService['openPackageUiBinding']>[0]

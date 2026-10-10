@@ -25,7 +25,6 @@ const howcodeAliasEntries = [
   ['@howcode/inbox', 'src/app/inbox'],
   ['@howcode/git-integration', 'src/app/git-integration'],
   ['@howcode/query', 'src/app/query'],
-  ['@howcode/roadmaps', 'src/app/roadmaps'],
   ['@howcode/settings', 'src/app/settings/settings'],
   ['@howcode/sessions', 'src/app/sessions'],
   ['@howcode/sidebar', 'src/app/components/sidebar'],

@@ -4,6 +4,7 @@ import {
   hook,
   type RegistryReader,
 } from '@earendil-works/pi-durable'
+import { installedPluginGeneration } from '../plugins/runtime.ts'
 import { createDesktopExtensionRegistry } from './extension-composition.ts'
 import { loadInstalledPackages, type PackageLoadOptions } from './packages.ts'
 
@@ -25,6 +26,7 @@ export async function openLiveExtensions(options: PackageLoadOptions) {
       ],
     })
     let current = createDesktopExtensionRegistry(packages.extensions, [reload])
+    let pluginGeneration = installedPluginGeneration()
     const listeners = new Set<() => void>()
     const registry: RegistryReader = {
       snapshot: () => current.snapshot(),
@@ -37,11 +39,16 @@ export async function openLiveExtensions(options: PackageLoadOptions) {
     }
     async function refresh() {
       try {
-        await packages.refresh((installed) => {
+        const packagesChanged = await packages.refresh((installed) => {
           const next = createDesktopExtensionRegistry(installed, [reload])
           current = next
           for (const listener of listeners) listener()
         })
+        if (!packagesChanged && pluginGeneration !== installedPluginGeneration()) {
+          current = createDesktopExtensionRegistry(packages.extensions, [reload])
+          for (const listener of listeners) listener()
+        }
+        pluginGeneration = installedPluginGeneration()
         failure = undefined
       } catch (error) {
         failure = { error }

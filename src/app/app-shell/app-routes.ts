@@ -3,21 +3,12 @@ import type {
   WorkspaceChat,
   WorkspaceNavigationState,
 } from '@howcode/shared/desktop-workspace-contracts'
+import { getWorkspacePageViews } from '../component-system/toolkit-components'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace-model'
-import type { View, WorkingDirectory } from '../types'
+import { builtInPagePaths, isBuiltInView, type View, type WorkingDirectory } from '../types'
 
 export type AppRouteSnapshot = { pathname: string; search: Record<string, unknown> }
 
-const utilityRoutes = new Set<View>([
-  'archived',
-  'automations',
-  'claw',
-  'inbox',
-  'settings',
-  'history',
-  'skills',
-  'work',
-])
 const leadingSlashes = /^\/+/
 
 function searchValue(search: AppRouteSnapshot['search'], key: string) {
@@ -27,7 +18,14 @@ function searchValue(search: AppRouteSnapshot['search'], key: string) {
 
 export function normalizeAppRoute(snapshot: AppRouteSnapshot) {
   const path = snapshot.pathname.replace(leadingSlashes, '') || 'landing'
-  const routeName = path === 'workspaces' ? 'workspace' : path === 'chats' ? 'chat' : path
+  let routeName = path === 'workspaces' ? 'workspace' : path === 'chats' ? 'chat' : path
+  if (path.startsWith('components/')) {
+    try {
+      routeName = `component:${decodeURIComponent(path.slice('components/'.length))}`
+    } catch {
+      routeName = 'invalid'
+    }
+  }
   return {
     routeName,
     workspaceId: searchValue(snapshot.search, 'workspaceId'),
@@ -98,7 +96,7 @@ export function getRouteAction(
       { type: 'select-inbox-chat', conversationId: route.conversationId },
     ]
   }
-  return utilityRoutes.has(route.routeName as View)
+  return getWorkspacePageViews().includes(route.routeName as View)
     ? { type: 'show-view', view: route.routeName as View }
     : null
 }
@@ -144,6 +142,11 @@ export function getRouteForState(
     ...(workspaceId ? { workspaceId } : {}),
     ...(state.selectedChatId ? { chatId: state.selectedChatId } : {}),
   }
+  if (state.activeView.startsWith('component:'))
+    return {
+      pathname: `/components/${encodeURIComponent(state.activeView.slice('component:'.length))}`,
+      search: {},
+    }
   if (state.activeView === 'landing') return { pathname: '/', search: {} }
   if (state.activeView === 'chat' && state.selectedChatId) return { pathname: '/chats', search }
   if (
@@ -161,5 +164,9 @@ export function getRouteForState(
         ? { conversationId: state.selectedInboxConversationId }
         : {},
     }
-  return { pathname: `/${state.activeView}`, search: {} }
+  return { pathname: pagePath(state.activeView), search: {} }
+}
+
+function pagePath(view: View) {
+  return isBuiltInView(view) ? builtInPagePaths[view] : '/'
 }

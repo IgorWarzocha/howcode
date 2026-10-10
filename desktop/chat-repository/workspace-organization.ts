@@ -1,16 +1,18 @@
 import * as Effect from 'effect/Effect'
 import * as SqlClient from 'effect/sql/SqlClient'
+import { DEFAULT_WORKSPACE_ID } from '../../shared/desktop-workspace-contracts.ts'
 import { seedWorkspaceLayouts } from './workspace-layout.ts'
 import { withDatabaseTransaction } from './write-transaction.ts'
 
 // Persisted chat_groups are now universal workspaces. The old table and chat
 // membership remain compatibility boundaries for saved composer capabilities.
-export const DEFAULT_WORKSPACE_ID = 'howcode:default-workspace'
-
 export const ensureDefaultWorkspace = Effect.fn('Workspace.ensureDefault')(function* () {
   const sql = yield* SqlClient.SqlClient
   yield* sql`INSERT OR IGNORE INTO chat_groups (id, name, order_index)
-    VALUES (${DEFAULT_WORKSPACE_ID}, 'Personal', -1)`
+    VALUES (${DEFAULT_WORKSPACE_ID}, 'Chats', -1)`
+  // Migrate the old seeded label without overwriting a user's custom name.
+  yield* sql`UPDATE chat_groups SET name = 'Chats'
+    WHERE id = ${DEFAULT_WORKSPACE_ID} AND name = 'Personal'`
   return DEFAULT_WORKSPACE_ID
 })
 

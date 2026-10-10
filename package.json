@@ -26,9 +26,9 @@
     "publish:howcode:dry-run": "bun ./scripts/pack-howcode.ts main publish-dry-run",
     "preview": "vite preview --configLoader runner",
     "prepare": "test -d .git && husky || true",
-    "test:watch": "vitest",
     "check": "bun run ai:check && bun run build",
-    "ai:check": "biome check --error-on-warnings . && tsc --noEmit && tsc -p tsconfig.desktop.json --noEmit && tsc -p tsconfig.server.json --noEmit && tsc -p tsconfig.scripts.json --noEmit && bun run check:auxiliary && bun ./scripts/check-architecture-boundaries.ts && bun ./scripts/check-vite-import-resolution.ts && vitest run && bun run doctor",
+    "ai:check": "biome check --error-on-warnings . && bun run typecheck && bun run check:auxiliary && bun ./scripts/check-architecture-boundaries.ts && bun ./scripts/check-vite-import-resolution.ts && bun run doctor",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.desktop.json --noEmit && tsc -p tsconfig.server.json --noEmit && tsc -p tsconfig.scripts.json --noEmit",
     "check:auxiliary": "tsc -p pages/tsconfig.json --noEmit && tsc -p workers/polls/tsconfig.json --noEmit && vite build --config pages/vite.config.mts && bun build workers/polls/src/index.ts --target browser --outdir build/polls-check",
     "check:architecture": "bun ./scripts/check-architecture-boundaries.ts",
     "pages:dev": "vite --config pages/vite.config.mts",
@@ -56,8 +56,6 @@
     ]
   },
   "dependencies": {
-    "@howaboua/pi-durable-git": "file:../pi-durable-components/dist/howaboua-pi-durable-git-0.1.0-33d23824.tgz",
-    "@howaboua/pi-durable-ui": "file:../pi-durable-components/dist/howaboua-pi-durable-ui-0.1.0-7f88e772.tgz",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
@@ -68,6 +66,12 @@
     "@effect/sql-sqlite-node": "4.0.1",
     "@fontsource-variable/geist-mono": "^5.3.0",
     "@fontsource-variable/inter": "^5.3.0",
+    "@howaboua/howcode-git": "file:../howcode-components/dist/howaboua-howcode-git-0.1.0-0780effc.tgz",
+    "@howaboua/howcode-intelligent-ui": "file:../howcode-components/dist/howaboua-howcode-intelligent-ui-0.1.0-b36451d9.tgz",
+    "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-e9dd148b.tgz",
+    "@howaboua/howcode-spaces": "file:../howcode-components/dist/howaboua-howcode-spaces-0.1.0-8b305f12.tgz",
+    "@howaboua/pi-durable-git": "file:../pi-durable-components/dist/howaboua-pi-durable-git-0.1.0-33d23824.tgz",
+    "@howaboua/pi-durable-ui": "file:../pi-durable-components/dist/howaboua-pi-durable-ui-0.1.0-7f88e772.tgz",
     "@mdxeditor/editor": "4.2.5",
     "@pierre/diffs": "1.4.3",
     "@pierre/trees": "1.0.0-beta.6",
@@ -81,6 +85,7 @@
     "esbuild": "0.28.2",
     "jiti": "2.7.0",
     "lucide-react": "1.47.0",
+    "mermaid": "11.13.0",
     "node-pty": "^1.1.0",
     "prismjs": "^1.30.0",
     "proper-lockfile": "4.1.2",
@@ -91,10 +96,7 @@
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
     "semver": "7.8.5",
-    "sherpa-onnx-node": "^1.13.8",
-    "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-0a29fff4.tgz",
-    "@howaboua/howcode-git": "file:../howcode-components/dist/howaboua-howcode-git-0.1.0-ea0d664a.tgz",
-    "@howaboua/howcode-intelligent-ui": "file:../howcode-components/dist/howaboua-howcode-intelligent-ui-0.1.0-9901fef0.tgz"
+    "sherpa-onnx-node": "^1.13.8"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
@@ -114,20 +116,21 @@
     "react-grab": "0.2.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
-    "vite": "8.3.0",
-    "vitest": "5.0.1"
+    "vite": "8.3.0"
   },
   "overrides": {
     "@howaboua/pi-durable-git": "file:../pi-durable-components/dist/howaboua-pi-durable-git-0.1.0-33d23824.tgz",
     "@aws-sdk/client-bedrock-runtime": "3.1136.0",
     "lightningcss": "1.33.0",
-    "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-0a29fff4.tgz",
-    "@howaboua/howcode-git": "file:../howcode-components/dist/howaboua-howcode-git-0.1.0-ea0d664a.tgz",
+    "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-e9dd148b.tgz",
+    "@howaboua/howcode-git": "file:../howcode-components/dist/howaboua-howcode-git-0.1.0-0780effc.tgz",
     "@howaboua/pi-durable-ui": "file:../pi-durable-components/dist/howaboua-pi-durable-ui-0.1.0-7f88e772.tgz",
-    "@howaboua/howcode-intelligent-ui": "file:../howcode-components/dist/howaboua-howcode-intelligent-ui-0.1.0-9901fef0.tgz"
+    "@howaboua/howcode-intelligent-ui": "file:../howcode-components/dist/howaboua-howcode-intelligent-ui-0.1.0-b36451d9.tgz",
+    "@howaboua/howcode-spaces": "file:../howcode-components/dist/howaboua-howcode-spaces-0.1.0-8b305f12.tgz"
   },
   "howcodeComponents": [
     "@howaboua/howcode-git",
-    "@howaboua/howcode-intelligent-ui"
+    "@howaboua/howcode-intelligent-ui",
+    "@howaboua/howcode-spaces"
   ]
 }

@@ -1,8 +1,8 @@
+import { Checkbox } from '@howaboua/howcode-sdk/ui/controls'
+import { SegmentedControl } from '@howaboua/howcode-sdk/ui/inline-select'
 import type { AppSettings } from '../../desktop/types'
 import type { SettingsController } from './settingsDescriptorTypes'
-import { SettingsSegmentedControl } from './settingsSegmentedControl'
 import type { SettingDescriptor } from './settingsTypes'
-import { ToggleBox } from './settingsUi'
 
 export function buildGitDiffSettingsDescriptors({
   appSettings,
@@ -19,7 +19,7 @@ export function buildGitDiffSettingsDescriptors({
       description: 'Default global commit action.',
       keywords: 'gitops commit push default workspace',
       render: () => (
-        <SettingsSegmentedControl
+        <SegmentedControl
           columnsClassName="grid-cols-2"
           value={appSettings.gitOpsDefaultMode}
           options={[
@@ -37,7 +37,7 @@ export function buildGitDiffSettingsDescriptors({
       description: 'Default baseline setting for git summary.',
       keywords: 'git diff baseline comparison files lines default',
       render: () => (
-        <SettingsSegmentedControl
+        <SegmentedControl
           columnsClassName="grid-cols-4"
           className="gap-1"
           value={appSettings.gitDiffBaselineDefault.kind}
@@ -58,7 +58,7 @@ export function buildGitDiffSettingsDescriptors({
       description: 'Default layout for the GitOps diff panel.',
       keywords: 'git diff layout stacked split default',
       render: () => (
-        <SettingsSegmentedControl
+        <SegmentedControl
           columnsClassName="grid-cols-2"
           value={appSettings.gitDiffRenderModeDefault}
           options={[
@@ -76,10 +76,10 @@ export function buildGitDiffSettingsDescriptors({
       description: 'Default visibility for the GitOps file tree.',
       keywords: 'git diff file tree changed files sidebar default',
       render: () => (
-        <ToggleBox
+        <Checkbox
           checked={appSettings.gitDiffFileTreeDefaultVisible}
-          label="Show file tree"
-          onClick={() =>
+          aria-label="Show file tree"
+          onChange={() =>
             controller.directories.setGitDiffFileTreeDefaultVisible(
               !appSettings.gitDiffFileTreeDefaultVisible,
             )
@@ -94,10 +94,10 @@ export function buildGitDiffSettingsDescriptors({
       description: 'Include untracked files in GitOps diffs by default.',
       keywords: 'git diff untracked files default gitops',
       render: () => (
-        <ToggleBox
+        <Checkbox
           checked={appSettings.gitDiffIncludeUntrackedDefault}
-          label="Include untracked"
-          onClick={() =>
+          aria-label="Include untracked"
+          onChange={() =>
             controller.directories.setGitDiffIncludeUntrackedDefault(
               !appSettings.gitDiffIncludeUntrackedDefault,
             )

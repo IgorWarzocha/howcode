@@ -1,4 +1,3 @@
-import { MainView } from '@howcode/app-shell'
 import { ChatWorkspaceView } from '@howcode/chat-workspace'
 import { chatHistoryComponent } from '@howcode/components/chat-history/ui/component'
 import { ChatHistoryWorkspaceView } from '@howcode/components/chat-history/ui/views'
@@ -6,7 +5,6 @@ import { SkillsWorkspaceView } from '@howcode/components/skills/ui'
 import { skillsComponent } from '@howcode/components/skills/ui/component'
 import { workingDirectoriesComponent } from '@howcode/components/working-directories/ui/component'
 import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
-import { mainPanelClass } from '@howcode/ui/classes'
 import type { ComponentProps } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
 import { FALLBACK_APP_SETTINGS } from '../workspace-shell/default-app-settings'
@@ -19,16 +17,6 @@ type CodeProps = ComponentProps<typeof DomainWorkspaceView>
 
 export type BuiltInWorkspaceViewProps = CodeProps & {
   controller: AppShellController
-}
-
-function roadmapView(activeView: 'claw' | 'work' | 'automations', directoryName: string) {
-  return (
-    <div className="relative min-h-0 flex-1 px-5 pt-1.5">
-      <main className={mainPanelClass}>
-        <MainView activeView={activeView} directoryName={directoryName} />
-      </main>
-    </div>
-  )
 }
 
 function composeChatHistory(controller: AppShellController) {
@@ -109,9 +97,6 @@ export function composeBuiltInWorkspaceViews(props: BuiltInWorkspaceViewProps) {
     settings: utility,
     chat,
     workspace: chat,
-    claw: roadmapView('claw', props.currentDirectoryName),
-    work: roadmapView('work', props.currentDirectoryName),
-    automations: roadmapView('automations', props.currentDirectoryName),
   }
   if (isToolkitComponentEnabled(settings, 'coding')) {
     for (const component of [workingDirectoriesComponent]) {

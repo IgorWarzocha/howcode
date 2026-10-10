@@ -1,10 +1,8 @@
-import { cn } from '@howaboua/howcode-sdk/utils/cn'
-import { settingsInputClass } from '@howcode/ui/classes'
+import { Checkbox, Input } from '@howaboua/howcode-sdk/ui/controls'
 import { FolderCog, FolderPlus } from 'lucide-react'
 import type { AppSettings } from '../../desktop/types'
 import type { SettingsController } from './settingsDescriptorTypes'
 import type { SettingDescriptor } from './settingsTypes'
-import { ToggleBox } from './settingsUi'
 
 export function buildDirectoryBasicsSettingsDescriptors({
   appSettings,
@@ -26,7 +24,7 @@ export function buildDirectoryBasicsSettingsDescriptors({
             size={14}
             className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[color:var(--muted)]"
           />
-          <input
+          <Input
             type="text"
             value={controller.directories.preferredDirectoryLocationDraft}
             onChange={(event) =>
@@ -38,7 +36,7 @@ export function buildDirectoryBasicsSettingsDescriptors({
               event.preventDefault()
               controller.directories.savePreferredDirectoryLocation()
             }}
-            className={cn(settingsInputClass, 'w-full pl-9')}
+            className="w-full pl-9"
             placeholder="Paste an absolute folder path"
             aria-label="Default workspace location"
           />
@@ -57,7 +55,7 @@ export function buildDirectoryBasicsSettingsDescriptors({
             size={14}
             className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[color:var(--muted)]"
           />
-          <input
+          <Input
             type="text"
             value={controller.directories.customPiDirectoryDraft}
             onChange={(event) =>
@@ -69,7 +67,7 @@ export function buildDirectoryBasicsSettingsDescriptors({
               event.preventDefault()
               controller.directories.saveCustomPiDirectory()
             }}
-            className={cn(settingsInputClass, 'w-full pl-9')}
+            className="w-full pl-9"
             placeholder={
               controller.directories.resolvedPiDirectory
                 ? `Default: ${controller.directories.resolvedPiDirectory} (useful for WSL)`
@@ -87,10 +85,10 @@ export function buildDirectoryBasicsSettingsDescriptors({
       description: 'Always git init when creating a new folder-backed workspace.',
       keywords: 'git init initialize workspaces diffs',
       render: () => (
-        <ToggleBox
+        <Checkbox
           checked={appSettings.initializeGitOnDirectoryCreate}
-          label="Initialise git"
-          onClick={controller.directories.toggleInitializeGitOnDirectoryCreate}
+          aria-label="Initialise git"
+          onChange={controller.directories.toggleInitializeGitOnDirectoryCreate}
         />
       ),
     },
@@ -101,10 +99,10 @@ export function buildDirectoryBasicsSettingsDescriptors({
       description: 'Show the dashboard when a folder-backed workspace is selected.',
       keywords: 'workspace dashboard overview code landing performance disable',
       render: () => (
-        <ToggleBox
+        <Checkbox
           checked={appSettings.directoryDashboardEnabled}
-          label="Show workspace dashboard"
-          onClick={controller.directories.toggleDirectoryDashboardEnabled}
+          aria-label="Show workspace dashboard"
+          onChange={controller.directories.toggleDirectoryDashboardEnabled}
         />
       ),
     },

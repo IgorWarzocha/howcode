@@ -2,6 +2,7 @@ import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { ReactNode } from 'react'
+import { DEFAULT_WORKSPACE_ID } from '../../../../../shared/desktop-workspace-contracts'
 
 type SortableWorkspaceItemProps = {
   workspaceId: string
@@ -17,6 +18,7 @@ type SortableWorkspaceItemProps = {
 export function SortableWorkspaceItem({ workspaceId, children }: SortableWorkspaceItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: workspaceId,
+    disabled: workspaceId === DEFAULT_WORKSPACE_ID,
   })
 
   return (

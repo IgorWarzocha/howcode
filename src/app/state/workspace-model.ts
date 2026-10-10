@@ -10,6 +10,7 @@ export type CodeChatSelection = {
 }
 
 export type UtilityViewReturnState = {
+  utilityViewReturnState: UtilityViewReturnState | null
   activeView: View
   selectedWorkspaceId: string | null
   composerProfile: ComposerProfile

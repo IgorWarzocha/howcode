@@ -1,7 +1,7 @@
+import { Checkbox } from '@howaboua/howcode-sdk/ui/controls'
 import { isToolkitComponentEnabled, toolkitComponents } from '@howcode/shared/toolkit-components'
 import type { AppSettings, DesktopActionInvoker } from '../../desktop/types'
 import type { SettingDescriptor } from './settingsTypes'
-import { ToggleBox } from './settingsUi'
 
 export function buildComponentSettingsDescriptors(
   appSettings: AppSettings,
@@ -14,10 +14,10 @@ export function buildComponentSettingsDescriptors(
     description: `${component.description} Workspace UI only. Existing conversation tools are unchanged.`,
     keywords: 'component enable disable',
     render: () => (
-      <ToggleBox
+      <Checkbox
         checked={isToolkitComponentEnabled(appSettings, component.id)}
-        label={component.label}
-        onClick={() => {
+        aria-label={component.label}
+        onChange={() => {
           const enabled = toolkitComponents
             .filter(({ id }) =>
               id === component.id

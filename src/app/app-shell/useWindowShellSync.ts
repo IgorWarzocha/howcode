@@ -15,7 +15,7 @@ export function shouldCloseUtilityViewOnEscape(
 export function useWatchedConversationSync(workspaceState: WorkspaceState) {
   useEffect(() => {
     const watchedConversationId =
-      workspaceState.activeView === 'chat'
+      workspaceState.activeView === 'chat' || workspaceState.activeView.startsWith('component:')
         ? getPersistedConversationId(workspaceState.selectedConversationId)
         : null
 

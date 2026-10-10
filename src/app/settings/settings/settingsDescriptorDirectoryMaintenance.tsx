@@ -1,4 +1,6 @@
 import { composerTextActionButtonClass } from '@howaboua/howcode-sdk/ui/classes'
+import { Input } from '@howaboua/howcode-sdk/ui/controls'
+import { SegmentedControl } from '@howaboua/howcode-sdk/ui/inline-select'
 import {
   appToneDangerClass,
   appToneMutedClass,
@@ -6,10 +8,8 @@ import {
   appTypeSmallClass,
 } from '@howaboua/howcode-sdk/ui/typography-scale'
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
-import { settingsInputClass } from '@howcode/ui/classes'
 import type { AppSettings } from '../../desktop/types'
 import type { SettingsController } from './settingsDescriptorTypes'
-import { SettingsSegmentedControl } from './settingsSegmentedControl'
 import type { SettingDescriptor } from './settingsTypes'
 
 export function buildDirectoryMaintenanceSettingsDescriptors({
@@ -27,7 +27,7 @@ export function buildDirectoryMaintenanceSettingsDescriptors({
       description: 'Remove conversations from Howcode, or also delete the workspace folder.',
       keywords: 'delete deletion cleanup workspace full clean pi only',
       render: () => (
-        <SettingsSegmentedControl
+        <SegmentedControl
           columnsClassName="grid-cols-2"
           value={appSettings.directoryDeletionMode}
           options={[
@@ -98,7 +98,7 @@ export function buildDirectoryMaintenanceSettingsDescriptors({
       render: () => (
         <div className="grid w-[28rem] max-w-full gap-2">
           <div className="grid grid-cols-[minmax(0,1fr)_4.5rem] items-center gap-2">
-            <input
+            <Input
               type="text"
               value={controller.directories.favoriteFolderDraft}
               onChange={(event) =>
@@ -109,7 +109,7 @@ export function buildDirectoryMaintenanceSettingsDescriptors({
                 event.preventDefault()
                 controller.directories.addFavoriteFolder()
               }}
-              className={cn(settingsInputClass, 'h-8')}
+              className="h-8"
               placeholder="Absolute folder path"
               aria-label="Favorite folder path"
             />

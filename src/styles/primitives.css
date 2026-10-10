@@ -311,11 +311,6 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   opacity: 1;
 }
 
-.composer-footer-text {
-  font-size: var(--app-type-small-size);
-  line-height: var(--app-type-small-line-height);
-}
-
 .composer-footer-row {
   container-type: inline-size;
 }

@@ -5,6 +5,7 @@ import { PopoverPanel } from '@howaboua/howcode-sdk/common/popover'
 import { IconButton } from '@howcode/common/icon-button'
 import { Edit2, FolderPlus, Plus, Save, Search } from 'lucide-react'
 import { type ReactNode, useRef } from 'react'
+import { DEFAULT_WORKSPACE_ID } from '../../../../../shared/desktop-workspace-contracts'
 import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
 import type {
   DesktopActionInvoker,
@@ -16,6 +17,7 @@ import { useWorkspaceLayoutActions } from '../../../workspace-shell/workspace-la
 import { SortableWorkspaceItem } from './sortable-workspace-item'
 import { useWorkspaceNavigationController } from './useWorkspaceNavigationController'
 import { WorkspaceChatItem } from './workspace-chat-item'
+import { workspaceDisplayName } from './workspace-name'
 import { WorkspaceRow } from './workspace-row'
 
 type WorkspaceNavigationSectionProps = {
@@ -95,6 +97,149 @@ export function WorkspaceNavigationSection({
     />
   )
 
+  const renderWorkspace = (workspace: Workspace) => {
+    const isExpanded = !workspace.collapsed
+    const effectiveIsExpanded = isExpanded && draggingWorkspaceId !== workspace.id
+    const workspaceMenuOpen = openWorkspaceMenuId === workspace.id
+    const workspaceId = `chat-workspace-threads-${workspace.id}`
+    const actionMenuId = `chat-workspace-actions-${workspace.id}`
+    const canSaveLayout = workspace.chats.some(
+      (chat) => chat.id === selectedChatId && chat.conversationId === layoutActions?.conversationId,
+    )
+    const displayName = workspaceDisplayName(workspace)
+    const isDefault = workspace.id === DEFAULT_WORKSPACE_ID
+    if (isDefault) {
+      return (
+        <details
+          key={workspace.id}
+          open={!workspace.collapsed}
+          className="sidebar-navigation-group"
+          onToggle={(event) => {
+            const collapsed = !event.currentTarget.open
+            if (collapsed !== workspace.collapsed)
+              void onAction('workspace.collapse', { workspaceId: workspace.id, value: collapsed })
+          }}
+        >
+          <summary>General</summary>
+          <ul
+            className="sidebar-tree-item"
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => handleChatDrop(event, workspace.id)}
+          >
+            {unassignedChats.map((chat) => renderChat(chat, null))}
+            {workspace.chats.map((chat) => renderChat(chat, workspace.id))}
+          </ul>
+        </details>
+      )
+    }
+    const saveLayoutHint = canSaveLayout ? undefined : 'Open a chat in this workspace first.'
+
+    const expandedChats = effectiveIsExpanded ? (
+      <ul
+        id={workspaceId}
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={(event) => handleChatDrop(event, workspace.id)}
+      >
+        {isDefault ? unassignedChats.map((chat) => renderChat(chat, null)) : null}
+        {workspace.chats.map((chat) => renderChat(chat, workspace.id))}
+        {workspace.directoryId && activeWorkspaceId === workspace.id
+          ? renderDirectoryTools?.(workspace.directoryId)
+          : null}
+      </ul>
+    ) : null
+    return (
+      <SortableWorkspaceItem key={workspace.id} workspaceId={workspace.id}>
+        {({ dragHandleProps, isDragging }) => (
+          <ul
+            className="sidebar-tree-item"
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => handleChatDrop(event, workspace.id)}
+          >
+            <div className="relative">
+              <WorkspaceRow
+                actionMenuId={actionMenuId}
+                actionMenuOpen={workspaceMenuOpen}
+                {...(isDefault ? {} : { dragHandleProps })}
+                isActive={activeWorkspaceId === workspace.id}
+                isDragging={isDragging}
+                isExpanded={effectiveIsExpanded}
+                name={displayName}
+                renameDraft={renameDraft}
+                isEditing={editingWorkspaceId === workspace.id}
+                workspaceId={workspaceId}
+                onCancelEdit={handleCancelEdit}
+                onChangeRenameDraft={setRenameDraft}
+                onCreateSession={() => {
+                  onSelectWorkspace(workspace.id)
+                  onNewChat(workspace.id)
+                  setOpenWorkspaceMenuId(null)
+                }}
+                onEdit={() => handleStartEdit(workspace.id, workspace.name)}
+                onSelect={() => {
+                  onSelectWorkspace(workspace.id)
+                  setOpenWorkspaceMenuId(null)
+                }}
+                onSubmitEdit={() => handleSubmitEdit(workspace.id)}
+                onToggleActions={() =>
+                  setOpenWorkspaceMenuId((current) =>
+                    current === workspace.id ? null : workspace.id,
+                  )
+                }
+                onToggleExpanded={() =>
+                  void onAction('workspace.collapse', {
+                    workspaceId: workspace.id,
+                    value: !workspace.collapsed,
+                  })
+                }
+              />
+
+              {workspaceMenuOpen && editingWorkspaceId !== workspace.id ? (
+                <PopoverPanel
+                  id={actionMenuId}
+                  role="menu"
+                  aria-label="Workspace actions"
+                  className="sidebar-popover-panel sidebar-project-action-menu"
+                >
+                  <div className="sidebar-project-menu-list">
+                    <button
+                      className="sidebar-project-menu-item disabled:opacity-50"
+                      disabled={!canSaveLayout}
+                      onClick={() => {
+                        layoutActions?.saveDefault()
+                        setOpenWorkspaceMenuId(null)
+                      }}
+                      role="menuitem"
+                      type="button"
+                      title={saveLayoutHint}
+                    >
+                      <span className="sidebar-project-menu-item__icon">
+                        <Save size={14} />
+                      </span>
+                      <span className="truncate text-left">Save as workspace default</span>
+                    </button>
+                    <button
+                      className="sidebar-project-menu-item"
+                      onClick={() => handleStartEdit(workspace.id, workspace.name)}
+                      role="menuitem"
+                      type="button"
+                    >
+                      <span className="sidebar-project-menu-item__icon">
+                        <Edit2 size={14} />
+                      </span>
+                      <span className="truncate text-left">Rename</span>
+                    </button>
+                  </div>
+                </PopoverPanel>
+              ) : null}
+            </div>
+
+            {expandedChats}
+          </ul>
+        )}
+      </SortableWorkspaceItem>
+    )
+  }
+
   return (
     <div ref={containerRef} className="sidebar-project-tree">
       <div className="sidebar-toolbar sidebar-toolbar--chat mb-2">
@@ -159,14 +304,6 @@ export function WorkspaceNavigationSection({
           </span>
         </button>
       </div>
-      <ul
-        className="sidebar-tree-item"
-        id="workspace-unassigned-chats"
-        onDragOver={(event) => event.preventDefault()}
-        onDrop={(event) => handleChatDrop(event, null)}
-      >
-        {unassignedChats.map((chat) => renderChat(chat, null))}
-      </ul>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -176,123 +313,28 @@ export function WorkspaceNavigationSection({
         onDragEnd={handleDragEnd}
       >
         <SortableContext items={workspaceIds} strategy={verticalListSortingStrategy}>
-          {workspaces.map((workspace: Workspace) => {
-            const isExpanded = !workspace.collapsed
-            const effectiveIsExpanded = isExpanded && draggingWorkspaceId !== workspace.id
-            const workspaceMenuOpen = openWorkspaceMenuId === workspace.id
-            const workspaceId = `chat-workspace-threads-${workspace.id}`
-            const actionMenuId = `chat-workspace-actions-${workspace.id}`
-            const canSaveLayout = workspace.chats.some(
-              (chat) =>
-                chat.id === selectedChatId && chat.conversationId === layoutActions?.conversationId,
-            )
-            const saveLayoutHint = canSaveLayout
-              ? undefined
-              : 'Open a chat in this workspace first.'
-
-            return (
-              <SortableWorkspaceItem key={workspace.id} workspaceId={workspace.id}>
-                {({ dragHandleProps, isDragging }) => (
-                  <ul
-                    className="sidebar-tree-item"
-                    onDragOver={(event) => event.preventDefault()}
-                    onDrop={(event) => handleChatDrop(event, workspace.id)}
-                  >
-                    <div className="relative">
-                      <WorkspaceRow
-                        actionMenuId={actionMenuId}
-                        actionMenuOpen={workspaceMenuOpen}
-                        dragHandleProps={dragHandleProps}
-                        isActive={activeWorkspaceId === workspace.id}
-                        isDragging={isDragging}
-                        isExpanded={effectiveIsExpanded}
-                        name={workspace.name}
-                        renameDraft={renameDraft}
-                        isEditing={editingWorkspaceId === workspace.id}
-                        workspaceId={workspaceId}
-                        onCancelEdit={handleCancelEdit}
-                        onChangeRenameDraft={setRenameDraft}
-                        onCreateSession={() => {
-                          onSelectWorkspace(workspace.id)
-                          onNewChat(workspace.id)
-                          setOpenWorkspaceMenuId(null)
-                        }}
-                        onEdit={() => handleStartEdit(workspace.id, workspace.name)}
-                        onSelect={() => {
-                          onSelectWorkspace(workspace.id)
-                          setOpenWorkspaceMenuId(null)
-                        }}
-                        onSubmitEdit={() => handleSubmitEdit(workspace.id)}
-                        onToggleActions={() =>
-                          setOpenWorkspaceMenuId((current) =>
-                            current === workspace.id ? null : workspace.id,
-                          )
-                        }
-                        onToggleExpanded={() =>
-                          void onAction('workspace.collapse', {
-                            workspaceId: workspace.id,
-                            value: !workspace.collapsed,
-                          })
-                        }
-                      />
-
-                      {workspaceMenuOpen && editingWorkspaceId !== workspace.id ? (
-                        <PopoverPanel
-                          id={actionMenuId}
-                          role="menu"
-                          aria-label="Workspace actions"
-                          className="sidebar-popover-panel sidebar-project-action-menu"
-                        >
-                          <div className="sidebar-project-menu-list">
-                            <button
-                              className="sidebar-project-menu-item disabled:opacity-50"
-                              disabled={!canSaveLayout}
-                              onClick={() => {
-                                layoutActions?.saveDefault()
-                                setOpenWorkspaceMenuId(null)
-                              }}
-                              role="menuitem"
-                              type="button"
-                              title={saveLayoutHint}
-                            >
-                              <span className="sidebar-project-menu-item__icon">
-                                <Save size={14} />
-                              </span>
-                              <span className="truncate text-left">Save as workspace default</span>
-                            </button>
-                            <button
-                              className="sidebar-project-menu-item"
-                              onClick={() => handleStartEdit(workspace.id, workspace.name)}
-                              role="menuitem"
-                              type="button"
-                            >
-                              <span className="sidebar-project-menu-item__icon">
-                                <Edit2 size={14} />
-                              </span>
-                              <span className="truncate text-left">Rename</span>
-                            </button>
-                          </div>
-                        </PopoverPanel>
-                      ) : null}
-                    </div>
-
-                    {effectiveIsExpanded ? (
-                      <ul
-                        id={workspaceId}
-                        onDragOver={(event) => event.preventDefault()}
-                        onDrop={(event) => handleChatDrop(event, workspace.id)}
-                      >
-                        {workspace.chats.map((chat) => renderChat(chat, workspace.id))}
-                        {workspace.directoryId && activeWorkspaceId === workspace.id
-                          ? renderDirectoryTools?.(workspace.directoryId)
-                          : null}
-                      </ul>
-                    ) : null}
-                  </ul>
-                )}
-              </SortableWorkspaceItem>
-            )
-          })}
+          {workspaces
+            .filter((workspace) => workspace.id === DEFAULT_WORKSPACE_ID)
+            .map(renderWorkspace)}
+          {!workspaces.some((workspace) => workspace.id === DEFAULT_WORKSPACE_ID) &&
+          unassignedChats.length > 0 ? (
+            <details open className="sidebar-navigation-group">
+              <summary>General</summary>
+              <ul
+                className="sidebar-tree-item"
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => handleChatDrop(event, null)}
+              >
+                {unassignedChats.map((chat) => renderChat(chat, null))}
+              </ul>
+            </details>
+          ) : null}
+          <details open className="sidebar-navigation-group">
+            <summary>Workspaces</summary>
+            {workspaces
+              .filter((workspace) => workspace.id !== DEFAULT_WORKSPACE_ID)
+              .map(renderWorkspace)}
+          </details>
         </SortableContext>
       </DndContext>
     </div>

@@ -1,9 +1,10 @@
-import { createHash } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import { watch } from 'node:fs'
 import { mkdir, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import * as Schema from 'effect/Schema'
 import { createJiti } from 'jiti'
+import { InstalledComponentAdmissionSchema } from '../../../shared/installed-component-contracts.ts'
 import type {
   PackageUiBindingFactory,
   PackageUiDescriptor,
@@ -12,12 +13,21 @@ import type {
 } from '../../../shared/package-ui-contracts.ts'
 import { PackageUiReferenceSchema } from '../../../shared/package-ui-schema.ts'
 import {
+  componentStatusLeaseMs,
+  retireComponentStatus,
+  writeComponentStatus,
+} from './component-status.ts'
+import {
+  createInstalledComponents,
+  type InstalledComponentLifecycle,
+} from './installed-components.ts'
+import {
   createPackageManager,
   type InstalledPackage,
   type PackageManagerOptions,
   packageMetadata,
 } from './manager.ts'
-import { parsePackageSource } from './source.ts'
+import { packageSourceId } from './source.ts'
 import { createPackageUiBindings } from './ui-bindings.ts'
 import { compilePackageUi } from './ui-compiler.ts'
 
@@ -71,10 +81,10 @@ async function loadBinding(root: string): Promise<PackageUiBindingFactory | unde
 export async function createPackageUiService(
   options: PackageManagerOptions,
   invalidate: () => void,
+  componentLifecycle?: InstalledComponentLifecycle,
 ): Promise<{ service: PackageUiService; dispose(): Promise<void> }> {
   const manager = createPackageManager(options)
-  const packageId = (source: string) =>
-    createHash('sha256').update(parsePackageSource(source, options.cwd).identity).digest('hex')
+  const packageId = (source: string) => packageSourceId(source, options.cwd)
   const directory = join(options.directory, 'packages')
   await mkdir(directory, { recursive: true })
   let generations = new Map<string, UiGeneration>()
@@ -82,6 +92,22 @@ export async function createPackageUiService(
   let closed = false
   let watcherError: Error | undefined
   let queue: Promise<unknown> = Promise.resolve()
+  const components = createInstalledComponents(componentLifecycle)
+  const ownerGeneration = randomUUID()
+  let componentInventory: InstalledPackage[] = []
+  const publishComponentStatus = () =>
+    writeComponentStatus(options.directory, {
+      owner: {
+        generation: ownerGeneration,
+        pid: process.pid,
+        expiresAt: Date.now() + componentStatusLeaseMs,
+      },
+      inventory: componentInventory.map((item) => ({
+        source: item.source,
+        revision: item.revision ?? 'unversioned',
+      })),
+      components: components.list(),
+    })
   const serialized = <T>(operation: () => Promise<T>): Promise<T> => {
     const next = queue
       .catch(() => undefined)
@@ -159,6 +185,9 @@ export async function createPackageUiService(
   }
   const refresh = async () => {
     const installed = await manager.inventory()
+    await components.refresh(installed, packageId)
+    componentInventory = installed
+    await publishComponentStatus()
     retireChanged(new Map(installed.map((item) => [packageId(item.source), item])))
     const next = new Map<string, UiGeneration>()
     const nextScanned = new Map<string, InstalledPackage>()
@@ -202,12 +231,45 @@ export async function createPackageUiService(
     console.error('Package UI settings watcher failed.', error)
     invalidate()
   })
+  const retry = setInterval(() => {
+    if (closed) return
+    void serialized(async () => {
+      if (components.pending) {
+        await refresh()
+        invalidate()
+      } else await publishComponentStatus()
+    }).catch((error: unknown) => {
+      console.error('Component inventory publication failed.', error)
+      invalidate()
+    })
+  }, 1000)
+  retry.unref()
   const bindings = createPackageUiBindings(async (request) => {
     const generation = await serialized(() => current(request))
     if (!generation.factory) throw new Error('Package UI has no ui-binding.ts factory.')
     return { factory: generation.factory, signal: generation.controller.signal }
   })
   const service: PackageUiService = {
+    admitInstalledComponent: (input) =>
+      serialized(async () => {
+        const request = Schema.decodeUnknownSync(InstalledComponentAdmissionSchema)(input)
+        await refresh()
+        components.admit(request)
+        await publishComponentStatus()
+        invalidate()
+        return undefined
+      }),
+    listInstalledComponents: () =>
+      serialized(async () => {
+        await refresh()
+        return components.list()
+      }),
+    loadInstalledComponent: (reference) =>
+      serialized(async () => {
+        validateReference(reference)
+        await refresh()
+        return components.load(reference)
+      }),
     openPackageUiBinding: bindings.openPackageUiBinding,
     readPackageUiBindingEvents: bindings.readPackageUiBindingEvents,
     operatePackageUiBinding: bindings.operatePackageUiBinding,
@@ -225,16 +287,23 @@ export async function createPackageUiService(
         return { js: generation.js }
       }),
   }
-  return {
-    service,
-    async dispose() {
-      closed = true
-      watcher.close()
-      await queue.catch(() => undefined)
-      for (const generation of generations.values()) generation.controller.abort()
-      generations.clear()
-      scanned.clear()
-      await bindings.dispose()
-    },
+  const dispose = async () => {
+    closed = true
+    clearInterval(retry)
+    watcher.close()
+    await queue.catch(() => undefined)
+    await retireComponentStatus(options.directory, ownerGeneration)
+    for (const generation of generations.values()) generation.controller.abort()
+    generations.clear()
+    scanned.clear()
+    await bindings.dispose()
   }
+  try {
+    // Restored profile services must exist before host admission or agent composition.
+    await serialized(refresh)
+  } catch (error) {
+    await dispose()
+    throw error
+  }
+  return { service, dispose }
 }

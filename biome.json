@@ -178,19 +178,6 @@
       }
     },
     {
-      "includes": ["**/*.{test,spec}.{js,jsx,ts,tsx}", "**/src/test/**"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noNonNullAssertion": "off"
-          },
-          "suspicious": {
-            "noExplicitAny": "off"
-          }
-        }
-      }
-    },
-    {
       "includes": ["src/styles.css", "src/installed-plugin-sources.generated.css"],
       "css": {
         "parser": {

@@ -47,6 +47,12 @@
   display: grid;
   gap: 0.125rem;
 }
+.sidebar-navigation-group > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: var(--app-type-group-size);
+  padding: 8px 6px;
+}
 
 .sidebar-nav-button {
   display: flex;

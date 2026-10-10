@@ -10,10 +10,10 @@ import {
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { inlineEmptyNoteClass } from '@howcode/ui/classes'
 import { Fragment } from 'react'
+import { SettingRow } from './setting-row'
 import { settingsHelpRowClass } from './settingsClasses'
 import type { settingsCategories } from './settingsGroups'
 import type { SettingsCategoryId } from './settingsTypes'
-import { SettingRow } from './settingsUi'
 
 type VisibleSettingsGroup = (typeof settingsCategories)[number] & {
   settings: Parameters<typeof SettingRow>[0]['setting'][]

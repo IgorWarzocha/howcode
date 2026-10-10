@@ -1,8 +1,8 @@
+import { Checkbox } from '@howaboua/howcode-sdk/ui/controls'
+import { InlineSelect, SegmentedControl } from '@howaboua/howcode-sdk/ui/inline-select'
 import type { PiSettings, PiThemeState } from '../../desktop/types'
 import type { SetDraftPiSetting } from './settingsDescriptorTypes'
-import { SettingsSegmentedControl } from './settingsSegmentedControl'
 import type { SettingDescriptor } from './settingsTypes'
-import { InlineSelect, ToggleBox } from './settingsUi'
 
 const queueModeSettings = [
   {
@@ -93,7 +93,7 @@ export function buildPiCoreSettingsDescriptors({
       description: 'Connection mode for providers that support it.',
       keywords: 'transport sse websocket cached auto provider runtime',
       render: () => (
-        <SettingsSegmentedControl
+        <SegmentedControl
           columnsClassName="grid-cols-4"
           value={draftPiSettings.transport}
           options={[
@@ -113,10 +113,10 @@ export function buildPiCoreSettingsDescriptors({
       description: 'Switch auto compaction on or off.',
       keywords: 'auto compact context runtime',
       render: () => (
-        <ToggleBox
+        <Checkbox
           checked={draftPiSettings.autoCompact}
-          label="Auto compact context"
-          onClick={() => setDraftPiSetting('autoCompact', !draftPiSettings.autoCompact)}
+          aria-label="Auto compact context"
+          onChange={() => setDraftPiSetting('autoCompact', !draftPiSettings.autoCompact)}
         />
       ),
     },
@@ -127,10 +127,10 @@ export function buildPiCoreSettingsDescriptors({
       description: 'Expose installed skills as /commands.',
       keywords: 'skills slash commands picker runtime',
       render: () => (
-        <ToggleBox
+        <Checkbox
           checked={draftPiSettings.enableSkillCommands}
-          label="Enable skill slash commands"
-          onClick={() =>
+          aria-label="Enable skill slash commands"
+          onChange={() =>
             setDraftPiSetting('enableSkillCommands', !draftPiSettings.enableSkillCommands)
           }
         />
@@ -143,7 +143,7 @@ export function buildPiCoreSettingsDescriptors({
       description: setting.description,
       keywords: 'queue drain steering follow-up mode runtime advanced',
       render: () => (
-        <SettingsSegmentedControl
+        <SegmentedControl
           columnsClassName="grid-cols-2"
           value={draftPiSettings[setting.key]}
           options={[
@@ -161,10 +161,10 @@ export function buildPiCoreSettingsDescriptors({
       description: setting.description,
       keywords: 'image images telemetry runtime provider',
       render: () => (
-        <ToggleBox
+        <Checkbox
           checked={draftPiSettings[setting.key]}
-          label={setting.title}
-          onClick={() => setDraftPiSetting(setting.key, !draftPiSettings[setting.key])}
+          aria-label={setting.title}
+          onChange={() => setDraftPiSetting(setting.key, !draftPiSettings[setting.key])}
         />
       ),
     })),

@@ -3,6 +3,7 @@ import * as Effect from 'effect/Effect'
 import * as Schema from 'effect/Schema'
 import * as SqlClient from 'effect/sql/SqlClient'
 import type { WorkspaceChat, WorkspaceNavigationState } from '../shared/desktop-contracts.ts'
+import { DEFAULT_WORKSPACE_ID } from '../shared/desktop-workspace-contracts.ts'
 import { databaseOperation } from './chat-repository/db.ts'
 import { mapChatRow } from './chat-repository/mappers.ts'
 import { ChatRowSchema, decodePersistedRows } from './chat-repository/row-schema.ts'
@@ -71,7 +72,9 @@ const reorderWorkspacesOperation = Effect.fn('ChatState.reorderGroups')(function
   workspaceIds: string[],
 ) {
   const sql = yield* SqlClient.SqlClient
-  for (const [index, workspaceId] of workspaceIds.entries()) {
+  for (const [index, workspaceId] of workspaceIds
+    .filter((id) => id !== DEFAULT_WORKSPACE_ID)
+    .entries()) {
     yield* sql.unsafe(
       'UPDATE chat_groups SET order_index = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
       [index, workspaceId],
@@ -115,8 +118,9 @@ const getWorkspaceNavigationStateOperation = Effect.fn('ChatState.getSidebarStat
         WHERE directory_id IS NULL OR EXISTS (
           SELECT 1 FROM projects WHERE cwd = chat_groups.directory_id AND hidden = 0
         )
-        ORDER BY order_index ASC, name COLLATE NOCASE ASC
+        ORDER BY CASE WHEN id = ? THEN 0 ELSE 1 END, order_index ASC, name COLLATE NOCASE ASC
       `,
+      [DEFAULT_WORKSPACE_ID],
     ),
     'chat workspace',
   ).map((workspace) => ({
