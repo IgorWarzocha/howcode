@@ -1,4 +1,5 @@
-import { readFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { createServer } from 'vite'
 
@@ -17,16 +18,18 @@ async function collectSourceFiles(root: string): Promise<string[]> {
 }
 
 async function main() {
-  const server = await createServer({
-    configFile: path.resolve('vite.config.ts'),
-    configLoader: 'runner',
-    logLevel: 'silent',
-    server: { middlewareMode: true, hmr: false },
-  })
-
+  const cacheDir = await mkdtemp(path.join(tmpdir(), 'howcode-vite-import-check-'))
+  let server: Awaited<ReturnType<typeof createServer>> | undefined
   const failures: string[] = []
 
   try {
+    server = await createServer({
+      configFile: path.resolve('vite.config.ts'),
+      configLoader: 'runner',
+      cacheDir,
+      logLevel: 'silent',
+      server: { middlewareMode: true, hmr: false },
+    })
     const files = (await Promise.all(sourceRoots.map(collectSourceFiles))).flat()
     for (const file of files) {
       const source = await readFile(file, 'utf8')
@@ -38,7 +41,11 @@ async function main() {
       }
     }
   } finally {
-    await server.close()
+    try {
+      await server?.close()
+    } finally {
+      await rm(cacheDir, { recursive: true, force: true })
+    }
   }
 
   if (failures.length > 0) {
