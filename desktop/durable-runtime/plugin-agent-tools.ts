@@ -49,7 +49,7 @@ export function installedAgentExtensions() {
               ...(context.abortSignal ? { signal: context.abortSignal } : {}),
             })
             return {
-              content: [{ type: 'text', text: result.text }],
+              output: [{ type: 'text', text: result.text }],
               ...(result.details ? { details: result.details } : {}),
               ...(result.isError === undefined ? {} : { isError: result.isError }),
             }

@@ -152,12 +152,12 @@ async function attachConversationWatch(request: ComposerStateRequest & { convers
   void watch.closed.then((result) => {
     if (watches.get(conversationId)?.watch !== watch) return
     watches.delete(conversationId)
-    if (result.reason === 'listener_error') {
+    if (result.reason === 'listener_error' || result.reason === 'session_failed') {
       console.error('Conversation watch failed:', result.error)
       emitDesktopEvent({
         type: 'runtime-diagnostic',
         severity: 'error',
-        message: result.error.message,
+        message: result.error instanceof Error ? result.error.message : String(result.error),
         conversationId,
       })
     }

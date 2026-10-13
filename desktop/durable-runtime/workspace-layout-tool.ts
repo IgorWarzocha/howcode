@@ -83,7 +83,7 @@ export const WorkspaceLayoutTools = defineExtension({
                 operation: parseWorkspaceLayoutOperation(args.operation),
               })
         if (result.status === 'conflict') throw new Error('Layout changed; inspect it again.')
-        return { content: [{ type: 'text', text: JSON.stringify(result.state) }] }
+        return { output: [{ type: 'text', text: JSON.stringify(result.state) }] }
       },
     }),
   ],

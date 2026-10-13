@@ -1,6 +1,13 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { createProvider, envApiKeyAuth, lazyApi, type MutableModels } from '@earendil-works/pi-ai'
+import {
+  type Api,
+  createProvider,
+  envApiKeyAuth,
+  lazyApi,
+  type Model,
+  type MutableModels,
+} from '@earendil-works/pi-ai'
 import * as Schema from 'effect/Schema'
 
 const ApiSchema = Schema.Literals([
@@ -84,6 +91,9 @@ const ModelSchema = Schema.Struct({
     }),
   ),
 })
+const PositiveTokenCountSchema = Schema.Number.check(Schema.isGreaterThan(0))
+const PositiveIntegerSchema = Schema.Number.check(Schema.isInt(), Schema.isGreaterThan(0))
+const ThinkingLevels = ['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'] as const
 const ProviderSchema = Schema.Struct({
   name: Schema.optionalKey(Schema.String),
   compat: ModelSchema.fields.compat,
@@ -92,6 +102,72 @@ const ProviderSchema = Schema.Struct({
   api: Schema.optionalKey(ApiSchema),
   headers: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
   models: Schema.optionalKey(Schema.Array(ModelSchema)),
+  modelOverrides: Schema.optionalKey(
+    Schema.Record(
+      Schema.String,
+      Schema.Struct({
+        name: ModelSchema.fields.name,
+        reasoning: ModelSchema.fields.reasoning,
+        thinkingLevelMap: ModelSchema.fields.thinkingLevelMap,
+        samplingParams: ModelSchema.fields.samplingParams,
+        input: ModelSchema.fields.input,
+        cost: Schema.optionalKey(
+          Schema.Struct({
+            input: Schema.optionalKey(CostSchema.fields.input),
+            output: Schema.optionalKey(CostSchema.fields.output),
+            cacheRead: Schema.optionalKey(CostSchema.fields.cacheRead),
+            cacheWrite: Schema.optionalKey(CostSchema.fields.cacheWrite),
+            tiers: CostSchema.fields.tiers,
+          }),
+        ),
+        contextWindow: Schema.optionalKey(PositiveTokenCountSchema),
+        maxTokens: Schema.optionalKey(PositiveTokenCountSchema),
+        promptCache: Schema.optionalKey(
+          Schema.Struct({
+            short: Schema.optionalKey(PositiveTokenCountSchema),
+            long: Schema.optionalKey(PositiveTokenCountSchema),
+          }),
+        ),
+        inputLimits: Schema.optionalKey(
+          Schema.Struct({
+            maxRequestBytes: Schema.optionalKey(PositiveIntegerSchema),
+            images: Schema.optionalKey(
+              Schema.Struct({
+                maxPerMessage: Schema.optionalKey(PositiveIntegerSchema),
+                maxPerRequest: Schema.optionalKey(PositiveIntegerSchema),
+                resize: Schema.optionalKey(
+                  Schema.Struct({
+                    maxWidth: Schema.optionalKey(PositiveIntegerSchema),
+                    maxHeight: Schema.optionalKey(PositiveIntegerSchema),
+                    maxBytes: Schema.optionalKey(PositiveIntegerSchema),
+                    jpegQuality: Schema.optionalKey(
+                      Schema.Number.check(
+                        Schema.isInt(),
+                        Schema.isBetween({ minimum: 1, maximum: 100 }),
+                      ),
+                    ),
+                  }),
+                ),
+              }),
+            ),
+          }),
+        ),
+        samplingParamsByThinkingLevel: Schema.optionalKey(
+          Schema.Struct({
+            off: ModelSchema.fields.samplingParams,
+            minimal: ModelSchema.fields.samplingParams,
+            low: ModelSchema.fields.samplingParams,
+            medium: ModelSchema.fields.samplingParams,
+            high: ModelSchema.fields.samplingParams,
+            xhigh: ModelSchema.fields.samplingParams,
+            max: ModelSchema.fields.samplingParams,
+          }),
+        ),
+        headers: ModelSchema.fields.headers,
+        compat: ModelSchema.fields.compat,
+      }),
+    ),
+  ),
 })
 const ConfigSchema = Schema.Struct({ providers: Schema.Record(Schema.String, ProviderSchema) })
 const decodeConfig = Schema.decodeUnknownSync(ConfigSchema)
@@ -125,6 +201,38 @@ async function readConfiguration(directory: string) {
   }
 }
 
+function mergeInputLimits(
+  base: Model<Api>['inputLimits'],
+  override: NonNullable<Model<Api>['inputLimits']>,
+) {
+  const images = override.images
+  return {
+    ...base,
+    ...override,
+    ...(images
+      ? {
+          images: {
+            ...base?.images,
+            ...images,
+            ...(images.resize ? { resize: { ...base?.images?.resize, ...images.resize } } : {}),
+          },
+        }
+      : {}),
+  }
+}
+
+function mergeLevelSampling(
+  base: Model<Api>['samplingParamsByThinkingLevel'],
+  override: NonNullable<Model<Api>['samplingParamsByThinkingLevel']>,
+) {
+  const merged = { ...base }
+  for (const level of ThinkingLevels) {
+    const params = override[level]
+    if (params) merged[level] = { ...base?.[level], ...params }
+  }
+  return merged
+}
+
 export async function applyProviderConfiguration(models: MutableModels, directory: string) {
   // Unrecognized compatibility knobs must fail visibly rather than disappear during migration.
   const config = await readConfiguration(directory)
@@ -155,12 +263,40 @@ export async function applyProviderConfiguration(models: MutableModels, director
     const catalog = [
       ...baseline.filter((model) => !additions.some((added) => added.id === model.id)),
       ...additions,
-    ].map((model) => ({
-      ...model,
-      ...(configured.compat ? { compat: { ...configured.compat, ...model.compat } } : {}),
-      ...(configured.baseUrl ? { baseUrl: configured.baseUrl } : {}),
-      ...(configured.headers ? { headers: { ...model.headers, ...configured.headers } } : {}),
-    }))
+    ]
+      .map((model) => ({
+        ...model,
+        ...(configured.compat ? { compat: { ...configured.compat, ...model.compat } } : {}),
+        ...(configured.baseUrl ? { baseUrl: configured.baseUrl } : {}),
+        ...(configured.headers ? { headers: { ...model.headers, ...configured.headers } } : {}),
+      }))
+      .map((model) => {
+        const override = configured.modelOverrides?.[model.id]
+        if (!override) return model
+        return {
+          ...model,
+          ...override,
+          cost: { ...model.cost, ...override.cost },
+          thinkingLevelMap: { ...model.thinkingLevelMap, ...override.thinkingLevelMap },
+          samplingParams: { ...model.samplingParams, ...override.samplingParams },
+          headers: { ...model.headers, ...override.headers },
+          compat: { ...model.compat, ...override.compat },
+          ...(override.promptCache
+            ? { promptCache: { ...model.promptCache, ...override.promptCache } }
+            : {}),
+          ...(override.inputLimits
+            ? { inputLimits: mergeInputLimits(model.inputLimits, override.inputLimits) }
+            : {}),
+          ...(override.samplingParamsByThinkingLevel
+            ? {
+                samplingParamsByThinkingLevel: mergeLevelSampling(
+                  model.samplingParamsByThinkingLevel,
+                  override.samplingParamsByThinkingLevel,
+                ),
+              }
+            : {}),
+        }
+      })
     if (configured.apiKey?.startsWith('!'))
       throw new Error(
         `Command-valued credentials for ${id} are not supported. Configure an environment variable or stored credential.`,

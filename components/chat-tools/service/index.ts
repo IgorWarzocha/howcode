@@ -83,7 +83,7 @@ export function createChatTools({
       )
       const entries = await readdir(resolved, { withFileTypes: true })
       return {
-        content: [
+        output: [
           {
             type: 'text',
             text: entries
