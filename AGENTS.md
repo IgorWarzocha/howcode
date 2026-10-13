@@ -21,6 +21,7 @@
 - Apply the same content-hashed tarball workflow to `../howcode-components` for bundled shell composition. Regenerate `package.json`'s `howcodeComponents` registration with `bun run generate:components`, never edit `*.generated.ts`. Ordinary profile components use `howcode install` and the live package generation lifecycle. Only shell-integrated adapter changes require a shell build and supported handoff, never a second Durable package install.
 - Assume the dev server is already running; do not start or restart it. Read `build/dev-server.json` for its address and exercise the app in a browser.
 - Commits run `bun run ai:check`, including blocking React Doctor; keep its score at 100. Run the gate manually only when asked, when not committing, or while diagnosing a failed hook.
+- Pre-push is validation-only: do not rewrite sources or delete `build`, which contains the running dev server's immutable generations and address metadata.
 - Do not relax Biome or TypeScript rules merely to make checks pass; fix the code or use a narrow, justified override.
 - Hardening is behaviour-preserving unless separately scoped: do not change product semantics, UI, UX, copy, layout, or interaction during structural passes.
 - This architecture branch has not shipped. Replace obsolete designs cleanly; do not preserve old routes, APIs, names, or implementation shapes as compatibility contracts. Preserve actual user data where it exists, not hypothetical external consumers.

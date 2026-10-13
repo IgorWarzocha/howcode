@@ -2,6 +2,4 @@
 
 set -e
 
-bun run prepush:clean
-bunx biome check --write --error-on-warnings .
 bun run ai:check
