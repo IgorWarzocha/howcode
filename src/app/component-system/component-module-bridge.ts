@@ -18,7 +18,11 @@ import { RendererPortalScope, RendererRetainedWorkspaceSurface } from './rendere
 
 /** Keep renderer CSS ownership when its DOM moves outside a slot. */
 const createRendererPortal: typeof reactDom.createPortal = (children, container, key) =>
-  reactDom.createPortal(react.createElement(RendererPortalScope, { children }), container, key)
+  reactDom.createPortal(
+    react.createElement(RendererPortalScope, { children, container }),
+    container,
+    key,
+  )
 
 const rendererReactDom = { ...reactDom, createPortal: createRendererPortal }
 

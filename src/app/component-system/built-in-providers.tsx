@@ -6,6 +6,10 @@ import type { AppSettings } from '../desktop/types'
 import type { View } from '../types'
 import { WorkspaceLayoutActionsProvider } from '../workspace-shell/workspace-layout-actions'
 import { ComponentSettingsContext } from './component-context'
+import {
+  ComposerDraftReceiverContext,
+  useComposerDraftReceiverHost,
+} from './composer-draft-receiver'
 import { InstalledComponentProviders } from './installed-providers'
 import { classicNavigationRenderer } from './navigation-selection'
 
@@ -21,22 +25,25 @@ export function BuiltInComponentProviders({
   children: ReactNode
 }) {
   const retainGitPreferences = workView !== 'chat'
+  const composerDraftReceiver = useComposerDraftReceiverHost()
   return (
     <ComponentSettingsContext value={settings ?? { enabledToolkitComponents: [] }}>
-      <GitRendererBridgeProvider>
-        <InstalledComponentProviders
-          enabled={true}
-          retain={retainGitPreferences}
-          terminalEnabled={isToolkitComponentEnabled(settings, 'terminal')}
-          skillsEnabled={isToolkitComponentEnabled(settings, 'skills')}
-          skills={skills}
-          navigationRenderer={
-            settings ? (settings.navigationRenderer ?? classicNavigationRenderer) : 'none'
-          }
-        >
-          <WorkspaceLayoutActionsProvider>{children}</WorkspaceLayoutActionsProvider>
-        </InstalledComponentProviders>
-      </GitRendererBridgeProvider>
+      <ComposerDraftReceiverContext value={composerDraftReceiver}>
+        <GitRendererBridgeProvider>
+          <InstalledComponentProviders
+            enabled={true}
+            retain={retainGitPreferences}
+            terminalEnabled={isToolkitComponentEnabled(settings, 'terminal')}
+            skillsEnabled={isToolkitComponentEnabled(settings, 'skills')}
+            skills={skills}
+            navigationRenderer={
+              settings ? (settings.navigationRenderer ?? classicNavigationRenderer) : 'none'
+            }
+          >
+            <WorkspaceLayoutActionsProvider>{children}</WorkspaceLayoutActionsProvider>
+          </InstalledComponentProviders>
+        </GitRendererBridgeProvider>
+      </ComposerDraftReceiverContext>
     </ComponentSettingsContext>
   )
 }

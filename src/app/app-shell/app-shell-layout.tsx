@@ -3,7 +3,7 @@ import { usePublishGitRendererInput } from '@howaboua/howcode-sdk/git-renderer'
 import { usePublishSidebarRendererInput } from '@howaboua/howcode-sdk/sidebar-renderer'
 import { useQueryClient } from '@tanstack/react-query'
 import { useMemo, useRef } from 'react'
-import { InstalledDraftInput } from '../component-system/composer-renderer-slot'
+import { useComposerDraftReceiver } from '../component-system/composer-draft-receiver'
 import {
   classicNavigationRenderer,
   useNavigationRenderer,
@@ -49,6 +49,12 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   } = useAppShellResponsiveLayout(terminalResponsive, Boolean(navigationRenderer))
   const { conversationId: terminalConversationId, chatId: activeChatId } =
     getLayoutChatSelection(state)
+  const { receiver } = useComposerDraftReceiver()
+  const prepareReview =
+    receiver?.directoryId === composerDirectoryId &&
+    receiver.conversationId === terminalConversationId
+      ? receiver.append
+      : undefined
   const { drawerVisible: terminalDrawerVisible, drawerPresent: terminalDrawerPresent } =
     useTerminalDrawerPresentation({
       enabled: terminalEnabled,
@@ -71,7 +77,6 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   )
   const { handleAction } = controller.desktop
   const { open, close, openWorktreeFile } = controller.gitOps
-  const { showView } = controller.navigation
   const directoryGitState = controller.directories.gitState
   const loading = controller.directories.gitLoading && !directoryGitState
   const gitPort = useMemo(
@@ -109,13 +114,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             onOpenDetail: open,
             onCloseDetail: close,
             onOpenWorktreeFile: openWorktreeFile,
-            renderDraftInput: (input) => (
-              <InstalledDraftInput
-                {...input}
-                activeView="chat"
-                onOpenSettingsView={(target) => showView('settings', target)}
-              />
-            ),
+            ...(prepareReview ? { prepareReview } : {}),
           }
         : undefined,
     [
@@ -133,7 +132,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
       open,
       close,
       openWorktreeFile,
-      showView,
+      prepareReview,
     ],
   )
   usePublishGitRendererInput(gitPort)

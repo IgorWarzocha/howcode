@@ -13,8 +13,21 @@ export function RendererStyleScope({ name, children }: { name: string; children:
   )
 }
 
-export function RendererPortalScope({ children }: { children: ReactNode }) {
+export function RendererPortalScope({
+  children,
+  container,
+}: {
+  children: ReactNode
+  container: Element | DocumentFragment
+}) {
   const name = useContext(RendererStyleOwner)
+  // Already-scoped portals must retain direct children, including native shadow slots.
+  if (
+    container instanceof Element &&
+    container.closest('[data-howcode-component]')?.getAttribute('data-howcode-component') === name
+  ) {
+    return children
+  }
   return name ? <RendererStyleScope name={name}>{children}</RendererStyleScope> : children
 }
 

@@ -6,7 +6,6 @@ import type {
   QueuedPromptsProps,
 } from '@howaboua/howcode-sdk/composer-renderer'
 import { getPersistedConversationId } from '@howaboua/howcode-sdk/conversation-ids'
-import type { DraftInputProps } from '@howaboua/howcode-sdk/draft-input'
 import { useContext, useMemo } from 'react'
 import type { DirectoryGitState } from '../desktop/types'
 import {
@@ -19,11 +18,11 @@ import {
   uploadComposerFilesQuery,
 } from '../query/desktop-query'
 import { InstalledArtifactComposerControl } from './artifact-renderer-slot'
+import { useComposerDraftReceiver } from './composer-draft-receiver'
 import { InstalledConversationActions } from './conversation-contributions'
 import { isGitRendererApi } from './git-renderer-api'
 import { RendererHostsContext } from './installed-renderer-context'
 import { RendererSlot } from './renderer-slots'
-import { RendererStyleScope } from './renderer-style-scope'
 
 function useComposerBinding() {
   const renderers = useContext(RendererHostsContext)
@@ -48,7 +47,7 @@ function useComposerBinding() {
   return { renderer, services, generationKey }
 }
 
-type InstalledComposerProps = Omit<ComposerProps, 'services'> & {
+type InstalledComposerProps = Omit<ComposerProps, 'services' | 'registerDraftReceiver'> & {
   directoryGitState?: DirectoryGitState | null
   parentBranchName?: string | null
   onToggleTerminal: () => void
@@ -75,6 +74,7 @@ export function InstalledComposer({
   ...props
 }: InstalledComposerProps) {
   const { renderer, services, generationKey } = useComposerBinding()
+  const { register } = useComposerDraftReceiver()
   const renderers = useContext(RendererHostsContext)
   if (!renderer?.contribution.composer) return null
   const Composer = renderer.contribution.composer.Composer
@@ -91,6 +91,7 @@ export function InstalledComposer({
         {...props}
         key={generationKey}
         services={services}
+        registerDraftReceiver={register}
         leadingFooter={
           showTerminalControls && terminal && TerminalControl ? (
             <RendererSlot name={terminal.name}>
@@ -111,7 +112,7 @@ export function InstalledComposer({
               <RendererSlot name={git.name}>
                 <GitControls
                   selector={{
-                    composerPanelRef,
+                    controlsRef: composerPanelRef,
                     directoryId: props.directoryId,
                     directoryGitState,
                     parentBranchName,
@@ -166,19 +167,5 @@ export function InstalledComposerModelPicker(props: ComposerModelPickerProps) {
     <RendererSlot name={renderer.name}>
       <ModelPicker {...props} />
     </RendererSlot>
-  )
-}
-
-export function InstalledDraftInput(props: Omit<DraftInputProps, 'host'>) {
-  const renderers = useContext(RendererHostsContext)
-  const renderer = renderers.find(({ contribution }) => contribution.draftInput)
-  if (!renderer?.contribution.draftInput)
-    return props.children({ leadingAdornment: null, onKeyDown: () => undefined })
-  const DraftInput = renderer.contribution.draftInput.DraftInput
-  // DraftInput invokes caller-owned children, which must retain the caller's feature providers.
-  return (
-    <RendererStyleScope name={renderer.name}>
-      <DraftInput {...props} host={renderer.host} />
-    </RendererStyleScope>
   )
 }
