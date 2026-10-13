@@ -1,17 +1,14 @@
-import { useTerminalCommands } from '@howcode/components/terminal/ui'
-import { useGitWorkspaceCommands } from '@howcode/git-integration'
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { isLocalConversationId } from '@howcode/shared/conversation-ids'
-import {
-  isToolkitComponentEnabled,
-  type ToolkitComponentSettings,
-} from '@howcode/shared/toolkit-components'
+import type { ToolkitComponentSettings } from '@howcode/shared/toolkit-components'
 import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch, SetStateAction } from 'react'
 import { isWorkspaceViewEnabled } from '../component-system/toolkit-components'
 import type { DesktopActionResult, InboxChat, WorkspaceNavigationState } from '../desktop/types'
+import { getGitRendererApi } from '../git-integration/client'
 import { forgetLocalDraftChat } from '../hooks/useDesktopDirectoryChats'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace-model'
+import { useTerminalCommands, useTerminalEnabled } from '../terminal-integration'
 import type { View, WorkingDirectory } from '../types'
 import { findWorkspaceForDirectory } from './app-routes'
 import { removeDirectoryChatFromShellState } from './directory-chat-cache'
@@ -67,10 +64,15 @@ export function useAppShellCommands({
 
   const { handleToggleTerminal, handleCloseTerminalDrawer } = useTerminalCommands({
     dispatch,
-    toolkitSettings,
+    enabled: useTerminalEnabled(toolkitSettings),
   })
-  const { handleOpenGitOpsView, handleCloseGitOpsView, handleOpenWorktreeDiffFile } =
-    useGitWorkspaceCommands({ composerDirectoryId, dispatch, queryClient })
+  const createGitCommands = () =>
+    getGitRendererApi()?.createGitWorkspaceCommands({ composerDirectoryId, dispatch, queryClient })
+  const handleOpenGitOpsView = (options: { filePath?: string | null } = {}) =>
+    createGitCommands()?.handleOpenGitOpsView(options)
+  const handleCloseGitOpsView = () => createGitCommands()?.handleCloseGitOpsView()
+  const handleOpenWorktreeDiffFile = (path: string) =>
+    createGitCommands()?.handleOpenWorktreeDiffFile(path)
 
   const handleShowView = (view: View, target?: SettingsOpenTarget) => {
     const enabledView = isWorkspaceViewEnabled(toolkitSettings, view) ? view : 'chat'
@@ -81,11 +83,7 @@ export function useAppShellCommands({
   }
 
   const handleShowLanding = () => {
-    dispatch(
-      isToolkitComponentEnabled(toolkitSettings, 'coding')
-        ? { type: 'show-landing' }
-        : { type: 'show-view', view: 'chat' },
-    )
+    dispatch({ type: 'show-landing' })
   }
 
   const handleCloseUtilityView = () => {
@@ -243,7 +241,6 @@ export function useAppShellCommands({
     handleChatOpen,
     handleChatCycle,
     handleToggleDirectoryCollapse,
-    handleToggleSettings: () => dispatch({ type: 'toggle-settings' }),
     handleToggleTerminal,
     handleCloseTerminalDrawer,
     handleCloseSettingsPanel: () => dispatch({ type: 'set-settings-panel-open', open: false }),

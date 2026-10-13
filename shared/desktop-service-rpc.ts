@@ -1,7 +1,5 @@
 import type {
   AppService,
-  ArtifactsService,
-  DictationService,
   PiSkillsService,
   PluginService,
   WorkingDirectoriesService,
@@ -16,8 +14,6 @@ export type DesktopServiceRemoteRuntime = {
   skills: PiSkillsService
   plugins: PluginService
   workingDirectories: WorkingDirectoriesService
-  artifacts: ArtifactsService
-  dictation: DictationService
 }
 
 export type DesktopServiceRemoteModuleName = keyof DesktopServiceRemoteRuntime
@@ -27,6 +23,9 @@ type MethodAllowlist<T> = { readonly [K in keyof T]-?: true }
 export const desktopServiceRemoteMethods = {
   dev: { inspectActivity: true },
   packages: {
+    installInstalledComponent: true,
+    updateInstalledComponent: true,
+    removeInstalledComponent: true,
     listInstalledComponents: true,
     admitInstalledComponent: true,
     loadInstalledComponent: true,
@@ -61,21 +60,6 @@ export const desktopServiceRemoteMethods = {
     loadDirectoryFavicon: true,
   },
   plugins: { request: true, hostRequest: true },
-  artifacts: {
-    listArtifacts: true,
-    getArtifact: true,
-    updateArtifact: true,
-    editArtifact: true,
-    listArtifactVersions: true,
-    compileReactArtifact: true,
-  },
-  dictation: {
-    getDictationState: true,
-    listDictationModels: true,
-    installDictationModel: true,
-    removeDictationModel: true,
-    transcribeDictation: true,
-  },
   skills: {
     searchPiSkills: true,
     listConfiguredPiSkills: true,

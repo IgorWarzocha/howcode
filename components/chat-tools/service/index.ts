@@ -1,12 +1,12 @@
 import { readdir, realpath } from 'node:fs/promises'
 import path from 'node:path'
 import { Type } from '@earendil-works/pi-ai'
+import type { Agent } from '@earendil-works/pi-durable'
 import {
   defineExtension,
   defineTool,
   type PromptSection,
   section,
-  type ToolRegistration,
   wrapSection,
 } from '@earendil-works/pi-durable'
 import { createReadTool } from '@earendil-works/pi-durable/tools'
@@ -22,16 +22,14 @@ import { renderChatPrompt, stripLegacyChatPrompt } from './chat-prompt.ts'
 export { AttachmentGrantsDoc } from './attachment-grants.ts'
 
 export function createChatTools({
-  artifactTools,
   discoverSkills,
   skillsSection,
 }: {
-  artifactTools: readonly ToolRegistration[]
-  discoverSkills: () => Promise<ComposerSkillReference[]>
+  discoverSkills: (agent: Agent) => Promise<ComposerSkillReference[]>
   skillsSection: PromptSection
 }) {
-  async function skillReadGrants() {
-    const skills = await discoverSkills()
+  async function skillReadGrants(agent: Agent) {
+    const skills = await discoverSkills(agent)
     return {
       files: [],
       directories: await Promise.all(skills.map((skill) => realpath(path.dirname(skill.filePath)))),
@@ -42,8 +40,9 @@ export function createChatTools({
     filePath: string,
     cwd: string,
     grants: { readonly files: readonly string[]; readonly directories: readonly string[] },
+    agent: Agent,
   ) {
-    const skillGrants = await skillReadGrants()
+    const skillGrants = await skillReadGrants(agent)
     return authorizeAttachmentPath(filePath, cwd, {
       files: grants.files,
       directories: [...grants.directories, ...skillGrants.directories],
@@ -58,7 +57,12 @@ export function createChatTools({
         files: [],
         directories: [],
       }
-      const resolved = await authorizeChatRead(args.path, api.env?.cwd ?? process.cwd(), grants)
+      const resolved = await authorizeChatRead(
+        args.path,
+        api.env?.cwd ?? process.cwd(),
+        grants,
+        await api.agent(context),
+      )
       return read.execute({ ...args, path: resolved }, api, context)
     },
   })
@@ -94,7 +98,7 @@ export function createChatTools({
   return withExtensionIngress(
     defineExtension({
       name: 'howcode.chat',
-      tools: [attachmentRead, attachmentList, ...artifactTools],
+      tools: [attachmentRead, attachmentList],
       sections: [
         section('howcode-chat', ({ agent }) => renderChatPrompt(agent.instructions), {
           tag: false,

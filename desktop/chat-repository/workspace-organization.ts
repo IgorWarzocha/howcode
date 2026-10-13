@@ -1,6 +1,7 @@
 import * as Effect from 'effect/Effect'
 import * as SqlClient from 'effect/sql/SqlClient'
 import { DEFAULT_WORKSPACE_ID } from '../../shared/desktop-workspace-contracts.ts'
+import { ensureDirectory } from './conversation-scopes.ts'
 import { seedWorkspaceLayouts } from './workspace-layout.ts'
 import { withDatabaseTransaction } from './write-transaction.ts'
 
@@ -17,6 +18,22 @@ export const ensureDefaultWorkspace = Effect.fn('Workspace.ensureDefault')(funct
 })
 
 export type WorkspaceDirectory = { id: string; name: string; rootId: string }
+
+export const ensureDirectoryWorkspace = Effect.fn('Workspace.ensureDirectory')(function* (
+  directoryId: string,
+) {
+  const sql = yield* SqlClient.SqlClient
+  return yield* withDatabaseTransaction(
+    Effect.gen(function* () {
+      yield* ensureDirectory(directoryId)
+      const id = `directory:${directoryId}`
+      yield* sql`INSERT INTO chat_groups (id, name, directory_id)
+        SELECT ${id}, COALESCE(custom_name, name), cwd FROM projects WHERE cwd = ${directoryId}
+        ON CONFLICT(id) DO NOTHING`
+      return id
+    }),
+  )
+})
 
 export const renameWorkspace = Effect.fn('Workspace.rename')(function* (id: string, name: string) {
   const trimmedName = name.trim()
@@ -66,9 +83,9 @@ export const reconcileWorkspaceOrganization = Effect.fn('Workspace.reconcile')(f
       for (const directory of directories) {
         if (directory.id !== directory.rootId) continue
         const id = `directory:${directory.id}`
-        yield* sql`INSERT INTO chat_groups (id, name, directory_id)
-        VALUES (${id}, COALESCE((SELECT custom_name FROM projects WHERE cwd = ${directory.id}), ${directory.name}), ${directory.id})
-        ON CONFLICT(id) DO UPDATE SET name = excluded.name`
+        yield* sql`UPDATE chat_groups
+        SET name = COALESCE((SELECT custom_name FROM projects WHERE cwd = ${directory.id}), ${directory.name})
+        WHERE id = ${id}`
       }
       for (const directory of directories) {
         const id = `directory:${directory.rootId}`

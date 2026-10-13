@@ -5,9 +5,12 @@ import {
   componentModuleBridgeKey,
   componentSharedModules,
 } from '../../../shared/installed-component-contracts.ts'
+import { compileComponentUtilities } from './component-utilities.ts'
+import { componentWorkers } from './component-workers.ts'
 
 const requireFromHost = createRequire(import.meta.url)
-const hostModulePattern = /^(react(?:-dom)?(?:\/.*)?|@howaboua\/howcode-sdk\/.*)$/
+const hostModulePattern =
+  /^(react(?:-dom)?(?:\/.*)?|@tanstack\/react-query|@howaboua\/howcode-sdk\/.*)$/
 const relativeModulePattern = /^\./
 const anyModulePattern = /.*/
 const outputPattern = /\.(js|css)$/
@@ -15,7 +18,10 @@ const exportIdentifierPattern = /^[A-Za-z_$][\w$]*$/
 const sdkDirectory = dirname(requireFromHost.resolve('@howaboua/howcode-sdk/plugins'))
 
 /** A full component runs inside the host React tree, unlike standalone ui.tsx. */
-export async function compileInstalledComponent(entry: string): Promise<InstalledComponentSource> {
+export async function compileInstalledComponent(
+  entry: string,
+  componentName: string,
+): Promise<InstalledComponentSource> {
   const { build } = await import('esbuild')
   const identities = new Map(
     componentSharedModules.map((name) => [requireFromHost.resolve(name), name]),
@@ -31,6 +37,7 @@ export async function compileInstalledComponent(entry: string): Promise<Installe
     jsx: 'automatic',
     logLevel: 'silent',
     plugins: [
+      componentWorkers(),
       {
         name: 'howcode-component-host-modules',
         setup(builder) {
@@ -78,5 +85,9 @@ export async function compileInstalledComponent(entry: string): Promise<Installe
   if (!js) throw new Error('Component renderer compilation produced no JavaScript.')
   if (result.outputFiles.some((file) => !outputPattern.test(file.path)))
     throw new Error('Component renderer assets must be inline or owned by its public service.')
-  return { js, css: result.outputFiles.find((file) => file.path.endsWith('.css'))?.text ?? '' }
+  const utilities = await compileComponentUtilities(js, componentName)
+  return {
+    js,
+    css: `${utilities}\n${result.outputFiles.find((file) => file.path.endsWith('.css'))?.text ?? ''}`,
+  }
 }

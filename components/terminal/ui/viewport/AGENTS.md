@@ -1,3 +1,0 @@
-- Keep xterm mechanics and session presentation here. Backend PTY ownership belongs in `components/terminal/service`.
-- `TerminalViewportBase` owns internal xterm mechanics. `ShellTerminalViewport` owns presentation defaults.
-- Session start, event subscription, timers and resize observers must retain their owned cleanup.

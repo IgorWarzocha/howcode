@@ -1,4 +1,5 @@
 import type { DesktopEvent } from '../desktop/types'
+import { desktopQueryKeys } from '../query/desktop-query'
 import { handleChatUpdateEvent } from './desktop-events/chat-update'
 import { handleComposerUpdateEvent } from './desktop-events/composer-update'
 import type { DesktopEventQueryClient, DesktopEventSyncRuntime } from './desktop-events/runtime'
@@ -24,6 +25,9 @@ export function handleDesktopEvent(runtime: DesktopEventSyncRuntime, event: Desk
   switch (event.type) {
     case 'shell-state-refresh':
       runtime.scheduleShellStateRefresh()
+      void runtime.queryClient.invalidateQueries({
+        queryKey: desktopQueryKeys.workspaceNavigationState(),
+      })
       return
     case 'keybinding-command':
       handleKeybindingCommandEvent(runtime, event)

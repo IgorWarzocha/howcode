@@ -1,3 +1,6 @@
+import { EmptyStateCard } from '@howaboua/howcode-sdk/common/empty-state-card'
+import { MarkdownContent } from '@howaboua/howcode-sdk/markdown/markdown-content'
+import { inlineEmptyNoteClass } from '@howaboua/howcode-sdk/ui/classes'
 import {
   appToneMutedClass,
   appToneSubtleClass,
@@ -8,10 +11,9 @@ import {
   appTypeReadableClass,
   appTypeSectionTitleClass,
 } from '@howaboua/howcode-sdk/ui/typography-scale'
-import { chatSessionStripClass, inlineEmptyNoteClass } from '@howcode/ui/classes'
-import { EmptyStateCard } from '../common/empty-state-card'
-import { MarkdownContent } from '../common/markdown-content'
+import { chatSessionStripClass } from '@howcode/ui/classes'
 import type { InboxChat } from '../desktop/types'
+import { openExternalQuery } from '../query/desktop-query'
 import { WORKSPACE_CONTENT_MAX_WIDTH_CLASS } from '../ui/layout'
 
 export function InboxEmptyState() {
@@ -76,6 +78,7 @@ export function InboxChatMessage({ chat }: { chat: InboxChat }) {
           <div className="border-t border-[color:var(--border)]/70 pt-2">
             {messageMarkdown ? (
               <MarkdownContent
+                openExternal={openExternalQuery}
                 markdown={messageMarkdown}
                 className={`gap-3 ${appTypeReadableClass} text-pretty`}
               />

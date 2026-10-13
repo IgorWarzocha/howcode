@@ -10,14 +10,15 @@ import type { AnyDesktopActionPayload } from '../../../shared/desktop-contracts.
 import type { WorkingDirectoriesService } from '../../../shared/desktop-service-contracts.ts'
 import { createDirectoryActionHandler } from './actions/directory-actions.ts'
 import { loadDirectoryUsageSummary } from './actions/directory-usage-summary.ts'
-import { createWorktreeActionHandler } from './actions/worktree-actions.ts'
 import type { WorkingDirectoryPeers } from './dependencies.ts'
 import { loadDirectoryFavicon } from './directory-favicon.ts'
 import { disposeDirectoryShell, loadDirectoryShell } from './directory-shell.ts'
 
+export type { WorkingDirectoryPeers } from './dependencies.ts'
+export { createSidebarHost } from './sidebar-host.ts'
+
 export function createWorkingDirectoriesService(peers: WorkingDirectoryPeers) {
   const directoryActions = createDirectoryActionHandler(peers)
-  const worktreeActions = createWorktreeActionHandler(peers)
   const work = createServiceWork('Working directories')
   const run = work.run
   let disposal: Promise<void> | undefined
@@ -35,11 +36,9 @@ export function createWorkingDirectoriesService(peers: WorkingDirectoryPeers) {
         }
         const result = await directoryActions(action, payload)
         if (result.handled) return result
-        return action.startsWith('worktrees.')
-          ? worktreeActions(action, payload)
-          : unhandledAction()
+        return unhandledAction()
       }),
-    loadShell: (cwd: string) => run(() => loadDirectoryShell(cwd)),
+    loadShell: (cwd: string) => run(() => loadDirectoryShell(cwd, peers.sidebar)),
     dispose() {
       disposal ??= (async () => {
         await work.stop()

@@ -1,3 +1,1 @@
 - Extend shared overlay primitives such as `Tooltip` and `PopoverPanel` instead of creating local portal, stacking, or dismissal systems.
-- Inline answer fences render only after a matching closing fence. Preserve original source and code-copy access through history and streaming. These are display content, never artifact creation or an interactive runtime.
-- SVG and Mermaid output must pass `sanitizeInlineSvg` and remain isolated image data, not host DOM. Keep resource URLs, execution, foreignObject, animation and CSS out. Mermaid input must pass preflight before its DOM-dependent renderer runs.

@@ -1,15 +1,13 @@
-import { DiffPanel, GitDetailLayoutControls, useGitOpsFileActions } from '@howaboua/howcode-git/ui'
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { mainPanelClass } from '@howcode/ui/classes'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import type { View } from '../../types'
 import { WORKSPACE_EDGE_PADDING_CLASS } from '../../ui/layout'
 import { FALLBACK_APP_SETTINGS } from '../../workspace-shell/default-app-settings'
 import { WorkspaceSurfaceDock } from '../../workspace-shell/workspace-surface-dock'
+import { RendererSlot } from '../renderer-slots'
 import type { DomainWorkspaceContentProps } from './domain-workspace-contract'
-import { DomainWorkspaceGitReview } from './domain-workspace-git-review'
 import { DomainWorkspaceMainView } from './domain-workspace-main-view'
-import './domain-workspace-main-area.css'
 
 function getMainPanelClass(activeView: View, gitDetailOpen: boolean) {
   return activeView === 'chat' ||
@@ -18,40 +16,6 @@ function getMainPanelClass(activeView: View, gitDetailOpen: boolean) {
     gitDetailOpen
     ? 'min-h-0 overflow-hidden'
     : mainPanelClass
-}
-
-function DomainWorkspaceGitDetail(props: DomainWorkspaceContentProps) {
-  const fileActions = useGitOpsFileActions(props.handleAction)
-  const viewportRef = useRef<HTMLDivElement>(null)
-  const [narrow, setNarrow] = useState(false)
-  useEffect(() => {
-    const viewport = viewportRef.current
-    if (!viewport) return
-    const observer = new ResizeObserver(([entry]) => {
-      if (entry) setNarrow(entry.contentRect.width < 680)
-    })
-    observer.observe(viewport)
-    return () => observer.disconnect()
-  }, [])
-  return (
-    <div ref={viewportRef} className="git-detail-viewport min-h-0 min-w-0 flex-1 overflow-hidden">
-      <DiffPanel
-        fileActions={fileActions}
-        directoryId={props.composerDirectoryId}
-        isGitRepo={props.directoryGitState?.isGitRepo ?? false}
-        baseline={props.diffBaseline}
-        selectedFilePath={props.state.selectedDiffFilePath}
-        selectedCommentId={props.gitOpsReview.selection.commentId}
-        selectedCommentJumpKey={props.gitOpsReview.selection.jumpKey}
-        diffRenderMode={narrow ? 'stacked' : props.diffRenderMode}
-        layoutMode="main"
-        showFileTree={props.gitOpsFileTreeVisible}
-        includeUntracked={props.includeUntrackedDiffFiles}
-        loading={props.controller.directories.gitLoading && !props.directoryGitState}
-        onLoadErrorChange={props.setDiffLoadError}
-      />
-    </div>
-  )
 }
 
 function getSelectedMainDirectoryId(
@@ -114,30 +78,31 @@ export function DomainWorkspaceLayout({
   children,
   ...props
 }: DomainWorkspaceContentProps & { children: ReactNode }) {
-  const detailLayout = props.gitDetailLayout
-  const detail = props.gitDetailOpen ? (
-    <>
-      <GitDetailLayoutControls {...detailLayout} />
-      <DomainWorkspaceGitDetail {...props} />
-      <div className="git-detail-review shrink-0 border-t border-[color:var(--border)] p-2">
-        <DomainWorkspaceGitReview {...props} />
-      </div>
-    </>
+  const presentation = props.gitPresentation
+  const detail = presentation?.detailOpen ? (
+    <RendererSlot name="@howaboua/howcode-git">{presentation.detail}</RendererSlot>
   ) : null
   return (
     <div
+      ref={props.artifactDrawer.desktopContentRef}
       className={cn(
         'motion-terminal-drawer-offset absolute inset-x-0 top-0 overflow-hidden',
         WORKSPACE_EDGE_PADDING_CLASS,
+        props.artifactDrawer.artifactsFullscreen && 'hidden',
       )}
-      style={{ ...props.terminalDrawerInsetStyle, bottom: 0 }}
+      style={{
+        ...props.terminalDrawerInsetStyle,
+        ...props.artifactDrawer.artifactDrawerInsetStyle,
+        bottom: 0,
+      }}
     >
       <WorkspaceSurfaceDock
         conversationId={
           props.state.activeView === 'chat' ? props.state.selectedConversationId : null
         }
-        layout={detailLayout.layout}
-        onLayoutChange={detailLayout.updateLayout}
+        {...(presentation
+          ? { layout: presentation.layout, onLayoutChange: presentation.updateLayout }
+          : {})}
         detail={detail}
         footerInset={props.footerInset}
         detailLabel="Git diff"

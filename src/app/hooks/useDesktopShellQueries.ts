@@ -1,4 +1,4 @@
-import { getDirectoryGitStateQuery } from '@howcode/git-integration/client'
+import { getSidebarRepositoryStateQuery } from '@howcode/query/sidebar-query'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import type {
@@ -40,7 +40,7 @@ export function useDesktopShellQueries() {
     (directoryId: string) =>
       queryClient.fetchQuery<DirectoryGitState | null>({
         queryKey: desktopQueryKeys.directoryGitState(directoryId),
-        queryFn: () => getDirectoryGitStateQuery(directoryId),
+        queryFn: () => getSidebarRepositoryStateQuery(directoryId),
         staleTime: 0,
       }),
     [queryClient],

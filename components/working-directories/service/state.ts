@@ -3,7 +3,7 @@ import * as directories from './state/directory-writes.ts'
 import * as queries from './state/queries.ts'
 import * as worktrees from './state/worktree-writes.ts'
 
-export { workingDirectoryChatBranchFallbacks } from './state/chat-branches.ts'
+export { persistedWorktreeBranchFacts } from './state/chat-branches.ts'
 
 export type {
   DirectoryWorktreeMetadata,

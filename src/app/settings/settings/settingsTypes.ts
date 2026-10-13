@@ -1,22 +1,15 @@
+import type { SettingsCategoryId } from '@howaboua/howcode-sdk/settings-navigation'
 import type { ReactNode } from 'react'
 
-export type SettingsCategoryId =
-  | 'howcode'
-  | 'composer'
-  | 'models'
-  | 'git-diffs'
-  | 'pi'
-  | 'shortcuts'
-  | 'dictation'
-
-export type SettingsOpenTarget = {
-  category?: SettingsCategoryId | undefined
-  settingId?: string | undefined
-}
+export type {
+  SettingsCategoryId,
+  SettingsOpenTarget,
+} from '@howaboua/howcode-sdk/settings-navigation'
 
 export type SettingDescriptor = {
   id: string
   category: SettingsCategoryId
+  componentId?: string
   title: string
   description: string
   helpDescription?: string

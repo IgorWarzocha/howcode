@@ -4,6 +4,9 @@ export {
   getDirectoryUsageSummaryQuery,
   listDirectoryDirectoryEntriesQuery,
 } from './query'
+export { buildDirectorySettingsDescriptors } from './settings/settingsDescriptors'
+export type { DirectorySettingsController } from './settings/useDirectorySettingsController'
+export { useDirectorySettingsController } from './settings/useDirectorySettingsController'
 export { useDirectoryDesktopEventContribution } from './shell/desktop-events'
 export {
   removeShellDirectoryFamily,
@@ -15,14 +18,6 @@ export {
   upsertShellDirectory,
   upsertShellWorktreeDirectory,
 } from './shell/directory-shell-cache'
-export { worktreePostEffectHandlers } from './shell/post-effects/worktree-handlers'
-export {
-  applyCreateWorktreePostEffect,
-  applyRemoveWorktreePostEffect,
-  applySwitchBranchPostEffect,
-  applyWorktreeMetadataPostEffect,
-} from './shell/post-effects/worktrees'
-export { useAppShellDirectoryState } from './shell/useAppShellDirectoryState'
 export { useDirectoryRepoOriginRefresh } from './shell/useDirectoryRepoOriginRefresh'
 export { useDirectoryShellSync } from './shell/useDirectoryShellSync'
 export {
@@ -36,5 +31,3 @@ export {
   getDirectoryUtilityReturnState,
   resolveCodeChatSelection,
 } from './shell/workspace-state'
-export { WorkspaceFolderCreateButton } from './sidebar/directories/workspace-folder-create-button'
-export { DirectoryWorkSection } from './sidebar/directory-work/directory-work-section'

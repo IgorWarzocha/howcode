@@ -1,5 +1,6 @@
 - Keep action status/result/error text on the same `SettingRow`, immediately left of its right-aligned control.
 - Stack it below only when the whole setting deliberately uses a multi-line layout.
 - `settingsDescriptors` is the registry; domain builders own descriptor copy and controls. Do not add domain branches to `SettingsView`.
-- Keep controller state nested under `app`, `models`, `projects`, or `dictation`; Pi draft persistence belongs to `useDraftPiSettings`.
+- Shell preferences persist through `useDraftShellPreferences`; component controls use their owning controller or installed plugin request boundary. UI visibility never selects conversation tools.
+- Component settings mount through renderer slots beneath the owning Provider. Retain failed/pending/headless packages in the catalogue; absence of a settings renderer is not absence of an installed package.
 - Use the SDK's `ui/controls` and `ui/inline-select` for shared controls; do not restore settings-local select, checkbox, or segmented-control owners.

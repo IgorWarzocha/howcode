@@ -1,5 +1,9 @@
+import { CompactMetaRow } from '@howaboua/howcode-sdk/common/compact-meta-row'
 import { ConfirmPopover } from '@howaboua/howcode-sdk/common/confirm-popover'
 import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
+import { ViewHeader } from '@howaboua/howcode-sdk/common/view-header'
+import { ViewShell } from '@howaboua/howcode-sdk/common/view-shell'
+import { inlineEmptyNoteClass, viewCloseButtonClass } from '@howaboua/howcode-sdk/ui/classes'
 import {
   appToneMutedClass,
   appToneTextClass,
@@ -8,17 +12,13 @@ import {
   appTypeSmallClass,
 } from '@howaboua/howcode-sdk/ui/typography-scale'
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
-import { inlineEmptyNoteClass, viewCloseButtonClass } from '@howcode/ui/classes'
 import { ArchiveRestore, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CompactMetaRow } from '../common/compact-meta-row'
-import { ViewHeader } from '../common/view-header'
-import { ViewShell } from '../common/view-shell'
 import type { ArchivedChat, DesktopActionInvoker } from '../desktop/types'
 import {
-  skillsActionColumnClass,
-  skillsListClass,
-  skillsViewShellClass,
+  topRoomyViewShellClass,
+  utilityActionColumnClass,
+  utilityListClass,
 } from '../ui/screen-classes'
 
 type ArchivedChatsViewProps = {
@@ -152,7 +152,7 @@ export function ArchivedChatsView({ chats, onAction }: ArchivedChatsViewProps) {
   }
 
   return (
-    <ViewShell className={skillsViewShellClass}>
+    <ViewShell className={topRoomyViewShellClass}>
       <ViewHeader
         title="Archived chats"
         actions={
@@ -195,7 +195,7 @@ export function ArchivedChatsView({ chats, onAction }: ArchivedChatsViewProps) {
       />
 
       {visibleChats.length > 0 ? (
-        <div className={skillsListClass}>
+        <div className={utilityListClass}>
           <CompactMetaRow
             density="dense"
             contentClassName={`grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 overflow-hidden ${appTypeGroupTextClass}`}
@@ -257,7 +257,7 @@ export function ArchivedChatsView({ chats, onAction }: ArchivedChatsViewProps) {
             }
           >
             <label className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 text-[color:var(--text)]">
-              <span className={skillsActionColumnClass}>
+              <span className={utilityActionColumnClass}>
                 <input
                   type="checkbox"
                   className="h-3.5 w-3.5 accent-[color:var(--accent)]"
@@ -318,7 +318,7 @@ export function ArchivedChatsView({ chats, onAction }: ArchivedChatsViewProps) {
                 </div>
               }
             >
-              <span className={skillsActionColumnClass}>
+              <span className={utilityActionColumnClass}>
                 <input
                   type="checkbox"
                   className="h-3.5 w-3.5 accent-[color:var(--accent)]"

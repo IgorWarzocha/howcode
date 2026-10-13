@@ -1,6 +1,13 @@
 import * as Schema from 'effect/Schema'
 
-const identity = { id: Schema.String, revision: Schema.String, name: Schema.String }
+const identity = {
+  id: Schema.String,
+  source: Schema.String,
+  revision: Schema.String,
+  name: Schema.String,
+  navigation: Schema.optional(Schema.Boolean),
+  activeRevision: Schema.optional(Schema.String),
+}
 export const InstalledComponentDescriptorSchema = Schema.Union([
   Schema.Struct({ ...identity, status: Schema.Literal('ready'), renderer: Schema.Boolean }),
   Schema.Struct({
@@ -27,6 +34,8 @@ export const InstalledComponentAdmissionSchema = Schema.Struct({
   error: Schema.optional(Schema.String),
 })
 export type InstalledComponentAdmission = typeof InstalledComponentAdmissionSchema.Type
+export const InstalledComponentMutationSchema = Schema.Struct({ source: Schema.String })
+export type InstalledComponentMutation = typeof InstalledComponentMutationSchema.Type
 export const InstalledComponentStatusSchema = Schema.Struct({
   owner: Schema.Struct({
     generation: Schema.String,
@@ -44,7 +53,11 @@ export const componentSharedModules = [
   'react-dom/client',
   'react/jsx-runtime',
   'react/jsx-dev-runtime',
+  '@tanstack/react-query',
   '@howaboua/howcode-sdk/installed-plugins',
+  '@howaboua/howcode-sdk/git-renderer',
+  '@howaboua/howcode-sdk/sidebar-renderer',
+  '@howaboua/howcode-sdk/navigation',
   '@howaboua/howcode-sdk/outputs',
   '@howaboua/howcode-sdk/workspace-surfaces',
 ] as const

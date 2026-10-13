@@ -3,8 +3,14 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, extname, join, resolve } from 'node:path'
 import { promisify } from 'node:util'
-import { howcodeMetadata, linkedDurablePackages } from '@howaboua/howcode-sdk/node/plugin-metadata'
+import {
+  howcodeMetadata,
+  linkedDurablePackages,
+  resolvePackageRoot,
+} from '@howaboua/howcode-sdk/node/plugin-metadata'
 import { satisfies, valid, validRange } from 'semver'
+import { installedSeedName, readSeededDefaults, writeSeededDefaults } from './default-seeding.ts'
+import { snapshotDistributionPackages } from './distribution-snapshot.ts'
 import { type PackageSource, parsePackageSource } from './source'
 import {
   type PackageRecord,
@@ -36,6 +42,8 @@ export interface PackageManagerOptions {
 }
 
 export interface PackageManager {
+  /** Register distribution defaults once; subsequent removals remain authoritative. */
+  seedDefaults(names: readonly string[], distributionDirectory: string): Promise<void>
   /** Install trusted package code. Bun may run lifecycle scripts before compatibility validation. */
   install(source: string): Promise<InstalledPackage>
   remove(source: string): Promise<boolean>
@@ -163,6 +171,7 @@ export function createPackageManager(options: PackageManagerOptions): PackageMan
       source: record.source,
       kind: source.kind,
       root,
+      ...(record.name === undefined ? {} : { name: record.name }),
       ...(record.revision === undefined ? {} : { revision: record.revision }),
     }
   }
@@ -173,13 +182,37 @@ export function createPackageManager(options: PackageManagerOptions): PackageMan
   const cleanup = async (record: PackageRecord) => {
     if (record.location) await rm(join(sources, record.location), { recursive: true, force: true })
   }
+  const replaceRecords = async (
+    records: PackageRecord[],
+    record: PackageRecord,
+    identity: string,
+  ) => {
+    const candidates = await Promise.all(
+      records.map(async (item) => {
+        if (parsePackageSource(item.source, cwd).identity === identity) return undefined
+        const name = item.name ?? (await installedSeedName(identify(item).root))
+        return record.name && name === record.name ? undefined : item
+      }),
+    )
+    const retained = candidates.filter((item): item is PackageRecord => item !== undefined)
+    await writePackageSettings(settings, [...retained, record])
+  }
+  const seedRecord = async (name: string, location: string): Promise<PackageRecord> => {
+    const root = await resolvePackageRoot(name, join(sources, location))
+    const metadata = await packageMetadata(root, options.hostVersion)
+    if (metadata.name !== name || !metadata.version || !valid(metadata.version))
+      throw new Error(`Invalid distribution default identity: ${name}`)
+    return {
+      source: `npm:${name}@${metadata.version}`,
+      name,
+      location,
+      revision: randomUUID(),
+    }
+  }
   const install = async (argument: string): Promise<InstalledPackage> => {
     const source = parsePackageSource(argument, cwd)
     if (source.kind !== 'local') await requireBun()
     const records = await readPackageSettings(settings)
-    const previous = records.find(
-      (item) => parsePackageSource(item.source, cwd).identity === source.identity,
-    )
     const record: PackageRecord = {
       source: source.source,
       revision: randomUUID(),
@@ -192,7 +225,8 @@ export function createPackageManager(options: PackageManagerOptions): PackageMan
         await installManaged(source, join(sources, record.location))
       }
       const installed = await describe(record)
-      await writePackageSettings(settings, [...records.filter((item) => item !== previous), record])
+      if (installed.name) record.name = installed.name
+      await replaceRecords(records, record, source.identity)
       committed = true
       // Retain committed generations: another process may still lazily import
       // their files. Only failed, unpublished installations can be deleted here.
@@ -206,6 +240,32 @@ export function createPackageManager(options: PackageManagerOptions): PackageMan
   const list = () =>
     serialized(async () => Promise.all((await readPackageSettings(settings)).map(describe)))
   return {
+    seedDefaults: (names, distributionDirectory) =>
+      serialized(async () => {
+        const completed = await readSeededDefaults(directory)
+        const pending = names.filter((name) => !completed.has(name))
+        if (pending.length === 0) return
+        const records = await readPackageSettings(settings)
+        const existing = new Set(
+          await Promise.all(
+            records.map((record) => record.name ?? installedSeedName(identify(record).root)),
+          ),
+        )
+        const missing = pending.filter((name) => !existing.has(name))
+        const location = randomUUID()
+        const target = join(sources, location)
+        let committed = false
+        try {
+          await snapshotDistributionPackages(missing, distributionDirectory, target)
+          const additions = await Promise.all(missing.map((name) => seedRecord(name, location)))
+          await writePackageSettings(settings, [...records, ...additions])
+          committed = true
+          for (const name of pending) completed.add(name)
+          await writeSeededDefaults(directory, completed)
+        } finally {
+          if (!committed) await rm(target, { recursive: true, force: true })
+        }
+      }),
     install: (source) => serialized(() => install(source)),
     list,
     inventory: () => serialized(async () => (await readPackageSettings(settings)).map(identify)),

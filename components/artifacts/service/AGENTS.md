@@ -1,2 +1,0 @@
-- The compiler resolves allowed React imports from Howcode's runtime. Artifact code otherwise remains self-contained.
-- Validate persisted artifact rows before mapping and preserve conversation ownership on every read or mutation. Storage operations use the shared transaction infrastructure, not a separate database.

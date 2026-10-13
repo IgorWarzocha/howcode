@@ -6,18 +6,14 @@ import {
   appTypeSmallClass,
 } from '@howaboua/howcode-sdk/ui/typography-scale'
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { InstalledSidebarBranchSwitcher } from '@howcode/component-system/sidebar-branch-switcher'
 import { ghostButtonClass, quietListFrameClass } from '@howcode/ui/classes'
 import { CircleDot, ExternalLink, GitBranch, GitPullRequest } from 'lucide-react'
 import { parseGitHubRepositoryUrl } from '../../../../shared/github-repository-url'
 import { GitHubInvertocatMark } from '../../../../src/app/common/github-invertocat-mark'
-import type {
-  DesktopActionInvoker,
-  DirectoryGitState,
-  DirectoryUsageSummary,
-} from '../../../../src/app/desktop/types'
+import type { DirectoryGitState, DirectoryUsageSummary } from '../../../../src/app/desktop/types'
 import { openExternalQuery } from '../../../../src/app/query/desktop-query'
 import type { WorkingDirectory } from '../../../../src/app/types'
-import { DashboardBranchSwitcher } from './directory-overview/dashboard-branch-switcher'
 import { DirectoryMetric } from './directory-overview/directory-metric'
 import {
   formatAverageCost,
@@ -77,14 +73,12 @@ function DirectoryRepositorySection({
   gitSummary,
   githubLink,
   directory,
-  onAction,
 }: {
   branchLabel: string
   gitState: DirectoryGitState | null | undefined
   gitSummary: string | null
   githubLink: ReturnType<typeof getGitHubRepositoryLink>
   directory: WorkingDirectory
-  onAction: DesktopActionInvoker
 }) {
   return (
     <section className="relative z-20 col-start-2 grid w-full gap-2">
@@ -119,11 +113,10 @@ function DirectoryRepositorySection({
             </>
           )}
           {gitState?.isGitRepo ? (
-            <DashboardBranchSwitcher
+            <InstalledSidebarBranchSwitcher
               branchLabel={branchLabel}
               gitState={gitState}
               directory={directory}
-              onAction={onAction}
             />
           ) : null}
         </div>
@@ -166,7 +159,6 @@ export function DirectoryOverview({
   usageLoading,
   usageSummary,
   onOpenChat,
-  onAction,
 }: {
   composerOverlayHeight: number
   directory: WorkingDirectory
@@ -174,7 +166,6 @@ export function DirectoryOverview({
   usageLoading: boolean
   usageSummary: DirectoryUsageSummary | null | undefined
   onOpenChat: (directoryId: string, chatId: string, conversationId: string) => void
-  onAction: DesktopActionInvoker
 }) {
   const githubLink = getGitHubRepositoryLink(directory, gitState)
   const sessionCount = usageSummary?.sessionCount ?? directory.chatCount ?? directory.chats.length
@@ -227,7 +218,6 @@ export function DirectoryOverview({
           gitSummary={gitSummary}
           githubLink={githubLink}
           directory={directory}
-          onAction={onAction}
         />
 
         <TopSessionsSection

@@ -19,6 +19,12 @@ export type {
   DirectoryFileWriteResult,
   DirectoryGitState,
 } from '@howaboua/howcode-git/contracts'
+export type {
+  PiConfiguredSkill,
+  PiSkillCatalogItem,
+  PiSkillCatalogPage,
+  PiSkillMutationResult,
+} from '@howaboua/howcode-skills/contracts'
 export type { ChatSearchMatch, ChatSearchResult } from './chat-search'
 export type {
   AnyDesktopActionPayload,
@@ -31,12 +37,6 @@ export type {
   DesktopActionResultData,
   DesktopSettingsUpdatePayload,
 } from './desktop-action-contracts'
-export type {
-  Artifact,
-  ArtifactKind,
-  ArtifactVersion,
-  ReactArtifactCompileResult,
-} from './desktop-artifact-contracts'
 export type { DesktopBridgeCapabilities } from './desktop-bridge-capabilities'
 export type {
   ArchivedChat,
@@ -74,32 +74,18 @@ export type {
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
 } from './desktop-composer-contracts'
-export type {
-  DictationModelId,
-  DictationModelInstallResult,
-  DictationModelRemoveResult,
-  DictationModelSummary,
-  DictationState,
-  DictationTranscriptionRequest,
-  DictationTranscriptionResult,
-} from './desktop-dictation-contracts'
+export type { DictationModelId } from './desktop-dictation-contracts'
 export type { DesktopEvent } from './desktop-event-contracts'
-export type {
-  PiConfiguredSkill,
-  PiSkillCatalogItem,
-  PiSkillCatalogPage,
-  PiSkillMutationResult,
-} from './desktop-package-contracts'
 export type {
   AppSettings,
   DirectoryDeletionMode,
   GitOpsMode,
   ModelSelection,
-  PiQueueMode,
-  PiSettings,
   PiThemeState,
-  PiTransportMode,
+  ShellPreferences,
+  ShellQueueMode,
   ShellState,
+  ShellTransportMode,
 } from './desktop-settings-contracts'
 export type {
   Workspace,

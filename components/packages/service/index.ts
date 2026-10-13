@@ -1,5 +1,6 @@
 export type { InstalledComponentDefinition } from './component-loader.ts'
 export { waitComponentStatus } from './component-status.ts'
+export { defaultComponentPackages } from './default-packages.generated.ts'
 export type { InstalledComponentLifecycle } from './installed-components.ts'
 export type { InstalledPackage, PackageManager, PackageManagerOptions } from './manager.ts'
 export { createPackageManager } from './manager.ts'

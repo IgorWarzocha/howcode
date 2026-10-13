@@ -14,8 +14,8 @@ export function buildCommonSettingsDescriptors({
   return [
     {
       id: 'common.streaming-behavior',
-      category: 'composer',
-      title: 'Send while Pi is responding',
+      category: 'chat',
+      title: 'Send while the agent is responding',
       description: 'Composer follow-up messages behavior.',
       keywords: 'queue steer stop streaming responding send composer',
       render: () => (
@@ -35,7 +35,7 @@ export function buildCommonSettingsDescriptors({
     },
     {
       id: 'common.hide-sidebar-session-counts',
-      category: 'howcode',
+      category: 'general',
       title: 'Hide sidebar counts',
       description: 'Hide branch and chat count badges in the sidebar.',
       keywords: 'sidebar counts chats branch numbers badges hide',
@@ -49,7 +49,7 @@ export function buildCommonSettingsDescriptors({
     },
     {
       id: 'common.hover-to-focus',
-      category: 'composer',
+      category: 'chat',
       title: 'Hover to type',
       description: 'Hover to input for composer and terminal.',
       keywords: 'hover focus type composer terminal drawer input',
@@ -63,7 +63,7 @@ export function buildCommonSettingsDescriptors({
     },
     {
       id: 'common.hover-to-blur',
-      category: 'composer',
+      category: 'chat',
       title: 'Stop typing on hover leave',
       description: 'Instantly leave input when not in hover area.',
       keywords: 'hover blur leave stop typing composer terminal drawer input',

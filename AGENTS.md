@@ -5,7 +5,7 @@
 - Howcode plugins and their small host SDK live in `/home/igorw/Work/howcode-components`; consume their built installed packages, never private-source aliases. Portable Durable capabilities belong in `/home/igorw/Work/pi-durable-components`; check its existing implementation before adding one.
 - Keep agent capability selection independent from UI presentation. Default-enabled tools are still extensions; do not bake fixed chat/code tool bundles into core or use plumbing work to redesign product bundles or artifact storage.
 - Reuse Durable's extension machinery and Effect's infrastructure primitives. Keep domain policy out of core; introduce shared component contracts only for concrete capabilities, not a speculative framework or parallel runtime.
-- Components must own their feature implementation, state, services and cleanup, not just registrations or visibility switches. Core and peer features consume explicit public contracts; removing a component from composition must not break unrelated features. Composer skill suggestions belong to core, not the skill-management UI component.
+- Components must own their feature implementation, state, services and cleanup, not just registrations or visibility switches. Core and peer features consume explicit public contracts; removing a component from composition must not break unrelated features. Composer skill suggestions belong to Composer, independently of the skill-management UI component.
 - When ownership or behavior changes, update names and remove obsolete forwarding layers in the same pass. Keep historical terminology only at explicit compatibility boundaries.
 
 ## Runtime boundaries
@@ -13,6 +13,7 @@
 - Use Bun for installs and scripts; the browser app's server and backend service run under stock Node.
 - Put browser/server/service API contracts in `shared/*`; do not add ad-hoc transport shims.
 - Native terminal and dictation dependencies belong on the server, never in browser bundles.
+- Vite excludes local component/SDK packages for asset transforms; explicitly prebundle SDK-owned CommonJS dependency chains with nested `optimizeDeps.include` entries, not source aliases or browser fallbacks.
 
 ## Workflow
 

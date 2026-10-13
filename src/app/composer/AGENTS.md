@@ -1,8 +1,0 @@
-- Composer owns prompt input, prompt surface, composer popovers, queued prompts, attachment picking, and submission glue.
-- `composer-contract.ts` owns the public component props; composer render modules may depend on it, never on each other merely to recover those types.
-- Git-specific controls belong to installed `@howaboua/howcode-git/ui`; expose host props rather than importing private GitOps internals. Dictation remains host composition through Git's optional draft-input renderer.
-- Shared footer row/chip/text primitives live in `@howaboua/howcode-sdk/ui/footer-primitives`.
-- `ComposerPromptInputPanel` owns the editor, mentions, and paste. Dictation owns its controls, capture lifecycle and commands in `components/dictation/ui`; hosts compose attachment, conversation-fork, and slash overlays around it.
-- Forks create a new conversation at an entry. Queued submissions may be canceled by ID, never edited or restored to the draft; placed submissions cannot be canceled.
-- Route fallible composer actions through `useComposerActionRunner` so backend and thrown failures reach the visible composer error state.
-- Composer draft version 1 stores `draftsByThreadId`; keep that persisted field and draft-key namespaces stable when renaming internal chat concepts.

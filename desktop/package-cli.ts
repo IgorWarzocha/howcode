@@ -2,7 +2,6 @@ import { howcodeMetadata, readPackageManifest } from '@howaboua/howcode-sdk/node
 import {
   createPackageManager,
   type InstalledPackage,
-  packageSourceId,
   parsePackageSource,
   waitComponentStatus,
 } from '../components/packages/service/index.ts'
@@ -81,10 +80,9 @@ async function reportActivation(
     )
     return
   }
-  const id = packageSourceId(installed.source, process.cwd())
   const descriptor = status.components.find(
     (component) =>
-      component.id === id &&
+      component.source === installed.source &&
       (operation === 'remove' || component.revision === (installed.revision ?? 'unversioned')),
   )
   reportComponentStatus(descriptor, operation)

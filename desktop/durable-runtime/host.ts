@@ -12,8 +12,9 @@ import { NodeExecutionEnv } from '@earendil-works/pi-durable/env/node'
 import { openNodeSqliteStorage } from '@earendil-works/pi-durable/storage/sqlite/node'
 import type { ComposerStateRequest } from '../../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
+import { bindInstalledPluginRuntime, unbindPluginRuntime } from '../plugins/runtime.ts'
 import { getDurableModels } from '../settings/models.ts'
-import { loadPiSettings } from '../settings/preferences.ts'
+import { loadShellPreferences } from '../settings/preferences.ts'
 import { getDesktopUserDataPath } from '../user-data-path.ts'
 import {
   decodeConversationOrigin,
@@ -37,7 +38,7 @@ let closing = false
 let runtimeStorage: Storage | undefined
 let shutdown: Promise<void> | undefined
 let activeModels: Models | undefined
-let preferences: Awaited<ReturnType<typeof loadPiSettings>> | undefined
+let preferences: Awaited<ReturnType<typeof loadShellPreferences>> | undefined
 let extensions: Promise<Awaited<ReturnType<typeof openExtensions>>> | undefined
 
 async function openExtensions() {
@@ -56,14 +57,16 @@ function getExtensions() {
 }
 
 export async function refreshDurableSettings() {
-  const [models, settings] = await Promise.all([getDurableModels(), loadPiSettings()])
+  const [models, settings] = await Promise.all([getDurableModels(), loadShellPreferences()])
   activeModels = models
   preferences = settings
 }
 
 async function openRuntime() {
-  const storage = await openNodeSqliteStorage(join(getDesktopUserDataPath(), 'durable.sqlite'))
+  let storage: Storage | undefined
+  let opened: Harness | undefined
   try {
+    storage = await openNodeSqliteStorage(join(getDesktopUserDataPath(), 'durable.sqlite'))
     const [, installed] = await Promise.all([refreshDurableSettings(), getExtensions()])
     const { registry, packages } = installed
     const harness = await Harness.open(
@@ -95,11 +98,21 @@ async function openRuntime() {
       runtimeContext,
     )
     runtimeStorage = storage
+    opened = harness
     packages.bind(harness)
+    await bindInstalledPluginRuntime({ harness, storage })
     harness.resume()
     return harness
   } catch (error) {
-    await storage.close(runtimeContext)
+    try {
+      if (opened) await opened.close(runtimeContext)
+      else await storage?.close(runtimeContext)
+    } finally {
+      if (opened) await unbindPluginRuntime(opened)
+      runtimeStorage = undefined
+    }
+    // Only a fully cleaned failed acquisition is idle and safe to retry or reload.
+    runtime = undefined
     throw error
   }
 }
@@ -115,9 +128,11 @@ export async function inspectDurableActivity() {
   if (!runtime) return { tasks: 0, blockedTasks: 0, submissions: 0 }
   const inspection = await (await runtime).inspect(runtimeContext)
   return {
-    tasks: inspection.tasks.length,
+    tasks: inspection.tasks.filter(
+      (task) => !task.record.background && task.state.kind !== 'blocked',
+    ).length,
     blockedTasks: inspection.tasks.filter((task) => task.state.kind === 'blocked').length,
-    submissions: inspection.submissions.length,
+    submissions: inspection.submissions.filter((submission) => submission.type === 'input').length,
   }
 }
 
@@ -136,7 +151,7 @@ export async function resolveConversation(conversationId: string) {
   return conversation
 }
 
-export async function createRuntimeConversation(request: ComposerStateRequest = {}) {
+export async function resolveDefaultRuntimeAgent(request: ComposerStateRequest = {}) {
   const selection = await resolveRuntimeExtensions(request)
   const defaults = getComposerDefaults(request)
   const models = await getDurableModels()
@@ -144,18 +159,25 @@ export async function createRuntimeConversation(request: ComposerStateRequest = 
   const model =
     defaults.model ??
     (defaultModel ? { provider: defaultModel.provider, modelId: defaultModel.id } : undefined)
-  const harness = await getDurableRuntime()
+  return {
+    cwd: request.directoryId ?? getDesktopWorkingDirectory(),
+    ...(model ? { model } : {}),
+    thinkingLevel: defaults.thinkingLevel,
+    ...(request.composerExtensions === undefined
+      ? { extensions: { remove: defaultExtensionExclusions(request) } }
+      : selection),
+  }
+}
+
+export async function createRuntimeConversation(request: ComposerStateRequest = {}) {
+  const [agent, harness] = await Promise.all([
+    resolveDefaultRuntimeAgent(request),
+    getDurableRuntime(),
+  ])
   return harness.createConversation(
     {
       ownership: { kind: 'ownerless' },
-      agent: {
-        cwd: request.directoryId ?? getDesktopWorkingDirectory(),
-        ...(model ? { model } : {}),
-        thinkingLevel: defaults.thinkingLevel,
-        ...(request.composerExtensions === undefined
-          ? { extensions: { remove: defaultExtensionExclusions(request) } }
-          : selection),
-      },
+      agent,
       init: async (tx, conversationId) => {
         const origin = await tx.doc(RuntimeOriginDoc, conversationId)
         Object.assign(
@@ -195,6 +217,12 @@ export async function listRuntimeConversations() {
 
 export async function readRuntimeConversationContext(conversationId: string) {
   return (await resolveConversation(conversationId)).agent(runtimeContext)
+}
+
+export async function readRuntimeConversationRecord(conversationId: string) {
+  await getDurableRuntime()
+  if (!runtimeStorage) throw new Error('Durable storage is unavailable.')
+  return runtimeStorage.conversation(decodeConversationId(conversationId), runtimeContext)
 }
 
 export async function readRuntimeConversationOrigin(conversationId: string) {
@@ -272,9 +300,13 @@ export function disposeDurableRuntime() {
       harness = runtime ? await runtime : undefined
     } finally {
       try {
-        if (extensions) await (await extensions).packages.close()
-      } finally {
         await harness?.close(runtimeContext)
+      } finally {
+        try {
+          if (harness) await unbindPluginRuntime(harness)
+        } finally {
+          if (extensions) await (await extensions).packages.close()
+        }
       }
     }
   })()

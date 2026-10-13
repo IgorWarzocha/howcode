@@ -54,6 +54,9 @@ export const initializeChatStateSchema = Effect.fn('ChatStateSchema.initialize')
   }
 
   // No history importer: path-keyed transcript mirrors are retired, not reinterpreted as IDs.
+  // Combined artifacts are explicitly disposable; independent components own their new stores.
+  yield* sql`DROP TABLE IF EXISTS artifact_versions`
+  yield* sql`DROP TABLE IF EXISTS artifacts`
   yield* sql`DROP TABLE IF EXISTS inbox_reply_suppressions`
   yield* sql`DROP TABLE IF EXISTS inbox_items`
   yield* sql`DROP TABLE IF EXISTS chat_threads`

@@ -1,4 +1,4 @@
-import { createInitialTerminalWorkspaceState } from '@howcode/components/terminal/ui'
+import { createInitialTerminalWorkspaceState } from '@howaboua/howcode-sdk/terminal-state'
 import { createInitialDirectoryWorkspaceState } from '@howcode/components/working-directories/ui'
 import type { Chat, View, WorkingDirectory } from '../types'
 import { workspaceActionHandlers } from './workspace-action-handlers'
@@ -27,7 +27,6 @@ export function createInitialWorkspaceState(directories: WorkingDirectory[]): Wo
     ...createInitialTerminalWorkspaceState(),
     ...createInitialDirectoryWorkspaceState(directories),
     utilityViewReturnState: null,
-    settingsOpen: false,
     settingsPanelOpen: false,
   }
 }

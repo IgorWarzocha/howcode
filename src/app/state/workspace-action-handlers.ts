@@ -5,7 +5,7 @@ import {
   getTerminalVisibilityForSession,
   migrateTerminalVisibility,
   setTerminalVisibleState,
-} from '@howcode/components/terminal/ui'
+} from '@howaboua/howcode-sdk/terminal-state'
 import {
   clearDirectoryChatSelection,
   createDirectoryWorkspaceTransitions,
@@ -14,8 +14,8 @@ import {
   getDirectoryStateForShownView,
   getDirectoryUtilityReturnState,
 } from '@howcode/components/working-directories/ui'
-import { createGitWorkspaceTransitions } from '@howcode/git-integration'
 import { isWorkspaceUtilityView } from '../component-system/toolkit-components'
+import { getGitRendererApi } from '../git-integration/client'
 import type { View } from '../types'
 import type {
   UtilityView,
@@ -30,8 +30,6 @@ const { directoryWorkspaceActionHandlers, restoreCodeChatForView } =
     getTerminalVisibilityForSession,
     migrateTerminalVisibility,
   })
-
-const gitWorkspaceActionHandlers = createGitWorkspaceTransitions()
 
 export function isUtilityView(view: View): view is UtilityView {
   return isWorkspaceUtilityView(view)
@@ -66,7 +64,6 @@ function showViewState(
       utilityViewReturnState: state.activeView.startsWith('component:')
         ? state.utilityViewReturnState
         : createUtilityViewReturnState(state),
-      settingsOpen: false,
       settingsPanelOpen: false,
     }
 
@@ -82,7 +79,6 @@ function showViewState(
     ...state,
     ...getTerminalStateForNextView(state, action.view),
     activeView: action.view,
-    settingsOpen: false,
     settingsPanelOpen: false,
     ...getDirectoryStateForShownView(state, action.view),
     selectedChatId: action.view === 'chat' ? state.selectedChatId : null,
@@ -132,7 +128,16 @@ function previewChatState(
 
 export const workspaceActionHandlers = {
   ...directoryWorkspaceActionHandlers,
-  ...gitWorkspaceActionHandlers,
+  'open-gitops': (
+    state: WorkspaceState,
+    action: Extract<WorkspaceAction, { type: 'open-gitops' }>,
+  ) =>
+    getGitRendererApi()
+      ?.createGitWorkspaceTransitions<WorkspaceState>()
+      ['open-gitops'](state, action) ?? state,
+  'close-gitops': (state: WorkspaceState) =>
+    getGitRendererApi()?.createGitWorkspaceTransitions<WorkspaceState>()['close-gitops'](state) ??
+    state,
   'select-workspace': (
     state: WorkspaceState,
     action: Extract<WorkspaceAction, { type: 'select-workspace' }>,
@@ -156,7 +161,6 @@ export const workspaceActionHandlers = {
       ? {
           ...state,
           ...state.utilityViewReturnState,
-          settingsOpen: false,
           settingsPanelOpen: false,
           utilityViewReturnState: state.utilityViewReturnState.utilityViewReturnState,
         }
@@ -179,14 +183,12 @@ export const workspaceActionHandlers = {
     state: WorkspaceState,
     action: Extract<WorkspaceAction, { type: 'set-terminal-visible' }>,
   ) => setTerminalVisibleState(state, action.visible),
-  'toggle-settings': (state: WorkspaceState) => ({ ...state, settingsOpen: !state.settingsOpen }),
   'set-settings-panel-open': (
     state: WorkspaceState,
     action: Extract<WorkspaceAction, { type: 'set-settings-panel-open' }>,
   ) => ({
     ...state,
     settingsPanelOpen: action.open,
-    settingsOpen: action.open ? false : state.settingsOpen,
   }),
 } satisfies {
   [Action in WorkspaceAction as Action['type']]: (

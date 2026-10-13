@@ -4,7 +4,7 @@ import { buildComposerAttachmentPrompt } from '../../shared/composer-attachment-
 import type { ComposerAttachment, ComposerStateRequest } from '../../shared/desktop-contracts.ts'
 import { mapWithConcurrency } from '../runtime/map-with-concurrency.ts'
 import { getDurableModels } from '../settings/models.ts'
-import { loadPiSettings } from '../settings/preferences.ts'
+import { loadShellPreferences } from '../settings/preferences.ts'
 import { getConversationResourceRequest, prepareExtensionInput } from './extension-ingress.ts'
 import { runtimeContext } from './host.ts'
 
@@ -66,13 +66,12 @@ export async function prepareRuntimeInput(
   request: ComposerStateRequest & { text: string; attachments?: ComposerAttachment[] },
 ) {
   const agent = await conversation.agent(runtimeContext)
-  const resourceRequest = getConversationResourceRequest(agent)
-  const preferences = await loadPiSettings(resourceRequest.directoryId)
+  const preferences = await loadShellPreferences(getConversationResourceRequest(agent).directoryId)
   if (
     preferences.blockImages &&
     request.attachments?.some((attachment) => attachment.kind === 'image')
   )
-    throw new Error('Image inputs are disabled in Pi settings.')
+    throw new Error('Image inputs are disabled in Howcode settings.')
   if (request.attachments?.some((attachment) => attachment.kind === 'image')) {
     const model = agent.model
       ? (await getDurableModels()).getModel(agent.model.provider, agent.model.modelId)

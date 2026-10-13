@@ -1,7 +1,4 @@
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
-import { ChatView } from '@howcode/chat'
-import { ArtifactDrawerViews, useChatArtifactDrawerState } from '@howcode/components/artifacts/ui'
-import { useQueuedPromptCancellation } from '@howcode/composer/useQueuedPromptCancellation'
 import {
   getLocalDraftWorkspaceId,
   getPersistedConversationId,
@@ -9,22 +6,20 @@ import {
 import { useWorkspaceFooterHeight } from '@howcode/workspace-shell/useWorkspaceFooterHeight'
 import { type RefObject, useRef, useState } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
-import type { DirectoryDiffBaseline, DirectoryDiffRenderMode } from '../desktop/types'
+import { InstalledChatRenderer } from '../component-system/chat-renderer-slot'
 import { WORKSPACE_EDGE_PADDING_CLASS } from '../ui/layout'
+import type { WorkspaceArtifactDrawerState } from '../workspace-shell/useWorkspaceArtifactDrawerState'
 import { WorkspaceSurfaceDock } from '../workspace-shell/workspace-surface-dock'
 import { ChatComposerDock, type ChatWorkspaceComposerProps } from './chat-workspace-composer'
 import type { ChatWorkspaceController } from './chat-workspace-contract'
 
 type ChatWorkspaceViewProps = {
+  artifactDrawer: WorkspaceArtifactDrawerState
   controller: ChatWorkspaceController
   activeComposerState: AppShellController['composer']['state']
   activeChatData: AppShellController['chat']['activeData']
   composerDirectoryId: string
-  diffBaseline: DirectoryDiffBaseline
-  diffRenderMode: DirectoryDiffRenderMode
   terminalConversationId: string | null
-  onSetDiffBaseline: (baseline: DirectoryDiffBaseline) => void
-  onSetDiffRenderMode: (renderMode: DirectoryDiffRenderMode) => void
   sidebarCollapsed: boolean
   sidebarAutoHidden: boolean
   sidebarCompactMode: boolean
@@ -55,7 +50,7 @@ function ChatWorkspaceMain({
 }: ChatWorkspaceContentProps) {
   return (
     <main ref={mainViewRef} className="h-full min-h-0 overflow-hidden">
-      <ChatView
+      <InstalledChatRenderer
         key={activeChatData?.conversationId ?? 'new-chat'}
         messages={shouldShowConversationContent ? (activeChatData?.messages ?? []) : []}
         previousMessageCount={activeChatData?.previousMessageCount ?? 0}
@@ -122,24 +117,17 @@ function ChatWorkspaceViewContent(props: ChatWorkspaceContentProps) {
   return (
     <div ref={rootRef} className="relative min-h-0 flex-1 overflow-hidden">
       <ChatDesktopContent {...props} />
-      <ArtifactDrawerViews
-        artifactDrawer={props.artifactDrawer}
-        conversationId={props.conversationId}
-      />
     </div>
   )
 }
 
 export function ChatWorkspaceView({
+  artifactDrawer,
   controller,
   activeComposerState,
   activeChatData,
   composerDirectoryId,
-  diffBaseline,
-  diffRenderMode,
   terminalConversationId,
-  onSetDiffBaseline,
-  onSetDiffRenderMode,
   sidebarCollapsed,
   sidebarAutoHidden,
   sidebarCompactMode,
@@ -162,17 +150,6 @@ export function ChatWorkspaceView({
   const hasPersistedChatSession = getPersistedConversationId(terminalConversationId) !== null
   const draftWorkspaceId = getLocalDraftWorkspaceId(terminalConversationId)
   const shouldShowConversationContent = hasConversation
-  const artifactDrawer = useChatArtifactDrawerState({
-    conversationId,
-    sidebarCompactMode,
-    settingsOpen: state.settingsOpen,
-  })
-  const { handleRemoveQueuedPrompt, pendingQueuedPromptIdsForSession, queuedPromptError } =
-    useQueuedPromptCancellation({
-      composerDirectoryId,
-      handleAction,
-      terminalConversationId,
-    })
 
   return (
     <ChatWorkspaceViewContent
@@ -194,19 +171,12 @@ export function ChatWorkspaceView({
       onToggleSidebar={onToggleSidebar}
       sidebarCollapsed={sidebarCollapsed}
       activeComposerState={activeComposerState}
-      pendingQueuedPromptIdsForSession={pendingQueuedPromptIdsForSession}
-      queuedPromptError={queuedPromptError}
-      handleRemoveQueuedPrompt={handleRemoveQueuedPrompt}
       state={state}
       shellState={shellState}
       composerDirectoryId={composerDirectoryId}
       hasPersistedChatSession={hasPersistedChatSession}
       draftWorkspaceId={draftWorkspaceId}
       terminalConversationId={terminalConversationId}
-      diffBaseline={diffBaseline}
-      diffRenderMode={diffRenderMode}
-      onSetDiffBaseline={onSetDiffBaseline}
-      onSetDiffRenderMode={onSetDiffRenderMode}
       setComposerOverlayHeight={setComposerOverlayHeight}
       handleToggleTerminal={handleToggleTerminal}
       conversationId={conversationId ?? null}

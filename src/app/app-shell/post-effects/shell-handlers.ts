@@ -30,13 +30,16 @@ export const shellPostEffectHandlers: PostEffectHandler[] = [
   },
   {
     matches: (ctx) =>
-      ctx.action === 'pi-settings.update' && ctx.contextualPayload.piSettingsKey === 'theme',
+      ctx.action === 'shell-preferences.import-pi' ||
+      (ctx.action === 'shell-preferences.update' &&
+        ctx.contextualPayload.shellPreferencesKey === 'theme'),
     run: (ctx) => {
-      const { piSettings, piTheme } = ctx.actionResult?.result ?? {}
-      if (!(piSettings && piTheme)) return ctx.refreshShellState()
+      const { shellPreferences, piTheme } = ctx.actionResult?.result ?? {}
+      if (!(shellPreferences && piTheme)) return ctx.refreshShellState()
       ctx.queryClient.setQueryData<ShellState | null>(
         desktopQueryKeys.shellState(),
-        (currentState) => (currentState ? { ...currentState, piSettings, piTheme } : currentState),
+        (currentState) =>
+          currentState ? { ...currentState, shellPreferences, piTheme } : currentState,
       )
     },
   },

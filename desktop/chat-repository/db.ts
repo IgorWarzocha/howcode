@@ -73,6 +73,11 @@ export function databaseOperation<Args extends readonly unknown[], A, E>(
   return (...args: Args): A => getDatabaseRuntime().runSync(operation(...args))
 }
 
+/** Component-owned migrations join this database runtime and their own disposal. */
+export function runDatabaseTask(task: DatabaseStartupTask) {
+  return getDatabaseRuntime().runPromise(task)
+}
+
 export async function disposeChatStateDatabase() {
   closed = true
   await database?.dispose()

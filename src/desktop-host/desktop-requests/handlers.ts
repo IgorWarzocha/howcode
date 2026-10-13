@@ -28,13 +28,7 @@ export function createDesktopRequestHandlers(input: {
     ...components.workingDirectories,
     pluginRequest: components.pluginRequest,
     ...components.terminal,
-    ...components.artifacts,
     ...components.skills,
-    ...components.dictation,
   }
-  for (const method of Object.keys(components.plugins)) {
-    if (Object.hasOwn(handlers, method))
-      throw new Error(`Installed plugin request collides with host: ${method}`)
-  }
-  return { ...handlers, ...components.plugins }
+  return handlers
 }

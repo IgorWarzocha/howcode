@@ -8,12 +8,14 @@ import { databaseOperation } from './chat-repository/db.ts'
 import { mapChatRow } from './chat-repository/mappers.ts'
 import { ChatRowSchema, decodePersistedRows } from './chat-repository/row-schema.ts'
 import {
+  ensureDirectoryWorkspace as ensureDirectoryWorkspaceOperation,
   moveWorkspaceChat,
   reconcileWorkspaceOrganization,
   renameWorkspace as renameWorkspaceOperation,
 } from './chat-repository/workspace-organization.ts'
 
 export const syncWorkspaceOrganization = databaseOperation(reconcileWorkspaceOrganization)
+export const ensureDirectoryWorkspace = databaseOperation(ensureDirectoryWorkspaceOperation)
 
 const WorkspaceRowSchema = Schema.Struct({
   id: Schema.String,

@@ -4,8 +4,6 @@ import type { DesktopAction } from './app/desktop/actions'
 import type {
   AnyDesktopActionPayload,
   ArchivedChat,
-  Artifact,
-  ArtifactVersion,
   Chat,
   ChatData,
   ChatSearchResult,
@@ -18,12 +16,6 @@ import type {
   ComposerStateRequest,
   DesktopActionResult,
   DesktopEvent,
-  DictationModelInstallResult,
-  DictationModelRemoveResult,
-  DictationModelSummary,
-  DictationState,
-  DictationTranscriptionRequest,
-  DictationTranscriptionResult,
   DirectoryCommitEntry,
   DirectoryDiffBaseline,
   DirectoryDiffFileContentsRequest,
@@ -39,7 +31,6 @@ import type {
   PiConfiguredSkill,
   PiSkillCatalogPage,
   PiSkillMutationResult,
-  ReactArtifactCompileResult,
   ShellState,
   TerminalCloseRequest,
   TerminalEvent,
@@ -51,10 +42,6 @@ import type {
 } from './app/desktop/types'
 
 declare global {
-  // Prism is installed lazily for @mdxeditor/@lexical code highlighting.
-  var Prism: unknown
-  var prism: unknown
-
   interface Window {
     piDesktop?: {
       pluginRequest: (plugin: string, method: string, payload: unknown) => Promise<unknown>
@@ -128,17 +115,6 @@ declare global {
       getComposerState?: (request?: ComposerStateRequest) => Promise<ComposerState>
       getComposerSlashCommands?: (request?: ComposerStateRequest) => Promise<ComposerSlashCommand[]>
       getComposerSkills?: (request?: ComposerStateRequest) => Promise<ComposerSkillReference[]>
-      getDictationState?: () => Promise<DictationState>
-      listDictationModels?: () => Promise<DictationModelSummary[]>
-      installDictationModel?: (
-        modelId: 'tiny.en' | 'base.en' | 'small.en',
-      ) => Promise<DictationModelInstallResult>
-      removeDictationModel?: (
-        modelId: 'tiny.en' | 'base.en' | 'small.en',
-      ) => Promise<DictationModelRemoveResult>
-      transcribeDictation?: (
-        request: DictationTranscriptionRequest,
-      ) => Promise<DictationTranscriptionResult>
       getDirectoryChats?: (directoryId: string) => Promise<Chat[]>
       getWorkspaceNavigationState?: (
         selectedWorkspaceId?: string | null,
@@ -147,27 +123,19 @@ declare global {
         request: DesktopRequestMap['workspaceLayout']['params'],
       ) => Promise<DesktopRequestMap['workspaceLayout']['response']>
       createWorkspace?: (name: string) => Promise<WorkspaceNavigationState>
-      listArtifacts?: (conversationId?: string | null) => Promise<Artifact[]>
-      getArtifact?: (
-        artifactSlug: string,
-        conversationId?: string | null,
-      ) => Promise<Artifact | null>
-      updateArtifact?: (
-        artifactSlug: string,
-        content: string,
-        conversationId?: string | null,
-      ) => Promise<Artifact>
-      editArtifact?: (
-        artifactSlug: string,
-        edits: Array<{ oldText: string; newText: string }>,
-        conversationId?: string | null,
-      ) => Promise<Artifact>
-      listArtifactVersions?: (artifactSlug: string) => Promise<ArtifactVersion[]>
-      compileReactArtifact?: (source: string) => Promise<ReactArtifactCompileResult>
       listPackageUis?: () => Promise<DesktopRequestMap['listPackageUis']['response']>
       listInstalledComponents?: () => Promise<
         DesktopRequestMap['listInstalledComponents']['response']
       >
+      installInstalledComponent?: (
+        request: DesktopRequestMap['installInstalledComponent']['params'],
+      ) => Promise<DesktopRequestMap['installInstalledComponent']['response']>
+      updateInstalledComponent?: (
+        request: DesktopRequestMap['updateInstalledComponent']['params'],
+      ) => Promise<DesktopRequestMap['updateInstalledComponent']['response']>
+      removeInstalledComponent?: (
+        request: DesktopRequestMap['removeInstalledComponent']['params'],
+      ) => Promise<DesktopRequestMap['removeInstalledComponent']['response']>
       admitInstalledComponent?: (
         request: DesktopRequestMap['admitInstalledComponent']['params'],
       ) => Promise<undefined>

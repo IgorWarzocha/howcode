@@ -1,3 +1,4 @@
+import { settingsKeybindingLayerIsOpen } from '@howaboua/howcode-sdk/keyboard-layers'
 import type { KeybindingCommandId } from '@howcode/shared/keybindings'
 import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
 import {
@@ -81,18 +82,20 @@ export function appLevelShortcutsAreBlocked(
   if (commandId === 'composer.focus' || layer === 'modal') {
     return (
       state.activeView === 'settings' ||
-      state.settingsOpen ||
+      settingsKeybindingLayerIsOpen() ||
       state.settingsPanelOpen ||
       modalOrSettingsLayerIsOpen()
     )
   }
   if (layer === 'settings') {
-    return state.activeView === 'settings' || state.settingsOpen || state.settingsPanelOpen
+    return (
+      state.activeView === 'settings' || settingsKeybindingLayerIsOpen() || state.settingsPanelOpen
+    )
   }
   if (commandId === 'settings.open') return state.settingsPanelOpen || interactiveLayerIsOpen()
   return (
     state.activeView === 'settings' ||
-    state.settingsOpen ||
+    settingsKeybindingLayerIsOpen() ||
     state.settingsPanelOpen ||
     interactiveLayerIsOpen()
   )

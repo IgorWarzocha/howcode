@@ -18,8 +18,6 @@ const organizationActions = new Set<DesktopAction>([
   'directory.remove',
   'directory.archive-chats',
   'directories.import.apply',
-  'worktrees.create-worktree',
-  'worktrees.remove-worktree',
   'workspace.create',
   'workspace.rename',
   'workspace.collapse',

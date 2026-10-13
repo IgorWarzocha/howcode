@@ -1,6 +1,6 @@
+import { TerminalEvent } from '@howaboua/howcode-terminal/contracts'
 import * as Schema from 'effect/Schema'
 import { DesktopEventSchema } from '../../shared/desktop-event-schema'
-import { TerminalEvent } from '../../shared/terminal-contracts'
 
 export const DevWebDesktopEventEnvelope = Schema.Struct({
   channel: Schema.Literal('desktopEvent'),

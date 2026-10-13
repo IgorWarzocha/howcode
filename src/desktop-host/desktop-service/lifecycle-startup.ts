@@ -86,7 +86,8 @@ export function makeDesktopServiceStartup<Process>(options: {
       return yield* Effect.fail(serviceError('start', new Error('Service start was cancelled.')))
 
     const diagnostics = yield* spawned.ready
-    yield* terminal.connect(spawned.process)
+    // biome-ignore lint/complexity/useLiteralKeys: Diagnostics are an index-signature contract.
+    yield* terminal.connect(spawned.process, diagnostics['terminalAvailable'] === true)
     const running = yield* Ref.modify(state, (current) => {
       const active = current.current
       if (!active || active.id !== record.id || active.status !== 'Starting')

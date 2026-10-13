@@ -1,7 +1,6 @@
 import {
   getSettingsBooleanValue,
   getSettingsComposerStreamingBehavior,
-  getSettingsDictationModelId,
   getSettingsDirectoryDeletionMode,
   getSettingsDirectoryDiffBaselineDefault,
   getSettingsDirectoryDiffRenderModeDefault,
@@ -9,7 +8,6 @@ import {
   getSettingsFavoriteFolders,
   getSettingsKey,
   getSettingsModelSelection,
-  getSettingsNumberValue,
   getSettingsPreferredDirectoryLocation,
   getSettingsReset,
   getSettingsThinkingLevel,
@@ -28,8 +26,6 @@ import {
   setComposerSendMode,
   setComposerStreamingBehavior,
   setCustomPiDirectory,
-  setDictationMaxDurationSeconds,
-  setDictationModelId,
   setDirectoryDashboardEnabled,
   setDirectoryDeletionMode,
   setDirectoryImportState,
@@ -47,8 +43,8 @@ import {
   setHoverToFocus,
   setInitializeGitOnDirectoryCreate,
   setKeybindings,
+  setNavigationRenderer,
   setPreferredDirectoryLocation,
-  setShowDictationButton,
   setUseAgentsSkillsPaths,
 } from '../app-settings/writers.ts'
 import { refreshDurableSettings } from '../durable-runtime/host.ts'
@@ -103,7 +99,14 @@ function setOptionalThinkingLevel(
   if (level) setter(level)
 }
 
-const settingsUpdateHandlers = {
+const settingsUpdateHandlers: Partial<
+  Record<NonNullable<ReturnType<typeof getSettingsKey>>, SettingsUpdateHandler>
+> = {
+  navigationRenderer: (payload) => {
+    if (typeof payload.value !== 'string' || !payload.value.trim())
+      throw new Error('Navigation renderer must be a nonempty package name or none.')
+    setNavigationRenderer(payload.value.trim())
+  },
   enabledToolkitComponents: (payload) =>
     setEnabledToolkitComponents(getSettingsToolkitComponents(payload)),
   favoriteFolders: (payload) => setFavoriteFolders(getSettingsFavoriteFolders(payload)),
@@ -111,13 +114,6 @@ const settingsUpdateHandlers = {
     const value = getSettingsComposerStreamingBehavior(payload)
     if (value) setComposerStreamingBehavior(value)
   },
-  dictationModelId: (payload) => setDictationModelId(getSettingsDictationModelId(payload)),
-  dictationMaxDurationSeconds: (payload) => {
-    const value = getSettingsNumberValue(payload)
-    if (value !== null) setDictationMaxDurationSeconds(value)
-  },
-  showDictationButton: (payload) =>
-    setShowDictationButton(getSettingsBooleanValue(payload) ?? true),
   directoryImportState: (payload) =>
     setDirectoryImportState(getSettingsDirectoryImportState(payload)),
   useAgentsSkillsPaths: (payload) =>
@@ -184,7 +180,7 @@ const settingsUpdateHandlers = {
     setOptionalThinkingLevel(payload, setGitCommitMessageThinkingLevel),
   gitCommitMessageModel: (payload) =>
     setResettableModelSelection(payload, setGitCommitMessageModelSelection),
-} satisfies Record<string, SettingsUpdateHandler>
+}
 
 export async function handleSettingsDesktopAction(
   action: DesktopAction,

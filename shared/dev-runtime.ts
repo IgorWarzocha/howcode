@@ -6,7 +6,7 @@ export const DevRuntimeActivity = Schema.Struct({
   tasks: Count,
   blockedTasks: Count,
   submissions: Count,
-  terminals: Count,
+  busyComponents: Schema.Array(Schema.String),
   requests: Count,
 })
 export interface DevRuntimeActivity extends Schema.Schema.Type<typeof DevRuntimeActivity> {}
@@ -42,7 +42,7 @@ export function isDevRuntimeIdle(activity: DevRuntimeActivity) {
   return (
     activity.tasks === 0 &&
     activity.submissions === 0 &&
-    activity.terminals === 0 &&
+    activity.busyComponents.length === 0 &&
     activity.requests === 0
   )
 }

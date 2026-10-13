@@ -8,4 +8,5 @@
 - Keep the desktop event subscription stable. `desktop-event-handlers.ts` only routes typed events; event-specific cache and state work belongs in `desktop-events/*`.
 - When changing URL sync, exercise deep links before metadata loads, browser history, and selection during loading in the running app. Initial hydration is not user intent. Keep workspace/chat IDs as strings, including numeric-looking Durable IDs; the selected chat's metadata owns directory and profile after workspace moves.
 - Responsive sidebar state belongs to `useAppShellResponsiveLayout.ts`.
-- The Skills directory-target callback in `app-shell-sidebar.tsx` owns target highlighting; preserve it when changing directory selection.
+- Initial shell-state failure must show the query error and retry, not editable fallback preferences. Sidebar open/toggle must never navigate to Settings when a renderer is unavailable; explicit settings access remains separate.
+- The Skills directory-target callback in `navigation-directory-slots.tsx` owns target highlighting; preserve it when changing directory selection.

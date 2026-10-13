@@ -8,16 +8,16 @@ import {
   getOptimisticallyRenamedChatShellState,
   getOptimisticallyRenamedShellState,
 } from './optimistic-directories'
-import { getOptimisticallyUpdatedPiSettingsState } from './optimistic-pi-settings'
 import { getOptimisticallyUpdatedShellState } from './optimistic-settings'
+import { getOptimisticallyUpdatedShellPreferencesState } from './optimistic-shell-preferences'
 
 export {
   getOptimisticallyPinnedShellState,
   getOptimisticallyRenamedChatShellState,
   getOptimisticallyRenamedShellState,
 } from './optimistic-directories'
-export { getOptimisticallyUpdatedPiSettingsState } from './optimistic-pi-settings'
 export { getOptimisticallyUpdatedShellState } from './optimistic-settings'
+export { getOptimisticallyUpdatedShellPreferencesState } from './optimistic-shell-preferences'
 
 export function applyOptimisticSettingsUpdate(queryClient: QueryClient, payload: ActionPayload) {
   queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) =>
@@ -25,9 +25,12 @@ export function applyOptimisticSettingsUpdate(queryClient: QueryClient, payload:
   )
 }
 
-export function applyOptimisticPiSettingsUpdate(queryClient: QueryClient, payload: ActionPayload) {
+export function applyOptimisticShellPreferencesUpdate(
+  queryClient: QueryClient,
+  payload: ActionPayload,
+) {
   queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) =>
-    getOptimisticallyUpdatedPiSettingsState(currentState ?? null, payload),
+    getOptimisticallyUpdatedShellPreferencesState(currentState ?? null, payload),
   )
 }
 
@@ -61,8 +64,8 @@ export function applyOptimisticDesktopAction(
   switch (action) {
     case 'settings.update':
       return applyOptimisticSettingsUpdate(queryClient, payload)
-    case 'pi-settings.update':
-      return applyOptimisticPiSettingsUpdate(queryClient, payload)
+    case 'shell-preferences.update':
+      return applyOptimisticShellPreferencesUpdate(queryClient, payload)
     case 'directory.edit-name':
       return applyOptimisticDirectoryRename(queryClient, payload)
     case 'chat.rename':

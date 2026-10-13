@@ -1,21 +1,13 @@
-import { listDesktopTerminals, subscribeDesktopTerminal } from '@howcode/components/terminal/ui'
 import {
   useDirectoryDesktopEventContribution,
   useDirectoryShellSync,
 } from '@howcode/components/working-directories/ui'
-import {
-  useGitDesktopEventContribution,
-  useGitStateSync,
-  useTerminalGitStateSync,
-} from '@howcode/git-integration'
-import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
-import { type Dispatch, type SetStateAction, useMemo } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 import type {
   AppSettings,
   ArchivedChat,
   ChatData,
   ComposerState,
-  DirectoryGitState,
   InboxChat,
   WorkspaceNavigationState,
 } from '../desktop/types'
@@ -42,7 +34,6 @@ export function useAppShellEffects({
   loadDirectoryChats,
   loadArchivedChats,
   loadComposerState,
-  loadDirectoryGitState,
   scheduleShellStateRefresh,
   refreshWorkspaceNavigationState,
   queryClient,
@@ -51,8 +42,6 @@ export function useAppShellEffects({
   setComposerState,
   setWorkspaceNavigationState,
   setLiveChatData,
-  setDirectoryGitState,
-  setDirectoryGitLoading,
   setChatHistoryCompactions,
 }: {
   directories: WorkingDirectory[]
@@ -74,7 +63,6 @@ export function useAppShellEffects({
     conversationId?: string | null
     composerProfile?: 'general' | 'coding' | null
   }) => Promise<ComposerState | null>
-  loadDirectoryGitState: (directoryId: string) => Promise<DirectoryGitState | null>
   scheduleShellStateRefresh: () => void
   refreshWorkspaceNavigationState: () => Promise<unknown>
   queryClient: QueryClientLike
@@ -83,12 +71,10 @@ export function useAppShellEffects({
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>
   setWorkspaceNavigationState: Dispatch<SetStateAction<WorkspaceNavigationState | null>>
   setLiveChatData: Dispatch<SetStateAction<ChatData | null>>
-  setDirectoryGitState: Dispatch<SetStateAction<DirectoryGitState | null>>
-  setDirectoryGitLoading: Dispatch<SetStateAction<boolean>>
   setChatHistoryCompactions: Dispatch<SetStateAction<number>>
 }) {
   useDirectoryShellSync({
-    enabled: shellAppSettings != null && isToolkitComponentEnabled(shellAppSettings, 'coding'),
+    enabled: shellAppSettings != null,
     directories,
     collapsedDirectoryIds,
     activeView: workspaceState.activeView,
@@ -111,57 +97,16 @@ export function useAppShellEffects({
     loadComposerState,
     setComposerState,
   })
-  useGitStateSync({
-    detailOpen: workspaceState.gitDetailDirectoryId === composerDirectoryId,
-    composerDirectoryId,
-    shellAppSettings,
-    loadDirectoryGitState,
-    setDirectoryGitState,
-    setDirectoryGitLoading,
-  })
-
   useWatchedConversationSync(workspaceState)
   useUtilityViewEscape({ activeView: workspaceState.activeView, dispatch })
-  useTerminalGitStateSync({
-    listDesktopTerminals,
-    subscribeDesktopTerminal,
-    enabled:
-      shellAppSettings != null &&
-      isToolkitComponentEnabled(shellAppSettings, 'terminal') &&
-      isToolkitComponentEnabled(shellAppSettings, 'coding'),
-    composerDirectoryId,
-    loadDirectoryGitState,
-    setDirectoryGitState,
-  })
-
-  const gitChatEndContribution = useGitDesktopEventContribution({
-    enabled: shellAppSettings != null && isToolkitComponentEnabled(shellAppSettings, 'coding'),
-    composerDirectoryId,
-    loadDirectoryGitState,
-    setDirectoryGitState,
-    queryClient,
-  })
 
   const directoryChatEndContribution = useDirectoryDesktopEventContribution({
-    enabled: shellAppSettings != null && isToolkitComponentEnabled(shellAppSettings, 'coding'),
+    enabled: shellAppSettings != null,
     loadDirectoryChats,
     queryClient,
   })
-  const chatEndContribution = useMemo(
-    () => ({
-      refreshChatList: directoryChatEndContribution.refreshChatList,
-      refreshDirectoryState: (
-        ...args: Parameters<typeof directoryChatEndContribution.refreshDirectoryState>
-      ) => {
-        gitChatEndContribution.refreshDirectoryState(...args)
-        directoryChatEndContribution.refreshDirectoryState(...args)
-      },
-    }),
-    [directoryChatEndContribution, gitChatEndContribution],
-  )
-
   useDesktopEventSync({
-    chatEndContribution,
+    chatEndContribution: directoryChatEndContribution,
     composerDirectoryId,
     workspaceState,
     loadDirectoryChats,

@@ -1,22 +1,91 @@
 import {
   invokePluginRequest,
+  type PluginConversation,
   type PluginServiceContribution,
   type PluginServiceHost,
   type PluginServiceInstance,
+  type PluginWorkspaceAgent,
 } from '@howaboua/howcode-sdk/plugins'
 import type { InstalledComponentDefinition } from '../../components/packages/service/index.ts'
-import { installedHostContributions } from './installed-hosts.generated.ts'
-import { installedServiceContributions } from './installed-services.generated.ts'
+import type { DesktopAction } from '../../shared/desktop-actions.ts'
+import type {
+  AnyDesktopActionPayload,
+  DesktopActionResultData,
+} from '../../shared/desktop-contracts.ts'
+import { bindPluginInstance, bindPluginRuntime, unbindPluginInstance } from './runtime-bindings.ts'
+
+export { unbindPluginRuntime } from './runtime-bindings.ts'
+export function bindInstalledPluginRuntime(runtime: Parameters<typeof bindPluginRuntime>[0]) {
+  return bindPluginRuntime(runtime, [...installedInstances.values()])
+}
 
 let installedInstances: ReadonlyMap<string, PluginServiceInstance> = new Map()
+export function hasInstalledPluginService(name: string) {
+  return installedInstances.has(name)
+}
 let serviceGeneration = 0
 export function installedPluginGeneration() {
   return serviceGeneration
+}
+export function installedBusyComponents() {
+  return [...installedInstances]
+    .filter(([name, instance]) => {
+      const busy = instance.isBusy?.() ?? false
+      if (typeof busy !== 'boolean') throw new Error(`Invalid component busy state: ${name}`)
+      return busy
+    })
+    .map(([name]) => name)
+}
+export function installedTerminalCapability() {
+  const providers = [...installedInstances.values()].flatMap((instance) =>
+    instance.terminal ? [instance.terminal] : [],
+  )
+  if (providers.length > 1) throw new Error('Conflicting component terminal providers.')
+  return providers[0]
 }
 export function installedAgentTools() {
   return [...installedInstances].flatMap(([plugin, instance]) =>
     (instance.tools ?? []).map((tool) => ({ plugin, tool })),
   )
+}
+export function installedServiceExtensions() {
+  return [...installedInstances.values()].flatMap((instance) => instance.extensions ?? [])
+}
+export function installedSkillResources(selectedExtensionNames: readonly string[] = []) {
+  const selected = new Set(selectedExtensionNames)
+  return [...installedInstances.values()].flatMap((instance) =>
+    (instance.skills ?? []).filter((skill) => selected.has(skill.extensionName)),
+  )
+}
+async function resolveCapability<T>(
+  resolve: (instance: PluginServiceInstance) => Promise<T | undefined> | undefined,
+  label: string,
+) {
+  const results = (await Promise.all([...installedInstances.values()].map(resolve))).filter(
+    (result) => result !== undefined,
+  )
+  if (results.length > 1) throw new Error(`Conflicting component ${label} providers.`)
+  return results[0]
+}
+export function resolveInstalledWorkspaceAgent(
+  workspaceId: string,
+): Promise<PluginWorkspaceAgent | undefined> {
+  return resolveCapability((instance) => instance.workspaceAgent?.(workspaceId), 'workspace agent')
+}
+export function resolveInstalledConversationAssociation(
+  id: string,
+): Promise<PluginConversation | undefined> {
+  return resolveCapability(
+    (instance) => instance.conversationAssociation?.(id),
+    'conversation association',
+  )
+}
+export async function admitPluginInput(conversationId: string) {
+  const results = await Promise.allSettled(
+    [...installedInstances.values()].map((instance) => instance.beforeInput?.(conversationId)),
+  )
+  const failed = results.find((result) => result.status === 'rejected')
+  if (failed) throw failed.reason
 }
 export async function freezePluginTurn(conversationId: string) {
   await Promise.all(
@@ -24,12 +93,14 @@ export async function freezePluginTurn(conversationId: string) {
   )
 }
 
+export async function deletePluginConversations(ids: readonly string[]) {
+  await Promise.all(
+    [...installedInstances.values()].map((instance) => instance.deleteConversations?.(ids)),
+  )
+}
+
 export async function createInstalledPluginServices(
   host: PluginServiceHost,
-  adapters: Record<
-    string,
-    (contribution: PluginServiceContribution, host: PluginServiceHost) => PluginServiceInstance
-  > = {},
   transition: (operation: () => Promise<void>) => Promise<boolean> = async (operation) => {
     await operation()
     return true
@@ -75,7 +146,7 @@ export async function createInstalledPluginServices(
     activeHosts.set(name, subscriptions)
     const active = () => !closed && activeHosts.get(name) === subscriptions
     const pluginHost = {
-      ...(host.agent ? { agent: host.agent } : {}),
+      ...host,
       outputs: {
         list: () => [...instances].filter(([, instance]) => instance.outputs).map(([id]) => id),
         get: (id: string) => instances.get(id)?.outputs,
@@ -100,7 +171,7 @@ export async function createInstalledPluginServices(
       },
     }
     return contribution
-      ? (adapters[name]?.(contribution, pluginHost) ?? contribution.create(pluginHost))
+      ? contribution.create(pluginHost)
       : {
           requests: {},
           dispose() {
@@ -108,33 +179,31 @@ export async function createInstalledPluginServices(
           },
         }
   }
-  const builtins: InstalledComponentDefinition[] = Object.entries(
-    installedServiceContributions,
-  ).map(([name, service]) => ({
-    id: name,
-    name,
-    revision: 'bundled',
-    service,
-    ...(Object.hasOwn(installedHostContributions, name)
-      ? { host: installedHostContributions[name as keyof typeof installedHostContributions] }
-      : {}),
-  }))
-  const install = (definition: InstalledComponentDefinition) => {
+  const install = async (definition: InstalledComponentDefinition) => {
     const native = createInstance(definition.name, definition.service)
     if (!native || typeof native !== 'object' || typeof native.dispose !== 'function')
       throw new Error(`Invalid component service lifecycle: ${definition.name}`)
+    const bindRuntime = native.bindRuntime?.bind(native)
     const instance: PluginServiceInstance = {
       requests: native.requests,
-      dispose: () => native.dispose(),
+      dispose: async (reason) => {
+        await unbindPluginInstance(instance)
+        await native.dispose(reason)
+      },
+      extensions: native.extensions ?? [],
+      beforeInput: async (id) => {
+        await native.beforeInput?.(id)
+      },
       ...(native.outputs ? { outputs: native.outputs } : {}),
-      ...(native.freezeTurn
-        ? {
-            freezeTurn: async (id) => {
-              await native.freezeTurn?.(id)
-            },
-          }
-        : {}),
+      freezeTurn: async (id) => {
+        await native.freezeTurn?.(id)
+      },
     }
+    if (bindRuntime) instance.bindRuntime = bindRuntime
+    bindCapabilities(native, instance, track, () => {
+      if (closed || instances.get(definition.name) !== instance)
+        throw new Error('Component capability generation is retired.')
+    })
     instances.set(definition.name, instance)
     definitionsByName.set(definition.name, definition)
     if (!native.requests || typeof native.requests !== 'object')
@@ -157,19 +226,7 @@ export async function createInstalledPluginServices(
     const hostHandlers = definition.host?.create({ request }) ?? instance.requests
     validateHostHandlers(hostHandlers, definition.name)
     handlers.set(definition.name, hostHandlers)
-  }
-  try {
-    for (const definition of builtins) install(definition)
-  } catch (error) {
-    closed = true
-    for (const name of activeHosts.keys()) revokeHost(name)
-    const cleanup = await closeInstances()
-    const errors = cleanup
-      .filter((result) => result.status === 'rejected')
-      .map((result) => result.reason)
-    if (errors.length > 0)
-      throw new AggregateError([error, ...errors], 'Plugin creation and cleanup failed.')
-    throw error
+    await activateRuntimeBinding(instance, definition.name)
   }
   installedInstances = instances
   let disposal: Promise<void> | undefined
@@ -184,7 +241,7 @@ export async function createInstalledPluginServices(
     }
     if (failures.has(key)) return
     try {
-      install(definition)
+      await install(definition)
     } catch (error) {
       let failure = error
       const partial = instances.get(definition.name)
@@ -204,7 +261,10 @@ export async function createInstalledPluginServices(
           error: `${cleanupFailure.message} Activation is blocked until the host is replaced.`,
         })
       }
-      failures.set(key, failure instanceof Error ? failure.message : String(failure))
+      failures.set(
+        key,
+        `Component activation failed after retirement; the previous generation is no longer active: ${failure instanceof Error ? failure.message : String(failure)}`,
+      )
     }
   }
   const retire = async (name: string) => {
@@ -217,7 +277,7 @@ export async function createInstalledPluginServices(
     revokeHost(name)
     if (definition) failures.delete(`${name}@${definition.revision}`)
     try {
-      await instance?.dispose()
+      await instance?.dispose('retire')
     } catch (error) {
       if (!definition) throw error
       retirementFailures.set(name, {
@@ -227,30 +287,50 @@ export async function createInstalledPluginServices(
     }
   }
   const replace = async (changed: InstalledComponentDefinition[], removed: string[]) => {
+    const previousTerminal = installedTerminalCapability()
+    // Export preparation completed before this barrier. Creation/binding can
+    // have effects, so retirement is irreversible: failed activation is not rollback.
     await Promise.all([...removed, ...changed.map((definition) => definition.name)].map(retire))
     await Promise.all(changed.map(startReplacement))
     installedInstances = instances
     serviceGeneration += 1
+    if (previousTerminal !== installedTerminalCapability())
+      host.publishEvent({
+        type: 'terminal-runtime-changed',
+        available: Boolean(installedTerminalCapability()),
+      })
     for (const listener of outputListeners) listener()
   }
   return {
+    async handleAction(action: DesktopAction, payload: AnyDesktopActionPayload) {
+      for (const [name, instance] of instances) {
+        if (!Object.hasOwn(instance.requests, 'handleAction')) continue
+        const result = (await track(() =>
+          invokePluginRequest(instance.requests, 'handleAction', { action, payload }),
+        )) as { handled: boolean; result?: DesktopActionResultData | null }
+        if (!result || typeof result.handled !== 'boolean')
+          throw new Error(`Invalid component action result: ${name}`)
+        if (result.handled) return result
+      }
+      return { handled: false as const }
+    },
     async reconcile(definitions: InstalledComponentDefinition[]) {
       if (closed) throw new Error('Plugin services are closed.')
-      const desired = new Map(builtins.map((definition) => [definition.name, definition]))
-      const rejected = new Map<string, string>()
+      const desired = new Map<string, InstalledComponentDefinition>()
       for (const definition of definitions) {
-        if (Object.hasOwn(adapters, definition.name))
-          rejected.set(
-            definition.id,
-            'This bundled component uses a shell-owned adapter. Replace it through the supported shell update, not a profile override.',
-          )
-        else desired.set(definition.name, definition)
+        desired.set(definition.name, definition)
       }
       const changed = [...desired.values()].filter(
         (definition) => revisions.get(definition.name) !== definition.revision,
       )
       const removed = [...revisions.keys()].filter((name) => !desired.has(name))
-      const errors = new Map(rejected)
+      const errors = new Map<string, string>()
+      const active = () =>
+        new Map(
+          [...definitionsByName.values()]
+            .filter((definition) => instances.has(definition.name))
+            .map((definition) => [definition.id, definition.revision]),
+        )
       const collectErrors = () => {
         for (const [name, retirement] of retirementFailures) {
           const definition = desired.get(name) ?? retirement.definition
@@ -264,12 +344,13 @@ export async function createInstalledPluginServices(
       }
       if (changed.length === 0 && removed.length === 0) {
         collectErrors()
-        return { pending: false, errors }
+        return { pending: false, errors, active: active() }
       }
-      if (inFlight > 0) return { pending: true, errors }
+      if (inFlight > 0 || installedBusyComponents().length > 0)
+        return { pending: true, errors, active: active() }
       const applied = await transition(() => replace(changed, removed))
       collectErrors()
-      return { pending: !applied, errors }
+      return { pending: !applied, errors, active: active() }
     },
     service: {
       async hostRequest(name: string, method: string, payload: unknown) {
@@ -302,6 +383,44 @@ export async function createInstalledPluginServices(
       return disposal
     },
   }
+}
+
+async function activateRuntimeBinding(instance: PluginServiceInstance, name: string) {
+  try {
+    await bindPluginInstance(instance)
+  } catch (error) {
+    throw new Error(`Component runtime binding failed: ${name}: ${String(error)}`, { cause: error })
+  }
+}
+
+function bindCapabilities(
+  native: PluginServiceInstance,
+  instance: PluginServiceInstance,
+  track: <T>(operation: () => Promise<T>) => Promise<T>,
+  assertCurrent: () => void,
+) {
+  if (native.terminal) instance.terminal = native.terminal
+  if (native.isBusy !== undefined) {
+    if (typeof native.isBusy !== 'function') throw new Error('Invalid component busy callback.')
+    instance.isBusy = native.isBusy.bind(native)
+  }
+  const leased = <T>(operation: () => Promise<T>) =>
+    track(async () => {
+      assertCurrent()
+      const result = await operation()
+      assertCurrent()
+      return result
+    })
+  const workspaceAgent = native.workspaceAgent?.bind(native)
+  const conversationAssociation = native.conversationAssociation?.bind(native)
+  const deleteConversations = native.deleteConversations?.bind(native)
+  if (workspaceAgent) instance.workspaceAgent = (id) => leased(() => workspaceAgent(id))
+  if (conversationAssociation)
+    instance.conversationAssociation = (id) => leased(() => conversationAssociation(id))
+  if (deleteConversations)
+    instance.deleteConversations = (ids) => leased(() => deleteConversations(ids))
+  if (native.skills)
+    instance.skills = Object.freeze(native.skills.map((skill) => Object.freeze({ ...skill })))
 }
 
 function validateHostHandlers(handlers: object, name: string) {

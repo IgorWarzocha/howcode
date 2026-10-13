@@ -1,2 +1,0 @@
-- `chat-history-model.ts` owns old-chat eligibility, worktree inclusion, search, and bulk target derivation; keep it pure and deterministic.
-- `chat-history-view.tsx` owns search/selection and action orchestration; row confirmations stay in `chat-history-row.tsx`, bulk confirmations in `chat-history-toolbar.tsx`.

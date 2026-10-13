@@ -1,6 +1,6 @@
 import type { PluginRendererContribution } from '@howaboua/howcode-sdk/plugins'
 import * as Schema from 'effect/Schema'
-import { useEffect, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useSyncExternalStore } from 'react'
 import type { InstalledComponentDescriptor } from '../../../shared/installed-component-contracts'
 import {
   InstalledComponentCatalogSchema,
@@ -15,7 +15,8 @@ import {
 } from '../query/desktop-query'
 import { builtInPagePaths } from '../types'
 import { installComponentModuleBridge } from './component-module-bridge'
-import { installedRendererContributions } from './installed-renderers.generated'
+import { isGitRendererApi } from './git-renderer-api'
+import { hasIndependentRendererFeatures } from './navigation-selection'
 
 type Loaded = {
   id: string
@@ -24,6 +25,8 @@ type Loaded = {
   css: string
 }
 type Catalog = {
+  descriptors: readonly InstalledComponentDescriptor[]
+  navigationPackages: string[]
   loading: boolean
   contributions: Record<string, PluginRendererContribution>
   styles: { id: string; css: string }[]
@@ -31,8 +34,10 @@ type Catalog = {
   references: Record<string, { id: string; revision: string }>
 }
 let snapshot: Catalog = {
+  descriptors: [],
+  navigationPackages: [],
   loading: true,
-  contributions: installedRendererContributions,
+  contributions: {},
   styles: [],
   errors: [],
   references: {},
@@ -115,70 +120,220 @@ function validateSidebarView(view: PluginRendererContribution['sidebarView']) {
     throw new Error('Invalid sidebar view contribution.')
 }
 
+function validateNavigationRenderer(view: PluginRendererContribution['navigation']) {
+  if (view === undefined) return
+  if (
+    !view ||
+    typeof view !== 'object' ||
+    Object.keys(view).some(
+      (key) => !['label', 'Content', 'History', 'BranchSwitcher'].includes(key),
+    ) ||
+    typeof view.label !== 'string' ||
+    !view.label.trim() ||
+    !(
+      typeof view.Content === 'function' ||
+      (view.Content && typeof view.Content === 'object' && '$$typeof' in view.Content)
+    ) ||
+    (view.History !== undefined &&
+      typeof view.History !== 'function' &&
+      !(view.History && typeof view.History === 'object' && '$$typeof' in view.History)) ||
+    (view.BranchSwitcher !== undefined &&
+      typeof view.BranchSwitcher !== 'function' &&
+      !(
+        view.BranchSwitcher &&
+        typeof view.BranchSwitcher === 'object' &&
+        '$$typeof' in view.BranchSwitcher
+      ))
+  )
+    throw new Error('Invalid navigation renderer contribution.')
+}
+
+function validateSettings(settings: PluginRendererContribution['settings']) {
+  if (settings === undefined) return
+  if (
+    !settings ||
+    typeof settings !== 'object' ||
+    Object.keys(settings).some((key) => !['label', 'description', 'Content'].includes(key)) ||
+    typeof settings.label !== 'string' ||
+    !settings.label.trim() ||
+    typeof settings.description !== 'string' ||
+    !(
+      typeof settings.Content === 'function' ||
+      (settings.Content && typeof settings.Content === 'object' && '$$typeof' in settings.Content)
+    )
+  )
+    throw new Error('Invalid settings contribution.')
+}
+
 function validateContribution(value: unknown): PluginRendererContribution {
   if (!value || typeof value !== 'object' || Array.isArray(value))
     throw new Error('Renderer export must be a default contribution.')
-  const allowed = [
+  const allowed = new Set([
     'Provider',
     'OutputPreview',
     'OutputThumbnail',
     'TurnAttachments',
+    'WorkspaceSidebar',
+    'WorkspaceActions',
+    'ConversationActions',
+    'ConversationContent',
+    'ChatRenderer',
+    'artifacts',
+    'draftInput',
+    'composer',
     'sidebarView',
+    'navigation',
+    'settings',
     'component',
-  ]
+    'git',
+    'TerminalDrawer',
+    'TerminalPanel',
+    'TerminalComposerControl',
+  ])
   for (const [name, exportValue] of Object.entries(value)) {
-    if (!allowed.includes(name)) throw new Error(`Unsupported renderer contribution: ${name}`)
+    if (!allowed.has(name)) throw new Error(`Unsupported renderer contribution: ${name}`)
     if (
       name !== 'component' &&
       name !== 'sidebarView' &&
+      name !== 'navigation' &&
+      name !== 'settings' &&
+      name !== 'git' &&
+      name !== 'artifacts' &&
+      name !== 'draftInput' &&
+      name !== 'composer' &&
       typeof exportValue !== 'function' &&
       !(exportValue && typeof exportValue === 'object' && '$$typeof' in exportValue)
     )
       throw new Error(`Renderer ${name} must be a component function.`)
   }
   const contribution = value as PluginRendererContribution
+  if (contribution.git !== undefined && !isGitRendererApi(contribution.git))
+    throw new Error('Invalid Git renderer API. Every public feature export must be callable.')
   validateSidebarView(contribution.sidebarView)
+  validateNavigationRenderer(contribution.navigation)
+  validateSettings(contribution.settings)
+  validateArtifactRenderer(contribution.artifacts)
+  validateDraftInput(contribution.draftInput)
+  validateComposer(contribution.composer)
   if (contribution.component) validateNavigation(contribution.component)
   return contribution
+}
+
+function validateArtifactRenderer(artifacts: PluginRendererContribution['artifacts']) {
+  if (artifacts === undefined) return
+  if (
+    !artifacts ||
+    typeof artifacts !== 'object' ||
+    Object.keys(artifacts).some((key) => !['Panel', 'ComposerControl'].includes(key)) ||
+    [artifacts.Panel, artifacts.ComposerControl].some(
+      (component) =>
+        typeof component !== 'function' &&
+        !(component && typeof component === 'object' && '$$typeof' in component),
+    )
+  )
+    throw new Error('Invalid artifact renderer contribution.')
+}
+
+function validateDraftInput(api: PluginRendererContribution['draftInput']) {
+  if (api === undefined) return
+  if (
+    !api ||
+    typeof api !== 'object' ||
+    Object.keys(api).some(
+      (key) => !['useDraftInput', 'Controls', 'useCommand', 'DraftInput'].includes(key),
+    ) ||
+    typeof api.useDraftInput !== 'function' ||
+    typeof api.useCommand !== 'function' ||
+    [api.Controls, api.DraftInput].some(
+      (component) =>
+        typeof component !== 'function' &&
+        !(component && typeof component === 'object' && '$$typeof' in component),
+    )
+  )
+    throw new Error('Invalid draft input contribution.')
+}
+
+function validateComposer(api: PluginRendererContribution['composer']) {
+  if (api === undefined) return
+  if (
+    !api ||
+    typeof api !== 'object' ||
+    Object.keys(api).some(
+      (key) => !['Composer', 'InboxComposer', 'QueuedPrompts', 'ModelPicker'].includes(key),
+    ) ||
+    [api.Composer, api.InboxComposer, api.QueuedPrompts, api.ModelPicker].some(
+      (component) =>
+        typeof component !== 'function' &&
+        !(component && typeof component === 'object' && '$$typeof' in component),
+    )
+  )
+    throw new Error('Invalid composer contribution.')
 }
 
 async function resolveDescriptor(
   descriptor: InstalledComponentDescriptor,
   previous: Loaded | undefined,
   errors: string[],
+  navigationRenderer: string,
 ) {
+  if (descriptor.navigation && descriptor.name !== navigationRenderer) return undefined
   if (descriptor.status === 'pending' && descriptor.stage === 'idle') {
     errors.push(`${descriptor.name}: ${descriptor.reason}`)
-    return previous
+    return resolveActiveRenderer(descriptor, previous, errors)
   }
   if (descriptor.status === 'error') {
     errors.push(`${descriptor.name}: ${descriptor.error}`)
-    return undefined
+    return resolveActiveRenderer(descriptor, previous, errors)
   }
   if (!descriptor.renderer) return undefined
   try {
     const loaded = previous?.revision === descriptor.revision ? previous : await load(descriptor)
+    if (descriptor.navigation) validateNavigationOnly(loaded.contribution)
     if (descriptor.status === 'pending') await admitInstalledComponentQuery(descriptor)
     return loaded
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     errors.push(`${descriptor.name}: ${message}`)
-    try {
-      await admitInstalledComponentQuery({
-        id: descriptor.id,
-        revision: descriptor.revision,
-        error: message,
-      })
-    } catch (admission) {
-      errors.push(
-        `${descriptor.name}: renderer error acknowledgement failed: ${admission instanceof Error ? admission.message : String(admission)}`,
-      )
-    }
+    await rejectRendererGeneration(descriptor, message, errors)
+    return resolveActiveRenderer(descriptor, previous, errors)
+  }
+}
+
+async function resolveActiveRenderer(
+  descriptor: InstalledComponentDescriptor,
+  previous: Loaded | undefined,
+  errors: string[],
+) {
+  if (!descriptor.activeRevision) return undefined
+  if (previous?.revision === descriptor.activeRevision) return previous
+  try {
+    return await load({ ...descriptor, revision: descriptor.activeRevision })
+  } catch (error) {
+    errors.push(`${descriptor.name}: active renderer unavailable: ${String(error)}`)
     return undefined
   }
 }
 
-async function readCatalog(loaded: Map<string, Loaded>) {
+async function rejectRendererGeneration(
+  descriptor: InstalledComponentDescriptor,
+  error: string,
+  errors: string[],
+) {
+  try {
+    await admitInstalledComponentQuery({ id: descriptor.id, revision: descriptor.revision, error })
+  } catch (admission) {
+    errors.push(
+      `${descriptor.name}: renderer error acknowledgement failed: ${admission instanceof Error ? admission.message : String(admission)}`,
+    )
+  }
+}
+
+function validateNavigationOnly(contribution: PluginRendererContribution) {
+  if (!contribution.navigation || hasIndependentRendererFeatures(contribution))
+    throw new Error('howcode.navigation requires a navigation-only renderer contribution.')
+}
+
+async function readCatalog(loaded: Map<string, Loaded>, navigationRenderer: string) {
   const errors: string[] = []
   const next = new Map<string, Loaded>()
   try {
@@ -188,22 +343,49 @@ async function readCatalog(loaded: Map<string, Loaded>) {
     const resolved = await Promise.all(
       descriptors.map(async (descriptor) => ({
         name: descriptor.name,
-        loaded: await resolveDescriptor(descriptor, loaded.get(descriptor.name), errors),
+        loaded: await resolveDescriptor(
+          descriptor,
+          loaded.get(descriptor.name),
+          errors,
+          navigationRenderer,
+        ),
       })),
     )
     for (const item of resolved) if (item.loaded) next.set(item.name, item.loaded)
+    return {
+      next,
+      errors,
+      descriptors,
+      navigationPackages: descriptors
+        .filter(
+          (descriptor) =>
+            descriptor.navigation &&
+            (descriptor.status !== 'error' || descriptor.activeRevision !== undefined),
+        )
+        .map((descriptor) => descriptor.name),
+    }
   } catch (error) {
     errors.push(error instanceof Error ? error.message : String(error))
-    return { next: loaded, errors }
+    return {
+      next: loaded,
+      errors,
+      descriptors: snapshot.descriptors,
+      navigationPackages: snapshot.navigationPackages,
+    }
   }
-  return { next, errors }
 }
 
-function publishCatalog(loaded: Map<string, Loaded>, errors: string[]) {
+function publishCatalog(
+  loaded: Map<string, Loaded>,
+  errors: string[],
+  navigationPackages: string[],
+  descriptors: readonly InstalledComponentDescriptor[],
+) {
   snapshot = {
+    descriptors,
+    navigationPackages,
     loading: false,
     contributions: {
-      ...installedRendererContributions,
       ...Object.fromEntries([...loaded].map(([name, item]) => [name, item.contribution])),
     },
     styles: [...loaded]
@@ -224,12 +406,14 @@ async function load(descriptor: InstalledComponentDescriptor): Promise<Loaded> {
   installComponentModuleBridge()
   const url = URL.createObjectURL(new Blob([source.js], { type: 'text/javascript' }))
   try {
-    const module: { default?: unknown } = await import(/* @vite-ignore */ url)
+    const module: { default?: unknown; stylesheet?: unknown } = await import(/* @vite-ignore */ url)
+    if (module.stylesheet !== undefined && typeof module.stylesheet !== 'string')
+      throw new Error('Renderer stylesheet export must be a string.')
     return {
       id: descriptor.id,
       revision: descriptor.revision,
       contribution: validateContribution(module.default),
-      css: source.css,
+      css: [source.css, module.stylesheet].filter(Boolean).join('\n'),
     }
   } finally {
     URL.revokeObjectURL(url)
@@ -237,16 +421,23 @@ async function load(descriptor: InstalledComponentDescriptor): Promise<Loaded> {
 }
 
 /** One mounted composition owns catalog loading; queries never replay mutations. */
-export function useInstalledComponentCatalog() {
+export function useInstalledComponentCatalog(navigationRenderer: string) {
+  const loadedRef = useRef(new Map<string, Loaded>())
   useEffect(() => {
     let closed = false
     let refreshing = false
     let dirty = false
-    let loaded = new Map<string, Loaded>()
-    const applyCatalog = ({ next, errors }: Awaited<ReturnType<typeof readCatalog>>) => {
+    let loaded = loadedRef.current
+    const applyCatalog = ({
+      next,
+      errors,
+      navigationPackages,
+      descriptors,
+    }: Awaited<ReturnType<typeof readCatalog>>) => {
       if (closed) return
       loaded = next
-      publishCatalog(loaded, errors)
+      loadedRef.current = next
+      publishCatalog(loaded, errors, navigationPackages, descriptors)
     }
     const refresh = async () => {
       dirty = true
@@ -255,7 +446,7 @@ export function useInstalledComponentCatalog() {
       try {
         while (dirty && !closed) {
           dirty = false
-          await readCatalog(loaded).then(applyCatalog)
+          await readCatalog(loaded, navigationRenderer).then(applyCatalog)
         }
       } finally {
         refreshing = false
@@ -269,7 +460,7 @@ export function useInstalledComponentCatalog() {
       closed = true
       unsubscribe()
     }
-  }, [])
+  }, [navigationRenderer])
   return useSyncExternalStore(subscribe, () => snapshot)
 }
 
@@ -279,4 +470,12 @@ export function useInstalledRendererContributions() {
 
 export function useInstalledComponentReadiness() {
   return useSyncExternalStore(subscribe, () => snapshot.loading)
+}
+
+export function useInstalledComponentInventory() {
+  return useSyncExternalStore(subscribe, () => snapshot.descriptors)
+}
+
+export function useInstalledNavigationPackages() {
+  return useSyncExternalStore(subscribe, () => snapshot.navigationPackages)
 }

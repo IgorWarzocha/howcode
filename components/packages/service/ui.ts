@@ -4,7 +4,11 @@ import { mkdir, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import * as Schema from 'effect/Schema'
 import { createJiti } from 'jiti'
-import { InstalledComponentAdmissionSchema } from '../../../shared/installed-component-contracts.ts'
+import {
+  InstalledComponentAdmissionSchema,
+  type InstalledComponentMutation,
+  InstalledComponentMutationSchema,
+} from '../../../shared/installed-component-contracts.ts'
 import type {
   PackageUiBindingFactory,
   PackageUiDescriptor,
@@ -249,7 +253,21 @@ export async function createPackageUiService(
     if (!generation.factory) throw new Error('Package UI has no ui-binding.ts factory.')
     return { factory: generation.factory, signal: generation.controller.signal }
   })
+  const mutateInstalledComponent = (
+    input: InstalledComponentMutation,
+    operation: (source: string) => Promise<unknown>,
+  ) =>
+    serialized(async () => {
+      const request = Schema.decodeUnknownSync(InstalledComponentMutationSchema)(input)
+      await operation(request.source)
+      await refresh()
+      invalidate()
+      return components.list()
+    })
   const service: PackageUiService = {
+    installInstalledComponent: (request) => mutateInstalledComponent(request, manager.install),
+    updateInstalledComponent: (request) => mutateInstalledComponent(request, manager.update),
+    removeInstalledComponent: (request) => mutateInstalledComponent(request, manager.remove),
     admitInstalledComponent: (input) =>
       serialized(async () => {
         const request = Schema.decodeUnknownSync(InstalledComponentAdmissionSchema)(input)

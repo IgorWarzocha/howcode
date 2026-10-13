@@ -1,18 +1,20 @@
 import { createRegistry, type Extension, type RegistryReader } from '@earendil-works/pi-durable'
 import { CodingTools } from '@earendil-works/pi-durable/tools'
 import { createAgentResources } from '../../components/agent-resources/service/index.ts'
-import { artifactTools, CodeArtifactTools } from '../../components/artifacts/service/extension.ts'
 import { createChatTools } from '../../components/chat-tools/service/index.ts'
-import { getComposerSkills } from '../../components/skills/service/extension.ts'
 import type { ComposerStateRequest } from '../../shared/desktop-contracts.ts'
+import { getComposerSkills } from '../skills-integration/composer.ts'
 import { installedAgentExtensions } from './plugin-agent-tools.ts'
 import { WorkspaceLayoutTools } from './workspace-layout-tool.ts'
 
 const resources = createAgentResources(getComposerSkills)
 const Resources = resources.extension
 const ChatTools = createChatTools({
-  artifactTools,
-  discoverSkills: () => getComposerSkills({ composerProfile: 'general' }),
+  discoverSkills: (agent) =>
+    getComposerSkills({
+      composerProfile: 'general',
+      composerExtensions: agent.extensions.map((extension) => extension.name),
+    }),
   skillsSection: resources.createSkillsSection('chat'),
 })
 
@@ -25,7 +27,6 @@ export function createDesktopExtensionRegistry(
   for (const extension of [
     CodingTools,
     ChatTools,
-    CodeArtifactTools,
     Resources,
     WorkspaceLayoutTools,
     ...installedAgentExtensions(),
@@ -63,5 +64,5 @@ export function resolveDesktopExtensions(request: ComposerStateRequest, registry
 
 /** Default conversations follow live host packages. Explicit choices stay exact. */
 export function defaultExtensionExclusions(request: ComposerStateRequest): Extension[] {
-  return request.composerProfile === 'general' ? [CodingTools, CodeArtifactTools] : [ChatTools]
+  return request.composerProfile === 'general' ? [CodingTools] : [ChatTools]
 }

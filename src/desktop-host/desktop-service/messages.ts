@@ -85,6 +85,9 @@ export function makeDesktopServiceMessages<Process>(options: {
       case 'ready':
         return
       case 'desktop-event':
+        if (message.event.type === 'terminal-runtime-changed') {
+          yield* terminal.setAvailable(process, message.event.available)
+        }
         yield* PubSub.publish(events, message.event)
         return
       case 'terminal-rpc-response':

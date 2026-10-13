@@ -1,6 +1,6 @@
+import type { TerminalRpcResponse } from '@howaboua/howcode-terminal/rpc'
 import * as Schema from 'effect/Schema'
 import { DesktopEventSchema } from './desktop-event-schema'
-import type { TerminalRpcResponse } from './terminal-rpc'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)

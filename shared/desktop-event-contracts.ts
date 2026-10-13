@@ -1,24 +1,15 @@
 import type { DirectoryDiffStreamEvent } from '@howaboua/howcode-git/contracts'
-import type { Artifact } from './desktop-artifact-contracts'
 import type { ChatData } from './desktop-chat-contracts'
 import type { ComposerState } from './desktop-composer-contracts'
-import type { DictationModelId } from './desktop-dictation-contracts'
 import type { KeybindingCommandId } from './keybindings'
 
 export type DesktopEvent =
   | { type: 'workspace-layout-changed'; conversationId: string; revision: number }
   | { type: 'plugin-event'; plugin: string; event: unknown }
+  | { type: 'terminal-runtime-changed'; available: boolean }
   | { type: 'package-ui-invalidation' }
   | { type: 'shell-state-refresh' }
   | { type: 'keybinding-command'; commandId: KeybindingCommandId }
-  | {
-      type: 'dictation-download-log'
-      modelId: DictationModelId
-      message: string
-      at: string
-      done: boolean
-      isError: boolean
-    }
   | { type: 'directory-diff-stream'; event: DirectoryDiffStreamEvent }
   | {
       type: 'runtime-diagnostic'
@@ -29,11 +20,6 @@ export type DesktopEvent =
       directoryId?: string | null | undefined
     }
   | { type: 'internal-chat-update'; conversationId: string }
-  | {
-      type: 'artifact-update'
-      conversationId: string
-      artifact: Artifact
-    }
   | {
       type: 'chat-update'
       reason: 'start' | 'update' | 'end' | 'external' | 'compaction-start' | 'compaction'

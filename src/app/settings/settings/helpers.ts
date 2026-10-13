@@ -49,18 +49,3 @@ export function buildModelSelectionPayload(
     modelId,
   }
 }
-
-export function getDirectoryImportSummaryMessage(result: DesktopActionResult | null) {
-  const checkedDirectoryCount =
-    typeof result?.result?.checkedDirectoryCount === 'number'
-      ? result.result.checkedDirectoryCount
-      : 0
-  const originDirectoryCount =
-    typeof result?.result?.originDirectoryCount === 'number'
-      ? result.result.originDirectoryCount
-      : 0
-
-  return checkedDirectoryCount > 0
-    ? `Scanned ${checkedDirectoryCount} · Found ${originDirectoryCount} origins`
-    : 'Nothing to scan'
-}

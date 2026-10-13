@@ -1,6 +1,5 @@
 import { useLatestRef } from '@howaboua/howcode-sdk/hooks/useLatestRef'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import type { AppShellController } from './useAppShellController'
 
 const COMPACT_SIDEBAR_MAX_WIDTH = 1236
 
@@ -9,11 +8,10 @@ function windowUsesCompactSidebar() {
 }
 
 export function useAppShellResponsiveLayout(
-  controller: AppShellController,
   terminal: { onEnterCompact: () => void; closeOnComposerFocus: () => void },
+  sidebarAvailable: boolean,
 ) {
   const terminalRef = useLatestRef(terminal)
-  const controllerRef = useLatestRef(controller)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [sidebarCompactMode, setSidebarCompactMode] = useState(windowUsesCompactSidebar)
   const [sidebarOverlayOpen, setSidebarOverlayOpen] = useState(false)
@@ -37,30 +35,32 @@ export function useAppShellResponsiveLayout(
   }, [sidebarCompactMode])
 
   useEffect(() => {
-    if (!sidebarOverlayOpen) return
+    if (!(sidebarAvailable && sidebarOverlayOpen)) return
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || controllerRef.current.workspace.state.settingsOpen) return
+      if (event.key !== 'Escape' || event.defaultPrevented) return
       event.preventDefault()
       event.stopImmediatePropagation()
       setSidebarOverlayOpen(false)
     }
-    window.addEventListener('keydown', handleKeyDown, { capture: true })
-    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true })
-  }, [controllerRef, sidebarOverlayOpen])
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [sidebarAvailable, sidebarOverlayOpen])
 
   const handleToggleSidebar = useCallback(() => {
+    if (!sidebarAvailable) return
     if (sidebarCompactMode) {
       setSidebarCollapsed(false)
       setSidebarOverlayOpen((open) => !open)
       return
     }
     setSidebarCollapsed((collapsed) => !collapsed)
-  }, [sidebarCompactMode])
+  }, [sidebarAvailable, sidebarCompactMode])
 
   const handleOpenSidebar = useCallback(() => {
+    if (!sidebarAvailable) return
     setSidebarCollapsed(false)
     if (sidebarCompactMode) setSidebarOverlayOpen(true)
-  }, [sidebarCompactMode])
+  }, [sidebarAvailable, sidebarCompactMode])
 
   const handleFocusComposer = useCallback(() => {
     if (!sidebarCompactMode) return
@@ -73,7 +73,6 @@ export function useAppShellResponsiveLayout(
   }, [sidebarCompactMode])
 
   return {
-    controllerRef,
     handleFocusComposer,
     handleFocusTerminal,
     handleOpenSidebar,
@@ -81,6 +80,6 @@ export function useAppShellResponsiveLayout(
     setSidebarOverlayOpen,
     sidebarCollapsed,
     sidebarCompactMode,
-    sidebarOverlayOpen,
+    sidebarOverlayOpen: sidebarAvailable && sidebarOverlayOpen,
   }
 }

@@ -1,22 +1,21 @@
-import { buildDictationSettingsDescriptors } from '@howcode/components/dictation/ui'
-import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
+import { buildDirectorySettingsDescriptors } from '@howcode/components/working-directories/ui'
 import type { Dispatch, SetStateAction } from 'react'
 import type {
   AppSettings,
   ComposerModel,
   ComposerThinkingLevel,
   DesktopActionInvoker,
-  DictationModelId,
-  PiSettings,
   PiThemeState,
+  ShellPreferences,
 } from '../../desktop/types'
 import { buildCommonSettingsDescriptors } from './settingsDescriptorCommon'
 import { buildComponentSettingsDescriptors } from './settingsDescriptorComponents'
-import { buildDirectoriesSettingsDescriptors } from './settingsDescriptorDirectories'
+import { buildGeneralPathsSettingsDescriptors } from './settingsDescriptorGeneralPaths'
 import { buildKeybindingSettingsDescriptors } from './settingsDescriptorKeybindings'
 import { buildModelSettingsDescriptors } from './settingsDescriptorModels'
-import { buildPiRuntimeSettingsDescriptors } from './settingsDescriptorPiRuntime'
-import type { SetDraftPiSetting, SettingsController } from './settingsDescriptorTypes'
+import { buildNavigationSettingsDescriptor } from './settingsDescriptorNavigation'
+import { buildRuntimeSettingsDescriptors } from './settingsDescriptorRuntime'
+import type { SetDraftShellPreference, SettingsController } from './settingsDescriptorTypes'
 import type { SettingDescriptor } from './settingsTypes'
 
 export function buildSettingsDescriptors({
@@ -25,14 +24,11 @@ export function buildSettingsDescriptors({
   availableThinkingLevels,
   currentModel,
   controller,
-  draftPiSettings,
+  draftShellPreferences,
   piTheme,
-  setDraftPiSetting,
+  setDraftShellPreference,
   openSelectId,
   setOpenSelectId,
-  dictationModelDraft,
-  setDictationModelDraft,
-  configuredDictationModelId,
   onAction,
 }: {
   appSettings: AppSettings
@@ -40,20 +36,19 @@ export function buildSettingsDescriptors({
   availableThinkingLevels: ComposerThinkingLevel[]
   currentModel: ComposerModel | null
   controller: SettingsController
-  draftPiSettings: PiSettings
+  draftShellPreferences: ShellPreferences
   piTheme: PiThemeState | null
-  setDraftPiSetting: SetDraftPiSetting
+  setDraftShellPreference: SetDraftShellPreference
   openSelectId: string | null
   setOpenSelectId: Dispatch<SetStateAction<string | null>>
-  dictationModelDraft: DictationModelId | null
-  setDictationModelDraft: Dispatch<SetStateAction<DictationModelId | null>>
-  configuredDictationModelId: DictationModelId | null
   onAction: DesktopActionInvoker
 }): SettingDescriptor[] {
   return [
+    buildNavigationSettingsDescriptor({ appSettings, controller, openSelectId, setOpenSelectId }),
     ...buildComponentSettingsDescriptors(appSettings, onAction),
     ...buildCommonSettingsDescriptors({ appSettings, controller }),
-    ...buildDirectoriesSettingsDescriptors({ appSettings, controller }),
+    ...buildGeneralPathsSettingsDescriptors({ appSettings, controller }),
+    ...buildDirectorySettingsDescriptors({ appSettings, controller }),
     ...buildModelSettingsDescriptors({
       appSettings,
       availableModels,
@@ -64,24 +59,13 @@ export function buildSettingsDescriptors({
       setOpenSelectId,
       onAction,
     }),
-    ...buildPiRuntimeSettingsDescriptors({
-      draftPiSettings,
+    ...buildRuntimeSettingsDescriptors({
+      draftShellPreferences,
       piTheme,
-      setDraftPiSetting,
+      setDraftShellPreference,
       openSelectId,
       setOpenSelectId,
     }),
-    ...(isToolkitComponentEnabled(appSettings, 'dictation')
-      ? buildDictationSettingsDescriptors({
-          appSettings,
-          controller,
-          openSelectId,
-          setOpenSelectId,
-          dictationModelDraft,
-          setDictationModelDraft,
-          configuredDictationModelId,
-        })
-      : []),
     ...buildKeybindingSettingsDescriptors({
       appSettings,
       openSelectId,

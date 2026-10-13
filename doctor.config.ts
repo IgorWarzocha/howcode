@@ -8,11 +8,6 @@ export default {
         rules: ['react-doctor/async-await-in-loop'],
       },
       {
-        // Shutdown can begin during startup. The post-await guard prevents dispatch to a closing server.
-        files: ['components/terminal/service/host-component.ts'],
-        rules: ['react-doctor/async-defer-await'],
-      },
-      {
         files: ['src/desktop-host/composer-attachments.ts'],
         rules: ['react-doctor/path-traversal-risk'],
       },

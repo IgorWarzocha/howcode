@@ -1,4 +1,5 @@
-const TERMINAL_EXIT_AFTER_SIGNAL_MS = 1_000
+import { terminalExitAfterSignalMs as TERMINAL_EXIT_AFTER_SIGNAL_MS } from '@howaboua/howcode-terminal/contracts'
+
 const NESTED_SHUTDOWN_GRACE_MS = 1_000
 
 // The service must survive both terminal signal waits, then leave time for transcript,

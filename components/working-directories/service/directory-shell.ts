@@ -5,7 +5,7 @@ import {
   enrichDirectoriesWithResolvedIds,
   resolveDirectoryPathForComparison,
 } from './actions/directory-paths.ts'
-import { importDirectories } from './directory-import.ts'
+import type { SidebarMaintenance } from './dependencies.ts'
 import { listDirectories } from './state.ts'
 
 let startupDirectoryMetadataRefresh: Promise<unknown> | null = null
@@ -39,11 +39,12 @@ function disambiguateDuplicateDirectoryNames<WorkingDirectory extends { id: stri
   })
 }
 
-/** Working directories own discovery. Merely loading the chat shell must not start it. */
-export async function loadDirectoryShell(cwd: string) {
+/** Core loads folder identity; an admitted Sidebar refreshes its repository metadata. */
+export async function loadDirectoryShell(cwd: string, sidebar?: SidebarMaintenance) {
   ensureDirectory(cwd)
-  if (!startupDirectoryMetadataRefresh) {
-    startupDirectoryMetadataRefresh = importDirectories([])
+  if (sidebar && !startupDirectoryMetadataRefresh) {
+    startupDirectoryMetadataRefresh = sidebar
+      .importDirectories({ directoryIds: [] })
       .then(() => emitDesktopEvent({ type: 'shell-state-refresh' }))
       .catch((error) => {
         startupDirectoryMetadataRefresh = null

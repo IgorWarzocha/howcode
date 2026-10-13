@@ -1,27 +1,26 @@
 import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
+import type { TerminalDrawerProps } from '@howaboua/howcode-sdk/terminal-renderer'
 import { appToneTextClass, appTypeGroupTextClass } from '@howaboua/howcode-sdk/ui/typography-scale'
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { composeBuiltInWorkspaceViews } from '@howcode/component-system/built-in-workspace-views'
-import { TerminalDrawerLayer } from '@howcode/components/terminal/ui'
-import { PanelLeftOpen } from 'lucide-react'
+import { PanelLeftOpen, Settings } from 'lucide-react'
 import type { RefObject } from 'react'
+import { useContext } from 'react'
 import { InstalledPageViews } from '../component-system/installed-providers'
-import type { DirectoryDiffBaseline, DirectoryDiffRenderMode } from '../desktop/types'
-import { AppShellSidebar } from './app-shell-sidebar'
+import { RendererHostsContext } from '../component-system/installed-renderer-context'
+import { RendererSlot } from '../component-system/renderer-slots'
+import { useWorkspaceArtifactDrawerState } from '../workspace-shell/useWorkspaceArtifactDrawerState'
+import { ArtifactDrawerViews } from '../workspace-shell/workspace-artifact-drawer'
+import { AppShellNavigation } from './app-shell-navigation'
 import { AppShellWorkspace } from './app-shell-workspace'
 import { appShellRootClass } from './layout-classes'
 import type { AppShellController } from './useAppShellController'
 
 type AppShellLayoutViewProps = {
   controller: AppShellController
-  diff: {
-    baseline: DirectoryDiffBaseline
-    onBaselineChange: (baseline: DirectoryDiffBaseline) => void
-    onRenderModeChange: (renderMode: DirectoryDiffRenderMode) => void
-    renderMode: DirectoryDiffRenderMode
-  }
   mainSectionRef: RefObject<HTMLElement | null>
   sidebar: {
+    available: boolean
     collapsed: boolean
     compactMode: boolean
     onOverlayOpenChange: (open: boolean) => void
@@ -36,7 +35,21 @@ type AppShellLayoutViewProps = {
   workspaceContentClass: string
 }
 
+function InstalledTerminalDrawer(props: TerminalDrawerProps) {
+  const renderer = useContext(RendererHostsContext).find(
+    ({ contribution }) => contribution.TerminalDrawer,
+  )
+  const Content = renderer?.contribution.TerminalDrawer
+  if (!(renderer?.host.enabled && Content)) return null
+  return (
+    <RendererSlot name={renderer.name}>
+      <Content {...props} host={renderer.host} />
+    </RendererSlot>
+  )
+}
+
 function DesktopSidebarFrame(props: AppShellLayoutViewProps) {
+  if (!props.sidebar.available) return null
   const hidden = props.sidebar.collapsed || props.sidebar.compactMode
   return (
     <div
@@ -47,7 +60,7 @@ function DesktopSidebarFrame(props: AppShellLayoutViewProps) {
       }
     >
       {hidden ? null : (
-        <AppShellSidebar
+        <AppShellNavigation
           compactMode={props.sidebar.compactMode}
           controller={props.controller}
           onToggle={props.sidebar.onToggle}
@@ -58,7 +71,8 @@ function DesktopSidebarFrame(props: AppShellLayoutViewProps) {
 }
 
 function CompactSidebarOverlay(props: AppShellLayoutViewProps) {
-  if (!(props.sidebar.compactMode && props.sidebar.overlayOpen)) return null
+  if (!(props.sidebar.available && props.sidebar.compactMode && props.sidebar.overlayOpen))
+    return null
   return (
     <button
       type="button"
@@ -70,12 +84,12 @@ function CompactSidebarOverlay(props: AppShellLayoutViewProps) {
 }
 
 function CompactSidebarPanel(props: AppShellLayoutViewProps) {
-  if (!props.sidebar.compactMode) return null
+  if (!(props.sidebar.available && props.sidebar.compactMode)) return null
   return (
     <div
       className={`absolute top-0 bottom-0 left-0 z-50 w-[min(300px,calc(100%_-_2rem))] min-w-0 overflow-hidden transition-[transform,opacity] duration-200 ease-out ${props.sidebar.overlayOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none'}`}
     >
-      <AppShellSidebar
+      <AppShellNavigation
         compactMode={props.sidebar.compactMode}
         controller={props.controller}
         onToggle={props.sidebar.onToggle}
@@ -86,8 +100,13 @@ function CompactSidebarPanel(props: AppShellLayoutViewProps) {
 
 function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
   const { mainSectionRef, controller, workspaceContentClass } = props
+  const conversationId = controller.chat.activeData?.conversationId ?? props.terminal.conversationId
+  const artifactDrawer = useWorkspaceArtifactDrawerState({
+    conversationId,
+    sidebarCompactMode: props.sidebar.compactMode,
+  })
   const activeView = controller.workspace.state.activeView
-  const installedPage = activeView.startsWith('component:')
+  const installedPage = activeView.startsWith('component:') || activeView === 'skills'
   const retainedView = installedPage
     ? (controller.workspace.state.utilityViewReturnState?.activeView ?? 'chat')
     : activeView
@@ -106,6 +125,23 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
       className="flex min-w-0 min-h-0 h-full flex-1 flex-col overflow-hidden bg-[color:var(--workspace)]"
     >
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+        {props.sidebar.available ? null : (
+          <div className="flex shrink-0 justify-end px-2 py-1">
+            <button
+              type="button"
+              className="inline-flex h-7 items-center gap-2 rounded-full px-2 text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
+              onClick={() =>
+                controller.navigation.showView('settings', {
+                  settingId: 'common.navigation-renderer',
+                })
+              }
+              aria-label="Open sidebar settings"
+            >
+              <Settings size={15} />
+              <span>Settings</span>
+            </button>
+          </div>
+        )}
         {installedPage && (props.sidebar.collapsed || props.sidebar.compactMode) ? (
           <div className="flex shrink-0 px-2 py-1">
             <Tooltip content="Show sidebar" placement="right">
@@ -131,18 +167,15 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
           <AppShellWorkspace
             activeView={retainedView}
             contributions={composeBuiltInWorkspaceViews({
+              artifactDrawer,
               controller: presentationController,
               activeComposerState: controller.composer.state,
               activeChatData: controller.chat.activeData,
               composerDirectoryId: controller.composer.directoryId,
               currentDirectoryName: controller.directories.currentName,
-              diffBaseline: props.diff.baseline,
-              diffRenderMode: props.diff.renderMode,
               terminalDrawerVisible: props.terminal.drawerVisible,
               terminalConversationId: props.terminal.conversationId,
               workspaceContentClass,
-              onSetDiffBaseline: props.diff.onBaselineChange,
-              onSetDiffRenderMode: props.diff.onRenderModeChange,
               sidebarCollapsed: props.sidebar.collapsed,
               sidebarAutoHidden: props.sidebar.compactMode,
               sidebarCompactMode: props.sidebar.compactMode,
@@ -150,7 +183,8 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
             })}
           />
         </div>
-        <TerminalDrawerLayer
+        <ArtifactDrawerViews artifactDrawer={artifactDrawer} conversationId={conversationId} />
+        <InstalledTerminalDrawer
           drawerPresent={props.terminal.drawerPresent}
           drawerVisible={props.terminal.drawerVisible && !installedPage}
           compactMode={props.sidebar.compactMode}

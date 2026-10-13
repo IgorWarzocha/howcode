@@ -9,7 +9,6 @@ import type {
   ComposerStateRequest,
   ComposerStreamingBehavior,
   DesktopActionPayloadInput,
-  DictationModelId,
   DirectoryDeletionMode,
   DirectoryDiffDefaultBaseline,
   DirectoryDiffRenderMode,
@@ -209,9 +208,6 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === 'gitCommitMessageModel' ||
     payload.key === 'gitCommitMessageThinkingLevel' ||
     payload.key === 'composerStreamingBehavior' ||
-    payload.key === 'dictationModelId' ||
-    payload.key === 'dictationMaxDurationSeconds' ||
-    payload.key === 'showDictationButton' ||
     payload.key === 'favoriteFolders' ||
     payload.key === 'projectImportState' ||
     payload.key === 'preferredDirectoryLocation' ||
@@ -226,6 +222,7 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === 'directoryDeletionMode' ||
     payload.key === 'useAgentsSkillsPaths' ||
     payload.key === 'hideSidebarSessionCounts' ||
+    payload.key === 'navigationRenderer' ||
     payload.key === 'hoverToFocus' ||
     payload.key === 'hoverToBlur' ||
     payload.key === 'keybindings' ||
@@ -243,10 +240,6 @@ export function getConversationFork(payload: DesktopActionPayloadInput) {
 export function getSettingsThinkingLevel(payload: DesktopActionPayloadInput) {
   const level = typeof payload.value === 'string' ? payload.value : null
   return isComposerThinkingLevel(level) ? level : null
-}
-
-export function getSettingsNumberValue(payload: DesktopActionPayloadInput) {
-  return typeof payload.value === 'number' && Number.isFinite(payload.value) ? payload.value : null
 }
 
 export function getSettingsReset(payload: DesktopActionPayloadInput) {
@@ -294,14 +287,6 @@ export function getSettingsComposerStreamingBehavior(
   payload: DesktopActionPayloadInput,
 ): ComposerStreamingBehavior | null {
   return payload.value === 'steer' || payload.value === 'followUp' || payload.value === 'stop'
-    ? payload.value
-    : null
-}
-
-export function getSettingsDictationModelId(
-  payload: DesktopActionPayloadInput,
-): DictationModelId | null {
-  return payload.value === 'tiny.en' || payload.value === 'base.en' || payload.value === 'small.en'
     ? payload.value
     : null
 }

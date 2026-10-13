@@ -1,1 +1,0 @@
-- Multiple draft inputs can coexist. Route the dictation shortcut to the capture/start/flush owner first, then the focused input, then the ordinary composer default; consume it once. Keep target registration scoped to its mounted input boundary and release it on unmount.

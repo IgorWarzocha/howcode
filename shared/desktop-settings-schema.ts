@@ -1,9 +1,8 @@
 import * as Schema from 'effect/Schema'
 
-export const PiSettingsSchema = Schema.Struct({
+export const ShellPreferencesSchema = Schema.Struct({
   theme: Schema.String,
   autoCompact: Schema.Boolean,
-  enableSkillCommands: Schema.Boolean,
   blockImages: Schema.Boolean,
   transport: Schema.Literals(['sse', 'websocket', 'websocket-cached', 'auto']),
   steeringMode: Schema.Literals(['all', 'one-at-a-time']),

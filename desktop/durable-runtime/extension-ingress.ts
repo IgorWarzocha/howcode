@@ -37,7 +37,7 @@ export function getConversationResourceRequest(agent: SelectedAgent): ComposerSt
     const resolve = ingress.get(extension)?.resourceRequest
     if (resolve) request = resolve(agent)
   }
-  return request
+  return { ...request, composerExtensions: agent.extensions.map((extension) => extension.name) }
 }
 
 export async function discoverConversationSkills(agent: SelectedAgent) {

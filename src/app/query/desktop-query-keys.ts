@@ -1,4 +1,4 @@
-import { gitQueryKeys } from '@howaboua/howcode-git/ui/query-keys'
+import { gitQueryKeys } from '@howaboua/howcode-sdk/git-query-keys'
 import { getPersistedConversationId } from '@howcode/shared/conversation-ids'
 import type { ComposerStateRequest } from '../desktop/types'
 

@@ -46,21 +46,33 @@ export function startDevWebBridge(input: {
   nodeExecutable: string
   userDataPath: string
   token: string
+  entrypoint?: string
+  terminalOwner?: { url: string; token: string }
   onUnexpectedExit: (error: Error) => void
 }) {
-  const child = spawn(input.nodeExecutable, [path.join(input.buildRoot, 'dev-web-bridge.mjs')], {
-    cwd: input.root,
-    env: {
-      ...process.env,
-      HOWCODE_REPO_ROOT: input.root,
-      HOWCODE_BUILD_ROOT: input.buildRoot,
-      HOWCODE_USER_DATA_PATH: input.userDataPath,
-      HOWCODE_DEV_RUNTIME: '1',
-      HOWCODE_DEV_WEB_BRIDGE_HOST: DEV_SERVER_HOST,
-      HOWCODE_DEV_WEB_BRIDGE_TOKEN: input.token,
+  const child = spawn(
+    input.nodeExecutable,
+    [path.join(input.buildRoot, input.entrypoint ?? 'dev-web-bridge.mjs')],
+    {
+      cwd: input.root,
+      env: {
+        ...process.env,
+        HOWCODE_REPO_ROOT: input.root,
+        HOWCODE_BUILD_ROOT: input.buildRoot,
+        HOWCODE_USER_DATA_PATH: input.userDataPath,
+        HOWCODE_DEV_RUNTIME: '1',
+        HOWCODE_DEV_WEB_BRIDGE_HOST: DEV_SERVER_HOST,
+        HOWCODE_DEV_WEB_BRIDGE_TOKEN: input.token,
+        ...(input.terminalOwner
+          ? {
+              HOWCODE_DEV_TERMINAL_URL: input.terminalOwner.url,
+              HOWCODE_DEV_TERMINAL_TOKEN: input.terminalOwner.token,
+            }
+          : {}),
+      },
+      stdio: ['ignore', 'inherit', 'inherit', 'ipc'],
     },
-    stdio: ['ignore', 'inherit', 'inherit', 'ipc'],
-  })
+  )
   let stopping: Promise<void> | undefined
   let port: number | null = null
   child.on('error', (error) => {

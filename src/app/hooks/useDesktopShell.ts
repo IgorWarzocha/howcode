@@ -9,6 +9,8 @@ export function useDesktopShell() {
   return {
     shellState: shellStateQuery.data ?? null,
     shellLoading: shellStateQuery.isLoading,
+    shellError: shellStateQuery.error,
+    retryShellState: shellStateQuery.refetch,
     refreshShellState,
     scheduleShellStateRefresh,
     loadDirectoryChats: shellQueries.loadDirectoryChats,

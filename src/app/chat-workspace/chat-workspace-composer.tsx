@@ -1,14 +1,16 @@
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
-import type { ChatArtifactDrawerState } from '@howcode/components/artifacts/ui'
-import { getComposerRuntimeModel, QueuedPromptsCard } from '@howcode/composer'
-import type { useQueuedPromptCancellation } from '@howcode/composer/useQueuedPromptCancellation'
-import { Composer } from '@howcode/workspace-shell'
-import { DesktopComposerStatusModelPicker } from '@howcode/workspace-shell/desktop-composer-status'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
-import type { AppSettings, DirectoryDiffBaseline } from '../desktop/types'
+import {
+  InstalledComposer as Composer,
+  InstalledComposerModelPicker as DesktopComposerStatusModelPicker,
+  InstalledQueuedPrompts,
+} from '../component-system/composer-renderer-slot'
+import { getComposerRuntimeModel } from '../component-system/composer-runtime'
+import type { AppSettings } from '../desktop/types'
 import type { Message } from '../types'
+import type { WorkspaceArtifactDrawerState } from '../workspace-shell/useWorkspaceArtifactDrawerState'
 import { WorkspaceComposerDock } from '../workspace-shell/workspace-composer-dock'
 import type { ChatWorkspaceController } from './chat-workspace-contract'
 
@@ -46,9 +48,8 @@ const FALLBACK_APP_SETTINGS = {
 export type ChatWorkspaceComposerProps = {
   activeComposerState: AppShellController['composer']['state']
   activeChatData: AppShellController['chat']['activeData']
-  artifactDrawer: ChatArtifactDrawerState
+  artifactDrawer: WorkspaceArtifactDrawerState
   composerDirectoryId: string
-  diffBaseline: DirectoryDiffBaseline
   draftWorkspaceId: string | null
   footerRef: RefObject<HTMLElement | null>
   handleAction: AppShellController['desktop']['handleAction']
@@ -58,14 +59,6 @@ export type ChatWorkspaceComposerProps = {
   hasPersistedChatSession: boolean
   listComposerAttachmentEntries: AppShellController['composer']['listAttachmentEntries']
   mainViewRef: RefObject<HTMLElement | null>
-  onSetDiffBaseline: (baseline: DirectoryDiffBaseline) => void
-  pendingQueuedPromptIdsForSession: ReturnType<
-    typeof useQueuedPromptCancellation
-  >['pendingQueuedPromptIdsForSession']
-  queuedPromptError: ReturnType<typeof useQueuedPromptCancellation>['queuedPromptError']
-  handleRemoveQueuedPrompt: ReturnType<
-    typeof useQueuedPromptCancellation
-  >['handleRemoveQueuedPrompt']
   setComposerOverlayHeight: Dispatch<SetStateAction<number>>
   shellState: AppShellController['desktop']['shellState']
   sidebarAutoHidden: boolean
@@ -126,18 +119,16 @@ function getToggleArtifacts({ hasConversationLayout, artifactDrawer }: ChatWorks
 
 function ChatQueuedPrompts({
   activeComposerState,
-  pendingQueuedPromptIdsForSession,
-  queuedPromptError,
-  handleRemoveQueuedPrompt,
+  composerDirectoryId,
+  terminalConversationId,
+  handleAction,
 }: ChatWorkspaceComposerProps) {
   return (
-    <QueuedPromptsCard
+    <InstalledQueuedPrompts
       prompts={activeComposerState?.queuedPrompts ?? []}
-      pendingPromptIds={pendingQueuedPromptIdsForSession}
-      errorMessage={queuedPromptError}
-      onRemovePrompt={(prompt) => {
-        void handleRemoveQueuedPrompt(prompt)
-      }}
+      directoryId={composerDirectoryId}
+      conversationId={terminalConversationId}
+      onAction={handleAction}
     />
   )
 }
@@ -149,14 +140,11 @@ function ChatComposer(props: ChatWorkspaceComposerProps) {
     activeChatData,
     shellState,
     composerDirectoryId,
-    diffBaseline,
     terminalConversationId,
-    onSetDiffBaseline,
     setComposerOverlayHeight,
     footerRef,
     handleToggleTerminal,
     hasConversationLayout,
-    hasConversation,
     artifactDrawer,
     listComposerAttachmentEntries,
     handleAction,
@@ -176,25 +164,22 @@ function ChatComposer(props: ChatWorkspaceComposerProps) {
       directoryId={composerDirectoryId}
       workspaceId={getWorkspaceId(props)}
       directoryGitState={null}
-      diffBaseline={diffBaseline}
       conversationId={terminalConversationId}
-      dictationModelId={appSettings.dictationModelId}
-      dictationMaxDurationSeconds={appSettings.dictationMaxDurationSeconds}
       favoriteFolders={appSettings.favoriteFolders}
-      showDictationButton={appSettings.showDictationButton}
       hoverToFocus={appSettings.hoverToFocus}
       hoverToBlur={appSettings.hoverToBlur}
       composerSendMode={appSettings.composerSendMode}
       keybindings={appSettings.keybindings}
-      onSetDiffBaseline={onSetDiffBaseline}
       onOverlayHeightChange={setComposerOverlayHeight}
       workspaceFooterRef={footerRef}
       onOpenSettingsView={(target) => controller.navigation.showView('settings', target)}
       onToggleTerminal={handleToggleTerminal}
       onToggleArtifacts={getToggleArtifacts(props)}
-      artifactsAvailable={hasConversation}
+      artifactsAvailable={terminalConversationId !== null}
       showTerminalControls={false}
       artifactsVisible={artifactDrawer.artifactsVisible}
+      artifactRendererName={artifactDrawer.artifactRendererName}
+      onToggleArtifactRenderer={artifactDrawer.toggleArtifacts}
       terminalVisible={state.terminalVisible}
       preferPortalModelPopover={!hasConversationLayout}
       onListAttachmentEntries={listComposerAttachmentEntries}

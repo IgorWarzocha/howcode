@@ -29,6 +29,24 @@ export async function listInstalledComponentsQuery() {
   return window.piDesktop.listInstalledComponents()
 }
 
+export async function installInstalledComponentQuery(source: string) {
+  if (!window.piDesktop?.installInstalledComponent)
+    throw new Error('Component installation bridge is unavailable.')
+  return window.piDesktop.installInstalledComponent({ source })
+}
+
+export async function updateInstalledComponentQuery(source: string) {
+  if (!window.piDesktop?.updateInstalledComponent)
+    throw new Error('Component update bridge is unavailable.')
+  return window.piDesktop.updateInstalledComponent({ source })
+}
+
+export async function removeInstalledComponentQuery(source: string) {
+  if (!window.piDesktop?.removeInstalledComponent)
+    throw new Error('Component removal bridge is unavailable.')
+  return window.piDesktop.removeInstalledComponent({ source })
+}
+
 export async function admitInstalledComponentQuery(
   request: import('../../../shared/installed-component-contracts').InstalledComponentAdmission,
 ) {

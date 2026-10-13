@@ -1,6 +1,7 @@
 import { getPersistedConversationId } from '@howcode/shared/conversation-ids'
 import type { DesktopAction } from '../desktop/actions'
 import type { AnyDesktopActionPayload, ArchivedChat } from '../desktop/types'
+import { getGitRendererApi } from '../git-integration/client'
 import type { WorkspaceState } from '../state/workspace-model'
 
 function getContextualConversationId({
@@ -71,7 +72,7 @@ export function buildContextualActionPayload({
   composerDirectoryId: string
   activeView: WorkspaceState['activeView']
   selectedConversationId: string | null
-}) {
+}): AnyDesktopActionPayload {
   if (action === 'composer.send' && isContextualChatView(activeView)) {
     return buildComposerSendPayload({
       composerProfile: composerProfile ?? 'general',
@@ -81,16 +82,22 @@ export function buildContextualActionPayload({
     })
   }
 
+  const gitPayload = getGitRendererApi()?.prepareGitActionPayload(action, payload, {
+    composerDirectoryId,
+    activeView,
+    selectedConversationId,
+    ...(composerProfile === undefined ? {} : { composerProfile }),
+    ...(workspaceId === undefined ? {} : { workspaceId }),
+  })
+  if (gitPayload) return gitPayload
+
   return action === 'composer.model' ||
     action === 'composer.dequeue' ||
     action === 'composer.send' ||
     action === 'composer.stop' ||
     action === 'composer.thinking' ||
     action === 'chat.new' ||
-    action === 'chat.open' ||
-    action === 'git.commit' ||
-    action === 'git.commit-options' ||
-    action === 'git.diff-preferences'
+    action === 'chat.open'
     ? {
         directoryId: composerDirectoryId,
         conversationId:

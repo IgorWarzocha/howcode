@@ -1,3 +1,4 @@
+import type { TerminalRpcResponse } from '@howaboua/howcode-terminal/rpc'
 import type * as Deferred from 'effect/Deferred'
 import type * as Effect from 'effect/Effect'
 import * as Schema from 'effect/Schema'
@@ -7,7 +8,6 @@ import type { DesktopEvent } from '../../../shared/desktop-contracts'
 import type { DesktopServiceRuntime } from '../../../shared/desktop-service-contracts'
 import type { DesktopServiceMessage } from '../../../shared/desktop-service-ipc'
 import type { DesktopServiceRemoteModuleName } from '../../../shared/desktop-service-rpc'
-import type { TerminalRpcResponse } from '../../../shared/terminal-rpc'
 
 export type DesktopServiceApi = DesktopServiceRuntime
 export type DesktopServiceModuleName = DesktopServiceRemoteModuleName
@@ -100,7 +100,14 @@ export interface DesktopServiceProcessAdapter<Process> {
 }
 
 export interface TerminalRpcBridge<Process> {
-  readonly connect: (process: Process) => Effect.Effect<void, DesktopServiceError>
+  readonly connect: (
+    process: Process,
+    available: boolean,
+  ) => Effect.Effect<void, DesktopServiceError>
+  readonly setAvailable: (
+    process: Process,
+    available: boolean,
+  ) => Effect.Effect<void, DesktopServiceError>
   readonly dispose: (process: Process) => Effect.Effect<void>
   readonly write: (message: TerminalRpcResponse) => void
 }

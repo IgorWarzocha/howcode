@@ -33,6 +33,7 @@ import {
   runtimeContext,
 } from './durable-runtime/host.ts'
 import { prepareRuntimeInput } from './durable-runtime/input.ts'
+import { admitPluginInput } from './plugins/runtime.ts'
 import { emitDesktopEvent, subscribeDesktopEvents } from './runtime/desktop-events.ts'
 import { withDirectoryActivity } from './runtime/directory-activity.ts'
 
@@ -141,6 +142,7 @@ export async function sendComposerPrompt(
       return { outcome: 'stopped' as const, conversationId, chatId: conversationId }
     }
     await refreshRuntimePackages()
+    await admitPluginInput(conversationId)
     const compact = parseCompactSlashCommand(request.text)
     if (compact === null) {
       await conversation.submit(

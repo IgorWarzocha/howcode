@@ -83,6 +83,7 @@ export function createAgentResources(
       const skills = await getComposerSkills({
         directoryId: scope === 'chat' ? null : agent.cwd,
         composerProfile: scope === 'chat' ? 'general' : 'coding',
+        composerExtensions: agent.extensions.map((selected) => selected.name),
       })
       if (skills.length === 0) return undefined
       return [

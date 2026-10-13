@@ -4,7 +4,6 @@ import {
   getChatIds,
   getComposerRequest,
   getConversationId,
-  getDirectoryId,
 } from '../../shared/desktop-action-payloads.ts'
 import type { DesktopAction } from '../../shared/desktop-actions.ts'
 import type { AnyDesktopActionPayload } from '../../shared/desktop-contracts.ts'
@@ -12,7 +11,6 @@ import {
   archiveChat,
   archiveChats,
   assignChatBranch,
-  assignChatToDirectoryBranch,
   clearReadInboxChats,
   deleteChatRecord,
   dismissInboxChat,
@@ -137,13 +135,6 @@ const chatActionHandlers = {
     const chatIds = getChatIds(payload)
     if (chatIds.length > 0) archiveChats(chatIds)
     return handledAction()
-  },
-  'chat.assign-branch': (payload) => {
-    const chatId = getChatId(payload)
-    if (!chatId) return handledAction()
-    return handledAction(
-      assignChatToDirectoryBranch(chatId, getBranchName(payload), getDirectoryId(payload)),
-    )
   },
   'chat.restore': (payload) => {
     const chatId = getChatId(payload)

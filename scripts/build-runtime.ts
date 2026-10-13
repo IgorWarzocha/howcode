@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { watch } from 'node:fs'
 import { cp, mkdir, rename, rm } from 'node:fs/promises'
 import path from 'node:path'
+import { getBundledSkillsDirectory } from '@howaboua/howcode-skills/resources'
 
 const isWatchMode = process.argv.includes('--watch')
 const directoryRoot = process.cwd()
@@ -41,8 +42,8 @@ const buildTargets = [
 ] as const
 
 const resourceTargets = [
-  { source: 'desktop/resources/themes', name: 'themes' },
-  { source: 'components/skills/resources/skills', name: 'skills' },
+  { source: path.join(directoryRoot, 'desktop/resources/themes'), name: 'themes' },
+  { source: getBundledSkillsDirectory(), name: 'skills' },
 ] as const
 
 async function prepareBuildDirectories() {
@@ -56,7 +57,7 @@ async function prepareBuildDirectories() {
 async function copyResources(target: (typeof resourceTargets)[number]) {
   const outputPath = path.join(buildRoot, 'resources', target.name)
   await rm(outputPath, { recursive: true, force: true })
-  await cp(path.join(directoryRoot, target.source), outputPath, {
+  await cp(target.source, outputPath, {
     recursive: true,
   })
 }
@@ -95,6 +96,14 @@ const watchTargets = [
     naming: { entry: 'dev-web-bridge.mjs' },
     format: 'esm',
   },
+  {
+    label: 'dev-terminal-owner',
+    entrypoints: [path.join(directoryRoot, 'scripts', 'dev-terminal-owner-node.ts')],
+    outdir: buildRoot,
+    root: path.join(directoryRoot, 'scripts'),
+    naming: { entry: 'dev-terminal-owner.mjs' },
+    format: 'esm',
+  },
 ] as const
 
 let lastRevisionTime = 0
@@ -131,11 +140,7 @@ async function publishWatchBuild() {
   try {
     await mkdir(stagingRoot, { recursive: true })
     for (const target of resourceTargets) {
-      await cp(
-        path.join(directoryRoot, target.source),
-        path.join(stagingRoot, 'resources', target.name),
-        { recursive: true },
-      )
+      await cp(target.source, path.join(stagingRoot, 'resources', target.name), { recursive: true })
     }
     for (const { target, outputs } of results) {
       for (const output of outputs) {
@@ -220,7 +225,12 @@ async function runWatch() {
         { recursive: source !== 'scripts' },
         (_event, name) => {
           // Watch the directory so editor atomic replacement does not detach the bridge watch.
-          if (source === 'scripts' && name !== 'dev-web-bridge-node.ts') return
+          if (
+            source === 'scripts' &&
+            name !== 'dev-web-bridge-node.ts' &&
+            name !== 'dev-terminal-owner-node.ts'
+          )
+            return
           if (!name || isRuntimeEdit(path.join(source, name))) schedule()
         },
       )

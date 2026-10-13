@@ -1,6 +1,7 @@
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { getInboxChatComposerProfile } from '../common/inbox-chat-scope'
+import { InstalledInboxComposer as InboxComposer } from '../component-system/composer-renderer-slot'
 import type {
   AppSettings,
   ComposerContextUsage,
@@ -11,9 +12,7 @@ import type {
   InboxChat,
 } from '../desktop/types'
 import { WorkspaceComposerDock } from '../workspace-shell/workspace-composer-dock'
-import { InboxComposer } from './components/inbox-composer'
 import { InboxChatHeader, InboxChatMessage, InboxEmptyState } from './inbox-chat-content'
-import { useInboxReplyController } from './useInboxReplyController'
 
 type InboxViewProps = {
   appSettings: AppSettings
@@ -89,14 +88,6 @@ function InboxChatView({
   sidebarCompactMode,
   onToggleSidebar,
 }: InboxChatViewProps) {
-  const reply = useInboxReplyController({
-    isCompacting,
-    onAction,
-    onDismissChat,
-    streamingBehavior: appSettings.composerStreamingBehavior,
-    chat,
-  })
-
   return (
     <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] pt-6 pb-4">
       <InboxChatHeader chat={chat} />
@@ -123,7 +114,6 @@ function InboxChatView({
                 currentModel,
                 currentThinkingLevel,
               }}
-              reply={reply}
               chat={chat}
               onAction={onAction}
               onDismiss={() => onDismissChat(chat)}

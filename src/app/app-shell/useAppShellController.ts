@@ -1,13 +1,14 @@
-import { useSkillsDirectoryScopeSync } from '@howcode/components/skills/ui'
-import { useRunningTerminalSessions } from '@howcode/components/terminal/ui'
 import { useDirectoryRepoOriginRefresh } from '@howcode/components/working-directories/ui'
-import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
 import { useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useDesktopBridge } from '../hooks/useDesktopBridge'
 import { useDesktopInbox } from '../hooks/useDesktopInbox'
 import { useDesktopShell } from '../hooks/useDesktopShell'
 import { useToast } from '../hooks/useToast'
+import { useSkillsDirectoryScopeSync } from '../skills-integration'
+import { terminalClient } from '../terminal-client'
+import { useTerminalEnabled } from '../terminal-integration'
+import { useRunningTerminalSessions } from '../useRunningTerminalSessions'
 import { deriveControllerViewModel } from './controller-view-model'
 import { useAppShellCommands } from './useAppShellCommands'
 import { useAppShellEffects } from './useAppShellEffects'
@@ -56,8 +57,8 @@ export function useAppShellController() {
     [inboxChats, bundle.workspace.state.selectedInboxConversationId],
   )
   const terminals = useRunningTerminalSessions(
-    desktopShell.shellState !== null &&
-      isToolkitComponentEnabled(desktopShell.shellState?.appSettings, 'terminal'),
+    terminalClient,
+    useTerminalEnabled(desktopShell.shellState?.appSettings),
   )
   const viewModel = useMemo(
     () =>
@@ -88,7 +89,6 @@ export function useAppShellController() {
     loadDirectoryChats: desktopShell.loadDirectoryChats,
     loadArchivedChats: desktopShell.loadArchivedChats,
     loadComposerState: desktopShell.loadComposerState,
-    loadDirectoryGitState: desktopShell.loadDirectoryGitState,
     scheduleShellStateRefresh: desktopShell.scheduleShellStateRefresh,
     refreshWorkspaceNavigationState: workspaceNavigation.refreshWorkspaceNavigationState,
     queryClient,
@@ -97,8 +97,6 @@ export function useAppShellController() {
     setComposerState: bundle.composer.setState,
     setWorkspaceNavigationState: workspaceNavigation.setWorkspaceNavigationState,
     setLiveChatData: bundle.chat.setLiveChatData,
-    setDirectoryGitState: bundle.directories.setGitState,
-    setDirectoryGitLoading: bundle.directories.setGitLoading,
     setChatHistoryCompactions: bundle.chat.setHistoryCompactions,
   })
   const actions = useDesktopActionHandlers({
@@ -112,7 +110,6 @@ export function useAppShellController() {
     loadDirectoryChats: desktopShell.loadDirectoryChats,
     refreshShellState: desktopShell.refreshShellState,
     selectedConversationId: bundle.workspace.state.selectedConversationId,
-    shellState: desktopShell.shellState,
     setArchivedChats: bundle.chat.setArchivedChats,
     setWorkspaceNavigationState: workspaceNavigation.setWorkspaceNavigationState,
     setComposerState: bundle.composer.setState,
@@ -122,9 +119,7 @@ export function useAppShellController() {
     workspaceState: bundle.workspace.state,
   })
   useDirectoryRepoOriginRefresh({
-    enabled:
-      desktopShell.shellState !== null &&
-      isToolkitComponentEnabled(desktopShell.shellState.appSettings, 'coding'),
+    enabled: desktopShell.shellState !== null,
     directories,
     selectedDirectoryId: bundle.workspace.state.selectedDirectoryId,
     runDesktopAction: actions.runDesktopAction,
@@ -159,10 +154,12 @@ export function useAppShellController() {
   })
 
   return {
-    app: { launchedAtMs: bundle.appLaunchedAtMs, toast },
+    app: { launchedAtMs: bundle.appLaunchedAtMs, toast, showToast },
     desktop: {
       handleAction: actions.handleAction,
       shellLoading: desktopShell.shellLoading,
+      shellError: desktopShell.shellError,
+      retryShellState: desktopShell.retryShellState,
       shellState: desktopShell.shellState,
     },
     workspace: {
@@ -223,7 +220,6 @@ export function useAppShellController() {
       showLanding: commands.handleShowLanding,
       showView: commands.handleShowView,
       showWorkspace: commands.handleShowWorkspace,
-      toggleSettings: commands.handleToggleSettings,
     },
     resourceScope: {
       setSkillsActive: bundle.resourceScope.setSkillsActive,

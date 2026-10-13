@@ -1,6 +1,6 @@
 import { ArchivedChatsView } from '@howcode/archive'
 import { InboxView } from '@howcode/inbox'
-import { defaultPiSettings } from '@howcode/shared/default-pi-settings'
+import { defaultShellPreferences } from '@howcode/shared/default-shell-preferences'
 import type { AppShellController } from '../app-shell/useAppShellController'
 import type { AppSettings, ComposerState } from '../desktop/types'
 import { SettingsView } from '../settings/settings-view'
@@ -93,7 +93,7 @@ function SettingsWorkspaceContent({
   return (
     <SettingsView
       appSettings={appSettings}
-      piSettings={shellState?.piSettings ?? defaultPiSettings}
+      shellPreferences={shellState?.shellPreferences ?? defaultShellPreferences}
       piTheme={shellState?.piTheme ?? null}
       resolvedPiDirectory={shellState?.agentDir ?? null}
       availableModels={activeComposerState?.availableModels ?? []}

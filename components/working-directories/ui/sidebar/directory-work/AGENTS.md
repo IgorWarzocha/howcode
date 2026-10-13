@@ -1,7 +1,0 @@
-- Compact and expanded layouts both compose `branch-chat-group-section.tsx`; keep branch-row behavior there, nested worktree rows in `worktree-group-section.tsx`, and layout-specific grouping in their composition files.
-- Keep sidebar derivation in its owned model: `directory-scope-model.ts`, `directory-git-model.ts`, `directory-chat-model.ts`, or `branch-group-model.ts`; do not recreate a catch-all directory-work model.
-- Keep branch, worktree, and unassigned rows as discriminated `BranchChatGroup` variants; do not restore boolean kind flags or optional worktree identity.
-- `branch-action-capabilities.ts` owns branch-row action policy; confirmations and failures stay row-local rather than drilling state IDs through directory containers.
-- `useBranchActionExecution.ts` owns branch-action pending/failure transitions; action-family modules own only their request and user-facing failure translation.
-- `useDirectoryScopeController.ts` owns directory selector state and persistence; keep Git queries and chat loading in their dedicated hooks.
-- `useDirectoryWorkRowMenu` owns directory-work menu dismissal and row geometry; do not recreate document listeners or measurement effects in menu components.

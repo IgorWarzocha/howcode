@@ -1,10 +1,7 @@
 import { InstalledPluginsProvider } from '@howaboua/howcode-sdk/installed-plugins'
 import { type OutputPreviewProps, OutputRenderersProvider } from '@howaboua/howcode-sdk/outputs'
-import type {
-  PluginRendererContribution,
-  PluginRendererHost,
-  PluginRequest,
-} from '@howaboua/howcode-sdk/plugins'
+import type { PluginRendererHost, PluginRequest } from '@howaboua/howcode-sdk/plugins'
+import type { SkillsRendererPort } from '@howaboua/howcode-sdk/skills-renderer'
 import { WorkspaceSurfacesProvider } from '@howaboua/howcode-sdk/workspace-surfaces'
 import type { ReactNode } from 'react'
 import { useContext, useMemo } from 'react'
@@ -17,6 +14,7 @@ import {
   requestInstalledPluginQuery,
   subscribeDesktopEvents,
 } from '../query/desktop-query'
+import { terminalRendererPort } from '../terminal-integration'
 import { InstalledComponentBoundary } from './installed-component-boundary'
 import { useInstalledComponentCatalog } from './installed-component-catalog'
 import {
@@ -24,10 +22,9 @@ import {
   RendererHostsContext,
   useInstalledPageViews,
 } from './installed-renderer-context'
-import { installedRendererContributions } from './installed-renderers.generated'
+import { hasIndependentRendererFeatures } from './navigation-selection'
 import { ComponentRendererSlots, RendererSlot, RendererSlotsProvider } from './renderer-slots'
-
-const ShellProvider = installedRendererContributions['@howaboua/howcode-git'].Provider
+import { RendererStyleScope } from './renderer-style-scope'
 
 function ContextualOutputPreview(props: OutputPreviewProps) {
   const renderer = useContext(RendererHostsContext).find(
@@ -62,7 +59,7 @@ function ComponentProvider({ renderer }: { renderer: Renderer }) {
       name={renderer.name}
       onError={(error) => {
         if (!renderer.reference) {
-          console.error(`Bundled component failed: ${renderer.name}`, error)
+          console.error(`Component has no admitted generation: ${renderer.name}`, error)
           return
         }
         void admitInstalledComponentQuery({ ...renderer.reference, error }).catch(
@@ -74,7 +71,9 @@ function ComponentProvider({ renderer }: { renderer: Renderer }) {
         )
       }}
     >
-      {Provider ? <Provider host={renderer.host}>{content}</Provider> : content}
+      <RendererStyleScope name={renderer.name}>
+        {Provider ? <Provider host={renderer.host}>{content}</Provider> : content}
+      </RendererStyleScope>
     </InstalledComponentBoundary>
   )
 }
@@ -110,51 +109,74 @@ export function InstalledPageViews({
 
 export function InstalledComponentProviders({
   enabled,
+  terminalEnabled,
+  skillsEnabled,
+  skills,
   retain,
+  navigationRenderer,
   children,
 }: {
   enabled: boolean
+  terminalEnabled: boolean
+  skillsEnabled: boolean
+  skills: SkillsRendererPort
   retain: boolean
+  navigationRenderer: string
   children: ReactNode
 }) {
-  const catalog = useInstalledComponentCatalog()
+  const catalog = useInstalledComponentCatalog(navigationRenderer)
+  const baseHosts = useMemo(() => {
+    const enabledPackages: Record<string, boolean> = {
+      '@howaboua/howcode-git': enabled,
+      '@howaboua/howcode-terminal': terminalEnabled,
+      '@howaboua/howcode-skills': skillsEnabled,
+    }
+    return Object.entries(catalog.contributions).map(([name, contribution]) => {
+      const request: PluginRequest = async <Result,>(
+        method: string,
+        payload: unknown,
+      ): Promise<Result> => {
+        return requestInstalledPluginQuery<Result>(name, method, payload)
+      }
+      const reference = catalog.references[name]
+      const host: PluginRendererHost = {
+        ...(reference ? { revision: reference.revision } : {}),
+        enabled: enabledPackages[name] ?? true,
+        ...(name === '@howaboua/howcode-terminal' ? { terminal: terminalRendererPort } : {}),
+        retain,
+        request,
+        subscribe: (listener) =>
+          subscribeDesktopEvents((event) => {
+            if (event.type === 'plugin-event' && event.plugin === name) listener(event.event)
+          }),
+        subscribeCommand: (command, listener) => {
+          const receive = (event: Event) => {
+            if (
+              (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId === command
+            )
+              listener(event)
+          }
+          window.addEventListener(howcodeKeybindingCommandEvent, receive)
+          return () => window.removeEventListener(howcodeKeybindingCommandEvent, receive)
+        },
+      }
+      return {
+        name,
+        contribution,
+        host,
+        ...(reference ? { reference } : {}),
+      }
+    })
+  }, [catalog.contributions, catalog.references, enabled, terminalEnabled, skillsEnabled, retain])
+  // A changing Skills port must not retire peer components' host identities.
   const hosts = useMemo(
     () =>
-      Object.entries(catalog.contributions).map(([name, contribution]) => {
-        const request: PluginRequest = async <Result,>(
-          method: string,
-          payload: unknown,
-        ): Promise<Result> => {
-          return requestInstalledPluginQuery<Result>(name, method, payload)
-        }
-        const host: PluginRendererHost = {
-          enabled: name === '@howaboua/howcode-git' ? enabled : true,
-          retain,
-          request,
-          subscribe: (listener) =>
-            subscribeDesktopEvents((event) => {
-              if (event.type === 'plugin-event' && event.plugin === name) listener(event.event)
-            }),
-          subscribeCommand: (command, listener) => {
-            const receive = (event: Event) => {
-              if (
-                (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId === command
-              )
-                listener(event)
-            }
-            window.addEventListener(howcodeKeybindingCommandEvent, receive)
-            return () => window.removeEventListener(howcodeKeybindingCommandEvent, receive)
-          },
-        }
-        const reference = catalog.references[name]
-        return {
-          name,
-          contribution: contribution as PluginRendererContribution,
-          host,
-          ...(reference ? { reference } : {}),
-        }
-      }),
-    [catalog.contributions, catalog.references, enabled, retain],
+      baseHosts.map((renderer) =>
+        renderer.name === '@howaboua/howcode-skills'
+          ? { ...renderer, host: { ...renderer.host, skills } }
+          : renderer,
+      ),
+    [baseHosts, skills],
   )
   const outputRenderers = useMemo(
     () =>
@@ -172,31 +194,37 @@ export function InstalledComponentProviders({
       ),
     [hosts],
   )
-  const shell = hosts.find(({ name }) => name === '@howaboua/howcode-git')
-  const content = shell ? <ShellProvider host={shell.host}>{children}</ShellProvider> : children
+  const mountedHosts = hosts.filter(
+    ({ name, contribution }) =>
+      !contribution.navigation ||
+      name === navigationRenderer ||
+      hasIndependentRendererFeatures(contribution),
+  )
   return (
     <WorkspaceSurfacesProvider>
       <InstalledPluginsProvider names={Object.keys(catalog.contributions)}>
         <RendererSlotsProvider>
-          {catalog.styles.map(({ id, css }) => (
-            <style key={id}>{css}</style>
-          ))}
+          {catalog.styles
+            .filter(({ id }) =>
+              mountedHosts.some(({ name, reference }) => id === `${name}@${reference?.revision}`),
+            )
+            .map(({ id, css }) => (
+              <style key={id}>{css}</style>
+            ))}
           {catalog.errors.map((error) => (
             <p key={error} role="alert">
               {error}
             </p>
           ))}
-          <RendererHostsContext value={hosts}>
+          <RendererHostsContext value={mountedHosts}>
             <OutputRenderersProvider renderers={outputRenderers}>
-              {content}
-              {hosts
-                .filter(({ name }) => name !== '@howaboua/howcode-git')
-                .map((renderer) => (
-                  <ComponentProvider
-                    key={`${renderer.name}@${renderer.reference?.revision ?? 'bundled'}`}
-                    renderer={renderer}
-                  />
-                ))}
+              {children}
+              {mountedHosts.map((renderer) => (
+                <ComponentProvider
+                  key={`${renderer.name}@${renderer.reference?.revision ?? 'bundled'}`}
+                  renderer={renderer}
+                />
+              ))}
             </OutputRenderersProvider>
           </RendererHostsContext>
         </RendererSlotsProvider>

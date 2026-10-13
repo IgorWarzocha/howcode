@@ -7,11 +7,15 @@ import {
   hook,
   UserEntry,
 } from '@earendil-works/pi-durable'
-import { freezePluginTurn, installedAgentTools } from '../plugins/runtime.ts'
+import {
+  freezePluginTurn,
+  installedAgentTools,
+  installedServiceExtensions,
+} from '../plugins/runtime.ts'
 
 /** Installed plugin tools use Durable's actual call and transcript identity, not renderer selection. */
 export function installedAgentExtensions() {
-  return installedAgentTools().map(({ plugin, tool }) =>
+  const tools = installedAgentTools().map(({ plugin, tool }) =>
     defineExtension({
       name: `${plugin}.${tool.name}`,
       tools: [
@@ -61,4 +65,5 @@ export function installedAgentExtensions() {
       ],
     }),
   )
+  return [...installedServiceExtensions(), ...tools]
 }

@@ -283,7 +283,6 @@ export function createDirectoryWorkspaceTransitions(terminal: TerminalWorkspaceT
       selectedConversationId: null,
       selectedDiffFilePath: null,
       lastCodeChatSelection: null,
-      settingsOpen: false,
       settingsPanelOpen: false,
 
       utilityViewReturnState: null,

@@ -1,31 +1,42 @@
-import { DictationDraftInput } from '@howcode/components/dictation/ui'
-import type { ToolkitComponentSettings } from '@howcode/shared/toolkit-components'
+import { GitRendererBridgeProvider } from '@howaboua/howcode-sdk/git-renderer'
+import type { SkillsRendererPort } from '@howaboua/howcode-sdk/skills-renderer'
 import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
 import type { ReactNode } from 'react'
-import { DraftInputContributionContext } from '../composer/draft-input-context'
+import type { AppSettings } from '../desktop/types'
 import type { View } from '../types'
 import { WorkspaceLayoutActionsProvider } from '../workspace-shell/workspace-layout-actions'
 import { ComponentSettingsContext } from './component-context'
 import { InstalledComponentProviders } from './installed-providers'
+import { classicNavigationRenderer } from './navigation-selection'
 
 export function BuiltInComponentProviders({
   settings,
   workView,
+  skills,
   children,
 }: {
-  settings: ToolkitComponentSettings | undefined
+  settings: AppSettings | undefined
   workView: View
+  skills: SkillsRendererPort
   children: ReactNode
 }) {
-  const enabled = isToolkitComponentEnabled(settings, 'coding')
   const retainGitPreferences = workView !== 'chat'
   return (
     <ComponentSettingsContext value={settings ?? { enabledToolkitComponents: [] }}>
-      <DraftInputContributionContext value={DictationDraftInput}>
-        <InstalledComponentProviders enabled={enabled} retain={retainGitPreferences}>
+      <GitRendererBridgeProvider>
+        <InstalledComponentProviders
+          enabled={true}
+          retain={retainGitPreferences}
+          terminalEnabled={isToolkitComponentEnabled(settings, 'terminal')}
+          skillsEnabled={isToolkitComponentEnabled(settings, 'skills')}
+          skills={skills}
+          navigationRenderer={
+            settings ? (settings.navigationRenderer ?? classicNavigationRenderer) : 'none'
+          }
+        >
           <WorkspaceLayoutActionsProvider>{children}</WorkspaceLayoutActionsProvider>
         </InstalledComponentProviders>
-      </DraftInputContributionContext>
+      </GitRendererBridgeProvider>
     </ComponentSettingsContext>
   )
 }

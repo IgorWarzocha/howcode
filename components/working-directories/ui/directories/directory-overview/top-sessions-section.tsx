@@ -1,3 +1,5 @@
+import { SkeletonBlock } from '@howaboua/howcode-sdk/common/skeleton'
+import { inlineEmptyNoteClass } from '@howaboua/howcode-sdk/ui/classes'
 import {
   appToneMutedClass,
   appToneTextClass,
@@ -6,8 +8,7 @@ import {
   appTypeSmallClass,
 } from '@howaboua/howcode-sdk/ui/typography-scale'
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
-import { inlineEmptyNoteClass, quietListRowClass } from '@howcode/ui/classes'
-import { SkeletonBlock } from '../../../../../src/app/common/skeleton'
+import { quietListRowClass } from '@howcode/ui/classes'
 import type { DirectoryUsageSessionSummary } from '../../../../../src/app/desktop/types'
 import { formatCost, formatTokens } from './overview-formatters'
 

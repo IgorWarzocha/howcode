@@ -1,9 +1,9 @@
 import type { ShellState } from '../../shared/desktop-contracts.ts'
-import { isToolkitComponentEnabled } from '../../shared/toolkit-components.ts'
 import { loadAppSettings, loadSidebarVisibleDirectoryIds } from '../app-settings/readers.ts'
 import { getComposerState } from '../conversation-runtime.ts'
-import { loadPiSettings, loadPiThemeState } from '../pi-settings.ts'
 import { getAgentDirectory } from '../settings/paths.ts'
+import { loadThemeState } from '../settings/themes.ts'
+import { loadShellPreferences } from '../shell-preferences.ts'
 import { syncWorkspaceOrganization } from '../workspace-repository.ts'
 import { ensureConversationProjection } from './conversation-projection.ts'
 
@@ -15,12 +15,17 @@ export async function loadShellState(
   await ensureConversationProjection()
 
   const appSettings = loadAppSettings()
-  const codingEnabled = Boolean(loadDirectories) && isToolkitComponentEnabled(appSettings, 'coding')
-  const [composer, piSettings, piTheme, directories] = await Promise.all([
-    getComposerState(codingEnabled ? { directoryId: cwd } : { composerProfile: 'general' }),
-    loadPiSettings(codingEnabled ? cwd : null),
-    loadPiThemeState(codingEnabled ? cwd : null),
-    codingEnabled && loadDirectories ? loadDirectories(cwd) : { resolvedCwd: cwd, directories: [] },
+  const directoryScopeAvailable = Boolean(loadDirectories)
+  // Snapshot only previously registered scopes, before directory discovery seeds the current cwd.
+  const shellPreferences = await loadShellPreferences(directoryScopeAvailable ? cwd : null)
+  const [composer, piTheme, directories] = await Promise.all([
+    getComposerState(
+      directoryScopeAvailable ? { directoryId: cwd } : { composerProfile: 'general' },
+    ),
+    loadThemeState(shellPreferences.theme, directoryScopeAvailable ? cwd : null),
+    directoryScopeAvailable && loadDirectories
+      ? loadDirectories(cwd)
+      : { resolvedCwd: cwd, directories: [] },
   ])
 
   syncWorkspaceOrganization(
@@ -40,7 +45,7 @@ export async function loadShellState(
     agentDir,
     appSettings,
     sidebarVisibleDirectoryIds: loadSidebarVisibleDirectoryIds(),
-    piSettings,
+    shellPreferences,
     piTheme,
     composer,
   }

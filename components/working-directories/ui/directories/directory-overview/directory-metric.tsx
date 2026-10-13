@@ -1,3 +1,4 @@
+import { SkeletonBlock } from '@howaboua/howcode-sdk/common/skeleton'
 import {
   appToneMutedClass,
   appToneSubtleClass,
@@ -6,7 +7,6 @@ import {
   appTypeDashboardMetricClass,
   appTypeSmallClass,
 } from '@howaboua/howcode-sdk/ui/typography-scale'
-import { SkeletonBlock } from '../../../../../src/app/common/skeleton'
 
 export function DirectoryMetric({
   detail,

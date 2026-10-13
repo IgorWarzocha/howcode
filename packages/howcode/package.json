@@ -32,7 +32,6 @@
     "effect": "4.0.0-rc.116",
     "esbuild": "0.28.2",
     "jiti": "2.7.0",
-    "node-pty": "^1.1.0",
     "proper-lockfile": "4.1.2",
     "react": "19.3.0",
     "react-dom": "19.3.0",

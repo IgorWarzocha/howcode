@@ -10,7 +10,7 @@ import type {
   ComposerThinkingLevel,
 } from './desktop-composer-contracts'
 import type { DictationModelId } from './desktop-dictation-contracts'
-import type { PiSettingsSchema, PiThemeStateSchema } from './desktop-settings-schema'
+import type { PiThemeStateSchema, ShellPreferencesSchema } from './desktop-settings-schema'
 import type { ComposerSendMode, KeybindingOverrides } from './keybindings'
 import type { ToolkitComponentId } from './toolkit-components'
 
@@ -23,6 +23,7 @@ export type DirectoryDeletionMode = 'pi-only' | 'full-clean'
 export type { GitOpsMode } from '@howaboua/howcode-git/contracts'
 
 export type AppSettings = {
+  navigationRenderer?: string
   enabledToolkitComponents?: readonly ToolkitComponentId[]
   chatModel: ModelSelection | null
   chatThinkingLevel: ComposerThinkingLevel | null
@@ -54,10 +55,10 @@ export type AppSettings = {
   composerSendMode: ComposerSendMode
 }
 
-export type PiTransportMode = 'sse' | 'websocket' | 'websocket-cached' | 'auto'
-export type PiQueueMode = 'all' | 'one-at-a-time'
+export type ShellTransportMode = 'sse' | 'websocket' | 'websocket-cached' | 'auto'
+export type ShellQueueMode = 'all' | 'one-at-a-time'
 
-export type PiSettings = typeof PiSettingsSchema.Type
+export type ShellPreferences = typeof ShellPreferencesSchema.Type
 
 export type PiThemeState = typeof PiThemeStateSchema.Type
 
@@ -71,7 +72,7 @@ export type ShellState = {
   directories: WorkingDirectory[]
   sidebarVisibleDirectoryIds: string[] | null
   appSettings: AppSettings
-  piSettings: PiSettings
+  shellPreferences: ShellPreferences
   piTheme: PiThemeState
   composer: ComposerState
 }

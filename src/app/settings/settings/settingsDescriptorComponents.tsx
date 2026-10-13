@@ -9,8 +9,9 @@ export function buildComponentSettingsDescriptors(
 ): SettingDescriptor[] {
   return toolkitComponents.map((component) => ({
     id: `component.${component.id}`,
-    category: 'howcode',
-    title: component.label,
+    category: 'components',
+    componentId: component.id,
+    title: 'Show in workspace',
     description: `${component.description} Workspace UI only. Existing conversation tools are unchanged.`,
     keywords: 'component enable disable',
     render: () => (

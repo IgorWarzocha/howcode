@@ -1,21 +1,5 @@
-import { appToneSubtleClass, appTypeTinyClass } from '@howaboua/howcode-sdk/ui/typography-scale'
+export const topRoomyViewShellClass = 'view-shell--top-roomy'
 
-export const skillsViewShellClass = 'view-shell--top-roomy'
-
-export const skillsListClass =
+export const utilityListClass =
   'grid min-h-0 gap-0.5 overflow-y-scroll overflow-x-hidden pr-1 [scrollbar-gutter:stable]'
-
-export const skillsPreviewListClass = `${skillsListClass} max-h-[14rem]`
-
-export const skillsActionRailInsetClass = 'pr-[1.125rem]'
-
-export const skillsActionColumnClass = 'inline-flex h-7 w-7 items-center justify-center'
-
-export const skillsHeaderActionRailClass = skillsActionRailInsetClass
-
-export const skillsSearchControlRowClass = `grid grid-cols-[minmax(0,1fr)_1.75rem] items-center gap-1 ${skillsActionRailInsetClass}`
-
-export const skillsActionControlRowClass =
-  'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 pr-4'
-
-export const skillsBrowsePreferenceButtonClass = `grid min-h-7 grid-cols-[auto_1.75rem] items-center gap-2 rounded-md py-0 pl-1.5 ${appTypeTinyClass} ${appToneSubtleClass} opacity-80 transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--muted)] hover:opacity-100`
+export const utilityActionColumnClass = 'inline-flex h-7 w-7 items-center justify-center'

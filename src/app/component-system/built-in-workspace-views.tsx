@@ -1,15 +1,10 @@
 import { ChatWorkspaceView } from '@howcode/chat-workspace'
-import { chatHistoryComponent } from '@howcode/components/chat-history/ui/component'
-import { ChatHistoryWorkspaceView } from '@howcode/components/chat-history/ui/views'
-import { SkillsWorkspaceView } from '@howcode/components/skills/ui'
-import { skillsComponent } from '@howcode/components/skills/ui/component'
 import { workingDirectoriesComponent } from '@howcode/components/working-directories/ui/component'
-import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
 import type { ComponentProps } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
 import { FALLBACK_APP_SETTINGS } from '../workspace-shell/default-app-settings'
 import { UtilityWorkspaceView } from '../workspace-shell/utility-workspace-view'
-import { WorkspacePresentation } from '../workspace-shell/workspace-presentation'
+import { InstalledNavigationHistory } from './navigation-history'
 import { DomainWorkspaceView } from './workspace-presentation/domain-workspace-view'
 import type { WorkspaceViewContributions } from './workspace-views'
 
@@ -19,35 +14,12 @@ export type BuiltInWorkspaceViewProps = CodeProps & {
   controller: AppShellController
 }
 
-function composeChatHistory(controller: AppShellController) {
-  const selectedDirectoryId = controller.workspace.state.hasSelectedDirectory
-    ? controller.workspace.state.selectedDirectoryId
-    : ''
-  const directoryGitState = controller.directories.gitState
-  return (
-    <ChatHistoryWorkspaceView
-      directory={
-        controller.directories.items.find((directory) => directory.id === selectedDirectoryId) ??
-        null
-      }
-      directories={controller.directories.items}
-      currentBranch={
-        directoryGitState?.directoryId === selectedDirectoryId && directoryGitState.isGitRepo
-          ? directoryGitState.branch
-          : null
-      }
-      onAction={controller.desktop.handleAction}
-      onClose={controller.navigation.closeUtilityView}
-      onOpenChat={controller.chat.open}
-    />
-  )
-}
-
 // Trusted built-in presentation composition does not select Durable extensions.
 export function composeBuiltInWorkspaceViews(props: BuiltInWorkspaceViewProps) {
   const { controller } = props
   const chat = (
     <ChatWorkspaceView
+      artifactDrawer={props.artifactDrawer}
       controller={{
         workspaces: controller.workspaces,
         composer: controller.composer,
@@ -60,11 +32,7 @@ export function composeBuiltInWorkspaceViews(props: BuiltInWorkspaceViewProps) {
       activeComposerState={props.activeComposerState}
       activeChatData={props.activeChatData}
       composerDirectoryId={props.composerDirectoryId}
-      diffBaseline={props.diffBaseline}
-      diffRenderMode={props.diffRenderMode}
       terminalConversationId={props.terminalConversationId}
-      onSetDiffBaseline={props.onSetDiffBaseline}
-      onSetDiffRenderMode={props.onSetDiffRenderMode}
       sidebarCollapsed={props.sidebarCollapsed}
       sidebarAutoHidden={props.sidebarAutoHidden}
       sidebarCompactMode={props.sidebarCompactMode}
@@ -97,40 +65,14 @@ export function composeBuiltInWorkspaceViews(props: BuiltInWorkspaceViewProps) {
     settings: utility,
     chat,
     workspace: chat,
+    history: <InstalledNavigationHistory controller={controller} />,
   }
-  if (isToolkitComponentEnabled(settings, 'coding')) {
-    for (const component of [workingDirectoriesComponent]) {
-      Object.assign(contributions, Object.fromEntries(component.views.map((view) => [view, code])))
-    }
-    const history = composeChatHistory(controller)
-    Object.assign(
-      contributions,
-      Object.fromEntries(chatHistoryComponent.views.map((view) => [view, history])),
-    )
-    if (controller.workspace.state.composerProfile === 'coding') {
-      Object.assign(contributions, { chat: code, workspace: code })
-    }
-  }
-  if (isToolkitComponentEnabled(settings, skillsComponent.id)) {
-    Object.assign(
-      contributions,
-      skillsComponent.contribute(
-        <WorkspacePresentation>
-          <SkillsWorkspaceView
-            appSettings={settings ?? FALLBACK_APP_SETTINGS}
-            directoryPath={
-              controller.workspace.state.hasSelectedDirectory
-                ? controller.workspace.state.selectedDirectoryId || null
-                : null
-            }
-            onSetDirectoryScopeActive={controller.resourceScope.setSkillsActive}
-            onDirectoryTargetSelected={() => controller.resourceScope.setSkillsActive(true)}
-            onAction={controller.desktop.handleAction}
-            onClose={controller.navigation.closeUtilityView}
-          />
-        </WorkspacePresentation>,
-      ),
-    )
+  Object.assign(
+    contributions,
+    Object.fromEntries(workingDirectoriesComponent.views.map((view) => [view, code])),
+  )
+  if (controller.workspace.state.composerProfile === 'coding') {
+    Object.assign(contributions, { chat: code, workspace: code })
   }
   return contributions
 }

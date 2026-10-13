@@ -1,13 +1,8 @@
-import {
-  GitDiffPresentationProvider,
-  useGitDetailLayout,
-  useGitWorkspacePresentation,
-} from '@howaboua/howcode-git/ui'
-import { useRef, useState } from 'react'
-import { useQueuedPromptCancellation } from '../../composer/useQueuedPromptCancellation'
+import { useGitPresentation } from '@howaboua/howcode-sdk/git-renderer'
+import { useContext, useRef, useState } from 'react'
 import type { Message, View } from '../../types'
 import { useWorkspaceFooterHeight } from '../../workspace-shell/useWorkspaceFooterHeight'
-import { useWorkspacePresentationToggle } from '../../workspace-shell/workspace-presentation'
+import { RendererHostsContext } from '../installed-renderer-context'
 import type { DomainWorkspaceViewProps } from './domain-workspace-contract'
 import { DomainWorkspaceViewContent } from './domain-workspace-footer'
 
@@ -81,71 +76,47 @@ function getDomainWorkspaceFlags(input: {
 }
 
 export function DomainWorkspaceView({
+  artifactDrawer,
   controller,
   activeComposerState,
   activeChatData,
   composerDirectoryId,
   currentDirectoryName,
-  diffBaseline,
-  diffRenderMode,
   terminalDrawerVisible,
   terminalDrawerOverlay = false,
   terminalConversationId,
   workspaceContentClass,
-  onSetDiffBaseline,
-  onSetDiffRenderMode,
   sidebarCollapsed,
   sidebarAutoHidden,
   sidebarCompactMode,
   onToggleSidebar,
 }: DomainWorkspaceViewProps) {
+  const publishedGitPresentation = useGitPresentation()
+  const gitRevision = useContext(RendererHostsContext).find(
+    (renderer) => renderer.name === '@howaboua/howcode-git',
+  )?.reference?.revision
+  const gitPresentation =
+    publishedGitPresentation?.revision === gitRevision ? publishedGitPresentation : null
   const [composerLayoutVersion, setComposerLayoutVersion] = useState(0)
-  const gitDetailLayout = useGitDetailLayout()
   const [composerOverlayHeight, setComposerOverlayHeight] = useState(0)
   const footerRef = useRef<HTMLElement>(null)
   const mainViewRef = useRef<HTMLElement>(null)
   const handleAction = controller.desktop.handleAction
   const handleLoadEarlierMessages = controller.chat.loadEarlierMessages
-  const handleOpenGitOpsView = controller.gitOps.open
-  const handleOpenWorktreeDiffFile = controller.gitOps.openWorktreeFile
   const handleToggleTerminal = controller.terminal.toggle
   const listComposerAttachmentEntries = controller.composer.listAttachmentEntries
   const directoryGitState = controller.directories.gitState
   const { shellState } = controller.desktop
   const { state } = controller.workspace
-  const gitDetailOpen = Boolean(
-    composerDirectoryId && state.gitDetailDirectoryId === composerDirectoryId,
-  )
+  const gitDetailOpen = gitPresentation?.detailOpen ?? false
   const { showWorkspaceFooter, showChatFooter, showCodeSidebarFooter } = getDomainWorkspaceFlags({
     activeView: state.activeView,
     hasSelectedDirectory: state.hasSelectedDirectory,
     selectedDirectoryId: state.selectedDirectoryId,
   })
-  const {
-    gitOpsFileTreeVisible,
-    parentBranchName,
-    includeUntrackedDiffFiles,
-    toggleGitOpsFileTree,
-    toggleIncludeUntrackedDiffFiles,
-    diffLoadError,
-    setDiffLoadError,
-    gitOpsReview,
-  } = useGitWorkspacePresentation({
-    detailOpen: gitDetailOpen,
-    composerDirectoryId,
-    terminalConversationId,
-    shellState,
-    diffBaseline,
-    handleAction,
-    handleOpenWorktreeDiffFile,
-  })
-  const gitPresentation = useWorkspacePresentationToggle({
-    id: composerDirectoryId,
-    open: gitDetailOpen,
-    confirmClose: gitOpsReview.hasPendingReview,
-    onOpen: handleOpenGitOpsView,
-    onClose: controller.gitOps.close,
-  })
+  const parentBranchName =
+    shellState?.directories.find((directory) => directory.id === composerDirectoryId)?.worktree
+      ?.parentBranchName ?? null
   const showDesktopTerminalDrawer = shouldShowDesktopTerminalDrawer(
     state.activeView,
     terminalDrawerVisible,
@@ -164,12 +135,6 @@ export function DomainWorkspaceView({
       gitDetailOpen,
     })
   const footerInset = showWorkspaceFooter && !floatingWorkspaceFooter ? footerHeight : 0
-  const { handleRemoveQueuedPrompt, pendingQueuedPromptIdsForSession, queuedPromptError } =
-    useQueuedPromptCancellation({
-      composerDirectoryId,
-      handleAction,
-      terminalConversationId,
-    })
 
   const terminalDrawerInsetStyle = showDesktopTerminalDrawer
     ? { right: TERMINAL_DRAWER_OFFSET }
@@ -182,69 +147,45 @@ export function DomainWorkspaceView({
   const chatTimelineLoading = state.activeView === 'chat' && controller.chat.activeLoading
 
   return (
-    <GitDiffPresentationProvider
-      directoryId={composerDirectoryId}
-      baseline={diffBaseline}
-      includeUntracked={includeUntrackedDiffFiles}
+    <DomainWorkspaceViewContent
+      artifactDrawer={artifactDrawer}
+      terminalDrawerInsetStyle={terminalDrawerInsetStyle}
+      terminalDrawerVisible={terminalDrawerVisible}
+      footerInset={footerInset}
+      mainViewRef={mainViewRef}
+      state={state}
+      gitDetailOpen={gitDetailOpen}
+      gitPresentation={gitPresentation}
+      composerDirectoryId={composerDirectoryId}
       directoryGitState={directoryGitState}
-      detailEnabled={gitDetailOpen}
-      onOpenDetail={gitPresentation.toggle}
-    >
-      <DomainWorkspaceViewContent
-        terminalDrawerInsetStyle={terminalDrawerInsetStyle}
-        terminalDrawerVisible={terminalDrawerVisible}
-        footerInset={footerInset}
-        mainViewRef={mainViewRef}
-        state={state}
-        gitDetailOpen={gitDetailOpen}
-        gitCloseConfirmation={gitPresentation.closeConfirmation}
-        gitDetailLayout={gitDetailLayout}
-        composerDirectoryId={composerDirectoryId}
-        directoryGitState={directoryGitState}
-        parentBranchName={parentBranchName}
-        diffBaseline={diffBaseline}
-        gitOpsReview={gitOpsReview}
-        diffRenderMode={diffRenderMode}
-        gitOpsFileTreeVisible={gitOpsFileTreeVisible}
-        includeUntrackedDiffFiles={includeUntrackedDiffFiles}
-        controller={controller}
-        shellState={shellState}
-        activeComposerState={activeComposerState}
-        currentDirectoryName={currentDirectoryName}
-        workspaceContentClass={workspaceContentClass}
-        activeChatData={activeChatData}
-        chatTimelineLoading={chatTimelineLoading}
-        composerLayoutVersion={composerLayoutVersion}
-        composerOverlayHeight={composerOverlayHeight}
-        handleAction={handleAction}
-        listComposerAttachmentEntries={listComposerAttachmentEntries}
-        sidebarCollapsed={sidebarCollapsed}
-        sidebarCompactMode={sidebarCompactMode}
-        onToggleSidebar={onToggleSidebar}
-        handleLoadEarlierMessages={handleLoadEarlierMessages}
-        showWorkspaceFooter={showWorkspaceFooter}
-        footerRef={footerRef}
-        showChatFooter={showChatFooter}
-        centerChatFooter={centerChatFooter}
-        chatFooterStyle={chatFooterStyle}
-        sidebarAutoHidden={sidebarAutoHidden}
-        terminalConversationId={terminalConversationId}
-        diffLoadError={diffLoadError}
-        setDiffLoadError={setDiffLoadError}
-        onSetDiffBaseline={onSetDiffBaseline}
-        onSetDiffRenderMode={onSetDiffRenderMode}
-        setComposerLayoutVersion={setComposerLayoutVersion}
-        handleCloseGitOpsView={gitPresentation.close}
-        handleRemoveQueuedPrompt={handleRemoveQueuedPrompt}
-        pendingQueuedPromptIdsForSession={pendingQueuedPromptIdsForSession}
-        queuedPromptError={queuedPromptError}
-        setComposerOverlayHeight={setComposerOverlayHeight}
-        handleToggleTerminal={handleToggleTerminal}
-        showDesktopTerminalDrawer={showDesktopTerminalDrawer}
-        toggleGitOpsFileTree={toggleGitOpsFileTree}
-        toggleIncludeUntrackedDiffFiles={toggleIncludeUntrackedDiffFiles}
-        showCodeSidebarFooter={showCodeSidebarFooter}
-      />
-    </GitDiffPresentationProvider>
+      parentBranchName={parentBranchName}
+      controller={controller}
+      shellState={shellState}
+      activeComposerState={activeComposerState}
+      currentDirectoryName={currentDirectoryName}
+      workspaceContentClass={workspaceContentClass}
+      activeChatData={activeChatData}
+      chatTimelineLoading={chatTimelineLoading}
+      composerLayoutVersion={composerLayoutVersion + (gitPresentation?.layoutRevision ?? 0)}
+      composerOverlayHeight={composerOverlayHeight}
+      handleAction={handleAction}
+      listComposerAttachmentEntries={listComposerAttachmentEntries}
+      sidebarCollapsed={sidebarCollapsed}
+      sidebarCompactMode={sidebarCompactMode}
+      onToggleSidebar={onToggleSidebar}
+      handleLoadEarlierMessages={handleLoadEarlierMessages}
+      showWorkspaceFooter={showWorkspaceFooter}
+      footerRef={footerRef}
+      showChatFooter={showChatFooter}
+      centerChatFooter={centerChatFooter}
+      chatFooterStyle={chatFooterStyle}
+      sidebarAutoHidden={sidebarAutoHidden}
+      terminalConversationId={terminalConversationId}
+      setComposerLayoutVersion={setComposerLayoutVersion}
+      setComposerOverlayHeight={setComposerOverlayHeight}
+      handleToggleTerminal={handleToggleTerminal}
+      showDesktopTerminalDrawer={showDesktopTerminalDrawer}
+      showCodeSidebarFooter={showCodeSidebarFooter}
+    />
   )
 }

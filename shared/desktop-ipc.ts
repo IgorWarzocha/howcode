@@ -1,11 +1,18 @@
-import type { GitRequestMap } from '@howaboua/howcode-git/host/contracts'
+import type {
+  TerminalCloseRequest,
+  TerminalEvent,
+  TerminalOpenRequest,
+  TerminalResizeRequest,
+  TerminalSessionSnapshot,
+  TerminalStatusRequest,
+  TerminalStatusSnapshot,
+  TerminalWriteRequest,
+} from '@howaboua/howcode-terminal/contracts'
 import type { ConversationEntryList } from './conversation-entries'
 import type { DesktopAction } from './desktop-actions'
 import type {
   AnyDesktopActionPayload,
   ArchivedChat,
-  Artifact,
-  ArtifactVersion,
   Chat,
   ChatData,
   ChatSearchResult,
@@ -17,24 +24,18 @@ import type {
   ComposerStateRequest,
   DesktopActionResult,
   DesktopEvent,
-  DictationModelInstallResult,
-  DictationModelRemoveResult,
-  DictationModelSummary,
-  DictationState,
-  DictationTranscriptionRequest,
-  DictationTranscriptionResult,
   DirectoryUsageSummary,
   InboxChat,
   PiConfiguredSkill,
   PiSkillCatalogPage,
   PiSkillMutationResult,
-  ReactArtifactCompileResult,
   ShellState,
   WorkspaceNavigationState,
 } from './desktop-contracts'
 import type {
   InstalledComponentAdmission,
   InstalledComponentDescriptor,
+  InstalledComponentMutation,
   InstalledComponentSource,
 } from './installed-component-contracts'
 import type {
@@ -43,24 +44,26 @@ import type {
   PackageUiReference,
   PackageUiService,
 } from './package-ui-contracts'
-import type {
-  TerminalCloseRequest,
-  TerminalEvent,
-  TerminalOpenRequest,
-  TerminalResizeRequest,
-  TerminalSessionSnapshot,
-  TerminalStatusRequest,
-  TerminalStatusSnapshot,
-  TerminalWriteRequest,
-} from './terminal-contracts'
 import type { WorkspaceLayoutRequest, WorkspaceLayoutResponse } from './workspace-layout-contracts'
 
-export type DesktopRequestMap = GitRequestMap & {
+export type DesktopRequestMap = {
   workspaceLayout: { params: WorkspaceLayoutRequest; response: WorkspaceLayoutResponse }
   pluginRequest: { params: { plugin: string; method: string; payload: unknown }; response: unknown }
   listPackageUis: { params: Record<string, never>; response: PackageUiDescriptor[] }
   listInstalledComponents: {
     params: Record<string, never>
+    response: InstalledComponentDescriptor[]
+  }
+  installInstalledComponent: {
+    params: InstalledComponentMutation
+    response: InstalledComponentDescriptor[]
+  }
+  updateInstalledComponent: {
+    params: InstalledComponentMutation
+    response: InstalledComponentDescriptor[]
+  }
+  removeInstalledComponent: {
+    params: InstalledComponentMutation
     response: InstalledComponentDescriptor[]
   }
   admitInstalledComponent: { params: InstalledComponentAdmission; response: undefined }
@@ -141,20 +144,6 @@ export type DesktopRequestMap = GitRequestMap & {
   getComposerState: { params: ComposerStateRequest; response: ComposerState }
   getComposerSlashCommands: { params: ComposerStateRequest; response: ComposerSlashCommand[] }
   getComposerSkills: { params: ComposerStateRequest; response: ComposerSkillReference[] }
-  getDictationState: { params: Record<string, never>; response: DictationState }
-  listDictationModels: { params: Record<string, never>; response: DictationModelSummary[] }
-  installDictationModel: {
-    params: { modelId: 'tiny.en' | 'base.en' | 'small.en' }
-    response: DictationModelInstallResult
-  }
-  removeDictationModel: {
-    params: { modelId: 'tiny.en' | 'base.en' | 'small.en' }
-    response: DictationModelRemoveResult
-  }
-  transcribeDictation: {
-    params: DictationTranscriptionRequest
-    response: DictationTranscriptionResult
-  }
   getDirectoryChats: {
     params: { directoryId: string } | undefined
     response: Chat[]
@@ -164,32 +153,6 @@ export type DesktopRequestMap = GitRequestMap & {
     response: WorkspaceNavigationState
   }
   createWorkspace: { params: { name: string }; response: WorkspaceNavigationState }
-  listArtifacts: {
-    params: { conversationId?: string | undefined | null | undefined } | undefined
-    response: Artifact[]
-  }
-  getArtifact: {
-    params: { artifactSlug: string; conversationId?: string | undefined | null | undefined }
-    response: Artifact | null
-  }
-  updateArtifact: {
-    params: {
-      artifactSlug: string
-      content: string
-      conversationId?: string | undefined | null | undefined
-    }
-    response: Artifact
-  }
-  editArtifact: {
-    params: {
-      artifactSlug: string
-      conversationId?: string | undefined | null | undefined
-      edits: Array<{ oldText: string; newText: string }>
-    }
-    response: Artifact
-  }
-  listArtifactVersions: { params: { artifactSlug: string }; response: ArtifactVersion[] }
-  compileReactArtifact: { params: { source: string }; response: ReactArtifactCompileResult }
   getInboxChats: { params: Record<string, never>; response: InboxChat[] }
   getArchivedChats: { params: Record<string, never>; response: ArchivedChat[] }
   getChat: {

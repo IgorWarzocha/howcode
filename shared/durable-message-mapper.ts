@@ -2,6 +2,7 @@ import type { Message as ModelMessage, ToolCall } from '@earendil-works/pi-ai'
 import { CompactionEntry, type EntryRecord, type LiveState } from '@earendil-works/pi-durable'
 import type { ConversationEntryList, ConversationEntryPreview } from './conversation-entries'
 import type { ChatData, Message } from './desktop-chat-contracts'
+import { HarnessContextEntry } from './harness-context'
 import {
   getFirstUserTurnTitle,
   mapAgentMessageToUiMessage,
@@ -48,7 +49,18 @@ function mapEntries(
   entries: readonly EntryRecord[],
   calls: ReadonlyMap<string, ToolCall>,
 ): Message[] {
-  return entries.flatMap((entry) => {
+  return entries.flatMap((entry): Message[] => {
+    if (HarnessContextEntry.is(entry)) {
+      return [
+        {
+          id: String(entry.id),
+          role: 'system',
+          label: entry.data.label,
+          content: [entry.data.text],
+          collapsible: true,
+        },
+      ]
+    }
     const messages: Message[] = []
     for (const [index, modelMessage] of (entry.model ?? []).entries()) {
       const mapped = mapModelMessage(modelMessage, entryMessageId(entry, index), calls)

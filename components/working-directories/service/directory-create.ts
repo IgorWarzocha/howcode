@@ -3,24 +3,23 @@ import { mkdir, realpath, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import path from 'node:path'
 import { promisify } from 'node:util'
-import {
-  captureGitRepositoryIdentity,
-  formatGitCommandError,
-  getMainWorktreePath,
-  getNonInteractiveGitEnv,
-  getOriginUrl,
-  initializeDirectoryGit,
-  isGitRepository,
-} from '@howaboua/howcode-git/service'
-import { resolveDirectoryIdentity } from '@howaboua/howcode-sdk/node/directory-identity'
 import { ensureDirectory } from '../../../desktop/chat-repository.ts'
 import { startNewChat } from '../../../desktop/conversation-runtime.ts'
+import { ensureDirectoryWorkspace } from '../../../desktop/workspace-repository.ts'
 import { getDesktopWorkingDirectory } from '../../../shared/desktop-working-directory.ts'
 import {
   isSameGitHubRepository,
   parseGitHubRepositoryUrl,
 } from '../../../shared/github-repository-url.ts'
-import { listDirectories, setDirectoryRepoOrigin, upsertDirectoryWorktree } from './state.ts'
+import type { SidebarMaintenance } from './dependencies.ts'
+import {
+  formatGitCommandError,
+  getNonInteractiveGitEnv,
+  getOriginUrl,
+  initializeDirectoryGit,
+  isGitRepository,
+} from './folder-git.ts'
+import { getDirectoryWorktree, listDirectories, setDirectoryRepoOrigin } from './state.ts'
 
 const execFile = promisify(execFileCallback)
 
@@ -32,231 +31,215 @@ function expandHomePath(directoryPath: string) {
   return directoryPath
 }
 
-async function startChatForNewlyVisibleDirectory(directoryId: string) {
-  const result = await startNewChat({ directoryId })
-  ensureDirectory(directoryId)
-  await recordRootGitProvenance(directoryId)
-  return result
+function requireDirectoryLocation(value: string | null) {
+  const location = value?.trim() ?? ''
+  if (!location) throw new Error('Set a default project location in Settings first.')
+  return location
 }
 
-async function recordRootGitProvenance(directoryId: string) {
-  const repositoryIdentity = await captureGitRepositoryIdentity(directoryId)
-  if (!repositoryIdentity) return
-
-  const [directoryIdentity, mainWorktreePath] = await Promise.all([
-    resolveDirectoryIdentity(directoryId),
-    getMainWorktreePath(directoryId).catch(() => null),
-  ])
-  if (!mainWorktreePath) return
-
-  const mainWorktreeIdentity = await resolveDirectoryIdentity(mainWorktreePath)
-  if (
-    directoryIdentity !== mainWorktreeIdentity ||
-    repositoryIdentity.topLevelIdentity !== mainWorktreeIdentity
-  ) {
-    return
+export function createDirectoryCreation(getSidebar: () => SidebarMaintenance | undefined) {
+  async function startChatForNewlyVisibleDirectory(directoryId: string) {
+    const workspaceId = await addDirectoryWorkspace(directoryId)
+    return startNewChat({ directoryId, workspaceId })
   }
 
-  upsertDirectoryWorktree({
-    cwd: directoryId,
-    rootCwd: directoryId,
-    branchName: null,
-    gitCommonDirectoryIdentity: repositoryIdentity.commonDirectoryIdentity,
-    isMain: true,
-    source: 'howcode',
-  })
-}
-
-function sanitizeDirectoryFolderName(directoryName: string) {
-  let nextName = directoryName
-    .trim()
-    .replaceAll(/[<>:"/\\|?*]/g, '-')
-    .replace(/\s+/g, ' ')
-
-  nextName = Array.from(nextName, (char) => {
-    const code = char.charCodeAt(0)
-    return code >= 0 && code <= 31 ? '-' : char
-  }).join('')
-
-  return nextName
-}
-
-export async function createDirectory(options: {
-  preferredDirectoryLocation: string | null
-  directoryName: string
-  initializeGit: boolean
-}) {
-  const preferredDirectoryLocation = options.preferredDirectoryLocation?.trim() ?? ''
-  if (preferredDirectoryLocation.length === 0) {
-    throw new Error('Set a default project location in Settings first.')
+  async function addDirectoryWorkspace(directoryId: string) {
+    ensureDirectory(directoryId)
+    await getSidebar()?.recordRootProvenance({ directoryId })
+    return ensureDirectoryWorkspace(getDirectoryWorktree(directoryId)?.rootCwd ?? directoryId)
   }
 
-  const folderName = sanitizeDirectoryFolderName(options.directoryName)
-  if (folderName.length === 0) {
-    throw new Error('Enter a project name.')
+  function sanitizeDirectoryFolderName(directoryName: string) {
+    let nextName = directoryName
+      .trim()
+      .replaceAll(/[<>:"/\\|?*]/g, '-')
+      .replace(/\s+/g, ' ')
+
+    nextName = Array.from(nextName, (char) => {
+      const code = char.charCodeAt(0)
+      return code >= 0 && code <= 31 ? '-' : char
+    }).join('')
+
+    return nextName
   }
 
-  const parentDirectory = path.resolve(preferredDirectoryLocation)
-  const directoryPath = path.join(parentDirectory, folderName)
+  async function createDirectory(options: {
+    preferredDirectoryLocation: string | null
+    directoryName: string
+    initializeGit: boolean
+  }) {
+    const preferredDirectoryLocation = requireDirectoryLocation(options.preferredDirectoryLocation)
 
-  await mkdir(parentDirectory, { recursive: true })
-  await mkdir(directoryPath, { recursive: true })
+    const folderName = sanitizeDirectoryFolderName(options.directoryName)
+    if (folderName.length === 0) {
+      throw new Error('Enter a project name.')
+    }
 
-  if (options.initializeGit) {
-    await initializeDirectoryGit(directoryPath)
+    const parentDirectory = path.resolve(preferredDirectoryLocation)
+    const directoryPath = path.join(parentDirectory, folderName)
+
+    await mkdir(parentDirectory, { recursive: true })
+    await mkdir(directoryPath, { recursive: true })
+
+    if (options.initializeGit) {
+      await initializeDirectoryGit(directoryPath)
+    }
+
+    const result = await startChatForNewlyVisibleDirectory(directoryPath)
+    return result
   }
 
-  const result = await startChatForNewlyVisibleDirectory(directoryPath)
-  return result
-}
+  async function addDirectoryFromPath(options: {
+    directoryPath: string
+    createIfMissing: boolean
+    initializeGit: boolean
+  }) {
+    const directoryPath = expandHomePath(options.directoryPath.trim())
+    if (directoryPath.length === 0) {
+      throw new Error('Choose a folder to add.')
+    }
 
-export async function addDirectoryFromPath(options: {
-  directoryPath: string
-  createIfMissing: boolean
-  initializeGit: boolean
-}) {
-  const directoryPath = expandHomePath(options.directoryPath.trim())
-  if (directoryPath.length === 0) {
-    throw new Error('Choose a folder to add.')
+    const candidateDirectoryPath = path.resolve(directoryPath)
+    const exists = await directoryExists(candidateDirectoryPath)
+    if (!(exists || options.createIfMissing)) {
+      throw new Error('Choose an existing folder or create a new one.')
+    }
+
+    if (!exists) {
+      await mkdir(candidateDirectoryPath, { recursive: true })
+    }
+
+    const resolvedDirectoryPath = await resolvePathIfPresent(candidateDirectoryPath)
+
+    if (options.initializeGit) {
+      await initializeDirectoryGit(resolvedDirectoryPath)
+    }
+
+    const result = await startChatForNewlyVisibleDirectory(resolvedDirectoryPath)
+    return result
   }
 
-  const candidateDirectoryPath = path.resolve(directoryPath)
-  const exists = await directoryExists(candidateDirectoryPath)
-  if (!(exists || options.createIfMissing)) {
-    throw new Error('Choose an existing folder or create a new one.')
+  async function resolvePathIfPresent(directoryPath: string) {
+    try {
+      return await realpath(directoryPath)
+    } catch {
+      return path.resolve(directoryPath)
+    }
   }
 
-  if (!exists) {
-    await mkdir(candidateDirectoryPath, { recursive: true })
+  async function directoryExists(directoryPath: string) {
+    try {
+      return (await stat(directoryPath)).isDirectory()
+    } catch {
+      return false
+    }
   }
 
-  const resolvedDirectoryPath = await resolvePathIfPresent(candidateDirectoryPath)
+  async function addExistingRepositoryDirectory(directoryPath: string, repositoryUrl: string) {
+    if (!((await directoryExists(directoryPath)) && (await isGitRepository(directoryPath)))) {
+      return null
+    }
 
-  if (options.initializeGit) {
-    await initializeDirectoryGit(resolvedDirectoryPath)
+    const originUrl = await getOriginUrl(directoryPath)
+    if (!isSameGitHubRepository(originUrl, repositoryUrl)) {
+      return null
+    }
+
+    await addDirectoryWorkspace(directoryPath)
+    setDirectoryRepoOrigin(directoryPath, originUrl ?? repositoryUrl)
+    return { directoryId: directoryPath }
   }
 
-  const result = await startChatForNewlyVisibleDirectory(resolvedDirectoryPath)
-  return result
-}
+  async function findExistingGitHubDirectory(repositoryUrl: string) {
+    const directories = listDirectories(getDesktopWorkingDirectory())
 
-async function resolvePathIfPresent(directoryPath: string) {
-  try {
-    return await realpath(directoryPath)
-  } catch {
-    return path.resolve(directoryPath)
-  }
-}
+    for (const directory of directories) {
+      if (isSameGitHubRepository(directory.repoOriginUrl, repositoryUrl)) {
+        return directory.id
+      }
+    }
 
-async function directoryExists(directoryPath: string) {
-  try {
-    return (await stat(directoryPath)).isDirectory()
-  } catch {
-    return false
-  }
-}
+    for (const directory of directories) {
+      if (!(await isGitRepository(directory.id))) {
+        continue
+      }
 
-async function addExistingRepositoryDirectory(directoryPath: string, repositoryUrl: string) {
-  if (!((await directoryExists(directoryPath)) && (await isGitRepository(directoryPath)))) {
+      const originUrl = await getOriginUrl(directory.id)
+      if (isSameGitHubRepository(originUrl, repositoryUrl)) {
+        setDirectoryRepoOrigin(directory.id, originUrl)
+        return directory.id
+      }
+    }
+
     return null
   }
 
-  const originUrl = await getOriginUrl(directoryPath)
-  if (!isSameGitHubRepository(originUrl, repositoryUrl)) {
-    return null
-  }
+  async function createDirectoryFromGitHubUrl(options: {
+    preferredDirectoryLocation: string | null
+    repositoryUrl: string
+  }) {
+    const preferredDirectoryLocation = requireDirectoryLocation(options.preferredDirectoryLocation)
 
-  ensureDirectory(directoryPath)
-  await recordRootGitProvenance(directoryPath)
-  setDirectoryRepoOrigin(directoryPath, originUrl ?? repositoryUrl)
-  return { directoryId: directoryPath }
-}
-
-async function findExistingGitHubDirectory(repositoryUrl: string) {
-  const directories = listDirectories(getDesktopWorkingDirectory())
-
-  for (const directory of directories) {
-    if (isSameGitHubRepository(directory.repoOriginUrl, repositoryUrl)) {
-      return directory.id
-    }
-  }
-
-  for (const directory of directories) {
-    if (!(await isGitRepository(directory.id))) {
-      continue
+    const repository = parseGitHubRepositoryUrl(options.repositoryUrl)
+    if (!repository) {
+      throw new Error('Paste a GitHub repository URL such as https://github.com/owner/repo.')
     }
 
-    const originUrl = await getOriginUrl(directory.id)
-    if (isSameGitHubRepository(originUrl, repositoryUrl)) {
-      setDirectoryRepoOrigin(directory.id, originUrl)
-      return directory.id
+    const existingDirectoryId = await findExistingGitHubDirectory(repository.canonicalUrl)
+    if (existingDirectoryId) {
+      await addDirectoryWorkspace(existingDirectoryId)
+      return { directoryId: existingDirectoryId }
     }
-  }
 
-  return null
-}
-
-export async function createDirectoryFromGitHubUrl(options: {
-  preferredDirectoryLocation: string | null
-  repositoryUrl: string
-}) {
-  const preferredDirectoryLocation = options.preferredDirectoryLocation?.trim() ?? ''
-  if (preferredDirectoryLocation.length === 0) {
-    throw new Error('Set a default project location in Settings first.')
-  }
-
-  const repository = parseGitHubRepositoryUrl(options.repositoryUrl)
-  if (!repository) {
-    throw new Error('Paste a GitHub repository URL such as https://github.com/owner/repo.')
-  }
-
-  const existingDirectoryId = await findExistingGitHubDirectory(repository.canonicalUrl)
-  if (existingDirectoryId) {
-    return { directoryId: existingDirectoryId }
-  }
-
-  const parentDirectory = path.resolve(preferredDirectoryLocation)
-  const directoryPath = path.join(
-    parentDirectory,
-    sanitizeDirectoryFolderName(repository.folderName),
-  )
-  await mkdir(parentDirectory, { recursive: true })
-
-  const existingDirectoryDirectory = await addExistingRepositoryDirectory(
-    directoryPath,
-    repository.canonicalUrl,
-  )
-  if (existingDirectoryDirectory) {
-    return existingDirectoryDirectory
-  }
-
-  if (await directoryExists(directoryPath)) {
-    throw new Error(
-      `A folder named ${repository.folderName} already exists there. Choose an empty location before cloning this GitHub repository.`,
+    const parentDirectory = path.resolve(preferredDirectoryLocation)
+    const directoryPath = path.join(
+      parentDirectory,
+      sanitizeDirectoryFolderName(repository.folderName),
     )
-  }
+    await mkdir(parentDirectory, { recursive: true })
 
-  try {
-    await execFile('git', ['clone', '--progress', repository.cloneUrl, directoryPath], {
-      cwd: parentDirectory,
-      env: getNonInteractiveGitEnv(),
-      timeout: 120_000,
-      maxBuffer: 1024 * 1024 * 4,
-    })
-  } catch (error) {
-    const resolvedDirectoryPath = await resolvePathIfPresent(directoryPath)
-    const resolvedExistingDirectory = await findExistingGitHubDirectory(repository.canonicalUrl)
-    if (
-      resolvedExistingDirectory &&
-      (await resolvePathIfPresent(resolvedExistingDirectory)) === resolvedDirectoryPath
-    ) {
-      return { directoryId: resolvedExistingDirectory }
+    const existingDirectoryDirectory = await addExistingRepositoryDirectory(
+      directoryPath,
+      repository.canonicalUrl,
+    )
+    if (existingDirectoryDirectory) {
+      return existingDirectoryDirectory
     }
 
-    throw new Error(`Unable to clone ${repository.canonicalUrl}: ${formatGitCommandError(error)}`)
+    if (await directoryExists(directoryPath)) {
+      throw new Error(
+        `A folder named ${repository.folderName} already exists there. Choose an empty location before cloning this GitHub repository.`,
+      )
+    }
+
+    try {
+      await execFile('git', ['clone', '--progress', repository.cloneUrl, directoryPath], {
+        cwd: parentDirectory,
+        env: getNonInteractiveGitEnv(),
+        timeout: 120_000,
+        maxBuffer: 1024 * 1024 * 4,
+      })
+    } catch (error) {
+      const recovered = await recoverClonedRepository(directoryPath, repository.canonicalUrl)
+      if (recovered) return recovered
+
+      throw new Error(`Unable to clone ${repository.canonicalUrl}: ${formatGitCommandError(error)}`)
+    }
+
+    const result = await startChatForNewlyVisibleDirectory(directoryPath)
+    setDirectoryRepoOrigin(directoryPath, repository.canonicalUrl)
+    return result
   }
 
-  const result = await startChatForNewlyVisibleDirectory(directoryPath)
-  setDirectoryRepoOrigin(directoryPath, repository.canonicalUrl)
-  return result
+  async function recoverClonedRepository(directoryPath: string, repositoryUrl: string) {
+    const [resolvedDirectoryPath, existing] = await Promise.all([
+      resolvePathIfPresent(directoryPath),
+      findExistingGitHubDirectory(repositoryUrl),
+    ])
+    if (!existing || (await resolvePathIfPresent(existing)) !== resolvedDirectoryPath) return null
+    await addDirectoryWorkspace(existing)
+    return { directoryId: existing }
+  }
+
+  return { createDirectory, addDirectoryFromPath, createDirectoryFromGitHubUrl }
 }

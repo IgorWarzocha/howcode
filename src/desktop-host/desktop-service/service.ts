@@ -1,8 +1,8 @@
 import type { ChildProcess } from 'node:child_process'
+import type { TerminalRpcServiceClient } from '@howaboua/howcode-terminal/host'
 import * as Context from 'effect/Context'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
-import type { TerminalRpcServiceClient } from '../../../components/terminal/host/index'
 import { makeDesktopServiceCore } from './core'
 import { makeLiveProcessAdapter } from './live-process'
 import {
@@ -20,10 +20,15 @@ function makeTerminalBridge(
   terminalRpc: TerminalRpcServiceClient,
 ): TerminalRpcBridge<ChildProcess> {
   return {
-    connect: (child) =>
+    connect: (child, available) =>
       Effect.tryPromise({
-        try: () => terminalRpc.connect(child),
+        try: () => terminalRpc.connect(child, available),
         catch: (error) => serviceError('connectTerminalRpc', error),
+      }),
+    setAvailable: (child, available) =>
+      Effect.tryPromise({
+        try: () => terminalRpc.setAvailable(child, available),
+        catch: (error) => serviceError('refreshTerminalRpc', error),
       }),
     dispose: (child) =>
       Effect.tryPromise({

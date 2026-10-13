@@ -1,16 +1,15 @@
-import { cn } from '@howaboua/howcode-sdk/utils/cn'
-import { useDictationSettingsDraft } from '@howcode/components/dictation/ui'
+import { ViewHeader } from '@howaboua/howcode-sdk/common/view-header'
+import { ViewShell } from '@howaboua/howcode-sdk/common/view-shell'
 import { useCallback, useRef } from 'react'
-import { ViewHeader } from '../common/view-header'
-import { ViewShell } from '../common/view-shell'
 import type {
   AppSettings,
   ComposerModel,
   ComposerThinkingLevel,
   DesktopActionInvoker,
-  PiSettings,
   PiThemeState,
+  ShellPreferences,
 } from '../desktop/types'
+import { SettingsComponentCatalogue } from './settings/settingsComponentCatalogue'
 import { buildSettingsDescriptors } from './settings/settingsDescriptors'
 import { filterSettings, groupSettingsByCategory } from './settings/settingsGroups'
 import { SettingsGroupsList } from './settings/settingsGroupsList'
@@ -20,15 +19,15 @@ import {
   SettingsMobileFilters,
   SettingsSearchField,
 } from './settings/settingsNavigation'
+import { SettingsPiImport } from './settings/settingsPiImport'
 import type { SettingsOpenTarget } from './settings/settingsTypes'
-import { useDraftPiSettings } from './settings/useDraftPiSettings'
+import { useDraftShellPreferences } from './settings/useDraftShellPreferences'
 import { useSettingsController } from './settings/useSettingsController'
-import { useSettingsHelpLayout } from './settings/useSettingsHelpLayout'
 import { useSettingsNavigation } from './settings/useSettingsNavigation'
 
 type SettingsViewProps = {
   appSettings: AppSettings
-  piSettings: PiSettings
+  shellPreferences: ShellPreferences
   piTheme: PiThemeState | null
   availableModels: ComposerModel[]
   availableThinkingLevels: ComposerThinkingLevel[]
@@ -41,7 +40,7 @@ type SettingsViewProps = {
 
 export function SettingsView({
   appSettings,
-  piSettings,
+  shellPreferences,
   piTheme,
   availableModels,
   availableThinkingLevels,
@@ -53,10 +52,8 @@ export function SettingsView({
 }: SettingsViewProps) {
   const settingsScrollRef = useRef<HTMLDivElement>(null)
   const controller = useSettingsController({ appSettings, resolvedPiDirectory, onAction })
-  const piDraft = useDraftPiSettings({ onAction, piSettings })
+  const preferencesDraft = useDraftShellPreferences({ onAction, shellPreferences })
   const navigation = useSettingsNavigation({ openTarget, settingsScrollRef })
-  const { configuredDictationModelId, dictationModelDraft, setDictationModelDraft } =
-    useDictationSettingsDraft(appSettings)
 
   const settings = buildSettingsDescriptors({
     appSettings,
@@ -64,35 +61,43 @@ export function SettingsView({
     availableThinkingLevels,
     currentModel,
     controller,
-    draftPiSettings: piDraft.draftPiSettings,
+    draftShellPreferences: preferencesDraft.draftShellPreferences,
     piTheme,
-    setDraftPiSetting: piDraft.setDraftPiSetting,
+    setDraftShellPreference: preferencesDraft.setDraftShellPreference,
     openSelectId: navigation.openSelectId,
     setOpenSelectId: navigation.setOpenSelectId,
-    dictationModelDraft,
-    setDictationModelDraft,
-    configuredDictationModelId,
     onAction,
   })
+  settings.push({
+    id: 'general.import-pi',
+    category: 'general',
+    title: 'Import from Pi',
+    description:
+      'Copy supported preferences into Howcode. Credentials and resources are not imported; Pi files are unchanged.',
+    keywords: 'import migration preferences settings',
+    render: () => (
+      <SettingsPiImport
+        onAction={onAction}
+        beforeImport={preferencesDraft.flushShellPreferences}
+        defaultDirectory={resolvedPiDirectory}
+      />
+    ),
+  })
   const filteredSettings = filterSettings({
-    settings,
+    settings: settings.filter((setting) => setting.category !== 'components'),
     normalizedFilter: navigation.normalizedFilter,
     activeCategory: navigation.activeCategory,
   })
   const visibleGroups = groupSettingsByCategory({ settings: filteredSettings })
-  const help = useSettingsHelpLayout({
-    settingsScrollRef,
-    visibleSettingIds: filteredSettings.map((setting) => setting.id).join('|'),
-  })
   const closeSettings = useCallback(
-    () => void piDraft.flushPiSettings().finally(onClose),
-    [onClose, piDraft.flushPiSettings],
+    () => void preferencesDraft.flushShellPreferences().finally(onClose),
+    [onClose, preferencesDraft.flushShellPreferences],
   )
 
   return (
     <ViewShell
       className="h-full content-stretch grid-rows-[auto_minmax(0,1fr)] overflow-hidden !pb-0"
-      maxWidthClassName={help.showHelp ? 'max-w-[1360px]' : 'max-w-[1120px]'}
+      maxWidthClassName="max-w-[1360px]"
     >
       <div className="grid min-w-0 items-center gap-4 lg:grid-cols-[220px_minmax(0,1fr)_auto]">
         <ViewHeader title="App settings" className="items-center" />
@@ -103,20 +108,10 @@ export function SettingsView({
             className="w-[min(460px,42vw)]"
           />
         </div>
-        <SettingsHeaderActions
-          helpColumnAvailable={help.helpColumnAvailable}
-          showHelp={help.showHelp}
-          onToggleHelp={() => help.setShowHelp((current) => !current)}
-          onClose={closeSettings}
-        />
+        <SettingsHeaderActions onClose={closeSettings} />
       </div>
 
-      <div
-        className={cn(
-          'grid h-full min-h-0 min-w-0 items-start gap-4 overflow-hidden lg:grid-cols-[220px_minmax(0,1fr)]',
-          help.showHelp && 'lg:grid-cols-[220px_minmax(0,1fr)_minmax(18rem,24rem)]',
-        )}
-      >
+      <div className="grid h-full min-h-0 min-w-0 items-start gap-4 overflow-hidden lg:grid-cols-[220px_minmax(0,1fr)]">
         <SettingsCategorySidebar
           activeCategory={navigation.activeCategory}
           normalizedFilter={navigation.normalizedFilter}
@@ -125,11 +120,7 @@ export function SettingsView({
 
         <div
           ref={settingsScrollRef}
-          className={cn(
-            'grid h-full min-h-0 min-w-0 content-start gap-4 overflow-x-hidden overflow-y-auto pr-1 pb-6',
-            help.showHelp &&
-              'lg:col-span-2 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:gap-x-4',
-          )}
+          className="grid h-full min-h-0 min-w-0 content-start gap-4 overflow-x-hidden overflow-y-auto pr-1 pb-6"
         >
           <SettingsMobileFilters
             filter={navigation.filter}
@@ -137,12 +128,18 @@ export function SettingsView({
             onFilterChange={navigation.setFilter}
             onSelectCategory={navigation.setActiveCategory}
           />
-          <SettingsGroupsList
-            visibleGroups={visibleGroups}
-            showHelp={help.showHelp}
-            highlightedCategoryId={navigation.highlightedCategoryId}
-            settingRowHeights={help.settingRowHeights}
-          />
+          {navigation.activeCategory === 'components' ? (
+            <SettingsComponentCatalogue
+              settings={settings}
+              filter={navigation.normalizedFilter}
+              target={openTarget?.componentId}
+            />
+          ) : (
+            <SettingsGroupsList
+              visibleGroups={visibleGroups}
+              highlightedCategoryId={navigation.highlightedCategoryId}
+            />
+          )}
         </div>
       </div>
     </ViewShell>

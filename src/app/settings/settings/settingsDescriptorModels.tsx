@@ -4,9 +4,13 @@ import type {
   ComposerThinkingLevel,
   DesktopActionInvoker,
 } from '../../desktop/types'
-import type { SettingsController } from './settingsDescriptorTypes'
+
 import { SettingsModelWorkflowControls } from './settingsModelWorkflowControls'
 import type { SettingDescriptor } from './settingsTypes'
+
+type SettingsController = {
+  models: { selectChatModel: (id: string) => void; selectCodeModel: (id: string) => void }
+}
 
 export function buildModelSettingsDescriptors({
   appSettings,
@@ -36,33 +40,8 @@ export function buildModelSettingsDescriptors({
   }
   return [
     {
-      id: 'models.chat',
-      category: 'models',
-      title: 'Chat',
-      description: 'Default settings for the Chat view.',
-      keywords: 'chat model provider reasoning thinking',
-      render: () => (
-        <SettingsModelWorkflowControls
-          {...sharedProps}
-          idPrefix="chat-models"
-          selection={appSettings.chatModel}
-          thinkingLevel={appSettings.chatThinkingLevel}
-          allowDefaultThinking
-          onSelectModel={controller.models.selectChatModel}
-          onSelectThinkingLevel={(value) =>
-            void onAction(
-              'settings.update',
-              value === null
-                ? { key: 'chatThinkingLevel', reset: true }
-                : { key: 'chatThinkingLevel', value },
-            )
-          }
-        />
-      ),
-    },
-    {
       id: 'models.code',
-      category: 'models',
+      category: 'chat',
       title: 'Code',
       description: 'Default settings for the Code view.',
       keywords: 'code model provider reasoning thinking composer',
@@ -85,24 +64,28 @@ export function buildModelSettingsDescriptors({
         />
       ),
     },
+
     {
-      id: 'models.git-commit',
-      category: 'models',
-      title: 'Git commit messages',
-      description: 'Default settings for the GitOps view.',
-      keywords: 'git commit message model provider reasoning thinking',
+      id: 'models.chat',
+      category: 'chat',
+      title: 'Chat',
+      description: 'Default settings for the Chat view.',
+      keywords: 'chat model provider reasoning thinking',
       render: () => (
         <SettingsModelWorkflowControls
           {...sharedProps}
-          idPrefix="git-commit-models"
-          selection={appSettings.gitCommitMessageModel}
-          thinkingLevel={appSettings.gitCommitMessageThinkingLevel}
-          onSelectModel={controller.models.selectGitCommitModel}
+          idPrefix="chat-models"
+          selection={appSettings.chatModel}
+          thinkingLevel={appSettings.chatThinkingLevel}
+          allowDefaultThinking
+          onSelectModel={controller.models.selectChatModel}
           onSelectThinkingLevel={(value) =>
-            void onAction('settings.update', {
-              key: 'gitCommitMessageThinkingLevel',
-              value,
-            })
+            void onAction(
+              'settings.update',
+              value === null
+                ? { key: 'chatThinkingLevel', reset: true }
+                : { key: 'chatThinkingLevel', value },
+            )
           }
         />
       ),

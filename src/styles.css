@@ -6,7 +6,5 @@
 @import "./styles/sidebar.css";
 @import "./styles/composer-session-tree.css";
 @import "./styles/headless-auth.css";
-@import "./styles/vendor/xterm.css";
-@import "./installed-plugin-sources.generated.css";
 
 @source "../node_modules/@howaboua/howcode-sdk/dist";

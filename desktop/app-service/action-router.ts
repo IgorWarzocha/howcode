@@ -6,8 +6,8 @@ import type {
 import { assertUnhandledDesktopAction } from './action-router-result.ts'
 import { handleChatDesktopAction } from './chat-actions.ts'
 import { handleComposerDesktopAction } from './composer-actions.ts'
-import { handlePiSettingsDesktopAction } from './pi-settings-actions.ts'
 import { handleSettingsDesktopAction } from './settings-actions.ts'
+import { handleShellPreferencesDesktopAction } from './shell-preferences-actions.ts'
 import { handleWorkspaceDesktopAction } from './workspace-actions.ts'
 
 export async function handleDesktopAction(
@@ -19,7 +19,7 @@ export async function handleDesktopAction(
     handleChatDesktopAction,
     handleComposerDesktopAction,
     handleSettingsDesktopAction,
-    handlePiSettingsDesktopAction,
+    handleShellPreferencesDesktopAction,
   ]
 
   for (const handler of handlers) {

@@ -1,9 +1,7 @@
 import path from 'node:path'
 import type {
   AppService,
-  ArtifactsService,
   DesktopServiceRuntime,
-  DictationService,
   PiSkillsService,
   PluginService,
   WorkingDirectoriesService,
@@ -59,8 +57,6 @@ export function createServerRuntime(
     skills: proxyModule<PiSkillsService>(service, 'skills'),
     plugins: proxyModule<PluginService>(service, 'plugins'),
     workingDirectories: proxyModule<WorkingDirectoriesService>(service, 'workingDirectories'),
-    artifacts: proxyModule<ArtifactsService>(service, 'artifacts'),
-    dictation: proxyModule<DictationService>(service, 'dictation'),
     terminalManager: service.terminalManager,
   }
 }

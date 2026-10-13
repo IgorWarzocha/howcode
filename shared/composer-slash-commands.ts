@@ -1,47 +1,9 @@
-import type { ComposerSlashCommand } from './desktop-contracts'
-
-const compactCommandPattern = /^\/compact(?:\s+([\s\S]*))?$/
-
-export function parseCompactSlashCommand(text: string) {
-  const match = compactCommandPattern.exec(text.trim())
-  if (!match) {
-    return null
-  }
-
-  return match[1]?.trim() ?? ''
-}
-
-export function isCompactSlashCommand(text: string) {
-  return parseCompactSlashCommand(text) !== null
-}
-
-export const appSettingsSlashCommand: ComposerSlashCommand = {
-  name: 'settings',
-  description: 'Open howcode app settings',
-  source: 'app',
-}
-
-export const appNewSessionSlashCommand: ComposerSlashCommand = {
-  name: 'new',
-  description: 'Start a new chat in the current folder',
-  source: 'app',
-}
-
-export const compactSlashCommand: ComposerSlashCommand = {
-  name: 'compact',
-  description: 'Manually compact the session context',
-  source: 'builtin',
-}
-
-export const conversationForkSlashCommand: ComposerSlashCommand = {
-  name: 'fork',
-  description: 'Fork the conversation from an earlier message',
-  source: 'app',
-}
-
-export const fallbackAppSlashCommands: ComposerSlashCommand[] = [
-  appSettingsSlashCommand,
+export {
   appNewSessionSlashCommand,
+  appSettingsSlashCommand,
   compactSlashCommand,
   conversationForkSlashCommand,
-]
+  fallbackAppSlashCommands,
+  isCompactSlashCommand,
+  parseCompactSlashCommand,
+} from '@howaboua/howcode-sdk/composer-slash-commands'

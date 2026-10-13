@@ -17,16 +17,6 @@ function isDirectoryDiffStreamEvent(value: unknown): value is DirectoryDiffStrea
   return type === 'error' && typeof error === 'string'
 }
 
-const ArtifactSchema = Schema.Struct({
-  slug: Schema.String,
-  conversationId: Schema.String,
-  kind: Schema.Literals(['html', 'react', 'markdown']),
-  content: Schema.String,
-  version: Schema.Number,
-  createdAt: Schema.String,
-  updatedAt: Schema.String,
-})
-
 const DirectoryDiffStreamEventSchema = Schema.declare<DirectoryDiffStreamEvent>(
   isDirectoryDiffStreamEvent,
   { identifier: 'DirectoryDiffStreamEvent' },
@@ -43,6 +33,7 @@ export const DesktopEventSchema = Schema.Union([
     revision: Schema.Number,
   }),
   Schema.Struct({ type: Schema.Literal('package-ui-invalidation') }),
+  Schema.Struct({ type: Schema.Literal('terminal-runtime-changed'), available: Schema.Boolean }),
   Schema.Struct({
     type: Schema.Literal('plugin-event'),
     plugin: Schema.String,
@@ -52,14 +43,6 @@ export const DesktopEventSchema = Schema.Union([
   Schema.Struct({
     type: Schema.Literal('keybinding-command'),
     commandId: KeybindingCommandIdSchema,
-  }),
-  Schema.Struct({
-    type: Schema.Literal('dictation-download-log'),
-    modelId: Schema.Literals(['tiny.en', 'base.en', 'small.en']),
-    message: Schema.String,
-    at: Schema.String,
-    done: Schema.Boolean,
-    isError: Schema.Boolean,
   }),
   Schema.Struct({
     type: Schema.Literal('directory-diff-stream'),
@@ -74,11 +57,6 @@ export const DesktopEventSchema = Schema.Union([
     directoryId: Schema.optionalKey(Schema.NullOr(Schema.String)),
   }),
   Schema.Struct({ type: Schema.Literal('internal-chat-update'), conversationId: Schema.String }),
-  Schema.Struct({
-    type: Schema.Literal('artifact-update'),
-    conversationId: Schema.String,
-    artifact: ArtifactSchema,
-  }),
   Schema.Struct({
     type: Schema.Literal('chat-update'),
     reason: Schema.Literals([

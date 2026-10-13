@@ -19,7 +19,6 @@ const howcodeAliasEntries = [
   ['@howcode/archive', 'src/app/archive'],
   ['@howcode/chat-workspace', 'src/app/chat-workspace'],
   ['@howcode/common', 'src/app/common'],
-  ['@howcode/composer', 'src/app/composer'],
   ['@howcode/desktop', 'src/app/desktop'],
   ['@howcode/component-system', 'src/app/component-system'],
   ['@howcode/inbox', 'src/app/inbox'],
@@ -27,9 +26,7 @@ const howcodeAliasEntries = [
   ['@howcode/query', 'src/app/query'],
   ['@howcode/settings', 'src/app/settings/settings'],
   ['@howcode/sessions', 'src/app/sessions'],
-  ['@howcode/sidebar', 'src/app/components/sidebar'],
   ['@howcode/state', 'src/app/state'],
-  ['@howcode/chat', 'src/app/chat'],
   ['@howcode/ui', 'src/app/ui'],
   ['@howcode/workspace-shell', 'src/app/workspace-shell'],
 ] as const
@@ -74,29 +71,11 @@ export default defineConfig({
     alias: howcodeAliases,
   },
   optimizeDeps: {
+    // Excluded local SDK sources still need their Markdown dependency's CommonJS interop.
+    include: ['@howaboua/howcode-sdk > react-markdown'],
     // Plugin assets/workers and local same-version packages need Vite's transform pipeline.
     exclude: [
       ...new Set(['@wterm/ghostty', ...packageMetadata.howcodeComponents, ...localPackageNames]),
-    ],
-    include: [
-      // The unbundled Git renderer reaches Pierre's nested CommonJS cache in review and edit.
-      '@pierre/diffs > lru_map',
-      'prismjs',
-      'prismjs/components/prism-c',
-      'prismjs/components/prism-clike',
-      'prismjs/components/prism-cpp',
-      'prismjs/components/prism-css',
-      'prismjs/components/prism-java',
-      'prismjs/components/prism-javascript',
-      'prismjs/components/prism-markdown',
-      'prismjs/components/prism-markup',
-      'prismjs/components/prism-objectivec',
-      'prismjs/components/prism-powershell',
-      'prismjs/components/prism-python',
-      'prismjs/components/prism-rust',
-      'prismjs/components/prism-sql',
-      'prismjs/components/prism-swift',
-      'prismjs/components/prism-typescript',
     ],
   },
   build: {

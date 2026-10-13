@@ -1,4 +1,5 @@
-import { getOriginUrl } from '@howaboua/howcode-git/service'
+import { lstat, rm } from 'node:fs/promises'
+import path from 'node:path'
 import type { ActionHandlerResult } from '../../../../desktop/app-service/action-router-result.ts'
 import {
   handledAction,
@@ -19,13 +20,9 @@ import type { DesktopAction } from '../../../../shared/desktop-actions.ts'
 import type { AnyDesktopActionPayload } from '../../../../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../../../../shared/desktop-working-directory.ts'
 import type { WorkingDirectoryPeers } from '../dependencies.ts'
-import {
-  addDirectoryFromPath,
-  createDirectory,
-  createDirectoryFromGitHubUrl,
-} from '../directory-create.ts'
-import { importDirectories, scanKnownDirectories } from '../directory-import.ts'
-import { removeFullCleanDirectoryDirectories } from '../directory-worktrees/full-clean-removal.ts'
+import { createDirectoryCreation } from '../directory-create.ts'
+import { createDirectoryImport } from '../directory-import.ts'
+import { getOriginUrl } from '../folder-git.ts'
 import {
   archiveDirectoryChats,
   collapseAllDirectories,
@@ -45,7 +42,10 @@ import { resolveDirectoryImportActionResult } from './directory-import-action.ts
 import { isProtectedDirectoryDeletionTarget } from './directory-paths.ts'
 
 export function createDirectoryActionHandler(peers: WorkingDirectoryPeers) {
-  const { deleteArtifactsForConversations, listTerminals } = peers
+  const { listTerminals } = peers
+  const { addDirectoryFromPath, createDirectory, createDirectoryFromGitHubUrl } =
+    createDirectoryCreation(() => peers.sidebar)
+  const { importDirectories, scanKnownDirectories } = createDirectoryImport(() => peers.sidebar)
   async function deleteDirectoryConversations(directoryId: string, conversationIds: string[]) {
     const results = await Promise.allSettled(conversationIds.map(abortRuntimeConversation))
     const deletedConversationIds = conversationIds.filter(
@@ -156,15 +156,17 @@ export function createDirectoryActionHandler(peers: WorkingDirectoryPeers) {
       })
     }
 
-    const removal = await removeFullCleanDirectoryDirectories({
-      rootDirectoryId: directoryId,
-      rootWorktree: directoryWorktree,
-      worktrees: persistedWorktrees.flatMap(({ worktree }) => (worktree ? [worktree] : [])),
-    })
+    const removal = peers.sidebar
+      ? await peers.sidebar.fullClean({
+          rootDirectoryId: directoryId,
+          rootWorktree: directoryWorktree,
+          worktrees: persistedWorktrees.flatMap(({ worktree }) => (worktree ? [worktree] : [])),
+        })
+      : await removeOrdinaryFolder(directoryId, directoryWorktree, persistedWorktrees.length)
     if ('error' in removal) return handledAction(removal)
 
     const cleanupResult = await deleteDirectoryConversations(directoryId, directoryConversationIds)
-    deleteArtifactsForConversations(directoryConversationIds)
+    await peers.deleteConversations(cleanupResult.deletedConversationIds)
     for (const familyDirectoryId of directoryFamilyIds) deleteDirectory(familyDirectoryId)
     return cleanupResult.failedConversationIds.length > 0
       ? handledAction({
@@ -180,8 +182,8 @@ export function createDirectoryActionHandler(peers: WorkingDirectoryPeers) {
     directoryFamilyIds: string[],
   ) {
     const cleanupResult = await deleteDirectoryConversations(directoryId, directoryConversationIds)
+    await peers.deleteConversations(cleanupResult.deletedConversationIds)
     if (cleanupResult.failedConversationIds.length > 0) {
-      deleteArtifactsForConversations(cleanupResult.deletedConversationIds)
       deleteChatRecordsByConversationIds(cleanupResult.deletedConversationIds)
 
       return handledAction({
@@ -192,7 +194,6 @@ export function createDirectoryActionHandler(peers: WorkingDirectoryPeers) {
       })
     }
 
-    deleteArtifactsForConversations(cleanupResult.deletedConversationIds)
     for (const familyDirectoryId of directoryFamilyIds) deleteDirectory(familyDirectoryId)
     return handledAction()
   }
@@ -303,4 +304,21 @@ export function createDirectoryActionHandler(peers: WorkingDirectoryPeers) {
   }
 
   return handleDirectoryDesktopAction
+}
+
+async function removeOrdinaryFolder(
+  directoryId: string,
+  metadata: unknown,
+  linkedWorktrees: number,
+) {
+  if (metadata || linkedWorktrees)
+    return { error: 'Enable Sidebar to safely remove Git workspaces.' }
+  try {
+    await lstat(path.join(directoryId, '.git'))
+    return { error: 'Enable Sidebar to safely remove Git workspaces.' }
+  } catch (error) {
+    if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error
+  }
+  await rm(directoryId, { recursive: true, force: true })
+  return {}
 }

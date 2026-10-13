@@ -1,3 +1,4 @@
+import { useSidebarRepositorySnapshot } from '@howaboua/howcode-sdk/sidebar-renderer'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Dispatch, SetStateAction } from 'react'
 import { useCallback } from 'react'
@@ -10,7 +11,6 @@ import type {
   DesktopActionInvoker,
   DesktopActionResult,
   DirectoryGitState,
-  ShellState,
   WorkspaceNavigationState,
 } from '../desktop/types'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace-model'
@@ -59,7 +59,6 @@ type UseDesktopActionHandlersArgs = {
   ) => Promise<unknown>
   refreshShellState: () => Promise<unknown>
   selectedConversationId: string | null
-  shellState: ShellState | null
   setArchivedChats: Dispatch<SetStateAction<ArchivedChat[]>>
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>
   setWorkspaceNavigationState: Dispatch<SetStateAction<WorkspaceNavigationState | null>>
@@ -80,7 +79,6 @@ export function useDesktopActionHandlers({
   loadDirectoryChats,
   refreshShellState,
   selectedConversationId,
-  shellState,
   setArchivedChats,
   setComposerState,
   setWorkspaceNavigationState,
@@ -89,6 +87,7 @@ export function useDesktopActionHandlers({
   showToast,
   workspaceState,
 }: UseDesktopActionHandlersArgs) {
+  const { prepareAction: prepareRepositoryAction } = useSidebarRepositorySnapshot()
   const queryClient = useQueryClient()
 
   const runDesktopAction = useCallback(
@@ -97,21 +96,17 @@ export function useDesktopActionHandlers({
       payload: ActionPayload = {},
     ): Promise<DesktopActionResult | null> => {
       const preparedPayload = await prepareDesktopAction({
+        prepareRepositoryAction,
         workspaceState,
         action,
         activeView,
         composerDirectoryId,
         dispatch,
-        invokeDesktopAction,
-        loadDirectoryGitState,
-        loadDirectoryChats,
         payload,
         queryClient,
         selectedConversationId,
-        setDirectoryGitState,
         setWorkspaceNavigationState,
         setLiveChatData,
-        shellState,
       })
       if (preparedPayload.blockedResult) return preparedPayload.blockedResult
       const { contextualPayload } = preparedPayload
@@ -156,6 +151,7 @@ export function useDesktopActionHandlers({
       return actionResult
     },
     [
+      prepareRepositoryAction,
       activeView,
       composerDirectoryId,
       dispatch,
@@ -166,7 +162,6 @@ export function useDesktopActionHandlers({
       loadDirectoryChats,
       refreshShellState,
       selectedConversationId,
-      shellState,
       setArchivedChats,
       setComposerState,
       setWorkspaceNavigationState,

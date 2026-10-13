@@ -2,6 +2,7 @@ import type { JsonValue, UiBinding, UiComponent } from '@howaboua/pi-durable-ui'
 import type {
   InstalledComponentAdmission,
   InstalledComponentDescriptor,
+  InstalledComponentMutation,
   InstalledComponentSource,
 } from './installed-component-contracts'
 import type {
@@ -25,6 +26,15 @@ export type PackageUiBindingFactory = (
 ) => UiBinding | Promise<UiBinding>
 
 export type PackageUiService = {
+  installInstalledComponent(
+    request: InstalledComponentMutation,
+  ): Promise<InstalledComponentDescriptor[]>
+  updateInstalledComponent(
+    request: InstalledComponentMutation,
+  ): Promise<InstalledComponentDescriptor[]>
+  removeInstalledComponent(
+    request: InstalledComponentMutation,
+  ): Promise<InstalledComponentDescriptor[]>
   listInstalledComponents(): Promise<InstalledComponentDescriptor[]>
   admitInstalledComponent(request: InstalledComponentAdmission): Promise<undefined>
   loadInstalledComponent(reference: PackageUiReference): Promise<InstalledComponentSource>

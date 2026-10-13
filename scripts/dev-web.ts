@@ -34,6 +34,7 @@ const devServerPublicHost = resolveDevServerPublicHost(devServerListenHost)
 const allowRemoteRendererHosts =
   isDevServerWildcardHost(devServerListenHost) || !isDevServerLoopbackHost(devServerListenHost)
 const bridgeToken = crypto.randomUUID()
+const terminalOwnerToken = crypto.randomUUID()
 function getEnvironmentVariable(name: string) {
   return process.env[name]
 }
@@ -45,6 +46,8 @@ const devWebAccess = createDevWebAccess({
     null,
 })
 let bridge: ReturnType<typeof startDevWebBridge> | null = null
+let terminalOwner: ReturnType<typeof startDevWebBridge> | null = null
+let terminalOwnerRevision: string | null = null
 let activeRevision: string | null = null
 let server: ViteDevServer | null = null
 let isShuttingDown = false
@@ -55,7 +58,13 @@ const reload = createDevRuntimeReload({
   inspect: () =>
     bridge?.port
       ? bridge.inspectActivity()
-      : Promise.resolve({ tasks: 0, blockedTasks: 0, submissions: 0, terminals: 0, requests: 0 }),
+      : Promise.resolve({
+          tasks: 0,
+          blockedTasks: 0,
+          submissions: 0,
+          busyComponents: [],
+          requests: 0,
+        }),
   restart: startBridge,
   report: (message) => console.log(`[howcode] ${message}`),
 })
@@ -63,6 +72,8 @@ const reload = createDevRuntimeReload({
 async function startBridge(revision: string) {
   await bridge?.close()
   if (isShuttingDown) return
+  if (!terminalOwner?.port)
+    throw new Error('Dev terminal owner is unavailable. Restart dev to recover.')
   activeRevision = revision
   bridge = startDevWebBridge({
     root: directoryRoot,
@@ -70,6 +81,10 @@ async function startBridge(revision: string) {
     nodeExecutable,
     userDataPath: getDevUserDataPath(),
     token: bridgeToken,
+    terminalOwner: {
+      url: `http://${DEV_SERVER_HOST}:${terminalOwner.port}`,
+      token: terminalOwnerToken,
+    },
     onUnexpectedExit: (error) =>
       console.error(`[howcode] ${error.message} Save a runtime edit or restart dev to recover.`),
   })
@@ -126,7 +141,8 @@ async function watchBuilds() {
           entry.isDirectory() &&
           revisionPattern.test(entry.name) &&
           entry.name < revision &&
-          entry.name !== activeRevision
+          entry.name !== activeRevision &&
+          entry.name !== terminalOwnerRevision
         ) {
           await rm(path.join(runtimeRoot, entry.name), { recursive: true, force: true })
         }
@@ -142,7 +158,11 @@ async function shutdown(exitCode = 0) {
   lifetime.abort()
   reload.stop()
   try {
-    await Promise.all([bridge?.close(), removeDevServerMetadata(), server?.close()])
+    try {
+      await Promise.all([bridge?.close(), removeDevServerMetadata(), server?.close()])
+    } finally {
+      await terminalOwner?.close()
+    }
   } finally {
     process.exit(exitCode)
   }
@@ -232,6 +252,7 @@ process.once('SIGINT', () => void shutdown())
 process.once('SIGTERM', () => void shutdown())
 process.once('exit', () => {
   bridge?.kill()
+  terminalOwner?.kill()
   try {
     rmSync(devServerMetadataPath, { force: true })
   } catch {
@@ -241,6 +262,20 @@ process.once('exit', () => {
 
 try {
   const initialRevision = await waitForBuild()
+  terminalOwnerRevision = initialRevision
+  terminalOwner = startDevWebBridge({
+    root: directoryRoot,
+    buildRoot: path.join(runtimeRoot, initialRevision),
+    nodeExecutable,
+    userDataPath: getDevUserDataPath(),
+    token: terminalOwnerToken,
+    entrypoint: 'dev-terminal-owner.mjs',
+    onUnexpectedExit: (error) => {
+      console.error(`[howcode] Dev terminal owner exited: ${error.message}`)
+      void shutdown(1)
+    },
+  })
+  await terminalOwner.ready
   await startBridge(initialRevision)
   reload.initialise(initialRevision)
 

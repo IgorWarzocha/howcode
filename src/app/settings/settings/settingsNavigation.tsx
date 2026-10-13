@@ -1,4 +1,4 @@
-import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
+import { viewCloseButtonClass } from '@howaboua/howcode-sdk/ui/classes'
 import { Input } from '@howaboua/howcode-sdk/ui/controls'
 import {
   appToneMutedClass,
@@ -7,8 +7,7 @@ import {
   appTypeSmallClass,
 } from '@howaboua/howcode-sdk/ui/typography-scale'
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
-import { viewCloseButtonClass } from '@howcode/ui/classes'
-import { Info, Search, X } from 'lucide-react'
+import { Search, X } from 'lucide-react'
 import { settingsCategories } from './settingsGroups'
 import type { SettingsCategoryId } from './settingsTypes'
 
@@ -39,44 +38,9 @@ export function SettingsSearchField({
   )
 }
 
-export function SettingsHeaderActions({
-  helpColumnAvailable,
-  showHelp,
-  onToggleHelp,
-  onClose,
-}: {
-  helpColumnAvailable: boolean
-  showHelp: boolean
-  onToggleHelp: () => void
-  onClose: () => void
-}) {
+export function SettingsHeaderActions({ onClose }: { onClose: () => void }) {
   return (
     <div className="flex items-center justify-end gap-2">
-      <Tooltip
-        content={
-          helpColumnAvailable
-            ? showHelp
-              ? 'Hide setting descriptions'
-              : 'Show setting descriptions'
-            : 'Window is too small for the help column. Hover settings to see tooltips instead.'
-        }
-        placement="left"
-      >
-        <button
-          type="button"
-          className={cn(
-            viewCloseButtonClass,
-            'self-center disabled:cursor-not-allowed disabled:opacity-40',
-            showHelp && 'bg-[color:var(--surface-hover)] text-[color:var(--text)] opacity-100',
-          )}
-          onClick={onToggleHelp}
-          aria-label={showHelp ? 'Hide setting descriptions' : 'Show setting descriptions'}
-          aria-pressed={showHelp}
-          disabled={!helpColumnAvailable}
-        >
-          <Info size={14} />
-        </button>
-      </Tooltip>
       <button
         type="button"
         className={cn(viewCloseButtonClass, 'self-center')}
@@ -103,18 +67,6 @@ export function SettingsCategorySidebar({
   return (
     <div className="sticky top-0 hidden max-h-full min-w-0 overflow-y-auto lg:grid">
       <nav className="grid gap-0.5 p-1">
-        <button
-          type="button"
-          className={cn(
-            `flex h-8 items-center rounded-md px-2 text-left ${appTypeSmallClass} transition-colors active:scale-[0.98]`,
-            activeCategory === null && !normalizedFilter
-              ? 'bg-[color:var(--accent-bg)] text-[color:var(--text)]'
-              : 'text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
-          )}
-          onClick={() => onSelectCategory(null)}
-        >
-          All settings
-        </button>
         {settingsCategories.map((category) => (
           <button
             key={category.id}
@@ -150,16 +102,6 @@ export function SettingsMobileFilters({
     <div className="grid min-w-0 content-start gap-4 lg:hidden">
       <SettingsSearchField value={filter} onChange={onFilterChange} className="lg:hidden" />
       <div className="flex flex-wrap items-center gap-1.5 lg:hidden">
-        <button
-          type="button"
-          className={cn(
-            `rounded-md px-2 py-1 ${appTypeSmallClass} transition-colors`,
-            activeCategory === null && 'bg-[color:var(--accent-bg)] text-[color:var(--text)]',
-          )}
-          onClick={() => onSelectCategory(null)}
-        >
-          All
-        </button>
         {settingsCategories.map((category) => (
           <button
             key={category.id}

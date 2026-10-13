@@ -50,7 +50,7 @@ export function createDevRuntimeReload(input: {
         if (stopped) return
         if (!isDevRuntimeIdle(activity)) {
           report(
-            `Reload queued: ${activity.tasks} task(s), ${activity.submissions} submission(s), ${activity.terminals} terminal(s), ${activity.requests} request(s); ${activity.blockedTasks} blocked task(s). Waiting for idle. Close terminals to reload; Ctrl+C restarts manually.`,
+            `Reload queued: ${activity.tasks} task(s), ${activity.submissions} submission(s), ${activity.requests} request(s), busy components: ${activity.busyComponents.join(', ') || 'none'}; ${activity.blockedTasks} blocked task(s). Waiting for idle.`,
           )
           return
         }

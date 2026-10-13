@@ -1,12 +1,22 @@
+import type { GitWorkspaceRendererPort } from '@howaboua/howcode-git/renderer-port'
+import { usePublishGitRendererInput } from '@howaboua/howcode-sdk/git-renderer'
+import { usePublishSidebarRendererInput } from '@howaboua/howcode-sdk/sidebar-renderer'
+import { useQueryClient } from '@tanstack/react-query'
+import { useMemo, useRef } from 'react'
+import { InstalledDraftInput } from '../component-system/composer-renderer-slot'
+import {
+  classicNavigationRenderer,
+  useNavigationRenderer,
+} from '../component-system/navigation-selection'
 import {
   useTerminalDrawerPresentation,
+  useTerminalEnabled,
   useTerminalResponsiveState,
-} from '@howcode/components/terminal/ui'
-import { useAppShellDiffPreferences } from '@howcode/git-integration'
-import { useRef } from 'react'
+} from '../terminal-integration'
 import { WORKSPACE_CONTENT_MAX_WIDTH_CLASS } from '../ui/layout'
 import { getLayoutChatSelection } from './app-shell-layout-model'
 import { AppShellLayoutView } from './app-shell-layout-view'
+import { navigationDirectorySlots } from './navigation-directory-slots'
 import { useAppKeybindings } from './useAppKeybindings'
 import type { AppShellController } from './useAppShellController'
 import { useAppShellResponsiveLayout } from './useAppShellResponsiveLayout'
@@ -16,6 +26,11 @@ type AppShellLayoutProps = {
 }
 
 export function AppShellLayout({ controller }: AppShellLayoutProps) {
+  const queryClient = useQueryClient()
+  const terminalEnabled = useTerminalEnabled(controller.desktop.shellState?.appSettings)
+  const navigationRenderer = useNavigationRenderer(
+    controller.desktop.shellState?.appSettings.navigationRenderer ?? classicNavigationRenderer,
+  )
   const composerDirectoryId = controller.composer.directoryId
   const { state } = controller.workspace
   const terminalResponsive = useTerminalResponsiveState(
@@ -31,29 +46,110 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     sidebarCollapsed,
     sidebarCompactMode,
     sidebarOverlayOpen,
-  } = useAppShellResponsiveLayout(controller, terminalResponsive)
+  } = useAppShellResponsiveLayout(terminalResponsive, Boolean(navigationRenderer))
   const { conversationId: terminalConversationId, chatId: activeChatId } =
     getLayoutChatSelection(state)
   const { drawerVisible: terminalDrawerVisible, drawerPresent: terminalDrawerPresent } =
     useTerminalDrawerPresentation({
+      enabled: terminalEnabled,
       activeView: state.activeView,
       visible: state.terminalVisible,
       compactMode: sidebarCompactMode,
       hiddenByCompactResize: terminalResponsive.hiddenByCompactResize,
     })
-  const parentBranchName =
-    controller.desktop.shellState?.directories.find(
-      (directory) => directory.id === composerDirectoryId,
-    )?.worktree?.parentBranchName ?? null
-  const { diffBaseline, diffRenderMode, handleSetDiffBaseline, handleSetDiffRenderMode } =
-    useAppShellDiffPreferences({
-      activeChatId,
-      composerDirectoryId,
-      controller,
-      parentBranchName,
-      terminalConversationId,
-    })
   const mainSectionRef = useRef<HTMLElement>(null)
+  const shellState = controller.desktop.shellState
+  const activeView =
+    state.activeView.startsWith('component:') || state.activeView === 'skills'
+      ? (state.utilityViewReturnState?.activeView ?? 'chat')
+      : state.activeView
+  const gitDetailOpen = Boolean(
+    shellState &&
+      ['chat', 'directory', 'workspace'].includes(activeView) &&
+      composerDirectoryId &&
+      state.gitDetailDirectoryId === composerDirectoryId,
+  )
+  const { handleAction } = controller.desktop
+  const { open, close, openWorktreeFile } = controller.gitOps
+  const { showView } = controller.navigation
+  const directoryGitState = controller.directories.gitState
+  const loading = controller.directories.gitLoading && !directoryGitState
+  const gitPort = useMemo(
+    (): GitWorkspaceRendererPort | undefined =>
+      shellState
+        ? {
+            directoryId: composerDirectoryId,
+            conversationId: terminalConversationId,
+            directoryGitState,
+            activeChatId,
+            preferencesHost: {
+              desktop: { shellState, handleAction },
+              chat: { activeData: controller.chat.activeData },
+            },
+            settings: {
+              appSettings: shellState.appSettings,
+              availableModels: controller.composer.state?.availableModels ?? [],
+              availableThinkingLevels: controller.composer.state?.availableThinkingLevels ?? [],
+              currentModel: controller.composer.state?.currentModel ?? null,
+              update: (payload) => handleAction('settings.update', payload),
+            },
+            detailOpen: gitDetailOpen,
+            selectedFilePath: state.selectedDiffFilePath,
+            loading,
+            shellState: {
+              appSettings: shellState.appSettings,
+              directories: shellState.directories.map(({ id, worktree }) => ({
+                id,
+                ...(worktree
+                  ? { worktree: { parentBranchName: worktree.parentBranchName ?? null } }
+                  : {}),
+              })),
+            },
+            onAction: handleAction,
+            onOpenDetail: open,
+            onCloseDetail: close,
+            onOpenWorktreeFile: openWorktreeFile,
+            renderDraftInput: (input) => (
+              <InstalledDraftInput
+                {...input}
+                activeView="chat"
+                onOpenSettingsView={(target) => showView('settings', target)}
+              />
+            ),
+          }
+        : undefined,
+    [
+      shellState,
+      composerDirectoryId,
+      terminalConversationId,
+      directoryGitState,
+      activeChatId,
+      controller.chat.activeData,
+      controller.composer.state,
+      gitDetailOpen,
+      state.selectedDiffFilePath,
+      loading,
+      handleAction,
+      open,
+      close,
+      openWorktreeFile,
+      showView,
+    ],
+  )
+  usePublishGitRendererInput(gitPort)
+  const sidebarInput = useMemo(
+    () =>
+      shellState && navigationRenderer
+        ? navigationDirectorySlots(
+            controller,
+            shellState.appSettings,
+            navigationRenderer.host,
+            queryClient,
+          ).directoryTools
+        : undefined,
+    [controller, shellState, navigationRenderer, queryClient],
+  )
+  usePublishSidebarRendererInput(sidebarInput)
 
   useAppKeybindings({
     controller,
@@ -69,17 +165,12 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
       controller={controller}
       mainSectionRef={mainSectionRef}
       sidebar={{
+        available: Boolean(navigationRenderer),
         collapsed: sidebarCollapsed,
         compactMode: sidebarCompactMode,
         onOverlayOpenChange: setSidebarOverlayOpen,
         onToggle: handleToggleSidebar,
         overlayOpen: sidebarOverlayOpen,
-      }}
-      diff={{
-        baseline: diffBaseline,
-        onBaselineChange: handleSetDiffBaseline,
-        onRenderModeChange: handleSetDiffRenderMode,
-        renderMode: diffRenderMode,
       }}
       terminal={{
         drawerPresent: terminalDrawerPresent,

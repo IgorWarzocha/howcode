@@ -1,2 +1,0 @@
-- Decode skills API payloads before catalog mapping. Keep lookup caches bounded with Effect `Cache`; transient failures are not cache entries.
-- `extension.ts` owns composer discovery independently of the Skills management UI toggle. Management operations and cache cleanup belong to the service instance in `index.ts`.

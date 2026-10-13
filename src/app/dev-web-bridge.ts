@@ -1,3 +1,5 @@
+import type { GitRequestMap } from '@howaboua/howcode-git/host/contracts'
+import type { TerminalEvent, TerminalOpenRequest } from '@howaboua/howcode-terminal/contracts'
 import type { DesktopAction } from '@howcode/shared/desktop-actions'
 import { browserDesktopBridgeCapabilities } from '@howcode/shared/desktop-bridge-capabilities'
 import type { AnyDesktopActionPayload, DesktopEvent } from '@howcode/shared/desktop-contracts'
@@ -7,7 +9,6 @@ import type {
   DesktopRequestChannel,
   DesktopRequestMap,
 } from '@howcode/shared/desktop-ipc'
-import type { TerminalEvent, TerminalOpenRequest } from '@howcode/shared/terminal-contracts'
 import * as Result from 'effect/Result'
 import * as Schema from 'effect/Schema'
 import { DevWebDesktopEventEnvelope, DevWebTerminalEventEnvelope } from './dev-web-event-schema'
@@ -232,6 +233,17 @@ async function invokeRequest<K extends DesktopRequestChannel>(
   return (await response.json()) as DesktopRequestMap[K]['response']
 }
 
+async function invokeGitRequest<Method extends keyof GitRequestMap>(
+  method: Method,
+  payload: GitRequestMap[Method]['params'],
+): Promise<GitRequestMap[Method]['response']> {
+  return (await invokeRequest('pluginRequest', {
+    plugin: '@howaboua/howcode-git',
+    method,
+    payload,
+  })) as GitRequestMap[Method]['response']
+}
+
 async function uploadComposerFiles(files: File[]) {
   if (files.length === 0) {
     return []
@@ -341,6 +353,9 @@ export async function installDevWebDesktopBridge() {
     getShellState: () => invokeRequest('getShellState', {}),
     listPackageUis: () => invokeRequest('listPackageUis', {}),
     listInstalledComponents: () => invokeRequest('listInstalledComponents', {}),
+    installInstalledComponent: (request) => invokeRequest('installInstalledComponent', request),
+    updateInstalledComponent: (request) => invokeRequest('updateInstalledComponent', request),
+    removeInstalledComponent: (request) => invokeRequest('removeInstalledComponent', request),
     admitInstalledComponent: (request) => invokeRequest('admitInstalledComponent', request),
     loadInstalledComponent: (reference) => invokeRequest('loadInstalledComponent', reference),
     loadPackageUi: (reference) => invokeRequest('loadPackageUi', reference),
@@ -349,7 +364,7 @@ export async function installDevWebDesktopBridge() {
     operatePackageUiBinding: (request) => invokeRequest('operatePackageUiBinding', request),
     closePackageUiBinding: (request) => invokeRequest('closePackageUiBinding', request),
     getDirectoryGitState: (directoryId: string) =>
-      invokeRequest('getDirectoryGitState', { directoryId }),
+      invokeGitRequest('getDirectoryGitState', { directoryId }),
     getDirectoryUsageSummary: (directoryId: string) =>
       invokeRequest('getDirectoryUsageSummary', { directoryId }),
     getDirectoryFavicon: (directoryId: string) =>
@@ -360,24 +375,24 @@ export async function installDevWebDesktopBridge() {
       streamId: string | null = null,
       includeUntracked = false,
     ) =>
-      invokeRequest('startDirectoryDiffStream', {
+      invokeGitRequest('startDirectoryDiffStream', {
         directoryId,
         baseline,
         streamId,
         includeUntracked,
       }),
     cancelDirectoryDiffStream: (streamId: string) =>
-      invokeRequest('cancelDirectoryDiffStream', { streamId }),
+      invokeGitRequest('cancelDirectoryDiffStream', { streamId }),
     getDirectoryDiffStats: (directoryId: string, baseline = null, includeUntracked = false) =>
-      invokeRequest('getDirectoryDiffStats', { directoryId, baseline, includeUntracked }),
+      invokeGitRequest('getDirectoryDiffStats', { directoryId, baseline, includeUntracked }),
     getDirectoryDiffImagePreview: (request) =>
-      invokeRequest('getDirectoryDiffImagePreview', request),
+      invokeGitRequest('getDirectoryDiffImagePreview', request),
     getDirectoryDiffFileContents: (request) =>
-      invokeRequest('getDirectoryDiffFileContents', request),
+      invokeGitRequest('getDirectoryDiffFileContents', request),
     captureDirectoryDiffBaseline: (directoryId: string) =>
-      invokeRequest('captureDirectoryDiffBaseline', { directoryId }),
+      invokeGitRequest('captureDirectoryDiffBaseline', { directoryId }),
     listDirectoryCommits: (directoryId: string, limit: number | null = null) =>
-      invokeRequest('listDirectoryCommits', { directoryId, limit }),
+      invokeGitRequest('listDirectoryCommits', { directoryId, limit }),
     searchPiSkills: (request = {}) => invokeRequest('searchPiSkills', request),
     getConfiguredPiSkills: (request = {}) => invokeRequest('getConfiguredPiSkills', request),
     installPiSkill: (request) => invokeRequest('installPiSkill', request),
@@ -392,32 +407,11 @@ export async function installDevWebDesktopBridge() {
     getComposerState: (request = {}) => invokeRequest('getComposerState', request),
     getComposerSlashCommands: (request = {}) => invokeRequest('getComposerSlashCommands', request),
     getComposerSkills: (request = {}) => invokeRequest('getComposerSkills', request),
-    getDictationState: () => invokeRequest('getDictationState', {}),
-    listDictationModels: () => invokeRequest('listDictationModels', {}),
-    installDictationModel: (modelId: 'tiny.en' | 'base.en' | 'small.en') =>
-      invokeRequest('installDictationModel', { modelId }),
-    removeDictationModel: (modelId: 'tiny.en' | 'base.en' | 'small.en') =>
-      invokeRequest('removeDictationModel', { modelId }),
-    transcribeDictation: (request) => invokeRequest('transcribeDictation', request),
     getDirectoryChats: (directoryId: string) => invokeRequest('getDirectoryChats', { directoryId }),
     getWorkspaceNavigationState: (selectedWorkspaceId: string | null = null) =>
       invokeRequest('getWorkspaceNavigationState', { selectedWorkspaceId }),
     workspaceLayout: (request) => invokeRequest('workspaceLayout', request),
     createWorkspace: (name: string) => invokeRequest('createWorkspace', { name }),
-    listArtifacts: (conversationId: string | null = null) =>
-      invokeRequest('listArtifacts', { conversationId }),
-    getArtifact: (artifactSlug: string, conversationId: string | null = null) =>
-      invokeRequest('getArtifact', { artifactSlug, conversationId }),
-    updateArtifact: (artifactSlug: string, content: string, conversationId: string | null = null) =>
-      invokeRequest('updateArtifact', { artifactSlug, content, conversationId }),
-    editArtifact: (
-      artifactSlug: string,
-      edits: Array<{ oldText: string; newText: string }>,
-      conversationId: string | null = null,
-    ) => invokeRequest('editArtifact', { artifactSlug, edits, conversationId }),
-    listArtifactVersions: (artifactSlug: string) =>
-      invokeRequest('listArtifactVersions', { artifactSlug }),
-    compileReactArtifact: (source: string) => invokeRequest('compileReactArtifact', { source }),
     getInboxChats: () => invokeRequest('getInboxChats', {}),
     getArchivedChats: () => invokeRequest('getArchivedChats', {}),
     getChat: (conversationId: string, historyCompactions = 0) =>

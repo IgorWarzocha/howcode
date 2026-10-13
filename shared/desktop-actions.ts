@@ -51,7 +51,8 @@ export const desktopActions = [
   'inbox.dismiss',
   'inbox.clear-read',
   'settings.update',
-  'pi-settings.update',
+  'shell-preferences.update',
+  'shell-preferences.import-pi',
   'directories.import.scan',
   'directories.import.apply',
 ] as const

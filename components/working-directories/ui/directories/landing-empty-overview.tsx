@@ -1,10 +1,11 @@
+import { MarkdownContent } from '@howaboua/howcode-sdk/markdown/markdown-content'
 import {
   appTypeGroupTextClass,
   appTypeSectionTitleClass,
 } from '@howaboua/howcode-sdk/ui/typography-scale'
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import type { KeyboardEvent } from 'react'
-import { MarkdownContent } from '../../../../src/app/common/markdown-content'
+import { openExternalQuery } from '../../../../src/app/query/desktop-query'
 import type { LandingOverviewContent } from './landing-overview-content'
 
 const pixelRows = [
@@ -122,6 +123,7 @@ export function EmptyLandingOverview({
           aria-labelledby={`landing-section-${activeSectionIndex}-tab`}
         >
           <MarkdownContent
+            openExternal={openExternalQuery}
             markdown={activeContent?.markdown ?? ''}
             className={`gap-2 ${appTypeGroupTextClass}`}
           />

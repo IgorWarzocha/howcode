@@ -41,7 +41,6 @@ export type WorkspaceState = {
   gitDetailDirectoryId: string | null
   selectedDiffFilePath: string | null
   utilityViewReturnState: UtilityViewReturnState | null
-  settingsOpen: boolean
   settingsPanelOpen: boolean
   collapsedDirectoryIds: Record<string, boolean>
   lastCodeChatSelection: CodeChatSelection | null
@@ -89,7 +88,6 @@ export type WorkspaceAction =
   | { type: 'close-gitops' }
   | { type: 'toggle-terminal' }
   | { type: 'set-terminal-visible'; visible: boolean }
-  | { type: 'toggle-settings' }
   | { type: 'set-settings-panel-open'; open: boolean }
   | { type: 'toggle-directory-collapse'; directoryId: string }
   | { type: 'collapse-all-directories' }

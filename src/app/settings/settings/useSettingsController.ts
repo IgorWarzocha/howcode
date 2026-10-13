@@ -1,24 +1,20 @@
-import { useSettingsDictationController } from '@howcode/components/dictation/ui'
+import { useDirectorySettingsController } from '@howcode/components/working-directories/ui'
 import type { AppSettings, DesktopActionInvoker } from '../../desktop/types'
 import { buildModelSelectionPayload } from './helpers'
-import { useSettingsDirectoryController } from './useSettingsDirectoryController'
-import { useSettingsMaintenanceController } from './useSettingsMaintenanceController'
+import { useSettingsGeneralPathsController } from './useSettingsGeneralPathsController'
 
 export function useSettingsController(input: {
   appSettings: AppSettings
   resolvedPiDirectory?: string | null | undefined
   onAction: DesktopActionInvoker
 }) {
-  const directories = {
-    ...useSettingsDirectoryController(input),
-    ...useSettingsMaintenanceController(input),
-  }
-  const dictation = useSettingsDictationController(input)
-  const selectModel = (key: 'chatModel' | 'codeModel' | 'gitCommitMessageModel', id: string) =>
-    void input.onAction('settings.update', buildModelSelectionPayload(key, id))
+  const directories = useDirectorySettingsController(input)
+  const generalPaths = useSettingsGeneralPathsController(input)
 
   return {
     app: {
+      setNavigationRenderer: (value: string) =>
+        void input.onAction('settings.update', { key: 'navigationRenderer', value }),
       setComposerStreamingBehavior: (value: AppSettings['composerStreamingBehavior']) =>
         void input.onAction('settings.update', {
           key: 'composerStreamingBehavior',
@@ -40,12 +36,13 @@ export function useSettingsController(input: {
           value: !input.appSettings.hoverToFocus,
         }),
     },
-    dictation,
     models: {
-      selectChatModel: (id: string) => selectModel('chatModel', id),
-      selectCodeModel: (id: string) => selectModel('codeModel', id),
-      selectGitCommitModel: (id: string) => selectModel('gitCommitMessageModel', id),
+      selectCodeModel: (id: string) =>
+        void input.onAction('settings.update', buildModelSelectionPayload('codeModel', id)),
+      selectChatModel: (id: string) =>
+        void input.onAction('settings.update', buildModelSelectionPayload('chatModel', id)),
     },
     directories,
+    generalPaths,
   }
 }

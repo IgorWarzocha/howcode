@@ -1,11 +1,9 @@
 import type { WorkspaceNavigationState } from '@howcode/shared/desktop-workspace-contracts'
-import {
-  isToolkitComponentEnabled,
-  type ToolkitComponentSettings,
-} from '@howcode/shared/toolkit-components'
+import type { ToolkitComponentSettings } from '@howcode/shared/toolkit-components'
 import { useRouter, useRouterState } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef } from 'react'
 import {
+  getInstalledRendererContributions,
   useInstalledComponentReadiness,
   useInstalledRendererContributions,
 } from '../component-system/installed-component-catalog'
@@ -140,7 +138,9 @@ function isRouteEnabled(
 ) {
   const routeView = normalizeAppRoute(snapshot).routeName
   return routeView === 'git'
-    ? isToolkitComponentEnabled(settings, 'coding')
+    ? Object.values(getInstalledRendererContributions()).some(
+        (contribution) => contribution.git !== undefined,
+      )
     : isWorkspaceViewEnabled(settings, routeView as View)
 }
 

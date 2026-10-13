@@ -38,7 +38,7 @@ export function buildKeybindingSettingsDescriptors({
   return [
     {
       id: 'keybindings.composer-send-mode',
-      category: 'composer',
+      category: 'shortcuts',
       title: 'Composer send mode',
       description: 'Choose whether Enter sends or inserts a newline.',
       keywords: 'keyboard shortcut keybinding enter composer send newline cmd ctrl',

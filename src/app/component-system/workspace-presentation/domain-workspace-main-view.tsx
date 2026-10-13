@@ -1,4 +1,3 @@
-import { ChatView } from '@howcode/chat'
 import { DirectoryOverviewView, LandingView } from '@howcode/components/working-directories/ui'
 import type {
   AppSettings,
@@ -7,6 +6,7 @@ import type {
   DirectoryGitState,
 } from '../../desktop/types'
 import type { View, WorkingDirectory } from '../../types'
+import { InstalledChatRenderer } from '../chat-renderer-slot'
 
 type DomainWorkspaceMainViewProps = {
   activeView: View
@@ -42,7 +42,7 @@ function ChatMainView({
   | 'chatLoading'
 >) {
   return (
-    <ChatView
+    <InstalledChatRenderer
       key={chatData?.conversationId ?? 'new-thread'}
       messages={chatData?.messages ?? []}
       previousMessageCount={chatData?.previousMessageCount ?? 0}
@@ -106,7 +106,6 @@ function DomainWorkspaceDirectoryOrEmptyView({
           composerOverlayHeight={composerOverlayHeight}
           directory={selectedDirectory}
           onOpenChat={onOpenChat}
-          onAction={onAction}
         />
       ) : null}
     </div>

@@ -23,11 +23,13 @@ export const gitDiffIncludeUntrackedDefaultKey = 'gitDiffIncludeUntrackedDefault
 export const directoryDeletionModeKey = 'projectDeletionMode'
 export const useAgentsSkillsPathsKey = 'useAgentsSkillsPaths'
 export const hideSidebarSessionCountsKey = 'hideSidebarSessionCounts'
+export const navigationRendererKey = 'navigationRenderer'
 export const hoverToFocusKey = 'hoverToFocus'
 export const hoverToBlurKey = 'hoverToBlur'
 export const keybindingsKey = 'keybindings'
 export const composerSendModeKey = 'composerSendMode'
 export const sidebarVisibleDirectoryIdsKey = 'sidebarVisibleProjectIds'
+export const shellPreferencesKey = 'shellPreferences'
 
 // Keep the legacy SQLite preference key so existing component choices survive the rename.
 export const enabledToolkitComponentsKey = 'enabledToolkitExtensions'

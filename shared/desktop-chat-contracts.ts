@@ -1,4 +1,5 @@
 import type { DirectoryDiffPreferences } from '@howaboua/howcode-git/contracts'
+import type { Message } from '@howaboua/howcode-sdk/chat-renderer'
 import type { ComposerProfile } from './desktop-composer-contracts'
 
 export type Chat = {
@@ -105,66 +106,17 @@ export type ArchivedChat = {
   composerProfile?: 'general' | 'coding' | undefined
 }
 
-export type ProseMessage = {
-  id: string
-  role: 'assistant' | 'user'
-  format?: 'prose' | 'list' | undefined
-  content: string[]
-  isError?: boolean | undefined
-  stopReason?: 'length' | 'error' | 'aborted' | undefined
-  usage?: AssistantUsageSummary | undefined
-  thinkingContent?: string[] | undefined
-  thinkingHeaders?: string[] | undefined
-  thinkingRedacted?: boolean | undefined
-}
-
-export type AssistantUsageSummary = {
-  input: number
-  output: number
-  cacheRead: number
-  cacheWrite: number
-  totalTokens: number
-  costTotal: number
-}
-
-export type ToolResultMessage = {
-  id: string
-  role: 'toolResult'
-  toolCallId?: string | undefined
-  toolName: string
-  content: string[]
-  images?: ToolResultImage[] | undefined
-  isError: boolean
-  args?: string | undefined
-  rawArgs?: unknown | undefined
-  details?: unknown | undefined
-  running?: boolean | undefined
-}
-
-export type ToolResultImage = {
-  src: string
-  mimeType: string
-  alt: string
-}
-
-export type BashExecutionMessage = {
-  id: string
-  role: 'bashExecution'
-  command: string
-  output: string[]
-  exitCode: number | null
-  cancelled: boolean
-  truncated: boolean
-}
-
-export type CustomChatMessage = {
-  id: string
-  role: 'custom'
-  customType: string
-  content: string[]
-  isError?: boolean | undefined
-  details?: unknown | undefined
-}
+export type {
+  AssistantUsageSummary,
+  BashExecutionMessage,
+  CustomChatMessage,
+  Message,
+  ProseMessage,
+  SummaryChatMessage,
+  SystemChatMessage,
+  ToolResultImage,
+  ToolResultMessage,
+} from '@howaboua/howcode-sdk/chat-renderer'
 
 export type ChatCustomMessageRecord = {
   id: string
@@ -173,27 +125,6 @@ export type ChatCustomMessageRecord = {
   display?: boolean | undefined
   details?: unknown | undefined
 }
-
-export type SystemChatMessage = {
-  id: string
-  role: 'system'
-  label: string
-  content: string[]
-}
-
-export type SummaryChatMessage = {
-  id: string
-  role: 'branchSummary' | 'compactionSummary'
-  content: string[]
-}
-
-export type Message =
-  | ProseMessage
-  | ToolResultMessage
-  | BashExecutionMessage
-  | CustomChatMessage
-  | SystemChatMessage
-  | SummaryChatMessage
 
 export type ChatData = {
   conversationId: string

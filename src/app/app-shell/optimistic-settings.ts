@@ -5,12 +5,8 @@ import {
   isValidAccelerator,
   normalizeAccelerator,
 } from '@howcode/shared/keybindings'
-import type {
-  ComposerThinkingLevel,
-  DirectoryDiffDefaultBaseline,
-  ModelSelection,
-  ShellState,
-} from '../desktop/types'
+import type { ComposerThinkingLevel, ModelSelection, ShellState } from '../desktop/types'
+import { getGitRendererApi } from '../git-integration/client'
 import type { ActionPayload } from './controller-action-utils'
 
 const optimisticSettingKeys = new Set([
@@ -19,26 +15,17 @@ const optimisticSettingKeys = new Set([
   'chatThinkingLevel',
   'codeModel',
   'codeThinkingLevel',
-  'gitCommitMessageModel',
-  'gitCommitMessageThinkingLevel',
   'composerStreamingBehavior',
-  'dictationModelId',
-  'dictationMaxDurationSeconds',
-  'showDictationButton',
   'favoriteFolders',
   'directoryImportState',
   'preferredDirectoryLocation',
   'customPiDirectory',
   'initializeGitOnDirectoryCreate',
   'directoryDashboardEnabled',
-  'gitOpsDefaultMode',
-  'gitDiffBaselineDefault',
-  'gitDiffRenderModeDefault',
-  'gitDiffFileTreeDefaultVisible',
-  'gitDiffIncludeUntrackedDefault',
   'directoryDeletionMode',
   'useAgentsSkillsPaths',
   'hideSidebarSessionCounts',
+  'navigationRenderer',
   'hoverToFocus',
   'hoverToBlur',
   'keybindings',
@@ -69,20 +56,6 @@ function getOptimisticFavoriteFolders(payload: ActionPayload, fallback: string[]
     : fallback
 }
 
-function getOptimisticDiffBaselineDefault(
-  payload: ActionPayload,
-  fallback: DirectoryDiffDefaultBaseline,
-) {
-  if (!(payload.value && typeof payload.value === 'object')) return fallback
-  const baseline = payload.value as { kind?: unknown }
-  return baseline.kind === 'head' ||
-    baseline.kind === 'previous' ||
-    baseline.kind === 'main-branch' ||
-    baseline.kind === 'dev-branch'
-    ? ({ kind: baseline.kind } as DirectoryDiffDefaultBaseline)
-    : fallback
-}
-
 function applyOptimisticModelSetting(
   nextSettings: ShellState['appSettings'],
   payload: ActionPayload,
@@ -91,12 +64,6 @@ function applyOptimisticModelSetting(
     nextSettings.chatModel = getOptimisticModelSelection(payload, nextSettings.chatModel)
   if (payload.key === 'codeModel')
     nextSettings.codeModel = getOptimisticModelSelection(payload, nextSettings.codeModel)
-  if (payload.key === 'gitCommitMessageModel') {
-    nextSettings.gitCommitMessageModel = getOptimisticModelSelection(
-      payload,
-      nextSettings.gitCommitMessageModel,
-    )
-  }
 }
 
 function getResettableThinkingLevel(
@@ -123,9 +90,6 @@ function applyOptimisticThinkingSetting(
       nextSettings.codeThinkingLevel,
     )
   }
-  if (payload.key === 'gitCommitMessageThinkingLevel' && isComposerThinkingLevel(payload.value)) {
-    nextSettings.gitCommitMessageThinkingLevel = payload.value
-  }
 }
 
 function applyOptimisticBooleanSetting(
@@ -134,11 +98,8 @@ function applyOptimisticBooleanSetting(
 ) {
   if (typeof payload.value !== 'boolean') return
   const directBooleanKeys = [
-    'showDictationButton',
     'initializeGitOnDirectoryCreate',
     'directoryDashboardEnabled',
-    'gitDiffFileTreeDefaultVisible',
-    'gitDiffIncludeUntrackedDefault',
     'useAgentsSkillsPaths',
   ] as const
   if (directBooleanKeys.includes(payload.key as (typeof directBooleanKeys)[number])) {
@@ -190,28 +151,13 @@ function applyOptimisticComposerSetting(
     nextSettings.composerStreamingBehavior = payload.value
 }
 
-function applyOptimisticDictationSetting(
-  nextSettings: ShellState['appSettings'],
-  payload: ActionPayload,
-) {
-  if (payload.key === 'dictationMaxDurationSeconds' && typeof payload.value === 'number')
-    nextSettings.dictationMaxDurationSeconds = payload.value
-  if (
-    payload.key === 'dictationModelId' &&
-    (payload.value === null ||
-      payload.value === 'tiny.en' ||
-      payload.value === 'base.en' ||
-      payload.value === 'small.en')
-  )
-    nextSettings.dictationModelId = payload.value
-}
-
 function applyOptimisticScalarSetting(
   nextSettings: ShellState['appSettings'],
   payload: ActionPayload,
 ) {
   applyOptimisticComposerSetting(nextSettings, payload)
-  applyOptimisticDictationSetting(nextSettings, payload)
+  if (payload.key === 'navigationRenderer' && typeof payload.value === 'string')
+    nextSettings.navigationRenderer = payload.value
   if (payload.key === 'favoriteFolders')
     nextSettings.favoriteFolders = getOptimisticFavoriteFolders(
       payload,
@@ -230,37 +176,16 @@ function applyOptimisticScalarSetting(
       typeof payload.value === 'string' ? payload.value.trim() || null : null
 }
 
-function applyOptimisticGitSetting(
-  nextSettings: ShellState['appSettings'],
-  payload: ActionPayload,
-) {
-  if (
-    payload.key === 'gitOpsDefaultMode' &&
-    (payload.value === 'commit' || payload.value === 'commit-push')
-  )
-    nextSettings.gitOpsDefaultMode = payload.value
-  if (payload.key === 'gitDiffBaselineDefault')
-    nextSettings.gitDiffBaselineDefault = getOptimisticDiffBaselineDefault(
-      payload,
-      nextSettings.gitDiffBaselineDefault,
-    )
-  if (
-    payload.key === 'gitDiffRenderModeDefault' &&
-    (payload.value === 'stacked' || payload.value === 'split')
-  )
-    nextSettings.gitDiffRenderModeDefault = payload.value
-  if (
-    payload.key === 'directoryDeletionMode' &&
-    (payload.value === 'pi-only' || payload.value === 'full-clean')
-  )
-    nextSettings.directoryDeletionMode = payload.value
-}
-
 export function getOptimisticallyUpdatedShellState(
   currentState: ShellState | null,
   payload: ActionPayload,
 ) {
-  if (!(currentState && optimisticSettingKeys.has(String(payload.key)))) return currentState
+  if (!currentState) return currentState
+  const gitPatch = getGitRendererApi()?.getOptimisticGitSettingsPatch(
+    currentState.appSettings,
+    payload,
+  )
+  if (!(optimisticSettingKeys.has(String(payload.key)) || gitPatch)) return currentState
 
   const appSettings = { ...currentState.appSettings }
   if (payload.key === 'enabledToolkitComponents')
@@ -269,7 +194,12 @@ export function getOptimisticallyUpdatedShellState(
   applyOptimisticThinkingSetting(appSettings, payload)
   applyOptimisticBooleanSetting(appSettings, payload)
   applyOptimisticScalarSetting(appSettings, payload)
-  applyOptimisticGitSetting(appSettings, payload)
+  if (gitPatch) Object.assign(appSettings, gitPatch)
+  if (
+    payload.key === 'directoryDeletionMode' &&
+    (payload.value === 'pi-only' || payload.value === 'full-clean')
+  )
+    appSettings.directoryDeletionMode = payload.value
   applyOptimisticKeybindingSetting(appSettings, payload)
 
   return { ...currentState, appSettings } satisfies ShellState

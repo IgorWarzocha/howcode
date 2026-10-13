@@ -1,11 +1,10 @@
-import { purgeLegacyCheckpointRefsForDirectory } from '@howaboua/howcode-git/service/legacy-checkpoints'
 import * as Effect from 'effect/Effect'
 import * as SqlClient from 'effect/sql/SqlClient'
 
 type DirectoryPathRow = { readonly cwd: string }
 
 export const cleanupLegacyCheckpoints = Effect.fn('ChatStateSchema.cleanupLegacyCheckpoints')(
-  function* () {
+  function* (purge: (directoryId: string) => Promise<boolean>) {
     const sql = yield* SqlClient.SqlClient
     const table = yield* sql.unsafe<{ readonly name?: string | undefined }>(
       `SELECT name
@@ -28,7 +27,7 @@ export const cleanupLegacyCheckpoints = Effect.fn('ChatStateSchema.cleanupLegacy
     ]
     const purgeResults = yield* Effect.forEach(
       directoryIds,
-      purgeLegacyCheckpointRefsForDirectory,
+      (id) => Effect.tryPromise(() => purge(id)),
       {
         concurrency: 2,
       },

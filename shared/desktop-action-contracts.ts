@@ -6,7 +6,6 @@ import type {
   ComposerState,
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
-  DictationModelId,
   DirectoryDeletionMode,
   DirectoryDiffBaseline,
   DirectoryDiffDefaultBaseline,
@@ -14,8 +13,8 @@ import type {
   DirectoryFileWriteResult,
   DirectoryImportCandidate,
   GitOpsMode,
-  PiSettings,
   PiThemeState,
+  ShellPreferences,
   WorkingDirectory,
 } from './desktop-data-contracts'
 import type { ToolkitComponentId } from './toolkit-components'
@@ -36,7 +35,7 @@ export type DesktopActionPayloadFields = {
   includeUnstaged?: boolean | undefined
   includeUntracked?: boolean | undefined
   key?: keyof AppSettings
-  piSettingsKey?: keyof PiSettings
+  shellPreferencesKey?: keyof ShellPreferences
   level?: ComposerThinkingLevel
   message?: string | undefined | null | undefined
   modelId?: string | undefined
@@ -111,9 +110,6 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'gitCommitMessageModel'; reset: true }
   | { key: 'gitCommitMessageThinkingLevel'; value: ComposerThinkingLevel }
   | { key: 'composerStreamingBehavior'; value: ComposerStreamingBehavior }
-  | { key: 'dictationModelId'; value: DictationModelId | null }
-  | { key: 'dictationMaxDurationSeconds'; value: number }
-  | { key: 'showDictationButton'; value: boolean }
   | { key: 'enabledToolkitComponents'; value: readonly ToolkitComponentId[] }
   | { key: 'favoriteFolders'; folders: string[] }
   | { key: 'directoryImportState'; imported: boolean | null }
@@ -129,6 +125,7 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'directoryDeletionMode'; value: DirectoryDeletionMode }
   | { key: 'useAgentsSkillsPaths'; value: boolean }
   | { key: 'hideSidebarSessionCounts'; value: boolean }
+  | { key: 'navigationRenderer'; value: string }
   | { key: 'hoverToFocus'; value: boolean }
   | { key: 'hoverToBlur'; value: boolean }
   | { key: 'keybindings'; value: AppSettings['keybindings'] }
@@ -309,10 +306,11 @@ export type DesktopActionPayloadMap = {
   'inbox.dismiss': { conversationId: string; directoryId?: string | undefined | null | undefined }
   'inbox.clear-read': { olderThanDays?: number | undefined | null | undefined }
   'settings.update': DesktopSettingsUpdatePayload
-  'pi-settings.update': {
-    piSettingsKey: keyof PiSettings
+  'shell-preferences.update': {
+    shellPreferencesKey: keyof ShellPreferences
     value: string | number | boolean | string[]
   }
+  'shell-preferences.import-pi': { directoryPath?: string | undefined }
   'directories.import.scan': { directoryIds: string[] }
   'directories.import.apply': { directoryIds: string[] }
 }
@@ -349,7 +347,12 @@ export type DesktopActionResultData = {
   message?: string | undefined | null | undefined
   originDirectoryCount?: number | undefined
   originUrl?: string | undefined | null | undefined
-  piSettings?: PiSettings
+  shellPreferences?: ShellPreferences
+  preferenceImport?: {
+    sourcePath: string
+    importedKeys: string[]
+    changedKeys: string[]
+  }
   piTheme?: PiThemeState
   previewed?: boolean | undefined
   affectedDirectoryIds?: string[] | undefined

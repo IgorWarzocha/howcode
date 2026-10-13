@@ -1,8 +1,1 @@
-@import "./sidebar/base.css";
-@import "./sidebar/primitives.css";
-@import "./sidebar/projects.css";
-@import "./sidebar/common-list.css";
-@import "./sidebar/project-tree.css";
-@import "./sidebar/thread-rows.css";
-@import "./sidebar/inbox.css";
-@import "./sidebar/project-work.css";
+@import "@howaboua/howcode-sdk/ui/navigation-rows.css";

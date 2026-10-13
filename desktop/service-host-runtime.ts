@@ -1,21 +1,30 @@
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import type { SidebarMaintenance } from '@howaboua/howcode-classic-navigation/host-contribution'
 import * as Effect from 'effect/Effect'
 import * as Result from 'effect/Result'
+import { ResponseDefectEncoded } from 'effect/rpc/RpcMessage'
 import * as Schema from 'effect/Schema'
-import * as artifacts from '../components/artifacts/service/index.ts'
-import { artifactsDatabaseSchema } from '../components/artifacts/service/schema.ts'
-import { createDictationService } from '../components/dictation/service/index.ts'
-import { createPackageUiService } from '../components/packages/service/index.ts'
-import { createSkillsService } from '../components/skills/service/index.ts'
-import * as terminalManager from '../components/terminal/service/index.ts'
-import { createTerminalServiceComponent } from '../components/terminal/service/index.ts'
-import { createWorkingDirectoriesService } from '../components/working-directories/service/index.ts'
+import {
+  createPackageManager,
+  createPackageUiService,
+  defaultComponentPackages,
+} from '../components/packages/service/index.ts'
+import {
+  createSidebarHost,
+  createWorkingDirectoriesService,
+  type WorkingDirectoryPeers,
+} from '../components/working-directories/service/index.ts'
 import { workingDirectoriesDatabaseSchema } from '../components/working-directories/service/schema.ts'
 import {
+  persistedWorktreeBranchFacts,
   setDirectoryGitOpsMode,
   setDirectoryRepoOrigin,
-  workingDirectoryChatBranchFallbacks,
 } from '../components/working-directories/service/state.ts'
+import { getPersistedConversationId } from '../shared/conversation-ids.ts'
+import { getComposerRequest } from '../shared/desktop-action-payloads.ts'
 import type { DesktopEvent } from '../shared/desktop-contracts.ts'
+import type { PiSkillsService } from '../shared/desktop-service-contracts.ts'
 import {
   type DesktopServiceRemoteModuleName,
   type DesktopServiceRemoteRuntime,
@@ -25,8 +34,6 @@ import { desktopShutdownTimeouts } from '../shared/desktop-shutdown-deadlines.ts
 import { getDesktopWorkingDirectory } from '../shared/desktop-working-directory.ts'
 import { makeShutdownCoordinator } from '../shared/effect-shutdown.ts'
 import { getThemeValues } from '../shared/gui-theme.ts'
-import type { TerminalRpcRequest } from '../shared/terminal-rpc.ts'
-import { isToolkitComponentEnabled } from '../shared/toolkit-components.ts'
 import { registerConversationCleanup } from './app-service/chat-actions.ts'
 import { getRuntimeConversationMetadata } from './app-service/conversation-state.ts'
 import * as coreApp from './app-service.ts'
@@ -35,32 +42,35 @@ import { registerChatBranchFallbacks } from './chat-repository/chat-branch-fallb
 import {
   configureDatabaseSchemas,
   disposeChatStateDatabase,
-  registerDatabaseStartupTask,
+  runDatabaseTask,
 } from './chat-repository/db.ts'
-import { inspectDurableActivity } from './durable-runtime/host.ts'
-import { createGitIntegration } from './git-integration/index.ts'
+import { setChatDiffPreferences } from './chat-repository.ts'
+import { disposeDurableRuntime, inspectDurableActivity } from './durable-runtime/host.ts'
+import { getDurableHostVersion } from './durable-runtime/packages.ts'
+import { completeGitCommitMessage } from './git-integration/git-commit-message.ts'
 import { cleanupLegacyCheckpoints } from './git-integration/legacy-checkpoints.ts'
-import { createInstalledPluginServices } from './plugins/runtime.ts'
+import { getDirectoryGitOpsMode } from './git-integration/metadata.ts'
+import { createPluginConversations } from './plugins/conversations.ts'
+import {
+  createInstalledPluginServices,
+  deletePluginConversations,
+  hasInstalledPluginService,
+  installedBusyComponents,
+  installedTerminalCapability,
+} from './plugins/runtime.ts'
 import { emitDesktopEvent } from './runtime/desktop-events.ts'
+import { withDirectoryActivity } from './runtime/directory-activity.ts'
 import { getAgentDirectory } from './settings/paths.ts'
-import { loadPiSettings } from './settings/preferences.ts'
+import { loadShellPreferences } from './settings/preferences.ts'
 import { loadThemeState } from './settings/themes.ts'
+import { skillsPathsHost } from './skills-integration/paths.ts'
 import { getDesktopUserDataPath } from './user-data-path.ts'
 import { syncWorkspaceOrganization } from './workspace-repository.ts'
 
 const ServiceRequestSchema = Schema.Struct({
   type: Schema.Literal('request'),
   id: Schema.String,
-  module: Schema.Literals([
-    'dev',
-    'app',
-    'skills',
-    'plugins',
-    'workingDirectories',
-    'artifacts',
-    'dictation',
-    'packages',
-  ]),
+  module: Schema.Literals(['dev', 'app', 'skills', 'plugins', 'workingDirectories', 'packages']),
   method: Schema.String,
   args: Schema.mutable(Schema.Array(Schema.Unknown)),
 })
@@ -83,24 +93,61 @@ const ServiceInboundMessageSchema = Schema.Union([
 
 const decodeServiceInboundMessage = Schema.decodeUnknownResult(ServiceInboundMessageSchema)
 
-configureDatabaseSchemas([workingDirectoriesDatabaseSchema, artifactsDatabaseSchema])
+configureDatabaseSchemas([workingDirectoriesDatabaseSchema])
 
-const skillsComponent = createSkillsService()
 let activeRequests = 0
 let componentAdmission = true
-const skills = skillsComponent.service
-const dictationComponent = createDictationService()
-const dictation = dictationComponent.service
-const workingDirectoriesComponent = createWorkingDirectoriesService({
-  deleteArtifactsForConversations: artifacts.deleteArtifactsForConversations,
-  listTerminals: terminalManager.listTerminals,
-  closeWorkspaceTerminals: terminalManager.closeWorkspaceTerminals,
-  hasActiveWorkspaceTerminal: terminalManager.hasActiveWorkspaceTerminal,
-})
+const sidebarPackage = '@howaboua/howcode-classic-navigation'
+const workingDirectoryPeers: WorkingDirectoryPeers = {
+  get sidebar() {
+    return hasInstalledPluginService(sidebarPackage) ? sidebarMaintenance : undefined
+  },
+  deleteConversations: deletePluginConversations,
+  listTerminals: async () => (await installedTerminalCapability()?.listTerminals()) ?? [],
+  closeWorkspaceTerminals: async (id) => {
+    await installedTerminalCapability()?.closeWorkspaceTerminals(id)
+  },
+  hasActiveWorkspaceTerminal: async (id) =>
+    (await installedTerminalCapability()?.hasActiveWorkspaceTerminal(id)) ?? false,
+}
+const workingDirectoriesComponent = createWorkingDirectoriesService(workingDirectoryPeers)
 const workingDirectories = workingDirectoriesComponent.service
-let gitComponent: ReturnType<typeof createGitIntegration> | undefined
 const pluginsComponent = await createInstalledPluginServices(
   {
+    sidebar: createSidebarHost(workingDirectoryPeers),
+    terminal: {
+      dataDirectory: getDesktopUserDataPath(),
+      withDirectoryActivity,
+      send: (message) => process.send?.({ type: 'terminal-rpc-response', message }),
+    },
+    skillsPaths: skillsPathsHost,
+    dictation: {
+      initialSettings: () => {
+        const settings = loadAppSettings()
+        return {
+          modelId: settings.dictationModelId,
+          maxDurationSeconds: settings.dictationMaxDurationSeconds,
+          showButton: settings.showDictationButton,
+        }
+      },
+    },
+    git: {
+      cleanupLegacyState: (purge) => runDatabaseTask(cleanupLegacyCheckpoints(purge)),
+      getDirectoryGitOpsMode,
+      publishDiffEvent: (event) => emitDesktopEvent(event as DesktopEvent),
+      actionHost: (payload) => ({
+        setDirectoryGitOpsMode,
+        setDirectoryRepoOrigin,
+        persistedConversationId: getPersistedConversationId(
+          // biome-ignore lint/complexity/useLiteralKeys: The component host payload is an index-signature contract.
+          typeof payload['conversationId'] === 'string' ? payload['conversationId'] : null,
+        ),
+        saveDiffPreferences: setChatDiffPreferences,
+        completeCommitMessage: (prompt) =>
+          completeGitCommitMessage(getComposerRequest(payload), prompt),
+      }),
+    },
+    conversations: createPluginConversations(),
     publishEvent: (event) => emitDesktopEvent(event as DesktopEvent),
     agent: {
       dataDirectory: getDesktopUserDataPath(),
@@ -108,20 +155,11 @@ const pluginsComponent = await createInstalledPluginServices(
         const directory =
           getRuntimeConversationMetadata(conversationId)?.directoryId ??
           getDesktopWorkingDirectory()
-        const settings = await loadPiSettings(directory)
+        const settings = await loadShellPreferences(directory)
         const theme = await loadThemeState(settings.theme, directory)
         const { colorScheme, ...cssVars } = getThemeValues(theme)
         return { name: theme.selectedTheme, colors: theme.colors, cssVars, colorScheme }
       },
-    },
-  },
-  {
-    '@howaboua/howcode-git': (contribution, host) => {
-      gitComponent = createGitIntegration(contribution, host, {
-        setDirectoryGitOpsMode,
-        setDirectoryRepoOrigin,
-      })
-      return gitComponent
     },
   },
   async (operation) => {
@@ -139,25 +177,66 @@ const pluginsComponent = await createInstalledPluginServices(
   },
 )
 const plugins = pluginsComponent.service
+// Dispatch through the current admitted host generation, never a distribution implementation.
+const sidebarMaintenance: SidebarMaintenance = {
+  recordRootProvenance: (payload) =>
+    plugins.hostRequest(sidebarPackage, 'recordRootProvenance', payload) as ReturnType<
+      SidebarMaintenance['recordRootProvenance']
+    >,
+  scanDirectories: (payload) =>
+    plugins.hostRequest(sidebarPackage, 'scanDirectories', payload) as ReturnType<
+      SidebarMaintenance['scanDirectories']
+    >,
+  importDirectories: (payload) =>
+    plugins.hostRequest(sidebarPackage, 'importDirectories', payload) as ReturnType<
+      SidebarMaintenance['importDirectories']
+    >,
+  fullClean: (payload) =>
+    plugins.hostRequest(sidebarPackage, 'fullClean', payload) as ReturnType<
+      SidebarMaintenance['fullClean']
+    >,
+}
+const skills: PiSkillsService = {
+  searchPiSkills: async (request) =>
+    (await plugins.request('@howaboua/howcode-skills', 'searchPiSkills', request)) as Awaited<
+      ReturnType<PiSkillsService['searchPiSkills']>
+    >,
+  listConfiguredPiSkills: async (request) =>
+    (await plugins.request(
+      '@howaboua/howcode-skills',
+      'listConfiguredPiSkills',
+      request,
+    )) as Awaited<ReturnType<PiSkillsService['listConfiguredPiSkills']>>,
+  installPiSkill: async (request) =>
+    (await plugins.request('@howaboua/howcode-skills', 'installPiSkill', request)) as Awaited<
+      ReturnType<PiSkillsService['installPiSkill']>
+    >,
+  removePiSkill: async (request) =>
+    (await plugins.request('@howaboua/howcode-skills', 'removePiSkill', request)) as Awaited<
+      ReturnType<PiSkillsService['removePiSkill']>
+    >,
+}
+await createPackageManager({
+  directory: getDesktopUserDataPath(),
+  cwd: process.cwd(),
+  hostVersion: await getDurableHostVersion(),
+}).seedDefaults(defaultComponentPackages, path.dirname(fileURLToPath(import.meta.url)))
 const packagesComponent = await createPackageUiService(
   { directory: getDesktopUserDataPath(), cwd: process.cwd() },
   () => emitDesktopEvent({ type: 'package-ui-invalidation' }),
   pluginsComponent,
 )
 const packages = packagesComponent.service
-const unregisterArtifactCleanup = registerConversationCleanup(
-  artifacts.deleteArtifactsForConversation,
+const unregisterComponentCleanup = registerConversationCleanup((id) =>
+  deletePluginConversations([id]),
 )
-const unregisterDirectoryBranchFallbacks = registerChatBranchFallbacks(
-  workingDirectoryChatBranchFallbacks,
-)
-const unregisterGitMigration = registerDatabaseStartupTask(cleanupLegacyCheckpoints())
+const unregisterDirectoryBranchFallbacks = registerChatBranchFallbacks(persistedWorktreeBranchFacts)
 const app = {
   ...coreApp,
   loadShellState: (cwd: string) =>
     coreApp.loadShellState(cwd, workingDirectoriesComponent.loadShell),
   async loadWorkspaceNavigationState(workspaceId?: string | null) {
-    if (isToolkitComponentEnabled(loadAppSettings(), 'coding')) {
+    {
       const shell = await workingDirectoriesComponent.loadShell(getDesktopWorkingDirectory())
       syncWorkspaceOrganization(
         shell.directories.map((directory) => ({
@@ -172,7 +251,7 @@ const app = {
   async handleDesktopAction(...args: Parameters<typeof coreApp.handleDesktopAction>) {
     const result = await workingDirectoriesComponent.handleAction(...args)
     if (result.handled) return result.result
-    const gitResult = await gitComponent?.handleAction(...args)
+    const gitResult = await pluginsComponent.handleAction(...args)
     return gitResult?.handled ? gitResult.result : coreApp.handleDesktopAction(...args)
   },
 }
@@ -185,15 +264,11 @@ const modules = {
       if (devRuntime !== '1') {
         throw new Error('Runtime inspection is only available in dev:web.')
       }
-      const [activity, terminals] = await Promise.all([
-        inspectDurableActivity(),
-        terminalManager.listTerminals(),
-      ])
+      const activity = await inspectDurableActivity()
       return {
         ...activity,
         requests: activeRequests,
-        terminals: terminals.filter(({ status }) => status === 'starting' || status === 'running')
-          .length,
+        busyComponents: installedBusyComponents(),
       }
     },
   },
@@ -202,8 +277,6 @@ const modules = {
   skills,
   plugins,
   workingDirectories,
-  artifacts,
-  dictation,
 } satisfies DesktopServiceRemoteRuntime
 
 function isServiceModuleName(value: string): value is DesktopServiceRemoteModuleName {
@@ -228,16 +301,13 @@ async function getServiceDiagnostics() {
     userDataPath: getDesktopUserDataPath(),
     piAgentDir,
     customPiDirectory: loadAppSettings().customPiDirectory,
+    terminalAvailable: Boolean(installedTerminalCapability()),
   }
 }
 
 app.subscribeDesktopEvents((event) => {
   process.send?.({ type: 'desktop-event', event })
 })
-
-const terminalComponent = createTerminalServiceComponent((message) =>
-  process.send?.({ type: 'terminal-rpc-response', message }),
-)
 
 let acceptingRequests = true
 
@@ -286,7 +356,17 @@ process.on('message', (message: unknown) => {
   }
   const inbound = decoded.success
   if (inbound.type === 'terminal-rpc-request') {
-    void terminalComponent.write(inbound.message as TerminalRpcRequest).catch((error) => {
+    const terminal = installedTerminalCapability()
+    if (!terminal) {
+      process.send?.({
+        type: 'terminal-rpc-response',
+        message: ResponseDefectEncoded(
+          Schema.encodeSync(Schema.Defect())(new Error('Terminal component is not installed.')),
+        ),
+      })
+      return
+    }
+    void terminal.write(inbound.message).catch((error) => {
       console.error('Desktop terminal RPC failed.', error)
       requestShutdown()
     })
@@ -304,25 +384,21 @@ const shutdownCoordinatorPromise = Effect.runPromise(
     Effect.gen(function* () {
       // Stop inventory admission and join any component publication before native disposal.
       yield* settledTask(() => packagesComponent.dispose())
+      // Task hooks retain component bindings until Harness.close drains their invocations.
+      yield* settledTask(disposeDurableRuntime)
       yield* Effect.all(
         [
           settledTask(() =>
             workingDirectoriesComponent.dispose().then(() => pluginsComponent.dispose()),
           ),
-          settledTask(() => skillsComponent.dispose()),
-          settledTask(() => dictationComponent.dispose()),
         ],
         { concurrency: 'unbounded', discard: true },
       )
-      yield* Effect.all(
-        [
-          settledTask(() => terminalComponent.dispose()),
-          settledTask(() => app.disposeDesktopRuntime?.()),
-        ],
-        { concurrency: 'unbounded', discard: true },
-      )
-      unregisterArtifactCleanup()
-      unregisterGitMigration()
+      yield* Effect.all([settledTask(() => app.disposeDesktopRuntime?.())], {
+        concurrency: 'unbounded',
+        discard: true,
+      })
+      unregisterComponentCleanup()
       unregisterDirectoryBranchFallbacks()
     }).pipe(Effect.ensuring(Effect.promise(disposeChatStateDatabase))),
     { label: 'Desktop service', timeout: desktopShutdownTimeouts.desktopServiceCleanupMs },

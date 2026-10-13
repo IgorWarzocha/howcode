@@ -1,11 +1,14 @@
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
-import { getComposerRuntimeModel, QueuedPromptsCard } from '../../composer/index'
 import type { Message } from '../../types'
 import { FALLBACK_APP_SETTINGS } from '../../workspace-shell/default-app-settings'
-import { DesktopComposerStatusModelPicker } from '../../workspace-shell/desktop-composer-status'
-import { Composer } from '../../workspace-shell/index'
 import { WorkspaceComposerDock } from '../../workspace-shell/workspace-composer-dock'
+import {
+  InstalledComposer as Composer,
+  InstalledComposerModelPicker as DesktopComposerStatusModelPicker,
+  InstalledQueuedPrompts,
+} from '../composer-renderer-slot'
+import { getComposerRuntimeModel } from '../composer-runtime'
 import type { DomainWorkspaceContentProps } from './domain-workspace-contract'
 import { DomainWorkspaceLayout, DomainWorkspaceMainArea } from './domain-workspace-main-area'
 
@@ -36,21 +39,18 @@ function CodeSidebarToggleButton(props: DomainWorkspaceContentProps) {
   )
 }
 
-function CodeQueuedPrompts(props: DomainWorkspaceContentProps) {
-  const {
-    activeComposerState,
-    pendingQueuedPromptIdsForSession,
-    handleRemoveQueuedPrompt,
-    queuedPromptError,
-  } = props
+function CodeQueuedPrompts({
+  activeComposerState,
+  composerDirectoryId,
+  terminalConversationId,
+  handleAction,
+}: DomainWorkspaceContentProps) {
   return (
-    <QueuedPromptsCard
+    <InstalledQueuedPrompts
       prompts={activeComposerState?.queuedPrompts ?? []}
-      pendingPromptIds={pendingQueuedPromptIdsForSession}
-      errorMessage={queuedPromptError}
-      onRemovePrompt={(prompt) => {
-        void handleRemoveQueuedPrompt(prompt)
-      }}
+      directoryId={composerDirectoryId}
+      conversationId={terminalConversationId}
+      onAction={handleAction}
     />
   )
 }
@@ -58,15 +58,14 @@ function CodeQueuedPrompts(props: DomainWorkspaceContentProps) {
 function CodeChatComposer(props: DomainWorkspaceContentProps) {
   const {
     state,
+    artifactDrawer,
     activeComposerState,
     activeChatData,
     shellState,
     composerDirectoryId,
     directoryGitState,
     parentBranchName,
-    diffBaseline,
     terminalConversationId,
-    onSetDiffBaseline,
     setComposerOverlayHeight,
     footerRef,
     controller,
@@ -87,21 +86,20 @@ function CodeChatComposer(props: DomainWorkspaceContentProps) {
       directoryId={composerDirectoryId}
       directoryGitState={directoryGitState}
       parentBranchName={parentBranchName}
-      diffBaseline={diffBaseline}
       conversationId={terminalConversationId}
-      dictationModelId={appSettings.dictationModelId}
-      dictationMaxDurationSeconds={appSettings.dictationMaxDurationSeconds}
       favoriteFolders={appSettings.favoriteFolders}
-      showDictationButton={appSettings.showDictationButton}
       hoverToFocus={appSettings.hoverToFocus}
       hoverToBlur={appSettings.hoverToBlur}
       composerSendMode={appSettings.composerSendMode}
       keybindings={appSettings.keybindings}
-      onSetDiffBaseline={onSetDiffBaseline}
       onOverlayHeightChange={setComposerOverlayHeight}
       workspaceFooterRef={footerRef}
       onOpenSettingsView={(target) => controller.navigation.showView('settings', target)}
       onToggleTerminal={handleToggleTerminal}
+      artifactsAvailable={terminalConversationId !== null}
+      artifactsVisible={artifactDrawer.artifactsVisible}
+      artifactRendererName={artifactDrawer.artifactRendererName}
+      onToggleArtifactRenderer={artifactDrawer.toggleArtifacts}
       terminalVisible={state.terminalVisible}
       preferPortalModelPopover={state.activeView === 'directory'}
       onListAttachmentEntries={listComposerAttachmentEntries}

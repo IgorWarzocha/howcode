@@ -3,18 +3,14 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { BACKGROUND_CONTEXT } from '@earendil-works/chord/context'
 import { createRegistry, type Extension, type Harness } from '@earendil-works/pi-durable'
-import {
-  howcodeMetadata,
-  linkedDurablePackages,
-  resolvePackageRoot,
-} from '@howaboua/howcode-sdk/node/plugin-metadata'
+import { howcodeMetadata, linkedDurablePackages } from '@howaboua/howcode-sdk/node/plugin-metadata'
 import { createJiti } from 'jiti'
 import {
   createPackageManager,
   hasPackageUi,
   type InstalledPackage,
 } from '../../components/packages/service/index.ts'
-import { installedHowcodePackages } from './installed-durable.generated.ts'
+import { createPackageIdentity } from './package-identity.ts'
 
 const hostPackages = [
   '@earendil-works/pi-durable',
@@ -227,28 +223,32 @@ interface LoadedPackage {
 }
 
 async function durablePackageClosure(installed: InstalledPackage[]): Promise<DurablePackage[]> {
-  const configured: InstalledPackage[] = await Promise.all(
-    installedHowcodePackages.map(async (name) => ({
-      source: `howcode:${name}`,
-      kind: 'local' as const,
-      root: await resolvePackageRoot(name, dirname(fileURLToPath(import.meta.url))),
-      name,
-    })),
-  )
   const result: DurablePackage[] = []
-  const roots = new Map<string, string>()
+  const roots = new Map<string, DurablePackage>()
+  const identity = createPackageIdentity(hostPackages)
+  const fingerprints = new Map<string, string>()
   const add = (item: DurablePackage) => {
     if (item.name) {
       const previous = roots.get(item.name)
-      if (previous && previous !== item.root)
-        throw new Error(`Multiple resolved identities for Durable package ${item.name}`)
-      if (previous) return
-      roots.set(item.name, item.root)
+      if (previous) {
+        if (previous.root === item.root) return
+        if (
+          previous.linked &&
+          item.linked &&
+          fingerprints.has(previous.root) &&
+          fingerprints.get(previous.root) === fingerprints.get(item.root)
+        )
+          return
+        throw new Error(
+          `Multiple resolved identities for Durable package ${item.name}: ${previous.root} and ${item.root}`,
+        )
+      }
+      roots.set(item.name, item)
     }
     result.push(item)
   }
   const closures = await Promise.all(
-    [...configured, ...installed].map(async (owner): Promise<DurablePackage[]> => {
+    installed.map(async (owner): Promise<DurablePackage[]> => {
       if ((await stat(owner.root)).isFile()) return [owner]
       const metadata = await manifest(owner.root)
       const howcode = howcodeMetadata(metadata, owner.root)
@@ -266,9 +266,26 @@ async function durablePackageClosure(installed: InstalledPackage[]): Promise<Dur
       )
     }),
   )
-  for (const closure of closures) {
-    for (const item of closure) add(item)
+  const byName = new Map<string, DurablePackage[]>()
+  for (const item of closures.flat()) {
+    if (!item.name) continue
+    const named = byName.get(item.name) ?? []
+    named.push(item)
+    byName.set(item.name, named)
   }
+  const comparedRoots = new Set(
+    [...byName.values()].flatMap((items) =>
+      new Set(items.filter((item) => item.linked).map((item) => item.root)).size > 1
+        ? items.filter((item) => item.linked).map((item) => item.root)
+        : [],
+    ),
+  )
+  await Promise.all(
+    [...comparedRoots].map(async (root) => {
+      fingerprints.set(root, await identity(root))
+    }),
+  )
+  for (const item of closures.flat()) add(item)
   return result
 }
 

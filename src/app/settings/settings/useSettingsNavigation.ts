@@ -6,7 +6,7 @@ export function useSettingsNavigation(input: {
   openTarget: SettingsOpenTarget | null
   settingsScrollRef: RefObject<HTMLDivElement | null>
 }) {
-  const targetKey = `${input.openTarget?.category ?? ''}\0${input.openTarget?.settingId ?? ''}`
+  const targetKey = `${input.openTarget?.category ?? ''}\0${input.openTarget?.settingId ?? ''}\0${input.openTarget?.componentId ?? ''}`
   const [filterEdit, setFilterEdit] = useState<{ source: string; value: string } | null>(null)
   const [categoryEdit, setCategoryEdit] = useState<{
     source: string
@@ -14,7 +14,9 @@ export function useSettingsNavigation(input: {
   } | null>(null)
   const filter = filterEdit?.source === targetKey ? filterEdit.value : ''
   const activeCategory =
-    categoryEdit?.source === targetKey ? categoryEdit.value : (input.openTarget?.category ?? null)
+    categoryEdit?.source === targetKey
+      ? categoryEdit.value
+      : (input.openTarget?.category ?? 'general')
   const [openSelectId, setOpenSelectId] = useState<string | null>(null)
   const [highlightedSettingId, setHighlightedSettingId] = useState<string | null>(null)
   const [highlightedCategoryId, setHighlightedCategoryId] = useState<SettingsCategoryId | null>(
@@ -26,28 +28,6 @@ export function useSettingsNavigation(input: {
     setHighlightedSettingId(input.openTarget.settingId ?? null)
     setHighlightedCategoryId(input.openTarget.category ?? null)
   }, [input.openTarget])
-
-  useEffect(() => {
-    if (!openSelectId) return
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target
-      if (target instanceof Element && !target.closest('[data-inline-select-root]')) {
-        setOpenSelectId(null)
-      }
-    }
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      event.preventDefault()
-      event.stopPropagation()
-      setOpenSelectId(null)
-    }
-    document.addEventListener('pointerdown', handlePointerDown)
-    window.addEventListener('keydown', handleKeyDown, true)
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown)
-      window.removeEventListener('keydown', handleKeyDown, true)
-    }
-  }, [openSelectId])
 
   useEffect(() => {
     if (!highlightedSettingId) return

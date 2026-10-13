@@ -35,7 +35,9 @@ import {
   hoverToFocusKey,
   initializeGitOnDirectoryCreateKey,
   keybindingsKey,
+  navigationRendererKey,
   preferredDirectoryLocationKey,
+  shellPreferencesKey,
   showDictationButtonKey,
   sidebarVisibleDirectoryIdsKey,
   useAgentsSkillsPathsKey,
@@ -102,21 +104,31 @@ function loadDirectoryUiSettings(value: (key: string) => string | undefined) {
       parseBooleanPreference(value(initializeGitOnDirectoryCreateKey)) ?? false,
     directoryDashboardEnabled: parseBooleanPreference(value(directoryDashboardEnabledKey)) ?? true,
     hideSidebarSessionCounts: parseBooleanPreference(value(hideSidebarSessionCountsKey)) ?? false,
+    navigationRenderer:
+      parseStringPreference(value(navigationRendererKey)) ?? '@howaboua/howcode-classic-navigation',
   }
+}
+
+function parseEnabledToolkitComponents(value: string | undefined) {
+  if (value === undefined) return undefined
+  const enabledComponents: unknown = JSON.parse(value)
+  // Retire flags whose features now use managed component lifecycles.
+  return Schema.decodeUnknownSync(EnabledToolkitComponentsSchema)(
+    Array.isArray(enabledComponents)
+      ? enabledComponents.filter(
+          (id) => id !== 'coding' && id !== 'artifacts' && id !== 'dictation',
+        )
+      : enabledComponents,
+  )
 }
 
 const loadAppSettingsOperation = Effect.fn('AppSettings.load')(function* () {
   const rows = yield* loadPreferenceRows()
   const value = (key: string) => rows.get(key)?.valueJson
+  const enabledToolkitComponents = parseEnabledToolkitComponents(value(enabledToolkitComponentsKey))
 
   return {
-    ...(value(enabledToolkitComponentsKey) === undefined
-      ? {}
-      : {
-          enabledToolkitComponents: Schema.decodeUnknownSync(EnabledToolkitComponentsSchema)(
-            JSON.parse(value(enabledToolkitComponentsKey) ?? 'null'),
-          ),
-        }),
+    ...(enabledToolkitComponents === undefined ? {} : { enabledToolkitComponents }),
     chatModel: parseModelSelection(value(chatModelKey)),
     chatThinkingLevel: parseThinkingLevelPreference(value(chatThinkingLevelKey)),
     codeModel: parseModelSelection(value(codeModelKey)),
@@ -156,3 +168,24 @@ const loadAppSettingsOperation = Effect.fn('AppSettings.load')(function* () {
 })
 
 export const loadAppSettings: () => AppSettings = databaseOperation(loadAppSettingsOperation)
+
+export const readShellPreferencesJson: () => string | undefined = databaseOperation(
+  Effect.fn('AppSettings.readShellPreferences')(function* () {
+    return (yield* loadPreferenceRows()).get(shellPreferencesKey)?.valueJson
+  }),
+)
+
+// One-time migration boundary: projects is the legacy Howcode directory registry.
+export const readLegacyShellPreferenceScopes = databaseOperation(
+  Effect.fn('AppSettings.readLegacyShellPreferenceScopes')(function* () {
+    const sql = yield* SqlClient.SqlClient
+    const rows = yield* sql.unsafe('SELECT cwd FROM projects')
+    const directories = Schema.decodeUnknownSync(
+      Schema.Array(Schema.Struct({ cwd: Schema.String })),
+    )(rows).map((row) => row.cwd)
+    return {
+      directories,
+      existingUser: directories.length > 0 || (yield* loadPreferenceRows()).size > 0,
+    }
+  }),
+)

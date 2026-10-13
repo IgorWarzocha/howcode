@@ -4,7 +4,6 @@ import type {
   ComposerSendMode,
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
-  DictationModelId,
   DirectoryDeletionMode,
   DirectoryDiffDefaultBaseline,
   DirectoryDiffRenderMode,
@@ -12,10 +11,6 @@ import type {
   KeybindingOverrides,
   ModelSelection,
 } from '../../shared/desktop-contracts.ts'
-import {
-  DEFAULT_DICTATION_MAX_DURATION_SECONDS,
-  normalizeDictationMaxDurationSeconds,
-} from '../../shared/dictation-settings.ts'
 import type { ToolkitComponentId } from '../../shared/toolkit-components.ts'
 import { databaseOperation } from '../chat-repository/db.ts'
 import {
@@ -26,8 +21,6 @@ import {
   composerSendModeKey,
   composerStreamingBehaviorKey,
   customPiDirectoryKey,
-  dictationMaxDurationSecondsKey,
-  dictationModelIdKey,
   directoryDashboardEnabledKey,
   directoryDeletionModeKey,
   directoryImportStateKey,
@@ -45,8 +38,9 @@ import {
   hoverToFocusKey,
   initializeGitOnDirectoryCreateKey,
   keybindingsKey,
+  navigationRendererKey,
   preferredDirectoryLocationKey,
-  showDictationButtonKey,
+  shellPreferencesKey,
   sidebarVisibleDirectoryIdsKey,
   useAgentsSkillsPathsKey,
 } from './keys.ts'
@@ -80,6 +74,12 @@ const deleteAppPreference = Effect.fn('AppSettings.deletePreference')(function* 
 })
 
 const writeAppPreferenceSync = databaseOperation(writeAppPreference)
+export function writeShellPreferencesJson(valueJson: string) {
+  writeAppPreferenceSync(shellPreferencesKey, valueJson)
+}
+export function setNavigationRenderer(value: string) {
+  writeAppPreferenceSync(navigationRendererKey, JSON.stringify(value))
+}
 const deleteAppPreferenceSync = databaseOperation(deleteAppPreference)
 
 export function setGitCommitMessageModelSelection(selection: ModelSelection | null) {
@@ -133,35 +133,6 @@ export function setGitCommitMessageThinkingLevel(level: ComposerThinkingLevel) {
 
 export function setComposerStreamingBehavior(behavior: ComposerStreamingBehavior) {
   writeAppPreferenceSync(composerStreamingBehaviorKey, JSON.stringify(behavior))
-}
-
-export function setDictationModelId(modelId: DictationModelId | null) {
-  if (!modelId) {
-    deleteAppPreferenceSync(dictationModelIdKey)
-    return
-  }
-
-  writeAppPreferenceSync(dictationModelIdKey, JSON.stringify(modelId))
-}
-
-export function setDictationMaxDurationSeconds(value: number) {
-  const normalizedValue = normalizeDictationMaxDurationSeconds(value)
-
-  if (!normalizedValue || normalizedValue === DEFAULT_DICTATION_MAX_DURATION_SECONDS) {
-    deleteAppPreferenceSync(dictationMaxDurationSecondsKey)
-    return
-  }
-
-  writeAppPreferenceSync(dictationMaxDurationSecondsKey, JSON.stringify(normalizedValue))
-}
-
-export function setShowDictationButton(enabled: boolean) {
-  if (enabled) {
-    deleteAppPreferenceSync(showDictationButtonKey)
-    return
-  }
-
-  writeAppPreferenceSync(showDictationButtonKey, JSON.stringify(false))
 }
 
 export function setFavoriteFolders(favoriteFolders: string[]) {
