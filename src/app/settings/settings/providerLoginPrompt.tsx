@@ -18,7 +18,7 @@ export function ProviderLoginNotices({ session }: { session: ProviderAuthSession
   return (
     <div className="grid gap-2 text-sm">
       {session.notices.map((notice) => (
-        <div key={JSON.stringify(notice)}>
+        <div key={JSON.stringify(notice)} className="grid gap-1">
           {notice.type === 'auth_url' ? (
             <>
               <AuthLink url={notice.url}>Open sign-in page</AuthLink>
@@ -46,7 +46,9 @@ export function ProviderLoginNotices({ session }: { session: ProviderAuthSession
           {notice.type === 'progress' ? <p>{notice.message}</p> : null}
         </div>
       ))}
-      <p role="status">{session.message || 'Waiting for sign-in…'}</p>
+      {session.message || !session.prompt ? (
+        <p role="status">{session.message || 'Waiting for sign-in…'}</p>
+      ) : null}
     </div>
   )
 }
@@ -55,10 +57,12 @@ export function ProviderLoginPrompt({
   prompt,
   busy,
   answer,
+  cancel,
 }: {
   prompt: ProviderAuthPrompt
   busy: boolean
   answer: (value: string) => Promise<boolean>
+  cancel: () => Promise<void>
 }) {
   const id = useId()
   const [value, setValue] = useState('')
@@ -67,7 +71,7 @@ export function ProviderLoginPrompt({
   }
   return (
     <form
-      className="grid gap-2"
+      className="grid min-w-0 gap-2"
       onSubmit={(event) => {
         event.preventDefault()
         void submit()
@@ -106,14 +110,14 @@ export function ProviderLoginPrompt({
           disabled={busy}
         />
       )}
-      {prompt.type === 'manual_code' ? (
-        <p className="text-xs text-[color:var(--muted)]">
-          If the browser redirects to an unreachable localhost page, paste its full URL here.
-        </p>
-      ) : null}
-      <Button type="submit" disabled={busy}>
-        Continue
-      </Button>
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button disabled={busy} onClick={() => void cancel()}>
+          Cancel sign-in
+        </Button>
+        <Button type="submit" disabled={busy}>
+          Continue
+        </Button>
+      </div>
     </form>
   )
 }

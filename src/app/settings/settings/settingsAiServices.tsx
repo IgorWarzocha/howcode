@@ -138,7 +138,7 @@ export function SettingsAiServices() {
     }
   }
   return (
-    <div className="grid w-full max-w-lg gap-3">
+    <div className="grid w-full min-w-0 gap-3">
       {accounts.isPending ? (
         <p role="status" className="text-sm">
           Loading services...
@@ -163,7 +163,7 @@ export function SettingsAiServices() {
           />
           {provider ? (
             <>
-              <ServiceConnectionStatus service={provider} />
+              {running ? null : <ServiceConnectionStatus service={provider} />}
               {running ? null : (
                 <ProviderAccountControls
                   provider={provider}
@@ -181,15 +181,7 @@ export function SettingsAiServices() {
         </>
       ) : null}
       <ProviderLoginInteraction login={login} />
-      {accounts.data ? (
-        <details className="text-xs text-[color:var(--muted)]">
-          <summary className="cursor-pointer">Shared with Pi</summary>
-          <p className="mt-2 break-words">
-            Sign-ins are saved in <code>{accounts.data.directory}</code>. Changes also apply to
-            other apps using this Pi directory.
-          </p>
-        </details>
-      ) : null}
+      <p className="text-xs text-[color:var(--muted)]">Sign-ins are shared with Pi.</p>
     </div>
   )
 }
@@ -226,11 +218,18 @@ function ProviderLoginInteraction({ login }: { login: ReturnType<typeof useProvi
               prompt={login.session.prompt}
               busy={login.busy}
               answer={login.answer}
+              cancel={login.cancel}
             />
           ) : null}
-          <Button disabled={login.busy} onClick={() => void login.cancel()}>
-            Cancel sign-in
-          </Button>
+          {login.session.prompt ? null : (
+            <Button
+              className="justify-self-end"
+              disabled={login.busy}
+              onClick={() => void login.cancel()}
+            >
+              Cancel sign-in
+            </Button>
+          )}
         </>
       ) : null}
     </>
