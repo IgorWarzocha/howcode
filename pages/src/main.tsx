@@ -7,10 +7,6 @@ import { HomePage } from './pages/home-page'
 import { WorktreesBlogPage } from './pages/worktrees-blog-page'
 import './styles.css'
 
-if (import.meta.env.DEV) {
-  void import('react-grab')
-}
-
 const rootElement = document.getElementById('root')
 
 if (!rootElement) {

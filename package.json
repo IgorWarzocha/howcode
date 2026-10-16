@@ -109,7 +109,6 @@
     "husky": "^9.1.7",
     "lint-staged": "17.5.1",
     "react-doctor": "0.9.14",
-    "react-grab": "0.2.0",
     "typescript": "^7.0.2",
     "vite": "8.3.0"
   },
