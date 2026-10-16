@@ -1,9 +1,11 @@
 import { Button, Select } from '@howaboua/howcode-sdk/ui/controls'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useCallback, useId, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import type { ProviderAccount } from '../../../../shared/provider-auth'
 import { requestProviderAuth } from './providerAuthClient'
 import { ProviderLoginNotices, ProviderLoginPrompt } from './providerLoginPrompt'
+import { SettingRow } from './setting-row'
+import { settingRowClass } from './settingsClasses'
 import { useProviderLogin } from './useProviderLogin'
 
 const accountsKey = ['provider-accounts'] as const
@@ -19,27 +21,22 @@ function ProviderAccountPicker({
   disabled: boolean
   onChange: (id: string) => void
 }) {
-  const id = useId()
   return (
-    <>
-      <label htmlFor={id} className="text-sm">
-        Service
-      </label>
-      <Select
-        id={id}
-        value={selected}
-        onChange={(event) => onChange(event.target.value)}
-        disabled={disabled}
-      >
-        <option value="">Choose a service</option>
-        {accounts.map((account) => (
-          <option key={account.id} value={account.id}>
-            {account.name}
-            {account.available ? (account.source ? ' (connected)' : '') : ' (unavailable)'}
-          </option>
-        ))}
-      </Select>
-    </>
+    <Select
+      aria-label="AI service"
+      className="w-full sm:w-80"
+      value={selected}
+      onChange={(event) => onChange(event.target.value)}
+      disabled={disabled}
+    >
+      <option value="">Choose a service</option>
+      {accounts.map((account) => (
+        <option key={account.id} value={account.id}>
+          {account.name}
+          {account.available ? (account.source ? ' (connected)' : '') : ' (unavailable)'}
+        </option>
+      ))}
+    </Select>
   )
 }
 
@@ -138,33 +135,50 @@ export function SettingsAiServices() {
     }
   }
   return (
-    <div className="grid w-full min-w-0 gap-3">
-      {accounts.isPending ? (
-        <p role="status" className="text-sm">
-          Loading services...
-        </p>
-      ) : null}
-      {accounts.error ? (
-        <div role="alert" className="text-sm">
-          <p>{accounts.error.message}</p>
-          <Button onClick={() => void accounts.refetch()}>Retry</Button>
-        </div>
-      ) : null}
-      {accounts.data ? (
-        <>
-          <ProviderAccountPicker
-            accounts={accounts.data.accounts}
-            selected={selected}
-            disabled={running || busy}
-            onChange={(value) => {
-              setSelected(value)
-              setLogoutStatus({ status: 'idle', message: '' })
-            }}
-          />
-          {provider ? (
+    <>
+      <SettingRow
+        setting={{
+          id: 'ai-services.select',
+          category: 'general',
+          title: 'AI services',
+          description: 'Sign-ins are shared with Pi.',
+          render: () => (
             <>
-              {running ? null : <ServiceConnectionStatus service={provider} />}
-              {running ? null : (
+              {accounts.isPending ? (
+                <p role="status" className="text-sm">
+                  Loading services...
+                </p>
+              ) : null}
+              {accounts.error ? (
+                <div role="alert" className="text-sm">
+                  <p>{accounts.error.message}</p>
+                  <Button onClick={() => void accounts.refetch()}>Retry</Button>
+                </div>
+              ) : null}
+              {accounts.data ? (
+                <ProviderAccountPicker
+                  accounts={accounts.data.accounts}
+                  selected={selected}
+                  disabled={running || busy}
+                  onChange={(value) => {
+                    setSelected(value)
+                    setLogoutStatus({ status: 'idle', message: '' })
+                  }}
+                />
+              ) : null}
+            </>
+          ),
+        }}
+      />
+      {provider ? (
+        running ? null : (
+          <SettingRow
+            setting={{
+              id: 'ai-services.connection',
+              category: 'general',
+              title: provider.name,
+              description: serviceConnectionStatus(provider),
+              render: () => (
                 <ProviderAccountControls
                   provider={provider}
                   busy={busy}
@@ -175,37 +189,27 @@ export function SettingsAiServices() {
                   }}
                   logout={() => void logout()}
                 />
-              )}
-            </>
-          ) : null}
-        </>
+              ),
+            }}
+          />
+        )
       ) : null}
       <ProviderLoginInteraction login={login} />
-      <p className="text-xs text-[color:var(--muted)]">Sign-ins are shared with Pi.</p>
-    </div>
+    </>
   )
 }
 
-function ServiceConnectionStatus({ service }: { service: ProviderAccount }) {
+function serviceConnectionStatus(service: ProviderAccount) {
   if (!service.available)
-    return (
-      <p className="text-sm text-[color:var(--muted)]">
-        This saved sign-in belongs to a service that is no longer available. You can remove it
-        below.
-      </p>
-    )
-  return (
-    <p className="text-sm">
-      {service.source ? `Connected using ${service.source}.` : 'Not connected.'}
-    </p>
-  )
+    return 'This service is no longer available. You can remove its saved sign-in.'
+  return service.source ? `Connected using ${service.source}.` : 'Not connected.'
 }
 
 function ProviderLoginInteraction({ login }: { login: ReturnType<typeof useProviderLogin> }) {
   return (
     <>
       {login.error ? (
-        <p role="alert" className="text-sm">
+        <p role="alert" className="px-1 py-1.5 text-right text-sm">
           {login.error}
         </p>
       ) : null}
@@ -222,13 +226,12 @@ function ProviderLoginInteraction({ login }: { login: ReturnType<typeof useProvi
             />
           ) : null}
           {login.session.prompt ? null : (
-            <Button
-              className="justify-self-end"
-              disabled={login.busy}
-              onClick={() => void login.cancel()}
-            >
-              Cancel sign-in
-            </Button>
+            <div className={settingRowClass}>
+              <span />
+              <Button disabled={login.busy} onClick={() => void login.cancel()}>
+                Cancel sign-in
+              </Button>
+            </div>
           )}
         </>
       ) : null}

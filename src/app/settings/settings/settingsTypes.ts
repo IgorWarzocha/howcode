@@ -12,7 +12,7 @@ export type SettingDescriptor = {
   componentId?: string
   title: string
   description: string
-  layout?: 'stacked'
+  layout?: 'rows'
   helpDescription?: string
   dividerBefore?: boolean
   keywords?: string

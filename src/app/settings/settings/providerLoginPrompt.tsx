@@ -2,6 +2,7 @@ import { Button, Input, Select } from '@howaboua/howcode-sdk/ui/controls'
 import { useId, useState } from 'react'
 import { getSafeExternalUrl } from '../../../../shared/external-url'
 import type { ProviderAuthPrompt, ProviderAuthSession } from '../../../../shared/provider-auth'
+import { settingRowClass } from './settingsClasses'
 
 function AuthLink({ url, children }: { url: string; children: React.ReactNode }) {
   const safeUrl = getSafeExternalUrl(url)
@@ -16,40 +17,44 @@ function AuthLink({ url, children }: { url: string; children: React.ReactNode })
 
 export function ProviderLoginNotices({ session }: { session: ProviderAuthSession }) {
   return (
-    <div className="grid gap-2 text-sm">
+    <>
       {session.notices.map((notice) => (
-        <div key={JSON.stringify(notice)} className="grid gap-1">
+        <div key={JSON.stringify(notice)} className={`${settingRowClass} text-sm`}>
           {notice.type === 'auth_url' ? (
             <>
+              <p>{notice.instructions || 'Sign in on the service’s website.'}</p>
               <AuthLink url={notice.url}>Open sign-in page</AuthLink>
-              {notice.instructions ? <p>{notice.instructions}</p> : null}
             </>
           ) : null}
           {notice.type === 'device_code' ? (
             <>
-              <AuthLink url={notice.verificationUri}>Open sign-in page</AuthLink>
               <p>
                 Enter code: <strong className="select-all">{notice.userCode}</strong>
               </p>
+              <AuthLink url={notice.verificationUri}>Open sign-in page</AuthLink>
             </>
           ) : null}
           {notice.type === 'info' ? (
             <>
               <p>{notice.message}</p>
-              {notice.links?.map((link) => (
-                <p key={link.url}>
-                  <AuthLink url={link.url}>{link.label ?? link.url}</AuthLink>
-                </p>
-              ))}
+              <div className="grid gap-1 sm:justify-self-end">
+                {notice.links?.map((link) => (
+                  <p key={link.url}>
+                    <AuthLink url={link.url}>{link.label ?? link.url}</AuthLink>
+                  </p>
+                ))}
+              </div>
             </>
           ) : null}
           {notice.type === 'progress' ? <p>{notice.message}</p> : null}
         </div>
       ))}
       {session.message || !session.prompt ? (
-        <p role="status">{session.message || 'Waiting for sign-in…'}</p>
+        <p role="status" className="px-1 py-1.5 text-right text-sm">
+          {session.message || 'Waiting for sign-in…'}
+        </p>
       ) : null}
-    </div>
+    </>
   )
 }
 
@@ -71,46 +76,50 @@ export function ProviderLoginPrompt({
   }
   return (
     <form
-      className="grid min-w-0 gap-2"
+      className="grid min-w-0"
       onSubmit={(event) => {
         event.preventDefault()
         void submit()
       }}
     >
-      <label htmlFor={id} className="text-sm">
-        {prompt.message}
-      </label>
-      {prompt.type === 'select' ? (
-        <Select
-          id={id}
-          value={value}
-          onChange={(event) => setValue(event.target.value)}
-          disabled={busy}
-          required
-        >
-          <option value="" disabled>
-            Choose an option
-          </option>
-          {prompt.options.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.label}
-              {option.description ? ` — ${option.description}` : ''}
+      <div className={settingRowClass}>
+        <label htmlFor={id} className="text-sm">
+          {prompt.message}
+        </label>
+        {prompt.type === 'select' ? (
+          <Select
+            id={id}
+            className="w-full sm:w-80"
+            value={value}
+            onChange={(event) => setValue(event.target.value)}
+            disabled={busy}
+            required
+          >
+            <option value="" disabled>
+              Choose an option
             </option>
-          ))}
-        </Select>
-      ) : (
-        <Input
-          id={id}
-          type={prompt.type === 'text' ? 'text' : 'password'}
-          autoComplete="off"
-          spellCheck={false}
-          value={value}
-          placeholder={prompt.placeholder}
-          onChange={(event) => setValue(event.target.value)}
-          disabled={busy}
-        />
-      )}
-      <div className="flex flex-wrap justify-end gap-2">
+            {prompt.options.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+                {option.description ? ` — ${option.description}` : ''}
+              </option>
+            ))}
+          </Select>
+        ) : (
+          <Input
+            id={id}
+            className="w-full sm:w-80"
+            type={prompt.type === 'text' ? 'text' : 'password'}
+            autoComplete="off"
+            spellCheck={false}
+            value={value}
+            placeholder={prompt.placeholder}
+            onChange={(event) => setValue(event.target.value)}
+            disabled={busy}
+          />
+        )}
+      </div>
+      <div className="flex flex-wrap justify-end gap-2 px-1 py-1.5">
         <Button disabled={busy} onClick={() => void cancel()}>
           Cancel sign-in
         </Button>

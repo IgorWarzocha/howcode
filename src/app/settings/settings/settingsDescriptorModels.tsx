@@ -44,7 +44,7 @@ export function buildModelSettingsDescriptors({
       category: 'general',
       title: 'AI services',
       description: 'Connect the services you use for AI models.',
-      layout: 'stacked',
+      layout: 'rows',
       keywords:
         'login logout authentication oauth credentials provider accounts api key subscription',
       render: () => <SettingsAiServices />,
