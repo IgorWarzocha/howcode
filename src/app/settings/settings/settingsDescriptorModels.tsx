@@ -4,9 +4,8 @@ import type {
   ComposerThinkingLevel,
   DesktopActionInvoker,
 } from '../../desktop/types'
-
+import { SettingsAiServices } from './settingsAiServices'
 import { SettingsModelWorkflowControls } from './settingsModelWorkflowControls'
-import { SettingsProviderAccounts } from './settingsProviderAccounts'
 import type { SettingDescriptor } from './settingsTypes'
 
 type SettingsController = {
@@ -41,13 +40,14 @@ export function buildModelSettingsDescriptors({
   }
   return [
     {
-      id: 'models.providers',
-      category: 'chat',
-      title: 'Provider accounts',
-      description: 'Sign in with a subscription or API key.',
+      id: 'general.ai-services',
+      category: 'general',
+      title: 'AI services',
+      description: 'Connect the services you use for AI models.',
+      layout: 'stacked',
       keywords:
         'login logout authentication oauth credentials provider accounts api key subscription',
-      render: () => <SettingsProviderAccounts />,
+      render: () => <SettingsAiServices />,
     },
     {
       id: 'models.code',

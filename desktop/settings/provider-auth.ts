@@ -25,6 +25,7 @@ async function listAccounts(): Promise<ProviderAuthResponse> {
       return {
         id: provider.id,
         name: provider.name,
+        available: true,
         methods: [
           ...(provider.auth.oauth
             ? [
@@ -48,8 +49,9 @@ async function listAccounts(): Promise<ProviderAuthResponse> {
       accounts.push({
         id: credential.providerId,
         name: credential.providerId,
+        available: false,
         methods: [],
-        source: 'Saved credential; provider unavailable',
+        source: null,
         stored: true,
       })
   }

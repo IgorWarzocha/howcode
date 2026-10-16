@@ -10,13 +10,11 @@ const accountsKey = ['provider-accounts'] as const
 
 function ProviderAccountPicker({
   accounts,
-  directory,
   selected,
   disabled,
   onChange,
 }: {
   accounts: readonly ProviderAccount[]
-  directory: string
   selected: string
   disabled: boolean
   onChange: (id: string) => void
@@ -25,7 +23,7 @@ function ProviderAccountPicker({
   return (
     <>
       <label htmlFor={id} className="text-sm">
-        Provider
+        Service
       </label>
       <Select
         id={id}
@@ -33,17 +31,14 @@ function ProviderAccountPicker({
         onChange={(event) => onChange(event.target.value)}
         disabled={disabled}
       >
-        <option value="">Choose a provider</option>
+        <option value="">Choose a service</option>
         {accounts.map((account) => (
           <option key={account.id} value={account.id}>
             {account.name}
-            {account.source ? ' — configured' : ''}
+            {account.available ? (account.source ? ' (connected)' : '') : ' (unavailable)'}
           </option>
         ))}
       </Select>
-      <p className="break-all text-xs text-[color:var(--muted)]">
-        Credentials are shared with Pi in {directory}.
-      </p>
     </>
   )
 }
@@ -62,30 +57,36 @@ function ProviderAccountControls({
   logout: () => void
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-end gap-2">
-      <p role={status.status === 'error' ? 'alert' : 'status'} className="text-sm">
+    <div className="flex flex-wrap items-center gap-2">
+      <p role={status.status === 'error' ? 'alert' : 'status'} className="text-sm empty:hidden">
         {status.message}
       </p>
       {provider.methods.map((method) => (
-        <Button key={method.type} disabled={busy} onClick={() => start(method.type)}>
-          {method.label}
+        <Button
+          key={method.type}
+          title={method.label}
+          disabled={busy}
+          onClick={() => start(method.type)}
+        >
+          {method.type === 'oauth' ? 'Sign in' : 'Use API key'}
         </Button>
       ))}
       {provider.stored ? (
         <Button disabled={busy} onClick={logout}>
-          Sign out
+          {provider.available ? 'Sign out' : 'Remove saved sign-in'}
         </Button>
       ) : null}
-      {provider.methods.length === 0 ? (
+      {provider.available && provider.methods.length === 0 ? (
         <p className="text-sm text-[color:var(--muted)]">
-          Configure this provider through its environment or credential files on the server.
+          Set up access through this service's environment variables or credential files on the
+          server.
         </p>
       ) : null}
     </div>
   )
 }
 
-export function SettingsProviderAccounts() {
+export function SettingsAiServices() {
   const queryClient = useQueryClient()
   const accounts = useQuery({
     queryKey: accountsKey,
@@ -137,10 +138,10 @@ export function SettingsProviderAccounts() {
     }
   }
   return (
-    <div className="grid w-full gap-3 sm:w-96">
+    <div className="grid w-full max-w-lg gap-3">
       {accounts.isPending ? (
         <p role="status" className="text-sm">
-          Loading provider accounts…
+          Loading services...
         </p>
       ) : null}
       {accounts.error ? (
@@ -153,7 +154,6 @@ export function SettingsProviderAccounts() {
         <>
           <ProviderAccountPicker
             accounts={accounts.data.accounts}
-            directory={accounts.data.directory}
             selected={selected}
             disabled={running || busy}
             onChange={(value) => {
@@ -163,9 +163,7 @@ export function SettingsProviderAccounts() {
           />
           {provider ? (
             <>
-              <p className="text-sm">
-                {provider.source ? `Configured: ${provider.source}` : 'Not configured.'}
-              </p>
+              <ServiceConnectionStatus service={provider} />
               {running ? null : (
                 <ProviderAccountControls
                   provider={provider}
@@ -183,7 +181,31 @@ export function SettingsProviderAccounts() {
         </>
       ) : null}
       <ProviderLoginInteraction login={login} />
+      {accounts.data ? (
+        <details className="text-xs text-[color:var(--muted)]">
+          <summary className="cursor-pointer">Shared with Pi</summary>
+          <p className="mt-2 break-words">
+            Sign-ins are saved in <code>{accounts.data.directory}</code>. Changes also apply to
+            other apps using this Pi directory.
+          </p>
+        </details>
+      ) : null}
     </div>
+  )
+}
+
+function ServiceConnectionStatus({ service }: { service: ProviderAccount }) {
+  if (!service.available)
+    return (
+      <p className="text-sm text-[color:var(--muted)]">
+        This saved sign-in belongs to a service that is no longer available. You can remove it
+        below.
+      </p>
+    )
+  return (
+    <p className="text-sm">
+      {service.source ? `Connected using ${service.source}.` : 'Not connected.'}
+    </p>
   )
 }
 

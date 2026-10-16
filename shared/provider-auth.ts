@@ -62,6 +62,7 @@ export type ProviderAuthPrompt = typeof ProviderAuthPrompt.Type
 export const ProviderAccount = Schema.Struct({
   id: Schema.String,
   name: Schema.String,
+  available: Schema.Boolean,
   methods: Schema.Array(Schema.Struct({ type: AuthType, label: Schema.String })),
   source: Schema.NullOr(Schema.String),
   stored: Schema.Boolean,
