@@ -19,6 +19,7 @@ import type {
   WorkspaceNavigationState,
 } from './desktop-contracts'
 import type { PackageUiService } from './package-ui-contracts'
+import type { ProviderAuthRequest, ProviderAuthResponse } from './provider-auth'
 
 import type { WorkspaceLayoutRequest, WorkspaceLayoutResponse } from './workspace-layout-contracts'
 
@@ -33,6 +34,7 @@ export type PluginService = {
 }
 
 export type AppService = {
+  providerAuth: (request: ProviderAuthRequest) => Promise<ProviderAuthResponse>
   workspaceLayout: (
     request: WorkspaceLayoutRequest,
   ) => Promise<WorkspaceLayoutResponse> | WorkspaceLayoutResponse

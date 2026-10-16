@@ -37,6 +37,7 @@ export const desktopServiceRemoteMethods = {
     closePackageUiBinding: true,
   },
   app: {
+    providerAuth: true,
     workspaceLayout: true,
     handleDesktopAction: true,
     loadArchivedChatList: true,

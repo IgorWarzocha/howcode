@@ -44,9 +44,11 @@ import type {
   PackageUiReference,
   PackageUiService,
 } from './package-ui-contracts'
+import type { ProviderAuthRequest, ProviderAuthResponse } from './provider-auth'
 import type { WorkspaceLayoutRequest, WorkspaceLayoutResponse } from './workspace-layout-contracts'
 
 export type DesktopRequestMap = {
+  providerAuth: { params: ProviderAuthRequest; response: ProviderAuthResponse }
   workspaceLayout: { params: WorkspaceLayoutRequest; response: WorkspaceLayoutResponse }
   pluginRequest: { params: { plugin: string; method: string; payload: unknown }; response: unknown }
   listPackageUis: { params: Record<string, never>; response: PackageUiDescriptor[] }

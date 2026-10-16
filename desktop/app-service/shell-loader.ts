@@ -7,6 +7,7 @@ import {
 } from '../conversation-runtime.ts'
 import { disposeRuntimeWatches } from '../durable-runtime/chats.ts'
 import { disposeDurableRuntime } from '../durable-runtime/host.ts'
+import { disposeProviderAuth } from '../settings/provider-auth.ts'
 import { disposeConversationProjection } from './conversation-projection.ts'
 
 export { loadInboxChatList } from './chat-loader.ts'
@@ -31,6 +32,7 @@ export const subscribeDesktopEvents = subscribeRuntimeEvents
 
 export async function disposeDesktopRuntime() {
   const results = await Promise.allSettled([
+    disposeProviderAuth(),
     disposeConversationProjection(),
     disposeRuntimeWatches(),
   ])

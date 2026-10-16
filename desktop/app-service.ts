@@ -18,6 +18,7 @@ export {
 } from './app-service/shell-loader.ts'
 export { loadAppSettings } from './app-settings/readers.ts'
 export { watchConversation } from './conversation-runtime.ts'
+export { providerAuth } from './settings/provider-auth.ts'
 export { workspaceLayout } from './workspace-layout.ts'
 export {
   createWorkspace,

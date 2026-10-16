@@ -48,6 +48,7 @@ import {
   setUseAgentsSkillsPaths,
 } from '../app-settings/writers.ts'
 import { refreshDurableSettings } from '../durable-runtime/host.ts'
+import { disposeProviderAuth } from '../settings/provider-auth.ts'
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
 
@@ -144,6 +145,7 @@ const settingsUpdateHandlers: Partial<
     )
     if (currentCustomPiDirectory === nextCustomPiDirectory) return { didMutate: false }
 
+    await disposeProviderAuth()
     setCustomPiDirectory(nextCustomPiDirectory)
     await refreshDurableSettings()
     return { didMutate: true }

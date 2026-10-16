@@ -346,6 +346,7 @@ export async function installDevWebDesktopBridge() {
   }
 
   window.piDesktop = {
+    providerAuth: (request) => invokeRequest('providerAuth', request),
     pluginRequest: (plugin, method, payload) =>
       invokeRequest('pluginRequest', { plugin, method, payload }),
     platform: navigator.platform.toLowerCase().includes('mac') ? 'darwin' : 'browser',

@@ -83,6 +83,9 @@ declare global {
         query?: string | null | undefined
         limit?: number | null | undefined
       }) => Promise<PiSkillCatalogPage>
+      providerAuth?: (
+        request: DesktopRequestMap['providerAuth']['params'],
+      ) => Promise<DesktopRequestMap['providerAuth']['response']>
       getConfiguredPiSkills?: (request?: {
         directoryPath?: string | null | undefined
         chat?: boolean | undefined

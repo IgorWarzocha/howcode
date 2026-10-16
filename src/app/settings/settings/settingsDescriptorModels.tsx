@@ -6,6 +6,7 @@ import type {
 } from '../../desktop/types'
 
 import { SettingsModelWorkflowControls } from './settingsModelWorkflowControls'
+import { SettingsProviderAccounts } from './settingsProviderAccounts'
 import type { SettingDescriptor } from './settingsTypes'
 
 type SettingsController = {
@@ -39,6 +40,15 @@ export function buildModelSettingsDescriptors({
     setOpenSelectId,
   }
   return [
+    {
+      id: 'models.providers',
+      category: 'chat',
+      title: 'Provider accounts',
+      description: 'Sign in with a subscription or API key.',
+      keywords:
+        'login logout authentication oauth credentials provider accounts api key subscription',
+      render: () => <SettingsProviderAccounts />,
+    },
     {
       id: 'models.code',
       category: 'chat',

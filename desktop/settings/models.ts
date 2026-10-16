@@ -1,5 +1,5 @@
 import path from 'node:path'
-import type { AuthInteraction, AuthType, Models } from '@earendil-works/pi-ai'
+import type { Models } from '@earendil-works/pi-ai'
 import { builtinModels } from '@earendil-works/pi-ai/providers/all'
 import type { ComposerModel } from '../../shared/desktop-contracts.ts'
 import { FileCredentialStore } from './credentials.ts'
@@ -32,16 +32,4 @@ export async function getComposerModels(): Promise<ComposerModel[]> {
     reasoning: Boolean(model.reasoning),
     input: [...model.input],
   }))
-}
-
-export async function loginProvider(
-  providerId: string,
-  type: AuthType,
-  interaction: AuthInteraction,
-) {
-  return (await getDurableModels()).login(providerId, type, interaction)
-}
-
-export async function logoutProvider(providerId: string) {
-  await (await getDurableModels()).logout(providerId)
 }
