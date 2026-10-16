@@ -14,10 +14,6 @@ function applyDesktopPlatformAttribute() {
   document.documentElement.setAttribute('data-desktop-shell', 'browser')
 }
 
-if (import.meta.env.DEV) {
-  void import('react-grab')
-}
-
 const bridgeInstallPromise = import('./app/dev-web-bridge').then(({ installDevWebDesktopBridge }) =>
   installDevWebDesktopBridge(),
 )

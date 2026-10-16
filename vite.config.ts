@@ -96,7 +96,7 @@ export default defineConfig({
             },
             {
               name: 'vendor-ui',
-              test: /node_modules[/](?:@dnd-kit|@tanstack|lucide-react|react-grab)[/]/,
+              test: /node_modules[/](?:@dnd-kit|@tanstack|lucide-react)[/]/,
               priority: 10,
             },
             {
