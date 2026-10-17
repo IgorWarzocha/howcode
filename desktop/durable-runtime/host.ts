@@ -10,23 +10,22 @@ import {
 } from '@earendil-works/pi-durable'
 import { NodeExecutionEnv } from '@earendil-works/pi-durable/env/node'
 import { openNodeSqliteStorage } from '@earendil-works/pi-durable/storage/sqlite/node'
+import { createPeopleExtension } from '../../components/people/service/index.ts'
 import type { ComposerStateRequest } from '../../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
+import { loadAppSettings } from '../app-settings/readers.ts'
 import { bindInstalledPluginRuntime, unbindPluginRuntime } from '../plugins/runtime.ts'
 import { getDurableModels } from '../settings/models.ts'
 import { loadShellPreferences } from '../settings/preferences.ts'
 import { getDesktopUserDataPath } from '../user-data-path.ts'
-import {
-  decodeConversationOrigin,
-  encodeConversationOrigin,
-  RuntimeOriginDoc,
-} from './conversation-origin.ts'
+import { RuntimeOriginDoc } from './conversation-origin.ts'
 import { getComposerDefaults } from './defaults.ts'
 
 export { RuntimeOriginDoc } from './conversation-origin.ts'
 
 import { defaultExtensionExclusions, resolveDesktopExtensions } from './extension-composition.ts'
 import { decodeConversationId, decodeEntryId } from './identity.ts'
+import { migrateConversationCapabilities } from './legacy-capability-migration.ts'
 import { openLiveExtensions } from './live-extensions.ts'
 import { liveModels } from './live-models.ts'
 
@@ -43,12 +42,15 @@ let extensions: Promise<Awaited<ReturnType<typeof openExtensions>>> | undefined
 
 async function openExtensions() {
   const directory = getDesktopUserDataPath()
-  return openLiveExtensions({
-    directory,
-    cwd: getDesktopWorkingDirectory(),
-    stateDirectory: join(directory, 'notebook'),
-    environmentId: new NodeExecutionEnv({ cwd: getDesktopWorkingDirectory() }).id,
-  })
+  return openLiveExtensions(
+    {
+      directory,
+      cwd: getDesktopWorkingDirectory(),
+      stateDirectory: join(directory, 'notebook'),
+      environmentId: new NodeExecutionEnv({ cwd: getDesktopWorkingDirectory() }).id,
+    },
+    [createPeopleExtension(() => loadAppSettings().people)],
+  )
 }
 
 function getExtensions() {
@@ -99,6 +101,7 @@ async function openRuntime() {
     )
     runtimeStorage = storage
     opened = harness
+    await migrateConversationCapabilities(harness, storage, runtimeContext)
     packages.bind(harness)
     await bindInstalledPluginRuntime({ harness, storage })
     harness.resume()
@@ -164,7 +167,7 @@ export async function resolveDefaultRuntimeAgent(request: ComposerStateRequest =
     ...(model ? { model } : {}),
     thinkingLevel: defaults.thinkingLevel,
     ...(request.composerExtensions === undefined
-      ? { extensions: { remove: defaultExtensionExclusions(request) } }
+      ? { extensions: { remove: defaultExtensionExclusions } }
       : selection),
   }
 }
@@ -180,16 +183,12 @@ export async function createRuntimeConversation(request: ComposerStateRequest = 
       agent,
       init: async (tx, conversationId) => {
         const origin = await tx.doc(RuntimeOriginDoc, conversationId)
-        Object.assign(
-          origin,
-          encodeConversationOrigin({
-            appOwned: true,
-            directoryId: request.directoryId ?? null,
-            composerProfile: request.composerProfile ?? 'coding',
-            workspaceId: request.workspaceId ?? null,
-            branchName: request.branchName ?? null,
-          }),
-        )
+        Object.assign(origin, {
+          appOwned: true,
+          directoryId: request.directoryId ?? null,
+          workspaceId: request.workspaceId ?? null,
+          branchName: request.branchName ?? null,
+        })
       },
     },
     runtimeContext,
@@ -200,6 +199,18 @@ export async function resolveRuntimeExtensions(request: ComposerStateRequest) {
   const installed = await getExtensions()
   await installed.refresh()
   return resolveDesktopExtensions(request, installed.registry)
+}
+
+export async function getAvailableRuntimeExtensions() {
+  const installed = await getExtensions()
+  await installed.refresh()
+  return installed.registry
+    .snapshot()
+    .installed()
+    .map((extension) => ({
+      name: extension.name,
+      tools: (extension.tools ?? []).map((tool) => tool.name),
+    }))
 }
 
 export async function listRuntimeConversations() {
@@ -231,7 +242,7 @@ export async function readRuntimeConversationOrigin(conversationId: string) {
     decodeConversationId(conversationId),
     runtimeContext,
   )
-  return origin ? decodeConversationOrigin(origin) : null
+  return origin ?? null
 }
 
 export async function readRuntimeEntries(conversationId: string, atEntryId?: string) {

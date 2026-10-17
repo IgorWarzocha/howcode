@@ -1,5 +1,6 @@
 import {
   defineExtension,
+  type Extension,
   GenerationTask,
   hook,
   type RegistryReader,
@@ -9,7 +10,10 @@ import { createDesktopExtensionRegistry } from './extension-composition.ts'
 import { loadInstalledPackages, type PackageLoadOptions } from './packages.ts'
 
 /** Live, atomically published package registry and generation-boundary failure policy. */
-export async function openLiveExtensions(options: PackageLoadOptions) {
+export async function openLiveExtensions(
+  options: PackageLoadOptions,
+  host: readonly Extension[] = [],
+) {
   const packages = await loadInstalledPackages(options)
   let failure: { error: unknown } | undefined
   try {
@@ -25,7 +29,7 @@ export async function openLiveExtensions(options: PackageLoadOptions) {
         }),
       ],
     })
-    let current = createDesktopExtensionRegistry(packages.extensions, [reload])
+    let current = createDesktopExtensionRegistry(packages.extensions, [reload, ...host])
     let pluginGeneration = installedPluginGeneration()
     const listeners = new Set<() => void>()
     const registry: RegistryReader = {
@@ -40,12 +44,12 @@ export async function openLiveExtensions(options: PackageLoadOptions) {
     async function refresh() {
       try {
         const packagesChanged = await packages.refresh((installed) => {
-          const next = createDesktopExtensionRegistry(installed, [reload])
+          const next = createDesktopExtensionRegistry(installed, [reload, ...host])
           current = next
           for (const listener of listeners) listener()
         })
         if (!packagesChanged && pluginGeneration !== installedPluginGeneration()) {
-          current = createDesktopExtensionRegistry(packages.extensions, [reload])
+          current = createDesktopExtensionRegistry(packages.extensions, [reload, ...host])
           for (const listener of listeners) listener()
         }
         pluginGeneration = installedPluginGeneration()

@@ -77,7 +77,6 @@ function handleNewChatCommand(runtime: KeybindingRuntime) {
     if (!controller.composer.directoryId) return false
     void controller.desktop.handleAction('chat.new', {
       directoryId: controller.composer.directoryId,
-      composerProfile: controller.workspace.state.composerProfile,
       workspaceId: controller.workspaces.selectedWorkspaceId,
     })
     return true
@@ -89,7 +88,6 @@ function handleNewChatCommand(runtime: KeybindingRuntime) {
     return false
   void controller.desktop.handleAction('chat.new', {
     directoryId,
-    composerProfile: 'coding',
     workspaceId: controller.workspaces.selectedWorkspaceId,
   })
   return true

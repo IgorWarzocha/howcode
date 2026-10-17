@@ -1,3 +1,4 @@
+import type { ComposerStateRequest } from '@howcode/shared/desktop-composer-contracts'
 import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch } from 'react'
 import type { DesktopAction } from '../../desktop/actions'
@@ -20,10 +21,7 @@ export type RunPostDesktopActionEffectsInput = {
   composerDirectoryId: string
   dispatch: Dispatch<WorkspaceAction>
   loadArchivedChats: () => Promise<ArchivedChat[]>
-  loadComposerState: (request?: {
-    directoryId?: string | null
-    composerProfile?: 'general' | 'coding' | null
-  }) => Promise<ComposerState | null>
+  loadComposerState: (request?: ComposerStateRequest) => Promise<ComposerState | null>
   loadDirectoryGitState: (directoryId: string) => Promise<DirectoryGitState | null>
   loadDirectoryChats: (
     directoryId: string,

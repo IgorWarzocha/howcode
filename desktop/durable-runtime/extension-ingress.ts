@@ -11,7 +11,6 @@ type InputRequest = { text: string; attachments?: ComposerAttachment[] }
 
 /** Durable owns tools, prompts and lifecycle. These are host ingress hooks it does not expose. */
 interface ExtensionIngress {
-  resourceRequest?: (agent: SelectedAgent) => ComposerStateRequest
   skills?: (request: ComposerStateRequest) => Promise<ComposerSkillReference[]>
   prepareInput?: (input: {
     conversation: Conversation
@@ -32,12 +31,10 @@ export function withExtensionIngress<T extends Extension>(
 }
 
 export function getConversationResourceRequest(agent: SelectedAgent): ComposerStateRequest {
-  let request: ComposerStateRequest = { directoryId: agent.cwd, composerProfile: 'coding' }
-  for (const extension of agent.extensions) {
-    const resolve = ingress.get(extension)?.resourceRequest
-    if (resolve) request = resolve(agent)
+  return {
+    directoryId: agent.cwd,
+    composerExtensions: agent.extensions.map((extension) => extension.name),
   }
-  return { ...request, composerExtensions: agent.extensions.map((extension) => extension.name) }
 }
 
 export async function discoverConversationSkills(agent: SelectedAgent) {

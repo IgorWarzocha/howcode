@@ -6,7 +6,7 @@
 <img width="1920" height="1080" alt="Howcode screenshot" src="https://github.com/user-attachments/assets/c81d022e-75bd-4657-8d46-821514997d9c" />
 <br />
 
-Howcode is a browser app for chatting with Pi. Workspaces contain chats and can cover more than repositories. Folder-backed workspaces keep the coding tools, terminal, and Git workflows on a local Node server.
+Howcode is a browser app for chatting with Pi. Workspaces contain chats and can cover more than repositories. Each chat has selectable tools, with optional components for terminal, Git and other workflows. Local tools run on a Node server.
 
 It is not trying to be a file editor. It is not trying to be VS Code with a chat panel glued on. The idea is simpler: keep the agent, chats, workspace state, terminal, diffs, and messy follow-up work in one place.
 

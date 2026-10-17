@@ -7,8 +7,8 @@ export const desktopQueryKeys = {
   shellState: () => ['desktop', 'shellState'] as const,
   piSkillCatalog: (query: string, limit?: number | undefined) =>
     ['desktop', 'piSkills', 'catalog', query, limit ?? null] as const,
-  configuredPiSkills: (directoryPath?: string | null | undefined, chat = false) =>
-    ['desktop', 'piSkills', 'configured', directoryPath ?? null, chat] as const,
+  configuredPiSkills: (directoryPath?: string | null | undefined) =>
+    ['desktop', 'piSkills', 'configured', directoryPath ?? null] as const,
   directoryChats: (directoryId: string) => ['desktop', 'directoryChats', directoryId] as const,
   workspaceNavigationState: (selectedWorkspaceId?: string | null) =>
     ['desktop', 'workspaceNavigationState', selectedWorkspaceId ?? null] as const,
@@ -20,8 +20,8 @@ export const desktopQueryKeys = {
       'composerState',
       request.directoryId ?? null,
       getPersistedConversationId(request.conversationId),
-      request.composerProfile ?? null,
       request.workspaceId ?? null,
+      request.composerExtensions ?? null,
     ] as const,
   directoryUsageSummary: (directoryId: string) =>
     ['desktop', 'directoryUsageSummary', directoryId] as const,

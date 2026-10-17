@@ -1,10 +1,9 @@
 import type { AppSettings } from '../desktop/types'
 
 export const FALLBACK_APP_SETTINGS = {
-  chatModel: null,
-  chatThinkingLevel: null,
-  codeModel: null,
-  codeThinkingLevel: null,
+  people: [],
+  defaultModel: null,
+  defaultThinkingLevel: null,
   gitCommitMessageModel: null,
   gitCommitMessageThinkingLevel: 'off',
   composerStreamingBehavior: 'followUp',

@@ -7,6 +7,7 @@ import {
   hook,
   UserEntry,
 } from '@earendil-works/pi-durable'
+import { personInputKind } from '../../shared/people.ts'
 import {
   freezePluginTurn,
   installedAgentTools,
@@ -37,7 +38,9 @@ export function installedAgentExtensions() {
                   100,
                   cursor,
                 )
-                const user = page.items.find((entry) => UserEntry.is(entry))
+                const user = page.items.find(
+                  (entry) => UserEntry.is(entry) || entry.kind === personInputKind,
+                )
                 if (user) return String(user.id)
                 cursor = page.next
               } while (cursor !== undefined)

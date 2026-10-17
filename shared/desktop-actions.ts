@@ -40,6 +40,7 @@ export const desktopActions = [
   'worktrees.merge-completed-worktrees',
   'worktrees.remove-completed-worktrees',
   'worktrees.set-worktree-directory',
+  'composer.set-extensions',
   'composer.model',
   'composer.thinking',
   'composer.send',

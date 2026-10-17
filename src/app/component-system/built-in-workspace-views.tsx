@@ -1,16 +1,15 @@
-import { ChatWorkspaceView } from '@howcode/chat-workspace'
 import { workingDirectoriesComponent } from '@howcode/components/working-directories/ui/component'
 import type { ComponentProps } from 'react'
 import type { AppShellController } from '../app-shell/useAppShellController'
 import { FALLBACK_APP_SETTINGS } from '../workspace-shell/default-app-settings'
 import { UtilityWorkspaceView } from '../workspace-shell/utility-workspace-view'
 import { InstalledNavigationHistory } from './navigation-history'
-import { DomainWorkspaceView } from './workspace-presentation/domain-workspace-view'
+import { ChatWorkspaceView } from './workspace-presentation/chat-workspace-view'
 import type { WorkspaceViewContributions } from './workspace-views'
 
-type CodeProps = ComponentProps<typeof DomainWorkspaceView>
+type ChatProps = ComponentProps<typeof ChatWorkspaceView>
 
-export type BuiltInWorkspaceViewProps = CodeProps & {
+export type BuiltInWorkspaceViewProps = ChatProps & {
   controller: AppShellController
 }
 
@@ -19,33 +18,11 @@ export function composeBuiltInWorkspaceViews(props: BuiltInWorkspaceViewProps) {
   const { controller } = props
   const chat = (
     <ChatWorkspaceView
-      artifactDrawer={props.artifactDrawer}
+      {...props}
       controller={{
         workspaces: controller.workspaces,
         composer: controller.composer,
         desktop: controller.desktop,
-        navigation: controller.navigation,
-        terminal: controller.terminal,
-        chat: controller.chat,
-        workspace: controller.workspace,
-      }}
-      activeComposerState={props.activeComposerState}
-      activeChatData={props.activeChatData}
-      composerDirectoryId={props.composerDirectoryId}
-      terminalConversationId={props.terminalConversationId}
-      sidebarCollapsed={props.sidebarCollapsed}
-      sidebarAutoHidden={props.sidebarAutoHidden}
-      sidebarCompactMode={props.sidebarCompactMode}
-      onToggleSidebar={props.onToggleSidebar}
-    />
-  )
-  const code = (
-    <DomainWorkspaceView
-      {...props}
-      controller={{
-        composer: controller.composer,
-        desktop: controller.desktop,
-        gitOps: controller.gitOps,
         navigation: controller.navigation,
         directories: controller.directories,
         terminal: controller.terminal,
@@ -69,10 +46,7 @@ export function composeBuiltInWorkspaceViews(props: BuiltInWorkspaceViewProps) {
   }
   Object.assign(
     contributions,
-    Object.fromEntries(workingDirectoriesComponent.views.map((view) => [view, code])),
+    Object.fromEntries(workingDirectoriesComponent.views.map((view) => [view, chat])),
   )
-  if (controller.workspace.state.composerProfile === 'coding') {
-    Object.assign(contributions, { chat: code, workspace: code })
-  }
   return contributions
 }

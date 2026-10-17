@@ -3,8 +3,8 @@ import { useContext, useRef, useState } from 'react'
 import type { Message, View } from '../../types'
 import { useWorkspaceFooterHeight } from '../../workspace-shell/useWorkspaceFooterHeight'
 import { RendererHostsContext } from '../installed-renderer-context'
-import type { DomainWorkspaceViewProps } from './domain-workspace-contract'
-import { DomainWorkspaceViewContent } from './domain-workspace-footer'
+import type { ChatWorkspaceViewProps } from './chat-workspace-contract'
+import { ChatWorkspaceViewContent } from './chat-workspace-footer'
 
 const TERMINAL_DRAWER_OFFSET = 'min(28rem, calc(100% - 2.5rem))'
 const EMPTY_COMPOSER_TOP = '60%'
@@ -21,42 +21,18 @@ function shouldShowDesktopTerminalDrawer(
   )
 }
 
-function getFloatingFooterStyle(input: {
-  centerDashboardFooter: boolean
-  centerChatFooter: boolean
-  showChatFooter: boolean
-}) {
-  if (input.centerDashboardFooter) {
-    return { top: EMPTY_COMPOSER_TOP }
-  }
-
-  if (!input.showChatFooter) {
-    return undefined
-  }
-
-  return input.centerChatFooter ? { top: EMPTY_COMPOSER_TOP } : { bottom: 0 }
-}
-
 function getFloatingFooterLayoutState(input: {
-  activeView: View
   activeChatData: Message[] | undefined
   activeChatLoading: boolean
   showChatFooter: boolean
   gitDetailOpen: boolean
 }) {
-  const hasChatConversation = input.showChatFooter && (input.activeChatData?.length ?? 0) > 0
-  const hasChatConversationLayout = hasChatConversation || input.activeChatLoading
-  const centerDashboardFooter = false
-  const centerChatFooter =
-    input.showChatFooter && !hasChatConversationLayout && !input.gitDetailOpen
-  return {
-    centerDashboardFooter,
-    centerChatFooter,
-    floatingWorkspaceFooter: centerChatFooter || centerDashboardFooter,
-  }
+  const hasConversationLayout = (input.activeChatData?.length ?? 0) > 0 || input.activeChatLoading
+  const centerChatFooter = input.showChatFooter && !hasConversationLayout && !input.gitDetailOpen
+  return { centerChatFooter, floatingWorkspaceFooter: centerChatFooter }
 }
 
-function getDomainWorkspaceFlags(input: {
+function getChatWorkspaceFlags(input: {
   activeView: View
   hasSelectedDirectory: boolean
   selectedDirectoryId: string
@@ -67,15 +43,15 @@ function getDomainWorkspaceFlags(input: {
       ? input.selectedDirectoryId
       : ''
   return {
-    showWorkspaceFooter: input.activeView === 'chat',
-    showChatFooter: input.activeView === 'chat',
-    showCodeSidebarFooter:
+    showWorkspaceFooter: input.activeView === 'chat' || input.activeView === 'workspace',
+    showChatFooter: input.activeView === 'chat' || input.activeView === 'workspace',
+    showSidebarFooter:
       (input.activeView === 'directories' || input.activeView === 'landing') &&
       !selectedDirectoryIdForView,
   }
 }
 
-export function DomainWorkspaceView({
+export function ChatWorkspaceView({
   artifactDrawer,
   controller,
   activeComposerState,
@@ -90,14 +66,13 @@ export function DomainWorkspaceView({
   sidebarAutoHidden,
   sidebarCompactMode,
   onToggleSidebar,
-}: DomainWorkspaceViewProps) {
+}: ChatWorkspaceViewProps) {
   const publishedGitPresentation = useGitPresentation()
   const gitRevision = useContext(RendererHostsContext).find(
     (renderer) => renderer.name === '@howaboua/howcode-git',
   )?.reference?.revision
   const gitPresentation =
     publishedGitPresentation?.revision === gitRevision ? publishedGitPresentation : null
-  const [composerLayoutVersion, setComposerLayoutVersion] = useState(0)
   const [composerOverlayHeight, setComposerOverlayHeight] = useState(0)
   const footerRef = useRef<HTMLElement>(null)
   const mainViewRef = useRef<HTMLElement>(null)
@@ -109,7 +84,7 @@ export function DomainWorkspaceView({
   const { shellState } = controller.desktop
   const { state } = controller.workspace
   const gitDetailOpen = gitPresentation?.detailOpen ?? false
-  const { showWorkspaceFooter, showChatFooter, showCodeSidebarFooter } = getDomainWorkspaceFlags({
+  const { showWorkspaceFooter, showChatFooter, showSidebarFooter } = getChatWorkspaceFlags({
     activeView: state.activeView,
     hasSelectedDirectory: state.hasSelectedDirectory,
     selectedDirectoryId: state.selectedDirectoryId,
@@ -126,28 +101,22 @@ export function DomainWorkspaceView({
     footerRef,
     visible: showWorkspaceFooter,
   })
-  const { centerDashboardFooter, centerChatFooter, floatingWorkspaceFooter } =
-    getFloatingFooterLayoutState({
-      activeChatData: activeChatData?.messages,
-      activeChatLoading: controller.chat.activeLoading,
-      activeView: state.activeView,
-      showChatFooter,
-      gitDetailOpen,
-    })
+  const { centerChatFooter, floatingWorkspaceFooter } = getFloatingFooterLayoutState({
+    activeChatData: activeChatData?.messages,
+    activeChatLoading: controller.chat.activeLoading,
+    showChatFooter,
+    gitDetailOpen,
+  })
   const footerInset = showWorkspaceFooter && !floatingWorkspaceFooter ? footerHeight : 0
 
   const terminalDrawerInsetStyle = showDesktopTerminalDrawer
     ? { right: TERMINAL_DRAWER_OFFSET }
     : undefined
-  const chatFooterStyle = getFloatingFooterStyle({
-    centerDashboardFooter,
-    centerChatFooter,
-    showChatFooter,
-  })
+  const chatFooterStyle = centerChatFooter ? { top: EMPTY_COMPOSER_TOP } : { bottom: 0 }
   const chatTimelineLoading = state.activeView === 'chat' && controller.chat.activeLoading
 
   return (
-    <DomainWorkspaceViewContent
+    <ChatWorkspaceViewContent
       artifactDrawer={artifactDrawer}
       terminalDrawerInsetStyle={terminalDrawerInsetStyle}
       terminalDrawerVisible={terminalDrawerVisible}
@@ -166,7 +135,7 @@ export function DomainWorkspaceView({
       workspaceContentClass={workspaceContentClass}
       activeChatData={activeChatData}
       chatTimelineLoading={chatTimelineLoading}
-      composerLayoutVersion={composerLayoutVersion + (gitPresentation?.layoutRevision ?? 0)}
+      composerLayoutVersion={gitPresentation?.layoutRevision ?? 0}
       composerOverlayHeight={composerOverlayHeight}
       handleAction={handleAction}
       listComposerAttachmentEntries={listComposerAttachmentEntries}
@@ -181,11 +150,10 @@ export function DomainWorkspaceView({
       chatFooterStyle={chatFooterStyle}
       sidebarAutoHidden={sidebarAutoHidden}
       terminalConversationId={terminalConversationId}
-      setComposerLayoutVersion={setComposerLayoutVersion}
       setComposerOverlayHeight={setComposerOverlayHeight}
       handleToggleTerminal={handleToggleTerminal}
       showDesktopTerminalDrawer={showDesktopTerminalDrawer}
-      showCodeSidebarFooter={showCodeSidebarFooter}
+      showSidebarFooter={showSidebarFooter}
     />
   )
 }

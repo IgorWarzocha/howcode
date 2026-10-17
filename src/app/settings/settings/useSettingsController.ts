@@ -37,10 +37,8 @@ export function useSettingsController(input: {
         }),
     },
     models: {
-      selectCodeModel: (id: string) =>
-        void input.onAction('settings.update', buildModelSelectionPayload('codeModel', id)),
-      selectChatModel: (id: string) =>
-        void input.onAction('settings.update', buildModelSelectionPayload('chatModel', id)),
+      selectModel: (id: string) =>
+        void input.onAction('settings.update', buildModelSelectionPayload(id)),
     },
     directories,
     generalPaths,

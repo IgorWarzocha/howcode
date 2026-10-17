@@ -1,3 +1,4 @@
+import { preparePersonInput } from '../components/people/service/index.ts'
 import {
   fallbackAppSlashCommands,
   parseCompactSlashCommand,
@@ -19,7 +20,6 @@ import {
   watchRuntimeConversation,
 } from './durable-runtime/chats.ts'
 import { getComposerSkills, getComposerState } from './durable-runtime/composer.ts'
-import { encodeConversationOrigin } from './durable-runtime/conversation-origin.ts'
 import {
   abortRuntimeConversation,
   createRuntimeConversation,
@@ -30,15 +30,18 @@ import {
   readRuntimeConversationOrigin,
   refreshRuntimePackages,
   resolveConversation,
+  resolveRuntimeExtensions,
   runtimeContext,
 } from './durable-runtime/host.ts'
 import { prepareRuntimeInput } from './durable-runtime/input.ts'
+import { migrateAgentCapabilities } from './durable-runtime/legacy-capability-migration.ts'
 import { admitPluginInput } from './plugins/runtime.ts'
 import { emitDesktopEvent, subscribeDesktopEvents } from './runtime/desktop-events.ts'
 import { withDirectoryActivity } from './runtime/directory-activity.ts'
 
 export {
   getComposerState,
+  setComposerExtensions,
   setComposerModel,
   setComposerThinkingLevel,
 } from './durable-runtime/composer.ts'
@@ -77,12 +80,10 @@ async function registerConversation(conversationId: string, request: ComposerSta
       directoryId: origin?.directoryId ?? request.directoryId ?? getDesktopWorkingDirectory(),
       branchName: origin?.branchName ?? request.branchName,
       workspaceId: origin?.workspaceId ?? request.workspaceId,
-      composerProfile: origin?.composerProfile ?? request.composerProfile ?? undefined,
     })
   await watchRuntimeConversation({
     ...request,
     directoryId: existing?.directoryId ?? origin?.directoryId ?? request.directoryId,
-    composerProfile: origin?.composerProfile ?? request.composerProfile,
     workspaceId: origin?.workspaceId ?? request.workspaceId,
     branchName: origin?.branchName ?? request.branchName,
     conversationId,
@@ -117,7 +118,6 @@ export async function watchConversation(conversationId: string | null) {
   return selectRuntimeConversation({
     conversationId,
     directoryId: metadata?.directoryId ?? origin?.directoryId,
-    composerProfile: metadata?.composerProfile ?? origin?.composerProfile,
     workspaceId: metadata?.workspaceId ?? origin?.workspaceId,
     branchName: metadata?.branchName ?? origin?.branchName,
   })
@@ -125,6 +125,7 @@ export async function watchConversation(conversationId: string | null) {
 
 export async function sendComposerPrompt(
   request: ComposerStateRequest & {
+    personId?: string | undefined
     text: string
     attachments?: ComposerAttachment[]
     streamingBehavior?: ComposerStreamingBehavior | null
@@ -145,10 +146,24 @@ export async function sendComposerPrompt(
     await admitPluginInput(conversationId)
     const compact = parseCompactSlashCommand(request.text)
     if (compact === null) {
+      const input = await preparePersonInput(
+        conversation,
+        request.personId,
+        await prepareRuntimeInput(conversation, request),
+        async () => {
+          const { extensions } = await resolveRuntimeExtensions({
+            composerExtensions: ['howcode.people'],
+          })
+          const extension = extensions[0]
+          if (!extension) throw new Error('People extension is unavailable.')
+          return extension
+        },
+        runtimeContext,
+      )
       await conversation.submit(
         {
+          ...input,
           type: 'input',
-          content: await prepareRuntimeInput(conversation, request),
           whenBusy: behavior,
         },
         runtimeContext,
@@ -178,18 +193,15 @@ export async function forkConversation(request: ComposerStateRequest & { targetE
       {
         ownership: { kind: 'ownerless' },
         init: async (tx, id) => {
+          await migrateAgentCapabilities(tx, id)
           const origin = await tx.doc(RuntimeOriginDoc, id)
           if (metadata)
-            Object.assign(
-              origin,
-              encodeConversationOrigin({
-                appOwned: true,
-                directoryId: metadata.directoryId,
-                composerProfile: metadata.composerProfile,
-                workspaceId: metadata.workspaceId,
-                branchName: metadata.branchName,
-              }),
-            )
+            Object.assign(origin, {
+              appOwned: true,
+              directoryId: metadata.directoryId,
+              workspaceId: metadata.workspaceId,
+              branchName: metadata.branchName,
+            })
         },
       },
       runtimeContext,

@@ -98,7 +98,6 @@ export function AppShellNavigation({
       controller.workspaces.select(workspaceId)
       void controller.desktop.handleAction('chat.new', {
         workspaceId,
-        composerProfile: workspace?.directoryId ? 'coding' : 'general',
         directoryId: workspace?.directoryId ?? controller.desktop.shellState?.cwd,
       })
     },

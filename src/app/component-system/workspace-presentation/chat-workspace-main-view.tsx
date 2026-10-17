@@ -8,7 +8,7 @@ import type {
 import type { View, WorkingDirectory } from '../../types'
 import { InstalledChatRenderer } from '../chat-renderer-slot'
 
-type DomainWorkspaceMainViewProps = {
+type ChatWorkspaceMainViewProps = {
   activeView: View
   appSettings: AppSettings
   currentDirectoryName: string
@@ -34,7 +34,7 @@ function ChatMainView({
   chatData,
   chatLoading,
 }: Pick<
-  DomainWorkspaceMainViewProps,
+  ChatWorkspaceMainViewProps,
   | 'composerLayoutVersion'
   | 'composerOverlayHeight'
   | 'onLoadEarlierMessages'
@@ -58,7 +58,7 @@ function ChatMainView({
   )
 }
 
-function DomainWorkspaceDirectoryOrEmptyView({
+function ChatWorkspaceDirectoryOrEmptyView({
   appSettings,
   composerOverlayHeight,
   currentDirectoryName,
@@ -69,7 +69,7 @@ function DomainWorkspaceDirectoryOrEmptyView({
   selectedDirectoryId,
   workspaceContentClass,
 }: Pick<
-  DomainWorkspaceMainViewProps,
+  ChatWorkspaceMainViewProps,
   | 'appSettings'
   | 'composerOverlayHeight'
   | 'currentDirectoryName'
@@ -112,7 +112,7 @@ function DomainWorkspaceDirectoryOrEmptyView({
   )
 }
 
-export function DomainWorkspaceMainView({
+export function ChatWorkspaceMainView({
   activeView,
   appSettings,
   currentDirectoryName,
@@ -127,8 +127,8 @@ export function DomainWorkspaceMainView({
   onOpenChat,
   onLoadEarlierMessages,
   onSelectDirectory,
-}: DomainWorkspaceMainViewProps) {
-  if (activeView === 'chat') {
+}: ChatWorkspaceMainViewProps) {
+  if (activeView === 'chat' || activeView === 'workspace') {
     return (
       <ChatMainView
         composerLayoutVersion={composerLayoutVersion}
@@ -141,7 +141,7 @@ export function DomainWorkspaceMainView({
   }
 
   return (
-    <DomainWorkspaceDirectoryOrEmptyView
+    <ChatWorkspaceDirectoryOrEmptyView
       appSettings={appSettings}
       composerOverlayHeight={composerOverlayHeight}
       currentDirectoryName={currentDirectoryName}

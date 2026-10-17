@@ -15,7 +15,6 @@ export type ScheduledChatOpenInput = {
   directoryId: string
   chatId: string
   conversationId: string
-  composerProfile?: 'general' | 'coding' | undefined
   branchName?: string | null | undefined
   delayMs?: number | undefined
   deferChatQuery?: boolean | undefined
@@ -27,7 +26,6 @@ export function getScheduledChatOpenActionPayload(input: ScheduledChatOpenInput)
     directoryId: input.directoryId,
     chatId: input.chatId,
     conversationId: input.conversationId,
-    composerProfile: input.composerProfile,
     branchName: input.branchName,
   }
 }
@@ -84,7 +82,6 @@ export function useScheduledChatOpen(input: {
             directoryId: scheduledChatOpen.directoryId,
             chatId: scheduledChatOpen.chatId,
             conversationId: scheduledChatOpen.conversationId,
-            composerProfile: scheduledChatOpen.composerProfile,
           })
         }
         void handleAction('chat.open', getScheduledChatOpenActionPayload(scheduledChatOpen))

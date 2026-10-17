@@ -69,7 +69,7 @@ function openAdjacentChat(runtime: KeybindingRuntime, direction: -1 | 1) {
     conversationId: getChatConversationId(nextChat),
     view: 'chat',
   }
-  controller.chat.cycle(directory.id, nextChat.id, getChatConversationId(nextChat), 'coding')
+  controller.chat.cycle(directory.id, nextChat.id, getChatConversationId(nextChat))
   return true
 }
 
@@ -104,12 +104,7 @@ function openAdjacentWorkspaceChat(runtime: KeybindingRuntime, direction: -1 | 1
     conversationId: nextChat.conversationId,
     view: 'chat',
   }
-  controller.chat.cycle(
-    nextChat.directoryId,
-    nextChat.id,
-    nextChat.conversationId,
-    nextChat.composerProfile,
-  )
+  controller.chat.cycle(nextChat.directoryId, nextChat.id, nextChat.conversationId)
   return true
 }
 

@@ -141,7 +141,6 @@ export const chatPostEffectHandlers: PostEffectHandler[] = [
         directoryId,
         chatId,
         conversationId,
-        composerProfile: ctx.workspaceState.composerProfile,
       })
       ctx.setLiveChatData(() => null)
       ctx.setComposerState(null)

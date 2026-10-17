@@ -16,7 +16,6 @@ type QueryClientLike = {
 export type DesktopEventSelectionState = Pick<
   WorkspaceState,
   | 'activeView'
-  | 'composerProfile'
   | 'selectedDirectoryId'
   | 'selectedChatId'
   | 'selectedConversationId'
@@ -38,7 +37,6 @@ export function shouldAutoOpenStartedChat({
 }: {
   reason: Extract<DesktopEvent, { type: 'chat-update' }>['reason']
   directoryId: string
-  composerProfile?: 'general' | 'coding' | undefined
   workspaceState: DesktopEventSelectionState
 }) {
   if (reason !== 'start' || directoryId !== workspaceState.selectedDirectoryId) {
@@ -53,13 +51,11 @@ export function shouldAutoOpenStartedChat({
 export function shouldDisplayStartedChatForLocalDraft({
   reason,
   directoryId,
-  composerProfile,
   replacesConversationId,
   workspaceState,
 }: {
   reason: Extract<DesktopEvent, { type: 'chat-update' }>['reason']
   directoryId: string
-  composerProfile?: 'general' | 'coding' | undefined
   replacesConversationId?: string | null | undefined
   workspaceState: DesktopEventSelectionState
 }) {
@@ -75,10 +71,7 @@ export function shouldDisplayStartedChatForLocalDraft({
     return false
   }
 
-  return (
-    (workspaceState.activeView === 'chat' || workspaceState.activeView === 'directory') &&
-    (composerProfile === undefined || composerProfile === workspaceState.composerProfile)
-  )
+  return workspaceState.activeView === 'chat' || workspaceState.activeView === 'directory'
 }
 
 export async function refreshVisibleInboxChat({

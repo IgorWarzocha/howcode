@@ -51,7 +51,6 @@ function upsertSidebarChat({
   directoryId,
   chat,
   workspaceId,
-  composerProfile,
   updateDirectoryChats = true,
   replaceConversationId = null,
   revealDirectory = false,
@@ -61,7 +60,6 @@ function upsertSidebarChat({
   directoryId: string
   chat: Chat
   workspaceId?: string | null | undefined
-  composerProfile?: 'general' | 'coding'
   updateDirectoryChats?: boolean | undefined
   replaceConversationId?: string | null | undefined
   revealDirectory?: boolean | undefined
@@ -81,7 +79,6 @@ function upsertSidebarChat({
           ...chat,
           directoryId,
           workspaceId: workspaceId,
-          composerProfile: composerProfile ?? chat.composerProfile ?? 'coding',
         },
         { replaceConversationId },
       ),
@@ -161,7 +158,6 @@ export function applyOptimisticComposerChat({
     directoryId: localFallback.directoryId,
     chat,
     workspaceId,
-    composerProfile: contextualPayload.composerProfile === 'general' ? 'general' : 'coding',
     revealDirectory: true,
   })
   setLiveChatData(() => ({
@@ -177,7 +173,11 @@ export function applyOptimisticComposerChat({
     directoryId: localFallback.directoryId,
     chatId: localFallback.chatId,
     conversationId: localFallback.conversationId,
-    composerProfile: contextualPayload.composerProfile === 'coding' ? 'coding' : 'general',
+    composerExtensions: Array.isArray(contextualPayload.composerExtensions)
+      ? contextualPayload.composerExtensions.filter(
+          (name): name is string => typeof name === 'string',
+        )
+      : undefined,
   })
 
   return { contextualPayload: nextPayload }
@@ -296,7 +296,6 @@ export function reconcileComposerChatResult({
     directoryId,
     chatId: resultChatId,
     conversationId: resultConversationId,
-    composerProfile: workspaceState.composerProfile,
   })
 }
 
@@ -314,7 +313,6 @@ export function applyChatEventToSidebarState({
   queryClient: QueryClientLike
   setWorkspaceNavigationState: SetWorkspaceNavigationState
 }) {
-  const composerProfile = event.composerProfile ?? 'coding'
   const eventReplacementConversationId =
     typeof event.replacesConversationId === 'string' ? event.replacesConversationId : null
   const explicitReplacementConversationId = isLocalConversationId(eventReplacementConversationId)
@@ -342,8 +340,7 @@ export function applyChatEventToSidebarState({
       branchName: event.branchName,
       running: event.chat.isStreaming || event.chat.isCompacting,
     }),
-    workspaceId: event.workspaceId ?? (composerProfile === 'general' ? null : undefined),
-    composerProfile,
+    workspaceId: event.workspaceId,
     updateDirectoryChats: directoryChatScopeMatchesView,
     replaceConversationId,
   })

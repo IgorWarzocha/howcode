@@ -28,7 +28,6 @@ function conversationEventContext(conversationId: string, request: ComposerState
       directoryId: metadata?.directoryId ?? request.directoryId ?? getDesktopWorkingDirectory(),
       workspaceId: metadata?.workspaceId ?? request.workspaceId,
       branchName: metadata?.branchName ?? request.branchName,
-      composerProfile: metadata?.composerProfile ?? request.composerProfile ?? 'coding',
     },
   }
 }

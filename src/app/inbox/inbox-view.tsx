@@ -1,6 +1,5 @@
 import type { SettingsOpenTarget } from '@howcode/settings/settingsTypes'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
-import { getInboxChatComposerProfile } from '../common/inbox-chat-scope'
 import { InstalledInboxComposer as InboxComposer } from '../component-system/composer-renderer-slot'
 import type {
   AppSettings,
@@ -34,7 +33,6 @@ type InboxViewProps = {
     directoryId: string,
     chatId: string,
     conversationId: string,
-    composerProfile?: 'general' | 'coding' | undefined,
     branchName?: string | null | undefined,
   ) => void
   onOpenSettingsView: (target?: SettingsOpenTarget) => void
@@ -119,19 +117,12 @@ function InboxChatView({
               onDismiss={() => onDismissChat(chat)}
               onListAttachmentEntries={onListAttachmentEntries}
               onOpenChat={() =>
-                onOpenChat(
-                  chat.directoryId,
-                  chat.chatId,
-                  chat.conversationId,
-                  getInboxChatComposerProfile(chat),
-                  chat.branchName,
-                )
+                onOpenChat(chat.directoryId, chat.chatId, chat.conversationId, chat.branchName)
               }
               onOpenSettingsView={onOpenSettingsView}
               onStartNewSession={() =>
                 void onAction('chat.new', {
                   directoryId: chat.directoryId,
-                  composerProfile: getInboxChatComposerProfile(chat),
                   branchName: chat.branchName,
                 })
               }

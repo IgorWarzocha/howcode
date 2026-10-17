@@ -1,14 +1,13 @@
 import type {
-  CodeChatSelection,
+  ChatSelection,
   WorkspaceAction,
   WorkspaceState,
 } from '../../../../src/app/state/workspace-model'
 import type { View, WorkingDirectory } from '../../../../src/app/types'
 
-export function getCurrentCodeChatSelection(state: WorkspaceState): CodeChatSelection | null {
+export function getCurrentChatSelection(state: WorkspaceState): ChatSelection | null {
   if (
-    ((state.activeView === 'chat' && state.composerProfile === 'coding') ||
-      state.activeView === 'directory') &&
+    (state.activeView === 'chat' || state.activeView === 'directory') &&
     state.selectedDirectoryId &&
     state.selectedChatId &&
     state.selectedConversationId
@@ -20,27 +19,22 @@ export function getCurrentCodeChatSelection(state: WorkspaceState): CodeChatSele
     }
   }
 
-  return state.lastCodeChatSelection
+  return state.lastChatSelection
 }
 
-function getScopedCodeChatSelection(
-  state: WorkspaceState,
-  directoryId: string,
-): CodeChatSelection | null {
-  return state.lastCodeChatSelection?.directoryId === directoryId
-    ? state.lastCodeChatSelection
-    : null
+function getScopedChatSelection(state: WorkspaceState, directoryId: string): ChatSelection | null {
+  return state.lastChatSelection?.directoryId === directoryId ? state.lastChatSelection : null
 }
 
-function isDirectoryLoadedForCodeChats(directory: WorkingDirectory) {
+function isDirectoryLoadedForChats(directory: WorkingDirectory) {
   return directory.chatsLoaded === true
 }
 
-function getChatCodeSelection(
+function getDirectoryChatSelection(
   directory: WorkingDirectory,
   chat: WorkingDirectory['chats'][number],
   fallbackConversationId: string,
-): CodeChatSelection {
+): ChatSelection {
   return {
     directoryId: directory.id,
     chatId: chat.id,
@@ -48,31 +42,28 @@ function getChatCodeSelection(
   }
 }
 
-export function resolveCodeChatSelection(
+export function resolveChatSelection(
   directories: WorkingDirectory[],
-  selection: CodeChatSelection | null,
-): CodeChatSelection | null {
+  selection: ChatSelection | null,
+): ChatSelection | null {
   if (!selection) return null
 
   for (const directory of directories) {
-    if (!isDirectoryLoadedForCodeChats(directory)) continue
+    if (!isDirectoryLoadedForChats(directory)) continue
     const chat = directory.chats.find(
       (candidate) => candidate.conversationId === selection.conversationId,
     )
-    if (chat) return getChatCodeSelection(directory, chat, selection.conversationId)
+    if (chat) return getDirectoryChatSelection(directory, chat, selection.conversationId)
   }
 
   for (const directory of directories) {
-    if (!isDirectoryLoadedForCodeChats(directory)) continue
+    if (!isDirectoryLoadedForChats(directory)) continue
     const chat = directory.chats.find((candidate) => candidate.id === selection.chatId)
-    if (chat) return getChatCodeSelection(directory, chat, selection.conversationId)
+    if (chat) return getDirectoryChatSelection(directory, chat, selection.conversationId)
   }
 
-  const rememberedDirectory = directories.find(
-    (directory) => directory.id === selection.directoryId,
-  )
-  if (!rememberedDirectory) return null
-  return isDirectoryLoadedForCodeChats(rememberedDirectory) ? null : selection
+  // Directory lists are not conversation inventory. Chats may use unregistered cwds.
+  return selection
 }
 
 function findDirectoryContainingChat(directories: WorkingDirectory[], state: WorkspaceState) {
@@ -102,7 +93,7 @@ function getSyncedActiveView(input: {
   shouldPreserveSelectedChat: boolean
   activeView: View
 }) {
-  if (input.shouldPreserveSelectedChat) return input.activeView === 'chat' ? 'chat' : 'chat'
+  if (input.shouldPreserveSelectedChat) return input.activeView
   if (input.activeView === 'directory' && !input.hasSelectedDirectory) return 'directories'
   if (
     input.hasSelectedDirectory ||
@@ -143,19 +134,16 @@ export function createDirectoryWorkspaceTransitions(terminal: TerminalWorkspaceT
     getTerminalVisibilityForSession,
     migrateTerminalVisibility,
   } = terminal
-  function withCodeChatSelection(
-    state: WorkspaceState,
-    selection: CodeChatSelection,
-  ): WorkspaceState {
+  function withChatSelection(state: WorkspaceState, selection: ChatSelection): WorkspaceState {
     return {
       ...state,
       activeView: 'chat',
-      composerProfile: 'coding',
       selectedDirectoryId: selection.directoryId,
       hasSelectedDirectory: true,
       landingVisible: false,
       selectedChatId: selection.chatId,
       selectedConversationId: selection.conversationId,
+      composerExtensions: null,
       terminalVisible: getTerminalVisibilityForSession(
         state.terminalVisibleBySession,
         selection.conversationId,
@@ -164,7 +152,7 @@ export function createDirectoryWorkspaceTransitions(terminal: TerminalWorkspaceT
 
       utilityViewReturnState: null,
       collapsedDirectoryIds: { ...state.collapsedDirectoryIds, [selection.directoryId]: false },
-      lastCodeChatSelection: selection,
+      lastChatSelection: selection,
     }
   }
 
@@ -172,15 +160,12 @@ export function createDirectoryWorkspaceTransitions(terminal: TerminalWorkspaceT
     state: WorkspaceState,
     action: Extract<WorkspaceAction, { type: 'sync-directories' }>,
   ): WorkspaceState {
-    const lastCodeChatSelection = resolveCodeChatSelection(
-      action.directories,
-      state.lastCodeChatSelection,
-    )
+    const lastChatSelection = resolveChatSelection(action.directories, state.lastChatSelection)
     const hasSelectedDirectory = action.directories.some(
       (directory) => directory.id === state.selectedDirectoryId,
     )
     const selectedChatDirectory = findDirectoryContainingChat(action.directories, state)
-    const shouldPreserveSelectedChat = state.activeView === 'chat' && Boolean(selectedChatDirectory)
+    const shouldPreserveSelectedChat = Boolean(state.selectedConversationId)
     const shouldPreserveDirectorySelection = hasSelectedDirectory || shouldPreserveSelectedChat
     const nextHasSelectedDirectory = Boolean(selectedChatDirectory) || hasSelectedDirectory
     const collapsedDirectoryIds = Object.fromEntries(
@@ -230,7 +215,7 @@ export function createDirectoryWorkspaceTransitions(terminal: TerminalWorkspaceT
         shouldPreserveDirectorySelection,
         state.utilityViewReturnState,
       ),
-      lastCodeChatSelection,
+      lastChatSelection,
       collapsedDirectoryIds,
     }
   }
@@ -248,12 +233,12 @@ export function createDirectoryWorkspaceTransitions(terminal: TerminalWorkspaceT
       ...state,
       ...getTerminalStateForNextView(state, 'directory'),
       activeView: 'directory',
-      composerProfile: 'coding',
       selectedDirectoryId: action.directoryId,
       hasSelectedDirectory: true,
       landingVisible: false,
       selectedChatId: action.chatId,
       selectedConversationId: action.conversationId,
+      composerExtensions: null,
       terminalVisible: getTerminalVisibilityForSession(
         nextTerminalVisibleBySession,
         action.conversationId,
@@ -263,7 +248,7 @@ export function createDirectoryWorkspaceTransitions(terminal: TerminalWorkspaceT
 
       utilityViewReturnState: null,
       collapsedDirectoryIds: { ...state.collapsedDirectoryIds, [action.directoryId]: false },
-      lastCodeChatSelection: {
+      lastChatSelection: {
         directoryId: action.directoryId,
         chatId: action.chatId,
         conversationId: action.conversationId,
@@ -281,8 +266,9 @@ export function createDirectoryWorkspaceTransitions(terminal: TerminalWorkspaceT
       selectedInboxConversationId: null,
       selectedChatId: null,
       selectedConversationId: null,
+      composerExtensions: null,
       selectedDiffFilePath: null,
-      lastCodeChatSelection: null,
+      lastChatSelection: null,
       settingsPanelOpen: false,
 
       utilityViewReturnState: null,
@@ -296,18 +282,18 @@ export function createDirectoryWorkspaceTransitions(terminal: TerminalWorkspaceT
       ...state,
       ...getTerminalStateForNextView(state, 'directory'),
       activeView: 'directory',
-      composerProfile: 'coding',
       selectedDirectoryId: action.directoryId,
       selectedWorkspaceId: action.workspaceId ?? state.selectedWorkspaceId,
       hasSelectedDirectory: true,
       landingVisible: false,
       selectedChatId: null,
       selectedConversationId: null,
+      composerExtensions: null,
       terminalVisible: state.workspaceTerminalVisibleByWorkspace[action.directoryId] ?? false,
       selectedDiffFilePath: null,
 
       utilityViewReturnState: null,
-      lastCodeChatSelection: getScopedCodeChatSelection(state, action.directoryId),
+      lastChatSelection: getScopedChatSelection(state, action.directoryId),
     }),
     'set-selected-directory': (
       state: WorkspaceState,
@@ -318,7 +304,7 @@ export function createDirectoryWorkspaceTransitions(terminal: TerminalWorkspaceT
       selectedWorkspaceId: action.workspaceId ?? state.selectedWorkspaceId,
       hasSelectedDirectory: true,
       landingVisible: false,
-      lastCodeChatSelection: getScopedCodeChatSelection(state, action.directoryId),
+      lastChatSelection: getScopedChatSelection(state, action.directoryId),
     }),
     'start-directory-chat': startDirectoryChatState,
     'toggle-directory-collapse': (
@@ -344,26 +330,23 @@ export function createDirectoryWorkspaceTransitions(terminal: TerminalWorkspaceT
     ) => WorkspaceState
   }>
 
-  function restoreCodeChatForView(state: WorkspaceState, view: View): WorkspaceState | null {
-    const selection = getCurrentCodeChatSelection(state)
-    return view === 'directories' && selection ? withCodeChatSelection(state, selection) : null
+  function restoreChatForView(state: WorkspaceState, view: View): WorkspaceState | null {
+    const selection = getCurrentChatSelection(state)
+    return view === 'directories' && selection ? withChatSelection(state, selection) : null
   }
 
-  return { directoryWorkspaceActionHandlers, withCodeChatSelection, restoreCodeChatForView }
+  return { directoryWorkspaceActionHandlers, withChatSelection, restoreChatForView }
 }
 
 export function createInitialDirectoryWorkspaceState(
   directories: WorkingDirectory[],
-): Pick<
-  WorkspaceState,
-  'selectedDiffFilePath' | 'collapsedDirectoryIds' | 'lastCodeChatSelection'
-> {
+): Pick<WorkspaceState, 'selectedDiffFilePath' | 'collapsedDirectoryIds' | 'lastChatSelection'> {
   return {
     selectedDiffFilePath: null,
     collapsedDirectoryIds: Object.fromEntries(
       directories.map((directory) => [directory.id, directory.collapsed ?? true]),
     ),
-    lastCodeChatSelection: null,
+    lastChatSelection: null,
   }
 }
 
@@ -376,13 +359,13 @@ export function getDirectoryUtilityReturnState(state: WorkspaceState) {
 export function getDirectoryStateForShownView(state: WorkspaceState, view: View) {
   return {
     landingVisible: view === 'directories' ? state.landingVisible : false,
-    lastCodeChatSelection: getCurrentCodeChatSelection(state),
+    lastChatSelection: getCurrentChatSelection(state),
     selectedDiffFilePath: view === 'chat' ? state.selectedDiffFilePath : null,
   }
 }
 
 export function clearDirectoryChatSelection() {
-  return { selectedDiffFilePath: null, lastCodeChatSelection: null }
+  return { selectedDiffFilePath: null, lastChatSelection: null }
 }
 
 export function getDirectoryStateForPreviewedChat(
@@ -402,13 +385,10 @@ export function getDirectoryStateForOpenedChat(
 ) {
   return {
     ...getDirectoryStateForPreviewedChat(state, action),
-    lastCodeChatSelection:
-      (action.composerProfile ?? state.composerProfile) === 'general'
-        ? state.lastCodeChatSelection
-        : {
-            directoryId: action.directoryId,
-            chatId: action.chatId,
-            conversationId: action.conversationId,
-          },
+    lastChatSelection: {
+      directoryId: action.directoryId,
+      chatId: action.chatId,
+      conversationId: action.conversationId,
+    },
   }
 }

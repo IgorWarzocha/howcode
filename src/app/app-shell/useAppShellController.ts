@@ -100,6 +100,7 @@ export function useAppShellController() {
     setChatHistoryCompactions: bundle.chat.setHistoryCompactions,
   })
   const actions = useDesktopActionHandlers({
+    people: desktopShell.shellState?.appSettings.people ?? [],
     activeView: bundle.workspace.state.activeView,
     composerDirectoryId: viewModel.composerDirectoryId,
     dispatch: bundle.workspace.dispatch,

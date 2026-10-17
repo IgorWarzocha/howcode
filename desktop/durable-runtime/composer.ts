@@ -6,10 +6,12 @@ import type {
   ComposerStateRequest,
   ComposerThinkingLevel,
 } from '../../shared/desktop-contracts.ts'
+import { getPersonInputData } from '../../shared/people.ts'
 import { getComposerModels, getDurableModels } from '../settings/models.ts'
 import { getComposerDefaults } from './defaults.ts'
 import { discoverConversationSkills } from './extension-ingress.ts'
 import {
+  getAvailableRuntimeExtensions,
   getDurableRuntime,
   resolveConversation,
   resolveRuntimeExtensions,
@@ -28,22 +30,21 @@ export async function getComposerSkills(request: ComposerStateRequest = {}) {
 }
 
 function queuedPrompts(inbox: Readonly<InboxState> | undefined) {
-  return (inbox?.items ?? []).flatMap((item) =>
-    item.mode === 'write'
-      ? []
-      : [
-          {
-            id: String(item.id),
-            mode: item.mode,
-            text:
-              typeof item.content === 'string'
-                ? item.content
-                : item.content
-                    .flatMap((block) => (block.type === 'text' ? [block.text] : []))
-                    .join('\n'),
-          },
-        ],
-  )
+  return (inbox?.items ?? []).flatMap((item) => {
+    if (item.mode === 'write') return []
+    const data = item.entry ? getPersonInputData(item.entry) : undefined
+    const content =
+      data && Array.isArray(item.content)
+        ? item.content.slice(data.modelContextBlocks)
+        : item.content
+    const text =
+      typeof content === 'string'
+        ? content
+        : content.flatMap((block) => (block.type === 'text' ? [block.text] : [])).join('\n')
+    return [
+      { id: String(item.id), mode: item.mode, text: data ? `${data.author.name}: ${text}` : text },
+    ]
+  })
 }
 
 function contextUsage(
@@ -96,7 +97,10 @@ export async function getComposerState(request: ComposerStateRequest = {}): Prom
     : undefined
   const thinkingLevels = nativeModel ? getSupportedThinkingLevels(nativeModel) : ['off' as const]
   const context = conversation ? await conversation.context(runtimeContext) : null
+  const extensions = agent?.extensions ?? (await resolveRuntimeExtensions(request)).extensions
   return {
+    availableExtensions: await getAvailableRuntimeExtensions(),
+    selectedExtensions: extensions.map((extension) => extension.name),
     currentModel,
     availableModels,
     currentThinkingLevel: agent?.thinkingLevel ?? defaults.thinkingLevel,
@@ -118,6 +122,14 @@ export async function setComposerModel(
       runtimeContext,
     )
   return getComposerState({ ...request, composerModelSelection: { provider, id: modelId } })
+}
+
+export async function setComposerExtensions(request: ComposerStateRequest, names: string[]) {
+  const selection = await resolveRuntimeExtensions({ ...request, composerExtensions: names })
+  const conversationId = getPersistedConversationId(request.conversationId)
+  if (conversationId)
+    await (await resolveConversation(conversationId)).configure(selection, runtimeContext)
+  return getComposerState({ ...request, composerExtensions: names })
 }
 
 export async function setComposerThinkingLevel(

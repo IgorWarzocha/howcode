@@ -1,9 +1,7 @@
 import type { DirectoryDiffPreferences } from '@howaboua/howcode-git/contracts'
 import type { Message } from '@howaboua/howcode-sdk/chat-renderer'
-import type { ComposerProfile } from './desktop-composer-contracts'
 
 export type Chat = {
-  composerProfile?: ComposerProfile | undefined
   id: string
   title: string
   age: string
@@ -39,7 +37,6 @@ export type InboxChat = {
   running: boolean
   unread: boolean
   branchName?: string | null | undefined
-  composerProfile?: 'general' | 'coding' | undefined
 }
 
 export type WorkingDirectory = {
@@ -103,7 +100,6 @@ export type ArchivedChat = {
   directoryId: string
   directoryName: string
   conversationId: string
-  composerProfile?: 'general' | 'coding' | undefined
 }
 
 export type {

@@ -5,8 +5,7 @@ import { ensureDirectory } from './conversation-scopes.ts'
 import { seedWorkspaceLayouts } from './workspace-layout.ts'
 import { withDatabaseTransaction } from './write-transaction.ts'
 
-// Persisted chat_groups are now universal workspaces. The old table and chat
-// membership remain compatibility boundaries for saved composer capabilities.
+// Persisted chat_groups are universal workspaces; the table name preserves saved IDs.
 export const ensureDefaultWorkspace = Effect.fn('Workspace.ensureDefault')(function* () {
   const sql = yield* SqlClient.SqlClient
   yield* sql`INSERT OR IGNORE INTO chat_groups (id, name, order_index)
@@ -60,9 +59,6 @@ export const moveWorkspaceChat = Effect.fn('Workspace.moveChat')(function* (
       if (workspace.length === 0) throw new Error('Workspace not found.')
       yield* seedWorkspaceLayouts(conversationId)
       yield* sql`UPDATE conversation_facts SET workspace_id = ${id} WHERE conversation_id = ${conversationId}`
-      // Update legacy group context only for legacy chat-mode conversations.
-      // A move must never turn directory/coding conversations into chat-mode ones.
-      yield* sql`UPDATE chat_conversations SET group_id = ${id} WHERE conversation_id = ${conversationId}`
     }),
   )
 })
@@ -73,13 +69,7 @@ export const reconcileWorkspaceOrganization = Effect.fn('Workspace.reconcile')(f
   const sql = yield* SqlClient.SqlClient
   yield* withDatabaseTransaction(
     Effect.gen(function* () {
-      const defaultId = yield* ensureDefaultWorkspace()
-      // Existing standalone grouping wins over directory attribution. This is
-      // idempotent and never reassigns a chat the user has already organized.
-      yield* sql`UPDATE conversation_facts SET workspace_id = COALESCE(
-      (SELECT group_id FROM chat_conversations WHERE conversation_id = conversation_facts.conversation_id), ${defaultId})
-      WHERE workspace_id IS NULL AND EXISTS (
-        SELECT 1 FROM chat_conversations WHERE conversation_id = conversation_facts.conversation_id)`
+      yield* ensureDefaultWorkspace()
       for (const directory of directories) {
         if (directory.id !== directory.rootId) continue
         const id = `directory:${directory.id}`

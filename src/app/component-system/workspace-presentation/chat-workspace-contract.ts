@@ -13,7 +13,8 @@ import type { WorkspaceState } from '../../state/workspace-model'
 import type { View, WorkingDirectory } from '../../types'
 import type { WorkspaceArtifactDrawerState } from '../../workspace-shell/useWorkspaceArtifactDrawerState'
 
-export type DomainWorkspaceController = {
+export type ChatWorkspaceController = {
+  workspaces: { selectedWorkspaceId: string | null }
   composer: {
     listAttachmentEntries: (request: {
       directoryId?: string | null
@@ -22,17 +23,11 @@ export type DomainWorkspaceController = {
     }) => Promise<ComposerFilePickerState | null>
   }
   desktop: { handleAction: DesktopActionInvoker; shellState: ShellState | null }
-  gitOps: {
-    close: () => void
-    open: (options?: { filePath?: string | null }) => void
-    openWorktreeFile: (filePath: string) => void
-  }
   navigation: {
     closeUtilityView: () => void
     showView: (view: View, target?: SettingsOpenTarget) => void
   }
   directories: {
-    gitLoading: boolean
     items: WorkingDirectory[]
     select: (directoryId: string) => void
     gitState: DirectoryGitState | null
@@ -46,9 +41,9 @@ export type DomainWorkspaceController = {
   workspace: { state: WorkspaceState }
 }
 
-export type DomainWorkspaceViewProps = {
+export type ChatWorkspaceViewProps = {
   artifactDrawer: WorkspaceArtifactDrawerState
-  controller: DomainWorkspaceController
+  controller: ChatWorkspaceController
   activeComposerState: ComposerState | null
   activeChatData: ChatData | null
   composerDirectoryId: string
@@ -63,7 +58,7 @@ export type DomainWorkspaceViewProps = {
   onToggleSidebar: () => void
 }
 
-export type DomainWorkspaceContentProps = DomainWorkspaceViewProps & {
+export type ChatWorkspaceContentProps = ChatWorkspaceViewProps & {
   footerRef: RefObject<HTMLElement | null>
   mainViewRef: RefObject<HTMLElement | null>
   terminalDrawerInsetStyle: { right: string } | undefined
@@ -71,20 +66,19 @@ export type DomainWorkspaceContentProps = DomainWorkspaceViewProps & {
   chatFooterStyle: { top?: string; bottom?: number } | undefined
   showWorkspaceFooter: boolean
   showChatFooter: boolean
-  showCodeSidebarFooter: boolean
+  showSidebarFooter: boolean
   gitDetailOpen: boolean
   gitPresentation: GitPresentation | null
   showDesktopTerminalDrawer: boolean
   centerChatFooter: boolean
   chatTimelineLoading: boolean
   composerLayoutVersion: number
-  setComposerLayoutVersion: Dispatch<SetStateAction<number>>
   composerOverlayHeight: number
   setComposerOverlayHeight: Dispatch<SetStateAction<number>>
   handleAction: DesktopActionInvoker
   handleLoadEarlierMessages: () => void
   handleToggleTerminal: () => void
-  listComposerAttachmentEntries: DomainWorkspaceController['composer']['listAttachmentEntries']
+  listComposerAttachmentEntries: ChatWorkspaceController['composer']['listAttachmentEntries']
   shellState: ShellState | null
   state: WorkspaceState
   directoryGitState: DirectoryGitState | null

@@ -2,7 +2,7 @@ import { InlineSelect } from '@howaboua/howcode-sdk/ui/inline-select'
 import { composerThinkingLevels } from '@howcode/shared/composer-thinking-level'
 import type { AppSettings, ComposerModel, ComposerThinkingLevel } from '../../desktop/types'
 
-type ModelSettingsSelection = AppSettings['chatModel']
+type ModelSettingsSelection = AppSettings['defaultModel']
 
 const allThinkingLevels: ComposerThinkingLevel[] = [...composerThinkingLevels]
 

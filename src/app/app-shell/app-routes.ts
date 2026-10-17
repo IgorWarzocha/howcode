@@ -113,7 +113,6 @@ function getConversationRouteAction(
       directoryId: target.chat.directoryId,
       chatId: target.chat.id,
       conversationId: target.chat.conversationId,
-      composerProfile: target.chat.composerProfile,
     }
     return open
   }

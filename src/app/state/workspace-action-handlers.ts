@@ -24,7 +24,7 @@ import type {
   WorkspaceState,
 } from './workspace-model'
 
-const { directoryWorkspaceActionHandlers, restoreCodeChatForView } =
+const { directoryWorkspaceActionHandlers, restoreChatForView } =
   createDirectoryWorkspaceTransitions({
     getTerminalStateForNextView,
     getTerminalVisibilityForSession,
@@ -40,13 +40,13 @@ function createUtilityViewReturnState(state: WorkspaceState): UtilityViewReturnS
     utilityViewReturnState: state.utilityViewReturnState,
     activeView: state.activeView,
     selectedWorkspaceId: state.selectedWorkspaceId,
-    composerProfile: state.composerProfile,
     selectedDirectoryId: state.selectedDirectoryId,
     hasSelectedDirectory: state.hasSelectedDirectory,
     landingVisible: state.landingVisible,
     selectedInboxConversationId: state.selectedInboxConversationId,
     selectedChatId: state.selectedChatId,
     selectedConversationId: state.selectedConversationId,
+    composerExtensions: state.composerExtensions,
     ...getTerminalUtilityReturnState(state),
     ...getDirectoryUtilityReturnState(state),
   }
@@ -67,8 +67,8 @@ function showViewState(
       settingsPanelOpen: false,
     }
 
-  const restoredCodeChat = restoreCodeChatForView(state, action.view)
-  if (restoredCodeChat) return restoredCodeChat
+  const restoredChat = restoreChatForView(state, action.view)
+  if (restoredChat) return restoredChat
 
   const utilityViewReturnState = isUtilityView(action.view)
     ? isUtilityView(state.activeView)
@@ -96,12 +96,14 @@ function openChatState(
     ...state,
     activeView,
     selectedWorkspaceId: action.workspaceId ?? state.selectedWorkspaceId,
-    composerProfile: action.composerProfile ?? state.composerProfile,
     selectedDirectoryId: action.directoryId,
     hasSelectedDirectory: true,
     landingVisible: false,
     selectedChatId: action.chatId,
     selectedConversationId: action.conversationId,
+    composerExtensions:
+      action.composerExtensions ??
+      (state.selectedConversationId === action.conversationId ? state.composerExtensions : null),
     ...getTerminalStateForOpenedChat(state, action),
     utilityViewReturnState: null,
     ...getDirectoryStateForOpenedChat(state, action),
@@ -115,8 +117,8 @@ function previewChatState(
   return {
     ...state,
     activeView: 'chat',
+    composerExtensions: null,
     selectedWorkspaceId: action.workspaceId ?? state.selectedWorkspaceId,
-    composerProfile: action.composerProfile ?? state.composerProfile,
     selectedDirectoryId: action.directoryId,
     hasSelectedDirectory: true,
     landingVisible: false,
@@ -127,6 +129,15 @@ function previewChatState(
 }
 
 export const workspaceActionHandlers = {
+  'set-composer-extensions': (
+    state: WorkspaceState,
+    action: Extract<WorkspaceAction, { type: 'set-composer-extensions' }>,
+  ) =>
+    state.selectedConversationId === action.conversationId &&
+    state.selectedDirectoryId === action.directoryId &&
+    state.selectedWorkspaceId === action.workspaceId
+      ? { ...state, composerExtensions: action.extensions }
+      : state,
   ...directoryWorkspaceActionHandlers,
   'open-gitops': (
     state: WorkspaceState,
@@ -147,9 +158,9 @@ export const workspaceActionHandlers = {
     selectedWorkspaceId: action.workspaceId,
     selectedDirectoryId: action.directoryId ?? '',
     hasSelectedDirectory: Boolean(action.directoryId),
-    composerProfile: action.directoryId ? 'coding' : 'general',
     selectedChatId: null,
     selectedConversationId: null,
+    composerExtensions: null,
     selectedDiffFilePath: null,
     landingVisible: false,
     utilityViewReturnState: null,
@@ -169,6 +180,7 @@ export const workspaceActionHandlers = {
     ...state,
     selectedChatId: null,
     selectedConversationId: null,
+    composerExtensions: null,
     ...clearDirectoryChatSelection(),
   }),
   'select-inbox-chat': (

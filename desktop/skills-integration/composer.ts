@@ -31,7 +31,6 @@ export async function getComposerSkills(
 ): Promise<ComposerSkillReference[]> {
   const installed = await configuredSkills(skillsPathsHost, {
     directoryPath: request.directoryId,
-    chat: request.composerProfile === 'general',
   })
   // biome-ignore lint/complexity/useLiteralKeys: process.env has an index signature.
   const bundledDirectory = process.env['HOWCODE_BUNDLED_SKILLS_PATH']?.trim()

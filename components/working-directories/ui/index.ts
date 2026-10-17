@@ -24,10 +24,10 @@ export {
   clearDirectoryChatSelection,
   createDirectoryWorkspaceTransitions,
   createInitialDirectoryWorkspaceState,
-  getCurrentCodeChatSelection,
+  getCurrentChatSelection,
   getDirectoryStateForOpenedChat,
   getDirectoryStateForPreviewedChat,
   getDirectoryStateForShownView,
   getDirectoryUtilityReturnState,
-  resolveCodeChatSelection,
+  resolveChatSelection,
 } from './shell/workspace-state'

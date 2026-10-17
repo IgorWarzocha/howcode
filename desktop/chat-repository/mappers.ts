@@ -63,7 +63,6 @@ export function mapInboxChatRow(row: InboxChatRow): InboxChat {
     running: Boolean(row.running),
     unread: Boolean(row.unread),
     branchName: row.branchName ?? undefined,
-    composerProfile: row.isChat ? 'general' : 'coding',
   }
 }
 
@@ -75,6 +74,5 @@ export function mapArchivedChatRow(row: ArchivedChatRow): ArchivedChat {
     directoryId: row.directoryId,
     directoryName: row.directoryName,
     conversationId: row.conversationId,
-    composerProfile: row.isChat ? 'general' : 'coding',
   }
 }

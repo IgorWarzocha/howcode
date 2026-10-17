@@ -1,4 +1,7 @@
 import { useSidebarRepositorySnapshot } from '@howaboua/howcode-sdk/sidebar-renderer'
+import { getSelectedPersonId } from '@howcode/components/people/ui'
+import type { ComposerStateRequest } from '@howcode/shared/desktop-composer-contracts'
+import type { Person } from '@howcode/shared/people'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Dispatch, SetStateAction } from 'react'
 import { useCallback } from 'react'
@@ -42,16 +45,13 @@ function publishActionFeedback(input: {
 }
 
 type UseDesktopActionHandlersArgs = {
+  people: readonly Person[]
   activeView: View
   composerDirectoryId: string
   dispatch: Dispatch<WorkspaceAction>
   invokeDesktopAction: DesktopActionInvoker
   loadArchivedChats: () => Promise<ArchivedChat[]>
-  loadComposerState: (request?: {
-    directoryId?: string | null
-    conversationId?: string | null
-    composerProfile?: 'general' | 'coding' | null
-  }) => Promise<ComposerState | null>
+  loadComposerState: (request?: ComposerStateRequest) => Promise<ComposerState | null>
   loadDirectoryGitState: (directoryId: string) => Promise<DirectoryGitState | null>
   loadDirectoryChats: (
     directoryId: string,
@@ -69,6 +69,7 @@ type UseDesktopActionHandlersArgs = {
 }
 
 export function useDesktopActionHandlers({
+  people,
   activeView,
   composerDirectoryId,
   dispatch,
@@ -102,7 +103,10 @@ export function useDesktopActionHandlers({
         activeView,
         composerDirectoryId,
         dispatch,
-        payload,
+        payload:
+          action === 'composer.send'
+            ? { ...payload, personId: getSelectedPersonId(people) }
+            : payload,
         queryClient,
         selectedConversationId,
         setWorkspaceNavigationState,
@@ -151,6 +155,7 @@ export function useDesktopActionHandlers({
       return actionResult
     },
     [
+      people,
       prepareRepositoryAction,
       activeView,
       composerDirectoryId,

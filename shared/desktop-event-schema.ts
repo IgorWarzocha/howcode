@@ -73,7 +73,6 @@ export const DesktopEventSchema = Schema.Union([
     branchName: Schema.optionalKey(Schema.NullOr(Schema.String)),
     replacesConversationId: Schema.optionalKey(Schema.NullOr(Schema.String)),
     workspaceId: Schema.optionalKey(Schema.NullOr(Schema.String)),
-    composerProfile: Schema.optionalKey(Schema.Literals(['general', 'coding'])),
     chat: ChatDataSchema,
     composer: Schema.NullOr(ComposerStateSchema),
   }),

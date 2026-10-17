@@ -31,7 +31,6 @@ function getConversation(id: string): PluginConversation {
     id,
     workspaceId: metadata.workspaceId ?? DEFAULT_WORKSPACE_ID,
     directoryId: metadata.directoryId,
-    composerProfile: metadata.composerProfile,
   }
 }
 
@@ -78,7 +77,6 @@ export function createPluginConversations(): PluginConversations {
       return resolveDefaultRuntimeAgent({
         workspaceId,
         directoryId: workspace.directoryId ?? getDesktopWorkingDirectory(),
-        composerProfile: 'general',
       })
     },
     transcript: async (id) => {
@@ -136,7 +134,6 @@ export function createPluginConversations(): PluginConversations {
       const result = await startNewChat({
         workspaceId,
         directoryId: workspace.directoryId ?? getDesktopWorkingDirectory(),
-        composerProfile: 'general',
       })
       await refreshShellIndex(result.directoryId)
       return getConversation(result.conversationId)

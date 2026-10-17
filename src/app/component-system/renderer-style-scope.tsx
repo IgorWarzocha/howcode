@@ -38,13 +38,16 @@ export function RendererRetainedWorkspaceSurface(
   const name = useContext(RendererStyleOwner)
   const { content, actions } = props
   // Metadata effects consume node identity; don't republish unchanged surface actions.
-  const scoped = useMemo(
-    () => ({
-      content: name ? <RendererStyleScope name={name}>{content}</RendererStyleScope> : content,
-      actions:
-        name && actions ? <RendererStyleScope name={name}>{actions}</RendererStyleScope> : actions,
-    }),
-    [name, content, actions],
+  const scopedActions = useMemo(
+    () =>
+      name && actions ? <RendererStyleScope name={name}>{actions}</RendererStyleScope> : actions,
+    [name, actions],
   )
-  return <RetainedWorkspaceSurface {...props} {...scoped} />
+  return (
+    <RetainedWorkspaceSurface
+      {...props}
+      content={name ? <RendererStyleScope name={name}>{content}</RendererStyleScope> : content}
+      actions={scopedActions}
+    />
+  )
 }

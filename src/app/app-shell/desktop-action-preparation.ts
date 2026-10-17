@@ -1,4 +1,5 @@
 import type { SidebarRepositorySnapshot } from '@howaboua/howcode-sdk/sidebar-renderer'
+import { getPersistedConversationId } from '@howcode/shared/conversation-ids'
 import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch, SetStateAction } from 'react'
 import type { DesktopAction } from '../desktop/actions'
@@ -27,9 +28,14 @@ export async function prepareDesktopAction(input: {
 > {
   const contextualPayload = buildContextualActionPayload({
     action: input.action,
-    composerProfile: input.workspaceState.composerProfile,
     workspaceId: input.workspaceState.selectedWorkspaceId,
-    payload: input.payload,
+    payload: {
+      ...(!getPersistedConversationId(input.selectedConversationId) &&
+      input.workspaceState.composerExtensions !== null
+        ? { composerExtensions: input.workspaceState.composerExtensions }
+        : {}),
+      ...input.payload,
+    },
     composerDirectoryId: input.composerDirectoryId,
     activeView: input.activeView,
     selectedConversationId: input.selectedConversationId,

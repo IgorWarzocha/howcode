@@ -1,4 +1,9 @@
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
+import { SpeakerSelector } from '@howcode/components/people/ui'
+import {
+  getLocalDraftWorkspaceId,
+  getPersistedConversationId,
+} from '@howcode/shared/conversation-ids'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import type { Message } from '../../types'
 import { FALLBACK_APP_SETTINGS } from '../../workspace-shell/default-app-settings'
@@ -9,8 +14,8 @@ import {
   InstalledQueuedPrompts,
 } from '../composer-renderer-slot'
 import { getComposerRuntimeModel } from '../composer-runtime'
-import type { DomainWorkspaceContentProps } from './domain-workspace-contract'
-import { DomainWorkspaceLayout, DomainWorkspaceMainArea } from './domain-workspace-main-area'
+import type { ChatWorkspaceContentProps } from './chat-workspace-contract'
+import { ChatWorkspaceLayout, ChatWorkspaceMainArea } from './chat-workspace-main-area'
 
 function getReplyActivityKey(messages: readonly Message[]) {
   const replyMessageIds: string[] = []
@@ -20,7 +25,7 @@ function getReplyActivityKey(messages: readonly Message[]) {
   return replyMessageIds.join('|')
 }
 
-function CodeSidebarToggleButton(props: DomainWorkspaceContentProps) {
+function SidebarToggleButton(props: ChatWorkspaceContentProps) {
   const { sidebarCollapsed, sidebarCompactMode, onToggleSidebar } = props
   const sidebarHidden = sidebarCollapsed || sidebarCompactMode
   if (sidebarCompactMode && !sidebarHidden) return null
@@ -39,12 +44,12 @@ function CodeSidebarToggleButton(props: DomainWorkspaceContentProps) {
   )
 }
 
-function CodeQueuedPrompts({
+function QueuedPrompts({
   activeComposerState,
   composerDirectoryId,
   terminalConversationId,
   handleAction,
-}: DomainWorkspaceContentProps) {
+}: ChatWorkspaceContentProps) {
   return (
     <InstalledQueuedPrompts
       prompts={activeComposerState?.queuedPrompts ?? []}
@@ -55,7 +60,7 @@ function CodeQueuedPrompts({
   )
 }
 
-function CodeChatComposer(props: DomainWorkspaceContentProps) {
+function ChatComposer(props: ChatWorkspaceContentProps) {
   const {
     state,
     artifactDrawer,
@@ -79,11 +84,19 @@ function CodeChatComposer(props: DomainWorkspaceContentProps) {
     <Composer
       activeView={state.activeView}
       runtime={composerRuntime}
+      availableExtensions={activeComposerState?.availableExtensions ?? []}
+      selectedExtensions={activeComposerState?.selectedExtensions ?? []}
       messages={activeChatData?.messages}
       isStreaming={activeChatData?.isStreaming ?? false}
       replyActivityKey={getReplyActivityKey(activeChatData?.messages ?? [])}
       streamingBehaviorPreference={appSettings.composerStreamingBehavior}
       directoryId={composerDirectoryId}
+      workspaceId={
+        getPersistedConversationId(terminalConversationId)
+          ? null
+          : (getLocalDraftWorkspaceId(terminalConversationId) ??
+            controller.workspaces.selectedWorkspaceId)
+      }
       directoryGitState={directoryGitState}
       parentBranchName={parentBranchName}
       conversationId={terminalConversationId}
@@ -96,30 +109,37 @@ function CodeChatComposer(props: DomainWorkspaceContentProps) {
       workspaceFooterRef={footerRef}
       onOpenSettingsView={(target) => controller.navigation.showView('settings', target)}
       onToggleTerminal={handleToggleTerminal}
+      onToggleArtifacts={props.centerChatFooter ? undefined : artifactDrawer.toggleArtifacts}
       artifactsAvailable={terminalConversationId !== null}
       artifactsVisible={artifactDrawer.artifactsVisible}
       artifactRendererName={artifactDrawer.artifactRendererName}
       onToggleArtifactRenderer={artifactDrawer.toggleArtifacts}
       terminalVisible={state.terminalVisible}
-      preferPortalModelPopover={state.activeView === 'directory'}
+      preferPortalModelPopover={props.centerChatFooter}
       onListAttachmentEntries={listComposerAttachmentEntries}
       onAction={handleAction}
     />
   )
 }
 
-function CodeChatComposerCenter(props: DomainWorkspaceContentProps) {
+function ChatComposerCenter(props: ChatWorkspaceContentProps) {
   return (
     <div className="grid gap-0">
-      <CodeQueuedPrompts {...props} />
+      <SpeakerSelector
+        people={props.shellState?.appSettings.people ?? []}
+        onManage={() =>
+          props.controller.navigation.showView('settings', { settingId: 'general.people' })
+        }
+      />
+      <QueuedPrompts {...props} />
       <div>
-        <CodeChatComposer {...props} />
+        <ChatComposer {...props} />
       </div>
     </div>
   )
 }
 
-function CodeFooterRight(props: DomainWorkspaceContentProps) {
+function ChatFooterRight(props: ChatWorkspaceContentProps) {
   const {
     state,
     showDesktopTerminalDrawer,
@@ -128,12 +148,14 @@ function CodeFooterRight(props: DomainWorkspaceContentProps) {
     terminalConversationId,
     handleAction,
   } = props
-  if (state.activeView === 'chat' && !showDesktopTerminalDrawer)
+  if (
+    (state.activeView === 'chat' || state.activeView === 'workspace') &&
+    !showDesktopTerminalDrawer
+  )
     return (
       <DesktopComposerStatusModelPicker
         availableModels={activeComposerState?.availableModels ?? []}
         availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ['off']}
-        composerProfile="coding"
         contextUsage={activeComposerState?.contextUsage ?? null}
         model={activeComposerState?.currentModel ?? null}
         directoryId={composerDirectoryId}
@@ -145,7 +167,7 @@ function CodeFooterRight(props: DomainWorkspaceContentProps) {
   return null
 }
 
-function DomainWorkspaceChatFooter(props: DomainWorkspaceContentProps) {
+function ChatWorkspaceChatFooter(props: ChatWorkspaceContentProps) {
   const {
     footerRef,
     showChatFooter,
@@ -171,40 +193,43 @@ function DomainWorkspaceChatFooter(props: DomainWorkspaceContentProps) {
       <div className="pointer-events-auto grid gap-2.5">
         <WorkspaceComposerDock
           compactControls={sidebarAutoHidden || sidebarCollapsed}
-          left={<CodeSidebarToggleButton {...props} />}
-          center={<CodeChatComposerCenter {...props} />}
-          rightClassName="min-[1400px]:opacity-100 opacity-0"
-          right={<CodeFooterRight {...props} />}
+          left={<SidebarToggleButton {...props} />}
+          center={<ChatComposerCenter {...props} />}
+          rightClassName={cn(
+            'min-[1400px]:opacity-100',
+            props.artifactDrawer.showDesktopArtifactDrawer ? 'invisible' : 'opacity-0',
+          )}
+          right={<ChatFooterRight {...props} />}
         />
       </div>
     </footer>
   )
 }
 
-function CodeSidebarFooter(props: DomainWorkspaceContentProps) {
+function SidebarFooter(props: ChatWorkspaceContentProps) {
   return (
     <footer className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4">
       <div className="pointer-events-auto mb-1.5">
-        <CodeSidebarToggleButton {...props} />
+        <SidebarToggleButton {...props} />
       </div>
     </footer>
   )
 }
 
-function DomainWorkspaceFooterArea(props: DomainWorkspaceContentProps) {
-  const { showWorkspaceFooter, showCodeSidebarFooter } = props
-  if (showWorkspaceFooter) return <DomainWorkspaceChatFooter {...props} />
-  if (showCodeSidebarFooter) return <CodeSidebarFooter {...props} />
+function ChatWorkspaceFooterArea(props: ChatWorkspaceContentProps) {
+  const { showWorkspaceFooter, showSidebarFooter } = props
+  if (showWorkspaceFooter) return <ChatWorkspaceChatFooter {...props} />
+  if (showSidebarFooter) return <SidebarFooter {...props} />
   return null
 }
 
-export function DomainWorkspaceViewContent(props: DomainWorkspaceContentProps) {
+export function ChatWorkspaceViewContent(props: ChatWorkspaceContentProps) {
   return (
     <div className="relative min-h-0 flex-1 overflow-hidden">
-      <DomainWorkspaceLayout {...props}>
-        <DomainWorkspaceMainArea {...props} />
-        <DomainWorkspaceFooterArea {...props} />
-      </DomainWorkspaceLayout>
+      <ChatWorkspaceLayout {...props}>
+        <ChatWorkspaceMainArea {...props} />
+        <ChatWorkspaceFooterArea {...props} />
+      </ChatWorkspaceLayout>
     </div>
   )
 }

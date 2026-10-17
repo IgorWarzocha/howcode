@@ -47,13 +47,11 @@ function getChatEventFlags(input: {
   const shouldAutoOpenChat = shouldAutoOpenStartedChat({
     reason: input.event.reason,
     directoryId: input.event.directoryId,
-    composerProfile: input.event.composerProfile,
     workspaceState: input.latestWorkspaceState,
   })
   const shouldDisplayLocalDraftChat = shouldDisplayStartedChatForLocalDraft({
     reason: input.event.reason,
     directoryId: input.event.directoryId,
-    composerProfile: input.event.composerProfile,
     replacesConversationId: input.event.replacesConversationId,
     workspaceState: input.latestWorkspaceState,
   })
@@ -129,7 +127,6 @@ function dispatchChatOpenIfNeeded(input: {
       directoryId: input.event.directoryId,
       chatId: input.event.chatId,
       conversationId: input.event.conversationId,
-      composerProfile: input.event.composerProfile ?? 'coding',
     })
     return
   }
@@ -143,7 +140,6 @@ function dispatchChatOpenIfNeeded(input: {
       directoryId: input.event.directoryId,
       chatId: input.event.chatId,
       conversationId: input.event.conversationId,
-      composerProfile: input.latestWorkspaceState.composerProfile,
     })
   }
 }

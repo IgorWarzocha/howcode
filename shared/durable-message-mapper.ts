@@ -3,6 +3,7 @@ import { CompactionEntry, type EntryRecord, type LiveState } from '@earendil-wor
 import type { ConversationEntryList, ConversationEntryPreview } from './conversation-entries'
 import type { ChatData, Message } from './desktop-chat-contracts'
 import { HarnessContextEntry } from './harness-context'
+import { getPersonInputData } from './people'
 import {
   getFirstUserTurnTitle,
   mapAgentMessageToUiMessage,
@@ -45,6 +46,22 @@ function mapModelMessage(
   return mapped
 }
 
+function mapEntryModelMessage(
+  entry: EntryRecord,
+  message: ModelMessage,
+  id: string,
+  calls: ReadonlyMap<string, ToolCall>,
+) {
+  const data = getPersonInputData(entry)
+  const displayMessage =
+    data?.modelContextBlocks === 1 && message.role === 'user' && Array.isArray(message.content)
+      ? { ...message, content: message.content.slice(1) }
+      : message
+  const mapped = mapModelMessage(displayMessage, id, calls)
+  if (mapped?.role === 'user' && data) mapped.author = data.author
+  return mapped
+}
+
 function mapEntries(
   entries: readonly EntryRecord[],
   calls: ReadonlyMap<string, ToolCall>,
@@ -63,7 +80,7 @@ function mapEntries(
     }
     const messages: Message[] = []
     for (const [index, modelMessage] of (entry.model ?? []).entries()) {
-      const mapped = mapModelMessage(modelMessage, entryMessageId(entry, index), calls)
+      const mapped = mapEntryModelMessage(entry, modelMessage, entryMessageId(entry, index), calls)
       if (!mapped) continue
       messages.push(
         CompactionEntry.is(entry)

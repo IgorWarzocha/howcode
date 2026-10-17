@@ -1,21 +1,19 @@
 import { createRegistry, type Extension, type RegistryReader } from '@earendil-works/pi-durable'
 import { CodingTools } from '@earendil-works/pi-durable/tools'
 import { createAgentResources } from '../../components/agent-resources/service/index.ts'
-import { createChatTools } from '../../components/chat-tools/service/index.ts'
+import { createAttachmentTools } from '../../components/attachment-tools/service/index.ts'
 import type { ComposerStateRequest } from '../../shared/desktop-contracts.ts'
 import { getComposerSkills } from '../skills-integration/composer.ts'
 import { installedAgentExtensions } from './plugin-agent-tools.ts'
 import { WorkspaceLayoutTools } from './workspace-layout-tool.ts'
 
-const resources = createAgentResources(getComposerSkills)
-const Resources = resources.extension
-const ChatTools = createChatTools({
+const Resources = createAgentResources(getComposerSkills)
+const AttachmentTools = createAttachmentTools({
   discoverSkills: (agent) =>
     getComposerSkills({
-      composerProfile: 'general',
+      directoryId: agent.cwd,
       composerExtensions: agent.extensions.map((extension) => extension.name),
     }),
-  skillsSection: resources.createSkillsSection('chat'),
 })
 
 /** Durable owns activation and persisted selection. */
@@ -26,7 +24,7 @@ export function createDesktopExtensionRegistry(
   const registry = createRegistry()
   for (const extension of [
     CodingTools,
-    ChatTools,
+    AttachmentTools,
     Resources,
     WorkspaceLayoutTools,
     ...installedAgentExtensions(),
@@ -40,9 +38,9 @@ export function createDesktopExtensionRegistry(
   return registry
 }
 
-/** The only compatibility boundary for old UI mode defaults. Explicit lists are exact. */
+/** Selection is independent of directories and presentation. Explicit lists are exact. */
 export function resolveDesktopExtensions(request: ComposerStateRequest, registry: RegistryReader) {
-  const excluded = new Set(defaultExtensionExclusions(request).map((extension) => extension.name))
+  const excluded = new Set(defaultExtensionExclusions.map((extension) => extension.name))
   const names =
     request.composerExtensions ??
     registry
@@ -52,17 +50,21 @@ export function resolveDesktopExtensions(request: ComposerStateRequest, registry
       .map((extension) => extension.name)
   const snapshot = registry.snapshot()
   const seen = new Set<string>()
+  const tools = new Map<string, string>()
   const extensions = names.map((name) => {
     if (seen.has(name)) throw new Error(`Duplicate conversation extension: ${name}`)
     seen.add(name)
     const extension = snapshot.extension(name)
     if (!extension) throw new Error(`Unknown conversation extension: ${name}`)
+    for (const tool of extension.tools ?? []) {
+      const owner = tools.get(tool.name)
+      if (owner) throw new Error(`Tool ${tool.name} is provided by both ${owner} and ${name}.`)
+      tools.set(tool.name, name)
+    }
     return extension
   })
   return { extensions }
 }
 
 /** Default conversations follow live host packages. Explicit choices stay exact. */
-export function defaultExtensionExclusions(request: ComposerStateRequest): Extension[] {
-  return request.composerProfile === 'general' ? [CodingTools] : [ChatTools]
-}
+export const defaultExtensionExclusions: Extension[] = [AttachmentTools]

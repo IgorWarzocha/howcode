@@ -2,13 +2,7 @@ import { readdir, realpath } from 'node:fs/promises'
 import path from 'node:path'
 import { Type } from '@earendil-works/pi-ai'
 import type { Agent } from '@earendil-works/pi-durable'
-import {
-  defineExtension,
-  defineTool,
-  type PromptSection,
-  section,
-  wrapSection,
-} from '@earendil-works/pi-durable'
+import { defineExtension, defineTool } from '@earendil-works/pi-durable'
 import { createReadTool } from '@earendil-works/pi-durable/tools'
 import { withExtensionIngress } from '../../../desktop/durable-runtime/extension-ingress.ts'
 import type { ComposerSkillReference } from '../../../shared/desktop-contracts.ts'
@@ -17,16 +11,13 @@ import {
   authorizeAttachmentPath,
   resolveAttachmentGrants,
 } from './attachment-grants.ts'
-import { renderChatPrompt, stripLegacyChatPrompt } from './chat-prompt.ts'
 
 export { AttachmentGrantsDoc } from './attachment-grants.ts'
 
-export function createChatTools({
+export function createAttachmentTools({
   discoverSkills,
-  skillsSection,
 }: {
   discoverSkills: (agent: Agent) => Promise<ComposerSkillReference[]>
-  skillsSection: PromptSection
 }) {
   async function skillReadGrants(agent: Agent) {
     const skills = await discoverSkills(agent)
@@ -36,7 +27,7 @@ export function createChatTools({
     }
   }
 
-  async function authorizeChatRead(
+  async function authorizeRead(
     filePath: string,
     cwd: string,
     grants: { readonly files: readonly string[]; readonly directories: readonly string[] },
@@ -57,7 +48,7 @@ export function createChatTools({
         files: [],
         directories: [],
       }
-      const resolved = await authorizeChatRead(
+      const resolved = await authorizeRead(
         args.path,
         api.env?.cwd ?? process.cwd(),
         grants,
@@ -97,26 +88,10 @@ export function createChatTools({
 
   return withExtensionIngress(
     defineExtension({
-      name: 'howcode.chat',
+      name: 'howcode.attachments',
       tools: [attachmentRead, attachmentList],
-      sections: [
-        section('howcode-chat', ({ agent }) => renderChatPrompt(agent.instructions), {
-          tag: false,
-        }),
-      ],
-      wraps: [
-        wrapSection('skills', () => skillsSection),
-        wrapSection('instructions', (original) => ({
-          ...original,
-          async render(input, context) {
-            const text = await original.render(input, context)
-            return text ? stripLegacyChatPrompt(text) || undefined : undefined
-          },
-        })),
-      ],
     }),
     {
-      resourceRequest: () => ({ directoryId: null, composerProfile: 'general' }),
       async prepareInput({ conversation, request, context }) {
         const grants = await resolveAttachmentGrants(request.attachments ?? [])
         await conversation.commit(async (tx) => {

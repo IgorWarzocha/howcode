@@ -9,7 +9,7 @@ import { SettingsModelWorkflowControls } from './settingsModelWorkflowControls'
 import type { SettingDescriptor } from './settingsTypes'
 
 type SettingsController = {
-  models: { selectChatModel: (id: string) => void; selectCodeModel: (id: string) => void }
+  models: { selectModel: (id: string) => void }
 }
 
 export function buildModelSettingsDescriptors({
@@ -50,51 +50,25 @@ export function buildModelSettingsDescriptors({
       render: () => <SettingsAiServices />,
     },
     {
-      id: 'models.code',
+      id: 'models.defaults',
       category: 'chat',
-      title: 'Code',
-      description: 'Default settings for the Code view.',
-      keywords: 'code model provider reasoning thinking composer',
-      render: () => (
-        <SettingsModelWorkflowControls
-          {...sharedProps}
-          idPrefix="code-models"
-          selection={appSettings.codeModel}
-          thinkingLevel={appSettings.codeThinkingLevel}
-          allowDefaultThinking
-          onSelectModel={controller.models.selectCodeModel}
-          onSelectThinkingLevel={(value) =>
-            void onAction(
-              'settings.update',
-              value === null
-                ? { key: 'codeThinkingLevel', reset: true }
-                : { key: 'codeThinkingLevel', value },
-            )
-          }
-        />
-      ),
-    },
-
-    {
-      id: 'models.chat',
-      category: 'chat',
-      title: 'Chat',
-      description: 'Default settings for the Chat view.',
+      title: 'Model defaults',
+      description: 'Default model and thinking level for new chats.',
       keywords: 'chat model provider reasoning thinking',
       render: () => (
         <SettingsModelWorkflowControls
           {...sharedProps}
           idPrefix="chat-models"
-          selection={appSettings.chatModel}
-          thinkingLevel={appSettings.chatThinkingLevel}
+          selection={appSettings.defaultModel}
+          thinkingLevel={appSettings.defaultThinkingLevel}
           allowDefaultThinking
-          onSelectModel={controller.models.selectChatModel}
+          onSelectModel={controller.models.selectModel}
           onSelectThinkingLevel={(value) =>
             void onAction(
               'settings.update',
               value === null
-                ? { key: 'chatThinkingLevel', reset: true }
-                : { key: 'chatThinkingLevel', value },
+                ? { key: 'defaultThinkingLevel', reset: true }
+                : { key: 'defaultThinkingLevel', value },
             )
           }
         />

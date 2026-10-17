@@ -5,7 +5,7 @@ import { workspaceActionHandlers } from './workspace-action-handlers'
 import type { WorkspaceAction, WorkspaceState } from './workspace-model'
 
 export type {
-  CodeChatSelection,
+  ChatSelection,
   UtilityView,
   UtilityViewReturnState,
   WorkspaceAction,
@@ -16,13 +16,13 @@ export function createInitialWorkspaceState(directories: WorkingDirectory[]): Wo
   return {
     activeView: 'landing',
     selectedWorkspaceId: null,
-    composerProfile: 'general',
     selectedDirectoryId: '',
     hasSelectedDirectory: false,
     landingVisible: true,
     selectedInboxConversationId: null,
     selectedChatId: null,
     selectedConversationId: null,
+    composerExtensions: null,
     gitDetailDirectoryId: null,
     ...createInitialTerminalWorkspaceState(),
     ...createInitialDirectoryWorkspaceState(directories),

@@ -6,8 +6,8 @@ import { WORKSPACE_EDGE_PADDING_CLASS } from '../../ui/layout'
 import { FALLBACK_APP_SETTINGS } from '../../workspace-shell/default-app-settings'
 import { WorkspaceSurfaceDock } from '../../workspace-shell/workspace-surface-dock'
 import { RendererSlot } from '../renderer-slots'
-import type { DomainWorkspaceContentProps } from './domain-workspace-contract'
-import { DomainWorkspaceMainView } from './domain-workspace-main-view'
+import type { ChatWorkspaceContentProps } from './chat-workspace-contract'
+import { ChatWorkspaceMainView } from './chat-workspace-main-view'
 
 function getMainPanelClass(activeView: View, gitDetailOpen: boolean) {
   return activeView === 'chat' ||
@@ -19,7 +19,7 @@ function getMainPanelClass(activeView: View, gitDetailOpen: boolean) {
 }
 
 function getSelectedMainDirectoryId(
-  state: DomainWorkspaceContentProps['controller']['workspace']['state'],
+  state: ChatWorkspaceContentProps['controller']['workspace']['state'],
 ) {
   return (state.activeView === 'workspace' ||
     state.activeView === 'directory' ||
@@ -30,11 +30,11 @@ function getSelectedMainDirectoryId(
     : ''
 }
 
-function DomainWorkspaceDefaultMain(props: DomainWorkspaceContentProps) {
+function ChatWorkspaceDefaultMain(props: ChatWorkspaceContentProps) {
   const appSettings = props.shellState?.appSettings ?? FALLBACK_APP_SETTINGS
   const selectedDirectoryId = getSelectedMainDirectoryId(props.controller.workspace.state)
   return (
-    <DomainWorkspaceMainView
+    <ChatWorkspaceMainView
       activeView={props.state.activeView}
       appSettings={appSettings}
       currentDirectoryName={props.currentDirectoryName}
@@ -55,7 +55,7 @@ function DomainWorkspaceDefaultMain(props: DomainWorkspaceContentProps) {
   )
 }
 
-export function DomainWorkspaceMainArea(props: DomainWorkspaceContentProps) {
+export function ChatWorkspaceMainArea(props: ChatWorkspaceContentProps) {
   return (
     <div
       className="absolute inset-x-0 top-0 overflow-hidden"
@@ -68,16 +68,16 @@ export function DomainWorkspaceMainArea(props: DomainWorkspaceContentProps) {
           getMainPanelClass(props.state.activeView, props.gitDetailOpen),
         )}
       >
-        <DomainWorkspaceDefaultMain {...props} />
+        <ChatWorkspaceDefaultMain {...props} />
       </main>
     </div>
   )
 }
 
-export function DomainWorkspaceLayout({
+export function ChatWorkspaceLayout({
   children,
   ...props
-}: DomainWorkspaceContentProps & { children: ReactNode }) {
+}: ChatWorkspaceContentProps & { children: ReactNode }) {
   const presentation = props.gitPresentation
   const detail = presentation?.detailOpen ? (
     <RendererSlot name="@howaboua/howcode-git">{presentation.detail}</RendererSlot>

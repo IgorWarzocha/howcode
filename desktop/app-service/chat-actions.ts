@@ -23,7 +23,6 @@ import {
 } from '../chat-repository.ts'
 import { openChatRuntime, startNewChat } from '../conversation-runtime.ts'
 import { abortRuntimeConversation } from '../durable-runtime/host.ts'
-import { deleteWorkspaceChat } from '../workspace-repository.ts'
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
 
@@ -41,7 +40,6 @@ async function deletePersistedChat(chatId: string) {
   if (conversationId) {
     await abortRuntimeConversation(conversationId)
     await Promise.all(Array.from(conversationCleanup, (cleanup) => cleanup(conversationId)))
-    deleteWorkspaceChat(conversationId)
   }
   deleteChatRecord(chatId)
 }

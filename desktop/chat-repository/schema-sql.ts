@@ -80,20 +80,12 @@ export function chatStateSchemaStatements(sql: SqlClient.SqlClient) {
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );`,
-    sql`CREATE TABLE IF NOT EXISTS chat_conversations (
-    conversation_id TEXT PRIMARY KEY,
-    group_id TEXT,
-    order_index INTEGER,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (group_id) REFERENCES chat_groups(id) ON DELETE SET NULL
-  );`,
     sql`CREATE INDEX IF NOT EXISTS chat_groups_order_idx ON chat_groups(order_index, name COLLATE NOCASE);`,
-    sql`CREATE INDEX IF NOT EXISTS chat_conversations_group_idx ON chat_conversations(group_id, order_index);`,
   ]
 }
 
 export const columnMigrations = [
+  { table: 'conversation_facts', column: 'order_index', definition: 'order_index INTEGER' },
   { table: 'chat_groups', column: 'directory_id', definition: 'directory_id TEXT' },
   { table: 'chat_groups', column: 'layout_default_json', definition: 'layout_default_json TEXT' },
   {

@@ -1,4 +1,5 @@
 import { upsertShellDirectory } from '@howcode/components/working-directories/ui'
+import type { ComposerStateRequest } from '@howcode/shared/desktop-composer-contracts'
 import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch } from 'react'
 import type { ComposerState, DesktopActionResult } from '../../desktop/types'
@@ -28,10 +29,7 @@ type NewChatPostEffectInput = {
     directoryId: string,
     options?: { replaceLocalDraftConversationId?: string | null },
   ) => Promise<unknown>
-  loadComposerState: (request?: {
-    directoryId?: string | null
-    composerProfile?: 'general' | 'coding' | null
-  }) => Promise<ComposerState | null>
+  loadComposerState: (request?: ComposerStateRequest) => Promise<ComposerState | null>
   setComposerState: (state: ComposerState | null) => void
 }
 
@@ -56,23 +54,12 @@ function getNewChatResult(input: NewChatPostEffectInput) {
   return { directoryId, resultDirectoryId, conversationId, chatId, localFallback }
 }
 
-function shouldStayOnCodeDashboard(input: NewChatPostEffectInput) {
+function shouldStayOnDirectoryDashboard(input: NewChatPostEffectInput) {
   return input.action === 'directory.add' && input.workspaceState.activeView === 'directory'
 }
 
-function shouldShowCodeDashboard(input: NewChatPostEffectInput) {
+function shouldShowDirectoryDashboard(input: NewChatPostEffectInput) {
   return input.action === 'directory.add'
-}
-
-function getRequestedComposerProfile(input: NewChatPostEffectInput): 'general' | 'coding' {
-  if (input.action === 'directory.add') return 'coding'
-  if (input.contextualPayload.composerProfile === 'general') return 'general'
-  if (input.contextualPayload.composerProfile === 'coding') return 'coding'
-  return input.workspaceState.composerProfile
-}
-
-function getComposerProfileForNextView(input: NewChatPostEffectInput): 'general' | 'coding' {
-  return getRequestedComposerProfile(input)
 }
 
 function applyOptimisticChat(
@@ -100,7 +87,6 @@ function openOptimisticChat(
     directoryId: chat.directoryId,
     chatId: chat.chatId,
     conversationId: chat.conversationId,
-    composerProfile: getRequestedComposerProfile(input),
     workspaceId:
       typeof input.contextualPayload.workspaceId === 'string'
         ? input.contextualPayload.workspaceId
@@ -129,7 +115,7 @@ async function handleNewChatBridgeResult(
 ) {
   const nextDirectoryId = result.resultDirectoryId ?? result.directoryId
   if (!(nextDirectoryId && result.chatId && result.conversationId)) return false
-  if (shouldShowCodeDashboard(input)) {
+  if (shouldShowDirectoryDashboard(input)) {
     startOptimisticDirectoryChat(input, {
       directoryId: nextDirectoryId,
       chatId: result.chatId,
@@ -155,7 +141,7 @@ async function handleNewChatNavigation(
 ) {
   const nextDirectoryId = result.resultDirectoryId ?? result.directoryId
   if (await handleNewChatBridgeResult(input, result)) return
-  if (shouldStayOnCodeDashboard(input) && nextDirectoryId) {
+  if (shouldStayOnDirectoryDashboard(input) && nextDirectoryId) {
     input.dispatch({ type: 'select-directory', directoryId: nextDirectoryId })
     return
   }
@@ -199,7 +185,6 @@ export async function applyNewChatPostEffect(input: NewChatPostEffectInput) {
     (input.action === 'chat.new' ? input.actionResult?.result?.composer : null) ??
     (await input.loadComposerState({
       directoryId: result.resultDirectoryId ?? result.directoryId,
-      composerProfile: getComposerProfileForNextView(input),
     }))
   if (nextComposerState) input.setComposerState(nextComposerState)
 }

@@ -51,9 +51,6 @@ export const archiveDirectoryChats = Effect.fn('chatRepository.archiveDirectoryC
       SET archived = 1, updated_at = CURRENT_TIMESTAMP
       WHERE cwd = ?
         AND archived = 0
-        AND NOT EXISTS (
-          SELECT 1 FROM chat_conversations WHERE chat_conversations.conversation_id = conversation_facts.conversation_id
-        )
     `,
     [directoryId],
   )

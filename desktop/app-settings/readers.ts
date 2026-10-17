@@ -6,16 +6,15 @@ import {
   DEFAULT_DICTATION_MAX_DURATION_SECONDS,
   normalizeDictationMaxDurationSeconds,
 } from '../../shared/dictation-settings.ts'
+import { PeopleSchema } from '../../shared/people.ts'
 import { EnabledToolkitComponentsSchema } from '../../shared/toolkit-components.ts'
 import { databaseOperation } from '../chat-repository/db.ts'
 import {
-  chatModelKey,
-  chatThinkingLevelKey,
-  codeModelKey,
-  codeThinkingLevelKey,
   composerSendModeKey,
   composerStreamingBehaviorKey,
   customPiDirectoryKey,
+  defaultModelKey,
+  defaultThinkingLevelKey,
   dictationMaxDurationSecondsKey,
   dictationModelIdKey,
   directoryDashboardEnabledKey,
@@ -129,10 +128,9 @@ const loadAppSettingsOperation = Effect.fn('AppSettings.load')(function* () {
 
   return {
     ...(enabledToolkitComponents === undefined ? {} : { enabledToolkitComponents }),
-    chatModel: parseModelSelection(value(chatModelKey)),
-    chatThinkingLevel: parseThinkingLevelPreference(value(chatThinkingLevelKey)),
-    codeModel: parseModelSelection(value(codeModelKey)),
-    codeThinkingLevel: parseThinkingLevelPreference(value(codeThinkingLevelKey)),
+    people: Schema.decodeUnknownSync(PeopleSchema)(JSON.parse(value('people') ?? '[]')),
+    defaultModel: parseModelSelection(value(defaultModelKey)),
+    defaultThinkingLevel: parseThinkingLevelPreference(value(defaultThinkingLevelKey)),
     gitCommitMessageModel: parseModelSelection(value(gitCommitMessageModelKey)),
     gitCommitMessageThinkingLevel:
       parseThinkingLevelPreference(value(gitCommitMessageThinkingLevelKey)) ?? 'off',

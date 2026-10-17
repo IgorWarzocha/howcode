@@ -19,9 +19,7 @@ export async function loadShellState(
   // Snapshot only previously registered scopes, before directory discovery seeds the current cwd.
   const shellPreferences = await loadShellPreferences(directoryScopeAvailable ? cwd : null)
   const [composer, piTheme, directories] = await Promise.all([
-    getComposerState(
-      directoryScopeAvailable ? { directoryId: cwd } : { composerProfile: 'general' },
-    ),
+    getComposerState(directoryScopeAvailable ? { directoryId: cwd } : {}),
     loadThemeState(shellPreferences.theme, directoryScopeAvailable ? cwd : null),
     directoryScopeAvailable && loadDirectories
       ? loadDirectories(cwd)

@@ -2,6 +2,7 @@ import {
   useDirectoryDesktopEventContribution,
   useDirectoryShellSync,
 } from '@howcode/components/working-directories/ui'
+import type { ComposerStateRequest } from '@howcode/shared/desktop-composer-contracts'
 import type { Dispatch, SetStateAction } from 'react'
 import type {
   AppSettings,
@@ -58,11 +59,7 @@ export function useAppShellEffects({
     },
   ) => Promise<unknown>
   loadArchivedChats: () => Promise<ArchivedChat[]>
-  loadComposerState: (request?: {
-    directoryId?: string | null
-    conversationId?: string | null
-    composerProfile?: 'general' | 'coding' | null
-  }) => Promise<ComposerState | null>
+  loadComposerState: (request?: ComposerStateRequest) => Promise<ComposerState | null>
   scheduleShellStateRefresh: () => void
   refreshWorkspaceNavigationState: () => Promise<unknown>
   queryClient: QueryClientLike
@@ -79,9 +76,8 @@ export function useAppShellEffects({
     collapsedDirectoryIds,
     activeView: workspaceState.activeView,
     selectedDirectoryId: workspaceState.selectedDirectoryId,
-    selectedChatId: workspaceState.selectedChatId,
     selectedConversationId: workspaceState.selectedConversationId,
-    lastCodeChatSelection: workspaceState.lastCodeChatSelection,
+    lastChatSelection: workspaceState.lastChatSelection,
     loadDirectoryChats,
     loadArchivedChats,
     dispatch,

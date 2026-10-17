@@ -3,12 +3,37 @@ import {
   updateShellDirectory,
   upsertShellDirectory,
 } from '@howcode/components/working-directories/ui'
+import { getPersistedConversationId } from '@howcode/shared/conversation-ids'
 import type { ShellState } from '../../desktop/types'
 import { desktopQueryKeys } from '../../query/desktop-query'
+import { hasActionError } from '../controller-action-utils'
 import type { PostEffectHandler } from './context'
 import { applyNewChatPostEffect } from './new-chat'
 
 export const shellPostEffectHandlers: PostEffectHandler[] = [
+  {
+    matches: (ctx) => ctx.action === 'composer.set-extensions' && !hasActionError(ctx.actionResult),
+    run: (ctx) => {
+      const conversationId =
+        typeof ctx.contextualPayload.conversationId === 'string'
+          ? ctx.contextualPayload.conversationId
+          : null
+      if (getPersistedConversationId(conversationId)) return
+      const extensions = ctx.actionResult?.result?.composer?.selectedExtensions
+      if (!Array.isArray(extensions)) return
+      ctx.dispatch({
+        type: 'set-composer-extensions',
+        extensions: extensions.filter((name): name is string => typeof name === 'string'),
+        conversationId: ctx.workspaceState.selectedConversationId,
+        directoryId: ctx.workspaceState.selectedDirectoryId,
+        workspaceId: ctx.workspaceState.selectedWorkspaceId,
+      })
+    },
+  },
+  {
+    matches: (ctx) => ctx.action === 'settings.update' && ctx.contextualPayload.key === 'people',
+    run: (ctx) => ctx.refreshShellState(),
+  },
   {
     matches: (ctx) => Boolean(ctx.actionResult?.result?.composer),
     run: (ctx) => {

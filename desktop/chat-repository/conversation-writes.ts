@@ -24,7 +24,6 @@ export const registerConversationFacts = Effect.fn('ConversationState.register')
   lastModifiedMs: number
   branchName?: string | null | undefined
   workspaceId?: string | null | undefined
-  composerProfile?: 'general' | 'coding' | undefined
 }) {
   const sql = yield* SqlClient.SqlClient
   return yield* withDatabaseTransaction(
@@ -37,14 +36,7 @@ export const registerConversationFacts = Effect.fn('ConversationState.register')
         lastModifiedMs: input.lastModifiedMs,
         branchName: input.branchName,
       })
-      const workspaceId =
-        input.workspaceId ??
-        (input.composerProfile === 'general' ? yield* ensureDefaultWorkspace() : null)
-      if (input.composerProfile === 'general') {
-        yield* sql`INSERT INTO chat_conversations (conversation_id, group_id)
-        VALUES (${input.conversationId}, ${workspaceId})
-        ON CONFLICT(conversation_id) DO NOTHING`
-      }
+      const workspaceId = input.workspaceId ?? (yield* ensureDefaultWorkspace())
       if (workspaceId) {
         yield* sql`UPDATE conversation_facts SET workspace_id = ${workspaceId}
           WHERE conversation_id = ${input.conversationId} AND workspace_id IS NULL`

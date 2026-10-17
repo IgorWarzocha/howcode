@@ -25,12 +25,10 @@ function isContextualChatView(activeView: WorkspaceState['activeView']) {
 }
 
 function buildComposerSendPayload({
-  composerProfile,
   composerDirectoryId,
   payload,
   selectedConversationId,
 }: {
-  composerProfile: WorkspaceState['composerProfile']
   composerDirectoryId: string
   payload: AnyDesktopActionPayload
   selectedConversationId: string | null
@@ -42,7 +40,6 @@ function buildComposerSendPayload({
   if (explicitPersistedConversationId) {
     return {
       directoryId: composerDirectoryId,
-      composerProfile,
       ...payload,
       conversationId: explicitPersistedConversationId,
     }
@@ -52,21 +49,18 @@ function buildComposerSendPayload({
     ...payload,
     directoryId: composerDirectoryId,
     conversationId: selectedConversationId,
-    composerProfile,
   }
 }
 
 export function buildContextualActionPayload({
   action,
   payload,
-  composerProfile,
   workspaceId,
   composerDirectoryId,
   activeView,
   selectedConversationId,
 }: {
   action: DesktopAction
-  composerProfile?: WorkspaceState['composerProfile']
   workspaceId?: string | null
   payload: AnyDesktopActionPayload
   composerDirectoryId: string
@@ -75,7 +69,6 @@ export function buildContextualActionPayload({
 }): AnyDesktopActionPayload {
   if (action === 'composer.send' && isContextualChatView(activeView)) {
     return buildComposerSendPayload({
-      composerProfile: composerProfile ?? 'general',
       composerDirectoryId,
       payload,
       selectedConversationId,
@@ -86,7 +79,6 @@ export function buildContextualActionPayload({
     composerDirectoryId,
     activeView,
     selectedConversationId,
-    ...(composerProfile === undefined ? {} : { composerProfile }),
     ...(workspaceId === undefined ? {} : { workspaceId }),
   })
   if (gitPayload) return gitPayload
@@ -96,6 +88,7 @@ export function buildContextualActionPayload({
     action === 'composer.send' ||
     action === 'composer.stop' ||
     action === 'composer.thinking' ||
+    action === 'composer.set-extensions' ||
     action === 'chat.new' ||
     action === 'chat.open'
     ? {
@@ -104,7 +97,6 @@ export function buildContextualActionPayload({
           action === 'chat.new'
             ? null
             : getContextualConversationId({ activeView, payload, selectedConversationId }),
-        composerProfile: composerProfile ?? 'general',
         workspaceId,
         ...payload,
       }

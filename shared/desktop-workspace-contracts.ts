@@ -14,8 +14,6 @@ export type Workspace = {
 export type WorkspaceChat = Chat & {
   workspaceId: string | null
   directoryId: string
-  // Legacy composer capabilities, not a separate product conversation class.
-  composerProfile: 'general' | 'coding'
 }
 
 export type WorkspaceNavigationState = {

@@ -1,3 +1,4 @@
+import { updatePeople } from '../../components/people/service/index.ts'
 import {
   getSettingsBooleanValue,
   getSettingsComposerStreamingBehavior,
@@ -19,13 +20,11 @@ import { parseKeybindingOverrides } from '../app-settings/parsers.ts'
 import { normalizeOptionalSettingsPath } from '../app-settings/path-normalization.ts'
 import { loadAppSettings } from '../app-settings/readers.ts'
 import {
-  setChatModelSelection,
-  setChatThinkingLevel,
-  setCodeModelSelection,
-  setCodeThinkingLevel,
   setComposerSendMode,
   setComposerStreamingBehavior,
   setCustomPiDirectory,
+  setDefaultModelSelection,
+  setDefaultThinkingLevel,
   setDirectoryDashboardEnabled,
   setDirectoryDeletionMode,
   setDirectoryImportState,
@@ -48,6 +47,7 @@ import {
   setUseAgentsSkillsPaths,
 } from '../app-settings/writers.ts'
 import { refreshDurableSettings } from '../durable-runtime/host.ts'
+import { emitDesktopEvent } from '../runtime/desktop-events.ts'
 import { disposeProviderAuth } from '../settings/provider-auth.ts'
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
@@ -103,6 +103,10 @@ function setOptionalThinkingLevel(
 const settingsUpdateHandlers: Partial<
   Record<NonNullable<ReturnType<typeof getSettingsKey>>, SettingsUpdateHandler>
 > = {
+  people: (payload) => {
+    updatePeople(payload.value)
+    emitDesktopEvent({ type: 'shell-state-refresh' })
+  },
   navigationRenderer: (payload) => {
     if (typeof payload.value !== 'string' || !payload.value.trim())
       throw new Error('Navigation renderer must be a nonempty package name or none.')
@@ -174,10 +178,8 @@ const settingsUpdateHandlers: Partial<
     const value = getSettingsDirectoryDeletionMode(payload)
     if (value) setDirectoryDeletionMode(value)
   },
-  chatModel: (payload) => setResettableModelSelection(payload, setChatModelSelection),
-  codeModel: (payload) => setResettableModelSelection(payload, setCodeModelSelection),
-  chatThinkingLevel: (payload) => setResettableThinkingLevel(payload, setChatThinkingLevel),
-  codeThinkingLevel: (payload) => setResettableThinkingLevel(payload, setCodeThinkingLevel),
+  defaultModel: (payload) => setResettableModelSelection(payload, setDefaultModelSelection),
+  defaultThinkingLevel: (payload) => setResettableThinkingLevel(payload, setDefaultThinkingLevel),
   gitCommitMessageThinkingLevel: (payload) =>
     setOptionalThinkingLevel(payload, setGitCommitMessageThinkingLevel),
   gitCommitMessageModel: (payload) =>

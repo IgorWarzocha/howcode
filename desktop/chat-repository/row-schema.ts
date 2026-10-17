@@ -24,7 +24,6 @@ export const InboxChatRowSchema = Schema.Struct({
   unread: Schema.Number,
   branchName: Schema.NullOr(Schema.String),
   lastActivityMs: Schema.Number,
-  isChat: Schema.Number,
 })
 
 export const ArchivedChatRowSchema = Schema.Struct({
@@ -34,7 +33,6 @@ export const ArchivedChatRowSchema = Schema.Struct({
   directoryId: Schema.String,
   directoryName: Schema.String,
   lastModifiedMs: Schema.Number,
-  isChat: Schema.Number,
 })
 
 export function decodePersistedRow<A>(

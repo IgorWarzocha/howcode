@@ -17,14 +17,16 @@ import type {
   ShellPreferences,
   WorkingDirectory,
 } from './desktop-data-contracts'
+import type { PeopleUpdate } from './people'
 import type { ToolkitComponentId } from './toolkit-components'
 
 type EmptyActionPayload = Record<string, never>
 
 export type DesktopActionPayloadFields = {
+  personId?: string
   composerExtensions?: ComposerExtensionSelection
+  extensions?: string[]
   attachments?: ComposerAttachment[]
-  composerProfile?: 'general' | 'coding' | null
   workspaceId?: string | undefined | null | undefined
   workspaceIds?: string[] | undefined
   folders?: string[] | undefined
@@ -83,6 +85,7 @@ export type DesktopActionPayloadFields = {
   branchName?: string | undefined | null | undefined
   label?: string | undefined | null | undefined
   value?:
+    | PeopleUpdate
     | string
     | undefined
     | number
@@ -98,14 +101,11 @@ export type DesktopActionPayloadInput = {
 }
 
 export type DesktopSettingsUpdatePayload =
-  | { key: 'chatModel'; provider: string; modelId: string; reset?: false }
-  | { key: 'chatModel'; reset: true }
-  | { key: 'chatThinkingLevel'; value: ComposerThinkingLevel }
-  | { key: 'chatThinkingLevel'; reset: true }
-  | { key: 'codeModel'; provider: string; modelId: string; reset?: false }
-  | { key: 'codeModel'; reset: true }
-  | { key: 'codeThinkingLevel'; value: ComposerThinkingLevel }
-  | { key: 'codeThinkingLevel'; reset: true }
+  | { key: 'people'; value: PeopleUpdate }
+  | { key: 'defaultModel'; provider: string; modelId: string; reset?: false }
+  | { key: 'defaultModel'; reset: true }
+  | { key: 'defaultThinkingLevel'; value: ComposerThinkingLevel }
+  | { key: 'defaultThinkingLevel'; reset: true }
   | { key: 'gitCommitMessageModel'; provider: string; modelId: string; reset?: false }
   | { key: 'gitCommitMessageModel'; reset: true }
   | { key: 'gitCommitMessageThinkingLevel'; value: ComposerThinkingLevel }
@@ -171,10 +171,11 @@ export type DesktopActionPayloadMap = {
     branchName?: string | undefined | null | undefined
   }
   'chat.open': {
+    composerExtensions?: ComposerExtensionSelection
+    workspaceId?: string | null | undefined
     directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
     chatId?: string | undefined
-    composerProfile?: 'general' | 'coding' | null
     branchName?: string | undefined | null | undefined
   }
   'chat.archive': { chatId: string }
@@ -261,18 +262,30 @@ export type DesktopActionPayloadMap = {
     rootDirectoryId: string
     worktreeDirectory: string
   }
+  'composer.set-extensions': {
+    extensions: string[]
+    composerExtensions?: ComposerExtensionSelection
+    directoryId?: string | null | undefined
+    conversationId?: string | null | undefined
+    workspaceId?: string | null | undefined
+  }
   'composer.model': {
+    composerExtensions?: ComposerExtensionSelection
+    workspaceId?: string | null | undefined
     directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
     provider: string
     modelId: string
   }
   'composer.thinking': {
+    composerExtensions?: ComposerExtensionSelection
+    workspaceId?: string | null | undefined
     directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
     level: ComposerThinkingLevel
   }
   'composer.send': {
+    personId?: string
     composerExtensions?: ComposerExtensionSelection
     directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
@@ -283,23 +296,29 @@ export type DesktopActionPayloadMap = {
     streamingBehavior?: ComposerStreamingBehavior
   }
   'composer.stop': {
+    composerExtensions?: ComposerExtensionSelection
+    workspaceId?: string | null | undefined
     directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
   }
   'composer.dequeue': {
+    composerExtensions?: ComposerExtensionSelection
+    workspaceId?: string | null | undefined
     directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
     queueId: string
   }
   'composer.reload-settings': {
+    composerExtensions?: ComposerExtensionSelection
+    workspaceId?: string | null | undefined
     directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
   }
   'composer.conversation.fork': {
+    composerExtensions?: ComposerExtensionSelection
+    workspaceId?: string | null | undefined
     directoryId?: string | undefined | null | undefined
     conversationId?: string | undefined | null | undefined
-    composerProfile?: 'general' | 'coding' | null
-    workspaceId?: string | undefined | null | undefined
     targetEntryId: string
   }
   'inbox.mark-read': { conversationId: string; directoryId?: string | undefined | null | undefined }

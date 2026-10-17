@@ -46,7 +46,6 @@ async function repair(conversationId: string) {
       directoryId: origin.directoryId ?? getDesktopWorkingDirectory(),
       branchName: origin.branchName,
       workspaceId: origin.workspaceId,
-      composerProfile: origin.composerProfile ?? undefined,
       lastModifiedMs,
     })
   }

@@ -1,9 +1,8 @@
-import type { ComposerProfile } from '@howcode/shared/desktop-composer-contracts'
 import type { View, WorkingDirectory } from '../types'
 
 export type UtilityView = Extract<View, 'settings' | 'skills' | 'history'>
 
-export type CodeChatSelection = {
+export type ChatSelection = {
   directoryId: string
   chatId: string
   conversationId: string
@@ -13,13 +12,13 @@ export type UtilityViewReturnState = {
   utilityViewReturnState: UtilityViewReturnState | null
   activeView: View
   selectedWorkspaceId: string | null
-  composerProfile: ComposerProfile
   selectedDirectoryId: string
   hasSelectedDirectory: boolean
   landingVisible: boolean
   selectedInboxConversationId: string | null
   selectedChatId: string | null
   selectedConversationId: string | null
+  composerExtensions: string[] | null
   terminalVisible: boolean
   workspaceTerminalVisibleByWorkspace: Record<string, boolean>
   selectedDiffFilePath: string | null
@@ -28,13 +27,13 @@ export type UtilityViewReturnState = {
 export type WorkspaceState = {
   activeView: View
   selectedWorkspaceId: string | null
-  composerProfile: ComposerProfile
   selectedDirectoryId: string
   hasSelectedDirectory: boolean
   landingVisible: boolean
   selectedInboxConversationId: string | null
   selectedChatId: string | null
   selectedConversationId: string | null
+  composerExtensions: string[] | null
   terminalVisible: boolean
   workspaceTerminalVisibleByWorkspace: Record<string, boolean>
   terminalVisibleBySession: Record<string, boolean>
@@ -43,10 +42,17 @@ export type WorkspaceState = {
   utilityViewReturnState: UtilityViewReturnState | null
   settingsPanelOpen: boolean
   collapsedDirectoryIds: Record<string, boolean>
-  lastCodeChatSelection: CodeChatSelection | null
+  lastChatSelection: ChatSelection | null
 }
 
 export type WorkspaceAction =
+  | {
+      type: 'set-composer-extensions'
+      extensions: string[]
+      conversationId: string | null
+      directoryId: string
+      workspaceId: string | null
+    }
   | { type: 'sync-directories'; directories: WorkingDirectory[] }
   | {
       type: 'select-workspace'
@@ -71,14 +77,13 @@ export type WorkspaceAction =
       directoryId: string
       chatId: string
       conversationId: string
-      composerProfile?: ComposerProfile | undefined
+      composerExtensions?: string[] | undefined
       workspaceId?: string | null | undefined
     }
   | {
       type: 'preview-chat'
       directoryId: string
       chatId: string
-      composerProfile?: ComposerProfile | undefined
       workspaceId?: string | null | undefined
     }
   | {

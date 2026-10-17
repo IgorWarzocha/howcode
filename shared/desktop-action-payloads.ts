@@ -29,10 +29,6 @@ export function getComposerRequest(payload: DesktopActionPayloadInput): Composer
     conversationId: getPersistedConversationId(
       typeof payload.conversationId === 'string' ? payload.conversationId : null,
     ),
-    composerProfile:
-      payload.composerProfile === 'general' || payload.composerProfile === 'coding'
-        ? payload.composerProfile
-        : null,
     workspaceId: typeof payload.workspaceId === 'string' ? payload.workspaceId : null,
     branchName:
       typeof payload.branchName === 'string'
@@ -200,11 +196,10 @@ export function getSettingsDirectoryDiffRenderModeDefault(
 }
 
 export function getSettingsKey(payload: DesktopActionPayloadInput) {
-  return payload.key === 'enabledToolkitComponents' ||
-    payload.key === 'chatModel' ||
-    payload.key === 'chatThinkingLevel' ||
-    payload.key === 'codeModel' ||
-    payload.key === 'codeThinkingLevel' ||
+  return payload.key === 'people' ||
+    payload.key === 'enabledToolkitComponents' ||
+    payload.key === 'defaultModel' ||
+    payload.key === 'defaultThinkingLevel' ||
     payload.key === 'gitCommitMessageModel' ||
     payload.key === 'gitCommitMessageThinkingLevel' ||
     payload.key === 'composerStreamingBehavior' ||

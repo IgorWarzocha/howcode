@@ -55,7 +55,6 @@ export function useDesktopEventSync({
     composerDirectoryId,
     workspaceState: {
       activeView: workspaceState.activeView,
-      composerProfile: workspaceState.composerProfile,
       selectedDirectoryId: workspaceState.selectedDirectoryId,
       selectedChatId: workspaceState.selectedChatId,
       selectedConversationId: workspaceState.selectedConversationId,
@@ -70,7 +69,6 @@ export function useDesktopEventSync({
       composerDirectoryId,
       workspaceState: {
         activeView: workspaceState.activeView,
-        composerProfile: workspaceState.composerProfile,
         selectedDirectoryId: workspaceState.selectedDirectoryId,
         selectedChatId: workspaceState.selectedChatId,
         selectedConversationId: workspaceState.selectedConversationId,
@@ -81,7 +79,6 @@ export function useDesktopEventSync({
     chatEndContribution,
     composerDirectoryId,
     workspaceState.activeView,
-    workspaceState.composerProfile,
     workspaceState.selectedDirectoryId,
     workspaceState.selectedChatId,
     workspaceState.selectedInboxConversationId,

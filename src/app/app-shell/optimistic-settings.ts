@@ -11,10 +11,8 @@ import type { ActionPayload } from './controller-action-utils'
 
 const optimisticSettingKeys = new Set([
   'enabledToolkitComponents',
-  'chatModel',
-  'chatThinkingLevel',
-  'codeModel',
-  'codeThinkingLevel',
+  'defaultModel',
+  'defaultThinkingLevel',
   'composerStreamingBehavior',
   'favoriteFolders',
   'directoryImportState',
@@ -60,10 +58,8 @@ function applyOptimisticModelSetting(
   nextSettings: ShellState['appSettings'],
   payload: ActionPayload,
 ) {
-  if (payload.key === 'chatModel')
-    nextSettings.chatModel = getOptimisticModelSelection(payload, nextSettings.chatModel)
-  if (payload.key === 'codeModel')
-    nextSettings.codeModel = getOptimisticModelSelection(payload, nextSettings.codeModel)
+  if (payload.key === 'defaultModel')
+    nextSettings.defaultModel = getOptimisticModelSelection(payload, nextSettings.defaultModel)
 }
 
 function getResettableThinkingLevel(
@@ -78,16 +74,10 @@ function applyOptimisticThinkingSetting(
   nextSettings: ShellState['appSettings'],
   payload: ActionPayload,
 ) {
-  if (payload.key === 'chatThinkingLevel') {
-    nextSettings.chatThinkingLevel = getResettableThinkingLevel(
+  if (payload.key === 'defaultThinkingLevel') {
+    nextSettings.defaultThinkingLevel = getResettableThinkingLevel(
       payload,
-      nextSettings.chatThinkingLevel,
-    )
-  }
-  if (payload.key === 'codeThinkingLevel') {
-    nextSettings.codeThinkingLevel = getResettableThinkingLevel(
-      payload,
-      nextSettings.codeThinkingLevel,
+      nextSettings.defaultThinkingLevel,
     )
   }
 }

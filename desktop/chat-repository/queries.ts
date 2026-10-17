@@ -101,11 +101,6 @@ export const listDirectoryChats = Effect.fn('chatRepository.listDirectoryChats')
   directoryId: string,
 ) {
   const sql = yield* SqlClient.SqlClient
-  const chatIds = new Set(
-    (yield* sql<{ id: string }>`SELECT conversation_id AS id FROM chat_conversations`).map(
-      (row) => row.id,
-    ),
-  )
   const rows = decodePersistedRows(
     ChatRowSchema,
     yield* sql.unsafe(
@@ -131,20 +126,12 @@ export const listDirectoryChats = Effect.fn('chatRepository.listDirectoryChats')
   )
 
   const enriched = yield* applyChatBranchFallbacks(rows, () => directoryId)
-  return enriched.map((row) => ({
-    ...mapChatRow(row),
-    composerProfile: chatIds.has(row.conversationId) ? ('general' as const) : ('coding' as const),
-  }))
+  return enriched.map(mapChatRow)
 })
 
 export const listArchivedDirectoryChats = Effect.fn('chatRepository.listArchivedDirectoryChats')(
   function* (directoryId: string) {
     const sql = yield* SqlClient.SqlClient
-    const chatIds = new Set(
-      (yield* sql<{ id: string }>`SELECT conversation_id AS id FROM chat_conversations`).map(
-        (row) => row.id,
-      ),
-    )
     const rows = decodePersistedRows(
       ChatRowSchema,
       yield* sql.unsafe(
@@ -170,10 +157,7 @@ export const listArchivedDirectoryChats = Effect.fn('chatRepository.listArchived
     )
 
     const enriched = yield* applyChatBranchFallbacks(rows, () => directoryId)
-    return enriched.map((row) => ({
-      ...mapChatRow(row),
-      composerProfile: chatIds.has(row.conversationId) ? ('general' as const) : ('coding' as const),
-    }))
+    return enriched.map(mapChatRow)
   },
 )
 
@@ -193,12 +177,10 @@ export const listInboxChats = Effect.fn('chatRepository.listInboxChats')(functio
           conversation_facts.running AS running,
           conversation_inbox.unread AS unread,
           NULLIF(TRIM(conversation_facts.branch_name), '') AS branchName,
-          COALESCE(conversation_facts.last_assistant_at_ms, conversation_facts.last_modified_ms) AS lastActivityMs,
-          CASE WHEN chat_conversations.conversation_id IS NULL THEN 0 ELSE 1 END AS isChat
+          COALESCE(conversation_facts.last_assistant_at_ms, conversation_facts.last_modified_ms) AS lastActivityMs
         FROM conversation_inbox
         INNER JOIN conversation_facts ON conversation_facts.conversation_id = conversation_inbox.conversation_id
         INNER JOIN projects ON projects.cwd = conversation_facts.cwd
-        LEFT JOIN chat_conversations ON chat_conversations.conversation_id = conversation_facts.conversation_id
         WHERE
           conversation_facts.deleted = 0 AND projects.hidden = 0
           AND conversation_inbox.dismissed = 0 AND conversation_facts.archived = 0
@@ -228,11 +210,9 @@ export const listArchivedChats = Effect.fn('chatRepository.listArchivedChats')(f
           conversation_facts.conversation_id AS conversationId,
           conversation_facts.cwd AS directoryId,
           COALESCE(projects.custom_name, projects.name) AS directoryName,
-          conversation_facts.last_modified_ms AS lastModifiedMs,
-          CASE WHEN chat_conversations.conversation_id IS NULL THEN 0 ELSE 1 END AS isChat
+          conversation_facts.last_modified_ms AS lastModifiedMs
         FROM conversation_facts
         INNER JOIN projects ON projects.cwd = conversation_facts.cwd
-        LEFT JOIN chat_conversations ON chat_conversations.conversation_id = conversation_facts.conversation_id
         WHERE conversation_facts.deleted = 0 AND conversation_facts.archived = 1
         ORDER BY conversation_facts.last_modified_ms DESC, conversation_facts.title COLLATE NOCASE ASC
       `,

@@ -4,10 +4,8 @@ export function getActionError(result: DesktopActionResult | null) {
   return typeof result?.result?.error === 'string' ? result.result.error : null
 }
 
-export function buildModelSelectionPayload(
-  key: 'chatModel' | 'codeModel' | 'gitCommitMessageModel',
-  id: string,
-): DesktopSettingsUpdatePayload {
+export function buildModelSelectionPayload(id: string): DesktopSettingsUpdatePayload {
+  const key = 'defaultModel'
   if (id === 'composer-default') {
     return { key, reset: true }
   }
@@ -19,33 +17,5 @@ export function buildModelSelectionPayload(
     return { key, reset: true }
   }
 
-  if (key === 'chatModel') {
-    return {
-      key,
-      provider,
-      modelId,
-    }
-  }
-
-  if (key === 'codeModel') {
-    return {
-      key,
-      provider,
-      modelId,
-    }
-  }
-
-  if (key === 'gitCommitMessageModel') {
-    return {
-      key,
-      provider,
-      modelId,
-    }
-  }
-
-  return {
-    key,
-    provider,
-    modelId,
-  }
+  return { key, provider, modelId }
 }

@@ -1,3 +1,4 @@
+import * as Schema from 'effect/Schema'
 import { isCompactSlashCommand } from '../../shared/composer-slash-commands.ts'
 import {
   getBranchName,
@@ -11,12 +12,14 @@ import {
   getConversationFork,
 } from '../../shared/desktop-action-payloads.ts'
 import type { DesktopAction } from '../../shared/desktop-actions.ts'
+import { ComposerExtensionSelectionSchema } from '../../shared/desktop-composer-schema.ts'
 import type { AnyDesktopActionPayload, ComposerAttachment } from '../../shared/desktop-contracts.ts'
 import { assignChatBranch, dismissInboxChatAfterReply } from '../chat-repository.ts'
 import {
   dequeueComposerPrompt,
   forkConversation,
   sendComposerPrompt,
+  setComposerExtensions,
   setComposerModel,
   setComposerThinkingLevel,
   stopComposerRun,
@@ -49,6 +52,7 @@ async function sendComposerPromptFromPayload(payload: AnyDesktopActionPayload) {
 
   const composerRequest = getComposerRequest(payload)
   const composerSendResult = await sendComposerPrompt({
+    personId: typeof payload.personId === 'string' ? payload.personId : undefined,
     ...composerRequest,
     text,
     attachments,
@@ -92,6 +96,13 @@ async function forkConversationFromPayload(payload: AnyDesktopActionPayload) {
 }
 
 const composerActionHandlers = {
+  'composer.set-extensions': async (payload) => {
+    const extensions = Schema.decodeUnknownSync(ComposerExtensionSelectionSchema)(
+      payload.extensions,
+    )
+    const composer = await setComposerExtensions(getComposerRequest(payload), extensions)
+    return handledAction({ composer })
+  },
   'composer.model': async (payload) => {
     const selection = getComposerModelSelection(payload)
     if (selection)

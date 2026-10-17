@@ -2,12 +2,12 @@ import type { Dispatch } from 'react'
 import { useEffect } from 'react'
 import type { ArchivedChat } from '../../../../src/app/desktop/types'
 import type {
-  CodeChatSelection,
+  ChatSelection,
   WorkspaceAction,
   WorkspaceState,
 } from '../../../../src/app/state/workspace-model'
 import type { WorkingDirectory } from '../../../../src/app/types'
-import { resolveCodeChatSelection } from './workspace-state'
+import { resolveChatSelection } from './workspace-state'
 
 type UseDirectoryShellSyncInput = {
   enabled?: boolean
@@ -15,9 +15,8 @@ type UseDirectoryShellSyncInput = {
   collapsedDirectoryIds: Record<string, boolean>
   activeView: WorkspaceState['activeView']
   selectedDirectoryId: WorkspaceState['selectedDirectoryId']
-  selectedChatId: WorkspaceState['selectedChatId']
   selectedConversationId: WorkspaceState['selectedConversationId']
-  lastCodeChatSelection: CodeChatSelection | null
+  lastChatSelection: ChatSelection | null
   loadDirectoryChats: (
     directoryId: string,
     options?: { replaceLocalDraftConversationId?: string | null },
@@ -33,9 +32,8 @@ export function useDirectoryShellSync({
   collapsedDirectoryIds,
   activeView,
   selectedDirectoryId,
-  selectedChatId,
   selectedConversationId,
-  lastCodeChatSelection,
+  lastChatSelection,
   loadDirectoryChats,
   loadArchivedChats,
   dispatch,
@@ -47,43 +45,22 @@ export function useDirectoryShellSync({
     }
 
     const hasSelectedDirectory =
-      !selectedDirectoryId || directories.some((directory) => directory.id === selectedDirectoryId)
-    const hasSelectedChat =
-      !selectedChatId ||
-      directories.some((directory) => directory.chats.some((chat) => chat.id === selectedChatId))
-    const hasSelectedSession =
-      !selectedConversationId ||
-      directories.some((directory) =>
-        directory.chats.some((chat) => chat.conversationId === selectedConversationId),
-      )
+      Boolean(selectedConversationId) ||
+      !selectedDirectoryId ||
+      directories.some((directory) => directory.id === selectedDirectoryId)
 
-    const resolvedLastCodeChatSelection = resolveCodeChatSelection(
-      directories,
-      lastCodeChatSelection,
-    )
-    const hasSyncedRememberedCodeChat =
-      resolvedLastCodeChatSelection?.directoryId === lastCodeChatSelection?.directoryId &&
-      resolvedLastCodeChatSelection?.chatId === lastCodeChatSelection?.chatId &&
-      resolvedLastCodeChatSelection?.conversationId === lastCodeChatSelection?.conversationId
+    const resolvedLastChatSelection = resolveChatSelection(directories, lastChatSelection)
+    const hasSyncedRememberedChat =
+      resolvedLastChatSelection?.directoryId === lastChatSelection?.directoryId &&
+      resolvedLastChatSelection?.chatId === lastChatSelection?.chatId &&
+      resolvedLastChatSelection?.conversationId === lastChatSelection?.conversationId
 
-    if (
-      hasSelectedDirectory &&
-      hasSelectedChat &&
-      hasSelectedSession &&
-      hasSyncedRememberedCodeChat
-    ) {
+    if (hasSelectedDirectory && hasSyncedRememberedChat) {
       return
     }
 
     dispatch({ type: 'sync-directories', directories })
-  }, [
-    dispatch,
-    lastCodeChatSelection,
-    directories,
-    selectedDirectoryId,
-    selectedConversationId,
-    selectedChatId,
-  ])
+  }, [dispatch, lastChatSelection, directories, selectedDirectoryId, selectedConversationId])
 
   useEffect(() => {
     if (!enabled) return

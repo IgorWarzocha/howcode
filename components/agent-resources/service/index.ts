@@ -39,7 +39,7 @@ const skillCommandPattern = /^\/skill:([^\s]+)(?:\s|$)/
 export function createAgentResources(
   getComposerSkills: (request: ComposerStateRequest) => Promise<ComposerSkillReference[]>,
 ) {
-  const extension = withExtensionIngress(
+  return withExtensionIngress(
     defineExtension({
       name: 'howcode.resources',
       sections: [
@@ -51,7 +51,7 @@ export function createAgentResources(
           const workspace = agent.cwd ? await workspaceInstructions(agent.cwd) : ''
           return [global, workspace].filter(Boolean).join('\n\n') || undefined
         }),
-        createSkillsSection('workspace'),
+        createSkillsSection(),
       ],
     }),
     {
@@ -78,11 +78,10 @@ export function createAgentResources(
   )
 
   /** Resource discovery is explicit extension behavior, not a name check on the agent. */
-  function createSkillsSection(scope: 'chat' | 'workspace') {
+  function createSkillsSection() {
     return section('skills', async ({ agent }) => {
       const skills = await getComposerSkills({
-        directoryId: scope === 'chat' ? null : agent.cwd,
-        composerProfile: scope === 'chat' ? 'general' : 'coding',
+        directoryId: agent.cwd,
         composerExtensions: agent.extensions.map((selected) => selected.name),
       })
       if (skills.length === 0) return undefined
@@ -94,5 +93,4 @@ export function createAgentResources(
       ].join('\n')
     })
   }
-  return { extension, createSkillsSection }
 }

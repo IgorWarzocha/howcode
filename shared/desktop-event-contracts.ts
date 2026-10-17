@@ -29,7 +29,6 @@ export type DesktopEvent =
       branchName?: string | null | undefined
       replacesConversationId?: string | null | undefined
       workspaceId?: string | null | undefined
-      composerProfile?: 'general' | 'coding' | undefined
       chat: ChatData
       composer: ComposerState | null
     }

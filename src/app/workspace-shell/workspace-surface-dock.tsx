@@ -11,7 +11,7 @@ const DEFAULT_LAYOUT: DockLayout = {
   floatingY: 50,
 }
 
-/** Both chat presentations keep their composer and timeline in the same stable dock column. */
+/** Keep the composer and timeline in one stable dock column. */
 export function WorkspaceSurfaceDock({
   children,
   footerInset,

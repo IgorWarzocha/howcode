@@ -12,6 +12,7 @@ import type {
 import type { DictationModelId } from './desktop-dictation-contracts'
 import type { PiThemeStateSchema, ShellPreferencesSchema } from './desktop-settings-schema'
 import type { ComposerSendMode, KeybindingOverrides } from './keybindings'
+import type { Person } from './people'
 import type { ToolkitComponentId } from './toolkit-components'
 
 export type ModelSelection = {
@@ -23,12 +24,11 @@ export type DirectoryDeletionMode = 'pi-only' | 'full-clean'
 export type { GitOpsMode } from '@howaboua/howcode-git/contracts'
 
 export type AppSettings = {
+  people: readonly Person[]
   navigationRenderer?: string
   enabledToolkitComponents?: readonly ToolkitComponentId[]
-  chatModel: ModelSelection | null
-  chatThinkingLevel: ComposerThinkingLevel | null
-  codeModel: ModelSelection | null
-  codeThinkingLevel: ComposerThinkingLevel | null
+  defaultModel: ModelSelection | null
+  defaultThinkingLevel: ComposerThinkingLevel | null
   gitCommitMessageModel: ModelSelection | null
   gitCommitMessageThinkingLevel: ComposerThinkingLevel
   composerStreamingBehavior: ComposerStreamingBehavior

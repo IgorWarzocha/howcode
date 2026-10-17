@@ -29,7 +29,6 @@ const ChatWorkspaceRowSchema = Schema.Struct({
   ...ChatRowSchema.fields,
   workspaceId: Schema.NullOr(Schema.String),
   directoryId: Schema.String,
-  isChat: Schema.Number,
 })
 
 type ChatWorkspaceRow = typeof ChatWorkspaceRowSchema.Type
@@ -88,21 +87,11 @@ export const reorderWorkspaces = databaseOperation(reorderWorkspacesOperation)
 
 export const moveChat = databaseOperation(moveWorkspaceChat)
 
-const deleteWorkspaceChatOperation = Effect.fn('ChatState.deleteChat')(function* (
-  conversationId: string,
-) {
-  const sql = yield* SqlClient.SqlClient
-  yield* sql.unsafe('DELETE FROM chat_conversations WHERE conversation_id = ?', [conversationId])
-})
-
-export const deleteWorkspaceChat = databaseOperation(deleteWorkspaceChatOperation)
-
 function mapWorkspaceChatRow(row: ChatWorkspaceRow): WorkspaceChat {
   return {
     ...mapChatRow(row),
     workspaceId: row.workspaceId,
     directoryId: row.directoryId,
-    composerProfile: row.isChat ? 'general' : 'coding',
   }
 }
 
@@ -149,13 +138,11 @@ const getWorkspaceNavigationStateOperation = Effect.fn('ChatState.getSidebarStat
           conversation_facts.pinned AS pinned,
           conversation_facts.branch_name AS branchName,
           conversation_facts.last_modified_ms AS lastModifiedMs,
-          conversation_facts.workspace_id AS workspaceId,
-          CASE WHEN chat_conversations.conversation_id IS NULL THEN 0 ELSE 1 END AS isChat
+          conversation_facts.workspace_id AS workspaceId
         FROM conversation_facts
-        LEFT JOIN chat_conversations ON chat_conversations.conversation_id = conversation_facts.conversation_id
         LEFT JOIN conversation_inbox ON conversation_inbox.conversation_id = conversation_facts.conversation_id
         WHERE conversation_facts.deleted = 0 AND conversation_facts.archived = 0
-        ORDER BY conversation_facts.pinned DESC, COALESCE(chat_conversations.order_index, conversation_facts.last_modified_ms) DESC, conversation_facts.title COLLATE NOCASE ASC
+        ORDER BY conversation_facts.pinned DESC, COALESCE(conversation_facts.order_index, conversation_facts.last_modified_ms) DESC, conversation_facts.title COLLATE NOCASE ASC
       `,
     ),
     'chat thread',

@@ -133,7 +133,6 @@ export function useAppShellCommands({
     directoryId: string,
     chatId: string,
     conversationId: string,
-    composerProfile?: 'general' | 'coding' | undefined,
     branchName?: string | null | undefined,
   ) => {
     clearSelectedUnstartedDraft()
@@ -143,31 +142,22 @@ export function useAppShellCommands({
         (candidate) => candidate.id === chatId || candidate.conversationId === conversationId,
       ),
     )
-    const chat = workspace?.chats.find((item) => item.id === chatId)
-    const profile = chat?.composerProfile ?? composerProfile ?? workspaceState.composerProfile
     dispatch({
       type: 'open-chat',
       directoryId,
       chatId,
       conversationId,
-      composerProfile: profile,
       workspaceId: workspace?.id,
     })
     scheduleChatOpenAction({
       directoryId,
       chatId,
       conversationId,
-      composerProfile: profile,
       branchName,
     })
   }
 
-  const handleChatCycle = (
-    directoryId: string,
-    chatId: string,
-    conversationId: string,
-    composerProfile?: 'general' | 'coding' | undefined,
-  ) => {
+  const handleChatCycle = (directoryId: string, chatId: string, conversationId: string) => {
     setChatHistoryCompactions(0)
     const workspace = navigation?.workspaces.find((item) =>
       item.chats.some((chat) => chat.id === chatId),
@@ -176,14 +166,12 @@ export function useAppShellCommands({
       type: 'preview-chat',
       directoryId,
       chatId,
-      composerProfile,
       workspaceId: workspace?.id,
     })
     scheduleChatOpenAction({
       directoryId,
       chatId,
       conversationId,
-      composerProfile,
       delayMs: CHAT_CYCLE_OPEN_ACTION_DELAY_MS,
       deferChatQuery: true,
       commitLocally: true,

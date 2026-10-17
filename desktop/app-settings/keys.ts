@@ -1,8 +1,6 @@
 // Preference strings are persisted compatibility keys. Product contracts use directory names.
-export const chatModelKey = 'chatModel'
-export const chatThinkingLevelKey = 'chatThinkingLevel'
-export const codeModelKey = 'codeModel'
-export const codeThinkingLevelKey = 'codeThinkingLevel'
+export const defaultModelKey = 'defaultModel'
+export const defaultThinkingLevelKey = 'defaultThinkingLevel'
 export const gitCommitMessageModelKey = 'gitCommitMessageModel'
 export const gitCommitMessageThinkingLevelKey = 'gitCommitMessageThinkingLevel'
 export const composerStreamingBehaviorKey = 'composerStreamingBehavior'

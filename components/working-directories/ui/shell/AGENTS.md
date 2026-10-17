@@ -1,0 +1,1 @@
+- Directory lists are not conversation inventory. Synchronisation may locate a known chat's directory, but absence must not clear or invalidate chat selection: conversations can use unregistered working directories. Chat lifecycle and workspace navigation own membership and deletion.

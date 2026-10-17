@@ -11,16 +11,15 @@ import type {
   KeybindingOverrides,
   ModelSelection,
 } from '../../shared/desktop-contracts.ts'
+import type { Person } from '../../shared/people.ts'
 import type { ToolkitComponentId } from '../../shared/toolkit-components.ts'
 import { databaseOperation } from '../chat-repository/db.ts'
 import {
-  chatModelKey,
-  chatThinkingLevelKey,
-  codeModelKey,
-  codeThinkingLevelKey,
   composerSendModeKey,
   composerStreamingBehaviorKey,
   customPiDirectoryKey,
+  defaultModelKey,
+  defaultThinkingLevelKey,
   directoryDashboardEnabledKey,
   directoryDeletionModeKey,
   directoryImportStateKey,
@@ -74,6 +73,9 @@ const deleteAppPreference = Effect.fn('AppSettings.deletePreference')(function* 
 })
 
 const writeAppPreferenceSync = databaseOperation(writeAppPreference)
+export function setPeople(people: readonly Person[]) {
+  writeAppPreferenceSync('people', JSON.stringify(people))
+}
 export function writeShellPreferencesJson(valueJson: string) {
   writeAppPreferenceSync(shellPreferencesKey, valueJson)
 }
@@ -91,40 +93,22 @@ export function setGitCommitMessageModelSelection(selection: ModelSelection | nu
   writeAppPreferenceSync(gitCommitMessageModelKey, JSON.stringify(selection))
 }
 
-export function setChatModelSelection(selection: ModelSelection | null) {
+export function setDefaultModelSelection(selection: ModelSelection | null) {
   if (!selection) {
-    deleteAppPreferenceSync(chatModelKey)
+    deleteAppPreferenceSync(defaultModelKey)
     return
   }
 
-  writeAppPreferenceSync(chatModelKey, JSON.stringify(selection))
+  writeAppPreferenceSync(defaultModelKey, JSON.stringify(selection))
 }
 
-export function setChatThinkingLevel(level: ComposerThinkingLevel | null) {
+export function setDefaultThinkingLevel(level: ComposerThinkingLevel | null) {
   if (!level) {
-    deleteAppPreferenceSync(chatThinkingLevelKey)
+    deleteAppPreferenceSync(defaultThinkingLevelKey)
     return
   }
 
-  writeAppPreferenceSync(chatThinkingLevelKey, JSON.stringify(level))
-}
-
-export function setCodeModelSelection(selection: ModelSelection | null) {
-  if (!selection) {
-    deleteAppPreferenceSync(codeModelKey)
-    return
-  }
-
-  writeAppPreferenceSync(codeModelKey, JSON.stringify(selection))
-}
-
-export function setCodeThinkingLevel(level: ComposerThinkingLevel | null) {
-  if (!level) {
-    deleteAppPreferenceSync(codeThinkingLevelKey)
-    return
-  }
-
-  writeAppPreferenceSync(codeThinkingLevelKey, JSON.stringify(level))
+  writeAppPreferenceSync(defaultThinkingLevelKey, JSON.stringify(level))
 }
 
 export function setGitCommitMessageThinkingLevel(level: ComposerThinkingLevel) {

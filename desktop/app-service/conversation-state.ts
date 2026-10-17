@@ -13,7 +13,6 @@ const ConversationMetadataSchema = Schema.Struct({
   deleted: Schema.Number,
   branchName: Schema.NullOr(Schema.String),
   workspaceId: Schema.NullOr(Schema.String),
-  isChat: Schema.Number,
 })
 
 export const getRuntimeConversationMetadata = databaseOperation(
@@ -23,20 +22,17 @@ export const getRuntimeConversationMetadata = databaseOperation(
       ConversationMetadataSchema,
       yield* sql`
       SELECT conversation_facts.cwd AS directoryId, title, deleted, branch_name AS branchName,
-        conversation_facts.workspace_id AS workspaceId,
-        CASE WHEN chat_conversations.conversation_id IS NULL THEN 0 ELSE 1 END AS isChat
-      FROM conversation_facts LEFT JOIN chat_conversations ON chat_conversations.conversation_id = conversation_facts.conversation_id
+        conversation_facts.workspace_id AS workspaceId
+      FROM conversation_facts
       WHERE conversation_facts.conversation_id = ${conversationId}
     `,
       'conversation metadata',
     )
     const row = rows[0]
     if (!row) return null
-    const { isChat, ...metadata } = row
     return {
-      ...metadata,
+      ...row,
       deleted: Boolean(row.deleted),
-      composerProfile: isChat ? ('general' as const) : ('coding' as const),
     }
   }),
 )
@@ -46,7 +42,6 @@ export function registerRuntimeConversation(input: {
   directoryId: string
   branchName?: string | null | undefined
   workspaceId?: string | null | undefined
-  composerProfile?: 'general' | 'coding' | undefined
   title?: string | undefined
   lastModifiedMs?: number | undefined
 }) {

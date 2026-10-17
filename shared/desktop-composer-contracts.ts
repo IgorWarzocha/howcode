@@ -6,7 +6,6 @@ export type {
   ComposerFilePickerState,
   ComposerFileSearchEntry,
   ComposerModel,
-  ComposerProfile,
   ComposerQueuedPrompt,
   ComposerSkillReference,
   ComposerSlashCommand,
