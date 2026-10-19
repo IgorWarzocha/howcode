@@ -156,7 +156,11 @@ export function createPluginConversations(): PluginConversations {
         .extensions[0]
       if (!extension) throw new Error(`Extension not installed: ${name}`)
       await conversation.configure(
-        { extensions: enabled ? { add: [extension] } : { remove: [extension] } },
+        {
+          extensions: enabled
+            ? [...agent.extensions, extension]
+            : agent.extensions.filter((selected) => selected.name !== name),
+        },
         runtimeContext,
       )
     },
