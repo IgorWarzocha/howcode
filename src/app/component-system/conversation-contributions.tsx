@@ -3,6 +3,28 @@ import { useContext } from 'react'
 import { RendererHostsContext } from './installed-renderer-context'
 import { RendererSlot } from './renderer-slots'
 
+export function InstalledSidebarActions({
+  conversationId,
+  onOpenConversation,
+}: {
+  conversationId: string | null
+  onOpenConversation: (conversation: PluginConversation) => void
+}) {
+  const renderers = useContext(RendererHostsContext)
+  return renderers.map(({ name, host, contribution }) => {
+    const Actions = contribution.SidebarActions
+    return Actions ? (
+      <RendererSlot key={name} name={name}>
+        <Actions
+          host={host}
+          conversationId={conversationId}
+          onOpenConversation={onOpenConversation}
+        />
+      </RendererSlot>
+    ) : null
+  })
+}
+
 export function InstalledWorkspaceSidebar({
   workspaceId,
   onOpenConversation,

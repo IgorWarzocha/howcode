@@ -174,6 +174,7 @@ function validateContribution(value: unknown): PluginRendererContribution {
     'OutputThumbnail',
     'TurnAttachments',
     'WorkspaceSidebar',
+    'SidebarActions',
     'WorkspaceActions',
     'ComposerActions',
     'ConversationContent',

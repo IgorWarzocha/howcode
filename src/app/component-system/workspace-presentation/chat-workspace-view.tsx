@@ -62,6 +62,7 @@ export function ChatWorkspaceView({
   terminalDrawerOverlay = false,
   terminalConversationId,
   workspaceContentClass,
+  sidebarAvailable,
   sidebarCollapsed,
   sidebarAutoHidden,
   sidebarCompactMode,
@@ -140,6 +141,7 @@ export function ChatWorkspaceView({
       handleAction={handleAction}
       listComposerAttachmentEntries={listComposerAttachmentEntries}
       sidebarCollapsed={sidebarCollapsed}
+      sidebarAvailable={sidebarAvailable}
       sidebarCompactMode={sidebarCompactMode}
       onToggleSidebar={onToggleSidebar}
       handleLoadEarlierMessages={handleLoadEarlierMessages}

@@ -1,14 +1,15 @@
-import { Tooltip } from '@howaboua/howcode-sdk/common/tooltip'
 import type { TerminalDrawerProps } from '@howaboua/howcode-sdk/terminal-renderer'
 import { appToneTextClass, appTypeGroupTextClass } from '@howaboua/howcode-sdk/ui/typography-scale'
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { composeBuiltInWorkspaceViews } from '@howcode/component-system/built-in-workspace-views'
-import { PanelLeftOpen, Settings } from 'lucide-react'
+import { Settings } from 'lucide-react'
 import type { RefObject } from 'react'
 import { useContext } from 'react'
+import { useInstalledComponentReadiness } from '../component-system/installed-component-catalog'
 import { InstalledPageViews } from '../component-system/installed-providers'
 import { RendererHostsContext } from '../component-system/installed-renderer-context'
 import { RendererSlot } from '../component-system/renderer-slots'
+import { SidebarFooter } from '../workspace-shell/sidebar-toggle'
 import { useWorkspaceArtifactDrawerState } from '../workspace-shell/useWorkspaceArtifactDrawerState'
 import { ArtifactDrawerViews } from '../workspace-shell/workspace-artifact-drawer'
 import { AppShellNavigation } from './app-shell-navigation'
@@ -100,6 +101,7 @@ function CompactSidebarPanel(props: AppShellLayoutViewProps) {
 
 function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
   const { mainSectionRef, controller, workspaceContentClass } = props
+  const componentsLoading = useInstalledComponentReadiness()
   const conversationId = controller.chat.activeData?.conversationId ?? props.terminal.conversationId
   const artifactDrawer = useWorkspaceArtifactDrawerState({
     conversationId,
@@ -125,8 +127,8 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
       className="flex min-w-0 min-h-0 h-full flex-1 flex-col overflow-hidden bg-[color:var(--workspace)]"
     >
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-        {props.sidebar.available ? null : (
-          <div className="flex shrink-0 justify-end px-2 py-1">
+        {props.sidebar.available || componentsLoading ? null : (
+          <div className="absolute bottom-0 left-0 z-20 px-5 pb-4">
             <button
               type="button"
               className="inline-flex h-7 items-center gap-2 rounded-full px-2 text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
@@ -142,19 +144,13 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
             </button>
           </div>
         )}
-        {installedPage && (props.sidebar.collapsed || props.sidebar.compactMode) ? (
-          <div className="flex shrink-0 px-2 py-1">
-            <Tooltip content="Show sidebar" placement="right">
-              <button
-                type="button"
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
-                aria-label="Show sidebar"
-                onClick={props.sidebar.onToggle}
-              >
-                <PanelLeftOpen size={15} />
-              </button>
-            </Tooltip>
-          </div>
+        {installedPage ? (
+          <SidebarFooter
+            sidebarAvailable={props.sidebar.available}
+            sidebarCollapsed={props.sidebar.collapsed}
+            sidebarCompactMode={props.sidebar.compactMode}
+            onToggleSidebar={props.sidebar.onToggle}
+          />
         ) : null}
         <InstalledPageViews
           activeView={activeView}
@@ -180,6 +176,7 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
               terminalDrawerVisible: props.terminal.drawerVisible,
               terminalConversationId: props.terminal.conversationId,
               workspaceContentClass,
+              sidebarAvailable: props.sidebar.available,
               sidebarCollapsed: props.sidebar.collapsed,
               sidebarAutoHidden: props.sidebar.compactMode,
               sidebarCompactMode: props.sidebar.compactMode,

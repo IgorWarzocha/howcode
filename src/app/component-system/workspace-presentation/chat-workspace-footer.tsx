@@ -4,9 +4,9 @@ import {
   getLocalDraftWorkspaceId,
   getPersistedConversationId,
 } from '@howcode/shared/conversation-ids'
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import type { Message } from '../../types'
 import { FALLBACK_APP_SETTINGS } from '../../workspace-shell/default-app-settings'
+import { SidebarFooter, SidebarToggleButton } from '../../workspace-shell/sidebar-toggle'
 import { WorkspaceComposerDock } from '../../workspace-shell/workspace-composer-dock'
 import {
   InstalledComposer as Composer,
@@ -23,25 +23,6 @@ function getReplyActivityKey(messages: readonly Message[]) {
     if (message.role !== 'user') replyMessageIds.push(message.id)
   }
   return replyMessageIds.join('|')
-}
-
-function SidebarToggleButton(props: ChatWorkspaceContentProps) {
-  const { sidebarCollapsed, sidebarCompactMode, onToggleSidebar } = props
-  const sidebarHidden = sidebarCollapsed || sidebarCompactMode
-  if (sidebarCompactMode && !sidebarHidden) return null
-  const label = sidebarHidden ? 'Show sidebar' : 'Hide sidebar'
-  return (
-    <button
-      type="button"
-      className="pointer-events-auto inline-flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
-      onClick={onToggleSidebar}
-      aria-label={label}
-      data-tooltip={label}
-      data-tooltip-placement="right"
-    >
-      {sidebarHidden ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
-    </button>
-  )
 }
 
 function QueuedPrompts({
@@ -201,16 +182,6 @@ function ChatWorkspaceChatFooter(props: ChatWorkspaceContentProps) {
           )}
           right={<ChatFooterRight {...props} />}
         />
-      </div>
-    </footer>
-  )
-}
-
-function SidebarFooter(props: ChatWorkspaceContentProps) {
-  return (
-    <footer className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4">
-      <div className="pointer-events-auto mb-1.5">
-        <SidebarToggleButton {...props} />
       </div>
     </footer>
   )

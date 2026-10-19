@@ -4,6 +4,7 @@ import { AppMenu } from '@howcode/app-menu'
 import { isToolkitComponentEnabled } from '@howcode/shared/toolkit-components'
 import { useQueryClient } from '@tanstack/react-query'
 import {
+  InstalledSidebarActions,
   InstalledWorkspaceActions,
   InstalledWorkspaceSidebar,
 } from '../component-system/conversation-contributions'
@@ -60,6 +61,15 @@ export function AppShellNavigation({
     host: renderer.host,
     ...navigationDirectorySlots(controller, appSettings, renderer.host, queryClient),
     pageViews: pageViews.map(({ name, id, view }) => ({ name, id, label: view.label })),
+    sidebarActions: (
+      <InstalledSidebarActions
+        conversationId={state.activeView === 'chat' ? state.selectedChatId : null}
+        onOpenConversation={(conversation) => {
+          controller.workspaces.select(conversation.workspaceId)
+          controller.chat.open(conversation.directoryId, conversation.id, conversation.id)
+        }}
+      />
+    ),
     layoutActions,
     inboxChats: controller.inbox.chats,
     inboxLoading: controller.inbox.loading,

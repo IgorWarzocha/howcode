@@ -52,6 +52,7 @@ export type ChatWorkspaceViewProps = {
   terminalDrawerOverlay?: boolean
   terminalConversationId: string | null
   workspaceContentClass: string
+  sidebarAvailable: boolean
   sidebarCollapsed: boolean
   sidebarAutoHidden: boolean
   sidebarCompactMode: boolean
