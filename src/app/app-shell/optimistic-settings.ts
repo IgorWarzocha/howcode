@@ -24,6 +24,7 @@ const optimisticSettingKeys = new Set([
   'useAgentsSkillsPaths',
   'hideSidebarSessionCounts',
   'navigationRenderer',
+  'dictationProvider',
   'hoverToFocus',
   'hoverToBlur',
   'keybindings',
@@ -139,6 +140,8 @@ function applyOptimisticComposerSetting(
     (payload.value === 'steer' || payload.value === 'followUp' || payload.value === 'stop')
   )
     nextSettings.composerStreamingBehavior = payload.value
+  if (payload.key === 'dictationProvider' && typeof payload.value === 'string')
+    nextSettings.dictationProvider = payload.value
 }
 
 function applyOptimisticScalarSetting(

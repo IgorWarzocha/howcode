@@ -11,6 +11,7 @@ import type {
 } from '../../desktop/types'
 import { buildCommonSettingsDescriptors } from './settingsDescriptorCommon'
 import { buildComponentSettingsDescriptors } from './settingsDescriptorComponents'
+import { buildDictationSettingsDescriptor } from './settingsDescriptorDictation'
 import { buildGeneralPathsSettingsDescriptors } from './settingsDescriptorGeneralPaths'
 import { buildKeybindingSettingsDescriptors } from './settingsDescriptorKeybindings'
 import { buildModelSettingsDescriptors } from './settingsDescriptorModels'
@@ -47,6 +48,7 @@ export function buildSettingsDescriptors({
   return [
     buildPeopleSettingsDescriptor(appSettings.people, onAction),
     buildNavigationSettingsDescriptor({ appSettings, controller, openSelectId, setOpenSelectId }),
+    buildDictationSettingsDescriptor({ controller, openSelectId, setOpenSelectId }),
     ...buildComponentSettingsDescriptors(appSettings, onAction),
     ...buildCommonSettingsDescriptors({ appSettings, controller }),
     ...buildGeneralPathsSettingsDescriptors({ appSettings, controller }),

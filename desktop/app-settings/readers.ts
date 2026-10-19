@@ -17,6 +17,7 @@ import {
   defaultThinkingLevelKey,
   dictationMaxDurationSecondsKey,
   dictationModelIdKey,
+  dictationProviderKey,
   directoryDashboardEnabledKey,
   directoryDeletionModeKey,
   directoryImportStateKey,
@@ -137,6 +138,7 @@ const loadAppSettingsOperation = Effect.fn('AppSettings.load')(function* () {
     composerStreamingBehavior:
       parseComposerStreamingBehaviorPreference(value(composerStreamingBehaviorKey)) ?? 'followUp',
     dictationModelId: parseDictationModelIdPreference(value(dictationModelIdKey)),
+    dictationProvider: parseStringPreference(value(dictationProviderKey)) ?? 'auto',
     dictationMaxDurationSeconds: getDictationMaxDurationSeconds(
       value(dictationMaxDurationSecondsKey),
     ),

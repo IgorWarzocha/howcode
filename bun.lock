@@ -17,13 +17,13 @@
         "@fontsource-variable/inter": "^5.3.0",
         "@howaboua/howcode-chat-renderer": "file:../howcode-components/dist/howaboua-howcode-chat-renderer-0.1.0-78b5a0a6.tgz",
         "@howaboua/howcode-classic-navigation": "file:../howcode-components/dist/howaboua-howcode-classic-navigation-0.1.0-6de0172e.tgz",
-        "@howaboua/howcode-composer": "file:../howcode-components/dist/howaboua-howcode-composer-0.1.0-e71e8b30.tgz",
-        "@howaboua/howcode-dictation": "file:../howcode-components/dist/howaboua-howcode-dictation-0.1.0-91aafd27.tgz",
+        "@howaboua/howcode-composer": "file:../howcode-components/dist/howaboua-howcode-composer-0.1.0-509debcd.tgz",
+        "@howaboua/howcode-dictation": "file:../howcode-components/dist/howaboua-howcode-dictation-0.1.0-3f30adb6.tgz",
         "@howaboua/howcode-git": "file:../howcode-components/dist/howaboua-howcode-git-0.1.0-36e139b4.tgz",
         "@howaboua/howcode-intelligent-ui": "file:../howcode-components/dist/howaboua-howcode-intelligent-ui-0.1.0-b36451d9.tgz",
         "@howaboua/howcode-markdown-artifacts": "file:../howcode-components/dist/howaboua-howcode-markdown-artifacts-0.1.0-5eea21ea.tgz",
         "@howaboua/howcode-react-artifacts": "file:../howcode-components/dist/howaboua-howcode-react-artifacts-0.1.0-2465a52d.tgz",
-        "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-19af3114.tgz",
+        "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-e44cca6b.tgz",
         "@howaboua/howcode-skills": "file:../howcode-components/dist/howaboua-howcode-skills-0.1.0-7b93964b.tgz",
         "@howaboua/howcode-spaces": "file:../howcode-components/dist/howaboua-howcode-spaces-0.1.0-8b305f12.tgz",
         "@howaboua/howcode-terminal": "file:../howcode-components/dist/howaboua-howcode-terminal-0.1.0-c6f7e0ea.tgz",
@@ -68,13 +68,13 @@
     "@aws-sdk/client-bedrock-runtime": "3.1136.0",
     "@howaboua/howcode-chat-renderer": "file:../howcode-components/dist/howaboua-howcode-chat-renderer-0.1.0-78b5a0a6.tgz",
     "@howaboua/howcode-classic-navigation": "file:../howcode-components/dist/howaboua-howcode-classic-navigation-0.1.0-6de0172e.tgz",
-    "@howaboua/howcode-composer": "file:../howcode-components/dist/howaboua-howcode-composer-0.1.0-e71e8b30.tgz",
-    "@howaboua/howcode-dictation": "file:../howcode-components/dist/howaboua-howcode-dictation-0.1.0-91aafd27.tgz",
+    "@howaboua/howcode-composer": "file:../howcode-components/dist/howaboua-howcode-composer-0.1.0-509debcd.tgz",
+    "@howaboua/howcode-dictation": "file:../howcode-components/dist/howaboua-howcode-dictation-0.1.0-3f30adb6.tgz",
     "@howaboua/howcode-git": "file:../howcode-components/dist/howaboua-howcode-git-0.1.0-36e139b4.tgz",
     "@howaboua/howcode-intelligent-ui": "file:../howcode-components/dist/howaboua-howcode-intelligent-ui-0.1.0-b36451d9.tgz",
     "@howaboua/howcode-markdown-artifacts": "file:../howcode-components/dist/howaboua-howcode-markdown-artifacts-0.1.0-5eea21ea.tgz",
     "@howaboua/howcode-react-artifacts": "file:../howcode-components/dist/howaboua-howcode-react-artifacts-0.1.0-2465a52d.tgz",
-    "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-19af3114.tgz",
+    "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-e44cca6b.tgz",
     "@howaboua/howcode-skills": "file:../howcode-components/dist/howaboua-howcode-skills-0.1.0-7b93964b.tgz",
     "@howaboua/howcode-spaces": "file:../howcode-components/dist/howaboua-howcode-spaces-0.1.0-8b305f12.tgz",
     "@howaboua/howcode-terminal": "file:../howcode-components/dist/howaboua-howcode-terminal-0.1.0-c6f7e0ea.tgz",
@@ -366,9 +366,9 @@
 
     "@howaboua/howcode-classic-navigation": ["@howaboua/howcode-classic-navigation@../howcode-components/dist/howaboua-howcode-classic-navigation-0.1.0-6de0172e.tgz", { "dependencies": { "@dnd-kit/core": "^6.3.1", "@dnd-kit/modifiers": "^9.0.0", "@dnd-kit/sortable": "^10.0.0", "@dnd-kit/utilities": "^3.2.2", "@howaboua/pi-durable-git": "0.1.0", "effect": "4.0.1", "lucide-react": "1.47.0" }, "peerDependencies": { "@howaboua/howcode-sdk": "0.1.0", "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-tEERKy8giA9CWtErisVdZJaiK8mPXKLpKOefnPG3OTOOHWULBfahbmGLo4gUSagk08T6LFIAc04Hp6bTRqqmmw=="],
 
-    "@howaboua/howcode-composer": ["@howaboua/howcode-composer@../howcode-components/dist/howaboua-howcode-composer-0.1.0-e71e8b30.tgz", { "dependencies": { "@tanstack/react-query": "5.103.1", "lucide-react": "1.47.0" }, "peerDependencies": { "@howaboua/howcode-sdk": "0.1.0", "react": "19.3.0" } }, "sha512-3x/O3QIVcli4V+s1uQhWq1JveBMjIYPN6xmwKySoDrIeugzqnIL7sZ7VmvjNuUEwzzdJtmLsb2olzTL5BHEvYA=="],
+    "@howaboua/howcode-composer": ["@howaboua/howcode-composer@../howcode-components/dist/howaboua-howcode-composer-0.1.0-509debcd.tgz", { "dependencies": { "@tanstack/react-query": "5.103.1", "lucide-react": "1.47.0" }, "peerDependencies": { "@howaboua/howcode-sdk": "0.1.0", "react": "19.3.0" } }, "sha512-ThGrkVWb27viON7chy/gf7WllGs+xNv1GJVb+f+L2MBqH/KwxWx2buP1y31jPi/iAzG/8+LnSxD+AsHmri81Uw=="],
 
-    "@howaboua/howcode-dictation": ["@howaboua/howcode-dictation@../howcode-components/dist/howaboua-howcode-dictation-0.1.0-91aafd27.tgz", { "dependencies": { "@howaboua/pi-durable-dictation": "0.1.0", "effect": "4.0.1", "lucide-react": "1.47.0" }, "peerDependencies": { "@howaboua/howcode-sdk": "0.1.0", "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-h2hNp+3WOAGCZqIT9JNVTAIRhSpHoifak4vDVXZRxtuWx/FDU4qhQP6BYQi4sJWojs2k7QIpnERYktbwTpr1MQ=="],
+    "@howaboua/howcode-dictation": ["@howaboua/howcode-dictation@../howcode-components/dist/howaboua-howcode-dictation-0.1.0-3f30adb6.tgz", { "dependencies": { "@howaboua/pi-durable-dictation": "0.1.0", "effect": "4.0.1", "lucide-react": "1.47.0" }, "peerDependencies": { "@howaboua/howcode-sdk": "0.1.0", "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-q5SC0tGbHACo61EK9wZSs2UERO0nZEMowTW9mIgWNFN9b+iDFzte0dvQWrGeh5TaXUAczSywQKkL1IT6It0IAw=="],
 
     "@howaboua/howcode-git": ["@howaboua/howcode-git@../howcode-components/dist/howaboua-howcode-git-0.1.0-36e139b4.tgz", { "dependencies": { "@howaboua/pi-durable-git": "0.1.0", "@howaboua/pi-durable-ui": "0.1.0", "@pierre/diffs": "1.4.3", "@pierre/trees": "1.0.0-beta.6", "@tanstack/react-query": "5.103.1", "effect": "4.0.1", "lucide-react": "1.47.0" }, "peerDependencies": { "@howaboua/howcode-sdk": "0.1.0", "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-LsiwgoZmVN27dL77QmVdaokqq3EN1YphbDq/aZ9zhk+r0jJaA4XAFAJC4iCJcTB9fSsZNB5sFe1qohMOQkIC/w=="],
 
@@ -378,7 +378,7 @@
 
     "@howaboua/howcode-react-artifacts": ["@howaboua/howcode-react-artifacts@../howcode-components/dist/howaboua-howcode-react-artifacts-0.1.0-2465a52d.tgz", { "dependencies": { "esbuild": "0.28.2", "lucide-react": "1.47.0" }, "peerDependencies": { "@howaboua/howcode-sdk": "0.1.0", "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-ou3e6QBJkb1/8hbCLPI24tLc7nhcNRzZ67+6ooa+GV24ZtpFPlZ9KbgvsnSSGRbkdKbWtcDU1WnvPc6Ukm9Vsg=="],
 
-    "@howaboua/howcode-sdk": ["@howaboua/howcode-sdk@../howcode-components/dist/howaboua-howcode-sdk-0.1.0-19af3114.tgz", { "dependencies": { "@types/hast": "3.0.5", "effect": "4.0.1", "lucide-react": "1.47.0", "mermaid": "11.13.0", "react-markdown": "10.1.0", "rehype-raw": "7.0.0", "rehype-sanitize": "6.0.0", "remark-gfm": "4.0.1", "unified": "11.0.5" }, "peerDependencies": { "@earendil-works/pi-durable": "1.3.0", "react": "19.3.0", "react-dom": "19.3.0" }, "optionalPeers": ["@earendil-works/pi-durable"] }, "sha512-3550VTElI8blwubuYTtNf0Fyddt3vLxMZ0CdcyNvTfalVzvmOF+HF0vnmPl6rmLNxMjhM7OGXOVNpp1P2XEtTA=="],
+    "@howaboua/howcode-sdk": ["@howaboua/howcode-sdk@../howcode-components/dist/howaboua-howcode-sdk-0.1.0-e44cca6b.tgz", { "dependencies": { "@types/hast": "3.0.5", "effect": "4.0.1", "lucide-react": "1.47.0", "mermaid": "11.13.0", "react-markdown": "10.1.0", "rehype-raw": "7.0.0", "rehype-sanitize": "6.0.0", "remark-gfm": "4.0.1", "unified": "11.0.5" }, "peerDependencies": { "@earendil-works/pi-durable": "1.3.0", "react": "19.3.0", "react-dom": "19.3.0" }, "optionalPeers": ["@earendil-works/pi-durable"] }, "sha512-/g27KEyPjv+k8LUpa67XC4ygfR7486DcV+MBhVIE4JfPNyChx5Kfl6qQvMnf6wX7p09hEE1FH0s+HW/Y0l0LSw=="],
 
     "@howaboua/howcode-skills": ["@howaboua/howcode-skills@../howcode-components/dist/howaboua-howcode-skills-0.1.0-7b93964b.tgz", { "dependencies": { "@tanstack/react-query": "5.103.1", "effect": "4.0.1", "lucide-react": "1.47.0" }, "peerDependencies": { "@howaboua/howcode-sdk": "0.1.0", "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-fsCZxLukbN5KBtrUls5HBq0D/eLYi1Qa9nGXUCAohkmTGpmoaC9JEc1+roa3gqzl15lLKRqn3ES+51B12Oqvbg=="],
 

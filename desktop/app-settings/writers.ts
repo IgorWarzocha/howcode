@@ -20,6 +20,7 @@ import {
   customPiDirectoryKey,
   defaultModelKey,
   defaultThinkingLevelKey,
+  dictationProviderKey,
   directoryDashboardEnabledKey,
   directoryDeletionModeKey,
   directoryImportStateKey,
@@ -81,6 +82,9 @@ export function writeShellPreferencesJson(valueJson: string) {
 }
 export function setNavigationRenderer(value: string) {
   writeAppPreferenceSync(navigationRendererKey, JSON.stringify(value))
+}
+export function setDictationProvider(value: string) {
+  writeAppPreferenceSync(dictationProviderKey, JSON.stringify(value))
 }
 const deleteAppPreferenceSync = databaseOperation(deleteAppPreference)
 

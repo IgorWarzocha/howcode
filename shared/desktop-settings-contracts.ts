@@ -26,6 +26,7 @@ export type { GitOpsMode } from '@howaboua/howcode-git/contracts'
 export type AppSettings = {
   people: readonly Person[]
   navigationRenderer?: string
+  dictationProvider?: string
   enabledToolkitComponents?: readonly ToolkitComponentId[]
   defaultModel: ModelSelection | null
   defaultThinkingLevel: ComposerThinkingLevel | null

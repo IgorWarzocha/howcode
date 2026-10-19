@@ -1,11 +1,11 @@
 import type {
+  ComposerActionContext,
   ComposerModelPickerProps,
   ComposerProps,
   ComposerServices,
   InboxComposerProps,
   QueuedPromptsProps,
 } from '@howaboua/howcode-sdk/composer-renderer'
-import { getPersistedConversationId } from '@howaboua/howcode-sdk/conversation-ids'
 import { useContext, useMemo } from 'react'
 import type { DirectoryGitState } from '../desktop/types'
 import {
@@ -18,8 +18,9 @@ import {
   uploadComposerFilesQuery,
 } from '../query/desktop-query'
 import { InstalledArtifactComposerControl } from './artifact-renderer-slot'
+import { InstalledComposerActions } from './composer-actions-slot'
 import { useComposerDraftReceiver } from './composer-draft-receiver'
-import { InstalledConversationActions } from './conversation-contributions'
+import { useDictationProviderSelection } from './dictation-provider-selection'
 import { isGitRendererApi } from './git-renderer-api'
 import { RendererHostsContext } from './installed-renderer-context'
 import { RendererSlot } from './renderer-slots'
@@ -27,7 +28,7 @@ import { RendererSlot } from './renderer-slots'
 function useComposerBinding() {
   const renderers = useContext(RendererHostsContext)
   const renderer = renderers.find(({ contribution }) => contribution.composer)
-  const draftInput = renderers.find(({ contribution }) => contribution.draftInput)
+  const { renderer: draftInput, error: dictationError } = useDictationProviderSelection()
   const services = useMemo<ComposerServices>(
     () => ({
       getComposerSkills: getComposerSkillsQuery,
@@ -44,7 +45,34 @@ function useComposerBinding() {
     [draftInput],
   )
   const generationKey = `${renderer?.reference?.revision ?? renderer?.name ?? ''}:${draftInput?.reference?.revision ?? draftInput?.name ?? ''}`
-  return { renderer, services, generationKey }
+  return { renderer, services, generationKey, dictationError }
+}
+
+function renderComposerActions(composer: ComposerActionContext) {
+  return <InstalledComposerActions composer={composer} />
+}
+
+function DictationWarning({
+  error,
+  onOpenSettingsView,
+}: {
+  error: string | null
+  onOpenSettingsView: ComposerProps['onOpenSettingsView']
+}) {
+  return error ? (
+    <p role="status" className="px-2 py-1 text-sm">
+      {error}{' '}
+      <button
+        type="button"
+        className="underline"
+        onClick={() =>
+          onOpenSettingsView({ category: 'chat', settingId: 'common.dictation-provider' })
+        }
+      >
+        Choose provider
+      </button>
+    </p>
+  ) : null
 }
 
 type InstalledComposerProps = Omit<ComposerProps, 'services' | 'registerDraftReceiver'> & {
@@ -73,7 +101,7 @@ export function InstalledComposer({
   onToggleArtifactRenderer,
   ...props
 }: InstalledComposerProps) {
-  const { renderer, services, generationKey } = useComposerBinding()
+  const { renderer, services, generationKey, dictationError } = useComposerBinding()
   const { register } = useComposerDraftReceiver()
   const renderers = useContext(RendererHostsContext)
   if (!renderer?.contribution.composer) return null
@@ -84,9 +112,9 @@ export function InstalledComposer({
   const GitControls = isGitRendererApi(git?.contribution.git)
     ? git.contribution.git.GitComposerControls
     : undefined
-  const conversationId = getPersistedConversationId(props.conversationId)
   return (
     <RendererSlot name={renderer.name}>
+      <DictationWarning error={dictationError} onOpenSettingsView={props.onOpenSettingsView} />
       <Composer
         {...props}
         key={generationKey}
@@ -103,9 +131,7 @@ export function InstalledComposer({
             </RendererSlot>
           ) : null
         }
-        conversationActions={
-          conversationId ? <InstalledConversationActions conversationId={conversationId} /> : null
-        }
+        composerActions={renderComposerActions}
         trailingFooter={(composerPanelRef) => (
           <>
             {git && GitControls ? (
@@ -138,11 +164,12 @@ export function InstalledComposer({
 }
 
 export function InstalledInboxComposer(props: Omit<InboxComposerProps, 'services'>) {
-  const { renderer, services, generationKey } = useComposerBinding()
+  const { renderer, services, generationKey, dictationError } = useComposerBinding()
   if (!renderer?.contribution.composer) return null
   const InboxComposer = renderer.contribution.composer.InboxComposer
   return (
     <RendererSlot name={renderer.name}>
+      <DictationWarning error={dictationError} onOpenSettingsView={props.onOpenSettingsView} />
       <InboxComposer {...props} key={`${generationKey}:${props.chat.chatId}`} services={services} />
     </RendererSlot>
   )

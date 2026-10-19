@@ -46,18 +46,6 @@ export function InstalledWorkspaceActions({
   })
 }
 
-export function InstalledConversationActions({ conversationId }: { conversationId: string }) {
-  const renderers = useContext(RendererHostsContext)
-  return renderers.map(({ name, host, contribution }) => {
-    const Actions = contribution.ConversationActions
-    return Actions ? (
-      <RendererSlot key={name} name={name}>
-        <Actions host={host} conversationId={conversationId} />
-      </RendererSlot>
-    ) : null
-  })
-}
-
 export function InstalledConversationContent({ conversationId }: { conversationId: string }) {
   const renderers = useContext(RendererHostsContext)
   return renderers.map(({ name, host, contribution }) => {

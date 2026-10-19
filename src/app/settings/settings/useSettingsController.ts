@@ -15,6 +15,8 @@ export function useSettingsController(input: {
     app: {
       setNavigationRenderer: (value: string) =>
         void input.onAction('settings.update', { key: 'navigationRenderer', value }),
+      setDictationProvider: (value: string) =>
+        void input.onAction('settings.update', { key: 'dictationProvider', value }),
       setComposerStreamingBehavior: (value: AppSettings['composerStreamingBehavior']) =>
         void input.onAction('settings.update', {
           key: 'composerStreamingBehavior',

@@ -175,7 +175,7 @@ function validateContribution(value: unknown): PluginRendererContribution {
     'TurnAttachments',
     'WorkspaceSidebar',
     'WorkspaceActions',
-    'ConversationActions',
+    'ComposerActions',
     'ConversationContent',
     'ChatRenderer',
     'artifacts',

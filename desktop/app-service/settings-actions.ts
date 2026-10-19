@@ -25,6 +25,7 @@ import {
   setCustomPiDirectory,
   setDefaultModelSelection,
   setDefaultThinkingLevel,
+  setDictationProvider,
   setDirectoryDashboardEnabled,
   setDirectoryDeletionMode,
   setDirectoryImportState,
@@ -111,6 +112,11 @@ const settingsUpdateHandlers: Partial<
     if (typeof payload.value !== 'string' || !payload.value.trim())
       throw new Error('Navigation renderer must be a nonempty package name or none.')
     setNavigationRenderer(payload.value.trim())
+  },
+  dictationProvider: (payload) => {
+    if (typeof payload.value !== 'string' || !payload.value.trim())
+      throw new Error('Dictation provider must be a nonempty package name, auto or none.')
+    setDictationProvider(payload.value.trim())
   },
   enabledToolkitComponents: (payload) =>
     setEnabledToolkitComponents(getSettingsToolkitComponents(payload)),

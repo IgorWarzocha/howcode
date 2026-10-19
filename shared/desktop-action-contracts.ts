@@ -126,6 +126,7 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'useAgentsSkillsPaths'; value: boolean }
   | { key: 'hideSidebarSessionCounts'; value: boolean }
   | { key: 'navigationRenderer'; value: string }
+  | { key: 'dictationProvider'; value: string }
   | { key: 'hoverToFocus'; value: boolean }
   | { key: 'hoverToBlur'; value: boolean }
   | { key: 'keybindings'; value: AppSettings['keybindings'] }

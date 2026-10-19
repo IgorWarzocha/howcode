@@ -218,6 +218,7 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === 'useAgentsSkillsPaths' ||
     payload.key === 'hideSidebarSessionCounts' ||
     payload.key === 'navigationRenderer' ||
+    payload.key === 'dictationProvider' ||
     payload.key === 'hoverToFocus' ||
     payload.key === 'hoverToBlur' ||
     payload.key === 'keybindings' ||
