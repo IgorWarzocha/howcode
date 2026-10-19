@@ -3,10 +3,15 @@ import type { Models } from '@earendil-works/pi-ai'
 import { builtinModels } from '@earendil-works/pi-ai/providers/all'
 import type { ComposerModel } from '../../shared/desktop-contracts.ts'
 import { FileCredentialStore } from './credentials.ts'
+import { liveModels } from './live-models.ts'
 import { getAgentDirectory } from './paths.ts'
 import { applyProviderConfiguration } from './provider-config.ts'
 
 let current: { directory: string; models: Models } | undefined
+const sharedModels = liveModels(() => {
+  if (!current) throw new Error('Model access is unavailable.')
+  return current.models
+})
 
 export async function getDurableModels(): Promise<Models> {
   const directory = getAgentDirectory()
@@ -20,7 +25,7 @@ export async function getDurableModels(): Promise<Models> {
       models,
     }
   }
-  return current.models
+  return sharedModels
 }
 
 export async function getComposerModels(): Promise<ComposerModel[]> {

@@ -8,6 +8,7 @@ import { refreshShellIndex } from '../app-service/shell-index.ts'
 import { startNewChat } from '../conversation-runtime.ts'
 import { contextTranscript } from '../durable-runtime/context-transcript.ts'
 import {
+  getAvailableRuntimeExtensions,
   getDurableRuntime,
   readRuntimeConversationRecord,
   readRuntimeEntries,
@@ -67,6 +68,14 @@ function validateAssociation(id: string, association: PluginConversation) {
 
 export function createPluginConversations(): PluginConversations {
   return {
+    extensions: async (id) => {
+      const available = await getAvailableRuntimeExtensions()
+      if (id === undefined) return { available, selected: [] }
+      await getAssociatedConversation(id)
+      const conversation = await resolveConversation(id)
+      const agent = await conversation.agent(runtimeContext)
+      return { available, selected: agent.extensions.map(({ name }) => name) }
+    },
     admitInput: admitPluginInput,
     workspaceAgent: resolveInstalledWorkspaceAgent,
     defaultAgent: async (workspaceId) => {

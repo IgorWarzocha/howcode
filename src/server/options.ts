@@ -63,7 +63,7 @@ export function parseHeadlessServerOptions(
   const accessToken =
     readOptionValue(args, '--token')?.trim() ||
     env[HEADLESS_TOKEN_ENV]?.trim() ||
-    (authRequired ? createAccessToken() : null)
+    createAccessToken()
 
   const { HOWCODE_USER_DATA_PATH: configuredDataPath } = env
   return {

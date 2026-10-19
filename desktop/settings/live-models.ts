@@ -1,7 +1,6 @@
 import type { Models } from '@earendil-works/pi-ai'
 
-/** Harness captures Models at open. Delegate each operation to current settings
- * and enforce package-boundary failures even when Durable reports a hook throw. */
+/** Captured model ports delegate each operation to their current owner. */
 export function liveModels(current: () => Models): Models {
   return {
     getProviders: () => current().getProviders(),

@@ -7,6 +7,7 @@ import {
   hasTrustedBrowserOrigin,
 } from '../src/server/auth'
 import { sendJson, sendText } from '../src/server/http-response'
+import { authoriseMcpRequest } from '../src/server/mcp-auth'
 
 type RendererTrust = { hosts: Set<string>; port: number }
 
@@ -15,9 +16,7 @@ export function createDevWebAccess(options: {
   configuredAccessToken: string | null
 }) {
   const authRequired = options.allowRemoteRendererHosts || Boolean(options.configuredAccessToken)
-  const accessToken =
-    options.configuredAccessToken ||
-    (authRequired ? `hc_${randomBytes(18).toString('base64url')}` : null)
+  const accessToken = options.configuredAccessToken || `hc_${randomBytes(18).toString('base64url')}`
   const auth = createHeadlessAuthState({ accessToken, authRequired, port: 0 })
   let rendererTrust: RendererTrust | null = null
   const isTrustedRendererHost = (host: string | undefined) => {
@@ -41,6 +40,16 @@ export function createDevWebAccess(options: {
     },
     handleAuthRequest: (request: http.IncomingMessage, response: http.ServerResponse) =>
       handleHeadlessAuthRequest(request, response, auth, isTrustedRendererHost, 16 * 1024),
+    authoriseMcpRequest: (request: http.IncomingMessage, response: http.ServerResponse) =>
+      authoriseMcpRequest(request, response, accessToken, (host) =>
+        Boolean(
+          rendererTrust &&
+            host &&
+            (rendererTrust.hosts.has(host) ||
+              host === `localhost:${rendererTrust.port}` ||
+              host === `[::1]:${rendererTrust.port}`),
+        ),
+      ),
     authoriseBridgeRequest: (request: http.IncomingMessage, response: http.ServerResponse) => {
       if (!hasTrustedBrowserOrigin(request, isTrustedRendererHost)) {
         sendText(response, 403, 'Forbidden')

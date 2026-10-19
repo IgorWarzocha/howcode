@@ -51,6 +51,11 @@ export function installedAgentTools() {
 export function installedServiceExtensions() {
   return [...installedInstances.values()].flatMap((instance) => instance.extensions ?? [])
 }
+export function installedDefaultExtensionExclusions() {
+  return [...installedInstances.values()].flatMap(
+    (instance) => instance.defaultExtensionExclusions ?? [],
+  )
+}
 export function installedSkillResources(selectedExtensionNames: readonly string[] = []) {
   const selected = new Set(selectedExtensionNames)
   return [...installedInstances.values()].flatMap((instance) =>
@@ -191,7 +196,7 @@ export async function createInstalledPluginServices(
         }
   }
   const install = async (definition: InstalledComponentDefinition) => {
-    const native = createInstance(definition.name, definition.service)
+    const native = await createInstance(definition.name, definition.service)
     if (!native || typeof native !== 'object' || typeof native.dispose !== 'function')
       throw new Error(`Invalid component service lifecycle: ${definition.name}`)
     const bindRuntime = native.bindRuntime?.bind(native)
@@ -202,6 +207,7 @@ export async function createInstalledPluginServices(
         await native.dispose(reason)
       },
       extensions: native.extensions ?? [],
+      defaultExtensionExclusions: native.defaultExtensionExclusions ?? [],
       beforeInput: async (id) => {
         await native.beforeInput?.(id)
       },

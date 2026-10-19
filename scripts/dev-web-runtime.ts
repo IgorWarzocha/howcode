@@ -46,6 +46,7 @@ export function startDevWebBridge(input: {
   nodeExecutable: string
   userDataPath: string
   token: string
+  accessToken: string | null
   entrypoint?: string
   terminalOwner?: { url: string; token: string }
   onUnexpectedExit: (error: Error) => void
@@ -63,6 +64,7 @@ export function startDevWebBridge(input: {
         HOWCODE_DEV_RUNTIME: '1',
         HOWCODE_DEV_WEB_BRIDGE_HOST: DEV_SERVER_HOST,
         HOWCODE_DEV_WEB_BRIDGE_TOKEN: input.token,
+        ...(input.accessToken ? { HOWCODE_DEV_WEB_ACCESS_TOKEN: input.accessToken } : {}),
         ...(input.terminalOwner
           ? {
               HOWCODE_DEV_TERMINAL_URL: input.terminalOwner.url,

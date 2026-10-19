@@ -3,7 +3,9 @@ import { CodingTools } from '@earendil-works/pi-durable/tools'
 import { createAgentResources } from '../../components/agent-resources/service/index.ts'
 import { createAttachmentTools } from '../../components/attachment-tools/service/index.ts'
 import type { ComposerStateRequest } from '../../shared/desktop-contracts.ts'
+import { installedDefaultExtensionExclusions } from '../plugins/runtime.ts'
 import { getComposerSkills } from '../skills-integration/composer.ts'
+import { AppControlTools } from './app-control-tool.ts'
 import { installedAgentExtensions } from './plugin-agent-tools.ts'
 import { WorkspaceLayoutTools } from './workspace-layout-tool.ts'
 
@@ -27,6 +29,7 @@ export function createDesktopExtensionRegistry(
     AttachmentTools,
     Resources,
     WorkspaceLayoutTools,
+    AppControlTools,
     ...installedAgentExtensions(),
     ...host,
     ...packages,
@@ -40,7 +43,7 @@ export function createDesktopExtensionRegistry(
 
 /** Selection is independent of directories and presentation. Explicit lists are exact. */
 export function resolveDesktopExtensions(request: ComposerStateRequest, registry: RegistryReader) {
-  const excluded = new Set(defaultExtensionExclusions.map((extension) => extension.name))
+  const excluded = new Set(defaultExtensionExclusions().map((extension) => extension.name))
   const names =
     request.composerExtensions ??
     registry
@@ -67,4 +70,6 @@ export function resolveDesktopExtensions(request: ComposerStateRequest, registry
 }
 
 /** Default conversations follow live host packages. Explicit choices stay exact. */
-export const defaultExtensionExclusions: Extension[] = [AttachmentTools]
+export function defaultExtensionExclusions(): Extension[] {
+  return [AttachmentTools, AppControlTools, ...installedDefaultExtensionExclusions()]
+}

@@ -45,6 +45,7 @@ import {
   runDatabaseTask,
 } from './chat-repository/db.ts'
 import { setChatDiffPreferences } from './chat-repository.ts'
+import { bindAppControl } from './durable-runtime/app-control-tool.ts'
 import { disposeDurableRuntime, inspectDurableActivity } from './durable-runtime/host.ts'
 import { getDurableHostVersion } from './durable-runtime/packages.ts'
 import { completeGitCommitMessage } from './git-integration/git-commit-message.ts'
@@ -95,6 +96,7 @@ const ServiceInboundMessageSchema = Schema.Union([
 const decodeServiceInboundMessage = Schema.decodeUnknownResult(ServiceInboundMessageSchema)
 
 configureDatabaseSchemas([workingDirectoriesDatabaseSchema])
+const unbindAppControl = bindAppControl(coreApp.appControl)
 
 let activeRequests = 0
 let componentAdmission = true
@@ -388,6 +390,7 @@ const shutdownCoordinatorPromise = Effect.runPromise(
       yield* settledTask(() => packagesComponent.dispose())
       // Task hooks retain component bindings until Harness.close drains their invocations.
       yield* settledTask(disposeDurableRuntime)
+      unbindAppControl()
       yield* Effect.all(
         [
           settledTask(() =>

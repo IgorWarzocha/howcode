@@ -32,6 +32,8 @@ try {
   process.on('SIGINT', requestShutdown)
   process.on('SIGTERM', requestShutdown)
   console.log(`Howcode ${getHeadlessAccessUrl(options)}`)
+  console.log(`Howcode MCP ${getHeadlessAccessUrl({ host: options.host, port: server.port })}/mcp`)
+  if (!options.authRequired) console.log(`MCP Authorization: Bearer ${options.accessToken}`)
 } catch (error) {
   await shutdown()
   throw error

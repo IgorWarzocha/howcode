@@ -3,4 +3,5 @@
 - `auth.ts` owns host/origin trust and session authentication; `request-router.ts` owns HTTP/SSE/upload/static routing; `http-response.ts` owns bounded JSON and responses.
 - Preserve status codes, cookie attributes, bridge-token checks, host/origin checks, SPA fallback, upload limits, and SSE cleanup across refactors.
 - Browser operation handlers come from the canonical desktop request composition; do not add product behaviour to this transport.
+- MCP uses the shared app-control descriptor and dispatcher only. Require Bearer auth even on loopback, ignore cookies, and keep its strict host/origin allowlist separate from wildcard browser trust. Disconnected mutations retain admission until settled; shutdown must drain them before runtime teardown.
 - Package binding SSE channels require exclusive session ownership before reading. Rejected duplicate readers must not retire the owner's session. Await response backpressure and release the binding on channel close.

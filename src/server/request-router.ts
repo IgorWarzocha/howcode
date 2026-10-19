@@ -17,6 +17,7 @@ import {
   hasTrustedBrowserOrigin,
 } from './auth'
 import { readJsonBody, sendJson, sendText } from './http-response'
+import type { createMcpEndpoint } from './mcp'
 import { streamPackageUiEvents } from './package-ui-events'
 
 const bridgeToken = randomUUID()
@@ -33,6 +34,7 @@ const mimeTypes: Record<string, string> = {
 }
 
 export type HeadlessRequestContext = {
+  mcp: ReturnType<typeof createMcpEndpoint>
   bridgeToken?: string | undefined
   allSseClients: Set<http.ServerResponse>
   auth: HeadlessAuthState
@@ -289,6 +291,10 @@ export function handleHeadlessHttpRequest(
   response: http.ServerResponse,
 ) {
   const { pathname } = new URL(request.url ?? '/', 'http://headless')
+  if (pathname === '/mcp') {
+    context.mcp.handle(request, response)
+    return
+  }
   if (pathname === '/__howcode/auth') {
     void handleHeadlessAuthRequest(request, response, context.auth, context.isTrustedHost)
     return

@@ -7,6 +7,8 @@ import { scheduleBrowserUploadComposerAttachmentsCleanup } from '../desktop-host
 import { createDesktopRequestHandlers } from '../desktop-host/desktop-requests/handlers'
 import { createSystemRequestHandlers } from '../desktop-host/desktop-requests/system'
 import { createHeadlessAuthState, createHostTrust } from './auth'
+import { createMcpEndpoint } from './mcp'
+import { createMcpHostTrust } from './mcp-auth'
 import type { HeadlessServerOptions } from './options'
 import {
   type HeadlessRequestContext,
@@ -77,6 +79,14 @@ export async function startHeadlessServer(input: HeadlessServerInput) {
     rendererDistDirectory,
     terminalEventClients: new Set(),
     packageUiEventClients: new Map(),
+    mcp: createMcpEndpoint({
+      app: input.runtime.app,
+      accessToken: input.options.accessToken,
+      isTrustedHost: createMcpHostTrust(input.options.host, () => {
+        const address = server.address()
+        return address && typeof address !== 'string' ? address.port : input.options.port
+      }),
+    }),
   }
 
   const unsubscribeDesktopEvents = input.runtime.app.subscribeDesktopEvents((event) => {
@@ -115,7 +125,7 @@ export async function startHeadlessServer(input: HeadlessServerInput) {
     close: () => {
       if (closing) return closing
       finalize()
-      closing = server.listening
+      const closed = server.listening
         ? new Promise<void>((resolve, reject) => {
             const timer = setTimeout(
               () => server.closeAllConnections(),
@@ -129,6 +139,7 @@ export async function startHeadlessServer(input: HeadlessServerInput) {
             })
           })
         : Promise.resolve()
+      closing = Promise.all([closed, requestContext.mcp.close()]).then(() => undefined)
       return closing
     },
   } satisfies HeadlessServer

@@ -159,6 +159,10 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
         <InstalledPageViews
           activeView={activeView}
           onOpenWorkspace={controller.navigation.showWorkspace}
+          onOpenConversation={(conversation) => {
+            controller.workspaces.select(conversation.workspaceId)
+            controller.chat.open(conversation.directoryId, conversation.id, conversation.id)
+          }}
         />
         <div
           className="min-h-0 flex-1 flex-col overflow-hidden"

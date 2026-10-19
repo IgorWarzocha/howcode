@@ -81,6 +81,7 @@ async function startBridge(revision: string) {
     nodeExecutable,
     userDataPath: getDevUserDataPath(),
     token: bridgeToken,
+    accessToken: devWebAccess.accessToken,
     terminalOwner: {
       url: `http://${DEV_SERVER_HOST}:${terminalOwner.port}`,
       token: terminalOwnerToken,
@@ -172,6 +173,7 @@ function proxyDevWebBridgeRequest(
   request: http.IncomingMessage,
   response: http.ServerResponse,
   events: boolean,
+  mcp = false,
 ) {
   const done = events ? (reload.gated ? null : () => undefined) : reload.admit()
   if (!(done && bridge?.port)) {
@@ -182,16 +184,21 @@ function proxyDevWebBridgeRequest(
     )
     return
   }
+  const headers = {
+    ...request.headers,
+    'x-howcode-dev-web-bridge-token': bridgeToken,
+  }
+  if (mcp) {
+    headers.host = `${DEV_SERVER_HOST}:${bridge.port}`
+    delete headers.origin
+  }
   const proxyRequest = http.request(
     {
       hostname: DEV_SERVER_HOST,
       port: bridge.port,
       method: request.method,
       path: request.url,
-      headers: {
-        ...request.headers,
-        'x-howcode-dev-web-bridge-token': bridgeToken,
-      },
+      headers,
     },
     (proxyResponse) => {
       proxyResponse.once('end', done)
@@ -269,6 +276,7 @@ try {
     nodeExecutable,
     userDataPath: getDevUserDataPath(),
     token: terminalOwnerToken,
+    accessToken: null,
     entrypoint: 'dev-terminal-owner.mjs',
     onUnexpectedExit: (error) => {
       console.error(`[howcode] Dev terminal owner exited: ${error.message}`)
@@ -285,6 +293,12 @@ try {
     next: () => void,
   ) => {
     const requestUrl = new URL(request.url ?? '/', 'http://localhost')
+
+    if (requestUrl.pathname === '/mcp') {
+      if (!devWebAccess.authoriseMcpRequest(request, response)) return
+      proxyDevWebBridgeRequest(request, response, false, true)
+      return
+    }
 
     if (requestUrl.pathname === '/__howcode/auth') {
       void devWebAccess.handleAuthRequest(request, response)
@@ -361,6 +375,10 @@ try {
   })
   await writeDevServerMetadata(`http://${devServerPublicHost}:${port}`, port)
   server.printUrls()
+  console.warn(`[howcode] MCP endpoint: http://${devServerPublicHost}:${port}/mcp`)
+  if (!devWebAccess.authRequired) {
+    console.warn(`[howcode] MCP Authorization: Bearer ${devWebAccess.accessToken}`)
+  }
   if (allowRemoteRendererHosts) {
     console.warn(
       `[howcode] dev:web is accepting browser hosts on port ${port}. Keep this on a trusted network.`,

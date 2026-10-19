@@ -9,6 +9,7 @@ import { createServerShutdown } from '../src/server/shutdown'
 const {
   HOWCODE_DEV_WEB_BRIDGE_HOST: host = '127.0.0.1',
   HOWCODE_DEV_WEB_BRIDGE_TOKEN: proxyToken,
+  HOWCODE_DEV_WEB_ACCESS_TOKEN: accessToken,
   HOWCODE_BUILD_ROOT: buildRoot,
 } = process.env
 if (!proxyToken) throw new Error('Missing dev:web proxy token.')
@@ -50,7 +51,7 @@ try {
   const server = await startHeadlessServer({
     runtime,
     proxyToken,
-    options: { host, port: 0, accessToken: null, authRequired: false },
+    options: { host, port: 0, accessToken: accessToken ?? null, authRequired: false },
   })
   closeServer = server.close
   // Readiness includes the owning service, not just its lazy HTTP transport.

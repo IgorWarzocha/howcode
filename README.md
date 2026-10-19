@@ -112,6 +112,14 @@ Notes:
 - Microphone capture requires HTTPS or a loopback address. Plain HTTP access from another device cannot use dictation.
 - This is not hardened SaaS auth. Treat it more like SSH with a UI.
 
+## MCP access
+
+Howcode serves MCP Streamable HTTP at `/mcp` on the same address as the browser app. Configure your MCP client's URL, for example `http://127.0.0.1:5173/mcp`, and its `Authorization: Bearer <access-token>` header. Use the same access token as the browser login, configured with `--token` or `HOWCODE_HEADLESS_TOKEN`. Development also accepts `HOWCODE_DEV_WEB_TOKEN`.
+
+MCP starts with Howcode and always requires a token, including on loopback. If you have not configured one, Howcode generates a token and prints it in the startup console. Local browser access remains token-free by default. Browser cookies do not authenticate MCP. Use HTTPS or a trusted encrypted network for remote access.
+
+The single `howcode` tool shares the in-app agent's app controls. Call it with `{}` for help. Connections are stateless, with no event stream or request replay. A disconnected call may already have taken effect. Check its status before repeating a mutation. Use a local interface IP, `localhost`, or the configured listen hostname rather than an arbitrary DNS alias.
+
 ## Run from source
 
 ```bash

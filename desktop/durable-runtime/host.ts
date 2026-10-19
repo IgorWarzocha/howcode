@@ -15,6 +15,7 @@ import type { ComposerStateRequest } from '../../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
 import { loadAppSettings } from '../app-settings/readers.ts'
 import { bindInstalledPluginRuntime, unbindPluginRuntime } from '../plugins/runtime.ts'
+import { liveModels } from '../settings/live-models.ts'
 import { getDurableModels } from '../settings/models.ts'
 import { loadShellPreferences } from '../settings/preferences.ts'
 import { getDesktopUserDataPath } from '../user-data-path.ts'
@@ -27,7 +28,6 @@ import { defaultExtensionExclusions, resolveDesktopExtensions } from './extensio
 import { decodeConversationId, decodeEntryId } from './identity.ts'
 import { migrateConversationCapabilities } from './legacy-capability-migration.ts'
 import { openLiveExtensions } from './live-extensions.ts'
-import { liveModels } from './live-models.ts'
 
 export { decodeConversationId, decodeEntryId, decodeSubmissionId } from './identity.ts'
 
@@ -167,7 +167,7 @@ export async function resolveDefaultRuntimeAgent(request: ComposerStateRequest =
     ...(model ? { model } : {}),
     thinkingLevel: defaults.thinkingLevel,
     ...(request.composerExtensions === undefined
-      ? { extensions: { remove: defaultExtensionExclusions } }
+      ? { extensions: { remove: defaultExtensionExclusions() } }
       : selection),
   }
 }

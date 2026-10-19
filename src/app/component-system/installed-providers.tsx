@@ -1,6 +1,10 @@
 import { InstalledPluginsProvider } from '@howaboua/howcode-sdk/installed-plugins'
 import { type OutputPreviewProps, OutputRenderersProvider } from '@howaboua/howcode-sdk/outputs'
-import type { PluginRendererHost, PluginRequest } from '@howaboua/howcode-sdk/plugins'
+import type {
+  PluginConversation,
+  PluginRendererHost,
+  PluginRequest,
+} from '@howaboua/howcode-sdk/plugins'
 import type { SkillsRendererPort } from '@howaboua/howcode-sdk/skills-renderer'
 import { WorkspaceSurfacesProvider } from '@howaboua/howcode-sdk/workspace-surfaces'
 import type { ReactNode } from 'react'
@@ -82,9 +86,11 @@ function ComponentProvider({ renderer }: { renderer: Renderer }) {
 export function InstalledPageViews({
   activeView,
   onOpenWorkspace,
+  onOpenConversation,
 }: {
   activeView: import('../types').View
   onOpenWorkspace: () => void
+  onOpenConversation: (conversation: PluginConversation) => void
 }) {
   const views = useInstalledPageViews()
   return (
@@ -98,7 +104,11 @@ export function InstalledPageViews({
             style={{ display: activeView === id ? 'flex' : 'none' }}
           >
             <RendererSlot name={name}>
-              <Content host={host} onOpenWorkspace={onOpenWorkspace} />
+              <Content
+                host={host}
+                onOpenWorkspace={onOpenWorkspace}
+                onOpenConversation={onOpenConversation}
+              />
             </RendererSlot>
           </div>
         )

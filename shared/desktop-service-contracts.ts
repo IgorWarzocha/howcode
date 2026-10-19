@@ -1,3 +1,4 @@
+import type { AppControlResult } from './app-control'
 import type { ConversationEntryList } from './conversation-entries'
 import type { DesktopAction } from './desktop-actions'
 import type {
@@ -34,6 +35,7 @@ export type PluginService = {
 }
 
 export type AppService = {
+  appControl: (input: unknown) => Promise<AppControlResult>
   providerAuth: (request: ProviderAuthRequest) => Promise<ProviderAuthResponse>
   workspaceLayout: (
     request: WorkspaceLayoutRequest,
