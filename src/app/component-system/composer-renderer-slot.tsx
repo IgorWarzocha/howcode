@@ -69,7 +69,7 @@ function DictationWarning({
           onOpenSettingsView({ category: 'chat', settingId: 'common.dictation-provider' })
         }
       >
-        Choose provider
+        Choose component
       </button>
     </p>
   ) : null

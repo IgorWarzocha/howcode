@@ -145,8 +145,19 @@ export async function createInstalledPluginServices(
     const subscriptions = new Set<() => void>()
     activeHosts.set(name, subscriptions)
     const active = () => !closed && activeHosts.get(name) === subscriptions
+    const models = host.models
     const pluginHost = {
       ...host,
+      ...(models
+        ? {
+            models: async () => {
+              if (!active()) throw new Error('Component service host is retired.')
+              const resolved = await models()
+              if (!active()) throw new Error('Component service host is retired.')
+              return resolved
+            },
+          }
+        : {}),
       outputs: {
         list: () => [...instances].filter(([, instance]) => instance.outputs).map(([id]) => id),
         get: (id: string) => instances.get(id)?.outputs,

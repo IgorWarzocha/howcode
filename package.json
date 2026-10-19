@@ -67,7 +67,7 @@
     "@fontsource-variable/inter": "^5.3.0",
     "@howaboua/howcode-git": "file:../howcode-components/dist/howaboua-howcode-git-0.1.0-36e139b4.tgz",
     "@howaboua/howcode-intelligent-ui": "file:../howcode-components/dist/howaboua-howcode-intelligent-ui-0.1.0-b36451d9.tgz",
-    "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-e44cca6b.tgz",
+    "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-2335a421.tgz",
     "@howaboua/howcode-classic-navigation": "file:../howcode-components/dist/howaboua-howcode-classic-navigation-0.1.0-6de0172e.tgz",
     "@howaboua/howcode-spaces": "file:../howcode-components/dist/howaboua-howcode-spaces-0.1.0-8b305f12.tgz",
     "@howaboua/pi-durable-git": "file:../pi-durable-components/dist/howaboua-pi-durable-git-0.1.0-322f984e.tgz",
@@ -92,7 +92,7 @@
     "@howaboua/howcode-composer": "file:../howcode-components/dist/howaboua-howcode-composer-0.1.0-6c1e1cd6.tgz",
     "@howaboua/howcode-markdown-artifacts": "file:../howcode-components/dist/howaboua-howcode-markdown-artifacts-0.1.0-5eea21ea.tgz",
     "@howaboua/howcode-react-artifacts": "file:../howcode-components/dist/howaboua-howcode-react-artifacts-0.1.0-2465a52d.tgz",
-    "@howaboua/howcode-dictation": "file:../howcode-components/dist/howaboua-howcode-dictation-0.1.0-3f30adb6.tgz"
+    "@howaboua/howcode-dictation": "file:../howcode-components/dist/howaboua-howcode-dictation-0.1.0-95a80b21.tgz"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
@@ -116,7 +116,7 @@
     "@howaboua/pi-durable-git": "file:../pi-durable-components/dist/howaboua-pi-durable-git-0.1.0-322f984e.tgz",
     "@aws-sdk/client-bedrock-runtime": "3.1136.0",
     "lightningcss": "1.33.0",
-    "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-e44cca6b.tgz",
+    "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-2335a421.tgz",
     "@howaboua/howcode-classic-navigation": "file:../howcode-components/dist/howaboua-howcode-classic-navigation-0.1.0-6de0172e.tgz",
     "@howaboua/howcode-git": "file:../howcode-components/dist/howaboua-howcode-git-0.1.0-36e139b4.tgz",
     "@howaboua/pi-durable-ui": "file:../pi-durable-components/dist/howaboua-pi-durable-ui-0.1.0-9aa8bc27.tgz",
@@ -128,7 +128,9 @@
     "@howaboua/howcode-composer": "file:../howcode-components/dist/howaboua-howcode-composer-0.1.0-6c1e1cd6.tgz",
     "@howaboua/howcode-markdown-artifacts": "file:../howcode-components/dist/howaboua-howcode-markdown-artifacts-0.1.0-5eea21ea.tgz",
     "@howaboua/howcode-react-artifacts": "file:../howcode-components/dist/howaboua-howcode-react-artifacts-0.1.0-2465a52d.tgz",
-    "@howaboua/howcode-dictation": "file:../howcode-components/dist/howaboua-howcode-dictation-0.1.0-3f30adb6.tgz",
+    "@howaboua/howcode-dictation": "file:../howcode-components/dist/howaboua-howcode-dictation-0.1.0-95a80b21.tgz",
+    "@howaboua/pi-durable-gippity-voice": "file:../pi-durable-components/dist/buffered-dictation/howaboua-pi-durable-gippity-voice-0.5.0-0bab9c80.tgz",
+    "@howaboua/pi-durable-grok-voice": "file:../pi-durable-components/dist/grok-utterance-fix/howaboua-pi-durable-grok-voice-0.5.0-f7e959be.tgz",
     "@howaboua/pi-durable-dictation": "file:../pi-durable-components/dist/howaboua-pi-durable-dictation-0.1.0-cd45fe11.tgz"
   },
   "howcodeComponents": [

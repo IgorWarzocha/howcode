@@ -18,9 +18,9 @@ export function useDictationProviderSelection() {
         : providers.find(({ name }) => name === selection)
   const error =
     selection === 'auto' && providers.length > 1
-      ? 'Multiple dictation providers are installed. Choose one in Chat settings.'
+      ? 'Multiple dictation components are installed. Choose one in Chat settings.'
       : selection !== 'auto' && selection !== 'none' && !renderer
-        ? `Dictation provider unavailable: ${selection}. Choose another in Chat settings.`
+        ? `Dictation component unavailable: ${selection}. Choose another in Chat settings.`
         : null
   return { selection, providers, renderer, error }
 }

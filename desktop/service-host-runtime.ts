@@ -60,6 +60,7 @@ import {
 } from './plugins/runtime.ts'
 import { emitDesktopEvent } from './runtime/desktop-events.ts'
 import { withDirectoryActivity } from './runtime/directory-activity.ts'
+import { getDurableModels } from './settings/models.ts'
 import { getAgentDirectory } from './settings/paths.ts'
 import { loadShellPreferences } from './settings/preferences.ts'
 import { loadThemeState } from './settings/themes.ts'
@@ -114,6 +115,7 @@ const workingDirectoriesComponent = createWorkingDirectoriesService(workingDirec
 const workingDirectories = workingDirectoriesComponent.service
 const pluginsComponent = await createInstalledPluginServices(
   {
+    models: getDurableModels,
     sidebar: createSidebarHost(workingDirectoryPeers),
     terminal: {
       dataDirectory: getDesktopUserDataPath(),

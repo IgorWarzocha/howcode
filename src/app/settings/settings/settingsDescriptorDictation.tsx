@@ -14,7 +14,7 @@ function DictationProviderSelect({
 }) {
   const { selection, providers, error } = useDictationProviderSelection()
   const options = [
-    { value: 'auto', label: 'Automatic (single provider)' },
+    { value: 'auto', label: 'Automatic (single component)' },
     { value: 'none', label: 'None' },
     ...providers.map(({ name, contribution }) => ({
       value: name,
@@ -46,8 +46,8 @@ export function buildDictationSettingsDescriptor(input: {
   return {
     id: 'common.dictation-provider',
     category: 'chat',
-    title: 'Dictation provider',
-    description: 'Choose who handles voice input. Automatic works only with one provider.',
+    title: 'Dictation component',
+    description: 'Choose voice-input controls. Select its preferred engine in component settings.',
     keywords: 'dictation microphone voice capture composer component provider',
     render: () => (
       <DictationProviderSelect

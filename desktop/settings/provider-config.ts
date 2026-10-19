@@ -7,6 +7,7 @@ import {
   lazyApi,
   type Model,
   type MutableModels,
+  type ProviderAuth,
 } from '@earendil-works/pi-ai'
 import * as Schema from 'effect/Schema'
 
@@ -233,12 +234,40 @@ function mergeLevelSampling(
   return merged
 }
 
+function configuredProviderAuth(
+  id: string,
+  apiKey: string | undefined,
+  baseAuth: ProviderAuth | undefined,
+): ProviderAuth {
+  if (apiKey?.startsWith('!'))
+    throw new Error(
+      `Command-valued credentials for ${id} are not supported. Configure an environment variable or stored credential.`,
+    )
+  if (!apiKey) return baseAuth ?? { apiKey: envApiKeyAuth(id, []) }
+  return {
+    apiKey: {
+      name: 'Configured API key',
+      async resolve() {
+        return {
+          auth: { apiKey: process.env[apiKey] ?? apiKey },
+          source: 'models.json',
+        }
+      },
+      async check() {
+        return { type: 'api_key', source: 'models.json' }
+      },
+    },
+  }
+}
+
 export async function applyProviderConfiguration(models: MutableModels, directory: string) {
   // Unrecognized compatibility knobs must fail visibly rather than disappear during migration.
   const config = await readConfiguration(directory)
   if (!config) return
   for (const [id, configured] of Object.entries(config.providers)) {
     const base = models.getProvider(id)
+    const providerBaseUrl = configured.baseUrl ?? base?.baseUrl
+    const origin = providerBaseUrl === undefined ? {} : { baseUrl: providerBaseUrl }
     const baseline = [...(base?.getModels() ?? [])]
     const additions = (configured.models ?? []).map((model) => {
       const previous = baseline.find((known) => known.id === model.id)
@@ -297,43 +326,26 @@ export async function applyProviderConfiguration(models: MutableModels, director
             : {}),
         }
       })
-    if (configured.apiKey?.startsWith('!'))
-      throw new Error(
-        `Command-valued credentials for ${id} are not supported. Configure an environment variable or stored credential.`,
-      )
-    const auth = configured.apiKey
-      ? {
-          apiKey: {
-            name: 'Configured API key',
-            async resolve() {
-              return {
-                auth: { apiKey: process.env[configured.apiKey ?? ''] ?? configured.apiKey ?? '' },
-                source: 'models.json',
-              }
-            },
-            async check() {
-              return { type: 'api_key' as const, source: 'models.json' }
-            },
-          },
-        }
-      : (base?.auth ?? { apiKey: envApiKeyAuth(id, []) })
+    const auth = configuredProviderAuth(id, configured.apiKey, base?.auth)
     if (base && additions.length === 0) {
       models.setProvider({
         ...base,
+        ...origin,
         name: configured.name ?? base.name,
         auth,
         getModels: () => catalog,
       })
-    } else {
-      models.setProvider(
-        createProvider({
-          id,
-          name: configured.name ?? id,
-          auth,
-          models: catalog,
-          api: apiImplementations,
-        }),
-      )
+      continue
     }
+    models.setProvider(
+      createProvider({
+        id,
+        name: configured.name ?? id,
+        ...origin,
+        auth,
+        models: catalog,
+        api: apiImplementations,
+      }),
+    )
   }
 }
