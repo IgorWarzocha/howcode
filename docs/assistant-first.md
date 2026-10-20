@@ -10,6 +10,14 @@ Howcode starts with you and your main assistant. It remains available without an
 
 ## Agreed decisions
 
+### Feature boundaries
+
+- Build agent access into each feature's supported operations. The UI, agent tools and MCP should use the same feature-owned behaviour, not separate connector implementations.
+- Reuse small agent primitives where requirements actually repeat. Scheduled initiative and continuing after component activation should share reliable subscription and delivery machinery, rather than each inventing a wake-up mechanism.
+- Keep passive notification, new work and continuation of accepted work distinct. Sharing delivery machinery does not make every event wake an agent.
+- Expose deliberate capabilities and outcomes. Keep implementation details replaceable without hiding failures, provenance or useful inspection. Features should be easy to add and remove while preserving actual user data.
+- Treat temporary prompting and model-behaviour workarounds as removable. Reliable execution, recovery and user-selected policy remain application responsibilities.
+
 ### First delivery and setup
 
 - Deliver reliable runtime behaviour first. Proactive discovery and autonomous task completion are later milestones.
@@ -123,6 +131,7 @@ Proposed threads:
 ### 4. Snooze and controlled scheduling
 
 Proposed threads:
+- Shared subscription and delivery contracts for concrete event sources, with scheduled work as one source rather than the owner of every wake-up.
 - Scoped snooze tool and card, backed by persistent target state.
 - Shared snooze participation for Pulses and other proactive trigger components.
 - Repeated-job deduplication and paced release of distinct due work.
@@ -133,8 +142,8 @@ Proposed threads:
 ### 5. Assistant-shaped environment
 
 Proposed threads:
-- Supported package installation and explicit capability selection.
-- Yielding for component activation, then continuing the setup task.
+- Feature-owned package operations and explicit capability selection, shared by agent and user interfaces.
+- Yielding for component activation, then continuing through the shared subscription and delivery contract.
 - Generated views and workspace layout tools.
 - Persistent component views, including user-requested task panels and notification channels.
 
@@ -154,6 +163,7 @@ Start with board 1. The later order and the exact capability subset needed for a
 - Workspace Board membership must remain local even when residents publish to the main Board. This needs an explicit capability, not attaching every resident to one family or mirroring all conversations.
 - Snooze is operational state, unlike the instruction-led folder preferences. Scheduled components must actually honour it. Arbitrary OS jobs that bypass Howcode cannot be assumed to participate.
 - Catch-up trades timeliness against provider pressure and obsolete work. Preserve due work without blindly replaying every missed interval or uncertain external side effect.
+- Exposed behaviour attracts dependencies, including from agents. Small semantic gateways let feature internals change. This is not a reason to hide diagnostics or to create a universal RPC interface. Shared primitives must earn their place through concrete consumers.
 
 ## Open questions
 
@@ -162,6 +172,6 @@ None outstanding from the planning rounds. Implementation thread boundaries and 
 ## Proposed next steps
 
 1. Bound board 1 into implementation-ready threads. Keep startup and recovery reliable without turning the assistant into an app tester. Use the setup Board thread rather than a new configuration-record feature.
-2. Trace cross-board participation and snooze through their owning public APIs before estimating those boards. Do not create parallel stores or silently change portable package contracts.
+2. Trace cross-board participation, feature gateways and shared subscription/admission boundaries through their owning public APIs before estimating those boards. Do not create parallel stores or silently change portable package contracts.
 3. Refine the dependency order while preserving optional workspace residents and the main-assistant versus workspace-resident split.
 4. Begin implementation only after explicit approval.

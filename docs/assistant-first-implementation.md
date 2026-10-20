@@ -2,7 +2,7 @@
 
 This is the implementation companion to [Assistant-first Howcode](assistant-first.md). That document owns the agreed product behaviour. This one maps the changes, their owners and the order in which they can land. It is a proposal, not permission to begin implementation.
 
-The investigation covered seven areas across Howcode, Howcode Components and Pi Durable Components on 20 October 2026. Howcode's starting revision was `4519f1f5`. Current behaviour below is source-backed. Proposed contracts are not APIs that already exist.
+The first investigation covered seven areas across Howcode, Howcode Components and Pi Durable Components on 20 October 2026, starting at Howcode revision `4519f1f5`. Five further source investigations assessed feature gateways, durable delivery, trigger policy, package activation and public surfaces after the supplied harness talk. Current behaviour below is source-backed. Proposed contracts are not APIs that already exist.
 
 ## What the investigation changes
 
@@ -28,13 +28,42 @@ Keep the feature state with the feature. Core should provide the small host cont
 | Assistant setup, identity and home | Howcode Components, Bots | Provider/model access, workspace creation, conversation creation and shell entry |
 | Local family membership and cross-Board participation | Pi Durable Components, Board | Compose its public capabilities into Bots and Agents |
 | Context and Notes | Existing Context components | Keep native conversation identity stable and resolve explicit lookup targets |
-| Scheduling, proactive admission and catch-up | Pi Durable Components, Pulses | Supply trusted input provenance, resident targets and lifecycle binding |
-| Snooze cards and app-wide controls | Howcode Components, Pulses | Expose the component's controls without duplicating its policy |
+| Time schedules and missed-period catch-up | Pi Durable Components, Pulses | Supply trusted input provenance, resident targets and lifecycle binding |
+| Cross-source delivery | Existing Howcode Durable input/admission host, using native task and receipt primitives | Route feature-owned occurrences and validate accepted-work lineage |
+| Proactive admission policy and controls | A small Howcode Initiative component, proposed here | Compose one source-neutral policy port, with policy state and cards owned by Initiative |
 | Folder intent and workspace awareness | A Howcode awareness component | Existing workspace identity, activity projection and explicit enrolment |
 | Package installation and activation | Existing Howcode package service | Narrow agent operations through the existing app-control dispatcher |
 | Generated and persistent views | Existing UI and artefact components | Existing presentation slots and explicit host grants |
 
 No new runtime, memory store, Board mirror or scheduler is proposed. A component-owned folder-policy record is configuration, not agent memory. The canonical setup narrative remains a Board thread.
+
+## Feature gateways and reusable primitives
+
+The supplied harness-talk transcript, `laptop:/home/igorw/Downloads/7Y4sbZgBdnc-transcript.txt`, makes two useful points. Exposed behaviour attracts dependencies under Hyrum's Law. Small primitives make features easier to ship and remove. Its concrete example is one subscription interface for events such as a message, a failed CI run or a time of day, rather than a separate integration pattern for each.
+
+Apply that to the work here, without importing an entire new framework:
+
+- Each feature owns its semantic operations, validation, state and lifecycle. Give it a supported gateway that the UI, agent tools and MCP can consume. Transport adapters translate calls and carry trusted caller context. They do not reimplement feature policy.
+- Keep shared discovery and routing separate from feature behaviour. A compact `howcode` entry point must not become a central collection of Board, package, scheduling and workspace business rules. Never expose arbitrary internal service methods as a shortcut.
+- Derive common subscription and delivery machinery from concrete consumers: timed initiative and component-activation continuation. Source state remains with its feature. Delivery must distinguish a passive notice, new work and continuation of accepted work.
+- Expose intent and useful outcomes, with opaque references where needed. Callers should not need queue internals or process-generation choreography to configure initiative or wait for installation. Existing supported formats and inspection remain available where useful.
+- Keep temporary model-behaviour workarounds local, attributable and removable. Record the behaviour they compensate for and a removal condition with the owning feature. Do not turn them into permanent product contracts or build a shim dashboard without a demonstrated need. Runtime reliability and explicit user policy are not such workarounds.
+
+This refines the previous plan in two places. Pulses should not own every kind of wake-up merely because it owns timers. Component activation should not gain an unrelated setup-continuation queue. The owning threads must find the smallest shared boundary in the existing machinery, not design hypothetical Slack or CI integrations now.
+
+### What the gateway assessment found
+
+The SDK already allows feature-owned `tools` and `requests`. Requests are an untyped handler object dispatched by package and method. Native app-control and HTTP MCP share `executeAppControl`, but its workspace/chat action catalogue is hand-written. Bots has its own semantic request handlers. Board's Howcode adapter contributes no request handlers. These are separate entry paths, not evidence that domain rules have already been copied into multiple implementations.
+
+The missing piece is explicit composition of supported feature operations. Add only the typed operation contribution needed to discover and route those operations: a namespaced identity, feature-owned validation and handler, and trusted caller context. Reuse the same feature operation and schema across its adapters where feasible. Do not build a second native-tool catalogue, automatically export every Durable tool, or publish the existing `requests` object wholesale.
+
+Native agent routing must honour selected capabilities. Installation does not grant conversational access, and routing through `howcode` must not bypass that selection. MCP exposure is a separate explicit policy, not proof of human origin. The feature validates the operation using host-derived caller context regardless of transport.
+
+Build the callable catalogue from active component instances, reject collisions and retire entries with their owning generation after admitted calls drain. Removing a capability reports it unavailable and preserves its user data. Pilot a real Bots or Board operation before expanding package administration. Do not migrate every existing renderer request merely for architectural symmetry.
+
+Native IDs, Board membership, extension selections and documented user-authored formats are intentional contracts or actual data, not clutter to hide. Preserve them where they carry identity or authority. Hyrum's Law is a reason to choose a small public surface deliberately, not to remove useful controls, make inspection opaque or preserve every obsolete interface on this unshipped branch.
+
+Source anchors: `../howcode-components/packages/sdk/src/plugins.ts:195`, `desktop/plugins/runtime.ts:372`, `desktop/durable-runtime/app-control-tool.ts:19`, `src/server/mcp.ts:41`, `../howcode-components/packages/bots/src/service.ts:69`, `../howcode-components/packages/board/src/service.ts:7`.
 
 ## 1. Make the runtime available without a browser
 
@@ -144,7 +173,7 @@ Source anchors:
 
 ### Proposed thread: Bots-owned setup and home workspace
 
-Bots should own the setup workflow and resident state. The shell supplies the first-run entry and opens the resulting ordinary conversation. Reuse host-owned model and authentication APIs. Do not create another setup identity in the shell or revive the previously rejected full-page assistant management screen.
+Bots should own the setup workflow and resident state. The shell supplies the first-run entry and opens the resulting ordinary conversation. Reuse host-owned model and authentication APIs. Replace the current name/instructions-first, default-workspace setup contract rather than preserving it as an unshipped compatibility interface. Preserve resident data, not obsolete workflow shapes. Do not create another setup identity in the shell or revive the previously rejected full-page assistant management screen.
 
 Collect the agreed choices: model access, assistant home folder, launch preference and initiative frequency. Create or select the corresponding directory-backed workspace and persist its ID on the installation resident. Use a default identity and enter conversation without a naming or instruction-writing gate.
 
@@ -164,7 +193,8 @@ The proposed first-delivery composition is:
 | Board | Standalone Board, `howaboua.board`, after the coordinated upgrade |
 | App and conversation control | Existing `howcode.app-control` |
 | Filesystem and command execution for setup | Existing `coding-tools`, providing `read`, `write`, `edit` and `bash` |
-| Chosen initiative schedule and controls | Pulses and its Howcode adapter |
+| Chosen initiative schedule | Pulses and its Howcode adapter |
+| Cross-source snooze and admission controls | The proposed Initiative component |
 
 This is a configurable resident selection, not a fixed core chat or coding bundle. `coding-tools` is already registered by the host, not a missing profile package. UI visibility remains independent of selected agent capabilities. Visualise, bespoke panels and general package administration are not prerequisites for the first setup conversation.
 
@@ -192,6 +222,10 @@ Pulses already owns definitions, scheduling and durable execution. Its checkpoin
 
 A normal Pulse runs in a child conversation, waits for the native input receipt, then waits for a passive parent-write receipt. Preserve that accepted-work and reporting boundary.
 
+Installed Durable 1.3 already supplies task checkpoints, transactions, `TaskRuntime.sleep` and `Harness.waitForTask`. The sleep itself is an in-process cancellable timer. Recovery comes from rerunning the persisted task against its stored absolute deadline, not from retaining the timer registration. Commit subscriptions and the SDK's `publishEvent` are also process-local observers, not replayable durable subscriptions. A terminal task is not necessarily successful: delivery must inspect its real outcome.
+
+Board's persisted subscriptions are feature-specific. Their notices remain passive and best-effort for active turns. Do not repurpose them as a universal wake-up service.
+
 Source anchors:
 
 - `../pi-durable-components/packages/pulses/src/state.ts:9`
@@ -199,6 +233,7 @@ Source anchors:
 - `../pi-durable-components/packages/pulses/src/schedule.ts:144`
 - `../pi-durable-components/packages/pulses/src/tasks.ts:53`
 - `../howcode-components/packages/pulses/src/service.ts:104` and `:275`
+- Installed `node_modules/@earendil-works/pi-durable/dist/types.d.ts`, `dist/harness/types.d.ts` and `dist/harness/scheduler.js:1672`
 
 ### Proposed thread: trusted input origin and accepted work
 
@@ -214,11 +249,25 @@ The same provenance feeds the workspace last-human-message projection. Today's `
 
 Source anchors: `desktop/durable-runtime/conversation-origin.ts:4`, `desktop/app-service/composer-actions.ts:53`, `desktop/durable-runtime/app-control/chat-actions.ts:46`, `../howcode-components/packages/sdk/src/plugins.ts`.
 
-### Proposed thread: one shared admission owner
+### Proposed thread: shared subscriptions and one admission owner
 
-Keep persisted proactive admission policy with portable Pulses and expose a narrow public gate. The Howcode adapter owns the scoped card and separate app-wide controls. Participating scheduled components and agent-originated proactive dispatch must consult that same owner. Core supplies provenance and routes requests, not snooze policy.
+Put authoritative local and app-wide restrictions in a small Howcode Initiative component. This is the concrete feature for the already-agreed snooze controls, not a new permissions framework. It owns policy persistence, decisions, scoped cards and app-wide controls, independently of Bots and Pulses. Expose it through one typed, source-neutral admission port.
 
-Define the public contract before changing producers: scope identity, current restrictions, admission result, accepted-work linkage and reactivation. Unsupported producers must not claim to honour snooze. Trusted host code and arbitrary OS jobs can bypass Howcode, so this is not an isolation guarantee.
+Pulses supplies time-based work, not the definition of every event or continuation. Component activation supplies its own outcomes. Both must reuse the durable delivery contract without making activation pretend to be a Pulse job. Accepted activation continuations retain their admission rather than becoming new proactive work.
+
+Define the public contract before changing producers: source and target identity, subscription lifetime, delivery mode, current restrictions, admission result, accepted-work linkage, retry identity and reactivation. Feature owners provide events or observable conditions. Reconcile authoritative source state on recovery rather than assuming an in-memory callback is a durable subscription.
+
+Keep subscription identity, cursor and result state with the source feature, using existing durable storage and task primitives where they fit. The shared part is a thin delivery boundary at Howcode's existing Durable input/admission host: stable occurrence identity, target, delivery intent and acquisition of the native receipt. Portable sources receive that capability through an explicit host port. Do not add a central event log, a ledger duplicating native submission receipts or peer-service lookup. Reacquire a previous receipt before admitting a retry as new work.
+
+Use native task checkpoints and absolute deadlines for recoverable scheduled waits. Rebind source capabilities before recovery resumes. Waiting must not count as foreground activity that prevents the very component transition being observed. A missing feature can leave its task visibly blocked until restored, but must not erase accepted work or silently replay its external effects.
+
+Use the existing SDK `admitInput` and host `beforeInput` composition as mechanical starting points. Their current conversation-ID-only signature is insufficient. Pulses already supplies a mandatory `admit` callback for new runs, but its Howcode adapter uses it to prepare workspace configuration. That callback runs before the native task transaction. Neither hook currently makes a pause change race-safe with new work acceptance.
+
+The implementation must establish a shared commit boundary for a new admission and the policy state it checks. A successful preflight followed later by an unchecked submission is not enough. Preserve receipt rejoin before new admission and validate continuation lineage through the host. Checking a Pulse's parent configuration is not a substitute for admitting the Pulse's own work.
+
+Core supplies provenance and lifecycle plumbing, not snooze policy. Removing Pulses leaves Initiative's restrictions intact. If Initiative itself becomes unavailable, participating proactive admission must stop visibly rather than treating a missing hook as permission. Preserve restrictions until the owner returns or the user deliberately resolves them. Direct user work and settlement of accepted work remain available. Unsupported producers must not claim to honour snooze. Trusted host code and arbitrary OS jobs can bypass Howcode, so this is not an isolation guarantee.
+
+Source anchors: `../pi-durable-components/packages/pulses/src/contract.ts:35`, `../pi-durable-components/packages/pulses/src/index.ts:191`, `../howcode-components/packages/pulses/src/service.ts:136`, `../howcode-components/packages/pulses/src/configuration.ts:33`, `desktop/plugins/runtime.ts:88`.
 
 The persisted state must distinguish these cases:
 
@@ -248,7 +297,9 @@ Retain user-owned Pulse definitions, instructions, artefacts and existing schedu
 
 ### Proposed thread: the main assistant's cadence
 
-Use the chosen home workspace and an explicit setup-created `pulses/<id>/PULSE.md` for the selected frequency. The assistant authors and records this configuration as part of setup. The adapter should not silently create user Pulse files, and no synthetic parallel schedule store is needed.
+Expose a scheduling-owned operation to configure the main assistant's initiative frequency in its chosen home workspace. The operation must reuse the existing definition and schedule machinery. If it creates or updates `pulses/<id>/PULSE.md`, do so as the explicit requested configuration and report the managed definition. Keep existing user-authored Pulse files supported and preserve unrelated definitions. Do not require the caller to construct a file as the only public interface, or create a parallel schedule store.
+
+This gateway is new work: the current public Pulses API offers catalogue, scan, run, observe and stop, but no cadence configuration operation. Its current bindings also resolve workspace bots rather than the separate installation resident. Use the explicit resident resolver and stable home association, not title matching or an invented bot identity.
 
 Add a supported run target that submits to the continuing main resident. A passive report from a normal child Pulse does not wake that resident and is insufficient on its own. Keep child execution as the existing default for ordinary Pulse jobs. Both targets use the same scheduling, admission and native receipt machinery.
 
@@ -324,17 +375,25 @@ Use the overview when needed. Do not inject it into every turn or implement an i
 
 The package service already supports inventory, install, update, remove and activation status. The CLI can report an installation as pending. The compact `howcode` tool and MCP share one dispatcher, but currently expose conversation/workspace operations, not package administration or extension selection.
 
+The package manager persists a fresh revision with committed inventory. Its exposed mutation returns component descriptors, not a durable operation receipt or request-deduplicated install result. `component-status.json` is a leased snapshot used by the CLI, not an activation event log. Renderer invalidation is volatile. None can simply be relabelled as reliable subscription delivery.
+
 Full component activation can wait for active work and request leases to drain. There is no supported durable operation meaning "continue this setup after this exact component generation activates". A chat submission receipt does not supply that contract.
+
+Service activation and renderer admission are separate stages. Headless agent work should wait for the service capability it needs, not for a browser to acknowledge a renderer. A request for a UI capability may need the latter stage too.
 
 Visualise creates turn-bound views that freeze when the turn ends. It is not a persistent installed component. Existing artefact and component packages provide the durable presentation mechanisms.
 
 Source anchors: `components/packages/service/ui.ts:256`, `desktop/package-cli.ts:72`, `components/packages/service/installed-components.ts:210`, `shared/app-control.ts:17`, `desktop/durable-runtime/extension-composition.ts:44`, `../howcode-components/packages/intelligent-ui/src/service.ts:103`.
 
+Activation evidence: `components/packages/service/manager.ts:212` and `:269`, `components/packages/service/component-status.ts:8`, `components/packages/service/installed-components.ts:207` and `:351`, `desktop/service-host-runtime.ts:169`.
+
 ### Proposed threads: narrow administration and activation continuation
 
-Add typed inventory, installation and exact activation-status operations to the existing app-control catalogue and dispatcher. Reuse the package service. Expose per-conversation extension selection through the existing Durable selection path. Do not add generic service RPC, another installer or a second MCP implementation.
+Expose typed inventory, installation and activation-status operations from the package feature's own gateway. The existing app-control catalogue may discover and route those supported operations, but the package service remains their implementation. UI, native agent tools and MCP use that same owner. Expose per-conversation extension selection through the existing Durable selection path. Do not add generic service RPC, another installer or a second MCP implementation.
 
-Installation receipts must distinguish installed inventory from an active generation. Add a small persisted continuation tied to the intended generation and originating conversation. The agent yields, the package owner reaches its idle activation boundary, and the continuation resumes once after activation or reports its failure. Do not wait for idle while holding the very turn or request lease that prevents it.
+Installation receipts must distinguish installed inventory from a usable capability. Let callers subscribe to the outcome of that installation through the shared durable delivery contract. Internally correlate the exact intended revision and originating conversation. The agent yields, the package owner reaches its idle activation boundary, and accepted setup work resumes once after activation or receives an explicit failure. The package owner remains authoritative for the outcome. Do not add a separate setup queue, or wait for idle while holding the very turn or request lease that prevents it.
+
+The package operation needs a durable receipt that identifies the committed source and revision. Close the snapshot/subscribe race with registration and a revision recheck or equivalent reconciliation. After restart, inspect the exact operation and source state rather than reinstalling. Report failed, removed and superseded targets explicitly. Do not quietly continue on a different generation, and do not assume `waitForTask` observes activation when the package lifecycle is not a native task today.
 
 Capability removal or failed activation needs an explicit result. Retrying setup must inspect the original install receipt rather than reinstalling or repeating external setup side effects. This continuation also needs the accepted-work classification from the admission work.
 
@@ -342,13 +401,13 @@ Keep generated views and installable components distinct in instructions. A requ
 
 Audit `WorkspaceLayoutTools` during this ownership work: it is currently registered unconditionally in core. Its presentation policy should move behind the owning layout capability rather than being copied into a new assistant-control layer. Existing per-chat layout records and workspace defaults must survive that move.
 
-**Completion evidence:** installation during a turn reports pending, yields, and continues on the exact active revision without repeating installation. Changing tool selection does not change renderer visibility. A generated view is not misreported as a package install.
+**Completion evidence:** installation during a turn reports pending, yields, and continues on the exact active service revision without repeating installation or waiting for an absent browser. Requests for renderer readiness remain distinct. Restart, failure and supersession produce the right outcome without an idle-blocking waiter. Changing tool selection does not change renderer visibility. A generated view is not misreported as a package install.
 
 ## 8. Add reminders as reminders
 
 There is no general reminder/deadline record today. The conversation inbox tracks unread assistant notifications, not due work. It cannot be relabelled to satisfy the requirement.
 
-Add persistent one-shot due records referencing the relevant chat or Board thread, with a Howcode-owned on-return presentation. Reuse the scheduling and admission machinery where appropriate, but keep reminder delivery distinct from starting a Pulse work conversation. A due notification should not silently become an instruction to perform the underlying task.
+Add persistent one-shot due records referencing the relevant chat or Board thread, with a Howcode-owned on-return presentation. Reuse the subscription, scheduling and admission machinery where appropriate, but keep reminder delivery distinct from starting a Pulse work conversation. A due notification should not silently become an instruction to perform the underlying task.
 
 Specify restart-safe delivery and acknowledgement, and preserve the reminder while the user is away. Use the existing inbox as a delivery surface if it fits, not as a substitute for the due record. External channels remain installable capabilities requested separately.
 
@@ -363,9 +422,9 @@ The five proposed workboards in the product plan still fit, but they are not ind
 | Order | Threads | Dependency and stopping point |
 | --- | --- | --- |
 | 1 | Eager startup and backend recovery | Can land with current component versions. Proves reliable runtime, not complete assistant setup |
-| 2 | Agents/Board dependency alignment, public local enrolment and stable resident anchors | Must precede relying on standalone Board and new continuing-family behaviour |
+| 2 | Agents/Board dependency alignment, public local enrolment and stable resident anchors | Must precede relying on standalone Board and new continuing-family behaviour. Pilot a feature-owned operation here before expanding the shared router |
 | 3 | Fresh defaults, Bots setup, chosen home, direct conversation and setup Board thread | Needs the Board foundation and existing model/workspace host ports |
-| 4 | Trusted origin and accepted-work linkage, shared admission, snooze and catch-up | Can be developed alongside setup after scope and target contracts are fixed |
+| 4 | Trusted origin and accepted-work linkage, shared subscription/delivery, Initiative policy and Pulse catch-up | Prove the shared boundary against scheduled work and the existing package lifecycle. Full agent package administration can still follow later |
 | 5 | Main-resident Pulse target, selected cadence and actual launch setup | Joins runtime, setup and controlled scheduling into the first complete assistant-first experience |
 | 6 | Optional workspace resident enrolment and cross-Board coordination | Uses the same family foundation and admission boundary |
 | 7 | Discovery, policies, activity overview and reminders | Awareness needs provenance and resident routing. Reminder delivery needs the due path |
@@ -380,8 +439,8 @@ This keeps board 1 first while acknowledging its small dependencies on resident 
 - **Agents and Board:** package versions, adapter composition, fresh defaults and saved extension selections before resume. Board data stays intact.
 - **Resident home and family:** home association, stable anchor, new-chat enrolment, continuing-resident authority and reliable addressing. Preserve older chats and their Boards instead of moving them implicitly.
 - **Provenance:** composer, app-control, component-triggered and scheduled ingress, durable metadata, accepted-work linkage and the activity projection. A partial rollout must not guess that unknown input is human.
-- **Snooze and producers:** the shared owner, Pulses admission, explicit agent nudges and reactivation. A control that only hides a button does not count.
-- **Component activation:** installation receipt, target generation, idle handoff and one continuation. Inventory success alone does not mean the capability is usable.
+- **Snooze and producers:** Initiative's policy state, race-safe admission, time and other proactive sources, explicit agent nudges and reactivation. Missing policy must not silently resume work. A control that only hides a button does not count.
+- **Component activation:** feature-owned installation receipt and outcome, target generation, idle handoff and shared delivery of one accepted continuation. Inventory success alone does not mean the capability is usable.
 
 Portable changes are built and packed in Pi Durable Components. Howcode adapters and SDK changes are built and packed in Howcode Components. Consume supported built packages, using content-hashed tarball names for the current sibling workflow. Regenerate shell registrations. Ordinary profile components use `howcode install` and the existing live-generation lifecycle. Do not introduce private-source aliases or duplicate Durable installs.
 
@@ -397,19 +456,21 @@ The consequential practical checks are:
 2. **Headless lifecycle:** pending work and scheduled work after startup, backend crash without a browser, visible startup failure and clean generation replacement.
 3. **Family continuity:** manual resident threads, resident-free chats, worker ownership, Context rollover, restart and missing-root recovery without data loss.
 4. **Coordination:** local Board authority, remote contributions without local detachment, passive notices versus explicit messages, and old Board access after package migration.
-5. **Pause semantics:** timed local and app-wide snoozes, indefinite halt with individual resumes, new workspaces under halt, deadlines ageing under restrictions, direct user work and accepted reporting.
+5. **Pause semantics:** timed local and app-wide snoozes, indefinite halt with individual resumes, new workspaces under halt, deadlines ageing under restrictions, direct user work and accepted reporting. Include pause/admission races and a missing policy owner without silently resuming work.
 6. **Catch-up:** several jobs across downtime, accurate missed-period metadata from tracked history, concurrency limits, provider backoff, obsolete definitions and no duplicated native submission.
 7. **Awareness:** explicit enrolment, advisory policies, distinct human/Howcode/Git signals and graceful unavailability of optional capabilities.
-8. **Environment and reminders:** exact-generation activation continuation, preserved artefacts, restart-safe reminder delivery and visibility on return.
+8. **Environment and reminders:** exact-generation activation continuation, service versus renderer readiness, failure and supersession, no idle-blocking waiter, preserved artefacts, restart-safe reminder delivery and visibility on return.
+9. **Gateways and removal:** the same feature operation through supported UI, native-agent and MCP routes, correct caller authority and selection, no raw-request exposure, and capability removal without deleting its data or breaking unrelated chat.
 
 ## Technical decisions to settle at the start of the owning threads
 
 These do not reopen product behaviour. They bound the implementation work before broad parallel changes begin.
 
 - Finalise Board's host-enrolment, continuing-resident authority, additional-participation and optional Agents handoff contracts without a peer-service locator.
+- Settle the SDK's explicit feature-operation contribution and trusted-caller contract before expanding app-control or MCP. Reuse owning schemas and handlers, retain agent selection and keep raw plugin requests private.
 - Confirm the Durable metadata and transaction boundary for trusted origin, accepted-work linkage and retry-safe resident-target Pulse submissions.
-- Specify the portable Pulses admission port and checkpoint changes, including definition revisions and what exact missed history can be recovered from existing records.
+- Finalise the host delivery port and Initiative's policy contract against concrete Pulses and activation sources, including atomic new admission and policy-owner loss. Keep Pulse checkpoint changes, definition revisions and recoverable missed history with Pulses.
 - Identify an actual provider-backoff signal the dispatcher can consume. Do not promise automatic backoff from unclassified error text.
-- Specify the package-generation continuation receipt and the concrete component-state grant needed by awareness.
+- Specify the package-owned activation receipt and its subscription boundary, feature-gateway discovery and the concrete component-state grant needed by awareness.
 
 The next implementation assignment should be the bounded startup/recovery thread. The next cross-repository design work should settle the Board and admission contracts above. Neither requires another round of product questions.
