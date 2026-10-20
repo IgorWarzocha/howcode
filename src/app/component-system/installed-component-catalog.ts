@@ -169,7 +169,6 @@ function validateContribution(value: unknown): PluginRendererContribution {
   if (!value || typeof value !== 'object' || Array.isArray(value))
     throw new Error('Renderer export must be a default contribution.')
   const allowed = new Set([
-    'FirstRun',
     'Provider',
     'OutputPreview',
     'OutputThumbnail',

@@ -14,7 +14,6 @@ import { useWorkspaceArtifactDrawerState } from '../workspace-shell/useWorkspace
 import { ArtifactDrawerViews } from '../workspace-shell/workspace-artifact-drawer'
 import { AppShellNavigation } from './app-shell-navigation'
 import { AppShellWorkspace } from './app-shell-workspace'
-import { AssistantEntry } from './assistant-entry'
 import { appShellRootClass } from './layout-classes'
 import type { AppShellController } from './useAppShellController'
 
@@ -186,18 +185,7 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
           className="min-h-0 flex-1 flex-col overflow-hidden"
           style={{ display: installedPage ? 'none' : 'flex' }}
         >
-          {activeView === 'landing' ? (
-            <AssistantEntry
-              onOpenConversation={(conversation) => {
-                controller.workspaces.select(conversation.workspaceId)
-                controller.chat.open(conversation.directoryId, conversation.id, conversation.id)
-              }}
-            >
-              {workspace}
-            </AssistantEntry>
-          ) : (
-            workspace
-          )}
+          {workspace}
         </div>
         <ArtifactDrawerViews artifactDrawer={artifactDrawer} conversationId={conversationId} />
         <InstalledTerminalDrawer

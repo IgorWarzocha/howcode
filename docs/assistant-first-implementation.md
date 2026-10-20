@@ -173,7 +173,7 @@ Source anchors:
 
 ### Proposed thread: Bots-owned setup and home workspace
 
-Bots should own the setup workflow and resident state. The shell supplies the first-run entry and opens the resulting ordinary conversation. Reuse host-owned model and authentication APIs. Replace the current name/instructions-first, default-workspace setup contract rather than preserving it as an unshipped compatibility interface. Preserve resident data, not obsolete workflow shapes. Do not create another setup identity in the shell or revive the previously rejected full-page assistant management screen.
+Bots should own the setup workflow and resident state, reached through an explicit Assistant action. Preserve ordinary landing and navigation. Do not introduce a first-run takeover, automatic assistant redirect or setup checkpoint before an existing chat. Reuse host-owned model and authentication APIs. Replace the current name/instructions-first, default-workspace setup contract rather than preserving it as an unshipped compatibility interface. Preserve resident data, not obsolete workflow shapes. Do not create another setup identity in the shell or revive the previously rejected full-page assistant management screen.
 
 Collect the agreed choices: model access, assistant home folder, launch preference and initiative mode. Support fixed timing, adaptive initiative and no scheduled generic initiative. Create or select the corresponding directory-backed workspace and persist its ID on the installation resident. Use a default identity and enter conversation without a naming or instruction-writing gate.
 
@@ -206,7 +206,7 @@ Use one canonical `Howcode setup` thread on the main Board. Keep a stable refere
 
 Give the assistant the existing host diagnostics and any missing concrete launch facts: executable, arguments, profile paths and relevant effective environment. Never include secret values. Existing diagnostics already expose Node executable, version, working directory and profile/resource paths.
 
-The assistant uses its tools to configure the actual OS. Distinguish manual launch, restart after failure, login startup, boot startup and survival after logout. Privilege requirements and failed setup stay visible. A selected unattended mode that has not been established leaves setup incomplete.
+When the user requests launch configuration, the assistant uses its tools to configure the actual OS. Distinguish manual launch, restart after failure, login startup, boot startup and survival after logout. Privilege requirements and failed setup remain available in optional assistant management and the setup thread. An unverified mode remains incomplete without preventing ordinary conversation or becoming a standing setup assignment.
 
 A successful launch configuration does not prove that the selected initiative schedule works. Record and verify those separately. This is setup work, not a recurring synthetic app test assigned to the assistant.
 

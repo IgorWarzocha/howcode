@@ -8,6 +8,8 @@ The planning questions are resolved. Product direction and the decisions below a
 
 Howcode starts with you and your main assistant. It remains available without an open browser, notices where attention might help and shapes its working environment with you. Manual sessions remain available, but do not organise the product.
 
+This direction does not authorise automatic assistant navigation. Keep the ordinary landing page and let users choose when to open their assistant.
+
 ## Agreed decisions
 
 ### Feature boundaries
@@ -23,12 +25,12 @@ Howcode starts with you and your main assistant. It remains available without an
 - Deliver reliable runtime behaviour first. Proactive discovery and autonomous task completion are later milestones.
 - The first delivery must cover fresh installations, not just Igor's configured development profile.
 - The user chooses the main assistant's backing folder. Do not silently assign its home to the app directory or a hidden profile folder.
-- After model setup, go straight into conversation with a default identity and prepared capabilities. Do not require naming or detailed instruction setup before meeting the assistant.
+- Assistant creation is an explicit user action. After that model setup, open the requested conversation with a default identity and prepared capabilities. Do not require naming or detailed instruction setup before meeting the assistant.
 - Include setup for both manual launch and unattended operation, including automatic restart and boot startup where selected.
 - Let the main assistant configure the user's actual OS and environment through available tools. Do not build a platform-specific service-management framework merely to cover every environment.
 - Keep one canonical `Howcode setup` thread on the main assistant's Board. Record decisions, actual operating conditions and completed configuration there, including installed or generated views. Reuse Board rather than creating a separate setup-record feature. The assistant can consult and update this thread when changing or undoing setup.
 - The wizard collects model access, home folder, launch preference and initiative mode. The assistant then implements and verifies that configuration in conversation.
-- If the chosen unattended setup cannot be established, setup remains incomplete. Surface the blocker and required user action rather than silently substituting a weaker launch mode.
+- If the chosen unattended setup cannot be established, retain its incomplete status in assistant management and the setup thread. It must not block ordinary chat or replace the landing page with a setup checkpoint.
 - Process uptime and initiative are separate choices. Support conversational sidequests, fixed proactive intervals and adaptive initiative, independently of manual launch or boot startup.
 - Conversational sidequests are not tied to browser presence. The assistant may follow related work after the user leaves and judges when to wind down.
 - Proactive work follows the user's standing instructions. Do not introduce a separate blanket approval policy for unsolicited work.
