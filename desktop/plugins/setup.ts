@@ -1,8 +1,7 @@
 import path from 'node:path'
 import type { PluginSetupHost, SetupLaunchFacts } from '@howaboua/howcode-sdk/setup-host'
-import { resolveConversation, runtimeContext } from '../durable-runtime/host.ts'
 import { submitSetupInput } from '../durable-runtime/input-ingress.ts'
-import { getDurableModels } from '../settings/models.ts'
+import { getAvailableSetupModels, selectSetupModel } from '../durable-runtime/setup-models.ts'
 import { getAgentDirectory } from '../settings/paths.ts'
 import { getDesktopUserDataPath } from '../user-data-path.ts'
 import { resolveInstalledWorkspaceAgent } from './runtime.ts'
@@ -24,19 +23,8 @@ export function createPluginSetupHost(
         )
           throw new Error('Setup input must target the continuing installation assistant.')
       }),
-    models: async () =>
-      (await (await getDurableModels()).getAvailable()).map(({ provider, id, name }) => ({
-        provider,
-        modelId: id,
-        name,
-      })),
-    selectModel: async ({ conversationId, provider, modelId }) => {
-      const models = await (await getDurableModels()).getAvailable()
-      if (!models.some((model) => model.provider === provider && model.id === modelId))
-        throw new Error('Selected model is not available. Configure model access first.')
-      const conversation = await resolveConversation(conversationId)
-      await conversation.configure({ model: { provider, modelId } }, runtimeContext)
-    },
+    models: getAvailableSetupModels,
+    selectModel: selectSetupModel,
     launchFacts: async () => {
       if (!standalone) throw new Error('Standalone launch facts are unavailable for this runtime.')
       return {

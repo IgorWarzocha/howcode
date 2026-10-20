@@ -37,7 +37,11 @@ export function useAppShellController() {
     dispatch: bundle.workspace.dispatch,
     directories,
     navigation: workspaceNavigation.workspaceNavigationState,
-    loading: desktopShell.shellLoading || workspaceNavigation.workspaceNavigationLoading,
+    loading:
+      desktopShell.shellLoading ||
+      workspaceNavigation.workspaceNavigationLoading ||
+      desktopShell.shellState === null ||
+      workspaceNavigation.workspaceNavigationState === null,
     state: bundle.workspace.state,
   })
   const selectedChat = useSelectedChatData({
@@ -199,7 +203,9 @@ export function useAppShellController() {
     },
     workspaces: {
       create: workspaceNavigation.handleCreateWorkspace,
+      error: workspaceNavigation.workspaceNavigationError,
       loading: workspaceNavigation.workspaceNavigationLoading,
+      retry: workspaceNavigation.retryWorkspaceNavigationState,
       refresh: workspaceNavigation.refreshWorkspaceNavigationState,
       select: workspaceNavigation.setSelectedWorkspaceId,
       selectedWorkspaceId: workspaceNavigation.selectedWorkspaceId,

@@ -33,6 +33,7 @@ export function getAppShellUrlSyncDecision(input: {
   loading: boolean
   stateRoute: AppRouteSnapshot
 }): Decision {
+  if (input.loading) return { type: 'defer' }
   const routeKey = JSON.stringify(input.routeSnapshot)
   const stateKey = JSON.stringify(input.stateRoute)
   const next = { routeKey, stateKey }
@@ -40,7 +41,6 @@ export function getAppShellUrlSyncDecision(input: {
   const routeChanged = input.previous.routeKey !== routeKey
   const stateChanged = input.previous.stateKey !== stateKey
   if (routeChanged && (input.previous.routeKey === null || !stateChanged)) {
-    if (input.loading) return { type: 'defer' }
     const action = getRouteAction(input.routeSnapshot, input.navigation)
     return action
       ? { type: 'dispatch-route', action, next: { routeKey, stateKey: input.previous.stateKey } }

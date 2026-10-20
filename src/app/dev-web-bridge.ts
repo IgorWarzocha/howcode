@@ -276,11 +276,55 @@ async function uploadComposerFiles(files: File[]) {
 }
 
 type EventSubscription = {
-  eventSource: EventSource
+  eventSource: EventSource | null
   listeners: Set<(event: MessageEvent<string>) => void>
+  openListeners: Set<() => void>
+  retryTimer: ReturnType<typeof setTimeout> | null
+  retryDelayMs: number
 }
 
 const eventSubscriptions = new Map<DesktopEventChannel, EventSubscription>()
+
+function reconnectClosedEventSubscription(
+  channel: DesktopEventChannel,
+  subscription: EventSubscription,
+) {
+  if (
+    eventSubscriptions.get(channel) !== subscription ||
+    subscription.listeners.size === 0 ||
+    subscription.retryTimer !== null
+  )
+    return
+  const delay = subscription.retryDelayMs
+  subscription.retryDelayMs = Math.min(delay * 2, 30_000)
+  subscription.retryTimer = setTimeout(() => {
+    subscription.retryTimer = null
+    if (eventSubscriptions.get(channel) === subscription && subscription.listeners.size > 0)
+      connectEventSubscription(channel, subscription)
+  }, delay)
+}
+
+function connectEventSubscription(channel: DesktopEventChannel, subscription: EventSubscription) {
+  subscription.eventSource?.close()
+  const source = new EventSource(`/__howcode/events/${channel}`)
+  subscription.eventSource = source
+  for (const listener of subscription.listeners) source.addEventListener(channel, listener)
+  for (const listener of subscription.openListeners) source.addEventListener('open', listener)
+  source.addEventListener('open', () => {
+    subscription.retryDelayMs = 1_000
+    if (import.meta.env.DEV && channel === 'desktopEvent') {
+      // The replacement dev service has no in-memory conversation subscriptions.
+      void invokeRequest('watchConversation', { conversationId: watchedConversationId }).catch(
+        (error: unknown) => console.warn('Failed to restore dev conversation watch.', error),
+      )
+    }
+  })
+  source.addEventListener('error', () => {
+    // Native retry handles dropped streams, but an HTTP 503 can permanently close EventSource.
+    if (subscription.eventSource === source && source.readyState === EventSource.CLOSED)
+      reconnectClosedEventSubscription(channel, subscription)
+  })
+}
 
 function getEventSubscription(channel: DesktopEventChannel) {
   const current = eventSubscriptions.get(channel)
@@ -289,19 +333,25 @@ function getEventSubscription(channel: DesktopEventChannel) {
   }
 
   const subscription: EventSubscription = {
-    eventSource: new EventSource(`/__howcode/events/${channel}`),
+    eventSource: null,
     listeners: new Set(),
-  }
-  if (import.meta.env.DEV && channel === 'desktopEvent') {
-    subscription.eventSource.addEventListener('open', () => {
-      // The replacement dev service has no in-memory conversation subscriptions.
-      void invokeRequest('watchConversation', { conversationId: watchedConversationId }).catch(
-        (error: unknown) => console.warn('Failed to restore dev conversation watch.', error),
-      )
-    })
+    openListeners: new Set(),
+    retryTimer: null,
+    retryDelayMs: 1_000,
   }
   eventSubscriptions.set(channel, subscription)
+  connectEventSubscription(channel, subscription)
   return subscription
+}
+
+function subscribeToEventOpen(channel: DesktopEventChannel, listener: () => void) {
+  const subscription = getEventSubscription(channel)
+  subscription.openListeners.add(listener)
+  subscription.eventSource?.addEventListener('open', listener)
+  return () => {
+    subscription.openListeners.delete(listener)
+    subscription.eventSource?.removeEventListener('open', listener)
+  }
 }
 
 function subscribeToEvent<K extends DesktopEventChannel>(
@@ -329,12 +379,14 @@ function subscribeToEvent<K extends DesktopEventChannel>(
   }
 
   subscription.listeners.add(wrappedListener)
-  subscription.eventSource.addEventListener(channel, wrappedListener)
+  subscription.eventSource?.addEventListener(channel, wrappedListener)
   return () => {
-    subscription.eventSource.removeEventListener(channel, wrappedListener)
+    subscription.eventSource?.removeEventListener(channel, wrappedListener)
     subscription.listeners.delete(wrappedListener)
-    if (subscription.listeners.size === 0) {
-      subscription.eventSource.close()
+    if (subscription.listeners.size === 0 && eventSubscriptions.get(channel) === subscription) {
+      if (subscription.retryTimer !== null) clearTimeout(subscription.retryTimer)
+      subscription.retryTimer = null
+      subscription.eventSource?.close()
       eventSubscriptions.delete(channel)
     }
   }
@@ -445,15 +497,14 @@ export async function installDevWebDesktopBridge() {
         Schema.decodeUnknownResult(DevWebDesktopEventEnvelope),
         listener,
       )
-      const source = getEventSubscription('desktopEvent').eventSource
       // SSE does not replay inventory invalidations lost while disconnected.
       const refreshPackageUis = () => {
         listener({ type: 'package-ui-invalidation' })
         if (import.meta.env.DEV) listener({ type: 'shell-state-refresh' })
       }
-      source.addEventListener('open', refreshPackageUis)
+      const unsubscribeOpen = subscribeToEventOpen('desktopEvent', refreshPackageUis)
       return () => {
-        source.removeEventListener('open', refreshPackageUis)
+        unsubscribeOpen()
         unsubscribe()
       }
     },

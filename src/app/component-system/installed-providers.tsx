@@ -13,11 +13,7 @@ import {
   type HowcodeKeybindingCommandDetail,
   howcodeKeybindingCommandEvent,
 } from '../app-shell/keybinding-events'
-import {
-  admitInstalledComponentQuery,
-  requestInstalledPluginQuery,
-  subscribeDesktopEvents,
-} from '../query/desktop-query'
+import { requestInstalledPluginQuery, subscribeDesktopEvents } from '../query/desktop-query'
 import { terminalRendererPort } from '../terminal-integration'
 import { InstalledComponentBoundary } from './installed-component-boundary'
 import { useInstalledComponentCatalog } from './installed-component-catalog'
@@ -59,22 +55,7 @@ function ComponentProvider({ renderer }: { renderer: Renderer }) {
   const Provider = renderer.contribution.Provider
   const content = <ComponentRendererSlots name={renderer.name} />
   return (
-    <InstalledComponentBoundary
-      name={renderer.name}
-      onError={(error) => {
-        if (!renderer.reference) {
-          console.error(`Component has no admitted generation: ${renderer.name}`, error)
-          return
-        }
-        void admitInstalledComponentQuery({ ...renderer.reference, error }).catch(
-          (acknowledgement) =>
-            console.error(
-              `Component failure acknowledgement failed: ${renderer.name}`,
-              acknowledgement,
-            ),
-        )
-      }}
-    >
+    <InstalledComponentBoundary name={renderer.name}>
       <RendererStyleScope name={renderer.name}>
         {Provider ? <Provider host={renderer.host}>{content}</Provider> : content}
       </RendererStyleScope>

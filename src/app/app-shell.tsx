@@ -44,8 +44,8 @@ function AppShellContents() {
     [directoryPath, useAgentsSkillsPaths, handleAction, setSkillsActive, closeUtilityView],
   )
   usePiGuiTheme(controller.desktop.shellState?.piTheme)
-  if (!controller.desktop.shellState) {
-    const error = controller.desktop.shellError
+  if (!(controller.desktop.shellState && controller.workspaces.state)) {
+    const error = controller.desktop.shellError ?? controller.workspaces.error
     return (
       <main className="grid h-full place-content-center gap-3 p-6">
         {error ? (
@@ -57,8 +57,13 @@ function AppShellContents() {
             <button
               type="button"
               className={composerTextActionButtonClass}
-              onClick={() => void controller.desktop.retryShellState()}
-              disabled={controller.desktop.shellLoading}
+              onClick={() =>
+                void Promise.all([
+                  controller.desktop.retryShellState(),
+                  controller.workspaces.retry(),
+                ])
+              }
+              disabled={controller.desktop.shellLoading || controller.workspaces.loading}
             >
               Retry
             </button>

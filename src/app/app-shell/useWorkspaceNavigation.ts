@@ -55,7 +55,9 @@ export function useAppShellWorkspaceNavigation({
 
   return {
     workspaceNavigationLoading: sidebarQuery.isLoading,
+    workspaceNavigationError: sidebarQuery.error,
     workspaceNavigationState: sidebarQuery.data ?? null,
+    retryWorkspaceNavigationState: sidebarQuery.refetch,
     handleCreateWorkspace,
     refreshWorkspaceNavigationState,
     selectedWorkspaceId,

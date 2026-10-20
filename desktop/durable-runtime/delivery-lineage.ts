@@ -1,10 +1,13 @@
 import type { Context } from '@earendil-works/chord'
 import {
+  AssistantEntry,
   type Cursor,
   defineDoc,
+  GenerationTask,
   type Harness,
   LiveDoc,
   type TaskId,
+  ToolTask,
   type Tx,
 } from '@earendil-works/pi-durable'
 import type {
@@ -12,7 +15,7 @@ import type {
   InputAdmission,
   InputOrigin,
 } from '@howaboua/howcode-sdk/input-delivery'
-import { decodeConversationId } from './identity.ts'
+import { decodeConversationId, decodeEntryId } from './identity.ts'
 import {
   agentInputOrigin,
   componentActionOrigin,
@@ -79,7 +82,7 @@ export function decodeTaskId(value: string): TaskId {
   return id as TaskId
 }
 
-/** Capture while the native caller is executing; a later completed caller retains this proof. */
+/** Capture while executing; terminal native callers are validated from retained task records. */
 export async function captureNativeAcceptedWork(
   tx: Tx,
   caller: { conversationId: string; taskId: string },
@@ -129,21 +132,98 @@ export async function captureNativeAcceptedWork(
 }
 
 /** Native worker settlement may address its owner chain, never an unrelated family or fork. */
-export async function captureNativeSettlement(
-  tx: Tx,
-  caller: { conversationId: string; taskId: string },
-  target: string,
-): Promise<AcceptedWork | undefined> {
+async function isNativeSettlementTarget(tx: Tx, conversationId: string, target: string) {
   const seen = new Set<string>()
-  let current: string | undefined = caller.conversationId
+  let current: string | undefined = conversationId
   while (current !== undefined && !seen.has(current)) {
-    if (current === target) return captureNativeAcceptedWork(tx, caller, target)
+    if (current === target) return true
     seen.add(current)
     const conversation = await tx.conversation(decodeConversationId(current))
     if (!conversation) throw new Error('The native caller conversation is missing.')
     current = conversation.owner ? String(conversation.owner.conversationId) : undefined
   }
+  return false
+}
+
+export async function captureNativeSettlement(
+  tx: Tx,
+  caller: { conversationId: string; taskId: string },
+  target: string,
+): Promise<AcceptedWork | undefined> {
+  if (await isNativeSettlementTarget(tx, caller.conversationId, target))
+    return captureNativeAcceptedWork(tx, caller, target)
   return undefined
+}
+
+async function validateNativeModelCall(
+  tx: Tx,
+  task: NativeTaskRecord,
+  mode: 'continuation' | 'passive',
+) {
+  const input = task.input
+  if (typeof input !== 'object' || input === null || Array.isArray(input))
+    throw new Error('Accepted-work native model call is missing.')
+  const { kind, assistant: assistantId, callId } = input
+  if (
+    kind !== 'model' ||
+    typeof assistantId !== 'number' ||
+    typeof callId !== 'string' ||
+    task.owner === undefined
+  )
+    throw new Error('Accepted-work native model call is missing.')
+  const generation = await tx.task(task.owner)
+  if (
+    !generation ||
+    generation.kind !== GenerationTask.definition.name ||
+    generation.conversationId !== task.conversationId ||
+    generation.background
+  )
+    throw new Error('Accepted-work native generation ownership is missing.')
+  assertContinuationNotCancelled(generation, mode)
+  const assistant = await tx.entry(AssistantEntry, decodeEntryId(String(assistantId)))
+  const message = assistant?.model?.[0]
+  if (
+    assistant?.conversationId !== task.conversationId ||
+    message?.role !== 'assistant' ||
+    !message.content.some((part) => part.type === 'toolCall' && part.id === callId)
+  )
+    throw new Error('Accepted-work native assistant call is missing.')
+}
+
+async function validateSettledNativeWork(
+  tx: Tx,
+  caller: NativeTaskRecord,
+  target: string,
+  mode: 'continuation' | 'passive',
+) {
+  if (!(await isNativeSettlementTarget(tx, String(caller.conversationId), target)))
+    throw new Error('Accepted-work target is outside the native owner chain.')
+  const seen = new Set<TaskId>()
+  let task: NativeTaskRecord | undefined = caller
+  while (task && !seen.has(task.id)) {
+    seen.add(task.id)
+    if (
+      task.kind !== ToolTask.definition.name ||
+      task.conversationId !== caller.conversationId ||
+      task.background
+    )
+      break
+    assertContinuationNotCancelled(task, mode)
+    const input = task.input
+    if (typeof input !== 'object' || input === null || Array.isArray(input)) break
+    const { kind, parent } = input
+    if (kind === 'model') {
+      await validateNativeModelCall(tx, task, mode)
+      return {
+        source: 'native',
+        scopeId: '',
+        origin: agentInputOrigin(String(caller.conversationId), String(caller.id)),
+      }
+    }
+    if (kind !== 'nested' || task.owner === undefined || parent !== task.owner) break
+    task = await tx.task(task.owner)
+  }
+  throw new Error('Delivery has no retained native tool-call lineage.')
 }
 
 export async function validateAcceptedWork(
@@ -157,10 +237,25 @@ export async function validateAcceptedWork(
   const task = await tx.task(taskId)
   if (!task) throw new Error('Accepted native task no longer exists.')
   assertContinuationNotCancelled(task, mode)
+  if (work.conversationId !== target)
+    throw new Error('Accepted-work conversation identity mismatch.')
+  // Durable retires every task-scoped document at terminal. Reading one here would try
+  // to recreate it under a terminal owner. Only built-in tool/generation records can
+  // reconstruct native capture; terminal source tasks still require receipt rejoin.
+  if (task.state.status === 'terminal') return validateSettledNativeWork(tx, task, target, mode)
+  return validateLiveAcceptedWork(tx, taskId, target, source, mode)
+}
+
+async function validateLiveAcceptedWork(
+  tx: Tx,
+  taskId: TaskId,
+  target: string,
+  source: string,
+  mode: 'continuation' | 'passive',
+) {
   const marker = await tx.doc(AcceptedInputTaskDoc, taskId)
   if (
     !marker.accepted ||
-    marker.conversationId !== work.conversationId ||
     marker.conversationId !== target ||
     (marker.source !== 'native' && marker.source !== source)
   )
