@@ -1,16 +1,14 @@
-### The Pi Durable browser app you'll actually want to use.
+### Just you and your assistant.
 
-Heavily optimised towards coding with agents on YOLO with very little friction.
+Howcode is a standalone, browser-native workspace built around Pi Durable. We're building it to start with nothing but you and your assistant, then take the shape your work needs.
 
-- Server mode via `howcode --host 0.0.0.0 --port xyz`
-- Workspaces for whatever you're doing, with chats inside them.
-- Every chat uses the same composer. Choose its tools and add components for Git, terminal, artifacts and more.
-- Git-ops composer with diff review mode, comments-based review-flow & more.
-- Browse, install, remove, and configure skills.
-- Persistent conversations, queued messages, and conversation forks.
-- One sidebar for workspaces and chats.
-- Local dictation via sherpa-ONNX (CPU - it's fast enough)
+- **An assistant that looks for work.** The aim is for it to proactively explore the working folders and project directories you point it towards, find unfinished work and investigate useful next steps without waiting for every prompt.
+- **Build at your own pace.** Keep it simple, add a little at a time or put together a full workspace in one go. Starting small shouldn't mean getting there slowly.
+- **Let your assistant set things up.** We ship components as installable packages. Have your assistant wire them together around what you need, rather than assemble every workflow yourself.
+- **Make the workspace fit.** Ask for custom views and let your assistant arrange how Howcode looks and works around the task.
+- **Coding when you need it.** Add Git review, terminal and other tools without making every workspace a repository or every conversation a coding session.
+- **Keep the thread.** Persistent conversations, queued messages and forks let you pick up work without starting over. Run Howcode on a machine you trust and use it through your browser.
 
-Submit any issues to https://github.com/IgorWarzocha/howcode/issues
+The assistant-only starting point and automatic folder discovery are still being developed. Today's app already supports chats, installable components and agent-created interfaces.
 
-Follow on https://x.com/Howaboua for random updates.
+[Issues and suggestions](https://github.com/IgorWarzocha/howcode/issues) · [Updates from Howaboua](https://x.com/Howaboua)
