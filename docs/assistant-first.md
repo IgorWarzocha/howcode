@@ -27,12 +27,31 @@ Howcode starts with you and your main assistant. It remains available without an
 - Include setup for both manual launch and unattended operation, including automatic restart and boot startup where selected.
 - Let the main assistant configure the user's actual OS and environment through available tools. Do not build a platform-specific service-management framework merely to cover every environment.
 - Keep one canonical `Howcode setup` thread on the main assistant's Board. Record decisions, actual operating conditions and completed configuration there, including installed or generated views. Reuse Board rather than creating a separate setup-record feature. The assistant can consult and update this thread when changing or undoing setup.
-- The wizard collects model access, home folder, launch preference and initiative frequency. The assistant then implements and verifies that configuration in conversation.
+- The wizard collects model access, home folder, launch preference and initiative mode. The assistant then implements and verifies that configuration in conversation.
 - If the chosen unattended setup cannot be established, setup remains incomplete. Surface the blocker and required user action rather than silently substituting a weaker launch mode.
-- Process uptime and initiative are separate choices. Support conversational sidequests and daily, hourly or user-chosen proactive intervals, independently of manual launch or boot startup.
+- Process uptime and initiative are separate choices. Support conversational sidequests, fixed proactive intervals and adaptive initiative, independently of manual launch or boot startup.
 - Conversational sidequests are not tied to browser presence. The assistant may follow related work after the user leaves and judges when to wind down.
 - Proactive work follows the user's standing instructions. Do not introduce a separate blanket approval policy for unsolicited work.
 - Reliable startup and recovery are application responsibilities. Do not give the assistant a recurring end-to-end test ritual or synthetic verification job on wake. Implementation validation is developer work, separate from ordinary assistant behaviour.
+
+### Adaptive initiative
+
+- Reduce or suspend generic proactive check-ins while the user is active. Give agents more opportunity to work during the user's absence, not more reasons to interrupt an already busy user.
+- Use genuine user-prompt activity and rolling weekly/monthly patterns, not browser presence, agent messages or raw prompt volume alone. Activity elsewhere in the app still means the user is around.
+- Give the agent a tool to adjust its next internal check-in. The system applies activity-based suppression and user preferences over that request. The agent may wait longer, but cannot shorten the user's configured minimum gap or override snooze, halt or workspace policy.
+- Keep timers and learned activity patterns internal. Do not add a timer dashboard, routine countdowns or explanations of each timing adjustment to ordinary chat. Expose useful timing preferences in Settings.
+
+| Level | Default minimum gap between generic check-ins |
+| --- | --- |
+| Off | No generic proactive check-ins |
+| Low | 2 hours |
+| Normal | 1 hour |
+| High | 30 minutes |
+
+- Make all three intervals editable, along with the quiet period after a user prompt, initially 30 minutes. Longer settings such as 8 hours, 4 hours and 2 hours are valid. These are maximum frequencies, not a requirement to wake at every opportunity.
+- Do not start another generic check-in while that resident is already working. Already accepted work continues, including when activity suppresses new check-ins.
+- A Pulse admitted to run counts as proactive activity for its workspace and suppresses or postpones a redundant generic check-in. Other proactive event-triggered work should receive the same credit. Merely defining a future schedule does not count.
+- Deduplicate per scope through shared admission and activity accounting, not a separate dedupe service. Explicitly scheduled jobs and reminders retain their own timing, subject to explicit snooze and halt. Generic check-in suppression must not cancel those jobs or merge distinct tasks.
 
 ### Residents, context and Boards
 
@@ -132,6 +151,8 @@ Proposed threads:
 
 Proposed threads:
 - Shared subscription and delivery contracts for concrete event sources, with scheduled work as one source rather than the owner of every wake-up.
+- Adaptive initiative, user-editable timing levels and prompt-activity patterns, with an internal timer-adjustment tool.
+- Per-scope proactive activity accounting so scheduled Pulses and event-triggered work suppress redundant generic check-ins.
 - Scoped snooze tool and card, backed by persistent target state.
 - Shared snooze participation for Pulses and other proactive trigger components.
 - Repeated-job deduplication and paced release of distinct due work.
@@ -164,6 +185,7 @@ Start with board 1. The later order and the exact capability subset needed for a
 - Snooze is operational state, unlike the instruction-led folder preferences. Scheduled components must actually honour it. Arbitrary OS jobs that bypass Howcode cannot be assumed to participate.
 - Catch-up trades timeliness against provider pressure and obsolete work. Preserve due work without blindly replaying every missed interval or uncertain external side effect.
 - Exposed behaviour attracts dependencies, including from agents. Small semantic gateways let feature internals change. This is not a reason to hide diagnostics or to create a universal RPC interface. Shared primitives must earn their place through concrete consumers.
+- Frequent generic check-ins can be costly even when nothing happens. Adaptive timing should back off, respect configured minimum gaps and reuse scheduled work as a check-in opportunity. Learned habits are estimates, not proof that the user is absent.
 
 ## Open questions
 

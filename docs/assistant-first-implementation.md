@@ -30,7 +30,7 @@ Keep the feature state with the feature. Core should provide the small host cont
 | Context and Notes | Existing Context components | Keep native conversation identity stable and resolve explicit lookup targets |
 | Time schedules and missed-period catch-up | Pi Durable Components, Pulses | Supply trusted input provenance, resident targets and lifecycle binding |
 | Cross-source delivery | Existing Howcode Durable input/admission host, using native task and receipt primitives | Route feature-owned occurrences and validate accepted-work lineage |
-| Proactive admission policy and controls | A small Howcode Initiative component, proposed here | Compose one source-neutral policy port, with policy state and cards owned by Initiative |
+| Proactive admission, adaptive timing and controls | A small Howcode Initiative component, proposed here | Compose one source-neutral policy port, with policy state, activity accounting and presentation owned by Initiative |
 | Folder intent and workspace awareness | A Howcode awareness component | Existing workspace identity, activity projection and explicit enrolment |
 | Package installation and activation | Existing Howcode package service | Narrow agent operations through the existing app-control dispatcher |
 | Generated and persistent views | Existing UI and artefact components | Existing presentation slots and explicit host grants |
@@ -175,7 +175,7 @@ Source anchors:
 
 Bots should own the setup workflow and resident state. The shell supplies the first-run entry and opens the resulting ordinary conversation. Reuse host-owned model and authentication APIs. Replace the current name/instructions-first, default-workspace setup contract rather than preserving it as an unshipped compatibility interface. Preserve resident data, not obsolete workflow shapes. Do not create another setup identity in the shell or revive the previously rejected full-page assistant management screen.
 
-Collect the agreed choices: model access, assistant home folder, launch preference and initiative frequency. Create or select the corresponding directory-backed workspace and persist its ID on the installation resident. Use a default identity and enter conversation without a naming or instruction-writing gate.
+Collect the agreed choices: model access, assistant home folder, launch preference and initiative mode. Support fixed timing, adaptive initiative and no scheduled generic initiative. Create or select the corresponding directory-backed workspace and persist its ID on the installation resident. Use a default identity and enter conversation without a naming or instruction-writing gate.
 
 Keep the installation role distinct from optional workspace bots. Expose it through a narrow resident resolver so app-control and Pulses can locate it without title matching. Its home is an ordinary workspace target, not a second scheduler scope type. Ensure that the home has one resolved resident owner. If an existing local bot conflicts, surface that before setup rather than silently replacing an identity or choosing precedence.
 
@@ -194,7 +194,7 @@ The proposed first-delivery composition is:
 | App and conversation control | Existing `howcode.app-control` |
 | Filesystem and command execution for setup | Existing `coding-tools`, providing `read`, `write`, `edit` and `bash` |
 | Chosen initiative schedule | Pulses and its Howcode adapter |
-| Cross-source snooze and admission controls | The proposed Initiative component |
+| Cross-source admission, adaptive timing and snooze controls | The proposed Initiative component |
 
 This is a configurable resident selection, not a fixed core chat or coding bundle. `coding-tools` is already registered by the host, not a missing profile package. UI visibility remains independent of selected agent capabilities. Visualise, bespoke panels and general package administration are not prerequisites for the first setup conversation.
 
@@ -251,7 +251,7 @@ Source anchors: `desktop/durable-runtime/conversation-origin.ts:4`, `desktop/app
 
 ### Proposed thread: shared subscriptions and one admission owner
 
-Put authoritative local and app-wide restrictions in a small Howcode Initiative component. This is the concrete feature for the already-agreed snooze controls, not a new permissions framework. It owns policy persistence, decisions, scoped cards and app-wide controls, independently of Bots and Pulses. Expose it through one typed, source-neutral admission port.
+Put authoritative local and app-wide restrictions in a small Howcode Initiative component. This is the concrete feature for the already-agreed snooze and adaptive initiative controls, not a new permissions framework. It owns policy persistence, decisions, activity-based timing, scoped cards and Settings, independently of Bots and Pulses. Expose it through one typed, source-neutral admission port.
 
 Pulses supplies time-based work, not the definition of every event or continuation. Component activation supplies its own outcomes. Both must reuse the durable delivery contract without making activation pretend to be a Pulse job. Accepted activation continuations retain their admission rather than becoming new proactive work.
 
@@ -295,17 +295,46 @@ Extend the existing Pulses checkpoints and task admission, rather than placing a
 
 Retain user-owned Pulse definitions, instructions, artefacts and existing schedule-change seeding behaviour. Derive new missed-period state from the point where tracking becomes reliable. Do not fabricate exact historical counts that old checkpoints never recorded.
 
-### Proposed thread: the main assistant's cadence
+### Proposed thread: fixed and adaptive initiative
 
-Expose a scheduling-owned operation to configure the main assistant's initiative frequency in its chosen home workspace. The operation must reuse the existing definition and schedule machinery. If it creates or updates `pulses/<id>/PULSE.md`, do so as the explicit requested configuration and report the managed definition. Keep existing user-authored Pulse files supported and preserve unrelated definitions. Do not require the caller to construct a file as the only public interface, or create a parallel schedule store.
+Expose a scheduling-owned operation to configure fixed initiative in the main assistant's chosen home workspace. The operation must reuse the existing definition and schedule machinery. If it creates or updates `pulses/<id>/PULSE.md`, do so as the explicit requested configuration and report the managed definition. Keep existing user-authored Pulse files supported and preserve unrelated definitions. Do not require the caller to construct a file as the only public interface, or create a parallel schedule store.
 
 This gateway is new work: the current public Pulses API offers catalogue, scan, run, observe and stop, but no cadence configuration operation. Its current bindings also resolve workspace bots rather than the separate installation resident. Use the explicit resident resolver and stable home association, not title matching or an invented bot identity.
 
 Add a supported run target that submits to the continuing main resident. A passive report from a normal child Pulse does not wake that resident and is insufficient on its own. Keep child execution as the existing default for ordinary Pulse jobs. Both targets use the same scheduling, admission and native receipt machinery.
 
+For adaptive mode, Initiative owns the next eligible generic check-in and an agent-facing tool to request a later or earlier internal deadline within the user's limits. Use the existing durable deadline and delivery machinery. Do not run a second model continuously to decide whether the resident should wake, create another scheduler or rewrite a recurring Pulse definition after every prompt.
+
+The default levels are Off, Low at 2 hours, Normal at 1 hour and High at 30 minutes. Expose Initiative's editable intervals and post-prompt quiet period, initially 30 minutes, through Settings. Treat intervals as minimum gaps, not mandatory wake frequencies. Validate positive, ordered intervals. The agent can defer further, but cannot request a wake inside the effective minimum gap or bypass activity suppression and explicit restrictions. Timing preferences are user-facing. Individual deadlines, learned patterns and routine timer adjustments remain internal, without a new dashboard or chat narration.
+
+### Proposed thread: learn when to leave the user alone
+
+Feed Initiative the trusted human-prompt timestamps already needed for workspace awareness. Observe activity across the profile, not just the target resident, so working in one workspace does not look like absence to every other bot. Persist bounded timing aggregates rather than copying prompt content or creating an agent memory store. Agent inputs, Pulse messages and settlement reports do not count as human activity.
+
+Recent activity suppresses generic initiative. Historical active hours also bias it down. Quiet periods create more opportunity for agents to work. The system must not interpret a high volume of prompts as a reason to become more proactive.
+
+Use this as an initial tuning proposal, not a fixed product contract:
+
+- Compare rolling 7-day and 28-day activity windows, initially weighted 60% and 40%.
+- Use hourly activity slots. Count occupied slots rather than allowing a burst of prompts to dominate the pattern. Begin with weekday/weekend patterns and refine to individual weekdays when history supports it.
+- A new human prompt suppresses generic check-ins for the configured quiet period. With the 30-minute default, an absence of 30 to 90 minutes permits Low during habitual active hours or Normal otherwise. After 90 minutes, habitual quiet hours can permit High, otherwise Normal. Keep this transition consistent if the quiet period is lengthened.
+- Treat insufficient history as unknown, not evidence of absence. Live activity takes precedence over historical expectations.
+
+These estimates only select an opportunity within user limits. Explicit snooze, halt and workspace policies still win. No browser tab or presence heartbeat is required. Activity-based Off suppresses generic check-ins, not an explicitly scheduled job, requested reminder or accepted work.
+
+### Proposed thread: count scheduled work instead of waking twice
+
+At the shared admission boundary, Initiative records per-scope proactive execution activity using the native occurrence or receipt identity. A Pulse or other proactive event admitted to run consumes the generic check-in opportunity for that scope. Rejoining the same receipt must not count it again or keep extending the interval. A future schedule, an unadmitted queued occurrence or a rejected admission earns no execution credit.
+
+Update activity credit and check generic eligibility at the same race-safe acceptance boundary. Resolve already-due explicit work before admitting a generic wake for the same scope, rather than letting both independently pass stale checks. Suppress or postpone the generic request, preserve the explicit job, and admit no extra generic wake while the resident is busy. Do not cancel work already accepted before a later explicit job becomes due. This is different from deduplicating a retry of the same native submission or coalescing missed occurrences of a job. Distinct scheduled jobs retain their identities and timing.
+
+For example, a Pulse admitted at 09:00 displaces a generic check-in due at 09:05. With a one-hour minimum gap, the next generic opportunity is no earlier than 10:00, and may be later because of activity, ongoing work, agent deferral or snooze. Credit does not assert that the job succeeded. Preserve its real outcome and reporting, and do not disguise failure as a reason to replay the job through a generic wake.
+
+Persist enough accounting to survive restart alongside Initiative's policy state. Do not introduce a second execution ledger or standalone dedupe service. Generic adaptive opportunities are not a backlog of obligations: do not accumulate and replay every missed adaptive tick. Explicit scheduled jobs still use the agreed per-job catch-up rules.
+
 Conversational sidequests remain ordinary continuing agent work. They do not need another periodic job or an open browser. Their wind-down and unrelated-work choices follow standing instructions, with the same accepted-work boundary when snooze begins.
 
-**Completion evidence:** browser-independent cadence, restart-safe due work, correct local and global restriction precedence, one coalesced run per job with correct metadata, bounded concurrent catch-up, visible obsolete jobs and accepted work finishing without waking idle parents merely to report.
+**Completion evidence:** browser-independent fixed and adaptive initiative, editable timing limits, suppression during genuine user activity and correct handling of sparse history. A scheduled Pulse and a nearby generic check-in produce no redundant generic wake, including simultaneous admission and restart. Explicit jobs remain intact. Verify restart-safe due work, local/global restriction precedence, one coalesced run per explicit job with correct metadata, bounded catch-up, visible obsolete jobs and accepted work finishing without waking idle parents merely to report.
 
 ## 5. Connect residents without merging their context
 
@@ -424,8 +453,8 @@ The five proposed workboards in the product plan still fit, but they are not ind
 | 1 | Eager startup and backend recovery | Can land with current component versions. Proves reliable runtime, not complete assistant setup |
 | 2 | Agents/Board dependency alignment, public local enrolment and stable resident anchors | Must precede relying on standalone Board and new continuing-family behaviour. Pilot a feature-owned operation here before expanding the shared router |
 | 3 | Fresh defaults, Bots setup, chosen home, direct conversation and setup Board thread | Needs the Board foundation and existing model/workspace host ports |
-| 4 | Trusted origin and accepted-work linkage, shared subscription/delivery, Initiative policy and Pulse catch-up | Prove the shared boundary against scheduled work and the existing package lifecycle. Full agent package administration can still follow later |
-| 5 | Main-resident Pulse target, selected cadence and actual launch setup | Joins runtime, setup and controlled scheduling into the first complete assistant-first experience |
+| 4 | Trusted origin and accepted-work linkage, shared delivery, Initiative policy/activity accounting and Pulse catch-up | Prove the shared boundary against scheduled work and the existing package lifecycle. Full agent package administration can still follow later |
+| 5 | Main-resident target, fixed/adaptive timing, editable preferences and actual launch setup | Joins runtime, setup and controlled scheduling into the first complete assistant-first experience |
 | 6 | Optional workspace resident enrolment and cross-Board coordination | Uses the same family foundation and admission boundary |
 | 7 | Discovery, policies, activity overview and reminders | Awareness needs provenance and resident routing. Reminder delivery needs the due path |
 | 8 | General package control, activation continuation and persistent custom surfaces | Narrow setup tool selection is already in step 3. General environment changes can follow |
@@ -439,7 +468,7 @@ This keeps board 1 first while acknowledging its small dependencies on resident 
 - **Agents and Board:** package versions, adapter composition, fresh defaults and saved extension selections before resume. Board data stays intact.
 - **Resident home and family:** home association, stable anchor, new-chat enrolment, continuing-resident authority and reliable addressing. Preserve older chats and their Boards instead of moving them implicitly.
 - **Provenance:** composer, app-control, component-triggered and scheduled ingress, durable metadata, accepted-work linkage and the activity projection. A partial rollout must not guess that unknown input is human.
-- **Snooze and producers:** Initiative's policy state, race-safe admission, time and other proactive sources, explicit agent nudges and reactivation. Missing policy must not silently resume work. A control that only hides a button does not count.
+- **Initiative and producers:** policy state, trusted prompt activity, editable timing limits, race-safe admission/credit, time and other proactive sources, explicit agent nudges and reactivation. Missing policy must not silently resume work. A control that only hides a button does not count.
 - **Component activation:** feature-owned installation receipt and outcome, target generation, idle handoff and shared delivery of one accepted continuation. Inventory success alone does not mean the capability is usable.
 
 Portable changes are built and packed in Pi Durable Components. Howcode adapters and SDK changes are built and packed in Howcode Components. Consume supported built packages, using content-hashed tarball names for the current sibling workflow. Regenerate shell registrations. Ordinary profile components use `howcode install` and the existing live-generation lifecycle. Do not introduce private-source aliases or duplicate Durable installs.
@@ -461,6 +490,7 @@ The consequential practical checks are:
 7. **Awareness:** explicit enrolment, advisory policies, distinct human/Howcode/Git signals and graceful unavailability of optional capabilities.
 8. **Environment and reminders:** exact-generation activation continuation, service versus renderer readiness, failure and supersession, no idle-blocking waiter, preserved artefacts, restart-safe reminder delivery and visibility on return.
 9. **Gateways and removal:** the same feature operation through supported UI, native-agent and MCP routes, correct caller authority and selection, no raw-request exposure, and capability removal without deleting its data or breaking unrelated chat.
+10. **Adaptive initiative:** prompts in another workspace still suppress generic wakes, agent messages do not train human activity patterns, editable intervals survive restart, sparse history does not imply absence, and the agent cannot shorten user limits. A Pulse consumes one generic opportunity without cancelling distinct jobs or counting receipt retries again.
 
 ## Technical decisions to settle at the start of the owning threads
 
@@ -470,6 +500,7 @@ These do not reopen product behaviour. They bound the implementation work before
 - Settle the SDK's explicit feature-operation contribution and trusted-caller contract before expanding app-control or MCP. Reuse owning schemas and handlers, retain agent selection and keep raw plugin requests private.
 - Confirm the Durable metadata and transaction boundary for trusted origin, accepted-work linkage and retry-safe resident-target Pulse submissions.
 - Finalise the host delivery port and Initiative's policy contract against concrete Pulses and activation sources, including atomic new admission and policy-owner loss. Keep Pulse checkpoint changes, definition revisions and recoverable missed history with Pulses.
+- Specify Initiative's bounded prompt-time aggregates, adjustable timer operation and atomic per-scope activity credit. Keep the proposed learning weights and transitions replaceable, separate from user timing limits and fixed job schedules.
 - Identify an actual provider-backoff signal the dispatcher can consume. Do not promise automatic backoff from unclassified error text.
 - Specify the package-owned activation receipt and its subscription boundary, feature-gateway discovery and the concrete component-state grant needed by awareness.
 
