@@ -24,7 +24,9 @@ import {
 import { getPersistedConversationId } from '../shared/conversation-ids.ts'
 import { getComposerRequest } from '../shared/desktop-action-payloads.ts'
 import type { DesktopEvent } from '../shared/desktop-contracts.ts'
+import { DesktopLaunchSchema, desktopLaunchEnvironmentKey } from '../shared/desktop-launch.ts'
 import type { PiSkillsService } from '../shared/desktop-service-contracts.ts'
+import type { DesktopServiceMessage } from '../shared/desktop-service-ipc.ts'
 import {
   type DesktopServiceRemoteModuleName,
   type DesktopServiceRemoteRuntime,
@@ -32,7 +34,7 @@ import {
 } from '../shared/desktop-service-rpc.ts'
 import { desktopShutdownTimeouts } from '../shared/desktop-shutdown-deadlines.ts'
 import { getDesktopWorkingDirectory } from '../shared/desktop-working-directory.ts'
-import { makeShutdownCoordinator } from '../shared/effect-shutdown.ts'
+import { makeShutdownCoordinator, type ShutdownCoordinator } from '../shared/effect-shutdown.ts'
 import { getThemeValues } from '../shared/gui-theme.ts'
 import { registerConversationCleanup } from './app-service/chat-actions.ts'
 import { getRuntimeConversationMetadata } from './app-service/conversation-state.ts'
@@ -46,19 +48,36 @@ import {
 } from './chat-repository/db.ts'
 import { setChatDiffPreferences } from './chat-repository.ts'
 import { bindAppControl } from './durable-runtime/app-control-tool.ts'
-import { disposeDurableRuntime, inspectDurableActivity } from './durable-runtime/host.ts'
+import {
+  bindRuntimeDelivery,
+  getDurableRuntime,
+  inspectDurableActivity,
+  readRuntimePackageActivation,
+  reconcileRuntimeGeneration,
+  stopDurableAdmission,
+  withDurableAdmissionClosed,
+} from './durable-runtime/host.ts'
+import { createInputDelivery, InputDeliveryExtension } from './durable-runtime/input-delivery.ts'
 import { getDurableHostVersion } from './durable-runtime/packages.ts'
 import { completeGitCommitMessage } from './git-integration/git-commit-message.ts'
 import { cleanupLegacyCheckpoints } from './git-integration/legacy-checkpoints.ts'
 import { getDirectoryGitOpsMode } from './git-integration/metadata.ts'
+import { createPluginBoard } from './plugins/board.ts'
 import { createPluginConversations } from './plugins/conversations.ts'
+import { bindFeatureOperations } from './plugins/feature-operations.ts'
+import { createPluginFixedInitiative } from './plugins/fixed-initiative.ts'
+import { createPluginInitiativeConfiguration } from './plugins/initiative.ts'
 import {
   createInstalledPluginServices,
   deletePluginConversations,
   hasInstalledPluginService,
   installedBusyComponents,
   installedTerminalCapability,
+  resolveInstalledGitProgress,
 } from './plugins/runtime.ts'
+import { boundPluginRuntime } from './plugins/runtime-bindings.ts'
+import { createPluginSetupHost } from './plugins/setup.ts'
+import { createPluginWorkspaceHost } from './plugins/workspaces.ts'
 import { emitDesktopEvent } from './runtime/desktop-events.ts'
 import { withDirectoryActivity } from './runtime/directory-activity.ts'
 import { getDurableModels } from './settings/models.ts'
@@ -67,6 +86,7 @@ import { loadShellPreferences } from './settings/preferences.ts'
 import { loadThemeState } from './settings/themes.ts'
 import { skillsPathsHost } from './skills-integration/paths.ts'
 import { getDesktopUserDataPath } from './user-data-path.ts'
+import { workspaceLayout } from './workspace-layout.ts'
 import { syncWorkspaceOrganization } from './workspace-repository.ts'
 
 const ServiceRequestSchema = Schema.Struct({
@@ -79,14 +99,7 @@ const ServiceRequestSchema = Schema.Struct({
 
 type ServiceRequest = typeof ServiceRequestSchema.Type
 
-type ServiceResponse = {
-  type: 'response'
-  id: string
-  ok: boolean
-  result?: unknown
-  error?: string
-  stack?: string
-}
+type ServiceResponse = Extract<DesktopServiceMessage, { type: 'response' }>
 
 const ServiceInboundMessageSchema = Schema.Union([
   ServiceRequestSchema,
@@ -95,11 +108,47 @@ const ServiceInboundMessageSchema = Schema.Union([
 
 const decodeServiceInboundMessage = Schema.decodeUnknownResult(ServiceInboundMessageSchema)
 
-configureDatabaseSchemas([workingDirectoriesDatabaseSchema])
-const unbindAppControl = bindAppControl(coreApp.appControl)
-
 let activeRequests = 0
 let componentAdmission = true
+let acceptingRequests = true
+let shutdownExitCode = 0
+let cleanupComplete = false
+let shutdownCoordinatorPromise: Promise<ShutdownCoordinator> | undefined
+
+function sendServiceMessage(message: unknown) {
+  if (!process.connected) return
+  process.send?.(message, (error: Error | null) => {
+    if (!error) return
+    console.error('Desktop service IPC failed.', error)
+    requestShutdown(1)
+  })
+}
+
+process.once('disconnect', () => requestShutdown())
+// Keep listeners registered until exit. signal-exit can re-send a signal after
+// a once-listener removes itself, cutting asynchronous cleanup short.
+process.on('SIGTERM', () => requestShutdown())
+process.on('SIGINT', () => requestShutdown())
+
+configureDatabaseSchemas([workingDirectoriesDatabaseSchema])
+const unbindAppControl = bindAppControl(coreApp.appControl)
+const serializedLaunch = process.env[desktopLaunchEnvironmentKey]
+const standaloneLaunch = serializedLaunch
+  ? Schema.decodeUnknownSync(DesktopLaunchSchema)(JSON.parse(serializedLaunch))
+  : undefined
+const inputDelivery = createInputDelivery()
+const unbindRuntimeDelivery = bindRuntimeDelivery({
+  extension: InputDeliveryExtension,
+  reconcileSources: () => inputDelivery.reconcileSources(),
+})
+const hostVersion = await getDurableHostVersion()
+
+await createPackageManager({
+  directory: getDesktopUserDataPath(),
+  cwd: process.cwd(),
+  hostVersion,
+}).seedDefaults(defaultComponentPackages, path.dirname(fileURLToPath(import.meta.url)))
+
 const sidebarPackage = '@howaboua/howcode-classic-navigation'
 const workingDirectoryPeers: WorkingDirectoryPeers = {
   get sidebar() {
@@ -117,12 +166,25 @@ const workingDirectoriesComponent = createWorkingDirectoriesService(workingDirec
 const workingDirectories = workingDirectoriesComponent.service
 const pluginsComponent = await createInstalledPluginServices(
   {
+    board: createPluginBoard(),
+    fixedInitiative: createPluginFixedInitiative(),
+    initiativeConfiguration: createPluginInitiativeConfiguration(),
+    inputDelivery,
+    workspaceLayout: async (request) => workspaceLayout(request),
+    setup: createPluginSetupHost(
+      standaloneLaunch
+        ? {
+            ...standaloneLaunch,
+            args: [...standaloneLaunch.args, '--data-path', path.resolve(getDesktopUserDataPath())],
+          }
+        : undefined,
+    ),
     models: getDurableModels,
     sidebar: createSidebarHost(workingDirectoryPeers),
     terminal: {
       dataDirectory: getDesktopUserDataPath(),
       withDirectoryActivity,
-      send: (message) => process.send?.({ type: 'terminal-rpc-response', message }),
+      send: (message) => sendServiceMessage({ type: 'terminal-rpc-response', message }),
     },
     skillsPaths: skillsPathsHost,
     dictation: {
@@ -152,6 +214,11 @@ const pluginsComponent = await createInstalledPluginServices(
       }),
     },
     conversations: createPluginConversations(),
+    workspaces: createPluginWorkspaceHost(async (directory) => {
+      const progress = resolveInstalledGitProgress()
+      if (!progress) throw new Error('Git progress is unavailable.')
+      return progress(directory)
+    }),
     publishEvent: (event) => emitDesktopEvent(event as DesktopEvent),
     agent: {
       dataDirectory: getDesktopUserDataPath(),
@@ -168,15 +235,22 @@ const pluginsComponent = await createInstalledPluginServices(
   },
   async (operation) => {
     // Close admission before live inspection so a new submission cannot race retirement.
-    if (activeRequests > 0 || !componentAdmission) return false
+    if (!acceptingRequests || activeRequests > 0 || !componentAdmission) return false
     componentAdmission = false
     try {
-      const activity = await inspectDurableActivity()
-      if (activity.tasks > 0 || activity.submissions > 0) return false
-      await operation()
-      return true
+      const applied = await withDurableAdmissionClosed(async () => {
+        const activity = await inspectDurableActivity()
+        if (activity.tasks > 0 || activity.submissions > 0) return false
+        await operation()
+        // Native capability publication and policy repair precede new-work admission.
+        await reconcileRuntimeGeneration()
+        return true
+      })
+      if (applied && acceptingRequests && boundPluginRuntime())
+        await inputDelivery.reconcileSources()
+      return applied
     } finally {
-      componentAdmission = true
+      componentAdmission = acceptingRequests
     }
   },
 )
@@ -220,15 +294,15 @@ const skills: PiSkillsService = {
       ReturnType<PiSkillsService['removePiSkill']>
     >,
 }
-await createPackageManager({
-  directory: getDesktopUserDataPath(),
-  cwd: process.cwd(),
-  hostVersion: await getDurableHostVersion(),
-}).seedDefaults(defaultComponentPackages, path.dirname(fileURLToPath(import.meta.url)))
 const packagesComponent = await createPackageUiService(
-  { directory: getDesktopUserDataPath(), cwd: process.cwd() },
+  { directory: getDesktopUserDataPath(), cwd: process.cwd(), hostVersion },
   () => emitDesktopEvent({ type: 'package-ui-invalidation' }),
   pluginsComponent,
+  { inputDelivery, activeInventory: readRuntimePackageActivation },
+)
+const unbindPackageOperations = bindFeatureOperations(
+  'howcode.packages',
+  packagesComponent.operations,
 )
 const packages = packagesComponent.service
 const unregisterComponentCleanup = registerConversationCleanup((id) =>
@@ -310,10 +384,10 @@ async function getServiceDiagnostics() {
 }
 
 app.subscribeDesktopEvents((event) => {
-  process.send?.({ type: 'desktop-event', event })
+  sendServiceMessage({ type: 'desktop-event', event })
 })
 
-let acceptingRequests = true
+const pendingResponses = new Set<Promise<void>>()
 
 async function handleRequest(message: ServiceRequest): Promise<ServiceResponse> {
   try {
@@ -361,68 +435,91 @@ process.on('message', (message: unknown) => {
   const inbound = decoded.success
   if (inbound.type === 'terminal-rpc-request') {
     const terminal = installedTerminalCapability()
-    if (!terminal) {
-      process.send?.({
+    if (!(acceptingRequests && terminal)) {
+      sendServiceMessage({
         type: 'terminal-rpc-response',
         message: ResponseDefectEncoded(
-          Schema.encodeSync(Schema.Defect())(new Error('Terminal component is not installed.')),
+          Schema.encodeSync(Schema.Defect())(
+            new Error(
+              acceptingRequests
+                ? 'Terminal component is not installed.'
+                : 'Desktop service is shutting down.',
+            ),
+          ),
         ),
       })
       return
     }
     void terminal.write(inbound.message).catch((error) => {
       console.error('Desktop terminal RPC failed.', error)
-      requestShutdown()
+      requestShutdown(1)
     })
     return
   }
-  void handleRequest(inbound).then((response) => process.send?.(response))
+  const response = handleRequest(inbound)
+    .then((result) => {
+      sendServiceMessage(result)
+    })
+    .catch((error: unknown) => {
+      console.error('Desktop service response failed.', error)
+      requestShutdown(1)
+    })
+    .finally(() => pendingResponses.delete(response))
+  pendingResponses.add(response)
 })
 
-function settledTask<A>(evaluate: () => A) {
-  return Effect.exit(Effect.promise(async () => await evaluate())).pipe(Effect.asVoid)
+async function disposeService() {
+  const failures: unknown[] = []
+  const attempt = async (operation: () => Promise<void> | void) => {
+    try {
+      await operation()
+    } catch (error) {
+      failures.push(error)
+    }
+  }
+  // Stop inventory admission and join publication before native disposal.
+  await attempt(unbindPackageOperations)
+  await attempt(() => packagesComponent.dispose())
+  // A failed drain must retain bindings and the app database until process exit.
+  // Disposing their owners anyway would invalidate still-running task hooks.
+  await app.disposeDesktopRuntime()
+  await Promise.all(pendingResponses)
+  unbindAppControl()
+  unbindRuntimeDelivery()
+  await attempt(() => workingDirectoriesComponent.dispose())
+  await attempt(() => pluginsComponent.dispose())
+  unregisterComponentCleanup()
+  unregisterDirectoryBranchFallbacks()
+  await attempt(disposeChatStateDatabase)
+  if (failures.length > 0) throw new AggregateError(failures, 'Desktop service cleanup failed.')
+  cleanupComplete = true
 }
 
-const shutdownCoordinatorPromise = Effect.runPromise(
-  makeShutdownCoordinator(
-    Effect.gen(function* () {
-      // Stop inventory admission and join any component publication before native disposal.
-      yield* settledTask(() => packagesComponent.dispose())
-      // Task hooks retain component bindings until Harness.close drains their invocations.
-      yield* settledTask(disposeDurableRuntime)
-      unbindAppControl()
-      yield* Effect.all(
-        [
-          settledTask(() =>
-            workingDirectoriesComponent.dispose().then(() => pluginsComponent.dispose()),
-          ),
-        ],
-        { concurrency: 'unbounded', discard: true },
-      )
-      yield* Effect.all([settledTask(() => app.disposeDesktopRuntime?.())], {
-        concurrency: 'unbounded',
-        discard: true,
-      })
-      unregisterComponentCleanup()
-      unregisterDirectoryBranchFallbacks()
-    }).pipe(Effect.ensuring(Effect.promise(disposeChatStateDatabase))),
-    { label: 'Desktop service', timeout: desktopShutdownTimeouts.desktopServiceCleanupMs },
-  ),
+shutdownCoordinatorPromise = Effect.runPromise(
+  makeShutdownCoordinator(Effect.promise(disposeService), {
+    label: 'Desktop service',
+    timeout: desktopShutdownTimeouts.desktopServiceCleanupMs,
+  }),
 )
 
-function requestShutdown() {
+function requestShutdown(exitCode = 0) {
   acceptingRequests = false
+  componentAdmission = false
+  stopDurableAdmission()
+  shutdownExitCode = Math.max(shutdownExitCode, exitCode)
   void shutdownCoordinatorPromise
-    .then((coordinator) => Effect.runPromise(coordinator.shutdown))
-    .finally(() => process.exit(0))
+    ?.then((coordinator) => Effect.runPromise(coordinator.shutdown))
+    .finally(() => process.exit(cleanupComplete ? shutdownExitCode : 1))
 }
 
-process.once('disconnect', requestShutdown)
-// Keep listeners registered until exit. signal-exit can re-send a signal after
-// a once-listener removes itself, cutting asynchronous cleanup short.
-process.on('SIGTERM', requestShutdown)
-process.on('SIGINT', requestShutdown)
-
-void getServiceDiagnostics().then((diagnostics) => {
-  process.send?.({ type: 'ready', diagnostics })
-})
+try {
+  if (acceptingRequests) {
+    await packagesComponent.assertServiceReady()
+    if (acceptingRequests) await getDurableRuntime()
+    const diagnostics = await getServiceDiagnostics()
+    if (acceptingRequests) sendServiceMessage({ type: 'ready', diagnostics })
+  } else requestShutdown()
+} catch (error) {
+  console.error('Desktop runtime service failed to initialise.', error)
+  requestShutdown(1)
+}

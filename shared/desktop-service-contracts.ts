@@ -30,12 +30,14 @@ export type WorkingDirectoriesService = {
 }
 
 export type PluginService = {
+  rendererRequest: (plugin: string, method: string, payload: unknown) => Promise<unknown>
   hostRequest: (plugin: string, method: string, payload: unknown) => Promise<unknown>
   request: (plugin: string, method: string, payload: unknown) => Promise<unknown>
 }
 
 export type AppService = {
   appControl: (input: unknown) => Promise<AppControlResult>
+  appControlMcp: (input: unknown) => Promise<AppControlResult>
   providerAuth: (request: ProviderAuthRequest) => Promise<ProviderAuthResponse>
   workspaceLayout: (
     request: WorkspaceLayoutRequest,

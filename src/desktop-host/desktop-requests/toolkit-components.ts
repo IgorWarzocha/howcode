@@ -23,7 +23,7 @@ export function createToolkitHostComponents(
       method: string
       payload: unknown
     }) {
-      return runtime.plugins.hostRequest(plugin, method, payload)
+      return runtime.plugins.rendererRequest(plugin, method, payload)
     },
     terminal: createTerminalHandlers(runtime.terminalManager),
     skills: createPiSkillsHandlers(runtime.skills),

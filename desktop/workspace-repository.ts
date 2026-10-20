@@ -4,6 +4,7 @@ import * as Schema from 'effect/Schema'
 import * as SqlClient from 'effect/sql/SqlClient'
 import type { WorkspaceChat, WorkspaceNavigationState } from '../shared/desktop-contracts.ts'
 import { DEFAULT_WORKSPACE_ID } from '../shared/desktop-workspace-contracts.ts'
+import { listWorkspaceActivity as workspaceActivity } from './chat-repository/conversation-projection.ts'
 import { databaseOperation } from './chat-repository/db.ts'
 import { mapChatRow } from './chat-repository/mappers.ts'
 import { ChatRowSchema, decodePersistedRows } from './chat-repository/row-schema.ts'
@@ -16,6 +17,7 @@ import {
 
 export const syncWorkspaceOrganization = databaseOperation(reconcileWorkspaceOrganization)
 export const ensureDirectoryWorkspace = databaseOperation(ensureDirectoryWorkspaceOperation)
+export const listWorkspaceActivity = databaseOperation(workspaceActivity)
 
 const WorkspaceRowSchema = Schema.Struct({
   id: Schema.String,

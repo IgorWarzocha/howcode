@@ -5,6 +5,12 @@ let current: Runtime | undefined
 let pending: Promise<void> = Promise.resolve()
 const cleanups = new Map<PluginServiceInstance, () => Promise<void> | void>()
 
+/** Host identity ports can read the acquired native runtime while features bind,
+ * without recursively awaiting the readiness promise that their bind holds. */
+export function boundPluginRuntime() {
+  return current
+}
+
 function serialize(operation: () => Promise<void>) {
   const result = pending.then(operation)
   // The caller receives rejection; subsequent lifecycle operations must still drain.

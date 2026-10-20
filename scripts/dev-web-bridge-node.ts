@@ -15,20 +15,31 @@ const {
 if (!proxyToken) throw new Error('Missing dev:web proxy token.')
 const root = path.resolve(process.cwd())
 const runtime = createServerRuntime(root, buildRoot || path.join(root, 'build'))
-let closeServer = () => Promise.resolve()
+let serverStartup: ReturnType<typeof startHeadlessServer> | undefined
+let stopping = false
 const shutdown = await createServerShutdown({
-  closeServer: () => closeServer(),
+  closeServer: async () => {
+    const server = await serverStartup?.catch(() => undefined)
+    await server?.close()
+  },
   disposeRuntime: runtime.dispose,
 })
 const requestShutdown = () => {
-  void shutdown().finally(() => process.exit(0))
+  stopping = true
+  void shutdown().then(
+    () => process.exit(0),
+    (error: unknown) => {
+      console.error('Howcode development bridge failed to shut down cleanly.', error)
+      process.exit(1)
+    },
+  )
 }
 process.once('disconnect', requestShutdown)
 process.on('SIGINT', requestShutdown)
 process.on('SIGTERM', requestShutdown)
 process.on('message', (message: unknown) => {
   const decoded = Schema.decodeUnknownResult(DevBridgeInspection)(message)
-  if (Result.isFailure(decoded)) return
+  if (stopping || Result.isFailure(decoded)) return
   const { id } = decoded.success
   void runtime.dev
     .inspectActivity()
@@ -48,16 +59,18 @@ process.on('message', (message: unknown) => {
     )
 })
 try {
-  const server = await startHeadlessServer({
-    runtime,
-    proxyToken,
-    options: { host, port: 0, accessToken: accessToken ?? null, authRequired: false },
-  })
-  closeServer = server.close
-  // Readiness includes the owning service, not just its lazy HTTP transport.
-  await runtime.dev.inspectActivity()
-  process.send?.({ type: 'ready', port: server.port })
+  await runtime.start()
+  if (!stopping) {
+    serverStartup = startHeadlessServer({
+      runtime,
+      proxyToken,
+      options: { host, port: 0, accessToken: accessToken ?? null, authRequired: false },
+    })
+    const server = await serverStartup
+    if (!stopping) process.send?.({ type: 'ready', port: server.port })
+  }
 } catch (error) {
+  console.error('Howcode development bridge failed to start.', error)
   await shutdown()
   throw error
 }

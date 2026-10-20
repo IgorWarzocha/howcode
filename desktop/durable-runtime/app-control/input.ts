@@ -9,6 +9,22 @@ const page = {
 const target = { workspace: text, chat: text }
 const actions = Schema.Union([
   Schema.Struct({ action: Schema.Literal('help') }),
+  Schema.Struct({ action: Schema.Literal('features.list') }),
+  Schema.Struct({
+    action: Schema.Literal('features.call'),
+    operation: text,
+    input: Schema.Unknown,
+  }),
+  Schema.Struct({
+    action: Schema.Literal('extensions.list'),
+    conversationId: Schema.optionalKey(text),
+  }),
+  Schema.Struct({
+    action: Schema.Literal('extensions.select'),
+    conversationId: Schema.optionalKey(text),
+    extension: text,
+    enabled: Schema.Boolean,
+  }),
   Schema.Struct({ action: Schema.Literal('workspaces.list'), ...page }),
   Schema.Struct({ action: Schema.Literal('workspaces.create'), name: text }),
   Schema.Struct({ action: Schema.Literal('chats.list'), workspace: text, ...page }),
@@ -41,6 +57,10 @@ export type AppControlInput = typeof actions.Type
 
 export const appControlHelp = {
   actions: [
+    'features.list() — selected feature operations and their input schemas',
+    'features.call(operation, input) — call a listed feature operation',
+    'extensions.list(conversationId?) — available and selected agent capabilities',
+    'extensions.select(extension, enabled, conversationId?)',
     'workspaces.list(cursor?, limit?)',
     'workspaces.create(name) — logical workspace; no directory creation',
     'chats.list(workspace, cursor?, limit?)',
@@ -52,6 +72,8 @@ export const appControlHelp = {
   ],
   targeting:
     'Use returned IDs or exact unambiguous names. General includes unassigned chats. workspaceAgent identifies a workspace main chat when available.',
+  extensionTargeting:
+    'Native extension actions target only the executing conversation; omit conversationId for self. MCP requires an exact native conversationId. Selection does not change renderer visibility.',
   continuation:
     'Pass nextCursor unchanged to the same list/read action. Read returns bounded transcript entries; status with requestId returns the actual submission outcome.',
 }

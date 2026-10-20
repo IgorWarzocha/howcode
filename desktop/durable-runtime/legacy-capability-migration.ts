@@ -8,6 +8,7 @@ import {
   type Storage,
   type Tx,
 } from '@earendil-works/pi-durable'
+import { migrateBoardSelection } from './board-selection-migration.ts'
 
 const legacyChatSystemPrompt = `You are Howcode Chat, a general-purpose assistant.
 
@@ -58,6 +59,7 @@ function renameExtensions(names: string[]) {
 
 /** Also run inside fork commits: their rewindable agent may predate startup migration. */
 export async function migrateAgentCapabilities(tx: Tx, conversationId: ConversationId) {
+  await migrateBoardSelection(tx, conversationId)
   const agent = await tx.doc(AgentDoc, conversationId)
   if (!hasLegacyCapabilities(agent)) return
   const selection = agent.extensions
@@ -86,7 +88,7 @@ export async function migrateConversationCapabilities(
     const page = await storage.scanConversations({}, 200, cursor, context)
     for (const conversation of page.items) {
       const agent = await harness.snapshot(AgentDoc, conversation.id, context)
-      if (!(agent && hasLegacyCapabilities(agent))) continue
+      if (!agent) continue
       await harness.commit((tx) => migrateAgentCapabilities(tx, conversation.id), context)
     }
     cursor = page.next

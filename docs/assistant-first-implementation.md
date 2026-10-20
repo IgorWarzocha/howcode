@@ -1,6 +1,6 @@
 # Implementing assistant-first Howcode
 
-This is the implementation companion to [Assistant-first Howcode](assistant-first.md). That document owns the agreed product behaviour. This one maps the changes, their owners and the order in which they can land. It is a proposal, not permission to begin implementation.
+This is the implementation companion to [Assistant-first Howcode](assistant-first.md). That document owns the agreed product behaviour. This one maps the changes, their owners and dependencies. Implementation is authorised. The main agent leads the swarm directly, with feature implementers spawning bounded subagents where useful. The existing Pi Durable Components main agent remains that repository's authority.
 
 The first investigation covered seven areas across Howcode, Howcode Components and Pi Durable Components on 20 October 2026, starting at Howcode revision `4519f1f5`. Five further source investigations assessed feature gateways, durable delivery, trigger policy, package activation and public surfaces after the supplied harness talk. Current behaviour below is source-backed. Proposed contracts are not APIs that already exist.
 
@@ -475,9 +475,11 @@ Portable changes are built and packed in Pi Durable Components. Howcode adapters
 
 Current local tarball references are development inputs, not distributable release dependencies. Recheck the actual resolved package and profile inventory at implementation time. An absent app-root `node_modules` entry does not prove a dynamically installed profile component is absent.
 
-## Validation when implementation is authorised
+## Implementation and final acceptance
 
-Use focused type, lint and build checks during implementation, then the repository's final gate once. Exercise UI and interaction changes in the running app with disposable workspaces. Do not add tests without Igor's explicit request, automate UI assertions or turn these developer checks into the assistant's wake routine.
+Build and integrate the complete system before practical acceptance. Parallel lanes follow dependency contracts, not separate app-testing milestones. Use focused type, lint and build checks and source review during construction, then the repository's final gate after convergence.
+
+Once the whole implementation is theoretically coherent, exercise it with a real agent. UI and interaction checks belong to that final phase, using disposable workspaces in the running app. The completion evidence listed throughout this document describes final acceptance, not repeated browser or headless exercises for each lane. Do not add tests without Igor's explicit request, automate UI assertions or turn developer checks into the assistant's wake routine.
 
 The consequential practical checks are:
 
@@ -504,4 +506,4 @@ These do not reopen product behaviour. They bound the implementation work before
 - Identify an actual provider-backoff signal the dispatcher can consume. Do not promise automatic backoff from unclassified error text.
 - Specify the package-owned activation receipt and its subscription boundary, feature-gateway discovery and the concrete component-state grant needed by awareness.
 
-The next implementation assignment should be the bounded startup/recovery thread. The next cross-repository design work should settle the Board and admission contracts above. Neither requires another round of product questions.
+Startup and recovery can proceed alongside Board, setup, admission and feature implementation. Settle shared contracts early, keep each feature in its owning repository and integrate against supported built packages. The main agent coordinates those dependencies and the final real-agent acceptance. No further product-planning round is required.

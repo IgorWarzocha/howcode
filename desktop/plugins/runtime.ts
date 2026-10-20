@@ -1,3 +1,8 @@
+import type { PluginBoardFamily } from '@howaboua/howcode-sdk/board-family'
+import type { FixedInitiative } from '@howaboua/howcode-sdk/fixed-initiative'
+import type { PluginGitProgress } from '@howaboua/howcode-sdk/git-progress'
+import type { PluginInitiativeConfiguration } from '@howaboua/howcode-sdk/initiative-configuration'
+import type { InputAdmissionPolicy } from '@howaboua/howcode-sdk/input-delivery'
 import {
   invokePluginRequest,
   type PluginConversation,
@@ -12,7 +17,10 @@ import type {
   AnyDesktopActionPayload,
   DesktopActionResultData,
 } from '../../shared/desktop-contracts.ts'
+import { withRendererTaskAuthorization } from '../durable-runtime/input-authorization.ts'
+import { busyFeatureOperationOwners } from './feature-operations.ts'
 import { bindPluginInstance, bindPluginRuntime, unbindPluginInstance } from './runtime-bindings.ts'
+import { bindCapabilities, bindOperationCapabilities } from './runtime-capabilities.ts'
 
 export { unbindPluginRuntime } from './runtime-bindings.ts'
 export function bindInstalledPluginRuntime(runtime: Parameters<typeof bindPluginRuntime>[0]) {
@@ -28,13 +36,54 @@ export function installedPluginGeneration() {
   return serviceGeneration
 }
 export function installedBusyComponents() {
-  return [...installedInstances]
-    .filter(([name, instance]) => {
-      const busy = instance.isBusy?.() ?? false
-      if (typeof busy !== 'boolean') throw new Error(`Invalid component busy state: ${name}`)
-      return busy
-    })
-    .map(([name]) => name)
+  return [
+    ...new Set(
+      [...installedInstances]
+        .filter(([name, instance]) => {
+          const busy = instance.isBusy?.() ?? false
+          if (typeof busy !== 'boolean') throw new Error(`Invalid component busy state: ${name}`)
+          return busy
+        })
+        .map(([name]) => name)
+        .concat(busyFeatureOperationOwners()),
+    ),
+  ]
+}
+export function resolveInstalledBoardCapability(): PluginBoardFamily | undefined {
+  return singleInstalledCapability((instance) => instance.board, 'Board')
+}
+function singleInstalledCapability<T>(
+  read: (instance: PluginServiceInstance) => T | undefined,
+  label: string,
+) {
+  const providers = [...installedInstances.values()].flatMap((instance) => {
+    const capability = read(instance)
+    return capability ? [capability] : []
+  })
+  if (providers.length > 1) throw new Error(`Conflicting component ${label} providers.`)
+  return providers[0]
+}
+export function resolveInstalledInputPolicy(): InputAdmissionPolicy | undefined {
+  return singleInstalledCapability((instance) => instance.inputPolicy, 'input policy')
+}
+export function installedInputSources() {
+  return [...installedInstances.values()].flatMap((instance) =>
+    instance.inputSource ? [instance.inputSource] : [],
+  )
+}
+export function resolveInstalledFixedInitiative(): FixedInitiative | undefined {
+  return singleInstalledCapability((instance) => instance.fixedInitiative, 'fixed initiative')
+}
+export function resolveInstalledInitiativeConfiguration():
+  | PluginInitiativeConfiguration
+  | undefined {
+  return singleInstalledCapability(
+    (instance) => instance.initiativeConfiguration,
+    'initiative configuration',
+  )
+}
+export function resolveInstalledGitProgress(): PluginGitProgress | undefined {
+  return singleInstalledCapability((instance) => instance.gitProgress, 'Git progress')
 }
 export function installedTerminalCapability() {
   const providers = [...installedInstances.values()].flatMap((instance) =>
@@ -73,7 +122,7 @@ async function resolveCapability<T>(
   return results[0]
 }
 export function resolveInstalledWorkspaceAgent(
-  workspaceId: string,
+  workspaceId?: string,
 ): Promise<PluginWorkspaceAgent | undefined> {
   return resolveCapability((instance) => instance.workspaceAgent?.(workspaceId), 'workspace agent')
 }
@@ -101,6 +150,14 @@ export async function freezePluginTurn(conversationId: string) {
 export async function deletePluginConversations(ids: readonly string[]) {
   await Promise.all(
     [...installedInstances.values()].map((instance) => instance.deleteConversations?.(ids)),
+  )
+}
+
+export async function notifyPluginConversationCreated(conversation: PluginConversation) {
+  await Promise.all(
+    [...installedInstances.values()].map((instance) =>
+      instance.conversationCreated?.(conversation),
+    ),
   )
 }
 
@@ -151,6 +208,7 @@ export async function createInstalledPluginServices(
     activeHosts.set(name, subscriptions)
     const active = () => !closed && activeHosts.get(name) === subscriptions
     const models = host.models
+    const workspaceLayout = host.workspaceLayout
     const pluginHost = {
       ...host,
       ...(models
@@ -160,6 +218,16 @@ export async function createInstalledPluginServices(
               const resolved = await models()
               if (!active()) throw new Error('Component service host is retired.')
               return resolved
+            },
+          }
+        : {}),
+      ...(workspaceLayout
+        ? {
+            workspaceLayout: async (...args: Parameters<typeof workspaceLayout>) => {
+              if (!active()) throw new Error('Component service host is retired.')
+              const result = await workspaceLayout(...args)
+              if (!active()) throw new Error('Component service host is retired.')
+              return result
             },
           }
         : {}),
@@ -200,9 +268,11 @@ export async function createInstalledPluginServices(
     if (!native || typeof native !== 'object' || typeof native.dispose !== 'function')
       throw new Error(`Invalid component service lifecycle: ${definition.name}`)
     const bindRuntime = native.bindRuntime?.bind(native)
+    let releaseOperations: (() => Promise<void>) | undefined
     const instance: PluginServiceInstance = {
       requests: native.requests,
       dispose: async (reason) => {
+        await releaseOperations?.()
         await unbindPluginInstance(instance)
         await native.dispose(reason)
       },
@@ -244,6 +314,10 @@ export async function createInstalledPluginServices(
     validateHostHandlers(hostHandlers, definition.name)
     handlers.set(definition.name, hostHandlers)
     await activateRuntimeBinding(instance, definition.name)
+    releaseOperations = bindOperationCapabilities(definition.name, native, instance, track, () => {
+      if (closed || instances.get(definition.name) !== instance)
+        throw new Error('Feature operation generation is retired.')
+    })
   }
   installedInstances = instances
   let disposal: Promise<void> | undefined
@@ -370,6 +444,16 @@ export async function createInstalledPluginServices(
       return { pending: !applied, errors, active: active() }
     },
     service: {
+      async rendererRequest(name: string, method: string, payload: unknown) {
+        if (closed) throw new Error('Plugin services are closed.')
+        const hostRequests = handlers.get(name)
+        if (!hostRequests) throw new Error(`Plugin host is not ready: ${name}`)
+        return track(() =>
+          withRendererTaskAuthorization((inputAuthorization) =>
+            invokePluginRequest(hostRequests, method, payload, { inputAuthorization }),
+          ),
+        )
+      },
       async hostRequest(name: string, method: string, payload: unknown) {
         if (closed) throw new Error('Plugin services are closed.')
         const hostRequests = handlers.get(name)
@@ -408,36 +492,6 @@ async function activateRuntimeBinding(instance: PluginServiceInstance, name: str
   } catch (error) {
     throw new Error(`Component runtime binding failed: ${name}: ${String(error)}`, { cause: error })
   }
-}
-
-function bindCapabilities(
-  native: PluginServiceInstance,
-  instance: PluginServiceInstance,
-  track: <T>(operation: () => Promise<T>) => Promise<T>,
-  assertCurrent: () => void,
-) {
-  if (native.terminal) instance.terminal = native.terminal
-  if (native.isBusy !== undefined) {
-    if (typeof native.isBusy !== 'function') throw new Error('Invalid component busy callback.')
-    instance.isBusy = native.isBusy.bind(native)
-  }
-  const leased = <T>(operation: () => Promise<T>) =>
-    track(async () => {
-      assertCurrent()
-      const result = await operation()
-      assertCurrent()
-      return result
-    })
-  const workspaceAgent = native.workspaceAgent?.bind(native)
-  const conversationAssociation = native.conversationAssociation?.bind(native)
-  const deleteConversations = native.deleteConversations?.bind(native)
-  if (workspaceAgent) instance.workspaceAgent = (id) => leased(() => workspaceAgent(id))
-  if (conversationAssociation)
-    instance.conversationAssociation = (id) => leased(() => conversationAssociation(id))
-  if (deleteConversations)
-    instance.deleteConversations = (ids) => leased(() => deleteConversations(ids))
-  if (native.skills)
-    instance.skills = Object.freeze(native.skills.map((skill) => Object.freeze({ ...skill })))
 }
 
 function validateHostHandlers(handlers: object, name: string) {

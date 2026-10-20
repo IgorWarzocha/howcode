@@ -7,7 +7,6 @@ import { installedDefaultExtensionExclusions } from '../plugins/runtime.ts'
 import { getComposerSkills } from '../skills-integration/composer.ts'
 import { AppControlTools } from './app-control-tool.ts'
 import { installedAgentExtensions } from './plugin-agent-tools.ts'
-import { WorkspaceLayoutTools } from './workspace-layout-tool.ts'
 
 const Resources = createAgentResources(getComposerSkills)
 const AttachmentTools = createAttachmentTools({
@@ -28,7 +27,6 @@ export function createDesktopExtensionRegistry(
     CodingTools,
     AttachmentTools,
     Resources,
-    WorkspaceLayoutTools,
     AppControlTools,
     ...installedAgentExtensions(),
     ...host,

@@ -7,6 +7,7 @@ import {
   hook,
   UserEntry,
 } from '@earendil-works/pi-durable'
+import { readTrustedInputData } from '../../shared/input-origin.ts'
 import { personInputKind } from '../../shared/people.ts'
 import {
   freezePluginTurn,
@@ -39,7 +40,10 @@ export function installedAgentExtensions() {
                   cursor,
                 )
                 const user = page.items.find(
-                  (entry) => UserEntry.is(entry) || entry.kind === personInputKind,
+                  (entry) =>
+                    UserEntry.is(entry) ||
+                    entry.kind === personInputKind ||
+                    readTrustedInputData(entry) !== null,
                 )
                 if (user) return String(user.id)
                 cursor = page.next
@@ -48,6 +52,7 @@ export function installedAgentExtensions() {
             }, context)
             const result = await tool.execute(args.input, {
               conversationId: String(api.conversationId),
+              taskId: String(api.taskId),
               turnId,
               ...(context.abortSignal ? { signal: context.abortSignal } : {}),
             })

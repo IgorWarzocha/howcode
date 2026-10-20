@@ -9,10 +9,15 @@ import type {
 } from './types'
 
 export type StartDecision<Process> =
+  | { readonly status: 'Disposed' }
   | { readonly status: 'Ready'; readonly process: Process }
   | { readonly status: 'Wait'; readonly ready: Deferred.Deferred<Process, DesktopServiceError> }
-  | { readonly status: 'WaitClosed'; readonly closed: Deferred.Deferred<void> }
-  | { readonly status: 'Start'; readonly stale: ServiceRecord<Process> | null }
+  | {
+      readonly status: 'WaitClosed'
+      readonly closed: Deferred.Deferred<void, DesktopServiceError>
+    }
+  | { readonly status: 'StopStale'; readonly record: ServiceRecord<Process> }
+  | { readonly status: 'Start' }
 
 export type DiagnosticInput = {
   readonly severity: 'warning' | 'error'
@@ -32,17 +37,25 @@ export function diagnosticEvent(input: DiagnosticInput): DesktopEvent {
 export function reserveStart<Process>(options: {
   readonly adapter: DesktopServiceProcessAdapter<Process>
   readonly current: DesktopServiceState<Process>
-  readonly closed: Deferred.Deferred<void>
+  readonly closed: Deferred.Deferred<void, DesktopServiceError>
   readonly ready: Deferred.Deferred<Process, DesktopServiceError>
   readonly scope: Scope.Closeable
 }): readonly [StartDecision<Process>, DesktopServiceState<Process>] {
   const { adapter, closed, current, ready, scope } = options
+  if (current.disposed) return [{ status: 'Disposed' }, current]
   const record = current.current
   if (record?.status === 'Running' && adapter.isRunning(record.process))
     return [{ status: 'Ready', process: record.process }, current]
   if (record?.status === 'Starting') return [{ status: 'Wait', ready: record.ready }, current]
   if (record?.status === 'Stopping')
     return [{ status: 'WaitClosed', closed: record.closed }, current]
+  if (record) {
+    const stopping = { ...record, status: 'Stopping' as const }
+    return [
+      { status: 'StopStale', record: stopping },
+      { ...current, current: stopping },
+    ]
+  }
 
   const next: ServiceRecord<Process> = {
     id: current.nextRecordId,
@@ -54,7 +67,7 @@ export function reserveStart<Process>(options: {
     pendingRequests: new Map(),
   }
   return [
-    { status: 'Start', stale: record },
-    { current: next, nextRecordId: current.nextRecordId + 1 },
+    { status: 'Start' },
+    { ...current, current: next, nextRecordId: current.nextRecordId + 1 },
   ]
 }

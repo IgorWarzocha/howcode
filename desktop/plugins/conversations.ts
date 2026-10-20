@@ -2,11 +2,11 @@ import path from 'node:path'
 import type { PluginConversation, PluginConversations } from '@howaboua/howcode-sdk/plugins'
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
 import { DEFAULT_WORKSPACE_ID } from '../../shared/desktop-workspace-contracts.ts'
-import { HarnessContextEntry } from '../../shared/harness-context.ts'
 import { getRuntimeConversationMetadata } from '../app-service/conversation-state.ts'
 import { refreshShellIndex } from '../app-service/shell-index.ts'
 import { startNewChat } from '../conversation-runtime.ts'
 import { contextTranscript } from '../durable-runtime/context-transcript.ts'
+import { writeRuntimeContext } from '../durable-runtime/context-write.ts'
 import {
   getAvailableRuntimeExtensions,
   getDurableRuntime,
@@ -17,7 +17,6 @@ import {
   resolveRuntimeExtensions,
   runtimeContext,
 } from '../durable-runtime/host.ts'
-import { getDurableModels } from '../settings/models.ts'
 import { getWorkspaceNavigationState } from '../workspace-repository.ts'
 import {
   admitPluginInput,
@@ -135,15 +134,18 @@ export function createPluginConversations(): PluginConversations {
       )
     },
     get: getAssociatedConversation,
-    create: async (workspaceId) => {
+    create: async (workspaceId, options) => {
       const workspace = getWorkspaceNavigationState().workspaces.find(
         ({ id }) => id === workspaceId,
       )
       if (!workspace) throw new Error(`Workspace not found: ${workspaceId}`)
-      const result = await startNewChat({
-        workspaceId,
-        directoryId: workspace.directoryId ?? getDesktopWorkingDirectory(),
-      })
+      const result = await startNewChat(
+        {
+          workspaceId,
+          directoryId: workspace.directoryId ?? getDesktopWorkingDirectory(),
+        },
+        options,
+      )
       await refreshShellIndex(result.directoryId)
       return getConversation(result.conversationId)
     },
@@ -187,43 +189,10 @@ export function createPluginConversations(): PluginConversations {
       // Keep the complete summary and verbatim task content; no second summarizer or truncation.
       return contextTranscript(await conversation.context(runtimeContext))
     },
-    writeContext: async ({ conversationId, sourceConversationId, label, text, requestId }) => {
-      await getAssociatedConversation(conversationId)
-      await getAssociatedConversation(sourceConversationId)
-      const conversation = await resolveConversation(conversationId)
-      const [agent, models] = await Promise.all([
-        conversation.agent(runtimeContext),
-        getDurableModels(),
-      ])
-      const model = agent.model
-        ? models.getModel(agent.model.provider, agent.model.modelId)
-        : undefined
-      const supportsSystem =
-        model &&
-        [
-          'openai-completions',
-          'openai-responses',
-          'azure-openai-responses',
-          'openai-codex-responses',
-          'mistral-conversations',
-        ].includes(model.api) &&
-        model.compat &&
-        'supportsMidConvoSystemMessages' in model.compat &&
-        model.compat.supportsMidConvoSystemMessages === true
-      const content = `Harness context: ${label}\nSource conversation: ${sourceConversationId}\n\n${text}`
-      const submission = await conversation.submit(
-        {
-          type: 'write',
-          ...(requestId === undefined ? {} : { requestId }),
-          entry: {
-            kind: HarnessContextEntry.kind,
-            data: { sourceConversationId, label, text },
-            model: [{ role: supportsSystem ? 'system' : 'user', content, timestamp: Date.now() }],
-          },
-        },
-        runtimeContext,
-      )
-      return submission.wait(runtimeContext)
-    },
+    writeContext: (input) =>
+      writeRuntimeContext(input, async () => {
+        await getAssociatedConversation(input.conversationId)
+        await getAssociatedConversation(input.sourceConversationId)
+      }),
   }
 }

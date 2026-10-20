@@ -27,6 +27,7 @@ export function chatStateSchemaStatements(sql: SqlClient.SqlClient) {
     projection_assistant_id TEXT,
     last_assistant_preview TEXT,
     last_assistant_at_ms INTEGER,
+    last_human_input_at_ms INTEGER,
     running INTEGER NOT NULL DEFAULT 0,
     pinned INTEGER NOT NULL DEFAULT 0,
     archived INTEGER NOT NULL DEFAULT 0,
@@ -122,6 +123,11 @@ export const columnMigrations = [
     table: 'conversation_facts',
     column: 'last_assistant_at_ms',
     definition: 'last_assistant_at_ms INTEGER',
+  },
+  {
+    table: 'conversation_facts',
+    column: 'last_human_input_at_ms',
+    definition: 'last_human_input_at_ms INTEGER',
   },
   {
     table: 'conversation_facts',

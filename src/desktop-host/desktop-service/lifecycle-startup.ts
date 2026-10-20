@@ -5,7 +5,6 @@ import * as Exit from 'effect/Exit'
 import * as Ref from 'effect/Ref'
 import * as Scope from 'effect/Scope'
 import type { makeDesktopServiceFinalization } from './lifecycle-finalization'
-import type { StartDecision } from './lifecycle-state'
 import { updateCurrent } from './state'
 import {
   type DesktopServiceClientOptions,
@@ -24,6 +23,7 @@ export function makeDesktopServiceStartup<Process>(options: {
   readonly adapter: DesktopServiceProcessAdapter<Process>
   readonly client: DesktopServiceClientOptions
   readonly finalization: ReturnType<typeof makeDesktopServiceFinalization<Process>>
+  readonly onReady: (handler: ServiceMessageHandler<Process>) => Effect.Effect<unknown>
   readonly runCallback: RunCallback
   readonly state: Ref.Ref<DesktopServiceState<Process>>
   readonly terminal: TerminalRpcBridge<Process>
@@ -44,7 +44,7 @@ export function makeDesktopServiceStartup<Process>(options: {
     yield* failAndFinalize(record, serviceError('exit', new Error('Desktop service exited.')), {
       severity: wasReady ? 'warning' : 'error',
       message: wasReady
-        ? 'Desktop runtime service exited. It will restart on the next request.'
+        ? 'Desktop runtime service exited. Automatic recovery will restart it.'
         : 'Desktop runtime service exited before startup.',
       details: { code, signal },
     })
@@ -75,7 +75,7 @@ export function makeDesktopServiceStartup<Process>(options: {
 
     const attached = yield* Ref.modify(state, (current) => {
       const active = current.current
-      if (!active || active.id !== record.id || active.status !== 'Starting')
+      if (current.disposed || !active || active.id !== record.id || active.status !== 'Starting')
         return [false, current] as const
       return [
         true,
@@ -90,7 +90,7 @@ export function makeDesktopServiceStartup<Process>(options: {
     yield* terminal.connect(spawned.process, diagnostics['terminalAvailable'] === true)
     const running = yield* Ref.modify(state, (current) => {
       const active = current.current
-      if (!active || active.id !== record.id || active.status !== 'Starting')
+      if (current.disposed || !active || active.id !== record.id || active.status !== 'Starting')
         return [false, current] as const
       return [
         true,
@@ -104,6 +104,7 @@ export function makeDesktopServiceStartup<Process>(options: {
     if (!running)
       return yield* Effect.fail(serviceError('start', new Error('Service start was cancelled.')))
     yield* Effect.sync(() => console.info('Desktop service ready.', diagnostics))
+    yield* options.onReady(handleMessage)
     yield* Deferred.succeed(record.ready, spawned.process)
   })
 
@@ -141,28 +142,26 @@ export function makeDesktopServiceStartup<Process>(options: {
       Effect.catch(() => Effect.void),
     )
 
-  const beginReservedStart = Effect.fn('DesktopService.beginReservedStart')(function* (
-    decision: Extract<StartDecision<Process>, { status: 'Start' }>,
+  const stopStale = (record: ServiceRecord<Process>) =>
+    Effect.sync(() =>
+      runCallback(
+        failAndFinalize(record, serviceError('restart', new Error('Desktop service exited.')), {
+          severity: 'warning',
+          message: 'Desktop runtime service exited. Starting a replacement.',
+        }),
+      ),
+    )
+
+  const launchReservedStart = Effect.fn('DesktopService.launchReservedStart')(function* (
     ready: Deferred.Deferred<Process, DesktopServiceError>,
     handleMessage: ServiceMessageHandler<Process>,
   ) {
-    if (decision.stale) {
-      yield* failAndFinalize(
-        decision.stale,
-        serviceError('restart', new Error('Desktop service exited.')),
-        {
-          severity: 'warning',
-          message: 'Desktop runtime service exited. It will restart on the next request.',
-        },
-      )
-    }
-
-    const record = (yield* Ref.get(state)).current
-    if (!record || record.ready !== ready)
+    const active = yield* Ref.get(state)
+    const record = active.current
+    if (active.disposed || record?.status !== 'Starting' || record.ready !== ready)
       return yield* Effect.fail(serviceError('start', new Error('Service start was cancelled.')))
     yield* Effect.forkIn(runStartup(record, handleMessage), record.scope)
-    return yield* Deferred.await(record.ready)
   })
 
-  return { beginReservedStart }
+  return { launchReservedStart, stopStale }
 }

@@ -4,6 +4,7 @@ import type { Models } from '@earendil-works/pi-ai'
 import {
   type Cursor,
   type EntryRecord,
+  type Extension,
   Harness,
   type Storage,
   UsageDoc,
@@ -15,17 +16,24 @@ import type { ComposerStateRequest } from '../../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
 import { loadAppSettings } from '../app-settings/readers.ts'
 import { bindInstalledPluginRuntime, unbindPluginRuntime } from '../plugins/runtime.ts'
+import { boundPluginRuntime } from '../plugins/runtime-bindings.ts'
 import { liveModels } from '../settings/live-models.ts'
 import { getDurableModels } from '../settings/models.ts'
 import { loadShellPreferences } from '../settings/preferences.ts'
 import { getDesktopUserDataPath } from '../user-data-path.ts'
+import {
+  enableBoardSelectionMigration,
+  reconcileCreatedBoardSelection,
+} from './board-selection-migration.ts'
 import { RuntimeOriginDoc } from './conversation-origin.ts'
 import { getComposerDefaults } from './defaults.ts'
+import { migrateAcceptedInputTasks } from './delivery-lineage.ts'
 
 export { RuntimeOriginDoc } from './conversation-origin.ts'
 
 import { defaultExtensionExclusions, resolveDesktopExtensions } from './extension-composition.ts'
 import { decodeConversationId, decodeEntryId } from './identity.ts'
+import { reconcileHumanInputActivity } from './input-admission.ts'
 import { migrateConversationCapabilities } from './legacy-capability-migration.ts'
 import { openLiveExtensions } from './live-extensions.ts'
 
@@ -34,11 +42,69 @@ export { decodeConversationId, decodeEntryId, decodeSubmissionId } from './ident
 export const runtimeContext = BACKGROUND_CONTEXT
 let runtime: Promise<Harness> | undefined
 let closing = false
+let admissionOpen = true
+let admissionClosures = 0
+let generationFailure: unknown
 let runtimeStorage: Storage | undefined
 let shutdown: Promise<void> | undefined
 let activeModels: Models | undefined
 let preferences: Awaited<ReturnType<typeof loadShellPreferences>> | undefined
 let extensions: Promise<Awaited<ReturnType<typeof openExtensions>>> | undefined
+type RuntimeDelivery = { extension: Extension; reconcileSources: () => Promise<void> }
+let runtimeDelivery: RuntimeDelivery | undefined
+
+/** The service composition root supplies delivery before native acquisition. */
+export function bindRuntimeDelivery(delivery: RuntimeDelivery) {
+  if (runtimeDelivery) throw new Error('Durable input delivery is already bound.')
+  runtimeDelivery = delivery
+  return () => {
+    if (runtimeDelivery === delivery) runtimeDelivery = undefined
+  }
+}
+
+function requireRuntimeDelivery() {
+  if (!runtimeDelivery) throw new Error('Durable input delivery is not bound.')
+  return runtimeDelivery
+}
+
+/** Stop new work without interrupting receipt rejoin or settlement of accepted work. */
+export function stopDurableAdmission() {
+  admissionOpen = false
+}
+
+export function assertDurableAdmissionOpen() {
+  const restriction = durableAdmissionRestriction()
+  if (restriction) throw new Error(restriction.reason)
+}
+
+/** Sources retain blocked occurrences instead of failing durable deadlines during retirement. */
+export function durableAdmissionRestriction() {
+  if (generationFailure !== undefined)
+    return {
+      status: 'blocked' as const,
+      reason:
+        'Native component generation is unavailable. Repair the package or restart the backend.',
+    }
+  if (!admissionOpen)
+    return { status: 'blocked' as const, reason: 'Durable input admission is closed.' }
+  if (admissionClosures > 0)
+    return {
+      status: 'blocked' as const,
+      reason: 'Native component generation is changing.',
+      retryAt: Date.now() + 1_000,
+    }
+  return undefined
+}
+
+/** Generation retirement excludes new acceptance, not accepted native settlement. */
+export async function withDurableAdmissionClosed<T>(operation: () => Promise<T>): Promise<T> {
+  admissionClosures += 1
+  try {
+    return await operation()
+  } finally {
+    admissionClosures -= 1
+  }
+}
 
 async function openExtensions() {
   const directory = getDesktopUserDataPath()
@@ -49,7 +115,7 @@ async function openExtensions() {
       stateDirectory: join(directory, 'notebook'),
       environmentId: new NodeExecutionEnv({ cwd: getDesktopWorkingDirectory() }).id,
     },
-    [createPeopleExtension(() => loadAppSettings().people)],
+    [requireRuntimeDelivery().extension, createPeopleExtension(() => loadAppSettings().people)],
   )
 }
 
@@ -64,7 +130,30 @@ export async function refreshDurableSettings() {
   preferences = settings
 }
 
+async function migrateRuntimeState(
+  harness: Harness,
+  storage: Storage,
+  installed: Awaited<ReturnType<typeof openExtensions>>,
+) {
+  const selection = installed.registry.snapshot()
+  const agents = selection.extension('howaboua.agents')
+  const board = selection.extension('howaboua.board')
+  if (agents && board) {
+    if (agents.tools?.some((tool) => tool.name === 'board'))
+      throw new Error(
+        'Standalone Board requires Agents 0.6 or later; bundled Board is still installed.',
+      )
+    // Registry presence does not prove an old Agents selection included Board.
+    // The package owner records only the verified bundled-0.5 cutover.
+    if (await installed.packages.requiresBoardSelectionMigration())
+      await harness.commit(enableBoardSelectionMigration, runtimeContext)
+  }
+  await migrateConversationCapabilities(harness, storage, runtimeContext)
+  await migrateAcceptedInputTasks(harness, runtimeContext)
+}
+
 async function openRuntime() {
+  assertDurableAdmissionOpen()
   let storage: Storage | undefined
   let opened: Harness | undefined
   try {
@@ -95,25 +184,32 @@ async function openRuntime() {
           },
         },
         env: ({ cwd }) => new NodeExecutionEnv({ cwd: cwd ?? getDesktopWorkingDirectory() }),
+        conversationCreated: reconcileCreatedBoardSelection,
         onReport: (error) => console.error('Durable runtime:', error),
       },
       runtimeContext,
     )
     runtimeStorage = storage
     opened = harness
-    await migrateConversationCapabilities(harness, storage, runtimeContext)
+    await migrateRuntimeState(harness, storage, installed)
     packages.bind(harness)
     await bindInstalledPluginRuntime({ harness, storage })
+    await reconcileHumanInputActivity(harness, runtimeContext)
+    await requireRuntimeDelivery().reconcileSources()
+    assertDurableAdmissionOpen()
     harness.resume()
     return harness
   } catch (error) {
     try {
       if (opened) await opened.close(runtimeContext)
       else await storage?.close(runtimeContext)
-    } finally {
       if (opened) await unbindPluginRuntime(opened)
-      runtimeStorage = undefined
+    } catch (cleanup) {
+      // Keep the rejected acquisition published. Rebinding after failed cleanup
+      // could leave old native invocations using disposed component resources.
+      throw new AggregateError([error, cleanup], 'Durable startup and cleanup failed.')
     }
+    runtimeStorage = undefined
     // Only a fully cleaned failed acquisition is idle and safe to retry or reload.
     runtime = undefined
     throw error
@@ -144,8 +240,32 @@ export async function refreshRuntimePackages() {
   await (await getExtensions()).refresh()
 }
 
+/** Called inside the admitted service transition, before new input can enter the new generation. */
+export async function reconcileRuntimeGeneration() {
+  const bound = boundPluginRuntime()
+  // Initial inventory/service composition must not acquire or await its own Harness startup.
+  if (!(runtime && bound)) return
+  try {
+    const installed = await getExtensions()
+    await installed.refresh()
+    await reconcileHumanInputActivity(bound.harness, runtimeContext)
+    generationFailure = undefined
+  } catch (error) {
+    generationFailure = error
+    throw error
+  }
+}
+
+/** Native readiness only; package service separately owns component/renderer activation. */
+export async function readRuntimePackageActivation() {
+  const installed = await getExtensions()
+  await installed.refresh()
+  installed.assertReady()
+  return installed.packages.activeInventory()
+}
+
 export async function resolveConversation(conversationId: string) {
-  const harness = await getDurableRuntime()
+  const harness = boundPluginRuntime()?.harness ?? (await getDurableRuntime())
   const conversation = await harness.conversation(
     decodeConversationId(conversationId),
     runtimeContext,
@@ -231,13 +351,16 @@ export async function readRuntimeConversationContext(conversationId: string) {
 }
 
 export async function readRuntimeConversationRecord(conversationId: string) {
+  const bound = boundPluginRuntime()
+  if (bound) return bound.storage.conversation(decodeConversationId(conversationId), runtimeContext)
   await getDurableRuntime()
   if (!runtimeStorage) throw new Error('Durable storage is unavailable.')
   return runtimeStorage.conversation(decodeConversationId(conversationId), runtimeContext)
 }
 
 export async function readRuntimeConversationOrigin(conversationId: string) {
-  const origin = await (await getDurableRuntime()).snapshot(
+  const harness = boundPluginRuntime()?.harness ?? (await getDurableRuntime())
+  const origin = await harness.snapshot(
     RuntimeOriginDoc,
     decodeConversationId(conversationId),
     runtimeContext,
@@ -304,22 +427,15 @@ export async function abortRuntimeConversation(conversationId: string) {
 
 export function disposeDurableRuntime() {
   if (shutdown) return shutdown
+  stopDurableAdmission()
   closing = true
   shutdown = (async () => {
-    let harness: Harness | undefined
-    try {
-      harness = runtime ? await runtime : undefined
-    } finally {
-      try {
-        await harness?.close(runtimeContext)
-      } finally {
-        try {
-          if (harness) await unbindPluginRuntime(harness)
-        } finally {
-          if (extensions) await (await extensions).packages.close()
-        }
-      }
-    }
+    const harness = runtime ? await runtime : undefined
+    // Closing joins native invocations. Never retire their services or package
+    // resources if that join fails; the backend must report a failed shutdown.
+    await harness?.close(runtimeContext)
+    if (harness) await unbindPluginRuntime(harness)
+    if (extensions) await (await extensions).packages.close()
   })()
   return shutdown
 }

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { watch } from 'node:fs'
 import { mkdir, stat } from 'node:fs/promises'
 import { join } from 'node:path'
+import type { FeatureOperation } from '@howaboua/howcode-sdk/feature-operations'
 import * as Schema from 'effect/Schema'
 import { createJiti } from 'jiti'
 import {
@@ -16,6 +17,7 @@ import type {
   PackageUiService,
 } from '../../../shared/package-ui-contracts.ts'
 import { PackageUiReferenceSchema } from '../../../shared/package-ui-schema.ts'
+import { createPackageActivation, type PackageOperationHost } from './activation.ts'
 import {
   componentStatusLeaseMs,
   retireComponentStatus,
@@ -31,6 +33,7 @@ import {
   type PackageManagerOptions,
   packageMetadata,
 } from './manager.ts'
+import { createPackageOperations } from './operations.ts'
 import { packageSourceId } from './source.ts'
 import { createPackageUiBindings } from './ui-bindings.ts'
 import { compilePackageUi } from './ui-compiler.ts'
@@ -86,7 +89,13 @@ export async function createPackageUiService(
   options: PackageManagerOptions,
   invalidate: () => void,
   componentLifecycle?: InstalledComponentLifecycle,
-): Promise<{ service: PackageUiService; dispose(): Promise<void> }> {
+  operationHost?: PackageOperationHost,
+): Promise<{
+  service: PackageUiService
+  operations: readonly FeatureOperation[]
+  assertServiceReady(): Promise<void>
+  dispose(): Promise<void>
+}> {
   const manager = createPackageManager(options)
   const packageId = (source: string) => packageSourceId(source, options.cwd)
   const directory = join(options.directory, 'packages')
@@ -97,6 +106,28 @@ export async function createPackageUiService(
   let watcherError: Error | undefined
   let queue: Promise<unknown> = Promise.resolve()
   const components = createInstalledComponents(componentLifecycle)
+  const activation = createPackageActivation({
+    directory: options.directory,
+    cwd: options.cwd,
+    manager,
+    components,
+    ...(operationHost ? { host: operationHost } : {}),
+  })
+  const deliveries = new Map<string, Promise<void>>()
+  const deliverActivations = (subscriptions: Awaited<ReturnType<typeof activation.reconcile>>) => {
+    if (closed) return
+    for (const subscription of subscriptions) {
+      if (deliveries.has(subscription.id)) continue
+      const delivery = activation.deliver(subscription).catch(async (error: unknown) => {
+        console.error(`Package activation continuation failed: ${subscription.operationId}`, error)
+        await activation.deliveryFailed(subscription.id, error).catch((storageError: unknown) => {
+          console.error('Package activation delivery failure could not be persisted.', storageError)
+        })
+      })
+      deliveries.set(subscription.id, delivery)
+      void delivery.finally(() => deliveries.delete(subscription.id))
+    }
+  }
   const ownerGeneration = randomUUID()
   let componentInventory: InstalledPackage[] = []
   const publishComponentStatus = () =>
@@ -222,7 +253,11 @@ export async function createPackageUiService(
   }
   const watcher = watch(directory, (_event, filename) => {
     if (filename !== null && String(filename) !== 'settings.json') return
-    void serialized(refresh)
+    void serialized(async () => {
+      await refresh()
+      return activation.reconcile(componentInventory)
+    })
+      .then(deliverActivations)
       .then(invalidate)
       .catch((error: unknown) => {
         if (closed) return
@@ -242,10 +277,13 @@ export async function createPackageUiService(
         await refresh()
         invalidate()
       } else await publishComponentStatus()
-    }).catch((error: unknown) => {
-      console.error('Component inventory publication failed.', error)
-      invalidate()
+      return activation.reconcile(componentInventory)
     })
+      .then(deliverActivations)
+      .catch((error: unknown) => {
+        console.error('Component inventory publication failed.', error)
+        invalidate()
+      })
   }, 1000)
   retry.unref()
   const bindings = createPackageUiBindings(async (request) => {
@@ -305,11 +343,20 @@ export async function createPackageUiService(
         return { js: generation.js }
       }),
   }
+  const operations = createPackageOperations({
+    manager,
+    activation,
+    serialize: serialized,
+    refresh,
+    inventory: () => componentInventory,
+    invalidate,
+  })
   const dispose = async () => {
     closed = true
     clearInterval(retry)
     watcher.close()
     await queue.catch(() => undefined)
+    await Promise.all(deliveries.values())
     await retireComponentStatus(options.directory, ownerGeneration)
     for (const generation of generations.values()) generation.controller.abort()
     generations.clear()
@@ -323,5 +370,10 @@ export async function createPackageUiService(
     await dispose()
     throw error
   }
-  return { service, dispose }
+  return {
+    service,
+    operations,
+    assertServiceReady: () => serialized(async () => components.assertServiceReady()),
+    dispose,
+  }
 }

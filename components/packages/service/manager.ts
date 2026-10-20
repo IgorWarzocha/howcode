@@ -8,15 +8,26 @@ import {
   linkedDurablePackages,
   resolvePackageRoot,
 } from '@howaboua/howcode-sdk/node/plugin-metadata'
+import * as Schema from 'effect/Schema'
 import { satisfies, valid, validRange } from 'semver'
+import {
+  type PackageMutationRequest,
+  PackageMutationRequestSchema,
+  type PackageOperationCaller,
+  type PackageOperationReceipt,
+  type PackageOperationTarget,
+} from '../../../shared/package-operation-contracts.ts'
+import { legacyBoardPackageReplacement } from './board-package-cutover.ts'
 import { installedSeedName, readSeededDefaults, writeSeededDefaults } from './default-seeding.ts'
 import { snapshotDistributionPackages } from './distribution-snapshot.ts'
+import { type PackageMutationPlan, runPackageOperation } from './operation-storage.ts'
 import { type PackageSource, parsePackageSource } from './source'
 import {
   type PackageRecord,
   readPackageSettings,
+  readPackageState,
   serializePackageOperation,
-  writePackageSettings,
+  writePackageState,
 } from './state'
 
 const run = promisify(execFile)
@@ -42,6 +53,15 @@ export interface PackageManagerOptions {
 }
 
 export interface PackageManager {
+  /** Request identity is scoped by a trusted host caller, not by operation payload. */
+  mutate(
+    request: PackageMutationRequest,
+    caller: PackageOperationCaller,
+  ): Promise<PackageOperationReceipt>
+  operation(id: string): Promise<PackageOperationReceipt | undefined>
+  operations(): Promise<PackageOperationReceipt[]>
+  /** Proof of the known bundled-Board inventory cutover, committed with its replacement. */
+  requiresBoardSelectionMigration(): Promise<boolean>
   /** Register distribution defaults once; subsequent removals remain authoritative. */
   seedDefaults(names: readonly string[], distributionDirectory: string): Promise<void>
   /** Install trusted package code. Bun may run lifecycle scripts before compatibility validation. */
@@ -52,6 +72,29 @@ export interface PackageManager {
   inventory(): Promise<InstalledPackage[]>
   update(source?: string): Promise<InstalledPackage[]>
   resolve(): Promise<InstalledPackage[]>
+}
+
+function normalizedSource(argument: string, cwd: string): PackageSource {
+  const parsed = parsePackageSource(argument, cwd)
+  if (parsed.kind !== 'git') return parsed
+  return {
+    ...parsed,
+    source: `git:${parsed.url}${parsed.ref === undefined ? '' : `@${parsed.ref}`}`,
+  }
+}
+
+function operationTarget(record: PackageRecord): PackageOperationTarget {
+  return {
+    source: record.source,
+    revision: record.revision ?? 'unversioned',
+    ...(record.name === undefined ? {} : { name: record.name }),
+  }
+}
+
+function requireCommitted(receipt: PackageOperationReceipt): void {
+  if (receipt.outcome === 'failed' || receipt.outcome === 'interrupted')
+    throw new Error(receipt.error)
+  if (receipt.outcome !== 'committed') throw new Error(`Package operation is ${receipt.outcome}`)
 }
 
 export async function packageMetadata(
@@ -195,7 +238,7 @@ export function createPackageManager(options: PackageManagerOptions): PackageMan
       }),
     )
     const retained = candidates.filter((item): item is PackageRecord => item !== undefined)
-    await writePackageSettings(settings, [...retained, record])
+    return [...retained, record]
   }
   const seedRecord = async (name: string, location: string): Promise<PackageRecord> => {
     const root = await resolvePackageRoot(name, join(sources, location))
@@ -209,94 +252,144 @@ export function createPackageManager(options: PackageManagerOptions): PackageMan
       revision: randomUUID(),
     }
   }
-  const install = async (argument: string): Promise<InstalledPackage> => {
-    const source = parsePackageSource(argument, cwd)
-    if (source.kind !== 'local') await requireBun()
-    const records = await readPackageSettings(settings)
-    const record: PackageRecord = {
-      source: source.source,
-      revision: randomUUID(),
-      ...(source.kind === 'local' ? {} : { location: randomUUID() }),
+  const prepareInstallation = async (record: PackageRecord): Promise<InstalledPackage> => {
+    const source = parsePackageSource(record.source, cwd)
+    if (source.kind !== 'local') {
+      await requireBun()
+      if (!record.location) throw new Error(`Managed source has no location: ${record.source}`)
+      await mkdir(sources, { recursive: true })
+      await installManaged(source, join(sources, record.location))
     }
-    let committed = false
-    try {
-      if (source.kind !== 'local' && record.location) {
-        await mkdir(sources, { recursive: true })
-        await installManaged(source, join(sources, record.location))
+    return describe(record)
+  }
+  const prepareMutation = (
+    request: PackageMutationRequest,
+    records: PackageRecord[],
+  ): PackageMutationPlan<InstalledPackage[]> => {
+    const source = normalizedSource(request.source, cwd)
+    const selected = records.find(
+      (record) => parsePackageSource(record.source, cwd).identity === source.identity,
+    )
+    if (request.kind === 'remove') {
+      const targets = selected ? [operationTarget(selected)] : []
+      return {
+        targets,
+        run: async () => ({
+          packages: records.filter((item) => item !== selected),
+          targets,
+          value: [],
+        }),
       }
-      const installed = await describe(record)
-      if (installed.name) record.name = installed.name
-      await replaceRecords(records, record, source.identity)
-      committed = true
-      // Retain committed generations: another process may still lazily import
-      // their files. Only failed, unpublished installations can be deleted here.
-      return installed
-    } catch (error) {
-      // Cleanup only uncommitted installations. Committed roots must survive cleanup errors.
-      if (!committed) await cleanup(record)
-      throw error
     }
+    const candidateSource =
+      request.kind === 'update' && selected ? normalizedSource(selected.source, cwd) : source
+    const candidate: PackageRecord = {
+      source: candidateSource.source,
+      revision: randomUUID(),
+      ...(candidateSource.kind === 'local' ? {} : { location: randomUUID() }),
+    }
+    return {
+      targets: [operationTarget(candidate)],
+      run: async () => {
+        if (request.kind === 'update' && !selected)
+          throw new Error(`Package is not installed: ${request.source}`)
+        const installed = await prepareInstallation(candidate)
+        const record = {
+          ...candidate,
+          ...(installed.name === undefined ? {} : { name: installed.name }),
+        }
+        return {
+          packages: await replaceRecords(records, record, source.identity),
+          targets: [operationTarget(record)],
+          value: [installed],
+        }
+      },
+      // Only failed, unpublished roots are deleted; committed generations may still be in use.
+      cleanup: () => cleanup(candidate),
+    }
+  }
+  const mutate = (input: PackageMutationRequest, caller: PackageOperationCaller) => {
+    const request = Schema.decodeUnknownSync(PackageMutationRequestSchema)(input)
+    const normalized = { ...request, source: normalizedSource(request.source, cwd).source }
+    return runPackageOperation(settings, normalized, caller, (records) =>
+      prepareMutation(normalized, records),
+    )
+  }
+  const legacyMutation = async (kind: PackageMutationRequest['kind'], source: string) => {
+    const result = await mutate({ requestId: randomUUID(), kind, source }, { scope: 'legacy' })
+    requireCommitted(result.receipt)
+    if (result.value === undefined) throw new Error('Package mutation committed without a result')
+    return { receipt: result.receipt, installed: result.value }
   }
   const list = () =>
     serialized(async () => Promise.all((await readPackageSettings(settings)).map(describe)))
   return {
+    mutate: (request, caller) => serialized(async () => (await mutate(request, caller)).receipt),
+    operation: (id) =>
+      serialized(async () =>
+        (await readPackageState(settings)).operations.find((operation) => operation.id === id),
+      ),
+    operations: () => serialized(async () => (await readPackageState(settings)).operations),
+    requiresBoardSelectionMigration: () =>
+      serialized(async () => (await readPackageState(settings)).boardSelectionMigration === true),
     seedDefaults: (names, distributionDirectory) =>
       serialized(async () => {
         const completed = await readSeededDefaults(directory)
         const pending = names.filter((name) => !completed.has(name))
-        if (pending.length === 0) return
         const records = await readPackageSettings(settings)
-        const existing = new Set(
-          await Promise.all(
-            records.map((record) => record.name ?? installedSeedName(identify(record).root)),
-          ),
+        const installed = await Promise.all(
+          records.map(async (record) => {
+            const root = identify(record).root
+            return { record, root, name: await installedSeedName(root, record.name) }
+          }),
         )
+        const replacement = await legacyBoardPackageReplacement({
+          installed,
+          defaults: names,
+          sources,
+          distributionDirectory,
+        })
+        if (pending.length === 0 && !replacement) return
+        const existing = new Set(installed.map((item) => item.name))
         const missing = pending.filter((name) => !existing.has(name))
+        const snapshot = replacement ? [...missing, '@howaboua/howcode-agents'] : missing
         const location = randomUUID()
         const target = join(sources, location)
-        let committed = false
         try {
-          await snapshotDistributionPackages(missing, distributionDirectory, target)
-          const additions = await Promise.all(missing.map((name) => seedRecord(name, location)))
-          await writePackageSettings(settings, [...records, ...additions])
-          committed = true
-          for (const name of pending) completed.add(name)
-          await writeSeededDefaults(directory, completed)
-        } finally {
-          if (!committed) await rm(target, { recursive: true, force: true })
+          await snapshotDistributionPackages(snapshot, distributionDirectory, target)
+          const additions = await Promise.all(snapshot.map((name) => seedRecord(name, location)))
+          const state = await readPackageState(settings)
+          await writePackageState(settings, {
+            ...state,
+            packages: [...records.filter((record) => record !== replacement), ...additions],
+            ...(replacement ? { boardSelectionMigration: true } : {}),
+          })
+        } catch (error) {
+          await rm(target, { recursive: true, force: true })
+          throw error
         }
+        await writeSeededDefaults(directory, new Set([...completed, ...pending]))
       }),
-    install: (source) => serialized(() => install(source)),
+    install: (source) =>
+      serialized(async () => {
+        const installed = (await legacyMutation('install', source)).installed[0]
+        if (!installed) throw new Error('Package installation committed without a target')
+        return installed
+      }),
     list,
     inventory: () => serialized(async () => (await readPackageSettings(settings)).map(identify)),
     resolve: list,
-    remove: (argument) =>
-      serialized(async () => {
-        const identity = parsePackageSource(argument, cwd).identity
-        const records = await readPackageSettings(settings)
-        const record = records.find(
-          (item) => parsePackageSource(item.source, cwd).identity === identity,
-        )
-        if (!record) return false
-        await writePackageSettings(
-          settings,
-          records.filter((item) => item !== record),
-        )
-        return true
-      }),
+    remove: (source) =>
+      serialized(async () => (await legacyMutation('remove', source)).receipt.targets.length > 0),
     update: (argument) =>
       serialized(async () => {
+        if (argument !== undefined) return (await legacyMutation('update', argument)).installed
         const records = await readPackageSettings(settings)
-        const identity =
-          argument === undefined ? undefined : parsePackageSource(argument, cwd).identity
-        const selected = records.filter(
-          (item) =>
-            identity === undefined || parsePackageSource(item.source, cwd).identity === identity,
-        )
-        if (identity !== undefined && selected.length === 0)
-          throw new Error(`Package is not installed: ${argument}`)
         const result: InstalledPackage[] = []
-        for (const record of selected) result.push(await install(record.source))
+        // Each mutation commits the entire inventory/receipt envelope. Later updates must read
+        // the prior commit; parallel plans would overwrite each other's inventory and receipts.
+        for (const record of records)
+          result.push(...(await legacyMutation('update', record.source)).installed)
         return result
       }),
   }

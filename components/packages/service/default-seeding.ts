@@ -3,7 +3,11 @@ import { readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { readPackageManifest } from '@howaboua/howcode-sdk/node/plugin-metadata'
 
-export async function installedSeedName(root: string): Promise<string | undefined> {
+export async function installedSeedName(
+  root: string,
+  persistedName?: string,
+): Promise<string | undefined> {
+  if (persistedName !== undefined) return persistedName
   try {
     const manifest = await readPackageManifest(root)
     return typeof manifest.name === 'string' ? manifest.name : undefined

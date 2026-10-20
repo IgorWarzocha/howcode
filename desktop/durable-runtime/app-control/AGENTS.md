@@ -1,4 +1,5 @@
 - Keep native and external app control on this dispatcher and the shared catalogue; transport adapters must not add action policy or replay mutations.
+- Native yield currently uses Durable 1.3 termination: every tool slot in the round must request it. Do not promise unconditional yield or substitute handoff, which resets context; revisit this boundary when Durable's owning generation semantics change.
 - Admission receipts are not answers. Resolve an existing caller request ID from Durable before new-work admission or input preparation: a retry must still return its receipt after component admission closes. Do not add an app-control queue or deduplication ledger.
 - Joining a stop from the executing conversation or its native owner chain deadlocks cancellation. Preserve trusted caller identity and reject that join rather than starting detached cleanup.
 - Transcript continuation must retain the first entry bound and partial-entry offset: new replies must not shift pagination or hide a truncated entry's remainder. Workspace-agent discovery is optional, not a dependency on Bots.

@@ -1,4 +1,5 @@
 import * as Schema from 'effect/Schema'
+import { readTrustedInputData } from './input-origin'
 
 export const PersonSchema = Schema.Struct({
   id: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(128)),
@@ -23,11 +24,12 @@ export type PeopleUpdate = typeof PeopleUpdateSchema.Type
 export const personInputKind = 'howcode.person-input'
 
 export function getPersonInputData(entry: { kind: string; data?: unknown }) {
-  if (entry.kind !== personInputKind) return undefined
+  const input = readTrustedInputData(entry)?.inputEntry ?? entry
+  if (input.kind !== personInputKind) return undefined
   return Schema.decodeUnknownSync(
     Schema.Struct({
       author: PersonSchema,
       modelContextBlocks: Schema.Literal(1),
     }),
-  )(entry.data)
+  )(input.data)
 }

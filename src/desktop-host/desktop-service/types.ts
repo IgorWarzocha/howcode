@@ -57,7 +57,7 @@ type ServiceRecordBase<Process> = {
   readonly id: number
   readonly scope: Scope.Closeable
   readonly ready: Deferred.Deferred<Process, DesktopServiceError>
-  readonly closed: Deferred.Deferred<void>
+  readonly closed: Deferred.Deferred<void, DesktopServiceError>
   readonly pendingRequests: ReadonlyMap<string, PendingRequest>
 }
 
@@ -67,6 +67,7 @@ export type ServiceRecord<Process> =
   | (ServiceRecordBase<Process> & { readonly status: 'Stopping'; readonly process: Process | null })
 
 export type DesktopServiceState<Process> = {
+  readonly disposed: boolean
   readonly current: ServiceRecord<Process> | null
   readonly nextRecordId: number
 }
@@ -121,5 +122,5 @@ export interface DesktopServiceCore<Process> {
     method: string,
     args: readonly unknown[],
   ) => Effect.Effect<unknown, DesktopServiceError>
-  readonly dispose: Effect.Effect<void>
+  readonly dispose: Effect.Effect<void, DesktopServiceError>
 }

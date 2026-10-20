@@ -52,7 +52,12 @@ export class DesktopServiceClient {
   }
 
   private run<A, E>(evaluate: (service: Service['Service']) => Effect.Effect<A, E>) {
+    if (this.disposal) return Promise.reject(new Error('Desktop service is disposed.'))
     return this.runtime.runPromise(Effect.flatMap(Service, evaluate))
+  }
+
+  async start(): Promise<void> {
+    await this.ensureStarted()
   }
 
   private ensureStarted(): Promise<ChildProcess> {

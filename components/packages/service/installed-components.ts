@@ -24,6 +24,11 @@ export type InstalledComponentLifecycle = {
     active: ReadonlyMap<string, string>
   }>
 }
+export type ComponentReadiness =
+  | { status: 'ready' }
+  | { status: 'pending'; reason: string }
+  | { status: 'failed'; error: string }
+  | { status: 'not-component' }
 type Generation = {
   root: string
   descriptor: InstalledComponentDescriptor
@@ -189,6 +194,15 @@ function isPreparationError(generation: Generation) {
   return generation.descriptor.status === 'error' && !generation.rendererError
 }
 
+function rendererReadiness(generation: Generation): ComponentReadiness {
+  if (!generation.source)
+    return { status: 'failed', error: 'This package has no renderer contribution.' }
+  if (generation.rendererError) return { status: 'failed', error: generation.rendererError }
+  return generation.rendererAdmitted
+    ? { status: 'ready' }
+    : { status: 'pending', reason: 'Waiting for browser contribution admission.' }
+}
+
 function publishOutcome(
   next: Map<string, Generation>,
   definitions: InstalledComponentDefinition[],
@@ -277,6 +291,7 @@ export function createInstalledComponents(lifecycle?: InstalledComponentLifecycl
   let generations = new Map<string, Generation>()
   let active = new Map<string, Generation>()
   let pending = false
+  let serviceErrors: ReadonlyMap<string, string> = new Map()
   const prepare = async (
     installed: InstalledPackage,
     id: string,
@@ -337,6 +352,7 @@ export function createInstalledComponents(lifecycle?: InstalledComponentLifecycl
       const definitions = componentDefinitions(next, active)
       const outcome = await lifecycle?.reconcile(definitions)
       pending = outcome?.pending ?? false
+      serviceErrors = outcome?.errors ?? new Map()
       const nextActive = activeGenerations(next, active, outcome?.active ?? new Map())
       publishOutcome(next, definitions, pending, outcome?.errors ?? new Map())
       if (pending) retainPendingRemovals(next, generations)
@@ -347,6 +363,48 @@ export function createInstalledComponents(lifecycle?: InstalledComponentLifecycl
     },
     list() {
       return [...generations.values()].map((generation) => ({ ...generation.descriptor }))
+    },
+    readiness(source: string, revision: string, stage: 'service' | 'renderer'): ComponentReadiness {
+      const generation = [...generations.values()].find(
+        (item) => item.descriptor.source === source && item.descriptor.revision === revision,
+      )
+      if (!generation) return { status: 'not-component' }
+      const { descriptor } = generation
+      const error = serviceErrors.get(descriptor.id)
+      if (error) return { status: 'failed', error }
+      if (isPreparationError(generation) && descriptor.status === 'error')
+        return { status: 'failed', error: descriptor.error }
+      if (active.get(descriptor.id)?.definition?.revision !== revision)
+        return {
+          status: 'pending',
+          reason: 'Waiting for the exact service generation to activate.',
+        }
+      if (stage === 'service') return { status: 'ready' }
+      return rendererReadiness(generation)
+    },
+    retirement(source: string, revision: string): ComponentReadiness {
+      const generation = [...generations.values()].find(
+        (item) => item.descriptor.source === source && item.descriptor.revision === revision,
+      )
+      if (generation) {
+        const error = serviceErrors.get(generation.descriptor.id)
+        if (error) return { status: 'failed', error }
+      }
+      return [...active.values()].some(
+        (item) => item.descriptor.source === source && item.definition?.revision === revision,
+      )
+        ? { status: 'pending', reason: 'Waiting for the exact service generation to retire.' }
+        : { status: 'ready' }
+    },
+    assertServiceReady() {
+      for (const generation of generations.values()) {
+        const { source, revision, name } = generation.descriptor
+        const readiness = this.readiness(source, revision, 'service')
+        if (readiness.status === 'failed')
+          throw new Error(`Component service is unavailable: ${name}: ${readiness.error}`)
+        if (readiness.status === 'pending')
+          throw new Error(`Component service is not ready: ${name}: ${readiness.reason}`)
+      }
     },
     admit(request: InstalledComponentAdmission) {
       const generation = generations.get(request.id)
@@ -365,7 +423,7 @@ export function createInstalledComponents(lifecycle?: InstalledComponentLifecycl
       } else {
         generation.rendererError = request.error
       }
-      const { id, name, revision, navigation, source } = generation.descriptor
+      const { id, name, revision, navigation, source, activeRevision } = generation.descriptor
       generation.descriptor =
         request.error === undefined
           ? {
@@ -376,8 +434,9 @@ export function createInstalledComponents(lifecycle?: InstalledComponentLifecycl
               status: 'ready',
               renderer: true,
               navigation,
+              activeRevision,
             }
-          : { id, name, revision, source, status: 'error', error: request.error }
+          : { id, name, revision, source, activeRevision, status: 'error', error: request.error }
     },
     load(reference: PackageUiReference) {
       const current = active.get(reference.id)

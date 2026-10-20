@@ -27,11 +27,20 @@ export const AppControlTools = defineExtension({
       executionMode: 'sequential',
       async execute(args, api, context) {
         if (!dispatch) throw new Error('App control is unavailable.')
+        let yielded = false
         const result = await dispatch(args, {
+          kind: 'native',
           conversationId: String(api.conversationId),
+          taskId: String(api.taskId),
+          yield: () => {
+            yielded = true
+          },
           ...(context.abortSignal ? { signal: context.abortSignal } : {}),
         })
-        return { output: [{ type: 'text', text: JSON.stringify(result) }] }
+        return {
+          output: [{ type: 'text', text: JSON.stringify(result) }],
+          ...(yielded ? { control: { terminate: true as const } } : {}),
+        }
       },
     }),
   ],

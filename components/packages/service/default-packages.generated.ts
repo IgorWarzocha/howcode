@@ -11,4 +11,13 @@ export const defaultComponentPackages = [
   '@howaboua/howcode-markdown-artifacts',
   '@howaboua/howcode-react-artifacts',
   '@howaboua/howcode-dictation',
+  '@howaboua/howcode-bots',
+  '@howaboua/howcode-context',
+  '@howaboua/howcode-board',
+  '@howaboua/howcode-agents',
+  '@howaboua/howcode-pulses',
+  '@howaboua/howcode-initiative',
+  '@howaboua/howcode-awareness',
+  '@howaboua/howcode-reminders',
+  '@howaboua/howcode-workspace-layout',
 ] as const

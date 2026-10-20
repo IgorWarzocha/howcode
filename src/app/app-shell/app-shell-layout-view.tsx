@@ -14,6 +14,7 @@ import { useWorkspaceArtifactDrawerState } from '../workspace-shell/useWorkspace
 import { ArtifactDrawerViews } from '../workspace-shell/workspace-artifact-drawer'
 import { AppShellNavigation } from './app-shell-navigation'
 import { AppShellWorkspace } from './app-shell-workspace'
+import { AssistantEntry } from './assistant-entry'
 import { appShellRootClass } from './layout-classes'
 import type { AppShellController } from './useAppShellController'
 
@@ -121,6 +122,27 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
         },
       }
     : controller
+  const workspace = (
+    <AppShellWorkspace
+      activeView={retainedView}
+      contributions={composeBuiltInWorkspaceViews({
+        artifactDrawer,
+        controller: presentationController,
+        activeComposerState: controller.composer.state,
+        activeChatData: controller.chat.activeData,
+        composerDirectoryId: controller.composer.directoryId,
+        currentDirectoryName: controller.directories.currentName,
+        terminalDrawerVisible: props.terminal.drawerVisible,
+        terminalConversationId: props.terminal.conversationId,
+        workspaceContentClass,
+        sidebarAvailable: props.sidebar.available,
+        sidebarCollapsed: props.sidebar.collapsed,
+        sidebarAutoHidden: props.sidebar.compactMode,
+        sidebarCompactMode: props.sidebar.compactMode,
+        onToggleSidebar: props.sidebar.onToggle,
+      })}
+    />
+  )
   return (
     <section
       ref={mainSectionRef}
@@ -164,25 +186,18 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
           className="min-h-0 flex-1 flex-col overflow-hidden"
           style={{ display: installedPage ? 'none' : 'flex' }}
         >
-          <AppShellWorkspace
-            activeView={retainedView}
-            contributions={composeBuiltInWorkspaceViews({
-              artifactDrawer,
-              controller: presentationController,
-              activeComposerState: controller.composer.state,
-              activeChatData: controller.chat.activeData,
-              composerDirectoryId: controller.composer.directoryId,
-              currentDirectoryName: controller.directories.currentName,
-              terminalDrawerVisible: props.terminal.drawerVisible,
-              terminalConversationId: props.terminal.conversationId,
-              workspaceContentClass,
-              sidebarAvailable: props.sidebar.available,
-              sidebarCollapsed: props.sidebar.collapsed,
-              sidebarAutoHidden: props.sidebar.compactMode,
-              sidebarCompactMode: props.sidebar.compactMode,
-              onToggleSidebar: props.sidebar.onToggle,
-            })}
-          />
+          {activeView === 'landing' ? (
+            <AssistantEntry
+              onOpenConversation={(conversation) => {
+                controller.workspaces.select(conversation.workspaceId)
+                controller.chat.open(conversation.directoryId, conversation.id, conversation.id)
+              }}
+            >
+              {workspace}
+            </AssistantEntry>
+          ) : (
+            workspace
+          )}
         </div>
         <ArtifactDrawerViews artifactDrawer={artifactDrawer} conversationId={conversationId} />
         <InstalledTerminalDrawer

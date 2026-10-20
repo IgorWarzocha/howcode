@@ -1,14 +1,17 @@
 import type { Context } from '@earendil-works/chord'
 import { type Conversation, LiveDoc, type SubmissionRecord } from '@earendil-works/pi-durable'
 import type { AppControlCaller, AppControlResult } from '../../../shared/app-control.ts'
+import { DEFAULT_WORKSPACE_ID } from '../../../shared/desktop-workspace-contracts.ts'
+import { getRuntimeConversationMetadata } from '../../app-service/conversation-state.ts'
 import { admitPluginInput } from '../../plugins/runtime.ts'
-import { watchRuntimeConversation } from '../chats.ts'
+import { captureNativeSettlement } from '../delivery-lineage.ts'
 import {
   getDurableRuntime,
   readRuntimeConversationRecord,
   refreshRuntimePackages,
 } from '../host.ts'
 import { prepareRuntimeInput } from '../input.ts'
+import { createInputDelivery, findAcceptedDeliveryTask } from '../input-delivery.ts'
 import type { AppControlInput } from './input.ts'
 import { readChat } from './read.ts'
 
@@ -28,10 +31,44 @@ function receipt(record: SubmissionRecord): AppControlResult {
 }
 
 type TargetAction = Extract<AppControlInput, { chat: string }>
+type SendAction = Extract<TargetAction, { action: 'chats.send' }>
+
+async function admitNewChatInput(
+  conversation: Conversation,
+  args: SendAction,
+  caller: AppControlCaller,
+  source: string,
+  context: Context,
+) {
+  const id = String(conversation.id)
+  await refreshRuntimePackages()
+  await admitPluginInput(id)
+  context.abortSignal?.throwIfAborted()
+  const content = await prepareRuntimeInput(conversation, {
+    conversationId: id,
+    text: args.message,
+  })
+  context.abortSignal?.throwIfAborted()
+  const metadata = getRuntimeConversationMetadata(id)
+  if (!metadata) throw new Error('New agent input requires a known target workspace scope.')
+  const admission = await createInputDelivery().start({
+    source,
+    scopeId: metadata.workspaceId ?? DEFAULT_WORKSPACE_ID,
+    occurrenceId: args.requestId,
+    conversationId: id,
+    kind: 'explicit',
+    content,
+    origin:
+      caller.kind === 'native'
+        ? { kind: 'agent', conversationId: caller.conversationId, taskId: caller.taskId }
+        : { kind: 'mcp' },
+  })
+  return { ...admission, content }
+}
 
 async function assertStopDoesNotJoinCaller(target: string, caller: AppControlCaller) {
   const seen = new Set<string>()
-  let current = caller.conversationId
+  let current = caller.kind === 'native' ? caller.conversationId : undefined
   while (current && !seen.has(current)) {
     if (current === target)
       throw new Error(
@@ -55,7 +92,8 @@ async function submissionStatus(conversation: Conversation, requestId: string, c
 
 async function sendChat(
   conversation: Conversation,
-  args: Extract<TargetAction, { action: 'chats.send' }>,
+  args: SendAction,
+  caller: AppControlCaller,
   context: Context,
 ) {
   const existing = await conversation.commit(
@@ -69,24 +107,44 @@ async function sendChat(
       )
     return { id: String(conversation.id), accepted: true, submission: receipt(existing) }
   }
-  await refreshRuntimePackages()
-  await admitPluginInput(String(conversation.id))
-  context.abortSignal?.throwIfAborted()
-  const content = await prepareRuntimeInput(conversation, {
-    conversationId: String(conversation.id),
-    text: args.message,
-  })
-  context.abortSignal?.throwIfAborted()
-  const submission = await conversation.submit(
-    { type: 'input', content, requestId: args.requestId, whenBusy: 'followUp' },
+  const id = String(conversation.id)
+  const delivery = createInputDelivery()
+  const source = caller.kind === 'native' ? 'howcode.agent-message' : 'howcode.mcp-message'
+  const acceptedTask = await conversation.commit(
+    (tx) =>
+      findAcceptedDeliveryTask(tx, {
+        source,
+        conversationId: id,
+        occurrenceId: args.requestId,
+      }),
     context,
   )
-  // The existing watch owns UI publication and component turn cleanup after admission.
-  await watchRuntimeConversation({ conversationId: String(conversation.id) })
+  if (acceptedTask) return { id, accepted: true, taskId: acceptedTask.taskId, submission: null }
+  let acceptedWork =
+    caller.kind === 'native'
+      ? await conversation.commit((tx) => captureNativeSettlement(tx, caller, id), context)
+      : undefined
+  let content: Parameters<typeof delivery.start>[0]['content'] = args.message
+  if (!acceptedWork) {
+    const admission = await admitNewChatInput(conversation, args, caller, source, context)
+    if (admission.status === 'blocked')
+      return { id, accepted: false, reason: admission.reason, retryAt: admission.retryAt ?? null }
+    acceptedWork = admission.acceptedWork
+    content = admission.content
+  }
+  const submission = await delivery.submit({
+    source,
+    conversationId: id,
+    requestId: args.requestId,
+    content,
+    acceptedWork,
+    mode: 'continuation',
+    ...(context.abortSignal ? { signal: context.abortSignal } : {}),
+  })
   return {
     id: String(conversation.id),
     accepted: true,
-    submission: receipt(await submission.status(context)),
+    submission: receipt(submission),
   }
 }
 
@@ -103,7 +161,7 @@ export async function executeChatAction(
       await conversation.abort(context)
       return { id, stopped: true }
     case 'chats.send':
-      return sendChat(conversation, args, context)
+      return sendChat(conversation, args, caller, context)
     case 'chats.status': {
       if (args.requestId) return submissionStatus(conversation, args.requestId, context)
       const live = await (await getDurableRuntime()).snapshot(LiveDoc, conversation.id, context)

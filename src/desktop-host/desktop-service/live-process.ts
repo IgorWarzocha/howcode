@@ -99,20 +99,27 @@ function spawnServiceProcess(
 }
 
 export function terminateDesktopServiceProcess(child: ChildProcess) {
-  return Effect.callback<void>((resume) => {
-    if (child.exitCode !== null || child.signalCode !== null) {
+  return Effect.callback<void, ReturnType<typeof serviceError>>((resume) => {
+    // Unexpected exits are recovered separately; no graceful cleanup was claimed.
+    if (child.exitCode !== null || child.signalCode !== null || child.pid === undefined) {
       resume(Effect.void)
       return
     }
 
     let settled = false
-    const finish = () => {
+    const finish = (error?: Error) => {
       if (settled) return
       settled = true
       clearTimeout(timer)
-      child.off('exit', finish)
-      resume(Effect.void)
+      child.off('exit', onExit)
+      resume(error ? Effect.fail(serviceError('terminate', error)) : Effect.void)
     }
+    const onExit = (code: number | null, signal: NodeJS.Signals | null) =>
+      finish(
+        code === 0 && signal === null
+          ? undefined
+          : new Error(`Desktop service shutdown was unclean (code: ${code}, signal: ${signal}).`),
+      )
     const timer = setTimeout(() => {
       if (child.exitCode === null && child.signalCode === null) {
         try {
@@ -121,20 +128,26 @@ export function terminateDesktopServiceProcess(child: ChildProcess) {
           // The process may have exited between the running check and kill.
         }
       }
-      finish()
+      finish(new Error('Desktop service shutdown timed out and required forced termination.'))
     }, desktopShutdownTimeouts.desktopServiceTerminationMs)
     timer.unref?.()
-    child.once('exit', finish)
+    child.once('exit', onExit)
     try {
       child.kill('SIGTERM')
-    } catch {
-      finish()
+    } catch (error) {
+      finish(new Error('Failed to signal desktop service shutdown.', { cause: error }))
     }
     return Effect.sync(() => {
       clearTimeout(timer)
-      child.off('exit', finish)
+      child.off('exit', onExit)
     })
-  })
+  }).pipe(
+    Effect.tapError((error) =>
+      Effect.sync(() => console.error('Desktop service cleanup failed.', error)),
+    ),
+    // Scope finalizers cannot expose typed errors. A defect keeps this generation unclosed.
+    Effect.orDie,
+  )
 }
 
 export function makeLiveProcessAdapter(

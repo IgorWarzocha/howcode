@@ -38,6 +38,7 @@ export const desktopServiceRemoteMethods = {
   },
   app: {
     appControl: true,
+    appControlMcp: true,
     providerAuth: true,
     workspaceLayout: true,
     handleDesktopAction: true,
@@ -61,7 +62,7 @@ export const desktopServiceRemoteMethods = {
     loadDirectoryUsageSummary: true,
     loadDirectoryFavicon: true,
   },
-  plugins: { request: true, hostRequest: true },
+  plugins: { request: true, hostRequest: true, rendererRequest: true },
   skills: {
     searchPiSkills: true,
     listConfiguredPiSkills: true,

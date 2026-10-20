@@ -216,13 +216,18 @@ async function closeNotebooks(notebooks: NotebookAdapter[]) {
 }
 
 type DurablePackage = InstalledPackage & { linked?: boolean }
+type PackageActivationOwner = {
+  source: string
+  revision: string | undefined
+  dependencies: DurablePackage[]
+}
 interface LoadedPackage {
   installed: DurablePackage
   extensions: Extension[]
   notebooks: NotebookAdapter[]
 }
 
-async function durablePackageClosure(installed: InstalledPackage[]): Promise<DurablePackage[]> {
+async function durablePackageClosure(installed: InstalledPackage[]) {
   const result: DurablePackage[] = []
   const roots = new Map<string, DurablePackage>()
   const identity = createPackageIdentity(hostPackages)
@@ -231,14 +236,14 @@ async function durablePackageClosure(installed: InstalledPackage[]): Promise<Dur
     if (item.name) {
       const previous = roots.get(item.name)
       if (previous) {
-        if (previous.root === item.root) return
+        if (previous.root === item.root) return previous
         if (
           previous.linked &&
           item.linked &&
           fingerprints.has(previous.root) &&
           fingerprints.get(previous.root) === fingerprints.get(item.root)
         )
-          return
+          return previous
         throw new Error(
           `Multiple resolved identities for Durable package ${item.name}: ${previous.root} and ${item.root}`,
         )
@@ -246,6 +251,7 @@ async function durablePackageClosure(installed: InstalledPackage[]): Promise<Dur
       roots.set(item.name, item)
     }
     result.push(item)
+    return item
   }
   const closures = await Promise.all(
     installed.map(async (owner): Promise<DurablePackage[]> => {
@@ -285,8 +291,16 @@ async function durablePackageClosure(installed: InstalledPackage[]): Promise<Dur
       fingerprints.set(root, await identity(root))
     }),
   )
-  for (const item of closures.flat()) add(item)
-  return result
+  const owners = installed.map((owner, index): PackageActivationOwner => {
+    const closure = closures[index]
+    if (!closure) throw new Error(`Missing native dependency closure: ${owner.source}`)
+    return {
+      source: owner.source,
+      revision: owner.revision,
+      dependencies: closure.map(add),
+    }
+  })
+  return { packages: result, owners }
 }
 
 /** Incremental package generations. Retired resources stay alive until shutdown:
@@ -294,6 +308,7 @@ async function durablePackageClosure(installed: InstalledPackage[]): Promise<Dur
 export async function loadInstalledPackages(options: PackageLoadOptions) {
   const manager = createPackageManager({ ...options, hostVersion: await getDurableHostVersion() })
   let active: LoadedPackage[] = []
+  let owners: PackageActivationOwner[] = []
   const retained: LoadedPackage[] = []
   let harness: Harness | undefined
   let queue: Promise<unknown> = Promise.resolve()
@@ -385,11 +400,11 @@ export async function loadInstalledPackages(options: PackageLoadOptions) {
       .catch(() => undefined)
       .then(async () => {
         if (closed) throw new Error('Installed packages are closed.')
-        const installed = await durablePackageClosure(await manager.resolve())
+        const resolved = await durablePackageClosure(await manager.resolve())
         const created: LoadedPackage[] = []
         try {
           // Sequential construction makes partial failure cleanup deterministic.
-          const next = await buildNext(installed, created)
+          const next = await buildNext(resolved.packages, created)
           // Recheck after imports: another conversation may have admitted a cell.
           // Publication is synchronous from this point, before another phase runs.
           preserveBusy(next, await busyNotebooks())
@@ -398,6 +413,7 @@ export async function loadInstalledPackages(options: PackageLoadOptions) {
             next.every((item, index) => item === active[index])
           ) {
             retained.push(...created)
+            owners = resolved.owners
             return false
           }
           const extensions = allExtensions(next)
@@ -408,6 +424,7 @@ export async function loadInstalledPackages(options: PackageLoadOptions) {
           retained.push(...active.filter((item) => !selected.has(item)))
           retained.push(...created.filter((item) => !selected.has(item)))
           active = next
+          owners = resolved.owners
           return true
         } catch (error) {
           try {
@@ -425,6 +442,22 @@ export async function loadInstalledPackages(options: PackageLoadOptions) {
   return {
     get extensions() {
       return allExtensions(active)
+    },
+    requiresBoardSelectionMigration: () => manager.requiresBoardSelectionMigration(),
+    /** Exact inventory owners whose complete native closure reached this registry generation. */
+    activeInventory() {
+      return owners.flatMap((owner) => {
+        if (owner.revision === undefined) return []
+        const ready = owner.dependencies.every((dependency) =>
+          active.some(
+            ({ installed }) =>
+              installed.source === dependency.source &&
+              installed.root === dependency.root &&
+              installed.revision === dependency.revision,
+          ),
+        )
+        return ready ? [{ source: owner.source, revision: owner.revision }] : []
+      })
     },
     refresh,
     async close() {

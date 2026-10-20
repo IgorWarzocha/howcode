@@ -8,6 +8,16 @@ export default {
         rules: ['react-doctor/async-await-in-loop'],
       },
       {
+        // Cursor replay mutates one Initiative session document on Durable's serial Session line.
+        files: ['desktop/durable-runtime/input-admission.ts'],
+        rules: ['react-doctor/async-await-in-loop'],
+      },
+      {
+        // Each update reads and replaces the same inventory after the preceding mutation commits.
+        files: ['components/packages/service/manager.ts'],
+        rules: ['react-doctor/async-await-in-loop'],
+      },
+      {
         files: ['src/desktop-host/composer-attachments.ts'],
         rules: ['react-doctor/path-traversal-risk'],
       },

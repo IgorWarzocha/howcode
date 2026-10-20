@@ -1,3 +1,4 @@
+export type { PackageOperationHost } from './activation.ts'
 export type { InstalledComponentDefinition } from './component-loader.ts'
 export { waitComponentStatus } from './component-status.ts'
 export { defaultComponentPackages } from './default-packages.generated.ts'

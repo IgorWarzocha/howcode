@@ -33,8 +33,13 @@ function makeTerminalBridge(
     dispose: (child) =>
       Effect.tryPromise({
         try: () => terminalRpc.dispose(child),
-        catch: () => undefined,
-      }).pipe(Effect.ignore),
+        catch: (error) => serviceError('disposeTerminalRpc', error),
+      }).pipe(
+        Effect.tapError((error) =>
+          Effect.sync(() => console.error('Desktop terminal RPC cleanup failed.', error)),
+        ),
+        Effect.orDie,
+      ),
     write: (message) => terminalRpc.write(message),
   }
 }

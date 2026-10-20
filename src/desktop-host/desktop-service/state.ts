@@ -7,7 +7,7 @@ export function updateMap<K, V>(source: ReadonlyMap<K, V>, update: (copy: Map<K,
 }
 
 export function makeDesktopServiceState<Process>(): DesktopServiceState<Process> {
-  return { current: null, nextRecordId: 1 }
+  return { disposed: false, current: null, nextRecordId: 1 }
 }
 
 export function updateCurrent<Process>(

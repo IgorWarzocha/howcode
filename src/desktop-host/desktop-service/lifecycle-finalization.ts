@@ -1,3 +1,4 @@
+import * as Cause from 'effect/Cause'
 import * as Deferred from 'effect/Deferred'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
@@ -7,12 +8,13 @@ import * as Scope from 'effect/Scope'
 import type { DesktopEvent } from '../../../shared/desktop-contracts'
 import { type DiagnosticInput, diagnosticEvent } from './lifecycle-state'
 import { detachCurrent, updateCurrent } from './state'
-import type {
-  DesktopServiceError,
-  DesktopServiceState,
-  PendingRequest,
-  ServiceRecord,
-  TerminalRpcBridge,
+import {
+  type DesktopServiceError,
+  type DesktopServiceState,
+  type PendingRequest,
+  type ServiceRecord,
+  serviceError,
+  type TerminalRpcBridge,
 } from './types'
 
 export function makeDesktopServiceFinalization<Process>(options: {
@@ -31,14 +33,22 @@ export function makeDesktopServiceFinalization<Process>(options: {
     })
   })
 
-  const finalizeRecord = Effect.fn('DesktopService.finalizeRecord')(function* (
-    record: ServiceRecord<Process>,
-  ) {
-    yield* Scope.close(record.scope, Exit.void)
-    if (record.process) yield* terminal.dispose(record.process)
-    yield* Ref.update(state, (current) => detachCurrent(current, record.id))
-    yield* Deferred.succeed(record.closed, undefined)
-  })
+  const finalizeRecord = Effect.fn('DesktopService.finalizeRecord')(
+    function* (record: ServiceRecord<Process>) {
+      yield* Scope.close(record.scope, Exit.void)
+      if (record.process) yield* terminal.dispose(record.process)
+      yield* Ref.update(state, (current) => detachCurrent(current, record.id))
+      yield* Deferred.succeed(record.closed, undefined)
+    },
+    (effect, record) =>
+      effect.pipe(
+        Effect.onExit((exit) =>
+          Exit.isFailure(exit)
+            ? Deferred.fail(record.closed, serviceError('finalize', Cause.squash(exit.cause)))
+            : Effect.void,
+        ),
+      ),
+  )
 
   const claimStop = Effect.fn('DesktopService.claimStop')(function* (
     recordId: number,
@@ -63,7 +73,14 @@ export function makeDesktopServiceFinalization<Process>(options: {
   ) {
     yield* rejectPending(record.pendingRequests.values(), error)
     yield* Deferred.fail(record.ready, error)
-    if (diagnostic) yield* PubSub.publish(events, diagnosticEvent(diagnostic))
+    if (diagnostic) {
+      yield* Effect.sync(() => {
+        if (diagnostic.severity === 'error')
+          console.error(diagnostic.message, diagnostic.details ?? '')
+        else console.warn(diagnostic.message, diagnostic.details ?? '')
+      })
+      yield* PubSub.publish(events, diagnosticEvent(diagnostic))
+    }
     yield* finalizeRecord(record)
   })
 

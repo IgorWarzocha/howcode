@@ -24,6 +24,7 @@ import {
   setComposerThinkingLevel,
   stopComposerRun,
 } from '../conversation-runtime.ts'
+import { humanComposerOrigin } from '../durable-runtime/input-origin.ts'
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
 import { normalizeComposerSendAttachments } from './composer-attachment-payload'
@@ -51,13 +52,16 @@ async function sendComposerPromptFromPayload(payload: AnyDesktopActionPayload) {
   if (!text && attachments.length === 0) return handledAction()
 
   const composerRequest = getComposerRequest(payload)
-  const composerSendResult = await sendComposerPrompt({
-    personId: typeof payload.personId === 'string' ? payload.personId : undefined,
-    ...composerRequest,
-    text,
-    attachments,
-    streamingBehavior: getComposerStreamingBehavior(payload),
-  })
+  const composerSendResult = await sendComposerPrompt(
+    {
+      personId: typeof payload.personId === 'string' ? payload.personId : undefined,
+      ...composerRequest,
+      text,
+      attachments,
+      streamingBehavior: getComposerStreamingBehavior(payload),
+    },
+    humanComposerOrigin(),
+  )
   if (
     payload.suppressInbox === true &&
     composerRequest.conversationId &&

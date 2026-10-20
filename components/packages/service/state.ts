@@ -1,58 +1,85 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
+import * as Schema from 'effect/Schema'
 import { lock } from 'proper-lockfile'
+import { PackageOperationReceiptSchema } from '../../../shared/package-operation-contracts.ts'
 
 const managedLocation = /^[0-9a-f-]{36}$/
 
-export interface PackageRecord {
-  source: string
-  name?: string
-  location?: string
-  revision?: string
-}
+const PackageRecordSchema = Schema.Struct({
+  source: Schema.String,
+  name: Schema.optionalKey(Schema.String),
+  location: Schema.optionalKey(Schema.String.check(Schema.isPattern(managedLocation))),
+  revision: Schema.optionalKey(Schema.String),
+})
+export type PackageRecord = typeof PackageRecordSchema.Type
+const PackageSettingsSchema = Schema.Struct({
+  version: Schema.Literal(1),
+  packages: Schema.mutable(Schema.Array(PackageRecordSchema)),
+  operations: Schema.mutable(Schema.Array(PackageOperationReceiptSchema)),
+  boardSelectionMigration: Schema.optionalKey(Schema.Literal(true)),
+})
+export type PackageSettings = typeof PackageSettingsSchema.Type
 
-export async function readPackageSettings(path: string): Promise<PackageRecord[]> {
+/** Call under the inventory barrier: acquiring it proves no prior mutation still owns an intent. */
+export async function readPackageState(path: string): Promise<PackageSettings> {
   let contents: string
   try {
     contents = await readFile(path, 'utf8')
   } catch (error) {
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return []
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT')
+      return { version: 1, packages: [], operations: [] }
     throw error
   }
   const value: unknown = JSON.parse(contents)
-  if (!Array.isArray(value)) throw new Error(`Invalid package settings: ${path}`)
-  return value.map((record: unknown) => {
-    if (
-      typeof record !== 'object' ||
-      record === null ||
-      !('source' in record) ||
-      typeof record.source !== 'string' ||
-      ('name' in record && typeof record.name !== 'string') ||
-      ('revision' in record && typeof record.revision !== 'string') ||
-      ('location' in record &&
-        (typeof record.location !== 'string' || !managedLocation.test(record.location)))
-    ) {
-      throw new Error(`Invalid package settings record: ${path}`)
-    }
-    return {
-      source: record.source,
-      ...('name' in record ? { name: String(record.name) } : {}),
-      ...('revision' in record ? { revision: String(record.revision) } : {}),
-      ...('location' in record ? { location: String(record.location) } : {}),
-    }
-  })
+  const state = Array.isArray(value)
+    ? {
+        version: 1 as const,
+        packages: Schema.decodeUnknownSync(Schema.mutable(Schema.Array(PackageRecordSchema)))(
+          value,
+        ),
+        operations: [],
+      }
+    : Schema.decodeUnknownSync(PackageSettingsSchema)(value)
+  if (!state.operations.some((operation) => operation.outcome === 'preparing')) return state
+  const recovered: PackageSettings = {
+    ...state,
+    operations: state.operations.map((operation) =>
+      operation.outcome === 'preparing'
+        ? {
+            ...operation,
+            outcome: 'interrupted',
+            error:
+              'Package operation was interrupted before inventory commit; effects were not retried.',
+          }
+        : operation,
+    ),
+  }
+  await writePackageState(path, recovered)
+  return recovered
 }
 
-export async function writePackageSettings(path: string, records: PackageRecord[]): Promise<void> {
+export async function readPackageSettings(path: string): Promise<PackageRecord[]> {
+  return (await readPackageState(path)).packages
+}
+
+export async function writePackageState(path: string, state: PackageSettings): Promise<void> {
   await mkdir(dirname(path), { recursive: true })
   const temporary = `${path}.${randomUUID()}.tmp`
   try {
-    await writeFile(temporary, `${JSON.stringify(records, null, 2)}\n`, { flag: 'wx' })
+    await writeFile(temporary, `${JSON.stringify(state, null, 2)}\n`, { flag: 'wx', flush: true })
     await rename(temporary, path)
-  } finally {
+  } catch (error) {
     await rm(temporary, { force: true })
+    throw error
   }
+}
+
+/** Inventory-only writers (including distribution seeding) must retain operation receipts. */
+export async function writePackageSettings(path: string, records: PackageRecord[]): Promise<void> {
+  const state = await readPackageState(path)
+  await writePackageState(path, { ...state, packages: records })
 }
 
 // Managers for the same app directory share one mutation and read barrier.

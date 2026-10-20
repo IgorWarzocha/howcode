@@ -1,6 +1,7 @@
 import type { Message, ProseMessage } from '../../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
 import { mapDurableEntriesToChat } from '../../shared/durable-message-mapper.ts'
+import { readTrustedInputData } from '../../shared/input-origin.ts'
 import { normalizeChatTitle } from '../../shared/pi-message-mapper.ts'
 import { repairConversationProjection } from '../chat-repository.ts'
 import { readRuntimeChat } from '../durable-runtime/chats.ts'
@@ -38,6 +39,11 @@ async function repair(conversationId: string) {
     (latest, message) => Math.max(latest, message.timestamp),
     0,
   )
+  const lastHumanInputAtMs = entries.reduce<number | null>((latest, entry) => {
+    const input = readTrustedInputData(entry)
+    if (input?.origin.kind !== 'human-composer') return latest
+    return latest === null ? input.at : Math.max(latest, input.at)
+  }, null)
   if (!metadata) {
     const origin = await readRuntimeConversationOrigin(conversationId)
     if (!origin?.appOwned) return
@@ -57,6 +63,7 @@ async function repair(conversationId: string) {
     conversationId,
     title: normalizeChatTitle(firstUser?.content.join('\n\n')),
     lastModifiedMs,
+    lastHumanInputAtMs,
     entryId: persisted.messages.at(-1)?.id ?? null,
     assistantId: assistant?.id ?? null,
     preview: assistant?.content.join('\n\n').slice(0, 240) ?? null,

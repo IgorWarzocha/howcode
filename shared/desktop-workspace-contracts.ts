@@ -2,6 +2,12 @@ import type { Chat } from './desktop-chat-contracts'
 
 export const DEFAULT_WORKSPACE_ID = 'howcode:default-workspace'
 
+export type WorkspaceActivity = {
+  workspaceId: string
+  lastHumanInputAtMs: number | null
+  lastHowcodeActivityAtMs: number | null
+}
+
 export type Workspace = {
   id: string
   name: string

@@ -1,6 +1,6 @@
 # Assistant-first Howcode
 
-The planning questions are resolved. Product direction and the decisions below are agreed. Workboard boundaries are proposals, not implementation approval.
+The planning questions are resolved. Product direction and the decisions below are agreed. Implementation is authorised, with the main agent coordinating parallel implementers across the shell, Howcode Components and Pi Durable Components.
 
 [The implementation companion](assistant-first-implementation.md) maps the source-backed changes, ownership, dependencies and validation work.
 
@@ -119,7 +119,7 @@ Source anchors: `desktop/durable-runtime/host.ts`, `desktop/conversation-runtime
 
 ## Proposed workboards
 
-These are planning groups, not created boards or implementation assignments.
+These groups describe the scope. Implementation assignments and cross-owner contracts are coordinated on the shared Board.
 
 ### 1. Reliable runtime and fresh-install foundation
 
@@ -196,4 +196,4 @@ None outstanding from the planning rounds. Implementation thread boundaries and 
 1. Bound board 1 into implementation-ready threads. Keep startup and recovery reliable without turning the assistant into an app tester. Use the setup Board thread rather than a new configuration-record feature.
 2. Trace cross-board participation, feature gateways and shared subscription/admission boundaries through their owning public APIs before estimating those boards. Do not create parallel stores or silently change portable package contracts.
 3. Refine the dependency order while preserving optional workspace residents and the main-assistant versus workspace-resident split.
-4. Begin implementation only after explicit approval.
+4. Implement the complete system in parallel, integrating dependencies as they become available. Use static checks and source review during construction, then exercise the coherent result with a real agent. Do not fragment implementation around repeated app-testing milestones.

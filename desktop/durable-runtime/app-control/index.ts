@@ -10,7 +10,9 @@ import { resolveInstalledWorkspaceAgent } from '../../plugins/runtime.ts'
 import { createWorkspace, getWorkspaceNavigationState } from '../../workspace-repository.ts'
 import { resolveConversation, runtimeContext } from '../host.ts'
 import { executeChatAction } from './chat-actions.ts'
-import { appControlHelp, decodeAppControlInput } from './input.ts'
+import { executeFeatureAction } from './features.ts'
+import { type AppControlInput, appControlHelp, decodeAppControlInput } from './input.ts'
+import { executeSelectionAction } from './selection.ts'
 
 function page<T>(items: T[], cursor = '0', limit = 20) {
   const offset = Number(cursor)
@@ -55,12 +57,27 @@ async function workspaceSummary(
 /** One policy/dispatcher shared by native tools and external transports. Never replay calls here. */
 export async function executeAppControl(
   input: unknown,
-  caller: AppControlCaller = {},
+  caller: AppControlCaller = { kind: 'host' },
 ): Promise<AppControlResult> {
   const args = await decodeAppControlInput(input)
   caller.signal?.throwIfAborted()
   const context = caller.signal ? withAbortSignal(caller.signal, runtimeContext) : runtimeContext
   if (args.action === 'help') return appControlHelp
+  if (args.action === 'features.list' || args.action === 'features.call')
+    return executeFeatureAction(args, caller, context)
+  if (args.action === 'extensions.list' || args.action === 'extensions.select')
+    return executeSelectionAction(args, caller)
+  return executeNavigationAction(args, caller, context)
+}
+
+async function executeNavigationAction(
+  args: Exclude<
+    AppControlInput,
+    { action: 'help' | 'features.list' | 'features.call' | 'extensions.list' | 'extensions.select' }
+  >,
+  caller: AppControlCaller,
+  context: typeof runtimeContext,
+): Promise<AppControlResult> {
   await ensureConversationProjection()
   caller.signal?.throwIfAborted()
   if (args.action === 'workspaces.create') {
@@ -115,4 +132,9 @@ export async function executeAppControl(
   const conversation = await resolveConversation(chat.id)
   caller.signal?.throwIfAborted()
   return executeChatAction(conversation, args, caller, context)
+}
+
+/** Explicit external route: bearer authentication never supplies native or human authority. */
+export function executeMcpAppControl(input: unknown): Promise<AppControlResult> {
+  return executeAppControl(input, { kind: 'mcp' })
 }

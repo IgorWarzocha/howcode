@@ -42,7 +42,7 @@ export function createMcpEndpoint(input: {
     server.setRequestHandler(CallToolRequestSchema, async (toolRequest, extra) => {
       if (closing || extra.signal.aborted) throw new Error('MCP request closed.')
       if (toolRequest.params.name !== appControlTool.name) throw new Error('Unknown tool.')
-      const call = input.app.appControl(toolRequest.params.arguments ?? {})
+      const call = input.app.appControlMcp(toolRequest.params.arguments ?? {})
       calls.add(call)
       try {
         const result = await call

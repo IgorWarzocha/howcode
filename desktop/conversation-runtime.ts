@@ -9,6 +9,7 @@ import type {
   ComposerStreamingBehavior,
 } from '../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../shared/desktop-working-directory.ts'
+import { DEFAULT_WORKSPACE_ID } from '../shared/desktop-workspace-contracts.ts'
 import {
   getRuntimeConversationMetadata,
   registerRuntimeConversation,
@@ -34,8 +35,10 @@ import {
   runtimeContext,
 } from './durable-runtime/host.ts'
 import { prepareRuntimeInput } from './durable-runtime/input.ts'
+import { submitTrustedInput } from './durable-runtime/input-ingress.ts'
+import type { TrustedInputOrigin } from './durable-runtime/input-origin.ts'
 import { migrateAgentCapabilities } from './durable-runtime/legacy-capability-migration.ts'
-import { admitPluginInput } from './plugins/runtime.ts'
+import { admitPluginInput, notifyPluginConversationCreated } from './plugins/runtime.ts'
 import { emitDesktopEvent, subscribeDesktopEvents } from './runtime/desktop-events.ts'
 import { withDirectoryActivity } from './runtime/directory-activity.ts'
 
@@ -90,11 +93,25 @@ async function registerConversation(conversationId: string, request: ComposerSta
   })
 }
 
-export async function startNewChat(request: ComposerStateRequest = {}) {
+async function notifyCreatedConversation(conversationId: string) {
+  const metadata = getRuntimeConversationMetadata(conversationId)
+  if (!metadata) throw new Error('Created conversation has no app association.')
+  await notifyPluginConversationCreated({
+    id: conversationId,
+    directoryId: metadata.directoryId,
+    workspaceId: metadata.workspaceId ?? DEFAULT_WORKSPACE_ID,
+  })
+}
+
+export async function startNewChat(
+  request: ComposerStateRequest = {},
+  options: { purpose?: 'resident' } = {},
+) {
   return withDirectoryActivity(request.directoryId ?? getDesktopWorkingDirectory(), async () => {
     const conversation = await createRuntimeConversation(request)
     const conversationId = String(conversation.id)
     await registerConversation(conversationId, request)
+    if (options.purpose !== 'resident') await notifyCreatedConversation(conversationId)
     return {
       composer: await publishComposerState({ ...request, conversationId }),
       directoryId: request.directoryId ?? getDesktopWorkingDirectory(),
@@ -130,6 +147,7 @@ export async function sendComposerPrompt(
     attachments?: ComposerAttachment[]
     streamingBehavior?: ComposerStreamingBehavior | null
   },
+  origin: TrustedInputOrigin,
 ) {
   return withDirectoryActivity(request.directoryId ?? getDesktopWorkingDirectory(), async () => {
     const conversation = request.conversationId
@@ -137,6 +155,7 @@ export async function sendComposerPrompt(
       : await createRuntimeConversation(request)
     const conversationId = String(conversation.id)
     await registerConversation(conversationId, request)
+    if (!request.conversationId) await notifyCreatedConversation(conversationId)
     const behavior = request.streamingBehavior ?? loadAppSettings().composerStreamingBehavior
     if (behavior === 'stop') {
       await conversation.abort(runtimeContext)
@@ -160,11 +179,12 @@ export async function sendComposerPrompt(
         },
         runtimeContext,
       )
-      await conversation.submit(
+      await submitTrustedInput(
+        conversation,
         {
           ...input,
-          type: 'input',
           whenBusy: behavior,
+          origin,
         },
         runtimeContext,
       )
@@ -208,6 +228,7 @@ export async function forkConversation(request: ComposerStateRequest & { targetE
     )
     const conversationId = String(child.id)
     await registerConversation(conversationId, request)
+    await notifyCreatedConversation(conversationId)
     await publishComposerState({ ...request, conversationId })
     return { conversationId, chatId: conversationId, directoryId: request.directoryId ?? undefined }
   })
