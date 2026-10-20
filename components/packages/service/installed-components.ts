@@ -35,7 +35,6 @@ type Generation = {
   definition?: InstalledComponentDefinition
   source?: InstalledComponentSource
   rendererAdmitted?: boolean
-  rendererError?: string
 }
 function readyGeneration(
   root: string,
@@ -190,14 +189,9 @@ function componentDefinitions(
   return definitions
 }
 
-function isPreparationError(generation: Generation) {
-  return generation.descriptor.status === 'error' && !generation.rendererError
-}
-
 function rendererReadiness(generation: Generation): ComponentReadiness {
   if (!generation.source)
     return { status: 'failed', error: 'This package has no renderer contribution.' }
-  if (generation.rendererError) return { status: 'failed', error: generation.rendererError }
   return generation.rendererAdmitted
     ? { status: 'ready' }
     : { status: 'pending', reason: 'Waiting for browser contribution admission.' }
@@ -211,8 +205,8 @@ function publishOutcome(
 ) {
   for (const { id, name, revision } of definitions) {
     const generation = next.get(id)
-    if (!generation || isPreparationError(generation)) continue
-    const error = errors.get(id) ?? generation.rendererError
+    if (!generation || generation.descriptor.status === 'error') continue
+    const error = errors.get(id)
     const navigation = {
       source: generation.descriptor.source,
       ...(generation.descriptor.navigation ? { navigation: true } : {}),
@@ -372,8 +366,7 @@ export function createInstalledComponents(lifecycle?: InstalledComponentLifecycl
       const { descriptor } = generation
       const error = serviceErrors.get(descriptor.id)
       if (error) return { status: 'failed', error }
-      if (isPreparationError(generation) && descriptor.status === 'error')
-        return { status: 'failed', error: descriptor.error }
+      if (descriptor.status === 'error') return { status: 'failed', error: descriptor.error }
       if (active.get(descriptor.id)?.definition?.revision !== revision)
         return {
           status: 'pending',
@@ -415,36 +408,24 @@ export function createInstalledComponents(lifecycle?: InstalledComponentLifecycl
         (generation.descriptor.status === 'pending' && generation.descriptor.stage !== 'renderer')
       )
         throw new Error('Component services are not ready for renderer admission.')
-      if (generation.descriptor.status === 'error' && !generation.rendererError)
-        throw new Error(generation.descriptor.error)
-      generation.rendererAdmitted = request.error === undefined
-      if (request.error === undefined) {
-        delete generation.rendererError
-      } else {
-        generation.rendererError = request.error
-      }
+      if (generation.descriptor.status === 'error') throw new Error(generation.descriptor.error)
+      // Browser acknowledgement is monotonic for this generation. Other clients cannot revoke it.
+      generation.rendererAdmitted = true
       const { id, name, revision, navigation, source, activeRevision } = generation.descriptor
-      generation.descriptor =
-        request.error === undefined
-          ? {
-              id,
-              source,
-              name,
-              revision,
-              status: 'ready',
-              renderer: true,
-              navigation,
-              activeRevision,
-            }
-          : { id, name, revision, source, activeRevision, status: 'error', error: request.error }
+      generation.descriptor = {
+        id,
+        source,
+        name,
+        revision,
+        status: 'ready',
+        renderer: true,
+        navigation,
+        activeRevision,
+      }
     },
     load(reference: PackageUiReference) {
       const current = active.get(reference.id)
-      if (
-        current?.definition?.revision === reference.revision &&
-        current.source &&
-        !current.rendererError
-      )
+      if (current?.definition?.revision === reference.revision && current.source)
         return current.source
       const generation = generations.get(reference.id)
       if (!generation || generation.descriptor.revision !== reference.revision)

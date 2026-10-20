@@ -2,6 +2,8 @@ Package UI bindings own native work through the factory session signal and opera
 
 Full component preparation shares this inventory watcher and serialization barrier. Keep service admission ahead of generation-bound renderer admission. Publish status with the same inventory snapshot that was reconciled, not a fresh read. Missing public exports are activation errors, not evidence that a package has no component. Resolve exports inside the owning installed root.
 
+Browser renderer admission acknowledges success only and is monotonic for the exact generation. Reject error-bearing or excess admission payloads before mutation; an incompatible client's load/validation failure is local, never a shared generation failure. Service/compiler preparation failures remain authoritative global errors.
+
 Read package settings under the inventory barrier: a surviving preparing receipt becomes interrupted once that barrier is acquired. Commit inventory and operation receipts in one atomic settings envelope; inventory-only writers must preserve receipts. Reconcile activation against the receipt's exact source/revision and the published native registry, never inventory success or the CLI lease alone. Register continuations before rechecking and acquire native delivery receipts outside package queues and agent/request leases; accepted-work lineage survives the originating turn ending.
 
 Native termination is a request: Durable may finish other tools in the round first. Return pending and release the operation lease; only the real idle boundary admits activation. Never force a context-reset handoff or keep a foreground waiter to simulate an immediate yield.

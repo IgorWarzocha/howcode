@@ -308,7 +308,10 @@ export async function createPackageUiService(
     removeInstalledComponent: (request) => mutateInstalledComponent(request, manager.remove),
     admitInstalledComponent: (input) =>
       serialized(async () => {
-        const request = Schema.decodeUnknownSync(InstalledComponentAdmissionSchema)(input)
+        // Reject old error-bearing payloads instead of stripping them into false success.
+        const request = Schema.decodeUnknownSync(InstalledComponentAdmissionSchema, {
+          onExcessProperty: 'error',
+        })(input)
         await refresh()
         components.admit(request)
         await publishComponentStatus()

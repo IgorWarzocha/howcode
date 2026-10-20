@@ -31,7 +31,6 @@ export type InstalledComponentSource = typeof InstalledComponentSourceSchema.Typ
 export const InstalledComponentAdmissionSchema = Schema.Struct({
   id: Schema.String,
   revision: Schema.String,
-  error: Schema.optional(Schema.String),
 })
 export type InstalledComponentAdmission = typeof InstalledComponentAdmissionSchema.Type
 export const InstalledComponentMutationSchema = Schema.Struct({ source: Schema.String })

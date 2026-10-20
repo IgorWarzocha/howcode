@@ -298,12 +298,12 @@ async function resolveDescriptor(
   try {
     const loaded = previous?.revision === descriptor.revision ? previous : await load(descriptor)
     if (descriptor.navigation) validateNavigationOnly(loaded.contribution)
-    if (descriptor.status === 'pending') await admitInstalledComponentQuery(descriptor)
+    if (descriptor.status === 'pending')
+      await admitInstalledComponentQuery({ id: descriptor.id, revision: descriptor.revision })
     return loaded
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     errors.push(`${descriptor.name}: ${message}`)
-    await rejectRendererGeneration(descriptor, message, errors)
     return resolveActiveRenderer(descriptor, previous, errors)
   }
 }
@@ -320,20 +320,6 @@ async function resolveActiveRenderer(
   } catch (error) {
     errors.push(`${descriptor.name}: active renderer unavailable: ${String(error)}`)
     return undefined
-  }
-}
-
-async function rejectRendererGeneration(
-  descriptor: InstalledComponentDescriptor,
-  error: string,
-  errors: string[],
-) {
-  try {
-    await admitInstalledComponentQuery({ id: descriptor.id, revision: descriptor.revision, error })
-  } catch (admission) {
-    errors.push(
-      `${descriptor.name}: renderer error acknowledgement failed: ${admission instanceof Error ? admission.message : String(admission)}`,
-    )
   }
 }
 
