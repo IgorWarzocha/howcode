@@ -1,6 +1,6 @@
 # Assistant-first Howcode
 
-The three requested decision batches are complete. Product direction and the decisions below are agreed. One global-pause timing ambiguity remains. Workboard boundaries are proposals, not implementation approval.
+The planning questions are resolved. Product direction and the decisions below are agreed. Workboard boundaries are proposals, not implementation approval.
 
 ## Goal
 
@@ -58,8 +58,9 @@ Howcode starts with you and your main assistant. It remains available without an
 - Snooze targets one workspace or the main assistant's own scope, never the entire app through that scoped tool. It suspends proactive admission from Pulses and comparable scheduled components for that target.
 - On reactivation, coalesce missed occurrences into one fresh run per distinct job and queue the different jobs. Programmatically include how many occurrences were missed and the start and end of the missed period, instructing the run to cover relevant work since then. Clearly obsolete or expired jobs should be reported rather than blindly replayed.
 - Pace catch-up with a configurable small concurrency limit. Let the user or assistant adjust it, and honour provider backoff when limits are hit. Do not introduce a billing system or pretend the concurrency setting knows every provider's limits.
-- Provide a separate app-wide pause button. The explicit selected rule is that each workspace, including the main assistant's own scope, remains paused until individually resumed. New workspaces start paused under that global hold. Existing snooze timers cannot silently override it.
-- Existing snooze deadlines continue to age during an app-wide pause. Do not freeze their clocks or restart their full duration on release. Once the global hold is released for a workspace, an unexpired snooze retains only its remaining time; an expired one can enter paced catch-up. Whether a timed global hold may release automatically remains the single open ambiguity below.
+- Distinguish an indefinite global halt from a timed snooze. After a global halt, each workspace, including the main assistant's own scope, requires individual resume. New workspaces start paused under that halt. Snooze timers cannot override it.
+- Timed snoozes expire automatically, including an app-wide snooze until a chosen time. They do not require per-workspace resume. The main assistant's scoped snooze tool remains limited to one target; app-wide controls are separate.
+- Individual snooze deadlines keep counting down during a global halt or timed app-wide snooze. Do not freeze or reset them. After the global restriction clears, a workspace with an unexpired snooze waits until its original deadline. Otherwise it can enter paced catch-up. A remaining indefinite halt always requires explicit resume.
 - Direct user requests may run in a snoozed workspace without switching proactive mode back on. Agent-originated nudges, including those labelled urgent, wait for reactivation.
 - Support explicit reminders and deadlines for work needing user attention. Initially keep them in Howcode and available on return. External delivery channels can be installed or created when requested.
 - Do not prescribe a built-in to-do panel. The user can ask the assistant to create one or find an installable component.
@@ -124,7 +125,7 @@ Proposed threads:
 - Shared snooze participation for Pulses and other proactive trigger components.
 - Repeated-job deduplication and paced release of distinct due work.
 - Missed-period context injected into each coalesced run, with a configurable catch-up concurrency limit and provider backoff.
-- App-wide pause with explicit per-workspace reactivation, while original snooze deadlines continue to age.
+- Indefinite global halt with per-workspace resume, distinct from automatically expiring timed snoozes. Original workspace snooze deadlines keep counting down under either.
 - Reminder delivery in Howcode, with optional external integrations.
 
 ### 5. Assistant-shaped environment
@@ -154,12 +155,11 @@ Start with board 1. The later order and the exact capability subset needed for a
 
 ## Open questions
 
-- **Timed global pause:** Igor selected explicit per-workspace resume, but also described a "global pause until morning" under which individual snooze deadlines keep ageing. The clock behaviour is agreed. It is not yet clear whether the global hold itself can expire automatically, or whether morning is when the user resumes selected workspaces. Preserve the explicit-resume rule unless this is clarified. This does not block the runtime foundation.
+None outstanding from the planning rounds. Implementation thread boundaries and dependency details remain to be worked out without reopening the agreed product behaviour.
 
 ## Proposed next steps
 
-1. Resolve the one timed-global-pause ambiguity before implementing that feature. Do not reopen the settled product model or require a resident for every workspace.
-2. Bound board 1 into implementation-ready threads. Keep startup and recovery reliable without turning the assistant into an app tester. Use the setup Board thread rather than a new configuration-record feature.
-3. Trace cross-board participation and snooze through their owning public APIs before estimating those boards. Do not create parallel stores or silently change portable package contracts.
-4. Refine the dependency order while preserving the main-assistant versus workspace-resident split.
-5. Begin implementation only after explicit approval.
+1. Bound board 1 into implementation-ready threads. Keep startup and recovery reliable without turning the assistant into an app tester. Use the setup Board thread rather than a new configuration-record feature.
+2. Trace cross-board participation and snooze through their owning public APIs before estimating those boards. Do not create parallel stores or silently change portable package contracts.
+3. Refine the dependency order while preserving optional workspace residents and the main-assistant versus workspace-resident split.
+4. Begin implementation only after explicit approval.
