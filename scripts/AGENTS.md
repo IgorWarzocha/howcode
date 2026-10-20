@@ -1,6 +1,7 @@
 - Development web scripts own Vite, authentication, proxying, and child lifecycle only. Operation behaviour comes from the host-neutral typed handler composition used by the production server.
 - `dev-web.ts` owns Vite/bridge process lifecycle and proxy installation; `dev-web-access.ts` owns renderer host trust, access-token sessions, and auth responses.
 - Dev reloads consume the build watcher's immutable generations. Never replace active bundles or infer runtime idleness from persisted chat flags; admission must stay closed across the live service inspection and replacement.
+- Proxy disconnect handling must cover browsers closing before upstream headers. Drain non-event responses without a downstream pipe; paused orphan responses retain admission and block every later backend handoff.
 - The dev terminal owner lives for the supervisor lifetime. Pin its immutable generation during GC; close backends before the owner at shutdown. Terminal-owner and supervisor edits require a supported dev restart, not an idle backend switch.
 - Install dev auth/config/proxy middleware through Vite's `configureServer` plugin hook so configuration reloads preserve it. Never splice Vite's private middleware stack.
 - `/mcp` requires Bearer auth independently of browser cookies. Validate its public host/origin before replacing Host and removing Origin at the private backend proxy; preserve backend Bearer validation and the bridge-token gate.

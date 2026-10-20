@@ -192,6 +192,15 @@ function proxyDevWebBridgeRequest(
     headers.host = `${DEV_SERVER_HOST}:${bridge.port}`
     delete headers.origin
   }
+  let upstreamResponse: http.IncomingMessage | null = null
+  // The browser can disconnect before upstream headers arrive. Keep mutations
+  // draining, but never pipe their eventual response into a closed browser.
+  response.once('close', () => {
+    if (!upstreamResponse) return
+    upstreamResponse.unpipe(response)
+    if (events) upstreamResponse.destroy()
+    else upstreamResponse.resume()
+  })
   const proxyRequest = http.request(
     {
       hostname: DEV_SERVER_HOST,
@@ -201,14 +210,17 @@ function proxyDevWebBridgeRequest(
       headers,
     },
     (proxyResponse) => {
+      upstreamResponse = proxyResponse
       proxyResponse.once('end', done)
       proxyResponse.once('error', done)
-      response.writeHead(proxyResponse.statusCode ?? 500, proxyResponse.headers)
-      proxyResponse.pipe(response)
-      response.on('close', () => {
+      proxyResponse.once('close', done)
+      if (response.destroyed) {
         if (events) proxyResponse.destroy()
         else proxyResponse.resume()
-      })
+        return
+      }
+      response.writeHead(proxyResponse.statusCode ?? 500, proxyResponse.headers)
+      proxyResponse.pipe(response)
     },
   )
 
