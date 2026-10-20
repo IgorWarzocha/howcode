@@ -99,6 +99,7 @@ export function InstalledComposer({
   artifactRendererName,
   onToggleArtifacts,
   onToggleArtifactRenderer,
+  leadingFooter,
   ...props
 }: InstalledComposerProps) {
   const { renderer, services, generationKey, dictationError } = useComposerBinding()
@@ -121,15 +122,18 @@ export function InstalledComposer({
         services={services}
         registerDraftReceiver={register}
         leadingFooter={
-          showTerminalControls && terminal && TerminalControl ? (
-            <RendererSlot name={terminal.name}>
-              <TerminalControl
-                host={terminal.host}
-                visible={terminalVisible}
-                onToggle={onToggleTerminal}
-              />
-            </RendererSlot>
-          ) : null
+          <>
+            {leadingFooter}
+            {showTerminalControls && terminal && TerminalControl ? (
+              <RendererSlot name={terminal.name}>
+                <TerminalControl
+                  host={terminal.host}
+                  visible={terminalVisible}
+                  onToggle={onToggleTerminal}
+                />
+              </RendererSlot>
+            ) : null}
+          </>
         }
         composerActions={renderComposerActions}
         trailingFooter={(composerPanelRef) => (

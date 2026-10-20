@@ -122,7 +122,7 @@ export function buildPeopleSettingsDescriptor(
     category: 'general',
     title: 'People',
     description:
-      'Names and short descriptions the agent can see. Choose who is speaking beside the composer.',
+      'Names and short descriptions the agent can see. With multiple people, choose who is speaking in the composer toolbar.',
     layout: 'rows',
     keywords: 'humans person speaker identity',
     render: () => <PeopleSettings people={people} onAction={onAction} />,

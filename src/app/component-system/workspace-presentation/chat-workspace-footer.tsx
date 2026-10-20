@@ -97,6 +97,14 @@ function ChatComposer(props: ChatWorkspaceContentProps) {
       onToggleArtifactRenderer={artifactDrawer.toggleArtifacts}
       terminalVisible={state.terminalVisible}
       preferPortalModelPopover={props.centerChatFooter}
+      leadingFooter={
+        <SpeakerSelector
+          people={appSettings.people}
+          onManage={() =>
+            controller.navigation.showView('settings', { settingId: 'general.people' })
+          }
+        />
+      }
       onListAttachmentEntries={listComposerAttachmentEntries}
       onAction={handleAction}
     />
@@ -106,12 +114,6 @@ function ChatComposer(props: ChatWorkspaceContentProps) {
 function ChatComposerCenter(props: ChatWorkspaceContentProps) {
   return (
     <div className="grid gap-0">
-      <SpeakerSelector
-        people={props.shellState?.appSettings.people ?? []}
-        onManage={() =>
-          props.controller.navigation.showView('settings', { settingId: 'general.people' })
-        }
-      />
       <QueuedPrompts {...props} />
       <div>
         <ChatComposer {...props} />
