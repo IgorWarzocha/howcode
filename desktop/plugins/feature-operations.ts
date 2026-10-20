@@ -11,7 +11,7 @@ type Binding = {
 }
 const bindings = new Map<string, Binding>()
 const catalogue = new Map<string, { binding: Binding; operation: FeatureOperation }>()
-const operationNamePattern = /^[a-z][a-z0-9-]*(?:\.[a-z][a-z0-9-]*)+$/
+const operationNamePattern = /^[a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)+$/
 
 /** Composition only: installed instances and explicitly composed shell features share a catalogue. */
 export function bindFeatureOperations(owner: string, operations: readonly FeatureOperation[]) {
