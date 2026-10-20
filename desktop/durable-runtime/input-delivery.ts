@@ -43,6 +43,7 @@ import {
 type DeliveryTaskInput = InputAdmission & {
   content: InputDeliveryRequest['content']
   whenBusy?: InputDeliveryRequest['whenBusy']
+  semantics?: InputDeliveryRequest['semantics']
 }
 
 const InputDeliveryTask = defineTask<
@@ -62,6 +63,7 @@ const InputDeliveryTask = defineTask<
         content: task.input.content,
         acceptedWork: { taskId: String(task.id), conversationId: task.input.conversationId },
         mode: 'continuation',
+        ...(task.input.semantics === undefined ? {} : { semantics: task.input.semantics }),
         signal: runtime.signal,
         ...(task.input.whenBusy === undefined ? {} : { whenBusy: task.input.whenBusy }),
       })
@@ -239,6 +241,7 @@ export function createInputDelivery(): InputDelivery {
           requestId: request.requestId,
           whenBusy: request.whenBusy ?? 'followUp',
           origin: lineage.origin,
+          ...(request.semantics === undefined ? {} : { semantics: request.semantics }),
           acceptedWork: { source: request.source, reference: request.acceptedWork },
         },
         context,

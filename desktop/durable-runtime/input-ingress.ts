@@ -1,6 +1,6 @@
 import type { Context } from '@earendil-works/chord'
 import type { Conversation, InputSubmissionDraft } from '@earendil-works/pi-durable'
-import type { AcceptedWork } from '@howaboua/howcode-sdk/input-delivery'
+import type { AcceptedWork, InputSemantics } from '@howaboua/howcode-sdk/input-delivery'
 import { watchRuntimeConversation } from './chats.ts'
 import { validateAcceptedWork } from './delivery-lineage.ts'
 import {
@@ -17,6 +17,7 @@ export async function submitTrustedInput(
   conversation: Conversation,
   request: Omit<InputSubmissionDraft, 'type'> & {
     origin: TrustedInputOrigin
+    semantics?: InputSemantics
     acceptedWork?: { source: string; reference: AcceptedWork }
   },
   context: Context,
@@ -56,7 +57,7 @@ export async function submitTrustedInput(
       content: request.content,
       ...(request.requestId === undefined ? {} : { requestId: request.requestId }),
       ...(request.whenBusy === undefined ? {} : { whenBusy: request.whenBusy }),
-      entry: stampInputOrigin(request.origin, at, request.entry),
+      entry: stampInputOrigin(request.origin, at, request.entry, request.semantics),
     },
     context,
   )
@@ -98,6 +99,7 @@ export async function submitSetupInput(
       requestId: request.requestId,
       whenBusy: 'followUp',
       origin: setupActionOrigin(),
+      semantics: { kind: 'operational', label: 'Assistant setup' },
     },
     runtimeContext,
   )

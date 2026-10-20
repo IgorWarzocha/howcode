@@ -58,6 +58,10 @@ async function admitNewChatInput(
     conversationId: id,
     kind: 'explicit',
     content,
+    semantics: {
+      kind: 'operational',
+      label: caller.kind === 'native' ? 'Agent message' : 'MCP message',
+    },
     origin:
       caller.kind === 'native'
         ? { kind: 'agent', conversationId: caller.conversationId, taskId: caller.taskId }
@@ -139,6 +143,10 @@ async function sendChat(
     content,
     acceptedWork,
     mode: 'continuation',
+    semantics: {
+      kind: 'operational',
+      label: caller.kind === 'native' ? 'Agent message' : 'MCP message',
+    },
     ...(context.abortSignal ? { signal: context.abortSignal } : {}),
   })
   return {

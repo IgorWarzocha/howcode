@@ -3,5 +3,6 @@
 - Shared helpers stay pure and runtime-agnostic; verify server, backend-service, and renderer consumers after contract changes.
 - `effect-shutdown.ts` is the cross-runtime idempotence/deadline primitive; process adapters supply their cleanup effects.
 - Keep leaf contracts acyclic. When domains need the same primitive model, extract it to the smallest named contract owner rather than making contract files import each other or adding a catch-all types file.
-- Composer schemas and schema-derived types are SDK-owned; change the owning SDK schema, consume its supported package, and keep these shared entrypoints as re-exports. Do not add parallel event-only validators.
+- Composer and input-origin/semantics schemas are SDK-owned; change the owning SDK schema, consume its supported package, and keep these shared entrypoints as re-exports. Do not add parallel event-only validators.
 - Skill, Pi settings/theme, and thread-search wire types likewise derive from their named Schema modules.
+- Input purpose is producer-declared, not inferred from origin. Native receipts prove input/final-answer joins and `live.run.inputs` proves active work; neither proves historical intermediate membership. Keep unknown messages visible; never reconstruct joins from entry ranges or retired task documents.

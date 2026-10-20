@@ -1,4 +1,5 @@
 import type { PluginRendererContribution } from '@howaboua/howcode-sdk/plugins'
+import { isToolPresentationContributions } from '@howaboua/howcode-sdk/tool-renderer'
 import * as Schema from 'effect/Schema'
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 import type { InstalledComponentDescriptor } from '../../../shared/installed-component-contracts'
@@ -179,6 +180,7 @@ function validateContribution(value: unknown): PluginRendererContribution {
     'ComposerActions',
     'ConversationContent',
     'ChatRenderer',
+    'toolPresentations',
     'artifacts',
     'draftInput',
     'composer',
@@ -202,12 +204,18 @@ function validateContribution(value: unknown): PluginRendererContribution {
       name !== 'artifacts' &&
       name !== 'draftInput' &&
       name !== 'composer' &&
+      name !== 'toolPresentations' &&
       typeof exportValue !== 'function' &&
       !(exportValue && typeof exportValue === 'object' && '$$typeof' in exportValue)
     )
       throw new Error(`Renderer ${name} must be a component function.`)
   }
   const contribution = value as PluginRendererContribution
+  if (
+    contribution.toolPresentations !== undefined &&
+    !isToolPresentationContributions(contribution.toolPresentations)
+  )
+    throw new Error('Invalid tool presentation contribution.')
   if (contribution.git !== undefined && !isGitRendererApi(contribution.git))
     throw new Error('Invalid Git renderer API. Every public feature export must be callable.')
   validateSidebarView(contribution.sidebarView)

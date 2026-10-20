@@ -1,8 +1,15 @@
 import type { Message as ModelMessage, ToolCall } from '@earendil-works/pi-ai'
-import { CompactionEntry, type EntryRecord, type LiveState } from '@earendil-works/pi-durable'
+import {
+  CompactionEntry,
+  type EntryRecord,
+  type LiveState,
+  type SubmissionRecord,
+  ToolResultEntry,
+} from '@earendil-works/pi-durable'
 import type { ConversationEntryList, ConversationEntryPreview } from './conversation-entries'
 import type { ChatData, Message } from './desktop-chat-contracts'
 import { HarnessContextEntry } from './harness-context'
+import { readTrustedInputData } from './input-origin'
 import { getPersonInputData } from './people'
 import {
   getFirstUserTurnTitle,
@@ -12,6 +19,10 @@ import {
 
 function entryMessageId(entry: EntryRecord, index: number) {
   return index === 0 ? String(entry.id) : `${entry.id}:${index}`
+}
+
+function withInputEntries(message: Message, inputEntryIds: readonly string[] | undefined): Message {
+  return inputEntryIds ? { ...message, inputEntryIds } : message
 }
 
 function collectToolCalls(entries: readonly EntryRecord[]) {
@@ -59,12 +70,22 @@ function mapEntryModelMessage(
       : message
   const mapped = mapModelMessage(displayMessage, id, calls)
   if (mapped?.role === 'user' && data) mapped.author = data.author
+  if (mapped?.role === 'toolResult' && ToolResultEntry.is(entry))
+    mapped.diagnostics = entry.data.diagnostics
+  const input = readTrustedInputData(entry)
+  if (mapped?.role === 'user' && input) {
+    mapped.input = {
+      origin: input.origin,
+      ...(input.semantics === undefined ? {} : { semantics: input.semantics }),
+    }
+  }
   return mapped
 }
 
 function mapEntries(
   entries: readonly EntryRecord[],
   calls: ReadonlyMap<string, ToolCall>,
+  inputRelations: ReadonlyMap<string, readonly string[]> = new Map(),
 ): Message[] {
   return entries.flatMap((entry): Message[] => {
     if (HarnessContextEntry.is(entry)) {
@@ -89,11 +110,72 @@ function mapEntries(
               role: 'compactionSummary',
               content: 'content' in mapped ? mapped.content : mapped.output,
             }
-          : mapped,
+          : withInputEntries(mapped, inputRelations.get(String(entry.id))),
       )
     }
     return messages
   })
+}
+
+/** Receipts prove inputs and final answers, not membership of historical intermediate rounds. */
+function collectInputRelations(submissions: readonly SubmissionRecord[], live?: LiveState) {
+  const entries = new Map<string, readonly string[]>()
+  const inputs = new Map<number, string>()
+  for (const submission of submissions) {
+    if (submission.type !== 'input' || submission.entry === undefined) continue
+    const id = String(submission.entry)
+    inputs.set(submission.id, id)
+    entries.set(id, [id])
+    if (submission.status !== 'done') continue
+    const answer = String(submission.answer)
+    entries.set(answer, [...(entries.get(answer) ?? []), id])
+  }
+  const active = live?.run?.inputs.map((id) => inputs.get(id))
+  // A watch frame and receipt scan can straddle a commit. Never claim a partial co-input set.
+  const liveInputs =
+    active?.length && active.every((id): id is string => id !== undefined) ? active : undefined
+  if (!liveInputs) return { entries, liveInputs }
+  for (const slot of live?.tools ?? []) {
+    if (slot.entry !== undefined) entries.set(String(slot.entry), liveInputs)
+  }
+  return { entries, liveInputs }
+}
+
+function mapLiveMessages(
+  conversationId: string,
+  live: LiveState | undefined,
+  calls: ReadonlyMap<string, ToolCall>,
+  inputEntryIds: readonly string[] | undefined,
+) {
+  const messages: Message[] = []
+  const partial = live?.generation?.message
+  if (partial) {
+    const mapped = mapModelMessage(partial, `live:${live?.run?.taskId ?? conversationId}`, calls)
+    if (mapped) messages.push(withInputEntries(mapped, inputEntryIds))
+  }
+  for (const slot of live?.tools ?? []) {
+    if (slot.status === 'done') continue
+    const call = calls.get(slot.callId)
+    messages.push(
+      withInputEntries(
+        {
+          id: `tool:${slot.callId}`,
+          role: 'toolResult',
+          toolCallId: slot.callId,
+          toolName: slot.name,
+          content: slot.output ? [slot.output] : [],
+          isError: false,
+          running: true,
+          rawArgs: call?.arguments,
+          args: call ? JSON.stringify(call.arguments, null, 2) : undefined,
+          details: slot.details,
+          ...(slot.diagnostics === undefined ? {} : { diagnostics: slot.diagnostics }),
+        },
+        inputEntryIds,
+      ),
+    )
+  }
+  return messages
 }
 
 export function mapDurableEntriesToChat(input: {
@@ -101,35 +183,15 @@ export function mapDurableEntriesToChat(input: {
   title?: string | undefined
   entries: readonly EntryRecord[]
   live?: LiveState | undefined
+  submissions?: readonly SubmissionRecord[] | undefined
   previousMessageCount?: number | undefined
 }): ChatData {
   const calls = collectToolCalls(input.entries)
-  const messages = mapEntries(input.entries, calls)
-  const partial = input.live?.generation?.message
-  if (partial) {
-    const mapped = mapModelMessage(
-      partial,
-      `live:${input.live?.run?.taskId ?? input.conversationId}`,
-      calls,
-    )
-    if (mapped) messages.push(mapped)
-  }
-  for (const slot of input.live?.tools ?? []) {
-    if (slot.status === 'done') continue
-    const call = calls.get(slot.callId)
-    messages.push({
-      id: `tool:${slot.callId}`,
-      role: 'toolResult',
-      toolCallId: slot.callId,
-      toolName: slot.name,
-      content: slot.output ? [slot.output] : [],
-      isError: false,
-      running: true,
-      rawArgs: call?.arguments,
-      args: call ? JSON.stringify(call.arguments, null, 2) : undefined,
-      details: slot.details,
-    })
-  }
+  const relations = collectInputRelations(input.submissions ?? [], input.live)
+  const messages = [
+    ...mapEntries(input.entries, calls, relations.entries),
+    ...mapLiveMessages(input.conversationId, input.live, calls, relations.liveInputs),
+  ]
   return {
     conversationId: input.conversationId,
     title: input.title?.trim() ? normalizeChatTitle(input.title) : getFirstUserTurnTitle(messages),

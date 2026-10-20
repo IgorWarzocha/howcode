@@ -237,6 +237,7 @@ export function createPackageActivation(options: {
     if (!(options.host && subscription.outcome)) return
     const receipt = await options.host.inputDelivery.submit({
       source: 'howcode.packages',
+      semantics: { kind: 'operational', label: 'Package activation' },
       conversationId: subscription.conversationId,
       requestId: `package-activation:${subscription.id}`,
       content: `Package activation outcome: ${JSON.stringify(subscription.outcome)}. Inspect the original package receipt before continuing; do not repeat installation or completed setup side effects.`,

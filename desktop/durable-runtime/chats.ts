@@ -3,6 +3,7 @@ import type {
   ConversationWatch,
   EntryRecord,
   LiveState,
+  SubmissionRecord,
 } from '@earendil-works/pi-durable'
 import type { ChatData, ComposerStateRequest } from '../../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
@@ -11,7 +12,12 @@ import { getRuntimeConversationMetadata } from '../app-service/conversation-stat
 import { freezePluginTurn } from '../plugins/runtime.ts'
 import { emitDesktopEvent } from '../runtime/desktop-events.ts'
 import { getComposerState } from './composer.ts'
-import { readRuntimeEntries, resolveConversation, runtimeContext } from './host.ts'
+import {
+  readRuntimeEntries,
+  readRuntimeInputSubmissions,
+  resolveConversation,
+  runtimeContext,
+} from './host.ts'
 
 const watches = new Map<string, { watch: ConversationWatch; finished: Promise<void> }>()
 const chats = new Map<string, ChatData>()
@@ -36,6 +42,7 @@ function mapHistory(
   conversationId: string,
   entries: readonly EntryRecord[],
   live: LiveState | undefined,
+  submissions: readonly SubmissionRecord[],
   title?: string,
   historyCompactions = 0,
 ) {
@@ -58,6 +65,7 @@ function mapHistory(
     conversationId,
     entries: visible,
     live,
+    submissions,
     title,
     previousMessageCount,
   })
@@ -77,13 +85,17 @@ export async function readRuntimeChat(
   const conversation = await resolveConversation(conversationId)
   const watch = await conversation.watch(runtimeContext)
   try {
-    const entries = await readRuntimeEntries(conversationId, atEntryId)
+    const [entries, submissions] = await Promise.all([
+      readRuntimeEntries(conversationId, atEntryId),
+      readRuntimeInputSubmissions(conversationId),
+    ])
     const live = watch.value.docs['pi.live'] as LiveState | undefined
     const metadata = getRuntimeConversationMetadata(conversationId)
     return mapHistory(
       conversationId,
       entries,
       atEntryId ? undefined : live,
+      submissions,
       metadata?.title,
       options?.historyCompactions ?? 0,
     )
@@ -104,12 +116,15 @@ async function attachConversationWatch(request: ComposerStateRequest & { convers
     const live = value.docs['pi.live'] as LiveState | undefined
     const { title, event: eventContext } = conversationEventContext(conversationId, request)
     const newestId = value.entries.at(-1)?.id
-    const entries =
-      newestId === undefined ? [] : await readRuntimeEntries(conversationId, String(newestId))
+    const [entries, submissions] = await Promise.all([
+      newestId === undefined ? [] : readRuntimeEntries(conversationId, String(newestId)),
+      readRuntimeInputSubmissions(conversationId),
+    ])
     const chat = mapHistory(
       conversationId,
       entries,
       live,
+      submissions,
       title,
       historyWindows.get(conversationId) ?? 0,
     )

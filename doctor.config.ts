@@ -3,6 +3,11 @@ export default {
     files: ['dist-pages/**', 'Frameworks/**'],
     overrides: [
       {
+        // Runtime acquisition initializes storage; receipt scans must await it before checking availability.
+        files: ['desktop/durable-runtime/host.ts'],
+        rules: ['react-doctor/async-defer-await'],
+      },
+      {
         // SSE must await each read and socket drain to preserve order and bound slow-client buffering.
         files: ['src/server/package-ui-events.ts'],
         rules: ['react-doctor/async-await-in-loop'],

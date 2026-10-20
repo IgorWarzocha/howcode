@@ -7,6 +7,7 @@ import {
   type Extension,
   Harness,
   type Storage,
+  type SubmissionRecord,
   UsageDoc,
 } from '@earendil-works/pi-durable'
 import { NodeExecutionEnv } from '@earendil-works/pi-durable/env/node'
@@ -384,6 +385,40 @@ export async function readRuntimeEntries(conversationId: string, atEntryId?: str
     cursor = page.next
   } while (cursor !== undefined)
   return entries.reverse()
+}
+
+/** Native receipts retain input/answer identity after task-scoped documents have retired. */
+export async function readRuntimeInputSubmissions(conversationId: string) {
+  const harness = await getDurableRuntime()
+  if (!runtimeStorage) throw new Error('Durable storage is unavailable.')
+  const id = decodeConversationId(conversationId)
+  const changed = new Map<number, SubmissionRecord>()
+  // A run settles its co-inputs atomically. Reconcile publications during the paged scan so
+  // an answer never appears to belong only to whichever page was read after settlement.
+  const unsubscribe = harness.subscribeCommits(({ changes }) => {
+    for (const change of changes) {
+      if (change.type === 'submission' && change.value.conversationId === id)
+        changed.set(change.value.id, change.value)
+    }
+  })
+  try {
+    const submissions = new Map<number, SubmissionRecord>()
+    let cursor: Cursor | undefined
+    do {
+      const page = await runtimeStorage.scanSubmissions(
+        { conversationId: id },
+        200,
+        cursor,
+        runtimeContext,
+      )
+      for (const record of page.items) submissions.set(record.id, record)
+      cursor = page.next
+    } while (cursor !== undefined)
+    for (const [key, record] of changed) submissions.set(key, record)
+    return [...submissions.values()].filter((record) => record.type === 'input')
+  } finally {
+    unsubscribe()
+  }
 }
 
 export async function readRuntimeUsage(conversationId: string) {

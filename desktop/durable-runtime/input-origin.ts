@@ -4,6 +4,7 @@ import * as Schema from 'effect/Schema'
 import {
   type InputOrigin,
   InputOriginSchema,
+  type InputSemantics,
   TrustedInputDataSchema,
   trustedInputKind,
 } from '../../shared/input-origin.ts'
@@ -52,6 +53,7 @@ export function stampInputOrigin(
   origin: TrustedInputOrigin,
   at: number,
   inputEntry?: InputEntry,
+  semantics?: InputSemantics,
 ): InputEntry {
   if (origin[hostOrigin] !== true) throw new Error('Input origin must be host-derived.')
   if (inputEntry?.kind === trustedInputKind || inputEntry?.kind.startsWith('pi.'))
@@ -62,6 +64,7 @@ export function stampInputOrigin(
       Schema.decodeUnknownSync(TrustedInputDataSchema)({
         origin,
         at,
+        ...(semantics === undefined ? {} : { semantics }),
         ...(inputEntry ? { inputEntry } : {}),
       }),
     ),

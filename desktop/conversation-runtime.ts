@@ -185,6 +185,7 @@ export async function sendComposerPrompt(
           ...input,
           whenBusy: behavior,
           origin,
+          semantics: { kind: 'conversation' },
         },
         runtimeContext,
       )
