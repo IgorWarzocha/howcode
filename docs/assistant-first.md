@@ -1,6 +1,6 @@
 # Assistant-first Howcode
 
-Planning paused at Igor's request. Product direction and the decisions below are agreed. Workboard boundaries and unresolved behaviour are proposals, not implementation approval.
+The three requested decision batches are complete. Product direction and the decisions below are agreed. One global-pause timing ambiguity remains. Workboard boundaries are proposals, not implementation approval.
 
 ## Goal
 
@@ -16,15 +16,19 @@ Howcode starts with you and your main assistant. It remains available without an
 - After model setup, go straight into conversation with a default identity and prepared capabilities. Do not require naming or detailed instruction setup before meeting the assistant.
 - Include setup for both manual launch and unattended operation, including automatic restart and boot startup where selected.
 - Let the main assistant configure the user's actual OS and environment through available tools. Do not build a platform-specific service-management framework merely to cover every environment.
+- Keep one canonical `Howcode setup` thread on the main assistant's Board. Record decisions, actual operating conditions and completed configuration there, including installed or generated views. Reuse Board rather than creating a separate setup-record feature. The assistant can consult and update this thread when changing or undoing setup.
 - The wizard collects model access, home folder, launch preference and initiative frequency. The assistant then implements and verifies that configuration in conversation.
 - If the chosen unattended setup cannot be established, setup remains incomplete. Surface the blocker and required user action rather than silently substituting a weaker launch mode.
 - Process uptime and initiative are separate choices. Support conversational sidequests and daily, hourly or user-chosen proactive intervals, independently of manual launch or boot startup.
 - Conversational sidequests are not tied to browser presence. The assistant may follow related work after the user leaves and judges when to wind down.
 - Proactive work follows the user's standing instructions. Do not introduce a separate blanket approval policy for unsolicited work.
+- Reliable startup and recovery are application responsibilities. Do not give the assistant a recurring end-to-end test ritual or synthetic verification job on wake. Implementation validation is developer work, separate from ordinary assistant behaviour.
 
 ### Residents, context and Boards
 
 - The main assistant works within its own workspace. For work elsewhere, it talks to workspace bots or starts threads rather than carrying out those tasks itself.
+- Workspace residents are optional. A workspace listing names its bot or explicitly says there is no bot. Create a persistent resident only when the user wants one, not automatically on discovery, workspace creation or upgrade.
+- A workspace without a resident remains a classic workspace with manually created chats. The main assistant may maintain a top-level Board thread and ask how things are going, subject to its policy, but must not take over its work. If the user asks it to start a task there, create a normal chat rather than manufacturing a persistent bot.
 - Workspace bots own local judgement: existing changes, competing work, worktree conventions, blockers and whether anything needs doing at all.
 - Each workspace resident anchors one continuing conversation family. Its workers and Board remain with that family. Context rollover must not manufacture a new resident family or Board.
 - The main assistant has its own context and top-level Board. Workspace residents retain local context and share it with their workers. Do not collapse all residents into the main assistant's family to obtain shared Board access.
@@ -32,6 +36,8 @@ Howcode starts with you and your main assistant. It remains available without an
 - Workspace residents can create top-level threads and publish high-level overviews to the main assistant's Board. Link the underlying local work rather than copying all of its context into the main assistant.
 - The main assistant can create a top-level thread for a workspace resident. A Board notification does not wake an idle resident. Urgent work requires an explicit message. Otherwise the resident picks up relevant updates on its next wake.
 - Context sharing, Board participation and turn-start are separate contracts. Preserve that distinction in tools and presentation.
+- In a workspace with a resident, manually opened chats are workspace-family threads with their own conversation context and shared Board participation. Resident-free workspaces retain ordinary chats without creating a resident merely to host them.
+- When Board is active, standing instructions should encourage documenting useful work and decisions there. Allow deliberate lookup of other agents' Notes where appropriate, including by the main assistant, but do not make cross-agent Notes reading or wholesale context sharing the default.
 
 ### Workspace awareness and folder intent
 
@@ -41,21 +47,26 @@ Howcode starts with you and your main assistant. It remains available without an
 - Roots carry user-described roles and priorities, not just filesystem paths. Examples include active coding work, low-priority reference repositories, life-admin documents and a main-job folder requiring extra care.
 - Users can mark nested folders off limits or observation-only for the main assistant. Observation-only workspaces can provide current information, but the main assistant must not suggest or initiate extra work there. The user may still initiate work directly in those workspaces.
 - Start with standing instructions and informative tool output for those policies, not a new permission or isolation framework. Workspace listings must show the policy and short, agent-maintainable comments that remind the main assistant of the workspace's basics.
+- Expose that overview through a workspace-listing tool used when needed. Do not inject a workspace report into every turn.
 - Doing nothing can be the right decision. A stale thread is a reason to ask the resident about blockers, not an automatic order to start a worker.
 
 ### Snooze, pause and reminders
 
 - When asked to leave work alone temporarily, finish already accepted work and its reporting, but do not initiate unrelated work. Explicit task cancellation remains separate.
 - Give the main assistant a tool that presents a scoped snooze card. Choices include tomorrow morning, evening, a number of hours or a number of days.
+- Use the server's local timezone, with morning at 09:00 and evening at 18:00. Show the resolved date, time and timezone on the card.
 - Snooze targets one workspace or the main assistant's own scope, never the entire app through that scoped tool. It suspends proactive admission from Pulses and comparable scheduled components for that target.
-- On reactivation, deduplicate repeated due pulses and queue distinct remaining jobs. Release work gradually rather than starting everything at once and hitting provider limits. The exact catch-up and rate-limit policy remains open.
-- Provide a separate app-wide pause button. Resuming afterwards is per workspace, not a single global resume operation. The interaction with existing snooze deadlines still needs definition.
+- On reactivation, coalesce missed occurrences into one fresh run per distinct job and queue the different jobs. Programmatically include how many occurrences were missed and the start and end of the missed period, instructing the run to cover relevant work since then. Clearly obsolete or expired jobs should be reported rather than blindly replayed.
+- Pace catch-up with a configurable small concurrency limit. Let the user or assistant adjust it, and honour provider backoff when limits are hit. Do not introduce a billing system or pretend the concurrency setting knows every provider's limits.
+- Provide a separate app-wide pause button. The explicit selected rule is that each workspace, including the main assistant's own scope, remains paused until individually resumed. New workspaces start paused under that global hold. Existing snooze timers cannot silently override it.
+- Existing snooze deadlines continue to age during an app-wide pause. Do not freeze their clocks or restart their full duration on release. Once the global hold is released for a workspace, an unexpired snooze retains only its remaining time; an expired one can enter paced catch-up. Whether a timed global hold may release automatically remains the single open ambiguity below.
+- Direct user requests may run in a snoozed workspace without switching proactive mode back on. Agent-originated nudges, including those labelled urgent, wait for reactivation.
 - Support explicit reminders and deadlines for work needing user attention. Initially keep them in Howcode and available on return. External delivery channels can be installed or created when requested.
 - Do not prescribe a built-in to-do panel. The user can ask the assistant to create one or find an installable component.
 
 ## Why this direction
 
-The product starts with an ongoing relationship, not a list of sessions. The main assistant coordinates across workspaces while local bots understand their own work. An idle workspace is not automatically neglected, and a busy one is not automatically progressing.
+The product starts with an ongoing relationship, not a list of sessions. The main assistant coordinates across workspaces while local bots, where present, understand their own work. A workspace can remain manual without a resident. An idle workspace is not automatically neglected, and a busy one is not automatically progressing.
 
 Igor's concrete example is a Board item untouched for a month. The main assistant raises it with the workspace resident, which understands blockers and repository conventions. If appropriate, the resident creates a worktree and delegates implementation. The main assistant does not need to learn the repository's operating details to make that useful intervention.
 
@@ -86,17 +97,17 @@ Proposed threads:
 - Eager backend and Harness startup, with recovery independent of the browser.
 - Minimal installed capabilities, user-chosen assistant home and default identity.
 - Setup wizard handing its selected preferences into the first conversation.
-- Agent-led launch configuration, verification and visible setup blockers.
-- Practical acceptance: fresh profile, closed browser, restart and preserved assistant identity.
+- Agent-led launch configuration, visible setup blockers and the canonical `Howcode setup` Board thread.
+- Developer validation of fresh profiles, browser-independent operation, restart and preserved identity. No recurring app-test assignment for the assistant.
 
 ### 2. Resident families and Board coordination
 
 Proposed threads:
-- Workspace resident creation and continuing family ownership.
+- Explicit optional resident creation, classic resident-free workspaces and continuing family ownership.
 - Local Board authority and workspace worker participation.
 - Resident-authored overviews and threads on the main Board without sharing all local context.
 - Passive Board updates versus explicit messages that wake a resident.
-- Manual workspace chats and their relationship to the resident, once decided.
+- Manual chats joining a resident's family when one exists, with Board-first documentation and optional Notes lookup.
 
 ### 3. Awareness and initiative
 
@@ -112,7 +123,8 @@ Proposed threads:
 - Scoped snooze tool and card, backed by persistent target state.
 - Shared snooze participation for Pulses and other proactive trigger components.
 - Repeated-job deduplication and paced release of distinct due work.
-- App-wide pause with explicit per-workspace reactivation.
+- Missed-period context injected into each coalesced run, with a configurable catch-up concurrency limit and provider backoff.
+- App-wide pause with explicit per-workspace reactivation, while original snooze deadlines continue to age.
 - Reminder delivery in Howcode, with optional external integrations.
 
 ### 5. Assistant-shaped environment
@@ -142,21 +154,12 @@ Start with board 1. The later order and the exact capability subset needed for a
 
 ## Open questions
 
-- How should agent-created launch and scheduling configuration be inspected, changed or removed later?
-- Does adding a workspace establish its resident automatically, and what happens to existing workspaces?
-- How should a manually opened workspace chat participate in the resident's family and Board? This was not settled by the clarification of main-assistant versus workspace context.
-- What form should the cross-workspace progress surface take for the assistant and the user?
-- What are the default morning and evening times, and which timezone governs snooze and reminders?
-- Does resume coalesce missed occurrences into one run per pulse? How are time-sensitive or no-longer-relevant jobs handled?
-- How should app-wide pause interact with timed snoozes, new workspaces and reactivating the main assistant's own scope?
-- Can a direct user request or urgent message override snooze, or must the target be explicitly reactivated first?
-- Which provider and concurrency limits should paced resume respect, and what happens when those limits are unknown?
-- What are the acceptance criteria and boundaries of the first implementation slice?
+- **Timed global pause:** Igor selected explicit per-workspace resume, but also described a "global pause until morning" under which individual snooze deadlines keep ageing. The clock behaviour is agreed. It is not yet clear whether the global hold itself can expire automatically, or whether morning is when the user resumes selected workspaces. Preserve the explicit-resume rule unless this is clarified. This does not block the runtime foundation.
 
 ## Proposed next steps
 
-1. Resume with the manual-session and snooze questions above. Do not reopen the settled product model.
-2. Bound board 1 into implementation-ready threads with observable acceptance criteria, including the minimum capability needed for agent-led setup.
+1. Resolve the one timed-global-pause ambiguity before implementing that feature. Do not reopen the settled product model or require a resident for every workspace.
+2. Bound board 1 into implementation-ready threads. Keep startup and recovery reliable without turning the assistant into an app tester. Use the setup Board thread rather than a new configuration-record feature.
 3. Trace cross-board participation and snooze through their owning public APIs before estimating those boards. Do not create parallel stores or silently change portable package contracts.
 4. Refine the dependency order while preserving the main-assistant versus workspace-resident split.
 5. Begin implementation only after explicit approval.
