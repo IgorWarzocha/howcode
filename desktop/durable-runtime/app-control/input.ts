@@ -73,7 +73,7 @@ export const appControlHelp = {
   targeting:
     'Use returned IDs or exact unambiguous names. General includes unassigned chats. workspaceAgent identifies a workspace main chat when available.',
   extensionTargeting:
-    'Native extension actions target only the executing conversation; omit conversationId for self. MCP requires an exact native conversationId. Selection does not change renderer visibility.',
+    'Use an exact conversationId, or omit it within a native turn to target self. Selection does not change renderer visibility.',
   continuation:
     'Pass nextCursor unchanged to the same list/read action. Read returns bounded transcript entries; status with requestId returns the actual submission outcome.',
 }

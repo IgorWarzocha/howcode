@@ -23,6 +23,7 @@
 - Commits run `bun run ai:check`, including blocking React Doctor; keep its score at 100. Run the gate manually only when asked, when not committing, or while diagnosing a failed hook.
 - Pre-push is validation-only: do not rewrite sources or delete `build`, which contains the running dev server's immutable generations and address metadata.
 - Do not relax Biome or TypeScript rules merely to make checks pass; fix the code or use a narrow, justified override.
+- Justify safeguards and hard limits with concrete, reachable inputs or realistic failure modes. Trace actual execution timing, including inference between agent turns, before defending against repeated tool calls. Do not invent controls, instantaneous call sequences or product restrictions to justify defensive code.
 - Hardening is behaviour-preserving unless separately scoped: do not change product semantics, UI, UX, copy, layout, or interaction during structural passes.
 - This architecture branch has not shipped. Replace obsolete designs cleanly; do not preserve old routes, APIs, names, or implementation shapes as compatibility contracts. Preserve actual user data where it exists, not hypothetical external consumers.
 
