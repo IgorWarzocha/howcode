@@ -2,6 +2,8 @@
 
 The planning questions are resolved. Product direction and the decisions below are agreed. Workboard boundaries are proposals, not implementation approval.
 
+[The implementation companion](assistant-first-implementation.md) maps the source-backed changes, ownership, dependencies and validation work.
+
 ## Goal
 
 Howcode starts with you and your main assistant. It remains available without an open browser, notices where attention might help and shapes its working environment with you. Manual sessions remain available, but do not organise the product.
