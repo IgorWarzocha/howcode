@@ -1,5 +1,5 @@
 - This backend is bundled separately and loaded under stock Node; do not introduce Electron or DOM dependencies.
-- `app-service.ts` owns core chat, composer and settings APIs. Domain service APIs belong to `components/*/service` and are composed in `service-host-runtime.ts`.
+- `app-service.ts` owns core chat, composer and settings APIs. Domain behaviour and services belong to the owning component package; compose explicit host ports in `service-host-runtime.ts`.
 - Service-host signal handlers delegate to the shared shutdown coordinator; drain Durable and terminal RPC before terminal-runtime and app-database disposal.
 - Backend readiness requires package service readiness and an acquired, migrated, bound, resumed Harness; missing model credentials are not runtime failure. If Harness cleanup fails, retain component bindings and the app database until process exit.
 - API or event changes must update their `shared/*` contracts, action routing, host bridge, and transport consumers together.

@@ -1,3 +1,2 @@
-- This folder owns backend-only Node process primitives shared by Node server/desktop host, stock-Node service, and scripts.
-- Keep product policy in callers. Process helpers own spawn, output collection, interruption, deadlines, and typed failures only.
+- This folder owns shared Node executable discovery. Use `@howaboua/howcode-sdk/node/process-probe` for bounded probe execution; callers retain executable precedence, shell flags and fallback policy.
 - Renderer, Pages, Worker, and launcher code must not import this layer.

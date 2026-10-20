@@ -3,9 +3,8 @@
 - The desktop service runs under the browser host stock Node executable. Preserve startup/restart/timeouts and typed request/event routing.
 - Keep `desktop-service-client.ts` as the class/Promise compatibility edge; `desktop-service/*` owns process generations, requests, and timeouts.
 - Desktop-service lifecycle reservation, startup, and finalization stay in their named modules; `lifecycle.ts` only composes the state machine.
-- Detach service generations by record/process identity before closing scopes; terminal RPC disposal must remain child-specific.
+- Terminal RPC disposal must remain child-specific.
 - Terminal RPC protocols must route responses to their registered Effect client IDs, not assume zero; IDs advance when a host reconnects.
 - Terminal service generations replace the event subscription, not the child RPC protocol. Startup diagnostics must report availability; replacement and removal must publish `terminal-runtime-changed` so a retired stream cannot silently leave browser output disconnected.
 - Native dependencies resolve from ordinary installed packages under stock Node. Unsupported Node versions or ABIs must fail explicitly.
-- `node-runtime/*` owns shared subprocess deadlines/output collection; callers retain executable precedence, fallback, and ABI allowlists.
 - Desktop service reflection is constrained by `shared/desktop-service-rpc.ts`; adding an exported backend helper must not expose it as RPC.

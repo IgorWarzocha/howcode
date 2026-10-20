@@ -1,4 +1,4 @@
 - `handlers.ts` is the one complete desktop request composition boundary for production HTTP and development web.
 - `toolkit-components.ts` composes core directory and installed feature transports. Installed host requests dispatch through the admitted profile generation; renderer presentation and Durable tool selection do not grant service admission.
-- `system.ts` owns server filesystem request behaviour. Browser uploads, clipboard, downloads, and external links belong to the renderer.
+- `system.ts` owns server filesystem request behaviour. Browser file selection, clipboard, downloads, and external links belong to the renderer.
 - Keep transports limited to authentication, framing, event delivery, uploads, and lifecycle. Preserve request and response semantics across every host.
