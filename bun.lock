@@ -103,7 +103,7 @@
     "@howaboua/pi-durable-dictation": "file:../pi-durable-components/dist/howaboua-pi-durable-dictation-0.1.0-cd45fe11.tgz",
     "@howaboua/pi-durable-gippity-voice": "file:../pi-durable-components/dist/buffered-dictation/howaboua-pi-durable-gippity-voice-0.5.0-0bab9c80.tgz",
     "@howaboua/pi-durable-git": "file:../pi-durable-components/dist/howaboua-pi-durable-git-0.1.0-322f984e.tgz",
-    "@howaboua/pi-durable-grok-voice": "file:../pi-durable-components/dist/grok-utterance-fix/howaboua-pi-durable-grok-voice-0.5.0-f7e959be.tgz",
+    "@howaboua/pi-durable-grok-voice": "file:../pi-durable-components/dist/grok-runtime-deps/howaboua-pi-durable-grok-voice-0.5.0-982210af.tgz",
     "@howaboua/pi-durable-pulses": "file:../pi-durable-components/dist/assistant-first-pulses/howaboua-pi-durable-pulses-0.1.0-0a60329d.tgz",
     "@howaboua/pi-durable-ui": "file:../pi-durable-components/dist/howaboua-pi-durable-ui-0.1.0-9aa8bc27.tgz",
     "lightningcss": "1.33.0",
@@ -443,7 +443,7 @@
 
     "@howaboua/pi-durable-git": ["@howaboua/pi-durable-git@../pi-durable-components/dist/howaboua-pi-durable-git-0.1.0-322f984e.tgz", { "dependencies": { "typebox": "1.3.27" }, "peerDependencies": { "@earendil-works/chord": "1.3.0", "@earendil-works/pi-ai": "1.3.0", "@earendil-works/pi-durable": "1.3.0" }, "optionalPeers": ["@earendil-works/chord", "@earendil-works/pi-ai", "@earendil-works/pi-durable"] }, "sha512-i2nyrMXVP4DupvCqHtnxTWCiM7ase11HSLbk1RwBwiJMluKObYVERhKWGleREG783r8SM6h8VSIb50/ls+kM3Q=="],
 
-    "@howaboua/pi-durable-grok-voice": ["@howaboua/pi-durable-grok-voice@../pi-durable-components/dist/grok-utterance-fix/howaboua-pi-durable-grok-voice-0.5.0-f7e959be.tgz", { "dependencies": { "@types/ws": "8.18.1", "ws": "8.21.3" }, "peerDependencies": { "@earendil-works/chord": "1.3.0", "@earendil-works/pi-ai": "1.3.0", "@earendil-works/pi-durable": "1.3.0", "@modelcontextprotocol/sdk": "1.25.2" } }, "sha512-AE4HaE6vh3MNSZOA136xiIuVEn1s7CNMUnDN3keWQ6Pgaj3pncb6/e58TSEJLzYbKNgTEuJPriibGEVKKlodFg=="],
+    "@howaboua/pi-durable-grok-voice": ["@howaboua/pi-durable-grok-voice@../pi-durable-components/dist/grok-runtime-deps/howaboua-pi-durable-grok-voice-0.5.0-982210af.tgz", { "dependencies": { "@types/ws": "8.18.1", "typebox": "1.3.27", "ws": "8.21.3" }, "peerDependencies": { "@earendil-works/chord": "1.3.0", "@earendil-works/pi-ai": "1.3.0", "@earendil-works/pi-durable": "1.3.0", "@modelcontextprotocol/sdk": "1.25.2" } }, "sha512-UUIt3hnYOScZbQTSiv8fzlSBY1T+O7teoKR626k9plEodHN6As0o6g6wev82t9Zos4XML4xyEl6UDnwcIbRXaQ=="],
 
     "@howaboua/pi-durable-pulses": ["@howaboua/pi-durable-pulses@../pi-durable-components/dist/assistant-first-pulses/howaboua-pi-durable-pulses-0.1.0-0a60329d.tgz", { "peerDependencies": { "@earendil-works/chord": "1.3.0", "@earendil-works/pi-ai": "1.3.0", "@earendil-works/pi-durable": "1.3.0", "@modelcontextprotocol/sdk": "1.25.2" } }, "sha512-D+z6bCTCAcnUFUF+QSakGQhntnLmIPYmJItGDK7vzE/BlZAPkkiMHq0gTnMm9pDMN/JbPnyv4jzYG4AzLHZdhg=="],
 

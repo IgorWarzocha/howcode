@@ -140,7 +140,7 @@
     "@howaboua/howcode-react-artifacts": "file:../howcode-components/dist/howaboua-howcode-react-artifacts-0.1.0-2465a52d.tgz",
     "@howaboua/howcode-dictation": "file:../howcode-components/dist/howaboua-howcode-dictation-0.1.0-95a80b21.tgz",
     "@howaboua/pi-durable-gippity-voice": "file:../pi-durable-components/dist/buffered-dictation/howaboua-pi-durable-gippity-voice-0.5.0-0bab9c80.tgz",
-    "@howaboua/pi-durable-grok-voice": "file:../pi-durable-components/dist/grok-utterance-fix/howaboua-pi-durable-grok-voice-0.5.0-f7e959be.tgz",
+    "@howaboua/pi-durable-grok-voice": "file:../pi-durable-components/dist/grok-runtime-deps/howaboua-pi-durable-grok-voice-0.5.0-982210af.tgz",
     "@howaboua/pi-durable-dictation": "file:../pi-durable-components/dist/howaboua-pi-durable-dictation-0.1.0-cd45fe11.tgz",
     "@howaboua/howcode-bots": "file:../howcode-components/dist/howaboua-howcode-bots-0.1.0-6a99c061.tgz",
     "@howaboua/howcode-context": "file:../howcode-components/dist/howaboua-howcode-context-0.1.0-ee1d0bee.tgz",

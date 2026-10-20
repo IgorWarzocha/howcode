@@ -24,7 +24,7 @@ import { bindCapabilities, bindOperationCapabilities } from './runtime-capabilit
 
 export { unbindPluginRuntime } from './runtime-bindings.ts'
 export function bindInstalledPluginRuntime(runtime: Parameters<typeof bindPluginRuntime>[0]) {
-  return bindPluginRuntime(runtime, [...installedInstances.values()])
+  return bindPluginRuntime(runtime, new Map(installedInstances))
 }
 
 let installedInstances: ReadonlyMap<string, PluginServiceInstance> = new Map()

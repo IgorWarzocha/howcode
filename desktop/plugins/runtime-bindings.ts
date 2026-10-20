@@ -38,14 +38,23 @@ export function unbindPluginInstance(instance: PluginServiceInstance) {
   })
 }
 
-export function bindPluginRuntime(runtime: Runtime, instances: readonly PluginServiceInstance[]) {
+export function bindPluginRuntime(
+  runtime: Runtime,
+  instances: ReadonlyMap<string, PluginServiceInstance>,
+) {
   return serialize(async () => {
     if (current || cleanups.size > 0)
       throw new Error('Plugin services are still bound to a runtime.')
     current = runtime
     try {
       const bindings = await Promise.allSettled(
-        instances.map((instance) => bind(instance, runtime)),
+        [...instances].map(async ([name, instance]) => {
+          try {
+            await bind(instance, runtime)
+          } catch (error) {
+            throw new Error(`Component runtime binding failed: ${name}`, { cause: error })
+          }
+        }),
       )
       const errors = bindings
         .filter((result) => result.status === 'rejected')

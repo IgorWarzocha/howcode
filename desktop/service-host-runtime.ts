@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { inspect } from 'node:util'
 import type { SidebarMaintenance } from '@howaboua/howcode-classic-navigation/host-contribution'
 import * as Effect from 'effect/Effect'
 import * as Result from 'effect/Result'
@@ -520,6 +521,15 @@ try {
     if (acceptingRequests) sendServiceMessage({ type: 'ready', diagnostics })
   } else requestShutdown()
 } catch (error) {
-  console.error('Desktop runtime service failed to initialise.', error)
+  console.error(
+    'Desktop runtime service failed to initialise.',
+    inspect(error, {
+      depth: null,
+      maxArrayLength: null,
+      maxStringLength: null,
+      colors: false,
+      customInspect: false,
+    }),
+  )
   requestShutdown(1)
 }

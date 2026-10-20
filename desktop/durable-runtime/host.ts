@@ -191,6 +191,7 @@ async function openRuntime() {
     )
     runtimeStorage = storage
     opened = harness
+    await harness.root(runtimeContext)
     await migrateRuntimeState(harness, storage, installed)
     packages.bind(harness)
     await bindInstalledPluginRuntime({ harness, storage })
