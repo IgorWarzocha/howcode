@@ -7,6 +7,7 @@ export const defaultComponentPackages = [
   '@howaboua/howcode-terminal',
   '@howaboua/howcode-skills',
   '@howaboua/howcode-chat-renderer',
+  '@howaboua/howcode-code-tool-presentations',
   '@howaboua/howcode-composer',
   '@howaboua/howcode-markdown-artifacts',
   '@howaboua/howcode-react-artifacts',

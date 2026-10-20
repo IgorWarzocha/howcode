@@ -14,7 +14,7 @@ body,
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-sans, "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif);
+  font-family: var(--font-sans);
   font-size: 14px;
   line-height: 1.5;
   text-rendering: optimizeLegibility;
@@ -36,8 +36,11 @@ button {
   color: inherit;
 }
 
-code {
-  font-family: "Geist Mono Variable", "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--font-mono);
 }
 
 ::-webkit-scrollbar {
