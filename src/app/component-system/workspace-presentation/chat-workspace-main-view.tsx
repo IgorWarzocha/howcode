@@ -47,6 +47,9 @@ function ChatMainView({
       messages={chatData?.messages ?? []}
       previousMessageCount={chatData?.previousMessageCount ?? 0}
       isStreaming={chatData?.isStreaming ?? false}
+      {...(chatData?.hostObservedAtMs === undefined
+        ? {}
+        : { hostObservedAtMs: chatData.hostObservedAtMs })}
       isCompacting={chatData?.isCompacting ?? false}
       composerLayoutVersion={composerLayoutVersion}
       composerOverlayHeight={composerOverlayHeight}

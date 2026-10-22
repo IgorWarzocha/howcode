@@ -6,3 +6,4 @@
 - Composer and input-origin/semantics schemas are SDK-owned; change the owning SDK schema, consume its supported package, and keep these shared entrypoints as re-exports. Do not add parallel event-only validators.
 - Skill, Pi settings/theme, and thread-search wire types likewise derive from their named Schema modules.
 - Input purpose is producer-declared, not inferred from origin. Native receipts prove input/final-answer joins and `live.run.inputs` proves active work; neither proves historical intermediate membership. Keep unknown messages visible; never reconstruct joins from entry ranges or retired task documents.
+- Work timing joins native tool-call IDs to their generating request and result timestamps. These spans are not whole-turn durations or additive tool times; missing clocks stay unknown, and only unfinished intervals may tick beyond the host observation.

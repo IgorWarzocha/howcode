@@ -68,6 +68,7 @@ function mapHistory(
     submissions,
     title,
     previousMessageCount,
+    hostObservedAtMs: Date.now(),
   })
 }
 

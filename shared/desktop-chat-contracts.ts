@@ -129,6 +129,7 @@ export type ChatData = {
   customMessages?: ChatCustomMessageRecord[] | undefined
   previousMessageCount: number
   isStreaming: boolean
+  hostObservedAtMs?: number
   isCompacting: boolean
   diffPreferences?: DirectoryDiffPreferences | undefined
 }

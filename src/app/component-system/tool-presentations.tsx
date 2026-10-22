@@ -21,6 +21,8 @@ function describePresentation(
     if (
       typeof summary.title !== 'string' ||
       !summary.title.trim() ||
+      (summary.activityTitle !== undefined &&
+        (typeof summary.activityTitle !== 'string' || !summary.activityTitle.trim())) ||
       (summary.description !== undefined && typeof summary.description !== 'string')
     )
       throw new Error('Invalid tool presentation summary.')
