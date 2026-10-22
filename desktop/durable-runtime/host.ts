@@ -12,10 +12,8 @@ import {
 } from '@earendil-works/pi-durable'
 import { NodeExecutionEnv } from '@earendil-works/pi-durable/env/node'
 import { openNodeSqliteStorage } from '@earendil-works/pi-durable/storage/sqlite/node'
-import { createPeopleExtension } from '../../components/people/service/index.ts'
 import type { ComposerStateRequest } from '../../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
-import { loadAppSettings } from '../app-settings/readers.ts'
 import { bindInstalledPluginRuntime, unbindPluginRuntime } from '../plugins/runtime.ts'
 import { boundPluginRuntime } from '../plugins/runtime-bindings.ts'
 import { liveModels } from '../settings/live-models.ts'
@@ -116,7 +114,7 @@ async function openExtensions() {
       stateDirectory: join(directory, 'notebook'),
       environmentId: new NodeExecutionEnv({ cwd: getDesktopWorkingDirectory() }).id,
     },
-    [requireRuntimeDelivery().extension, createPeopleExtension(() => loadAppSettings().people)],
+    [requireRuntimeDelivery().extension],
   )
 }
 

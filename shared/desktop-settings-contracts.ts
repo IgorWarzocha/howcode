@@ -12,7 +12,6 @@ import type {
 import type { DictationModelId } from './desktop-dictation-contracts'
 import type { PiThemeStateSchema, ShellPreferencesSchema } from './desktop-settings-schema'
 import type { ComposerSendMode, KeybindingOverrides } from './keybindings'
-import type { Person } from './people'
 import type { ToolkitComponentId } from './toolkit-components'
 
 export type ModelSelection = {
@@ -24,7 +23,6 @@ export type DirectoryDeletionMode = 'pi-only' | 'full-clean'
 export type { GitOpsMode } from '@howaboua/howcode-git/contracts'
 
 export type AppSettings = {
-  people: readonly Person[]
   navigationRenderer?: string
   dictationProvider?: string
   enabledToolkitComponents?: readonly ToolkitComponentId[]
@@ -48,7 +46,6 @@ export type AppSettings = {
   gitDiffFileTreeDefaultVisible: boolean
   gitDiffIncludeUntrackedDefault: boolean
   directoryDeletionMode: DirectoryDeletionMode
-  useAgentsSkillsPaths: boolean
   hideSidebarSessionCounts: boolean
   hoverToFocus: boolean
   hoverToBlur: boolean

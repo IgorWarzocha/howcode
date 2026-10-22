@@ -196,8 +196,7 @@ export function getSettingsDirectoryDiffRenderModeDefault(
 }
 
 export function getSettingsKey(payload: DesktopActionPayloadInput) {
-  return payload.key === 'people' ||
-    payload.key === 'enabledToolkitComponents' ||
+  return payload.key === 'enabledToolkitComponents' ||
     payload.key === 'defaultModel' ||
     payload.key === 'defaultThinkingLevel' ||
     payload.key === 'gitCommitMessageModel' ||
@@ -215,7 +214,6 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === 'gitDiffFileTreeDefaultVisible' ||
     payload.key === 'gitDiffIncludeUntrackedDefault' ||
     payload.key === 'directoryDeletionMode' ||
-    payload.key === 'useAgentsSkillsPaths' ||
     payload.key === 'hideSidebarSessionCounts' ||
     payload.key === 'navigationRenderer' ||
     payload.key === 'dictationProvider' ||

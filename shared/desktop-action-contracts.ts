@@ -17,7 +17,6 @@ import type {
   ShellPreferences,
   WorkingDirectory,
 } from './desktop-data-contracts'
-import type { PeopleUpdate } from './people'
 import type { ToolkitComponentId } from './toolkit-components'
 
 type EmptyActionPayload = Record<string, never>
@@ -85,7 +84,6 @@ export type DesktopActionPayloadFields = {
   branchName?: string | undefined | null | undefined
   label?: string | undefined | null | undefined
   value?:
-    | PeopleUpdate
     | string
     | undefined
     | number
@@ -101,7 +99,6 @@ export type DesktopActionPayloadInput = {
 }
 
 export type DesktopSettingsUpdatePayload =
-  | { key: 'people'; value: PeopleUpdate }
   | { key: 'defaultModel'; provider: string; modelId: string; reset?: false }
   | { key: 'defaultModel'; reset: true }
   | { key: 'defaultThinkingLevel'; value: ComposerThinkingLevel }
@@ -123,7 +120,6 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'gitDiffFileTreeDefaultVisible'; value: boolean }
   | { key: 'gitDiffIncludeUntrackedDefault'; value: boolean }
   | { key: 'directoryDeletionMode'; value: DirectoryDeletionMode }
-  | { key: 'useAgentsSkillsPaths'; value: boolean }
   | { key: 'hideSidebarSessionCounts'; value: boolean }
   | { key: 'navigationRenderer'; value: string }
   | { key: 'dictationProvider'; value: string }

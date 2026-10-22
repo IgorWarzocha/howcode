@@ -63,6 +63,7 @@ import { getDurableHostVersion } from './durable-runtime/packages.ts'
 import { completeGitCommitMessage } from './git-integration/git-commit-message.ts'
 import { cleanupLegacyCheckpoints } from './git-integration/legacy-checkpoints.ts'
 import { getDirectoryGitOpsMode } from './git-integration/metadata.ts'
+import { peopleStorage } from './people-integration.ts'
 import { createPluginBoard } from './plugins/board.ts'
 import { createPluginConversations } from './plugins/conversations.ts'
 import { bindFeatureOperations } from './plugins/feature-operations.ts'
@@ -144,11 +145,17 @@ const unbindRuntimeDelivery = bindRuntimeDelivery({
 })
 const hostVersion = await getDurableHostVersion()
 
+const legacyPeople = peopleStorage.read()
+if (!Array.isArray(legacyPeople)) throw new Error('Invalid saved People directory.')
 await createPackageManager({
   directory: getDesktopUserDataPath(),
   cwd: process.cwd(),
   hostVersion,
-}).seedDefaults(defaultComponentPackages, path.dirname(fileURLToPath(import.meta.url)))
+}).seedDefaults(
+  defaultComponentPackages,
+  path.dirname(fileURLToPath(import.meta.url)),
+  legacyPeople.length > 0 ? [] : ['@howaboua/howcode-people'],
+)
 
 const sidebarPackage = '@howaboua/howcode-classic-navigation'
 const workingDirectoryPeers: WorkingDirectoryPeers = {
@@ -188,6 +195,7 @@ const pluginsComponent = await createInstalledPluginServices(
       send: (message) => sendServiceMessage({ type: 'terminal-rpc-response', message }),
     },
     skillsPaths: skillsPathsHost,
+    peopleStorage,
     dictation: {
       initialSettings: () => {
         const settings = loadAppSettings()
@@ -276,6 +284,14 @@ const sidebarMaintenance: SidebarMaintenance = {
     >,
 }
 const skills: PiSkillsService = {
+  getSkillsSettings: async (request) =>
+    (await plugins.request('@howaboua/howcode-skills', 'getSkillsSettings', request)) as Awaited<
+      ReturnType<PiSkillsService['getSkillsSettings']>
+    >,
+  updateSkillsSettings: async (request) =>
+    (await plugins.request('@howaboua/howcode-skills', 'updateSkillsSettings', request)) as Awaited<
+      ReturnType<PiSkillsService['updateSkillsSettings']>
+    >,
   searchPiSkills: async (request) =>
     (await plugins.request('@howaboua/howcode-skills', 'searchPiSkills', request)) as Awaited<
       ReturnType<PiSkillsService['searchPiSkills']>

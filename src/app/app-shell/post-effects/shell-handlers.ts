@@ -31,10 +31,6 @@ export const shellPostEffectHandlers: PostEffectHandler[] = [
     },
   },
   {
-    matches: (ctx) => ctx.action === 'settings.update' && ctx.contextualPayload.key === 'people',
-    run: (ctx) => ctx.refreshShellState(),
-  },
-  {
     matches: (ctx) => Boolean(ctx.actionResult?.result?.composer),
     run: (ctx) => {
       if (ctx.actionResult?.result?.composer) ctx.setComposerState(ctx.actionResult.result.composer)

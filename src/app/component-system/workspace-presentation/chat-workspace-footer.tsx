@@ -1,5 +1,4 @@
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
-import { SpeakerSelector } from '@howcode/components/people/ui'
 import {
   getLocalDraftWorkspaceId,
   getPersistedConversationId,
@@ -14,6 +13,7 @@ import {
   InstalledQueuedPrompts,
 } from '../composer-renderer-slot'
 import { getComposerRuntimeModel } from '../composer-runtime'
+import { InstalledPeopleComposerControl } from '../people-renderer'
 import type { ChatWorkspaceContentProps } from './chat-workspace-contract'
 import { ChatWorkspaceLayout, ChatWorkspaceMainArea } from './chat-workspace-main-area'
 
@@ -98,10 +98,9 @@ function ChatComposer(props: ChatWorkspaceContentProps) {
       terminalVisible={state.terminalVisible}
       preferPortalModelPopover={props.centerChatFooter}
       leadingFooter={
-        <SpeakerSelector
-          people={appSettings.people}
-          onManage={() =>
-            controller.navigation.showView('settings', { settingId: 'general.people' })
+        <InstalledPeopleComposerControl
+          onManage={(packageName) =>
+            controller.navigation.showView('settings', { settingId: `component:${packageName}` })
           }
         />
       }

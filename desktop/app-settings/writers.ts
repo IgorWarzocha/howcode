@@ -11,7 +11,6 @@ import type {
   KeybindingOverrides,
   ModelSelection,
 } from '../../shared/desktop-contracts.ts'
-import type { Person } from '../../shared/people.ts'
 import type { ToolkitComponentId } from '../../shared/toolkit-components.ts'
 import { databaseOperation } from '../chat-repository/db.ts'
 import {
@@ -42,7 +41,7 @@ import {
   preferredDirectoryLocationKey,
   shellPreferencesKey,
   sidebarVisibleDirectoryIdsKey,
-  useAgentsSkillsPathsKey,
+  skillsPreferencesKey,
 } from './keys.ts'
 
 const writeAppPreference = Effect.fn('AppSettings.writePreference')(function* (
@@ -74,8 +73,8 @@ const deleteAppPreference = Effect.fn('AppSettings.deletePreference')(function* 
 })
 
 const writeAppPreferenceSync = databaseOperation(writeAppPreference)
-export function setPeople(people: readonly Person[]) {
-  writeAppPreferenceSync('people', JSON.stringify(people))
+export function writeSkillsPreferencesJson(valueJson: string) {
+  writeAppPreferenceSync(skillsPreferencesKey, valueJson)
 }
 export function writeShellPreferencesJson(valueJson: string) {
   writeAppPreferenceSync(shellPreferencesKey, valueJson)
@@ -242,10 +241,6 @@ export function setGitDiffIncludeUntrackedDefault(enabled: boolean) {
 
 export function setDirectoryDeletionMode(mode: DirectoryDeletionMode) {
   writeAppPreferenceSync(directoryDeletionModeKey, JSON.stringify(mode))
-}
-
-export function setUseAgentsSkillsPaths(enabled: boolean) {
-  writeAppPreferenceSync(useAgentsSkillsPathsKey, JSON.stringify(enabled))
 }
 
 export function setHideSidebarSessionCounts(enabled: boolean) {

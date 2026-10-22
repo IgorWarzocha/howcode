@@ -64,6 +64,8 @@ export const desktopServiceRemoteMethods = {
   },
   plugins: { request: true, hostRequest: true, rendererRequest: true },
   skills: {
+    getSkillsSettings: true,
+    updateSkillsSettings: true,
     searchPiSkills: true,
     listConfiguredPiSkills: true,
     installPiSkill: true,

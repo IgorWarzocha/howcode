@@ -1,7 +1,6 @@
 import type { AppSettings } from '../desktop/types'
 
 export const FALLBACK_APP_SETTINGS = {
-  people: [],
   defaultModel: null,
   defaultThinkingLevel: null,
   gitCommitMessageModel: null,
@@ -22,7 +21,6 @@ export const FALLBACK_APP_SETTINGS = {
   gitDiffFileTreeDefaultVisible: true,
   gitDiffIncludeUntrackedDefault: false,
   directoryDeletionMode: 'pi-only',
-  useAgentsSkillsPaths: false,
   hideSidebarSessionCounts: false,
   hoverToFocus: true,
   hoverToBlur: false,

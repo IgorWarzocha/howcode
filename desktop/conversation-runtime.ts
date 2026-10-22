@@ -1,4 +1,3 @@
-import { preparePersonInput } from '../components/people/service/index.ts'
 import {
   fallbackAppSlashCommands,
   parseCompactSlashCommand,
@@ -31,14 +30,17 @@ import {
   readRuntimeConversationOrigin,
   refreshRuntimePackages,
   resolveConversation,
-  resolveRuntimeExtensions,
   runtimeContext,
 } from './durable-runtime/host.ts'
 import { prepareRuntimeInput } from './durable-runtime/input.ts'
 import { submitTrustedInput } from './durable-runtime/input-ingress.ts'
 import type { TrustedInputOrigin } from './durable-runtime/input-origin.ts'
 import { migrateAgentCapabilities } from './durable-runtime/legacy-capability-migration.ts'
-import { admitPluginInput, notifyPluginConversationCreated } from './plugins/runtime.ts'
+import {
+  admitPluginInput,
+  notifyPluginConversationCreated,
+  resolveInstalledPeopleInput,
+} from './plugins/runtime.ts'
 import { emitDesktopEvent, subscribeDesktopEvents } from './runtime/desktop-events.ts'
 import { withDirectoryActivity } from './runtime/directory-activity.ts'
 
@@ -165,20 +167,11 @@ export async function sendComposerPrompt(
     await admitPluginInput(conversationId)
     const compact = parseCompactSlashCommand(request.text)
     if (compact === null) {
-      const input = await preparePersonInput(
-        conversation,
-        request.personId,
-        await prepareRuntimeInput(conversation, request),
-        async () => {
-          const { extensions } = await resolveRuntimeExtensions({
-            composerExtensions: ['howcode.people'],
-          })
-          const extension = extensions[0]
-          if (!extension) throw new Error('People extension is unavailable.')
-          return extension
-        },
-        runtimeContext,
-      )
+      const content = await prepareRuntimeInput(conversation, request)
+      const people = resolveInstalledPeopleInput()
+      const input = people
+        ? await people.prepareInput({ conversationId, personId: request.personId, content })
+        : { content }
       await submitTrustedInput(
         conversation,
         {

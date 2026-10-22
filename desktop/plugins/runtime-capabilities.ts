@@ -19,6 +19,11 @@ export function bindCapabilities(
       assertCurrent()
       return result
     })
+  const people = native.people
+  if (people)
+    instance.people = {
+      prepareInput: (...args) => leased(() => people.prepareInput(...args)),
+    }
   const workspaceAgent = native.workspaceAgent?.bind(native)
   const toolHistory = native.toolPresentationHistory
   if (toolHistory)

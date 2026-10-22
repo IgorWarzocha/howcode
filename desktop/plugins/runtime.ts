@@ -3,6 +3,7 @@ import type { FixedInitiative } from '@howaboua/howcode-sdk/fixed-initiative'
 import type { PluginGitProgress } from '@howaboua/howcode-sdk/git-progress'
 import type { PluginInitiativeConfiguration } from '@howaboua/howcode-sdk/initiative-configuration'
 import type { InputAdmissionPolicy } from '@howaboua/howcode-sdk/input-delivery'
+import type { PeopleInput } from '@howaboua/howcode-sdk/people'
 import {
   invokePluginRequest,
   type PluginConversation,
@@ -65,6 +66,9 @@ function singleInstalledCapability<T>(
 }
 export function resolveInstalledInputPolicy(): InputAdmissionPolicy | undefined {
   return singleInstalledCapability((instance) => instance.inputPolicy, 'input policy')
+}
+export function resolveInstalledPeopleInput(): PeopleInput | undefined {
+  return singleInstalledCapability((instance) => instance.people, 'People input')
 }
 export function installedInputSources() {
   return [...installedInstances.values()].flatMap((instance) =>

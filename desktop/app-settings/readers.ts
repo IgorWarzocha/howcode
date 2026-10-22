@@ -6,7 +6,6 @@ import {
   DEFAULT_DICTATION_MAX_DURATION_SECONDS,
   normalizeDictationMaxDurationSeconds,
 } from '../../shared/dictation-settings.ts'
-import { PeopleSchema } from '../../shared/people.ts'
 import { EnabledToolkitComponentsSchema } from '../../shared/toolkit-components.ts'
 import { databaseOperation } from '../chat-repository/db.ts'
 import {
@@ -35,12 +34,13 @@ import {
   hoverToFocusKey,
   initializeGitOnDirectoryCreateKey,
   keybindingsKey,
+  legacyUseAgentsSkillsPathsKey,
   navigationRendererKey,
   preferredDirectoryLocationKey,
   shellPreferencesKey,
   showDictationButtonKey,
   sidebarVisibleDirectoryIdsKey,
-  useAgentsSkillsPathsKey,
+  skillsPreferencesKey,
 } from './keys.ts'
 import {
   type PreferenceRow,
@@ -129,7 +129,6 @@ const loadAppSettingsOperation = Effect.fn('AppSettings.load')(function* () {
 
   return {
     ...(enabledToolkitComponents === undefined ? {} : { enabledToolkitComponents }),
-    people: Schema.decodeUnknownSync(PeopleSchema)(JSON.parse(value('people') ?? '[]')),
     defaultModel: parseModelSelection(value(defaultModelKey)),
     defaultThinkingLevel: parseThinkingLevelPreference(value(defaultThinkingLevelKey)),
     gitCommitMessageModel: parseModelSelection(value(gitCommitMessageModelKey)),
@@ -160,7 +159,6 @@ const loadAppSettingsOperation = Effect.fn('AppSettings.load')(function* () {
       parseBooleanPreference(value(gitDiffIncludeUntrackedDefaultKey)) ?? false,
     directoryDeletionMode:
       parseDirectoryDeletionModePreference(value(directoryDeletionModeKey)) ?? 'pi-only',
-    useAgentsSkillsPaths: parseBooleanPreference(value(useAgentsSkillsPathsKey)) ?? false,
     hoverToFocus: parseBooleanPreference(value(hoverToFocusKey)) ?? true,
     hoverToBlur: parseBooleanPreference(value(hoverToBlurKey)) ?? false,
     ...loadKeybindingSettings(value),
@@ -168,6 +166,20 @@ const loadAppSettingsOperation = Effect.fn('AppSettings.load')(function* () {
 })
 
 export const loadAppSettings: () => AppSettings = databaseOperation(loadAppSettingsOperation)
+
+/** Opaque feature snapshot: Skills owns decoding, migration and updates. */
+export const readSkillsPreferencesJson: () => string | undefined = databaseOperation(
+  Effect.fn('AppSettings.readSkillsPreferences')(function* () {
+    return (yield* loadPreferenceRows()).get(skillsPreferencesKey)?.valueJson
+  }),
+)
+
+export const readLegacyUseAgentsSkillsPaths: () => boolean = databaseOperation(
+  Effect.fn('AppSettings.readLegacySkillsInstallPreference')(function* () {
+    const saved = (yield* loadPreferenceRows()).get(legacyUseAgentsSkillsPathsKey)?.valueJson
+    return parseBooleanPreference(saved) ?? false
+  }),
+)
 
 export const readShellPreferencesJson: () => string | undefined = databaseOperation(
   Effect.fn('AppSettings.readShellPreferences')(function* () {

@@ -192,6 +192,7 @@ function validateContribution(value: unknown): PluginRendererContribution {
     'sidebarView',
     'navigation',
     'settings',
+    'people',
     'component',
     'git',
     'TerminalDrawer',
@@ -205,6 +206,7 @@ function validateContribution(value: unknown): PluginRendererContribution {
       name !== 'sidebarView' &&
       name !== 'navigation' &&
       name !== 'settings' &&
+      name !== 'people' &&
       name !== 'git' &&
       name !== 'artifacts' &&
       name !== 'draftInput' &&
@@ -226,11 +228,29 @@ function validateContribution(value: unknown): PluginRendererContribution {
   validateSidebarView(contribution.sidebarView)
   validateNavigationRenderer(contribution.navigation)
   validateSettings(contribution.settings)
+  validatePeople(contribution.people)
   validateArtifactRenderer(contribution.artifacts)
   validateDraftInput(contribution.draftInput)
   validateComposer(contribution.composer)
   if (contribution.component) validateNavigation(contribution.component)
   return contribution
+}
+
+function validatePeople(people: PluginRendererContribution['people']) {
+  if (people === undefined) return
+  if (
+    !people ||
+    typeof people !== 'object' ||
+    Object.keys(people).some((key) => !['ComposerControl', 'selectedPersonId'].includes(key)) ||
+    typeof people.selectedPersonId !== 'function' ||
+    !(
+      typeof people.ComposerControl === 'function' ||
+      (people.ComposerControl &&
+        typeof people.ComposerControl === 'object' &&
+        '$$typeof' in people.ComposerControl)
+    )
+  )
+    throw new Error('Invalid People renderer contribution.')
 }
 
 function validateArtifactRenderer(artifacts: PluginRendererContribution['artifacts']) {

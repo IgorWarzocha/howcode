@@ -63,7 +63,11 @@ export interface PackageManager {
   /** Proof of the known bundled-Board inventory cutover, committed with its replacement. */
   requiresBoardSelectionMigration(): Promise<boolean>
   /** Register distribution defaults once; subsequent removals remain authoritative. */
-  seedDefaults(names: readonly string[], distributionDirectory: string): Promise<void>
+  seedDefaults(
+    names: readonly string[],
+    distributionDirectory: string,
+    skipped?: readonly string[],
+  ): Promise<void>
   /** Install trusted package code. Bun may run lifecycle scripts before compatibility validation. */
   install(source: string): Promise<InstalledPackage>
   remove(source: string): Promise<boolean>
@@ -332,7 +336,7 @@ export function createPackageManager(options: PackageManagerOptions): PackageMan
     operations: () => serialized(async () => (await readPackageState(settings)).operations),
     requiresBoardSelectionMigration: () =>
       serialized(async () => (await readPackageState(settings)).boardSelectionMigration === true),
-    seedDefaults: (names, distributionDirectory) =>
+    seedDefaults: (names, distributionDirectory, skipped = []) =>
       serialized(async () => {
         const completed = await readSeededDefaults(directory)
         const pending = names.filter((name) => !completed.has(name))
@@ -351,7 +355,8 @@ export function createPackageManager(options: PackageManagerOptions): PackageMan
         })
         if (pending.length === 0 && !replacement) return
         const existing = new Set(installed.map((item) => item.name))
-        const missing = pending.filter((name) => !existing.has(name))
+        const excluded = new Set(skipped)
+        const missing = pending.filter((name) => !(existing.has(name) || excluded.has(name)))
         const snapshot = replacement ? [...missing, '@howaboua/howcode-agents'] : missing
         const location = randomUUID()
         const target = join(sources, location)

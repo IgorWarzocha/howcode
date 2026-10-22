@@ -21,7 +21,6 @@ const optimisticSettingKeys = new Set([
   'initializeGitOnDirectoryCreate',
   'directoryDashboardEnabled',
   'directoryDeletionMode',
-  'useAgentsSkillsPaths',
   'hideSidebarSessionCounts',
   'navigationRenderer',
   'dictationProvider',
@@ -88,11 +87,7 @@ function applyOptimisticBooleanSetting(
   payload: ActionPayload,
 ) {
   if (typeof payload.value !== 'boolean') return
-  const directBooleanKeys = [
-    'initializeGitOnDirectoryCreate',
-    'directoryDashboardEnabled',
-    'useAgentsSkillsPaths',
-  ] as const
+  const directBooleanKeys = ['initializeGitOnDirectoryCreate', 'directoryDashboardEnabled'] as const
   if (directBooleanKeys.includes(payload.key as (typeof directBooleanKeys)[number])) {
     nextSettings[payload.key as (typeof directBooleanKeys)[number]] = payload.value
   }

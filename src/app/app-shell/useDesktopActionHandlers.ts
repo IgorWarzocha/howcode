@@ -1,10 +1,9 @@
 import { useSidebarRepositorySnapshot } from '@howaboua/howcode-sdk/sidebar-renderer'
-import { getSelectedPersonId } from '@howcode/components/people/ui'
 import type { ComposerStateRequest } from '@howcode/shared/desktop-composer-contracts'
-import type { Person } from '@howcode/shared/people'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Dispatch, SetStateAction } from 'react'
 import { useCallback } from 'react'
+import { selectedInstalledPersonId } from '../component-system/people-selection'
 import type { DesktopAction } from '../desktop/actions'
 import type {
   AnyDesktopActionPayload,
@@ -45,7 +44,6 @@ function publishActionFeedback(input: {
 }
 
 type UseDesktopActionHandlersArgs = {
-  people: readonly Person[]
   activeView: View
   composerDirectoryId: string
   dispatch: Dispatch<WorkspaceAction>
@@ -69,7 +67,6 @@ type UseDesktopActionHandlersArgs = {
 }
 
 export function useDesktopActionHandlers({
-  people,
   activeView,
   composerDirectoryId,
   dispatch,
@@ -105,7 +102,7 @@ export function useDesktopActionHandlers({
         dispatch,
         payload:
           action === 'composer.send'
-            ? { ...payload, personId: getSelectedPersonId(people) }
+            ? { ...payload, personId: selectedInstalledPersonId() }
             : payload,
         queryClient,
         selectedConversationId,
@@ -155,7 +152,6 @@ export function useDesktopActionHandlers({
       return actionResult
     },
     [
-      people,
       prepareRepositoryAction,
       activeView,
       composerDirectoryId,

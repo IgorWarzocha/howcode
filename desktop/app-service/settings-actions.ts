@@ -1,4 +1,3 @@
-import { updatePeople } from '../../components/people/service/index.ts'
 import {
   getSettingsBooleanValue,
   getSettingsComposerStreamingBehavior,
@@ -45,10 +44,8 @@ import {
   setKeybindings,
   setNavigationRenderer,
   setPreferredDirectoryLocation,
-  setUseAgentsSkillsPaths,
 } from '../app-settings/writers.ts'
 import { refreshDurableSettings } from '../durable-runtime/host.ts'
-import { emitDesktopEvent } from '../runtime/desktop-events.ts'
 import { disposeProviderAuth } from '../settings/provider-auth.ts'
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
@@ -104,10 +101,6 @@ function setOptionalThinkingLevel(
 const settingsUpdateHandlers: Partial<
   Record<NonNullable<ReturnType<typeof getSettingsKey>>, SettingsUpdateHandler>
 > = {
-  people: (payload) => {
-    updatePeople(payload.value)
-    emitDesktopEvent({ type: 'shell-state-refresh' })
-  },
   navigationRenderer: (payload) => {
     if (typeof payload.value !== 'string' || !payload.value.trim())
       throw new Error('Navigation renderer must be a nonempty package name or none.')
@@ -127,9 +120,6 @@ const settingsUpdateHandlers: Partial<
   },
   directoryImportState: (payload) =>
     setDirectoryImportState(getSettingsDirectoryImportState(payload)),
-  useAgentsSkillsPaths: (payload) =>
-    setUseAgentsSkillsPaths(getSettingsBooleanValue(payload) ?? false),
-
   hideSidebarSessionCounts: (payload) =>
     setHideSidebarSessionCounts(getSettingsBooleanValue(payload) ?? false),
   hoverToFocus: (payload) => setHoverToFocus(getSettingsBooleanValue(payload) ?? true),

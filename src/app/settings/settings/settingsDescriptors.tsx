@@ -1,4 +1,3 @@
-import { buildPeopleSettingsDescriptor } from '@howcode/components/people/ui'
 import { buildDirectorySettingsDescriptors } from '@howcode/components/working-directories/ui'
 import type { Dispatch, SetStateAction } from 'react'
 import type {
@@ -49,7 +48,6 @@ export function buildSettingsDescriptors({
 }): SettingDescriptor[] {
   return [
     ...installedSettings,
-    buildPeopleSettingsDescriptor(appSettings.people, onAction),
     buildNavigationSettingsDescriptor({ appSettings, controller, openSelectId, setOpenSelectId }),
     buildDictationSettingsDescriptor({ controller, openSelectId, setOpenSelectId }),
     ...buildComponentSettingsDescriptors(appSettings, onAction),

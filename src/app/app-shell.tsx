@@ -20,19 +20,12 @@ function AppShellContents() {
   const directoryPath = controller.workspace.state.hasSelectedDirectory
     ? controller.workspace.state.selectedDirectoryId || null
     : null
-  const useAgentsSkillsPaths =
-    controller.desktop.shellState?.appSettings.useAgentsSkillsPaths ?? false
-  const { handleAction } = controller.desktop
   const { setSkillsActive } = controller.resourceScope
   const { closeUtilityView } = controller.navigation
   const skills = useMemo(
     () => ({
       openUrl: openPiResourceUrl,
       directoryPath,
-      useAgentsSkillsPaths,
-      onUseAgentsSkillsPathsChange: (value: boolean) => {
-        void handleAction('settings.update', { key: 'useAgentsSkillsPaths', value })
-      },
       onSetDirectoryScopeActive: setSkillsActive,
       onDirectoryTargetSelected: () => setSkillsActive(true),
       subscribeDirectoryTarget: (listener: () => void) => {
@@ -41,7 +34,7 @@ function AppShellContents() {
       },
       onClose: closeUtilityView,
     }),
-    [directoryPath, useAgentsSkillsPaths, handleAction, setSkillsActive, closeUtilityView],
+    [directoryPath, setSkillsActive, closeUtilityView],
   )
   usePiGuiTheme(controller.desktop.shellState?.piTheme)
   if (!(controller.desktop.shellState && controller.workspaces.state)) {
