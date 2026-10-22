@@ -154,10 +154,15 @@ function validateSettings(settings: PluginRendererContribution['settings']) {
   if (
     !settings ||
     typeof settings !== 'object' ||
-    Object.keys(settings).some((key) => !['label', 'description', 'Content'].includes(key)) ||
+    Object.keys(settings).some(
+      (key) => !['label', 'description', 'placement', 'keywords', 'Content'].includes(key),
+    ) ||
     typeof settings.label !== 'string' ||
     !settings.label.trim() ||
     typeof settings.description !== 'string' ||
+    (settings.placement !== undefined &&
+      !['general', 'chat', 'shortcuts', 'tab'].includes(settings.placement)) ||
+    (settings.keywords !== undefined && typeof settings.keywords !== 'string') ||
     !(
       typeof settings.Content === 'function' ||
       (settings.Content && typeof settings.Content === 'object' && '$$typeof' in settings.Content)

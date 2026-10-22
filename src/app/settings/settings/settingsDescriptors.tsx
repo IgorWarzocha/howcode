@@ -32,6 +32,7 @@ export function buildSettingsDescriptors({
   openSelectId,
   setOpenSelectId,
   onAction,
+  installedSettings,
 }: {
   appSettings: AppSettings
   availableModels: ComposerModel[]
@@ -44,8 +45,10 @@ export function buildSettingsDescriptors({
   openSelectId: string | null
   setOpenSelectId: Dispatch<SetStateAction<string | null>>
   onAction: DesktopActionInvoker
+  installedSettings: SettingDescriptor[]
 }): SettingDescriptor[] {
   return [
+    ...installedSettings,
     buildPeopleSettingsDescriptor(appSettings.people, onAction),
     buildNavigationSettingsDescriptor({ appSettings, controller, openSelectId, setOpenSelectId }),
     buildDictationSettingsDescriptor({ controller, openSelectId, setOpenSelectId }),

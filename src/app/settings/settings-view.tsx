@@ -10,6 +10,7 @@ import type {
   ShellPreferences,
 } from '../desktop/types'
 import { SettingsComponentCatalogue } from './settings/settingsComponentCatalogue'
+import { useInstalledSettingsDescriptors } from './settings/settingsDescriptorInstalled'
 import { buildSettingsDescriptors } from './settings/settingsDescriptors'
 import { filterSettings, groupSettingsByCategory } from './settings/settingsGroups'
 import { SettingsGroupsList } from './settings/settingsGroupsList'
@@ -54,6 +55,7 @@ export function SettingsView({
   const controller = useSettingsController({ appSettings, resolvedPiDirectory, onAction })
   const preferencesDraft = useDraftShellPreferences({ onAction, shellPreferences })
   const navigation = useSettingsNavigation({ openTarget, settingsScrollRef })
+  const installed = useInstalledSettingsDescriptors()
 
   const settings = buildSettingsDescriptors({
     appSettings,
@@ -67,6 +69,7 @@ export function SettingsView({
     openSelectId: navigation.openSelectId,
     setOpenSelectId: navigation.setOpenSelectId,
     onAction,
+    installedSettings: installed.settings,
   })
   settings.push({
     id: 'general.import-pi',
@@ -85,10 +88,14 @@ export function SettingsView({
   })
   const filteredSettings = filterSettings({
     settings: settings.filter((setting) => setting.category !== 'components'),
+    categories: installed.categories,
     normalizedFilter: navigation.normalizedFilter,
     activeCategory: navigation.activeCategory,
   })
-  const visibleGroups = groupSettingsByCategory({ settings: filteredSettings })
+  const visibleGroups = groupSettingsByCategory({
+    settings: filteredSettings,
+    categories: installed.categories,
+  })
   const closeSettings = useCallback(
     () => void preferencesDraft.flushShellPreferences().finally(onClose),
     [onClose, preferencesDraft.flushShellPreferences],
@@ -113,6 +120,7 @@ export function SettingsView({
 
       <div className="grid h-full min-h-0 min-w-0 items-start gap-4 overflow-hidden lg:grid-cols-[220px_minmax(0,1fr)]">
         <SettingsCategorySidebar
+          categories={installed.categories}
           activeCategory={navigation.activeCategory}
           normalizedFilter={navigation.normalizedFilter}
           onSelectCategory={navigation.setActiveCategory}
@@ -123,6 +131,7 @@ export function SettingsView({
           className="grid h-full min-h-0 min-w-0 content-start gap-4 overflow-x-hidden overflow-y-auto pr-1 pb-6"
         >
           <SettingsMobileFilters
+            categories={installed.categories}
             filter={navigation.filter}
             activeCategory={navigation.activeCategory}
             onFilterChange={navigation.setFilter}

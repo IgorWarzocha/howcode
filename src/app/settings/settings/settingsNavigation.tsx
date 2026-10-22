@@ -8,8 +8,7 @@ import {
 } from '@howaboua/howcode-sdk/ui/typography-scale'
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { Search, X } from 'lucide-react'
-import { settingsCategories } from './settingsGroups'
-import type { SettingsCategoryId } from './settingsTypes'
+import type { SettingsCategory, SettingsCategoryId } from './settingsTypes'
 
 export function SettingsSearchField({
   value,
@@ -56,10 +55,12 @@ export function SettingsHeaderActions({ onClose }: { onClose: () => void }) {
 }
 
 export function SettingsCategorySidebar({
+  categories,
   activeCategory,
   normalizedFilter,
   onSelectCategory,
 }: {
+  categories: SettingsCategory[]
   activeCategory: SettingsCategoryId | null
   normalizedFilter: string
   onSelectCategory: (category: SettingsCategoryId | null) => void
@@ -67,7 +68,7 @@ export function SettingsCategorySidebar({
   return (
     <div className="sticky top-0 hidden max-h-full min-w-0 overflow-y-auto lg:grid">
       <nav className="grid gap-0.5 p-1">
-        {settingsCategories.map((category) => (
+        {categories.map((category) => (
           <button
             key={category.id}
             type="button"
@@ -88,11 +89,13 @@ export function SettingsCategorySidebar({
 }
 
 export function SettingsMobileFilters({
+  categories,
   filter,
   activeCategory,
   onFilterChange,
   onSelectCategory,
 }: {
+  categories: SettingsCategory[]
   filter: string
   activeCategory: SettingsCategoryId | null
   onFilterChange: (value: string) => void
@@ -102,7 +105,7 @@ export function SettingsMobileFilters({
     <div className="grid min-w-0 content-start gap-4 lg:hidden">
       <SettingsSearchField value={filter} onChange={onFilterChange} className="lg:hidden" />
       <div className="flex flex-wrap items-center gap-1.5 lg:hidden">
-        {settingsCategories.map((category) => (
+        {categories.map((category) => (
           <button
             key={category.id}
             type="button"
