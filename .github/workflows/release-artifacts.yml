@@ -26,7 +26,8 @@ jobs:
           bun-version-file: package.json
       - uses: actions/setup-node@v6
         with:
-          node-version: 24.15.0
+          node-version: current
+          check-latest: true
       - run: bun install --frozen-lockfile
       - run: bun run build
       - name: Pack server package

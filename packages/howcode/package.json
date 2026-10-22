@@ -28,7 +28,7 @@
     "@earendil-works/chord": "1.4.0",
     "@earendil-works/pi-ai": "1.4.0",
     "@earendil-works/pi-durable": "1.4.0",
-    "@modelcontextprotocol/sdk": "1.25.2",
+    "@modelcontextprotocol/sdk": "1.32.0",
     "@effect/sql-sqlite-node": "4.0.0-rc.116",
     "effect": "4.0.0-rc.116",
     "esbuild": "0.28.2",
@@ -41,7 +41,7 @@
     "@howaboua/howcode-sdk": "0.1.0"
   },
   "engines": {
-    "node": ">=24.15.0 <27"
+    "node": ">=26.12.1 <27"
   },
   "keywords": [
     "coding",

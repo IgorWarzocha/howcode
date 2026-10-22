@@ -1,8 +1,4 @@
 {
-  "nativeServiceAbiDirectoryName": "native-node-abi",
-  "serviceNativePackages": ["node-pty"],
-  "serviceAbiPackages": ["node-pty"],
-  "minimumServiceNodeVersion": "24.15.0",
-  "supportedServiceNodeMajors": ["24", "25", "26"],
-  "supportedServiceNodeAbis": ["137", "141", "147"]
+  "nodeVersionRange": ">=26.12.1 <27",
+  "nodeAbi": "147"
 }

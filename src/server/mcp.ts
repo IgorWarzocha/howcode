@@ -69,7 +69,7 @@ export function createMcpEndpoint(input: {
         return
       }
       if (closing || response.destroyed) return
-      // SDK 1.25.2's own transport accessor types violate its Transport interface under exactOptionalPropertyTypes.
+      // The SDK's transport accessor types violate its Transport interface under exactOptionalPropertyTypes.
       // @ts-expect-error Official SDK transport, without altering its runtime or weakening project types.
       await server.connect(transport)
       await Promise.race([transport.handleRequest(request, response, body), closed])

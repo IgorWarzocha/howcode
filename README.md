@@ -21,7 +21,7 @@ npm i -g howcode
 howcode
 ```
 
-Requires Node 24.15 or newer, below Node 27. Open the access URL printed by Howcode in your browser. Keep the server running while you work.
+Requires the current Node 26 release, at least 26.12.1. The development toolchain follows Node's latest release through mise. Open the access URL printed by Howcode in your browser. Keep the server running while you work.
 
 The npm package contains the server and browser app. Native terminal and dictation dependencies install for your machine through npm. Updating Howcode means installing a newer npm package, not an in-app updater.
 
