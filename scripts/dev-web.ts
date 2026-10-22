@@ -169,19 +169,22 @@ async function shutdown(exitCode = 0) {
   }
 }
 
-function proxyDevWebBridgeRequest(
+async function proxyDevWebBridgeRequest(
   request: http.IncomingMessage,
   response: http.ServerResponse,
   events: boolean,
   mcp = false,
 ) {
+  // These requests have not reached a backend. Hold them across the handoff,
+  // rather than failing the mounted UI or replaying a potentially accepted action.
+  const handoff = reload.handoff
+  if (handoff) await handoff
+  if (response.destroyed) return
   const done = events ? (reload.gated ? null : () => undefined) : reload.admit()
   if (!(done && bridge?.port)) {
     done?.()
-    response.writeHead(503, { 'content-type': 'application/json', 'retry-after': '1' })
-    response.end(
-      JSON.stringify({ error: 'Dev backend is reloading or unavailable. Try again shortly.' }),
-    )
+    response.writeHead(503, { 'content-type': 'application/json' })
+    response.end(JSON.stringify({ error: 'Dev backend is unavailable.' }))
     return
   }
   const headers = {
@@ -302,13 +305,13 @@ try {
   const bridgeMiddleware = (
     request: http.IncomingMessage,
     response: http.ServerResponse,
-    next: () => void,
+    next: (error?: unknown) => void,
   ) => {
     const requestUrl = new URL(request.url ?? '/', 'http://localhost')
 
     if (requestUrl.pathname === '/mcp') {
       if (!devWebAccess.authoriseMcpRequest(request, response)) return
-      proxyDevWebBridgeRequest(request, response, false, true)
+      void proxyDevWebBridgeRequest(request, response, false, true).catch(next)
       return
     }
 
@@ -331,7 +334,7 @@ try {
     ) {
       if (!devWebAccess.authoriseBridgeRequest(request, response)) return
       const events = requestUrl.pathname.startsWith('/__howcode/events')
-      proxyDevWebBridgeRequest(request, response, events)
+      void proxyDevWebBridgeRequest(request, response, events).catch(next)
       return
     }
 

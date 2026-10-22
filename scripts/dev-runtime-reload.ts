@@ -9,7 +9,7 @@ export function createDevRuntimeReload(input: {
   let requests = 0
   let gated = false
   let stopped = false
-  let checking = false
+  let handoff: PromiseWithResolvers<void> | null = null
   let applied: string | null = null
   let pending: string | null = null
   let lastReport = ''
@@ -27,6 +27,7 @@ export function createDevRuntimeReload(input: {
     stop() {
       stopped = true
       gated = true
+      handoff?.resolve()
     },
     admit() {
       if (gated || stopped) return null
@@ -41,9 +42,13 @@ export function createDevRuntimeReload(input: {
     get gated() {
       return gated
     },
+    get handoff() {
+      return handoff?.promise
+    },
     async check() {
-      if (stopped || checking || requests > 0 || !pending || pending === applied) return
-      checking = true
+      if (stopped || handoff || requests > 0 || !pending || pending === applied) return
+      const currentHandoff = Promise.withResolvers<void>()
+      handoff = currentHandoff
       gated = true
       try {
         const activity = await input.inspect()
@@ -63,8 +68,9 @@ export function createDevRuntimeReload(input: {
       } catch (error) {
         report(`Dev reload failed: ${error instanceof Error ? error.message : String(error)}`)
       } finally {
-        checking = false
         gated = stopped
+        handoff = null
+        currentHandoff.resolve()
       }
     },
   }
