@@ -1,17 +1,32 @@
 import type { PluginServiceInstance } from '@howaboua/howcode-sdk/plugins'
 import { bindFeatureOperations } from './feature-operations.ts'
 
+function bindLiveCapabilities(
+  native: PluginServiceInstance,
+  instance: PluginServiceInstance,
+  assertCurrent: () => void,
+) {
+  if (native.terminal) instance.terminal = native.terminal
+  if (native.notebookStoragePolicy) {
+    const readPolicy = native.notebookStoragePolicy.bind(native)
+    instance.notebookStoragePolicy = () => {
+      assertCurrent()
+      return readPolicy()
+    }
+  }
+  if (native.isBusy !== undefined) {
+    if (typeof native.isBusy !== 'function') throw new Error('Invalid component busy callback.')
+    instance.isBusy = native.isBusy.bind(native)
+  }
+}
+
 export function bindCapabilities(
   native: PluginServiceInstance,
   instance: PluginServiceInstance,
   track: <T>(operation: () => Promise<T>) => Promise<T>,
   assertCurrent: () => void,
 ) {
-  if (native.terminal) instance.terminal = native.terminal
-  if (native.isBusy !== undefined) {
-    if (typeof native.isBusy !== 'function') throw new Error('Invalid component busy callback.')
-    instance.isBusy = native.isBusy.bind(native)
-  }
+  bindLiveCapabilities(native, instance, assertCurrent)
   const leased = <T>(operation: () => Promise<T>) =>
     track(async () => {
       assertCurrent()

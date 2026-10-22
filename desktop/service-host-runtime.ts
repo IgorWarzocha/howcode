@@ -53,6 +53,7 @@ import {
   bindRuntimeDelivery,
   getDurableRuntime,
   inspectDurableActivity,
+  notebookStorageHost,
   readRuntimePackageActivation,
   reconcileRuntimeGeneration,
   stopDurableAdmission,
@@ -188,6 +189,7 @@ const pluginsComponent = await createInstalledPluginServices(
         : undefined,
     ),
     models: getDurableModels,
+    notebookStorage: notebookStorageHost,
     sidebar: createSidebarHost(workingDirectoryPeers),
     terminal: {
       dataDirectory: getDesktopUserDataPath(),

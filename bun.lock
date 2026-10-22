@@ -15,7 +15,7 @@
         "@effect/sql-sqlite-node": "4.0.1",
         "@fontsource-variable/geist-mono": "^5.3.0",
         "@fontsource-variable/inter": "^5.3.0",
-        "@howaboua/howcode-agents": "file:../howcode-components/dist/howaboua-howcode-agents-0.1.0-d69ad166.tgz",
+        "@howaboua/howcode-agents": "file:../howcode-components/dist/howaboua-howcode-agents-0.1.0-d2609146.tgz",
         "@howaboua/howcode-awareness": "file:../howcode-components/dist/howaboua-howcode-awareness-0.1.0-869c13ba.tgz",
         "@howaboua/howcode-board": "file:../howcode-components/dist/howaboua-howcode-board-0.1.0-1d6b26ae.tgz",
         "@howaboua/howcode-bots": "file:../howcode-components/dist/howaboua-howcode-bots-0.1.0-5291b0f3.tgz",
@@ -29,11 +29,12 @@
         "@howaboua/howcode-initiative": "file:../howcode-components/dist/howaboua-howcode-initiative-0.1.0-6ce9229e.tgz",
         "@howaboua/howcode-intelligent-ui": "file:../howcode-components/dist/howaboua-howcode-intelligent-ui-0.1.0-b36451d9.tgz",
         "@howaboua/howcode-markdown-artifacts": "file:../howcode-components/dist/howaboua-howcode-markdown-artifacts-0.1.0-245c6378.tgz",
+        "@howaboua/howcode-notebook": "file:../howcode-components/dist/howaboua-howcode-notebook-0.1.0-89e54e2e.tgz",
         "@howaboua/howcode-people": "file:../howcode-components/dist/howaboua-howcode-people-0.1.0-59828aec.tgz",
-        "@howaboua/howcode-pulses": "file:../howcode-components/dist/howaboua-howcode-pulses-0.1.0-3b498c54.tgz",
+        "@howaboua/howcode-pulses": "file:../howcode-components/dist/howaboua-howcode-pulses-0.1.0-d8f17491.tgz",
         "@howaboua/howcode-react-artifacts": "file:../howcode-components/dist/howaboua-howcode-react-artifacts-0.1.0-2465a52d.tgz",
         "@howaboua/howcode-reminders": "file:../howcode-components/dist/howaboua-howcode-reminders-0.1.0-af2bc8fa.tgz",
-        "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-81857a50.tgz",
+        "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-8730f387.tgz",
         "@howaboua/howcode-skills": "file:../howcode-components/dist/howaboua-howcode-skills-0.1.0-55966d0c.tgz",
         "@howaboua/howcode-spaces": "file:../howcode-components/dist/howaboua-howcode-spaces-0.1.0-8b305f12.tgz",
         "@howaboua/howcode-terminal": "file:../howcode-components/dist/howaboua-howcode-terminal-0.1.0-d839cd24.tgz",
@@ -79,7 +80,7 @@
   },
   "overrides": {
     "@aws-sdk/client-bedrock-runtime": "3.1136.0",
-    "@howaboua/howcode-agents": "file:../howcode-components/dist/howaboua-howcode-agents-0.1.0-d69ad166.tgz",
+    "@howaboua/howcode-agents": "file:../howcode-components/dist/howaboua-howcode-agents-0.1.0-d2609146.tgz",
     "@howaboua/howcode-awareness": "file:../howcode-components/dist/howaboua-howcode-awareness-0.1.0-869c13ba.tgz",
     "@howaboua/howcode-board": "file:../howcode-components/dist/howaboua-howcode-board-0.1.0-1d6b26ae.tgz",
     "@howaboua/howcode-bots": "file:../howcode-components/dist/howaboua-howcode-bots-0.1.0-5291b0f3.tgz",
@@ -93,24 +94,25 @@
     "@howaboua/howcode-initiative": "file:../howcode-components/dist/howaboua-howcode-initiative-0.1.0-6ce9229e.tgz",
     "@howaboua/howcode-intelligent-ui": "file:../howcode-components/dist/howaboua-howcode-intelligent-ui-0.1.0-b36451d9.tgz",
     "@howaboua/howcode-markdown-artifacts": "file:../howcode-components/dist/howaboua-howcode-markdown-artifacts-0.1.0-245c6378.tgz",
+    "@howaboua/howcode-notebook": "file:../howcode-components/dist/howaboua-howcode-notebook-0.1.0-89e54e2e.tgz",
     "@howaboua/howcode-people": "file:../howcode-components/dist/howaboua-howcode-people-0.1.0-59828aec.tgz",
-    "@howaboua/howcode-pulses": "file:../howcode-components/dist/howaboua-howcode-pulses-0.1.0-3b498c54.tgz",
+    "@howaboua/howcode-pulses": "file:../howcode-components/dist/howaboua-howcode-pulses-0.1.0-d8f17491.tgz",
     "@howaboua/howcode-react-artifacts": "file:../howcode-components/dist/howaboua-howcode-react-artifacts-0.1.0-2465a52d.tgz",
     "@howaboua/howcode-reminders": "file:../howcode-components/dist/howaboua-howcode-reminders-0.1.0-af2bc8fa.tgz",
-    "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-81857a50.tgz",
+    "@howaboua/howcode-sdk": "file:../howcode-components/dist/howaboua-howcode-sdk-0.1.0-8730f387.tgz",
     "@howaboua/howcode-skills": "file:../howcode-components/dist/howaboua-howcode-skills-0.1.0-55966d0c.tgz",
     "@howaboua/howcode-spaces": "file:../howcode-components/dist/howaboua-howcode-spaces-0.1.0-8b305f12.tgz",
     "@howaboua/howcode-terminal": "file:../howcode-components/dist/howaboua-howcode-terminal-0.1.0-d839cd24.tgz",
     "@howaboua/howcode-workspace-layout": "file:../howcode-components/dist/howaboua-howcode-workspace-layout-0.1.0-5037498a.tgz",
-    "@howaboua/pi-durable-agents": "file:../pi-durable-components/dist/howaboua-pi-durable-agents-0.7.0-9b6c0116.tgz",
-    "@howaboua/pi-durable-board": "file:../pi-durable-components/dist/howaboua-pi-durable-board-0.2.1-7002b29f.tgz",
-    "@howaboua/pi-durable-context": "file:../pi-durable-components/dist/howaboua-pi-durable-context-0.7.1-b829ad92.tgz",
+    "@howaboua/pi-durable-agents": "file:../pi-durable-components/dist/howaboua-pi-durable-agents-0.7.0-adc9be6c.tgz",
+    "@howaboua/pi-durable-board": "file:../pi-durable-components/dist/parity-final-candidates/howaboua-pi-durable-board-0.2.1-7103c730.tgz",
+    "@howaboua/pi-durable-context": "file:../pi-durable-components/dist/howaboua-pi-durable-context-0.7.1-93a446a0.tgz",
     "@howaboua/pi-durable-dictation": "file:../pi-durable-components/dist/dictation-config/howaboua-pi-durable-dictation-0.1.0-49e24ca7.tgz",
-    "@howaboua/pi-durable-gippity-voice": "file:../pi-durable-components/dist/howaboua-pi-durable-gippity-voice-0.5.0-c8b97cfd.tgz",
+    "@howaboua/pi-durable-gippity-voice": "file:../pi-durable-components/dist/parity-closure/howaboua-pi-durable-gippity-voice-0.5.0-6a94b242.tgz",
     "@howaboua/pi-durable-git": "file:../pi-durable-components/dist/howaboua-pi-durable-git-0.1.0-820d78f6.tgz",
     "@howaboua/pi-durable-grok-voice": "file:../pi-durable-components/dist/howaboua-pi-durable-grok-voice-0.5.0-6044790e.tgz",
-    "@howaboua/pi-durable-notebook": "file:../pi-durable-components/dist/prompt-sections/howaboua-pi-durable-notebook-0.7.1-a5ce6480.tgz",
-    "@howaboua/pi-durable-pulses": "file:../pi-durable-components/dist/howaboua-pi-durable-pulses-0.1.0-a733f277.tgz",
+    "@howaboua/pi-durable-notebook": "file:../pi-durable-components/dist/notebook-retention/howaboua-pi-durable-notebook-0.7.1-a3e2a68f.tgz",
+    "@howaboua/pi-durable-pulses": "file:../pi-durable-components/dist/howaboua-pi-durable-pulses-0.1.0-d7950d99.tgz",
     "@howaboua/pi-durable-ui": "file:../pi-durable-components/dist/pierre-ui-upgrade/howaboua-pi-durable-ui-0.1.0-839dbfaf.tgz",
     "lightningcss": "1.33.0",
   },
@@ -395,7 +397,7 @@
 
     "@hono/node-server": ["@hono/node-server@1.19.17", "", { "peerDependencies": { "hono": "^4" } }, "sha512-dSneS5qhiauZWGDCeK4o695Xd9nUNjviSZCMQrj10eetr8Uln1ucn6bbphOM6UynAMMtNIzZNSpL9vnASJwrPQ=="],
 
-    "@howaboua/howcode-agents": ["@howaboua/howcode-agents@../howcode-components/dist/howaboua-howcode-agents-0.1.0-d69ad166.tgz", { "dependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "@howaboua/pi-durable-agents": "0.7.0" }, "peerDependencies": { "@howaboua/howcode-sdk": "0.1.0", "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-TKFX/CZ5Dz1raXYrWaiT5luzX5IHFNWNJj/gO+T68I8j6LLoU+adSSobmfxsVIcq/4wbGhcN1wbum/+AoV5/Jw=="],
+    "@howaboua/howcode-agents": ["@howaboua/howcode-agents@../howcode-components/dist/howaboua-howcode-agents-0.1.0-d2609146.tgz", { "dependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "@howaboua/pi-durable-agents": "0.7.0" }, "peerDependencies": { "@howaboua/howcode-sdk": "0.1.0", "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-yK5oZ+rnpkyYSdVIGV5jd4w+2S7N7k7d07TZpZRmkdrIMW4RtJUwQxIHbxbpgTggBchGS/fiZgPECkVUwn+wIg=="],
 
     "@howaboua/howcode-awareness": ["@howaboua/howcode-awareness@../howcode-components/dist/howaboua-howcode-awareness-0.1.0-869c13ba.tgz", { "dependencies": { "effect": "4.0.1" }, "peerDependencies": { "@howaboua/howcode-sdk": "0.1.0", "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-FvAF8v5fKin/oFCLMfUpNg0N4d/sHNsWAf2LpB+5CQPoDl+EmLl0p4JxAwfP4XqWswT+x1WRoeDRSmsjAFVe0w=="],
 
@@ -423,15 +425,17 @@
 
     "@howaboua/howcode-markdown-artifacts": ["@howaboua/howcode-markdown-artifacts@../howcode-components/dist/howaboua-howcode-markdown-artifacts-0.1.0-245c6378.tgz", { "dependencies": { "@mdxeditor/editor": "4.2.5", "effect": "4.0.1", "lucide-react": "1.47.0", "prismjs": "1.30.0", "react-markdown": "10.1.0", "rehype-raw": "7.0.0", "rehype-sanitize": "6.0.0", "remark-gfm": "4.0.1" }, "peerDependencies": { "@howaboua/howcode-sdk": "0.1.0", "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-38hB+GDQHrMUJ+Z/WGFeNieYiesjDPXC2ZTq5RFbO+iOb0CoOSTaLZvgtEQOVBYPKCu3h1BCPNJOR+UzeGoDsw=="],
 
+    "@howaboua/howcode-notebook": ["@howaboua/howcode-notebook@../howcode-components/dist/howaboua-howcode-notebook-0.1.0-89e54e2e.tgz", { "dependencies": { "effect": "4.0.1" }, "peerDependencies": { "@howaboua/howcode-sdk": "0.1.0", "react": "19.3.0" } }, "sha512-BLgmWgs+PgytHkGgGYTnmSCD7g4tK7tGenK04VGiS/jSEb4XkxFAPdW228pjjC8Gc0124eK+VrQR0c6gZaQvAA=="],
+
     "@howaboua/howcode-people": ["@howaboua/howcode-people@../howcode-components/dist/howaboua-howcode-people-0.1.0-59828aec.tgz", { "dependencies": { "@earendil-works/pi-durable": "1.4.0", "@tanstack/react-query": "5.103.1", "effect": "4.0.1" }, "peerDependencies": { "@howaboua/howcode-sdk": "0.1.0", "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-rARPeGjO0JsPrwyTdJUHsGrFNHO/KYaiQJwHGxSea4+1MwFQfMOpIJqD7LSkufBxWQXnil5XHmAhaVnim8xxFA=="],
 
-    "@howaboua/howcode-pulses": ["@howaboua/howcode-pulses@../howcode-components/dist/howaboua-howcode-pulses-0.1.0-3b498c54.tgz", { "dependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "@howaboua/pi-durable-pulses": "0.1.0", "effect": "4.0.1" }, "peerDependencies": { "@howaboua/howcode-sdk": "0.1.0", "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-pAj6iB3P42bftJHm7IN3qghhac2LoHlwvRXyU1a7+FS3eLGOhRNm71ocGw7z9gv4t5WbCY5KSkcHc32dX3RMJQ=="],
+    "@howaboua/howcode-pulses": ["@howaboua/howcode-pulses@../howcode-components/dist/howaboua-howcode-pulses-0.1.0-d8f17491.tgz", { "dependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "@howaboua/pi-durable-pulses": "0.1.0", "effect": "4.0.1" }, "peerDependencies": { "@howaboua/howcode-sdk": "0.1.0", "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-HSDjlVBZpX7Itp8S0S5qfenBLtPpVEM5v9a3hfDhEj+290fY3/oRNa7QBLqygkP9U0RuLCujR7lAzlg5GZECyQ=="],
 
     "@howaboua/howcode-react-artifacts": ["@howaboua/howcode-react-artifacts@../howcode-components/dist/howaboua-howcode-react-artifacts-0.1.0-2465a52d.tgz", { "dependencies": { "esbuild": "0.28.2", "lucide-react": "1.47.0" }, "peerDependencies": { "@howaboua/howcode-sdk": "0.1.0", "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-ou3e6QBJkb1/8hbCLPI24tLc7nhcNRzZ67+6ooa+GV24ZtpFPlZ9KbgvsnSSGRbkdKbWtcDU1WnvPc6Ukm9Vsg=="],
 
     "@howaboua/howcode-reminders": ["@howaboua/howcode-reminders@../howcode-components/dist/howaboua-howcode-reminders-0.1.0-af2bc8fa.tgz", { "dependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "effect": "4.0.1" }, "peerDependencies": { "@howaboua/howcode-sdk": "0.1.0", "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-hGSE79Qxzra2wZWuocONACkHOzmLmhOKyzVZTZUxv9NKSPHfv5lXy3ScSbCu4IRa1mSRN2M52slb0GLZkTDeCA=="],
 
-    "@howaboua/howcode-sdk": ["@howaboua/howcode-sdk@../howcode-components/dist/howaboua-howcode-sdk-0.1.0-81857a50.tgz", { "dependencies": { "@types/hast": "3.0.5", "effect": "4.0.1", "lucide-react": "1.47.0", "mermaid": "11.13.0", "react-markdown": "10.1.0", "rehype-raw": "7.0.0", "rehype-sanitize": "6.0.0", "remark-gfm": "4.0.1", "unified": "11.0.5" }, "peerDependencies": { "@earendil-works/pi-ai": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "react": "19.3.0", "react-dom": "19.3.0" }, "optionalPeers": ["@earendil-works/pi-ai", "@earendil-works/pi-durable"] }, "sha512-8RiBS5erRVFzesZgCT11QJuT47FjGPpcNEYwM0I3mTuzZLOOhFAl1YjleKGxnvE+w2Fdf5an2q40aOA6gvA54w=="],
+    "@howaboua/howcode-sdk": ["@howaboua/howcode-sdk@../howcode-components/dist/howaboua-howcode-sdk-0.1.0-8730f387.tgz", { "dependencies": { "@types/hast": "3.0.5", "effect": "4.0.1", "lucide-react": "1.47.0", "mermaid": "11.13.0", "react-markdown": "10.1.0", "rehype-raw": "7.0.0", "rehype-sanitize": "6.0.0", "remark-gfm": "4.0.1", "unified": "11.0.5" }, "peerDependencies": { "@earendil-works/pi-ai": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "react": "19.3.0", "react-dom": "19.3.0" }, "optionalPeers": ["@earendil-works/pi-ai", "@earendil-works/pi-durable"] }, "sha512-XqRwLsxf4lww6jQiydMY3Y6tGK87uCb67Phs4M1+VOHhDDw7j2DhKeNrhsfuT+Qj+dboOvFNhPL300a4VBQT+g=="],
 
     "@howaboua/howcode-skills": ["@howaboua/howcode-skills@../howcode-components/dist/howaboua-howcode-skills-0.1.0-55966d0c.tgz", { "dependencies": { "@tanstack/react-query": "5.103.1", "effect": "4.0.1", "lucide-react": "1.47.0" }, "peerDependencies": { "@howaboua/howcode-sdk": "0.1.0", "react": "19.3.0", "react-dom": "19.3.0" } }, "sha512-PSTsPHSwFKcEpBfNlJVwu+3wR8ELzS8rZ/Vb4TsHeIAZ764CKkYxbYChu6G6NywcQNchYGan7RQI8jiD/Qp1Fg=="],
 
@@ -441,25 +445,25 @@
 
     "@howaboua/howcode-workspace-layout": ["@howaboua/howcode-workspace-layout@../howcode-components/dist/howaboua-howcode-workspace-layout-0.1.0-5037498a.tgz", { "dependencies": { "@earendil-works/pi-ai": "1.4.0", "@earendil-works/pi-durable": "1.4.0" }, "peerDependencies": { "@howaboua/howcode-sdk": "0.1.0" } }, "sha512-O6g/Kw94YRoPsd4mv9SukMdgJmVTtTmJmGJgLp5FvaZA7VpC5ixtNVrKuSwkSkvDhuP0UjOOULj+uLOL4D6Wzw=="],
 
-    "@howaboua/pi-durable-agents": ["@howaboua/pi-durable-agents@../pi-durable-components/dist/howaboua-pi-durable-agents-0.7.0-9b6c0116.tgz", { "dependencies": { "typebox": "1.3.27" }, "peerDependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-ai": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "@modelcontextprotocol/sdk": "1.25.2" } }, "sha512-EIdEZSTqMbr7ZkpWYaLw1mN7cRkxQfsls8fUHqZysqYPelH3pgZE5ZXKdXAUAGZHn3hnAtBtvncCsL/GhZpuVg=="],
+    "@howaboua/pi-durable-agents": ["@howaboua/pi-durable-agents@../pi-durable-components/dist/howaboua-pi-durable-agents-0.7.0-adc9be6c.tgz", { "dependencies": { "typebox": "1.3.27" }, "peerDependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-ai": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "@modelcontextprotocol/sdk": "1.25.2" } }, "sha512-9J+3OnazM7A+EHrYgrA6NPigTTvyyxUzkMzF7RurgZgaTKrqkGxJQxtTIQchAgvn7fgp5K6wx/N1qlKofNrrWw=="],
 
-    "@howaboua/pi-durable-board": ["@howaboua/pi-durable-board@../pi-durable-components/dist/howaboua-pi-durable-board-0.2.1-7002b29f.tgz", { "dependencies": { "typebox": "1.3.27", "unicode-case-folding": "1.1.2" }, "peerDependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-ai": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "@modelcontextprotocol/sdk": "1.25.2" } }, "sha512-fxWc5xDQHA0YT88qszjyvXRdZF0jtkF+eW16xlxg+UeC5N3teZplR1B742EnSmXf1lNkPKXIHm7PAZn3jUD45g=="],
+    "@howaboua/pi-durable-board": ["@howaboua/pi-durable-board@../pi-durable-components/dist/parity-final-candidates/howaboua-pi-durable-board-0.2.1-7103c730.tgz", { "dependencies": { "typebox": "1.3.27", "unicode-case-folding": "1.1.2" }, "peerDependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-ai": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "@modelcontextprotocol/sdk": "1.25.2" } }, "sha512-FqHRpP4dYuE6JvEblCRA1IDHlGSMrCJyOuUmwlC0vB1rgM3bDhGmsryV0JI/rE5jhxmB/5NMXfAScEetnE7tsQ=="],
 
-    "@howaboua/pi-durable-context": ["@howaboua/pi-durable-context@../pi-durable-components/dist/howaboua-pi-durable-context-0.7.1-b829ad92.tgz", { "dependencies": { "typebox": "1.3.27" }, "peerDependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-ai": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "@modelcontextprotocol/sdk": "1.25.2" } }, "sha512-ICaSZOd60IGxi+GTA881Hsq4aSgel0uitbFCEjFHtj08eEH5R6KOZXAZSS0D4T0bKGpJebZXSpA7BsvN36DwYw=="],
+    "@howaboua/pi-durable-context": ["@howaboua/pi-durable-context@../pi-durable-components/dist/howaboua-pi-durable-context-0.7.1-93a446a0.tgz", { "dependencies": { "typebox": "1.3.27" }, "peerDependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-ai": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "@modelcontextprotocol/sdk": "1.25.2" } }, "sha512-kKVxxFChTa14hsPuM8pI4MfQlgvQzu9CLJw1wigYqPq54GG8a/UCItbrGP6UyoRvuKYqqJry8ZdefGa+68pueA=="],
 
     "@howaboua/pi-durable-dictation": ["@howaboua/pi-durable-dictation@../pi-durable-components/dist/dictation-config/howaboua-pi-durable-dictation-0.1.0-49e24ca7.tgz", { "dependencies": { "sherpa-onnx-node": "1.13.8" } }, "sha512-abn62LTz7YEub6As3dc0Kl0CvVfatXETElhwhfC7Nyk2JG6O/EvBRdqSY18eJj/7Gb4OA6HYSxRiIvDUFXQH+g=="],
 
-    "@howaboua/pi-durable-gippity-voice": ["@howaboua/pi-durable-gippity-voice@../pi-durable-components/dist/howaboua-pi-durable-gippity-voice-0.5.0-c8b97cfd.tgz", { "dependencies": { "undici": "8.10.2", "ws": "8.21.3" }, "peerDependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-ai": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "@modelcontextprotocol/sdk": "1.25.2" } }, "sha512-+KS/Al2DQX4aUvxztJcUXo9edlmGTv762UwCmqwu8d4fFUZBbSUAJHnBIkzalNnKEomOjSr9fIaNC6UvWtrWkQ=="],
+    "@howaboua/pi-durable-gippity-voice": ["@howaboua/pi-durable-gippity-voice@../pi-durable-components/dist/parity-closure/howaboua-pi-durable-gippity-voice-0.5.0-6a94b242.tgz", { "dependencies": { "undici": "8.10.2", "ws": "8.21.3" }, "peerDependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-ai": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "@modelcontextprotocol/sdk": "1.25.2" } }, "sha512-/TE2iArPgGCOkQ0NqIdYMrNFpdI2p5lwdBVHGitHP+bNYZW+xND2ik9zkBQFXXtrGJZJi750PQEFnPI7MZRtsw=="],
 
     "@howaboua/pi-durable-git": ["@howaboua/pi-durable-git@../pi-durable-components/dist/howaboua-pi-durable-git-0.1.0-820d78f6.tgz", { "dependencies": { "typebox": "1.3.27" }, "peerDependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-ai": "1.4.0", "@earendil-works/pi-durable": "1.4.0" }, "optionalPeers": ["@earendil-works/chord", "@earendil-works/pi-ai", "@earendil-works/pi-durable"] }, "sha512-qThQSMtyvEoeJnBP2LQ7KRr7TEMl1lJwyZArrJZvEpbWDS07TAoTyzEpS6FgEFBST60giKTajewPekAT8WTrsw=="],
 
     "@howaboua/pi-durable-grok-voice": ["@howaboua/pi-durable-grok-voice@../pi-durable-components/dist/howaboua-pi-durable-grok-voice-0.5.0-6044790e.tgz", { "dependencies": { "@types/ws": "8.18.1", "typebox": "1.3.27", "ws": "8.21.3" }, "peerDependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-ai": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "@modelcontextprotocol/sdk": "1.25.2" } }, "sha512-ckFwRPeKHdbRzbxmOpF7N1Rxhhjjw681Wl9ZE9prlhbwUNkzqI1iEC6eqoBjJARVavzxtCU7yWqIsLAcx04UEA=="],
 
-    "@howaboua/pi-durable-notebook": ["@howaboua/pi-durable-notebook@../pi-durable-components/dist/prompt-sections/howaboua-pi-durable-notebook-0.7.1-a5ce6480.tgz", { "dependencies": { "node-pty": "1.1.0", "proxy-from-env": "2.1.0", "smol-toml": "1.8.0", "typebox": "1.3.27", "undici": "8.10.2" }, "peerDependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-ai": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "@modelcontextprotocol/sdk": "1.25.2" } }, "sha512-FPZpaYHsJ2+ctFfuqTYIe+9gwXJtgjykd7v/qpDwMyRYHb2lzJpVMKDvF7Mx2IkFGcUZT3ocuhrON54Q5fR83A=="],
+    "@howaboua/pi-durable-notebook": ["@howaboua/pi-durable-notebook@../pi-durable-components/dist/notebook-retention/howaboua-pi-durable-notebook-0.7.1-a3e2a68f.tgz", { "dependencies": { "node-pty": "1.1.0", "proxy-from-env": "2.1.0", "smol-toml": "1.8.0", "typebox": "1.3.27", "undici": "8.10.2" }, "peerDependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-ai": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "@modelcontextprotocol/sdk": "1.25.2" } }, "sha512-CpLfqEnw74fFdBbmz1yQSX1ldnWWfJSl8+YW79VQzYFbf3w7QLZt0q50xejobxpoHKeOLb3MMSaF0h+je5NdEg=="],
 
     "@howaboua/pi-durable-project-instructions": ["@howaboua/pi-durable-project-instructions@../pi-durable-components/dist/project-instructions/howaboua-pi-durable-project-instructions-0.1.0-194d9f87.tgz", { "peerDependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-durable": "1.4.0" } }, "sha512-OLMEQ4z36Tplxxum1J77u15TmhEAGdNERLWtZskjSne4bki0J//BPROz5FYpzhTZNcSkCG8CgqWxxXCFqPMwjQ=="],
 
-    "@howaboua/pi-durable-pulses": ["@howaboua/pi-durable-pulses@../pi-durable-components/dist/howaboua-pi-durable-pulses-0.1.0-a733f277.tgz", { "peerDependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-ai": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "@modelcontextprotocol/sdk": "1.25.2" } }, "sha512-IFmn8ekwlY8H5HBLd/jETbKMzaGITMwZNQg3rZCLmzu9n0As0rqh1IyAMYRxqL7Li21/DikRkbDV//5OjgNBkg=="],
+    "@howaboua/pi-durable-pulses": ["@howaboua/pi-durable-pulses@../pi-durable-components/dist/howaboua-pi-durable-pulses-0.1.0-d7950d99.tgz", { "dependencies": { "typebox": "1.3.27" }, "peerDependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-ai": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "@modelcontextprotocol/sdk": "1.25.2" } }, "sha512-VWeAmouPeQduDKFs9wFqRoDn/KeaP24Na9x8LZ2itoTSzwolPU8YD6ciufeNE5ILqNuWcgX0+Qz2l418RNaUtg=="],
 
     "@howaboua/pi-durable-ui": ["@howaboua/pi-durable-ui@../pi-durable-components/dist/pierre-ui-upgrade/howaboua-pi-durable-ui-0.1.0-839dbfaf.tgz", { "peerDependencies": { "@howaboua/pi-durable-git": "0.1.0", "@pierre/diffs": "1.6.1", "react": "19.3.0", "react-dom": "19.3.0" }, "optionalPeers": ["@howaboua/pi-durable-git", "@pierre/diffs", "react", "react-dom"] }, "sha512-2lN6kZCpQZ0wBAvZenTCmuK9MoxT/qnfGytmWTrhRqdCOXa2oH6sIY+S/rc9i9DxeG9hlOxXy/3U4A6T42V+yQ=="],
 

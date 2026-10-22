@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { BACKGROUND_CONTEXT } from '@earendil-works/chord/context'
 import { createRegistry, type Extension, type Harness } from '@earendil-works/pi-durable'
 import { howcodeMetadata, linkedDurablePackages } from '@howaboua/howcode-sdk/node/plugin-metadata'
+import type { NotebookStoragePolicy } from '@howaboua/howcode-sdk/notebook-storage'
 import { createJiti } from 'jiti'
 import {
   createPackageManager,
@@ -165,12 +166,14 @@ interface NotebookAdapter {
   extension: Extension
   bind(harness: Harness): void
   close(): Promise<void>
+  maintainStorage?: () => Promise<void>
 }
 type NotebookFactory = (options: {
   stateDirectory: string
   native: { environmentId: string }
   shell: { backend: unknown }
   cancelTask: Harness['abortTask']
+  getStoragePolicy: () => NotebookStoragePolicy
 }) => NotebookAdapter
 
 export interface PackageLoadOptions {
@@ -178,6 +181,7 @@ export interface PackageLoadOptions {
   cwd: string
   stateDirectory: string
   environmentId: string
+  getNotebookStoragePolicy: () => NotebookStoragePolicy
 }
 
 function createNotebook(
@@ -195,6 +199,7 @@ function createNotebook(
     native: { environmentId: options.environmentId },
     shell: { backend: loaded.createNodeShellBackend({ environmentId: options.environmentId }) },
     cancelTask,
+    getStoragePolicy: options.getNotebookStoragePolicy,
   })
 }
 
@@ -460,6 +465,35 @@ export async function loadInstalledPackages(options: PackageLoadOptions) {
       })
     },
     refresh,
+    notebookStorage: {
+      available: () => active.some((item) => item.notebooks.length > 0),
+      maintainStorage() {
+        const result = queue
+          .catch(() => undefined)
+          .then(async () => {
+            if (closed) throw new Error('Installed packages are closed.')
+            const notebooks = [...active, ...retained].flatMap((item) => item.notebooks)
+            if (notebooks.length === 0) throw new Error('Notebook is not installed.')
+            const maintainers = notebooks.map((notebook) => {
+              if (typeof notebook.maintainStorage !== 'function')
+                throw new Error(
+                  'An older Notebook generation is still loaded. Update Notebook and let the backend reload before applying storage changes.',
+                )
+              return notebook.maintainStorage.bind(notebook)
+            })
+            const outcomes = await Promise.allSettled(maintainers.map((maintain) => maintain()))
+            const failures = outcomes
+              .filter((outcome) => outcome.status === 'rejected')
+              .map((outcome) => outcome.reason)
+            if (failures.length > 0)
+              throw new AggregateError(failures, 'Notebook storage maintenance failed.', {
+                cause: failures[0],
+              })
+          })
+        queue = result
+        return result
+      },
+    },
     async close() {
       closed = true
       await queue.catch(() => undefined)

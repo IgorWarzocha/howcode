@@ -3,6 +3,7 @@ import type { FixedInitiative } from '@howaboua/howcode-sdk/fixed-initiative'
 import type { PluginGitProgress } from '@howaboua/howcode-sdk/git-progress'
 import type { PluginInitiativeConfiguration } from '@howaboua/howcode-sdk/initiative-configuration'
 import type { InputAdmissionPolicy } from '@howaboua/howcode-sdk/input-delivery'
+import type { NotebookStoragePolicy } from '@howaboua/howcode-sdk/notebook-storage'
 import type { PeopleInput } from '@howaboua/howcode-sdk/people'
 import {
   invokePluginRequest,
@@ -69,6 +70,14 @@ export function resolveInstalledInputPolicy(): InputAdmissionPolicy | undefined 
 }
 export function resolveInstalledPeopleInput(): PeopleInput | undefined {
   return singleInstalledCapability((instance) => instance.people, 'People input')
+}
+export function readInstalledNotebookStoragePolicy(): NotebookStoragePolicy {
+  return (
+    singleInstalledCapability(
+      (instance) => instance.notebookStoragePolicy,
+      'Notebook storage policy',
+    )?.() ?? {}
+  )
 }
 export function installedInputSources() {
   return [...installedInstances.values()].flatMap((instance) =>

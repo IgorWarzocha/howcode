@@ -14,7 +14,11 @@ import { NodeExecutionEnv } from '@earendil-works/pi-durable/env/node'
 import { openNodeSqliteStorage } from '@earendil-works/pi-durable/storage/sqlite/node'
 import type { ComposerStateRequest } from '../../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
-import { bindInstalledPluginRuntime, unbindPluginRuntime } from '../plugins/runtime.ts'
+import {
+  bindInstalledPluginRuntime,
+  readInstalledNotebookStoragePolicy,
+  unbindPluginRuntime,
+} from '../plugins/runtime.ts'
 import { boundPluginRuntime } from '../plugins/runtime-bindings.ts'
 import { liveModels } from '../settings/live-models.ts'
 import { getDurableModels } from '../settings/models.ts'
@@ -113,6 +117,7 @@ async function openExtensions() {
       cwd: getDesktopWorkingDirectory(),
       stateDirectory: join(directory, 'notebook'),
       environmentId: new NodeExecutionEnv({ cwd: getDesktopWorkingDirectory() }).id,
+      getNotebookStoragePolicy: readInstalledNotebookStoragePolicy,
     },
     [requireRuntimeDelivery().extension],
   )
@@ -121,6 +126,11 @@ async function openExtensions() {
 function getExtensions() {
   extensions ??= openExtensions()
   return extensions
+}
+
+export const notebookStorageHost = {
+  available: async () => (await getExtensions()).packages.notebookStorage.available(),
+  maintainStorage: async () => (await getExtensions()).packages.notebookStorage.maintainStorage(),
 }
 
 export async function refreshDurableSettings() {
