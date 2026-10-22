@@ -118,7 +118,8 @@ export default defineConfig({
     port: DEV_SERVER_START_PORT,
     strictPort: false,
     watch: {
-      ignored: ['**/.worktrees/**'],
+      // The standalone pages build must not reload the application during checks.
+      ignored: ['**/.worktrees/**', path.resolve(directoryRoot, 'dist-pages/**')],
     },
   },
 })
