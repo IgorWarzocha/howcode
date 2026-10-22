@@ -14,6 +14,7 @@ const BoardSelectionCutover = defineDoc<{ enabled: boolean }>({
   version: 1,
   scope: 'session',
   initial: () => ({ enabled: false }),
+  checkpointWhen: () => true,
 })
 
 // Follow the same as-of boundary as pi.agent. Forking a pre-cutover entry needs

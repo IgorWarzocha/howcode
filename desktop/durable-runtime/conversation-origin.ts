@@ -21,6 +21,7 @@ export const RuntimeOriginDoc = defineDoc<ConversationOrigin>({
   scope: 'conversation',
   history: 'latest',
   fork: 'current',
+  checkpointWhen: () => true,
   initial: () => ({
     appOwned: false,
     directoryId: null,

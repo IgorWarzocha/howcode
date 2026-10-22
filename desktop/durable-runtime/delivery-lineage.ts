@@ -41,6 +41,7 @@ export const AcceptedInputTaskDoc = defineDoc({
   kind: 'howcode.accepted-input-task',
   version: 1,
   scope: 'task',
+  checkpointWhen: () => true,
   initial: () => ({
     accepted: false,
     source: '',

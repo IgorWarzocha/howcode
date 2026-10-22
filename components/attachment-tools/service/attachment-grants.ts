@@ -17,6 +17,7 @@ export const AttachmentGrantsDoc = defineDoc<{ files: string[]; directories: str
   history: 'rewindable',
   fork: 'asOf',
   initial: () => ({ files: [], directories: [] }),
+  checkpointWhen: () => true,
 })
 
 export async function resolveAttachmentGrants(attachments: ComposerAttachment[]) {
