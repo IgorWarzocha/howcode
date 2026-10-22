@@ -1,12 +1,26 @@
 import type { ToolResultMessage } from '@howaboua/howcode-sdk/chat-renderer'
 import {
+  isToolActivityGroup,
   isToolCallForwarding,
   type ToolPresentationProps,
   type ToolPresentationResolution,
+  type ToolPresentationSummary,
 } from '@howaboua/howcode-sdk/tool-renderer'
 import { useCallback, useContext } from 'react'
 import { type Renderer, RendererHostsContext } from './installed-renderer-context'
 import { RendererSlot } from './renderer-slots'
+
+function validateSummary(summary: ToolPresentationSummary) {
+  if (
+    typeof summary.title !== 'string' ||
+    !summary.title.trim() ||
+    (summary.activityTitle !== undefined &&
+      (typeof summary.activityTitle !== 'string' || !summary.activityTitle.trim())) ||
+    (summary.activityGroup !== undefined && !isToolActivityGroup(summary.activityGroup)) ||
+    (summary.description !== undefined && typeof summary.description !== 'string')
+  )
+    throw new Error('Invalid tool presentation summary.')
+}
 
 function describePresentation(
   renderer: Renderer,
@@ -19,14 +33,7 @@ function describePresentation(
   try {
     const summary = presentation.summarize(message)
     if (!summary) return null
-    if (
-      typeof summary.title !== 'string' ||
-      !summary.title.trim() ||
-      (summary.activityTitle !== undefined &&
-        (typeof summary.activityTitle !== 'string' || !summary.activityTitle.trim())) ||
-      (summary.description !== undefined && typeof summary.description !== 'string')
-    )
-      throw new Error('Invalid tool presentation summary.')
+    validateSummary(summary)
     const forwarded = presentation.forwardCalls?.(message)
     if (forwarded && !isToolCallForwarding(forwarded))
       throw new Error('Invalid forwarded tool calls.')
