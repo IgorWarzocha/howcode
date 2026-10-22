@@ -72,6 +72,7 @@
     "@howaboua/howcode-classic-navigation": "file:../howcode-components/dist/howaboua-howcode-classic-navigation-0.1.0-77e4906b.tgz",
     "@howaboua/howcode-spaces": "file:../howcode-components/dist/howaboua-howcode-spaces-0.1.0-8b305f12.tgz",
     "@howaboua/pi-durable-git": "file:../pi-durable-components/dist/howaboua-pi-durable-git-0.1.0-820d78f6.tgz",
+    "@howaboua/pi-durable-project-instructions": "file:../pi-durable-components/dist/project-instructions/howaboua-pi-durable-project-instructions-0.1.0-194d9f87.tgz",
     "@howaboua/pi-durable-ui": "file:../pi-durable-components/dist/pierre-ui-upgrade/howaboua-pi-durable-ui-0.1.0-839dbfaf.tgz",
     "@tanstack/react-pacer": "^0.23.0",
     "@tanstack/react-query": "5.103.1",
@@ -157,7 +158,7 @@
     "@howaboua/pi-durable-agents": "file:../pi-durable-components/dist/howaboua-pi-durable-agents-0.7.0-9b6c0116.tgz",
     "@howaboua/pi-durable-board": "file:../pi-durable-components/dist/howaboua-pi-durable-board-0.2.1-7002b29f.tgz",
     "@howaboua/pi-durable-pulses": "file:../pi-durable-components/dist/howaboua-pi-durable-pulses-0.1.0-a733f277.tgz",
-    "@howaboua/pi-durable-notebook": "file:../pi-durable-components/dist/howaboua-pi-durable-notebook-0.7.1-8384fbd8.tgz"
+    "@howaboua/pi-durable-notebook": "file:../pi-durable-components/dist/prompt-sections/howaboua-pi-durable-notebook-0.7.1-a5ce6480.tgz"
   },
   "howcodeComponents": [
     "@howaboua/howcode-classic-navigation",

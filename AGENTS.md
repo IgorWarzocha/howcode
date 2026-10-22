@@ -2,7 +2,11 @@
 
 - Design Howcode as chat with an agent first, with a small, malleable core built around Pi Durable. Coding is an optional domain, not the core's identity.
 - Prefer Howcode components and Durable tool/resource extensions for domain capabilities. Users should be able to enable coding UI and tools, choose other domain capabilities, and add their own components without changing core.
-- Howcode plugins and their small host SDK live in `/home/igorw/Work/howcode-components`; consume their built installed packages, never private-source aliases. Portable Durable capabilities belong in `/home/igorw/Work/pi-durable-components`; check its existing implementation before adding one.
+- Howcode core owns host transport, runtime composition, execution-environment grants, native identity, global user paths and capability selection.
+- Howcode Components in `../howcode-components` owns Howcode-specific feature UI, backend services, adapters, settings, state and cleanup, plus the public host SDK.
+- Pi Durable Components in `../pi-durable-components` owns reusable agent capabilities, tools, resources and prompt sections, including their implementation, state and lifecycle. They must work without Howcode.
+- Consume built installed public packages and pass explicit host options. Never use private-source aliases or duplicate portable protocol parsers in the host.
+- Existing backend code in `components/*` does not override these repository boundaries or justify adding new portable or domain engines here.
 - Keep agent capability selection independent from UI presentation. Default-enabled tools are still extensions; do not bake fixed chat/code tool bundles into core or use plumbing work to redesign product bundles or artifact storage.
 - Reuse Durable's extension machinery and Effect's infrastructure primitives. Keep domain policy out of core; introduce shared component contracts only for concrete capabilities, not a speculative framework or parallel runtime.
 - Components must own their feature implementation, state, services and cleanup, not just registrations or visibility switches. Core and peer features consume explicit public contracts; removing a component from composition must not break unrelated features. Composer skill suggestions belong to Composer, independently of the skill-management UI component.

@@ -38,6 +38,7 @@
         "@howaboua/howcode-terminal": "file:../howcode-components/dist/howaboua-howcode-terminal-0.1.0-d839cd24.tgz",
         "@howaboua/howcode-workspace-layout": "file:../howcode-components/dist/howaboua-howcode-workspace-layout-0.1.0-5037498a.tgz",
         "@howaboua/pi-durable-git": "file:../pi-durable-components/dist/howaboua-pi-durable-git-0.1.0-820d78f6.tgz",
+        "@howaboua/pi-durable-project-instructions": "file:../pi-durable-components/dist/project-instructions/howaboua-pi-durable-project-instructions-0.1.0-194d9f87.tgz",
         "@howaboua/pi-durable-ui": "file:../pi-durable-components/dist/pierre-ui-upgrade/howaboua-pi-durable-ui-0.1.0-839dbfaf.tgz",
         "@modelcontextprotocol/sdk": "1.25.2",
         "@tailwindcss/node": "4.3.3",
@@ -106,7 +107,7 @@
     "@howaboua/pi-durable-gippity-voice": "file:../pi-durable-components/dist/howaboua-pi-durable-gippity-voice-0.5.0-c8b97cfd.tgz",
     "@howaboua/pi-durable-git": "file:../pi-durable-components/dist/howaboua-pi-durable-git-0.1.0-820d78f6.tgz",
     "@howaboua/pi-durable-grok-voice": "file:../pi-durable-components/dist/howaboua-pi-durable-grok-voice-0.5.0-6044790e.tgz",
-    "@howaboua/pi-durable-notebook": "file:../pi-durable-components/dist/howaboua-pi-durable-notebook-0.7.1-8384fbd8.tgz",
+    "@howaboua/pi-durable-notebook": "file:../pi-durable-components/dist/prompt-sections/howaboua-pi-durable-notebook-0.7.1-a5ce6480.tgz",
     "@howaboua/pi-durable-pulses": "file:../pi-durable-components/dist/howaboua-pi-durable-pulses-0.1.0-a733f277.tgz",
     "@howaboua/pi-durable-ui": "file:../pi-durable-components/dist/pierre-ui-upgrade/howaboua-pi-durable-ui-0.1.0-839dbfaf.tgz",
     "lightningcss": "1.33.0",
@@ -450,7 +451,9 @@
 
     "@howaboua/pi-durable-grok-voice": ["@howaboua/pi-durable-grok-voice@../pi-durable-components/dist/howaboua-pi-durable-grok-voice-0.5.0-6044790e.tgz", { "dependencies": { "@types/ws": "8.18.1", "typebox": "1.3.27", "ws": "8.21.3" }, "peerDependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-ai": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "@modelcontextprotocol/sdk": "1.25.2" } }, "sha512-ckFwRPeKHdbRzbxmOpF7N1Rxhhjjw681Wl9ZE9prlhbwUNkzqI1iEC6eqoBjJARVavzxtCU7yWqIsLAcx04UEA=="],
 
-    "@howaboua/pi-durable-notebook": ["@howaboua/pi-durable-notebook@../pi-durable-components/dist/howaboua-pi-durable-notebook-0.7.1-8384fbd8.tgz", { "dependencies": { "node-pty": "1.1.0", "proxy-from-env": "2.1.0", "smol-toml": "1.8.0", "typebox": "1.3.27", "undici": "8.10.2" }, "peerDependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-ai": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "@modelcontextprotocol/sdk": "1.25.2" } }, "sha512-jC/G6Vu1qYbSn2tbHPSOb6yZuN/qYT2/nCKsFTU2AUnX4n2LkW15WrEYWeH0Ma2zqQJgjLGVgV4RP3RgAQvD2A=="],
+    "@howaboua/pi-durable-notebook": ["@howaboua/pi-durable-notebook@../pi-durable-components/dist/prompt-sections/howaboua-pi-durable-notebook-0.7.1-a5ce6480.tgz", { "dependencies": { "node-pty": "1.1.0", "proxy-from-env": "2.1.0", "smol-toml": "1.8.0", "typebox": "1.3.27", "undici": "8.10.2" }, "peerDependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-ai": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "@modelcontextprotocol/sdk": "1.25.2" } }, "sha512-FPZpaYHsJ2+ctFfuqTYIe+9gwXJtgjykd7v/qpDwMyRYHb2lzJpVMKDvF7Mx2IkFGcUZT3ocuhrON54Q5fR83A=="],
+
+    "@howaboua/pi-durable-project-instructions": ["@howaboua/pi-durable-project-instructions@../pi-durable-components/dist/project-instructions/howaboua-pi-durable-project-instructions-0.1.0-194d9f87.tgz", { "peerDependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-durable": "1.4.0" } }, "sha512-OLMEQ4z36Tplxxum1J77u15TmhEAGdNERLWtZskjSne4bki0J//BPROz5FYpzhTZNcSkCG8CgqWxxXCFqPMwjQ=="],
 
     "@howaboua/pi-durable-pulses": ["@howaboua/pi-durable-pulses@../pi-durable-components/dist/howaboua-pi-durable-pulses-0.1.0-a733f277.tgz", { "peerDependencies": { "@earendil-works/chord": "1.4.0", "@earendil-works/pi-ai": "1.4.0", "@earendil-works/pi-durable": "1.4.0", "@modelcontextprotocol/sdk": "1.25.2" } }, "sha512-IFmn8ekwlY8H5HBLd/jETbKMzaGITMwZNQg3rZCLmzu9n0As0rqh1IyAMYRxqL7Li21/DikRkbDV//5OjgNBkg=="],
 

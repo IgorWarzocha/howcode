@@ -1,8 +1,8 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { defineExtension, section } from '@earendil-works/pi-durable'
+import { createProjectInstructions } from '@howaboua/pi-durable-project-instructions'
 import { withExtensionIngress } from '../../../desktop/durable-runtime/extension-ingress.ts'
-import { mapWithConcurrency } from '../../../desktop/runtime/map-with-concurrency.ts'
 import { getAgentDirectory } from '../../../desktop/settings/paths.ts'
 import type {
   ComposerSkillReference,
@@ -19,38 +19,28 @@ async function optionalInstructions(filePath: string) {
   }
 }
 
-async function workspaceInstructions(cwd: string) {
-  const directories: string[] = []
-  for (let directory = path.resolve(cwd); ; directory = path.dirname(directory)) {
-    directories.unshift(directory)
-    if (path.dirname(directory) === directory) break
-  }
-  const contents = await mapWithConcurrency(directories, 8, async (directory) => {
-    const filePath = path.join(directory, 'AGENTS.md')
-    const text = await optionalInstructions(filePath)
-    return text ? `Instructions from ${filePath}:\n${text}` : null
-  })
-  return contents.filter(Boolean).join('\n\n')
-}
-
 const dollarSkillTokenPattern = /(^|\s)\$([\w./-]+)/g
 const skillCommandPattern = /^\/skill:([^\s]+)(?:\s|$)/
 
 export function createAgentResources(
   getComposerSkills: (request: ComposerStateRequest) => Promise<ComposerSkillReference[]>,
 ) {
+  const projectInstructions = createProjectInstructions()
   return withExtensionIngress(
     defineExtension({
+      // Keep project context under the existing, independently selected Resources capability.
+      ...projectInstructions,
       name: 'howcode.resources',
       sections: [
         section('howcode-answer-presentation', () => inlineAnswerPrompt, { tag: false }),
-        section('howcode-instructions', async ({ agent }) => {
-          const global =
+        section(
+          'howcode-global-instructions',
+          async () =>
             (await optionalInstructions(path.join(getAgentDirectory(), 'AGENTS.md'))) ??
-            (await optionalInstructions(path.join(getAgentDirectory(), 'AGENTS.MD')))
-          const workspace = agent.cwd ? await workspaceInstructions(agent.cwd) : ''
-          return [global, workspace].filter(Boolean).join('\n\n') || undefined
-        }),
+            (await optionalInstructions(path.join(getAgentDirectory(), 'AGENTS.MD'))) ??
+            undefined,
+        ),
+        ...(projectInstructions.sections ?? []),
         createSkillsSection(),
       ],
     }),
