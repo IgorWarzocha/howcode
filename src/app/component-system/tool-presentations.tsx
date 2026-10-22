@@ -1,7 +1,8 @@
 import type { ToolResultMessage } from '@howaboua/howcode-sdk/chat-renderer'
-import type {
-  ToolPresentationProps,
-  ToolPresentationResolution,
+import {
+  isToolCallForwarding,
+  type ToolPresentationProps,
+  type ToolPresentationResolution,
 } from '@howaboua/howcode-sdk/tool-renderer'
 import { useCallback, useContext } from 'react'
 import { type Renderer, RendererHostsContext } from './installed-renderer-context'
@@ -26,7 +27,10 @@ function describePresentation(
       (summary.description !== undefined && typeof summary.description !== 'string')
     )
       throw new Error('Invalid tool presentation summary.')
-    return { status: 'ready', owner: renderer.name, summary }
+    const forwarded = presentation.forwardCalls?.(message)
+    if (forwarded && !isToolCallForwarding(forwarded))
+      throw new Error('Invalid forwarded tool calls.')
+    return { status: 'ready', owner: renderer.name, summary, ...(forwarded ? { forwarded } : {}) }
   } catch (error) {
     return {
       status: 'error',
@@ -39,6 +43,7 @@ export function useDescribeToolPresentation() {
   const renderers = useContext(RendererHostsContext)
   return useCallback(
     (message: ToolResultMessage): ToolPresentationResolution | null => {
+      if (message.presentationError) return { status: 'error', message: message.presentationError }
       let match: Extract<ToolPresentationResolution, { status: 'ready' }> | null = null
       for (const renderer of renderers) {
         const result = describePresentation(renderer, message)

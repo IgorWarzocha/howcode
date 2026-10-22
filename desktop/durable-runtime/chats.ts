@@ -10,6 +10,7 @@ import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directo
 import { mapDurableEntriesToChat } from '../../shared/durable-message-mapper.ts'
 import { getRuntimeConversationMetadata } from '../app-service/conversation-state.ts'
 import { freezePluginTurn } from '../plugins/runtime.ts'
+import { projectToolPresentationHistory } from '../plugins/tool-presentation-history.ts'
 import { emitDesktopEvent } from '../runtime/desktop-events.ts'
 import { getComposerState } from './composer.ts'
 import {
@@ -92,7 +93,7 @@ export async function readRuntimeChat(
     ])
     const live = watch.value.docs['pi.live'] as LiveState | undefined
     const metadata = getRuntimeConversationMetadata(conversationId)
-    return mapHistory(
+    const chat = mapHistory(
       conversationId,
       entries,
       atEntryId ? undefined : live,
@@ -100,6 +101,9 @@ export async function readRuntimeChat(
       metadata?.title,
       options?.historyCompactions ?? 0,
     )
+    if (!atEntryId)
+      chat.messages = await projectToolPresentationHistory(conversationId, chat.messages)
+    return chat
   } finally {
     await watch.stop()
   }
@@ -129,6 +133,7 @@ async function attachConversationWatch(request: ComposerStateRequest & { convers
       title,
       historyWindows.get(conversationId) ?? 0,
     )
+    chat.messages = await projectToolPresentationHistory(conversationId, chat.messages)
     const reason =
       chat.isStreaming && !running ? 'start' : !chat.isStreaming && running ? 'end' : 'update'
     running = chat.isStreaming

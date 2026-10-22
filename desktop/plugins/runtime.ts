@@ -97,6 +97,12 @@ export function installedAgentTools() {
     (instance.tools ?? []).map((tool) => ({ plugin, tool })),
   )
 }
+
+export function installedToolPresentationHistory() {
+  return [...installedInstances].flatMap(([owner, instance]) =>
+    instance.toolPresentationHistory ? [{ owner, history: instance.toolPresentationHistory }] : [],
+  )
+}
 export function installedServiceExtensions() {
   return [...installedInstances.values()].flatMap((instance) => instance.extensions ?? [])
 }

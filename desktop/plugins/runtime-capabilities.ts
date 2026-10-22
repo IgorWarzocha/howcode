@@ -20,6 +20,12 @@ export function bindCapabilities(
       return result
     })
   const workspaceAgent = native.workspaceAgent?.bind(native)
+  const toolHistory = native.toolPresentationHistory
+  if (toolHistory)
+    instance.toolPresentationHistory = {
+      toolNames: Object.freeze([...toolHistory.toolNames]),
+      readDetails: (...args) => leased(() => toolHistory.readDetails(...args)),
+    }
   const conversationAssociation = native.conversationAssociation?.bind(native)
   const deleteConversations = native.deleteConversations?.bind(native)
   const conversationCreated = native.conversationCreated?.bind(native)
