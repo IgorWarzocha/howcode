@@ -29,10 +29,21 @@ export function filterSettings({
 
     const categoryLabel =
       categories.find((category) => category.id === setting.category)?.label ?? ''
-    return `${categoryLabel} ${setting.title} ${setting.description} ${setting.keywords ?? ''}`
+    return `${categoryLabel} ${setting.section ?? ''} ${setting.title} ${setting.description} ${setting.keywords ?? ''}`
       .toLowerCase()
       .includes(normalizedFilter)
   })
+}
+
+export function groupSettingsBySection(settings: SettingDescriptor[], categoryLabel: string) {
+  const sections = new Map<string, SettingDescriptor[]>()
+  for (const setting of settings) {
+    const label = setting.section ?? categoryLabel
+    const section = sections.get(label)
+    if (section) section.push(setting)
+    else sections.set(label, [setting])
+  }
+  return [...sections].map(([label, entries]) => ({ label, settings: entries }))
 }
 
 export function groupSettingsByCategory({

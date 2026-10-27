@@ -17,6 +17,7 @@ export function buildDirectoryBasicsSettingsDescriptors({
     {
       id: 'projects.default-location',
       category: 'general',
+      section: 'Workspaces',
       title: 'Default workspace location',
       description: 'Default folder for new folder-backed workspaces.',
       keywords: 'workspace folder location path default',
@@ -48,6 +49,7 @@ export function buildDirectoryBasicsSettingsDescriptors({
     {
       id: 'projects.initialize-git',
       category: 'general',
+      section: 'Workspaces',
       title: 'Initialise git',
       description: 'Always git init when creating a new folder-backed workspace.',
       keywords: 'git init initialize workspaces diffs',
@@ -62,6 +64,7 @@ export function buildDirectoryBasicsSettingsDescriptors({
     {
       id: 'projects.dashboard',
       category: 'general',
+      section: 'Workspaces',
       title: 'Workspace dashboard',
       description: 'Show the dashboard when a folder-backed workspace is selected.',
       keywords: 'workspace dashboard overview code landing performance disable',

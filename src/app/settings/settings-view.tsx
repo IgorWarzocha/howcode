@@ -25,6 +25,7 @@ import type { SettingsOpenTarget } from './settings/settingsTypes'
 import { useDraftShellPreferences } from './settings/useDraftShellPreferences'
 import { useSettingsController } from './settings/useSettingsController'
 import { useSettingsNavigation } from './settings/useSettingsNavigation'
+import './settings.css'
 
 type SettingsViewProps = {
   appSettings: AppSettings
@@ -74,6 +75,7 @@ export function SettingsView({
   settings.push({
     id: 'general.import-pi',
     category: 'general',
+    section: 'Pi preferences',
     title: 'Import from Pi',
     description:
       'Copy supported preferences into Howcode. Credentials and resources are not imported; Pi files are unchanged.',
@@ -103,10 +105,10 @@ export function SettingsView({
 
   return (
     <ViewShell
-      className="h-full content-stretch grid-rows-[auto_minmax(0,1fr)] overflow-hidden !pb-0"
-      maxWidthClassName="max-w-[1360px]"
+      className="settings-view h-full content-stretch grid-rows-[auto_minmax(0,1fr)] overflow-hidden !pb-0"
+      maxWidthClassName="max-w-[1180px]"
     >
-      <div className="grid min-w-0 items-center gap-4 lg:grid-cols-[220px_minmax(0,1fr)_auto]">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 lg:grid-cols-[220px_minmax(0,1fr)_auto]">
         <ViewHeader title="App settings" className="items-center" />
         <div className="hidden h-10 items-center lg:flex">
           <SettingsSearchField
@@ -128,7 +130,7 @@ export function SettingsView({
 
         <div
           ref={settingsScrollRef}
-          className="grid h-full min-h-0 min-w-0 content-start gap-4 overflow-x-hidden overflow-y-auto pr-1 pb-6"
+          className="settings-content grid h-full min-h-0 min-w-0 content-start gap-8 overflow-x-hidden overflow-y-auto pr-1 pb-6"
         >
           <SettingsMobileFilters
             categories={installed.categories}

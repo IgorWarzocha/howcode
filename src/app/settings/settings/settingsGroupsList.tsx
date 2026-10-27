@@ -10,7 +10,7 @@ import {
 import { cn } from '@howaboua/howcode-sdk/utils/cn'
 import { Fragment } from 'react'
 import { SettingRow } from './setting-row'
-import type { settingsCategories } from './settingsGroups'
+import { groupSettingsBySection, type settingsCategories } from './settingsGroups'
 import type { SettingsCategoryId } from './settingsTypes'
 
 type VisibleSettingsGroup = (typeof settingsCategories)[number] & {
@@ -40,40 +40,39 @@ export function SettingsGroupsList({
     )
   }
 
-  return visibleGroups.map((group, index) => (
-    <Fragment key={group.id}>
-      {index > 0 ? (
-        <div className="my-2 h-px bg-[rgba(169,178,215,0.18)] lg:col-span-full" />
-      ) : null}
-      <PopoverBoundary
-        as="section"
-        className="motion-surface-pulse motion-settings-section-pulse grid min-w-0 gap-1"
-        data-pulse-active={group.id === highlightedCategoryId ? 'true' : 'false'}
+  return visibleGroups.map((group) => (
+    <PopoverBoundary
+      key={group.id}
+      as="section"
+      className="motion-surface-pulse motion-settings-section-pulse settings-category-group"
+      data-pulse-active={group.id === highlightedCategoryId ? 'true' : 'false'}
+    >
+      <div
+        className={cn(
+          'flex items-baseline justify-between gap-3 px-1 pt-1 pb-1',
+          getCategoryHelpIntro(group.id) && 'min-h-10 items-start',
+        )}
       >
-        <div
-          className={cn(
-            'flex items-baseline justify-between gap-3 px-1 pt-1 pb-1',
-            getCategoryHelpIntro(group.id) && 'min-h-10 items-start',
-          )}
-        >
-          <h2 className={`${appTypeSectionTitleClass} ${appToneTextClass}`}>{group.label}</h2>
-        </div>
-        {getCategoryHelpIntro(group.id) ? (
-          <p className={`px-1 pb-2 ${appTypeSmallClass} ${appToneMutedClass}`}>
-            {getCategoryHelpIntro(group.id)}
-          </p>
-        ) : null}
-        <div className="grid">
-          {group.settings.map((setting) => (
-            <Fragment key={setting.id}>
-              {setting.dividerBefore ? (
-                <div className="my-2 border-t border-[rgba(169,178,215,0.12)]" />
-              ) : null}
-              <SettingRow setting={setting} />
-            </Fragment>
-          ))}
-        </div>
-      </PopoverBoundary>
-    </Fragment>
+        <h2 className={`${appTypeSectionTitleClass} ${appToneTextClass}`}>{group.label}</h2>
+      </div>
+      {getCategoryHelpIntro(group.id) ? (
+        <p className={`px-1 pb-2 ${appTypeSmallClass} ${appToneMutedClass}`}>
+          {getCategoryHelpIntro(group.id)}
+        </p>
+      ) : null}
+      {groupSettingsBySection(group.settings, group.label).map((section) => (
+        <PopoverBoundary className="settings-section" key={section.label}>
+          {section.label === group.label ? null : <h3>{section.label}</h3>}
+          <div className="settings-panel">
+            {section.settings.map((setting) => (
+              <Fragment key={setting.id}>
+                {setting.dividerBefore ? <div className="settings-divider" /> : null}
+                <SettingRow setting={setting} />
+              </Fragment>
+            ))}
+          </div>
+        </PopoverBoundary>
+      ))}
+    </PopoverBoundary>
   ))
 }

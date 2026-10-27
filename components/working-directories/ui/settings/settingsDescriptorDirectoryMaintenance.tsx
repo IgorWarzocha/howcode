@@ -22,6 +22,7 @@ export function buildDirectoryMaintenanceSettingsDescriptors({
     {
       id: 'projects.deletion-mode',
       category: 'general',
+      section: 'Workspaces',
       title: 'Workspace deletion cleanup',
       description: 'Remove conversations from Howcode, or also delete the workspace folder.',
       keywords: 'delete deletion cleanup workspace conversations folder',
@@ -40,6 +41,7 @@ export function buildDirectoryMaintenanceSettingsDescriptors({
     {
       id: 'projects.import-ui',
       category: 'general',
+      section: 'Workspaces',
       title: 'Refresh workspace metadata',
       description: 'Scan workspace folders for repository and origin status.',
       keywords: 'workspace import ui scan repo origin first launch',

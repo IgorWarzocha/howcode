@@ -38,6 +38,7 @@ export function buildRuntimeSettingsDescriptors({
     {
       id: 'pi-runtime.theme',
       category: 'general',
+      section: 'Appearance',
       title: 'Theme',
       description: 'Colors for Howcode.',
       keywords: 'theme color json pi gui appearance howcode',
@@ -89,6 +90,7 @@ export function buildRuntimeSettingsDescriptors({
     {
       id: 'pi-runtime.transport',
       category: 'chat',
+      section: 'Agent behaviour',
       title: 'Transport',
       description: 'Connection mode for providers that support it.',
       keywords: 'transport sse websocket cached auto provider runtime',
@@ -109,6 +111,7 @@ export function buildRuntimeSettingsDescriptors({
     {
       id: 'pi-runtime.auto-compact',
       category: 'chat',
+      section: 'Agent behaviour',
       title: 'Auto compact context',
       description: 'Switch auto compaction on or off.',
       keywords: 'auto compact context runtime',
@@ -125,6 +128,7 @@ export function buildRuntimeSettingsDescriptors({
     ...queueModeSettings.map((setting) => ({
       id: `pi-runtime.${setting.key}`,
       category: 'chat' as const,
+      section: 'Agent behaviour',
       title: setting.title,
       description: setting.description,
       keywords: 'queue drain steering follow-up mode runtime advanced',
@@ -143,6 +147,7 @@ export function buildRuntimeSettingsDescriptors({
     ...runtimeBooleanSettings.map((setting) => ({
       id: `pi-runtime.${setting.key}`,
       category: 'chat' as const,
+      section: 'Agent behaviour',
       title: setting.title,
       description: setting.description,
       keywords: 'image images telemetry runtime provider',

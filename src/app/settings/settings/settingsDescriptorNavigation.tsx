@@ -53,6 +53,7 @@ export function buildNavigationSettingsDescriptor(input: {
   return {
     id: 'common.navigation-renderer',
     category: 'general',
+    section: 'Appearance',
     title: 'Sidebar',
     description: 'Choose an installed navigation component, or use no sidebar.',
     keywords: 'sidebar navigation classic none component',

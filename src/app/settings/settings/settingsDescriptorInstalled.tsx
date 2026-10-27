@@ -21,6 +21,7 @@ export function useInstalledSettingsDescriptors() {
     settings.push({
       id: `component:${renderer.name}`,
       category,
+      section: contribution.label,
       title: contribution.label,
       description: contribution.description,
       keywords: contribution.keywords ?? '',

@@ -4,3 +4,4 @@
 - Shell preferences persist through `useDraftShellPreferences`; component controls use their owning controller or installed plugin request boundary. UI visibility never selects conversation tools.
 - Component settings mount through renderer slots beneath the owning Provider. Retain failed/pending/headless packages in the catalogue; absence of a settings renderer is not absence of an installed package.
 - Use the SDK's `ui/controls` and `ui/inline-select` for shared controls; do not restore settings-local select, checkbox, or segmented-control owners.
+- Keep each settings section a `PopoverBoundary`: category pulse styling gives sibling sections stacking contexts, so dropdowns must lift their own section above the next panel.

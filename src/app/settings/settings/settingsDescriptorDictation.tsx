@@ -46,6 +46,7 @@ export function buildDictationSettingsDescriptor(input: {
   return {
     id: 'common.dictation-provider',
     category: 'chat',
+    section: 'Composer',
     title: 'Dictation component',
     description: 'Choose voice-input controls. Select its preferred engine in component settings.',
     keywords: 'dictation microphone voice capture composer component provider',

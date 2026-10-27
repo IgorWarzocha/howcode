@@ -9,6 +9,7 @@ export type {
 export type SettingDescriptor = {
   id: string
   category: SettingsCategoryId
+  section?: string
   componentId?: string
   title: string
   description: string

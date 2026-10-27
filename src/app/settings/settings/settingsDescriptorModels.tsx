@@ -42,6 +42,7 @@ export function buildModelSettingsDescriptors({
     {
       id: 'general.ai-services',
       category: 'general',
+      section: 'Providers',
       title: 'AI services',
       description: 'Connect the services you use for AI models.',
       layout: 'rows',
@@ -52,6 +53,7 @@ export function buildModelSettingsDescriptors({
     {
       id: 'models.defaults',
       category: 'chat',
+      section: 'Agent behaviour',
       title: 'Model defaults',
       description: 'Default model and thinking level for new chats.',
       keywords: 'chat model provider reasoning thinking',

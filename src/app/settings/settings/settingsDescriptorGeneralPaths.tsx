@@ -18,6 +18,7 @@ export function buildGeneralPathsSettingsDescriptors({
     {
       id: 'projects.custom-pi-directory',
       category: 'general',
+      section: 'Folders',
       title: 'Pi resource directory',
       description:
         'Source for credentials, providers, skills, instructions and themes. Howcode preferences are stored separately.',
@@ -54,6 +55,7 @@ export function buildGeneralPathsSettingsDescriptors({
     {
       id: 'projects.favorite-folders',
       category: 'general',
+      section: 'Folders',
       title: 'Favorite folders',
       description: 'Paths shown in the attachment picker alongside Home.',
       keywords: 'favorite folders attachment picker paths',

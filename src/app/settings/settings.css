@@ -1,0 +1,118 @@
+.settings-view {
+  --app-type-small-size: 13px;
+  --app-type-small-line-height: 1.4;
+  --app-type-meta-size: 12px;
+  --app-type-meta-line-height: 1.5;
+}
+
+.settings-content {
+  container-type: inline-size;
+}
+
+.settings-category-group {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 20px;
+}
+
+.settings-section {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+}
+
+.settings-section > h3 {
+  padding-inline: 2px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.settings-panel {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel) 35%, transparent);
+}
+
+.settings-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+  align-items: center;
+  min-width: 0;
+  gap: 24px;
+  padding: 16px 18px;
+}
+
+.settings-row-copy {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+
+.settings-row-title {
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.settings-row-description {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.settings-row-control {
+  min-width: 0;
+  max-width: min(100%, 28rem);
+  justify-self: end;
+}
+
+.settings-custom-rows {
+  display: grid;
+  min-width: 0;
+}
+
+.settings-panel > .settings-row + .settings-row,
+.settings-custom-rows > .settings-row + .settings-row,
+.settings-panel > .settings-custom-rows + .settings-row,
+.settings-panel > .settings-row + .settings-custom-rows {
+  border-top: 1px solid var(--border);
+}
+
+/* Feature renderers own their internal rows; only their containing surface is shared. */
+.settings-custom-rows[data-setting-id^="component:"] {
+  padding: 18px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.settings-divider {
+  border-top: 1px solid var(--border-strong);
+}
+
+@container (min-width: 681px) {
+  .settings-row .hc-inline-select__panel {
+    right: 0;
+    left: auto;
+  }
+}
+
+@container (max-width: 680px) {
+  .settings-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .settings-row-control {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 639px) {
+  .settings-row {
+    padding: 14px;
+  }
+}
