@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { defineExtension, section } from '@earendil-works/pi-durable'
-import { createProjectInstructions } from '@howaboua/pi-durable-project-instructions'
+import { createNestedAgentsMd } from '@howaboua/pi-durable-nested-agents-md'
 import { withExtensionIngress } from '../../../desktop/durable-runtime/extension-ingress.ts'
 import { getAgentDirectory } from '../../../desktop/settings/paths.ts'
 import type {
@@ -25,11 +25,11 @@ const skillCommandPattern = /^\/skill:([^\s]+)(?:\s|$)/
 export function createAgentResources(
   getComposerSkills: (request: ComposerStateRequest) => Promise<ComposerSkillReference[]>,
 ) {
-  const projectInstructions = createProjectInstructions()
+  const nestedAgentsMd = createNestedAgentsMd()
   return withExtensionIngress(
     defineExtension({
       // Keep project context under the existing, independently selected Resources capability.
-      ...projectInstructions,
+      ...nestedAgentsMd,
       name: 'howcode.resources',
       sections: [
         section('howcode-answer-presentation', () => inlineAnswerPrompt, { tag: false }),
@@ -40,7 +40,7 @@ export function createAgentResources(
             (await optionalInstructions(path.join(getAgentDirectory(), 'AGENTS.MD'))) ??
             undefined,
         ),
-        ...(projectInstructions.sections ?? []),
+        ...(nestedAgentsMd.sections ?? []),
         createSkillsSection(),
       ],
     }),

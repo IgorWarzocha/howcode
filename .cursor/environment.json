@@ -1,0 +1,10 @@
+{
+  "install": "bash /agent/repos/howcode/scripts/cloud-install.sh",
+  "start": "bash /agent/repos/howcode/scripts/cloud-runtime.sh check",
+  "terminals": [
+    {
+      "name": "Howcode",
+      "command": "bash /agent/repos/howcode/scripts/cloud-start.sh"
+    }
+  ]
+}

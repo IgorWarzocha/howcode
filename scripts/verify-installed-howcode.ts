@@ -11,11 +11,11 @@ const requireFromPackage = createRequire(path.join(packageRoot, 'package.json'))
 
 // Resolve from the installed distribution, never from this checkout's dependency tree.
 for (const name of ['node-pty', 'sherpa-onnx-node', 'node:sqlite']) requireFromPackage(name)
-const instructions = await import(
-  pathToFileURL(requireFromPackage.resolve('@howaboua/pi-durable-project-instructions')).href
+const nestedAgentsMd = await import(
+  pathToFileURL(requireFromPackage.resolve('@howaboua/pi-durable-nested-agents-md')).href
 )
-if (typeof instructions.createProjectInstructions !== 'function') {
-  throw new Error('Installed project instructions entrypoint is unavailable')
+if (typeof nestedAgentsMd.createNestedAgentsMd !== 'function') {
+  throw new Error('Installed nested AGENTS.md entrypoint is unavailable')
 }
 const { compile } = await import(
   pathToFileURL(requireFromPackage.resolve('@tailwindcss/node')).href
