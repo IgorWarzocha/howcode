@@ -37,6 +37,19 @@ Remove the old hidden `/usr/local/lib/howcode-cloud-install.sh` command from the
 }
 ```
 
+If the saved environment editor exposes only Install and Start, use this finite `start` command instead. It launches an ordinary named tmux session rather than a Cursor-configured terminal:
+
+```sh
+set -eu
+bash /agent/repos/howcode/scripts/cloud-runtime.sh check
+if ! tmux has-session -t '=howcode-dev' 2>/dev/null; then
+  tmux new-session -d -s howcode-dev -c /agent/repos/howcode \
+    'bash scripts/cloud-start.sh'
+fi
+```
+
+Inspect the process with `tmux attach -t howcode-dev` and verify the app opens. A successful detached launch alone does not establish readiness.
+
 ## Preparation and startup
 
 The finite install script installs Node **26.12.1** and Bun **1.4.4** into `~/.local/share/howcode-cloud`, verifies the downloaded archives against pinned official release SHA-256 values, and logs all three checkout commits. The base image needs Bash, Git, curl, tar, xz, unzip and sha256sum on Linux x64. No existing system tool is patched or replaced.
