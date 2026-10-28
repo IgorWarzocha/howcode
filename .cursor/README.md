@@ -37,18 +37,13 @@ Remove the old hidden `/usr/local/lib/howcode-cloud-install.sh` command from the
 }
 ```
 
-If the saved environment editor exposes only Install and Start, use this finite `start` command instead. It launches an ordinary named tmux session rather than a Cursor-configured terminal:
+If the saved environment editor exposes only Install and Start, let Cursor own the server process directly through `start`:
 
 ```sh
-set -eu
-bash /agent/repos/howcode/scripts/cloud-runtime.sh check
-if ! tmux has-session -t '=howcode-dev' 2>/dev/null; then
-  tmux new-session -d -s howcode-dev -c /agent/repos/howcode \
-    'bash scripts/cloud-start.sh'
-fi
+exec bash /agent/repos/howcode/scripts/cloud-start.sh
 ```
 
-Inspect the process with `tmux attach -t howcode-dev` and verify the app opens. A successful detached launch alone does not establish readiness.
+Startup output remains in Cursor's `start-user` logs. Do not add a detached tmux layer that loses its output when the session exits. Verify the app opens before activating a new Build.
 
 ## Preparation and startup
 
@@ -57,6 +52,8 @@ The finite install script installs Node **26.12.1** and Bun **1.4.4** into `~/.l
 Preparation installs portable dependencies for editing without rebuilding its released packages. It then installs and packs Howcode Components through its supported workflow, followed by Howcode's frozen install and build. Root dependency references must match the content-hashed tarballs that packing produces. A mismatch must be integrated in the owning repository, never fixed by rewriting manifests or renaming unrelated tarballs during install.
 
 The terminal checks the prepared runtimes and runs `dev:host`, with stock Node selected explicitly for backend services. It preserves the feature branch Cursor selected. Builds save disk state, not processes or exported variables, so the terminal restores the runtime paths each time. If a feature branch changes dependencies, run `bash scripts/cloud-install.sh` on that branch before using the app.
+
+For other development commands, source `scripts/cloud-runtime.sh check` in the same Bash shell first. This selects the prepared runtimes without replacing the base image's system tools.
 
 Use Cursor's forwarded ports to open the app. Read `build/dev-server.json` for its actual address and access details. Keep model credentials in Cursor Secrets, never in checkout files or snapshot setup commands. Installation neither publishes packages nor calls model providers.
 
