@@ -4,6 +4,7 @@ import path from 'node:path'
 import * as Result from 'effect/Result'
 import * as Schema from 'effect/Schema'
 import { desktopShutdownTimeouts } from '../shared/desktop-shutdown-deadlines'
+import { desktopStartupTimeouts } from '../shared/desktop-startup-deadlines'
 import { DevBridgeMessage } from '../shared/dev-runtime'
 import { DEV_SERVER_HOST } from '../shared/dev-server'
 
@@ -90,7 +91,7 @@ export function startDevWebBridge(input: {
   const ready = receiveBridgeMessage(
     child,
     (message): message is Extract<BridgeMessage, { type: 'ready' }> => message.type === 'ready',
-    30_000,
+    desktopStartupTimeouts.bridgeReadyMs,
   ).then((message) => {
     port = message.port
   })

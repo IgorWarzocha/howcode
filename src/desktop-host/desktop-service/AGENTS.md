@@ -1,2 +1,3 @@
 - Recovery must wait for successful generation cleanup, not merely process exit. Fail `closed` on cleanup errors and keep the failed generation unavailable; never turn a forced or failed graceful shutdown into permission to replace it.
 - Keep first startup caller-owned: arm recovery only after readiness, and mark disposal before cancelling recovery or tearing down the child. Construction alone must not launch the backend.
+- Startup budgets cover fresh profile package snapshots; keep the outer dev-bridge wait longer than service startup plus failed-start cleanup.

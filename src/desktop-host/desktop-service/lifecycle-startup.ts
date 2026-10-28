@@ -4,6 +4,7 @@ import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
 import * as Ref from 'effect/Ref'
 import * as Scope from 'effect/Scope'
+import { desktopStartupTimeouts } from '../../../shared/desktop-startup-deadlines'
 import type { makeDesktopServiceFinalization } from './lifecycle-finalization'
 import { updateCurrent } from './state'
 import {
@@ -114,7 +115,7 @@ export function makeDesktopServiceStartup<Process>(options: {
   ) =>
     startRecord(record, handleMessage).pipe(
       Effect.timeoutOrElse({
-        duration: client.startupTimeoutMs ?? 15_000,
+        duration: client.startupTimeoutMs ?? desktopStartupTimeouts.serviceReadyMs,
         orElse: () =>
           Effect.fail(
             serviceError(
