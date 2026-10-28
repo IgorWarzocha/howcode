@@ -25,10 +25,14 @@
   "dependencies": {
     "@howaboua/pi-durable-git": "0.1.0",
     "@howaboua/pi-durable-ui": "0.1.0",
+    "@howaboua/pi-durable-project-instructions": "0.1.0",
     "@earendil-works/chord": "1.4.0",
     "@earendil-works/pi-ai": "1.4.0",
     "@earendil-works/pi-durable": "1.4.0",
     "@modelcontextprotocol/sdk": "1.32.0",
+    "@tailwindcss/node": "4.3.3",
+    "@tailwindcss/oxide": "4.3.3",
+    "tailwindcss": "^4.3.3",
     "@effect/sql-sqlite-node": "4.0.0-rc.116",
     "effect": "4.0.0-rc.116",
     "esbuild": "0.28.2",
@@ -51,5 +55,9 @@
     "diff",
     "assistant",
     "browser"
-  ]
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
 }

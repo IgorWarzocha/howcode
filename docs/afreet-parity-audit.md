@@ -2,6 +2,8 @@
 
 Investigated 17/10/2026. This is an implementation ledger, not permission to implement everything in it.
 
+For the current delivery queue, see [Release readiness](release-readiness.md). Several gaps recorded below have since been delivered. Keep the original findings tied to their inspected revisions.
+
 ## Bottom line
 
 Howcode already has durable chats, resident bots, workers, scheduled pulses, notebook execution, People, generated interfaces, artifacts, Git review and flexible docking. Rebuilding those would waste the day.

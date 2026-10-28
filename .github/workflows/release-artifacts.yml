@@ -4,14 +4,24 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 on:
-  push:
-    branches: [dev, main]
-    tags: ["v*"]
+  release:
+    types: [published]
   workflow_dispatch:
+    inputs:
+      channel:
+        description: Artifact channel (manual runs never publish)
+        type: choice
+        options: [main, dev, durable]
+        required: true
+        default: durable
+      version:
+        description: Exact package version (prereleases must include channel, e.g. 0.2.0-durable.1)
+        required: true
+        type: string
 
 concurrency:
-  group: release-artifacts-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: release-artifacts-${{ github.event.release.tag_name || github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -19,38 +29,116 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    outputs:
+      channel: ${{ steps.release.outputs.channel }}
+      version: ${{ steps.release.outputs.version }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
+          persist-credentials: false
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: package.json
       - uses: actions/setup-node@v6
         with:
-          node-version: current
+          node-version-file: package.json
           check-latest: true
-      - run: bun install --frozen-lockfile
-      - run: bun run build
-      - name: Pack server package
-        shell: bash
+      - name: Resolve release channel
+        id: release
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          IS_PRERELEASE: ${{ github.event.release.prerelease }}
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_CHANNEL: ${{ inputs.channel }}
         run: |
-          if [ "$GITHUB_REF_NAME" = dev ]; then
-            bun run pack:howcode:dev
-          else
-            bun run pack:howcode
-          fi
-      - name: Verify installed runtime dependencies
-        shell: bash
+          node --input-type=module <<'NODE'
+          import { appendFileSync } from 'node:fs';
+          const env = process.env;
+          let version = env.INPUT_VERSION;
+          let channel = env.INPUT_CHANNEL;
+          if (env.EVENT_NAME === 'release') {
+            if (!env.RELEASE_TAG.startsWith('v')) throw new Error('Release tag must be vVERSION');
+            version = env.RELEASE_TAG.slice(1);
+            channel = version.includes('-durable.') ? 'durable' : version.includes('-dev.') ? 'dev' : 'main';
+            if ((env.IS_PRERELEASE === 'true') !== (channel !== 'main')) {
+              throw new Error('GitHub prerelease flag must match the package channel');
+            }
+          }
+          if (!/^[0-9]+\.[0-9]+\.[0-9]+(?:-(?:dev|durable)\.[0-9A-Za-z.-]+)?$/.test(version)) {
+            throw new Error('Expected exact stable, dev, or durable version');
+          }
+          if (!['main', 'dev', 'durable'].includes(channel)) throw new Error('Invalid channel');
+          appendFileSync(env.GITHUB_OUTPUT, `channel=${channel}\nversion=${version}\n`);
+          NODE
+      # Intentionally requires registry-ready source pins. Sibling development tarballs
+      # cannot be installed on a fresh runner and must not be relabelled as npm releases.
+      - run: bun install --frozen-lockfile
+      - name: Build and pack in disposable staging directories
+        env:
+          RELEASE_CHANNEL: ${{ steps.release.outputs.channel }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: bun run release:prepare "$RELEASE_CHANNEL" "$RELEASE_VERSION"
+      - name: Verify clean installed runtime dependencies
         run: |
           package=$(realpath artifacts/howcode-*.tgz)
           install_root=$(mktemp -d)
           cd "$install_root"
           npm init -y
           npm install "$package"
-          node -e "require('node-pty'); require('sherpa-onnx-node'); require('node:sqlite')"
           test -f node_modules/howcode/build/server/index.mjs
           test -f node_modules/howcode/dist/index.html
+          node "$GITHUB_WORKSPACE/scripts/verify-installed-howcode.ts" "$install_root"
       - uses: actions/upload-artifact@v7
         with:
           name: howcode-server-package
           if-no-files-found: error
           path: artifacts/howcode-*.tgz
+
+  publish:
+    if: github.event_name == 'release'
+    needs: build
+    runs-on: ubuntu-24.04
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: howcode-server-package
+          path: artifacts
+      # The publishing job deliberately has no source checkout or dependency install.
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '26'
+          registry-url: https://registry.npmjs.org
+      - name: Require npm trusted-publishing support
+        run: test "$(printf '%s\n' 11.5.1 "$(npm --version)" | sort -V | head -n1)" = 11.5.1
+      - name: Publish verified tarball (token or npm trusted publisher)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          RELEASE_CHANNEL: ${{ needs.build.outputs.channel }}
+        run: |
+          tag="$RELEASE_CHANNEL"
+          if [ "$tag" = main ]; then tag=latest; fi
+          npm publish artifacts/howcode-*.tgz --tag "$tag" --access public --provenance --ignore-scripts
+
+  release-assets:
+    if: github.event_name == 'release'
+    needs: [build, publish]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: howcode-server-package
+          path: artifacts
+      - name: Attach immutable package to its versioned release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$RELEASE_TAG" artifacts/howcode-*.tgz

@@ -20,7 +20,7 @@
     "build:runtime": "bun run generate:components && bun ./scripts/build-runtime.ts",
     "build": "bun run generate:components && vite build --configLoader runner && bun run build:runtime",
     "build:release": "bun run build",
-    "release:prepare": "bun run build && bun run pack:howcode",
+    "release:prepare": "bun ./scripts/prepare-howcode-release.ts",
     "pack:howcode": "bun ./scripts/pack-howcode.ts main pack",
     "publish:howcode:dry-run": "bun ./scripts/pack-howcode.ts main publish-dry-run",
     "preview": "vite preview --configLoader runner",
@@ -37,17 +37,20 @@
     "deadcode": "bun run doctor",
     "react-doctor": "bun run doctor",
     "typography:audit": "bun ./scripts/audit-typography.ts",
-    "pack:howcode:dev": "bun ./scripts/pack-howcode.ts dev pack 0.1.72-dev.0",
-    "publish:howcode:dev:dry-run": "bun ./scripts/pack-howcode.ts dev publish-dry-run 0.1.72-dev.0",
+    "pack:howcode:dev": "bun ./scripts/pack-howcode.ts dev pack",
+    "publish:howcode:dev:dry-run": "bun ./scripts/pack-howcode.ts dev publish-dry-run",
     "publish:howcode": "bun ./scripts/pack-howcode.ts main publish",
-    "publish:howcode:dev": "bun ./scripts/pack-howcode.ts dev publish 0.1.72-dev.0",
+    "publish:howcode:dev": "bun ./scripts/pack-howcode.ts dev publish",
     "typography:generate": "bun ./scripts/generate-typography-css.ts",
     "polls:deploy": "cd workers/polls && bunx wrangler deploy",
     "polls:migrate": "cd workers/polls && bunx wrangler d1 migrations apply howcode_polls --remote",
     "dev:host": "HOWCODE_DEV_SERVER_HOST=0.0.0.0 bun run dev",
     "start": "node build/server/index.mjs",
     "generate:components": "bun ./scripts/generate-component-registry.ts",
-    "postinstall": "bun run generate:components"
+    "postinstall": "bun run generate:components",
+    "pack:howcode:durable": "bun ./scripts/pack-howcode.ts durable pack",
+    "publish:howcode:durable": "bun ./scripts/pack-howcode.ts durable publish",
+    "publish:howcode:durable:dry-run": "bun ./scripts/pack-howcode.ts durable publish-dry-run"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,cts,mts,cjs,mjs,json,css,md}": [
